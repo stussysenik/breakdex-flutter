@@ -8,6 +8,8 @@ class VideoExportPlugin: NSObject, FlutterPlugin, FlutterStreamHandler {
     private var progressSink: FlutterEventSink?
     private var exportSession: AVAssetExportSession?
     private var progressTimer: Timer?
+    private var encoderInitialized = false
+    private var encoderStartTime: Date?
 
     static func register(with registrar: FlutterPluginRegistrar) {
         let instance = VideoExportPlugin()
@@ -73,6 +75,12 @@ class VideoExportPlugin: NSObject, FlutterPlugin, FlutterStreamHandler {
         let rotation = args["rotation"] as? Int ?? 0
         let aspectRatio = args["aspectRatio"] as? String
 
+        // Free-form crop params (normalized 0.0-1.0)
+        let cropLeft = args["cropLeft"] as? Double
+        let cropTop = args["cropTop"] as? Double
+        let cropWidth = args["cropWidth"] as? Double
+        let cropHeight = args["cropHeight"] as? Double
+
         let inputURL = URL(fileURLWithPath: inputPath)
         let outputURL = URL(fileURLWithPath: outputPath)
 
@@ -80,7 +88,9 @@ class VideoExportPlugin: NSObject, FlutterPlugin, FlutterStreamHandler {
 
         let asset = AVURLAsset(url: inputURL)
 
-        sendProgress(phase: "preparing", progress: 0.0)
+        encoderInitialized = false
+        encoderStartTime = nil
+        sendProgress(phase: "preparing", progress: 0.02)
 
         DispatchQueue.global(qos: .userInitiated).async { [weak self] in
             guard let self = self else { return }
@@ -140,7 +150,7 @@ class VideoExportPlugin: NSObject, FlutterPlugin, FlutterStreamHandler {
                 compositionAudioTrack?.scaleTimeRange(insertedRange, toDuration: scaledDuration)
             }
 
-            self.sendProgress(phase: "composing", progress: 0.1)
+            self.sendProgress(phase: "composing", progress: 0.05)
 
             // Geometry
             let orientedSize = self.orientedSize(naturalSize: naturalSize, transform: preferredTransform)
@@ -149,7 +159,11 @@ class VideoExportPlugin: NSObject, FlutterPlugin, FlutterStreamHandler {
                 naturalSize: naturalSize,
                 preferredTransform: preferredTransform,
                 userRotation: rotation,
-                aspectRatio: aspectRatio
+                aspectRatio: aspectRatio,
+                cropLeft: cropLeft,
+                cropTop: cropTop,
+                cropWidth: cropWidth,
+                cropHeight: cropHeight
             )
 
             let videoComposition = AVMutableVideoComposition()
@@ -164,7 +178,7 @@ class VideoExportPlugin: NSObject, FlutterPlugin, FlutterStreamHandler {
             instruction.layerInstructions = [layerInstruction]
             videoComposition.instructions = [instruction]
 
-            self.sendProgress(phase: "exporting", progress: 0.15)
+            self.sendProgress(phase: "initializing", progress: 0.08)
 
             guard let session = AVAssetExportSession(
                 asset: composition,
@@ -182,6 +196,7 @@ class VideoExportPlugin: NSObject, FlutterPlugin, FlutterStreamHandler {
             session.shouldOptimizeForNetworkUse = true
 
             self.exportSession = session
+            self.encoderStartTime = Date()
 
             DispatchQueue.main.async {
                 self.startProgressTimer()
@@ -226,8 +241,41 @@ class VideoExportPlugin: NSObject, FlutterPlugin, FlutterStreamHandler {
         progressTimer?.invalidate()
         progressTimer = Timer.scheduledTimer(withTimeInterval: 0.1, repeats: true) { [weak self] _ in
             guard let self = self, let session = self.exportSession else { return }
-            let p = Double(0.15 + session.progress * 0.85)
-            self.sendProgress(phase: "exporting", progress: p)
+
+            let sessionProgress = Double(session.progress)
+
+            if sessionProgress > 0.0 && !self.encoderInitialized {
+                self.encoderInitialized = true
+            }
+
+            if !self.encoderInitialized {
+                // Encoder not yet producing frames — show initializing phase
+                let waitSeconds = -(self.encoderStartTime ?? Date()).timeIntervalSinceNow
+                self.sendProgress(
+                    phase: "initializing",
+                    progress: 0.08,
+                    extra: ["waitSeconds": waitSeconds]
+                )
+                return
+            }
+
+            // Map session.progress (0-1) to our range (0.10 - 1.0)
+            let p = 0.10 + sessionProgress * 0.90
+
+            // Detect stall: encoder initialized but progress hasn't moved in >10s
+            if let startTime = self.encoderStartTime {
+                let elapsed = -startTime.timeIntervalSinceNow
+                if elapsed > 10.0 && sessionProgress < 0.05 {
+                    self.sendProgress(
+                        phase: "encoding_stalled",
+                        progress: p,
+                        extra: ["stallSeconds": elapsed]
+                    )
+                    return
+                }
+            }
+
+            self.sendProgress(phase: "encoding", progress: p)
         }
     }
 
@@ -238,9 +286,15 @@ class VideoExportPlugin: NSObject, FlutterPlugin, FlutterStreamHandler {
         }
     }
 
-    private func sendProgress(phase: String, progress: Double) {
+    private func sendProgress(phase: String, progress: Double, extra: [String: Any]? = nil) {
         DispatchQueue.main.async { [weak self] in
-            self?.progressSink?(["phase": phase, "progress": progress])
+            var data: [String: Any] = ["phase": phase, "progress": progress]
+            if let extra = extra {
+                for (key, value) in extra {
+                    data[key] = value
+                }
+            }
+            self?.progressSink?(data)
         }
     }
 
@@ -256,7 +310,11 @@ class VideoExportPlugin: NSObject, FlutterPlugin, FlutterStreamHandler {
         naturalSize: CGSize,
         preferredTransform: CGAffineTransform,
         userRotation: Int,
-        aspectRatio: String?
+        aspectRatio: String?,
+        cropLeft: Double?,
+        cropTop: Double?,
+        cropWidth: Double?,
+        cropHeight: Double?
     ) -> (CGSize, CGAffineTransform) {
         var transform = preferredTransform
         var currentSize = orientedSize
@@ -280,9 +338,18 @@ class VideoExportPlugin: NSObject, FlutterPlugin, FlutterStreamHandler {
             )
         }
 
-        // Aspect ratio crop
+        // Custom free-form crop (takes precedence over aspect ratio)
         var renderSize = currentSize
-        if let ratio = aspectRatio, let targetRatio = parseAspectRatio(ratio) {
+        if let cl = cropLeft, let ct = cropTop, let cw = cropWidth, let ch = cropHeight {
+            let pixelLeft = CGFloat(cl) * currentSize.width
+            let pixelTop = CGFloat(ct) * currentSize.height
+            let pixelWidth = CGFloat(cw) * currentSize.width
+            let pixelHeight = CGFloat(ch) * currentSize.height
+
+            renderSize = CGSize(width: pixelWidth, height: pixelHeight)
+            transform = transform.concatenating(CGAffineTransform(translationX: -pixelLeft, y: -pixelTop))
+        } else if let ratio = aspectRatio, let targetRatio = parseAspectRatio(ratio) {
+            // Aspect ratio crop
             let currentRatio = currentSize.width / currentSize.height
             if currentRatio > targetRatio {
                 let newWidth = currentSize.height * targetRatio
@@ -310,7 +377,16 @@ class VideoExportPlugin: NSObject, FlutterPlugin, FlutterStreamHandler {
         case "16:9": return 16.0 / 9.0
         case "1:1":  return 1.0
         case "4:5":  return 4.0 / 5.0
-        default:     return nil
+        default:
+            // Try to parse arbitrary "W:H" format
+            let parts = str.split(separator: ":")
+            if parts.count == 2,
+               let w = Double(parts[0]),
+               let h = Double(parts[1]),
+               h > 0 {
+                return CGFloat(w / h)
+            }
+            return nil
         }
     }
 }

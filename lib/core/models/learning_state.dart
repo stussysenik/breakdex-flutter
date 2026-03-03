@@ -51,7 +51,8 @@ enum ReviewRating {
 
 enum ReviewType {
   move('MOVE'),
-  combo('COMBO');
+  combo('COMBO'),
+  manual('MANUAL');
 
   const ReviewType(this.dbValue);
   final String dbValue;
@@ -59,6 +60,7 @@ enum ReviewType {
   static ReviewType fromString(String value) => switch (value) {
         'MOVE' => ReviewType.move,
         'COMBO' => ReviewType.combo,
+        'MANUAL' => ReviewType.manual,
         _ => ReviewType.move,
       };
 }

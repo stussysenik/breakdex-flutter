@@ -78,10 +78,13 @@ class _ComboDetailScreenState extends ConsumerState<ComboDetailScreen> {
                     const SizedBox(height: AppSpacing.lg),
 
                     // Combo name
-                    Text(
-                      combo.name,
-                      style: AppTypography.titleMedium.copyWith(
-                        color: colorScheme.onSurface,
+                    Semantics(
+                      header: true,
+                      child: Text(
+                        combo.name,
+                        style: AppTypography.titleLarge.copyWith(
+                          color: colorScheme.onSurface,
+                        ),
                       ),
                     ),
                     const SizedBox(height: AppSpacing.md),

@@ -74,10 +74,13 @@ class MoveDetailScreen extends ConsumerWidget {
                 const SizedBox(height: AppSpacing.lg),
 
                 // Move name
-                Text(
-                  move.name,
-                  style: AppTypography.titleMedium.copyWith(
-                    color: colorScheme.onSurface,
+                Semantics(
+                  header: true,
+                  child: Text(
+                    move.name,
+                    style: AppTypography.titleLarge.copyWith(
+                      color: colorScheme.onSurface,
+                    ),
                   ),
                 ),
                 const SizedBox(height: AppSpacing.sm),

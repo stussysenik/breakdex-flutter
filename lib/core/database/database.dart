@@ -8,15 +8,18 @@ import 'tables/moves.dart';
 import 'tables/combos.dart';
 import 'tables/combo_moves.dart';
 import 'tables/reviews.dart';
+import 'tables/battle_results.dart';
+import 'tables/sync_log.dart';
 import 'daos/moves_dao.dart';
 import 'daos/combos_dao.dart';
 import 'daos/reviews_dao.dart';
+import 'daos/sync_dao.dart';
 
 part 'database.g.dart';
 
 @DriftDatabase(
-  tables: [Moves, Combos, ComboMoves, Reviews],
-  daos: [MovesDao, CombosDao, ReviewsDao],
+  tables: [Moves, Combos, ComboMoves, Reviews, BattleResults, SyncLog],
+  daos: [MovesDao, CombosDao, ReviewsDao, SyncDao],
 )
 class AppDatabase extends _$AppDatabase {
   AppDatabase() : super(_openConnection());
@@ -24,11 +27,19 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.forTesting(super.e);
 
   @override
-  int get schemaVersion => 1;
+  int get schemaVersion => 3;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
         onCreate: (m) => m.createAll(),
+        onUpgrade: (m, from, to) async {
+          if (from < 2) {
+            await m.createTable(battleResults);
+          }
+          if (from < 3) {
+            await m.createTable(syncLog);
+          }
+        },
       );
 }
 

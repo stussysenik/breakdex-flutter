@@ -82,4 +82,25 @@ class DriftReviewRepository implements ReviewRepository {
 
   @override
   Future<List<Review>> getByMoveId(String moveId) => _dao.getByMoveId(moveId);
+
+  @override
+  Future<int> countAll() => _dao.countAll();
+
+  @override
+  Future<List<Review>> getInRange(DateTime start, DateTime end) =>
+      _dao.getInRange(start, end);
+
+  @override
+  Future<Map<DateTime, int>> dailyCountsSince(DateTime since) =>
+      _dao.dailyCountsSince(since);
+
+  @override
+  Future<Map<String, int>> ratingDistribution() => _dao.ratingDistribution();
+
+  @override
+  Future<List<MapEntry<String, int>>> topReviewedMoves(int limit) =>
+      _dao.topReviewedMoves(limit);
+
+  @override
+  Future<int> currentStreak() => _dao.currentStreak();
 }

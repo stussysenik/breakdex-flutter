@@ -8,6 +8,7 @@ import '../../core/design/spacing.dart';
 import '../../core/design/typography.dart';
 import '../../core/models/learning_state.dart';
 import '../../core/providers.dart';
+import '../../shared/widgets/celebration_overlay.dart';
 import '../../shared/widgets/primary_button.dart';
 import '../../shared/widgets/secondary_button.dart';
 import '../../shared/widgets/timeline_node.dart';
@@ -66,14 +67,17 @@ class _CreateComboScreenState extends ConsumerState<CreateComboScreen> {
               child: Row(
                 children: [
                   for (int i = 0; i < _selectedMoves.length; i++)
-                    TimelineNode(
-                      index: i + 1,
-                      style: i == _activeIndex
-                          ? TimelineNodeStyle.active
-                          : TimelineNodeStyle.inactive,
-                      showLeadingLine: i > 0,
-                      showTrailingLine: true,
-                      onTap: () => setState(() => _activeIndex = i),
+                    GestureDetector(
+                      onLongPress: () => _removeMoveAt(i),
+                      child: TimelineNode(
+                        index: i + 1,
+                        style: i == _activeIndex
+                            ? TimelineNodeStyle.active
+                            : TimelineNodeStyle.inactive,
+                        showLeadingLine: i > 0,
+                        showTrailingLine: true,
+                        onTap: () => setState(() => _activeIndex = i),
+                      ),
                     ),
                   TimelineNode(
                     index: 0,
@@ -87,15 +91,37 @@ class _CreateComboScreenState extends ConsumerState<CreateComboScreen> {
             ),
             const SizedBox(height: AppSpacing.md),
 
-            // Current move label
+            // Current move label + remove
             if (currentMove != null)
-              Center(
-                child: Text(
-                  currentMove.name,
-                  style: AppTypography.bodyMedium.copyWith(
-                    color: colorScheme.onSurface,
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Flexible(
+                    child: Text(
+                      currentMove.name,
+                      style: AppTypography.bodyMedium.copyWith(
+                        color: colorScheme.onSurface,
+                      ),
+                      overflow: TextOverflow.ellipsis,
+                    ),
                   ),
-                ),
+                  const SizedBox(width: AppSpacing.sm),
+                  GestureDetector(
+                    onTap: _removeActiveMove,
+                    child: Container(
+                      padding: const EdgeInsets.all(4),
+                      decoration: BoxDecoration(
+                        color: colorScheme.surfaceContainerHighest,
+                        shape: BoxShape.circle,
+                      ),
+                      child: Icon(
+                        Icons.close,
+                        size: 14,
+                        color: colorScheme.secondary,
+                      ),
+                    ),
+                  ),
+                ],
               ),
             const SizedBox(height: AppSpacing.xl),
 
@@ -114,6 +140,29 @@ class _CreateComboScreenState extends ConsumerState<CreateComboScreen> {
         ),
       ),
     );
+  }
+
+  void _removeActiveMove() {
+    if (_selectedMoves.isEmpty) return;
+    HapticFeedback.lightImpact();
+    setState(() {
+      _selectedMoves.removeAt(_activeIndex);
+      if (_activeIndex >= _selectedMoves.length && _selectedMoves.isNotEmpty) {
+        _activeIndex = _selectedMoves.length - 1;
+      }
+      if (_selectedMoves.isEmpty) _activeIndex = 0;
+    });
+  }
+
+  void _removeMoveAt(int index) {
+    HapticFeedback.lightImpact();
+    setState(() {
+      _selectedMoves.removeAt(index);
+      if (_activeIndex >= _selectedMoves.length && _selectedMoves.isNotEmpty) {
+        _activeIndex = _selectedMoves.length - 1;
+      }
+      if (_selectedMoves.isEmpty) _activeIndex = 0;
+    });
   }
 
   Future<void> _showMovePicker() async {
@@ -224,9 +273,7 @@ class _CreateComboScreenState extends ConsumerState<CreateComboScreen> {
         _selectedMoves.clear();
         _activeIndex = 0;
       });
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Combo "$name" saved!')),
-      );
+      CelebrationOverlay.show(context, title: name);
     }
   }
 }

@@ -1,15 +1,32 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-class BottomNavShell extends StatelessWidget {
+import '../../core/design/colors.dart';
+import '../../core/providers.dart';
+import 'sync_progress_bar.dart';
+
+class BottomNavShell extends ConsumerWidget {
   const BottomNavShell({super.key, required this.navigationShell});
 
   final StatefulNavigationShell navigationShell;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final pendingCount =
+        ref.watch(pendingChangesCountProvider).valueOrNull ?? 0;
+    final isLoggedIn = ref.watch(isLoggedInProvider);
+
+    // Watch sync trigger to keep auto-sync alive
+    ref.watch(syncTriggerProvider);
+
     return Scaffold(
-      body: navigationShell,
+      body: Column(
+        children: [
+          const SyncProgressBar(),
+          Expanded(child: navigationShell),
+        ],
+      ),
       bottomNavigationBar: Container(
         decoration: BoxDecoration(
           border: Border(
@@ -25,21 +42,29 @@ class BottomNavShell extends StatelessWidget {
             index,
             initialLocation: index == navigationShell.currentIndex,
           ),
-          items: const [
-            BottomNavigationBarItem(
+          items: [
+            const BottomNavigationBarItem(
               icon: Icon(Icons.grid_view_rounded),
               label: 'Arsenal',
             ),
-            BottomNavigationBarItem(
-              icon: Icon(Icons.add_circle_outline),
-              label: 'Create',
-            ),
-            BottomNavigationBarItem(
+            const BottomNavigationBarItem(
               icon: Icon(Icons.style_outlined),
               label: 'Review',
             ),
+            const BottomNavigationBarItem(
+              icon: Icon(Icons.insights_rounded),
+              label: 'Stats',
+            ),
             BottomNavigationBarItem(
-              icon: Icon(Icons.settings_outlined),
+              icon: Badge(
+                isLabelVisible: isLoggedIn && pendingCount > 0,
+                label: Text(
+                  pendingCount > 99 ? '99+' : '$pendingCount',
+                  style: const TextStyle(fontSize: 10, color: Colors.white),
+                ),
+                backgroundColor: AppColors.accent,
+                child: const Icon(Icons.settings_outlined),
+              ),
               label: 'Settings',
             ),
           ],

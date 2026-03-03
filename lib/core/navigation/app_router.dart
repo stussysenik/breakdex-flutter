@@ -7,7 +7,10 @@ import '../../features/flashcard_review/flashcard_review_screen.dart';
 import '../../features/create_combo/create_combo_screen.dart';
 import '../../features/combo_detail/combo_detail_screen.dart';
 import '../../features/settings/settings_screen.dart';
+import '../../features/stats/stats_screen.dart';
+import '../../features/battle/battle_screen.dart';
 import '../../features/video_editor/video_editor_screen.dart';
+import '../../features/auth/auth_screen.dart';
 import '../../shared/widgets/bottom_nav_shell.dart';
 
 final _rootNavigatorKey = GlobalKey<NavigatorState>();
@@ -43,21 +46,21 @@ final appRouter = GoRouter(
             ),
           ],
         ),
-        // Create
-        StatefulShellBranch(
-          routes: [
-            GoRoute(
-              path: '/create',
-              builder: (context, state) => const CreateComboScreen(),
-            ),
-          ],
-        ),
         // Review
         StatefulShellBranch(
           routes: [
             GoRoute(
               path: '/review',
               builder: (context, state) => const FlashcardReviewScreen(),
+            ),
+          ],
+        ),
+        // Stats
+        StatefulShellBranch(
+          routes: [
+            GoRoute(
+              path: '/stats',
+              builder: (context, state) => const StatsScreen(),
             ),
           ],
         ),
@@ -74,6 +77,16 @@ final appRouter = GoRouter(
     ),
     // Modal routes (no bottom nav)
     GoRoute(
+      path: '/create-combo',
+      parentNavigatorKey: _rootNavigatorKey,
+      builder: (context, state) => const CreateComboScreen(),
+    ),
+    GoRoute(
+      path: '/battle',
+      parentNavigatorKey: _rootNavigatorKey,
+      builder: (context, state) => const BattleScreen(),
+    ),
+    GoRoute(
       path: '/video-editor',
       parentNavigatorKey: _rootNavigatorKey,
       builder: (context, state) {
@@ -82,6 +95,11 @@ final appRouter = GoRouter(
           videoPath: extras?['videoPath'] as String? ?? '',
         );
       },
+    ),
+    GoRoute(
+      path: '/auth',
+      parentNavigatorKey: _rootNavigatorKey,
+      builder: (context, state) => const AuthScreen(),
     ),
   ],
 );

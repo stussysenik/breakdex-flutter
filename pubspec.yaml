@@ -1,7 +1,7 @@
 name: breakdex
 description: "Breakdancing training app — catalog moves, build combos, master through spaced repetition."
 publish_to: 'none'
-version: 0.2.0+1
+version: 0.4.0+1
 
 environment:
   sdk: ^3.11.1
@@ -27,6 +27,9 @@ dependencies:
   path: ^1.9.1
   uuid: ^4.5.1
   intl: ^0.20.2
+  share_plus: ^10.1.4
+  supabase_flutter: ^2.8.0
+  connectivity_plus: ^6.1.0
 
 dev_dependencies:
   flutter_test:

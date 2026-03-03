@@ -1359,6 +1359,1002 @@ class ReviewsCompanion extends UpdateCompanion<Review> {
   }
 }
 
+class $BattleResultsTable extends BattleResults
+    with TableInfo<$BattleResultsTable, BattleResult> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $BattleResultsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+    'id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _scoreMeta = const VerificationMeta('score');
+  @override
+  late final GeneratedColumn<int> score = GeneratedColumn<int>(
+    'score',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _movesReviewedMeta = const VerificationMeta(
+    'movesReviewed',
+  );
+  @override
+  late final GeneratedColumn<int> movesReviewed = GeneratedColumn<int>(
+    'moves_reviewed',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _goodCountMeta = const VerificationMeta(
+    'goodCount',
+  );
+  @override
+  late final GeneratedColumn<int> goodCount = GeneratedColumn<int>(
+    'good_count',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _hardCountMeta = const VerificationMeta(
+    'hardCount',
+  );
+  @override
+  late final GeneratedColumn<int> hardCount = GeneratedColumn<int>(
+    'hard_count',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _againCountMeta = const VerificationMeta(
+    'againCount',
+  );
+  @override
+  late final GeneratedColumn<int> againCount = GeneratedColumn<int>(
+    'again_count',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _longestStreakMeta = const VerificationMeta(
+    'longestStreak',
+  );
+  @override
+  late final GeneratedColumn<int> longestStreak = GeneratedColumn<int>(
+    'longest_streak',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _difficultyMeta = const VerificationMeta(
+    'difficulty',
+  );
+  @override
+  late final GeneratedColumn<String> difficulty = GeneratedColumn<String>(
+    'difficulty',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _playedAtMeta = const VerificationMeta(
+    'playedAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> playedAt = GeneratedColumn<DateTime>(
+    'played_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+    defaultValue: currentDateAndTime,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    score,
+    movesReviewed,
+    goodCount,
+    hardCount,
+    againCount,
+    longestStreak,
+    difficulty,
+    playedAt,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'battle_results';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<BattleResult> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    } else if (isInserting) {
+      context.missing(_idMeta);
+    }
+    if (data.containsKey('score')) {
+      context.handle(
+        _scoreMeta,
+        score.isAcceptableOrUnknown(data['score']!, _scoreMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_scoreMeta);
+    }
+    if (data.containsKey('moves_reviewed')) {
+      context.handle(
+        _movesReviewedMeta,
+        movesReviewed.isAcceptableOrUnknown(
+          data['moves_reviewed']!,
+          _movesReviewedMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_movesReviewedMeta);
+    }
+    if (data.containsKey('good_count')) {
+      context.handle(
+        _goodCountMeta,
+        goodCount.isAcceptableOrUnknown(data['good_count']!, _goodCountMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_goodCountMeta);
+    }
+    if (data.containsKey('hard_count')) {
+      context.handle(
+        _hardCountMeta,
+        hardCount.isAcceptableOrUnknown(data['hard_count']!, _hardCountMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_hardCountMeta);
+    }
+    if (data.containsKey('again_count')) {
+      context.handle(
+        _againCountMeta,
+        againCount.isAcceptableOrUnknown(data['again_count']!, _againCountMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_againCountMeta);
+    }
+    if (data.containsKey('longest_streak')) {
+      context.handle(
+        _longestStreakMeta,
+        longestStreak.isAcceptableOrUnknown(
+          data['longest_streak']!,
+          _longestStreakMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_longestStreakMeta);
+    }
+    if (data.containsKey('difficulty')) {
+      context.handle(
+        _difficultyMeta,
+        difficulty.isAcceptableOrUnknown(data['difficulty']!, _difficultyMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_difficultyMeta);
+    }
+    if (data.containsKey('played_at')) {
+      context.handle(
+        _playedAtMeta,
+        playedAt.isAcceptableOrUnknown(data['played_at']!, _playedAtMeta),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  BattleResult map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return BattleResult(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}id'],
+      )!,
+      score: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}score'],
+      )!,
+      movesReviewed: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}moves_reviewed'],
+      )!,
+      goodCount: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}good_count'],
+      )!,
+      hardCount: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}hard_count'],
+      )!,
+      againCount: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}again_count'],
+      )!,
+      longestStreak: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}longest_streak'],
+      )!,
+      difficulty: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}difficulty'],
+      )!,
+      playedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}played_at'],
+      )!,
+    );
+  }
+
+  @override
+  $BattleResultsTable createAlias(String alias) {
+    return $BattleResultsTable(attachedDatabase, alias);
+  }
+}
+
+class BattleResult extends DataClass implements Insertable<BattleResult> {
+  final String id;
+  final int score;
+  final int movesReviewed;
+  final int goodCount;
+  final int hardCount;
+  final int againCount;
+  final int longestStreak;
+  final String difficulty;
+  final DateTime playedAt;
+  const BattleResult({
+    required this.id,
+    required this.score,
+    required this.movesReviewed,
+    required this.goodCount,
+    required this.hardCount,
+    required this.againCount,
+    required this.longestStreak,
+    required this.difficulty,
+    required this.playedAt,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    map['score'] = Variable<int>(score);
+    map['moves_reviewed'] = Variable<int>(movesReviewed);
+    map['good_count'] = Variable<int>(goodCount);
+    map['hard_count'] = Variable<int>(hardCount);
+    map['again_count'] = Variable<int>(againCount);
+    map['longest_streak'] = Variable<int>(longestStreak);
+    map['difficulty'] = Variable<String>(difficulty);
+    map['played_at'] = Variable<DateTime>(playedAt);
+    return map;
+  }
+
+  BattleResultsCompanion toCompanion(bool nullToAbsent) {
+    return BattleResultsCompanion(
+      id: Value(id),
+      score: Value(score),
+      movesReviewed: Value(movesReviewed),
+      goodCount: Value(goodCount),
+      hardCount: Value(hardCount),
+      againCount: Value(againCount),
+      longestStreak: Value(longestStreak),
+      difficulty: Value(difficulty),
+      playedAt: Value(playedAt),
+    );
+  }
+
+  factory BattleResult.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return BattleResult(
+      id: serializer.fromJson<String>(json['id']),
+      score: serializer.fromJson<int>(json['score']),
+      movesReviewed: serializer.fromJson<int>(json['movesReviewed']),
+      goodCount: serializer.fromJson<int>(json['goodCount']),
+      hardCount: serializer.fromJson<int>(json['hardCount']),
+      againCount: serializer.fromJson<int>(json['againCount']),
+      longestStreak: serializer.fromJson<int>(json['longestStreak']),
+      difficulty: serializer.fromJson<String>(json['difficulty']),
+      playedAt: serializer.fromJson<DateTime>(json['playedAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'score': serializer.toJson<int>(score),
+      'movesReviewed': serializer.toJson<int>(movesReviewed),
+      'goodCount': serializer.toJson<int>(goodCount),
+      'hardCount': serializer.toJson<int>(hardCount),
+      'againCount': serializer.toJson<int>(againCount),
+      'longestStreak': serializer.toJson<int>(longestStreak),
+      'difficulty': serializer.toJson<String>(difficulty),
+      'playedAt': serializer.toJson<DateTime>(playedAt),
+    };
+  }
+
+  BattleResult copyWith({
+    String? id,
+    int? score,
+    int? movesReviewed,
+    int? goodCount,
+    int? hardCount,
+    int? againCount,
+    int? longestStreak,
+    String? difficulty,
+    DateTime? playedAt,
+  }) => BattleResult(
+    id: id ?? this.id,
+    score: score ?? this.score,
+    movesReviewed: movesReviewed ?? this.movesReviewed,
+    goodCount: goodCount ?? this.goodCount,
+    hardCount: hardCount ?? this.hardCount,
+    againCount: againCount ?? this.againCount,
+    longestStreak: longestStreak ?? this.longestStreak,
+    difficulty: difficulty ?? this.difficulty,
+    playedAt: playedAt ?? this.playedAt,
+  );
+  BattleResult copyWithCompanion(BattleResultsCompanion data) {
+    return BattleResult(
+      id: data.id.present ? data.id.value : this.id,
+      score: data.score.present ? data.score.value : this.score,
+      movesReviewed: data.movesReviewed.present
+          ? data.movesReviewed.value
+          : this.movesReviewed,
+      goodCount: data.goodCount.present ? data.goodCount.value : this.goodCount,
+      hardCount: data.hardCount.present ? data.hardCount.value : this.hardCount,
+      againCount: data.againCount.present
+          ? data.againCount.value
+          : this.againCount,
+      longestStreak: data.longestStreak.present
+          ? data.longestStreak.value
+          : this.longestStreak,
+      difficulty: data.difficulty.present
+          ? data.difficulty.value
+          : this.difficulty,
+      playedAt: data.playedAt.present ? data.playedAt.value : this.playedAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('BattleResult(')
+          ..write('id: $id, ')
+          ..write('score: $score, ')
+          ..write('movesReviewed: $movesReviewed, ')
+          ..write('goodCount: $goodCount, ')
+          ..write('hardCount: $hardCount, ')
+          ..write('againCount: $againCount, ')
+          ..write('longestStreak: $longestStreak, ')
+          ..write('difficulty: $difficulty, ')
+          ..write('playedAt: $playedAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    id,
+    score,
+    movesReviewed,
+    goodCount,
+    hardCount,
+    againCount,
+    longestStreak,
+    difficulty,
+    playedAt,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is BattleResult &&
+          other.id == this.id &&
+          other.score == this.score &&
+          other.movesReviewed == this.movesReviewed &&
+          other.goodCount == this.goodCount &&
+          other.hardCount == this.hardCount &&
+          other.againCount == this.againCount &&
+          other.longestStreak == this.longestStreak &&
+          other.difficulty == this.difficulty &&
+          other.playedAt == this.playedAt);
+}
+
+class BattleResultsCompanion extends UpdateCompanion<BattleResult> {
+  final Value<String> id;
+  final Value<int> score;
+  final Value<int> movesReviewed;
+  final Value<int> goodCount;
+  final Value<int> hardCount;
+  final Value<int> againCount;
+  final Value<int> longestStreak;
+  final Value<String> difficulty;
+  final Value<DateTime> playedAt;
+  final Value<int> rowid;
+  const BattleResultsCompanion({
+    this.id = const Value.absent(),
+    this.score = const Value.absent(),
+    this.movesReviewed = const Value.absent(),
+    this.goodCount = const Value.absent(),
+    this.hardCount = const Value.absent(),
+    this.againCount = const Value.absent(),
+    this.longestStreak = const Value.absent(),
+    this.difficulty = const Value.absent(),
+    this.playedAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  BattleResultsCompanion.insert({
+    required String id,
+    required int score,
+    required int movesReviewed,
+    required int goodCount,
+    required int hardCount,
+    required int againCount,
+    required int longestStreak,
+    required String difficulty,
+    this.playedAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  }) : id = Value(id),
+       score = Value(score),
+       movesReviewed = Value(movesReviewed),
+       goodCount = Value(goodCount),
+       hardCount = Value(hardCount),
+       againCount = Value(againCount),
+       longestStreak = Value(longestStreak),
+       difficulty = Value(difficulty);
+  static Insertable<BattleResult> custom({
+    Expression<String>? id,
+    Expression<int>? score,
+    Expression<int>? movesReviewed,
+    Expression<int>? goodCount,
+    Expression<int>? hardCount,
+    Expression<int>? againCount,
+    Expression<int>? longestStreak,
+    Expression<String>? difficulty,
+    Expression<DateTime>? playedAt,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (score != null) 'score': score,
+      if (movesReviewed != null) 'moves_reviewed': movesReviewed,
+      if (goodCount != null) 'good_count': goodCount,
+      if (hardCount != null) 'hard_count': hardCount,
+      if (againCount != null) 'again_count': againCount,
+      if (longestStreak != null) 'longest_streak': longestStreak,
+      if (difficulty != null) 'difficulty': difficulty,
+      if (playedAt != null) 'played_at': playedAt,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  BattleResultsCompanion copyWith({
+    Value<String>? id,
+    Value<int>? score,
+    Value<int>? movesReviewed,
+    Value<int>? goodCount,
+    Value<int>? hardCount,
+    Value<int>? againCount,
+    Value<int>? longestStreak,
+    Value<String>? difficulty,
+    Value<DateTime>? playedAt,
+    Value<int>? rowid,
+  }) {
+    return BattleResultsCompanion(
+      id: id ?? this.id,
+      score: score ?? this.score,
+      movesReviewed: movesReviewed ?? this.movesReviewed,
+      goodCount: goodCount ?? this.goodCount,
+      hardCount: hardCount ?? this.hardCount,
+      againCount: againCount ?? this.againCount,
+      longestStreak: longestStreak ?? this.longestStreak,
+      difficulty: difficulty ?? this.difficulty,
+      playedAt: playedAt ?? this.playedAt,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (score.present) {
+      map['score'] = Variable<int>(score.value);
+    }
+    if (movesReviewed.present) {
+      map['moves_reviewed'] = Variable<int>(movesReviewed.value);
+    }
+    if (goodCount.present) {
+      map['good_count'] = Variable<int>(goodCount.value);
+    }
+    if (hardCount.present) {
+      map['hard_count'] = Variable<int>(hardCount.value);
+    }
+    if (againCount.present) {
+      map['again_count'] = Variable<int>(againCount.value);
+    }
+    if (longestStreak.present) {
+      map['longest_streak'] = Variable<int>(longestStreak.value);
+    }
+    if (difficulty.present) {
+      map['difficulty'] = Variable<String>(difficulty.value);
+    }
+    if (playedAt.present) {
+      map['played_at'] = Variable<DateTime>(playedAt.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('BattleResultsCompanion(')
+          ..write('id: $id, ')
+          ..write('score: $score, ')
+          ..write('movesReviewed: $movesReviewed, ')
+          ..write('goodCount: $goodCount, ')
+          ..write('hardCount: $hardCount, ')
+          ..write('againCount: $againCount, ')
+          ..write('longestStreak: $longestStreak, ')
+          ..write('difficulty: $difficulty, ')
+          ..write('playedAt: $playedAt, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $SyncLogTable extends SyncLog with TableInfo<$SyncLogTable, SyncLogData> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $SyncLogTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _entityIdMeta = const VerificationMeta(
+    'entityId',
+  );
+  @override
+  late final GeneratedColumn<String> entityId = GeneratedColumn<String>(
+    'entity_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _entityTableMeta = const VerificationMeta(
+    'entityTable',
+  );
+  @override
+  late final GeneratedColumn<String> entityTable = GeneratedColumn<String>(
+    'entity_table',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _actionMeta = const VerificationMeta('action');
+  @override
+  late final GeneratedColumn<String> action = GeneratedColumn<String>(
+    'action',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _changedAtMeta = const VerificationMeta(
+    'changedAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> changedAt = GeneratedColumn<DateTime>(
+    'changed_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+    defaultValue: currentDateAndTime,
+  );
+  static const VerificationMeta _syncedMeta = const VerificationMeta('synced');
+  @override
+  late final GeneratedColumn<bool> synced = GeneratedColumn<bool>(
+    'synced',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("synced" IN (0, 1))',
+    ),
+    defaultValue: const Constant(false),
+  );
+  static const VerificationMeta _videoSyncedMeta = const VerificationMeta(
+    'videoSynced',
+  );
+  @override
+  late final GeneratedColumn<bool> videoSynced = GeneratedColumn<bool>(
+    'video_synced',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("video_synced" IN (0, 1))',
+    ),
+    defaultValue: const Constant(true),
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    entityId,
+    entityTable,
+    action,
+    changedAt,
+    synced,
+    videoSynced,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'sync_log';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<SyncLogData> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('entity_id')) {
+      context.handle(
+        _entityIdMeta,
+        entityId.isAcceptableOrUnknown(data['entity_id']!, _entityIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_entityIdMeta);
+    }
+    if (data.containsKey('entity_table')) {
+      context.handle(
+        _entityTableMeta,
+        entityTable.isAcceptableOrUnknown(
+          data['entity_table']!,
+          _entityTableMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_entityTableMeta);
+    }
+    if (data.containsKey('action')) {
+      context.handle(
+        _actionMeta,
+        action.isAcceptableOrUnknown(data['action']!, _actionMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_actionMeta);
+    }
+    if (data.containsKey('changed_at')) {
+      context.handle(
+        _changedAtMeta,
+        changedAt.isAcceptableOrUnknown(data['changed_at']!, _changedAtMeta),
+      );
+    }
+    if (data.containsKey('synced')) {
+      context.handle(
+        _syncedMeta,
+        synced.isAcceptableOrUnknown(data['synced']!, _syncedMeta),
+      );
+    }
+    if (data.containsKey('video_synced')) {
+      context.handle(
+        _videoSyncedMeta,
+        videoSynced.isAcceptableOrUnknown(
+          data['video_synced']!,
+          _videoSyncedMeta,
+        ),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {entityId, entityTable, action};
+  @override
+  SyncLogData map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return SyncLogData(
+      entityId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}entity_id'],
+      )!,
+      entityTable: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}entity_table'],
+      )!,
+      action: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}action'],
+      )!,
+      changedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}changed_at'],
+      )!,
+      synced: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}synced'],
+      )!,
+      videoSynced: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}video_synced'],
+      )!,
+    );
+  }
+
+  @override
+  $SyncLogTable createAlias(String alias) {
+    return $SyncLogTable(attachedDatabase, alias);
+  }
+}
+
+class SyncLogData extends DataClass implements Insertable<SyncLogData> {
+  final String entityId;
+  final String entityTable;
+  final String action;
+  final DateTime changedAt;
+  final bool synced;
+  final bool videoSynced;
+  const SyncLogData({
+    required this.entityId,
+    required this.entityTable,
+    required this.action,
+    required this.changedAt,
+    required this.synced,
+    required this.videoSynced,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['entity_id'] = Variable<String>(entityId);
+    map['entity_table'] = Variable<String>(entityTable);
+    map['action'] = Variable<String>(action);
+    map['changed_at'] = Variable<DateTime>(changedAt);
+    map['synced'] = Variable<bool>(synced);
+    map['video_synced'] = Variable<bool>(videoSynced);
+    return map;
+  }
+
+  SyncLogCompanion toCompanion(bool nullToAbsent) {
+    return SyncLogCompanion(
+      entityId: Value(entityId),
+      entityTable: Value(entityTable),
+      action: Value(action),
+      changedAt: Value(changedAt),
+      synced: Value(synced),
+      videoSynced: Value(videoSynced),
+    );
+  }
+
+  factory SyncLogData.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return SyncLogData(
+      entityId: serializer.fromJson<String>(json['entityId']),
+      entityTable: serializer.fromJson<String>(json['entityTable']),
+      action: serializer.fromJson<String>(json['action']),
+      changedAt: serializer.fromJson<DateTime>(json['changedAt']),
+      synced: serializer.fromJson<bool>(json['synced']),
+      videoSynced: serializer.fromJson<bool>(json['videoSynced']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'entityId': serializer.toJson<String>(entityId),
+      'entityTable': serializer.toJson<String>(entityTable),
+      'action': serializer.toJson<String>(action),
+      'changedAt': serializer.toJson<DateTime>(changedAt),
+      'synced': serializer.toJson<bool>(synced),
+      'videoSynced': serializer.toJson<bool>(videoSynced),
+    };
+  }
+
+  SyncLogData copyWith({
+    String? entityId,
+    String? entityTable,
+    String? action,
+    DateTime? changedAt,
+    bool? synced,
+    bool? videoSynced,
+  }) => SyncLogData(
+    entityId: entityId ?? this.entityId,
+    entityTable: entityTable ?? this.entityTable,
+    action: action ?? this.action,
+    changedAt: changedAt ?? this.changedAt,
+    synced: synced ?? this.synced,
+    videoSynced: videoSynced ?? this.videoSynced,
+  );
+  SyncLogData copyWithCompanion(SyncLogCompanion data) {
+    return SyncLogData(
+      entityId: data.entityId.present ? data.entityId.value : this.entityId,
+      entityTable: data.entityTable.present
+          ? data.entityTable.value
+          : this.entityTable,
+      action: data.action.present ? data.action.value : this.action,
+      changedAt: data.changedAt.present ? data.changedAt.value : this.changedAt,
+      synced: data.synced.present ? data.synced.value : this.synced,
+      videoSynced: data.videoSynced.present
+          ? data.videoSynced.value
+          : this.videoSynced,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('SyncLogData(')
+          ..write('entityId: $entityId, ')
+          ..write('entityTable: $entityTable, ')
+          ..write('action: $action, ')
+          ..write('changedAt: $changedAt, ')
+          ..write('synced: $synced, ')
+          ..write('videoSynced: $videoSynced')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    entityId,
+    entityTable,
+    action,
+    changedAt,
+    synced,
+    videoSynced,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is SyncLogData &&
+          other.entityId == this.entityId &&
+          other.entityTable == this.entityTable &&
+          other.action == this.action &&
+          other.changedAt == this.changedAt &&
+          other.synced == this.synced &&
+          other.videoSynced == this.videoSynced);
+}
+
+class SyncLogCompanion extends UpdateCompanion<SyncLogData> {
+  final Value<String> entityId;
+  final Value<String> entityTable;
+  final Value<String> action;
+  final Value<DateTime> changedAt;
+  final Value<bool> synced;
+  final Value<bool> videoSynced;
+  final Value<int> rowid;
+  const SyncLogCompanion({
+    this.entityId = const Value.absent(),
+    this.entityTable = const Value.absent(),
+    this.action = const Value.absent(),
+    this.changedAt = const Value.absent(),
+    this.synced = const Value.absent(),
+    this.videoSynced = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  SyncLogCompanion.insert({
+    required String entityId,
+    required String entityTable,
+    required String action,
+    this.changedAt = const Value.absent(),
+    this.synced = const Value.absent(),
+    this.videoSynced = const Value.absent(),
+    this.rowid = const Value.absent(),
+  }) : entityId = Value(entityId),
+       entityTable = Value(entityTable),
+       action = Value(action);
+  static Insertable<SyncLogData> custom({
+    Expression<String>? entityId,
+    Expression<String>? entityTable,
+    Expression<String>? action,
+    Expression<DateTime>? changedAt,
+    Expression<bool>? synced,
+    Expression<bool>? videoSynced,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (entityId != null) 'entity_id': entityId,
+      if (entityTable != null) 'entity_table': entityTable,
+      if (action != null) 'action': action,
+      if (changedAt != null) 'changed_at': changedAt,
+      if (synced != null) 'synced': synced,
+      if (videoSynced != null) 'video_synced': videoSynced,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  SyncLogCompanion copyWith({
+    Value<String>? entityId,
+    Value<String>? entityTable,
+    Value<String>? action,
+    Value<DateTime>? changedAt,
+    Value<bool>? synced,
+    Value<bool>? videoSynced,
+    Value<int>? rowid,
+  }) {
+    return SyncLogCompanion(
+      entityId: entityId ?? this.entityId,
+      entityTable: entityTable ?? this.entityTable,
+      action: action ?? this.action,
+      changedAt: changedAt ?? this.changedAt,
+      synced: synced ?? this.synced,
+      videoSynced: videoSynced ?? this.videoSynced,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (entityId.present) {
+      map['entity_id'] = Variable<String>(entityId.value);
+    }
+    if (entityTable.present) {
+      map['entity_table'] = Variable<String>(entityTable.value);
+    }
+    if (action.present) {
+      map['action'] = Variable<String>(action.value);
+    }
+    if (changedAt.present) {
+      map['changed_at'] = Variable<DateTime>(changedAt.value);
+    }
+    if (synced.present) {
+      map['synced'] = Variable<bool>(synced.value);
+    }
+    if (videoSynced.present) {
+      map['video_synced'] = Variable<bool>(videoSynced.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('SyncLogCompanion(')
+          ..write('entityId: $entityId, ')
+          ..write('entityTable: $entityTable, ')
+          ..write('action: $action, ')
+          ..write('changedAt: $changedAt, ')
+          ..write('synced: $synced, ')
+          ..write('videoSynced: $videoSynced, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$AppDatabase extends GeneratedDatabase {
   _$AppDatabase(QueryExecutor e) : super(e);
   $AppDatabaseManager get managers => $AppDatabaseManager(this);
@@ -1366,9 +2362,12 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   late final $CombosTable combos = $CombosTable(this);
   late final $ComboMovesTable comboMoves = $ComboMovesTable(this);
   late final $ReviewsTable reviews = $ReviewsTable(this);
+  late final $BattleResultsTable battleResults = $BattleResultsTable(this);
+  late final $SyncLogTable syncLog = $SyncLogTable(this);
   late final MovesDao movesDao = MovesDao(this as AppDatabase);
   late final CombosDao combosDao = CombosDao(this as AppDatabase);
   late final ReviewsDao reviewsDao = ReviewsDao(this as AppDatabase);
+  late final SyncDao syncDao = SyncDao(this as AppDatabase);
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
@@ -1378,6 +2377,8 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     combos,
     comboMoves,
     reviews,
+    battleResults,
+    syncLog,
   ];
   @override
   StreamQueryUpdateRules get streamUpdateRules => const StreamQueryUpdateRules([
@@ -2773,6 +3774,510 @@ typedef $$ReviewsTableProcessedTableManager =
       Review,
       PrefetchHooks Function({bool moveId})
     >;
+typedef $$BattleResultsTableCreateCompanionBuilder =
+    BattleResultsCompanion Function({
+      required String id,
+      required int score,
+      required int movesReviewed,
+      required int goodCount,
+      required int hardCount,
+      required int againCount,
+      required int longestStreak,
+      required String difficulty,
+      Value<DateTime> playedAt,
+      Value<int> rowid,
+    });
+typedef $$BattleResultsTableUpdateCompanionBuilder =
+    BattleResultsCompanion Function({
+      Value<String> id,
+      Value<int> score,
+      Value<int> movesReviewed,
+      Value<int> goodCount,
+      Value<int> hardCount,
+      Value<int> againCount,
+      Value<int> longestStreak,
+      Value<String> difficulty,
+      Value<DateTime> playedAt,
+      Value<int> rowid,
+    });
+
+class $$BattleResultsTableFilterComposer
+    extends Composer<_$AppDatabase, $BattleResultsTable> {
+  $$BattleResultsTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get score => $composableBuilder(
+    column: $table.score,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get movesReviewed => $composableBuilder(
+    column: $table.movesReviewed,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get goodCount => $composableBuilder(
+    column: $table.goodCount,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get hardCount => $composableBuilder(
+    column: $table.hardCount,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get againCount => $composableBuilder(
+    column: $table.againCount,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get longestStreak => $composableBuilder(
+    column: $table.longestStreak,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get difficulty => $composableBuilder(
+    column: $table.difficulty,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get playedAt => $composableBuilder(
+    column: $table.playedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$BattleResultsTableOrderingComposer
+    extends Composer<_$AppDatabase, $BattleResultsTable> {
+  $$BattleResultsTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get score => $composableBuilder(
+    column: $table.score,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get movesReviewed => $composableBuilder(
+    column: $table.movesReviewed,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get goodCount => $composableBuilder(
+    column: $table.goodCount,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get hardCount => $composableBuilder(
+    column: $table.hardCount,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get againCount => $composableBuilder(
+    column: $table.againCount,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get longestStreak => $composableBuilder(
+    column: $table.longestStreak,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get difficulty => $composableBuilder(
+    column: $table.difficulty,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get playedAt => $composableBuilder(
+    column: $table.playedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$BattleResultsTableAnnotationComposer
+    extends Composer<_$AppDatabase, $BattleResultsTable> {
+  $$BattleResultsTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<int> get score =>
+      $composableBuilder(column: $table.score, builder: (column) => column);
+
+  GeneratedColumn<int> get movesReviewed => $composableBuilder(
+    column: $table.movesReviewed,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get goodCount =>
+      $composableBuilder(column: $table.goodCount, builder: (column) => column);
+
+  GeneratedColumn<int> get hardCount =>
+      $composableBuilder(column: $table.hardCount, builder: (column) => column);
+
+  GeneratedColumn<int> get againCount => $composableBuilder(
+    column: $table.againCount,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get longestStreak => $composableBuilder(
+    column: $table.longestStreak,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get difficulty => $composableBuilder(
+    column: $table.difficulty,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<DateTime> get playedAt =>
+      $composableBuilder(column: $table.playedAt, builder: (column) => column);
+}
+
+class $$BattleResultsTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $BattleResultsTable,
+          BattleResult,
+          $$BattleResultsTableFilterComposer,
+          $$BattleResultsTableOrderingComposer,
+          $$BattleResultsTableAnnotationComposer,
+          $$BattleResultsTableCreateCompanionBuilder,
+          $$BattleResultsTableUpdateCompanionBuilder,
+          (
+            BattleResult,
+            BaseReferences<_$AppDatabase, $BattleResultsTable, BattleResult>,
+          ),
+          BattleResult,
+          PrefetchHooks Function()
+        > {
+  $$BattleResultsTableTableManager(_$AppDatabase db, $BattleResultsTable table)
+    : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$BattleResultsTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$BattleResultsTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$BattleResultsTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<String> id = const Value.absent(),
+                Value<int> score = const Value.absent(),
+                Value<int> movesReviewed = const Value.absent(),
+                Value<int> goodCount = const Value.absent(),
+                Value<int> hardCount = const Value.absent(),
+                Value<int> againCount = const Value.absent(),
+                Value<int> longestStreak = const Value.absent(),
+                Value<String> difficulty = const Value.absent(),
+                Value<DateTime> playedAt = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => BattleResultsCompanion(
+                id: id,
+                score: score,
+                movesReviewed: movesReviewed,
+                goodCount: goodCount,
+                hardCount: hardCount,
+                againCount: againCount,
+                longestStreak: longestStreak,
+                difficulty: difficulty,
+                playedAt: playedAt,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String id,
+                required int score,
+                required int movesReviewed,
+                required int goodCount,
+                required int hardCount,
+                required int againCount,
+                required int longestStreak,
+                required String difficulty,
+                Value<DateTime> playedAt = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => BattleResultsCompanion.insert(
+                id: id,
+                score: score,
+                movesReviewed: movesReviewed,
+                goodCount: goodCount,
+                hardCount: hardCount,
+                againCount: againCount,
+                longestStreak: longestStreak,
+                difficulty: difficulty,
+                playedAt: playedAt,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$BattleResultsTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $BattleResultsTable,
+      BattleResult,
+      $$BattleResultsTableFilterComposer,
+      $$BattleResultsTableOrderingComposer,
+      $$BattleResultsTableAnnotationComposer,
+      $$BattleResultsTableCreateCompanionBuilder,
+      $$BattleResultsTableUpdateCompanionBuilder,
+      (
+        BattleResult,
+        BaseReferences<_$AppDatabase, $BattleResultsTable, BattleResult>,
+      ),
+      BattleResult,
+      PrefetchHooks Function()
+    >;
+typedef $$SyncLogTableCreateCompanionBuilder =
+    SyncLogCompanion Function({
+      required String entityId,
+      required String entityTable,
+      required String action,
+      Value<DateTime> changedAt,
+      Value<bool> synced,
+      Value<bool> videoSynced,
+      Value<int> rowid,
+    });
+typedef $$SyncLogTableUpdateCompanionBuilder =
+    SyncLogCompanion Function({
+      Value<String> entityId,
+      Value<String> entityTable,
+      Value<String> action,
+      Value<DateTime> changedAt,
+      Value<bool> synced,
+      Value<bool> videoSynced,
+      Value<int> rowid,
+    });
+
+class $$SyncLogTableFilterComposer
+    extends Composer<_$AppDatabase, $SyncLogTable> {
+  $$SyncLogTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get entityId => $composableBuilder(
+    column: $table.entityId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get entityTable => $composableBuilder(
+    column: $table.entityTable,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get action => $composableBuilder(
+    column: $table.action,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get changedAt => $composableBuilder(
+    column: $table.changedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get synced => $composableBuilder(
+    column: $table.synced,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get videoSynced => $composableBuilder(
+    column: $table.videoSynced,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$SyncLogTableOrderingComposer
+    extends Composer<_$AppDatabase, $SyncLogTable> {
+  $$SyncLogTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get entityId => $composableBuilder(
+    column: $table.entityId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get entityTable => $composableBuilder(
+    column: $table.entityTable,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get action => $composableBuilder(
+    column: $table.action,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get changedAt => $composableBuilder(
+    column: $table.changedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<bool> get synced => $composableBuilder(
+    column: $table.synced,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<bool> get videoSynced => $composableBuilder(
+    column: $table.videoSynced,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$SyncLogTableAnnotationComposer
+    extends Composer<_$AppDatabase, $SyncLogTable> {
+  $$SyncLogTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get entityId =>
+      $composableBuilder(column: $table.entityId, builder: (column) => column);
+
+  GeneratedColumn<String> get entityTable => $composableBuilder(
+    column: $table.entityTable,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get action =>
+      $composableBuilder(column: $table.action, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get changedAt =>
+      $composableBuilder(column: $table.changedAt, builder: (column) => column);
+
+  GeneratedColumn<bool> get synced =>
+      $composableBuilder(column: $table.synced, builder: (column) => column);
+
+  GeneratedColumn<bool> get videoSynced => $composableBuilder(
+    column: $table.videoSynced,
+    builder: (column) => column,
+  );
+}
+
+class $$SyncLogTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $SyncLogTable,
+          SyncLogData,
+          $$SyncLogTableFilterComposer,
+          $$SyncLogTableOrderingComposer,
+          $$SyncLogTableAnnotationComposer,
+          $$SyncLogTableCreateCompanionBuilder,
+          $$SyncLogTableUpdateCompanionBuilder,
+          (
+            SyncLogData,
+            BaseReferences<_$AppDatabase, $SyncLogTable, SyncLogData>,
+          ),
+          SyncLogData,
+          PrefetchHooks Function()
+        > {
+  $$SyncLogTableTableManager(_$AppDatabase db, $SyncLogTable table)
+    : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$SyncLogTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$SyncLogTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$SyncLogTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<String> entityId = const Value.absent(),
+                Value<String> entityTable = const Value.absent(),
+                Value<String> action = const Value.absent(),
+                Value<DateTime> changedAt = const Value.absent(),
+                Value<bool> synced = const Value.absent(),
+                Value<bool> videoSynced = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => SyncLogCompanion(
+                entityId: entityId,
+                entityTable: entityTable,
+                action: action,
+                changedAt: changedAt,
+                synced: synced,
+                videoSynced: videoSynced,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String entityId,
+                required String entityTable,
+                required String action,
+                Value<DateTime> changedAt = const Value.absent(),
+                Value<bool> synced = const Value.absent(),
+                Value<bool> videoSynced = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => SyncLogCompanion.insert(
+                entityId: entityId,
+                entityTable: entityTable,
+                action: action,
+                changedAt: changedAt,
+                synced: synced,
+                videoSynced: videoSynced,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$SyncLogTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $SyncLogTable,
+      SyncLogData,
+      $$SyncLogTableFilterComposer,
+      $$SyncLogTableOrderingComposer,
+      $$SyncLogTableAnnotationComposer,
+      $$SyncLogTableCreateCompanionBuilder,
+      $$SyncLogTableUpdateCompanionBuilder,
+      (SyncLogData, BaseReferences<_$AppDatabase, $SyncLogTable, SyncLogData>),
+      SyncLogData,
+      PrefetchHooks Function()
+    >;
 
 class $AppDatabaseManager {
   final _$AppDatabase _db;
@@ -2785,4 +4290,8 @@ class $AppDatabaseManager {
       $$ComboMovesTableTableManager(_db, _db.comboMoves);
   $$ReviewsTableTableManager get reviews =>
       $$ReviewsTableTableManager(_db, _db.reviews);
+  $$BattleResultsTableTableManager get battleResults =>
+      $$BattleResultsTableTableManager(_db, _db.battleResults);
+  $$SyncLogTableTableManager get syncLog =>
+      $$SyncLogTableTableManager(_db, _db.syncLog);
 }

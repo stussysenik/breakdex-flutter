@@ -33,4 +33,10 @@ abstract class ReviewRepository {
   Stream<List<Review>> watchAll();
   Future<void> insert(ReviewsCompanion review);
   Future<List<Review>> getByMoveId(String moveId);
+  Future<int> countAll();
+  Future<List<Review>> getInRange(DateTime start, DateTime end);
+  Future<Map<DateTime, int>> dailyCountsSince(DateTime since);
+  Future<Map<String, int>> ratingDistribution();
+  Future<List<MapEntry<String, int>>> topReviewedMoves(int limit);
+  Future<int> currentStreak();
 }
