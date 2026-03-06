@@ -8,6 +8,7 @@ import '../../../core/design/typography.dart';
 import '../../../core/models/learning_state.dart';
 import '../../../core/models/reviewable_item.dart';
 import '../../../core/providers.dart';
+import '../providers/deck_providers.dart';
 import '../providers/review_providers.dart';
 
 /// Bottom sheet showing the full FSRS math breakdown for a single item.
@@ -36,9 +37,13 @@ class ItemScheduleDetailSheet extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final colorScheme = Theme.of(context).colorScheme;
-    final coefficientsAsync = ref.watch(srsCoefficientsProvider(
-      (entityId: item.item.entityId, entityType: item.item.entityType),
-    ));
+    final canReviewNow = item.item is ReviewableMove;
+    final coefficientsAsync = ref.watch(
+      srsCoefficientsProvider((
+        entityId: item.item.entityId,
+        entityType: item.item.entityType,
+      )),
+    );
     final intervalsAsync = ref.watch(
       intervalPreviewProvider(item.item.entityId),
     );
@@ -121,11 +126,12 @@ class ItemScheduleDetailSheet extends ConsumerWidget {
             intervalsAsync.when(
               loading: () => const Center(
                 child: SizedBox(
-                  width: 20, height: 20,
+                  width: 20,
+                  height: 20,
                   child: CircularProgressIndicator(strokeWidth: 2),
                 ),
               ),
-              error: (_, __) => const SizedBox.shrink(),
+              error: (error, stackTrace) => const SizedBox.shrink(),
               data: (intervals) => _RatingPreviews(intervals: intervals),
             ),
             const SizedBox(height: AppSpacing.lg),
@@ -146,16 +152,20 @@ class ItemScheduleDetailSheet extends ConsumerWidget {
                   ),
                 ),
                 tilePadding: EdgeInsets.zero,
-                childrenPadding: const EdgeInsets.only(top: AppSpacing.md, bottom: AppSpacing.lg),
+                childrenPadding: const EdgeInsets.only(
+                  top: AppSpacing.md,
+                  bottom: AppSpacing.lg,
+                ),
                 children: [
                   coefficientsAsync.when(
                     loading: () => const Center(
                       child: SizedBox(
-                        width: 20, height: 20,
+                        width: 20,
+                        height: 20,
                         child: CircularProgressIndicator(strokeWidth: 2),
                       ),
                     ),
-                    error: (_, __) => const SizedBox.shrink(),
+                    error: (error, stackTrace) => const SizedBox.shrink(),
                     data: (coeff) => _CoefficientDisplay(coeff: coeff),
                   ),
                 ],
@@ -164,28 +174,48 @@ class ItemScheduleDetailSheet extends ConsumerWidget {
             const SizedBox(height: AppSpacing.sm),
 
             // Review Now button
-            SizedBox(
-              width: double.infinity,
-              height: 50,
-              child: ElevatedButton(
-                onPressed: () {
-                  HapticFeedback.mediumImpact();
-                  Navigator.pop(context);
-                  // Switch to session mode — the flashcard screen handles it
-                  ref.read(reviewModeProvider.notifier).set(ReviewMode.session);
-                  ref.read(reviewSessionActiveProvider.notifier).state = true;
-                },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.accent,
-                  foregroundColor: Colors.white,
-                  elevation: 0,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(AppRadius.lg),
+            if (canReviewNow)
+              SizedBox(
+                width: double.infinity,
+                height: 50,
+                child: ElevatedButton(
+                  onPressed: () {
+                    HapticFeedback.mediumImpact();
+                    Navigator.pop(context);
+                    ref
+                        .read(reviewModeProvider.notifier)
+                        .set(ReviewMode.session);
+                    ref
+                        .read(reviewSessionSourceProvider.notifier)
+                        .set(ReviewSessionSource.stateBased);
+                    ref.read(selectedDeckProvider.notifier).state = null;
+                    ref.read(reviewStateFilterProvider.notifier).state = null;
+                    ref
+                        .read(reviewSessionTargetMoveIdsProvider.notifier)
+                        .state = {
+                      item.item.entityId,
+                    };
+                    refreshReviewSession(ref);
+                    ref.read(reviewSessionActiveProvider.notifier).state = true;
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.accent,
+                    foregroundColor: Colors.white,
+                    elevation: 0,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(AppRadius.lg),
+                    ),
                   ),
+                  child: const Text('Review Now'),
                 ),
-                child: const Text('Review Now'),
               ),
-            ),
+            if (!canReviewNow)
+              Text(
+                'Combo sessions still open in the schedule view only.',
+                style: AppTypography.caption.copyWith(
+                  color: colorScheme.secondary,
+                ),
+              ),
           ],
         ),
       ),
@@ -265,8 +295,8 @@ class _CoefficientDisplay extends StatelessWidget {
           color: coeff.retrievability > 0.85
               ? AppColors.actionGood
               : coeff.retrievability > 0.5
-                  ? AppColors.actionHard
-                  : AppColors.actionAgain,
+              ? AppColors.actionHard
+              : AppColors.actionAgain,
         ),
         const SizedBox(height: AppSpacing.md),
 
@@ -472,8 +502,18 @@ class _RatingPreviews extends StatelessWidget {
 
   static String _formatDate(DateTime dt) {
     final months = [
-      'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-      'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'May',
+      'Jun',
+      'Jul',
+      'Aug',
+      'Sep',
+      'Oct',
+      'Nov',
+      'Dec',
     ];
     return '${months[dt.month - 1]} ${dt.day}';
   }

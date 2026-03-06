@@ -14,11 +14,15 @@ import '../../core/design/colors.dart';
 import '../../core/design/spacing.dart';
 import '../../core/design/typography.dart';
 import '../../core/models/learning_state.dart';
+import '../../core/models/reviewable_item.dart';
 import '../../core/providers.dart';
+import 'providers/deck_providers.dart';
 import 'providers/review_providers.dart';
 import 'widgets/rating_button_row.dart';
+import 'widgets/mastery_prescreen.dart';
 import 'widgets/review_card.dart';
 import 'widgets/review_dashboard.dart';
+import 'widgets/schedule_review_screen.dart';
 import 'widgets/state_picker_sheet.dart';
 import '../../shared/widgets/video_picker_sheet.dart';
 
@@ -63,9 +67,44 @@ class _FlashcardReviewScreenState extends ConsumerState<FlashcardReviewScreen> {
     _pageController = PageController(initialPage: _currentIndex);
   }
 
+  void _resetSessionState() {
+    _stopShakeListener();
+    _pageController?.dispose();
+    _pageController = null;
+    _currentIndex = 0;
+    _completed = false;
+    _moves = [];
+    _initialized = false;
+    _isRevealed = false;
+    _cardScale = 1.0;
+    _cardOpacity = 1.0;
+    _animatingExit = false;
+  }
+
+  void _endSession({bool clearTarget = true}) {
+    setState(_resetSessionState);
+    if (clearTarget) {
+      ref.read(reviewSessionTargetMoveIdsProvider.notifier).state = null;
+    }
+    ref.read(reviewSessionActiveProvider.notifier).state = false;
+  }
+
+  void _setReviewMode(ReviewMode mode) {
+    ref.read(reviewModeProvider.notifier).set(mode);
+    if (mode == ReviewMode.schedule) {
+      _endSession();
+      return;
+    }
+
+    setState(_resetSessionState);
+    ref.read(reviewSessionActiveProvider.notifier).state = false;
+  }
+
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
+    final reviewMode = ref.watch(reviewModeProvider);
+    final sessionActive = ref.watch(reviewSessionActiveProvider);
 
     return Scaffold(
       body: SafeArea(
@@ -88,15 +127,48 @@ class _FlashcardReviewScreenState extends ConsumerState<FlashcardReviewScreen> {
                       ),
                     ),
                   ),
+                  if (reviewMode == ReviewMode.session && sessionActive)
+                    TextButton(
+                      onPressed: _endSession,
+                      child: const Text('End'),
+                    ),
                 ],
               ),
             ),
 
             const SizedBox(height: AppSpacing.sm),
+            Padding(
+              padding: const EdgeInsets.symmetric(
+                horizontal: AppSpacing.screenEdge,
+              ),
+              child: SegmentedButton<ReviewMode>(
+                segments: const [
+                  ButtonSegment<ReviewMode>(
+                    value: ReviewMode.session,
+                    icon: Icon(Icons.style_outlined, size: 18),
+                    label: Text('Session'),
+                  ),
+                  ButtonSegment<ReviewMode>(
+                    value: ReviewMode.schedule,
+                    icon: Icon(Icons.calendar_month_outlined, size: 18),
+                    label: Text('Schedule'),
+                  ),
+                ],
+                selected: {reviewMode},
+                showSelectedIcon: false,
+                onSelectionChanged: (selection) =>
+                    _setReviewMode(selection.first),
+              ),
+            ),
             const SizedBox(height: AppSpacing.xs),
 
             Expanded(
-              child: _buildFlashcardSession(),
+              child: switch (reviewMode) {
+                ReviewMode.schedule => const ScheduleReviewScreen(),
+                ReviewMode.session when sessionActive =>
+                  _buildFlashcardSession(),
+                ReviewMode.session => const MasteryPrescreen(),
+              },
             ),
           ],
         ),
@@ -148,8 +220,8 @@ class _FlashcardReviewScreenState extends ConsumerState<FlashcardReviewScreen> {
               child: _moves.isEmpty
                   ? _buildEmpty(colorScheme)
                   : _completed
-                      ? _buildCompleted(colorScheme)
-                      : _buildReviewContent(),
+                  ? _buildCompleted(colorScheme)
+                  : _buildReviewContent(),
             ),
           ],
         );
@@ -211,7 +283,9 @@ class _FlashcardReviewScreenState extends ConsumerState<FlashcardReviewScreen> {
                         },
                         child: ReviewCard(
                           move: pageMove,
-                          isRevealed: index == _currentIndex ? _isRevealed : false,
+                          isRevealed: index == _currentIndex
+                              ? _isRevealed
+                              : false,
                           onStatePillTap: () => _showStatePicker(pageMove),
                           videoHeight: videoHeight,
                           onRepick: () => _repickVideo(pageMove, index),
@@ -229,16 +303,20 @@ class _FlashcardReviewScreenState extends ConsumerState<FlashcardReviewScreen> {
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                   Icon(
+                  Icon(
                     _isRevealed ? Icons.swipe : Icons.touch_app,
                     size: 14,
-                    color: Theme.of(context).colorScheme.secondary.withValues(alpha: 0.3),
+                    color: Theme.of(
+                      context,
+                    ).colorScheme.secondary.withValues(alpha: 0.3),
                   ),
                   const SizedBox(width: 4),
                   Text(
                     _isRevealed ? 'swipe to navigate' : 'tap to reveal',
                     style: AppTypography.caption.copyWith(
-                      color: Theme.of(context).colorScheme.secondary.withValues(alpha: 0.3),
+                      color: Theme.of(
+                        context,
+                      ).colorScheme.secondary.withValues(alpha: 0.3),
                       fontSize: 10,
                     ),
                   ),
@@ -268,31 +346,30 @@ class _FlashcardReviewScreenState extends ConsumerState<FlashcardReviewScreen> {
 
   Widget _buildEmpty(ColorScheme colorScheme) {
     final stateFilter = ref.watch(reviewStateFilterProvider);
-    final categoryFilter = ref.watch(reviewCategoryFilterProvider);
-    final hasFilter = stateFilter != null || categoryFilter != null;
+    final selectedDeck = ref.watch(selectedDeckProvider);
+    final targetMoveIds = ref.watch(reviewSessionTargetMoveIdsProvider);
+    final reviewSource = ref.watch(reviewSessionSourceProvider);
     final totalMoves = ref.watch(totalMoveCountProvider).valueOrNull ?? 0;
 
-    if (hasFilter) {
+    if (targetMoveIds != null && targetMoveIds.isNotEmpty) {
       return Center(
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(Icons.filter_list_off, size: 64, color: colorScheme.secondary),
+            Icon(
+              Icons.remove_circle_outline,
+              size: 64,
+              color: colorScheme.secondary,
+            ),
             const SizedBox(height: AppSpacing.md),
             Text(
-              'No moves match filters',
+              'That move is no longer available',
               style: AppTypography.bodyMedium.copyWith(
                 color: colorScheme.secondary,
               ),
             ),
             const SizedBox(height: AppSpacing.lg),
-            TextButton(
-              onPressed: () {
-                ref.read(reviewStateFilterProvider.notifier).state = null;
-                ref.read(reviewCategoryFilterProvider.notifier).state = null;
-              },
-              child: const Text('Clear Filters'),
-            ),
+            TextButton(onPressed: _endSession, child: const Text('Back')),
           ],
         ),
       );
@@ -303,8 +380,11 @@ class _FlashcardReviewScreenState extends ConsumerState<FlashcardReviewScreen> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(Icons.library_add_outlined, size: 64,
-                color: colorScheme.secondary),
+            Icon(
+              Icons.library_add_outlined,
+              size: 64,
+              color: colorScheme.secondary,
+            ),
             const SizedBox(height: AppSpacing.md),
             Text(
               'Your breakdex is empty',
@@ -334,70 +414,37 @@ class _FlashcardReviewScreenState extends ConsumerState<FlashcardReviewScreen> {
       );
     }
 
-    // All caught up
-    final nextDueAsync = ref.watch(nextDueDateProvider);
+    final message = switch (reviewSource) {
+      ReviewSessionSource.deck =>
+        selectedDeck == null
+            ? 'Pick a deck to start a review session'
+            : '"${selectedDeck.name}" has no matching cards',
+      ReviewSessionSource.stateBased when stateFilter != null =>
+        'No ${stateFilter.displayText.toLowerCase()} cards available',
+      _ => 'No cards available for this session',
+    };
+
     return Center(
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(Icons.check_circle_outline, size: 64,
-              color: AppColors.actionGood),
+          Icon(Icons.filter_list_off, size: 64, color: colorScheme.secondary),
           const SizedBox(height: AppSpacing.md),
           Text(
-            'All caught up!',
+            message,
             style: AppTypography.titleMedium.copyWith(
               color: colorScheme.onSurface,
             ),
           ),
-          const SizedBox(height: AppSpacing.sm),
-          nextDueAsync.when(
-            loading: () => const SizedBox.shrink(),
-            error: (_, _) => const SizedBox.shrink(),
-            data: (nextDue) {
-              if (nextDue == null) return const SizedBox.shrink();
-              final diff = nextDue.difference(DateTime.now().toUtc());
-              return Text(
-                'Next review in ${_formatCountdown(diff)}',
-                style: AppTypography.bodySmall.copyWith(
-                  color: colorScheme.secondary,
-                ),
-              );
-            },
-          ),
           const SizedBox(height: AppSpacing.xl),
-          Wrap(
-            spacing: AppSpacing.sm,
-            children: [
-              OutlinedButton.icon(
-                onPressed: () => context.go('/arsenal'),
-                icon: const Icon(Icons.add, size: 18),
-                label: const Text('Add a Move'),
-              ),
-              OutlinedButton.icon(
-                onPressed: () {
-                  HapticFeedback.mediumImpact();
-                  context.push('/battle');
-                },
-                icon: const Icon(Icons.bolt_rounded, size: 18),
-                label: const Text('Battle Mode'),
-              ),
-            ],
+          OutlinedButton.icon(
+            onPressed: _endSession,
+            icon: const Icon(Icons.arrow_back_rounded, size: 18),
+            label: const Text('Back to Review'),
           ),
         ],
       ),
     );
-  }
-
-  String _formatCountdown(Duration d) {
-    if (d.inDays > 0) {
-      final hours = d.inHours % 24;
-      return '${d.inDays}d ${hours}h';
-    }
-    if (d.inHours > 0) {
-      final minutes = d.inMinutes % 60;
-      return '${d.inHours}h ${minutes}m';
-    }
-    return '${d.inMinutes}m';
   }
 
   Widget _buildCompleted(ColorScheme colorScheme) {
@@ -424,10 +471,7 @@ class _FlashcardReviewScreenState extends ConsumerState<FlashcardReviewScreen> {
           ElevatedButton(
             onPressed: () {
               setState(() {
-                _currentIndex = 0;
-                _completed = false;
-                _initialized = false;
-                _isRevealed = false;
+                _resetSessionState();
               });
               refreshReviewSession(ref);
               _startShakeListener();
@@ -438,6 +482,11 @@ class _FlashcardReviewScreenState extends ConsumerState<FlashcardReviewScreen> {
             ),
             child: const Text('Review Again'),
           ),
+          const SizedBox(height: AppSpacing.sm),
+          TextButton(
+            onPressed: _endSession,
+            child: const Text('Back to Review'),
+          ),
         ],
       ),
     );
@@ -445,20 +494,21 @@ class _FlashcardReviewScreenState extends ConsumerState<FlashcardReviewScreen> {
 
   void _startShakeListener() {
     _shakeSubscription?.cancel();
-    _shakeSubscription = accelerometerEventStream(
-      samplingPeriod: const Duration(milliseconds: 50),
-    ).listen((event) {
-      final magnitude = sqrt(
-        event.x * event.x + event.y * event.y + event.z * event.z,
-      );
-      final now = DateTime.now();
-      if (magnitude > _shakeThreshold &&
-          now.difference(_lastShakeTime) > _shakeCooldown) {
-        _lastShakeTime = now;
-        HapticFeedback.heavyImpact();
-        _skip();
-      }
-    });
+    _shakeSubscription =
+        accelerometerEventStream(
+          samplingPeriod: const Duration(milliseconds: 50),
+        ).listen((event) {
+          final magnitude = sqrt(
+            event.x * event.x + event.y * event.y + event.z * event.z,
+          );
+          final now = DateTime.now();
+          if (magnitude > _shakeThreshold &&
+              now.difference(_lastShakeTime) > _shakeCooldown) {
+            _lastShakeTime = now;
+            HapticFeedback.heavyImpact();
+            _skip();
+          }
+        });
   }
 
   void _stopShakeListener() {
@@ -474,15 +524,17 @@ class _FlashcardReviewScreenState extends ConsumerState<FlashcardReviewScreen> {
     if (result == null) return;
 
     final videoService = ref.read(videoServiceProvider);
-    await videoService.replaceVideo(move.videoPath);
 
-    await ref.read(moveRepositoryProvider).update(
+    await ref
+        .read(moveRepositoryProvider)
+        .update(
           MovesCompanion(
             id: Value(move.id),
             videoPath: Value(result.localPath),
             originalVideoName: Value(result.originalFileName),
           ),
         );
+    await videoService.replaceVideo(move.videoPath);
 
     setState(() {
       _moves[index] = Move(
@@ -507,14 +559,18 @@ class _FlashcardReviewScreenState extends ConsumerState<FlashcardReviewScreen> {
 
     if (newState == null || newState == currentState) return;
 
-    await ref.read(moveRepositoryProvider).update(
+    await ref
+        .read(moveRepositoryProvider)
+        .update(
           MovesCompanion(
             id: Value(move.id),
             learningState: Value(newState.dbValue),
           ),
         );
 
-    await ref.read(reviewRepositoryProvider).insert(
+    await ref
+        .read(reviewRepositoryProvider)
+        .insert(
           ReviewsCompanion.insert(
             id: const Uuid().v4(),
             rating: newState.dbValue,
@@ -543,7 +599,9 @@ class _FlashcardReviewScreenState extends ConsumerState<FlashcardReviewScreen> {
     final currentState = LearningState.fromString(move.learningState);
     final newState = currentState.applyRating(rating);
 
-    await ref.read(moveRepositoryProvider).update(
+    await ref
+        .read(moveRepositoryProvider)
+        .update(
           MovesCompanion(
             id: Value(move.id),
             learningState: Value(newState.dbValue),
@@ -555,7 +613,9 @@ class _FlashcardReviewScreenState extends ConsumerState<FlashcardReviewScreen> {
         .read(fsrsServiceProvider)
         .processReview(move.id, rating, entityType: 'move');
 
-    await ref.read(reviewRepositoryProvider).insert(
+    await ref
+        .read(reviewRepositoryProvider)
+        .insert(
           ReviewsCompanion.insert(
             id: const Uuid().v4(),
             rating: rating.dbValue,

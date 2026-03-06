@@ -2,6 +2,147 @@ import Flutter
 import UIKit
 import AVFoundation
 
+struct VideoExportGeometryResult {
+    let renderSize: CGSize
+    let transform: CGAffineTransform
+}
+
+enum VideoExportGeometryError: LocalizedError {
+    case invalidCanvas
+    case invalidCrop
+
+    var errorDescription: String? {
+        switch self {
+        case .invalidCanvas:
+            return "Invalid video canvas size"
+        case .invalidCrop:
+            return "Invalid crop rectangle"
+        }
+    }
+}
+
+struct VideoExportGeometry {
+    static func orientedBounds(
+        naturalSize: CGSize,
+        preferredTransform: CGAffineTransform
+    ) -> CGRect {
+        CGRect(origin: .zero, size: naturalSize)
+            .applying(preferredTransform)
+            .standardized
+    }
+
+    static func compute(
+        naturalSize: CGSize,
+        preferredTransform: CGAffineTransform,
+        userRotation: Int,
+        cropRect: CGRect?
+    ) throws -> VideoExportGeometryResult {
+        let orientedBounds = orientedBounds(
+            naturalSize: naturalSize,
+            preferredTransform: preferredTransform
+        )
+        guard orientedBounds.width > 0, orientedBounds.height > 0 else {
+            throw VideoExportGeometryError.invalidCanvas
+        }
+
+        var transform = preferredTransform.concatenating(
+            CGAffineTransform(
+                translationX: -orientedBounds.minX,
+                y: -orientedBounds.minY
+            )
+        )
+        var canvasBounds = CGRect(origin: .zero, size: orientedBounds.size)
+
+        let normalizedRotation = ((userRotation % 360) + 360) % 360
+        if normalizedRotation != 0 {
+            let radians = CGFloat(normalizedRotation) * .pi / 180.0
+            let rotationResult = rotationTransform(
+                canvasBounds: canvasBounds,
+                angle: radians
+            )
+            transform = transform.concatenating(rotationResult.transform)
+            canvasBounds = CGRect(origin: .zero, size: rotationResult.size)
+        }
+
+        if let cropRect {
+            let clampedCrop = clampedCropRect(cropRect, canvasSize: canvasBounds.size)
+            guard clampedCrop.width > 0, clampedCrop.height > 0 else {
+                throw VideoExportGeometryError.invalidCrop
+            }
+            transform = transform.concatenating(
+                CGAffineTransform(
+                    translationX: -clampedCrop.minX,
+                    y: -clampedCrop.minY
+                )
+            )
+            canvasBounds = CGRect(origin: .zero, size: clampedCrop.size)
+        }
+
+        let renderSize = evenRenderSize(from: canvasBounds.size)
+        return VideoExportGeometryResult(
+            renderSize: renderSize,
+            transform: transform
+        )
+    }
+
+    private static func rotationTransform(
+        canvasBounds: CGRect,
+        angle: CGFloat
+    ) -> (transform: CGAffineTransform, size: CGSize) {
+        let rotation = CGAffineTransform(
+            translationX: -canvasBounds.midX,
+            y: -canvasBounds.midY
+        ).rotated(by: angle)
+        let rotatedBounds = canvasBounds.applying(rotation).standardized
+        let normalize = CGAffineTransform(
+            translationX: -rotatedBounds.minX,
+            y: -rotatedBounds.minY
+        )
+        return (
+            rotation.concatenating(normalize),
+            rotatedBounds.size
+        )
+    }
+
+    private static func clampedCropRect(
+        _ normalizedCrop: CGRect,
+        canvasSize: CGSize
+    ) -> CGRect {
+        let width = canvasSize.width
+        let height = canvasSize.height
+
+        guard width > 0, height > 0 else { return .zero }
+
+        let leftNormalized = max(0, min(1, normalizedCrop.minX))
+        let topNormalized = max(0, min(1, normalizedCrop.minY))
+        let rightNormalized = max(leftNormalized, min(1, normalizedCrop.maxX))
+        let bottomNormalized = max(topNormalized, min(1, normalizedCrop.maxY))
+
+        let left = leftNormalized * width
+        let top = topNormalized * height
+        let right = rightNormalized * width
+        let bottom = bottomNormalized * height
+
+        let cropWidth = max(2, right - left)
+        let cropHeight = max(2, bottom - top)
+        let clampedWidth = min(cropWidth, width - left)
+        let clampedHeight = min(cropHeight, height - top)
+
+        return CGRect(
+            x: left,
+            y: top,
+            width: max(2, clampedWidth),
+            height: max(2, clampedHeight)
+        )
+    }
+
+    private static func evenRenderSize(from size: CGSize) -> CGSize {
+        let width = max(2, Int(floor(size.width / 2)) * 2)
+        let height = max(2, Int(floor(size.height / 2)) * 2)
+        return CGSize(width: width, height: height)
+    }
+}
+
 /// Native iOS video export using AVFoundation — hardware-accelerated, works on both
 /// simulator and device. Reports real-time progress via EventChannel.
 class VideoExportPlugin: NSObject, FlutterPlugin, FlutterStreamHandler {
@@ -73,7 +214,6 @@ class VideoExportPlugin: NSObject, FlutterPlugin, FlutterStreamHandler {
 
         let speed = args["speed"] as? Double ?? 1.0
         let rotation = args["rotation"] as? Int ?? 0
-        let aspectRatio = args["aspectRatio"] as? String
 
         // Free-form crop params (normalized 0.0-1.0)
         let cropLeft = args["cropLeft"] as? Double
@@ -154,21 +294,36 @@ class VideoExportPlugin: NSObject, FlutterPlugin, FlutterStreamHandler {
                 compositionAudioTrack?.scaleTimeRange(insertedRange, toDuration: scaledDuration)
             }
 
-            self.sendProgress(phase: "composing", progress: 0.05)
-
-            // Geometry
-            let orientedSize = self.orientedSize(naturalSize: naturalSize, transform: preferredTransform)
-            let (renderSize, finalTransform) = self.computeTransformAndSize(
-                orientedSize: orientedSize,
-                naturalSize: naturalSize,
-                preferredTransform: preferredTransform,
-                userRotation: rotation,
-                aspectRatio: aspectRatio,
-                cropLeft: cropLeft,
-                cropTop: cropTop,
-                cropWidth: cropWidth,
-                cropHeight: cropHeight
+            let cropRect = self.normalizedCropRect(
+                left: cropLeft,
+                top: cropTop,
+                width: cropWidth,
+                height: cropHeight
             )
+
+            let geometry: VideoExportGeometryResult
+            do {
+                geometry = try VideoExportGeometry.compute(
+                    naturalSize: naturalSize,
+                    preferredTransform: preferredTransform,
+                    userRotation: rotation,
+                    cropRect: cropRect
+                )
+            } catch {
+                DispatchQueue.main.async {
+                    result(
+                        FlutterError(
+                            code: "GEOMETRY_ERR",
+                            message: error.localizedDescription,
+                            details: nil
+                        )
+                    )
+                }
+                return
+            }
+
+            let renderSize = geometry.renderSize
+            let finalTransform = geometry.transform
 
             let videoComposition = AVMutableVideoComposition()
             videoComposition.frameDuration = CMTime(value: 1, timescale: 30)
@@ -181,6 +336,21 @@ class VideoExportPlugin: NSObject, FlutterPlugin, FlutterStreamHandler {
             layerInstruction.setTransform(finalTransform, at: .zero)
             instruction.layerInstructions = [layerInstruction]
             videoComposition.instructions = [instruction]
+
+            self.sendProgress(phase: "composing", progress: 0.05)
+
+            guard renderSize.width >= 2, renderSize.height >= 2 else {
+                DispatchQueue.main.async {
+                    result(
+                        FlutterError(
+                            code: "GEOMETRY_ERR",
+                            message: "Export produced an invalid render size",
+                            details: nil
+                        )
+                    )
+                }
+                return
+            }
 
             self.sendProgress(phase: "initializing", progress: 0.08)
 
@@ -212,9 +382,27 @@ class VideoExportPlugin: NSObject, FlutterPlugin, FlutterStreamHandler {
 
                 switch session.status {
                 case .completed:
-                    self.sendProgress(phase: "done", progress: 1.0)
-                    DispatchQueue.main.async {
-                        result(outputPath)
+                    Task { [weak self] in
+                        guard let self = self else { return }
+                        do {
+                            try await self.validateExportedVideo(at: outputURL)
+                            self.sendProgress(phase: "done", progress: 1.0)
+                            DispatchQueue.main.async {
+                                result(outputPath)
+                            }
+                        } catch {
+                            try? FileManager.default.removeItem(at: outputURL)
+                            DispatchQueue.main.async {
+                                result(
+                                    FlutterError(
+                                        code: "INVALID_EXPORT",
+                                        message: error.localizedDescription,
+                                        details: nil
+                                    )
+                                )
+                            }
+                        }
+                        self.exportSession = nil
                     }
 
                 case .cancelled:
@@ -234,9 +422,72 @@ class VideoExportPlugin: NSObject, FlutterPlugin, FlutterStreamHandler {
                     }
                 }
 
-                self.exportSession = nil
+                if session.status != .completed {
+                    self.exportSession = nil
+                }
             }
         }
+    }
+
+    private func normalizedCropRect(
+        left: Double?,
+        top: Double?,
+        width: Double?,
+        height: Double?
+    ) -> CGRect? {
+        guard let left, let top, let width, let height else {
+            return nil
+        }
+        return CGRect(x: left, y: top, width: width, height: height)
+    }
+
+    private func validateExportedVideo(at url: URL) async throws {
+        let attributes = try FileManager.default.attributesOfItem(atPath: url.path)
+        let fileSize = (attributes[.size] as? NSNumber)?.int64Value ?? 0
+        guard fileSize > 0 else {
+            throw NSError(
+                domain: "VideoExportPlugin",
+                code: 1,
+                userInfo: [NSLocalizedDescriptionKey: "Exported video file is empty"]
+            )
+        }
+
+        let asset = AVURLAsset(url: url)
+        let duration = try await asset.load(.duration)
+        guard duration.isValid, duration.seconds > 0 else {
+            throw NSError(
+                domain: "VideoExportPlugin",
+                code: 2,
+                userInfo: [NSLocalizedDescriptionKey: "Exported video has no duration"]
+            )
+        }
+
+        guard let videoTrack = try await asset.loadTracks(withMediaType: .video).first else {
+            throw NSError(
+                domain: "VideoExportPlugin",
+                code: 3,
+                userInfo: [NSLocalizedDescriptionKey: "Exported video track is missing"]
+            )
+        }
+
+        let exportedSize = try await videoTrack.load(.naturalSize)
+        let exportedTransform = try await videoTrack.load(.preferredTransform)
+        let bounds = VideoExportGeometry.orientedBounds(
+            naturalSize: exportedSize,
+            preferredTransform: exportedTransform
+        )
+        guard bounds.width > 1, bounds.height > 1 else {
+            throw NSError(
+                domain: "VideoExportPlugin",
+                code: 4,
+                userInfo: [NSLocalizedDescriptionKey: "Exported video dimensions are invalid"]
+            )
+        }
+
+        let imageGenerator = AVAssetImageGenerator(asset: asset)
+        imageGenerator.appliesPreferredTrackTransform = true
+        imageGenerator.maximumSize = CGSize(width: 640, height: 640)
+        _ = try imageGenerator.copyCGImage(at: .zero, actualTime: nil)
     }
 
     // MARK: - Progress
@@ -302,62 +553,4 @@ class VideoExportPlugin: NSObject, FlutterPlugin, FlutterStreamHandler {
         }
     }
 
-    // MARK: - Geometry
-
-    private func orientedSize(naturalSize: CGSize, transform: CGAffineTransform) -> CGSize {
-        let rect = CGRect(origin: .zero, size: naturalSize).applying(transform)
-        return CGSize(width: abs(rect.width), height: abs(rect.height))
-    }
-
-    private func computeTransformAndSize(
-        orientedSize: CGSize,
-        naturalSize: CGSize,
-        preferredTransform: CGAffineTransform,
-        userRotation: Int,
-        aspectRatio: String?,
-        cropLeft: Double?,
-        cropTop: Double?,
-        cropWidth: Double?,
-        cropHeight: Double?
-    ) -> (CGSize, CGAffineTransform) {
-        var transform = preferredTransform
-        var currentSize = orientedSize
-
-        // User rotation
-        let normalizedRotation = ((userRotation % 360) + 360) % 360
-        if normalizedRotation != 0 {
-            let radians = CGFloat(normalizedRotation) * .pi / 180.0
-
-            // Build rotation around center of oriented space
-            transform = preferredTransform
-                .concatenating(CGAffineTransform(translationX: -orientedSize.width / 2, y: -orientedSize.height / 2))
-                .concatenating(CGAffineTransform(rotationAngle: radians))
-
-            if normalizedRotation == 90 || normalizedRotation == 270 {
-                currentSize = CGSize(width: orientedSize.height, height: orientedSize.width)
-            }
-
-            transform = transform.concatenating(
-                CGAffineTransform(translationX: currentSize.width / 2, y: currentSize.height / 2)
-            )
-        }
-
-        // Crop
-        var renderSize = currentSize
-        if let cl = cropLeft, let ct = cropTop, let cw = cropWidth, let ch = cropHeight {
-            let pixelLeft = CGFloat(cl) * currentSize.width
-            let pixelTop = CGFloat(ct) * currentSize.height
-            let pixelWidth = CGFloat(cw) * currentSize.width
-            let pixelHeight = CGFloat(ch) * currentSize.height
-
-            renderSize = CGSize(width: pixelWidth, height: pixelHeight)
-            transform = transform.concatenating(CGAffineTransform(translationX: -pixelLeft, y: -pixelTop))
-        }
-
-        // H.264 requires even dimensions
-        renderSize.width = CGFloat(Int(renderSize.width / 2) * 2)
-        renderSize.height = CGFloat(Int(renderSize.height / 2) * 2)
-
-        return (renderSize, transform)
-    }
 }

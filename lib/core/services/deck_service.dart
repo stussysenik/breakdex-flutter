@@ -26,10 +26,10 @@ class DeckFilter {
   }
 
   String toJson() => jsonEncode({
-        'categories': categories,
-        'fsrsStates': fsrsStates,
-        'dueOnly': dueOnly,
-      });
+    'categories': categories,
+    'fsrsStates': fsrsStates,
+    'dueOnly': dueOnly,
+  });
 
   bool get isEmpty => categories.isEmpty && fsrsStates.isEmpty && !dueOnly;
 }
@@ -61,7 +61,9 @@ class DeckService {
 
     // Filter by categories
     if (filter.categories.isNotEmpty) {
-      moves = moves.where((m) => filter.categories.contains(m.category)).toList();
+      moves = moves
+          .where((m) => filter.categories.contains(m.category))
+          .toList();
     }
 
     // Filter by FSRS states
@@ -82,12 +84,6 @@ class DeckService {
           .map((c) => c.entityId)
           .toSet();
       moves = moves.where((m) => dueIds.contains(m.id)).toList();
-    }
-
-    // Cap to session size if set
-    if (deck.sessionSize != null && moves.length > deck.sessionSize!) {
-      moves.shuffle();
-      moves = moves.sublist(0, deck.sessionSize!);
     }
 
     return moves;

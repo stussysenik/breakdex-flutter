@@ -1,54 +1,66 @@
+import 'package:drift/drift.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-import 'package:breakdex/main.dart';
+import 'package:breakdex/core/database/database.dart';
+import 'package:breakdex/core/providers.dart';
 import 'package:breakdex/core/services/settings_service.dart';
+import 'package:breakdex/main.dart';
+
+import '../test/helpers/test_database.dart';
 
 void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
 
   group('Breakdex integration tests', () {
     late SharedPreferences prefs;
+    late AppDatabase db;
 
     setUp(() async {
       SharedPreferences.setMockInitialValues({});
       prefs = await SharedPreferences.getInstance();
+      db = createTestDatabase();
+    });
+
+    tearDown(() async {
+      await db.close();
     });
 
     Widget buildApp() {
       return ProviderScope(
         overrides: [
           sharedPreferencesProvider.overrideWithValue(prefs),
+          databaseProvider.overrideWithValue(db),
         ],
         child: const BreakdexApp(),
       );
     }
 
-    testWidgets('Add move without video', (tester) async {
+    Future<void> seedMove({
+      required String id,
+      required String name,
+      String learningState = 'NEW',
+    }) async {
+      await db
+          .into(db.moves)
+          .insert(
+            MovesCompanion.insert(
+              id: id,
+              name: name,
+              learningState: Value(learningState),
+            ),
+          );
+    }
+
+    testWidgets('Arsenal renders a seeded move', (tester) async {
+      await seedMove(id: 'move-1', name: 'Windmill');
+
       await tester.pumpWidget(buildApp());
       await tester.pumpAndSettle();
 
-      // Tap the FAB (+)
-      final fab = find.byIcon(Icons.add);
-      expect(fab, findsOneWidget);
-      await tester.tap(fab);
-      await tester.pumpAndSettle();
-
-      // Enter move name
-      final nameField = find.byType(TextField).last;
-      await tester.enterText(nameField, 'Windmill');
-      await tester.pumpAndSettle();
-
-      // Tap Save
-      final saveButton = find.text('Save');
-      expect(saveButton, findsOneWidget);
-      await tester.tap(saveButton);
-      await tester.pumpAndSettle();
-
-      // Verify move appears in list
       expect(find.text('Windmill'), findsOneWidget);
     });
 
@@ -56,71 +68,97 @@ void main() {
       await tester.pumpWidget(buildApp());
       await tester.pumpAndSettle();
 
-      // Arsenal tab (default)
-      expect(find.text('Moves'), findsOneWidget);
+      expect(find.text('Arsenal'), findsWidgets);
 
-      // Create tab
-      await tester.tap(find.text('Create'));
-      await tester.pumpAndSettle();
-      expect(find.text('Create Combo'), findsOneWidget);
-
-      // Review tab
       await tester.tap(find.text('Review'));
       await tester.pumpAndSettle();
-      // The review screen should render
-      expect(find.byType(Scaffold), findsWidgets);
+      expect(find.text('Session'), findsOneWidget);
+      expect(find.text('Schedule'), findsOneWidget);
 
-      // Settings tab
+      await tester.tap(find.text('Stats'));
+      await tester.pumpAndSettle();
+      expect(find.text('Stats'), findsWidgets);
+
       await tester.tap(find.text('Settings'));
       await tester.pumpAndSettle();
       expect(find.text('Settings'), findsWidgets);
     });
 
-    testWidgets('Settings — add category', (tester) async {
+    testWidgets('Review tab starts a state-based session', (tester) async {
+      await seedMove(id: 'move-1', name: 'Windmill');
+
       await tester.pumpWidget(buildApp());
       await tester.pumpAndSettle();
 
-      // Navigate to Settings
+      await tester.tap(find.text('Review'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('New'), findsOneWidget);
+      expect(find.text('Learning'), findsOneWidget);
+      expect(find.text('Mastery'), findsOneWidget);
+
+      await tester.tap(find.text('Start').first);
+      await tester.pumpAndSettle();
+
+      expect(find.text('1/1'), findsOneWidget);
+      expect(find.text('tap to reveal'), findsOneWidget);
+    });
+
+    testWidgets('Settings adds a custom category', (tester) async {
+      await tester.pumpWidget(buildApp());
+      await tester.pumpAndSettle();
+
       await tester.tap(find.text('Settings'));
       await tester.pumpAndSettle();
 
-      // Tap "Add Category"
       await tester.tap(find.text('Add Category'));
       await tester.pumpAndSettle();
 
-      // Enter category name in dialog
       final nameField = find.byType(TextField);
       expect(nameField, findsOneWidget);
-      await tester.enterText(nameField, 'Power Moves');
+      await tester.enterText(nameField, 'Integration Category');
       await tester.pumpAndSettle();
 
-      // Tap "Add"
       await tester.tap(find.text('Add'));
       await tester.pumpAndSettle();
 
-      // Verify category appears
-      expect(find.text('Power Moves'), findsOneWidget);
+      expect(find.text('Integration Category'), findsWidgets);
     });
 
-    testWidgets('Move detail screen', (tester) async {
+    testWidgets('Review tab starts a deck session', (tester) async {
+      await seedMove(id: 'move-1', name: 'Headspin');
+      await db
+          .into(db.decks)
+          .insert(
+            DecksCompanion.insert(
+              id: 'deck-1',
+              name: 'Battle Set',
+              deckType: const Value('manual'),
+              sessionSize: const Value(10),
+            ),
+          );
+      await db
+          .into(db.deckMoves)
+          .insert(
+            DeckMovesCompanion.insert(deckId: 'deck-1', moveId: 'move-1'),
+          );
+
       await tester.pumpWidget(buildApp());
       await tester.pumpAndSettle();
 
-      // Create a move first
-      await tester.tap(find.byIcon(Icons.add));
-      await tester.pumpAndSettle();
-      await tester.enterText(find.byType(TextField).last, 'Headspin');
-      await tester.pumpAndSettle();
-      await tester.tap(find.text('Save'));
+      await tester.tap(find.text('Review'));
       await tester.pumpAndSettle();
 
-      // Tap the move to go to detail
-      await tester.tap(find.text('Headspin'));
+      await tester.tap(find.text('Deck'));
       await tester.pumpAndSettle();
 
-      // Verify detail screen shows name and state pill
-      expect(find.text('Headspin'), findsWidgets);
-      expect(find.text('NEW'), findsOneWidget);
+      expect(find.text('Battle Set'), findsOneWidget);
+
+      await tester.tap(find.text('Battle Set'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('1/1'), findsOneWidget);
+      expect(find.text('tap to reveal'), findsOneWidget);
     });
   });
 }

@@ -7,6 +7,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:path/path.dart' as p;
 import 'package:uuid/uuid.dart';
+import 'package:video_player/video_player.dart';
 import 'package:video_thumbnail/video_thumbnail.dart';
 
 enum VideoFileStatus { ready, missing, error }
@@ -28,15 +29,18 @@ class VideoPickResult {
 class VideoService {
   final _picker = ImagePicker();
   static const _uuid = Uuid();
-  static const _nativeImportChannel =
-      MethodChannel('com.breakdex/native_video_import');
-  static const _progressChannel =
-      EventChannel('com.breakdex/native_video_import_progress');
+  static const _nativeImportChannel = MethodChannel(
+    'com.breakdex/native_video_import',
+  );
+  static const _progressChannel = EventChannel(
+    'com.breakdex/native_video_import_progress',
+  );
 
   /// Stream of import progress (0.0–1.0) from the native iOS video picker.
   /// Emits fractional progress as iCloud/large videos materialize on disk.
-  Stream<double> get importProgress =>
-      _progressChannel.receiveBroadcastStream().map((e) => (e as num).toDouble());
+  Stream<double> get importProgress => _progressChannel
+      .receiveBroadcastStream()
+      .map((e) => (e as num).toDouble());
 
   /// In-memory cache: videoPath → thumbnailPath. Avoids repeated disk checks
   /// when the grid view rebuilds (e.g. scroll, theme change, filter toggle).
@@ -44,7 +48,10 @@ class VideoService {
 
   /// Shared iOS pick-and-thumbnail helper for native channel methods.
   Future<VideoPickResult?> _nativePickWithThumb(
-      String method, String statusLabel, {StatusCallback? onStatus}) async {
+    String method,
+    String statusLabel, {
+    StatusCallback? onStatus,
+  }) async {
     onStatus?.call(statusLabel);
     final native = await _pickViaNativeChannel(method);
     if (native == null) return null;
@@ -60,8 +67,11 @@ class VideoService {
   /// Pick from photo library (includes iCloud Photos)
   Future<VideoPickResult?> pickFromPhotos({StatusCallback? onStatus}) async {
     if (Platform.isIOS) {
-      return _nativePickWithThumb('pickFromPhotos',
-          'Opening native iOS photo picker...', onStatus: onStatus);
+      return _nativePickWithThumb(
+        'pickFromPhotos',
+        'Opening native iOS photo picker...',
+        onStatus: onStatus,
+      );
     }
 
     onStatus?.call('Opening photo library...');
@@ -86,8 +96,11 @@ class VideoService {
   /// Pick from Files app (iCloud Drive, Dropbox, local files)
   Future<VideoPickResult?> pickFromFiles({StatusCallback? onStatus}) async {
     if (Platform.isIOS) {
-      return _nativePickWithThumb('pickFromFiles',
-          'Opening native iOS files picker...', onStatus: onStatus);
+      return _nativePickWithThumb(
+        'pickFromFiles',
+        'Opening native iOS files picker...',
+        onStatus: onStatus,
+      );
     }
 
     onStatus?.call('Opening Files...');
@@ -137,7 +150,8 @@ class VideoService {
 
   Future<VideoPickResult?> _pickViaNativeChannel(String method) async {
     try {
-      final payload = await _nativeImportChannel.invokeMapMethod<String, dynamic>(method);
+      final payload = await _nativeImportChannel
+          .invokeMapMethod<String, dynamic>(method);
       if (payload == null) return null;
       final localPath = payload['localPath'] as String?;
       if (localPath == null || localPath.isEmpty) return null;
@@ -194,6 +208,37 @@ class VideoService {
       status = await checkVideoFile(path);
     }
     return status;
+  }
+
+  /// Validate that a saved video can actually be opened by the player.
+  ///
+  /// This is used after export so a corrupt or half-written file does not
+  /// replace the last known-good saved video.
+  Future<void> validatePlayableVideo(
+    String path, {
+    Duration initializeTimeout = const Duration(seconds: 12),
+  }) async {
+    final status = await checkVideoFileWithRetry(path, maxRetries: 3);
+    if (status != VideoFileStatus.ready) {
+      throw StateError('The exported video file is not ready yet.');
+    }
+
+    final controller = VideoPlayerController.file(File(path));
+    try {
+      await controller.initialize().timeout(initializeTimeout);
+      final value = controller.value;
+      if (!value.isInitialized) {
+        throw StateError('The exported video could not be initialized.');
+      }
+      if (value.duration <= Duration.zero) {
+        throw StateError('The exported video has no playable duration.');
+      }
+      if (value.size.width <= 0 || value.size.height <= 0) {
+        throw StateError('The exported video has invalid dimensions.');
+      }
+    } finally {
+      await controller.dispose();
+    }
   }
 
   /// Generate thumbnail, cached in .thumbs/ folder and in-memory.
@@ -369,7 +414,9 @@ class VideoService {
     // Also delete cached thumbnail
     final videoName = p.basenameWithoutExtension(path);
     final docs = await getApplicationDocumentsDirectory();
-    final thumbFile = File(p.join(docs.path, 'Moves', '.thumbs', '$videoName.jpg'));
+    final thumbFile = File(
+      p.join(docs.path, 'Moves', '.thumbs', '$videoName.jpg'),
+    );
     if (await thumbFile.exists()) {
       await thumbFile.delete();
     }

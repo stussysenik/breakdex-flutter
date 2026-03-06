@@ -24,10 +24,12 @@ import '../../shared/widgets/video_picker_sheet.dart';
 // -- Providers ---------------------------------------------------------------
 
 enum ViewMode { list, grid }
+
 enum ArsenalSegment { moves, combos }
 
-final _arsenalSegmentProvider =
-    StateProvider<ArsenalSegment>((_) => ArsenalSegment.moves);
+final _arsenalSegmentProvider = StateProvider<ArsenalSegment>(
+  (_) => ArsenalSegment.moves,
+);
 
 final _searchQueryProvider = StateProvider<String>((ref) => '');
 
@@ -35,8 +37,9 @@ final _combosStreamProvider = StreamProvider<List<(Combo, int)>>((ref) {
   return ref.watch(comboRepositoryProvider).watchAllWithMoveCounts();
 });
 
-final _viewModeProvider =
-    NotifierProvider<_ViewModeNotifier, ViewMode>(_ViewModeNotifier.new);
+final _viewModeProvider = NotifierProvider<_ViewModeNotifier, ViewMode>(
+  _ViewModeNotifier.new,
+);
 
 class _ViewModeNotifier extends Notifier<ViewMode> {
   static const _key = 'arsenal_view_mode';
@@ -85,7 +88,10 @@ class MoveListScreen extends ConsumerWidget {
             // Title
             Padding(
               padding: const EdgeInsets.fromLTRB(
-                AppSpacing.screenEdge, AppSpacing.lg, AppSpacing.screenEdge, 0,
+                AppSpacing.screenEdge,
+                AppSpacing.lg,
+                AppSpacing.screenEdge,
+                0,
               ),
               child: Text(
                 title,
@@ -98,8 +104,9 @@ class MoveListScreen extends ConsumerWidget {
 
             // Search bar
             Padding(
-              padding:
-                  const EdgeInsets.symmetric(horizontal: AppSpacing.screenEdge),
+              padding: const EdgeInsets.symmetric(
+                horizontal: AppSpacing.screenEdge,
+              ),
               child: TextField(
                 onChanged: (v) =>
                     ref.read(_searchQueryProvider.notifier).state = v,
@@ -107,8 +114,7 @@ class MoveListScreen extends ConsumerWidget {
                   hintText: segment == ArsenalSegment.moves
                       ? 'Search moves...'
                       : 'Search combos...',
-                  prefixIcon:
-                      Icon(Icons.search, color: colorScheme.secondary),
+                  prefixIcon: Icon(Icons.search, color: colorScheme.secondary),
                 ),
               ),
             ),
@@ -132,10 +138,12 @@ class MoveListScreen extends ConsumerWidget {
                         final filtered = searchQuery.isEmpty
                             ? moves
                             : moves
-                                .where((m) => m.name
-                                    .toLowerCase()
-                                    .contains(searchQuery.toLowerCase()))
-                                .toList();
+                                  .where(
+                                    (m) => m.name.toLowerCase().contains(
+                                      searchQuery.toLowerCase(),
+                                    ),
+                                  )
+                                  .toList();
 
                         if (filtered.isEmpty) {
                           return _EmptyState(
@@ -158,10 +166,12 @@ class MoveListScreen extends ConsumerWidget {
                         final filtered = searchQuery.isEmpty
                             ? combosWithCounts
                             : combosWithCounts
-                                .where((c) => c.$1.name
-                                    .toLowerCase()
-                                    .contains(searchQuery.toLowerCase()))
-                                .toList();
+                                  .where(
+                                    (c) => c.$1.name.toLowerCase().contains(
+                                      searchQuery.toLowerCase(),
+                                    ),
+                                  )
+                                  .toList();
 
                         if (filtered.isEmpty) {
                           return _EmptyState(
@@ -180,30 +190,33 @@ class MoveListScreen extends ConsumerWidget {
           ],
         ),
       ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: switch (segment) {
-          ArsenalSegment.moves => () => _startVideoFirstFlow(context, ref),
-          ArsenalSegment.combos => () => context.push('/create-combo'),
-        },
-        backgroundColor: AppColors.accent,
-        child: const Icon(Icons.add, color: Colors.white),
-      )
-          .animate()
-          .scale(
-            begin: const Offset(0, 0),
-            end: const Offset(1, 1),
-            duration: AppMotion.moderate02,
-            curve: AppMotion.expressive,
-          )
-          .fadeIn(duration: AppMotion.moderate01),
+      floatingActionButton:
+          FloatingActionButton(
+                onPressed: switch (segment) {
+                  ArsenalSegment.moves => () => _startVideoFirstFlow(
+                    context,
+                    ref,
+                  ),
+                  ArsenalSegment.combos => () => context.push('/create-combo'),
+                },
+                backgroundColor: AppColors.accent,
+                child: const Icon(Icons.add, color: Colors.white),
+              )
+              .animate()
+              .scale(
+                begin: const Offset(0, 0),
+                end: const Offset(1, 1),
+                duration: AppMotion.moderate02,
+                curve: AppMotion.expressive,
+              )
+              .fadeIn(duration: AppMotion.moderate01),
     );
   }
 
   /// Video-first creation flow:
   /// FAB → VideoPickerSheet → optional editor → _VideoNamingSheet → save.
   /// If user taps "Skip", falls through to a simplified name-only sheet.
-  Future<void> _startVideoFirstFlow(
-      BuildContext context, WidgetRef ref) async {
+  Future<void> _startVideoFirstFlow(BuildContext context, WidgetRef ref) async {
     // 1. Open video picker immediately
     final pickerResult = await VideoPickerSheet.show(context);
     if (!context.mounted) return;
@@ -219,24 +232,25 @@ class MoveListScreen extends ConsumerWidget {
     );
     if (!context.mounted) return;
     if (editedPath == null) return; // Cancel → back to arsenal, done
+    if (editedPath != videoPath) {
+      await ref.read(videoServiceProvider).replaceVideo(videoPath);
+    }
     videoPath = editedPath;
 
     // 3. Generate thumbnail for naming sheet background
-    final thumbPath =
-        await VideoService().generateThumbnail(videoPath);
+    final thumbPath = await VideoService().generateThumbnail(videoPath);
 
     if (!context.mounted) return;
 
     // 4. Show naming sheet with video thumbnail background
-    final result = await showModalBottomSheet<({String name, String? category})>(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (_) => _VideoNamingSheet(
-        videoPath: videoPath,
-        thumbnailPath: thumbPath,
-      ),
-    );
+    final result =
+        await showModalBottomSheet<({String name, String? category})>(
+          context: context,
+          isScrollControlled: true,
+          backgroundColor: Colors.transparent,
+          builder: (_) =>
+              _VideoNamingSheet(videoPath: videoPath, thumbnailPath: thumbPath),
+        );
 
     if (result == null || result.name.isEmpty || !context.mounted) return;
 
@@ -245,8 +259,14 @@ class MoveListScreen extends ConsumerWidget {
   }
 
   void _createMove(
-      WidgetRef ref, String name, String? category, String? videoPath) {
-    ref.read(moveRepositoryProvider).insert(
+    WidgetRef ref,
+    String name,
+    String? category,
+    String? videoPath,
+  ) {
+    ref
+        .read(moveRepositoryProvider)
+        .insert(
           MovesCompanion.insert(
             id: const Uuid().v4(),
             name: name,
@@ -263,10 +283,7 @@ class MoveListScreen extends ConsumerWidget {
 /// Background: video thumbnail with dark gradient scrim.
 /// Foreground: autofocused name field + category row + save button.
 class _VideoNamingSheet extends ConsumerStatefulWidget {
-  const _VideoNamingSheet({
-    required this.videoPath,
-    this.thumbnailPath,
-  });
+  const _VideoNamingSheet({required this.videoPath, this.thumbnailPath});
 
   final String videoPath;
   final String? thumbnailPath;
@@ -338,131 +355,136 @@ class _VideoNamingSheetState extends ConsumerState<_VideoNamingSheet> {
               AppSpacing.screenEdge,
               MediaQuery.of(context).viewInsets.bottom + AppSpacing.lg,
             ),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Drag handle
-                Center(
-                  child: Container(
-                    width: 36,
-                    height: 4,
-                    decoration: BoxDecoration(
-                      color: Colors.white.withValues(alpha: 0.3),
-                      borderRadius: BorderRadius.circular(2),
-                    ),
-                  ),
-                ),
-                const SizedBox(height: AppSpacing.lg),
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(AppRadius.md),
-                  child: BackdropFilter(
-                    filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
-                    child: Container(
-                      padding: const EdgeInsets.all(AppSpacing.md),
-                      decoration: BoxDecoration(
-                        color: colorScheme.surface.withValues(alpha: 0.7),
-                        borderRadius: BorderRadius.circular(AppRadius.md),
-                        border: Border.all(
-                          color: Colors.white.withValues(alpha: 0.1),
+            child:
+                Column(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // Drag handle
+                        Center(
+                          child: Container(
+                            width: 36,
+                            height: 4,
+                            decoration: BoxDecoration(
+                              color: Colors.white.withValues(alpha: 0.3),
+                              borderRadius: BorderRadius.circular(2),
+                            ),
+                          ),
                         ),
-                      ),
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'Name this move',
-                            style: AppTypography.titleMedium.copyWith(
-                              color: colorScheme.onSurface,
-                            ),
-                          ),
-                          const SizedBox(height: AppSpacing.md),
-                          TextField(
-                            controller: _nameController,
-                            autofocus: true,
-                            decoration:
-                                const InputDecoration(hintText: 'Move name'),
-                          ),
-                          const SizedBox(height: AppSpacing.md),
-                          // Category chips
-                          Text(
-                            'Category',
-                            style: AppTypography.caption.copyWith(
-                              color: colorScheme.secondary,
-                            ),
-                          ),
-                          const SizedBox(height: AppSpacing.sm),
-                          Wrap(
-                            spacing: AppSpacing.sm,
-                            runSpacing: AppSpacing.sm,
-                            children: [
-                              _buildCategoryChip(
-                                context,
-                                label: 'None',
-                                color: colorScheme.secondary,
-                                selected: _selectedCategory == null,
-                                onTap: () => setState(
-                                    () => _selectedCategory = null),
-                              ),
-                              for (final cat in categories)
-                                _buildCategoryChip(
-                                  context,
-                                  label: cat.name,
-                                  color: cat.color,
-                                  selected:
-                                      _selectedCategory == cat.name,
-                                  onTap: () => setState(() =>
-                                      _selectedCategory = cat.name),
+                        const SizedBox(height: AppSpacing.lg),
+                        ClipRRect(
+                          borderRadius: BorderRadius.circular(AppRadius.md),
+                          child: BackdropFilter(
+                            filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
+                            child: Container(
+                              padding: const EdgeInsets.all(AppSpacing.md),
+                              decoration: BoxDecoration(
+                                color: colorScheme.surface.withValues(
+                                  alpha: 0.7,
                                 ),
-                            ],
-                          ),
-                          const SizedBox(height: AppSpacing.lg),
-                          // Full-width save button
-                          SizedBox(
-                            width: double.infinity,
-                            height: 50,
-                            child: ElevatedButton(
-                              onPressed: _nameEmpty
-                                  ? null
-                                  : () => Navigator.pop(
+                                borderRadius: BorderRadius.circular(
+                                  AppRadius.md,
+                                ),
+                                border: Border.all(
+                                  color: Colors.white.withValues(alpha: 0.1),
+                                ),
+                              ),
+                              child: Column(
+                                mainAxisSize: MainAxisSize.min,
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    'Name this move',
+                                    style: AppTypography.titleMedium.copyWith(
+                                      color: colorScheme.onSurface,
+                                    ),
+                                  ),
+                                  const SizedBox(height: AppSpacing.md),
+                                  TextField(
+                                    controller: _nameController,
+                                    autofocus: true,
+                                    decoration: const InputDecoration(
+                                      hintText: 'Move name',
+                                    ),
+                                  ),
+                                  const SizedBox(height: AppSpacing.md),
+                                  // Category chips
+                                  Text(
+                                    'Category',
+                                    style: AppTypography.caption.copyWith(
+                                      color: colorScheme.secondary,
+                                    ),
+                                  ),
+                                  const SizedBox(height: AppSpacing.sm),
+                                  Wrap(
+                                    spacing: AppSpacing.sm,
+                                    runSpacing: AppSpacing.sm,
+                                    children: [
+                                      _buildCategoryChip(
                                         context,
-                                        (
-                                          name: _nameController.text
-                                              .trim(),
-                                          category: _selectedCategory,
+                                        label: 'None',
+                                        color: colorScheme.secondary,
+                                        selected: _selectedCategory == null,
+                                        onTap: () => setState(
+                                          () => _selectedCategory = null,
                                         ),
                                       ),
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: AppColors.accent,
-                                foregroundColor: Colors.white,
-                                disabledBackgroundColor:
-                                    AppColors.accent
-                                        .withValues(alpha: 0.3),
-                                disabledForegroundColor:
-                                    Colors.white
-                                        .withValues(alpha: 0.5),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(
-                                      AppRadius.lg),
-                                ),
+                                      for (final cat in categories)
+                                        _buildCategoryChip(
+                                          context,
+                                          label: cat.name,
+                                          color: cat.color,
+                                          selected:
+                                              _selectedCategory == cat.name,
+                                          onTap: () => setState(
+                                            () => _selectedCategory = cat.name,
+                                          ),
+                                        ),
+                                    ],
+                                  ),
+                                  const SizedBox(height: AppSpacing.lg),
+                                  // Full-width save button
+                                  SizedBox(
+                                    width: double.infinity,
+                                    height: 50,
+                                    child: ElevatedButton(
+                                      onPressed: _nameEmpty
+                                          ? null
+                                          : () => Navigator.pop(context, (
+                                              name: _nameController.text.trim(),
+                                              category: _selectedCategory,
+                                            )),
+                                      style: ElevatedButton.styleFrom(
+                                        backgroundColor: AppColors.accent,
+                                        foregroundColor: Colors.white,
+                                        disabledBackgroundColor: AppColors
+                                            .accent
+                                            .withValues(alpha: 0.3),
+                                        disabledForegroundColor: Colors.white
+                                            .withValues(alpha: 0.5),
+                                        shape: RoundedRectangleBorder(
+                                          borderRadius: BorderRadius.circular(
+                                            AppRadius.lg,
+                                          ),
+                                        ),
+                                      ),
+                                      child: const Text('Save'),
+                                    ),
+                                  ),
+                                ],
                               ),
-                              child: const Text('Save'),
                             ),
                           ),
-                        ],
-                      ),
+                        ),
+                      ],
+                    )
+                    .animate()
+                    .fadeIn(duration: AppMotion.moderate02)
+                    .slideY(
+                      begin: 0.05,
+                      duration: AppMotion.moderate02,
+                      curve: AppMotion.entrance,
                     ),
-                  ),
-                ),
-              ],
-            )
-                .animate()
-                .fadeIn(duration: AppMotion.moderate02)
-                .slideY(
-                    begin: 0.05,
-                    duration: AppMotion.moderate02,
-                    curve: AppMotion.entrance),
           ),
         ),
       ],
@@ -518,10 +540,7 @@ class _VideoNamingSheetState extends ConsumerState<_VideoNamingSheet> {
 // -- View Mode Toggle --------------------------------------------------------
 
 class _ViewModeToggle extends ConsumerWidget {
-  const _ViewModeToggle({
-    required this.viewMode,
-    required this.viewNames,
-  });
+  const _ViewModeToggle({required this.viewMode, required this.viewNames});
 
   final ViewMode viewMode;
   final Map<String, String> viewNames;
@@ -535,10 +554,12 @@ class _ViewModeToggle extends ConsumerWidget {
         ViewMode.list => Icons.view_list_rounded,
         ViewMode.grid => Icons.grid_view_rounded,
       },
-      labelOf: (m) => viewNames[m.name] ?? switch (m) {
-        ViewMode.list => 'List',
-        ViewMode.grid => 'Gallery',
-      },
+      labelOf: (m) =>
+          viewNames[m.name] ??
+          switch (m) {
+            ViewMode.list => 'List',
+            ViewMode.grid => 'Gallery',
+          },
       onSelected: (m) {
         HapticFeedback.selectionClick();
         ref.read(_viewModeProvider.notifier).set(m);
@@ -548,9 +569,13 @@ class _ViewModeToggle extends ConsumerWidget {
   }
 
   Future<void> _showRenameDialog(
-      BuildContext context, WidgetRef ref, ViewMode mode) async {
+    BuildContext context,
+    WidgetRef ref,
+    ViewMode mode,
+  ) async {
     final controller = TextEditingController(
-      text: viewNames[mode.name] ??
+      text:
+          viewNames[mode.name] ??
           switch (mode) {
             ViewMode.list => 'List',
             ViewMode.grid => 'Gallery',
@@ -644,8 +669,12 @@ class _PillToggleRow<T> extends StatelessWidget {
             if (item != items.first) const SizedBox(width: AppSpacing.sm),
             Expanded(
               child: GestureDetector(
-                onTap: () { if (selected != item) onSelected(item); },
-                onLongPress: onLongPress != null ? () => onLongPress!(item) : null,
+                onTap: () {
+                  if (selected != item) onSelected(item);
+                },
+                onLongPress: onLongPress != null
+                    ? () => onLongPress!(item)
+                    : null,
                 child: Container(
                   padding: const EdgeInsets.symmetric(vertical: 8),
                   decoration: BoxDecoration(
@@ -762,8 +791,7 @@ class _ComboRow extends ConsumerWidget {
                   ),
                 ),
                 const SizedBox(width: AppSpacing.sm),
-                Icon(Icons.playlist_play,
-                    color: AppColors.accent, size: 24),
+                Icon(Icons.playlist_play, color: AppColors.accent, size: 24),
                 const SizedBox(width: AppSpacing.md),
                 Expanded(
                   child: Padding(
@@ -787,8 +815,11 @@ class _ComboRow extends ConsumerWidget {
                     ),
                   ),
                 ),
-                Icon(Icons.chevron_right,
-                    color: colorScheme.secondary, size: 20),
+                Icon(
+                  Icons.chevron_right,
+                  color: colorScheme.secondary,
+                  size: 20,
+                ),
                 const SizedBox(width: AppSpacing.sm),
               ],
             ),
@@ -824,15 +855,13 @@ class _MoveCountDots extends StatelessWidget {
               color: AppColors.accent,
               shape: BoxShape.circle,
             ),
-          )
-              .animate()
-              .scale(
-                begin: const Offset(0, 0),
-                end: const Offset(1, 1),
-                duration: AppMotion.fast02,
-                delay: Duration(milliseconds: i * 20),
-                curve: AppMotion.expressive,
-              ),
+          ).animate().scale(
+            begin: const Offset(0, 0),
+            end: const Offset(1, 1),
+            duration: AppMotion.fast02,
+            delay: Duration(milliseconds: i * 20),
+            curve: AppMotion.expressive,
+          ),
         ],
         if (overflow > 0) ...[
           const SizedBox(width: AppSpacing.xs),
@@ -925,7 +954,9 @@ class _GridCardShell extends StatelessWidget {
           children: [
             background,
             Positioned(
-              left: 0, right: 0, bottom: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
               child: Container(
                 padding: const EdgeInsets.fromLTRB(10, 24, 10, 10),
                 decoration: BoxDecoration(
@@ -1013,8 +1044,11 @@ class _ComboGridCell extends ConsumerWidget {
           ),
         ),
         child: Center(
-          child: Icon(Icons.playlist_play,
-              size: 48, color: AppColors.accent.withValues(alpha: 0.4)),
+          child: Icon(
+            Icons.playlist_play,
+            size: 48,
+            color: AppColors.accent.withValues(alpha: 0.4),
+          ),
         ),
       ),
       name: combo.name,
@@ -1070,8 +1104,8 @@ class _EmptyState extends StatelessWidget {
             hasSearch
                 ? 'No results'
                 : isCombo
-                    ? 'No combos yet'
-                    : 'No moves yet',
+                ? 'No combos yet'
+                : 'No moves yet',
             style: AppTypography.bodyMedium.copyWith(
               color: colorScheme.secondary,
             ),
@@ -1144,12 +1178,18 @@ class _MoveGridCell extends ConsumerWidget {
           ? _GridThumbnail(videoPath: move.videoPath!)
           : Container(
               color: colorScheme.surfaceContainerHighest,
-              child: Icon(Icons.videocam_off,
-                  size: 40, color: colorScheme.secondary),
+              child: Icon(
+                Icons.videocam_off,
+                size: 40,
+                color: colorScheme.secondary,
+              ),
             ),
       name: move.name,
       subtitle: move.category != 'default'
-          ? _CategoryLabel(category: move.category, overrideTextColor: Colors.white70)
+          ? _CategoryLabel(
+              category: move.category,
+              overrideTextColor: Colors.white70,
+            )
           : null,
       topRightWidget: StatePill(state: learningState),
     );
@@ -1189,10 +1229,7 @@ class _GridThumbnailState extends State<_GridThumbnail> {
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
     if (_loaded && _thumbPath != null) {
-      return Image.file(
-        File(_thumbPath!),
-        fit: BoxFit.cover,
-      );
+      return Image.file(File(_thumbPath!), fit: BoxFit.cover);
     }
     return Container(
       color: colorScheme.surfaceContainerHighest,
@@ -1200,7 +1237,8 @@ class _GridThumbnailState extends State<_GridThumbnail> {
           ? Icon(Icons.videocam_off, size: 40, color: colorScheme.secondary)
           : const Center(
               child: SizedBox(
-                width: 20, height: 20,
+                width: 20,
+                height: 20,
                 child: CircularProgressIndicator(strokeWidth: 2),
               ),
             ),
@@ -1300,10 +1338,7 @@ class _MoveRow extends ConsumerWidget {
 /// Replaces the old filter-chip approach — category is always visible without
 /// needing to toggle a filter.
 class _CategoryLabel extends ConsumerWidget {
-  const _CategoryLabel({
-    required this.category,
-    this.overrideTextColor,
-  });
+  const _CategoryLabel({required this.category, this.overrideTextColor});
 
   final String category;
   final Color? overrideTextColor;
@@ -1322,18 +1357,12 @@ class _CategoryLabel extends ConsumerWidget {
         Container(
           width: 6,
           height: 6,
-          decoration: BoxDecoration(
-            color: dotColor,
-            shape: BoxShape.circle,
-          ),
+          decoration: BoxDecoration(color: dotColor, shape: BoxShape.circle),
         ),
         const SizedBox(width: 4),
         Text(
           category,
-          style: AppTypography.caption.copyWith(
-            color: textColor,
-            fontSize: 10,
-          ),
+          style: AppTypography.caption.copyWith(color: textColor, fontSize: 10),
         ),
       ],
     );

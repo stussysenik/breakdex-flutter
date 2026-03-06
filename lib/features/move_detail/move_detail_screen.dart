@@ -14,7 +14,8 @@ import '../../core/design/typography.dart';
 import '../../core/models/learning_state.dart';
 import '../../core/providers.dart';
 import '../../shared/widgets/state_pill.dart';
-import '../../shared/widgets/video_player_widget.dart' show RobustVideoPlayer, VideoPlaceholder;
+import '../../shared/widgets/video_player_widget.dart'
+    show RobustVideoPlayer, VideoPlaceholder;
 import '../../shared/widgets/action_tile.dart';
 import '../../shared/widgets/video_picker_sheet.dart';
 
@@ -47,8 +48,11 @@ class MoveDetailScreen extends ConsumerWidget {
                   onTap: () => context.pop(),
                   child: Row(
                     children: [
-                      Icon(Icons.chevron_left,
-                          color: colorScheme.secondary, size: 20),
+                      Icon(
+                        Icons.chevron_left,
+                        color: colorScheme.secondary,
+                        size: 20,
+                      ),
                       Text(
                         'Move',
                         style: AppTypography.bodyMedium.copyWith(
@@ -72,9 +76,7 @@ class MoveDetailScreen extends ConsumerWidget {
                 else
                   GestureDetector(
                     onTap: () => _addOrReplaceVideo(context, ref, move),
-                    child: const VideoPlaceholder(
-                      icon: Icons.add_a_photo,
-                    ),
+                    child: const VideoPlaceholder(icon: Icons.add_a_photo),
                   ),
                 const SizedBox(height: AppSpacing.lg),
 
@@ -168,7 +170,7 @@ class MoveDetailScreen extends ConsumerWidget {
   }
 
   /// Derives the cached thumbnail path from a video path.
-  /// Thumbnails live in .thumbs/<uuid>.jpg alongside the video.
+  /// Thumbnails live in `.thumbs/{uuid}.jpg` alongside the video.
   String? _thumbnailPathFor(String videoPath) {
     final dir = p.dirname(videoPath);
     final name = p.basenameWithoutExtension(videoPath);
@@ -177,32 +179,40 @@ class MoveDetailScreen extends ConsumerWidget {
 
   Future<void> _shareVideo(BuildContext context, Move move) async {
     if (move.videoPath == null) return;
-    await Share.shareXFiles(
-      [XFile(move.videoPath!)],
-      subject: move.name,
-    );
+    await Share.shareXFiles([XFile(move.videoPath!)], subject: move.name);
   }
 
-  Future<void> _addOrReplaceVideo(BuildContext context, WidgetRef ref, Move move) async {
+  Future<void> _addOrReplaceVideo(
+    BuildContext context,
+    WidgetRef ref,
+    Move move,
+  ) async {
     final result = await VideoPickerSheet.show(
       context,
       previousVideoName: move.originalVideoName,
-      previousThumbnailPath:
-          move.videoPath != null ? _thumbnailPathFor(move.videoPath!) : null,
+      previousThumbnailPath: move.videoPath != null
+          ? _thumbnailPathFor(move.videoPath!)
+          : null,
     );
     if (result == null) return;
     final videoService = ref.read(videoServiceProvider);
+    await ref
+        .read(moveRepositoryProvider)
+        .update(
+          MovesCompanion(
+            id: Value(move.id),
+            videoPath: Value(result.localPath),
+            originalVideoName: Value(result.originalFileName),
+          ),
+        );
     await videoService.replaceVideo(move.videoPath);
-    await ref.read(moveRepositoryProvider).update(
-      MovesCompanion(
-        id: Value(move.id),
-        videoPath: Value(result.localPath),
-        originalVideoName: Value(result.originalFileName),
-      ),
-    );
   }
 
-  Future<void> _editVideo(BuildContext context, WidgetRef ref, Move move) async {
+  Future<void> _editVideo(
+    BuildContext context,
+    WidgetRef ref,
+    Move move,
+  ) async {
     if (move.videoPath == null) return;
     final editedPath = await context.push<String>(
       '/video-editor',
@@ -210,27 +220,36 @@ class MoveDetailScreen extends ConsumerWidget {
     );
     if (editedPath != null && context.mounted) {
       final videoService = ref.read(videoServiceProvider);
+      await ref
+          .read(moveRepositoryProvider)
+          .update(
+            MovesCompanion(id: Value(move.id), videoPath: Value(editedPath)),
+          );
       await videoService.replaceVideo(move.videoPath);
-      await ref.read(moveRepositoryProvider).update(
-        MovesCompanion(
-          id: Value(move.id),
-          videoPath: Value(editedPath),
-        ),
-      );
     }
   }
 
-  Future<void> _removeVideo(BuildContext context, WidgetRef ref, Move move) async {
+  Future<void> _removeVideo(
+    BuildContext context,
+    WidgetRef ref,
+    Move move,
+  ) async {
     final confirm = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
         title: const Text('Remove Video?'),
         content: const Text('The video file will be deleted.'),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Cancel'),
+          ),
           TextButton(
             onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('Remove', style: TextStyle(color: AppColors.actionAgain)),
+            child: const Text(
+              'Remove',
+              style: TextStyle(color: AppColors.actionAgain),
+            ),
           ),
         ],
       ),
@@ -240,12 +259,11 @@ class MoveDetailScreen extends ConsumerWidget {
     if (move.videoPath != null) {
       await ref.read(videoServiceProvider).deleteVideo(move.videoPath!);
     }
-    await ref.read(moveRepositoryProvider).update(
-      MovesCompanion(
-        id: Value(move.id),
-        videoPath: const Value(null),
-      ),
-    );
+    await ref
+        .read(moveRepositoryProvider)
+        .update(
+          MovesCompanion(id: Value(move.id), videoPath: const Value(null)),
+        );
   }
 
   Future<void> _rename(BuildContext context, WidgetRef ref, Move move) async {
@@ -264,7 +282,10 @@ class MoveDetailScreen extends ConsumerWidget {
               onChanged: (_) => setDialogState(() {}),
             ),
             actions: [
-              TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
+              TextButton(
+                onPressed: () => Navigator.pop(ctx),
+                child: const Text('Cancel'),
+              ),
               TextButton(
                 onPressed: isEmpty
                     ? null
@@ -277,25 +298,34 @@ class MoveDetailScreen extends ConsumerWidget {
       ),
     );
     if (newName == null || newName.isEmpty || newName == move.name) return;
-    await ref.read(moveRepositoryProvider).update(
-      MovesCompanion(
-        id: Value(move.id),
-        name: Value(newName),
-      ),
-    );
+    await ref
+        .read(moveRepositoryProvider)
+        .update(MovesCompanion(id: Value(move.id), name: Value(newName)));
   }
 
-  Future<void> _deleteMove(BuildContext context, WidgetRef ref, Move move) async {
+  Future<void> _deleteMove(
+    BuildContext context,
+    WidgetRef ref,
+    Move move,
+  ) async {
     final confirm = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
         title: const Text('Delete Move?'),
-        content: const Text('This will permanently delete this move and its video.'),
+        content: const Text(
+          'This will permanently delete this move and its video.',
+        ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Cancel'),
+          ),
           TextButton(
             onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('Delete', style: TextStyle(color: AppColors.actionAgain)),
+            child: const Text(
+              'Delete',
+              style: TextStyle(color: AppColors.actionAgain),
+            ),
           ),
         ],
       ),
@@ -309,4 +339,3 @@ class MoveDetailScreen extends ConsumerWidget {
     if (context.mounted) context.pop();
   }
 }
-

@@ -8,312 +8,342 @@ import '../../../core/database/database.dart';
 import '../../../core/design/colors.dart';
 import '../../../core/design/spacing.dart';
 import '../../../core/design/typography.dart';
+import '../../../core/models/learning_state.dart';
 import '../../../core/providers.dart';
-import '../../../core/services/categories_service.dart';
-import '../../../core/services/fsrs_service.dart';
 import '../providers/deck_providers.dart';
 import '../providers/review_providers.dart';
 import 'create_deck_sheet.dart';
 import 'deck_card.dart';
 
-/// The mastery pre-screen shown before entering a flashcard review session.
+/// The session launcher shown before entering a flashcard review session.
 ///
-/// Displays:
-/// - Due today / due tomorrow summary
-/// - Per-category mastery grid with progress bars and card state counts
-/// - "Start" buttons per category and "Start All" at the bottom
+/// Session mode has two sources:
+/// - State-based: quick entry into NEW / LEARNING / MASTERY buckets
+/// - Deck: saved manual or smart deck sessions
 class MasteryPrescreen extends ConsumerWidget {
   const MasteryPrescreen({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final totalMoves = ref.watch(totalMoveCountProvider).valueOrNull ?? 0;
-
-    // Full empty state when no moves exist at all
     if (totalMoves == 0) return const _ReviewEmptyState();
 
-    final masteryAsync = ref.watch(categoryMasteryProvider);
+    final reviewSource = ref.watch(reviewSessionSourceProvider);
     final dueAsync = ref.watch(dueSummaryProvider);
-    final categories = ref.watch(categoriesProvider);
     final colorScheme = Theme.of(context).colorScheme;
 
     return CustomScrollView(
       slivers: [
-        // Saved Decks — horizontal scroll
         SliverPadding(
           padding: const EdgeInsets.symmetric(
             horizontal: AppSpacing.screenEdge,
-          ),
-          sliver: SliverToBoxAdapter(
-            child: _DecksSection(
-              onStartDeck: (deck) => _startDeckSession(ref, deck),
-            ),
-          ),
-        ),
-        const SliverToBoxAdapter(child: SizedBox(height: AppSpacing.md)),
-
-        // Category mastery grid
-        masteryAsync.when(
-          loading: () => const SliverToBoxAdapter(
-            child: Center(child: CircularProgressIndicator()),
-          ),
-          error: (e, _) => SliverToBoxAdapter(
-            child: Center(child: Text('Error: $e')),
-          ),
-          data: (masteryList) {
-            if (masteryList.isEmpty) {
-              return const SliverToBoxAdapter(child: SizedBox.shrink());
-            }
-
-            return SliverPadding(
-              padding: const EdgeInsets.symmetric(
-                horizontal: AppSpacing.screenEdge,
-              ),
-              sliver: SliverList.builder(
-                itemCount: masteryList.length,
-                itemBuilder: (context, index) {
-                  final mastery = masteryList[index];
-                  final cat = categories
-                      .where((c) => c.name == mastery.category)
-                      .firstOrNull;
-                  final catColor = cat?.color ?? AppColors.accent;
-
-                  return Padding(
-                    padding: const EdgeInsets.only(bottom: AppSpacing.sm),
-                    child: _CategoryMasteryCard(
-                      mastery: mastery,
-                      categoryColor: catColor,
-                      onStart: () => _startSession(ref, mastery.category),
-                    ),
-                  )
-                      .animate()
-                      .fadeIn(
-                        duration: AppMotion.moderate01,
-                        delay: Duration(milliseconds: index * 40),
-                      )
-                      .slideY(
-                        begin: 0.03,
-                        duration: AppMotion.moderate02,
-                        delay: Duration(milliseconds: index * 40),
-                      );
-                },
-              ),
-            );
-          },
-        ),
-
-        // NEW / LEARN / MASTERY triptych — above Start All for quick glance
-        SliverPadding(
-          padding: const EdgeInsets.symmetric(
-            horizontal: AppSpacing.screenEdge,
-            vertical: AppSpacing.sm,
           ),
           sliver: SliverToBoxAdapter(
             child: dueAsync.when(
-              loading: () => const Center(
-                child: SizedBox(
-                  width: 20, height: 20,
-                  child: CircularProgressIndicator(strokeWidth: 2),
+              loading: () => const Padding(
+                padding: EdgeInsets.symmetric(vertical: AppSpacing.md),
+                child: Center(
+                  child: SizedBox(
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  ),
                 ),
               ),
               error: (_, _) => const SizedBox.shrink(),
-              data: (summary) => summary.totalDueNow == 0
-                  ? Center(
-                      child: Padding(
-                        padding: const EdgeInsets.symmetric(
-                          vertical: AppSpacing.md,
-                        ),
-                        child: Text(
-                          'All caught up',
-                          style: AppTypography.bodyMedium.copyWith(
-                            color: colorScheme.secondary,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                      ),
-                    )
-                  : Center(
-                      child: Padding(
-                        padding: const EdgeInsets.symmetric(
-                          vertical: AppSpacing.md,
-                        ),
-                        child: Text(
-                          '${summary.totalDueNow} due today',
-                          style: AppTypography.titleSmall.copyWith(
-                            color: colorScheme.onSurface,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
+              data: (summary) => Padding(
+                padding: const EdgeInsets.only(bottom: AppSpacing.md),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      summary.totalDueNow == 0
+                          ? 'All caught up'
+                          : '${summary.totalDueNow} due today',
+                      style: AppTypography.titleSmall.copyWith(
+                        color: summary.totalDueNow == 0
+                            ? colorScheme.secondary
+                            : colorScheme.onSurface,
+                        fontWeight: FontWeight.w700,
                       ),
                     ),
-            ),
-          ),
-        ),
-
-        // Start All button
-        SliverPadding(
-          padding: const EdgeInsets.fromLTRB(
-            AppSpacing.screenEdge, AppSpacing.md, AppSpacing.screenEdge, AppSpacing.xl,
-          ),
-          sliver: SliverToBoxAdapter(
-            child: SizedBox(
-              height: 50,
-              child: ElevatedButton(
-                onPressed: () => _startSession(ref, null),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.accent,
-                  foregroundColor: Colors.white,
-                  elevation: 0,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(AppRadius.lg),
-                  ),
-                  textStyle: AppTypography.bodyMedium.copyWith(
-                    fontWeight: FontWeight.w700,
-                  ),
+                    const SizedBox(height: AppSpacing.xs),
+                    Text(
+                      'Choose a review source for this session.',
+                      style: AppTypography.bodySmall.copyWith(
+                        color: colorScheme.secondary,
+                      ),
+                    ),
+                  ],
                 ),
-                child: const Text('Start All'),
               ),
             ),
           ),
         ),
+        SliverPadding(
+          padding: const EdgeInsets.symmetric(
+            horizontal: AppSpacing.screenEdge,
+          ),
+          sliver: SliverToBoxAdapter(
+            child: _SourceSelector(
+              source: reviewSource,
+              onChanged: (source) {
+                HapticFeedback.selectionClick();
+                ref.read(reviewSessionSourceProvider.notifier).set(source);
+                ref.read(reviewSessionTargetMoveIdsProvider.notifier).state =
+                    null;
+                if (source == ReviewSessionSource.stateBased) {
+                  ref.read(selectedDeckProvider.notifier).state = null;
+                } else {
+                  ref.read(reviewStateFilterProvider.notifier).state = null;
+                }
+              },
+            ),
+          ),
+        ),
+        const SliverToBoxAdapter(child: SizedBox(height: AppSpacing.lg)),
+        if (reviewSource == ReviewSessionSource.stateBased)
+          const _StateModeSection()
+        else
+          SliverPadding(
+            padding: const EdgeInsets.symmetric(
+              horizontal: AppSpacing.screenEdge,
+            ),
+            sliver: SliverToBoxAdapter(
+              child: _DecksSection(
+                onStartDeck: (deck) => _startDeckSession(ref, deck),
+              ),
+            ),
+          ),
+        const SliverToBoxAdapter(child: SizedBox(height: AppSpacing.xl)),
       ],
     );
   }
 
-  void _startSession(WidgetRef ref, String? category) {
-    HapticFeedback.mediumImpact();
-    ref.read(selectedDeckProvider.notifier).state = null;
-    ref.read(reviewCategoryFilterProvider.notifier).state = category;
-    ref.read(reviewSessionActiveProvider.notifier).state = true;
-  }
-
   void _startDeckSession(WidgetRef ref, Deck deck) {
     HapticFeedback.mediumImpact();
+    ref
+        .read(reviewSessionSourceProvider.notifier)
+        .set(ReviewSessionSource.deck);
     ref.read(selectedDeckProvider.notifier).state = deck;
+    ref.read(reviewStateFilterProvider.notifier).state = null;
+    ref.read(reviewSessionTargetMoveIdsProvider.notifier).state = null;
+    refreshReviewSession(ref);
     ref.read(reviewSessionActiveProvider.notifier).state = true;
   }
 }
 
-/// A card showing mastery info for a single category.
-class _CategoryMasteryCard extends StatelessWidget {
-  const _CategoryMasteryCard({
-    required this.mastery,
-    required this.categoryColor,
+class _SourceSelector extends StatelessWidget {
+  const _SourceSelector({required this.source, required this.onChanged});
+
+  final ReviewSessionSource source;
+  final ValueChanged<ReviewSessionSource> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    return SegmentedButton<ReviewSessionSource>(
+      segments: const [
+        ButtonSegment<ReviewSessionSource>(
+          value: ReviewSessionSource.stateBased,
+          icon: Icon(Icons.tune_rounded, size: 18),
+          label: Text('State'),
+        ),
+        ButtonSegment<ReviewSessionSource>(
+          value: ReviewSessionSource.deck,
+          icon: Icon(Icons.style_rounded, size: 18),
+          label: Text('Deck'),
+        ),
+      ],
+      selected: {source},
+      showSelectedIcon: false,
+      onSelectionChanged: (selection) => onChanged(selection.first),
+    );
+  }
+}
+
+class _StateModeSection extends ConsumerWidget {
+  const _StateModeSection();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final countsAsync = ref.watch(moveStateCountsProvider);
+
+    return countsAsync.when(
+      loading: () => const SliverToBoxAdapter(
+        child: Center(child: CircularProgressIndicator()),
+      ),
+      error: (e, _) =>
+          SliverToBoxAdapter(child: Center(child: Text('Error: $e'))),
+      data: (counts) {
+        final items = [
+          (
+            state: LearningState.newState,
+            title: 'New',
+            subtitle: 'Fresh cards waiting for first reps',
+            icon: Icons.fiber_new_rounded,
+          ),
+          (
+            state: LearningState.learning,
+            title: 'Learning',
+            subtitle: 'Cards still settling into memory',
+            icon: Icons.school_outlined,
+          ),
+          (
+            state: LearningState.mastery,
+            title: 'Mastery',
+            subtitle: 'Cards already in longer-term rotation',
+            icon: Icons.verified_rounded,
+          ),
+        ];
+
+        return SliverPadding(
+          padding: const EdgeInsets.symmetric(
+            horizontal: AppSpacing.screenEdge,
+          ),
+          sliver: SliverList(
+            delegate: SliverChildBuilderDelegate((context, index) {
+              if (index == items.length) {
+                return Padding(
+                  padding: const EdgeInsets.only(top: AppSpacing.lg),
+                  child: SizedBox(
+                    height: 50,
+                    child: ElevatedButton(
+                      onPressed: () => _startStateSession(ref, null),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.accent,
+                        foregroundColor: Colors.white,
+                        elevation: 0,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(AppRadius.lg),
+                        ),
+                      ),
+                      child: const Text('Start All'),
+                    ),
+                  ),
+                );
+              }
+
+              final item = items[index];
+              final count = counts[item.state] ?? 0;
+              return Padding(
+                    padding: const EdgeInsets.only(bottom: AppSpacing.sm),
+                    child: _StateSessionCard(
+                      title: item.title,
+                      subtitle: item.subtitle,
+                      count: count,
+                      color: item.state.color,
+                      icon: item.icon,
+                      onStart: () => _startStateSession(ref, item.state),
+                    ),
+                  )
+                  .animate()
+                  .fadeIn(
+                    duration: AppMotion.moderate01,
+                    delay: Duration(milliseconds: index * 40),
+                  )
+                  .slideY(
+                    begin: 0.03,
+                    duration: AppMotion.moderate02,
+                    delay: Duration(milliseconds: index * 40),
+                  );
+            }, childCount: items.length + 1),
+          ),
+        );
+      },
+    );
+  }
+
+  void _startStateSession(WidgetRef ref, LearningState? state) {
+    HapticFeedback.mediumImpact();
+    ref
+        .read(reviewSessionSourceProvider.notifier)
+        .set(ReviewSessionSource.stateBased);
+    ref.read(selectedDeckProvider.notifier).state = null;
+    ref.read(reviewSessionTargetMoveIdsProvider.notifier).state = null;
+    ref.read(reviewStateFilterProvider.notifier).state = state;
+    refreshReviewSession(ref);
+    ref.read(reviewSessionActiveProvider.notifier).state = true;
+  }
+}
+
+class _StateSessionCard extends StatelessWidget {
+  const _StateSessionCard({
+    required this.title,
+    required this.subtitle,
+    required this.count,
+    required this.color,
+    required this.icon,
     required this.onStart,
   });
 
-  final CategoryMastery mastery;
-  final Color categoryColor;
+  final String title;
+  final String subtitle;
+  final int count;
+  final Color color;
+  final IconData icon;
   final VoidCallback onStart;
 
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
-    final pct = (mastery.masteryPercent * 100).round();
 
     return Container(
       padding: const EdgeInsets.all(AppSpacing.md),
       decoration: BoxDecoration(
         color: colorScheme.surfaceContainerHighest,
         borderRadius: BorderRadius.circular(AppRadius.md),
+        border: Border.all(color: color.withValues(alpha: 0.2)),
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+      child: Row(
         children: [
-          // Header row: color dot + name + due badge + start button
-          Row(
-            children: [
-              Container(
-                width: 10,
-                height: 10,
-                decoration: BoxDecoration(
-                  color: categoryColor,
-                  shape: BoxShape.circle,
-                ),
-              ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Text(
-                  mastery.category,
+          Container(
+            width: 44,
+            height: 44,
+            decoration: BoxDecoration(
+              color: color.withValues(alpha: 0.12),
+              borderRadius: BorderRadius.circular(AppRadius.sm),
+            ),
+            child: Icon(icon, color: color),
+          ),
+          const SizedBox(width: AppSpacing.md),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
                   style: AppTypography.bodyMedium.copyWith(
                     color: colorScheme.onSurface,
-                    fontWeight: FontWeight.w600,
+                    fontWeight: FontWeight.w700,
                   ),
                 ),
-              ),
-              if (mastery.dueCount > 0) ...[
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 8,
-                    vertical: 2,
-                  ),
-                  decoration: BoxDecoration(
-                    color: AppColors.actionAgain.withValues(alpha: 0.15),
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  child: Text(
-                    '${mastery.dueCount} due',
-                    style: AppTypography.caption.copyWith(
-                      color: AppColors.actionAgain,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 8),
-              ],
-              // Apple HIG: minimum 44pt touch target
-              SizedBox(
-                height: 44,
-                child: TextButton(
-                  onPressed: onStart,
-                  style: TextButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
-                    minimumSize: const Size(44, 44),
-                  ),
-                  child: Text(
-                    'Start',
-                    style: AppTypography.bodySmall.copyWith(
-                      color: AppColors.accent,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: AppSpacing.sm),
-
-          // Mastery progress bar with progressive disclosure:
-          // 0% → lower opacity bar, no text. 100% → checkmark icon.
-          Row(
-            children: [
-              Expanded(
-                child: Opacity(
-                  opacity: pct == 0 ? 0.4 : 1.0,
-                  child: ClipRRect(
-                    borderRadius: BorderRadius.circular(4),
-                    child: LinearProgressIndicator(
-                      value: mastery.masteryPercent,
-                      backgroundColor: colorScheme.surfaceContainerHigh,
-                      color: AppColors.stateMastery,
-                      minHeight: 6,
-                    ),
-                  ),
-                ),
-              ),
-              const SizedBox(width: 8),
-              if (pct == 100)
-                Icon(Icons.check_circle, size: 16, color: AppColors.stateMastery)
-              else if (pct > 0)
+                const SizedBox(height: 2),
                 Text(
-                  '$pct%',
+                  subtitle,
                   style: AppTypography.caption.copyWith(
                     color: colorScheme.secondary,
-                    fontWeight: FontWeight.w600,
                   ),
-                )
-              else
-                const SizedBox(width: 16),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: AppSpacing.sm),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              Text(
+                '$count',
+                style: AppTypography.titleSmall.copyWith(
+                  color: colorScheme.onSurface,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+              const SizedBox(height: 2),
+              TextButton(
+                onPressed: onStart,
+                style: TextButton.styleFrom(minimumSize: const Size(44, 44)),
+                child: const Text('Start'),
+              ),
             ],
           ),
         ],
@@ -323,7 +353,7 @@ class _CategoryMasteryCard extends StatelessWidget {
 }
 
 /// Decks section with progressive disclosure:
-/// - Empty: single-line "Create a deck" link (no header, no 100px scroll area)
+/// - Empty: single-line "Create a deck" link
 /// - Non-empty: horizontal scroll of deck cards + create button
 class _DecksSection extends ConsumerWidget {
   const _DecksSection({required this.onStartDeck});
@@ -340,14 +370,14 @@ class _DecksSection extends ConsumerWidget {
         height: 20,
         child: Center(
           child: SizedBox(
-            width: 16, height: 16,
+            width: 16,
+            height: 16,
             child: CircularProgressIndicator(strokeWidth: 2),
           ),
         ),
       ),
       error: (_, _) => const SizedBox.shrink(),
       data: (decks) {
-        // Collapsed single-line when empty
         if (decks.isEmpty) {
           return GestureDetector(
             onTap: () => CreateDeckSheet.show(context),
@@ -370,15 +400,21 @@ class _DecksSection extends ConsumerWidget {
           );
         }
 
-        // Full deck list with horizontal scroll
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'Decks',
+              'Saved Decks',
               style: AppTypography.caption.copyWith(
                 color: colorScheme.secondary,
                 fontWeight: FontWeight.w600,
+              ),
+            ),
+            const SizedBox(height: AppSpacing.xs),
+            Text(
+              'Deck sessions use the deck’s own card filter and membership.',
+              style: AppTypography.bodySmall.copyWith(
+                color: colorScheme.secondary,
               ),
             ),
             const SizedBox(height: AppSpacing.sm),
@@ -391,30 +427,25 @@ class _DecksSection extends ConsumerWidget {
                     DeckCard(
                       deck: deck,
                       onTap: () => onStartDeck(deck),
-                      onLongPress: () =>
-                          _confirmDelete(context, ref, deck),
+                      onLongPress: () => _confirmDelete(context, ref, deck),
                     ),
                     const SizedBox(width: AppSpacing.sm),
                   ],
-                  // Create button
                   GestureDetector(
                     onTap: () => CreateDeckSheet.show(context),
                     child: Container(
                       width: 80,
                       decoration: BoxDecoration(
                         color: colorScheme.surfaceContainerHighest,
-                        borderRadius:
-                            BorderRadius.circular(AppRadius.md),
+                        borderRadius: BorderRadius.circular(AppRadius.md),
                         border: Border.all(
-                          color: colorScheme.outline
-                              .withValues(alpha: 0.3),
+                          color: colorScheme.outline.withValues(alpha: 0.3),
                         ),
                       ),
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          Icon(Icons.add,
-                              color: AppColors.accent, size: 24),
+                          Icon(Icons.add, color: AppColors.accent, size: 24),
                           const SizedBox(height: 4),
                           Text(
                             'Create',
@@ -442,7 +473,7 @@ class _DecksSection extends ConsumerWidget {
       builder: (ctx) => AlertDialog(
         title: Text('Delete "${deck.name}"?'),
         content: const Text(
-          'This will remove the deck. Your moves won\'t be affected.',
+          'This will remove the deck. Your moves won’t be affected.',
         ),
         actions: [
           TextButton(
@@ -466,8 +497,10 @@ class _DecksSection extends ConsumerWidget {
                 }
               }
             },
-            child: const Text('Delete',
-                style: TextStyle(color: AppColors.actionAgain)),
+            child: const Text(
+              'Delete',
+              style: TextStyle(color: AppColors.actionAgain),
+            ),
           ),
         ],
       ),
@@ -475,13 +508,6 @@ class _DecksSection extends ConsumerWidget {
   }
 }
 
-// -- Full Empty State --------------------------------------------------------
-
-/// Shown when the user has zero moves in their breakdex.
-///
-/// Three overlapping rounded rectangles (fanned at slight angles) in state
-/// colors evoke a deck of cards waiting to be filled, with staggered entrance
-/// animations for polish.
 class _ReviewEmptyState extends StatelessWidget {
   const _ReviewEmptyState();
 
@@ -495,61 +521,61 @@ class _ReviewEmptyState extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            // Decorative fanned card shapes
             SizedBox(
               height: 100,
               width: 120,
               child: Stack(
                 alignment: Alignment.center,
                 children: [
-                  // Back card (rotated left)
                   Transform.rotate(
-                    angle: -0.12,
-                    child: Container(
-                      width: 80,
-                      height: 60,
-                      decoration: BoxDecoration(
-                        color: AppColors.stateNew.withValues(alpha: 0.15),
-                        borderRadius: BorderRadius.circular(AppRadius.md),
-                      ),
-                    ),
-                  )
+                        angle: -0.12,
+                        child: Container(
+                          width: 80,
+                          height: 60,
+                          decoration: BoxDecoration(
+                            color: AppColors.stateNew.withValues(alpha: 0.15),
+                            borderRadius: BorderRadius.circular(AppRadius.md),
+                          ),
+                        ),
+                      )
                       .animate()
                       .fadeIn(
-                          duration: AppMotion.moderate02,
-                          delay: const Duration(milliseconds: 80))
+                        duration: AppMotion.moderate02,
+                        delay: const Duration(milliseconds: 80),
+                      )
                       .slideY(begin: 0.1),
-                  // Middle card (rotated right)
                   Transform.rotate(
-                    angle: 0.08,
-                    child: Container(
-                      width: 80,
-                      height: 60,
-                      decoration: BoxDecoration(
-                        color:
-                            AppColors.stateLearning.withValues(alpha: 0.15),
-                        borderRadius: BorderRadius.circular(AppRadius.md),
-                      ),
-                    ),
-                  )
+                        angle: 0.08,
+                        child: Container(
+                          width: 80,
+                          height: 60,
+                          decoration: BoxDecoration(
+                            color: AppColors.stateLearning.withValues(
+                              alpha: 0.15,
+                            ),
+                            borderRadius: BorderRadius.circular(AppRadius.md),
+                          ),
+                        ),
+                      )
                       .animate()
                       .fadeIn(
-                          duration: AppMotion.moderate02,
-                          delay: const Duration(milliseconds: 160))
+                        duration: AppMotion.moderate02,
+                        delay: const Duration(milliseconds: 160),
+                      )
                       .slideY(begin: 0.1),
-                  // Front card (centered)
                   Container(
-                    width: 80,
-                    height: 60,
-                    decoration: BoxDecoration(
-                      color: AppColors.stateMastery.withValues(alpha: 0.15),
-                      borderRadius: BorderRadius.circular(AppRadius.md),
-                    ),
-                  )
+                        width: 80,
+                        height: 60,
+                        decoration: BoxDecoration(
+                          color: AppColors.stateMastery.withValues(alpha: 0.15),
+                          borderRadius: BorderRadius.circular(AppRadius.md),
+                        ),
+                      )
                       .animate()
                       .fadeIn(
-                          duration: AppMotion.moderate02,
-                          delay: const Duration(milliseconds: 240))
+                        duration: AppMotion.moderate02,
+                        delay: const Duration(milliseconds: 240),
+                      )
                       .slideY(begin: 0.1),
                 ],
               ),

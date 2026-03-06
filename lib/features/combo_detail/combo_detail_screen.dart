@@ -15,7 +15,8 @@ import '../../core/models/learning_state.dart';
 import '../../core/providers.dart';
 import '../../shared/widgets/state_pill.dart';
 import '../../shared/widgets/timeline_node.dart';
-import '../../shared/widgets/video_player_widget.dart' show RobustVideoPlayer, VideoPlaceholder;
+import '../../shared/widgets/video_player_widget.dart'
+    show RobustVideoPlayer, VideoPlaceholder;
 
 class ComboDetailScreen extends ConsumerStatefulWidget {
   const ComboDetailScreen({super.key, required this.comboId});
@@ -34,9 +35,12 @@ class _ComboDetailScreenState extends ConsumerState<ComboDetailScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final comboStream = ref.watch(comboRepositoryProvider).watchById(widget.comboId);
-    final comboMovesStream =
-        ref.watch(comboRepositoryProvider).watchComboMoves(widget.comboId);
+    final comboStream = ref
+        .watch(comboRepositoryProvider)
+        .watchById(widget.comboId);
+    final comboMovesStream = ref
+        .watch(comboRepositoryProvider)
+        .watchComboMoves(widget.comboId);
     final colorScheme = Theme.of(context).colorScheme;
 
     return Scaffold(
@@ -54,12 +58,16 @@ class _ComboDetailScreenState extends ConsumerState<ComboDetailScreen> {
                 final combo = comboSnap.data!;
                 final comboMoves = movesSnap.data!;
                 final safeIndex = _activeIndex.clamp(
-                    0, comboMoves.isEmpty ? 0 : comboMoves.length - 1);
-                final currentMove =
-                    comboMoves.isNotEmpty ? comboMoves[safeIndex].move : null;
+                  0,
+                  comboMoves.isEmpty ? 0 : comboMoves.length - 1,
+                );
+                final currentMove = comboMoves.isNotEmpty
+                    ? comboMoves[safeIndex].move
+                    : null;
                 final states = comboMoves
-                    .map((cm) =>
-                        LearningState.fromString(cm.move.learningState))
+                    .map(
+                      (cm) => LearningState.fromString(cm.move.learningState),
+                    )
                     .toList();
                 final overallState = compositeState(states);
 
@@ -74,8 +82,11 @@ class _ComboDetailScreenState extends ConsumerState<ComboDetailScreen> {
                             onTap: () => context.pop(),
                             child: Row(
                               children: [
-                                Icon(Icons.chevron_left,
-                                    color: colorScheme.secondary, size: 20),
+                                Icon(
+                                  Icons.chevron_left,
+                                  color: colorScheme.secondary,
+                                  size: 20,
+                                ),
                                 Text(
                                   'Combo',
                                   style: AppTypography.bodyMedium.copyWith(
@@ -157,11 +168,12 @@ class _ComboDetailScreenState extends ConsumerState<ComboDetailScreen> {
                           left: 12,
                           child: Container(
                             padding: const EdgeInsets.symmetric(
-                                horizontal: 10, vertical: 5),
+                              horizontal: 10,
+                              vertical: 5,
+                            ),
                             decoration: BoxDecoration(
                               color: Colors.black54,
-                              borderRadius:
-                                  BorderRadius.circular(AppRadius.sm),
+                              borderRadius: BorderRadius.circular(AppRadius.sm),
                             ),
                             child: Text(
                               currentMove.name,
@@ -189,7 +201,8 @@ class _ComboDetailScreenState extends ConsumerState<ComboDetailScreen> {
                         children: [
                           StatePill(
                             state: LearningState.fromString(
-                                currentMove.learningState),
+                              currentMove.learningState,
+                            ),
                           ),
                         ],
                       ),
@@ -222,17 +235,18 @@ class _ComboDetailScreenState extends ConsumerState<ComboDetailScreen> {
   /// Opens the video editor for a combo move's video and updates the move on return.
   Future<void> _editVideo(Move move) async {
     if (move.videoPath == null) return;
+    final originalPath = move.videoPath;
     final editedPath = await context.push<String>(
       '/video-editor',
       extra: {'videoPath': move.videoPath},
     );
     if (editedPath != null && mounted) {
-      await ref.read(moveRepositoryProvider).update(
-        MovesCompanion(
-          id: Value(move.id),
-          videoPath: Value(editedPath),
-        ),
-      );
+      await ref
+          .read(moveRepositoryProvider)
+          .update(
+            MovesCompanion(id: Value(move.id), videoPath: Value(editedPath)),
+          );
+      await ref.read(videoServiceProvider).replaceVideo(originalPath);
     }
   }
 
