@@ -62,6 +62,18 @@ class $MovesTable extends Moves with TableInfo<$MovesTable, Move> {
     type: DriftSqlType.string,
     requiredDuringInsert: false,
   );
+  static const VerificationMeta _originalVideoNameMeta = const VerificationMeta(
+    'originalVideoName',
+  );
+  @override
+  late final GeneratedColumn<String> originalVideoName =
+      GeneratedColumn<String>(
+        'original_video_name',
+        aliasedName,
+        true,
+        type: DriftSqlType.string,
+        requiredDuringInsert: false,
+      );
   static const VerificationMeta _createdAtMeta = const VerificationMeta(
     'createdAt',
   );
@@ -81,6 +93,7 @@ class $MovesTable extends Moves with TableInfo<$MovesTable, Move> {
     learningState,
     category,
     videoPath,
+    originalVideoName,
     createdAt,
   ];
   @override
@@ -129,6 +142,15 @@ class $MovesTable extends Moves with TableInfo<$MovesTable, Move> {
         videoPath.isAcceptableOrUnknown(data['video_path']!, _videoPathMeta),
       );
     }
+    if (data.containsKey('original_video_name')) {
+      context.handle(
+        _originalVideoNameMeta,
+        originalVideoName.isAcceptableOrUnknown(
+          data['original_video_name']!,
+          _originalVideoNameMeta,
+        ),
+      );
+    }
     if (data.containsKey('created_at')) {
       context.handle(
         _createdAtMeta,
@@ -164,6 +186,10 @@ class $MovesTable extends Moves with TableInfo<$MovesTable, Move> {
         DriftSqlType.string,
         data['${effectivePrefix}video_path'],
       ),
+      originalVideoName: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}original_video_name'],
+      ),
       createdAt: attachedDatabase.typeMapping.read(
         DriftSqlType.dateTime,
         data['${effectivePrefix}created_at'],
@@ -183,6 +209,7 @@ class Move extends DataClass implements Insertable<Move> {
   final String learningState;
   final String category;
   final String? videoPath;
+  final String? originalVideoName;
   final DateTime createdAt;
   const Move({
     required this.id,
@@ -190,6 +217,7 @@ class Move extends DataClass implements Insertable<Move> {
     required this.learningState,
     required this.category,
     this.videoPath,
+    this.originalVideoName,
     required this.createdAt,
   });
   @override
@@ -201,6 +229,9 @@ class Move extends DataClass implements Insertable<Move> {
     map['category'] = Variable<String>(category);
     if (!nullToAbsent || videoPath != null) {
       map['video_path'] = Variable<String>(videoPath);
+    }
+    if (!nullToAbsent || originalVideoName != null) {
+      map['original_video_name'] = Variable<String>(originalVideoName);
     }
     map['created_at'] = Variable<DateTime>(createdAt);
     return map;
@@ -215,6 +246,9 @@ class Move extends DataClass implements Insertable<Move> {
       videoPath: videoPath == null && nullToAbsent
           ? const Value.absent()
           : Value(videoPath),
+      originalVideoName: originalVideoName == null && nullToAbsent
+          ? const Value.absent()
+          : Value(originalVideoName),
       createdAt: Value(createdAt),
     );
   }
@@ -230,6 +264,9 @@ class Move extends DataClass implements Insertable<Move> {
       learningState: serializer.fromJson<String>(json['learningState']),
       category: serializer.fromJson<String>(json['category']),
       videoPath: serializer.fromJson<String?>(json['videoPath']),
+      originalVideoName: serializer.fromJson<String?>(
+        json['originalVideoName'],
+      ),
       createdAt: serializer.fromJson<DateTime>(json['createdAt']),
     );
   }
@@ -242,6 +279,7 @@ class Move extends DataClass implements Insertable<Move> {
       'learningState': serializer.toJson<String>(learningState),
       'category': serializer.toJson<String>(category),
       'videoPath': serializer.toJson<String?>(videoPath),
+      'originalVideoName': serializer.toJson<String?>(originalVideoName),
       'createdAt': serializer.toJson<DateTime>(createdAt),
     };
   }
@@ -252,6 +290,7 @@ class Move extends DataClass implements Insertable<Move> {
     String? learningState,
     String? category,
     Value<String?> videoPath = const Value.absent(),
+    Value<String?> originalVideoName = const Value.absent(),
     DateTime? createdAt,
   }) => Move(
     id: id ?? this.id,
@@ -259,6 +298,9 @@ class Move extends DataClass implements Insertable<Move> {
     learningState: learningState ?? this.learningState,
     category: category ?? this.category,
     videoPath: videoPath.present ? videoPath.value : this.videoPath,
+    originalVideoName: originalVideoName.present
+        ? originalVideoName.value
+        : this.originalVideoName,
     createdAt: createdAt ?? this.createdAt,
   );
   Move copyWithCompanion(MovesCompanion data) {
@@ -270,6 +312,9 @@ class Move extends DataClass implements Insertable<Move> {
           : this.learningState,
       category: data.category.present ? data.category.value : this.category,
       videoPath: data.videoPath.present ? data.videoPath.value : this.videoPath,
+      originalVideoName: data.originalVideoName.present
+          ? data.originalVideoName.value
+          : this.originalVideoName,
       createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
     );
   }
@@ -282,14 +327,22 @@ class Move extends DataClass implements Insertable<Move> {
           ..write('learningState: $learningState, ')
           ..write('category: $category, ')
           ..write('videoPath: $videoPath, ')
+          ..write('originalVideoName: $originalVideoName, ')
           ..write('createdAt: $createdAt')
           ..write(')'))
         .toString();
   }
 
   @override
-  int get hashCode =>
-      Object.hash(id, name, learningState, category, videoPath, createdAt);
+  int get hashCode => Object.hash(
+    id,
+    name,
+    learningState,
+    category,
+    videoPath,
+    originalVideoName,
+    createdAt,
+  );
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -299,6 +352,7 @@ class Move extends DataClass implements Insertable<Move> {
           other.learningState == this.learningState &&
           other.category == this.category &&
           other.videoPath == this.videoPath &&
+          other.originalVideoName == this.originalVideoName &&
           other.createdAt == this.createdAt);
 }
 
@@ -308,6 +362,7 @@ class MovesCompanion extends UpdateCompanion<Move> {
   final Value<String> learningState;
   final Value<String> category;
   final Value<String?> videoPath;
+  final Value<String?> originalVideoName;
   final Value<DateTime> createdAt;
   final Value<int> rowid;
   const MovesCompanion({
@@ -316,6 +371,7 @@ class MovesCompanion extends UpdateCompanion<Move> {
     this.learningState = const Value.absent(),
     this.category = const Value.absent(),
     this.videoPath = const Value.absent(),
+    this.originalVideoName = const Value.absent(),
     this.createdAt = const Value.absent(),
     this.rowid = const Value.absent(),
   });
@@ -325,6 +381,7 @@ class MovesCompanion extends UpdateCompanion<Move> {
     this.learningState = const Value.absent(),
     this.category = const Value.absent(),
     this.videoPath = const Value.absent(),
+    this.originalVideoName = const Value.absent(),
     this.createdAt = const Value.absent(),
     this.rowid = const Value.absent(),
   }) : id = Value(id),
@@ -335,6 +392,7 @@ class MovesCompanion extends UpdateCompanion<Move> {
     Expression<String>? learningState,
     Expression<String>? category,
     Expression<String>? videoPath,
+    Expression<String>? originalVideoName,
     Expression<DateTime>? createdAt,
     Expression<int>? rowid,
   }) {
@@ -344,6 +402,7 @@ class MovesCompanion extends UpdateCompanion<Move> {
       if (learningState != null) 'learning_state': learningState,
       if (category != null) 'category': category,
       if (videoPath != null) 'video_path': videoPath,
+      if (originalVideoName != null) 'original_video_name': originalVideoName,
       if (createdAt != null) 'created_at': createdAt,
       if (rowid != null) 'rowid': rowid,
     });
@@ -355,6 +414,7 @@ class MovesCompanion extends UpdateCompanion<Move> {
     Value<String>? learningState,
     Value<String>? category,
     Value<String?>? videoPath,
+    Value<String?>? originalVideoName,
     Value<DateTime>? createdAt,
     Value<int>? rowid,
   }) {
@@ -364,6 +424,7 @@ class MovesCompanion extends UpdateCompanion<Move> {
       learningState: learningState ?? this.learningState,
       category: category ?? this.category,
       videoPath: videoPath ?? this.videoPath,
+      originalVideoName: originalVideoName ?? this.originalVideoName,
       createdAt: createdAt ?? this.createdAt,
       rowid: rowid ?? this.rowid,
     );
@@ -387,6 +448,9 @@ class MovesCompanion extends UpdateCompanion<Move> {
     if (videoPath.present) {
       map['video_path'] = Variable<String>(videoPath.value);
     }
+    if (originalVideoName.present) {
+      map['original_video_name'] = Variable<String>(originalVideoName.value);
+    }
     if (createdAt.present) {
       map['created_at'] = Variable<DateTime>(createdAt.value);
     }
@@ -404,6 +468,7 @@ class MovesCompanion extends UpdateCompanion<Move> {
           ..write('learningState: $learningState, ')
           ..write('category: $category, ')
           ..write('videoPath: $videoPath, ')
+          ..write('originalVideoName: $originalVideoName, ')
           ..write('createdAt: $createdAt, ')
           ..write('rowid: $rowid')
           ..write(')'))
@@ -1054,6 +1119,42 @@ class $ReviewsTable extends Reviews with TableInfo<$ReviewsTable, Review> {
       'REFERENCES moves (id) ON DELETE SET NULL',
     ),
   );
+  static const VerificationMeta _comboIdMeta = const VerificationMeta(
+    'comboId',
+  );
+  @override
+  late final GeneratedColumn<String> comboId = GeneratedColumn<String>(
+    'combo_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES combos (id) ON DELETE SET NULL',
+    ),
+  );
+  static const VerificationMeta _fsrsPreStateMeta = const VerificationMeta(
+    'fsrsPreState',
+  );
+  @override
+  late final GeneratedColumn<int> fsrsPreState = GeneratedColumn<int>(
+    'fsrs_pre_state',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _fsrsPostStateMeta = const VerificationMeta(
+    'fsrsPostState',
+  );
+  @override
+  late final GeneratedColumn<int> fsrsPostState = GeneratedColumn<int>(
+    'fsrs_post_state',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
   @override
   List<GeneratedColumn> get $columns => [
     id,
@@ -1061,6 +1162,9 @@ class $ReviewsTable extends Reviews with TableInfo<$ReviewsTable, Review> {
     reviewType,
     reviewedAt,
     moveId,
+    comboId,
+    fsrsPreState,
+    fsrsPostState,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -1107,6 +1211,30 @@ class $ReviewsTable extends Reviews with TableInfo<$ReviewsTable, Review> {
         moveId.isAcceptableOrUnknown(data['move_id']!, _moveIdMeta),
       );
     }
+    if (data.containsKey('combo_id')) {
+      context.handle(
+        _comboIdMeta,
+        comboId.isAcceptableOrUnknown(data['combo_id']!, _comboIdMeta),
+      );
+    }
+    if (data.containsKey('fsrs_pre_state')) {
+      context.handle(
+        _fsrsPreStateMeta,
+        fsrsPreState.isAcceptableOrUnknown(
+          data['fsrs_pre_state']!,
+          _fsrsPreStateMeta,
+        ),
+      );
+    }
+    if (data.containsKey('fsrs_post_state')) {
+      context.handle(
+        _fsrsPostStateMeta,
+        fsrsPostState.isAcceptableOrUnknown(
+          data['fsrs_post_state']!,
+          _fsrsPostStateMeta,
+        ),
+      );
+    }
     return context;
   }
 
@@ -1136,6 +1264,18 @@ class $ReviewsTable extends Reviews with TableInfo<$ReviewsTable, Review> {
         DriftSqlType.string,
         data['${effectivePrefix}move_id'],
       ),
+      comboId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}combo_id'],
+      ),
+      fsrsPreState: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}fsrs_pre_state'],
+      ),
+      fsrsPostState: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}fsrs_post_state'],
+      ),
     );
   }
 
@@ -1151,12 +1291,29 @@ class Review extends DataClass implements Insertable<Review> {
   final String reviewType;
   final DateTime reviewedAt;
   final String? moveId;
+
+  /// FK to combos — set when reviewing a combo. Nullable because most
+  /// reviews are move reviews. Added in schema v8 alongside FSRS combo support.
+  final String? comboId;
+
+  /// FSRS card state *before* this review was processed.
+  /// Null for legacy reviews recorded before the streaks redesign.
+  /// Values: 0=New, 1=Learning, 2=Review, 3=Relearning.
+  final int? fsrsPreState;
+
+  /// FSRS card state *after* this review was processed.
+  /// When fsrsPreState != 2 && fsrsPostState == 2, the card "graduated"
+  /// (transitioned to Review state), meaning the learner demonstrated recall.
+  final int? fsrsPostState;
   const Review({
     required this.id,
     required this.rating,
     required this.reviewType,
     required this.reviewedAt,
     this.moveId,
+    this.comboId,
+    this.fsrsPreState,
+    this.fsrsPostState,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -1167,6 +1324,15 @@ class Review extends DataClass implements Insertable<Review> {
     map['reviewed_at'] = Variable<DateTime>(reviewedAt);
     if (!nullToAbsent || moveId != null) {
       map['move_id'] = Variable<String>(moveId);
+    }
+    if (!nullToAbsent || comboId != null) {
+      map['combo_id'] = Variable<String>(comboId);
+    }
+    if (!nullToAbsent || fsrsPreState != null) {
+      map['fsrs_pre_state'] = Variable<int>(fsrsPreState);
+    }
+    if (!nullToAbsent || fsrsPostState != null) {
+      map['fsrs_post_state'] = Variable<int>(fsrsPostState);
     }
     return map;
   }
@@ -1180,6 +1346,15 @@ class Review extends DataClass implements Insertable<Review> {
       moveId: moveId == null && nullToAbsent
           ? const Value.absent()
           : Value(moveId),
+      comboId: comboId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(comboId),
+      fsrsPreState: fsrsPreState == null && nullToAbsent
+          ? const Value.absent()
+          : Value(fsrsPreState),
+      fsrsPostState: fsrsPostState == null && nullToAbsent
+          ? const Value.absent()
+          : Value(fsrsPostState),
     );
   }
 
@@ -1194,6 +1369,9 @@ class Review extends DataClass implements Insertable<Review> {
       reviewType: serializer.fromJson<String>(json['reviewType']),
       reviewedAt: serializer.fromJson<DateTime>(json['reviewedAt']),
       moveId: serializer.fromJson<String?>(json['moveId']),
+      comboId: serializer.fromJson<String?>(json['comboId']),
+      fsrsPreState: serializer.fromJson<int?>(json['fsrsPreState']),
+      fsrsPostState: serializer.fromJson<int?>(json['fsrsPostState']),
     );
   }
   @override
@@ -1205,6 +1383,9 @@ class Review extends DataClass implements Insertable<Review> {
       'reviewType': serializer.toJson<String>(reviewType),
       'reviewedAt': serializer.toJson<DateTime>(reviewedAt),
       'moveId': serializer.toJson<String?>(moveId),
+      'comboId': serializer.toJson<String?>(comboId),
+      'fsrsPreState': serializer.toJson<int?>(fsrsPreState),
+      'fsrsPostState': serializer.toJson<int?>(fsrsPostState),
     };
   }
 
@@ -1214,12 +1395,20 @@ class Review extends DataClass implements Insertable<Review> {
     String? reviewType,
     DateTime? reviewedAt,
     Value<String?> moveId = const Value.absent(),
+    Value<String?> comboId = const Value.absent(),
+    Value<int?> fsrsPreState = const Value.absent(),
+    Value<int?> fsrsPostState = const Value.absent(),
   }) => Review(
     id: id ?? this.id,
     rating: rating ?? this.rating,
     reviewType: reviewType ?? this.reviewType,
     reviewedAt: reviewedAt ?? this.reviewedAt,
     moveId: moveId.present ? moveId.value : this.moveId,
+    comboId: comboId.present ? comboId.value : this.comboId,
+    fsrsPreState: fsrsPreState.present ? fsrsPreState.value : this.fsrsPreState,
+    fsrsPostState: fsrsPostState.present
+        ? fsrsPostState.value
+        : this.fsrsPostState,
   );
   Review copyWithCompanion(ReviewsCompanion data) {
     return Review(
@@ -1232,6 +1421,13 @@ class Review extends DataClass implements Insertable<Review> {
           ? data.reviewedAt.value
           : this.reviewedAt,
       moveId: data.moveId.present ? data.moveId.value : this.moveId,
+      comboId: data.comboId.present ? data.comboId.value : this.comboId,
+      fsrsPreState: data.fsrsPreState.present
+          ? data.fsrsPreState.value
+          : this.fsrsPreState,
+      fsrsPostState: data.fsrsPostState.present
+          ? data.fsrsPostState.value
+          : this.fsrsPostState,
     );
   }
 
@@ -1242,13 +1438,25 @@ class Review extends DataClass implements Insertable<Review> {
           ..write('rating: $rating, ')
           ..write('reviewType: $reviewType, ')
           ..write('reviewedAt: $reviewedAt, ')
-          ..write('moveId: $moveId')
+          ..write('moveId: $moveId, ')
+          ..write('comboId: $comboId, ')
+          ..write('fsrsPreState: $fsrsPreState, ')
+          ..write('fsrsPostState: $fsrsPostState')
           ..write(')'))
         .toString();
   }
 
   @override
-  int get hashCode => Object.hash(id, rating, reviewType, reviewedAt, moveId);
+  int get hashCode => Object.hash(
+    id,
+    rating,
+    reviewType,
+    reviewedAt,
+    moveId,
+    comboId,
+    fsrsPreState,
+    fsrsPostState,
+  );
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -1257,7 +1465,10 @@ class Review extends DataClass implements Insertable<Review> {
           other.rating == this.rating &&
           other.reviewType == this.reviewType &&
           other.reviewedAt == this.reviewedAt &&
-          other.moveId == this.moveId);
+          other.moveId == this.moveId &&
+          other.comboId == this.comboId &&
+          other.fsrsPreState == this.fsrsPreState &&
+          other.fsrsPostState == this.fsrsPostState);
 }
 
 class ReviewsCompanion extends UpdateCompanion<Review> {
@@ -1266,6 +1477,9 @@ class ReviewsCompanion extends UpdateCompanion<Review> {
   final Value<String> reviewType;
   final Value<DateTime> reviewedAt;
   final Value<String?> moveId;
+  final Value<String?> comboId;
+  final Value<int?> fsrsPreState;
+  final Value<int?> fsrsPostState;
   final Value<int> rowid;
   const ReviewsCompanion({
     this.id = const Value.absent(),
@@ -1273,6 +1487,9 @@ class ReviewsCompanion extends UpdateCompanion<Review> {
     this.reviewType = const Value.absent(),
     this.reviewedAt = const Value.absent(),
     this.moveId = const Value.absent(),
+    this.comboId = const Value.absent(),
+    this.fsrsPreState = const Value.absent(),
+    this.fsrsPostState = const Value.absent(),
     this.rowid = const Value.absent(),
   });
   ReviewsCompanion.insert({
@@ -1281,6 +1498,9 @@ class ReviewsCompanion extends UpdateCompanion<Review> {
     required String reviewType,
     this.reviewedAt = const Value.absent(),
     this.moveId = const Value.absent(),
+    this.comboId = const Value.absent(),
+    this.fsrsPreState = const Value.absent(),
+    this.fsrsPostState = const Value.absent(),
     this.rowid = const Value.absent(),
   }) : id = Value(id),
        rating = Value(rating),
@@ -1291,6 +1511,9 @@ class ReviewsCompanion extends UpdateCompanion<Review> {
     Expression<String>? reviewType,
     Expression<DateTime>? reviewedAt,
     Expression<String>? moveId,
+    Expression<String>? comboId,
+    Expression<int>? fsrsPreState,
+    Expression<int>? fsrsPostState,
     Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
@@ -1299,6 +1522,9 @@ class ReviewsCompanion extends UpdateCompanion<Review> {
       if (reviewType != null) 'review_type': reviewType,
       if (reviewedAt != null) 'reviewed_at': reviewedAt,
       if (moveId != null) 'move_id': moveId,
+      if (comboId != null) 'combo_id': comboId,
+      if (fsrsPreState != null) 'fsrs_pre_state': fsrsPreState,
+      if (fsrsPostState != null) 'fsrs_post_state': fsrsPostState,
       if (rowid != null) 'rowid': rowid,
     });
   }
@@ -1309,6 +1535,9 @@ class ReviewsCompanion extends UpdateCompanion<Review> {
     Value<String>? reviewType,
     Value<DateTime>? reviewedAt,
     Value<String?>? moveId,
+    Value<String?>? comboId,
+    Value<int?>? fsrsPreState,
+    Value<int?>? fsrsPostState,
     Value<int>? rowid,
   }) {
     return ReviewsCompanion(
@@ -1317,6 +1546,9 @@ class ReviewsCompanion extends UpdateCompanion<Review> {
       reviewType: reviewType ?? this.reviewType,
       reviewedAt: reviewedAt ?? this.reviewedAt,
       moveId: moveId ?? this.moveId,
+      comboId: comboId ?? this.comboId,
+      fsrsPreState: fsrsPreState ?? this.fsrsPreState,
+      fsrsPostState: fsrsPostState ?? this.fsrsPostState,
       rowid: rowid ?? this.rowid,
     );
   }
@@ -1339,6 +1571,15 @@ class ReviewsCompanion extends UpdateCompanion<Review> {
     if (moveId.present) {
       map['move_id'] = Variable<String>(moveId.value);
     }
+    if (comboId.present) {
+      map['combo_id'] = Variable<String>(comboId.value);
+    }
+    if (fsrsPreState.present) {
+      map['fsrs_pre_state'] = Variable<int>(fsrsPreState.value);
+    }
+    if (fsrsPostState.present) {
+      map['fsrs_post_state'] = Variable<int>(fsrsPostState.value);
+    }
     if (rowid.present) {
       map['rowid'] = Variable<int>(rowid.value);
     }
@@ -1353,6 +1594,9 @@ class ReviewsCompanion extends UpdateCompanion<Review> {
           ..write('reviewType: $reviewType, ')
           ..write('reviewedAt: $reviewedAt, ')
           ..write('moveId: $moveId, ')
+          ..write('comboId: $comboId, ')
+          ..write('fsrsPreState: $fsrsPreState, ')
+          ..write('fsrsPostState: $fsrsPostState, ')
           ..write('rowid: $rowid')
           ..write(')'))
         .toString();
@@ -2355,6 +2599,1266 @@ class SyncLogCompanion extends UpdateCompanion<SyncLogData> {
   }
 }
 
+class $FsrsCardsTable extends FsrsCards
+    with TableInfo<$FsrsCardsTable, FsrsCard> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $FsrsCardsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _entityIdMeta = const VerificationMeta(
+    'entityId',
+  );
+  @override
+  late final GeneratedColumn<String> entityId = GeneratedColumn<String>(
+    'entity_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _entityTypeMeta = const VerificationMeta(
+    'entityType',
+  );
+  @override
+  late final GeneratedColumn<String> entityType = GeneratedColumn<String>(
+    'entity_type',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant('move'),
+  );
+  static const VerificationMeta _stabilityMeta = const VerificationMeta(
+    'stability',
+  );
+  @override
+  late final GeneratedColumn<double> stability = GeneratedColumn<double>(
+    'stability',
+    aliasedName,
+    false,
+    type: DriftSqlType.double,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0.0),
+  );
+  static const VerificationMeta _difficultyMeta = const VerificationMeta(
+    'difficulty',
+  );
+  @override
+  late final GeneratedColumn<double> difficulty = GeneratedColumn<double>(
+    'difficulty',
+    aliasedName,
+    false,
+    type: DriftSqlType.double,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0.0),
+  );
+  static const VerificationMeta _dueMeta = const VerificationMeta('due');
+  @override
+  late final GeneratedColumn<DateTime> due = GeneratedColumn<DateTime>(
+    'due',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+    defaultValue: currentDateAndTime,
+  );
+  static const VerificationMeta _lastReviewMeta = const VerificationMeta(
+    'lastReview',
+  );
+  @override
+  late final GeneratedColumn<DateTime> lastReview = GeneratedColumn<DateTime>(
+    'last_review',
+    aliasedName,
+    true,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _repsMeta = const VerificationMeta('reps');
+  @override
+  late final GeneratedColumn<int> reps = GeneratedColumn<int>(
+    'reps',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0),
+  );
+  static const VerificationMeta _lapsesMeta = const VerificationMeta('lapses');
+  @override
+  late final GeneratedColumn<int> lapses = GeneratedColumn<int>(
+    'lapses',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0),
+  );
+  static const VerificationMeta _fsrsStateMeta = const VerificationMeta(
+    'fsrsState',
+  );
+  @override
+  late final GeneratedColumn<int> fsrsState = GeneratedColumn<int>(
+    'fsrs_state',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0),
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    entityId,
+    entityType,
+    stability,
+    difficulty,
+    due,
+    lastReview,
+    reps,
+    lapses,
+    fsrsState,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'fsrs_cards';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<FsrsCard> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('entity_id')) {
+      context.handle(
+        _entityIdMeta,
+        entityId.isAcceptableOrUnknown(data['entity_id']!, _entityIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_entityIdMeta);
+    }
+    if (data.containsKey('entity_type')) {
+      context.handle(
+        _entityTypeMeta,
+        entityType.isAcceptableOrUnknown(data['entity_type']!, _entityTypeMeta),
+      );
+    }
+    if (data.containsKey('stability')) {
+      context.handle(
+        _stabilityMeta,
+        stability.isAcceptableOrUnknown(data['stability']!, _stabilityMeta),
+      );
+    }
+    if (data.containsKey('difficulty')) {
+      context.handle(
+        _difficultyMeta,
+        difficulty.isAcceptableOrUnknown(data['difficulty']!, _difficultyMeta),
+      );
+    }
+    if (data.containsKey('due')) {
+      context.handle(
+        _dueMeta,
+        due.isAcceptableOrUnknown(data['due']!, _dueMeta),
+      );
+    }
+    if (data.containsKey('last_review')) {
+      context.handle(
+        _lastReviewMeta,
+        lastReview.isAcceptableOrUnknown(data['last_review']!, _lastReviewMeta),
+      );
+    }
+    if (data.containsKey('reps')) {
+      context.handle(
+        _repsMeta,
+        reps.isAcceptableOrUnknown(data['reps']!, _repsMeta),
+      );
+    }
+    if (data.containsKey('lapses')) {
+      context.handle(
+        _lapsesMeta,
+        lapses.isAcceptableOrUnknown(data['lapses']!, _lapsesMeta),
+      );
+    }
+    if (data.containsKey('fsrs_state')) {
+      context.handle(
+        _fsrsStateMeta,
+        fsrsState.isAcceptableOrUnknown(data['fsrs_state']!, _fsrsStateMeta),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {entityId, entityType};
+  @override
+  FsrsCard map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return FsrsCard(
+      entityId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}entity_id'],
+      )!,
+      entityType: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}entity_type'],
+      )!,
+      stability: attachedDatabase.typeMapping.read(
+        DriftSqlType.double,
+        data['${effectivePrefix}stability'],
+      )!,
+      difficulty: attachedDatabase.typeMapping.read(
+        DriftSqlType.double,
+        data['${effectivePrefix}difficulty'],
+      )!,
+      due: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}due'],
+      )!,
+      lastReview: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}last_review'],
+      ),
+      reps: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}reps'],
+      )!,
+      lapses: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}lapses'],
+      )!,
+      fsrsState: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}fsrs_state'],
+      )!,
+    );
+  }
+
+  @override
+  $FsrsCardsTable createAlias(String alias) {
+    return $FsrsCardsTable(attachedDatabase, alias);
+  }
+}
+
+class FsrsCard extends DataClass implements Insertable<FsrsCard> {
+  /// ID of the move or combo this card belongs to.
+  final String entityId;
+
+  /// Entity type: 'move' or 'combo'. Defaults to 'move' for backward compat.
+  final String entityType;
+
+  /// Memory stability in days — higher means longer retention.
+  final double stability;
+
+  /// Item difficulty on a 0–10 scale — higher means harder to remember.
+  final double difficulty;
+
+  /// When this card is next due for review (UTC).
+  final DateTime due;
+
+  /// When this card was last reviewed (UTC). Null if never reviewed.
+  final DateTime? lastReview;
+
+  /// Consecutive successful reviews (resets on lapse).
+  final int reps;
+
+  /// Number of times the card lapsed (was forgotten after graduating).
+  final int lapses;
+
+  /// FSRS state: 0=New, 1=Learning, 2=Review, 3=Relearning.
+  final int fsrsState;
+  const FsrsCard({
+    required this.entityId,
+    required this.entityType,
+    required this.stability,
+    required this.difficulty,
+    required this.due,
+    this.lastReview,
+    required this.reps,
+    required this.lapses,
+    required this.fsrsState,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['entity_id'] = Variable<String>(entityId);
+    map['entity_type'] = Variable<String>(entityType);
+    map['stability'] = Variable<double>(stability);
+    map['difficulty'] = Variable<double>(difficulty);
+    map['due'] = Variable<DateTime>(due);
+    if (!nullToAbsent || lastReview != null) {
+      map['last_review'] = Variable<DateTime>(lastReview);
+    }
+    map['reps'] = Variable<int>(reps);
+    map['lapses'] = Variable<int>(lapses);
+    map['fsrs_state'] = Variable<int>(fsrsState);
+    return map;
+  }
+
+  FsrsCardsCompanion toCompanion(bool nullToAbsent) {
+    return FsrsCardsCompanion(
+      entityId: Value(entityId),
+      entityType: Value(entityType),
+      stability: Value(stability),
+      difficulty: Value(difficulty),
+      due: Value(due),
+      lastReview: lastReview == null && nullToAbsent
+          ? const Value.absent()
+          : Value(lastReview),
+      reps: Value(reps),
+      lapses: Value(lapses),
+      fsrsState: Value(fsrsState),
+    );
+  }
+
+  factory FsrsCard.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return FsrsCard(
+      entityId: serializer.fromJson<String>(json['entityId']),
+      entityType: serializer.fromJson<String>(json['entityType']),
+      stability: serializer.fromJson<double>(json['stability']),
+      difficulty: serializer.fromJson<double>(json['difficulty']),
+      due: serializer.fromJson<DateTime>(json['due']),
+      lastReview: serializer.fromJson<DateTime?>(json['lastReview']),
+      reps: serializer.fromJson<int>(json['reps']),
+      lapses: serializer.fromJson<int>(json['lapses']),
+      fsrsState: serializer.fromJson<int>(json['fsrsState']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'entityId': serializer.toJson<String>(entityId),
+      'entityType': serializer.toJson<String>(entityType),
+      'stability': serializer.toJson<double>(stability),
+      'difficulty': serializer.toJson<double>(difficulty),
+      'due': serializer.toJson<DateTime>(due),
+      'lastReview': serializer.toJson<DateTime?>(lastReview),
+      'reps': serializer.toJson<int>(reps),
+      'lapses': serializer.toJson<int>(lapses),
+      'fsrsState': serializer.toJson<int>(fsrsState),
+    };
+  }
+
+  FsrsCard copyWith({
+    String? entityId,
+    String? entityType,
+    double? stability,
+    double? difficulty,
+    DateTime? due,
+    Value<DateTime?> lastReview = const Value.absent(),
+    int? reps,
+    int? lapses,
+    int? fsrsState,
+  }) => FsrsCard(
+    entityId: entityId ?? this.entityId,
+    entityType: entityType ?? this.entityType,
+    stability: stability ?? this.stability,
+    difficulty: difficulty ?? this.difficulty,
+    due: due ?? this.due,
+    lastReview: lastReview.present ? lastReview.value : this.lastReview,
+    reps: reps ?? this.reps,
+    lapses: lapses ?? this.lapses,
+    fsrsState: fsrsState ?? this.fsrsState,
+  );
+  FsrsCard copyWithCompanion(FsrsCardsCompanion data) {
+    return FsrsCard(
+      entityId: data.entityId.present ? data.entityId.value : this.entityId,
+      entityType: data.entityType.present
+          ? data.entityType.value
+          : this.entityType,
+      stability: data.stability.present ? data.stability.value : this.stability,
+      difficulty: data.difficulty.present
+          ? data.difficulty.value
+          : this.difficulty,
+      due: data.due.present ? data.due.value : this.due,
+      lastReview: data.lastReview.present
+          ? data.lastReview.value
+          : this.lastReview,
+      reps: data.reps.present ? data.reps.value : this.reps,
+      lapses: data.lapses.present ? data.lapses.value : this.lapses,
+      fsrsState: data.fsrsState.present ? data.fsrsState.value : this.fsrsState,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('FsrsCard(')
+          ..write('entityId: $entityId, ')
+          ..write('entityType: $entityType, ')
+          ..write('stability: $stability, ')
+          ..write('difficulty: $difficulty, ')
+          ..write('due: $due, ')
+          ..write('lastReview: $lastReview, ')
+          ..write('reps: $reps, ')
+          ..write('lapses: $lapses, ')
+          ..write('fsrsState: $fsrsState')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    entityId,
+    entityType,
+    stability,
+    difficulty,
+    due,
+    lastReview,
+    reps,
+    lapses,
+    fsrsState,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is FsrsCard &&
+          other.entityId == this.entityId &&
+          other.entityType == this.entityType &&
+          other.stability == this.stability &&
+          other.difficulty == this.difficulty &&
+          other.due == this.due &&
+          other.lastReview == this.lastReview &&
+          other.reps == this.reps &&
+          other.lapses == this.lapses &&
+          other.fsrsState == this.fsrsState);
+}
+
+class FsrsCardsCompanion extends UpdateCompanion<FsrsCard> {
+  final Value<String> entityId;
+  final Value<String> entityType;
+  final Value<double> stability;
+  final Value<double> difficulty;
+  final Value<DateTime> due;
+  final Value<DateTime?> lastReview;
+  final Value<int> reps;
+  final Value<int> lapses;
+  final Value<int> fsrsState;
+  final Value<int> rowid;
+  const FsrsCardsCompanion({
+    this.entityId = const Value.absent(),
+    this.entityType = const Value.absent(),
+    this.stability = const Value.absent(),
+    this.difficulty = const Value.absent(),
+    this.due = const Value.absent(),
+    this.lastReview = const Value.absent(),
+    this.reps = const Value.absent(),
+    this.lapses = const Value.absent(),
+    this.fsrsState = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  FsrsCardsCompanion.insert({
+    required String entityId,
+    this.entityType = const Value.absent(),
+    this.stability = const Value.absent(),
+    this.difficulty = const Value.absent(),
+    this.due = const Value.absent(),
+    this.lastReview = const Value.absent(),
+    this.reps = const Value.absent(),
+    this.lapses = const Value.absent(),
+    this.fsrsState = const Value.absent(),
+    this.rowid = const Value.absent(),
+  }) : entityId = Value(entityId);
+  static Insertable<FsrsCard> custom({
+    Expression<String>? entityId,
+    Expression<String>? entityType,
+    Expression<double>? stability,
+    Expression<double>? difficulty,
+    Expression<DateTime>? due,
+    Expression<DateTime>? lastReview,
+    Expression<int>? reps,
+    Expression<int>? lapses,
+    Expression<int>? fsrsState,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (entityId != null) 'entity_id': entityId,
+      if (entityType != null) 'entity_type': entityType,
+      if (stability != null) 'stability': stability,
+      if (difficulty != null) 'difficulty': difficulty,
+      if (due != null) 'due': due,
+      if (lastReview != null) 'last_review': lastReview,
+      if (reps != null) 'reps': reps,
+      if (lapses != null) 'lapses': lapses,
+      if (fsrsState != null) 'fsrs_state': fsrsState,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  FsrsCardsCompanion copyWith({
+    Value<String>? entityId,
+    Value<String>? entityType,
+    Value<double>? stability,
+    Value<double>? difficulty,
+    Value<DateTime>? due,
+    Value<DateTime?>? lastReview,
+    Value<int>? reps,
+    Value<int>? lapses,
+    Value<int>? fsrsState,
+    Value<int>? rowid,
+  }) {
+    return FsrsCardsCompanion(
+      entityId: entityId ?? this.entityId,
+      entityType: entityType ?? this.entityType,
+      stability: stability ?? this.stability,
+      difficulty: difficulty ?? this.difficulty,
+      due: due ?? this.due,
+      lastReview: lastReview ?? this.lastReview,
+      reps: reps ?? this.reps,
+      lapses: lapses ?? this.lapses,
+      fsrsState: fsrsState ?? this.fsrsState,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (entityId.present) {
+      map['entity_id'] = Variable<String>(entityId.value);
+    }
+    if (entityType.present) {
+      map['entity_type'] = Variable<String>(entityType.value);
+    }
+    if (stability.present) {
+      map['stability'] = Variable<double>(stability.value);
+    }
+    if (difficulty.present) {
+      map['difficulty'] = Variable<double>(difficulty.value);
+    }
+    if (due.present) {
+      map['due'] = Variable<DateTime>(due.value);
+    }
+    if (lastReview.present) {
+      map['last_review'] = Variable<DateTime>(lastReview.value);
+    }
+    if (reps.present) {
+      map['reps'] = Variable<int>(reps.value);
+    }
+    if (lapses.present) {
+      map['lapses'] = Variable<int>(lapses.value);
+    }
+    if (fsrsState.present) {
+      map['fsrs_state'] = Variable<int>(fsrsState.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('FsrsCardsCompanion(')
+          ..write('entityId: $entityId, ')
+          ..write('entityType: $entityType, ')
+          ..write('stability: $stability, ')
+          ..write('difficulty: $difficulty, ')
+          ..write('due: $due, ')
+          ..write('lastReview: $lastReview, ')
+          ..write('reps: $reps, ')
+          ..write('lapses: $lapses, ')
+          ..write('fsrsState: $fsrsState, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $DecksTable extends Decks with TableInfo<$DecksTable, Deck> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $DecksTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+    'id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _nameMeta = const VerificationMeta('name');
+  @override
+  late final GeneratedColumn<String> name = GeneratedColumn<String>(
+    'name',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _deckTypeMeta = const VerificationMeta(
+    'deckType',
+  );
+  @override
+  late final GeneratedColumn<String> deckType = GeneratedColumn<String>(
+    'deck_type',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant('smart'),
+  );
+  static const VerificationMeta _filterCriteriaMeta = const VerificationMeta(
+    'filterCriteria',
+  );
+  @override
+  late final GeneratedColumn<String> filterCriteria = GeneratedColumn<String>(
+    'filter_criteria',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _sessionSizeMeta = const VerificationMeta(
+    'sessionSize',
+  );
+  @override
+  late final GeneratedColumn<int> sessionSize = GeneratedColumn<int>(
+    'session_size',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _createdAtMeta = const VerificationMeta(
+    'createdAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> createdAt = GeneratedColumn<DateTime>(
+    'created_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+    defaultValue: currentDateAndTime,
+  );
+  static const VerificationMeta _updatedAtMeta = const VerificationMeta(
+    'updatedAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> updatedAt = GeneratedColumn<DateTime>(
+    'updated_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+    defaultValue: currentDateAndTime,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    name,
+    deckType,
+    filterCriteria,
+    sessionSize,
+    createdAt,
+    updatedAt,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'decks';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<Deck> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    } else if (isInserting) {
+      context.missing(_idMeta);
+    }
+    if (data.containsKey('name')) {
+      context.handle(
+        _nameMeta,
+        name.isAcceptableOrUnknown(data['name']!, _nameMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_nameMeta);
+    }
+    if (data.containsKey('deck_type')) {
+      context.handle(
+        _deckTypeMeta,
+        deckType.isAcceptableOrUnknown(data['deck_type']!, _deckTypeMeta),
+      );
+    }
+    if (data.containsKey('filter_criteria')) {
+      context.handle(
+        _filterCriteriaMeta,
+        filterCriteria.isAcceptableOrUnknown(
+          data['filter_criteria']!,
+          _filterCriteriaMeta,
+        ),
+      );
+    }
+    if (data.containsKey('session_size')) {
+      context.handle(
+        _sessionSizeMeta,
+        sessionSize.isAcceptableOrUnknown(
+          data['session_size']!,
+          _sessionSizeMeta,
+        ),
+      );
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(
+        _createdAtMeta,
+        createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta),
+      );
+    }
+    if (data.containsKey('updated_at')) {
+      context.handle(
+        _updatedAtMeta,
+        updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  Deck map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return Deck(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}id'],
+      )!,
+      name: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}name'],
+      )!,
+      deckType: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}deck_type'],
+      )!,
+      filterCriteria: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}filter_criteria'],
+      ),
+      sessionSize: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}session_size'],
+      ),
+      createdAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}created_at'],
+      )!,
+      updatedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}updated_at'],
+      )!,
+    );
+  }
+
+  @override
+  $DecksTable createAlias(String alias) {
+    return $DecksTable(attachedDatabase, alias);
+  }
+}
+
+class Deck extends DataClass implements Insertable<Deck> {
+  final String id;
+  final String name;
+
+  /// 'smart' or 'manual'
+  final String deckType;
+
+  /// JSON-encoded filter criteria for smart decks.
+  /// Format: {"categories": [...], "fsrsStates": [...], "dueOnly": bool}
+  /// Null for manual decks.
+  final String? filterCriteria;
+
+  /// Optional session size override. Null = all matching moves.
+  final int? sessionSize;
+  final DateTime createdAt;
+  final DateTime updatedAt;
+  const Deck({
+    required this.id,
+    required this.name,
+    required this.deckType,
+    this.filterCriteria,
+    this.sessionSize,
+    required this.createdAt,
+    required this.updatedAt,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    map['name'] = Variable<String>(name);
+    map['deck_type'] = Variable<String>(deckType);
+    if (!nullToAbsent || filterCriteria != null) {
+      map['filter_criteria'] = Variable<String>(filterCriteria);
+    }
+    if (!nullToAbsent || sessionSize != null) {
+      map['session_size'] = Variable<int>(sessionSize);
+    }
+    map['created_at'] = Variable<DateTime>(createdAt);
+    map['updated_at'] = Variable<DateTime>(updatedAt);
+    return map;
+  }
+
+  DecksCompanion toCompanion(bool nullToAbsent) {
+    return DecksCompanion(
+      id: Value(id),
+      name: Value(name),
+      deckType: Value(deckType),
+      filterCriteria: filterCriteria == null && nullToAbsent
+          ? const Value.absent()
+          : Value(filterCriteria),
+      sessionSize: sessionSize == null && nullToAbsent
+          ? const Value.absent()
+          : Value(sessionSize),
+      createdAt: Value(createdAt),
+      updatedAt: Value(updatedAt),
+    );
+  }
+
+  factory Deck.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return Deck(
+      id: serializer.fromJson<String>(json['id']),
+      name: serializer.fromJson<String>(json['name']),
+      deckType: serializer.fromJson<String>(json['deckType']),
+      filterCriteria: serializer.fromJson<String?>(json['filterCriteria']),
+      sessionSize: serializer.fromJson<int?>(json['sessionSize']),
+      createdAt: serializer.fromJson<DateTime>(json['createdAt']),
+      updatedAt: serializer.fromJson<DateTime>(json['updatedAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'name': serializer.toJson<String>(name),
+      'deckType': serializer.toJson<String>(deckType),
+      'filterCriteria': serializer.toJson<String?>(filterCriteria),
+      'sessionSize': serializer.toJson<int?>(sessionSize),
+      'createdAt': serializer.toJson<DateTime>(createdAt),
+      'updatedAt': serializer.toJson<DateTime>(updatedAt),
+    };
+  }
+
+  Deck copyWith({
+    String? id,
+    String? name,
+    String? deckType,
+    Value<String?> filterCriteria = const Value.absent(),
+    Value<int?> sessionSize = const Value.absent(),
+    DateTime? createdAt,
+    DateTime? updatedAt,
+  }) => Deck(
+    id: id ?? this.id,
+    name: name ?? this.name,
+    deckType: deckType ?? this.deckType,
+    filterCriteria: filterCriteria.present
+        ? filterCriteria.value
+        : this.filterCriteria,
+    sessionSize: sessionSize.present ? sessionSize.value : this.sessionSize,
+    createdAt: createdAt ?? this.createdAt,
+    updatedAt: updatedAt ?? this.updatedAt,
+  );
+  Deck copyWithCompanion(DecksCompanion data) {
+    return Deck(
+      id: data.id.present ? data.id.value : this.id,
+      name: data.name.present ? data.name.value : this.name,
+      deckType: data.deckType.present ? data.deckType.value : this.deckType,
+      filterCriteria: data.filterCriteria.present
+          ? data.filterCriteria.value
+          : this.filterCriteria,
+      sessionSize: data.sessionSize.present
+          ? data.sessionSize.value
+          : this.sessionSize,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+      updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('Deck(')
+          ..write('id: $id, ')
+          ..write('name: $name, ')
+          ..write('deckType: $deckType, ')
+          ..write('filterCriteria: $filterCriteria, ')
+          ..write('sessionSize: $sessionSize, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    id,
+    name,
+    deckType,
+    filterCriteria,
+    sessionSize,
+    createdAt,
+    updatedAt,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is Deck &&
+          other.id == this.id &&
+          other.name == this.name &&
+          other.deckType == this.deckType &&
+          other.filterCriteria == this.filterCriteria &&
+          other.sessionSize == this.sessionSize &&
+          other.createdAt == this.createdAt &&
+          other.updatedAt == this.updatedAt);
+}
+
+class DecksCompanion extends UpdateCompanion<Deck> {
+  final Value<String> id;
+  final Value<String> name;
+  final Value<String> deckType;
+  final Value<String?> filterCriteria;
+  final Value<int?> sessionSize;
+  final Value<DateTime> createdAt;
+  final Value<DateTime> updatedAt;
+  final Value<int> rowid;
+  const DecksCompanion({
+    this.id = const Value.absent(),
+    this.name = const Value.absent(),
+    this.deckType = const Value.absent(),
+    this.filterCriteria = const Value.absent(),
+    this.sessionSize = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  DecksCompanion.insert({
+    required String id,
+    required String name,
+    this.deckType = const Value.absent(),
+    this.filterCriteria = const Value.absent(),
+    this.sessionSize = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  }) : id = Value(id),
+       name = Value(name);
+  static Insertable<Deck> custom({
+    Expression<String>? id,
+    Expression<String>? name,
+    Expression<String>? deckType,
+    Expression<String>? filterCriteria,
+    Expression<int>? sessionSize,
+    Expression<DateTime>? createdAt,
+    Expression<DateTime>? updatedAt,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (name != null) 'name': name,
+      if (deckType != null) 'deck_type': deckType,
+      if (filterCriteria != null) 'filter_criteria': filterCriteria,
+      if (sessionSize != null) 'session_size': sessionSize,
+      if (createdAt != null) 'created_at': createdAt,
+      if (updatedAt != null) 'updated_at': updatedAt,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  DecksCompanion copyWith({
+    Value<String>? id,
+    Value<String>? name,
+    Value<String>? deckType,
+    Value<String?>? filterCriteria,
+    Value<int?>? sessionSize,
+    Value<DateTime>? createdAt,
+    Value<DateTime>? updatedAt,
+    Value<int>? rowid,
+  }) {
+    return DecksCompanion(
+      id: id ?? this.id,
+      name: name ?? this.name,
+      deckType: deckType ?? this.deckType,
+      filterCriteria: filterCriteria ?? this.filterCriteria,
+      sessionSize: sessionSize ?? this.sessionSize,
+      createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (name.present) {
+      map['name'] = Variable<String>(name.value);
+    }
+    if (deckType.present) {
+      map['deck_type'] = Variable<String>(deckType.value);
+    }
+    if (filterCriteria.present) {
+      map['filter_criteria'] = Variable<String>(filterCriteria.value);
+    }
+    if (sessionSize.present) {
+      map['session_size'] = Variable<int>(sessionSize.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<DateTime>(createdAt.value);
+    }
+    if (updatedAt.present) {
+      map['updated_at'] = Variable<DateTime>(updatedAt.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('DecksCompanion(')
+          ..write('id: $id, ')
+          ..write('name: $name, ')
+          ..write('deckType: $deckType, ')
+          ..write('filterCriteria: $filterCriteria, ')
+          ..write('sessionSize: $sessionSize, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $DeckMovesTable extends DeckMoves
+    with TableInfo<$DeckMovesTable, DeckMove> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $DeckMovesTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _deckIdMeta = const VerificationMeta('deckId');
+  @override
+  late final GeneratedColumn<String> deckId = GeneratedColumn<String>(
+    'deck_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES decks (id) ON DELETE CASCADE',
+    ),
+  );
+  static const VerificationMeta _moveIdMeta = const VerificationMeta('moveId');
+  @override
+  late final GeneratedColumn<String> moveId = GeneratedColumn<String>(
+    'move_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES moves (id) ON DELETE CASCADE',
+    ),
+  );
+  @override
+  List<GeneratedColumn> get $columns => [deckId, moveId];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'deck_moves';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<DeckMove> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('deck_id')) {
+      context.handle(
+        _deckIdMeta,
+        deckId.isAcceptableOrUnknown(data['deck_id']!, _deckIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_deckIdMeta);
+    }
+    if (data.containsKey('move_id')) {
+      context.handle(
+        _moveIdMeta,
+        moveId.isAcceptableOrUnknown(data['move_id']!, _moveIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_moveIdMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {deckId, moveId};
+  @override
+  DeckMove map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return DeckMove(
+      deckId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}deck_id'],
+      )!,
+      moveId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}move_id'],
+      )!,
+    );
+  }
+
+  @override
+  $DeckMovesTable createAlias(String alias) {
+    return $DeckMovesTable(attachedDatabase, alias);
+  }
+}
+
+class DeckMove extends DataClass implements Insertable<DeckMove> {
+  final String deckId;
+  final String moveId;
+  const DeckMove({required this.deckId, required this.moveId});
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['deck_id'] = Variable<String>(deckId);
+    map['move_id'] = Variable<String>(moveId);
+    return map;
+  }
+
+  DeckMovesCompanion toCompanion(bool nullToAbsent) {
+    return DeckMovesCompanion(deckId: Value(deckId), moveId: Value(moveId));
+  }
+
+  factory DeckMove.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return DeckMove(
+      deckId: serializer.fromJson<String>(json['deckId']),
+      moveId: serializer.fromJson<String>(json['moveId']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'deckId': serializer.toJson<String>(deckId),
+      'moveId': serializer.toJson<String>(moveId),
+    };
+  }
+
+  DeckMove copyWith({String? deckId, String? moveId}) =>
+      DeckMove(deckId: deckId ?? this.deckId, moveId: moveId ?? this.moveId);
+  DeckMove copyWithCompanion(DeckMovesCompanion data) {
+    return DeckMove(
+      deckId: data.deckId.present ? data.deckId.value : this.deckId,
+      moveId: data.moveId.present ? data.moveId.value : this.moveId,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('DeckMove(')
+          ..write('deckId: $deckId, ')
+          ..write('moveId: $moveId')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(deckId, moveId);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is DeckMove &&
+          other.deckId == this.deckId &&
+          other.moveId == this.moveId);
+}
+
+class DeckMovesCompanion extends UpdateCompanion<DeckMove> {
+  final Value<String> deckId;
+  final Value<String> moveId;
+  final Value<int> rowid;
+  const DeckMovesCompanion({
+    this.deckId = const Value.absent(),
+    this.moveId = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  DeckMovesCompanion.insert({
+    required String deckId,
+    required String moveId,
+    this.rowid = const Value.absent(),
+  }) : deckId = Value(deckId),
+       moveId = Value(moveId);
+  static Insertable<DeckMove> custom({
+    Expression<String>? deckId,
+    Expression<String>? moveId,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (deckId != null) 'deck_id': deckId,
+      if (moveId != null) 'move_id': moveId,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  DeckMovesCompanion copyWith({
+    Value<String>? deckId,
+    Value<String>? moveId,
+    Value<int>? rowid,
+  }) {
+    return DeckMovesCompanion(
+      deckId: deckId ?? this.deckId,
+      moveId: moveId ?? this.moveId,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (deckId.present) {
+      map['deck_id'] = Variable<String>(deckId.value);
+    }
+    if (moveId.present) {
+      map['move_id'] = Variable<String>(moveId.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('DeckMovesCompanion(')
+          ..write('deckId: $deckId, ')
+          ..write('moveId: $moveId, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$AppDatabase extends GeneratedDatabase {
   _$AppDatabase(QueryExecutor e) : super(e);
   $AppDatabaseManager get managers => $AppDatabaseManager(this);
@@ -2364,10 +3868,15 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   late final $ReviewsTable reviews = $ReviewsTable(this);
   late final $BattleResultsTable battleResults = $BattleResultsTable(this);
   late final $SyncLogTable syncLog = $SyncLogTable(this);
+  late final $FsrsCardsTable fsrsCards = $FsrsCardsTable(this);
+  late final $DecksTable decks = $DecksTable(this);
+  late final $DeckMovesTable deckMoves = $DeckMovesTable(this);
   late final MovesDao movesDao = MovesDao(this as AppDatabase);
   late final CombosDao combosDao = CombosDao(this as AppDatabase);
   late final ReviewsDao reviewsDao = ReviewsDao(this as AppDatabase);
   late final SyncDao syncDao = SyncDao(this as AppDatabase);
+  late final FsrsCardsDao fsrsCardsDao = FsrsCardsDao(this as AppDatabase);
+  late final DecksDao decksDao = DecksDao(this as AppDatabase);
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
@@ -2379,6 +3888,9 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     reviews,
     battleResults,
     syncLog,
+    fsrsCards,
+    decks,
+    deckMoves,
   ];
   @override
   StreamQueryUpdateRules get streamUpdateRules => const StreamQueryUpdateRules([
@@ -2403,6 +3915,27 @@ abstract class _$AppDatabase extends GeneratedDatabase {
       ),
       result: [TableUpdate('reviews', kind: UpdateKind.update)],
     ),
+    WritePropagation(
+      on: TableUpdateQuery.onTableName(
+        'combos',
+        limitUpdateKind: UpdateKind.delete,
+      ),
+      result: [TableUpdate('reviews', kind: UpdateKind.update)],
+    ),
+    WritePropagation(
+      on: TableUpdateQuery.onTableName(
+        'decks',
+        limitUpdateKind: UpdateKind.delete,
+      ),
+      result: [TableUpdate('deck_moves', kind: UpdateKind.delete)],
+    ),
+    WritePropagation(
+      on: TableUpdateQuery.onTableName(
+        'moves',
+        limitUpdateKind: UpdateKind.delete,
+      ),
+      result: [TableUpdate('deck_moves', kind: UpdateKind.delete)],
+    ),
   ]);
 }
 
@@ -2413,6 +3946,7 @@ typedef $$MovesTableCreateCompanionBuilder =
       Value<String> learningState,
       Value<String> category,
       Value<String?> videoPath,
+      Value<String?> originalVideoName,
       Value<DateTime> createdAt,
       Value<int> rowid,
     });
@@ -2423,6 +3957,7 @@ typedef $$MovesTableUpdateCompanionBuilder =
       Value<String> learningState,
       Value<String> category,
       Value<String?> videoPath,
+      Value<String?> originalVideoName,
       Value<DateTime> createdAt,
       Value<int> rowid,
     });
@@ -2467,6 +4002,24 @@ final class $$MovesTableReferences
       manager.$state.copyWith(prefetchedData: cache),
     );
   }
+
+  static MultiTypedResultKey<$DeckMovesTable, List<DeckMove>>
+  _deckMovesRefsTable(_$AppDatabase db) => MultiTypedResultKey.fromTable(
+    db.deckMoves,
+    aliasName: $_aliasNameGenerator(db.moves.id, db.deckMoves.moveId),
+  );
+
+  $$DeckMovesTableProcessedTableManager get deckMovesRefs {
+    final manager = $$DeckMovesTableTableManager(
+      $_db,
+      $_db.deckMoves,
+    ).filter((f) => f.moveId.id.sqlEquals($_itemColumn<String>('id')!));
+
+    final cache = $_typedResult.readTableOrNull(_deckMovesRefsTable($_db));
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
 }
 
 class $$MovesTableFilterComposer extends Composer<_$AppDatabase, $MovesTable> {
@@ -2499,6 +4052,11 @@ class $$MovesTableFilterComposer extends Composer<_$AppDatabase, $MovesTable> {
 
   ColumnFilters<String> get videoPath => $composableBuilder(
     column: $table.videoPath,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get originalVideoName => $composableBuilder(
+    column: $table.originalVideoName,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -2556,6 +4114,31 @@ class $$MovesTableFilterComposer extends Composer<_$AppDatabase, $MovesTable> {
     );
     return f(composer);
   }
+
+  Expression<bool> deckMovesRefs(
+    Expression<bool> Function($$DeckMovesTableFilterComposer f) f,
+  ) {
+    final $$DeckMovesTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.deckMoves,
+      getReferencedColumn: (t) => t.moveId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$DeckMovesTableFilterComposer(
+            $db: $db,
+            $table: $db.deckMoves,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
 }
 
 class $$MovesTableOrderingComposer
@@ -2592,6 +4175,11 @@ class $$MovesTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<String> get originalVideoName => $composableBuilder(
+    column: $table.originalVideoName,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<DateTime> get createdAt => $composableBuilder(
     column: $table.createdAt,
     builder: (column) => ColumnOrderings(column),
@@ -2623,6 +4211,11 @@ class $$MovesTableAnnotationComposer
 
   GeneratedColumn<String> get videoPath =>
       $composableBuilder(column: $table.videoPath, builder: (column) => column);
+
+  GeneratedColumn<String> get originalVideoName => $composableBuilder(
+    column: $table.originalVideoName,
+    builder: (column) => column,
+  );
 
   GeneratedColumn<DateTime> get createdAt =>
       $composableBuilder(column: $table.createdAt, builder: (column) => column);
@@ -2676,6 +4269,31 @@ class $$MovesTableAnnotationComposer
     );
     return f(composer);
   }
+
+  Expression<T> deckMovesRefs<T extends Object>(
+    Expression<T> Function($$DeckMovesTableAnnotationComposer a) f,
+  ) {
+    final $$DeckMovesTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.deckMoves,
+      getReferencedColumn: (t) => t.moveId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$DeckMovesTableAnnotationComposer(
+            $db: $db,
+            $table: $db.deckMoves,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
 }
 
 class $$MovesTableTableManager
@@ -2691,7 +4309,11 @@ class $$MovesTableTableManager
           $$MovesTableUpdateCompanionBuilder,
           (Move, $$MovesTableReferences),
           Move,
-          PrefetchHooks Function({bool comboMovesRefs, bool reviewsRefs})
+          PrefetchHooks Function({
+            bool comboMovesRefs,
+            bool reviewsRefs,
+            bool deckMovesRefs,
+          })
         > {
   $$MovesTableTableManager(_$AppDatabase db, $MovesTable table)
     : super(
@@ -2711,6 +4333,7 @@ class $$MovesTableTableManager
                 Value<String> learningState = const Value.absent(),
                 Value<String> category = const Value.absent(),
                 Value<String?> videoPath = const Value.absent(),
+                Value<String?> originalVideoName = const Value.absent(),
                 Value<DateTime> createdAt = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => MovesCompanion(
@@ -2719,6 +4342,7 @@ class $$MovesTableTableManager
                 learningState: learningState,
                 category: category,
                 videoPath: videoPath,
+                originalVideoName: originalVideoName,
                 createdAt: createdAt,
                 rowid: rowid,
               ),
@@ -2729,6 +4353,7 @@ class $$MovesTableTableManager
                 Value<String> learningState = const Value.absent(),
                 Value<String> category = const Value.absent(),
                 Value<String?> videoPath = const Value.absent(),
+                Value<String?> originalVideoName = const Value.absent(),
                 Value<DateTime> createdAt = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => MovesCompanion.insert(
@@ -2737,6 +4362,7 @@ class $$MovesTableTableManager
                 learningState: learningState,
                 category: category,
                 videoPath: videoPath,
+                originalVideoName: originalVideoName,
                 createdAt: createdAt,
                 rowid: rowid,
               ),
@@ -2747,12 +4373,17 @@ class $$MovesTableTableManager
               )
               .toList(),
           prefetchHooksCallback:
-              ({comboMovesRefs = false, reviewsRefs = false}) {
+              ({
+                comboMovesRefs = false,
+                reviewsRefs = false,
+                deckMovesRefs = false,
+              }) {
                 return PrefetchHooks(
                   db: db,
                   explicitlyWatchedTables: [
                     if (comboMovesRefs) db.comboMoves,
                     if (reviewsRefs) db.reviews,
+                    if (deckMovesRefs) db.deckMoves,
                   ],
                   addJoins: null,
                   getPrefetchedDataCallback: (items) async {
@@ -2787,6 +4418,23 @@ class $$MovesTableTableManager
                               ),
                           typedResults: items,
                         ),
+                      if (deckMovesRefs)
+                        await $_getPrefetchedData<Move, $MovesTable, DeckMove>(
+                          currentTable: table,
+                          referencedTable: $$MovesTableReferences
+                              ._deckMovesRefsTable(db),
+                          managerFromTypedResult: (p0) =>
+                              $$MovesTableReferences(
+                                db,
+                                table,
+                                p0,
+                              ).deckMovesRefs,
+                          referencedItemsForCurrentItem:
+                              (item, referencedItems) => referencedItems.where(
+                                (e) => e.moveId == item.id,
+                              ),
+                          typedResults: items,
+                        ),
                     ];
                   },
                 );
@@ -2807,7 +4455,11 @@ typedef $$MovesTableProcessedTableManager =
       $$MovesTableUpdateCompanionBuilder,
       (Move, $$MovesTableReferences),
       Move,
-      PrefetchHooks Function({bool comboMovesRefs, bool reviewsRefs})
+      PrefetchHooks Function({
+        bool comboMovesRefs,
+        bool reviewsRefs,
+        bool deckMovesRefs,
+      })
     >;
 typedef $$CombosTableCreateCompanionBuilder =
     CombosCompanion Function({
@@ -2841,6 +4493,25 @@ final class $$CombosTableReferences
     ).filter((f) => f.comboId.id.sqlEquals($_itemColumn<String>('id')!));
 
     final cache = $_typedResult.readTableOrNull(_comboMovesRefsTable($_db));
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
+
+  static MultiTypedResultKey<$ReviewsTable, List<Review>> _reviewsRefsTable(
+    _$AppDatabase db,
+  ) => MultiTypedResultKey.fromTable(
+    db.reviews,
+    aliasName: $_aliasNameGenerator(db.combos.id, db.reviews.comboId),
+  );
+
+  $$ReviewsTableProcessedTableManager get reviewsRefs {
+    final manager = $$ReviewsTableTableManager(
+      $_db,
+      $_db.reviews,
+    ).filter((f) => f.comboId.id.sqlEquals($_itemColumn<String>('id')!));
+
+    final cache = $_typedResult.readTableOrNull(_reviewsRefsTable($_db));
     return ProcessedTableManager(
       manager.$state.copyWith(prefetchedData: cache),
     );
@@ -2887,6 +4558,31 @@ class $$CombosTableFilterComposer
           }) => $$ComboMovesTableFilterComposer(
             $db: $db,
             $table: $db.comboMoves,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+
+  Expression<bool> reviewsRefs(
+    Expression<bool> Function($$ReviewsTableFilterComposer f) f,
+  ) {
+    final $$ReviewsTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.reviews,
+      getReferencedColumn: (t) => t.comboId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$ReviewsTableFilterComposer(
+            $db: $db,
+            $table: $db.reviews,
             $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
             joinBuilder: joinBuilder,
             $removeJoinBuilderFromRootComposer:
@@ -2966,6 +4662,31 @@ class $$CombosTableAnnotationComposer
     );
     return f(composer);
   }
+
+  Expression<T> reviewsRefs<T extends Object>(
+    Expression<T> Function($$ReviewsTableAnnotationComposer a) f,
+  ) {
+    final $$ReviewsTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.reviews,
+      getReferencedColumn: (t) => t.comboId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$ReviewsTableAnnotationComposer(
+            $db: $db,
+            $table: $db.reviews,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
 }
 
 class $$CombosTableTableManager
@@ -2981,7 +4702,7 @@ class $$CombosTableTableManager
           $$CombosTableUpdateCompanionBuilder,
           (Combo, $$CombosTableReferences),
           Combo,
-          PrefetchHooks Function({bool comboMovesRefs})
+          PrefetchHooks Function({bool comboMovesRefs, bool reviewsRefs})
         > {
   $$CombosTableTableManager(_$AppDatabase db, $CombosTable table)
     : super(
@@ -3024,28 +4745,59 @@ class $$CombosTableTableManager
                     (e.readTable(table), $$CombosTableReferences(db, table, e)),
               )
               .toList(),
-          prefetchHooksCallback: ({comboMovesRefs = false}) {
-            return PrefetchHooks(
-              db: db,
-              explicitlyWatchedTables: [if (comboMovesRefs) db.comboMoves],
-              addJoins: null,
-              getPrefetchedDataCallback: (items) async {
-                return [
-                  if (comboMovesRefs)
-                    await $_getPrefetchedData<Combo, $CombosTable, ComboMove>(
-                      currentTable: table,
-                      referencedTable: $$CombosTableReferences
-                          ._comboMovesRefsTable(db),
-                      managerFromTypedResult: (p0) =>
-                          $$CombosTableReferences(db, table, p0).comboMovesRefs,
-                      referencedItemsForCurrentItem: (item, referencedItems) =>
-                          referencedItems.where((e) => e.comboId == item.id),
-                      typedResults: items,
-                    ),
-                ];
+          prefetchHooksCallback:
+              ({comboMovesRefs = false, reviewsRefs = false}) {
+                return PrefetchHooks(
+                  db: db,
+                  explicitlyWatchedTables: [
+                    if (comboMovesRefs) db.comboMoves,
+                    if (reviewsRefs) db.reviews,
+                  ],
+                  addJoins: null,
+                  getPrefetchedDataCallback: (items) async {
+                    return [
+                      if (comboMovesRefs)
+                        await $_getPrefetchedData<
+                          Combo,
+                          $CombosTable,
+                          ComboMove
+                        >(
+                          currentTable: table,
+                          referencedTable: $$CombosTableReferences
+                              ._comboMovesRefsTable(db),
+                          managerFromTypedResult: (p0) =>
+                              $$CombosTableReferences(
+                                db,
+                                table,
+                                p0,
+                              ).comboMovesRefs,
+                          referencedItemsForCurrentItem:
+                              (item, referencedItems) => referencedItems.where(
+                                (e) => e.comboId == item.id,
+                              ),
+                          typedResults: items,
+                        ),
+                      if (reviewsRefs)
+                        await $_getPrefetchedData<Combo, $CombosTable, Review>(
+                          currentTable: table,
+                          referencedTable: $$CombosTableReferences
+                              ._reviewsRefsTable(db),
+                          managerFromTypedResult: (p0) =>
+                              $$CombosTableReferences(
+                                db,
+                                table,
+                                p0,
+                              ).reviewsRefs,
+                          referencedItemsForCurrentItem:
+                              (item, referencedItems) => referencedItems.where(
+                                (e) => e.comboId == item.id,
+                              ),
+                          typedResults: items,
+                        ),
+                    ];
+                  },
+                );
               },
-            );
-          },
         ),
       );
 }
@@ -3062,7 +4814,7 @@ typedef $$CombosTableProcessedTableManager =
       $$CombosTableUpdateCompanionBuilder,
       (Combo, $$CombosTableReferences),
       Combo,
-      PrefetchHooks Function({bool comboMovesRefs})
+      PrefetchHooks Function({bool comboMovesRefs, bool reviewsRefs})
     >;
 typedef $$ComboMovesTableCreateCompanionBuilder =
     ComboMovesCompanion Function({
@@ -3459,6 +5211,9 @@ typedef $$ReviewsTableCreateCompanionBuilder =
       required String reviewType,
       Value<DateTime> reviewedAt,
       Value<String?> moveId,
+      Value<String?> comboId,
+      Value<int?> fsrsPreState,
+      Value<int?> fsrsPostState,
       Value<int> rowid,
     });
 typedef $$ReviewsTableUpdateCompanionBuilder =
@@ -3468,6 +5223,9 @@ typedef $$ReviewsTableUpdateCompanionBuilder =
       Value<String> reviewType,
       Value<DateTime> reviewedAt,
       Value<String?> moveId,
+      Value<String?> comboId,
+      Value<int?> fsrsPreState,
+      Value<int?> fsrsPostState,
       Value<int> rowid,
     });
 
@@ -3487,6 +5245,24 @@ final class $$ReviewsTableReferences
       $_db.moves,
     ).filter((f) => f.id.sqlEquals($_column));
     final item = $_typedResult.readTableOrNull(_moveIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+
+  static $CombosTable _comboIdTable(_$AppDatabase db) => db.combos.createAlias(
+    $_aliasNameGenerator(db.reviews.comboId, db.combos.id),
+  );
+
+  $$CombosTableProcessedTableManager? get comboId {
+    final $_column = $_itemColumn<String>('combo_id');
+    if ($_column == null) return null;
+    final manager = $$CombosTableTableManager(
+      $_db,
+      $_db.combos,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_comboIdTable($_db));
     if (item == null) return manager;
     return ProcessedTableManager(
       manager.$state.copyWith(prefetchedData: [item]),
@@ -3523,6 +5299,16 @@ class $$ReviewsTableFilterComposer
     builder: (column) => ColumnFilters(column),
   );
 
+  ColumnFilters<int> get fsrsPreState => $composableBuilder(
+    column: $table.fsrsPreState,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get fsrsPostState => $composableBuilder(
+    column: $table.fsrsPostState,
+    builder: (column) => ColumnFilters(column),
+  );
+
   $$MovesTableFilterComposer get moveId {
     final $$MovesTableFilterComposer composer = $composerBuilder(
       composer: this,
@@ -3537,6 +5323,29 @@ class $$ReviewsTableFilterComposer
           }) => $$MovesTableFilterComposer(
             $db: $db,
             $table: $db.moves,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  $$CombosTableFilterComposer get comboId {
+    final $$CombosTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.comboId,
+      referencedTable: $db.combos,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$CombosTableFilterComposer(
+            $db: $db,
+            $table: $db.combos,
             $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
             joinBuilder: joinBuilder,
             $removeJoinBuilderFromRootComposer:
@@ -3576,6 +5385,16 @@ class $$ReviewsTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<int> get fsrsPreState => $composableBuilder(
+    column: $table.fsrsPreState,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get fsrsPostState => $composableBuilder(
+    column: $table.fsrsPostState,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   $$MovesTableOrderingComposer get moveId {
     final $$MovesTableOrderingComposer composer = $composerBuilder(
       composer: this,
@@ -3590,6 +5409,29 @@ class $$ReviewsTableOrderingComposer
           }) => $$MovesTableOrderingComposer(
             $db: $db,
             $table: $db.moves,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  $$CombosTableOrderingComposer get comboId {
+    final $$CombosTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.comboId,
+      referencedTable: $db.combos,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$CombosTableOrderingComposer(
+            $db: $db,
+            $table: $db.combos,
             $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
             joinBuilder: joinBuilder,
             $removeJoinBuilderFromRootComposer:
@@ -3625,6 +5467,16 @@ class $$ReviewsTableAnnotationComposer
     builder: (column) => column,
   );
 
+  GeneratedColumn<int> get fsrsPreState => $composableBuilder(
+    column: $table.fsrsPreState,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get fsrsPostState => $composableBuilder(
+    column: $table.fsrsPostState,
+    builder: (column) => column,
+  );
+
   $$MovesTableAnnotationComposer get moveId {
     final $$MovesTableAnnotationComposer composer = $composerBuilder(
       composer: this,
@@ -3639,6 +5491,29 @@ class $$ReviewsTableAnnotationComposer
           }) => $$MovesTableAnnotationComposer(
             $db: $db,
             $table: $db.moves,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  $$CombosTableAnnotationComposer get comboId {
+    final $$CombosTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.comboId,
+      referencedTable: $db.combos,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$CombosTableAnnotationComposer(
+            $db: $db,
+            $table: $db.combos,
             $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
             joinBuilder: joinBuilder,
             $removeJoinBuilderFromRootComposer:
@@ -3662,7 +5537,7 @@ class $$ReviewsTableTableManager
           $$ReviewsTableUpdateCompanionBuilder,
           (Review, $$ReviewsTableReferences),
           Review,
-          PrefetchHooks Function({bool moveId})
+          PrefetchHooks Function({bool moveId, bool comboId})
         > {
   $$ReviewsTableTableManager(_$AppDatabase db, $ReviewsTable table)
     : super(
@@ -3682,6 +5557,9 @@ class $$ReviewsTableTableManager
                 Value<String> reviewType = const Value.absent(),
                 Value<DateTime> reviewedAt = const Value.absent(),
                 Value<String?> moveId = const Value.absent(),
+                Value<String?> comboId = const Value.absent(),
+                Value<int?> fsrsPreState = const Value.absent(),
+                Value<int?> fsrsPostState = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => ReviewsCompanion(
                 id: id,
@@ -3689,6 +5567,9 @@ class $$ReviewsTableTableManager
                 reviewType: reviewType,
                 reviewedAt: reviewedAt,
                 moveId: moveId,
+                comboId: comboId,
+                fsrsPreState: fsrsPreState,
+                fsrsPostState: fsrsPostState,
                 rowid: rowid,
               ),
           createCompanionCallback:
@@ -3698,6 +5579,9 @@ class $$ReviewsTableTableManager
                 required String reviewType,
                 Value<DateTime> reviewedAt = const Value.absent(),
                 Value<String?> moveId = const Value.absent(),
+                Value<String?> comboId = const Value.absent(),
+                Value<int?> fsrsPreState = const Value.absent(),
+                Value<int?> fsrsPostState = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => ReviewsCompanion.insert(
                 id: id,
@@ -3705,6 +5589,9 @@ class $$ReviewsTableTableManager
                 reviewType: reviewType,
                 reviewedAt: reviewedAt,
                 moveId: moveId,
+                comboId: comboId,
+                fsrsPreState: fsrsPreState,
+                fsrsPostState: fsrsPostState,
                 rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0
@@ -3715,7 +5602,7 @@ class $$ReviewsTableTableManager
                 ),
               )
               .toList(),
-          prefetchHooksCallback: ({moveId = false}) {
+          prefetchHooksCallback: ({moveId = false, comboId = false}) {
             return PrefetchHooks(
               db: db,
               explicitlyWatchedTables: [],
@@ -3748,6 +5635,19 @@ class $$ReviewsTableTableManager
                               )
                               as T;
                     }
+                    if (comboId) {
+                      state =
+                          state.withJoin(
+                                currentTable: table,
+                                currentColumn: table.comboId,
+                                referencedTable: $$ReviewsTableReferences
+                                    ._comboIdTable(db),
+                                referencedColumn: $$ReviewsTableReferences
+                                    ._comboIdTable(db)
+                                    .id,
+                              )
+                              as T;
+                    }
 
                     return state;
                   },
@@ -3772,7 +5672,7 @@ typedef $$ReviewsTableProcessedTableManager =
       $$ReviewsTableUpdateCompanionBuilder,
       (Review, $$ReviewsTableReferences),
       Review,
-      PrefetchHooks Function({bool moveId})
+      PrefetchHooks Function({bool moveId, bool comboId})
     >;
 typedef $$BattleResultsTableCreateCompanionBuilder =
     BattleResultsCompanion Function({
@@ -4278,6 +6178,962 @@ typedef $$SyncLogTableProcessedTableManager =
       SyncLogData,
       PrefetchHooks Function()
     >;
+typedef $$FsrsCardsTableCreateCompanionBuilder =
+    FsrsCardsCompanion Function({
+      required String entityId,
+      Value<String> entityType,
+      Value<double> stability,
+      Value<double> difficulty,
+      Value<DateTime> due,
+      Value<DateTime?> lastReview,
+      Value<int> reps,
+      Value<int> lapses,
+      Value<int> fsrsState,
+      Value<int> rowid,
+    });
+typedef $$FsrsCardsTableUpdateCompanionBuilder =
+    FsrsCardsCompanion Function({
+      Value<String> entityId,
+      Value<String> entityType,
+      Value<double> stability,
+      Value<double> difficulty,
+      Value<DateTime> due,
+      Value<DateTime?> lastReview,
+      Value<int> reps,
+      Value<int> lapses,
+      Value<int> fsrsState,
+      Value<int> rowid,
+    });
+
+class $$FsrsCardsTableFilterComposer
+    extends Composer<_$AppDatabase, $FsrsCardsTable> {
+  $$FsrsCardsTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get entityId => $composableBuilder(
+    column: $table.entityId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get entityType => $composableBuilder(
+    column: $table.entityType,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<double> get stability => $composableBuilder(
+    column: $table.stability,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<double> get difficulty => $composableBuilder(
+    column: $table.difficulty,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get due => $composableBuilder(
+    column: $table.due,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get lastReview => $composableBuilder(
+    column: $table.lastReview,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get reps => $composableBuilder(
+    column: $table.reps,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get lapses => $composableBuilder(
+    column: $table.lapses,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get fsrsState => $composableBuilder(
+    column: $table.fsrsState,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$FsrsCardsTableOrderingComposer
+    extends Composer<_$AppDatabase, $FsrsCardsTable> {
+  $$FsrsCardsTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get entityId => $composableBuilder(
+    column: $table.entityId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get entityType => $composableBuilder(
+    column: $table.entityType,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<double> get stability => $composableBuilder(
+    column: $table.stability,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<double> get difficulty => $composableBuilder(
+    column: $table.difficulty,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get due => $composableBuilder(
+    column: $table.due,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get lastReview => $composableBuilder(
+    column: $table.lastReview,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get reps => $composableBuilder(
+    column: $table.reps,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get lapses => $composableBuilder(
+    column: $table.lapses,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get fsrsState => $composableBuilder(
+    column: $table.fsrsState,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$FsrsCardsTableAnnotationComposer
+    extends Composer<_$AppDatabase, $FsrsCardsTable> {
+  $$FsrsCardsTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get entityId =>
+      $composableBuilder(column: $table.entityId, builder: (column) => column);
+
+  GeneratedColumn<String> get entityType => $composableBuilder(
+    column: $table.entityType,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<double> get stability =>
+      $composableBuilder(column: $table.stability, builder: (column) => column);
+
+  GeneratedColumn<double> get difficulty => $composableBuilder(
+    column: $table.difficulty,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<DateTime> get due =>
+      $composableBuilder(column: $table.due, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get lastReview => $composableBuilder(
+    column: $table.lastReview,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get reps =>
+      $composableBuilder(column: $table.reps, builder: (column) => column);
+
+  GeneratedColumn<int> get lapses =>
+      $composableBuilder(column: $table.lapses, builder: (column) => column);
+
+  GeneratedColumn<int> get fsrsState =>
+      $composableBuilder(column: $table.fsrsState, builder: (column) => column);
+}
+
+class $$FsrsCardsTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $FsrsCardsTable,
+          FsrsCard,
+          $$FsrsCardsTableFilterComposer,
+          $$FsrsCardsTableOrderingComposer,
+          $$FsrsCardsTableAnnotationComposer,
+          $$FsrsCardsTableCreateCompanionBuilder,
+          $$FsrsCardsTableUpdateCompanionBuilder,
+          (FsrsCard, BaseReferences<_$AppDatabase, $FsrsCardsTable, FsrsCard>),
+          FsrsCard,
+          PrefetchHooks Function()
+        > {
+  $$FsrsCardsTableTableManager(_$AppDatabase db, $FsrsCardsTable table)
+    : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$FsrsCardsTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$FsrsCardsTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$FsrsCardsTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<String> entityId = const Value.absent(),
+                Value<String> entityType = const Value.absent(),
+                Value<double> stability = const Value.absent(),
+                Value<double> difficulty = const Value.absent(),
+                Value<DateTime> due = const Value.absent(),
+                Value<DateTime?> lastReview = const Value.absent(),
+                Value<int> reps = const Value.absent(),
+                Value<int> lapses = const Value.absent(),
+                Value<int> fsrsState = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => FsrsCardsCompanion(
+                entityId: entityId,
+                entityType: entityType,
+                stability: stability,
+                difficulty: difficulty,
+                due: due,
+                lastReview: lastReview,
+                reps: reps,
+                lapses: lapses,
+                fsrsState: fsrsState,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String entityId,
+                Value<String> entityType = const Value.absent(),
+                Value<double> stability = const Value.absent(),
+                Value<double> difficulty = const Value.absent(),
+                Value<DateTime> due = const Value.absent(),
+                Value<DateTime?> lastReview = const Value.absent(),
+                Value<int> reps = const Value.absent(),
+                Value<int> lapses = const Value.absent(),
+                Value<int> fsrsState = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => FsrsCardsCompanion.insert(
+                entityId: entityId,
+                entityType: entityType,
+                stability: stability,
+                difficulty: difficulty,
+                due: due,
+                lastReview: lastReview,
+                reps: reps,
+                lapses: lapses,
+                fsrsState: fsrsState,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$FsrsCardsTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $FsrsCardsTable,
+      FsrsCard,
+      $$FsrsCardsTableFilterComposer,
+      $$FsrsCardsTableOrderingComposer,
+      $$FsrsCardsTableAnnotationComposer,
+      $$FsrsCardsTableCreateCompanionBuilder,
+      $$FsrsCardsTableUpdateCompanionBuilder,
+      (FsrsCard, BaseReferences<_$AppDatabase, $FsrsCardsTable, FsrsCard>),
+      FsrsCard,
+      PrefetchHooks Function()
+    >;
+typedef $$DecksTableCreateCompanionBuilder =
+    DecksCompanion Function({
+      required String id,
+      required String name,
+      Value<String> deckType,
+      Value<String?> filterCriteria,
+      Value<int?> sessionSize,
+      Value<DateTime> createdAt,
+      Value<DateTime> updatedAt,
+      Value<int> rowid,
+    });
+typedef $$DecksTableUpdateCompanionBuilder =
+    DecksCompanion Function({
+      Value<String> id,
+      Value<String> name,
+      Value<String> deckType,
+      Value<String?> filterCriteria,
+      Value<int?> sessionSize,
+      Value<DateTime> createdAt,
+      Value<DateTime> updatedAt,
+      Value<int> rowid,
+    });
+
+final class $$DecksTableReferences
+    extends BaseReferences<_$AppDatabase, $DecksTable, Deck> {
+  $$DecksTableReferences(super.$_db, super.$_table, super.$_typedResult);
+
+  static MultiTypedResultKey<$DeckMovesTable, List<DeckMove>>
+  _deckMovesRefsTable(_$AppDatabase db) => MultiTypedResultKey.fromTable(
+    db.deckMoves,
+    aliasName: $_aliasNameGenerator(db.decks.id, db.deckMoves.deckId),
+  );
+
+  $$DeckMovesTableProcessedTableManager get deckMovesRefs {
+    final manager = $$DeckMovesTableTableManager(
+      $_db,
+      $_db.deckMoves,
+    ).filter((f) => f.deckId.id.sqlEquals($_itemColumn<String>('id')!));
+
+    final cache = $_typedResult.readTableOrNull(_deckMovesRefsTable($_db));
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
+}
+
+class $$DecksTableFilterComposer extends Composer<_$AppDatabase, $DecksTable> {
+  $$DecksTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get name => $composableBuilder(
+    column: $table.name,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get deckType => $composableBuilder(
+    column: $table.deckType,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get filterCriteria => $composableBuilder(
+    column: $table.filterCriteria,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get sessionSize => $composableBuilder(
+    column: $table.sessionSize,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  Expression<bool> deckMovesRefs(
+    Expression<bool> Function($$DeckMovesTableFilterComposer f) f,
+  ) {
+    final $$DeckMovesTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.deckMoves,
+      getReferencedColumn: (t) => t.deckId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$DeckMovesTableFilterComposer(
+            $db: $db,
+            $table: $db.deckMoves,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+}
+
+class $$DecksTableOrderingComposer
+    extends Composer<_$AppDatabase, $DecksTable> {
+  $$DecksTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get name => $composableBuilder(
+    column: $table.name,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get deckType => $composableBuilder(
+    column: $table.deckType,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get filterCriteria => $composableBuilder(
+    column: $table.filterCriteria,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get sessionSize => $composableBuilder(
+    column: $table.sessionSize,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$DecksTableAnnotationComposer
+    extends Composer<_$AppDatabase, $DecksTable> {
+  $$DecksTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get name =>
+      $composableBuilder(column: $table.name, builder: (column) => column);
+
+  GeneratedColumn<String> get deckType =>
+      $composableBuilder(column: $table.deckType, builder: (column) => column);
+
+  GeneratedColumn<String> get filterCriteria => $composableBuilder(
+    column: $table.filterCriteria,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get sessionSize => $composableBuilder(
+    column: $table.sessionSize,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<DateTime> get createdAt =>
+      $composableBuilder(column: $table.createdAt, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get updatedAt =>
+      $composableBuilder(column: $table.updatedAt, builder: (column) => column);
+
+  Expression<T> deckMovesRefs<T extends Object>(
+    Expression<T> Function($$DeckMovesTableAnnotationComposer a) f,
+  ) {
+    final $$DeckMovesTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.deckMoves,
+      getReferencedColumn: (t) => t.deckId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$DeckMovesTableAnnotationComposer(
+            $db: $db,
+            $table: $db.deckMoves,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+}
+
+class $$DecksTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $DecksTable,
+          Deck,
+          $$DecksTableFilterComposer,
+          $$DecksTableOrderingComposer,
+          $$DecksTableAnnotationComposer,
+          $$DecksTableCreateCompanionBuilder,
+          $$DecksTableUpdateCompanionBuilder,
+          (Deck, $$DecksTableReferences),
+          Deck,
+          PrefetchHooks Function({bool deckMovesRefs})
+        > {
+  $$DecksTableTableManager(_$AppDatabase db, $DecksTable table)
+    : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$DecksTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$DecksTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$DecksTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<String> id = const Value.absent(),
+                Value<String> name = const Value.absent(),
+                Value<String> deckType = const Value.absent(),
+                Value<String?> filterCriteria = const Value.absent(),
+                Value<int?> sessionSize = const Value.absent(),
+                Value<DateTime> createdAt = const Value.absent(),
+                Value<DateTime> updatedAt = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => DecksCompanion(
+                id: id,
+                name: name,
+                deckType: deckType,
+                filterCriteria: filterCriteria,
+                sessionSize: sessionSize,
+                createdAt: createdAt,
+                updatedAt: updatedAt,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String id,
+                required String name,
+                Value<String> deckType = const Value.absent(),
+                Value<String?> filterCriteria = const Value.absent(),
+                Value<int?> sessionSize = const Value.absent(),
+                Value<DateTime> createdAt = const Value.absent(),
+                Value<DateTime> updatedAt = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => DecksCompanion.insert(
+                id: id,
+                name: name,
+                deckType: deckType,
+                filterCriteria: filterCriteria,
+                sessionSize: sessionSize,
+                createdAt: createdAt,
+                updatedAt: updatedAt,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map(
+                (e) =>
+                    (e.readTable(table), $$DecksTableReferences(db, table, e)),
+              )
+              .toList(),
+          prefetchHooksCallback: ({deckMovesRefs = false}) {
+            return PrefetchHooks(
+              db: db,
+              explicitlyWatchedTables: [if (deckMovesRefs) db.deckMoves],
+              addJoins: null,
+              getPrefetchedDataCallback: (items) async {
+                return [
+                  if (deckMovesRefs)
+                    await $_getPrefetchedData<Deck, $DecksTable, DeckMove>(
+                      currentTable: table,
+                      referencedTable: $$DecksTableReferences
+                          ._deckMovesRefsTable(db),
+                      managerFromTypedResult: (p0) =>
+                          $$DecksTableReferences(db, table, p0).deckMovesRefs,
+                      referencedItemsForCurrentItem: (item, referencedItems) =>
+                          referencedItems.where((e) => e.deckId == item.id),
+                      typedResults: items,
+                    ),
+                ];
+              },
+            );
+          },
+        ),
+      );
+}
+
+typedef $$DecksTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $DecksTable,
+      Deck,
+      $$DecksTableFilterComposer,
+      $$DecksTableOrderingComposer,
+      $$DecksTableAnnotationComposer,
+      $$DecksTableCreateCompanionBuilder,
+      $$DecksTableUpdateCompanionBuilder,
+      (Deck, $$DecksTableReferences),
+      Deck,
+      PrefetchHooks Function({bool deckMovesRefs})
+    >;
+typedef $$DeckMovesTableCreateCompanionBuilder =
+    DeckMovesCompanion Function({
+      required String deckId,
+      required String moveId,
+      Value<int> rowid,
+    });
+typedef $$DeckMovesTableUpdateCompanionBuilder =
+    DeckMovesCompanion Function({
+      Value<String> deckId,
+      Value<String> moveId,
+      Value<int> rowid,
+    });
+
+final class $$DeckMovesTableReferences
+    extends BaseReferences<_$AppDatabase, $DeckMovesTable, DeckMove> {
+  $$DeckMovesTableReferences(super.$_db, super.$_table, super.$_typedResult);
+
+  static $DecksTable _deckIdTable(_$AppDatabase db) => db.decks.createAlias(
+    $_aliasNameGenerator(db.deckMoves.deckId, db.decks.id),
+  );
+
+  $$DecksTableProcessedTableManager get deckId {
+    final $_column = $_itemColumn<String>('deck_id')!;
+
+    final manager = $$DecksTableTableManager(
+      $_db,
+      $_db.decks,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_deckIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+
+  static $MovesTable _moveIdTable(_$AppDatabase db) => db.moves.createAlias(
+    $_aliasNameGenerator(db.deckMoves.moveId, db.moves.id),
+  );
+
+  $$MovesTableProcessedTableManager get moveId {
+    final $_column = $_itemColumn<String>('move_id')!;
+
+    final manager = $$MovesTableTableManager(
+      $_db,
+      $_db.moves,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_moveIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+}
+
+class $$DeckMovesTableFilterComposer
+    extends Composer<_$AppDatabase, $DeckMovesTable> {
+  $$DeckMovesTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  $$DecksTableFilterComposer get deckId {
+    final $$DecksTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.deckId,
+      referencedTable: $db.decks,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$DecksTableFilterComposer(
+            $db: $db,
+            $table: $db.decks,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  $$MovesTableFilterComposer get moveId {
+    final $$MovesTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.moveId,
+      referencedTable: $db.moves,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$MovesTableFilterComposer(
+            $db: $db,
+            $table: $db.moves,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$DeckMovesTableOrderingComposer
+    extends Composer<_$AppDatabase, $DeckMovesTable> {
+  $$DeckMovesTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  $$DecksTableOrderingComposer get deckId {
+    final $$DecksTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.deckId,
+      referencedTable: $db.decks,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$DecksTableOrderingComposer(
+            $db: $db,
+            $table: $db.decks,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  $$MovesTableOrderingComposer get moveId {
+    final $$MovesTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.moveId,
+      referencedTable: $db.moves,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$MovesTableOrderingComposer(
+            $db: $db,
+            $table: $db.moves,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$DeckMovesTableAnnotationComposer
+    extends Composer<_$AppDatabase, $DeckMovesTable> {
+  $$DeckMovesTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  $$DecksTableAnnotationComposer get deckId {
+    final $$DecksTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.deckId,
+      referencedTable: $db.decks,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$DecksTableAnnotationComposer(
+            $db: $db,
+            $table: $db.decks,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  $$MovesTableAnnotationComposer get moveId {
+    final $$MovesTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.moveId,
+      referencedTable: $db.moves,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$MovesTableAnnotationComposer(
+            $db: $db,
+            $table: $db.moves,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$DeckMovesTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $DeckMovesTable,
+          DeckMove,
+          $$DeckMovesTableFilterComposer,
+          $$DeckMovesTableOrderingComposer,
+          $$DeckMovesTableAnnotationComposer,
+          $$DeckMovesTableCreateCompanionBuilder,
+          $$DeckMovesTableUpdateCompanionBuilder,
+          (DeckMove, $$DeckMovesTableReferences),
+          DeckMove,
+          PrefetchHooks Function({bool deckId, bool moveId})
+        > {
+  $$DeckMovesTableTableManager(_$AppDatabase db, $DeckMovesTable table)
+    : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$DeckMovesTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$DeckMovesTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$DeckMovesTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<String> deckId = const Value.absent(),
+                Value<String> moveId = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => DeckMovesCompanion(
+                deckId: deckId,
+                moveId: moveId,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String deckId,
+                required String moveId,
+                Value<int> rowid = const Value.absent(),
+              }) => DeckMovesCompanion.insert(
+                deckId: deckId,
+                moveId: moveId,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map(
+                (e) => (
+                  e.readTable(table),
+                  $$DeckMovesTableReferences(db, table, e),
+                ),
+              )
+              .toList(),
+          prefetchHooksCallback: ({deckId = false, moveId = false}) {
+            return PrefetchHooks(
+              db: db,
+              explicitlyWatchedTables: [],
+              addJoins:
+                  <
+                    T extends TableManagerState<
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic
+                    >
+                  >(state) {
+                    if (deckId) {
+                      state =
+                          state.withJoin(
+                                currentTable: table,
+                                currentColumn: table.deckId,
+                                referencedTable: $$DeckMovesTableReferences
+                                    ._deckIdTable(db),
+                                referencedColumn: $$DeckMovesTableReferences
+                                    ._deckIdTable(db)
+                                    .id,
+                              )
+                              as T;
+                    }
+                    if (moveId) {
+                      state =
+                          state.withJoin(
+                                currentTable: table,
+                                currentColumn: table.moveId,
+                                referencedTable: $$DeckMovesTableReferences
+                                    ._moveIdTable(db),
+                                referencedColumn: $$DeckMovesTableReferences
+                                    ._moveIdTable(db)
+                                    .id,
+                              )
+                              as T;
+                    }
+
+                    return state;
+                  },
+              getPrefetchedDataCallback: (items) async {
+                return [];
+              },
+            );
+          },
+        ),
+      );
+}
+
+typedef $$DeckMovesTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $DeckMovesTable,
+      DeckMove,
+      $$DeckMovesTableFilterComposer,
+      $$DeckMovesTableOrderingComposer,
+      $$DeckMovesTableAnnotationComposer,
+      $$DeckMovesTableCreateCompanionBuilder,
+      $$DeckMovesTableUpdateCompanionBuilder,
+      (DeckMove, $$DeckMovesTableReferences),
+      DeckMove,
+      PrefetchHooks Function({bool deckId, bool moveId})
+    >;
 
 class $AppDatabaseManager {
   final _$AppDatabase _db;
@@ -4294,4 +7150,10 @@ class $AppDatabaseManager {
       $$BattleResultsTableTableManager(_db, _db.battleResults);
   $$SyncLogTableTableManager get syncLog =>
       $$SyncLogTableTableManager(_db, _db.syncLog);
+  $$FsrsCardsTableTableManager get fsrsCards =>
+      $$FsrsCardsTableTableManager(_db, _db.fsrsCards);
+  $$DecksTableTableManager get decks =>
+      $$DecksTableTableManager(_db, _db.decks);
+  $$DeckMovesTableTableManager get deckMoves =>
+      $$DeckMovesTableTableManager(_db, _db.deckMoves);
 }

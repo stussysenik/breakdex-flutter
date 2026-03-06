@@ -21,7 +21,7 @@ dependencies:
   video_thumbnail: ^0.5.3
   # ffmpeg_kit_flutter_new: ^4.1.0  # Replaced by native AVFoundation export
   shared_preferences: ^2.5.3
-  google_fonts: ^6.2.1
+  google_fonts: ^8.0.2
   flutter_animate: ^4.5.2
   path_provider: ^2.1.5
   path: ^1.9.1
@@ -30,6 +30,8 @@ dependencies:
   share_plus: ^10.1.4
   supabase_flutter: ^2.8.0
   connectivity_plus: ^6.1.0
+  sensors_plus: ^6.1.1
+  fsrs: ^2.0.1
 
 dev_dependencies:
   flutter_test:
@@ -39,6 +41,7 @@ dev_dependencies:
   flutter_lints: ^6.0.0
   drift_dev: ^2.22.1
   build_runner: ^2.4.14
+  sqlite3: ^2.4.6
 
 flutter:
   uses-material-design: true

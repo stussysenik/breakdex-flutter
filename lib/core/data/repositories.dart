@@ -18,6 +18,7 @@ abstract class MoveRepository {
 /// Abstract interface for combo data access.
 abstract class ComboRepository {
   Stream<List<Combo>> watchAll();
+  Stream<List<(Combo, int)>> watchAllWithMoveCounts();
   Future<List<Combo>> getAll();
   Future<Combo> getById(String id);
   Stream<Combo> watchById(String id);

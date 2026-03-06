@@ -74,6 +74,9 @@ class SyncAwareComboRepository implements ComboRepository {
   @override
   Stream<List<Combo>> watchAll() => _inner.watchAll();
   @override
+  Stream<List<(Combo, int)>> watchAllWithMoveCounts() =>
+      _inner.watchAllWithMoveCounts();
+  @override
   Future<List<Combo>> getAll() => _inner.getAll();
   @override
   Future<Combo> getById(String id) => _inner.getById(id);

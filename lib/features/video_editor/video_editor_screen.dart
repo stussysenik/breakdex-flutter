@@ -5,6 +5,7 @@ import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:path/path.dart' as p;
+import 'dart:math' as math;
 import 'package:uuid/uuid.dart';
 import 'package:video_player/video_player.dart';
 import 'package:video_thumbnail/video_thumbnail.dart';
@@ -29,7 +30,11 @@ class _VideoEditorScreenState extends State<VideoEditorScreen> {
   int _selectedSpeedIndex = 2; // 1x default
   int _rotation = 0; // 0, 90, 180, 270
   int _selectedAspectIndex = 0; // Original
-  Rect? _cropRect; // Free-form crop (normalized 0.0-1.0), null when not in free mode
+  bool _matrixInitialized = false;
+  double _viewW = 300.0;
+  double _viewH = 300.0;
+  
+  final TransformationController _transformController = TransformationController();
   bool _exporting = false;
   ExportProgress? _exportProgress;
   StreamSubscription<ExportProgress>? _progressSub;
@@ -41,12 +46,22 @@ class _VideoEditorScreenState extends State<VideoEditorScreen> {
   static const _speeds = [0.25, 0.5, 1.0, 1.5, 2.0];
   static const _speedLabels = ['0.25x', '0.5x', '1x', '1.5x', '2x'];
 
-  static const _aspectLabels = ['Original', '9:16', '16:9', '1:1', '4:5', 'Free'];
-  static const _aspectRatios = <double?>[null, 9 / 16, 16 / 9, 1.0, 4 / 5, null];
-  static const _aspectRatioStrings = <String?>[
-    null, '9:16', '16:9', '1:1', '4:5', null,
+  static const _aspectLabels = [
+    'Original',
+    'Free Form',
+    '9:16',
+    '16:9',
+    '1:1',
+    '4:5',
   ];
-  static const _freeAspectIndex = 5;
+  static const _aspectRatios = <double?>[
+    null, // Original
+    null, // Free Form (uses dynamic bounding rect)
+    9 / 16,
+    16 / 9,
+    1.0,
+    4 / 5,
+  ];
 
   @override
   void initState() {
@@ -56,7 +71,17 @@ class _VideoEditorScreenState extends State<VideoEditorScreen> {
 
   Future<void> _initVideo() async {
     final controller = VideoPlayerController.file(File(widget.videoPath));
-    await controller.initialize();
+    try {
+      await controller.initialize();
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Could not load video: $e')),
+        );
+        Navigator.of(context).pop();
+      }
+      return;
+    }
     if (mounted) {
       setState(() {
         _controller = controller;
@@ -93,6 +118,7 @@ class _VideoEditorScreenState extends State<VideoEditorScreen> {
   void dispose() {
     _progressSub?.cancel();
     _controller?.dispose();
+    _transformController.dispose();
     super.dispose();
   }
 
@@ -152,7 +178,8 @@ class _VideoEditorScreenState extends State<VideoEditorScreen> {
                 // Video preview
                 Padding(
                   padding: const EdgeInsets.symmetric(
-                      horizontal: AppSpacing.screenEdge),
+                    horizontal: AppSpacing.screenEdge,
+                  ),
                   child: _buildVideoPreview(colorScheme),
                 ),
                 const SizedBox(height: AppSpacing.lg),
@@ -166,14 +193,14 @@ class _VideoEditorScreenState extends State<VideoEditorScreen> {
                         // Trim timeline
                         Padding(
                           padding: const EdgeInsets.symmetric(
-                              horizontal: AppSpacing.screenEdge),
+                            horizontal: AppSpacing.screenEdge,
+                          ),
                           child: _TrimTimeline(
                             trimStart: _trimStart,
                             trimEnd: _trimEnd,
                             thumbnails: _thumbnails,
                             videoPath: widget.videoPath,
-                            videoDurationMs:
-                                _videoDuration.inMilliseconds,
+                            videoDurationMs: _videoDuration.inMilliseconds,
                             onChanged: (start, end) {
                               HapticFeedback.selectionClick();
                               setState(() {
@@ -182,11 +209,14 @@ class _VideoEditorScreenState extends State<VideoEditorScreen> {
                               });
                             },
                             onPlayheadChanged: (position) {
-                              final ms = (position *
-                                      _videoDuration.inMilliseconds)
-                                  .round();
-                              _controller?.seekTo(
-                                  Duration(milliseconds: ms));
+                              // Pause during scrubbing for instant frame preview
+                              if (_controller?.value.isPlaying ?? false) {
+                                _controller?.pause();
+                              }
+                              final ms =
+                                  (position * _videoDuration.inMilliseconds)
+                                      .round();
+                              _controller?.seekTo(Duration(milliseconds: ms));
                             },
                           ),
                         ),
@@ -195,22 +225,23 @@ class _VideoEditorScreenState extends State<VideoEditorScreen> {
                         if (_videoDuration.inMilliseconds > 0)
                           Padding(
                             padding: const EdgeInsets.symmetric(
-                                horizontal: AppSpacing.screenEdge),
+                              horizontal: AppSpacing.screenEdge,
+                            ),
                             child: Row(
                               mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               children: [
                                 Text(
                                   _formatDuration(
-                                      _trimStart *
-                                          _videoDuration.inMilliseconds),
+                                    _trimStart * _videoDuration.inMilliseconds,
+                                  ),
                                   style: AppTypography.caption.copyWith(
                                     color: colorScheme.secondary,
                                   ),
                                 ),
                                 Text(
                                   _formatDuration(
-                                      _trimEnd *
-                                          _videoDuration.inMilliseconds),
+                                    _trimEnd * _videoDuration.inMilliseconds,
+                                  ),
                                   style: AppTypography.caption.copyWith(
                                     color: colorScheme.secondary,
                                   ),
@@ -226,15 +257,18 @@ class _VideoEditorScreenState extends State<VideoEditorScreen> {
                           label: 'SPEED',
                           items: _speedLabels,
                           selectedIndex: _selectedSpeedIndex,
-                          onSelected: (i) =>
-                              setState(() => _selectedSpeedIndex = i),
+                          onSelected: (i) {
+                            setState(() => _selectedSpeedIndex = i);
+                            _controller?.setPlaybackSpeed(_speeds[i]);
+                          },
                         ),
                         const SizedBox(height: AppSpacing.lg),
 
                         // Transform
                         Padding(
                           padding: const EdgeInsets.symmetric(
-                              horizontal: AppSpacing.screenEdge),
+                            horizontal: AppSpacing.screenEdge,
+                          ),
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
@@ -252,8 +286,10 @@ class _VideoEditorScreenState extends State<VideoEditorScreen> {
                                     active: _rotation != 0,
                                     onTap: () {
                                       HapticFeedback.mediumImpact();
-                                      setState(() =>
-                                          _rotation = (_rotation - 90) % 360);
+                                      setState(() {
+                                        _rotation = (_rotation - 90) % 360;
+                                        _matrixInitialized = false;
+                                      });
                                     },
                                   ),
                                   const SizedBox(width: AppSpacing.sm),
@@ -262,8 +298,10 @@ class _VideoEditorScreenState extends State<VideoEditorScreen> {
                                     active: _rotation != 0,
                                     onTap: () {
                                       HapticFeedback.mediumImpact();
-                                      setState(() =>
-                                          _rotation = (_rotation + 90) % 360);
+                                      setState(() {
+                                        _rotation = (_rotation + 90) % 360;
+                                        _matrixInitialized = false;
+                                      });
                                     },
                                   ),
                                 ],
@@ -291,33 +329,10 @@ class _VideoEditorScreenState extends State<VideoEditorScreen> {
                           onSelected: (i) {
                             setState(() {
                               _selectedAspectIndex = i;
-                              if (i == _freeAspectIndex) {
-                                _cropRect ??= const Rect.fromLTWH(
-                                    0.0, 0.0, 1.0, 1.0);
-                              } else {
-                                _cropRect = null;
-                              }
+                              _matrixInitialized = false;
                             });
                           },
                         ),
-
-                        // Crop dimensions label (Free mode)
-                        if (_selectedAspectIndex == _freeAspectIndex &&
-                            _cropRect != null &&
-                            _controller != null &&
-                            _controller!.value.isInitialized) ...[
-                          const SizedBox(height: AppSpacing.sm),
-                          Padding(
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: AppSpacing.screenEdge),
-                            child: Text(
-                              'Crop: ${(_cropRect!.width * _controller!.value.size.width).round()} x ${(_cropRect!.height * _controller!.value.size.height).round()} px',
-                              style: AppTypography.caption.copyWith(
-                                color: colorScheme.secondary,
-                              ),
-                            ),
-                          ),
-                        ],
                       ],
                     ),
                   ),
@@ -427,8 +442,7 @@ class _VideoEditorScreenState extends State<VideoEditorScreen> {
                     onSelected(i);
                   },
                   child: Container(
-                    margin:
-                        EdgeInsets.only(left: i > 0 ? AppSpacing.sm : 0),
+                    margin: EdgeInsets.only(left: i > 0 ? AppSpacing.sm : 0),
                     padding: const EdgeInsets.symmetric(vertical: 10),
                     decoration: BoxDecoration(
                       color: isSelected
@@ -474,79 +488,161 @@ class _VideoEditorScreenState extends State<VideoEditorScreen> {
       );
     }
 
-    final targetAspect = _aspectRatios[_selectedAspectIndex];
-
-    Widget videoContent = SizedBox(
-      width: _controller!.value.size.width,
-      height: _controller!.value.size.height,
-      child: VideoPlayer(_controller!),
+    const playOverlay = Center(
+      child: Icon(Icons.play_circle_filled, color: Colors.white70, size: 64),
     );
 
-    if (targetAspect != null) {
-      videoContent = AspectRatio(
-        aspectRatio: targetAspect,
-        child: ClipRect(
-          child: FittedBox(
-            fit: BoxFit.cover,
-            child: Transform.rotate(
-              angle: _rotation * 3.14159265 / 180,
-              child: SizedBox(
-                width: _controller!.value.size.width,
-                height: _controller!.value.size.height,
-                child: VideoPlayer(_controller!),
+    final targetAspect = _aspectRatios[_selectedAspectIndex];
+    final videoSize = _controller!.value.size;
+    final isRotated = _rotation == 90 || _rotation == 270;
+    final orientedWidth = isRotated ? videoSize.height : videoSize.width;
+    final orientedHeight = isRotated ? videoSize.width : videoSize.height;
+
+    Widget rawVideo = SizedBox(
+      width: videoSize.width,
+      height: videoSize.height,
+      child: VideoPlayer(_controller!),
+    );
+    if (_rotation != 0) {
+      rawVideo = Transform.rotate(
+        angle: _rotation * 3.14159265 / 180,
+        child: rawVideo,
+      );
+    }
+
+    final videoContent = SizedBox(
+      width: orientedWidth,
+      height: orientedHeight,
+      child: Center(
+        child: FittedBox(
+          fit: BoxFit.contain,
+          child: rawVideo,
+        ),
+      ),
+    );
+
+    if (targetAspect != null || _aspectLabels[_selectedAspectIndex] == 'Free Form') {
+      return LayoutBuilder(
+        builder: (context, constraints) {
+          final maxW = constraints.maxWidth;
+          const maxH = 300.0;
+          
+          if (targetAspect != null) {
+            if (maxW / maxH > targetAspect) {
+              _viewH = maxH;
+              _viewW = _viewH * targetAspect;
+            } else {
+              _viewW = maxW;
+              _viewH = _viewW / targetAspect;
+            }
+          } else {
+            // Free Form uses full available space for the crop window initially
+            _viewW = maxW;
+            _viewH = maxH;
+          }
+          
+          final minScale = math.max(_viewW / orientedWidth, _viewH / orientedHeight);
+          
+          if (!_matrixInitialized) {
+            final dx = (_viewW - orientedWidth * minScale) / 2;
+            final dy = (_viewH - orientedHeight * minScale) / 2;
+            _transformController.value = Matrix4.identity()
+              ..translate(dx, dy)
+              ..scale(minScale);
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              if (mounted) setState(() => _matrixInitialized = true);
+            });
+          }
+          
+          return ClipRRect(
+            borderRadius: BorderRadius.circular(AppRadius.lg),
+            child: Container(
+              height: 300,
+              width: double.infinity,
+              color: AppColors.darkBg,
+              child: Stack(
+                fit: StackFit.expand,
+                children: [
+                  Center(
+                    child: SizedBox(
+                      width: _viewW,
+                      height: _viewH,
+                      child: ClipRect(
+                        child: InteractiveViewer(
+                          transformationController: _transformController,
+                          minScale: minScale,
+                          maxScale: minScale * 4.0,
+                          boundaryMargin: EdgeInsets.zero,
+                          constrained: false,
+                          onInteractionEnd: (_) => setState((){}),
+                          child: GestureDetector(
+                            onTap: () {
+                              setState(() {
+                                _controller!.value.isPlaying ? _controller!.pause() : _controller!.play();
+                              });
+                            },
+                            child: videoContent,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                  if (!_controller!.value.isPlaying) playOverlay,
+                  if (_aspectLabels[_selectedAspectIndex] == 'Free Form' || targetAspect != null)
+                    IgnorePointer(
+                      child: Container(
+                        width: _viewW,
+                        height: _viewH,
+                        decoration: BoxDecoration(
+                          border: Border.all(color: AppColors.accent, width: 2),
+                        ),
+                      ),
+                    ),
+                ],
               ),
+            ),
+          );
+        },
+      );
+    } else {
+      return ClipRRect(
+        borderRadius: BorderRadius.circular(AppRadius.lg),
+        child: GestureDetector(
+          onTap: () {
+            setState(() {
+              _controller!.value.isPlaying ? _controller!.pause() : _controller!.play();
+            });
+          },
+          child: Container(
+            height: 300,
+            width: double.infinity,
+            color: AppColors.darkBg,
+            child: Stack(
+              fit: StackFit.expand,
+              children: [
+                Center(
+                  child: AspectRatio(
+                    aspectRatio: orientedWidth / orientedHeight,
+                    child: FittedBox(
+                      fit: BoxFit.contain,
+                      child: rawVideo,
+                    ),
+                  ),
+                ),
+                if (!_controller!.value.isPlaying)
+                  const Center(
+                    child: Icon(
+                      Icons.play_circle_filled,
+                      color: Colors.white70,
+                      size: 64,
+                    ),
+                  ),
+              ],
             ),
           ),
         ),
       );
-    } else {
-      videoContent = Transform.rotate(
-        angle: _rotation * 3.14159265 / 180,
-        child: FittedBox(
-          fit: BoxFit.cover,
-          child: videoContent,
-        ),
-      );
     }
-
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(AppRadius.lg),
-      child: GestureDetector(
-        onTap: () {
-          setState(() {
-            _controller!.value.isPlaying
-                ? _controller!.pause()
-                : _controller!.play();
-          });
-        },
-        child: Container(
-          height: 300,
-          width: double.infinity,
-          color: AppColors.darkBg,
-          child: Stack(
-            fit: StackFit.expand,
-            children: [
-              Center(child: videoContent),
-              if (_selectedAspectIndex == _freeAspectIndex &&
-                  _cropRect != null)
-                _CropOverlay(
-                  cropRect: _cropRect!,
-                  onCropChanged: (rect) =>
-                      setState(() => _cropRect = rect),
-                ),
-              if (!_controller!.value.isPlaying)
-                const Center(
-                  child: Icon(
-                    Icons.play_circle_filled,
-                    color: Colors.white70,
-                    size: 64,
-                  ),
-                ),
-            ],
-          ),
-        ),
-      ),
-    );
   }
 
   String _formatDuration(double ms) {
@@ -586,6 +682,31 @@ class _VideoEditorScreenState extends State<VideoEditorScreen> {
       final speed = _speeds[_selectedSpeedIndex];
       final normalizedRotation = ((_rotation % 360) + 360) % 360;
 
+      Rect? finalCrop;
+      if (_aspectRatios[_selectedAspectIndex] != null || _aspectLabels[_selectedAspectIndex] == 'Free Form') {
+        final matrix = _transformController.value;
+        final s = matrix.getMaxScaleOnAxis();
+        final tx = matrix.getTranslation().x;
+        final ty = matrix.getTranslation().y;
+        
+        final videoSize = _controller!.value.size;
+        final isRotated = _rotation == 90 || _rotation == 270;
+        final orientedWidth = isRotated ? videoSize.height : videoSize.width;
+        final orientedHeight = isRotated ? videoSize.width : videoSize.height;
+
+        final left = -tx / s;
+        final top = -ty / s;
+        final width = _viewW / s;
+        final height = _viewH / s;
+        
+        final normLeft = (left / orientedWidth).clamp(0.0, 1.0);
+        final normTop = (top / orientedHeight).clamp(0.0, 1.0);
+        final normWidth = (width / orientedWidth).clamp(0.0, 1.0);
+        final normHeight = (height / orientedHeight).clamp(0.0, 1.0);
+        
+        finalCrop = Rect.fromLTWH(normLeft, normTop, normWidth, normHeight);
+      }
+
       final result = await NativeVideoExport.export(
         inputPath: widget.videoPath,
         outputPath: outputPath,
@@ -593,10 +714,29 @@ class _VideoEditorScreenState extends State<VideoEditorScreen> {
         trimEndMs: trimEndMs,
         speed: speed,
         rotation: normalizedRotation,
-        aspectRatio: _aspectRatioStrings[_selectedAspectIndex],
-        cropRect: _selectedAspectIndex == _freeAspectIndex ? _cropRect : null,
+        aspectRatio: null,
+        cropRect: finalCrop,
       );
 
+      // Wait for iOS to flush the exported file to disk (up to 2s).
+      // Without this, the video player may try to load before the file
+      // is fully written, causing a black screen with an error icon.
+      final exported = File(result);
+      var retries = 0;
+      while (retries < 20) {
+        if (await exported.exists() && await exported.length() > 0) {
+          // Additional buffer time for the OS to finalize the file descriptor
+          await Future.delayed(const Duration(milliseconds: 300));
+          break;
+        }
+        await Future.delayed(const Duration(milliseconds: 100));
+        retries++;
+      }
+
+      // Detach from the main isolate briefly using Future.microtask
+      // to ensure UI frames can clear before popping.
+      await Future.microtask(() {});
+      
       HapticFeedback.heavyImpact();
       if (mounted) context.pop(result);
     } catch (e) {
@@ -605,9 +745,9 @@ class _VideoEditorScreenState extends State<VideoEditorScreen> {
           _exporting = false;
           _exportProgress = null;
         });
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Export failed: $e')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Export failed: $e')));
       }
     } finally {
       _progressSub?.cancel();
@@ -649,7 +789,7 @@ class _TrimTimelineState extends State<_TrimTimeline> {
 
   void _requestThumbnail(double normalizedPosition) {
     _thumbnailDebounce?.cancel();
-    _thumbnailDebounce = Timer(const Duration(milliseconds: 60), () async {
+    _thumbnailDebounce = Timer(const Duration(milliseconds: 16), () async {
       if (widget.videoDurationMs <= 0) return;
       final ms = (normalizedPosition * widget.videoDurationMs).round();
       final key = (ms / 100).round(); // round to 100ms buckets
@@ -736,7 +876,8 @@ class _TrimTimelineState extends State<_TrimTimeline> {
                             color: AppColors.darkFill,
                             borderRadius: BorderRadius.circular(4),
                           ),
-                          child: (i < widget.thumbnails.length &&
+                          child:
+                              (i < widget.thumbnails.length &&
                                   widget.thumbnails[i] != null)
                               ? Image.memory(
                                   widget.thumbnails[i]!,
@@ -760,6 +901,8 @@ class _TrimTimelineState extends State<_TrimTimeline> {
                           _activeHandle = 'start';
                           _previewPosition = widget.trimStart;
                         });
+                        // Pause and seek to start handle position (iMovie/CapCut behavior)
+                        widget.onPlayheadChanged?.call(widget.trimStart);
                         _requestThumbnail(widget.trimStart);
                       },
                       onHorizontalDragUpdate: (d) {
@@ -768,6 +911,8 @@ class _TrimTimelineState extends State<_TrimTimeline> {
                                 .clamp(0.0, widget.trimEnd - 0.1);
                         widget.onChanged(newStart, widget.trimEnd);
                         setState(() => _previewPosition = newStart);
+                        // Seek preview to match handle position
+                        widget.onPlayheadChanged?.call(newStart);
                         _requestThumbnail(newStart);
                       },
                       onHorizontalDragEnd: (_) => _clearDragState(),
@@ -780,8 +925,11 @@ class _TrimTimelineState extends State<_TrimTimeline> {
                           ),
                         ),
                         child: const Center(
-                          child: Icon(Icons.drag_indicator,
-                              size: 12, color: Colors.white),
+                          child: Icon(
+                            Icons.drag_indicator,
+                            size: 12,
+                            color: Colors.white,
+                          ),
                         ),
                       ),
                     ),
@@ -798,14 +946,20 @@ class _TrimTimelineState extends State<_TrimTimeline> {
                           _activeHandle = 'end';
                           _previewPosition = widget.trimEnd;
                         });
+                        // Pause and seek to end handle position
+                        widget.onPlayheadChanged?.call(widget.trimEnd);
                         _requestThumbnail(widget.trimEnd);
                       },
                       onHorizontalDragUpdate: (d) {
                         final newEnd =
-                            (widget.trimEnd + d.delta.dx / timelineWidth)
-                                .clamp(widget.trimStart + 0.1, 1.0);
+                            (widget.trimEnd + d.delta.dx / timelineWidth).clamp(
+                              widget.trimStart + 0.1,
+                              1.0,
+                            );
                         widget.onChanged(widget.trimStart, newEnd);
                         setState(() => _previewPosition = newEnd);
+                        // Seek preview to match handle position
+                        widget.onPlayheadChanged?.call(newEnd);
                         _requestThumbnail(newEnd);
                       },
                       onHorizontalDragEnd: (_) => _clearDragState(),
@@ -818,8 +972,11 @@ class _TrimTimelineState extends State<_TrimTimeline> {
                           ),
                         ),
                         child: const Center(
-                          child: Icon(Icons.drag_indicator,
-                              size: 12, color: Colors.white),
+                          child: Icon(
+                            Icons.drag_indicator,
+                            size: 12,
+                            color: Colors.white,
+                          ),
                         ),
                       ),
                     ),
@@ -839,9 +996,9 @@ class _TrimTimelineState extends State<_TrimTimeline> {
                         _requestThumbnail(_effectivePlayheadPosition);
                       },
                       onHorizontalDragUpdate: (d) {
-                        final newPos = (_playheadPosition +
-                                d.delta.dx / timelineWidth)
-                            .clamp(widget.trimStart, widget.trimEnd);
+                        final newPos =
+                            (_playheadPosition + d.delta.dx / timelineWidth)
+                                .clamp(widget.trimStart, widget.trimEnd);
                         setState(() {
                           _playheadPosition = newPos;
                           _previewPosition = newPos;
@@ -850,10 +1007,7 @@ class _TrimTimelineState extends State<_TrimTimeline> {
                         _requestThumbnail(newPos);
                       },
                       onHorizontalDragEnd: (_) => _clearDragState(),
-                      child: Container(
-                        width: 3,
-                        color: Colors.white,
-                      ),
+                      child: Container(width: 3, color: Colors.white),
                     ),
                   ),
                 ],
@@ -864,8 +1018,10 @@ class _TrimTimelineState extends State<_TrimTimeline> {
           // Floating preview thumbnail
           if (_activeHandle != null && _previewPosition != null)
             Positioned(
-              left: (_previewPosition! * timelineWidth - 40)
-                  .clamp(0.0, timelineWidth - 80),
+              left: (_previewPosition! * timelineWidth - 40).clamp(
+                0.0,
+                timelineWidth - 80,
+              ),
               top: 0,
               child: Container(
                 width: 80,
@@ -873,15 +1029,11 @@ class _TrimTimelineState extends State<_TrimTimeline> {
                 decoration: BoxDecoration(
                   color: AppColors.darkFill,
                   borderRadius: BorderRadius.circular(6),
-                  border:
-                      Border.all(color: AppColors.accent, width: 2),
+                  border: Border.all(color: AppColors.accent, width: 2),
                 ),
                 clipBehavior: Clip.antiAlias,
                 child: _previewThumbnail != null
-                    ? Image.memory(
-                        _previewThumbnail!,
-                        fit: BoxFit.cover,
-                      )
+                    ? Image.memory(_previewThumbnail!, fit: BoxFit.cover)
                     : Center(
                         child: Text(
                           _formatPreviewTime(),
@@ -912,202 +1064,6 @@ class _TrimTimelineState extends State<_TrimTimeline> {
   }
 }
 
-class _CropOverlay extends StatefulWidget {
-  const _CropOverlay({
-    required this.cropRect,
-    required this.onCropChanged,
-  });
-
-  final Rect cropRect;
-  final ValueChanged<Rect> onCropChanged;
-
-  @override
-  State<_CropOverlay> createState() => _CropOverlayState();
-}
-
-class _CropOverlayState extends State<_CropOverlay> {
-  String? _activeCorner; // 'tl', 'tr', 'bl', 'br', 'body'
-  static const _minDim = 0.1; // minimum 10% each dimension
-  static const _handleSize = 28.0;
-
-  void _handleDrag(DragUpdateDetails d, Size size) {
-    final dx = d.delta.dx / size.width;
-    final dy = d.delta.dy / size.height;
-    var r = widget.cropRect;
-
-    switch (_activeCorner) {
-      case 'tl':
-        r = Rect.fromLTRB(
-          (r.left + dx).clamp(0.0, r.right - _minDim),
-          (r.top + dy).clamp(0.0, r.bottom - _minDim),
-          r.right,
-          r.bottom,
-        );
-        break;
-      case 'tr':
-        r = Rect.fromLTRB(
-          r.left,
-          (r.top + dy).clamp(0.0, r.bottom - _minDim),
-          (r.right + dx).clamp(r.left + _minDim, 1.0),
-          r.bottom,
-        );
-        break;
-      case 'bl':
-        r = Rect.fromLTRB(
-          (r.left + dx).clamp(0.0, r.right - _minDim),
-          r.top,
-          r.right,
-          (r.bottom + dy).clamp(r.top + _minDim, 1.0),
-        );
-        break;
-      case 'br':
-        r = Rect.fromLTRB(
-          r.left,
-          r.top,
-          (r.right + dx).clamp(r.left + _minDim, 1.0),
-          (r.bottom + dy).clamp(r.top + _minDim, 1.0),
-        );
-        break;
-      case 'body':
-        final newLeft = (r.left + dx).clamp(0.0, 1.0 - r.width);
-        final newTop = (r.top + dy).clamp(0.0, 1.0 - r.height);
-        r = Rect.fromLTWH(newLeft, newTop, r.width, r.height);
-        break;
-    }
-
-    widget.onCropChanged(r);
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final w = constraints.maxWidth;
-        final h = constraints.maxHeight;
-        final cr = widget.cropRect;
-
-        return Stack(
-          children: [
-            // Dimmed regions
-            // Top
-            Positioned(
-              left: 0, top: 0, right: 0,
-              height: cr.top * h,
-              child: Container(color: Colors.black54),
-            ),
-            // Bottom
-            Positioned(
-              left: 0, bottom: 0, right: 0,
-              height: (1 - cr.bottom) * h,
-              child: Container(color: Colors.black54),
-            ),
-            // Left
-            Positioned(
-              left: 0,
-              top: cr.top * h,
-              width: cr.left * w,
-              height: cr.height * h,
-              child: Container(color: Colors.black54),
-            ),
-            // Right
-            Positioned(
-              right: 0,
-              top: cr.top * h,
-              width: (1 - cr.right) * w,
-              height: cr.height * h,
-              child: Container(color: Colors.black54),
-            ),
-
-            // Crop border + rule-of-thirds
-            Positioned(
-              left: cr.left * w,
-              top: cr.top * h,
-              width: cr.width * w,
-              height: cr.height * h,
-              child: GestureDetector(
-                onPanStart: (_) => _activeCorner = 'body',
-                onPanUpdate: (d) => _handleDrag(d, Size(w, h)),
-                onPanEnd: (_) => _activeCorner = null,
-                child: Container(
-                  decoration: BoxDecoration(
-                    border: Border.all(color: Colors.white, width: 1.5),
-                  ),
-                  child: CustomPaint(
-                    painter: _RuleOfThirdsPainter(),
-                    size: Size(cr.width * w, cr.height * h),
-                  ),
-                ),
-              ),
-            ),
-
-            // Corner handles
-            _buildCornerHandle(cr.left * w, cr.top * h, 'tl', w, h),
-            _buildCornerHandle(
-                cr.right * w - _handleSize, cr.top * h, 'tr', w, h),
-            _buildCornerHandle(
-                cr.left * w, cr.bottom * h - _handleSize, 'bl', w, h),
-            _buildCornerHandle(cr.right * w - _handleSize,
-                cr.bottom * h - _handleSize, 'br', w, h),
-          ],
-        );
-      },
-    );
-  }
-
-  Widget _buildCornerHandle(
-      double left, double top, String corner, double parentW, double parentH) {
-    return Positioned(
-      left: left,
-      top: top,
-      child: GestureDetector(
-        onPanStart: (_) => _activeCorner = corner,
-        onPanUpdate: (d) => _handleDrag(d, Size(parentW, parentH)),
-        onPanEnd: (_) => _activeCorner = null,
-        child: Container(
-          width: _handleSize,
-          height: _handleSize,
-          color: Colors.transparent,
-          child: Center(
-            child: Container(
-              width: 12,
-              height: 12,
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(2),
-                boxShadow: const [
-                  BoxShadow(color: Colors.black45, blurRadius: 4),
-                ],
-              ),
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _RuleOfThirdsPainter extends CustomPainter {
-  @override
-  void paint(Canvas canvas, Size size) {
-    final paint = Paint()
-      ..color = Colors.white30
-      ..strokeWidth = 0.5;
-
-    // Vertical lines
-    canvas.drawLine(
-        Offset(size.width / 3, 0), Offset(size.width / 3, size.height), paint);
-    canvas.drawLine(Offset(size.width * 2 / 3, 0),
-        Offset(size.width * 2 / 3, size.height), paint);
-    // Horizontal lines
-    canvas.drawLine(
-        Offset(0, size.height / 3), Offset(size.width, size.height / 3), paint);
-    canvas.drawLine(Offset(0, size.height * 2 / 3),
-        Offset(size.width, size.height * 2 / 3), paint);
-  }
-
-  @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
-}
 
 class _TransformButton extends StatelessWidget {
   const _TransformButton({
@@ -1137,10 +1093,12 @@ class _TransformButton extends StatelessWidget {
               ? Border.all(color: AppColors.accent, width: 1.5)
               : null,
         ),
-        child: Icon(icon,
-            color: active
-                ? AppColors.accent
-                : Theme.of(context).colorScheme.onSurface),
+        child: Icon(
+          icon,
+          color: active
+              ? AppColors.accent
+              : Theme.of(context).colorScheme.onSurface,
+        ),
       ),
     );
   }

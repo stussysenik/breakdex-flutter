@@ -1,17 +1,26 @@
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'database/database.dart';
 import 'database/daos/moves_dao.dart';
 import 'database/daos/combos_dao.dart';
 import 'database/daos/reviews_dao.dart';
 import 'database/daos/sync_dao.dart';
+import 'database/daos/fsrs_cards_dao.dart';
+import 'database/daos/decks_dao.dart';
 import 'data/repositories.dart';
 import 'data/drift_repositories.dart';
 import 'data/sync_aware_repositories.dart';
+import 'design/colors.dart';
+import 'design/typography.dart';
+import 'models/reviewable_item.dart';
 import 'services/auth_service.dart';
 import 'services/settings_service.dart';
 import 'services/video_service.dart';
 import 'services/sync_service.dart';
 import 'services/connectivity_service.dart';
+import 'services/fsrs_service.dart';
+import 'services/deck_service.dart';
 import 'models/sync_progress.dart';
 
 final databaseProvider = Provider<AppDatabase>((ref) {
@@ -35,6 +44,26 @@ final reviewsDaoProvider = Provider<ReviewsDao>((ref) {
 
 final syncDaoProvider = Provider<SyncDao>((ref) {
   return ref.watch(databaseProvider).syncDao;
+});
+
+final fsrsCardsDaoProvider = Provider<FsrsCardsDao>((ref) {
+  return ref.watch(databaseProvider).fsrsCardsDao;
+});
+
+final fsrsServiceProvider = Provider<FsrsService>((ref) {
+  return FsrsService(ref.watch(fsrsCardsDaoProvider));
+});
+
+final decksDaoProvider = Provider<DecksDao>((ref) {
+  return ref.watch(databaseProvider).decksDao;
+});
+
+final deckServiceProvider = Provider<DeckService>((ref) {
+  return DeckService(
+    ref.watch(decksDaoProvider),
+    ref.watch(movesDaoProvider),
+    ref.watch(fsrsCardsDaoProvider),
+  );
 });
 
 // Auth
@@ -124,7 +153,28 @@ class AutoSyncNotifier extends Notifier<bool> {
   }
 }
 
-// Auto-sync trigger — watches connectivity + setting + pending count
+// Font family — persisted in SharedPreferences
+final fontFamilyProvider =
+    NotifierProvider<FontFamilyNotifier, AppFontFamily>(FontFamilyNotifier.new);
+
+class FontFamilyNotifier extends Notifier<AppFontFamily> {
+  static const _key = 'font_family';
+
+  @override
+  AppFontFamily build() {
+    final prefs = ref.watch(sharedPreferencesProvider);
+    return AppFontFamily.fromKey(prefs.getString(_key));
+  }
+
+  Future<void> set(AppFontFamily family) async {
+    state = family;
+    final prefs = ref.read(sharedPreferencesProvider);
+    await prefs.setString(_key, family.key);
+  }
+}
+
+// Auto-sync trigger — watches connectivity + setting + pending count.
+// Wrapped in try/catch so sync failures never crash the UI.
 final syncTriggerProvider = Provider<void>((ref) {
   final isOnline = ref.watch(connectivityProvider).valueOrNull ?? false;
   final autoSync = ref.watch(autoSyncEnabledProvider);
@@ -132,6 +182,126 @@ final syncTriggerProvider = Provider<void>((ref) {
   final pendingCount = ref.watch(pendingChangesCountProvider).valueOrNull ?? 0;
 
   if (isOnline && autoSync && isLoggedIn && pendingCount > 0) {
-    ref.read(syncServiceProvider).sync();
+    try {
+      ref.read(syncServiceProvider).sync();
+    } catch (_) {
+      // Sync failure is non-fatal — will retry on next connectivity change
+    }
   }
 });
+
+// ---------------------------------------------------------------------------
+// Rating colors — configurable per-rating button colors
+// ---------------------------------------------------------------------------
+
+/// Immutable snapshot of the four rating colors.
+class RatingColors {
+  final Color again;
+  final Color hard;
+  final Color good;
+  final Color easy;
+
+  const RatingColors({
+    required this.again,
+    required this.hard,
+    required this.good,
+    required this.easy,
+  });
+
+  static const defaults = RatingColors(
+    again: AppColors.actionAgain,
+    hard: AppColors.actionHard,
+    good: AppColors.actionGood,
+    easy: AppColors.actionEasy,
+  );
+
+  /// Look up the color for a given rating name (AGAIN, HARD, GOOD, EASY).
+  Color forName(String name) => switch (name) {
+        'AGAIN' => again,
+        'HARD' => hard,
+        'GOOD' => good,
+        'EASY' => easy,
+        _ => again,
+      };
+}
+
+final ratingColorsProvider =
+    NotifierProvider<RatingColorsNotifier, RatingColors>(
+  RatingColorsNotifier.new,
+);
+
+/// Persists custom rating colors in SharedPreferences as ARGB hex ints.
+class RatingColorsNotifier extends Notifier<RatingColors> {
+  static const _prefix = 'rating_color_';
+
+  @override
+  RatingColors build() {
+    final prefs = ref.watch(sharedPreferencesProvider);
+    return RatingColors(
+      again: _read(prefs, 'again', AppColors.actionAgain),
+      hard: _read(prefs, 'hard', AppColors.actionHard),
+      good: _read(prefs, 'good', AppColors.actionGood),
+      easy: _read(prefs, 'easy', AppColors.actionEasy),
+    );
+  }
+
+  Color _read(SharedPreferences prefs, String key, Color fallback) {
+    final v = prefs.getInt('$_prefix$key');
+    return v != null ? Color(v) : fallback;
+  }
+
+  Future<void> setColor(String key, Color color) async {
+    final prefs = ref.read(sharedPreferencesProvider);
+    await prefs.setInt('$_prefix$key', color.toARGB32());
+    state = RatingColors(
+      again: key == 'again' ? color : state.again,
+      hard: key == 'hard' ? color : state.hard,
+      good: key == 'good' ? color : state.good,
+      easy: key == 'easy' ? color : state.easy,
+    );
+  }
+
+  Future<void> resetAll() async {
+    final prefs = ref.read(sharedPreferencesProvider);
+    for (final key in ['again', 'hard', 'good', 'easy']) {
+      await prefs.remove('$_prefix$key');
+    }
+    state = RatingColors.defaults;
+  }
+}
+
+// ---------------------------------------------------------------------------
+// FSRS cards reactive stream — invalidates downstream providers on DB changes
+// ---------------------------------------------------------------------------
+
+/// Reactive stream watching all FSRS cards. Providers that depend on card data
+/// should watch this to auto-refresh when reviews are processed.
+final fsrsCardsRefreshProvider = StreamProvider<List<FsrsCard>>((ref) {
+  return ref.watch(fsrsCardsDaoProvider).watchAll();
+});
+
+// ---------------------------------------------------------------------------
+// Review mode — persisted toggle between Session and Schedule views
+// ---------------------------------------------------------------------------
+
+final reviewModeProvider =
+    NotifierProvider<ReviewModeNotifier, ReviewMode>(ReviewModeNotifier.new);
+
+class ReviewModeNotifier extends Notifier<ReviewMode> {
+  static const _key = 'review_mode';
+
+  @override
+  ReviewMode build() {
+    final prefs = ref.watch(sharedPreferencesProvider);
+    return ReviewMode.fromString(prefs.getString(_key));
+  }
+
+  Future<void> set(ReviewMode mode) async {
+    state = mode;
+    final prefs = ref.read(sharedPreferencesProvider);
+    await prefs.setString(_key, mode.name);
+  }
+}
+
+/// Static FSRS config provider for the SRS parameters card.
+final fsrsConfigProvider = Provider<FsrsConfig>((_) => FsrsService.config);

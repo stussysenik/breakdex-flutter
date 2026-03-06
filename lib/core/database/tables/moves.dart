@@ -6,6 +6,7 @@ class Moves extends Table {
   TextColumn get learningState => text().withDefault(const Constant('NEW'))();
   TextColumn get category => text().withDefault(const Constant('default'))();
   TextColumn get videoPath => text().nullable()();
+  TextColumn get originalVideoName => text().nullable()();
   DateTimeColumn get createdAt => dateTime().withDefault(currentDateAndTime)();
 
   @override

@@ -27,13 +27,15 @@ enum LearningState {
             LearningState.learning => LearningState.mastery,
             LearningState.mastery => LearningState.mastery,
           },
+        ReviewRating.easy => LearningState.mastery,
       };
 }
 
 enum ReviewRating {
   again('AGAIN', 'AGAIN', AppColors.actionAgain),
   hard('HARD', 'HARD', AppColors.actionHard),
-  good('GOOD', 'GOOD', AppColors.actionGood);
+  good('GOOD', 'GOOD', AppColors.actionGood),
+  easy('EASY', 'EASY', AppColors.actionEasy);
 
   const ReviewRating(this.dbValue, this.displayText, this.color);
 
@@ -45,6 +47,7 @@ enum ReviewRating {
         'AGAIN' => ReviewRating.again,
         'HARD' => ReviewRating.hard,
         'GOOD' => ReviewRating.good,
+        'EASY' => ReviewRating.easy,
         _ => ReviewRating.again,
       };
 }

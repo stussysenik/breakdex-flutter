@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'settings_service.dart';
+import '../database/daos/moves_dao.dart';
 import '../design/colors.dart';
 
 class Category {
@@ -83,6 +84,40 @@ class CategoriesNotifier extends Notifier<List<Category>> {
     final updated = state.where((c) => c.name != name).toList();
     state = updated;
     await _persist(updated);
+  }
+
+  /// Rename a category and batch-update all moves that reference it.
+  ///
+  /// This is a two-step operation:
+  /// 1. Update the category entry in SharedPreferences
+  /// 2. Batch-update all moves with the old name to the new name in SQLite
+  ///
+  /// The [movesDao] is passed explicitly so this notifier doesn't need a
+  /// direct database dependency — keeps the SharedPreferences ↔ SQLite
+  /// boundary clean.
+  Future<void> renameCategory(
+    String oldName,
+    String newName,
+    Color color,
+    MovesDao movesDao,
+  ) async {
+    final updated = state.map((c) {
+      if (c.name == oldName) {
+        return Category(
+          name: newName,
+          colorValue: color.toARGB32(),
+          isDefault: c.isDefault,
+        );
+      }
+      return c;
+    }).toList();
+    state = updated;
+    await _persist(updated);
+
+    // Batch-update moves in the database
+    if (oldName != newName) {
+      await movesDao.updateCategory(oldName, newName);
+    }
   }
 
   Future<void> _persist(List<Category> categories) async {

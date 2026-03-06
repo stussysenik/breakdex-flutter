@@ -4,6 +4,8 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
+import 'package:path/path.dart' as p;
+import 'package:share_plus/share_plus.dart';
 
 import '../../core/database/database.dart';
 import '../../core/design/colors.dart';
@@ -13,6 +15,7 @@ import '../../core/models/learning_state.dart';
 import '../../core/providers.dart';
 import '../../shared/widgets/state_pill.dart';
 import '../../shared/widgets/video_player_widget.dart' show RobustVideoPlayer, VideoPlaceholder;
+import '../../shared/widgets/action_tile.dart';
 import '../../shared/widgets/video_picker_sheet.dart';
 
 class MoveDetailScreen extends ConsumerWidget {
@@ -63,6 +66,8 @@ class MoveDetailScreen extends ConsumerWidget {
                     videoPath: move.videoPath!,
                     onRepick: () => _addOrReplaceVideo(context, ref, move),
                     onEdit: () => _editVideo(context, ref, move),
+                    ghostThumbnailPath: _thumbnailPathFor(move.videoPath!),
+                    originalVideoName: move.originalVideoName,
                   )
                 else
                   GestureDetector(
@@ -117,32 +122,38 @@ class MoveDetailScreen extends ConsumerWidget {
                 const SizedBox(height: AppSpacing.md),
 
                 if (move.videoPath != null) ...[
-                  _ActionTile(
+                  ActionTile(
                     icon: Icons.edit,
                     label: 'Edit Video',
                     onTap: () => _editVideo(context, ref, move),
                   ),
                   const SizedBox(height: AppSpacing.sm),
-                  _ActionTile(
+                  ActionTile(
+                    icon: Icons.ios_share,
+                    label: 'Share Video',
+                    onTap: () => _shareVideo(context, move),
+                  ),
+                  const SizedBox(height: AppSpacing.sm),
+                  ActionTile(
                     icon: Icons.delete_outline,
                     label: 'Remove Video',
                     destructive: true,
                     onTap: () => _removeVideo(context, ref, move),
                   ),
                 ] else
-                  _ActionTile(
+                  ActionTile(
                     icon: Icons.videocam,
                     label: 'Add Video',
                     onTap: () => _addOrReplaceVideo(context, ref, move),
                   ),
                 const SizedBox(height: AppSpacing.sm),
-                _ActionTile(
+                ActionTile(
                   icon: Icons.text_fields,
                   label: 'Rename',
                   onTap: () => _rename(context, ref, move),
                 ),
                 const SizedBox(height: AppSpacing.sm),
-                _ActionTile(
+                ActionTile(
                   icon: Icons.delete_forever,
                   label: 'Delete Move',
                   destructive: true,
@@ -156,13 +167,37 @@ class MoveDetailScreen extends ConsumerWidget {
     );
   }
 
+  /// Derives the cached thumbnail path from a video path.
+  /// Thumbnails live in .thumbs/<uuid>.jpg alongside the video.
+  String? _thumbnailPathFor(String videoPath) {
+    final dir = p.dirname(videoPath);
+    final name = p.basenameWithoutExtension(videoPath);
+    return p.join(dir, '.thumbs', '$name.jpg');
+  }
+
+  Future<void> _shareVideo(BuildContext context, Move move) async {
+    if (move.videoPath == null) return;
+    await Share.shareXFiles(
+      [XFile(move.videoPath!)],
+      subject: move.name,
+    );
+  }
+
   Future<void> _addOrReplaceVideo(BuildContext context, WidgetRef ref, Move move) async {
-    final result = await VideoPickerSheet.show(context);
+    final result = await VideoPickerSheet.show(
+      context,
+      previousVideoName: move.originalVideoName,
+      previousThumbnailPath:
+          move.videoPath != null ? _thumbnailPathFor(move.videoPath!) : null,
+    );
     if (result == null) return;
+    final videoService = ref.read(videoServiceProvider);
+    await videoService.replaceVideo(move.videoPath);
     await ref.read(moveRepositoryProvider).update(
       MovesCompanion(
         id: Value(move.id),
         videoPath: Value(result.localPath),
+        originalVideoName: Value(result.originalFileName),
       ),
     );
   }
@@ -174,6 +209,8 @@ class MoveDetailScreen extends ConsumerWidget {
       extra: {'videoPath': move.videoPath},
     );
     if (editedPath != null && context.mounted) {
+      final videoService = ref.read(videoServiceProvider);
+      await videoService.replaceVideo(move.videoPath);
       await ref.read(moveRepositoryProvider).update(
         MovesCompanion(
           id: Value(move.id),
@@ -215,20 +252,28 @@ class MoveDetailScreen extends ConsumerWidget {
     final controller = TextEditingController(text: move.name);
     final newName = await showDialog<String>(
       context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Rename Move'),
-        content: TextField(
-          controller: controller,
-          autofocus: true,
-          decoration: const InputDecoration(hintText: 'Move name'),
-        ),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, controller.text.trim()),
-            child: const Text('Save'),
-          ),
-        ],
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setDialogState) {
+          final isEmpty = controller.text.trim().isEmpty;
+          return AlertDialog(
+            title: const Text('Rename Move'),
+            content: TextField(
+              controller: controller,
+              autofocus: true,
+              decoration: const InputDecoration(hintText: 'Move name'),
+              onChanged: (_) => setDialogState(() {}),
+            ),
+            actions: [
+              TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
+              TextButton(
+                onPressed: isEmpty
+                    ? null
+                    : () => Navigator.pop(ctx, controller.text.trim()),
+                child: const Text('Save'),
+              ),
+            ],
+          );
+        },
       ),
     );
     if (newName == null || newName.isEmpty || newName == move.name) return;
@@ -265,45 +310,3 @@ class MoveDetailScreen extends ConsumerWidget {
   }
 }
 
-class _ActionTile extends StatelessWidget {
-  const _ActionTile({
-    required this.icon,
-    required this.label,
-    required this.onTap,
-    this.destructive = false,
-  });
-
-  final IconData icon;
-  final String label;
-  final VoidCallback onTap;
-  final bool destructive;
-
-  @override
-  Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
-    final color = destructive ? AppColors.actionAgain : colorScheme.onSurface;
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(AppRadius.sm),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: 14),
-        decoration: BoxDecoration(
-          color: colorScheme.surfaceContainerHighest,
-          borderRadius: BorderRadius.circular(AppRadius.sm),
-        ),
-        child: Row(
-          children: [
-            Icon(icon, color: color, size: 22),
-            const SizedBox(width: AppSpacing.md),
-            Text(
-              label,
-              style: AppTypography.bodyMedium.copyWith(color: color),
-            ),
-            const Spacer(),
-            Icon(Icons.chevron_right, color: colorScheme.secondary, size: 20),
-          ],
-        ),
-      ),
-    );
-  }
-}

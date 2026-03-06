@@ -15,5 +15,8 @@ import UIKit
     if let registrar = engineBridge.pluginRegistry.registrar(forPlugin: "VideoExportPlugin") {
       VideoExportPlugin.register(with: registrar)
     }
+    if let registrar = engineBridge.pluginRegistry.registrar(forPlugin: "NativeVideoImportPlugin") {
+      NativeVideoImportPlugin.register(with: registrar)
+    }
   }
 }

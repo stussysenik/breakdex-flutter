@@ -1,3 +1,5 @@
+import 'dart:async';
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../../core/design/colors.dart';
@@ -7,17 +9,34 @@ import '../../core/services/video_service.dart';
 
 /// Bottom sheet with 3 video source options: Camera, Photo Library, Files (iCloud).
 /// Shows loading overlay during pick/download. Returns VideoPickResult or null.
+///
+/// When [previousVideoName] is provided, shows a ghost suggestion header
+/// so the user can identify which video to re-pick.
 class VideoPickerSheet extends StatefulWidget {
-  const VideoPickerSheet({super.key});
+  const VideoPickerSheet({
+    super.key,
+    this.previousVideoName,
+    this.previousThumbnailPath,
+  });
 
-  static Future<VideoPickResult?> show(BuildContext context) {
+  final String? previousVideoName;
+  final String? previousThumbnailPath;
+
+  static Future<VideoPickResult?> show(
+    BuildContext context, {
+    String? previousVideoName,
+    String? previousThumbnailPath,
+  }) {
     return showModalBottomSheet<VideoPickResult>(
       context: context,
       backgroundColor: Theme.of(context).colorScheme.surface,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(AppRadius.lg)),
       ),
-      builder: (_) => const VideoPickerSheet(),
+      builder: (_) => VideoPickerSheet(
+        previousVideoName: previousVideoName,
+        previousThumbnailPath: previousThumbnailPath,
+      ),
     );
   }
 
@@ -29,30 +48,100 @@ class _VideoPickerSheetState extends State<VideoPickerSheet> {
   final _videoService = VideoService();
   bool _loading = false;
   String _statusText = '';
+  double _progress = 0.0;
+  StreamSubscription<double>? _progressSub;
+
+  @override
+  void dispose() {
+    _progressSub?.cancel();
+    super.dispose();
+  }
+
+  void _startProgressListener() {
+    _progressSub?.cancel();
+    _progressSub = _videoService.importProgress.listen((p) {
+      if (mounted) setState(() => _progress = p);
+    });
+  }
 
   void _onStatus(String status) {
     if (mounted) setState(() => _statusText = status);
   }
 
+  /// Dismiss the sheet without a result. Any in-flight native picker operation
+  /// will complete in the background but its result is silently discarded
+  /// because the `mounted` guards in each pick method prevent post-pop updates.
+  void _cancel() {
+    if (mounted) Navigator.pop(context, null);
+  }
+
+  /// Extract a human-readable message from the error thrown by the native
+  /// video import channel. `PlatformException.message` already carries the
+  /// `NSError.localizedDescription` from Swift, so we surface it directly
+  /// with a few friendly overrides for common cases.
+  String _describeError(Object error) {
+    if (error is PlatformException) {
+      final msg = error.message ?? '';
+      if (msg.contains('iCloud') || msg.contains('Timed out')) {
+        return 'iCloud download timed out — try again later';
+      }
+      if (msg.contains('view controller')) {
+        return 'Could not open picker — try again';
+      }
+      if (msg.isNotEmpty) return msg;
+    }
+    return 'Could not access file';
+  }
+
   Future<void> _pickFromPhotos() async {
     HapticFeedback.selectionClick();
-    setState(() => _loading = true);
-    final result = await _videoService.pickFromPhotos(onStatus: _onStatus);
-    if (mounted) Navigator.pop(context, result);
+    setState(() { _loading = true; _progress = 0.0; });
+    _startProgressListener();
+    try {
+      // Do not timeout the picker interaction itself; users may need
+      // more than 30s to browse iCloud/Photos and pick a file.
+      final result = await _videoService.pickFromPhotos(onStatus: _onStatus);
+      if (mounted) Navigator.pop(context, result);
+    } catch (e) {
+      if (mounted) _showError(_describeError(e));
+    }
   }
 
   Future<void> _pickFromFiles() async {
     HapticFeedback.selectionClick();
-    setState(() => _loading = true);
-    final result = await _videoService.pickFromFiles(onStatus: _onStatus);
-    if (mounted) Navigator.pop(context, result);
+    setState(() { _loading = true; _progress = 0.0; });
+    _startProgressListener();
+    try {
+      // Do not timeout the picker interaction itself; users may need
+      // more than 30s to browse iCloud Drive and pick a file.
+      final result = await _videoService.pickFromFiles(onStatus: _onStatus);
+      if (mounted) Navigator.pop(context, result);
+    } catch (e) {
+      if (mounted) _showError(_describeError(e));
+    }
   }
 
   Future<void> _recordVideo() async {
     HapticFeedback.selectionClick();
     setState(() => _loading = true);
-    final result = await _videoService.recordVideo(onStatus: _onStatus);
-    if (mounted) Navigator.pop(context, result);
+    try {
+      final result = await _videoService.recordVideo(onStatus: _onStatus);
+      if (mounted) Navigator.pop(context, result);
+    } catch (e) {
+      if (mounted) _showError(_describeError(e));
+    }
+  }
+
+  void _showError(String message) {
+    _progressSub?.cancel();
+    setState(() {
+      _loading = false;
+      _progress = 0.0;
+      _statusText = message;
+    });
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(message)),
+    );
   }
 
   @override
@@ -69,11 +158,18 @@ class _VideoPickerSheetState extends State<VideoPickerSheet> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Add Video',
+                  widget.previousVideoName != null ? 'Re-pick Video' : 'Add Video',
                   style: AppTypography.titleMedium.copyWith(
                     color: colorScheme.onSurface,
                   ),
                 ),
+                if (widget.previousVideoName != null) ...[
+                  const SizedBox(height: AppSpacing.md),
+                  _GhostCard(
+                    videoName: widget.previousVideoName!,
+                    thumbnailPath: widget.previousThumbnailPath,
+                  ),
+                ],
                 const SizedBox(height: AppSpacing.lg),
                 _SourceTile(
                   icon: Icons.videocam,
@@ -112,12 +208,40 @@ class _VideoPickerSheetState extends State<VideoPickerSheet> {
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  const CircularProgressIndicator(color: AppColors.accent),
-                  const SizedBox(height: AppSpacing.md),
+                  Text(
+                    '${(_progress * 100).toInt()}%',
+                    style: AppTypography.titleMedium.copyWith(
+                      color: Colors.white70,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 40),
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(4),
+                      child: LinearProgressIndicator(
+                        value: _progress > 0 ? _progress : null,
+                        backgroundColor: Colors.white24,
+                        color: AppColors.accent,
+                        minHeight: 6,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 8),
                   Text(
                     _statusText,
                     style: AppTypography.bodySmall.copyWith(
                       color: Colors.white70,
+                    ),
+                  ),
+                  const SizedBox(height: AppSpacing.lg),
+                  TextButton(
+                    onPressed: _cancel,
+                    child: Text(
+                      'Cancel',
+                      style: AppTypography.bodySmall.copyWith(
+                        color: Colors.white70,
+                      ),
                     ),
                   ),
                 ],
@@ -181,6 +305,80 @@ class _SourceTile extends StatelessWidget {
               ),
             ),
             Icon(Icons.chevron_right, color: colorScheme.secondary),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// Ghost card shown at 0.45 opacity above source tiles when re-picking.
+/// Shows the previous video's thumbnail + original filename for context.
+class _GhostCard extends StatelessWidget {
+  const _GhostCard({required this.videoName, this.thumbnailPath});
+
+  final String videoName;
+  final String? thumbnailPath;
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    return Opacity(
+      opacity: 0.45,
+      child: Container(
+        padding: const EdgeInsets.all(AppSpacing.sm),
+        decoration: BoxDecoration(
+          color: colorScheme.surfaceContainerHighest,
+          borderRadius: BorderRadius.circular(AppRadius.sm),
+        ),
+        child: Row(
+          children: [
+            // Thumbnail or fallback icon
+            ClipRRect(
+              borderRadius: BorderRadius.circular(6),
+              child: SizedBox(
+                width: 40,
+                height: 40,
+                child: thumbnailPath != null
+                    ? Image.file(
+                        File(thumbnailPath!),
+                        fit: BoxFit.cover,
+                        errorBuilder: (_, _, _) => Container(
+                          color: colorScheme.surfaceContainerHighest,
+                          child: Icon(Icons.videocam_off,
+                              color: colorScheme.secondary, size: 20),
+                        ),
+                      )
+                    : Container(
+                        color: colorScheme.surfaceContainerHighest,
+                        child: Icon(Icons.videocam_off,
+                            color: colorScheme.secondary, size: 20),
+                      ),
+              ),
+            ),
+            const SizedBox(width: AppSpacing.sm),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Previous video',
+                    style: AppTypography.caption.copyWith(
+                      color: colorScheme.secondary,
+                    ),
+                  ),
+                  Text(
+                    videoName,
+                    style: AppTypography.bodySmall.copyWith(
+                      color: colorScheme.onSurface,
+                    ),
+                    overflow: TextOverflow.ellipsis,
+                    maxLines: 1,
+                  ),
+                ],
+              ),
+            ),
+            Icon(Icons.history, color: colorScheme.secondary, size: 18),
           ],
         ),
       ),

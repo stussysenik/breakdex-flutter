@@ -5,6 +5,7 @@ part of 'reviews_dao.dart';
 // ignore_for_file: type=lint
 mixin _$ReviewsDaoMixin on DatabaseAccessor<AppDatabase> {
   $MovesTable get moves => attachedDatabase.moves;
+  $CombosTable get combos => attachedDatabase.combos;
   $ReviewsTable get reviews => attachedDatabase.reviews;
   ReviewsDaoManager get managers => ReviewsDaoManager(this);
 }
@@ -14,6 +15,8 @@ class ReviewsDaoManager {
   ReviewsDaoManager(this._db);
   $$MovesTableTableManager get moves =>
       $$MovesTableTableManager(_db.attachedDatabase, _db.moves);
+  $$CombosTableTableManager get combos =>
+      $$CombosTableTableManager(_db.attachedDatabase, _db.combos);
   $$ReviewsTableTableManager get reviews =>
       $$ReviewsTableTableManager(_db.attachedDatabase, _db.reviews);
 }

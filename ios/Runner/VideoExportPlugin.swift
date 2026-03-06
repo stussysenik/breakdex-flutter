@@ -92,19 +92,23 @@ class VideoExportPlugin: NSObject, FlutterPlugin, FlutterStreamHandler {
         encoderStartTime = nil
         sendProgress(phase: "preparing", progress: 0.02)
 
-        DispatchQueue.global(qos: .userInitiated).async { [weak self] in
+        Task { [weak self] in
             guard let self = self else { return }
 
-            guard let videoTrack = asset.tracks(withMediaType: .video).first else {
+            guard let videoTrack = try? await asset.loadTracks(withMediaType: .video).first else {
                 DispatchQueue.main.async {
                     result(FlutterError(code: "NO_VIDEO", message: "No video track found", details: nil))
                 }
                 return
             }
 
-            let naturalSize = videoTrack.naturalSize
-            let preferredTransform = videoTrack.preferredTransform
-            let assetDuration = asset.duration
+            guard let naturalSize = try? await videoTrack.load(.naturalSize),
+                  let preferredTransform = try? await videoTrack.load(.preferredTransform) else {
+                DispatchQueue.main.async {
+                    result(FlutterError(code: "LOAD_ERR", message: "Cannot load track properties", details: nil))
+                }
+                return
+            }
 
             let startTime = CMTime(value: Int64(trimStartMs), timescale: 1000)
             let endTime = CMTime(value: Int64(trimEndMs), timescale: 1000)
@@ -134,7 +138,7 @@ class VideoExportPlugin: NSObject, FlutterPlugin, FlutterStreamHandler {
 
             // Audio
             var compositionAudioTrack: AVMutableCompositionTrack?
-            if let audioTrack = asset.tracks(withMediaType: .audio).first {
+            if let audioTrack = try? await asset.loadTracks(withMediaType: .audio).first {
                 compositionAudioTrack = composition.addMutableTrack(
                     withMediaType: .audio,
                     preferredTrackID: kCMPersistentTrackID_Invalid
@@ -338,7 +342,7 @@ class VideoExportPlugin: NSObject, FlutterPlugin, FlutterStreamHandler {
             )
         }
 
-        // Custom free-form crop (takes precedence over aspect ratio)
+        // Crop
         var renderSize = currentSize
         if let cl = cropLeft, let ct = cropTop, let cw = cropWidth, let ch = cropHeight {
             let pixelLeft = CGFloat(cl) * currentSize.width
@@ -348,20 +352,6 @@ class VideoExportPlugin: NSObject, FlutterPlugin, FlutterStreamHandler {
 
             renderSize = CGSize(width: pixelWidth, height: pixelHeight)
             transform = transform.concatenating(CGAffineTransform(translationX: -pixelLeft, y: -pixelTop))
-        } else if let ratio = aspectRatio, let targetRatio = parseAspectRatio(ratio) {
-            // Aspect ratio crop
-            let currentRatio = currentSize.width / currentSize.height
-            if currentRatio > targetRatio {
-                let newWidth = currentSize.height * targetRatio
-                let offsetX = (currentSize.width - newWidth) / 2
-                renderSize = CGSize(width: newWidth, height: currentSize.height)
-                transform = transform.concatenating(CGAffineTransform(translationX: -offsetX, y: 0))
-            } else {
-                let newHeight = currentSize.width / targetRatio
-                let offsetY = (currentSize.height - newHeight) / 2
-                renderSize = CGSize(width: currentSize.width, height: newHeight)
-                transform = transform.concatenating(CGAffineTransform(translationX: 0, y: -offsetY))
-            }
         }
 
         // H.264 requires even dimensions
@@ -369,24 +359,5 @@ class VideoExportPlugin: NSObject, FlutterPlugin, FlutterStreamHandler {
         renderSize.height = CGFloat(Int(renderSize.height / 2) * 2)
 
         return (renderSize, transform)
-    }
-
-    private func parseAspectRatio(_ str: String) -> CGFloat? {
-        switch str {
-        case "9:16": return 9.0 / 16.0
-        case "16:9": return 16.0 / 9.0
-        case "1:1":  return 1.0
-        case "4:5":  return 4.0 / 5.0
-        default:
-            // Try to parse arbitrary "W:H" format
-            let parts = str.split(separator: ":")
-            if parts.count == 2,
-               let w = Double(parts[0]),
-               let h = Double(parts[1]),
-               h > 0 {
-                return CGFloat(w / h)
-            }
-            return nil
-        }
     }
 }

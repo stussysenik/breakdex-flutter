@@ -60,4 +60,22 @@ class CombosDao extends DatabaseAccessor<AppDatabase> with _$CombosDaoMixin {
 
   Future<void> removeComboMove(String id) =>
       (delete(comboMoves)..where((t) => t.id.equals(id))).go();
+
+  /// Watches all combos paired with their move count via a LEFT JOIN on
+  /// combo_moves grouped by comboId. Returns (Combo, int) tuples so the
+  /// UI can render move-count dots without extra queries.
+  Stream<List<(Combo, int)>> watchAllWithMoveCounts() {
+    final countExpr = comboMoves.id.count();
+    final query = select(combos).join([
+      leftOuterJoin(comboMoves, comboMoves.comboId.equalsExp(combos.id)),
+    ])
+      ..groupBy([combos.id]);
+
+    return query.watch().map((rows) => rows
+        .map((row) => (
+              row.readTable(combos),
+              row.read(countExpr) ?? 0,
+            ))
+        .toList());
+  }
 }

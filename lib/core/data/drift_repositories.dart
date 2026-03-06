@@ -45,6 +45,10 @@ class DriftComboRepository implements ComboRepository {
   Stream<List<Combo>> watchAll() => _dao.watchAll();
 
   @override
+  Stream<List<(Combo, int)>> watchAllWithMoveCounts() =>
+      _dao.watchAllWithMoveCounts();
+
+  @override
   Future<List<Combo>> getAll() => _dao.getAll();
 
   @override

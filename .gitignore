@@ -43,3 +43,11 @@ app.*.map.json
 /android/app/debug
 /android/app/profile
 /android/app/release
+
+# Xcode derived data (device UDIDs)
+00008130-*/
+senik/
+
+# Tool configs
+.claude/
+.flowdeck/

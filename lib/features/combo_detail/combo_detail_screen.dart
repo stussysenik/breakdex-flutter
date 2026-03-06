@@ -1,6 +1,10 @@
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+
+import 'package:drift/drift.dart' show Value;
 
 import '../../core/database/database.dart';
 import '../../core/database/daos/combos_dao.dart';
@@ -24,6 +28,9 @@ class ComboDetailScreen extends ConsumerStatefulWidget {
 
 class _ComboDetailScreenState extends ConsumerState<ComboDetailScreen> {
   int _activeIndex = 0;
+
+  /// Index of the timeline node currently being pressed (for scale animation).
+  int? _pressedNode;
 
   @override
   Widget build(BuildContext context) {
@@ -59,21 +66,35 @@ class _ComboDetailScreenState extends ConsumerState<ComboDetailScreen> {
                 return ListView(
                   padding: const EdgeInsets.all(AppSpacing.screenEdge),
                   children: [
-                    // Back breadcrumb
-                    GestureDetector(
-                      onTap: () => context.pop(),
-                      child: Row(
-                        children: [
-                          Icon(Icons.chevron_left,
-                              color: colorScheme.secondary, size: 20),
-                          Text(
-                            'Combo',
-                            style: AppTypography.bodyMedium.copyWith(
-                              color: colorScheme.secondary,
+                    // Header row: back breadcrumb + delete button
+                    Row(
+                      children: [
+                        Expanded(
+                          child: GestureDetector(
+                            onTap: () => context.pop(),
+                            child: Row(
+                              children: [
+                                Icon(Icons.chevron_left,
+                                    color: colorScheme.secondary, size: 20),
+                                Text(
+                                  'Combo',
+                                  style: AppTypography.bodyMedium.copyWith(
+                                    color: colorScheme.secondary,
+                                  ),
+                                ),
+                              ],
                             ),
                           ),
-                        ],
-                      ),
+                        ),
+                        GestureDetector(
+                          onTap: () => _showDeleteSheet(context, combo),
+                          child: Icon(
+                            Icons.delete_outline,
+                            color: colorScheme.secondary,
+                            size: 22,
+                          ),
+                        ),
+                      ],
                     ),
                     const SizedBox(height: AppSpacing.lg),
 
@@ -89,21 +110,37 @@ class _ComboDetailScreenState extends ConsumerState<ComboDetailScreen> {
                     ),
                     const SizedBox(height: AppSpacing.md),
 
-                    // Timeline
+                    // Timeline with tap-scale bounce
                     SingleChildScrollView(
                       scrollDirection: Axis.horizontal,
                       child: Row(
                         children: [
                           for (int i = 0; i < comboMoves.length; i++)
-                            TimelineNode(
-                              index: i + 1,
-                              style: i == safeIndex
-                                  ? TimelineNodeStyle.active
-                                  : TimelineNodeStyle.inactive,
-                              showLeadingLine: i > 0,
-                              showTrailingLine: i < comboMoves.length - 1,
-                              onTap: () =>
-                                  setState(() => _activeIndex = i),
+                            GestureDetector(
+                              onTapDown: (_) =>
+                                  setState(() => _pressedNode = i),
+                              onTapUp: (_) {
+                                setState(() {
+                                  _pressedNode = null;
+                                  _activeIndex = i;
+                                });
+                                HapticFeedback.selectionClick();
+                              },
+                              onTapCancel: () =>
+                                  setState(() => _pressedNode = null),
+                              child: AnimatedScale(
+                                scale: _pressedNode == i ? 0.85 : 1.0,
+                                duration: AppMotion.fast02,
+                                curve: AppMotion.expressive,
+                                child: TimelineNode(
+                                  index: i + 1,
+                                  style: i == safeIndex
+                                      ? TimelineNodeStyle.active
+                                      : TimelineNodeStyle.inactive,
+                                  showLeadingLine: i > 0,
+                                  showTrailingLine: i < comboMoves.length - 1,
+                                ),
+                              ),
                             ),
                         ],
                       ),
@@ -114,6 +151,7 @@ class _ComboDetailScreenState extends ConsumerState<ComboDetailScreen> {
                     if (currentMove?.videoPath != null)
                       RobustVideoPlayer(
                         videoPath: currentMove!.videoPath!,
+                        onEdit: () => _editVideo(currentMove),
                         overlay: Positioned(
                           bottom: 12,
                           left: 12,
@@ -176,6 +214,52 @@ class _ComboDetailScreenState extends ConsumerState<ComboDetailScreen> {
               },
             );
           },
+        ),
+      ),
+    );
+  }
+
+  /// Opens the video editor for a combo move's video and updates the move on return.
+  Future<void> _editVideo(Move move) async {
+    if (move.videoPath == null) return;
+    final editedPath = await context.push<String>(
+      '/video-editor',
+      extra: {'videoPath': move.videoPath},
+    );
+    if (editedPath != null && mounted) {
+      await ref.read(moveRepositoryProvider).update(
+        MovesCompanion(
+          id: Value(move.id),
+          videoPath: Value(editedPath),
+        ),
+      );
+    }
+  }
+
+  /// Shows a Cupertino-style destructive action sheet for deleting this combo.
+  void _showDeleteSheet(BuildContext context, Combo combo) {
+    showCupertinoModalPopup(
+      context: context,
+      builder: (_) => CupertinoActionSheet(
+        title: Text('Delete "${combo.name}"?'),
+        message: const Text(
+          'This will remove the combo and all its move associations.',
+        ),
+        actions: [
+          CupertinoActionSheetAction(
+            isDestructiveAction: true,
+            onPressed: () {
+              Navigator.pop(context); // dismiss sheet
+              HapticFeedback.heavyImpact();
+              ref.read(comboRepositoryProvider).delete(combo.id);
+              context.pop(); // navigate back
+            },
+            child: const Text('Delete Combo'),
+          ),
+        ],
+        cancelButton: CupertinoActionSheetAction(
+          onPressed: () => Navigator.pop(context),
+          child: const Text('Cancel'),
         ),
       ),
     );

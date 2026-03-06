@@ -1,20 +1,26 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/design/colors.dart';
+import '../providers/stats_providers.dart';
 
-class HeatMapGrid extends StatelessWidget {
+/// Activity heatmap showing 52 weeks of review data.
+///
+/// Each cell is tappable — tapping updates [selectedDateProvider] so the
+/// day detail drilldown shows the corresponding review timeline.
+class HeatMapGrid extends ConsumerWidget {
   const HeatMapGrid({super.key, required this.dailyCounts});
 
   final Map<DateTime, int> dailyCounts;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final cs = Theme.of(context).colorScheme;
     final now = DateTime.now();
     final today = DateTime(now.year, now.month, now.day);
 
     // Build 52 weeks of data ending today
-    // Find the Sunday that starts the grid (52 weeks ago, aligned to week start)
-    final daysFromMonday = today.weekday - 1; // Monday = 0
+    final daysFromMonday = today.weekday - 1;
     final thisWeekMonday = today.subtract(Duration(days: daysFromMonday));
     final startDate = thisWeekMonday.subtract(const Duration(days: 51 * 7));
 
@@ -25,21 +31,26 @@ class HeatMapGrid extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         SizedBox(
-          height: 7 * 15.0 + 20, // 7 rows * (12+3) + month labels
-          child: SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            reverse: true, // Start scrolled to the right (most recent)
-            child: CustomPaint(
-              size: Size(52 * 15.0, 7 * 15.0 + 20),
-              painter: _HeatMapPainter(
-                dailyCounts: dailyCounts,
-                startDate: startDate,
-                today: today,
-                maxCount: maxCount > 0 ? maxCount : 1,
-                emptyColor: cs.surfaceContainerHighest,
-                accentColor: AppColors.accent,
-                textColor: cs.secondary,
-                brightness: Theme.of(context).brightness,
+          height: 7 * 15.0 + 20,
+          child: GestureDetector(
+            onTapDown: (details) {
+              _handleTap(details.localPosition, startDate, today, ref);
+            },
+            child: SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              reverse: true,
+              child: CustomPaint(
+                size: Size(52 * 15.0, 7 * 15.0 + 20),
+                painter: _HeatMapPainter(
+                  dailyCounts: dailyCounts,
+                  startDate: startDate,
+                  today: today,
+                  maxCount: maxCount > 0 ? maxCount : 1,
+                  emptyColor: cs.surfaceContainerHighest,
+                  accentColor: AppColors.accent,
+                  textColor: cs.secondary,
+                  brightness: Theme.of(context).brightness,
+                ),
               ),
             ),
           ),
@@ -79,6 +90,33 @@ class HeatMapGrid extends StatelessWidget {
         ),
       ],
     );
+  }
+
+  /// Hit-test tap position to cell coordinates, update selectedDateProvider.
+  void _handleTap(
+    Offset position,
+    DateTime startDate,
+    DateTime today,
+    WidgetRef ref,
+  ) {
+    const cellSize = 12.0;
+    const gap = 3.0;
+    const step = cellSize + gap;
+    const monthLabelHeight = 20.0;
+
+    final adjustedY = position.dy - monthLabelHeight;
+    if (adjustedY < 0) return;
+
+    final week = (position.dx / step).floor();
+    final day = (adjustedY / step).floor();
+
+    if (week < 0 || week >= 52 || day < 0 || day >= 7) return;
+
+    final date = startDate.add(Duration(days: week * 7 + day));
+    if (date.isAfter(today)) return;
+
+    HapticFeedback.selectionClick();
+    ref.read(selectedDateProvider.notifier).state = date;
   }
 }
 
@@ -134,7 +172,6 @@ class _HeatMapPainter extends CustomPainter {
           paint.color = emptyColor;
         } else {
           final intensity = (count / maxCount).clamp(0.0, 1.0);
-          // Map to 4 levels
           final level = intensity <= 0.25
               ? 0.25
               : intensity <= 0.5

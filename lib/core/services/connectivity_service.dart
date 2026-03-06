@@ -1,6 +1,11 @@
 import 'dart:async';
 import 'package:connectivity_plus/connectivity_plus.dart';
+import 'package:flutter/foundation.dart';
 
+/// Monitors network connectivity and exposes a broadcast [onlineStream].
+///
+/// Guarded against platform exceptions — on simulator or when the
+/// connectivity plugin fails, the stream emits `false` rather than crashing.
 class ConnectivityService {
   final _connectivity = Connectivity();
   late final StreamController<bool> _controller;
@@ -16,9 +21,27 @@ class ConnectivityService {
   Stream<bool> get onlineStream => _controller.stream;
 
   void _startListening() {
-    _sub = _connectivity.onConnectivityChanged.listen((results) {
-      _controller.add(_isOnline(results));
-    });
+    try {
+      _sub = _connectivity.onConnectivityChanged.listen(
+        (results) {
+          _controller.add(_isOnline(results));
+        },
+        onError: (Object e) {
+          debugPrint('Connectivity stream error: $e');
+          if (!_controller.isClosed) _controller.add(false);
+        },
+      );
+      // Emit current state immediately so StreamProvider exits AsyncLoading.
+      // connectivity_plus only fires onConnectivityChanged on *changes*, not on
+      // initial subscription — without this, the provider stays loading forever
+      // if connectivity never changes (common in release mode).
+      checkNow().then((online) {
+        if (!_controller.isClosed) _controller.add(online);
+      });
+    } catch (e) {
+      debugPrint('Connectivity listen failed: $e');
+      if (!_controller.isClosed) _controller.add(false);
+    }
   }
 
   void _stopListening() {
@@ -34,8 +57,13 @@ class ConnectivityService {
   }
 
   Future<bool> checkNow() async {
-    final results = await _connectivity.checkConnectivity();
-    return _isOnline(results);
+    try {
+      final results = await _connectivity.checkConnectivity();
+      return _isOnline(results);
+    } catch (e) {
+      debugPrint('Connectivity check failed: $e');
+      return false;
+    }
   }
 
   void dispose() {

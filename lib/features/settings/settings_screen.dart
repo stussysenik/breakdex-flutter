@@ -16,7 +16,43 @@ import '../../core/providers.dart';
 import '../../core/services/categories_service.dart';
 import '../../core/services/settings_service.dart';
 import '../../core/services/stats_export_service.dart';
+import '../../shared/widgets/action_tile.dart';
+import '../../core/services/view_names_service.dart';
 import '../stats/providers/stats_providers.dart';
+
+
+/// Reusable color swatch grid for category/rating color pickers.
+Widget _colorSwatchGrid({
+  required List<Color> colors,
+  required Color selected,
+  required ValueChanged<Color> onSelected,
+  double size = 32,
+}) {
+  return Wrap(
+    spacing: AppSpacing.sm,
+    runSpacing: AppSpacing.sm,
+    children: colors.map((c) {
+      final isSelected = c.toARGB32() == selected.toARGB32();
+      return GestureDetector(
+        onTap: () => onSelected(c),
+        child: Container(
+          width: size,
+          height: size,
+          decoration: BoxDecoration(
+            color: c,
+            shape: BoxShape.circle,
+            border: isSelected
+                ? Border.all(color: Colors.white, width: 2.5)
+                : null,
+            boxShadow: isSelected
+                ? [BoxShadow(color: c.withValues(alpha: 0.5), blurRadius: 6)]
+                : null,
+          ),
+        ),
+      );
+    }).toList(),
+  );
+}
 
 class SettingsScreen extends ConsumerWidget {
   const SettingsScreen({super.key});
@@ -24,6 +60,7 @@ class SettingsScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = ref.watch(themeSettingProvider);
+    final fontFamily = ref.watch(fontFamilyProvider);
     final categories = ref.watch(categoriesProvider);
     final colorScheme = Theme.of(context).colorScheme;
 
@@ -49,9 +86,28 @@ class SettingsScreen extends ConsumerWidget {
               ),
             ),
             const SizedBox(height: AppSpacing.md),
-            _ThemePicker(
+            _SegmentedPicker<ThemeSetting>(
+              values: ThemeSetting.values,
               selected: theme,
+              labelOf: (t) => t.displayName,
               onChanged: (t) => ref.read(themeSettingProvider.notifier).set(t),
+            ),
+            const SizedBox(height: AppSpacing.lg),
+
+            // Font picker
+            Text(
+              'FONT',
+              style: AppTypography.sectionHeader.copyWith(
+                color: colorScheme.secondary,
+              ),
+            ),
+            const SizedBox(height: AppSpacing.md),
+            _SegmentedPicker<AppFontFamily>(
+              values: AppFontFamily.values,
+              selected: fontFamily,
+              labelOf: (f) => f.displayName,
+              fontSize: 12,
+              onChanged: (f) => ref.read(fontFamilyProvider.notifier).set(f),
             ),
             const SizedBox(height: AppSpacing.xl),
 
@@ -79,10 +135,13 @@ class SettingsScreen extends ConsumerWidget {
                   HapticFeedback.mediumImpact();
                   ref.read(categoriesProvider.notifier).removeCategory(cat.name);
                 },
-                child: _CategoryRow(
-                  name: cat.name,
-                  color: cat.color,
-                  isDefault: cat.isDefault,
+                child: GestureDetector(
+                  onTap: () => _showRenameCategoryDialog(context, ref, cat),
+                  child: _CategoryRow(
+                    name: cat.name,
+                    color: cat.color,
+                    isDefault: cat.isDefault,
+                  ),
                 ),
               ),
             const SizedBox(height: AppSpacing.sm),
@@ -103,6 +162,28 @@ class SettingsScreen extends ConsumerWidget {
             const SizedBox(height: AppSpacing.md),
             for (final state in LearningState.values)
               _StateColorRow(state: state),
+            const SizedBox(height: AppSpacing.xl),
+
+            // Rating Colors (configurable)
+            _RatingColorsSection(),
+            const SizedBox(height: AppSpacing.xl),
+
+            // Arsenal
+            Text(
+              'ARSENAL',
+              style: AppTypography.sectionHeader.copyWith(
+                color: colorScheme.secondary,
+              ),
+            ),
+            const SizedBox(height: AppSpacing.md),
+            Consumer(builder: (context, ref, _) {
+              final viewNames = ref.watch(viewNamesProvider);
+              return ActionTile(
+                icon: Icons.title,
+                label: 'Page Title: ${viewNames['title'] ?? 'Arsenal'}',
+                onTap: () => _showRenameArsenalDialog(context, ref, viewNames['title'] ?? 'Arsenal'),
+              );
+            }),
             const SizedBox(height: AppSpacing.xl),
 
             // Data section
@@ -153,7 +234,7 @@ class SettingsScreen extends ConsumerWidget {
               },
             ),
             const SizedBox(height: AppSpacing.sm),
-            _DataActionTile(
+            ActionTile(
               icon: Icons.delete_forever,
               label: 'Clear All Data',
               destructive: true,
@@ -168,7 +249,7 @@ class SettingsScreen extends ConsumerWidget {
             // Version footer
             Center(
               child: Text(
-                'Breakdex v0.4.0 (Build 1)',
+                'Breakdex v0.5.0 (Build 1)',
                 style: AppTypography.caption.copyWith(
                   color: colorScheme.secondary,
                 ),
@@ -208,6 +289,7 @@ class SettingsScreen extends ConsumerWidget {
                 }
               }
               // Delete all rows from every table
+              await db.delete(db.fsrsCards).go();
               await db.delete(db.reviews).go();
               await db.delete(db.comboMoves).go();
               await db.delete(db.combos).go();
@@ -323,6 +405,93 @@ class SettingsScreen extends ConsumerWidget {
     }
   }
 
+  void _showRenameCategoryDialog(
+      BuildContext context, WidgetRef ref, Category cat) {
+    showDialog(
+      context: context,
+      builder: (context) {
+        final controller = TextEditingController(text: cat.name);
+        Color selectedColor = cat.color;
+        return StatefulBuilder(
+          builder: (context, setDialogState) => AlertDialog(
+            title: const Text('Rename Category'),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextField(
+                  controller: controller,
+                  autofocus: true,
+                  decoration: const InputDecoration(hintText: 'Category name'),
+                ),
+                const SizedBox(height: AppSpacing.md),
+                _colorSwatchGrid(
+                  colors: categoryPresetColors,
+                  selected: selectedColor,
+                  onSelected: (c) => setDialogState(() => selectedColor = c),
+                ),
+              ],
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('Cancel'),
+              ),
+              TextButton(
+                onPressed: () {
+                  final newName = controller.text.trim();
+                  if (newName.isNotEmpty) {
+                    final movesDao = ref.read(databaseProvider).movesDao;
+                    ref.read(categoriesProvider.notifier).renameCategory(
+                          cat.name,
+                          newName,
+                          selectedColor,
+                          movesDao,
+                        );
+                    HapticFeedback.mediumImpact();
+                  }
+                  Navigator.pop(context);
+                },
+                child: const Text('Save'),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  void _showRenameArsenalDialog(BuildContext context, WidgetRef ref, String current) {
+    final controller = TextEditingController(text: current);
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Rename Page Title'),
+        content: TextField(
+          controller: controller,
+          autofocus: true,
+          decoration: const InputDecoration(hintText: 'Page title'),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () {
+              final name = controller.text.trim();
+              if (name.isNotEmpty) {
+                ref.read(viewNamesProvider.notifier).rename('title', name);
+                HapticFeedback.mediumImpact();
+              }
+              Navigator.pop(ctx);
+            },
+            child: const Text('Save'),
+          ),
+        ],
+      ),
+    );
+  }
+
   void _showAddCategoryDialog(BuildContext context, WidgetRef ref) {
     showDialog(
       context: context,
@@ -341,32 +510,10 @@ class SettingsScreen extends ConsumerWidget {
                   decoration: const InputDecoration(hintText: 'Category name'),
                 ),
                 const SizedBox(height: AppSpacing.md),
-                Wrap(
-                  spacing: AppSpacing.sm,
-                  runSpacing: AppSpacing.sm,
-                  children: categoryPresetColors.map((c) {
-                    final isSelected = c.toARGB32() == selectedColor.toARGB32();
-                    return GestureDetector(
-                      onTap: () => setDialogState(() => selectedColor = c),
-                      child: Container(
-                        width: 32,
-                        height: 32,
-                        decoration: BoxDecoration(
-                          color: c,
-                          shape: BoxShape.circle,
-                          border: isSelected
-                              ? Border.all(color: Colors.white, width: 2.5)
-                              : null,
-                          boxShadow: isSelected
-                              ? [BoxShadow(
-                                  color: c.withValues(alpha: 0.5),
-                                  blurRadius: 6,
-                                )]
-                              : null,
-                        ),
-                      ),
-                    );
-                  }).toList(),
+                _colorSwatchGrid(
+                  colors: categoryPresetColors,
+                  selected: selectedColor,
+                  onSelected: (c) => setDialogState(() => selectedColor = c),
                 ),
               ],
             ),
@@ -395,34 +542,43 @@ class SettingsScreen extends ConsumerWidget {
   }
 }
 
-class _ThemePicker extends StatelessWidget {
-  const _ThemePicker({required this.selected, required this.onChanged});
+/// Generic segmented picker — replaces _ThemePicker and _FontPicker.
+class _SegmentedPicker<T> extends StatelessWidget {
+  const _SegmentedPicker({
+    super.key,
+    required this.values,
+    required this.selected,
+    required this.onChanged,
+    required this.labelOf,
+    this.fontSize,
+  });
 
-  final ThemeSetting selected;
-  final ValueChanged<ThemeSetting> onChanged;
+  final List<T> values;
+  final T selected;
+  final ValueChanged<T> onChanged;
+  final String Function(T) labelOf;
+  final double? fontSize;
 
   @override
   Widget build(BuildContext context) {
-    final fill = Theme.of(context).colorScheme.surfaceContainerHighest;
+    final colorScheme = Theme.of(context).colorScheme;
     return Container(
       padding: const EdgeInsets.all(4),
       decoration: BoxDecoration(
-        color: fill,
+        color: colorScheme.surfaceContainerHighest,
         borderRadius: BorderRadius.circular(AppRadius.sm),
       ),
       child: Row(
-        children: ThemeSetting.values.map((t) {
-          final isSelected = t == selected;
+        children: values.map((v) {
+          final isSelected = v == selected;
           return Expanded(
             child: GestureDetector(
-              onTap: () => onChanged(t),
+              onTap: () => onChanged(v),
               child: AnimatedContainer(
                 duration: const Duration(milliseconds: 200),
                 padding: const EdgeInsets.symmetric(vertical: 10),
                 decoration: BoxDecoration(
-                  color: isSelected
-                      ? Theme.of(context).colorScheme.surface
-                      : Colors.transparent,
+                  color: isSelected ? colorScheme.surface : Colors.transparent,
                   borderRadius: BorderRadius.circular(AppRadius.sm - 2),
                   boxShadow: isSelected
                       ? [BoxShadow(
@@ -434,14 +590,15 @@ class _ThemePicker extends StatelessWidget {
                 ),
                 child: Center(
                   child: Text(
-                    t.displayName,
+                    labelOf(v),
                     style: AppTypography.bodySmall.copyWith(
                       color: isSelected
-                          ? Theme.of(context).colorScheme.onSurface
-                          : Theme.of(context).colorScheme.secondary,
-                      fontWeight:
-                          isSelected ? FontWeight.w600 : FontWeight.w400,
+                          ? colorScheme.onSurface
+                          : colorScheme.secondary,
+                      fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
+                      fontSize: fontSize,
                     ),
+                    textAlign: TextAlign.center,
                   ),
                 ),
               ),
@@ -535,50 +692,6 @@ class _StateColorRow extends StatelessWidget {
             ),
           ),
         ],
-      ),
-    );
-  }
-}
-
-class _DataActionTile extends StatelessWidget {
-  const _DataActionTile({
-    required this.icon,
-    required this.label,
-    required this.onTap,
-    this.destructive = false,
-  });
-
-  final IconData icon;
-  final String label;
-  final VoidCallback onTap;
-  final bool destructive;
-
-  @override
-  Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
-    final color = destructive ? AppColors.actionAgain : colorScheme.onSurface;
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(AppRadius.sm),
-      child: Container(
-        padding: const EdgeInsets.symmetric(
-            horizontal: AppSpacing.md, vertical: 14),
-        decoration: BoxDecoration(
-          color: colorScheme.surfaceContainerHighest,
-          borderRadius: BorderRadius.circular(AppRadius.sm),
-        ),
-        child: Row(
-          children: [
-            Icon(icon, color: color, size: 22),
-            const SizedBox(width: AppSpacing.md),
-            Text(
-              label,
-              style: AppTypography.bodyMedium.copyWith(color: color),
-            ),
-            const Spacer(),
-            Icon(Icons.chevron_right, color: colorScheme.secondary, size: 20),
-          ],
-        ),
       ),
     );
   }
@@ -682,7 +795,7 @@ class _CloudSyncSection extends ConsumerWidget {
         ),
         const SizedBox(height: AppSpacing.md),
         if (!isLoggedIn)
-          _DataActionTile(
+          ActionTile(
             icon: Icons.cloud_outlined,
             label: 'Sign in to sync',
             onTap: () => context.push('/auth'),
@@ -773,7 +886,7 @@ class _LoggedInSyncPanel extends ConsumerWidget {
         const SizedBox(height: AppSpacing.sm),
 
         // Sync now button
-        _DataActionTile(
+        ActionTile(
           icon: Icons.cloud_sync,
           label: isSyncing
               ? 'Syncing...'
@@ -801,7 +914,7 @@ class _LoggedInSyncPanel extends ConsumerWidget {
         const SizedBox(height: AppSpacing.md),
 
         // Sign out
-        _DataActionTile(
+        ActionTile(
           icon: Icons.logout,
           label: 'Sign Out',
           destructive: true,
@@ -825,5 +938,148 @@ class _LoggedInSyncPanel extends ConsumerWidget {
     if (diff.inMinutes < 60) return '${diff.inMinutes}m ago';
     if (diff.inHours < 24) return '${diff.inHours}h ago';
     return '${diff.inDays}d ago';
+  }
+}
+
+// -- Rating Colors Section ---------------------------------------------------
+
+/// Preset palette for rating color customization.
+const _ratingPresetColors = [
+  Color(0xFFDA1E28), // Red
+  Color(0xFFFF6F00), // Amber
+  Color(0xFF8E6A00), // Gold
+  Color(0xFFE040FB), // Purple
+  Color(0xFF198038), // Green
+  Color(0xFF08BDBA), // Teal
+  Color(0xFF2362A2), // Blue
+  Color(0xFF6929C4), // Violet
+];
+
+class _RatingColorsSection extends ConsumerWidget {
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final rc = ref.watch(ratingColorsProvider);
+
+    final entries = [
+      ('AGAIN', 'again', rc.again, Icons.close_rounded),
+      ('HARD', 'hard', rc.hard, Icons.remove_rounded),
+      ('GOOD', 'good', rc.good, Icons.check_rounded),
+      ('EASY', 'easy', rc.easy, Icons.star_rounded),
+    ];
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Expanded(
+              child: Text(
+                'RATING COLORS',
+                style: AppTypography.sectionHeader.copyWith(
+                  color: colorScheme.secondary,
+                ),
+              ),
+            ),
+            TextButton(
+              onPressed: () {
+                HapticFeedback.mediumImpact();
+                ref.read(ratingColorsProvider.notifier).resetAll();
+              },
+              child: Text(
+                'Reset',
+                style: AppTypography.caption.copyWith(
+                  color: colorScheme.secondary,
+                ),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: AppSpacing.md),
+        for (final (label, key, color, icon) in entries)
+          _RatingColorRow(
+            label: label,
+            colorKey: key,
+            currentColor: color,
+            icon: icon,
+          ),
+      ],
+    );
+  }
+}
+
+class _RatingColorRow extends ConsumerWidget {
+  const _RatingColorRow({
+    required this.label,
+    required this.colorKey,
+    required this.currentColor,
+    required this.icon,
+  });
+
+  final String label;
+  final String colorKey;
+  final Color currentColor;
+  final IconData icon;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final colorScheme = Theme.of(context).colorScheme;
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 6),
+      child: GestureDetector(
+        onTap: () => _showColorPicker(context, ref),
+        child: Row(
+          children: [
+            Icon(icon, size: 18, color: currentColor),
+            const SizedBox(width: 10),
+            Container(
+              width: 24,
+              height: 24,
+              decoration: BoxDecoration(
+                color: currentColor,
+                borderRadius: BorderRadius.circular(6),
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(label, style: AppTypography.bodyMedium.copyWith(
+                color: colorScheme.onSurface,
+              )),
+            ),
+            Text(
+              '#${currentColor.toARGB32().toRadixString(16).substring(2).toUpperCase()}',
+              style: AppTypography.caption.copyWith(
+                color: colorScheme.secondary,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showColorPicker(BuildContext context, WidgetRef ref) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text('$label Color'),
+        content: _colorSwatchGrid(
+          colors: _ratingPresetColors,
+          selected: currentColor,
+          size: 40,
+          onSelected: (c) {
+            HapticFeedback.mediumImpact();
+            ref.read(ratingColorsProvider.notifier).setColor(colorKey, c);
+            Navigator.pop(ctx);
+          },
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Cancel'),
+          ),
+        ],
+      ),
+    );
   }
 }

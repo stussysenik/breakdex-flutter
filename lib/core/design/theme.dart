@@ -4,7 +4,8 @@ import 'spacing.dart';
 import 'typography.dart';
 
 abstract final class AppTheme {
-  static ThemeData light() => _build(
+  static ThemeData light({AppFontFamily family = AppFontFamily.inter}) =>
+      _build(
         brightness: Brightness.light,
         bg: AppColors.lightBg,
         card: AppColors.lightCard,
@@ -12,9 +13,11 @@ abstract final class AppTheme {
         text: AppColors.lightText,
         secondary: AppColors.lightSecondary,
         separator: AppColors.lightSeparator,
+        family: family,
       );
 
-  static ThemeData dark() => _build(
+  static ThemeData dark({AppFontFamily family = AppFontFamily.inter}) =>
+      _build(
         brightness: Brightness.dark,
         bg: AppColors.darkBg,
         card: AppColors.darkCard,
@@ -22,6 +25,7 @@ abstract final class AppTheme {
         text: AppColors.darkText,
         secondary: AppColors.darkSecondary,
         separator: AppColors.darkSeparator,
+        family: family,
       );
 
   static ThemeData _build({
@@ -32,8 +36,9 @@ abstract final class AppTheme {
     required Color text,
     required Color secondary,
     required Color separator,
+    required AppFontFamily family,
   }) {
-    final textTheme = AppTypography.textTheme(text, secondary);
+    final textTheme = AppTypography.textTheme(text, secondary, family: family);
     final colorScheme = ColorScheme(
       brightness: brightness,
       primary: AppColors.accent,

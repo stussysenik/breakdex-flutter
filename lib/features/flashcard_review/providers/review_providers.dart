@@ -2,7 +2,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/database/database.dart';
 import '../../../core/models/learning_state.dart';
+import '../../../core/models/reviewable_item.dart';
 import '../../../core/providers.dart';
+import '../../../core/services/fsrs_service.dart';
 
 /// Which learning state to filter review cards by (null = all).
 final reviewStateFilterProvider = StateProvider<LearningState?>((ref) => null);
@@ -16,30 +18,26 @@ final reviewSessionSizeProvider = StateProvider<int?>((ref) => null);
 /// Available session size presets.
 const reviewSessionSizeOptions = [5, 10, 15, null]; // null = all
 
-/// Filtered + shuffled + capped moves for the current review session.
-/// Re-fetches when filter or session size changes.
+/// Cache the initial session so ratings don't cause the deck to reshuffle
+/// while the user is actively swiping through it.
+final _sessionSeedProvider = StateProvider<int>((ref) => DateTime.now().millisecondsSinceEpoch);
+
+/// Filtered + shuffled moves for the current review session.
 final filteredReviewMovesProvider = FutureProvider<List<Move>>((ref) async {
-  final stateFilter = ref.watch(reviewStateFilterProvider);
-  final categoryFilter = ref.watch(reviewCategoryFilterProvider);
-  final sessionSize = ref.watch(reviewSessionSizeProvider);
-  var moves = await ref.watch(moveRepositoryProvider).getAll();
+  // Bind to a seed so we only re-fetch/reshuffle when explicitly requested
+  ref.watch(_sessionSeedProvider);
 
-  if (stateFilter != null) {
-    moves = moves.where((m) => m.learningState == stateFilter.dbValue).toList();
-  }
-  if (categoryFilter != null) {
-    moves = moves.where((m) => m.category == categoryFilter).toList();
-  }
-
+  // Default session: all Arsenal moves so review works immediately
+  // after the first move is added.
+  final moves = await ref.watch(movesDaoProvider).getAll();
   moves.shuffle();
-
-  // Cap to session size
-  if (sessionSize != null && moves.length > sessionSize) {
-    moves = moves.sublist(0, sessionSize);
-  }
-
   return moves;
 });
+
+/// Refreshes the active review session (fetches new due cards and reshuffles).
+void refreshReviewSession(WidgetRef ref) {
+  ref.read(_sessionSeedProvider.notifier).state = DateTime.now().millisecondsSinceEpoch;
+}
 
 /// Live counts per learning state (always across ALL moves, ignoring filters).
 final moveStateCountsProvider = StreamProvider<Map<LearningState, int>>((ref) {
@@ -68,87 +66,159 @@ final totalMoveCountProvider = StreamProvider<int>((ref) {
   return ref.watch(moveRepositoryProvider).watchAll().map((m) => m.length);
 });
 
-/// Whether the review dashboard filters are expanded.
-final dashboardExpandedProvider = StateProvider<bool>((ref) {
-  // Self-healing: auto-expand when any filter changes
-  ref.listen(reviewStateFilterProvider, (prev, next) {
-    ref.controller.state = true;
-  });
-  ref.listen(reviewCategoryFilterProvider, (prev, next) {
-    ref.controller.state = true;
-  });
-  ref.listen(reviewSessionSizeProvider, (prev, next) {
-    ref.controller.state = true;
-  });
-  return true;
+// ---------------------------------------------------------------------------
+// FSRS-powered pre-screen providers
+// ---------------------------------------------------------------------------
+
+/// Whether the user is in an active review session (showing flashcards)
+/// or on the mastery pre-screen.
+final reviewSessionActiveProvider = StateProvider<bool>((ref) => false);
+
+/// FSRS category mastery data for the pre-screen grid.
+final categoryMasteryProvider =
+    FutureProvider<List<CategoryMastery>>((ref) async {
+  return ref.watch(fsrsServiceProvider).getCategoryMastery();
 });
 
-/// Temporal count data for time-series badges.
-class TemporalCounts {
-  final int today;
-  final int thisWeek;
-  final int total;
-
-  const TemporalCounts({
-    required this.today,
-    required this.thisWeek,
-    required this.total,
-  });
-}
-
-/// Temporal counts per learning state (today/week/total reviewed per state).
-final reviewStateTemporalCountsProvider =
-    StreamProvider<Map<LearningState, TemporalCounts>>((ref) {
-  return ref.watch(moveRepositoryProvider).watchAll().map((moves) {
-    final now = DateTime.now();
-    final todayStart = DateTime(now.year, now.month, now.day);
-    final weekStart = todayStart.subtract(Duration(days: now.weekday - 1));
-
-    final result = <LearningState, TemporalCounts>{};
-    for (final state in LearningState.values) {
-      final stateMoves =
-          moves.where((m) => m.learningState == state.dbValue).toList();
-      final total = stateMoves.length;
-      final today =
-          stateMoves.where((m) => m.createdAt.isAfter(todayStart)).length;
-      final week =
-          stateMoves.where((m) => m.createdAt.isAfter(weekStart)).length;
-      result[state] = TemporalCounts(
-        today: today,
-        thisWeek: week,
-        total: total,
-      );
-    }
-    return result;
-  });
+/// Anki-style due summary: New / Learning / Review breakdown.
+final dueSummaryProvider = FutureProvider<DueSummary>((ref) async {
+  return ref.watch(fsrsServiceProvider).getDueSummary();
 });
 
-/// Temporal counts per category (today/week/total).
-final reviewCategoryTemporalCountsProvider =
-    StreamProvider<Map<String, TemporalCounts>>((ref) {
-  return ref.watch(moveRepositoryProvider).watchAll().map((moves) {
-    final now = DateTime.now();
-    final todayStart = DateTime(now.year, now.month, now.day);
-    final weekStart = todayStart.subtract(Duration(days: now.weekday - 1));
+/// Preview the scheduling interval for each rating on the current move.
+final intervalPreviewProvider =
+    FutureProvider.family<Map<ReviewRating, Duration>, String>(
+        (ref, moveId) async {
+  return ref.watch(fsrsServiceProvider).previewIntervals(moveId);
+});
 
-    final result = <String, TemporalCounts>{};
-    final categories = <String>{};
-    for (final m in moves) {
-      categories.add(m.category);
+/// Next due date for empty-state countdown ("Next review in 2h 14m").
+final nextDueDateProvider = FutureProvider<DateTime?>((ref) async {
+  final dao = ref.watch(fsrsCardsDaoProvider);
+  return dao.getNextDueDate();
+});
+
+// ---------------------------------------------------------------------------
+// Schedule mode providers (calendar-based review)
+// ---------------------------------------------------------------------------
+
+/// Master list of all reviewable items with their FSRS cards.
+/// Refreshes whenever FSRS cards change (reviews processed).
+final allReviewableItemsProvider =
+    FutureProvider<List<ReviewableItemWithCard>>((ref) async {
+  // Watch the refresh stream to auto-invalidate on card changes
+  ref.watch(fsrsCardsRefreshProvider);
+  return ref.watch(fsrsServiceProvider).getAllItems();
+});
+
+/// Currently selected date on the schedule calendar.
+final reviewCalendarSelectedDateProvider = StateProvider<DateTime>((ref) {
+  final now = DateTime.now();
+  return DateTime(now.year, now.month, now.day);
+});
+
+/// Due counts per date for the schedule calendar dots.
+///
+/// Groups all FSRS cards by their due date (midnight-normalized) so the
+/// calendar can show colored indicators on each day.
+final calendarDueCountsProvider =
+    FutureProvider<Map<DateTime, int>>((ref) async {
+  ref.watch(fsrsCardsRefreshProvider);
+  final items = await ref.watch(allReviewableItemsProvider.future);
+  final counts = <DateTime, int>{};
+  for (final item in items) {
+    final due = item.dueDate;
+    final day = DateTime(due.year, due.month, due.day);
+    counts[day] = (counts[day] ?? 0) + 1;
+  }
+  return counts;
+});
+
+/// Items grouped by due date for the calendar drilldown.
+final calendarDueMapProvider =
+    FutureProvider<Map<DateTime, List<ReviewableItemWithCard>>>((ref) async {
+  ref.watch(fsrsCardsRefreshProvider);
+  final items = await ref.watch(allReviewableItemsProvider.future);
+  final map = <DateTime, List<ReviewableItemWithCard>>{};
+  for (final item in items) {
+    final due = item.dueDate;
+    final day = DateTime(due.year, due.month, due.day);
+    map.putIfAbsent(day, () => []).add(item);
+  }
+  return map;
+});
+
+/// Items due on the currently selected calendar date.
+final itemsDueOnSelectedDateProvider =
+    FutureProvider<List<ReviewableItemWithCard>>((ref) async {
+  final selectedDate = ref.watch(reviewCalendarSelectedDateProvider);
+  final dueMap = await ref.watch(calendarDueMapProvider.future);
+  final day = DateTime(selectedDate.year, selectedDate.month, selectedDate.day);
+
+  // For today and past dates, also include overdue items
+  final now = DateTime.now();
+  final today = DateTime(now.year, now.month, now.day);
+  if (!day.isAfter(today)) {
+    // Include items due on or before selected date
+    final items = <ReviewableItemWithCard>[];
+    for (final entry in dueMap.entries) {
+      if (!entry.key.isAfter(day)) {
+        items.addAll(entry.value);
+      }
     }
-    for (final cat in categories) {
-      final catMoves = moves.where((m) => m.category == cat).toList();
-      final total = catMoves.length;
-      final today =
-          catMoves.where((m) => m.createdAt.isAfter(todayStart)).length;
-      final week =
-          catMoves.where((m) => m.createdAt.isAfter(weekStart)).length;
-      result[cat] = TemporalCounts(
-        today: today,
-        thisWeek: week,
-        total: total,
+    // Sort by due date (most overdue first)
+    items.sort((a, b) => a.dueDate.compareTo(b.dueDate));
+    return items;
+  }
+
+  return dueMap[day] ?? [];
+});
+
+/// Per-item FSRS math coefficients for the detail sheet.
+final srsCoefficientsProvider = FutureProvider.family<SrsCoefficients,
+    ({String entityId, String entityType})>((ref, params) async {
+  return ref.watch(fsrsServiceProvider).getSrsCoefficients(
+        params.entityId,
+        entityType: params.entityType,
       );
+});
+
+/// Aggregate SRS overview stats.
+final srsOverviewProvider = FutureProvider<SrsOverview>((ref) async {
+  ref.watch(fsrsCardsRefreshProvider);
+  final items = await ref.watch(allReviewableItemsProvider.future);
+  final now = DateTime.now().toUtc();
+  final endOfToday = DateTime.utc(now.year, now.month, now.day, 23, 59, 59);
+  final endOfTomorrow = endOfToday.add(const Duration(days: 1));
+
+  int dueNow = 0, dueToday = 0, dueTomorrow = 0;
+  double totalRetention = 0;
+  double totalStability = 0;
+  int reviewedCount = 0;
+
+  for (final item in items) {
+    final card = item.card;
+    if (card == null) continue;
+
+    if (!card.due.isAfter(now)) dueNow++;
+    if (!card.due.isAfter(endOfToday)) dueToday++;
+    if (card.due.isAfter(endOfToday) && !card.due.isAfter(endOfTomorrow)) {
+      dueTomorrow++;
     }
-    return result;
-  });
+
+    if (card.lastReview != null) {
+      totalRetention += item.retrievability;
+      totalStability += card.stability;
+      reviewedCount++;
+    }
+  }
+
+  return SrsOverview(
+    totalCards: items.length,
+    dueNow: dueNow,
+    dueToday: dueToday,
+    dueTomorrow: dueTomorrow,
+    avgRetention: reviewedCount > 0 ? totalRetention / reviewedCount : 0,
+    avgStability: reviewedCount > 0 ? totalStability / reviewedCount : 0,
+  );
 });

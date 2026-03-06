@@ -38,4 +38,10 @@ class MovesDao extends DatabaseAccessor<AppDatabase> with _$MovesDaoMixin {
         ..where((t) => t.learningState.equals(state))
         ..orderBy([(t) => OrderingTerm.desc(t.createdAt)]))
       .watch();
+
+  /// Batch-update all moves with [oldCategory] to [newCategory].
+  /// Used by category rename to keep moves in sync with SharedPreferences.
+  Future<int> updateCategory(String oldCategory, String newCategory) =>
+      (update(moves)..where((t) => t.category.equals(oldCategory)))
+          .write(MovesCompanion(category: Value(newCategory)));
 }
