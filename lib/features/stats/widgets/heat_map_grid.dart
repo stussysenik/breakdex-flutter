@@ -13,6 +13,9 @@ class HeatMapGrid extends ConsumerWidget {
 
   final Map<DateTime, int> dailyCounts;
 
+  /// Width reserved for day-of-week labels (M, W, F) on the left.
+  static const double dayLabelWidth = 24.0;
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final cs = Theme.of(context).colorScheme;
@@ -40,7 +43,7 @@ class HeatMapGrid extends ConsumerWidget {
               scrollDirection: Axis.horizontal,
               reverse: true,
               child: CustomPaint(
-                size: Size(52 * 15.0, 7 * 15.0 + 20),
+                size: Size(52 * 15.0 + dayLabelWidth, 7 * 15.0 + 20),
                 painter: _HeatMapPainter(
                   dailyCounts: dailyCounts,
                   startDate: startDate,
@@ -107,7 +110,11 @@ class HeatMapGrid extends ConsumerWidget {
     final adjustedY = position.dy - monthLabelHeight;
     if (adjustedY < 0) return;
 
-    final week = (position.dx / step).floor();
+    // Subtract day label width from x before calculating week index
+    final adjustedX = position.dx - dayLabelWidth;
+    if (adjustedX < 0) return;
+
+    final week = (adjustedX / step).floor();
     final day = (adjustedY / step).floor();
 
     if (week < 0 || week >= 52 || day < 0 || day >= 7) return;
@@ -145,16 +152,32 @@ class _HeatMapPainter extends CustomPainter {
   static const double gap = 3.0;
   static const double step = cellSize + gap;
   static const double monthLabelHeight = 20.0;
+  static const double dayLabelWidth = HeatMapGrid.dayLabelWidth;
 
   static const _months = [
     'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
     'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
   ];
 
+  // Compact day labels: only Mon, Wed, Fri shown (rows 0, 2, 4)
+  static const _dayLabels = {0: 'M', 2: 'W', 4: 'F'};
+
   @override
   void paint(Canvas canvas, Size size) {
     final paint = Paint()..style = PaintingStyle.fill;
     final textPainter = TextPainter(textDirection: TextDirection.ltr);
+
+    // Paint day-of-week labels on the left
+    for (final entry in _dayLabels.entries) {
+      textPainter.text = TextSpan(
+        text: entry.value,
+        style: TextStyle(color: textColor, fontSize: 9),
+      );
+      textPainter.layout();
+      final y = entry.key * step + monthLabelHeight +
+          (cellSize - textPainter.height) / 2;
+      textPainter.paint(canvas, Offset(0, y));
+    }
 
     int? lastMonth;
 
@@ -164,7 +187,7 @@ class _HeatMapPainter extends CustomPainter {
         if (date.isAfter(today)) continue;
 
         final count = dailyCounts[date] ?? 0;
-        final x = week * step;
+        final x = week * step + dayLabelWidth;
         final y = day * step + monthLabelHeight;
 
         // Color based on intensity
@@ -187,6 +210,30 @@ class _HeatMapPainter extends CustomPainter {
           const Radius.circular(2.5),
         );
         canvas.drawRRect(rect, paint);
+
+        // Draw review count inside cell if count > 0
+        if (count > 0) {
+          final isDarkCell = (count / maxCount) > 0.4;
+          textPainter.text = TextSpan(
+            text: '$count',
+            style: TextStyle(
+              color: isDarkCell ? Colors.white : textColor,
+              fontSize: 7,
+              fontWeight: FontWeight.w600,
+            ),
+          );
+          textPainter.layout();
+          // Only render if text fits inside the cell
+          if (textPainter.width <= cellSize - 2) {
+            textPainter.paint(
+              canvas,
+              Offset(
+                x + (cellSize - textPainter.width) / 2,
+                y + (cellSize - textPainter.height) / 2,
+              ),
+            );
+          }
+        }
 
         // Today's cell glow
         if (date == today) {

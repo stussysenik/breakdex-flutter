@@ -44,7 +44,10 @@ class MoveDetailScreen extends ConsumerWidget {
               padding: const EdgeInsets.all(AppSpacing.screenEdge),
               children: [
                 // Back breadcrumb
-                GestureDetector(
+                Semantics(
+                  label: 'Back',
+                  button: true,
+                  child: GestureDetector(
                   onTap: () => context.pop(),
                   child: Row(
                     children: [
@@ -62,6 +65,7 @@ class MoveDetailScreen extends ConsumerWidget {
                     ],
                   ),
                 ),
+                ),
                 const SizedBox(height: AppSpacing.lg),
 
                 // Video player
@@ -74,9 +78,13 @@ class MoveDetailScreen extends ConsumerWidget {
                     originalVideoName: move.originalVideoName,
                   )
                 else
-                  GestureDetector(
-                    onTap: () => _addOrReplaceVideo(context, ref, move),
-                    child: const VideoPlaceholder(icon: Icons.add_a_photo),
+                  Semantics(
+                    label: 'Add video',
+                    button: true,
+                    child: GestureDetector(
+                      onTap: () => _addOrReplaceVideo(context, ref, move),
+                      child: const VideoPlaceholder(icon: Icons.add_a_photo),
+                    ),
                   ),
                 const SizedBox(height: AppSpacing.lg),
 
@@ -124,6 +132,18 @@ class MoveDetailScreen extends ConsumerWidget {
                 const SizedBox(height: AppSpacing.md),
 
                 if (move.videoPath != null) ...[
+                  ActionTile(
+                    icon: Icons.auto_fix_high,
+                    label: 'Analyze Move',
+                    onTap: () => context.push(
+                      '/move-analysis',
+                      extra: {
+                        'moveId': move.id,
+                        'videoPath': move.videoPath,
+                      },
+                    ),
+                  ),
+                  const SizedBox(height: AppSpacing.sm),
                   ActionTile(
                     icon: Icons.edit,
                     label: 'Edit Video',

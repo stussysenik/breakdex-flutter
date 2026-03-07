@@ -107,14 +107,18 @@ class MoveListScreen extends ConsumerWidget {
               padding: const EdgeInsets.symmetric(
                 horizontal: AppSpacing.screenEdge,
               ),
-              child: TextField(
-                onChanged: (v) =>
-                    ref.read(_searchQueryProvider.notifier).state = v,
-                decoration: InputDecoration(
-                  hintText: segment == ArsenalSegment.moves
-                      ? 'Search moves...'
-                      : 'Search combos...',
-                  prefixIcon: Icon(Icons.search, color: colorScheme.secondary),
+              child: Semantics(
+                label: 'Search',
+                textField: true,
+                child: TextField(
+                  onChanged: (v) =>
+                      ref.read(_searchQueryProvider.notifier).state = v,
+                  decoration: InputDecoration(
+                    hintText: segment == ArsenalSegment.moves
+                        ? 'Search moves...'
+                        : 'Search combos...',
+                    prefixIcon: Icon(Icons.search, color: colorScheme.secondary),
+                  ),
                 ),
               ),
             ),
@@ -191,16 +195,22 @@ class MoveListScreen extends ConsumerWidget {
         ),
       ),
       floatingActionButton:
-          FloatingActionButton(
-                onPressed: switch (segment) {
-                  ArsenalSegment.moves => () => _startVideoFirstFlow(
-                    context,
-                    ref,
-                  ),
-                  ArsenalSegment.combos => () => context.push('/create-combo'),
-                },
-                backgroundColor: AppColors.accent,
-                child: const Icon(Icons.add, color: Colors.white),
+          Semantics(
+                label: segment == ArsenalSegment.moves
+                    ? 'Add new move'
+                    : 'Create new combo',
+                button: true,
+                child: FloatingActionButton(
+                  onPressed: switch (segment) {
+                    ArsenalSegment.moves => () => _startVideoFirstFlow(
+                      context,
+                      ref,
+                    ),
+                    ArsenalSegment.combos => () => context.push('/create-combo'),
+                  },
+                  backgroundColor: AppColors.accent,
+                  child: const Icon(Icons.add, color: Colors.white),
+                ),
               )
               .animate()
               .scale(
@@ -400,11 +410,15 @@ class _VideoNamingSheetState extends ConsumerState<_VideoNamingSheet> {
                                     ),
                                   ),
                                   const SizedBox(height: AppSpacing.md),
-                                  TextField(
-                                    controller: _nameController,
-                                    autofocus: true,
-                                    decoration: const InputDecoration(
-                                      hintText: 'Move name',
+                                  Semantics(
+                                    label: 'Move name',
+                                    textField: true,
+                                    child: TextField(
+                                      controller: _nameController,
+                                      autofocus: true,
+                                      decoration: const InputDecoration(
+                                        hintText: 'Move name',
+                                      ),
                                     ),
                                   ),
                                   const SizedBox(height: AppSpacing.md),
@@ -444,7 +458,11 @@ class _VideoNamingSheetState extends ConsumerState<_VideoNamingSheet> {
                                   ),
                                   const SizedBox(height: AppSpacing.lg),
                                   // Full-width save button
-                                  SizedBox(
+                                  Semantics(
+                                    label: 'Save move',
+                                    button: true,
+                                    enabled: !_nameEmpty,
+                                    child: SizedBox(
                                     width: double.infinity,
                                     height: 50,
                                     child: ElevatedButton(
@@ -470,6 +488,7 @@ class _VideoNamingSheetState extends ConsumerState<_VideoNamingSheet> {
                                       ),
                                       child: const Text('Save'),
                                     ),
+                                  ),
                                   ),
                                 ],
                               ),
@@ -767,7 +786,11 @@ class _ComboRow extends ConsumerWidget {
         HapticFeedback.heavyImpact();
         ref.read(comboRepositoryProvider).delete(combo.id);
       },
-      child: InkWell(
+      child: Semantics(
+        identifier: 'combo-row-${combo.id}',
+        label: '${combo.name}, $moveCount moves',
+        button: true,
+        child: InkWell(
         onTap: () => context.go('/arsenal/combo/${combo.id}'),
         borderRadius: BorderRadius.circular(AppRadius.sm),
         child: Container(
@@ -825,6 +848,7 @@ class _ComboRow extends ConsumerWidget {
             ),
           ),
         ),
+      ),
       ),
     );
   }
@@ -1271,59 +1295,64 @@ class _MoveRow extends ConsumerWidget {
         HapticFeedback.heavyImpact();
         ref.read(moveRepositoryProvider).delete(move.id);
       },
-      child: InkWell(
-        onTap: () => context.go('/arsenal/move/${move.id}'),
-        child: Container(
-          margin: const EdgeInsets.only(bottom: AppSpacing.sm),
-          decoration: BoxDecoration(
-            color: colorScheme.surface,
-            borderRadius: BorderRadius.circular(AppRadius.sm),
-          ),
-          child: IntrinsicHeight(
-            child: Row(
-              children: [
-                Container(
-                  width: 5,
-                  decoration: BoxDecoration(
-                    color: state.color,
-                    borderRadius: const BorderRadius.only(
-                      topLeft: Radius.circular(AppRadius.sm),
-                      bottomLeft: Radius.circular(AppRadius.sm),
+      child: Semantics(
+        identifier: 'move-row-${move.id}',
+        label: '${move.name}, ${state.displayText}',
+        button: true,
+        child: InkWell(
+          onTap: () => context.go('/arsenal/move/${move.id}'),
+          child: Container(
+            margin: const EdgeInsets.only(bottom: AppSpacing.sm),
+            decoration: BoxDecoration(
+              color: colorScheme.surface,
+              borderRadius: BorderRadius.circular(AppRadius.sm),
+            ),
+            child: IntrinsicHeight(
+              child: Row(
+                children: [
+                  Container(
+                    width: 5,
+                    decoration: BoxDecoration(
+                      color: state.color,
+                      borderRadius: const BorderRadius.only(
+                        topLeft: Radius.circular(AppRadius.sm),
+                        bottomLeft: Radius.circular(AppRadius.sm),
+                      ),
                     ),
                   ),
-                ),
-                Expanded(
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: AppSpacing.md,
-                      vertical: 14,
-                    ),
-                    child: Row(
-                      children: [
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Text(
-                                move.name,
-                                style: AppTypography.bodyMedium.copyWith(
-                                  color: colorScheme.onSurface,
+                  Expanded(
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: AppSpacing.md,
+                        vertical: 14,
+                      ),
+                      child: Row(
+                        children: [
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Text(
+                                  move.name,
+                                  style: AppTypography.bodyMedium.copyWith(
+                                    color: colorScheme.onSurface,
+                                  ),
                                 ),
-                              ),
-                              if (move.category != 'default') ...[
-                                const SizedBox(height: 2),
-                                _CategoryLabel(category: move.category),
+                                if (move.category != 'default') ...[
+                                  const SizedBox(height: 2),
+                                  _CategoryLabel(category: move.category),
+                                ],
                               ],
-                            ],
+                            ),
                           ),
-                        ),
-                        StatePill(state: state),
-                      ],
+                          StatePill(state: state),
+                        ],
+                      ),
                     ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
         ),

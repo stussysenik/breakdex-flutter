@@ -22,7 +22,6 @@ import 'widgets/rating_button_row.dart';
 import 'widgets/mastery_prescreen.dart';
 import 'widgets/review_card.dart';
 import 'widgets/review_dashboard.dart';
-import 'widgets/schedule_review_screen.dart';
 import 'widgets/state_picker_sheet.dart';
 import '../../shared/widgets/video_picker_sheet.dart';
 
@@ -45,9 +44,6 @@ class _FlashcardReviewScreenState extends ConsumerState<FlashcardReviewScreen> {
   double _cardScale = 1.0;
   double _cardOpacity = 1.0;
   bool _animatingExit = false;
-
-  // Flashcard reveal state: true = see move/video/buttons, false = hidden
-  bool _isRevealed = false;
 
   // Shake-to-skip: accelerometer subscription + debounce
   StreamSubscription<AccelerometerEvent>? _shakeSubscription;
@@ -75,7 +71,6 @@ class _FlashcardReviewScreenState extends ConsumerState<FlashcardReviewScreen> {
     _completed = false;
     _moves = [];
     _initialized = false;
-    _isRevealed = false;
     _cardScale = 1.0;
     _cardOpacity = 1.0;
     _animatingExit = false;
@@ -91,11 +86,6 @@ class _FlashcardReviewScreenState extends ConsumerState<FlashcardReviewScreen> {
 
   void _setReviewMode(ReviewMode mode) {
     ref.read(reviewModeProvider.notifier).set(mode);
-    if (mode == ReviewMode.schedule) {
-      _endSession();
-      return;
-    }
-
     setState(_resetSessionState);
     ref.read(reviewSessionActiveProvider.notifier).state = false;
   }
@@ -112,7 +102,7 @@ class _FlashcardReviewScreenState extends ConsumerState<FlashcardReviewScreen> {
           children: [
             const SizedBox(height: AppSpacing.md),
 
-            // Title + Battle button (always visible)
+            // Title + End button
             Padding(
               padding: const EdgeInsets.symmetric(
                 horizontal: AppSpacing.screenEdge,
@@ -127,7 +117,7 @@ class _FlashcardReviewScreenState extends ConsumerState<FlashcardReviewScreen> {
                       ),
                     ),
                   ),
-                  if (reviewMode == ReviewMode.session && sessionActive)
+                  if (sessionActive)
                     TextButton(
                       onPressed: _endSession,
                       child: const Text('End'),
@@ -136,39 +126,57 @@ class _FlashcardReviewScreenState extends ConsumerState<FlashcardReviewScreen> {
               ),
             ),
 
-            const SizedBox(height: AppSpacing.sm),
+            const SizedBox(height: AppSpacing.xs),
             Padding(
               padding: const EdgeInsets.symmetric(
                 horizontal: AppSpacing.screenEdge,
               ),
-              child: SegmentedButton<ReviewMode>(
-                segments: const [
-                  ButtonSegment<ReviewMode>(
-                    value: ReviewMode.session,
-                    icon: Icon(Icons.style_outlined, size: 18),
-                    label: Text('Session'),
+              child: Semantics(
+                label: 'Review mode',
+                child: SegmentedButton<ReviewMode>(
+                  segments: const [
+                    ButtonSegment<ReviewMode>(
+                      value: ReviewMode.review,
+                      icon: Icon(Icons.bolt_rounded, size: 18),
+                      label: Text('Review'),
+                    ),
+                    ButtonSegment<ReviewMode>(
+                      value: ReviewMode.deck,
+                      icon: Icon(Icons.style_rounded, size: 18),
+                      label: Text('Deck'),
+                    ),
+                  ],
+                  selected: {reviewMode},
+                  showSelectedIcon: false,
+                  onSelectionChanged: (selection) =>
+                      _setReviewMode(selection.first),
+                  style: ButtonStyle(
+                    backgroundColor: WidgetStateProperty.resolveWith((states) {
+                      if (states.contains(WidgetState.selected)) {
+                        return AppColors.accent;
+                      }
+                      return Colors.transparent;
+                    }),
+                    foregroundColor: WidgetStateProperty.resolveWith((states) {
+                      if (states.contains(WidgetState.selected)) {
+                        return Colors.white;
+                      }
+                      return colorScheme.secondary;
+                    }),
                   ),
-                  ButtonSegment<ReviewMode>(
-                    value: ReviewMode.schedule,
-                    icon: Icon(Icons.calendar_month_outlined, size: 18),
-                    label: Text('Schedule'),
-                  ),
-                ],
-                selected: {reviewMode},
-                showSelectedIcon: false,
-                onSelectionChanged: (selection) =>
-                    _setReviewMode(selection.first),
+                ),
               ),
             ),
             const SizedBox(height: AppSpacing.xs),
 
             Expanded(
-              child: switch (reviewMode) {
-                ReviewMode.schedule => const ScheduleReviewScreen(),
-                ReviewMode.session when sessionActive =>
-                  _buildFlashcardSession(),
-                ReviewMode.session => const MasteryPrescreen(),
-              },
+              child: sessionActive
+                  ? _buildFlashcardSession()
+                  : MasteryPrescreen(
+                      source: reviewMode == ReviewMode.deck
+                          ? ReviewSessionSource.deck
+                          : ReviewSessionSource.stateBased,
+                    ),
             ),
           ],
         ),
@@ -178,7 +186,6 @@ class _FlashcardReviewScreenState extends ConsumerState<FlashcardReviewScreen> {
 
   Widget _buildFlashcardSession() {
     final movesAsync = ref.watch(filteredReviewMovesProvider);
-    final colorScheme = Theme.of(context).colorScheme;
 
     // Reset session when filters change (provider re-fetches)
     ref.listen(filteredReviewMovesProvider, (prev, next) {
@@ -201,10 +208,11 @@ class _FlashcardReviewScreenState extends ConsumerState<FlashcardReviewScreen> {
         if (!_initialized) {
           _moves = List.from(moves);
           _initialized = true;
-          _isRevealed = false;
           _initPageController();
           _startShakeListener();
         }
+
+        final colorScheme = Theme.of(context).colorScheme;
 
         return Column(
           children: [
@@ -263,32 +271,26 @@ class _FlashcardReviewScreenState extends ConsumerState<FlashcardReviewScreen> {
                       HapticFeedback.selectionClick();
                       setState(() {
                         _currentIndex = index;
-                        _isRevealed = false;
                       });
                     },
                     itemBuilder: (context, index) {
                       final pageMove = _moves[index];
-                      return GestureDetector(
-                        onTap: () {
-                          if (!_isRevealed && index == _currentIndex) {
-                            HapticFeedback.mediumImpact();
-                            setState(() => _isRevealed = true);
-                          }
-                        },
-                        onVerticalDragEnd: (details) {
-                          if (details.primaryVelocity != null &&
-                              details.primaryVelocity! < -300) {
-                            _showStatePicker(pageMove);
-                          }
-                        },
-                        child: ReviewCard(
-                          move: pageMove,
-                          isRevealed: index == _currentIndex
-                              ? _isRevealed
-                              : false,
-                          onStatePillTap: () => _showStatePicker(pageMove),
-                          videoHeight: videoHeight,
-                          onRepick: () => _repickVideo(pageMove, index),
+                      return Semantics(
+                        identifier: 'review-card-${pageMove.id}',
+                        label: 'Review card: ${pageMove.name}',
+                        child: GestureDetector(
+                          onVerticalDragEnd: (details) {
+                            if (details.primaryVelocity != null &&
+                                details.primaryVelocity! < -300) {
+                              _showStatePicker(pageMove);
+                            }
+                          },
+                          child: ReviewCard(
+                            move: pageMove,
+                            onStatePillTap: () => _showStatePicker(pageMove),
+                            videoHeight: videoHeight,
+                            onRepick: () => _repickVideo(pageMove, index),
+                          ),
                         ),
                       );
                     },
@@ -297,45 +299,16 @@ class _FlashcardReviewScreenState extends ConsumerState<FlashcardReviewScreen> {
               ),
             ),
 
-            // Swipe hint
-            Padding(
-              padding: const EdgeInsets.only(bottom: 2),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(
-                    _isRevealed ? Icons.swipe : Icons.touch_app,
-                    size: 14,
-                    color: Theme.of(
-                      context,
-                    ).colorScheme.secondary.withValues(alpha: 0.3),
-                  ),
-                  const SizedBox(width: 4),
-                  Text(
-                    _isRevealed ? 'swipe to navigate' : 'tap to reveal',
-                    style: AppTypography.caption.copyWith(
-                      color: Theme.of(
-                        context,
-                      ).colorScheme.secondary.withValues(alpha: 0.3),
-                      fontSize: 10,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-
-            // Rating buttons — natural height, no clamped SizedBox
+            // Rating buttons — always visible
             Padding(
               padding: const EdgeInsets.symmetric(
                 horizontal: AppSpacing.screenEdge,
                 vertical: AppSpacing.sm,
               ),
-              child: _isRevealed
-                  ? RatingButtonRow(
-                      onRate: (rating) => _rate(move, rating),
-                      intervalPreviews: intervals,
-                    )
-                  : const SizedBox.shrink(),
+              child: RatingButtonRow(
+                onRate: (rating) => _rate(move, rating),
+                intervalPreviews: intervals,
+              ),
             ),
             const SizedBox(height: AppSpacing.sm),
           ],

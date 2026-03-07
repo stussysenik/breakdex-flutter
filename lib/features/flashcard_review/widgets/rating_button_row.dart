@@ -7,8 +7,7 @@ import '../../../core/design/typography.dart';
 import '../../../core/models/learning_state.dart';
 import '../../../core/providers.dart';
 
-/// The AGAIN / HARD / GOOD / EASY rating buttons with Anki-style interval
-/// previews (e.g. "1m", "10m", "1d", "4d") and shake-to-skip hint.
+/// The AGAIN / HARD / GOOD / EASY rating buttons styled as subtle tinted pills.
 ///
 /// Each button uses both color AND a distinct icon shape for accessibility:
 /// red is commonly confused with green (deuteranopia), so shape
@@ -53,56 +52,35 @@ class RatingButtonRow extends ConsumerWidget {
     final colorScheme = Theme.of(context).colorScheme;
     final rc = ref.watch(ratingColorsProvider);
 
-    return Column(
-      mainAxisSize: MainAxisSize.min,
+    return Row(
       children: [
-        Row(
-          children: [
-            for (final rating in ReviewRating.values) ...[
-              if (rating != ReviewRating.values.first)
-                const SizedBox(width: AppSpacing.sm),
-              Expanded(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    _PressableRatingButton(
-                      rating: rating,
-                      icon: _iconForRating(rating),
-                      color: _colorForRating(rating, rc),
-                      onRate: onRate,
-                    ),
-                    if (intervalPreviews != null) ...[
-                      const SizedBox(height: 2),
-                      Text(
-                        _formatInterval(intervalPreviews![rating]),
-                        style: AppTypography.caption.copyWith(
-                          color: colorScheme.secondary,
-                          fontSize: 10,
-                        ),
-                      ),
-                    ],
-                  ],
+        for (final rating in ReviewRating.values) ...[
+          if (rating != ReviewRating.values.first)
+            const SizedBox(width: AppSpacing.sm),
+          Expanded(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                _TintedPillButton(
+                  rating: rating,
+                  icon: _iconForRating(rating),
+                  color: _colorForRating(rating, rc),
+                  onRate: onRate,
                 ),
-              ),
-            ],
-          ],
-        ),
-        const SizedBox(height: AppSpacing.sm),
-        Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(Icons.vibration, size: 12,
-                color: colorScheme.secondary.withValues(alpha: 0.3)),
-            const SizedBox(width: 4),
-            Text(
-              'shake to skip',
-              style: AppTypography.caption.copyWith(
-                color: colorScheme.secondary.withValues(alpha: 0.3),
-                fontSize: 10,
-              ),
+                if (intervalPreviews != null) ...[
+                  const SizedBox(height: 2),
+                  Text(
+                    _formatInterval(intervalPreviews![rating]),
+                    style: AppTypography.caption.copyWith(
+                      color: colorScheme.secondary,
+                      fontSize: 10,
+                    ),
+                  ),
+                ],
+              ],
             ),
-          ],
-        ),
+          ),
+        ],
       ],
     );
   }
@@ -126,13 +104,12 @@ class RatingButtonRow extends ConsumerWidget {
   }
 }
 
-/// Accessible rating button with Material InkWell ripple feedback.
+/// Tinted pill rating button — subtle translucent background with colored text.
 ///
-/// Uses a single InkWell instead of GestureDetector+AnimatedScale so
-/// buttons respond immediately on tap with no gesture recognizer delay.
-/// 60dp height meets the Czech Design System 48dp minimum touch target.
-class _PressableRatingButton extends StatelessWidget {
-  const _PressableRatingButton({
+/// 44dp height meets Apple HIG minimum touch target. Full pill shape with
+/// `AppRadius.xl` (30). Background uses 10% opacity tint of the rating color.
+class _TintedPillButton extends StatelessWidget {
+  const _TintedPillButton({
     required this.rating,
     required this.icon,
     required this.color,
@@ -146,31 +123,35 @@ class _PressableRatingButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Material(
-      color: color,
-      borderRadius: BorderRadius.circular(AppRadius.lg),
-      child: InkWell(
-        onTap: () {
-          HapticFeedback.lightImpact();
-          onRate(rating);
-        },
-        borderRadius: BorderRadius.circular(AppRadius.lg),
-        child: SizedBox(
-          height: 60, // Meets 48dp minimum with margin
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(icon, size: 22, color: Colors.white),
-              const SizedBox(height: 2),
-              Text(
-                rating.displayText,
-                style: AppTypography.bodyMedium.copyWith(
-                  fontWeight: FontWeight.w700,
-                  fontSize: 13,
-                  color: Colors.white,
+    return Semantics(
+      label: 'Rate ${rating.displayText}',
+      button: true,
+      child: Material(
+        color: color.withValues(alpha: 0.10),
+        borderRadius: BorderRadius.circular(AppRadius.xl),
+        child: InkWell(
+          onTap: () {
+            HapticFeedback.lightImpact();
+            onRate(rating);
+          },
+          borderRadius: BorderRadius.circular(AppRadius.xl),
+          child: SizedBox(
+            height: 44,
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(icon, size: 18, color: color),
+                const SizedBox(width: 4),
+                Text(
+                  rating.displayText,
+                  style: AppTypography.bodyMedium.copyWith(
+                    fontWeight: FontWeight.w600,
+                    fontSize: 12,
+                    color: color,
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),
