@@ -1,0 +1,75 @@
+# Flow 4: Video player controls
+# Navigates to a move with video and tests playback controls.
+#
+# Prerequisites: At least one move with a video must exist.
+#   Run import-and-trim.yaml first.
+# Tags: video
+
+appId: com.breakdex.breakdex
+name: Video Playback Flow
+tags:
+  - video
+
+---
+
+# Start on Arsenal tab
+- assertVisible: "Arsenal"
+
+# Tap the first move row to open move detail
+# Uses a broad approach — tap on the first visible move name
+- tapOn:
+    index: 0
+    id: "move-row-.*"
+    optional: true
+
+# If no move rows found, try tapping visible move name text
+- runFlow:
+    when:
+      notVisible: "Move"
+    commands:
+      # Fallback: go back, we need a move first
+      - assertVisible: "Arsenal"
+
+# Wait for move detail to load
+- extendedWaitUntil:
+    visible: "ACTIONS"
+    timeout: 5000
+
+# Verify video player is visible (or placeholder)
+# If video player loaded, test controls
+- runFlow:
+    when:
+      visible: "Play"
+    commands:
+      # Tap play to start playback
+      - tapOn:
+          id: "Play"
+      # Wait briefly for playback to start
+      - swipe:
+          direction: "UP"
+          duration: 500
+
+      # Tap pause
+      - tapOn:
+          id: "Pause"
+
+      # Test skip forward
+      - tapOn:
+          id: "Skip forward 5 seconds"
+
+      # Test skip back
+      - tapOn:
+          id: "Skip back 5 seconds"
+
+      # Test fullscreen
+      - tapOn:
+          id: "Fullscreen"
+      # Exit fullscreen
+      - tapOn:
+          id: "Exit fullscreen"
+
+      # Test mute toggle
+      - tapOn:
+          id: "Mute"
+      - tapOn:
+          id: "Unmute"

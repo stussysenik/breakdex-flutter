@@ -1,0 +1,61 @@
+# Flow 2: Review session flow
+# Starts a review session, rates a card (always visible), and verifies
+# the session completes or advances.
+#
+# Prerequisites: At least one move must exist in the database.
+#   Run import-and-trim.yaml first, or seed the database.
+# Tags: review
+
+appId: com.breakdex.breakdex
+name: Review Session Flow
+tags:
+  - review
+
+---
+
+# Navigate to Review tab
+- tapOn:
+    text: "Review"
+- assertVisible: "Review"
+
+# Ensure Review mode is selected
+- tapOn: "Review"
+
+# Start a review session — tap "Start All" on the mastery prescreen
+- runFlow:
+    when:
+      visible: "Start All"
+    commands:
+      - tapOn: "Start All"
+
+# Rating buttons are always visible (no tap-to-reveal).
+# Wait for a rating button to confirm the review card loaded.
+- extendedWaitUntil:
+    visible: "GOOD"
+    timeout: 5000
+
+# Verify all rating buttons are visible
+- assertVisible: "AGAIN"
+- assertVisible: "HARD"
+- assertVisible: "GOOD"
+- assertVisible: "EASY"
+
+# Rate the card as "Good"
+- tapOn:
+    id: "Rate Good"
+
+# After rating, either the next card appears or session completes
+- runFlow:
+    when:
+      visible: "Great work!"
+    commands:
+      - assertVisible: "Great work!"
+      - assertVisible: "Review Again"
+
+# If more cards remain, verify we can still rate
+- runFlow:
+    when:
+      visible: "GOOD"
+    commands:
+      - assertVisible: "AGAIN"
+      - assertVisible: "GOOD"

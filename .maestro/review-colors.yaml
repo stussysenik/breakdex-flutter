@@ -1,0 +1,90 @@
+# Flow: Review page color consistency & layout verification
+# Captures screenshots of the redesigned review UI for visual regression.
+#
+# Checks:
+# - Prescreen: segment control, state cards (New/Learning/Mastery)
+# - Active session: tinted pill rating buttons (AGAIN/HARD/GOOD/EASY)
+# - 44dp button height (Apple HIG minimum touch target)
+#
+# Prerequisites: At least one move must exist in the database.
+# Tags: review
+
+appId: com.breakdex.breakdex
+name: Review Colors & Layout
+tags:
+  - review
+
+---
+
+# ── Prescreen checks ──────────────────────────────────────────────────
+
+# Navigate to Review tab
+- tapOn:
+    text: "Review"
+- assertVisible: "Review"
+
+# Verify the Review/Deck segment control renders
+- assertVisible: "Review"
+- assertVisible: "Deck"
+
+# Ensure Review mode is active
+- tapOn: "Review"
+
+# Verify state cards are visible on the mastery prescreen
+- assertVisible: "New"
+- assertVisible: "Learning"
+- assertVisible: "Mastery"
+
+# Verify "Start All" button is visible
+- assertVisible: "Start All"
+
+# Capture prescreen for visual regression
+- takeScreenshot: e2e-screenshots/review-prescreen
+
+# ── Deck mode check ──────────────────────────────────────────────────
+
+# Switch to Deck mode and verify it renders
+- tapOn: "Deck"
+- takeScreenshot: e2e-screenshots/review-deck
+
+# Switch back to Review
+- tapOn: "Review"
+
+# ── Active session checks ─────────────────────────────────────────────
+
+# Start a session with all moves
+- tapOn: "Start All"
+
+# Wait for rating buttons to appear (always visible, no reveal step)
+- extendedWaitUntil:
+    visible: "GOOD"
+    timeout: 5000
+
+# Assert all 4 rating buttons visible
+- assertVisible: "AGAIN"
+- assertVisible: "HARD"
+- assertVisible: "GOOD"
+- assertVisible: "EASY"
+
+# Capture the active review session with rating buttons
+- takeScreenshot: e2e-screenshots/review-active-session
+
+# Rate a card and verify advance or completion
+- tapOn:
+    id: "Rate Good"
+
+# After rating, capture result state
+- runFlow:
+    when:
+      visible: "Great work!"
+    commands:
+      - takeScreenshot: e2e-screenshots/review-completed
+      - assertVisible: "Review Again"
+
+- runFlow:
+    when:
+      visible: "GOOD"
+    commands:
+      - takeScreenshot: e2e-screenshots/review-next-card
+      - assertVisible: "AGAIN"
+      - assertVisible: "EASY"

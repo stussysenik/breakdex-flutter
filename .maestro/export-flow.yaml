@@ -1,0 +1,82 @@
+# Flow 5: Video export with options
+# Imports a video, applies speed and rotation transformations,
+# exports, and verifies the result.
+#
+# Prerequisites:
+#   xcrun simctl addmedia booted test_fixtures/test-video.mp4
+# Tags: video
+
+appId: com.breakdex.breakdex
+name: Export Flow
+tags:
+  - video
+
+---
+
+# Start on Arsenal tab
+- assertVisible: "Arsenal"
+
+# Tap FAB to start import flow
+- tapOn:
+    id: "Add new move"
+
+# Import from Photos
+- tapOn: "Import from Photos"
+
+# Handle permission dialog
+- runFlow:
+    when:
+      visible: "Allow Full Access"
+    commands:
+      - tapOn: "Allow Full Access"
+
+# Select first video
+- tapOn:
+    index: 0
+    optional: true
+
+# Wait for video editor
+- extendedWaitUntil:
+    visible: "Export"
+    timeout: 15000
+
+# -- Apply transformations --
+
+# Set speed to 0.5x
+- tapOn: "SPEED 0.5x"
+
+# Rotate video 90 degrees
+- tapOn:
+    id: "Rotate right"
+
+# Verify rotation label appears
+- assertVisible: "Rotation: 90"
+
+# Set aspect ratio to 1:1
+- tapOn: "ASPECT RATIO 1:1"
+
+# -- Export --
+- tapOn:
+    id: "Export video"
+
+# Wait for export progress to appear
+- extendedWaitUntil:
+    visible: "Export in progress"
+    timeout: 5000
+
+# Wait for export to complete — naming sheet should appear
+- extendedWaitUntil:
+    visible: "Name this move"
+    timeout: 60000
+
+# Name the move
+- tapOn:
+    id: "Move name"
+- inputText: "Exported Move"
+
+# Save
+- tapOn:
+    id: "Save move"
+
+# Verify move appears in arsenal
+- assertVisible: "Exported Move"

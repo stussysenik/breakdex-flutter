@@ -27,15 +27,15 @@ String makeExportJson({
     'schemaVersion': schemaVersion,
     'exportedAt': DateTime.now().toIso8601String(),
     'appVersion': '0.6.0',
-    if (moves != null) 'moves': moves,
-    if (reviews != null) 'reviews': reviews,
-    if (combos != null) 'combos': combos,
-    if (comboMoves != null) 'comboMoves': comboMoves,
-    if (battleResults != null) 'battleResults': battleResults,
-    if (fsrsCards != null) 'fsrsCards': fsrsCards,
-    if (decks != null) 'decks': decks,
-    if (deckMoves != null) 'deckMoves': deckMoves,
-    if (categories != null) 'categories': categories,
+    'moves': ?moves,
+    'reviews': ?reviews,
+    'combos': ?combos,
+    'comboMoves': ?comboMoves,
+    'battleResults': ?battleResults,
+    'fsrsCards': ?fsrsCards,
+    'decks': ?decks,
+    'deckMoves': ?deckMoves,
+    'categories': ?categories,
   });
 }
 
@@ -54,8 +54,8 @@ Map<String, dynamic> makeJsonMove({
     'name': name,
     'category': category,
     'learningState': learningState,
-    if (videoFilename != null) 'videoFilename': videoFilename,
-    if (originalVideoName != null) 'originalVideoName': originalVideoName,
+    'videoFilename': ?videoFilename,
+    'originalVideoName': ?originalVideoName,
     'createdAt': (createdAt ?? DateTime(2024, 1, 15)).toIso8601String(),
   };
 }
@@ -78,8 +78,8 @@ Map<String, dynamic> makeJsonReview({
     'moveId': moveId,
     'comboId': comboId,
     'reviewedAt': (reviewedAt ?? DateTime(2024, 1, 16)).toIso8601String(),
-    if (fsrsPreState != null) 'fsrsPreState': fsrsPreState,
-    if (fsrsPostState != null) 'fsrsPostState': fsrsPostState,
+    'fsrsPreState': ?fsrsPreState,
+    'fsrsPostState': ?fsrsPostState,
   };
 }
 
@@ -89,12 +89,7 @@ Map<String, dynamic> makeJsonCombo({
   String name = 'Power Combo',
   String? activeVideoFilename,
 }) {
-  return {
-    'id': id,
-    'name': name,
-    if (activeVideoFilename != null)
-      'activeVideoFilename': activeVideoFilename,
-  };
+  return {'id': id, 'name': name, 'activeVideoFilename': ?activeVideoFilename};
 }
 
 /// A single comboMove in export JSON format.
@@ -176,8 +171,8 @@ Map<String, dynamic> makeJsonDeck({
     'id': id,
     'name': name,
     'deckType': deckType,
-    if (filterCriteria != null) 'filterCriteria': filterCriteria,
-    if (sessionSize != null) 'sessionSize': sessionSize,
+    'filterCriteria': ?filterCriteria,
+    'sessionSize': ?sessionSize,
     'createdAt': (createdAt ?? DateTime(2024, 1, 10)).toIso8601String(),
     'updatedAt': (updatedAt ?? DateTime(2024, 1, 10)).toIso8601String(),
   };
@@ -188,10 +183,7 @@ Map<String, dynamic> makeJsonDeckMove({
   String deckId = 'deck-1',
   String moveId = 'move-1',
 }) {
-  return {
-    'deckId': deckId,
-    'moveId': moveId,
-  };
+  return {'deckId': deckId, 'moveId': moveId};
 }
 
 /// A single category in export JSON format.
@@ -199,10 +191,7 @@ Map<String, dynamic> makeJsonCategory({
   String name = 'power',
   int colorValue = 0xFFFF0000,
 }) {
-  return {
-    'name': name,
-    'colorValue': colorValue,
-  };
+  return {'name': name, 'colorValue': colorValue};
 }
 
 // ---------------------------------------------------------------------------
@@ -218,13 +207,17 @@ Future<String> seedMove(
   String? videoPath,
   String? originalVideoName,
 }) async {
-  await db.into(db.moves).insert(MovesCompanion.insert(
-        id: id,
-        name: name,
-        category: Value(category),
-        videoPath: Value(videoPath),
-        originalVideoName: Value(originalVideoName),
-      ));
+  await db
+      .into(db.moves)
+      .insert(
+        MovesCompanion.insert(
+          id: id,
+          name: name,
+          category: Value(category),
+          videoPath: Value(videoPath),
+          originalVideoName: Value(originalVideoName),
+        ),
+      );
   return id;
 }
 
@@ -240,16 +233,20 @@ Future<void> seedReview(
   int? fsrsPreState,
   int? fsrsPostState,
 }) async {
-  await db.into(db.reviews).insert(ReviewsCompanion.insert(
-        id: id,
-        rating: rating,
-        reviewType: reviewType,
-        moveId: Value(moveId),
-        comboId: Value(comboId),
-        reviewedAt: Value(reviewedAt ?? DateTime.now()),
-        fsrsPreState: Value(fsrsPreState),
-        fsrsPostState: Value(fsrsPostState),
-      ));
+  await db
+      .into(db.reviews)
+      .insert(
+        ReviewsCompanion.insert(
+          id: id,
+          rating: rating,
+          reviewType: reviewType,
+          moveId: Value(moveId),
+          comboId: Value(comboId),
+          reviewedAt: Value(reviewedAt ?? DateTime.now()),
+          fsrsPreState: Value(fsrsPreState),
+          fsrsPostState: Value(fsrsPostState),
+        ),
+      );
 }
 
 /// Seed a combo into the database.
@@ -258,10 +255,7 @@ Future<void> seedCombo(
   String id = 'combo-1',
   String name = 'Power Combo',
 }) async {
-  await db.into(db.combos).insert(CombosCompanion.insert(
-        id: id,
-        name: name,
-      ));
+  await db.into(db.combos).insert(CombosCompanion.insert(id: id, name: name));
 }
 
 /// Seed a battle result into the database.
@@ -272,16 +266,20 @@ Future<void> seedBattleResult(
   int movesReviewed = 10,
   String difficulty = 'MEDIUM',
 }) async {
-  await db.into(db.battleResults).insert(BattleResultsCompanion.insert(
-        id: id,
-        score: score,
-        movesReviewed: movesReviewed,
-        goodCount: 5,
-        hardCount: 3,
-        againCount: 2,
-        longestStreak: 3,
-        difficulty: difficulty,
-      ));
+  await db
+      .into(db.battleResults)
+      .insert(
+        BattleResultsCompanion.insert(
+          id: id,
+          score: score,
+          movesReviewed: movesReviewed,
+          goodCount: 5,
+          hardCount: 3,
+          againCount: 2,
+          longestStreak: 3,
+          difficulty: difficulty,
+        ),
+      );
 }
 
 /// Seed an FSRS card into the database.
@@ -294,14 +292,16 @@ Future<void> seedFsrsCard(
   DateTime? due,
   int fsrsState = 2,
 }) async {
-  await db.fsrsCardsDao.upsert(FsrsCardsCompanion(
-    entityId: Value(entityId),
-    entityType: Value(entityType),
-    stability: Value(stability),
-    difficulty: Value(difficulty),
-    due: Value(due ?? DateTime.now().toUtc()),
-    fsrsState: Value(fsrsState),
-  ));
+  await db.fsrsCardsDao.upsert(
+    FsrsCardsCompanion(
+      entityId: Value(entityId),
+      entityType: Value(entityType),
+      stability: Value(stability),
+      difficulty: Value(difficulty),
+      due: Value(due ?? DateTime.now().toUtc()),
+      fsrsState: Value(fsrsState),
+    ),
+  );
 }
 
 /// Seed a deck into the database.
@@ -311,11 +311,11 @@ Future<void> seedDeck(
   String name = 'Power Moves',
   String deckType = 'manual',
 }) async {
-  await db.into(db.decks).insert(DecksCompanion.insert(
-        id: id,
-        name: name,
-        deckType: Value(deckType),
-      ));
+  await db
+      .into(db.decks)
+      .insert(
+        DecksCompanion.insert(id: id, name: name, deckType: Value(deckType)),
+      );
 }
 
 /// Seed a deckMove into the database.
@@ -324,10 +324,9 @@ Future<void> seedDeckMove(
   String deckId = 'deck-1',
   String moveId = 'move-1',
 }) async {
-  await db.into(db.deckMoves).insert(DeckMovesCompanion.insert(
-        deckId: deckId,
-        moveId: moveId,
-      ));
+  await db
+      .into(db.deckMoves)
+      .insert(DeckMovesCompanion.insert(deckId: deckId, moveId: moveId));
 }
 
 /// Builds a full export JSON with all entity types populated.
@@ -346,31 +345,19 @@ String makeFullExportJson() {
         fsrsPreState: 1,
         fsrsPostState: 2,
       ),
-      makeJsonReview(
-        id: 'review-2',
-        moveId: 'move-2',
-        rating: 'EASY',
-      ),
+      makeJsonReview(id: 'review-2', moveId: 'move-2', rating: 'EASY'),
     ],
-    combos: [
-      makeJsonCombo(id: 'combo-1', name: 'Power Combo'),
-    ],
+    combos: [makeJsonCombo(id: 'combo-1', name: 'Power Combo')],
     comboMoves: [
       makeJsonComboMove(id: 'cm-1', comboId: 'combo-1', moveId: 'move-1'),
     ],
-    battleResults: [
-      makeJsonBattleResult(id: 'battle-1'),
-    ],
+    battleResults: [makeJsonBattleResult(id: 'battle-1')],
     fsrsCards: [
       makeJsonFsrsCard(entityId: 'move-1', entityType: 'move'),
       makeJsonFsrsCard(entityId: 'combo-1', entityType: 'combo'),
     ],
-    decks: [
-      makeJsonDeck(id: 'deck-1', name: 'Power Moves'),
-    ],
-    deckMoves: [
-      makeJsonDeckMove(deckId: 'deck-1', moveId: 'move-1'),
-    ],
+    decks: [makeJsonDeck(id: 'deck-1', name: 'Power Moves')],
+    deckMoves: [makeJsonDeckMove(deckId: 'deck-1', moveId: 'move-1')],
     categories: [
       makeJsonCategory(name: 'power', colorValue: 0xFFFF0000),
       makeJsonCategory(name: 'freeze', colorValue: 0xFF0000FF),
