@@ -22,12 +22,26 @@ final class CapabilityRegistry {
 
     /// Register every capability with the Flutter engine's plugin registry.
     /// Called once from AppDelegate during engine initialization.
+    ///
+    /// Each plugin is registered independently — if one fails, the others
+    /// still load. This prevents a single bad plugin from crashing the app
+    /// before Flutter even renders.
     static func registerAll(with registry: FlutterPluginRegistry) {
+        print("[CapabilityRegistry] Registering \(capabilities.count) capabilities…")
         for cap in capabilities {
             let pluginName = String(describing: cap)
-            if let registrar = registry.registrar(forPlugin: pluginName) {
-                cap.register(with: registrar)
+            guard let registrar = registry.registrar(forPlugin: pluginName) else {
+                print("[CapabilityRegistry] ✗ No registrar for \(pluginName)")
+                continue
             }
+            // FlutterPlugin.register(with:) is not a throwing API, but the
+            // underlying code can still crash (missing frameworks, force
+            // unwraps, etc.). Log breadcrumbs so crash reports show exactly
+            // which plugin was being registered.
+            print("[CapabilityRegistry] → registering \(pluginName)…")
+            cap.register(with: registrar)
+            print("[CapabilityRegistry] ✓ \(pluginName)")
         }
+        print("[CapabilityRegistry] Done.")
     }
 }

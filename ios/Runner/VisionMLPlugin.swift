@@ -125,6 +125,15 @@ class VisionMLPlugin: NSObject, FlutterPlugin, FlutterStreamHandler, NativeCapab
     /// are upscaled to 640px using Lanczos interpolation before pose detection.
     /// This improves Vision's detection accuracy on compressed breakdance video.
     private func detectPose(imageData: Data, result: @escaping FlutterResult) {
+        guard #available(iOS 17.0, *) else {
+            result(FlutterError(
+                code: "UNSUPPORTED_OS",
+                message: "3D pose detection requires iOS 17+",
+                details: nil
+            ))
+            return
+        }
+
         guard let image = UIImage(data: imageData),
               let cgImage = image.cgImage else {
             result(FlutterError(code: "INVALID_IMAGE", message: "Cannot decode image data", details: nil))
@@ -217,6 +226,7 @@ class VisionMLPlugin: NSObject, FlutterPlugin, FlutterStreamHandler, NativeCapab
 
     /// Extract joint data from Vision 3D pose observations.
     /// Maps Apple's 17-joint skeleton to a serializable dictionary array.
+    @available(iOS 17.0, *)
     private func extractJoints(from observations: [VNHumanBodyPose3DObservation]?) -> [[String: Any]] {
         guard let observation = observations?.first else { return [] }
 
@@ -249,6 +259,15 @@ class VisionMLPlugin: NSObject, FlutterPlugin, FlutterStreamHandler, NativeCapab
 
     /// Start camera capture and stream pose data through the EventChannel at ~30fps.
     private func startLivePose(result: @escaping FlutterResult) {
+        guard #available(iOS 17.0, *) else {
+            result(FlutterError(
+                code: "UNSUPPORTED_OS",
+                message: "Live pose streaming requires iOS 17+",
+                details: nil
+            ))
+            return
+        }
+
         guard !isStreamingPose else {
             result(nil)
             return
@@ -428,6 +447,7 @@ extension VisionMLPlugin: AVCaptureVideoDataOutputSampleBufferDelegate {
         from connection: AVCaptureConnection
     ) {
         guard isStreamingPose, let sink = eventSink else { return }
+        guard #available(iOS 17.0, *) else { return }
 
         guard let pixelBuffer = CMSampleBufferGetImageBuffer(sampleBuffer) else { return }
 
