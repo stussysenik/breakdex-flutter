@@ -78,7 +78,7 @@ class SettingsScreen extends ConsumerWidget {
             ),
             const SizedBox(height: AppSpacing.xl),
 
-            // Theme picker
+            // Theme + Font + Arsenal title — grouped under APPEARANCE
             Text(
               'APPEARANCE',
               style: AppTypography.sectionHeader.copyWith(
@@ -94,21 +94,45 @@ class SettingsScreen extends ConsumerWidget {
             ),
             const SizedBox(height: AppSpacing.lg),
 
-            // Font picker
+            // Font picker — ChoiceChip wrap for 6 options
             Text(
-              'FONT',
-              style: AppTypography.sectionHeader.copyWith(
+              'Font',
+              style: AppTypography.caption.copyWith(
                 color: colorScheme.secondary,
+                fontWeight: FontWeight.w600,
               ),
             ),
-            const SizedBox(height: AppSpacing.md),
-            _SegmentedPicker<AppFontFamily>(
-              values: AppFontFamily.values,
-              selected: fontFamily,
-              labelOf: (f) => f.displayName,
-              fontSize: 12,
-              onChanged: (f) => ref.read(fontFamilyProvider.notifier).set(f),
+            const SizedBox(height: AppSpacing.sm),
+            Wrap(
+              spacing: AppSpacing.sm,
+              runSpacing: AppSpacing.sm,
+              children: AppFontFamily.values.map((f) {
+                final isSelected = f == fontFamily;
+                return ChoiceChip(
+                  label: Text(f.displayName),
+                  selected: isSelected,
+                  onSelected: (_) =>
+                      ref.read(fontFamilyProvider.notifier).set(f),
+                  selectedColor: AppColors.accent,
+                  labelStyle: AppTypography.caption.copyWith(
+                    color: isSelected ? Colors.white : colorScheme.onSurface,
+                    fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
+                  ),
+                  showCheckmark: false,
+                );
+              }).toList(),
             ),
+            const SizedBox(height: AppSpacing.lg),
+
+            // Arsenal page title — folded into APPEARANCE
+            Consumer(builder: (context, ref, _) {
+              final viewNames = ref.watch(viewNamesProvider);
+              return ActionTile(
+                icon: Icons.title,
+                label: 'Page Title: ${viewNames['title'] ?? 'Arsenal'}',
+                onTap: () => _showRenameArsenalDialog(context, ref, viewNames['title'] ?? 'Arsenal'),
+              );
+            }),
             const SizedBox(height: AppSpacing.xl),
 
             // Categories
@@ -152,38 +176,26 @@ class SettingsScreen extends ConsumerWidget {
             ),
             const SizedBox(height: AppSpacing.xl),
 
-            // Learning State Colors
+            // Unified COLORS section
             Text(
-              'LEARNING STATE COLORS',
+              'COLORS',
               style: AppTypography.sectionHeader.copyWith(
                 color: colorScheme.secondary,
               ),
             ),
             const SizedBox(height: AppSpacing.md),
+            Text(
+              'Learning States',
+              style: AppTypography.caption.copyWith(
+                color: colorScheme.secondary,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            const SizedBox(height: AppSpacing.sm),
             for (final state in LearningState.values)
               _StateColorRow(state: state),
-            const SizedBox(height: AppSpacing.xl),
-
-            // Rating Colors (configurable)
+            const SizedBox(height: AppSpacing.lg),
             _RatingColorsSection(),
-            const SizedBox(height: AppSpacing.xl),
-
-            // Arsenal
-            Text(
-              'ARSENAL',
-              style: AppTypography.sectionHeader.copyWith(
-                color: colorScheme.secondary,
-              ),
-            ),
-            const SizedBox(height: AppSpacing.md),
-            Consumer(builder: (context, ref, _) {
-              final viewNames = ref.watch(viewNamesProvider);
-              return ActionTile(
-                icon: Icons.title,
-                label: 'Page Title: ${viewNames['title'] ?? 'Arsenal'}',
-                onTap: () => _showRenameArsenalDialog(context, ref, viewNames['title'] ?? 'Arsenal'),
-              );
-            }),
             const SizedBox(height: AppSpacing.xl),
 
             // Data section
@@ -975,9 +987,10 @@ class _RatingColorsSection extends ConsumerWidget {
           children: [
             Expanded(
               child: Text(
-                'RATING COLORS',
-                style: AppTypography.sectionHeader.copyWith(
+                'Rating Buttons',
+                style: AppTypography.caption.copyWith(
                   color: colorScheme.secondary,
+                  fontWeight: FontWeight.w600,
                 ),
               ),
             ),
