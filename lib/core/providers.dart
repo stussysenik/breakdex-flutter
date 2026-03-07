@@ -21,6 +21,8 @@ import 'services/sync_service.dart';
 import 'services/connectivity_service.dart';
 import 'services/fsrs_service.dart';
 import 'services/deck_service.dart';
+import 'services/scene_3d.dart';
+import 'services/vision_ml.dart';
 import 'models/sync_progress.dart';
 
 final databaseProvider = Provider<AppDatabase>((ref) {
@@ -281,7 +283,7 @@ final fsrsCardsRefreshProvider = StreamProvider<List<FsrsCard>>((ref) {
 });
 
 // ---------------------------------------------------------------------------
-// Review mode — persisted toggle between Session and Schedule views
+// Review mode — persisted toggle between Review and Deck views
 // ---------------------------------------------------------------------------
 
 final reviewModeProvider =
@@ -305,3 +307,14 @@ class ReviewModeNotifier extends Notifier<ReviewMode> {
 
 /// Static FSRS config provider for the SRS parameters card.
 final fsrsConfigProvider = Provider<FsrsConfig>((_) => FsrsService.config);
+
+// ---------------------------------------------------------------------------
+// Native ML + 3D capabilities
+// ---------------------------------------------------------------------------
+
+/// On-device ML inference: pose detection + person segmentation.
+/// Uses Apple Vision (built-in) and CoreML (DeepLabV3).
+final visionMLProvider = Provider<VisionML>((_) => VisionML());
+
+/// Metal-backed SceneKit 3D rendering for skeleton visualization.
+final scene3DProvider = Provider<Scene3D>((_) => Scene3D());

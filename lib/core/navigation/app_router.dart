@@ -10,6 +10,7 @@ import '../../features/settings/settings_screen.dart';
 import '../../features/stats/stats_screen.dart';
 import '../../features/battle/battle_screen.dart';
 import '../../features/video_editor/video_editor_screen.dart';
+import '../../features/move_analysis/move_analysis_screen.dart';
 import '../../features/auth/auth_screen.dart';
 import '../../shared/widgets/bottom_nav_shell.dart';
 
@@ -92,6 +93,17 @@ final appRouter = GoRouter(
       builder: (context, state) {
         final extras = state.extra as Map<String, dynamic>?;
         return VideoEditorScreen(
+          videoPath: extras?['videoPath'] as String? ?? '',
+        );
+      },
+    ),
+    GoRoute(
+      path: '/move-analysis',
+      parentNavigatorKey: _rootNavigatorKey,
+      builder: (context, state) {
+        final extras = state.extra as Map<String, dynamic>?;
+        return MoveAnalysisScreen(
+          moveId: extras?['moveId'] as String?,
           videoPath: extras?['videoPath'] as String? ?? '',
         );
       },
