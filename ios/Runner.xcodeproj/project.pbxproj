@@ -19,6 +19,14 @@
 		97C146FE1CF9000F007C117D /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 97C146FD1CF9000F007C117D /* Assets.xcassets */; };
 		97C147011CF9000F007C117D /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 97C146FF1CF9000F007C117D /* LaunchScreen.storyboard */; };
 		AA0000011234567800000001 /* VideoExportPlugin.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000001234567800000001 /* VideoExportPlugin.swift */; };
+		CC0000020000000100000001 /* CapabilityRegistry.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC0000010000000100000001 /* CapabilityRegistry.swift */; };
+		CC0000020000000100000002 /* NativeCapability.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC0000010000000100000002 /* NativeCapability.swift */; };
+		CC0000020000000100000003 /* VisionMLPlugin.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC0000010000000100000003 /* VisionMLPlugin.swift */; };
+		CC0000020000000100000004 /* SceneKit3DPlugin.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC0000010000000100000004 /* SceneKit3DPlugin.swift */; };
+		CC0000020000000100000005 /* SceneKit3DFactory.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC0000010000000100000005 /* SceneKit3DFactory.swift */; };
+		CC0000020000000100000006 /* SceneKit3DView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC0000010000000100000006 /* SceneKit3DView.swift */; };
+		CC0000020000000100000007 /* Models in Resources */ = {isa = PBXBuildFile; fileRef = CC0000010000000100000007 /* Models */; };
+		CC0000020000000100000008 /* skeleton.usdz in Resources */ = {isa = PBXBuildFile; fileRef = CC0000010000000100000008 /* skeleton.usdz */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -68,6 +76,14 @@
 		9DC7E5AC16A5E89957BC4098 /* Pods_RunnerTests.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_RunnerTests.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		A45A01D88B0F9CCB80FD5B41 /* Pods-Runner.profile.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-Runner.profile.xcconfig"; path = "Target Support Files/Pods-Runner/Pods-Runner.profile.xcconfig"; sourceTree = "<group>"; };
 		AA0000001234567800000001 /* VideoExportPlugin.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VideoExportPlugin.swift; sourceTree = "<group>"; };
+		CC0000010000000100000001 /* CapabilityRegistry.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CapabilityRegistry.swift; sourceTree = "<group>"; };
+		CC0000010000000100000002 /* NativeCapability.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NativeCapability.swift; sourceTree = "<group>"; };
+		CC0000010000000100000003 /* VisionMLPlugin.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VisionMLPlugin.swift; sourceTree = "<group>"; };
+		CC0000010000000100000004 /* SceneKit3DPlugin.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SceneKit3DPlugin.swift; sourceTree = "<group>"; };
+		CC0000010000000100000005 /* SceneKit3DFactory.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SceneKit3DFactory.swift; sourceTree = "<group>"; };
+		CC0000010000000100000006 /* SceneKit3DView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SceneKit3DView.swift; sourceTree = "<group>"; };
+		CC0000010000000100000007 /* Models */ = {isa = PBXFileReference; lastKnownFileType = folder; path = Models; sourceTree = "<group>"; };
+		CC0000010000000100000008 /* skeleton.usdz */ = {isa = PBXFileReference; lastKnownFileType = file.usdz; path = skeleton.usdz; sourceTree = "<group>"; };
 		AF94D9764DE5B8791CE776D4 /* Pods-RunnerTests.profile.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-RunnerTests.profile.xcconfig"; path = "Target Support Files/Pods-RunnerTests/Pods-RunnerTests.profile.xcconfig"; sourceTree = "<group>"; };
 		B9C120C05EAF4F2180E99EE4 /* Pods-RunnerTests.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-RunnerTests.debug.xcconfig"; path = "Target Support Files/Pods-RunnerTests/Pods-RunnerTests.debug.xcconfig"; sourceTree = "<group>"; };
 		C9BDFBFC543230F46D560C47 /* Pods-RunnerTests.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-RunnerTests.release.xcconfig"; path = "Target Support Files/Pods-RunnerTests/Pods-RunnerTests.release.xcconfig"; sourceTree = "<group>"; };
@@ -155,6 +171,14 @@
 			name = Products;
 			sourceTree = "<group>";
 		};
+		CC0000030000000100000001 /* Assets */ = {
+			isa = PBXGroup;
+			children = (
+				CC0000010000000100000008 /* skeleton.usdz */,
+			);
+			path = Assets;
+			sourceTree = "<group>";
+		};
 		97C146F01CF9000F007C117D /* Runner */ = {
 			isa = PBXGroup;
 			children = (
@@ -169,6 +193,14 @@
 				AA0000001234567800000001 /* VideoExportPlugin.swift */,
 				74858FAD1ED2DC5600515810 /* Runner-Bridging-Header.h */,
 				21160B812F5AE517005BC9CB /* NativeVideoImportPlugin.swift */,
+				CC0000010000000100000001 /* CapabilityRegistry.swift */,
+				CC0000010000000100000002 /* NativeCapability.swift */,
+				CC0000010000000100000003 /* VisionMLPlugin.swift */,
+				CC0000010000000100000004 /* SceneKit3DPlugin.swift */,
+				CC0000010000000100000005 /* SceneKit3DFactory.swift */,
+				CC0000010000000100000006 /* SceneKit3DView.swift */,
+				CC0000010000000100000007 /* Models */,
+				CC0000030000000100000001 /* Assets */,
 			);
 			path = Runner;
 			sourceTree = "<group>";
@@ -272,6 +304,8 @@
 				3B3967161E833CAA004F5970 /* AppFrameworkInfo.plist in Resources */,
 				97C146FE1CF9000F007C117D /* Assets.xcassets in Resources */,
 				97C146FC1CF9000F007C117D /* Main.storyboard in Resources */,
+				CC0000020000000100000007 /* Models in Resources */,
+				CC0000020000000100000008 /* skeleton.usdz in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -390,6 +424,12 @@
 				7884E8682EC3CC0700C636F2 /* SceneDelegate.swift in Sources */,
 				AA0000011234567800000001 /* VideoExportPlugin.swift in Sources */,
 				21160B822F5AE517005BC9CB /* NativeVideoImportPlugin.swift in Sources */,
+				CC0000020000000100000001 /* CapabilityRegistry.swift in Sources */,
+				CC0000020000000100000002 /* NativeCapability.swift in Sources */,
+				CC0000020000000100000003 /* VisionMLPlugin.swift in Sources */,
+				CC0000020000000100000004 /* SceneKit3DPlugin.swift in Sources */,
+				CC0000020000000100000005 /* SceneKit3DFactory.swift in Sources */,
+				CC0000020000000100000006 /* SceneKit3DView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -467,7 +507,7 @@
 				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
-				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
 				MTL_ENABLE_DEBUG_INFO = NO;
 				SDKROOT = iphoneos;
 				STRING_CATALOG_GENERATE_SYMBOLS = YES;
@@ -599,7 +639,7 @@
 				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
-				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
 				MTL_ENABLE_DEBUG_INFO = YES;
 				ONLY_ACTIVE_ARCH = YES;
 				SDKROOT = iphoneos;
@@ -652,7 +692,7 @@
 				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
-				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
 				MTL_ENABLE_DEBUG_INFO = NO;
 				SDKROOT = iphoneos;
 				STRING_CATALOG_GENERATE_SYMBOLS = YES;

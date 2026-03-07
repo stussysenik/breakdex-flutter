@@ -9,7 +9,10 @@ private struct ImportedVideo {
     let originalFileName: String
 }
 
-final class NativeVideoImportPlugin: NSObject, FlutterPlugin, FlutterStreamHandler {
+final class NativeVideoImportPlugin: NSObject, FlutterPlugin, FlutterStreamHandler, NativeCapability {
+    static var channelName: String { "native_video_import" }
+    static var eventChannelName: String? { "native_video_import_progress" }
+
     private var activeResult: FlutterResult?
     private var filesContinuation: CheckedContinuation<ImportedVideo?, Error>?
     private var photosContinuation: CheckedContinuation<ImportedVideo?, Error>?

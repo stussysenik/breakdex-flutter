@@ -145,7 +145,10 @@ struct VideoExportGeometry {
 
 /// Native iOS video export using AVFoundation — hardware-accelerated, works on both
 /// simulator and device. Reports real-time progress via EventChannel.
-class VideoExportPlugin: NSObject, FlutterPlugin, FlutterStreamHandler {
+class VideoExportPlugin: NSObject, FlutterPlugin, FlutterStreamHandler, NativeCapability {
+    static var channelName: String { "video_export" }
+    static var eventChannelName: String? { "video_export_progress" }
+
     private var progressSink: FlutterEventSink?
     private var exportSession: AVAssetExportSession?
     private var progressTimer: Timer?
