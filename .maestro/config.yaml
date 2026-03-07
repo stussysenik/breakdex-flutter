@@ -1,0 +1,22 @@
+# Maestro E2E Test Configuration for Breakdex
+# Docs: https://maestro.mobile.dev
+
+appId: com.breakdex.breakdex
+name: Breakdex E2E Tests
+
+# Global settings
+onFlowStart:
+  - clearState    # Clear app data before each flow
+  - clearKeychain # Clear iOS keychain
+
+# Default timeouts (milliseconds)
+# Longer timeouts for video operations which can be slow on CI
+initFlow:
+  appId: com.breakdex.breakdex
+
+# Tags for selective test runs
+# Run subsets: maestro test --tags=smoke .maestro/
+tags:
+  smoke: [navigation.yaml]
+  video: [import-and-trim.yaml, video-playback.yaml, export-flow.yaml]
+  review: [review-session.yaml, review-colors.yaml]

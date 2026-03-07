@@ -1,0 +1,70 @@
+# Flow 1: Happy path video import
+# Imports a video from Photos, edits in the video editor, names the move,
+# and verifies it appears in the arsenal list.
+#
+# Prerequisites:
+#   xcrun simctl addmedia booted test_fixtures/test-video.mp4
+# Tags: video
+
+appId: com.breakdex.breakdex
+name: Import and Trim Flow
+tags:
+  - video
+
+---
+
+# Start on Arsenal tab
+- assertVisible: "Arsenal"
+
+# Tap FAB to start video import flow
+- tapOn:
+    id: "Add new move"
+
+# VideoPickerSheet should appear — tap "Import from Photos"
+- tapOn: "Import from Photos"
+
+# Handle iOS photo access permission dialog
+- runFlow:
+    when:
+      visible: "Allow Full Access"
+    commands:
+      - tapOn: "Allow Full Access"
+
+# Select the first video in the photo picker
+# (iOS system picker — Maestro handles native UI)
+- tapOn:
+    index: 0
+    optional: true
+
+# Wait for the video editor to appear
+- extendedWaitUntil:
+    visible: "Export"
+    timeout: 15000
+
+# Verify the video editor controls are visible
+- assertVisible: "Cancel"
+- assertVisible: "Export"
+
+# Adjust speed to 0.5x
+- tapOn: "SPEED 0.5x"
+
+# Tap Export to save the edited video
+- tapOn:
+    id: "Export video"
+
+# Wait for export to complete (can take several seconds)
+- extendedWaitUntil:
+    visible: "Name this move"
+    timeout: 30000
+
+# Enter the move name
+- tapOn:
+    id: "Move name"
+- inputText: "Test Windmill"
+
+# Save the move
+- tapOn:
+    id: "Save move"
+
+# Verify the move appears in the arsenal list
+- assertVisible: "Test Windmill"

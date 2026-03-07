@@ -1,0 +1,49 @@
+# Flow 3: Tab navigation & basic screens
+# Verifies all bottom nav tabs render their correct screens and
+# basic drill-down navigation works.
+#
+# Prerequisites: None (works with empty database)
+# Tags: smoke
+
+appId: com.breakdex.breakdex
+name: Navigation Flow
+tags:
+  - smoke
+
+---
+
+# App should launch on Arsenal tab by default
+- assertVisible: "Arsenal"
+
+# -- Arsenal Tab --
+- assertVisible: "Search moves..."
+
+# -- Review Tab --
+- tapOn:
+    text: "Review"
+- assertVisible: "Review"
+- assertVisible: "Deck"
+
+# -- Stats Tab --
+- tapOn:
+    text: "Stats"
+
+# -- Settings Tab --
+- tapOn:
+    text: "Settings"
+- assertVisible: "Settings"
+
+# -- Back to Arsenal Tab --
+- tapOn:
+    text: "Arsenal"
+- assertVisible: "Arsenal"
+
+# -- Verify segment toggle (Moves / Combos) --
+- tapOn: "Combos"
+- assertVisible: "No combos yet"
+- tapOn: "Moves"
+- assertVisible: "No moves yet"
+
+# -- Verify view mode toggle --
+- tapOn: "Gallery"
+- tapOn: "List"
