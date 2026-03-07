@@ -116,21 +116,24 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget>
     _hasError = false;
     _controller = VideoPlayerController.file(File(widget.videoPath))
       ..setLooping(true)
-      ..initialize().timeout(
-        const Duration(seconds: 10),
-        onTimeout: () => throw TimeoutException('Video init timed out'),
-      ).then((_) {
-        if (mounted) {
-          _controller.addListener(_onTick);
-          if (widget.autoPlay) {
-            _controller.play();
-            scheduleHide();
-          }
-          setState(() => _initialized = true);
-        }
-      }).catchError((_) {
-        if (mounted) setState(() => _hasError = true);
-      });
+      ..initialize()
+          .timeout(
+            const Duration(seconds: 10),
+            onTimeout: () => throw TimeoutException('Video init timed out'),
+          )
+          .then((_) {
+            if (mounted) {
+              _controller.addListener(_onTick);
+              if (widget.autoPlay) {
+                _controller.play();
+                scheduleHide();
+              }
+              setState(() => _initialized = true);
+            }
+          })
+          .catchError((_) {
+            if (mounted) setState(() => _hasError = true);
+          });
   }
 
   void _toggleMute() {
@@ -157,9 +160,11 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget>
     cancelHideTimer();
     Navigator.of(context).push(
       PageRouteBuilder(
-        pageBuilder: (_, __, ___) =>
-            _FullscreenVideoPlayer(controller: _controller, onEdit: widget.onEdit),
-        transitionsBuilder: (_, anim, __, child) =>
+        pageBuilder: (_, _, _) => _FullscreenVideoPlayer(
+          controller: _controller,
+          onEdit: widget.onEdit,
+        ),
+        transitionsBuilder: (_, anim, _, child) =>
             FadeTransition(opacity: anim, child: child),
         transitionDuration: AppMotion.moderate01,
         reverseTransitionDuration: AppMotion.moderate01,
@@ -181,90 +186,96 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget>
         color: AppColors.darkBg,
         child: _hasError
             ? const Center(
-                child:
-                    Icon(Icons.error_outline, color: Colors.white54, size: 48),
+                child: Icon(
+                  Icons.error_outline,
+                  color: Colors.white54,
+                  size: 48,
+                ),
               )
             : !_initialized
-                ? const Center(
-                    child:
-                        CircularProgressIndicator(color: AppColors.accent),
-                  )
-                : GestureDetector(
-                    onTap: tapHandler,
-                    behavior: HitTestBehavior.opaque,
-                    child: Stack(
-                      fit: StackFit.expand,
-                      children: [
-                        FittedBox(
-                          fit: BoxFit.cover,
-                          child: SizedBox(
-                            width: _controller.value.size.width,
-                            height: _controller.value.size.height,
-                            child: VideoPlayer(_controller),
-                          ),
+            ? const Center(
+                child: CircularProgressIndicator(color: AppColors.accent),
+              )
+            : GestureDetector(
+                onTap: tapHandler,
+                behavior: HitTestBehavior.opaque,
+                child: Stack(
+                  fit: StackFit.expand,
+                  children: [
+                    FittedBox(
+                      fit: BoxFit.cover,
+                      child: SizedBox(
+                        width: _controller.value.size.width,
+                        height: _controller.value.size.height,
+                        child: VideoPlayer(_controller),
+                      ),
+                    ),
+                    // Controls scrim — auto-hides during playback
+                    AnimatedOpacity(
+                      opacity: _showControls ? 1.0 : 0.0,
+                      duration: AppMotion.moderate01,
+                      child: IgnorePointer(
+                        ignoring: !_showControls,
+                        child: _VideoControls(
+                          controller: _controller,
+                          onTogglePlay: togglePlay,
+                          onSkipBack: () => skip(-_kSkipSeconds),
+                          onSkipForward: () => skip(_kSkipSeconds),
+                          onFullscreen: _openFullscreen,
+                          onEdit: widget.onEdit,
                         ),
-                        // Controls scrim — auto-hides during playback
-                        AnimatedOpacity(
-                          opacity: _showControls ? 1.0 : 0.0,
+                      ),
+                    ),
+                    // Persistent center play/pause icon — never fully hidden.
+                    // Always-visible at reduced opacity so users know where to tap.
+                    IgnorePointer(
+                      child: Center(
+                        child: AnimatedOpacity(
+                          opacity: _showControls ? 0.0 : 0.4,
                           duration: AppMotion.moderate01,
-                          child: IgnorePointer(
-                            ignoring: !_showControls,
-                            child: _VideoControls(
-                              controller: _controller,
-                              onTogglePlay: togglePlay,
-                              onSkipBack: () => skip(-_kSkipSeconds),
-                              onSkipForward: () => skip(_kSkipSeconds),
-                              onFullscreen: _openFullscreen,
-                              onEdit: widget.onEdit,
-                            ),
+                          child: Icon(
+                            _controller.value.isPlaying
+                                ? Icons.pause_circle_filled_rounded
+                                : Icons.play_circle_filled_rounded,
+                            color: Colors.white,
+                            size: 56,
                           ),
                         ),
-                        // Persistent center play/pause icon — never fully hidden.
-                        // Always-visible at reduced opacity so users know where to tap.
-                        IgnorePointer(
-                          child: Center(
+                      ),
+                    ),
+                    // Persistent mute toggle — top-right corner, always tappable
+                    Positioned(
+                      top: 8,
+                      right: 8,
+                      child: Semantics(
+                        label: _isMuted ? 'Unmute' : 'Mute',
+                        button: true,
+                        child: GestureDetector(
+                          onTap: _toggleMute,
+                          behavior: HitTestBehavior.opaque,
+                          child: Container(
+                            width: 48,
+                            height: 48,
+                            alignment: Alignment.center,
                             child: AnimatedOpacity(
-                              opacity: _showControls ? 0.0 : 0.4,
+                              opacity: _showControls ? 0.9 : 0.5,
                               duration: AppMotion.moderate01,
                               child: Icon(
-                                _controller.value.isPlaying
-                                    ? Icons.pause_circle_filled_rounded
-                                    : Icons.play_circle_filled_rounded,
+                                _isMuted
+                                    ? Icons.volume_off_rounded
+                                    : Icons.volume_up_rounded,
                                 color: Colors.white,
-                                size: 56,
+                                size: 22,
                               ),
                             ),
                           ),
                         ),
-                        // Persistent mute toggle — top-right corner, always tappable
-                        Positioned(
-                          top: 8,
-                          right: 8,
-                          child: GestureDetector(
-                            onTap: _toggleMute,
-                            behavior: HitTestBehavior.opaque,
-                            child: Container(
-                              width: 48,
-                              height: 48,
-                              alignment: Alignment.center,
-                              child: AnimatedOpacity(
-                                opacity: _showControls ? 0.9 : 0.5,
-                                duration: AppMotion.moderate01,
-                                child: Icon(
-                                  _isMuted
-                                      ? Icons.volume_off_rounded
-                                      : Icons.volume_up_rounded,
-                                  color: Colors.white,
-                                  size: 22,
-                                ),
-                              ),
-                            ),
-                          ),
-                        ),
-                        if (widget.overlay != null) widget.overlay!,
-                      ],
+                      ),
                     ),
-                  ),
+                    if (widget.overlay != null) widget.overlay!,
+                  ],
+                ),
+              ),
       ),
     );
   }
@@ -317,24 +328,36 @@ class _VideoControls extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              _TransportButton(
-                icon: Icons.replay_5_rounded,
-                onTap: onSkipBack,
-                size: isFullscreen ? 40 : 32,
+              Semantics(
+                label: 'Skip back 5 seconds',
+                button: true,
+                child: _TransportButton(
+                  icon: Icons.replay_5_rounded,
+                  onTap: onSkipBack,
+                  size: isFullscreen ? 40 : 32,
+                ),
               ),
               const SizedBox(width: AppSpacing.lg),
-              _TransportButton(
-                icon: isPlaying
-                    ? Icons.pause_circle_filled_rounded
-                    : Icons.play_circle_filled_rounded,
-                onTap: onTogglePlay,
-                size: isFullscreen ? 56 : 48,
+              Semantics(
+                label: isPlaying ? 'Pause' : 'Play',
+                button: true,
+                child: _TransportButton(
+                  icon: isPlaying
+                      ? Icons.pause_circle_filled_rounded
+                      : Icons.play_circle_filled_rounded,
+                  onTap: onTogglePlay,
+                  size: isFullscreen ? 56 : 48,
+                ),
               ),
               const SizedBox(width: AppSpacing.lg),
-              _TransportButton(
-                icon: Icons.forward_5_rounded,
-                onTap: onSkipForward,
-                size: isFullscreen ? 40 : 32,
+              Semantics(
+                label: 'Skip forward 5 seconds',
+                button: true,
+                child: _TransportButton(
+                  icon: Icons.forward_5_rounded,
+                  onTap: onSkipForward,
+                  size: isFullscreen ? 40 : 32,
+                ),
               ),
             ],
           ),
@@ -395,8 +418,7 @@ class _SeekBarState extends State<_SeekBar> {
 
     // While dragging, show the scrub position instead of the controller time.
     final displayPosition = _dragging
-        ? Duration(
-            milliseconds: (_dragValue * duration.inMilliseconds).round())
+        ? Duration(milliseconds: (_dragValue * duration.inMilliseconds).round())
         : position;
 
     return Padding(
@@ -409,18 +431,18 @@ class _SeekBarState extends State<_SeekBar> {
             width: 38,
             child: Text(
               _fmt(displayPosition),
-              style: AppTypography.caption
-                  .copyWith(color: Colors.white70, fontSize: 11),
+              style: AppTypography.caption.copyWith(
+                color: Colors.white70,
+                fontSize: 11,
+              ),
             ),
           ),
           Expanded(
             child: SliderTheme(
               data: SliderThemeData(
                 trackHeight: 3,
-                thumbShape:
-                    const RoundSliderThumbShape(enabledThumbRadius: 6),
-                overlayShape:
-                    const RoundSliderOverlayShape(overlayRadius: 14),
+                thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 6),
+                overlayShape: const RoundSliderOverlayShape(overlayRadius: 14),
                 activeTrackColor: AppColors.accent,
                 inactiveTrackColor: Colors.white24,
                 thumbColor: AppColors.accent,
@@ -428,15 +450,17 @@ class _SeekBarState extends State<_SeekBar> {
               ),
               child: Slider(
                 value: _dragging ? _dragValue : progress,
-                onChangeStart: (v) =>
-                    setState(() { _dragging = true; _dragValue = v; }),
+                onChangeStart: (v) => setState(() {
+                  _dragging = true;
+                  _dragValue = v;
+                }),
                 onChanged: (v) => setState(() => _dragValue = v),
                 onChangeEnd: (v) {
                   setState(() => _dragging = false);
                   widget.controller.seekTo(
                     Duration(
-                        milliseconds:
-                            (v * duration.inMilliseconds).round()),
+                      milliseconds: (v * duration.inMilliseconds).round(),
+                    ),
                   );
                 },
               ),
@@ -446,28 +470,38 @@ class _SeekBarState extends State<_SeekBar> {
             width: 38,
             child: Text(
               _fmt(duration),
-              style: AppTypography.caption
-                  .copyWith(color: Colors.white70, fontSize: 11),
+              style: AppTypography.caption.copyWith(
+                color: Colors.white70,
+                fontSize: 11,
+              ),
               textAlign: TextAlign.end,
             ),
           ),
           if (widget.onEdit != null) ...[
             const SizedBox(width: 4),
-            _TransportButton(
-              icon: Icons.tune_rounded,
-              onTap: widget.onEdit!,
-              size: 24,
+            Semantics(
+              label: 'Edit video',
+              button: true,
+              child: _TransportButton(
+                icon: Icons.tune_rounded,
+                onTap: widget.onEdit!,
+                size: 24,
+              ),
             ),
           ],
           const SizedBox(width: 4),
-          _TransportButton(
-            icon: widget.isFullscreen
-                ? Icons.fullscreen_exit_rounded
-                : Icons.fullscreen_rounded,
-            onTap: widget.isFullscreen
-                ? (widget.onExitFullscreen ?? () {})
-                : (widget.onFullscreen ?? () {}),
-            size: 24,
+          Semantics(
+            label: widget.isFullscreen ? 'Exit fullscreen' : 'Fullscreen',
+            button: true,
+            child: _TransportButton(
+              icon: widget.isFullscreen
+                  ? Icons.fullscreen_exit_rounded
+                  : Icons.fullscreen_rounded,
+              onTap: widget.isFullscreen
+                  ? (widget.onExitFullscreen ?? () {})
+                  : (widget.onFullscreen ?? () {}),
+              size: 24,
+            ),
           ),
         ],
       ),
@@ -525,8 +559,7 @@ class _FullscreenVideoPlayer extends StatefulWidget {
   final VoidCallback? onEdit;
 
   @override
-  State<_FullscreenVideoPlayer> createState() =>
-      _FullscreenVideoPlayerState();
+  State<_FullscreenVideoPlayer> createState() => _FullscreenVideoPlayerState();
 }
 
 class _FullscreenVideoPlayerState extends State<_FullscreenVideoPlayer>
@@ -621,7 +654,11 @@ class VideoPlaceholder extends StatelessWidget {
         color: fill,
         borderRadius: BorderRadius.circular(AppRadius.lg),
       ),
-      child: Icon(icon, color: Theme.of(context).colorScheme.secondary, size: 48),
+      child: Icon(
+        icon,
+        color: Theme.of(context).colorScheme.secondary,
+        size: 48,
+      ),
     );
   }
 }
@@ -681,8 +718,12 @@ class _RobustVideoPlayerState extends State<RobustVideoPlayer> {
 
   /// Check or retry video file availability. [isRetry] controls the loading state label.
   Future<void> _checkFile({bool isRetry = false}) async {
-    setState(() => _state = isRetry ? _PlayerState.retrying : _PlayerState.checking);
-    final status = await _videoService.checkVideoFileWithRetry(widget.videoPath);
+    setState(
+      () => _state = isRetry ? _PlayerState.retrying : _PlayerState.checking,
+    );
+    final status = await _videoService.checkVideoFileWithRetry(
+      widget.videoPath,
+    );
     if (!mounted) return;
     setState(() {
       _state = switch (status) {
@@ -700,45 +741,45 @@ class _RobustVideoPlayerState extends State<RobustVideoPlayer> {
     return switch (_state) {
       _PlayerState.checking => _buildShimmer(),
       _PlayerState.retrying => _buildStatusCard(
-          icon: Icons.refresh,
-          message: 'Retrying...',
-          showSpinner: true,
-          colorScheme: colorScheme,
-        ),
+        icon: Icons.refresh,
+        message: 'Retrying...',
+        showSpinner: true,
+        colorScheme: colorScheme,
+      ),
       _PlayerState.ready => VideoPlayerWidget(
-          videoPath: widget.videoPath,
-          height: widget.height,
-          overlay: widget.overlay,
-          onEdit: widget.onEdit,
-          autoPlay: widget.autoPlay,
-        ).animate().fadeIn(duration: 300.ms),
+        videoPath: widget.videoPath,
+        height: widget.height,
+        overlay: widget.overlay,
+        onEdit: widget.onEdit,
+        autoPlay: widget.autoPlay,
+      ).animate().fadeIn(duration: 300.ms),
       _PlayerState.missing => _buildStatusCard(
-          icon: Icons.cloud_off,
-          message: 'Video not found',
-          actionLabel: widget.onRepick != null ? 'Re-pick Video' : null,
-          onAction: widget.onRepick,
-          colorScheme: colorScheme,
-          showGhost: true,
-        ),
+        icon: Icons.cloud_off,
+        message: 'Video not found',
+        actionLabel: widget.onRepick != null ? 'Re-pick Video' : null,
+        onAction: widget.onRepick,
+        colorScheme: colorScheme,
+        showGhost: true,
+      ),
       _PlayerState.error => _buildStatusCard(
-          icon: Icons.error_outline,
-          message: 'Something went wrong',
-          actionLabel: 'Tap to retry',
-          onAction: () => _checkFile(isRetry: true),
-          colorScheme: colorScheme,
-        ),
+        icon: Icons.error_outline,
+        message: 'Something went wrong',
+        actionLabel: 'Tap to retry',
+        onAction: () => _checkFile(isRetry: true),
+        colorScheme: colorScheme,
+      ),
     };
   }
 
   Widget _buildShimmer() {
     return Container(
-      height: widget.height,
-      width: double.infinity,
-      decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surfaceContainerHighest,
-        borderRadius: BorderRadius.circular(AppRadius.lg),
-      ),
-    )
+          height: widget.height,
+          width: double.infinity,
+          decoration: BoxDecoration(
+            color: Theme.of(context).colorScheme.surfaceContainerHighest,
+            borderRadius: BorderRadius.circular(AppRadius.lg),
+          ),
+        )
         .animate(onPlay: (c) => c.repeat())
         .shimmer(duration: 1200.ms, color: Colors.white12);
   }
@@ -767,13 +808,15 @@ class _RobustVideoPlayerState extends State<RobustVideoPlayer> {
                 child: Image.file(
                   File(widget.ghostThumbnailPath!),
                   fit: BoxFit.cover,
-                  errorBuilder: (_, __, ___) => const SizedBox.shrink(),
+                  errorBuilder: (_, _, _) => const SizedBox.shrink(),
                 ),
               ),
             Container(
               decoration: BoxDecoration(
                 color: showGhost && widget.ghostThumbnailPath != null
-                    ? colorScheme.surfaceContainerHighest.withValues(alpha: 0.85)
+                    ? colorScheme.surfaceContainerHighest.withValues(
+                        alpha: 0.85,
+                      )
                     : colorScheme.surfaceContainerHighest,
               ),
               child: Column(
@@ -801,7 +844,9 @@ class _RobustVideoPlayerState extends State<RobustVideoPlayer> {
                       message == 'Video not found') ...[
                     const SizedBox(height: 4),
                     Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: AppSpacing.lg,
+                      ),
                       child: Text(
                         widget.originalVideoName!,
                         style: AppTypography.caption.copyWith(
@@ -816,10 +861,7 @@ class _RobustVideoPlayerState extends State<RobustVideoPlayer> {
                   ],
                   if (actionLabel != null && onAction != null) ...[
                     const SizedBox(height: AppSpacing.md),
-                    TextButton(
-                      onPressed: onAction,
-                      child: Text(actionLabel),
-                    ),
+                    TextButton(onPressed: onAction, child: Text(actionLabel)),
                   ],
                 ],
               ),

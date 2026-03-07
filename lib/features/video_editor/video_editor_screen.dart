@@ -436,33 +436,55 @@ class _VideoEditorScreenState extends State<VideoEditorScreen> {
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      GestureDetector(
-                        onTap: _exporting
-                            ? () async {
-                                await NativeVideoExport.cancel();
-                                if (mounted) {
-                                  setState(() => _exporting = false);
+                      Semantics(
+                        label: _exporting ? 'Cancel export' : 'Cancel',
+                        button: true,
+                        child: GestureDetector(
+                          onTap: _exporting
+                              ? () async {
+                                  await NativeVideoExport.cancel();
+                                  if (mounted) {
+                                    setState(() => _exporting = false);
+                                  }
                                 }
-                              }
-                            : () => context.pop(),
-                        child: Text(
-                          _exporting ? 'Cancel Export' : 'Cancel',
-                          style: AppTypography.bodyMedium.copyWith(
-                            color: _exporting
-                                ? AppColors.actionAgain
-                                : colorScheme.secondary,
+                              : () => context.pop(),
+                          child: Text(
+                            _exporting ? 'Cancel Export' : 'Cancel',
+                            style: AppTypography.bodyMedium.copyWith(
+                              color: _exporting
+                                  ? AppColors.actionAgain
+                                  : colorScheme.secondary,
+                            ),
                           ),
                         ),
                       ),
-                      GestureDetector(
-                        onTap: _exporting || !_isEditorReady ? null : _export,
-                        child: Text(
-                          'Export',
-                          style: AppTypography.bodyMedium.copyWith(
-                            color: _exporting || !_isEditorReady
-                                ? colorScheme.secondary
-                                : AppColors.accent,
-                            fontWeight: FontWeight.w600,
+                      Semantics(
+                        label: 'Export video',
+                        button: true,
+                        enabled: !_exporting && _isEditorReady,
+                        child: GestureDetector(
+                          onTap: _exporting || !_isEditorReady ? null : _export,
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: AppSpacing.md,
+                              vertical: AppSpacing.sm,
+                            ),
+                            decoration: BoxDecoration(
+                              color: _exporting || !_isEditorReady
+                                  ? colorScheme.surfaceContainerHighest
+                                  : AppColors.accent,
+                              borderRadius:
+                                  BorderRadius.circular(AppRadius.sm),
+                            ),
+                            child: Text(
+                              'Export',
+                              style: AppTypography.bodyMedium.copyWith(
+                                color: _exporting || !_isEditorReady
+                                    ? colorScheme.secondary
+                                    : Colors.white,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
                           ),
                         ),
                       ),
@@ -517,14 +539,18 @@ class _VideoEditorScreenState extends State<VideoEditorScreen> {
                                 child: Row(
                                   mainAxisAlignment: MainAxisAlignment.center,
                                   children: [
-                                    GestureDetector(
-                                      onTap: _togglePlayPause,
-                                      child: Icon(
-                                        _isPlaying
-                                            ? Icons.pause_circle_filled
-                                            : Icons.play_circle_filled,
-                                        color: AppColors.accent,
-                                        size: 36,
+                                    Semantics(
+                                      label: _isPlaying ? 'Pause' : 'Play',
+                                      button: true,
+                                      child: GestureDetector(
+                                        onTap: _togglePlayPause,
+                                        child: Icon(
+                                          _isPlaying
+                                              ? Icons.pause_circle_filled
+                                              : Icons.play_circle_filled,
+                                          color: AppColors.accent,
+                                          size: 36,
+                                        ),
                                       ),
                                     ),
                                     const SizedBox(width: AppSpacing.sm),
@@ -541,110 +567,155 @@ class _VideoEditorScreenState extends State<VideoEditorScreen> {
                                 ),
                               ),
 
-                              // Trim labels
-                              if (_videoDuration.inMilliseconds > 0)
-                                Padding(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: AppSpacing.screenEdge,
-                                  ),
-                                  child: Row(
-                                    mainAxisAlignment:
-                                        MainAxisAlignment.spaceBetween,
-                                    children: [
-                                      Text(
-                                        _formatDuration(
-                                          _trimStart *
-                                              _videoDuration.inMilliseconds,
-                                        ),
-                                        style: AppTypography.caption.copyWith(
-                                          color: colorScheme.secondary,
-                                        ),
-                                      ),
-                                      Text(
-                                        _formatDuration(
-                                          _trimEnd *
-                                              _videoDuration.inMilliseconds,
-                                        ),
-                                        style: AppTypography.caption.copyWith(
-                                          color: colorScheme.secondary,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              const SizedBox(height: AppSpacing.xl),
+                              const SizedBox(height: AppSpacing.md),
 
-                              // Speed
-                              _buildPillSelector(
-                                context,
-                                label: 'SPEED',
-                                items: _speedLabels,
-                                selectedIndex: _selectedSpeedIndex,
-                                onSelected: (i) {
-                                  setState(() => _selectedSpeedIndex = i);
-                                  _controller?.setPlaybackSpeed(_speeds[i]);
-                                },
-                              ),
-                              const SizedBox(height: AppSpacing.lg),
-
-                              // Transform
+                              // Speed + Rotation — unified row
                               Padding(
                                 padding: const EdgeInsets.symmetric(
                                   horizontal: AppSpacing.screenEdge,
                                 ),
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                child: Row(
                                   children: [
-                                    Text(
-                                      'TRANSFORM',
-                                      style: AppTypography.sectionHeader
-                                          .copyWith(
-                                            color: colorScheme.secondary,
+                                    // Speed pills (takes available space)
+                                    Expanded(
+                                      child: Column(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        children: [
+                                          Text(
+                                            'SPEED',
+                                            style: AppTypography.sectionHeader
+                                                .copyWith(
+                                                  color: colorScheme.secondary,
+                                                ),
                                           ),
+                                          const SizedBox(height: AppSpacing.sm),
+                                          Row(
+                                            children: List.generate(
+                                                _speedLabels.length, (i) {
+                                              final isSelected =
+                                                  i == _selectedSpeedIndex;
+                                              return Expanded(
+                                                child: Semantics(
+                                                  label:
+                                                      'SPEED ${_speedLabels[i]}',
+                                                  button: true,
+                                                  selected: isSelected,
+                                                  child: GestureDetector(
+                                                    onTap: () {
+                                                      HapticFeedback
+                                                          .selectionClick();
+                                                      setState(() =>
+                                                          _selectedSpeedIndex =
+                                                              i);
+                                                      _controller
+                                                          ?.setPlaybackSpeed(
+                                                              _speeds[i]);
+                                                    },
+                                                    child: Container(
+                                                      margin: EdgeInsets.only(
+                                                        left: i > 0
+                                                            ? AppSpacing.xs
+                                                            : 0,
+                                                      ),
+                                                      padding: const EdgeInsets
+                                                          .symmetric(
+                                                        vertical: 8,
+                                                      ),
+                                                      decoration: BoxDecoration(
+                                                        color: isSelected
+                                                            ? AppColors.accent
+                                                            : colorScheme
+                                                                .surfaceContainerHighest,
+                                                        borderRadius:
+                                                            BorderRadius
+                                                                .circular(
+                                                                    AppRadius
+                                                                        .sm),
+                                                      ),
+                                                      child: Center(
+                                                        child: Text(
+                                                          _speedLabels[i],
+                                                          style: AppTypography
+                                                              .caption
+                                                              .copyWith(
+                                                            color: isSelected
+                                                                ? Colors.white
+                                                                : colorScheme
+                                                                    .onSurface,
+                                                            fontWeight:
+                                                                isSelected
+                                                                    ? FontWeight
+                                                                        .w600
+                                                                    : FontWeight
+                                                                        .w400,
+                                                          ),
+                                                        ),
+                                                      ),
+                                                    ),
+                                                  ),
+                                                ),
+                                              );
+                                            }),
+                                          ),
+                                        ],
+                                      ),
                                     ),
-                                    const SizedBox(height: AppSpacing.md),
-                                    Row(
+                                    const SizedBox(width: AppSpacing.md),
+                                    // Rotate buttons (fixed width, right-aligned)
+                                    Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.center,
                                       children: [
-                                        _TransformButton(
-                                          icon: Icons.rotate_left,
-                                          active: _rotation != 0,
-                                          onTap: () {
-                                            HapticFeedback.mediumImpact();
-                                            setState(() {
-                                              _rotation =
-                                                  (_rotation - 90) % 360;
-                                              _matrixInitialized = false;
-                                            });
-                                          },
+                                        Text(
+                                          _rotation != 0
+                                              ? '$_rotation°'
+                                              : 'ROTATE',
+                                          style: AppTypography.sectionHeader
+                                              .copyWith(
+                                            color: _rotation != 0
+                                                ? AppColors.accent
+                                                : colorScheme.secondary,
+                                          ),
                                         ),
-                                        const SizedBox(width: AppSpacing.sm),
-                                        _TransformButton(
-                                          icon: Icons.rotate_right,
-                                          active: _rotation != 0,
-                                          onTap: () {
-                                            HapticFeedback.mediumImpact();
-                                            setState(() {
-                                              _rotation =
-                                                  (_rotation + 90) % 360;
-                                              _matrixInitialized = false;
-                                            });
-                                          },
+                                        const SizedBox(height: AppSpacing.sm),
+                                        Row(
+                                          mainAxisSize: MainAxisSize.min,
+                                          children: [
+                                            _TransformButton(
+                                              icon: Icons.rotate_left,
+                                              active: _rotation != 0,
+                                              onTap: () {
+                                                HapticFeedback.mediumImpact();
+                                                setState(() {
+                                                  _rotation =
+                                                      (_rotation - 90) % 360;
+                                                  _matrixInitialized = false;
+                                                });
+                                              },
+                                            ),
+                                            const SizedBox(
+                                                width: AppSpacing.xs),
+                                            _TransformButton(
+                                              icon: Icons.rotate_right,
+                                              active: _rotation != 0,
+                                              onTap: () {
+                                                HapticFeedback.mediumImpact();
+                                                setState(() {
+                                                  _rotation =
+                                                      (_rotation + 90) % 360;
+                                                  _matrixInitialized = false;
+                                                });
+                                              },
+                                            ),
+                                          ],
                                         ),
                                       ],
                                     ),
-                                    if (_rotation != 0) ...[
-                                      const SizedBox(height: AppSpacing.sm),
-                                      Text(
-                                        'Rotation: $_rotation°',
-                                        style: AppTypography.caption.copyWith(
-                                          color: AppColors.accent,
-                                        ),
-                                      ),
-                                    ],
                                   ],
                                 ),
                               ),
-                              const SizedBox(height: AppSpacing.lg),
+                              const SizedBox(height: AppSpacing.md),
 
                               // Aspect Ratio
                               _buildPillSelector(
@@ -670,7 +741,10 @@ class _VideoEditorScreenState extends State<VideoEditorScreen> {
             // Export overlay with real-time progress
             if (_exporting)
               Positioned.fill(
-                child: Container(
+                child: Semantics(
+                  label: 'Export in progress',
+                  liveRegion: true,
+                  child: Container(
                   color: Colors.black.withValues(alpha: 0.7),
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
@@ -733,6 +807,7 @@ class _VideoEditorScreenState extends State<VideoEditorScreen> {
                   ),
                 ),
               ),
+              ),
           ],
         ),
       ),
@@ -763,30 +838,35 @@ class _VideoEditorScreenState extends State<VideoEditorScreen> {
             children: List.generate(items.length, (i) {
               final isSelected = i == selectedIndex;
               return Expanded(
-                child: GestureDetector(
-                  onTap: () {
-                    HapticFeedback.selectionClick();
-                    onSelected(i);
-                  },
-                  child: Container(
-                    margin: EdgeInsets.only(left: i > 0 ? AppSpacing.sm : 0),
-                    padding: const EdgeInsets.symmetric(vertical: 10),
-                    decoration: BoxDecoration(
-                      color: isSelected
-                          ? AppColors.accent
-                          : colorScheme.surfaceContainerHighest,
-                      borderRadius: BorderRadius.circular(AppRadius.sm),
-                    ),
-                    child: Center(
-                      child: Text(
-                        items[i],
-                        style: AppTypography.caption.copyWith(
-                          color: isSelected
-                              ? Colors.white
-                              : colorScheme.onSurface,
-                          fontWeight: isSelected
-                              ? FontWeight.w600
-                              : FontWeight.w400,
+                child: Semantics(
+                  label: '$label ${items[i]}',
+                  button: true,
+                  selected: isSelected,
+                  child: GestureDetector(
+                    onTap: () {
+                      HapticFeedback.selectionClick();
+                      onSelected(i);
+                    },
+                    child: Container(
+                      margin: EdgeInsets.only(left: i > 0 ? AppSpacing.sm : 0),
+                      padding: const EdgeInsets.symmetric(vertical: 10),
+                      decoration: BoxDecoration(
+                        color: isSelected
+                            ? AppColors.accent
+                            : colorScheme.surfaceContainerHighest,
+                        borderRadius: BorderRadius.circular(AppRadius.sm),
+                      ),
+                      child: Center(
+                        child: Text(
+                          items[i],
+                          style: AppTypography.caption.copyWith(
+                            color: isSelected
+                                ? Colors.white
+                                : colorScheme.onSurface,
+                            fontWeight: isSelected
+                                ? FontWeight.w600
+                                : FontWeight.w400,
+                          ),
                         ),
                       ),
                     ),
@@ -923,9 +1003,11 @@ class _VideoEditorScreenState extends State<VideoEditorScreen> {
                       child: ClipRect(
                         child: InteractiveViewer(
                           transformationController: _transformController,
-                          minScale: minScale,
+                          minScale: isFreeForm ? minScale * 0.5 : minScale,
                           maxScale: minScale * 4.0,
-                          boundaryMargin: EdgeInsets.zero,
+                          boundaryMargin: isFreeForm
+                              ? const EdgeInsets.all(double.infinity)
+                              : EdgeInsets.zero,
                           constrained: false,
                           onInteractionEnd: (_) => setState(() {}),
                           child: GestureDetector(
@@ -1071,7 +1153,8 @@ class _VideoEditorScreenState extends State<VideoEditorScreen> {
     final d = Duration(milliseconds: ms.round());
     final minutes = d.inMinutes.remainder(60).toString().padLeft(2, '0');
     final seconds = d.inSeconds.remainder(60).toString().padLeft(2, '0');
-    return '$minutes:$seconds';
+    final millis = (d.inMilliseconds.remainder(1000) ~/ 10).toString().padLeft(2, '0');
+    return '$minutes:$seconds.$millis';
   }
 
   Future<void> _export() async {
@@ -1241,7 +1324,7 @@ class _TrimTimelineState extends State<_TrimTimeline> {
     _thumbnailDebounce = Timer(const Duration(milliseconds: 16), () async {
       if (widget.videoDurationMs <= 0) return;
       final ms = (normalizedPosition * widget.videoDurationMs).round();
-      final key = (ms / 100).round(); // round to 100ms buckets
+      final key = (ms / 50).round(); // round to 50ms buckets
 
       if (_thumbnailCache.containsKey(key)) {
         if (mounted) {
@@ -1404,19 +1487,21 @@ class _TrimTimelineState extends State<_TrimTimeline> {
                       ),
                     ),
 
-                  // Start handle
+                  // Start handle — 24px hit area, 16px visual
                   Positioned(
-                    left: widget.trimStart * timelineWidth,
+                    left: widget.trimStart * timelineWidth - 4,
                     top: 0,
                     bottom: 0,
-                    child: GestureDetector(
+                    child: Semantics(
+                      label: 'Trim start handle',
+                      child: GestureDetector(
+                      behavior: HitTestBehavior.opaque,
                       onHorizontalDragStart: (_) {
                         setState(() {
                           _activeHandle = 'start';
                           _previewPosition = widget.trimStart;
                           _playheadPosition = widget.trimStart;
                         });
-                        // Pause and seek to start handle position (iMovie/CapCut behavior)
                         widget.onPlayheadChanged?.call(widget.trimStart);
                         _requestThumbnail(widget.trimStart);
                       },
@@ -1433,43 +1518,50 @@ class _TrimTimelineState extends State<_TrimTimeline> {
                           _playheadPosition = newStart;
                           _previewPosition = newStart;
                         });
-                        // Seek preview to match handle position
                         widget.onPlayheadChanged?.call(newStart);
                         _requestThumbnail(newStart);
                       },
                       onHorizontalDragEnd: (_) => _clearDragState(),
-                      child: Container(
-                        width: 16,
-                        decoration: const BoxDecoration(
-                          color: AppColors.accent,
-                          borderRadius: BorderRadius.horizontal(
-                            left: Radius.circular(6),
-                          ),
-                        ),
-                        child: const Center(
-                          child: Icon(
-                            Icons.drag_indicator,
-                            size: 12,
-                            color: Colors.white,
+                      child: SizedBox(
+                        width: 24,
+                        child: Center(
+                          child: Container(
+                            width: 16,
+                            decoration: const BoxDecoration(
+                              color: AppColors.accent,
+                              borderRadius: BorderRadius.horizontal(
+                                left: Radius.circular(6),
+                              ),
+                            ),
+                            child: const Center(
+                              child: Icon(
+                                Icons.drag_indicator,
+                                size: 12,
+                                color: Colors.white,
+                              ),
+                            ),
                           ),
                         ),
                       ),
                     ),
+                    ),
                   ),
 
-                  // End handle
+                  // End handle — 24px hit area, 16px visual
                   Positioned(
-                    right: (1 - widget.trimEnd) * timelineWidth,
+                    right: (1 - widget.trimEnd) * timelineWidth - 4,
                     top: 0,
                     bottom: 0,
-                    child: GestureDetector(
+                    child: Semantics(
+                      label: 'Trim end handle',
+                      child: GestureDetector(
+                      behavior: HitTestBehavior.opaque,
                       onHorizontalDragStart: (_) {
                         setState(() {
                           _activeHandle = 'end';
                           _previewPosition = widget.trimEnd;
                           _playheadPosition = widget.trimEnd;
                         });
-                        // Pause and seek to end handle position
                         widget.onPlayheadChanged?.call(widget.trimEnd);
                         _requestThumbnail(widget.trimEnd);
                       },
@@ -1486,27 +1578,32 @@ class _TrimTimelineState extends State<_TrimTimeline> {
                           _playheadPosition = newEnd;
                           _previewPosition = newEnd;
                         });
-                        // Seek preview to match handle position
                         widget.onPlayheadChanged?.call(newEnd);
                         _requestThumbnail(newEnd);
                       },
                       onHorizontalDragEnd: (_) => _clearDragState(),
-                      child: Container(
-                        width: 16,
-                        decoration: const BoxDecoration(
-                          color: AppColors.accent,
-                          borderRadius: BorderRadius.horizontal(
-                            right: Radius.circular(6),
-                          ),
-                        ),
-                        child: const Center(
-                          child: Icon(
-                            Icons.drag_indicator,
-                            size: 12,
-                            color: Colors.white,
+                      child: SizedBox(
+                        width: 24,
+                        child: Center(
+                          child: Container(
+                            width: 16,
+                            decoration: const BoxDecoration(
+                              color: AppColors.accent,
+                              borderRadius: BorderRadius.horizontal(
+                                right: Radius.circular(6),
+                              ),
+                            ),
+                            child: const Center(
+                              child: Icon(
+                                Icons.drag_indicator,
+                                size: 12,
+                                color: Colors.white,
+                              ),
+                            ),
                           ),
                         ),
                       ),
+                    ),
                     ),
                   ),
 
@@ -1515,7 +1612,9 @@ class _TrimTimelineState extends State<_TrimTimeline> {
                     left: _effectivePlayheadPosition * timelineWidth - 1.5,
                     top: 0,
                     bottom: 0,
-                    child: GestureDetector(
+                    child: Semantics(
+                      label: 'Playhead',
+                      child: GestureDetector(
                       onHorizontalDragStart: (_) {
                         setState(() {
                           _activeHandle = 'playhead';
@@ -1537,6 +1636,7 @@ class _TrimTimelineState extends State<_TrimTimeline> {
                       },
                       onHorizontalDragEnd: (_) => _clearDragState(),
                       child: Container(width: 3, color: Colors.white),
+                    ),
                     ),
                   ),
                 ],
@@ -1595,12 +1695,13 @@ class _TrimTimelineState extends State<_TrimTimeline> {
   }
 
   String _formatPreviewTime() {
-    if (_previewPosition == null || widget.videoDurationMs <= 0) return '--:--';
+    if (_previewPosition == null || widget.videoDurationMs <= 0) return '--:--.--';
     final ms = (_previewPosition! * widget.videoDurationMs).round();
     final d = Duration(milliseconds: ms);
     final minutes = d.inMinutes.remainder(60).toString().padLeft(2, '0');
     final seconds = d.inSeconds.remainder(60).toString().padLeft(2, '0');
-    return '$minutes:$seconds';
+    final millis = (d.inMilliseconds.remainder(1000) ~/ 10).toString().padLeft(2, '0');
+    return '$minutes:$seconds.$millis';
   }
 }
 
@@ -1620,11 +1721,14 @@ class _TransformButton extends StatelessWidget {
     final fill = active
         ? AppColors.accent.withValues(alpha: 0.15)
         : Theme.of(context).colorScheme.surfaceContainerHighest;
-    return GestureDetector(
+    return Semantics(
+      label: icon == Icons.rotate_left ? 'Rotate left' : 'Rotate right',
+      button: true,
+      child: GestureDetector(
       onTap: onTap,
       child: Container(
-        width: 48,
-        height: 48,
+        width: 40,
+        height: 40,
         decoration: BoxDecoration(
           color: fill,
           borderRadius: BorderRadius.circular(AppRadius.sm),
@@ -1639,6 +1743,7 @@ class _TransformButton extends StatelessWidget {
               : Theme.of(context).colorScheme.onSurface,
         ),
       ),
+    ),
     );
   }
 }
