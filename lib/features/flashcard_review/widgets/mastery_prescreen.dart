@@ -17,18 +17,18 @@ import 'deck_card.dart';
 
 /// The session launcher shown before entering a flashcard review session.
 ///
-/// Session mode has two sources:
-/// - State-based: quick entry into NEW / LEARNING / MASTERY buckets
-/// - Deck: saved manual or smart deck sessions
+/// The parent (FlashcardReviewScreen) passes [source] based on the active
+/// mode tab — Review → stateBased, Deck → deck.
 class MasteryPrescreen extends ConsumerWidget {
-  const MasteryPrescreen({super.key});
+  const MasteryPrescreen({super.key, required this.source});
+
+  final ReviewSessionSource source;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final totalMoves = ref.watch(totalMoveCountProvider).valueOrNull ?? 0;
     if (totalMoves == 0) return const _ReviewEmptyState();
 
-    final reviewSource = ref.watch(reviewSessionSourceProvider);
     final dueAsync = ref.watch(dueSummaryProvider);
     final colorScheme = Theme.of(context).colorScheme;
 
@@ -67,42 +67,14 @@ class MasteryPrescreen extends ConsumerWidget {
                         fontWeight: FontWeight.w700,
                       ),
                     ),
-                    const SizedBox(height: AppSpacing.xs),
-                    Text(
-                      'Choose a review source for this session.',
-                      style: AppTypography.bodySmall.copyWith(
-                        color: colorScheme.secondary,
-                      ),
-                    ),
                   ],
                 ),
               ),
             ),
           ),
         ),
-        SliverPadding(
-          padding: const EdgeInsets.symmetric(
-            horizontal: AppSpacing.screenEdge,
-          ),
-          sliver: SliverToBoxAdapter(
-            child: _SourceSelector(
-              source: reviewSource,
-              onChanged: (source) {
-                HapticFeedback.selectionClick();
-                ref.read(reviewSessionSourceProvider.notifier).set(source);
-                ref.read(reviewSessionTargetMoveIdsProvider.notifier).state =
-                    null;
-                if (source == ReviewSessionSource.stateBased) {
-                  ref.read(selectedDeckProvider.notifier).state = null;
-                } else {
-                  ref.read(reviewStateFilterProvider.notifier).state = null;
-                }
-              },
-            ),
-          ),
-        ),
         const SliverToBoxAdapter(child: SizedBox(height: AppSpacing.lg)),
-        if (reviewSource == ReviewSessionSource.stateBased)
+        if (source == ReviewSessionSource.stateBased)
           const _StateModeSection()
         else
           SliverPadding(
@@ -133,34 +105,6 @@ class MasteryPrescreen extends ConsumerWidget {
   }
 }
 
-class _SourceSelector extends StatelessWidget {
-  const _SourceSelector({required this.source, required this.onChanged});
-
-  final ReviewSessionSource source;
-  final ValueChanged<ReviewSessionSource> onChanged;
-
-  @override
-  Widget build(BuildContext context) {
-    return SegmentedButton<ReviewSessionSource>(
-      segments: const [
-        ButtonSegment<ReviewSessionSource>(
-          value: ReviewSessionSource.stateBased,
-          icon: Icon(Icons.tune_rounded, size: 18),
-          label: Text('State'),
-        ),
-        ButtonSegment<ReviewSessionSource>(
-          value: ReviewSessionSource.deck,
-          icon: Icon(Icons.style_rounded, size: 18),
-          label: Text('Deck'),
-        ),
-      ],
-      selected: {source},
-      showSelectedIcon: false,
-      onSelectionChanged: (selection) => onChanged(selection.first),
-    );
-  }
-}
-
 class _StateModeSection extends ConsumerWidget {
   const _StateModeSection();
 
@@ -180,19 +124,16 @@ class _StateModeSection extends ConsumerWidget {
             state: LearningState.newState,
             title: 'New',
             subtitle: 'Fresh cards waiting for first reps',
-            icon: Icons.fiber_new_rounded,
           ),
           (
             state: LearningState.learning,
             title: 'Learning',
             subtitle: 'Cards still settling into memory',
-            icon: Icons.school_outlined,
           ),
           (
             state: LearningState.mastery,
             title: 'Mastery',
             subtitle: 'Cards already in longer-term rotation',
-            icon: Icons.verified_rounded,
           ),
         ];
 
@@ -232,7 +173,6 @@ class _StateModeSection extends ConsumerWidget {
                       subtitle: item.subtitle,
                       count: count,
                       color: item.state.color,
-                      icon: item.icon,
                       onStart: () => _startStateSession(ref, item.state),
                     ),
                   )
@@ -266,13 +206,16 @@ class _StateModeSection extends ConsumerWidget {
   }
 }
 
+/// Minimal state session card — colored dot, title/subtitle, count, chevron.
+///
+/// The entire card is tappable (no separate "Start" button). Designed for
+/// minimal visual noise following SwiftUI list row conventions.
 class _StateSessionCard extends StatelessWidget {
   const _StateSessionCard({
     required this.title,
     required this.subtitle,
     required this.count,
     required this.color,
-    required this.icon,
     required this.onStart,
   });
 
@@ -280,73 +223,73 @@ class _StateSessionCard extends StatelessWidget {
   final String subtitle;
   final int count;
   final Color color;
-  final IconData icon;
   final VoidCallback onStart;
 
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
 
-    return Container(
-      padding: const EdgeInsets.all(AppSpacing.md),
-      decoration: BoxDecoration(
-        color: colorScheme.surfaceContainerHighest,
+    return Material(
+      color: colorScheme.surfaceContainerHighest,
+      borderRadius: BorderRadius.circular(AppRadius.md),
+      child: InkWell(
+        onTap: onStart,
         borderRadius: BorderRadius.circular(AppRadius.md),
-        border: Border.all(color: color.withValues(alpha: 0.2)),
-      ),
-      child: Row(
-        children: [
-          Container(
-            width: 44,
-            height: 44,
-            decoration: BoxDecoration(
-              color: color.withValues(alpha: 0.12),
-              borderRadius: BorderRadius.circular(AppRadius.sm),
-            ),
-            child: Icon(icon, color: color),
-          ),
-          const SizedBox(width: AppSpacing.md),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  title,
-                  style: AppTypography.bodyMedium.copyWith(
-                    color: colorScheme.onSurface,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  subtitle,
-                  style: AppTypography.caption.copyWith(
-                    color: colorScheme.secondary,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(width: AppSpacing.sm),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.end,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: 14),
+          child: Row(
             children: [
-              Text(
-                '$count',
-                style: AppTypography.titleSmall.copyWith(
-                  color: colorScheme.onSurface,
-                  fontWeight: FontWeight.w700,
+              // Colored dot indicator
+              Container(
+                width: 8,
+                height: 8,
+                decoration: BoxDecoration(
+                  color: color,
+                  shape: BoxShape.circle,
                 ),
               ),
-              const SizedBox(height: 2),
-              TextButton(
-                onPressed: onStart,
-                style: TextButton.styleFrom(minimumSize: const Size(44, 44)),
-                child: const Text('Start'),
+              const SizedBox(width: AppSpacing.md),
+              // Title + subtitle
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      title,
+                      style: AppTypography.bodyMedium.copyWith(
+                        color: colorScheme.onSurface,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      subtitle,
+                      style: AppTypography.caption.copyWith(
+                        color: colorScheme.secondary,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: AppSpacing.sm),
+              // Count
+              Text(
+                '$count',
+                style: AppTypography.bodyMedium.copyWith(
+                  color: colorScheme.secondary,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              const SizedBox(width: AppSpacing.xs),
+              // Chevron disclosure
+              Icon(
+                Icons.chevron_right_rounded,
+                size: 20,
+                color: colorScheme.secondary.withValues(alpha: 0.5),
               ),
             ],
           ),
-        ],
+        ),
       ),
     );
   }
@@ -412,7 +355,7 @@ class _DecksSection extends ConsumerWidget {
             ),
             const SizedBox(height: AppSpacing.xs),
             Text(
-              'Deck sessions use the deck’s own card filter and membership.',
+              'Deck sessions use the deck\u2019s own card filter and membership.',
               style: AppTypography.bodySmall.copyWith(
                 color: colorScheme.secondary,
               ),
@@ -473,7 +416,7 @@ class _DecksSection extends ConsumerWidget {
       builder: (ctx) => AlertDialog(
         title: Text('Delete "${deck.name}"?'),
         content: const Text(
-          'This will remove the deck. Your moves won’t be affected.',
+          'This will remove the deck. Your moves won\u2019t be affected.',
         ),
         actions: [
           TextButton(
@@ -521,64 +464,10 @@ class _ReviewEmptyState extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            SizedBox(
-              height: 100,
-              width: 120,
-              child: Stack(
-                alignment: Alignment.center,
-                children: [
-                  Transform.rotate(
-                        angle: -0.12,
-                        child: Container(
-                          width: 80,
-                          height: 60,
-                          decoration: BoxDecoration(
-                            color: AppColors.stateNew.withValues(alpha: 0.15),
-                            borderRadius: BorderRadius.circular(AppRadius.md),
-                          ),
-                        ),
-                      )
-                      .animate()
-                      .fadeIn(
-                        duration: AppMotion.moderate02,
-                        delay: const Duration(milliseconds: 80),
-                      )
-                      .slideY(begin: 0.1),
-                  Transform.rotate(
-                        angle: 0.08,
-                        child: Container(
-                          width: 80,
-                          height: 60,
-                          decoration: BoxDecoration(
-                            color: AppColors.stateLearning.withValues(
-                              alpha: 0.15,
-                            ),
-                            borderRadius: BorderRadius.circular(AppRadius.md),
-                          ),
-                        ),
-                      )
-                      .animate()
-                      .fadeIn(
-                        duration: AppMotion.moderate02,
-                        delay: const Duration(milliseconds: 160),
-                      )
-                      .slideY(begin: 0.1),
-                  Container(
-                        width: 80,
-                        height: 60,
-                        decoration: BoxDecoration(
-                          color: AppColors.stateMastery.withValues(alpha: 0.15),
-                          borderRadius: BorderRadius.circular(AppRadius.md),
-                        ),
-                      )
-                      .animate()
-                      .fadeIn(
-                        duration: AppMotion.moderate02,
-                        delay: const Duration(milliseconds: 240),
-                      )
-                      .slideY(begin: 0.1),
-                ],
-              ),
+            Icon(
+              Icons.style_outlined,
+              size: 64,
+              color: colorScheme.secondary,
             ),
             const SizedBox(height: AppSpacing.lg),
             Text(

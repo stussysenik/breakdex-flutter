@@ -22,7 +22,10 @@ class ActionTile extends StatelessWidget {
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
     final color = destructive ? AppColors.actionAgain : colorScheme.onSurface;
-    return InkWell(
+    return Semantics(
+      label: label,
+      button: true,
+      child: InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(AppRadius.sm),
       child: Container(
@@ -41,6 +44,7 @@ class ActionTile extends StatelessWidget {
           ],
         ),
       ),
+    ),
     );
   }
 }

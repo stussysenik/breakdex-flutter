@@ -43,27 +43,39 @@ class BottomNavShell extends ConsumerWidget {
             initialLocation: index == navigationShell.currentIndex,
           ),
           items: [
-            const BottomNavigationBarItem(
-              icon: Icon(Icons.grid_view_rounded),
+            BottomNavigationBarItem(
+              icon: Semantics(
+                label: 'Arsenal tab',
+                child: const Icon(Icons.grid_view_rounded),
+              ),
               label: 'Arsenal',
             ),
-            const BottomNavigationBarItem(
-              icon: Icon(Icons.style_outlined),
+            BottomNavigationBarItem(
+              icon: Semantics(
+                label: 'Review tab',
+                child: const Icon(Icons.style_outlined),
+              ),
               label: 'Review',
             ),
-            const BottomNavigationBarItem(
-              icon: Icon(Icons.insights_rounded),
+            BottomNavigationBarItem(
+              icon: Semantics(
+                label: 'Stats tab',
+                child: const Icon(Icons.insights_rounded),
+              ),
               label: 'Stats',
             ),
             BottomNavigationBarItem(
-              icon: Badge(
-                isLabelVisible: isLoggedIn && pendingCount > 0,
-                label: Text(
-                  pendingCount > 99 ? '99+' : '$pendingCount',
-                  style: const TextStyle(fontSize: 10, color: Colors.white),
+              icon: Semantics(
+                label: 'Settings tab',
+                child: Badge(
+                  isLabelVisible: isLoggedIn && pendingCount > 0,
+                  label: Text(
+                    pendingCount > 99 ? '99+' : '$pendingCount',
+                    style: const TextStyle(fontSize: 10, color: Colors.white),
+                  ),
+                  backgroundColor: AppColors.accent,
+                  child: const Icon(Icons.settings_outlined),
                 ),
-                backgroundColor: AppColors.accent,
-                child: const Icon(Icons.settings_outlined),
               ),
               label: 'Settings',
             ),

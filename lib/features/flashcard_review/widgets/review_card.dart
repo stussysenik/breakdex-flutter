@@ -20,14 +20,12 @@ class ReviewCard extends StatelessWidget {
   const ReviewCard({
     super.key,
     required this.move,
-    required this.isRevealed,
     required this.onStatePillTap,
     required this.videoHeight,
     this.onRepick,
   });
 
   final Move move;
-  final bool isRevealed;
   final VoidCallback onStatePillTap;
   final double videoHeight;
 
@@ -45,30 +43,14 @@ class ReviewCard extends StatelessWidget {
       children: [
         // Video — 60% visual weight, edge-to-edge
         move.videoPath != null
-              ? (isRevealed
-                  ? RobustVideoPlayer(
-                      videoPath: move.videoPath!,
-                      height: videoHeight,
-                      onRepick: onRepick,
-                      originalVideoName: move.originalVideoName,
-                      autoPlay: true,
-                    )
-                  : Container(
-                      height: videoHeight,
-                      width: double.infinity,
-                      decoration: BoxDecoration(
-                        color: Theme.of(context).colorScheme.surfaceContainerHighest,
-                        borderRadius: BorderRadius.circular(16),
-                      ),
-                      child: Center(
-                        child: Icon(
-                          Icons.help_outline,
-                          size: 64,
-                          color: Theme.of(context).colorScheme.secondary.withValues(alpha: 0.5),
-                        ),
-                      ),
-                    ))
-              : VideoPlaceholder(height: videoHeight),
+            ? RobustVideoPlayer(
+                videoPath: move.videoPath!,
+                height: videoHeight,
+                onRepick: onRepick,
+                originalVideoName: move.originalVideoName,
+                autoPlay: true,
+              )
+            : VideoPlaceholder(height: videoHeight),
         const SizedBox(height: 6),
 
         // Context band — compact, close to video
@@ -79,11 +61,9 @@ class ReviewCard extends StatelessWidget {
               // Move name (dominant, left-aligned)
               Expanded(
                 child: Text(
-                  isRevealed ? move.name : '???',
+                  move.name,
                   style: AppTypography.titleSmall.copyWith(
-                    color: isRevealed 
-                        ? colorScheme.onSurface 
-                        : colorScheme.secondary.withValues(alpha: 0.5),
+                    color: colorScheme.onSurface,
                   ),
                   overflow: TextOverflow.ellipsis,
                 ),
@@ -95,7 +75,7 @@ class ReviewCard extends StatelessWidget {
                 Padding(
                   padding: const EdgeInsets.only(right: 6),
                   child: Text(
-                    isRevealed ? move.category.toUpperCase() : '???',
+                    move.category.toUpperCase(),
                     style: AppTypography.caption.copyWith(
                       color: colorScheme.secondary,
                       letterSpacing: 1.5,

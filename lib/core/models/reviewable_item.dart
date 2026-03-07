@@ -183,13 +183,14 @@ class SrsOverview {
   });
 }
 
-/// Review mode: session-based flashcards or calendar-based schedule view.
+/// Review mode: flashcard review or deck-based review.
 enum ReviewMode {
-  session,
-  schedule;
+  review,
+  deck;
 
   static ReviewMode fromString(String? value) => switch (value) {
-        'schedule' => ReviewMode.schedule,
-        _ => ReviewMode.session,
+        'deck' => ReviewMode.deck,
+        // Backward compat: old 'session' and 'schedule' both map to review
+        'session' || 'schedule' || _ => ReviewMode.review,
       };
 }

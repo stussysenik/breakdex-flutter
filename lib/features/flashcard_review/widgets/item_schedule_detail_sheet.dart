@@ -184,7 +184,7 @@ class ItemScheduleDetailSheet extends ConsumerWidget {
                     Navigator.pop(context);
                     ref
                         .read(reviewModeProvider.notifier)
-                        .set(ReviewMode.session);
+                        .set(ReviewMode.review);
                     ref
                         .read(reviewSessionSourceProvider.notifier)
                         .set(ReviewSessionSource.stateBased);
