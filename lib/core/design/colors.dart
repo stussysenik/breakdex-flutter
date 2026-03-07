@@ -29,7 +29,7 @@ abstract final class AppColors {
   // WCAG 2.1 AA: all action colors tested against both lightBg (#F8F9FB)
   // and darkBg (#0B0C0E) for ≥4.5:1 contrast ratio on text, ≥3:1 on buttons.
   static const actionAgain = Color(0xFFDA1E28); // Red — 4.6:1 on light bg
-  static const actionHard = Color(0xFF8E6A00);  // Darkened gold — 4.9:1 on light bg (was #F1C21B ~1.3:1 FAIL)
+  static const actionHard = Color(0xFFD4A017);  // Amber/yellow — warm gold
   static const actionGood = Color(0xFF198038);   // Darkened green — 4.6:1 on light bg (was #42BE65 ~2.8:1)
   static const actionEasy = Color(0xFF08BDBA);   // Teal — 3.3:1 on light bg (passes AA large text)
 }

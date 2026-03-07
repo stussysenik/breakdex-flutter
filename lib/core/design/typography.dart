@@ -11,6 +11,15 @@ enum AppFontFamily {
   /// Outfit — stylish geometric sans-serif for a premium feel.
   outfit('Outfit'),
 
+  /// Poppins — friendly geometric sans-serif with rounded terminals.
+  poppins('Poppins'),
+
+  /// Space Mono — fixed-width font with a retro-futuristic vibe.
+  spaceMono('Space Mono'),
+
+  /// JetBrains Mono — developer-oriented monospace with ligatures.
+  jetBrainsMono('JetBrains Mono'),
+
   /// System font — SF Pro on iOS, Roboto on Android.
   system('System');
 
@@ -19,6 +28,9 @@ enum AppFontFamily {
 
   static AppFontFamily fromKey(String? key) => switch (key) {
         'outfit' => AppFontFamily.outfit,
+        'poppins' => AppFontFamily.poppins,
+        'spaceMono' => AppFontFamily.spaceMono,
+        'jetBrainsMono' => AppFontFamily.jetBrainsMono,
         'system' => AppFontFamily.system,
         _ => AppFontFamily.inter,
       };
@@ -48,6 +60,27 @@ TextStyle _fontStyle(
       );
     case AppFontFamily.outfit:
       return GoogleFonts.outfit(
+        fontSize: fontSize,
+        fontWeight: fontWeight,
+        letterSpacing: letterSpacing,
+        height: height,
+      );
+    case AppFontFamily.poppins:
+      return GoogleFonts.poppins(
+        fontSize: fontSize,
+        fontWeight: fontWeight,
+        letterSpacing: letterSpacing,
+        height: height,
+      );
+    case AppFontFamily.spaceMono:
+      return GoogleFonts.spaceMono(
+        fontSize: fontSize,
+        fontWeight: fontWeight,
+        letterSpacing: letterSpacing,
+        height: height,
+      );
+    case AppFontFamily.jetBrainsMono:
+      return GoogleFonts.jetBrainsMono(
         fontSize: fontSize,
         fontWeight: fontWeight,
         letterSpacing: letterSpacing,
