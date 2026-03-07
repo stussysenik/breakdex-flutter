@@ -106,14 +106,38 @@ class FsrsMigrationService {
     }
   }
 
-  /// Periodic integrity check: ensure every move and combo has a corresponding
-  /// FSRS card. Self-healing for crashes between entity insert and card create.
+  /// How often the integrity check runs on normal cold launch.
+  /// Between checks, the scan is skipped to avoid O(n) overhead on every
+  /// app start. Set to 24 hours — a reasonable trade-off between safety
+  /// and launch performance.
+  static const _integrityIntervalMs = 24 * 60 * 60 * 1000; // 24 hours
+  static const _integrityLastRunKey = 'fsrs_integrity_last_run';
+
+  /// Integrity check: ensure every move and combo has a corresponding FSRS
+  /// card. Self-healing for crashes between entity insert and card create.
+  ///
+  /// **Performance guard:** This is an O(n) scan over all entities + cards.
+  /// To keep cold launch fast, the check is throttled to once per 24 hours
+  /// via a SharedPreferences timestamp. Pass [force: true] to bypass the
+  /// throttle (e.g. after a migration or import).
   static Future<int> ensureIntegrity({
     required MovesDao movesDao,
     required FsrsCardsDao fsrsCardsDao,
     CombosDao? combosDao,
+    SharedPreferences? prefs,
+    bool force = false,
   }) async {
     try {
+      // Throttle: skip if we already ran recently (unless forced).
+      if (!force && prefs != null) {
+        final lastRun = prefs.getInt(_integrityLastRunKey) ?? 0;
+        final now = DateTime.now().millisecondsSinceEpoch;
+        if (now - lastRun < _integrityIntervalMs) {
+          debugPrint('FSRS integrity check skipped (ran ${((now - lastRun) / 1000 / 60).round()}m ago)');
+          return 0;
+        }
+      }
+
       int created = 0;
 
       // Check moves
@@ -163,6 +187,16 @@ class FsrsMigrationService {
             created++;
           }
         }
+      }
+
+      // Record successful run timestamp
+      await prefs?.setInt(
+        _integrityLastRunKey,
+        DateTime.now().millisecondsSinceEpoch,
+      );
+
+      if (created > 0) {
+        debugPrint('FSRS integrity check created $created missing card(s)');
       }
 
       return created;

@@ -64,6 +64,7 @@ Future<AppDatabase> _openDatabaseSafely(SharedPreferences prefs) async {
       movesDao: db.movesDao,
       fsrsCardsDao: db.fsrsCardsDao,
       combosDao: db.combosDao,
+      prefs: prefs,
     );
 
     return db;
