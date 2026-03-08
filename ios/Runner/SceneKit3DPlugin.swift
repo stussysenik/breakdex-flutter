@@ -1,5 +1,4 @@
 import Flutter
-import Metal
 import SceneKit
 
 /// MethodChannel handler for the SceneKit 3D platform view.
@@ -22,16 +21,13 @@ class SceneKit3DPlugin: NSObject, FlutterPlugin, NativeCapability {
     static func register(with registrar: FlutterPluginRegistrar) {
         let instance = SceneKit3DPlugin()
 
-        // Guard: Metal is required for SceneKit rendering. On simulator
-        // or devices without GPU support, skip the platform view factory
-        // to avoid a crash — the MethodChannel still works for graceful
-        // error responses from handle(_:result:).
-        if MTLCreateSystemDefaultDevice() != nil {
-            let factory = SceneKit3DFactory(messenger: registrar.messenger())
-            registrar.register(factory, withId: "com.breakdex/scene_3d_view")
-        } else {
-            print("[SceneKit3D] ⚠ Metal not available — skipping platform view factory")
-        }
+        // Register the platform view factory immediately — this is lightweight
+        // (no Metal/GPU work). MTLCreateSystemDefaultDevice() is NOT called here;
+        // Metal initializes naturally when SCNView is first created by the factory,
+        // which only happens when the user navigates to a 3D screen.
+        // This avoids GPU memory pressure during the critical iOS launch window.
+        let factory = SceneKit3DFactory(messenger: registrar.messenger())
+        registrar.register(factory, withId: "com.breakdex/scene_3d_view")
 
         // Register the method channel for controlling the 3D scene
         let methodChannel = FlutterMethodChannel(

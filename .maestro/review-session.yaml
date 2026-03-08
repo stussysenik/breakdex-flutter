@@ -13,36 +13,41 @@ tags:
 
 ---
 
+# Explicit launch keeps the app foregrounded on this simulator and seeds
+# deterministic review content for the flow.
+- launchApp:
+    arguments:
+      maestro: true
+      breakdexFixture: review
+
 # Navigate to Review tab
 - tapOn:
-    text: "Review"
+    text: "Review\\nTab 2 of 4"
 - assertVisible: "Review"
 
-# Ensure Review mode is selected
-- tapOn: "Review"
-
-# Start a review session — tap "Start All" on the mastery prescreen
-- runFlow:
-    when:
-      visible: "Start All"
-    commands:
-      - tapOn: "Start All"
+# Verify the compact moves lane renders, then start a session.
+- assertVisible: "Moves"
+- assertVisible: "Combos"
+- assertVisible: "New\\n1\\nFirst recall"
+- assertVisible: "Learning\\n1\\nShort intervals"
+- assertVisible: "Mastery\\n1\\nLong intervals"
+- tapOn: "New\\n1\\nFirst recall"
 
 # Rating buttons are always visible (no tap-to-reveal).
 # Wait for a rating button to confirm the review card loaded.
 - extendedWaitUntil:
-    visible: "GOOD"
-    timeout: 5000
+    visible: "Rate GOOD\\nGOOD"
+    timeout: 10000
 
 # Verify all rating buttons are visible
-- assertVisible: "AGAIN"
-- assertVisible: "HARD"
-- assertVisible: "GOOD"
-- assertVisible: "EASY"
+- assertVisible: "Rate AGAIN\\nAGAIN"
+- assertVisible: "Rate HARD\\nHARD"
+- assertVisible: "Rate GOOD\\nGOOD"
+- assertVisible: "Rate EASY\\nEASY"
 
 # Rate the card as "Good"
 - tapOn:
-    id: "Rate Good"
+    text: "Rate GOOD\\nGOOD"
 
 # After rating, either the next card appears or session completes
 - runFlow:
@@ -55,7 +60,7 @@ tags:
 # If more cards remain, verify we can still rate
 - runFlow:
     when:
-      visible: "GOOD"
+      visible: "Rate GOOD\\nGOOD"
     commands:
-      - assertVisible: "AGAIN"
-      - assertVisible: "GOOD"
+      - assertVisible: "Rate AGAIN\\nAGAIN"
+      - assertVisible: "Rate GOOD\\nGOOD"

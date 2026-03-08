@@ -302,7 +302,7 @@ class _ScheduleEmptyState extends StatelessWidget {
             ElevatedButton(
               onPressed: () => context.go('/arsenal'),
               style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.accent,
+                backgroundColor: Theme.of(context).colorScheme.primary,
                 foregroundColor: Colors.white,
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(AppRadius.lg),

@@ -1,268 +1,303 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../../core/design/colors.dart';
+
+import '../../../core/design/spacing.dart';
+import '../../../core/design/typography.dart';
 import '../providers/stats_providers.dart';
 
-/// Activity heatmap showing 52 weeks of review data.
+/// Month x day activity matrix with explicit 01-31 headers.
 ///
-/// Each cell is tappable — tapping updates [selectedDateProvider] so the
-/// day detail drilldown shows the corresponding review timeline.
+/// Rows represent recent months, columns represent day numbers. Invalid
+/// dates (for example February 30) are rendered as empty placeholders.
 class HeatMapGrid extends ConsumerWidget {
   const HeatMapGrid({super.key, required this.dailyCounts});
 
   final Map<DateTime, int> dailyCounts;
 
-  /// Width reserved for day-of-week labels (M, W, F) on the left.
-  static const double dayLabelWidth = 24.0;
+  static const double _labelWidth = 74;
+  static const double _cellSize = 24;
+  static const double _gap = 4;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final cs = Theme.of(context).colorScheme;
+    final colorScheme = Theme.of(context).colorScheme;
+    final selectedDate = ref.watch(selectedDateProvider);
     final now = DateTime.now();
-    final today = DateTime(now.year, now.month, now.day);
-
-    // Build 52 weeks of data ending today
-    final daysFromMonday = today.weekday - 1;
-    final thisWeekMonday = today.subtract(Duration(days: daysFromMonday));
-    final startDate = thisWeekMonday.subtract(const Duration(days: 51 * 7));
-
-    // Compute max for intensity scaling
-    final maxCount = dailyCounts.values.fold(0, (a, b) => a > b ? a : b);
+    final currentMonth = DateTime(now.year, now.month);
+    final months = List<DateTime>.generate(
+      6,
+      (index) => DateTime(currentMonth.year, currentMonth.month - index),
+    ).reversed.toList();
+    final maxCount = dailyCounts.values.fold<int>(0, (max, value) {
+      return value > max ? value : max;
+    });
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        SizedBox(
-          height: 7 * 15.0 + 20,
-          child: GestureDetector(
-            onTapDown: (details) {
-              _handleTap(details.localPosition, startDate, today, ref);
-            },
-            child: SingleChildScrollView(
-              scrollDirection: Axis.horizontal,
-              reverse: true,
-              child: CustomPaint(
-                size: Size(52 * 15.0 + dayLabelWidth, 7 * 15.0 + 20),
-                painter: _HeatMapPainter(
-                  dailyCounts: dailyCounts,
-                  startDate: startDate,
-                  today: today,
-                  maxCount: maxCount > 0 ? maxCount : 1,
-                  emptyColor: cs.surfaceContainerHighest,
-                  accentColor: AppColors.accent,
-                  textColor: cs.secondary,
-                  brightness: Theme.of(context).brightness,
-                ),
-              ),
-            ),
+        Text(
+          'Month x Day',
+          style: AppTypography.titleSmall.copyWith(
+            color: colorScheme.onSurface,
+            fontWeight: FontWeight.w700,
           ),
         ),
-        const SizedBox(height: 8),
-        // Legend
+        const SizedBox(height: AppSpacing.xs),
+        Text(
+          'Tap any day to inspect the exact reviews captured at that time.',
+          style: AppTypography.bodySmall.copyWith(
+            color: colorScheme.secondary,
+          ),
+        ),
+        const SizedBox(height: AppSpacing.md),
+        SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _HeaderRow(colorScheme: colorScheme),
+              const SizedBox(height: AppSpacing.sm),
+              for (final month in months) ...[
+                _MonthRow(
+                  month: month,
+                  dailyCounts: dailyCounts,
+                  maxCount: maxCount > 0 ? maxCount : 1,
+                  selectedDate: selectedDate,
+                  onSelect: (date) {
+                    HapticFeedback.selectionClick();
+                    ref.read(selectedDateProvider.notifier).state = date;
+                  },
+                ),
+                if (month != months.last) const SizedBox(height: AppSpacing.sm),
+              ],
+            ],
+          ),
+        ),
+        const SizedBox(height: AppSpacing.sm),
         Row(
           mainAxisAlignment: MainAxisAlignment.end,
           children: [
-            Text('Less',
-                style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                      color: cs.secondary,
-                    )),
-            const SizedBox(width: 4),
-            for (int i = 0; i < 5; i++)
+            Text(
+              'Less',
+              style: AppTypography.caption.copyWith(
+                color: colorScheme.secondary,
+              ),
+            ),
+            const SizedBox(width: AppSpacing.xs),
+            for (final level in [0.0, 0.25, 0.5, 0.75, 1.0])
               Container(
-                width: 12,
-                height: 12,
-                margin: const EdgeInsets.only(left: 3),
+                width: 14,
+                height: 14,
+                margin: const EdgeInsets.only(left: 4),
                 decoration: BoxDecoration(
-                  color: i == 0
-                      ? cs.surfaceContainerHighest
-                      : Color.lerp(
-                          cs.surfaceContainerHighest,
-                          AppColors.accent,
-                          i / 4.0,
-                        ),
-                  borderRadius: BorderRadius.circular(2.5),
+                  color: Color.lerp(
+                    colorScheme.surfaceContainerHighest,
+                    colorScheme.primary,
+                    level,
+                  ),
+                  borderRadius: BorderRadius.circular(AppRadius.xs),
                 ),
               ),
-            const SizedBox(width: 4),
-            Text('More',
-                style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                      color: cs.secondary,
-                    )),
+            const SizedBox(width: AppSpacing.xs),
+            Text(
+              'More',
+              style: AppTypography.caption.copyWith(
+                color: colorScheme.secondary,
+              ),
+            ),
           ],
         ),
       ],
     );
   }
+}
 
-  /// Hit-test tap position to cell coordinates, update selectedDateProvider.
-  void _handleTap(
-    Offset position,
-    DateTime startDate,
-    DateTime today,
-    WidgetRef ref,
-  ) {
-    const cellSize = 12.0;
-    const gap = 3.0;
-    const step = cellSize + gap;
-    const monthLabelHeight = 20.0;
+class _HeaderRow extends StatelessWidget {
+  const _HeaderRow({required this.colorScheme});
 
-    final adjustedY = position.dy - monthLabelHeight;
-    if (adjustedY < 0) return;
+  final ColorScheme colorScheme;
 
-    // Subtract day label width from x before calculating week index
-    final adjustedX = position.dx - dayLabelWidth;
-    if (adjustedX < 0) return;
-
-    final week = (adjustedX / step).floor();
-    final day = (adjustedY / step).floor();
-
-    if (week < 0 || week >= 52 || day < 0 || day >= 7) return;
-
-    final date = startDate.add(Duration(days: week * 7 + day));
-    if (date.isAfter(today)) return;
-
-    HapticFeedback.selectionClick();
-    ref.read(selectedDateProvider.notifier).state = date;
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        SizedBox(
+          width: HeatMapGrid._labelWidth,
+          child: Text(
+            'Month',
+            style: AppTypography.caption.copyWith(
+              color: colorScheme.secondary,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+        ),
+        for (int day = 1; day <= 31; day++) ...[
+          Container(
+            width: HeatMapGrid._cellSize,
+            alignment: Alignment.center,
+            margin: const EdgeInsets.only(right: HeatMapGrid._gap),
+            child: Text(
+              day.toString().padLeft(2, '0'),
+              style: AppTypography.caption.copyWith(
+                color: colorScheme.secondary,
+                fontSize: 10,
+              ),
+            ),
+          ),
+        ],
+      ],
+    );
   }
 }
 
-class _HeatMapPainter extends CustomPainter {
-  _HeatMapPainter({
+class _MonthRow extends StatelessWidget {
+  const _MonthRow({
+    required this.month,
     required this.dailyCounts,
-    required this.startDate,
-    required this.today,
     required this.maxCount,
-    required this.emptyColor,
-    required this.accentColor,
-    required this.textColor,
-    required this.brightness,
+    required this.selectedDate,
+    required this.onSelect,
   });
 
+  final DateTime month;
   final Map<DateTime, int> dailyCounts;
-  final DateTime startDate;
-  final DateTime today;
   final int maxCount;
-  final Color emptyColor;
-  final Color accentColor;
-  final Color textColor;
-  final Brightness brightness;
-
-  static const double cellSize = 12.0;
-  static const double gap = 3.0;
-  static const double step = cellSize + gap;
-  static const double monthLabelHeight = 20.0;
-  static const double dayLabelWidth = HeatMapGrid.dayLabelWidth;
-
-  static const _months = [
-    'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-    'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
-  ];
-
-  // Compact day labels: only Mon, Wed, Fri shown (rows 0, 2, 4)
-  static const _dayLabels = {0: 'M', 2: 'W', 4: 'F'};
+  final DateTime selectedDate;
+  final ValueChanged<DateTime> onSelect;
 
   @override
-  void paint(Canvas canvas, Size size) {
-    final paint = Paint()..style = PaintingStyle.fill;
-    final textPainter = TextPainter(textDirection: TextDirection.ltr);
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final daysInMonth = DateUtils.getDaysInMonth(month.year, month.month);
+    final today = DateTime.now();
+    final todayDate = DateTime(today.year, today.month, today.day);
 
-    // Paint day-of-week labels on the left
-    for (final entry in _dayLabels.entries) {
-      textPainter.text = TextSpan(
-        text: entry.value,
-        style: TextStyle(color: textColor, fontSize: 9),
-      );
-      textPainter.layout();
-      final y = entry.key * step + monthLabelHeight +
-          (cellSize - textPainter.height) / 2;
-      textPainter.paint(canvas, Offset(0, y));
-    }
-
-    int? lastMonth;
-
-    for (int week = 0; week < 52; week++) {
-      for (int day = 0; day < 7; day++) {
-        final date = startDate.add(Duration(days: week * 7 + day));
-        if (date.isAfter(today)) continue;
-
-        final count = dailyCounts[date] ?? 0;
-        final x = week * step + dayLabelWidth;
-        final y = day * step + monthLabelHeight;
-
-        // Color based on intensity
-        if (count == 0) {
-          paint.color = emptyColor;
-        } else {
-          final intensity = (count / maxCount).clamp(0.0, 1.0);
-          final level = intensity <= 0.25
-              ? 0.25
-              : intensity <= 0.5
-                  ? 0.5
-                  : intensity <= 0.75
-                      ? 0.75
-                      : 1.0;
-          paint.color = Color.lerp(emptyColor, accentColor, level)!;
-        }
-
-        final rect = RRect.fromRectAndRadius(
-          Rect.fromLTWH(x, y, cellSize, cellSize),
-          const Radius.circular(2.5),
-        );
-        canvas.drawRRect(rect, paint);
-
-        // Draw review count inside cell if count > 0
-        if (count > 0) {
-          final isDarkCell = (count / maxCount) > 0.4;
-          textPainter.text = TextSpan(
-            text: '$count',
-            style: TextStyle(
-              color: isDarkCell ? Colors.white : textColor,
-              fontSize: 7,
-              fontWeight: FontWeight.w600,
+    return Row(
+      children: [
+        SizedBox(
+          width: HeatMapGrid._labelWidth,
+          child: Text(
+            '${_monthLabel(month.month)} ${month.year}',
+            style: AppTypography.caption.copyWith(
+              color: colorScheme.onSurface,
+              fontWeight: FontWeight.w700,
             ),
-          );
-          textPainter.layout();
-          // Only render if text fits inside the cell
-          if (textPainter.width <= cellSize - 2) {
-            textPainter.paint(
-              canvas,
-              Offset(
-                x + (cellSize - textPainter.width) / 2,
-                y + (cellSize - textPainter.height) / 2,
-              ),
-            );
-          }
-        }
-
-        // Today's cell glow
-        if (date == today) {
-          final glowPaint = Paint()
-            ..color = accentColor.withValues(alpha: 0.5)
-            ..style = PaintingStyle.stroke
-            ..strokeWidth = 1.5
-            ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 3.0);
-          canvas.drawRRect(rect, glowPaint);
-        }
-
-        // Month labels
-        if (day == 0) {
-          final month = date.month;
-          if (month != lastMonth) {
-            lastMonth = month;
-            textPainter.text = TextSpan(
-              text: _months[month - 1],
-              style: TextStyle(color: textColor, fontSize: 10),
-            );
-            textPainter.layout();
-            textPainter.paint(canvas, Offset(x, 0));
-          }
-        }
-      }
-    }
+          ),
+        ),
+        for (int day = 1; day <= 31; day++) ...[
+          _DayCell(
+            date: day <= daysInMonth ? DateTime(month.year, month.month, day) : null,
+            count: day <= daysInMonth
+                ? dailyCounts[DateTime(month.year, month.month, day)] ?? 0
+                : null,
+            maxCount: maxCount,
+            isSelected: day <= daysInMonth &&
+                selectedDate.year == month.year &&
+                selectedDate.month == month.month &&
+                selectedDate.day == day,
+            isToday: day <= daysInMonth &&
+                DateTime(month.year, month.month, day) == todayDate,
+            onTap: onSelect,
+          ),
+        ],
+      ],
+    );
   }
 
+  String _monthLabel(int month) => switch (month) {
+    1 => 'Jan',
+    2 => 'Feb',
+    3 => 'Mar',
+    4 => 'Apr',
+    5 => 'May',
+    6 => 'Jun',
+    7 => 'Jul',
+    8 => 'Aug',
+    9 => 'Sep',
+    10 => 'Oct',
+    11 => 'Nov',
+    _ => 'Dec',
+  };
+}
+
+class _DayCell extends StatelessWidget {
+  const _DayCell({
+    required this.date,
+    required this.count,
+    required this.maxCount,
+    required this.isSelected,
+    required this.isToday,
+    required this.onTap,
+  });
+
+  final DateTime? date;
+  final int? count;
+  final int maxCount;
+  final bool isSelected;
+  final bool isToday;
+  final ValueChanged<DateTime> onTap;
+
   @override
-  bool shouldRepaint(covariant _HeatMapPainter oldDelegate) =>
-      oldDelegate.dailyCounts != dailyCounts || oldDelegate.today != today;
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final enabled = date != null;
+    final intensity = enabled && (count ?? 0) > 0
+        ? ((count ?? 0) / maxCount).clamp(0.12, 1.0)
+        : 0.0;
+    final background = !enabled
+        ? Colors.transparent
+        : Color.lerp(
+            colorScheme.surfaceContainerHighest,
+            colorScheme.primary,
+            intensity,
+          );
+
+    return Container(
+      width: HeatMapGrid._cellSize,
+      height: HeatMapGrid._cellSize,
+      margin: const EdgeInsets.only(right: HeatMapGrid._gap),
+      child: enabled
+          ? Material(
+              color: background,
+              borderRadius: BorderRadius.circular(AppRadius.xs),
+              child: InkWell(
+                onTap: () => onTap(date!),
+                borderRadius: BorderRadius.circular(AppRadius.xs),
+                child: Container(
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(AppRadius.xs),
+                    border: Border.all(
+                      color: isSelected
+                          ? colorScheme.onSurface
+                          : isToday
+                              ? colorScheme.primary.withValues(alpha: 0.7)
+                              : Colors.transparent,
+                      width: isSelected ? 1.5 : 1,
+                    ),
+                  ),
+                  alignment: Alignment.center,
+                  child: (count ?? 0) > 0
+                      ? Text(
+                          count! > 9 ? '9+' : '$count',
+                          style: AppTypography.caption.copyWith(
+                            color: intensity > 0.5
+                                ? Colors.white
+                                : colorScheme.onSurface,
+                            fontSize: 9,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        )
+                      : null,
+                ),
+              ),
+            )
+          : Container(
+              decoration: BoxDecoration(
+                color: colorScheme.surfaceContainerHighest.withValues(alpha: 0.25),
+                borderRadius: BorderRadius.circular(AppRadius.xs),
+              ),
+            ),
+    );
+  }
 }

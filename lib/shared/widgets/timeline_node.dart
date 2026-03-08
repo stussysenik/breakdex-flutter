@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import '../../core/design/colors.dart';
 import '../../core/design/typography.dart';
 
 enum TimelineNodeStyle { active, inactive, add }
@@ -46,7 +45,7 @@ class TimelineNode extends StatelessWidget {
               color: isAdd ? Colors.transparent : null,
               border: Border.all(
                 color: isActive
-                    ? AppColors.accent
+                    ? Theme.of(context).colorScheme.primary
                     : isAdd
                         ? secondary
                         : separator,
@@ -59,7 +58,7 @@ class TimelineNode extends StatelessWidget {
                   : Text(
                       '$index',
                       style: AppTypography.caption.copyWith(
-                        color: isActive ? AppColors.accent : secondary,
+                        color: isActive ? Theme.of(context).colorScheme.primary : secondary,
                         fontWeight:
                             isActive ? FontWeight.w700 : FontWeight.w500,
                       ),

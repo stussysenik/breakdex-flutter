@@ -164,12 +164,12 @@ class _ScheduleCalendarState extends ConsumerState<ScheduleCalendar> {
                           shape: BoxShape.circle,
                           border: isToday
                               ? Border.all(
-                                  color: AppColors.accent,
+                                  color: Theme.of(context).colorScheme.primary,
                                   width: 1.5,
                                 )
                               : null,
                           color: isSelected
-                              ? AppColors.accent.withValues(alpha: 0.15)
+                              ? Theme.of(context).colorScheme.primary.withValues(alpha: 0.15)
                               : null,
                         ),
                         child: Column(
@@ -197,7 +197,7 @@ class _ScheduleCalendarState extends ConsumerState<ScheduleCalendar> {
                                 height: _dotSize(count),
                                 decoration: BoxDecoration(
                                   shape: BoxShape.circle,
-                                  color: _dotColor(count, isPast),
+                                  color: _dotColor(count, isPast, Theme.of(context).colorScheme.primary),
                                 ),
                               )
                             else
@@ -228,10 +228,10 @@ class _ScheduleCalendarState extends ConsumerState<ScheduleCalendar> {
   }
 
   /// Badge color: overdue items are red, future items use accent.
-  Color _dotColor(int count, bool isPast) {
+  Color _dotColor(int count, bool isPast, Color primary) {
     if (isPast) return AppColors.actionAgain.withValues(alpha: 0.7);
-    if (count >= 8) return AppColors.accent;
-    if (count >= 4) return AppColors.accent.withValues(alpha: 0.7);
-    return AppColors.accent.withValues(alpha: 0.4);
+    if (count >= 8) return primary;
+    if (count >= 4) return primary.withValues(alpha: 0.7);
+    return primary.withValues(alpha: 0.4);
   }
 }

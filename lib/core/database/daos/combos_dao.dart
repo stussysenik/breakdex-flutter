@@ -24,12 +24,26 @@ class ComboMoveWithDetail {
 class CombosDao extends DatabaseAccessor<AppDatabase> with _$CombosDaoMixin {
   CombosDao(super.db);
 
+  String _normalizeName(String value) =>
+      value.trim().toLowerCase().replaceAll(RegExp(r'\s+'), ' ');
+
   Stream<List<Combo>> watchAll() => select(combos).watch();
 
   Future<List<Combo>> getAll() => select(combos).get();
 
   Future<Combo> getById(String id) =>
       (select(combos)..where((t) => t.id.equals(id))).getSingle();
+
+  Future<bool> nameExists(String name, {String? excludingId}) async {
+    final normalized = _normalizeName(name);
+    if (normalized.isEmpty) return false;
+
+    final rows = await select(combos).get();
+    return rows.any(
+      (combo) =>
+          combo.id != excludingId && _normalizeName(combo.name) == normalized,
+    );
+  }
 
   Stream<Combo> watchById(String id) =>
       (select(combos)..where((t) => t.id.equals(id))).watchSingle();
@@ -69,6 +83,7 @@ class CombosDao extends DatabaseAccessor<AppDatabase> with _$CombosDaoMixin {
     final query = select(combos).join([
       leftOuterJoin(comboMoves, comboMoves.comboId.equalsExp(combos.id)),
     ])
+      ..addColumns([countExpr])
       ..groupBy([combos.id]);
 
     return query.watch().map((rows) => rows

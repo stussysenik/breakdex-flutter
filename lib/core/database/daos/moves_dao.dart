@@ -8,6 +8,9 @@ part 'moves_dao.g.dart';
 class MovesDao extends DatabaseAccessor<AppDatabase> with _$MovesDaoMixin {
   MovesDao(super.db);
 
+  String _normalizeName(String value) =>
+      value.trim().toLowerCase().replaceAll(RegExp(r'\s+'), ' ');
+
   Stream<List<Move>> watchAll() =>
       (select(moves)..orderBy([(t) => OrderingTerm.desc(t.createdAt)])).watch();
 
@@ -17,8 +20,26 @@ class MovesDao extends DatabaseAccessor<AppDatabase> with _$MovesDaoMixin {
   Future<List<Move>> getAll() =>
       (select(moves)..orderBy([(t) => OrderingTerm.desc(t.createdAt)])).get();
 
+  /// Lightweight row count — returns a single integer without loading any
+  /// Move objects into memory. Used as a DB smoke test during app launch.
+  Future<int> count() =>
+      (selectOnly(moves)..addColumns([countAll()]))
+          .map((r) => r.read(countAll())!)
+          .getSingle();
+
   Future<Move> getById(String id) =>
       (select(moves)..where((t) => t.id.equals(id))).getSingle();
+
+  Future<bool> nameExists(String name, {String? excludingId}) async {
+    final normalized = _normalizeName(name);
+    if (normalized.isEmpty) return false;
+
+    final rows = await select(moves).get();
+    return rows.any(
+      (move) =>
+          move.id != excludingId && _normalizeName(move.name) == normalized,
+    );
+  }
 
   Future<void> insertMove(MovesCompanion entry) => into(moves).insert(entry);
 

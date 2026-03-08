@@ -1133,6 +1133,51 @@ class $ReviewsTable extends Reviews with TableInfo<$ReviewsTable, Review> {
       'REFERENCES combos (id) ON DELETE SET NULL',
     ),
   );
+  static const VerificationMeta _entityIdSnapshotMeta = const VerificationMeta(
+    'entityIdSnapshot',
+  );
+  @override
+  late final GeneratedColumn<String> entityIdSnapshot = GeneratedColumn<String>(
+    'entity_id_snapshot',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _entityTypeMeta = const VerificationMeta(
+    'entityType',
+  );
+  @override
+  late final GeneratedColumn<String> entityType = GeneratedColumn<String>(
+    'entity_type',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _entityDisplayNameMeta = const VerificationMeta(
+    'entityDisplayName',
+  );
+  @override
+  late final GeneratedColumn<String> entityDisplayName =
+      GeneratedColumn<String>(
+        'entity_display_name',
+        aliasedName,
+        true,
+        type: DriftSqlType.string,
+        requiredDuringInsert: false,
+      );
+  static const VerificationMeta _entityCategoryMeta = const VerificationMeta(
+    'entityCategory',
+  );
+  @override
+  late final GeneratedColumn<String> entityCategory = GeneratedColumn<String>(
+    'entity_category',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
   static const VerificationMeta _fsrsPreStateMeta = const VerificationMeta(
     'fsrsPreState',
   );
@@ -1163,6 +1208,10 @@ class $ReviewsTable extends Reviews with TableInfo<$ReviewsTable, Review> {
     reviewedAt,
     moveId,
     comboId,
+    entityIdSnapshot,
+    entityType,
+    entityDisplayName,
+    entityCategory,
     fsrsPreState,
     fsrsPostState,
   ];
@@ -1217,6 +1266,39 @@ class $ReviewsTable extends Reviews with TableInfo<$ReviewsTable, Review> {
         comboId.isAcceptableOrUnknown(data['combo_id']!, _comboIdMeta),
       );
     }
+    if (data.containsKey('entity_id_snapshot')) {
+      context.handle(
+        _entityIdSnapshotMeta,
+        entityIdSnapshot.isAcceptableOrUnknown(
+          data['entity_id_snapshot']!,
+          _entityIdSnapshotMeta,
+        ),
+      );
+    }
+    if (data.containsKey('entity_type')) {
+      context.handle(
+        _entityTypeMeta,
+        entityType.isAcceptableOrUnknown(data['entity_type']!, _entityTypeMeta),
+      );
+    }
+    if (data.containsKey('entity_display_name')) {
+      context.handle(
+        _entityDisplayNameMeta,
+        entityDisplayName.isAcceptableOrUnknown(
+          data['entity_display_name']!,
+          _entityDisplayNameMeta,
+        ),
+      );
+    }
+    if (data.containsKey('entity_category')) {
+      context.handle(
+        _entityCategoryMeta,
+        entityCategory.isAcceptableOrUnknown(
+          data['entity_category']!,
+          _entityCategoryMeta,
+        ),
+      );
+    }
     if (data.containsKey('fsrs_pre_state')) {
       context.handle(
         _fsrsPreStateMeta,
@@ -1268,6 +1350,22 @@ class $ReviewsTable extends Reviews with TableInfo<$ReviewsTable, Review> {
         DriftSqlType.string,
         data['${effectivePrefix}combo_id'],
       ),
+      entityIdSnapshot: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}entity_id_snapshot'],
+      ),
+      entityType: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}entity_type'],
+      ),
+      entityDisplayName: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}entity_display_name'],
+      ),
+      entityCategory: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}entity_category'],
+      ),
       fsrsPreState: attachedDatabase.typeMapping.read(
         DriftSqlType.int,
         data['${effectivePrefix}fsrs_pre_state'],
@@ -1296,6 +1394,13 @@ class Review extends DataClass implements Insertable<Review> {
   /// reviews are move reviews. Added in schema v8 alongside FSRS combo support.
   final String? comboId;
 
+  /// Immutable snapshot of the reviewed card so stats remain readable even if
+  /// the underlying move/combo is renamed or deleted later.
+  final String? entityIdSnapshot;
+  final String? entityType;
+  final String? entityDisplayName;
+  final String? entityCategory;
+
   /// FSRS card state *before* this review was processed.
   /// Null for legacy reviews recorded before the streaks redesign.
   /// Values: 0=New, 1=Learning, 2=Review, 3=Relearning.
@@ -1312,6 +1417,10 @@ class Review extends DataClass implements Insertable<Review> {
     required this.reviewedAt,
     this.moveId,
     this.comboId,
+    this.entityIdSnapshot,
+    this.entityType,
+    this.entityDisplayName,
+    this.entityCategory,
     this.fsrsPreState,
     this.fsrsPostState,
   });
@@ -1327,6 +1436,18 @@ class Review extends DataClass implements Insertable<Review> {
     }
     if (!nullToAbsent || comboId != null) {
       map['combo_id'] = Variable<String>(comboId);
+    }
+    if (!nullToAbsent || entityIdSnapshot != null) {
+      map['entity_id_snapshot'] = Variable<String>(entityIdSnapshot);
+    }
+    if (!nullToAbsent || entityType != null) {
+      map['entity_type'] = Variable<String>(entityType);
+    }
+    if (!nullToAbsent || entityDisplayName != null) {
+      map['entity_display_name'] = Variable<String>(entityDisplayName);
+    }
+    if (!nullToAbsent || entityCategory != null) {
+      map['entity_category'] = Variable<String>(entityCategory);
     }
     if (!nullToAbsent || fsrsPreState != null) {
       map['fsrs_pre_state'] = Variable<int>(fsrsPreState);
@@ -1349,6 +1470,18 @@ class Review extends DataClass implements Insertable<Review> {
       comboId: comboId == null && nullToAbsent
           ? const Value.absent()
           : Value(comboId),
+      entityIdSnapshot: entityIdSnapshot == null && nullToAbsent
+          ? const Value.absent()
+          : Value(entityIdSnapshot),
+      entityType: entityType == null && nullToAbsent
+          ? const Value.absent()
+          : Value(entityType),
+      entityDisplayName: entityDisplayName == null && nullToAbsent
+          ? const Value.absent()
+          : Value(entityDisplayName),
+      entityCategory: entityCategory == null && nullToAbsent
+          ? const Value.absent()
+          : Value(entityCategory),
       fsrsPreState: fsrsPreState == null && nullToAbsent
           ? const Value.absent()
           : Value(fsrsPreState),
@@ -1370,6 +1503,12 @@ class Review extends DataClass implements Insertable<Review> {
       reviewedAt: serializer.fromJson<DateTime>(json['reviewedAt']),
       moveId: serializer.fromJson<String?>(json['moveId']),
       comboId: serializer.fromJson<String?>(json['comboId']),
+      entityIdSnapshot: serializer.fromJson<String?>(json['entityIdSnapshot']),
+      entityType: serializer.fromJson<String?>(json['entityType']),
+      entityDisplayName: serializer.fromJson<String?>(
+        json['entityDisplayName'],
+      ),
+      entityCategory: serializer.fromJson<String?>(json['entityCategory']),
       fsrsPreState: serializer.fromJson<int?>(json['fsrsPreState']),
       fsrsPostState: serializer.fromJson<int?>(json['fsrsPostState']),
     );
@@ -1384,6 +1523,10 @@ class Review extends DataClass implements Insertable<Review> {
       'reviewedAt': serializer.toJson<DateTime>(reviewedAt),
       'moveId': serializer.toJson<String?>(moveId),
       'comboId': serializer.toJson<String?>(comboId),
+      'entityIdSnapshot': serializer.toJson<String?>(entityIdSnapshot),
+      'entityType': serializer.toJson<String?>(entityType),
+      'entityDisplayName': serializer.toJson<String?>(entityDisplayName),
+      'entityCategory': serializer.toJson<String?>(entityCategory),
       'fsrsPreState': serializer.toJson<int?>(fsrsPreState),
       'fsrsPostState': serializer.toJson<int?>(fsrsPostState),
     };
@@ -1396,6 +1539,10 @@ class Review extends DataClass implements Insertable<Review> {
     DateTime? reviewedAt,
     Value<String?> moveId = const Value.absent(),
     Value<String?> comboId = const Value.absent(),
+    Value<String?> entityIdSnapshot = const Value.absent(),
+    Value<String?> entityType = const Value.absent(),
+    Value<String?> entityDisplayName = const Value.absent(),
+    Value<String?> entityCategory = const Value.absent(),
     Value<int?> fsrsPreState = const Value.absent(),
     Value<int?> fsrsPostState = const Value.absent(),
   }) => Review(
@@ -1405,6 +1552,16 @@ class Review extends DataClass implements Insertable<Review> {
     reviewedAt: reviewedAt ?? this.reviewedAt,
     moveId: moveId.present ? moveId.value : this.moveId,
     comboId: comboId.present ? comboId.value : this.comboId,
+    entityIdSnapshot: entityIdSnapshot.present
+        ? entityIdSnapshot.value
+        : this.entityIdSnapshot,
+    entityType: entityType.present ? entityType.value : this.entityType,
+    entityDisplayName: entityDisplayName.present
+        ? entityDisplayName.value
+        : this.entityDisplayName,
+    entityCategory: entityCategory.present
+        ? entityCategory.value
+        : this.entityCategory,
     fsrsPreState: fsrsPreState.present ? fsrsPreState.value : this.fsrsPreState,
     fsrsPostState: fsrsPostState.present
         ? fsrsPostState.value
@@ -1422,6 +1579,18 @@ class Review extends DataClass implements Insertable<Review> {
           : this.reviewedAt,
       moveId: data.moveId.present ? data.moveId.value : this.moveId,
       comboId: data.comboId.present ? data.comboId.value : this.comboId,
+      entityIdSnapshot: data.entityIdSnapshot.present
+          ? data.entityIdSnapshot.value
+          : this.entityIdSnapshot,
+      entityType: data.entityType.present
+          ? data.entityType.value
+          : this.entityType,
+      entityDisplayName: data.entityDisplayName.present
+          ? data.entityDisplayName.value
+          : this.entityDisplayName,
+      entityCategory: data.entityCategory.present
+          ? data.entityCategory.value
+          : this.entityCategory,
       fsrsPreState: data.fsrsPreState.present
           ? data.fsrsPreState.value
           : this.fsrsPreState,
@@ -1440,6 +1609,10 @@ class Review extends DataClass implements Insertable<Review> {
           ..write('reviewedAt: $reviewedAt, ')
           ..write('moveId: $moveId, ')
           ..write('comboId: $comboId, ')
+          ..write('entityIdSnapshot: $entityIdSnapshot, ')
+          ..write('entityType: $entityType, ')
+          ..write('entityDisplayName: $entityDisplayName, ')
+          ..write('entityCategory: $entityCategory, ')
           ..write('fsrsPreState: $fsrsPreState, ')
           ..write('fsrsPostState: $fsrsPostState')
           ..write(')'))
@@ -1454,6 +1627,10 @@ class Review extends DataClass implements Insertable<Review> {
     reviewedAt,
     moveId,
     comboId,
+    entityIdSnapshot,
+    entityType,
+    entityDisplayName,
+    entityCategory,
     fsrsPreState,
     fsrsPostState,
   );
@@ -1467,6 +1644,10 @@ class Review extends DataClass implements Insertable<Review> {
           other.reviewedAt == this.reviewedAt &&
           other.moveId == this.moveId &&
           other.comboId == this.comboId &&
+          other.entityIdSnapshot == this.entityIdSnapshot &&
+          other.entityType == this.entityType &&
+          other.entityDisplayName == this.entityDisplayName &&
+          other.entityCategory == this.entityCategory &&
           other.fsrsPreState == this.fsrsPreState &&
           other.fsrsPostState == this.fsrsPostState);
 }
@@ -1478,6 +1659,10 @@ class ReviewsCompanion extends UpdateCompanion<Review> {
   final Value<DateTime> reviewedAt;
   final Value<String?> moveId;
   final Value<String?> comboId;
+  final Value<String?> entityIdSnapshot;
+  final Value<String?> entityType;
+  final Value<String?> entityDisplayName;
+  final Value<String?> entityCategory;
   final Value<int?> fsrsPreState;
   final Value<int?> fsrsPostState;
   final Value<int> rowid;
@@ -1488,6 +1673,10 @@ class ReviewsCompanion extends UpdateCompanion<Review> {
     this.reviewedAt = const Value.absent(),
     this.moveId = const Value.absent(),
     this.comboId = const Value.absent(),
+    this.entityIdSnapshot = const Value.absent(),
+    this.entityType = const Value.absent(),
+    this.entityDisplayName = const Value.absent(),
+    this.entityCategory = const Value.absent(),
     this.fsrsPreState = const Value.absent(),
     this.fsrsPostState = const Value.absent(),
     this.rowid = const Value.absent(),
@@ -1499,6 +1688,10 @@ class ReviewsCompanion extends UpdateCompanion<Review> {
     this.reviewedAt = const Value.absent(),
     this.moveId = const Value.absent(),
     this.comboId = const Value.absent(),
+    this.entityIdSnapshot = const Value.absent(),
+    this.entityType = const Value.absent(),
+    this.entityDisplayName = const Value.absent(),
+    this.entityCategory = const Value.absent(),
     this.fsrsPreState = const Value.absent(),
     this.fsrsPostState = const Value.absent(),
     this.rowid = const Value.absent(),
@@ -1512,6 +1705,10 @@ class ReviewsCompanion extends UpdateCompanion<Review> {
     Expression<DateTime>? reviewedAt,
     Expression<String>? moveId,
     Expression<String>? comboId,
+    Expression<String>? entityIdSnapshot,
+    Expression<String>? entityType,
+    Expression<String>? entityDisplayName,
+    Expression<String>? entityCategory,
     Expression<int>? fsrsPreState,
     Expression<int>? fsrsPostState,
     Expression<int>? rowid,
@@ -1523,6 +1720,10 @@ class ReviewsCompanion extends UpdateCompanion<Review> {
       if (reviewedAt != null) 'reviewed_at': reviewedAt,
       if (moveId != null) 'move_id': moveId,
       if (comboId != null) 'combo_id': comboId,
+      if (entityIdSnapshot != null) 'entity_id_snapshot': entityIdSnapshot,
+      if (entityType != null) 'entity_type': entityType,
+      if (entityDisplayName != null) 'entity_display_name': entityDisplayName,
+      if (entityCategory != null) 'entity_category': entityCategory,
       if (fsrsPreState != null) 'fsrs_pre_state': fsrsPreState,
       if (fsrsPostState != null) 'fsrs_post_state': fsrsPostState,
       if (rowid != null) 'rowid': rowid,
@@ -1536,6 +1737,10 @@ class ReviewsCompanion extends UpdateCompanion<Review> {
     Value<DateTime>? reviewedAt,
     Value<String?>? moveId,
     Value<String?>? comboId,
+    Value<String?>? entityIdSnapshot,
+    Value<String?>? entityType,
+    Value<String?>? entityDisplayName,
+    Value<String?>? entityCategory,
     Value<int?>? fsrsPreState,
     Value<int?>? fsrsPostState,
     Value<int>? rowid,
@@ -1547,6 +1752,10 @@ class ReviewsCompanion extends UpdateCompanion<Review> {
       reviewedAt: reviewedAt ?? this.reviewedAt,
       moveId: moveId ?? this.moveId,
       comboId: comboId ?? this.comboId,
+      entityIdSnapshot: entityIdSnapshot ?? this.entityIdSnapshot,
+      entityType: entityType ?? this.entityType,
+      entityDisplayName: entityDisplayName ?? this.entityDisplayName,
+      entityCategory: entityCategory ?? this.entityCategory,
       fsrsPreState: fsrsPreState ?? this.fsrsPreState,
       fsrsPostState: fsrsPostState ?? this.fsrsPostState,
       rowid: rowid ?? this.rowid,
@@ -1574,6 +1783,18 @@ class ReviewsCompanion extends UpdateCompanion<Review> {
     if (comboId.present) {
       map['combo_id'] = Variable<String>(comboId.value);
     }
+    if (entityIdSnapshot.present) {
+      map['entity_id_snapshot'] = Variable<String>(entityIdSnapshot.value);
+    }
+    if (entityType.present) {
+      map['entity_type'] = Variable<String>(entityType.value);
+    }
+    if (entityDisplayName.present) {
+      map['entity_display_name'] = Variable<String>(entityDisplayName.value);
+    }
+    if (entityCategory.present) {
+      map['entity_category'] = Variable<String>(entityCategory.value);
+    }
     if (fsrsPreState.present) {
       map['fsrs_pre_state'] = Variable<int>(fsrsPreState.value);
     }
@@ -1595,6 +1816,10 @@ class ReviewsCompanion extends UpdateCompanion<Review> {
           ..write('reviewedAt: $reviewedAt, ')
           ..write('moveId: $moveId, ')
           ..write('comboId: $comboId, ')
+          ..write('entityIdSnapshot: $entityIdSnapshot, ')
+          ..write('entityType: $entityType, ')
+          ..write('entityDisplayName: $entityDisplayName, ')
+          ..write('entityCategory: $entityCategory, ')
           ..write('fsrsPreState: $fsrsPreState, ')
           ..write('fsrsPostState: $fsrsPostState, ')
           ..write('rowid: $rowid')
@@ -5212,6 +5437,10 @@ typedef $$ReviewsTableCreateCompanionBuilder =
       Value<DateTime> reviewedAt,
       Value<String?> moveId,
       Value<String?> comboId,
+      Value<String?> entityIdSnapshot,
+      Value<String?> entityType,
+      Value<String?> entityDisplayName,
+      Value<String?> entityCategory,
       Value<int?> fsrsPreState,
       Value<int?> fsrsPostState,
       Value<int> rowid,
@@ -5224,6 +5453,10 @@ typedef $$ReviewsTableUpdateCompanionBuilder =
       Value<DateTime> reviewedAt,
       Value<String?> moveId,
       Value<String?> comboId,
+      Value<String?> entityIdSnapshot,
+      Value<String?> entityType,
+      Value<String?> entityDisplayName,
+      Value<String?> entityCategory,
       Value<int?> fsrsPreState,
       Value<int?> fsrsPostState,
       Value<int> rowid,
@@ -5296,6 +5529,26 @@ class $$ReviewsTableFilterComposer
 
   ColumnFilters<DateTime> get reviewedAt => $composableBuilder(
     column: $table.reviewedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get entityIdSnapshot => $composableBuilder(
+    column: $table.entityIdSnapshot,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get entityType => $composableBuilder(
+    column: $table.entityType,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get entityDisplayName => $composableBuilder(
+    column: $table.entityDisplayName,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get entityCategory => $composableBuilder(
+    column: $table.entityCategory,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -5385,6 +5638,26 @@ class $$ReviewsTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<String> get entityIdSnapshot => $composableBuilder(
+    column: $table.entityIdSnapshot,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get entityType => $composableBuilder(
+    column: $table.entityType,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get entityDisplayName => $composableBuilder(
+    column: $table.entityDisplayName,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get entityCategory => $composableBuilder(
+    column: $table.entityCategory,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<int> get fsrsPreState => $composableBuilder(
     column: $table.fsrsPreState,
     builder: (column) => ColumnOrderings(column),
@@ -5464,6 +5737,26 @@ class $$ReviewsTableAnnotationComposer
 
   GeneratedColumn<DateTime> get reviewedAt => $composableBuilder(
     column: $table.reviewedAt,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get entityIdSnapshot => $composableBuilder(
+    column: $table.entityIdSnapshot,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get entityType => $composableBuilder(
+    column: $table.entityType,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get entityDisplayName => $composableBuilder(
+    column: $table.entityDisplayName,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get entityCategory => $composableBuilder(
+    column: $table.entityCategory,
     builder: (column) => column,
   );
 
@@ -5558,6 +5851,10 @@ class $$ReviewsTableTableManager
                 Value<DateTime> reviewedAt = const Value.absent(),
                 Value<String?> moveId = const Value.absent(),
                 Value<String?> comboId = const Value.absent(),
+                Value<String?> entityIdSnapshot = const Value.absent(),
+                Value<String?> entityType = const Value.absent(),
+                Value<String?> entityDisplayName = const Value.absent(),
+                Value<String?> entityCategory = const Value.absent(),
                 Value<int?> fsrsPreState = const Value.absent(),
                 Value<int?> fsrsPostState = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
@@ -5568,6 +5865,10 @@ class $$ReviewsTableTableManager
                 reviewedAt: reviewedAt,
                 moveId: moveId,
                 comboId: comboId,
+                entityIdSnapshot: entityIdSnapshot,
+                entityType: entityType,
+                entityDisplayName: entityDisplayName,
+                entityCategory: entityCategory,
                 fsrsPreState: fsrsPreState,
                 fsrsPostState: fsrsPostState,
                 rowid: rowid,
@@ -5580,6 +5881,10 @@ class $$ReviewsTableTableManager
                 Value<DateTime> reviewedAt = const Value.absent(),
                 Value<String?> moveId = const Value.absent(),
                 Value<String?> comboId = const Value.absent(),
+                Value<String?> entityIdSnapshot = const Value.absent(),
+                Value<String?> entityType = const Value.absent(),
+                Value<String?> entityDisplayName = const Value.absent(),
+                Value<String?> entityCategory = const Value.absent(),
                 Value<int?> fsrsPreState = const Value.absent(),
                 Value<int?> fsrsPostState = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
@@ -5590,6 +5895,10 @@ class $$ReviewsTableTableManager
                 reviewedAt: reviewedAt,
                 moveId: moveId,
                 comboId: comboId,
+                entityIdSnapshot: entityIdSnapshot,
+                entityType: entityType,
+                entityDisplayName: entityDisplayName,
+                entityCategory: entityCategory,
                 fsrsPreState: fsrsPreState,
                 fsrsPostState: fsrsPostState,
                 rowid: rowid,

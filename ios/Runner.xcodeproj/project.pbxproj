@@ -27,6 +27,8 @@
 		CC0000020000000100000006 /* SceneKit3DView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC0000010000000100000006 /* SceneKit3DView.swift */; };
 		CC0000020000000100000007 /* Models in Resources */ = {isa = PBXBuildFile; fileRef = CC0000010000000100000007 /* Models */; };
 		CC0000020000000100000008 /* skeleton.usdz in Resources */ = {isa = PBXBuildFile; fileRef = CC0000010000000100000008 /* skeleton.usdz */; };
+		DD0000020000000100000001 /* VideoPreviewPlugin.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD0000010000000100000001 /* VideoPreviewPlugin.swift */; };
+		EE0000020000000100000001 /* VideoAlbumPlugin.swift in Sources */ = {isa = PBXBuildFile; fileRef = EE0000010000000100000001 /* VideoAlbumPlugin.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -84,6 +86,8 @@
 		CC0000010000000100000006 /* SceneKit3DView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SceneKit3DView.swift; sourceTree = "<group>"; };
 		CC0000010000000100000007 /* Models */ = {isa = PBXFileReference; lastKnownFileType = folder; path = Models; sourceTree = "<group>"; };
 		CC0000010000000100000008 /* skeleton.usdz */ = {isa = PBXFileReference; lastKnownFileType = file.usdz; path = skeleton.usdz; sourceTree = "<group>"; };
+		DD0000010000000100000001 /* VideoPreviewPlugin.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VideoPreviewPlugin.swift; sourceTree = "<group>"; };
+		EE0000010000000100000001 /* VideoAlbumPlugin.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VideoAlbumPlugin.swift; sourceTree = "<group>"; };
 		AF94D9764DE5B8791CE776D4 /* Pods-RunnerTests.profile.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-RunnerTests.profile.xcconfig"; path = "Target Support Files/Pods-RunnerTests/Pods-RunnerTests.profile.xcconfig"; sourceTree = "<group>"; };
 		B9C120C05EAF4F2180E99EE4 /* Pods-RunnerTests.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-RunnerTests.debug.xcconfig"; path = "Target Support Files/Pods-RunnerTests/Pods-RunnerTests.debug.xcconfig"; sourceTree = "<group>"; };
 		C9BDFBFC543230F46D560C47 /* Pods-RunnerTests.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-RunnerTests.release.xcconfig"; path = "Target Support Files/Pods-RunnerTests/Pods-RunnerTests.release.xcconfig"; sourceTree = "<group>"; };
@@ -191,6 +195,8 @@
 				74858FAE1ED2DC5600515810 /* AppDelegate.swift */,
 				7884E8672EC3CC0400C636F2 /* SceneDelegate.swift */,
 				AA0000001234567800000001 /* VideoExportPlugin.swift */,
+				DD0000010000000100000001 /* VideoPreviewPlugin.swift */,
+				EE0000010000000100000001 /* VideoAlbumPlugin.swift */,
 				74858FAD1ED2DC5600515810 /* Runner-Bridging-Header.h */,
 				21160B812F5AE517005BC9CB /* NativeVideoImportPlugin.swift */,
 				CC0000010000000100000001 /* CapabilityRegistry.swift */,
@@ -239,6 +245,7 @@
 				9705A1C41CF9048500538489 /* Embed Frameworks */,
 				3B06AD1E1E4923F5004D2608 /* Thin Binary */,
 				6BCDFF67DC6C27E148068ABF /* [CP] Embed Pods Frameworks */,
+				4F0D3F3F2B6B4E0E8D4A9B01 /* Re-sign Native Asset Frameworks */,
 			);
 			buildRules = (
 			);
@@ -327,6 +334,19 @@
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
 			shellScript = "/bin/sh \"$FLUTTER_ROOT/packages/flutter_tools/bin/xcode_backend.sh\" embed_and_thin";
+		};
+		4F0D3F3F2B6B4E0E8D4A9B01 /* Re-sign Native Asset Frameworks */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			name = "Re-sign Native Asset Frameworks";
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "set -e\n\nFRAMEWORKS_DIR=\"${TARGET_BUILD_DIR}/${WRAPPER_NAME}/Frameworks\"\n\nif [ \"${CODE_SIGNING_ALLOWED}\" != \"YES\" ] || [ -z \"${EXPANDED_CODE_SIGN_IDENTITY}\" ] || [ ! -d \"$FRAMEWORKS_DIR\" ]; then\n  exit 0\nfi\n\nfind \"$FRAMEWORKS_DIR\" -maxdepth 1 -type d -name \"*.framework\" | while read -r framework; do\n  info_plist=\"$framework/Info.plist\"\n  if [ ! -f \"$info_plist\" ]; then\n    continue\n  fi\n\n  bundle_id=$(/usr/libexec/PlistBuddy -c \"Print :CFBundleIdentifier\" \"$info_plist\" 2>/dev/null || true)\n  case \"$bundle_id\" in\n    io.flutter.flutter.native-assets.*)\n      echo \"Re-signing native asset framework: $(basename \"$framework\")\"\n      /usr/bin/codesign --force --sign \"$EXPANDED_CODE_SIGN_IDENTITY\" --preserve-metadata=identifier,entitlements,flags --timestamp=none \"$framework\"\n      ;;\n  esac\ndone\n";
+			showEnvVarsInLog = 0;
 		};
 		6107DA6ED81F98588CBC6D6C /* [CP] Check Pods Manifest.lock */ = {
 			isa = PBXShellScriptBuildPhase;
@@ -423,6 +443,8 @@
 				1498D2341E8E89220040F4C2 /* GeneratedPluginRegistrant.m in Sources */,
 				7884E8682EC3CC0700C636F2 /* SceneDelegate.swift in Sources */,
 				AA0000011234567800000001 /* VideoExportPlugin.swift in Sources */,
+				DD0000020000000100000001 /* VideoPreviewPlugin.swift in Sources */,
+				EE0000020000000100000001 /* VideoAlbumPlugin.swift in Sources */,
 				21160B822F5AE517005BC9CB /* NativeVideoImportPlugin.swift in Sources */,
 				CC0000020000000100000001 /* CapabilityRegistry.swift in Sources */,
 				CC0000020000000100000002 /* NativeCapability.swift in Sources */,
@@ -526,7 +548,7 @@
 				CURRENT_PROJECT_VERSION = "$(FLUTTER_BUILD_NUMBER)";
 				DEVELOPMENT_TEAM = 95MF6RX2GK;
 				ENABLE_BITCODE = NO;
-				INFOPLIST_FILE = Runner/Info.plist;
+				INFOPLIST_FILE = Runner/Info-DebugProfile.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
@@ -714,7 +736,7 @@
 				DEVELOPMENT_TEAM = 95MF6RX2GK;
 				ENABLE_BITCODE = NO;
 				ENABLE_DEBUG_DYLIB = NO;
-				INFOPLIST_FILE = Runner/Info.plist;
+				INFOPLIST_FILE = Runner/Info-DebugProfile.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",

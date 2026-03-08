@@ -15,6 +15,13 @@ class Reviews extends Table {
   TextColumn get comboId =>
       text().nullable().references(Combos, #id, onDelete: KeyAction.setNull)();
 
+  /// Immutable snapshot of the reviewed card so stats remain readable even if
+  /// the underlying move/combo is renamed or deleted later.
+  TextColumn get entityIdSnapshot => text().nullable()();
+  TextColumn get entityType => text().nullable()();
+  TextColumn get entityDisplayName => text().nullable()();
+  TextColumn get entityCategory => text().nullable()();
+
   /// FSRS card state *before* this review was processed.
   /// Null for legacy reviews recorded before the streaks redesign.
   /// Values: 0=New, 1=Learning, 2=Review, 3=Relearning.

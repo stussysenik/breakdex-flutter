@@ -41,12 +41,11 @@ class _CelebrationOverlayState extends State<CelebrationOverlay>
   final _random = Random();
 
   static const _particleCount = 28;
-  static const _colors = [
+  static const _baseColors = [
     AppColors.stateNew,
     AppColors.stateLearning,
     AppColors.stateMastery,
     AppColors.actionGood,
-    AppColors.accent,
   ];
 
   @override
@@ -91,6 +90,10 @@ class _CelebrationOverlayState extends State<CelebrationOverlay>
         animation: _controller,
         builder: (context, _) {
           final opacity = 1.0 - _fade.value;
+          final colors = [
+            ..._baseColors,
+            Theme.of(context).colorScheme.primary,
+          ];
 
           return Opacity(
             opacity: opacity,
@@ -104,7 +107,7 @@ class _CelebrationOverlayState extends State<CelebrationOverlay>
                     painter: _ParticlePainter(
                       particles: _particles,
                       progress: _controller.value,
-                      colors: _colors,
+                      colors: colors,
                     ),
                   ),
 

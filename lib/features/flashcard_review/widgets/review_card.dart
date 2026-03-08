@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 
-import '../../../core/database/database.dart';
 import '../../../core/design/spacing.dart';
 import '../../../core/design/typography.dart';
 import '../../../core/models/learning_state.dart';
@@ -19,13 +18,23 @@ import '../../../shared/widgets/video_player_widget.dart'
 class ReviewCard extends StatelessWidget {
   const ReviewCard({
     super.key,
-    required this.move,
+    required this.title,
+    required this.state,
     required this.onStatePillTap,
     required this.videoHeight,
+    this.category,
+    this.videoPath,
+    this.originalVideoName,
+    this.canEditState = true,
     this.onRepick,
   });
 
-  final Move move;
+  final String title;
+  final LearningState state;
+  final String? category;
+  final String? videoPath;
+  final String? originalVideoName;
+  final bool canEditState;
   final VoidCallback onStatePillTap;
   final double videoHeight;
 
@@ -36,18 +45,17 @@ class ReviewCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
-    final state = LearningState.fromString(move.learningState);
 
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
         // Video — 60% visual weight, edge-to-edge
-        move.videoPath != null
+        videoPath != null
             ? RobustVideoPlayer(
-                videoPath: move.videoPath!,
+                videoPath: videoPath!,
                 height: videoHeight,
                 onRepick: onRepick,
-                originalVideoName: move.originalVideoName,
+                originalVideoName: originalVideoName,
                 autoPlay: true,
               )
             : VideoPlaceholder(height: videoHeight),
@@ -61,7 +69,7 @@ class ReviewCard extends StatelessWidget {
               // Move name (dominant, left-aligned)
               Expanded(
                 child: Text(
-                  move.name,
+                  title,
                   style: AppTypography.titleSmall.copyWith(
                     color: colorScheme.onSurface,
                   ),
@@ -71,11 +79,11 @@ class ReviewCard extends StatelessWidget {
               const SizedBox(width: AppSpacing.sm),
 
               // Category + state pills
-              if (move.category != 'default')
+              if (category != null && category != 'default')
                 Padding(
                   padding: const EdgeInsets.only(right: 6),
                   child: Text(
-                    move.category.toUpperCase(),
+                    category!.toUpperCase(),
                     style: AppTypography.caption.copyWith(
                       color: colorScheme.secondary,
                       letterSpacing: 1.5,
@@ -84,17 +92,19 @@ class ReviewCard extends StatelessWidget {
                   ),
                 ),
               GestureDetector(
-                onTap: onStatePillTap,
+                onTap: canEditState ? onStatePillTap : null,
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     StatePill(state: state),
-                    const SizedBox(width: 4),
-                    Icon(
-                      Icons.edit_outlined,
-                      size: 12,
-                      color: state.color.withValues(alpha: 0.6),
-                    ),
+                    if (canEditState) ...[
+                      const SizedBox(width: 4),
+                      Icon(
+                        Icons.edit_outlined,
+                        size: 12,
+                        color: state.color.withValues(alpha: 0.6),
+                      ),
+                    ],
                   ],
                 ),
               ),

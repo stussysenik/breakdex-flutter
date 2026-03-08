@@ -2,7 +2,6 @@ import 'dart:async';
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import '../../core/design/colors.dart';
 import '../../core/design/spacing.dart';
 import '../../core/design/typography.dart';
 import '../../core/services/video_service.dart';
@@ -95,7 +94,7 @@ class _VideoPickerSheetState extends State<VideoPickerSheet> {
 
   Future<void> _pickFromPhotos() async {
     HapticFeedback.selectionClick();
-    setState(() { _loading = true; _progress = 0.0; });
+    setState(() { _loading = true; _progress = 0.0; _statusText = 'Opening photo library...'; });
     _startProgressListener();
     try {
       // Do not timeout the picker interaction itself; users may need
@@ -109,7 +108,7 @@ class _VideoPickerSheetState extends State<VideoPickerSheet> {
 
   Future<void> _pickFromFiles() async {
     HapticFeedback.selectionClick();
-    setState(() { _loading = true; _progress = 0.0; });
+    setState(() { _loading = true; _progress = 0.0; _statusText = 'Opening files...'; });
     _startProgressListener();
     try {
       // Do not timeout the picker interaction itself; users may need
@@ -123,7 +122,7 @@ class _VideoPickerSheetState extends State<VideoPickerSheet> {
 
   Future<void> _recordVideo() async {
     HapticFeedback.selectionClick();
-    setState(() => _loading = true);
+    setState(() { _loading = true; _statusText = 'Opening camera...'; });
     try {
       final result = await _videoService.recordVideo(onStatus: _onStatus);
       if (mounted) Navigator.pop(context, result);
@@ -222,7 +221,7 @@ class _VideoPickerSheetState extends State<VideoPickerSheet> {
                       child: LinearProgressIndicator(
                         value: _progress > 0 ? _progress : null,
                         backgroundColor: Colors.white24,
-                        color: AppColors.accent,
+                        color: Theme.of(context).colorScheme.primary,
                         minHeight: 6,
                       ),
                     ),
@@ -283,7 +282,7 @@ class _SourceTile extends StatelessWidget {
         ),
         child: Row(
           children: [
-            Icon(icon, color: AppColors.accent, size: 28),
+            Icon(icon, color: Theme.of(context).colorScheme.primary, size: 28),
             const SizedBox(width: AppSpacing.md),
             Expanded(
               child: Column(

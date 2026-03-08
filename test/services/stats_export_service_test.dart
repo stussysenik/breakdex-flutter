@@ -30,7 +30,10 @@ void main() {
   group('validateImportJson', () {
     test('valid v6 JSON returns valid:true with correct counts', () {
       final json = makeExportJson(
-        moves: [makeJsonMove(), makeJsonMove(id: 'move-2', name: 'Headspin')],
+        moves: [
+          makeJsonMove(),
+          makeJsonMove(id: 'move-2', name: 'Headspin'),
+        ],
         reviews: [makeJsonReview()],
         combos: [makeJsonCombo()],
         battleResults: [makeJsonBattleResult()],
@@ -87,8 +90,9 @@ void main() {
     });
 
     test('malformed JSON returns Invalid JSON error', () {
-      final result =
-          StatsExportService.validateImportJson('not valid json {{{');
+      final result = StatsExportService.validateImportJson(
+        'not valid json {{{',
+      );
 
       expect(result.valid, isFalse);
       expect(result.error, startsWith('Invalid JSON'));
@@ -105,7 +109,7 @@ void main() {
       final json = jsonEncode({
         'schemaVersion': 6,
         'moves': [
-          {'name': 'Windmill'}
+          {'name': 'Windmill'},
         ],
       });
 
@@ -119,7 +123,7 @@ void main() {
       final json = jsonEncode({
         'schemaVersion': 6,
         'moves': [
-          {'id': 'move-1'}
+          {'id': 'move-1'},
         ],
       });
 
@@ -139,10 +143,12 @@ void main() {
     });
 
     test('unicode in move names accepted', () {
-      final json = makeExportJson(moves: [
-        makeJsonMove(id: 'move-1', name: 'フリーズ'),
-        makeJsonMove(id: 'move-2', name: 'Toupie 🌀'),
-      ]);
+      final json = makeExportJson(
+        moves: [
+          makeJsonMove(id: 'move-1', name: 'フリーズ'),
+          makeJsonMove(id: 'move-2', name: 'Toupie 🌀'),
+        ],
+      );
 
       final result = StatsExportService.validateImportJson(json);
 
@@ -179,8 +185,7 @@ void main() {
   // =========================================================================
   group('generateJsonExport', () {
     test('empty DB produces valid JSON with empty arrays', () async {
-      final result =
-          await StatsExportService.generateJsonExport(db, prefs);
+      final result = await StatsExportService.generateJsonExport(db, prefs);
       final data = jsonDecode(result.json) as Map<String, dynamic>;
 
       expect(data['schemaVersion'], 6);
@@ -195,15 +200,16 @@ void main() {
     });
 
     test('single move with all fields correctly mapped', () async {
-      await seedMove(db,
-          id: 'move-1',
-          name: 'Windmill',
-          category: 'power',
-          videoPath: '/path/to/video.mp4',
-          originalVideoName: 'windmill_orig.mp4');
+      await seedMove(
+        db,
+        id: 'move-1',
+        name: 'Windmill',
+        category: 'power',
+        videoPath: '/path/to/video.mp4',
+        originalVideoName: 'windmill_orig.mp4',
+      );
 
-      final result =
-          await StatsExportService.generateJsonExport(db, prefs);
+      final result = await StatsExportService.generateJsonExport(db, prefs);
       final data = jsonDecode(result.json) as Map<String, dynamic>;
       final moves = data['moves'] as List;
 
@@ -222,8 +228,7 @@ void main() {
     test('null videoPath produces null videoFilename', () async {
       await seedMove(db, videoPath: null);
 
-      final result =
-          await StatsExportService.generateJsonExport(db, prefs);
+      final result = await StatsExportService.generateJsonExport(db, prefs);
       final data = jsonDecode(result.json) as Map<String, dynamic>;
       final m = (data['moves'] as List).first as Map<String, dynamic>;
 
@@ -233,8 +238,7 @@ void main() {
     test('videoPath basename extraction', () async {
       await seedMove(db, videoPath: '/long/nested/path/to/clip.mp4');
 
-      final result =
-          await StatsExportService.generateJsonExport(db, prefs);
+      final result = await StatsExportService.generateJsonExport(db, prefs);
       final data = jsonDecode(result.json) as Map<String, dynamic>;
       final m = (data['moves'] as List).first as Map<String, dynamic>;
 
@@ -244,11 +248,14 @@ void main() {
     test('reviews with comboId and FSRS state fields', () async {
       await seedMove(db);
       await seedCombo(db);
-      await seedReview(db,
-          comboId: 'combo-1', fsrsPreState: 0, fsrsPostState: 1);
+      await seedReview(
+        db,
+        comboId: 'combo-1',
+        fsrsPreState: 0,
+        fsrsPostState: 1,
+      );
 
-      final result =
-          await StatsExportService.generateJsonExport(db, prefs);
+      final result = await StatsExportService.generateJsonExport(db, prefs);
       final data = jsonDecode(result.json) as Map<String, dynamic>;
       final r = (data['reviews'] as List).first as Map<String, dynamic>;
 
@@ -261,8 +268,7 @@ void main() {
       await seedMove(db);
       await seedFsrsCard(db, entityId: 'move-1', entityType: 'move');
 
-      final result =
-          await StatsExportService.generateJsonExport(db, prefs);
+      final result = await StatsExportService.generateJsonExport(db, prefs);
       final data = jsonDecode(result.json) as Map<String, dynamic>;
       final fc = (data['fsrsCards'] as List).first as Map<String, dynamic>;
 
@@ -277,8 +283,7 @@ void main() {
       await seedFsrsCard(db, entityId: 'move-1', entityType: 'move');
       await seedFsrsCard(db, entityId: 'combo-1', entityType: 'combo');
 
-      final result =
-          await StatsExportService.generateJsonExport(db, prefs);
+      final result = await StatsExportService.generateJsonExport(db, prefs);
       final data = jsonDecode(result.json) as Map<String, dynamic>;
       final cards = data['fsrsCards'] as List;
 
@@ -292,8 +297,7 @@ void main() {
       await seedDeck(db, id: 'deck-1', name: 'Power Moves');
       await seedDeckMove(db, deckId: 'deck-1', moveId: 'move-1');
 
-      final result =
-          await StatsExportService.generateJsonExport(db, prefs);
+      final result = await StatsExportService.generateJsonExport(db, prefs);
       final data = jsonDecode(result.json) as Map<String, dynamic>;
 
       final decks = data['decks'] as List;
@@ -307,13 +311,15 @@ void main() {
     });
 
     test('categories from SharedPreferences included', () async {
-      await prefs.setString('categories', jsonEncode([
-        {'name': 'power', 'colorValue': 0xFFFF0000},
-        {'name': 'freeze', 'colorValue': 0xFF0000FF},
-      ]));
+      await prefs.setString(
+        'categories',
+        jsonEncode([
+          {'name': 'power', 'colorValue': 0xFFFF0000},
+          {'name': 'freeze', 'colorValue': 0xFF0000FF},
+        ]),
+      );
 
-      final result =
-          await StatsExportService.generateJsonExport(db, prefs);
+      final result = await StatsExportService.generateJsonExport(db, prefs);
       final data = jsonDecode(result.json) as Map<String, dynamic>;
       final cats = data['categories'] as List;
 
@@ -328,8 +334,7 @@ void main() {
       await seedCombo(db);
       await seedBattleResult(db);
 
-      final result =
-          await StatsExportService.generateJsonExport(db, prefs);
+      final result = await StatsExportService.generateJsonExport(db, prefs);
 
       expect(result.moveCount, 2);
       expect(result.reviewCount, 1);
@@ -340,8 +345,7 @@ void main() {
     test('DateTime fields are ISO 8601', () async {
       await seedMove(db);
 
-      final result =
-          await StatsExportService.generateJsonExport(db, prefs);
+      final result = await StatsExportService.generateJsonExport(db, prefs);
       final data = jsonDecode(result.json) as Map<String, dynamic>;
       final m = (data['moves'] as List).first as Map<String, dynamic>;
 
@@ -357,12 +361,14 @@ void main() {
   // =========================================================================
   group('importFromJson replaceAll', () {
     test('import single move into empty DB', () async {
-      final json = makeExportJson(
-        moves: [makeJsonMove()],
-      );
+      final json = makeExportJson(moves: [makeJsonMove()]);
 
       final result = await StatsExportService.importFromJson(
-          db, prefs, json, ImportMode.replaceAll);
+        db,
+        prefs,
+        json,
+        ImportMode.replaceAll,
+      );
 
       expect(result.movesImported, 1);
       final moves = await db.movesDao.getAll();
@@ -381,7 +387,11 @@ void main() {
       );
 
       await StatsExportService.importFromJson(
-          db, prefs, json, ImportMode.replaceAll);
+        db,
+        prefs,
+        json,
+        ImportMode.replaceAll,
+      );
 
       final moves = await db.movesDao.getAll();
       expect(moves.length, 1);
@@ -406,7 +416,11 @@ void main() {
       final json = makeExportJson();
 
       await StatsExportService.importFromJson(
-          db, prefs, json, ImportMode.replaceAll);
+        db,
+        prefs,
+        json,
+        ImportMode.replaceAll,
+      );
 
       expect(await db.movesDao.getAll(), isEmpty);
       expect(await db.reviewsDao.watchAll().first, isEmpty);
@@ -419,37 +433,53 @@ void main() {
     });
 
     test('videoPath always null after import', () async {
-      final json = makeExportJson(moves: [
-        makeJsonMove(videoFilename: 'clip.mp4'),
-      ]);
+      final json = makeExportJson(
+        moves: [makeJsonMove(videoFilename: 'clip.mp4')],
+      );
 
       await StatsExportService.importFromJson(
-          db, prefs, json, ImportMode.replaceAll);
+        db,
+        prefs,
+        json,
+        ImportMode.replaceAll,
+      );
 
       final moves = await db.movesDao.getAll();
       expect(moves.first.videoPath, isNull);
     });
 
     test('missing video tracked in movesWithMissingVideos', () async {
-      final json = makeExportJson(moves: [
-        makeJsonMove(id: 'move-1', name: 'Windmill', videoFilename: 'w.mp4'),
-        makeJsonMove(id: 'move-2', name: 'Headspin'),
-      ]);
+      final json = makeExportJson(
+        moves: [
+          makeJsonMove(id: 'move-1', name: 'Windmill', videoFilename: 'w.mp4'),
+          makeJsonMove(id: 'move-2', name: 'Headspin'),
+        ],
+      );
 
       final result = await StatsExportService.importFromJson(
-          db, prefs, json, ImportMode.replaceAll);
+        db,
+        prefs,
+        json,
+        ImportMode.replaceAll,
+      );
 
       expect(result.movesWithMissingVideos, contains('Windmill'));
       expect(result.movesWithMissingVideos, isNot(contains('Headspin')));
     });
 
     test('default values: learningState=NEW, category=default', () async {
-      final json = makeExportJson(moves: [
-        {'id': 'move-1', 'name': 'Minimal Move'},
-      ]);
+      final json = makeExportJson(
+        moves: [
+          {'id': 'move-1', 'name': 'Minimal Move'},
+        ],
+      );
 
       await StatsExportService.importFromJson(
-          db, prefs, json, ImportMode.replaceAll);
+        db,
+        prefs,
+        json,
+        ImportMode.replaceAll,
+      );
 
       final moves = await db.movesDao.getAll();
       expect(moves.first.learningState, 'NEW');
@@ -469,12 +499,16 @@ void main() {
             'difficulty': 4.0,
             'due': DateTime(2024, 2, 1).toIso8601String(),
             'fsrsState': 2,
-          }
+          },
         ],
       );
 
       await StatsExportService.importFromJson(
-          db, prefs, json, ImportMode.replaceAll);
+        db,
+        prefs,
+        json,
+        ImportMode.replaceAll,
+      );
 
       final cards = await db.fsrsCardsDao.getAll();
       expect(cards.length, 1);
@@ -487,7 +521,11 @@ void main() {
       final json = jsonEncode({'schemaVersion': 6});
 
       final result = await StatsExportService.importFromJson(
-          db, prefs, json, ImportMode.replaceAll);
+        db,
+        prefs,
+        json,
+        ImportMode.replaceAll,
+      );
 
       expect(result.movesImported, 0);
       expect(result.reviewsImported, 0);
@@ -502,7 +540,11 @@ void main() {
       );
 
       final result = await StatsExportService.importFromJson(
-          db, prefs, json, ImportMode.replaceAll);
+        db,
+        prefs,
+        json,
+        ImportMode.replaceAll,
+      );
 
       expect(result.decksImported, 1);
       expect(result.deckMovesImported, 1);
@@ -523,12 +565,14 @@ void main() {
       await seedDeckMove(db, deckId: 'old-deck', moveId: 'move-1');
 
       // Import without decks
-      final json = makeExportJson(
-        moves: [makeJsonMove(id: 'move-1')],
-      );
+      final json = makeExportJson(moves: [makeJsonMove(id: 'move-1')]);
 
       await StatsExportService.importFromJson(
-          db, prefs, json, ImportMode.replaceAll);
+        db,
+        prefs,
+        json,
+        ImportMode.replaceAll,
+      );
 
       expect(await db.decksDao.getAll(), isEmpty);
       expect(await db.select(db.deckMoves).get(), isEmpty);
@@ -541,7 +585,11 @@ void main() {
       );
 
       final result = await StatsExportService.importFromJson(
-          db, prefs, json, ImportMode.replaceAll);
+        db,
+        prefs,
+        json,
+        ImportMode.replaceAll,
+      );
 
       expect(result.fsrsCardsImported, 1);
     });
@@ -550,16 +598,16 @@ void main() {
       final json = makeExportJson(
         moves: [makeJsonMove()],
         reviews: [
-          makeJsonReview(
-            fsrsPreState: 1,
-            fsrsPostState: 2,
-            comboId: null,
-          ),
+          makeJsonReview(fsrsPreState: 1, fsrsPostState: 2, comboId: null),
         ],
       );
 
       await StatsExportService.importFromJson(
-          db, prefs, json, ImportMode.replaceAll);
+        db,
+        prefs,
+        json,
+        ImportMode.replaceAll,
+      );
 
       final reviews = await db.reviewsDao.watchAll().first;
       expect(reviews.first.fsrsPreState, 1);
@@ -583,7 +631,11 @@ void main() {
       );
 
       await StatsExportService.importFromJson(
-          db, prefs, json, ImportMode.replaceAll);
+        db,
+        prefs,
+        json,
+        ImportMode.replaceAll,
+      );
 
       final battles = await db.select(db.battleResults).get();
       expect(battles.length, 1);
@@ -597,13 +649,16 @@ void main() {
         moves: [makeJsonMove(id: 'move-1')],
         combos: [makeJsonCombo(id: 'combo-1', name: 'Power Combo')],
         comboMoves: [
-          makeJsonComboMove(
-              id: 'cm-1', comboId: 'combo-1', moveId: 'move-1'),
+          makeJsonComboMove(id: 'cm-1', comboId: 'combo-1', moveId: 'move-1'),
         ],
       );
 
       final result = await StatsExportService.importFromJson(
-          db, prefs, json, ImportMode.replaceAll);
+        db,
+        prefs,
+        json,
+        ImportMode.replaceAll,
+      );
 
       expect(result.combosImported, 1);
       expect(result.comboMovesImported, 1);
@@ -620,12 +675,16 @@ void main() {
     test('merge skips existing move IDs', () async {
       await seedMove(db, id: 'move-1', name: 'Original');
 
-      final json = makeExportJson(moves: [
-        makeJsonMove(id: 'move-1', name: 'Overwrite Attempt'),
-      ]);
+      final json = makeExportJson(
+        moves: [makeJsonMove(id: 'move-1', name: 'Overwrite Attempt')],
+      );
 
       final result = await StatsExportService.importFromJson(
-          db, prefs, json, ImportMode.merge);
+        db,
+        prefs,
+        json,
+        ImportMode.merge,
+      );
 
       expect(result.movesImported, 0);
       final moves = await db.movesDao.getAll();
@@ -635,12 +694,16 @@ void main() {
     test('merge adds items with new IDs', () async {
       await seedMove(db, id: 'move-1', name: 'Existing');
 
-      final json = makeExportJson(moves: [
-        makeJsonMove(id: 'move-2', name: 'Brand New'),
-      ]);
+      final json = makeExportJson(
+        moves: [makeJsonMove(id: 'move-2', name: 'Brand New')],
+      );
 
       final result = await StatsExportService.importFromJson(
-          db, prefs, json, ImportMode.merge);
+        db,
+        prefs,
+        json,
+        ImportMode.merge,
+      );
 
       expect(result.movesImported, 1);
       final moves = await db.movesDao.getAll();
@@ -650,14 +713,20 @@ void main() {
     test('mixed: some new + some existing returns correct counts', () async {
       await seedMove(db, id: 'move-1', name: 'Existing');
 
-      final json = makeExportJson(moves: [
-        makeJsonMove(id: 'move-1', name: 'Existing Copy'),
-        makeJsonMove(id: 'move-2', name: 'New Move'),
-        makeJsonMove(id: 'move-3', name: 'Another New'),
-      ]);
+      final json = makeExportJson(
+        moves: [
+          makeJsonMove(id: 'move-1', name: 'Existing Copy'),
+          makeJsonMove(id: 'move-2', name: 'New Move'),
+          makeJsonMove(id: 'move-3', name: 'Another New'),
+        ],
+      );
 
       final result = await StatsExportService.importFromJson(
-          db, prefs, json, ImportMode.merge);
+        db,
+        prefs,
+        json,
+        ImportMode.merge,
+      );
 
       expect(result.movesImported, 2);
       final moves = await db.movesDao.getAll();
@@ -671,7 +740,11 @@ void main() {
       final json = makeExportJson();
 
       final result = await StatsExportService.importFromJson(
-          db, prefs, json, ImportMode.merge);
+        db,
+        prefs,
+        json,
+        ImportMode.merge,
+      );
 
       expect(result.totalImported, 0);
       expect(await db.movesDao.getAll(), hasLength(1));
@@ -691,7 +764,11 @@ void main() {
       );
 
       final result = await StatsExportService.importFromJson(
-          db, prefs, json, ImportMode.merge);
+        db,
+        prefs,
+        json,
+        ImportMode.merge,
+      );
 
       expect(result.reviewsImported, 1);
       final reviews = await db.reviewsDao.watchAll().first;
@@ -706,7 +783,11 @@ void main() {
       );
 
       final result = await StatsExportService.importFromJson(
-          db, prefs, json, ImportMode.merge);
+        db,
+        prefs,
+        json,
+        ImportMode.merge,
+      );
 
       expect(result.combosImported, 0);
     });
@@ -717,13 +798,15 @@ void main() {
 
       final json = makeExportJson(
         moves: [makeJsonMove()],
-        fsrsCards: [
-          makeJsonFsrsCard(entityId: 'move-1', stability: 99.0),
-        ],
+        fsrsCards: [makeJsonFsrsCard(entityId: 'move-1', stability: 99.0)],
       );
 
       final result = await StatsExportService.importFromJson(
-          db, prefs, json, ImportMode.merge);
+        db,
+        prefs,
+        json,
+        ImportMode.merge,
+      );
 
       expect(result.fsrsCardsImported, 0);
       final cards = await db.fsrsCardsDao.getAll();
@@ -738,7 +821,11 @@ void main() {
       );
 
       final result = await StatsExportService.importFromJson(
-          db, prefs, json, ImportMode.merge);
+        db,
+        prefs,
+        json,
+        ImportMode.merge,
+      );
 
       expect(result.battleResultsImported, 0);
     });
@@ -753,7 +840,11 @@ void main() {
       );
 
       final result = await StatsExportService.importFromJson(
-          db, prefs, json, ImportMode.merge);
+        db,
+        prefs,
+        json,
+        ImportMode.merge,
+      );
 
       expect(result.decksImported, 0);
       final decks = await db.decksDao.getAll();
@@ -772,7 +863,11 @@ void main() {
       );
 
       final result = await StatsExportService.importFromJson(
-          db, prefs, json, ImportMode.merge);
+        db,
+        prefs,
+        json,
+        ImportMode.merge,
+      );
 
       expect(result.deckMovesImported, 0);
     });
@@ -783,15 +878,17 @@ void main() {
   // =========================================================================
   group('round-trip export → import → export', () {
     test('empty DB round-trip', () async {
-      final export1 =
-          await StatsExportService.generateJsonExport(db, prefs);
+      final export1 = await StatsExportService.generateJsonExport(db, prefs);
 
       // Import into same DB (already empty)
       await StatsExportService.importFromJson(
-          db, prefs, export1.json, ImportMode.replaceAll);
+        db,
+        prefs,
+        export1.json,
+        ImportMode.replaceAll,
+      );
 
-      final export2 =
-          await StatsExportService.generateJsonExport(db, prefs);
+      final export2 = await StatsExportService.generateJsonExport(db, prefs);
 
       final data1 = jsonDecode(export1.json) as Map<String, dynamic>;
       final data2 = jsonDecode(export2.json) as Map<String, dynamic>;
@@ -804,10 +901,13 @@ void main() {
       final originalJson = makeFullExportJson();
 
       await StatsExportService.importFromJson(
-          db, prefs, originalJson, ImportMode.replaceAll);
+        db,
+        prefs,
+        originalJson,
+        ImportMode.replaceAll,
+      );
 
-      final exported =
-          await StatsExportService.generateJsonExport(db, prefs);
+      final exported = await StatsExportService.generateJsonExport(db, prefs);
       final data = jsonDecode(exported.json) as Map<String, dynamic>;
 
       expect((data['moves'] as List).length, 2);
@@ -828,10 +928,13 @@ void main() {
       );
 
       await StatsExportService.importFromJson(
-          db, prefs, json, ImportMode.replaceAll);
+        db,
+        prefs,
+        json,
+        ImportMode.replaceAll,
+      );
 
-      final exported =
-          await StatsExportService.generateJsonExport(db, prefs);
+      final exported = await StatsExportService.generateJsonExport(db, prefs);
       final data = jsonDecode(exported.json) as Map<String, dynamic>;
       final m = (data['moves'] as List).first as Map<String, dynamic>;
       final parsed = DateTime.parse(m['createdAt'] as String);
@@ -852,7 +955,11 @@ void main() {
       );
 
       await StatsExportService.importFromJson(
-          db, prefs, json, ImportMode.replaceAll);
+        db,
+        prefs,
+        json,
+        ImportMode.replaceAll,
+      );
 
       final cards = await db.fsrsCardsDao.getAll();
       expect(cards.first.stability, closeTo(4.567890, 0.001));
@@ -860,15 +967,18 @@ void main() {
     });
 
     test('unicode in names survives round-trip', () async {
-      final json = makeExportJson(moves: [
-        makeJsonMove(id: 'move-1', name: 'フリーズ 🌀'),
-      ]);
+      final json = makeExportJson(
+        moves: [makeJsonMove(id: 'move-1', name: 'フリーズ 🌀')],
+      );
 
       await StatsExportService.importFromJson(
-          db, prefs, json, ImportMode.replaceAll);
+        db,
+        prefs,
+        json,
+        ImportMode.replaceAll,
+      );
 
-      final exported =
-          await StatsExportService.generateJsonExport(db, prefs);
+      final exported = await StatsExportService.generateJsonExport(db, prefs);
       final data = jsonDecode(exported.json) as Map<String, dynamic>;
       final m = (data['moves'] as List).first as Map<String, dynamic>;
 
@@ -877,19 +987,18 @@ void main() {
 
     test('null fields preserved as null through round-trip', () async {
       final json = makeExportJson(
-        moves: [
-          makeJsonMove(videoFilename: null, originalVideoName: null),
-        ],
-        reviews: [
-          makeJsonReview(comboId: null),
-        ],
+        moves: [makeJsonMove(videoFilename: null, originalVideoName: null)],
+        reviews: [makeJsonReview(comboId: null)],
       );
 
       await StatsExportService.importFromJson(
-          db, prefs, json, ImportMode.replaceAll);
+        db,
+        prefs,
+        json,
+        ImportMode.replaceAll,
+      );
 
-      final exported =
-          await StatsExportService.generateJsonExport(db, prefs);
+      final exported = await StatsExportService.generateJsonExport(db, prefs);
       final data = jsonDecode(exported.json) as Map<String, dynamic>;
       final m = (data['moves'] as List).first as Map<String, dynamic>;
 
@@ -903,44 +1012,54 @@ void main() {
         combos: [makeJsonCombo(id: 'combo-1')],
         fsrsCards: [
           makeJsonFsrsCard(
-              entityId: 'move-1', entityType: 'move', stability: 3.0),
+            entityId: 'move-1',
+            entityType: 'move',
+            stability: 3.0,
+          ),
           makeJsonFsrsCard(
-              entityId: 'combo-1', entityType: 'combo', stability: 7.0),
+            entityId: 'combo-1',
+            entityType: 'combo',
+            stability: 7.0,
+          ),
         ],
       );
 
       await StatsExportService.importFromJson(
-          db, prefs, json, ImportMode.replaceAll);
+        db,
+        prefs,
+        json,
+        ImportMode.replaceAll,
+      );
 
-      final exported =
-          await StatsExportService.generateJsonExport(db, prefs);
+      final exported = await StatsExportService.generateJsonExport(db, prefs);
       final data = jsonDecode(exported.json) as Map<String, dynamic>;
-      final cards = (data['fsrsCards'] as List)
-          .cast<Map<String, dynamic>>();
+      final cards = (data['fsrsCards'] as List).cast<Map<String, dynamic>>();
 
-      final moveCard =
-          cards.firstWhere((c) => c['entityType'] == 'move');
-      final comboCard =
-          cards.firstWhere((c) => c['entityType'] == 'combo');
+      final moveCard = cards.firstWhere((c) => c['entityType'] == 'move');
+      final comboCard = cards.firstWhere((c) => c['entityType'] == 'combo');
 
       expect(moveCard['stability'], closeTo(3.0, 0.01));
       expect(comboCard['stability'], closeTo(7.0, 0.01));
     });
 
     test('categories round-trip via SharedPreferences', () async {
-      final json = makeExportJson(categories: [
-        makeJsonCategory(name: 'power', colorValue: 0xFFFF0000),
-        makeJsonCategory(name: 'freeze', colorValue: 0xFF0000FF),
-      ]);
+      final json = makeExportJson(
+        categories: [
+          makeJsonCategory(name: 'power', colorValue: 0xFFFF0000),
+          makeJsonCategory(name: 'freeze', colorValue: 0xFF0000FF),
+        ],
+      );
 
       await StatsExportService.importFromJson(
-          db, prefs, json, ImportMode.replaceAll);
+        db,
+        prefs,
+        json,
+        ImportMode.replaceAll,
+      );
 
-      final exported =
-          await StatsExportService.generateJsonExport(db, prefs);
+      final exported = await StatsExportService.generateJsonExport(db, prefs);
       final data = jsonDecode(exported.json) as Map<String, dynamic>;
-      final cats = (data['categories'] as List)
-          .cast<Map<String, dynamic>>();
+      final cats = (data['categories'] as List).cast<Map<String, dynamic>>();
 
       expect(cats.length, 2);
       expect(cats.map((c) => c['name']), containsAll(['power', 'freeze']));
@@ -962,12 +1081,16 @@ void main() {
             'difficulty': 3.0,
             'due': DateTime(2024, 3, 1).toIso8601String(),
             'fsrsState': 1,
-          }
+          },
         ],
       );
 
       await StatsExportService.importFromJson(
-          db, prefs, json, ImportMode.replaceAll);
+        db,
+        prefs,
+        json,
+        ImportMode.replaceAll,
+      );
 
       final cards = await db.fsrsCardsDao.getAll();
       expect(cards.first.entityId, 'move-1');
@@ -982,12 +1105,16 @@ void main() {
             'id': 'move-1',
             'name': 'Old Move',
             'videoPath': '/old/path/video.mp4',
-          }
+          },
         ],
       });
 
       final result = await StatsExportService.importFromJson(
-          db, prefs, json, ImportMode.replaceAll);
+        db,
+        prefs,
+        json,
+        ImportMode.replaceAll,
+      );
 
       expect(result.movesWithMissingVideos, contains('Old Move'));
     });
@@ -996,12 +1123,16 @@ void main() {
       final json = jsonEncode({
         'schemaVersion': 3,
         'moves': [
-          {'id': 'move-1', 'name': 'Test'}
+          {'id': 'move-1', 'name': 'Test'},
         ],
       });
 
       final result = await StatsExportService.importFromJson(
-          db, prefs, json, ImportMode.replaceAll);
+        db,
+        prefs,
+        json,
+        ImportMode.replaceAll,
+      );
 
       expect(result.movesImported, 1);
       expect(result.fsrsCardsImported, 0);
@@ -1018,12 +1149,16 @@ void main() {
             'difficulty': 2.0,
             'due': DateTime(2024, 4, 1).toIso8601String(),
             'fsrsState': 0,
-          }
+          },
         ],
       );
 
       await StatsExportService.importFromJson(
-          db, prefs, json, ImportMode.replaceAll);
+        db,
+        prefs,
+        json,
+        ImportMode.replaceAll,
+      );
 
       final cards = await db.fsrsCardsDao.getAll();
       expect(cards.first.entityType, 'move');
@@ -1047,7 +1182,11 @@ void main() {
       });
 
       final result = await StatsExportService.importFromJson(
-          db, prefs, json, ImportMode.replaceAll);
+        db,
+        prefs,
+        json,
+        ImportMode.replaceAll,
+      );
 
       expect(result.movesImported, 1);
       expect(result.reviewsImported, 1);
@@ -1077,21 +1216,31 @@ void main() {
       final json = makeExportJson(moves: moves, reviews: reviews);
 
       final result = await StatsExportService.importFromJson(
-          db, prefs, json, ImportMode.replaceAll);
+        db,
+        prefs,
+        json,
+        ImportMode.replaceAll,
+      );
 
       expect(result.movesImported, 500);
       expect(result.reviewsImported, 2000);
     });
 
     test('special JSON characters in names (quotes, backslash)', () async {
-      final json = makeExportJson(moves: [
-        makeJsonMove(id: 'move-1', name: 'Wind"mill'),
-        makeJsonMove(id: 'move-2', name: 'Head\\spin'),
-        makeJsonMove(id: 'move-3', name: 'Top\nRock'),
-      ]);
+      final json = makeExportJson(
+        moves: [
+          makeJsonMove(id: 'move-1', name: 'Wind"mill'),
+          makeJsonMove(id: 'move-2', name: 'Head\\spin'),
+          makeJsonMove(id: 'move-3', name: 'Top\nRock'),
+        ],
+      );
 
       await StatsExportService.importFromJson(
-          db, prefs, json, ImportMode.replaceAll);
+        db,
+        prefs,
+        json,
+        ImportMode.replaceAll,
+      );
 
       final moves = await db.movesDao.getAll();
       expect(moves.length, 3);
@@ -1103,13 +1252,15 @@ void main() {
 
     test('review with null moveId AND null comboId', () async {
       final json = makeExportJson(
-        reviews: [
-          makeJsonReview(id: 'r-1', moveId: null, comboId: null),
-        ],
+        reviews: [makeJsonReview(id: 'r-1', moveId: null, comboId: null)],
       );
 
       final result = await StatsExportService.importFromJson(
-          db, prefs, json, ImportMode.replaceAll);
+        db,
+        prefs,
+        json,
+        ImportMode.replaceAll,
+      );
 
       expect(result.reviewsImported, 1);
       final reviews = await db.reviewsDao.watchAll().first;
@@ -1128,12 +1279,16 @@ void main() {
             'difficulty': 3, // int, not double
             'due': DateTime(2024, 3, 1).toIso8601String(),
             'fsrsState': 2,
-          }
+          },
         ],
       );
 
       await StatsExportService.importFromJson(
-          db, prefs, json, ImportMode.replaceAll);
+        db,
+        prefs,
+        json,
+        ImportMode.replaceAll,
+      );
 
       final cards = await db.fsrsCardsDao.getAll();
       expect(cards.first.stability, 5.0);
@@ -1141,14 +1296,21 @@ void main() {
     });
 
     test('empty categories array does not overwrite existing prefs', () async {
-      await prefs.setString('categories', jsonEncode([
-        {'name': 'power', 'colorValue': 0xFFFF0000},
-      ]));
+      await prefs.setString(
+        'categories',
+        jsonEncode([
+          {'name': 'power', 'colorValue': 0xFFFF0000},
+        ]),
+      );
 
       final json = makeExportJson(categories: []);
 
       await StatsExportService.importFromJson(
-          db, prefs, json, ImportMode.replaceAll);
+        db,
+        prefs,
+        json,
+        ImportMode.replaceAll,
+      );
 
       // Existing categories should remain — empty array doesn't overwrite
       final catJson = prefs.getString('categories');
@@ -1162,33 +1324,39 @@ void main() {
         'schemaVersion': 6,
         'unknownField': 'should be ignored',
         'moves': [
-          {
-            'id': 'move-1',
-            'name': 'Test',
-            'extraField': 42,
-          }
+          {'id': 'move-1', 'name': 'Test', 'extraField': 42},
         ],
         'reviews': [],
         'futureEntity': [
-          {'id': 'x'}
+          {'id': 'x'},
         ],
       });
 
       final result = await StatsExportService.importFromJson(
-          db, prefs, json, ImportMode.replaceAll);
+        db,
+        prefs,
+        json,
+        ImportMode.replaceAll,
+      );
 
       expect(result.movesImported, 1);
     });
 
     test('categories missing name/colorValue filtered out', () async {
-      final json = makeExportJson(categories: [
-        {'name': 'power', 'colorValue': 0xFFFF0000},
-        {'name': null, 'colorValue': 0xFF00FF00}, // missing name
-        {'name': 'freeze'}, // missing colorValue
-      ]);
+      final json = makeExportJson(
+        categories: [
+          {'name': 'power', 'colorValue': 0xFFFF0000},
+          {'name': null, 'colorValue': 0xFF00FF00}, // missing name
+          {'name': 'freeze'}, // missing colorValue
+        ],
+      );
 
       await StatsExportService.importFromJson(
-          db, prefs, json, ImportMode.replaceAll);
+        db,
+        prefs,
+        json,
+        ImportMode.replaceAll,
+      );
 
       final catJson = prefs.getString('categories');
       expect(catJson, isNotNull);
@@ -1208,12 +1376,16 @@ void main() {
             'difficulty': null,
             'due': DateTime(2024, 3, 1).toIso8601String(),
             'fsrsState': 0,
-          }
+          },
         ],
       );
 
       await StatsExportService.importFromJson(
-          db, prefs, json, ImportMode.replaceAll);
+        db,
+        prefs,
+        json,
+        ImportMode.replaceAll,
+      );
 
       final cards = await db.fsrsCardsDao.getAll();
       expect(cards.first.stability, 0.0);
@@ -1225,42 +1397,54 @@ void main() {
   // Group H: Transaction atomicity
   // =========================================================================
   group('transaction atomicity', () {
-    test('categories import is outside transaction (succeeds independently)',
-        () async {
-      // This test documents behavior: categories are imported via
-      // SharedPreferences outside the DB transaction, so they persist
-      // even if the DB portion were to fail.
-      final json = makeExportJson(
-        moves: [makeJsonMove()],
-        categories: [makeJsonCategory(name: 'test-cat')],
-      );
+    test(
+      'categories import is outside transaction (succeeds independently)',
+      () async {
+        // This test documents behavior: categories are imported via
+        // SharedPreferences outside the DB transaction, so they persist
+        // even if the DB portion were to fail.
+        final json = makeExportJson(
+          moves: [makeJsonMove()],
+          categories: [makeJsonCategory(name: 'test-cat')],
+        );
 
-      await StatsExportService.importFromJson(
-          db, prefs, json, ImportMode.replaceAll);
+        await StatsExportService.importFromJson(
+          db,
+          prefs,
+          json,
+          ImportMode.replaceAll,
+        );
 
-      final catJson = prefs.getString('categories');
-      expect(catJson, isNotNull);
-      expect(catJson, contains('test-cat'));
-    });
+        final catJson = prefs.getString('categories');
+        expect(catJson, isNotNull);
+        expect(catJson, contains('test-cat'));
+      },
+    );
 
-    test('import within transaction ensures all-or-nothing for DB entities',
-        () async {
-      // Verify that a successful import populates all tables atomically
-      final json = makeFullExportJson();
+    test(
+      'import within transaction ensures all-or-nothing for DB entities',
+      () async {
+        // Verify that a successful import populates all tables atomically
+        final json = makeFullExportJson();
 
-      await StatsExportService.importFromJson(
-          db, prefs, json, ImportMode.replaceAll);
+        await StatsExportService.importFromJson(
+          db,
+          prefs,
+          json,
+          ImportMode.replaceAll,
+        );
 
-      // All entities present — transaction committed successfully
-      expect(await db.movesDao.getAll(), hasLength(2));
-      expect(await db.reviewsDao.watchAll().first, hasLength(2));
-      expect(await db.combosDao.getAll(), hasLength(1));
-      expect(await db.select(db.comboMoves).get(), hasLength(1));
-      expect(await db.select(db.battleResults).get(), hasLength(1));
-      expect(await db.fsrsCardsDao.getAll(), hasLength(2));
-      expect(await db.decksDao.getAll(), hasLength(1));
-      expect(await db.select(db.deckMoves).get(), hasLength(1));
-    });
+        // All entities present — transaction committed successfully
+        expect(await db.movesDao.getAll(), hasLength(2));
+        expect(await db.reviewsDao.watchAll().first, hasLength(2));
+        expect(await db.combosDao.getAll(), hasLength(1));
+        expect(await db.select(db.comboMoves).get(), hasLength(1));
+        expect(await db.select(db.battleResults).get(), hasLength(1));
+        expect(await db.fsrsCardsDao.getAll(), hasLength(2));
+        expect(await db.decksDao.getAll(), hasLength(1));
+        expect(await db.select(db.deckMoves).get(), hasLength(1));
+      },
+    );
   });
 
   // =========================================================================
@@ -1278,7 +1462,8 @@ void main() {
       final defaultMoves = <Move>[];
       return StatsBundle(
         ratingDistribution:
-            ratingDistribution ?? {'AGAIN': 5, 'HARD': 10, 'GOOD': 30, 'EASY': 5},
+            ratingDistribution ??
+            {'AGAIN': 5, 'HARD': 10, 'GOOD': 30, 'EASY': 5},
         topMoveEntries: topMoveEntries ?? [],
         topMoves: topMoves ?? [],
         currentStreak: currentStreak,
@@ -1300,6 +1485,8 @@ void main() {
         overallRetention: overallRetention,
         categoryMastery: [],
         dailyBreakdown: [],
+        cardStats: const [],
+        reviewTimeline: const [],
       );
     }
 

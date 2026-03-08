@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 import 'dart:ui';
 import 'package:drift/drift.dart' hide Column;
@@ -9,12 +10,15 @@ import 'package:go_router/go_router.dart';
 import 'package:uuid/uuid.dart';
 
 import '../../core/database/database.dart';
+import '../../core/database/daos/combos_dao.dart';
 import '../../core/design/colors.dart';
 import '../../core/design/spacing.dart';
+import '../../core/design/theme.dart';
 import '../../core/design/typography.dart';
 import '../../core/models/learning_state.dart';
 import '../../core/providers.dart';
 import '../../core/services/categories_service.dart';
+import '../../core/services/native_video_album.dart';
 import '../../core/services/settings_service.dart';
 import '../../core/services/video_service.dart';
 import '../../core/services/view_names_service.dart';
@@ -66,7 +70,9 @@ final _movesStreamProvider = StreamProvider<List<Move>>((ref) {
 // -- Screen ------------------------------------------------------------------
 
 class MoveListScreen extends ConsumerWidget {
-  const MoveListScreen({super.key});
+  MoveListScreen({super.key});
+
+  final NativeVideoAlbum _videoAlbum = NativeVideoAlbum();
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -117,7 +123,10 @@ class MoveListScreen extends ConsumerWidget {
                     hintText: segment == ArsenalSegment.moves
                         ? 'Search moves...'
                         : 'Search combos...',
-                    prefixIcon: Icon(Icons.search, color: colorScheme.secondary),
+                    prefixIcon: Icon(
+                      Icons.search,
+                      color: colorScheme.secondary,
+                    ),
                   ),
                 ),
               ),
@@ -206,9 +215,11 @@ class MoveListScreen extends ConsumerWidget {
                       context,
                       ref,
                     ),
-                    ArsenalSegment.combos => () => context.push('/create-combo'),
+                    ArsenalSegment.combos => () => context.push(
+                      '/create-combo',
+                    ),
                   },
-                  backgroundColor: AppColors.accent,
+                  backgroundColor: Theme.of(context).colorScheme.primary,
                   child: const Icon(Icons.add, color: Colors.white),
                 ),
               )
@@ -264,26 +275,64 @@ class MoveListScreen extends ConsumerWidget {
 
     if (result == null || result.name.isEmpty || !context.mounted) return;
 
-    HapticFeedback.mediumImpact();
-    _createMove(ref, result.name, result.category, videoPath);
+    try {
+      await _createMove(ref, result.name, result.category, videoPath);
+      HapticFeedback.mediumImpact();
+    } catch (error) {
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            '$error'.contains('duplicate_card_name')
+                ? 'Card names must stay unique across moves and combos.'
+                : 'Could not create move: $error',
+          ),
+        ),
+      );
+    }
   }
 
-  void _createMove(
+  Future<void> _createMove(
     WidgetRef ref,
     String name,
     String? category,
     String? videoPath,
-  ) {
-    ref
+  ) async {
+    final safeCategory = category ?? 'default';
+    final normalizedName = ref
+        .read(reviewableNamingServiceProvider)
+        .normalize(name);
+    final isTaken = await ref
+        .read(reviewableNamingServiceProvider)
+        .isNameTaken(normalizedName);
+    if (isTaken) {
+      throw StateError('duplicate_card_name');
+    }
+
+    await ref
         .read(moveRepositoryProvider)
         .insert(
           MovesCompanion.insert(
             id: const Uuid().v4(),
-            name: name,
-            category: Value(category ?? 'default'),
+            name: normalizedName,
+            category: Value(safeCategory),
             videoPath: Value(videoPath),
           ),
         );
+    if (videoPath != null) {
+      unawaited(
+        _videoAlbum
+            .saveToAlbum(
+              videoPath: videoPath,
+              albumName: NativeVideoAlbum.defaultAlbumName(),
+              assetTitle: normalizedName,
+              category: safeCategory,
+            )
+            .catchError(
+              (error) => debugPrint('Album save failed (non-fatal): $error'),
+            ),
+      );
+    }
   }
 }
 
@@ -305,6 +354,7 @@ class _VideoNamingSheet extends ConsumerStatefulWidget {
 class _VideoNamingSheetState extends ConsumerState<_VideoNamingSheet> {
   final _nameController = TextEditingController();
   String? _selectedCategory;
+  String? _errorText;
   bool _nameEmpty = true;
 
   @override
@@ -315,7 +365,30 @@ class _VideoNamingSheetState extends ConsumerState<_VideoNamingSheet> {
 
   void _onNameChanged() {
     final empty = _nameController.text.trim().isEmpty;
-    if (empty != _nameEmpty) setState(() => _nameEmpty = empty);
+    if (empty != _nameEmpty || _errorText != null) {
+      setState(() {
+        _nameEmpty = empty;
+        _errorText = null;
+      });
+    }
+  }
+
+  Future<void> _submit(String? selectedCategory) async {
+    if (_nameEmpty || selectedCategory == null) return;
+
+    final naming = ref.read(reviewableNamingServiceProvider);
+    final normalized = naming.normalize(_nameController.text);
+    final isTaken = await naming.isNameTaken(normalized);
+    if (!mounted) return;
+
+    if (isTaken) {
+      setState(() => _errorText = '"$normalized" already exists.');
+      HapticFeedback.heavyImpact();
+      return;
+    }
+
+    HapticFeedback.mediumImpact();
+    Navigator.pop(context, (name: normalized, category: selectedCategory));
   }
 
   @override
@@ -329,6 +402,18 @@ class _VideoNamingSheetState extends ConsumerState<_VideoNamingSheet> {
   Widget build(BuildContext context) {
     final categories = ref.watch(categoriesProvider);
     final colorScheme = Theme.of(context).colorScheme;
+    final selectedCategory =
+        categories.any((cat) => cat.name == _selectedCategory)
+        ? _selectedCategory
+        : (categories.isNotEmpty ? categories.first.name : null);
+
+    if (selectedCategory != _selectedCategory) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          setState(() => _selectedCategory = selectedCategory);
+        }
+      });
+    }
 
     return Stack(
       children: [
@@ -416,15 +501,27 @@ class _VideoNamingSheetState extends ConsumerState<_VideoNamingSheet> {
                                     child: TextField(
                                       controller: _nameController,
                                       autofocus: true,
-                                      decoration: const InputDecoration(
+                                      decoration: InputDecoration(
                                         hintText: 'Move name',
+                                        errorText: _errorText,
                                       ),
+                                      textInputAction: TextInputAction.done,
+                                      onSubmitted: (_) =>
+                                          _submit(selectedCategory),
                                     ),
                                   ),
                                   const SizedBox(height: AppSpacing.md),
                                   // Category chips
                                   Text(
                                     'Category',
+                                    style: AppTypography.caption.copyWith(
+                                      color: colorScheme.secondary,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    'Required so the move keeps its meaning across review, stats, and gallery.',
                                     style: AppTypography.caption.copyWith(
                                       color: colorScheme.secondary,
                                     ),
@@ -434,22 +531,13 @@ class _VideoNamingSheetState extends ConsumerState<_VideoNamingSheet> {
                                     spacing: AppSpacing.sm,
                                     runSpacing: AppSpacing.sm,
                                     children: [
-                                      _buildCategoryChip(
-                                        context,
-                                        label: 'None',
-                                        color: colorScheme.secondary,
-                                        selected: _selectedCategory == null,
-                                        onTap: () => setState(
-                                          () => _selectedCategory = null,
-                                        ),
-                                      ),
                                       for (final cat in categories)
                                         _buildCategoryChip(
                                           context,
                                           label: cat.name,
                                           color: cat.color,
                                           selected:
-                                              _selectedCategory == cat.name,
+                                              selectedCategory == cat.name,
                                           onTap: () => setState(
                                             () => _selectedCategory = cat.name,
                                           ),
@@ -461,34 +549,38 @@ class _VideoNamingSheetState extends ConsumerState<_VideoNamingSheet> {
                                   Semantics(
                                     label: 'Save move',
                                     button: true,
-                                    enabled: !_nameEmpty,
+                                    enabled:
+                                        !_nameEmpty && selectedCategory != null,
                                     child: SizedBox(
-                                    width: double.infinity,
-                                    height: 50,
-                                    child: ElevatedButton(
-                                      onPressed: _nameEmpty
-                                          ? null
-                                          : () => Navigator.pop(context, (
-                                              name: _nameController.text.trim(),
-                                              category: _selectedCategory,
-                                            )),
-                                      style: ElevatedButton.styleFrom(
-                                        backgroundColor: AppColors.accent,
-                                        foregroundColor: Colors.white,
-                                        disabledBackgroundColor: AppColors
-                                            .accent
-                                            .withValues(alpha: 0.3),
-                                        disabledForegroundColor: Colors.white
-                                            .withValues(alpha: 0.5),
-                                        shape: RoundedRectangleBorder(
-                                          borderRadius: BorderRadius.circular(
-                                            AppRadius.lg,
+                                      width: double.infinity,
+                                      height: 50,
+                                      child: ElevatedButton(
+                                        onPressed:
+                                            _nameEmpty ||
+                                                selectedCategory == null
+                                            ? null
+                                            : () => _submit(selectedCategory),
+                                        style: ElevatedButton.styleFrom(
+                                          backgroundColor: Theme.of(
+                                            context,
+                                          ).colorScheme.primary,
+                                          foregroundColor: Colors.white,
+                                          disabledBackgroundColor:
+                                              Theme.of(context)
+                                                  .colorScheme
+                                                  .primary
+                                                  .withValues(alpha: 0.3),
+                                          disabledForegroundColor: Colors.white
+                                              .withValues(alpha: 0.5),
+                                          shape: RoundedRectangleBorder(
+                                            borderRadius: BorderRadius.circular(
+                                              AppRadius.lg,
+                                            ),
                                           ),
                                         ),
+                                        child: const Text('Save'),
                                       ),
-                                      child: const Text('Save'),
                                     ),
-                                  ),
                                   ),
                                 ],
                               ),
@@ -527,7 +619,7 @@ class _VideoNamingSheetState extends ConsumerState<_VideoNamingSheet> {
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
         decoration: BoxDecoration(
           color: selected
-              ? AppColors.accent
+              ? colorScheme.primary
               : colorScheme.surfaceContainerHighest,
           borderRadius: BorderRadius.circular(AppRadius.sm),
         ),
@@ -687,44 +779,51 @@ class _PillToggleRow<T> extends StatelessWidget {
           for (final item in items) ...[
             if (item != items.first) const SizedBox(width: AppSpacing.sm),
             Expanded(
-              child: GestureDetector(
-                onTap: () {
-                  if (selected != item) onSelected(item);
-                },
-                onLongPress: onLongPress != null
-                    ? () => onLongPress!(item)
-                    : null,
-                child: Container(
-                  padding: const EdgeInsets.symmetric(vertical: 8),
-                  decoration: BoxDecoration(
-                    color: selected == item
-                        ? AppColors.accent
-                        : colorScheme.surfaceContainerHighest,
-                    borderRadius: BorderRadius.circular(AppRadius.sm),
-                  ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(
-                        iconOf(item),
-                        size: 16,
+              child: Semantics(
+                button: true,
+                selected: selected == item,
+                label: labelOf(item),
+                child: GestureDetector(
+                  onTap: () {
+                    if (selected != item) onSelected(item);
+                  },
+                  onLongPress: onLongPress != null
+                      ? () => onLongPress!(item)
+                      : null,
+                  child: ExcludeSemantics(
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(vertical: 8),
+                      decoration: BoxDecoration(
                         color: selected == item
-                            ? Colors.white
-                            : colorScheme.secondary,
+                            ? colorScheme.primary
+                            : colorScheme.surfaceContainerHighest,
+                        borderRadius: BorderRadius.circular(AppRadius.sm),
                       ),
-                      const SizedBox(width: 6),
-                      Text(
-                        labelOf(item),
-                        style: AppTypography.caption.copyWith(
-                          color: selected == item
-                              ? Colors.white
-                              : colorScheme.onSurface,
-                          fontWeight: selected == item
-                              ? FontWeight.w600
-                              : FontWeight.w400,
-                        ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(
+                            iconOf(item),
+                            size: 16,
+                            color: selected == item
+                                ? Colors.white
+                                : colorScheme.secondary,
+                          ),
+                          const SizedBox(width: 6),
+                          Text(
+                            labelOf(item),
+                            style: AppTypography.caption.copyWith(
+                              color: selected == item
+                                  ? Colors.white
+                                  : colorScheme.onSurface,
+                              fontWeight: selected == item
+                                  ? FontWeight.w600
+                                  : FontWeight.w400,
+                            ),
+                          ),
+                        ],
                       ),
-                    ],
+                    ),
                   ),
                 ),
               ),
@@ -791,64 +890,68 @@ class _ComboRow extends ConsumerWidget {
         label: '${combo.name}, $moveCount moves',
         button: true,
         child: InkWell(
-        onTap: () => context.go('/arsenal/combo/${combo.id}'),
-        borderRadius: BorderRadius.circular(AppRadius.sm),
-        child: Container(
-          margin: const EdgeInsets.only(bottom: AppSpacing.sm),
-          decoration: BoxDecoration(
-            color: colorScheme.surface,
-            borderRadius: BorderRadius.circular(AppRadius.sm),
-          ),
-          child: IntrinsicHeight(
-            child: Row(
-              children: [
-                // Leading accent bar
-                Container(
-                  width: 5,
-                  decoration: BoxDecoration(
-                    color: AppColors.accent,
-                    borderRadius: const BorderRadius.only(
-                      topLeft: Radius.circular(AppRadius.sm),
-                      bottomLeft: Radius.circular(AppRadius.sm),
+          onTap: () => context.go('/arsenal/combo/${combo.id}'),
+          borderRadius: BorderRadius.circular(AppRadius.sm),
+          child: Container(
+            margin: const EdgeInsets.only(bottom: AppSpacing.sm),
+            decoration: BoxDecoration(
+              color: colorScheme.surface,
+              borderRadius: BorderRadius.circular(AppRadius.sm),
+            ),
+            child: IntrinsicHeight(
+              child: Row(
+                children: [
+                  // Leading accent bar
+                  Container(
+                    width: 5,
+                    decoration: BoxDecoration(
+                      color: Theme.of(context).colorScheme.primary,
+                      borderRadius: const BorderRadius.only(
+                        topLeft: Radius.circular(AppRadius.sm),
+                        bottomLeft: Radius.circular(AppRadius.sm),
+                      ),
                     ),
                   ),
-                ),
-                const SizedBox(width: AppSpacing.sm),
-                Icon(Icons.playlist_play, color: AppColors.accent, size: 24),
-                const SizedBox(width: AppSpacing.md),
-                Expanded(
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 14),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Text(
-                          combo.name,
-                          style: AppTypography.bodyMedium.copyWith(
-                            color: colorScheme.onSurface,
+                  const SizedBox(width: AppSpacing.sm),
+                  Icon(
+                    Icons.playlist_play,
+                    color: Theme.of(context).colorScheme.primary,
+                    size: 24,
+                  ),
+                  const SizedBox(width: AppSpacing.md),
+                  Expanded(
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Text(
+                            combo.name,
+                            style: AppTypography.bodyMedium.copyWith(
+                              color: colorScheme.onSurface,
+                            ),
+                            overflow: TextOverflow.ellipsis,
                           ),
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                        if (moveCount > 0) ...[
-                          const SizedBox(height: AppSpacing.xs),
-                          _MoveCountDots(count: moveCount),
+                          if (moveCount > 0) ...[
+                            const SizedBox(height: AppSpacing.xs),
+                            _MoveCountDots(count: moveCount),
+                          ],
                         ],
-                      ],
+                      ),
                     ),
                   ),
-                ),
-                Icon(
-                  Icons.chevron_right,
-                  color: colorScheme.secondary,
-                  size: 20,
-                ),
-                const SizedBox(width: AppSpacing.sm),
-              ],
+                  Icon(
+                    Icons.chevron_right,
+                    color: colorScheme.secondary,
+                    size: 20,
+                  ),
+                  const SizedBox(width: AppSpacing.sm),
+                ],
+              ),
             ),
           ),
         ),
-      ),
       ),
     );
   }
@@ -875,8 +978,8 @@ class _MoveCountDots extends StatelessWidget {
           Container(
             width: 6,
             height: 6,
-            decoration: const BoxDecoration(
-              color: AppColors.accent,
+            decoration: BoxDecoration(
+              color: Theme.of(context).colorScheme.primary,
               shape: BoxShape.circle,
             ),
           ).animate().scale(
@@ -965,13 +1068,15 @@ class _GridCardShell extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
+    final semanticTheme = AppSemanticTheme.of(context);
     return GestureDetector(
       onTap: onTap,
       child: Container(
         clipBehavior: Clip.antiAlias,
-        decoration: BoxDecoration(
-          color: colorScheme.surface,
-          borderRadius: BorderRadius.circular(AppRadius.md),
+        decoration: AppSurfaces.panel(
+          context,
+          raised: true,
+          radius: AppRadius.md,
         ),
         child: Stack(
           fit: StackFit.expand,
@@ -984,14 +1089,11 @@ class _GridCardShell extends StatelessWidget {
               child: Container(
                 padding: const EdgeInsets.fromLTRB(10, 24, 10, 10),
                 decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.topCenter,
-                    end: Alignment.bottomCenter,
-                    colors: [
-                      Colors.transparent,
-                      Colors.black.withValues(alpha: 0.7),
-                    ],
-                  ),
+                  color:
+                      (semanticTheme.isMonoOutline
+                              ? colorScheme.onSurface
+                              : Colors.black)
+                          .withValues(alpha: 0.74),
                 ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -1056,31 +1158,13 @@ class _ComboGridCell extends ConsumerWidget {
         HapticFeedback.lightImpact();
         context.go('/arsenal/combo/${combo.id}');
       },
-      background: Container(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [
-              AppColors.accent.withValues(alpha: 0.15),
-              AppColors.accent.withValues(alpha: 0.05),
-            ],
-          ),
-        ),
-        child: Center(
-          child: Icon(
-            Icons.playlist_play,
-            size: 48,
-            color: AppColors.accent.withValues(alpha: 0.4),
-          ),
-        ),
-      ),
+      background: _ComboPreviewBackground(combo: combo),
       name: combo.name,
-      subtitle: moveCount > 0 ? _MoveCountDots(count: moveCount) : null,
+      subtitle: _ComboGridMeta(combo: combo, moveCount: moveCount),
       topRightWidget: Container(
         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
         decoration: BoxDecoration(
-          color: AppColors.accent.withValues(alpha: 0.9),
+          color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.9),
           borderRadius: BorderRadius.circular(AppRadius.sm),
         ),
         child: Row(
@@ -1096,6 +1180,175 @@ class _ComboGridCell extends ConsumerWidget {
                 fontWeight: FontWeight.w600,
               ),
             ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _ComboGridMeta extends ConsumerWidget {
+  const _ComboGridMeta({required this.combo, required this.moveCount});
+
+  final Combo combo;
+  final int moveCount;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final comboMovesStream = ref
+        .watch(comboRepositoryProvider)
+        .watchComboMoves(combo.id);
+
+    return StreamBuilder<List<ComboMoveWithDetail>>(
+      stream: comboMovesStream,
+      builder: (context, snapshot) {
+        final moves = snapshot.data ?? const <ComboMoveWithDetail>[];
+        final names = moves.map((item) => item.move.name).take(3).toList();
+        final overflow = moves.length - names.length;
+        final sequenceLabel = names.isEmpty
+            ? '$moveCount move${moveCount == 1 ? '' : 's'}'
+            : [names.join(' • '), if (overflow > 0) '+$overflow'].join(' ');
+
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              sequenceLabel,
+              style: AppTypography.caption.copyWith(
+                color: Colors.white.withValues(alpha: 0.88),
+                fontWeight: FontWeight.w500,
+              ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+            const SizedBox(height: 6),
+            Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                for (int index = 0; index < moveCount.clamp(0, 4); index++) ...[
+                  if (index > 0)
+                    Container(
+                      width: 12,
+                      height: 1.5,
+                      margin: const EdgeInsets.symmetric(horizontal: 3),
+                      color: Colors.white.withValues(alpha: 0.38),
+                    ),
+                  Container(
+                    width: 6,
+                    height: 6,
+                    decoration: BoxDecoration(
+                      color: Colors.white.withValues(
+                        alpha: 0.96 - (index * 0.14),
+                      ),
+                      shape: BoxShape.circle,
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ],
+        );
+      },
+    );
+  }
+}
+
+class _ComboPreviewBackground extends ConsumerWidget {
+  const _ComboPreviewBackground({required this.combo});
+
+  final Combo combo;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final comboMovesStream = ref
+        .watch(comboRepositoryProvider)
+        .watchComboMoves(combo.id);
+
+    return StreamBuilder<List<ComboMoveWithDetail>>(
+      stream: comboMovesStream,
+      builder: (context, snapshot) {
+        final comboMoves = snapshot.data ?? const <ComboMoveWithDetail>[];
+        final previewPath =
+            comboMoves
+                .map((item) => item.move.videoPath)
+                .whereType<String>()
+                .firstOrNull ??
+            combo.activeVideoPath;
+
+        if (previewPath != null && previewPath.isNotEmpty) {
+          return _GridThumbnail(videoPath: previewPath);
+        }
+
+        return _ComboPreviewFallback(
+          stepCount: comboMoves.length,
+          stepNames: comboMoves.map((item) => item.move.name).take(3).toList(),
+        );
+      },
+    );
+  }
+}
+
+class _ComboPreviewFallback extends StatelessWidget {
+  const _ComboPreviewFallback({
+    required this.stepCount,
+    required this.stepNames,
+  });
+
+  final int stepCount;
+  final List<String> stepNames;
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    return Container(
+      color: colorScheme.surfaceContainerHighest,
+      child: Padding(
+        padding: const EdgeInsets.all(AppSpacing.md),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Spacer(),
+            Row(
+              children: [
+                for (int index = 0; index < stepCount.clamp(0, 4); index++) ...[
+                  if (index > 0)
+                    Expanded(
+                      child: Container(
+                        height: 1.5,
+                        margin: const EdgeInsets.symmetric(horizontal: 4),
+                        color: colorScheme.primary.withValues(alpha: 0.22),
+                      ),
+                    )
+                  else
+                    const SizedBox(width: 0),
+                  Container(
+                    width: 12,
+                    height: 12,
+                    decoration: BoxDecoration(
+                      color: colorScheme.primary.withValues(
+                        alpha: 0.94 - (index * 0.18),
+                      ),
+                      shape: BoxShape.circle,
+                    ),
+                  ),
+                ],
+              ],
+            ),
+            const SizedBox(height: AppSpacing.md),
+            for (final name in stepNames.take(2)) ...[
+              Text(
+                name,
+                style: AppTypography.caption.copyWith(
+                  color: colorScheme.onSurface.withValues(alpha: 0.78),
+                  fontWeight: FontWeight.w600,
+                ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+              const SizedBox(height: 4),
+            ],
+            const Spacer(),
           ],
         ),
       ),
@@ -1239,8 +1492,40 @@ class _GridThumbnailState extends State<_GridThumbnail> {
     _load();
   }
 
+  @override
+  void didUpdateWidget(covariant _GridThumbnail oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.videoPath != widget.videoPath) {
+      _thumbPath = null;
+      _loaded = false;
+      _load();
+    }
+  }
+
   Future<void> _load() async {
-    final path = await _videoService.generateThumbnail(widget.videoPath);
+    final videoPath = widget.videoPath;
+    if (videoPath.isEmpty) {
+      if (mounted) {
+        setState(() {
+          _thumbPath = null;
+          _loaded = true;
+        });
+      }
+      return;
+    }
+
+    final status = await _videoService.checkVideoFileWithRetry(videoPath);
+    if (!mounted || widget.videoPath != videoPath) return;
+    if (status != VideoFileStatus.ready) {
+      setState(() {
+        _thumbPath = null;
+        _loaded = true;
+      });
+      return;
+    }
+
+    final path = await _videoService.generateThumbnail(videoPath);
+    if (!mounted || widget.videoPath != videoPath) return;
     if (mounted) {
       setState(() {
         _thumbPath = path;
@@ -1253,7 +1538,20 @@ class _GridThumbnailState extends State<_GridThumbnail> {
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
     if (_loaded && _thumbPath != null) {
-      return Image.file(File(_thumbPath!), fit: BoxFit.cover);
+      return Image.file(
+        File(_thumbPath!),
+        fit: BoxFit.cover,
+        filterQuality: FilterQuality.high,
+        gaplessPlayback: true,
+        errorBuilder: (_, _, _) => Container(
+          color: colorScheme.surfaceContainerHighest,
+          child: Icon(
+            Icons.videocam_off,
+            size: 40,
+            color: colorScheme.secondary,
+          ),
+        ),
+      );
     }
     return Container(
       color: colorScheme.surfaceContainerHighest,

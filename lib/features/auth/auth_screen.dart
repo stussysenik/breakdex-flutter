@@ -171,7 +171,7 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
                       TextSpan(
                         text: _isLogin ? 'Sign Up' : 'Sign In',
                         style: AppTypography.bodySmall.copyWith(
-                          color: AppColors.accent,
+                          color: colorScheme.primary,
                           fontWeight: FontWeight.w600,
                         ),
                       ),

@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:collection';
 import 'dart:io';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/foundation.dart';
@@ -9,6 +10,8 @@ import 'package:path/path.dart' as p;
 import 'package:uuid/uuid.dart';
 import 'package:video_player/video_player.dart';
 import 'package:video_thumbnail/video_thumbnail.dart';
+
+import 'native_video_preview.dart';
 
 enum VideoFileStatus { ready, missing, error }
 
@@ -35,6 +38,7 @@ class VideoService {
   static const _progressChannel = EventChannel(
     'com.breakdex/native_video_import_progress',
   );
+  static final _nativePreview = NativeVideoPreview();
 
   /// Stream of import progress (0.0–1.0) from the native iOS video picker.
   /// Emits fractional progress as iCloud/large videos materialize on disk.
@@ -45,6 +49,10 @@ class VideoService {
   /// In-memory cache: videoPath → thumbnailPath. Avoids repeated disk checks
   /// when the grid view rebuilds (e.g. scroll, theme change, filter toggle).
   static final Map<String, String?> _thumbCache = {};
+  static final LinkedHashMap<String, Uint8List?> _frameThumbCache =
+      LinkedHashMap<String, Uint8List?>();
+  static final Map<String, Future<Uint8List?>> _frameThumbInFlight = {};
+  static const _maxFrameThumbEntries = 256;
 
   /// Shared iOS pick-and-thumbnail helper for native channel methods.
   Future<VideoPickResult?> _nativePickWithThumb(
@@ -270,8 +278,8 @@ class VideoService {
       final Uint8List? bytes = await VideoThumbnail.thumbnailData(
         video: videoPath,
         imageFormat: ImageFormat.JPEG,
-        maxWidth: 200,
-        quality: 75,
+        maxWidth: 720,
+        quality: 95,
       );
       if (bytes == null) {
         _thumbCache[videoPath] = null;
@@ -285,6 +293,213 @@ class VideoService {
     } catch (_) {
       _thumbCache[videoPath] = null;
       return null;
+    }
+  }
+
+  /// Load thumbnail bytes for a specific video frame.
+  ///
+  /// Cache keys are bucketed by [bucketMs] so timeline scrubbing produces
+  /// deterministic O(1) hits after the first decode instead of hammering the
+  /// platform with near-identical requests.
+  Future<Uint8List?> loadFrameThumbnailData({
+    required String videoPath,
+    required int timeMs,
+    int maxWidth = 100,
+    int quality = 50,
+    int bucketMs = 50,
+    bool exact = false,
+  }) async {
+    final normalizedTimeMs = exact || bucketMs <= 1
+        ? timeMs
+        : ((timeMs / bucketMs).round() * bucketMs);
+    final cacheKey = _frameThumbnailKey(
+      videoPath: videoPath,
+      timeMs: normalizedTimeMs,
+      maxWidth: maxWidth,
+      quality: quality,
+      exact: exact,
+    );
+
+    final cached = _readFrameThumbnail(cacheKey);
+    if (cached != null || _frameThumbCache.containsKey(cacheKey)) {
+      return cached;
+    }
+
+    final pending = _frameThumbInFlight[cacheKey];
+    if (pending != null) return pending;
+
+    final future = _loadFrameThumbnailUncached(
+      videoPath: videoPath,
+      timeMs: normalizedTimeMs,
+      maxWidth: maxWidth,
+      quality: quality,
+      exact: exact,
+      bucketMs: bucketMs,
+    );
+    _frameThumbInFlight[cacheKey] = future;
+
+    try {
+      final bytes = await future;
+      _rememberFrameThumbnail(cacheKey, bytes);
+      return bytes;
+    } finally {
+      _frameThumbInFlight.remove(cacheKey);
+    }
+  }
+
+  Future<List<Uint8List?>> loadTimelineThumbnails({
+    required String videoPath,
+    required int durationMs,
+    int count = 8,
+    int maxWidth = 80,
+    int quality = 50,
+  }) async {
+    if (durationMs <= 0 || count <= 0) {
+      return const <Uint8List?>[];
+    }
+
+    final times = List<int>.generate(
+      count,
+      (index) => (durationMs * index / count).round(),
+      growable: false,
+    );
+    final results = List<Uint8List?>.filled(
+      times.length,
+      null,
+      growable: false,
+    );
+    final missingIndexes = <int>[];
+
+    for (var i = 0; i < times.length; i++) {
+      final cacheKey = _frameThumbnailKey(
+        videoPath: videoPath,
+        timeMs: times[i],
+        maxWidth: maxWidth,
+        quality: quality,
+        exact: false,
+      );
+      final cached = _readFrameThumbnail(cacheKey);
+      if (cached != null || _frameThumbCache.containsKey(cacheKey)) {
+        results[i] = cached;
+      } else {
+        missingIndexes.add(i);
+      }
+    }
+
+    if (missingIndexes.isEmpty) {
+      return results;
+    }
+
+    if (Platform.isIOS) {
+      try {
+        final nativeResults = await _nativePreview.generateThumbnails(
+          videoPath: videoPath,
+          timesMs: [for (final index in missingIndexes) times[index]],
+          maxWidth: maxWidth,
+          quality: quality,
+          toleranceMs: 200,
+        );
+
+        for (var i = 0; i < missingIndexes.length; i++) {
+          final index = missingIndexes[i];
+          final bytes = i < nativeResults.length ? nativeResults[i] : null;
+          final cacheKey = _frameThumbnailKey(
+            videoPath: videoPath,
+            timeMs: times[index],
+            maxWidth: maxWidth,
+            quality: quality,
+            exact: false,
+          );
+          _rememberFrameThumbnail(cacheKey, bytes);
+          results[index] = bytes;
+        }
+        return results;
+      } on MissingPluginException {
+        // Fallback below.
+      } on PlatformException {
+        // Fallback below.
+      }
+    }
+
+    final resolved = await Future.wait(
+      missingIndexes.map(
+        (index) => loadFrameThumbnailData(
+          videoPath: videoPath,
+          timeMs: times[index],
+          maxWidth: maxWidth,
+          quality: quality,
+          bucketMs: 100,
+        ),
+      ),
+    );
+
+    for (var i = 0; i < missingIndexes.length; i++) {
+      results[missingIndexes[i]] = resolved[i];
+    }
+    return results;
+  }
+
+  Future<Uint8List?> _loadFrameThumbnailUncached({
+    required String videoPath,
+    required int timeMs,
+    required int maxWidth,
+    required int quality,
+    required bool exact,
+    required int bucketMs,
+  }) async {
+    if (Platform.isIOS) {
+      try {
+        final batch = await _nativePreview.generateThumbnails(
+          videoPath: videoPath,
+          timesMs: [timeMs],
+          maxWidth: maxWidth,
+          quality: quality,
+          toleranceMs: exact ? 0 : bucketMs,
+          exact: exact,
+        );
+        if (batch.isNotEmpty) {
+          return batch.first;
+        }
+      } on MissingPluginException {
+        // Fall through to the plugin package below.
+      } on PlatformException {
+        // Fall through to the plugin package below.
+      }
+    }
+
+    return VideoThumbnail.thumbnailData(
+      video: videoPath,
+      imageFormat: ImageFormat.JPEG,
+      timeMs: timeMs,
+      maxWidth: maxWidth,
+      quality: quality,
+    );
+  }
+
+  static String _frameThumbnailKey({
+    required String videoPath,
+    required int timeMs,
+    required int maxWidth,
+    required int quality,
+    required bool exact,
+  }) {
+    return '$videoPath|$timeMs|$maxWidth|$quality|${exact ? '1' : '0'}';
+  }
+
+  static Uint8List? _readFrameThumbnail(String key) {
+    if (!_frameThumbCache.containsKey(key)) {
+      return null;
+    }
+    final value = _frameThumbCache.remove(key);
+    _frameThumbCache[key] = value;
+    return value;
+  }
+
+  static void _rememberFrameThumbnail(String key, Uint8List? value) {
+    _frameThumbCache.remove(key);
+    _frameThumbCache[key] = value;
+    while (_frameThumbCache.length > _maxFrameThumbEntries) {
+      _frameThumbCache.remove(_frameThumbCache.keys.first);
     }
   }
 

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../core/design/colors.dart';
 import '../../core/design/spacing.dart';
+import '../../core/design/theme.dart';
 import '../../core/design/typography.dart';
 
 /// Reusable row tile with icon, label, chevron — used across settings, detail screens, etc.
@@ -26,25 +27,35 @@ class ActionTile extends StatelessWidget {
       label: label,
       button: true,
       child: InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(AppRadius.sm),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: 14),
-        decoration: BoxDecoration(
-          color: colorScheme.surfaceContainerHighest,
-          borderRadius: BorderRadius.circular(AppRadius.sm),
-        ),
-        child: Row(
-          children: [
-            Icon(icon, color: color, size: 22),
-            const SizedBox(width: AppSpacing.md),
-            Text(label, style: AppTypography.bodyMedium.copyWith(color: color)),
-            const Spacer(),
-            Icon(Icons.chevron_right, color: colorScheme.secondary, size: 20),
-          ],
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(AppRadius.sm),
+        child: Container(
+          padding: const EdgeInsets.symmetric(
+            horizontal: AppSpacing.md,
+            vertical: 14,
+          ),
+          decoration: BoxDecoration(
+            color: colorScheme.surfaceContainerHighest,
+            borderRadius: BorderRadius.circular(AppRadius.sm),
+            border: Border.all(
+              color: colorScheme.outline.withValues(alpha: 0.32),
+            ),
+            boxShadow: AppShadows.soft(Theme.of(context).brightness),
+          ),
+          child: Row(
+            children: [
+              Icon(icon, color: color, size: 22),
+              const SizedBox(width: AppSpacing.md),
+              Text(
+                label,
+                style: AppTypography.bodyMedium.copyWith(color: color),
+              ),
+              const Spacer(),
+              Icon(Icons.chevron_right, color: colorScheme.secondary, size: 20),
+            ],
+          ),
         ),
       ),
-    ),
     );
   }
 }

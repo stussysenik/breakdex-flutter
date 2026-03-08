@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../core/design/colors.dart';
 import '../../../core/design/spacing.dart';
 import '../../../core/design/typography.dart';
 
@@ -14,10 +13,12 @@ class ReviewDashboard extends ConsumerWidget {
     super.key,
     required this.currentIndex,
     required this.totalInSession,
+    this.sessionLabel,
   });
 
   final int currentIndex;
   final int totalInSession;
+  final String? sessionLabel;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -25,12 +26,23 @@ class ReviewDashboard extends ConsumerWidget {
 
     final colorScheme = Theme.of(context).colorScheme;
     return Padding(
-      padding: const EdgeInsets.symmetric(
-        horizontal: AppSpacing.screenEdge,
-      ),
+      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.screenEdge),
       child: Column(
         children: [
           const SizedBox(height: AppSpacing.sm),
+          if (sessionLabel != null) ...[
+            Align(
+              alignment: Alignment.centerLeft,
+              child: Text(
+                sessionLabel!,
+                style: AppTypography.caption.copyWith(
+                  color: colorScheme.secondary,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+            const SizedBox(height: AppSpacing.xs),
+          ],
           Row(
             children: [
               Expanded(
@@ -41,7 +53,7 @@ class ReviewDashboard extends ConsumerWidget {
                         ? (currentIndex + 1) / totalInSession
                         : 0,
                     backgroundColor: colorScheme.surfaceContainerHighest,
-                    color: AppColors.accent,
+                    color: Theme.of(context).colorScheme.primary,
                     minHeight: 4,
                   ),
                 ),

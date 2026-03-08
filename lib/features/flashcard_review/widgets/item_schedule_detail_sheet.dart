@@ -45,7 +45,10 @@ class ItemScheduleDetailSheet extends ConsumerWidget {
       )),
     );
     final intervalsAsync = ref.watch(
-      intervalPreviewProvider(item.item.entityId),
+      intervalPreviewProvider((
+        entityId: item.item.entityId,
+        entityType: item.item.entityType,
+      )),
     );
 
     return Container(
@@ -89,7 +92,7 @@ class ItemScheduleDetailSheet extends ConsumerWidget {
                       ? Icons.playlist_play
                       : Icons.sports_martial_arts,
                   size: 20,
-                  color: AppColors.accent,
+                  color: colorScheme.primary,
                 ),
                 const SizedBox(width: 8),
                 Expanded(
@@ -199,7 +202,7 @@ class ItemScheduleDetailSheet extends ConsumerWidget {
                     ref.read(reviewSessionActiveProvider.notifier).state = true;
                   },
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.accent,
+                    backgroundColor: colorScheme.primary,
                     foregroundColor: Colors.white,
                     elevation: 0,
                     shape: RoundedRectangleBorder(

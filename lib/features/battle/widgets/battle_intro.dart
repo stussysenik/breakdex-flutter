@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import '../../../core/design/colors.dart';
 import '../../../core/design/spacing.dart';
 import '../../../core/design/typography.dart';
 import '../providers/battle_providers.dart';
@@ -27,7 +26,7 @@ class BattleIntro extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           const Spacer(),
-          Icon(Icons.bolt_rounded, size: 64, color: AppColors.accent),
+          Icon(Icons.bolt_rounded, size: 64, color: Theme.of(context).colorScheme.primary),
           const SizedBox(height: AppSpacing.lg),
           Semantics(
             header: true,
@@ -68,7 +67,7 @@ class BattleIntro extends StatelessWidget {
                 onStart();
               },
               style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.accent,
+                backgroundColor: Theme.of(context).colorScheme.primary,
                 foregroundColor: Colors.white,
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(AppRadius.sm),
@@ -108,10 +107,10 @@ class _DifficultyCard extends StatelessWidget {
         duration: const Duration(milliseconds: 200),
         padding: const EdgeInsets.all(AppSpacing.md),
         decoration: BoxDecoration(
-          color: isSelected ? AppColors.accent.withValues(alpha: 0.1) : cs.surface,
+          color: isSelected ? cs.primary.withValues(alpha: 0.1) : cs.surface,
           borderRadius: BorderRadius.circular(AppRadius.md),
           border: Border.all(
-            color: isSelected ? AppColors.accent : cs.outline,
+            color: isSelected ? cs.primary : cs.outline,
             width: isSelected ? 2 : 1,
           ),
         ),
@@ -137,7 +136,7 @@ class _DifficultyCard extends StatelessWidget {
               ),
             ),
             if (isSelected)
-              Icon(Icons.check_circle, color: AppColors.accent, size: 24),
+              Icon(Icons.check_circle, color: cs.primary, size: 24),
           ],
         ),
       ),
