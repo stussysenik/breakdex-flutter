@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../core/design/colors.dart';
 import '../../../core/design/spacing.dart';
 import '../../../core/design/typography.dart';
 import '../../../core/providers.dart';
@@ -32,12 +31,12 @@ class SrsParametersCard extends ConsumerWidget {
           // Header
           Row(
             children: [
-              Icon(Icons.tune, size: 16, color: AppColors.accent),
+              Icon(Icons.tune, size: 16, color: Theme.of(context).colorScheme.primary),
               const SizedBox(width: 6),
               Text(
                 'FSRS Parameters',
                 style: AppTypography.caption.copyWith(
-                  color: AppColors.accent,
+                  color: Theme.of(context).colorScheme.primary,
                   fontWeight: FontWeight.w700,
                   letterSpacing: 0.5,
                 ),

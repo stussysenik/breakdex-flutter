@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import '../../../core/database/database.dart';
-import '../../../core/design/colors.dart';
 import '../../../core/design/spacing.dart';
 import '../../../core/design/typography.dart';
 import '../../../core/services/deck_service.dart';
@@ -15,11 +14,13 @@ class DeckCard extends StatelessWidget {
   const DeckCard({
     super.key,
     required this.deck,
+    required this.isSelected,
     required this.onTap,
     required this.onLongPress,
   });
 
   final Deck deck;
+  final bool isSelected;
   final VoidCallback onTap;
   final VoidCallback onLongPress;
 
@@ -55,10 +56,14 @@ class DeckCard extends StatelessWidget {
         width: 140,
         padding: const EdgeInsets.all(AppSpacing.md),
         decoration: BoxDecoration(
-          color: colorScheme.surfaceContainerHighest,
+          color: isSelected
+              ? Theme.of(context).colorScheme.primary.withValues(alpha: 0.12)
+              : colorScheme.surfaceContainerHighest,
           borderRadius: BorderRadius.circular(AppRadius.md),
           border: Border.all(
-            color: AppColors.accent.withValues(alpha: 0.2),
+            color: isSelected
+                ? Theme.of(context).colorScheme.primary
+                : Theme.of(context).colorScheme.primary.withValues(alpha: 0.2),
           ),
         ),
         child: Stack(
@@ -72,7 +77,9 @@ class DeckCard extends StatelessWidget {
                     Icon(
                       isSmart ? Icons.auto_awesome : Icons.playlist_add_check,
                       size: 14,
-                      color: AppColors.accent,
+                      color: isSelected
+                          ? Theme.of(context).colorScheme.primary
+                          : Theme.of(context).colorScheme.primary,
                     ),
                     const SizedBox(width: 4),
                     if (deck.sessionSize != null)
@@ -96,10 +103,13 @@ class DeckCard extends StatelessWidget {
                 ),
                 const SizedBox(height: 2),
                 Text(
-                  subtitle,
+                  isSelected ? 'Ready to review' : subtitle,
                   style: AppTypography.caption.copyWith(
-                    color: colorScheme.secondary,
+                    color: isSelected
+                        ? Theme.of(context).colorScheme.primary
+                        : colorScheme.secondary,
                     fontSize: 10,
+                    fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
                   ),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
@@ -117,7 +127,9 @@ class DeckCard extends StatelessWidget {
                 child: Icon(
                   Icons.close,
                   size: 14,
-                  color: colorScheme.secondary,
+                  color: isSelected
+                      ? Theme.of(context).colorScheme.primary
+                      : colorScheme.secondary,
                 ),
               ),
             ),

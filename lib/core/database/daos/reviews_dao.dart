@@ -10,12 +10,16 @@ part 'reviews_dao.g.dart';
 class ReviewsDao extends DatabaseAccessor<AppDatabase> with _$ReviewsDaoMixin {
   ReviewsDao(super.db);
 
-  Stream<List<Review>> watchAll() =>
-      (select(reviews)..orderBy([(t) => OrderingTerm.desc(t.reviewedAt)]))
-          .watch();
+  Stream<List<Review>> watchAll() => (select(
+    reviews,
+  )..orderBy([(t) => OrderingTerm.desc(t.reviewedAt)])).watch();
 
   Future<void> insertReview(ReviewsCompanion entry) =>
       into(reviews).insert(entry);
+
+  Future<List<Review>> getAllOrdered() => (select(
+    reviews,
+  )..orderBy([(t) => OrderingTerm.desc(t.reviewedAt)])).get();
 
   Future<List<Review>> getByMoveId(String moveId) =>
       (select(reviews)..where((t) => t.moveId.equals(moveId))).get();
@@ -27,9 +31,11 @@ class ReviewsDao extends DatabaseAccessor<AppDatabase> with _$ReviewsDaoMixin {
 
   Future<List<Review>> getInRange(DateTime start, DateTime end) =>
       (select(reviews)
-            ..where((t) =>
-                t.reviewedAt.isBiggerOrEqualValue(start) &
-                t.reviewedAt.isSmallerOrEqualValue(end))
+            ..where(
+              (t) =>
+                  t.reviewedAt.isBiggerOrEqualValue(start) &
+                  t.reviewedAt.isSmallerOrEqualValue(end),
+            )
             ..orderBy([(t) => OrderingTerm.asc(t.reviewedAt)]))
           .get();
 
@@ -41,15 +47,19 @@ class ReviewsDao extends DatabaseAccessor<AppDatabase> with _$ReviewsDaoMixin {
   }
 
   Future<Map<DateTime, int>> dailyCountsSince(DateTime since) async {
-    final rows = await (select(reviews)
-          ..where((t) => t.reviewedAt.isBiggerOrEqualValue(since))
-          ..orderBy([(t) => OrderingTerm.asc(t.reviewedAt)]))
-        .get();
+    final rows =
+        await (select(reviews)
+              ..where((t) => t.reviewedAt.isBiggerOrEqualValue(since))
+              ..orderBy([(t) => OrderingTerm.asc(t.reviewedAt)]))
+            .get();
 
     final counts = <DateTime, int>{};
     for (final r in rows) {
       final day = DateTime(
-          r.reviewedAt.year, r.reviewedAt.month, r.reviewedAt.day);
+        r.reviewedAt.year,
+        r.reviewedAt.month,
+        r.reviewedAt.day,
+      );
       counts[day] = (counts[day] ?? 0) + 1;
     }
     return counts;
@@ -79,15 +89,17 @@ class ReviewsDao extends DatabaseAccessor<AppDatabase> with _$ReviewsDaoMixin {
 
   /// Legacy streak: consecutive days with any review activity.
   Future<int> currentStreak() async {
-    final rows = await (select(reviews)
-          ..orderBy([(t) => OrderingTerm.desc(t.reviewedAt)]))
-        .get();
+    final rows = await (select(
+      reviews,
+    )..orderBy([(t) => OrderingTerm.desc(t.reviewedAt)])).get();
 
     if (rows.isEmpty) return 0;
 
     final days = <DateTime>{};
     for (final r in rows) {
-      days.add(DateTime(r.reviewedAt.year, r.reviewedAt.month, r.reviewedAt.day));
+      days.add(
+        DateTime(r.reviewedAt.year, r.reviewedAt.month, r.reviewedAt.day),
+      );
     }
 
     final sortedDays = days.toList()..sort((a, b) => b.compareTo(a));
@@ -116,21 +128,25 @@ class ReviewsDao extends DatabaseAccessor<AppDatabase> with _$ReviewsDaoMixin {
   /// actual learning progress — the learner proved they can recall a move
   /// reliably enough for FSRS to promote it to Review state.
   Future<int> graduationStreak() async {
-    final rows = await (select(reviews)
-          ..where((t) =>
-              t.fsrsPostState.equals(2) &
-              t.fsrsPreState.isNotNull() &
-              t.fsrsPreState.isNotValue(2))
-          ..orderBy([(t) => OrderingTerm.desc(t.reviewedAt)]))
-        .get();
+    final rows =
+        await (select(reviews)
+              ..where(
+                (t) =>
+                    t.fsrsPostState.equals(2) &
+                    t.fsrsPreState.isNotNull() &
+                    t.fsrsPreState.isNotValue(2),
+              )
+              ..orderBy([(t) => OrderingTerm.desc(t.reviewedAt)]))
+            .get();
 
     if (rows.isEmpty) return 0;
 
     // Collect unique days with graduation events
     final days = <DateTime>{};
     for (final r in rows) {
-      days.add(DateTime(
-          r.reviewedAt.year, r.reviewedAt.month, r.reviewedAt.day));
+      days.add(
+        DateTime(r.reviewedAt.year, r.reviewedAt.month, r.reviewedAt.day),
+      );
     }
 
     final sortedDays = days.toList()..sort((a, b) => b.compareTo(a));

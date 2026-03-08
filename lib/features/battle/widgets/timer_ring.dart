@@ -20,7 +20,7 @@ class TimerRing extends StatelessWidget {
     // Color lerps from accent to red as time depletes
     final ringColor = Color.lerp(
       AppColors.actionAgain,
-      AppColors.accent,
+      cs.primary,
       progress,
     )!;
 

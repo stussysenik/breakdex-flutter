@@ -5,7 +5,6 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-import '../../core/design/colors.dart';
 import '../../core/design/spacing.dart';
 import '../../core/design/typography.dart';
 import '../../core/models/pose_frame.dart';
@@ -186,7 +185,7 @@ class _MoveAnalysisScreenState extends ConsumerState<MoveAnalysisScreen> {
           children: [
             Icon(
               livePose ? Icons.camera_alt : Icons.camera_alt_outlined,
-              color: livePose ? AppColors.accent : Colors.white54,
+              color: livePose ? Theme.of(context).colorScheme.primary : Colors.white54,
               size: 48,
             ),
             const SizedBox(height: 8),
@@ -216,8 +215,8 @@ class _MoveAnalysisScreenState extends ConsumerState<MoveAnalysisScreen> {
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
         decoration: BoxDecoration(
           color: _isAnalyzing
-              ? AppColors.accent.withValues(alpha: 0.5)
-              : AppColors.accent,
+              ? Theme.of(context).colorScheme.primary.withValues(alpha: 0.5)
+              : Theme.of(context).colorScheme.primary,
           borderRadius: BorderRadius.circular(AppRadius.sm),
         ),
         child: Row(

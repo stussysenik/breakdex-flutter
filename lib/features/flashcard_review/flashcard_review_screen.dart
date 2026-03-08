@@ -12,10 +12,12 @@ import 'package:uuid/uuid.dart';
 import '../../core/database/database.dart';
 import '../../core/design/colors.dart';
 import '../../core/design/spacing.dart';
+import '../../core/design/theme.dart';
 import '../../core/design/typography.dart';
 import '../../core/models/learning_state.dart';
 import '../../core/models/reviewable_item.dart';
 import '../../core/providers.dart';
+import '../../shared/widgets/primary_button.dart';
 import 'providers/deck_providers.dart';
 import 'providers/review_providers.dart';
 import 'widgets/rating_button_row.dart';
@@ -24,6 +26,7 @@ import 'widgets/review_card.dart';
 import 'widgets/review_dashboard.dart';
 import 'widgets/state_picker_sheet.dart';
 import '../../shared/widgets/video_picker_sheet.dart';
+import '../../shared/widgets/app_segmented_control.dart';
 
 class FlashcardReviewScreen extends ConsumerStatefulWidget {
   const FlashcardReviewScreen({super.key});
@@ -36,7 +39,7 @@ class FlashcardReviewScreen extends ConsumerStatefulWidget {
 class _FlashcardReviewScreenState extends ConsumerState<FlashcardReviewScreen> {
   int _currentIndex = 0;
   bool _completed = false;
-  List<Move> _moves = [];
+  List<ReviewSessionItem> _items = [];
   bool _initialized = false;
   PageController? _pageController;
 
@@ -69,7 +72,7 @@ class _FlashcardReviewScreenState extends ConsumerState<FlashcardReviewScreen> {
     _pageController = null;
     _currentIndex = 0;
     _completed = false;
-    _moves = [];
+    _items = [];
     _initialized = false;
     _cardScale = 1.0;
     _cardOpacity = 1.0;
@@ -118,8 +121,24 @@ class _FlashcardReviewScreenState extends ConsumerState<FlashcardReviewScreen> {
                     ),
                   ),
                   if (sessionActive)
-                    TextButton(
+                    OutlinedButton(
                       onPressed: _endSession,
+                      style: OutlinedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 10,
+                        ),
+                        foregroundColor: colorScheme.secondary,
+                        side: BorderSide(
+                          color: colorScheme.outline.withValues(alpha: 0.28),
+                        ),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(AppRadius.sm),
+                        ),
+                        textStyle: AppTypography.bodySmall.copyWith(
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
                       child: const Text('End'),
                     ),
                 ],
@@ -131,40 +150,21 @@ class _FlashcardReviewScreenState extends ConsumerState<FlashcardReviewScreen> {
               padding: const EdgeInsets.symmetric(
                 horizontal: AppSpacing.screenEdge,
               ),
-              child: Semantics(
-                label: 'Review mode',
-                child: SegmentedButton<ReviewMode>(
-                  segments: const [
-                    ButtonSegment<ReviewMode>(
-                      value: ReviewMode.review,
-                      icon: Icon(Icons.bolt_rounded, size: 18),
-                      label: Text('Review'),
-                    ),
-                    ButtonSegment<ReviewMode>(
-                      value: ReviewMode.deck,
-                      icon: Icon(Icons.style_rounded, size: 18),
-                      label: Text('Deck'),
-                    ),
-                  ],
-                  selected: {reviewMode},
-                  showSelectedIcon: false,
-                  onSelectionChanged: (selection) =>
-                      _setReviewMode(selection.first),
-                  style: ButtonStyle(
-                    backgroundColor: WidgetStateProperty.resolveWith((states) {
-                      if (states.contains(WidgetState.selected)) {
-                        return AppColors.accent;
-                      }
-                      return Colors.transparent;
-                    }),
-                    foregroundColor: WidgetStateProperty.resolveWith((states) {
-                      if (states.contains(WidgetState.selected)) {
-                        return Colors.white;
-                      }
-                      return colorScheme.secondary;
-                    }),
+              child: AppSegmentedControl<ReviewMode>(
+                items: const [
+                  AppSegmentedControlItem(
+                    value: ReviewMode.review,
+                    icon: Icons.grid_view_rounded,
+                    label: 'Review',
                   ),
-                ),
+                  AppSegmentedControlItem(
+                    value: ReviewMode.deck,
+                    icon: Icons.layers_rounded,
+                    label: 'Deck',
+                  ),
+                ],
+                selectedValue: reviewMode,
+                onChanged: _setReviewMode,
               ),
             ),
             const SizedBox(height: AppSpacing.xs),
@@ -185,13 +185,17 @@ class _FlashcardReviewScreenState extends ConsumerState<FlashcardReviewScreen> {
   }
 
   Widget _buildFlashcardSession() {
-    final movesAsync = ref.watch(filteredReviewMovesProvider);
+    final itemsAsync = ref.watch(filteredReviewSessionItemsProvider);
+    final sessionSource = ref.watch(reviewSessionSourceProvider);
+    final selectedDeck = ref.watch(selectedDeckProvider);
+    final stateFilter = ref.watch(reviewStateFilterProvider);
+    final entityKind = ref.watch(reviewEntityKindProvider);
 
     // Reset session when filters change (provider re-fetches)
-    ref.listen(filteredReviewMovesProvider, (prev, next) {
-      if (next is AsyncData<List<Move>> && prev != next) {
+    ref.listen(filteredReviewSessionItemsProvider, (prev, next) {
+      if (next is AsyncData<List<ReviewSessionItem>> && prev != next) {
         setState(() {
-          _moves = List.from(next.value);
+          _items = List.from(next.value);
           _currentIndex = 0;
           _completed = false;
           _initialized = true;
@@ -200,13 +204,13 @@ class _FlashcardReviewScreenState extends ConsumerState<FlashcardReviewScreen> {
       }
     });
 
-    return movesAsync.when(
+    return itemsAsync.when(
       loading: () => const Center(child: CircularProgressIndicator()),
       error: (e, _) => Center(child: Text('Error: $e')),
-      data: (moves) {
+      data: (items) {
         // First load — also start shake listener for the active session
         if (!_initialized) {
-          _moves = List.from(moves);
+          _items = List.from(items);
           _initialized = true;
           _initPageController();
           _startShakeListener();
@@ -219,13 +223,23 @@ class _FlashcardReviewScreenState extends ConsumerState<FlashcardReviewScreen> {
             // Dashboard: filter chips + progress
             ReviewDashboard(
               currentIndex: _currentIndex,
-              totalInSession: _moves.length,
+              totalInSession: _items.length,
+              sessionLabel: switch (sessionSource) {
+                ReviewSessionSource.deck when selectedDeck != null =>
+                  stateFilter == null
+                      ? '${selectedDeck.name} · Moves'
+                      : '${selectedDeck.name} · ${stateFilter.displayText}',
+                ReviewSessionSource.stateBased when stateFilter != null =>
+                  '${_entityKindLabel(entityKind)} · ${stateFilter.displayText}',
+                ReviewSessionSource.stateBased => _entityKindLabel(entityKind),
+                _ => 'All Cards',
+              },
             ),
             const SizedBox(height: AppSpacing.md),
 
             // Main content
             Expanded(
-              child: _moves.isEmpty
+              child: _items.isEmpty
                   ? _buildEmpty(colorScheme)
                   : _completed
                   ? _buildCompleted(colorScheme)
@@ -239,15 +253,19 @@ class _FlashcardReviewScreenState extends ConsumerState<FlashcardReviewScreen> {
 
   /// PageView-based review content with true 60/30/10 viewport split.
   Widget _buildReviewContent() {
-    final move = _moves[_currentIndex];
-    final intervalsAsync = ref.watch(intervalPreviewProvider(move.id));
+    final item = _items[_currentIndex];
+    final intervalsAsync = ref.watch(
+      intervalPreviewProvider((
+        entityId: item.entityId,
+        entityType: item.entityType,
+      )),
+    );
     final intervals = intervalsAsync.valueOrNull;
 
     return LayoutBuilder(
       builder: (context, constraints) {
         final available = constraints.maxHeight;
-        // 65% for video, remaining for context band + buttons
-        final videoHeight = (available * 0.65).clamp(180.0, 420.0);
+        final videoHeight = (available * 0.58).clamp(180.0, 400.0);
 
         return Column(
           children: [
@@ -266,7 +284,7 @@ class _FlashcardReviewScreenState extends ConsumerState<FlashcardReviewScreen> {
                     physics: _animatingExit
                         ? const NeverScrollableScrollPhysics()
                         : null,
-                    itemCount: _moves.length,
+                    itemCount: _items.length,
                     onPageChanged: (index) {
                       HapticFeedback.selectionClick();
                       setState(() {
@@ -274,22 +292,35 @@ class _FlashcardReviewScreenState extends ConsumerState<FlashcardReviewScreen> {
                       });
                     },
                     itemBuilder: (context, index) {
-                      final pageMove = _moves[index];
+                      final pageItem = _items[index];
                       return Semantics(
-                        identifier: 'review-card-${pageMove.id}',
-                        label: 'Review card: ${pageMove.name}',
+                        identifier: 'review-card-${pageItem.entityId}',
+                        label: 'Review card: ${pageItem.displayName}',
                         child: GestureDetector(
                           onVerticalDragEnd: (details) {
                             if (details.primaryVelocity != null &&
-                                details.primaryVelocity! < -300) {
-                              _showStatePicker(pageMove);
+                                details.primaryVelocity! < -300 &&
+                                pageItem.isMove &&
+                                pageItem.move != null) {
+                              _showStatePicker(pageItem.move!, index);
                             }
                           },
                           child: ReviewCard(
-                            move: pageMove,
-                            onStatePillTap: () => _showStatePicker(pageMove),
+                            title: pageItem.displayName,
+                            state: pageItem.state,
+                            category: pageItem.category,
+                            videoPath: pageItem.videoPath,
+                            originalVideoName: pageItem.originalVideoName,
+                            canEditState: pageItem.isMove,
+                            onStatePillTap: () {
+                              if (pageItem.isMove && pageItem.move != null) {
+                                _showStatePicker(pageItem.move!, index);
+                              }
+                            },
                             videoHeight: videoHeight,
-                            onRepick: () => _repickVideo(pageMove, index),
+                            onRepick: pageItem.isMove && pageItem.move != null
+                                ? () => _repickVideo(pageItem.move!, index)
+                                : null,
                           ),
                         ),
                       );
@@ -299,18 +330,36 @@ class _FlashcardReviewScreenState extends ConsumerState<FlashcardReviewScreen> {
               ),
             ),
 
-            // Rating buttons — always visible
+            // Raised, fixed action bar
             Padding(
               padding: const EdgeInsets.symmetric(
                 horizontal: AppSpacing.screenEdge,
-                vertical: AppSpacing.sm,
               ),
-              child: RatingButtonRow(
-                onRate: (rating) => _rate(move, rating),
-                intervalPreviews: intervals,
+              child: Container(
+                margin: const EdgeInsets.only(bottom: AppSpacing.md),
+                padding: const EdgeInsets.all(AppSpacing.sm),
+                decoration: BoxDecoration(
+                  color: Theme.of(context).colorScheme.surface,
+                  borderRadius: BorderRadius.circular(AppRadius.sm),
+                  border: Border.all(
+                    color: Theme.of(
+                      context,
+                    ).colorScheme.outline.withValues(alpha: 0.22),
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.04),
+                      blurRadius: 18,
+                      offset: const Offset(0, 8),
+                    ),
+                  ],
+                ),
+                child: RatingButtonRow(
+                  onRate: (rating) => _rateItem(item, rating),
+                  intervalPreviews: intervals,
+                ),
               ),
             ),
-            const SizedBox(height: AppSpacing.sm),
           ],
         );
       },
@@ -322,7 +371,9 @@ class _FlashcardReviewScreenState extends ConsumerState<FlashcardReviewScreen> {
     final selectedDeck = ref.watch(selectedDeckProvider);
     final targetMoveIds = ref.watch(reviewSessionTargetMoveIdsProvider);
     final reviewSource = ref.watch(reviewSessionSourceProvider);
-    final totalMoves = ref.watch(totalMoveCountProvider).valueOrNull ?? 0;
+    final entityKind = ref.watch(reviewEntityKindProvider);
+    final totalReviewable =
+        ref.watch(totalReviewableCountProvider).valueOrNull ?? 0;
 
     if (targetMoveIds != null && targetMoveIds.isNotEmpty) {
       return Center(
@@ -348,7 +399,7 @@ class _FlashcardReviewScreenState extends ConsumerState<FlashcardReviewScreen> {
       );
     }
 
-    if (totalMoves == 0) {
+    if (totalReviewable == 0) {
       return Center(
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -378,7 +429,7 @@ class _FlashcardReviewScreenState extends ConsumerState<FlashcardReviewScreen> {
               icon: const Icon(Icons.add),
               label: const Text('Add a Move'),
               style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.accent,
+                backgroundColor: colorScheme.primary,
                 foregroundColor: Colors.white,
               ),
             ),
@@ -393,8 +444,9 @@ class _FlashcardReviewScreenState extends ConsumerState<FlashcardReviewScreen> {
             ? 'Pick a deck to start a review session'
             : '"${selectedDeck.name}" has no matching cards',
       ReviewSessionSource.stateBased when stateFilter != null =>
-        'No ${stateFilter.displayText.toLowerCase()} cards available',
-      _ => 'No cards available for this session',
+        'No ${stateFilter.displayText.toLowerCase()} ${entityKind == ReviewEntityKind.moves ? 'move cards' : 'combo cards'} available',
+      ReviewSessionSource.stateBased =>
+        'No ${entityKind == ReviewEntityKind.moves ? 'move cards' : 'combo cards'} available for this session',
     };
 
     return Center(
@@ -422,45 +474,84 @@ class _FlashcardReviewScreenState extends ConsumerState<FlashcardReviewScreen> {
 
   Widget _buildCompleted(ColorScheme colorScheme) {
     return Center(
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(Icons.check_circle, size: 80, color: AppColors.actionGood),
-          const SizedBox(height: AppSpacing.lg),
-          Text(
-            'Great work!',
-            style: AppTypography.titleMedium.copyWith(
-              color: colorScheme.onSurface,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: AppSpacing.screenEdge),
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 360),
+          child: Container(
+            width: double.infinity,
+            padding: const EdgeInsets.fromLTRB(
+              AppSpacing.lg,
+              AppSpacing.xl,
+              AppSpacing.lg,
+              AppSpacing.lg,
+            ),
+            decoration: AppSurfaces.panel(
+              context,
+              raised: true,
+              focused: true,
+              radius: AppRadius.lg,
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  width: 88,
+                  height: 88,
+                  decoration: BoxDecoration(
+                    color: AppColors.actionGood.withValues(alpha: 0.12),
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(
+                    Icons.check_rounded,
+                    size: 48,
+                    color: AppColors.actionGood,
+                  ),
+                ),
+                const SizedBox(height: AppSpacing.lg),
+                Text(
+                  'Great work!',
+                  style: AppTypography.titleLarge.copyWith(
+                    color: colorScheme.onSurface,
+                    fontWeight: FontWeight.w700,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: AppSpacing.sm),
+                Text(
+                  'All ${_items.length} cards reviewed',
+                  style: AppTypography.bodyMedium.copyWith(
+                    color: colorScheme.secondary,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: AppSpacing.xl),
+                PrimaryButton(
+                  label: 'Review Again',
+                  onPressed: () {
+                    setState(() {
+                      _resetSessionState();
+                    });
+                    refreshReviewSession(ref);
+                    _startShakeListener();
+                  },
+                  color: colorScheme.primary,
+                ),
+                const SizedBox(height: AppSpacing.sm),
+                TextButton(
+                  onPressed: _endSession,
+                  style: TextButton.styleFrom(
+                    foregroundColor: colorScheme.secondary,
+                    textStyle: AppTypography.bodySmall.copyWith(
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  child: const Text('Back to Review'),
+                ),
+              ],
             ),
           ),
-          const SizedBox(height: AppSpacing.sm),
-          Text(
-            'All ${_moves.length} moves reviewed',
-            style: AppTypography.bodyMedium.copyWith(
-              color: colorScheme.secondary,
-            ),
-          ),
-          const SizedBox(height: AppSpacing.xl),
-          ElevatedButton(
-            onPressed: () {
-              setState(() {
-                _resetSessionState();
-              });
-              refreshReviewSession(ref);
-              _startShakeListener();
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.accent,
-              foregroundColor: Colors.white,
-            ),
-            child: const Text('Review Again'),
-          ),
-          const SizedBox(height: AppSpacing.sm),
-          TextButton(
-            onPressed: _endSession,
-            child: const Text('Back to Review'),
-          ),
-        ],
+        ),
       ),
     );
   }
@@ -510,20 +601,24 @@ class _FlashcardReviewScreenState extends ConsumerState<FlashcardReviewScreen> {
     await videoService.replaceVideo(move.videoPath);
 
     setState(() {
-      _moves[index] = Move(
-        id: move.id,
-        name: move.name,
-        learningState: move.learningState,
+      _items[index] = ReviewSessionItem(
+        entityId: move.id,
+        entityType: 'move',
+        displayName: move.name,
+        state: _items[index].state,
         category: move.category,
         videoPath: result.localPath,
         originalVideoName: result.originalFileName,
-        createdAt: move.createdAt,
+        move: move.copyWith(
+          videoPath: Value(result.localPath),
+          originalVideoName: Value(result.originalFileName),
+        ),
       );
     });
   }
 
-  Future<void> _showStatePicker(Move move) async {
-    final currentState = LearningState.fromString(move.learningState);
+  Future<void> _showStatePicker(Move move, int index) async {
+    final currentState = _items[index].state;
     final newState = await StatePickerSheet.show(
       context,
       currentState: currentState,
@@ -549,55 +644,121 @@ class _FlashcardReviewScreenState extends ConsumerState<FlashcardReviewScreen> {
             rating: newState.dbValue,
             reviewType: ReviewType.manual.dbValue,
             moveId: Value(move.id),
+            entityIdSnapshot: Value(move.id),
+            entityType: const Value('move'),
+            entityDisplayName: Value(move.name),
+            entityCategory: Value(move.category),
           ),
         );
 
     setState(() {
-      _moves[_currentIndex] = Move(
-        id: move.id,
-        name: move.name,
-        learningState: newState.dbValue,
+      _items[index] = ReviewSessionItem(
+        entityId: move.id,
+        entityType: 'move',
+        displayName: move.name,
+        state: newState,
         category: move.category,
         videoPath: move.videoPath,
         originalVideoName: move.originalVideoName,
-        createdAt: move.createdAt,
+        move: move.copyWith(learningState: newState.dbValue),
       );
     });
   }
 
-  Future<void> _rate(Move move, ReviewRating rating) async {
+  Future<void> _rateItem(ReviewSessionItem item, ReviewRating rating) async {
     HapticFeedback.mediumImpact();
 
-    // Legacy state transition
-    final currentState = LearningState.fromString(move.learningState);
-    final newState = currentState.applyRating(rating);
+    if (item.isMove && item.move != null) {
+      final move = item.move!;
+      final newState = item.state.applyRating(rating);
 
-    await ref
-        .read(moveRepositoryProvider)
-        .update(
-          MovesCompanion(
-            id: Value(move.id),
-            learningState: Value(newState.dbValue),
+      await ref
+          .read(moveRepositoryProvider)
+          .update(
+            MovesCompanion(
+              id: Value(move.id),
+              learningState: Value(newState.dbValue),
+            ),
+          );
+
+      final fsrsResult = await ref
+          .read(fsrsServiceProvider)
+          .processReview(move.id, rating, entityType: 'move');
+      await ref
+          .read(syncDaoProvider)
+          .logChange(entityId: move.id, table: 'fsrs_cards', action: 'update');
+
+      await ref
+          .read(reviewRepositoryProvider)
+          .insert(
+            ReviewsCompanion.insert(
+              id: const Uuid().v4(),
+              rating: rating.dbValue,
+              reviewType: ReviewType.move.dbValue,
+              moveId: Value(move.id),
+              entityIdSnapshot: Value(move.id),
+              entityType: const Value('move'),
+              entityDisplayName: Value(move.name),
+              entityCategory: Value(move.category),
+              fsrsPreState: Value(fsrsResult.preState),
+              fsrsPostState: Value(fsrsResult.postState),
+            ),
+          );
+
+      setState(() {
+        _items[_currentIndex] = ReviewSessionItem(
+          entityId: move.id,
+          entityType: 'move',
+          displayName: move.name,
+          state: _fsrsStateToLearningState(fsrsResult.postState),
+          category: move.category,
+          videoPath: move.videoPath,
+          originalVideoName: move.originalVideoName,
+          move: move.copyWith(
+            learningState: _fsrsStateToLearningState(
+              fsrsResult.postState,
+            ).dbValue,
           ),
         );
+      });
+    } else if (item.isCombo && item.combo != null) {
+      final combo = item.combo!;
+      final fsrsResult = await ref
+          .read(fsrsServiceProvider)
+          .processReview(combo.id, rating, entityType: 'combo');
+      await ref
+          .read(syncDaoProvider)
+          .logChange(entityId: combo.id, table: 'fsrs_cards', action: 'update');
 
-    // FSRS scheduling — pass entityType for polymorphic support
-    final fsrsResult = await ref
-        .read(fsrsServiceProvider)
-        .processReview(move.id, rating, entityType: 'move');
+      await ref
+          .read(reviewRepositoryProvider)
+          .insert(
+            ReviewsCompanion.insert(
+              id: const Uuid().v4(),
+              rating: rating.dbValue,
+              reviewType: ReviewType.combo.dbValue,
+              comboId: Value(combo.id),
+              entityIdSnapshot: Value(combo.id),
+              entityType: const Value('combo'),
+              entityDisplayName: Value(combo.name),
+              entityCategory: const Value('combo'),
+              fsrsPreState: Value(fsrsResult.preState),
+              fsrsPostState: Value(fsrsResult.postState),
+            ),
+          );
 
-    await ref
-        .read(reviewRepositoryProvider)
-        .insert(
-          ReviewsCompanion.insert(
-            id: const Uuid().v4(),
-            rating: rating.dbValue,
-            reviewType: ReviewType.move.dbValue,
-            moveId: Value(move.id),
-            fsrsPreState: Value(fsrsResult.preState),
-            fsrsPostState: Value(fsrsResult.postState),
-          ),
+      setState(() {
+        _items[_currentIndex] = ReviewSessionItem(
+          entityId: combo.id,
+          entityType: 'combo',
+          displayName: combo.name,
+          state: _fsrsStateToLearningState(fsrsResult.postState),
+          category: 'combo',
+          videoPath: combo.activeVideoPath,
+          combo: combo,
         );
+      });
+    }
 
     _animatedAdvance();
   }
@@ -629,7 +790,7 @@ class _FlashcardReviewScreenState extends ConsumerState<FlashcardReviewScreen> {
   }
 
   void _advance() {
-    if (_currentIndex < _moves.length - 1) {
+    if (_currentIndex < _items.length - 1) {
       final nextIndex = _currentIndex + 1;
       _pageController?.animateToPage(
         nextIndex,
@@ -642,4 +803,15 @@ class _FlashcardReviewScreenState extends ConsumerState<FlashcardReviewScreen> {
       setState(() => _completed = true);
     }
   }
+
+  String _entityKindLabel(ReviewEntityKind kind) => switch (kind) {
+    ReviewEntityKind.moves => 'Moves',
+    ReviewEntityKind.combos => 'Combos',
+  };
+
+  LearningState _fsrsStateToLearningState(int fsrsState) => switch (fsrsState) {
+    2 => LearningState.mastery,
+    1 || 3 => LearningState.learning,
+    _ => LearningState.newState,
+  };
 }

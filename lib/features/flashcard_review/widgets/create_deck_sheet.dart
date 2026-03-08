@@ -181,7 +181,7 @@ class _CreateDeckSheetState extends ConsumerState<CreateDeckSheet> {
                   Switch.adaptive(
                     value: _dueOnly,
                     onChanged: (v) => setState(() => _dueOnly = v),
-                    activeTrackColor: AppColors.accent,
+                    activeTrackColor: Theme.of(context).colorScheme.primary,
                   ),
                   const SizedBox(width: AppSpacing.sm),
                   Text('Due only',
@@ -239,10 +239,10 @@ class _CreateDeckSheetState extends ConsumerState<CreateDeckSheet> {
               child: ElevatedButton(
                 onPressed: _canCreate ? _create : null,
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.accent,
+                  backgroundColor: Theme.of(context).colorScheme.primary,
                   foregroundColor: Colors.white,
                   disabledBackgroundColor:
-                      AppColors.accent.withValues(alpha: 0.3),
+                      Theme.of(context).colorScheme.primary.withValues(alpha: 0.3),
                 ),
                 child: const Text('Create Deck'),
               ),
@@ -329,7 +329,7 @@ class _TypeChip extends StatelessWidget {
         padding: const EdgeInsets.symmetric(vertical: 12),
         decoration: BoxDecoration(
           color: isSelected
-              ? AppColors.accent
+              ? Theme.of(context).colorScheme.primary
               : colorScheme.surfaceContainerHighest,
           borderRadius: BorderRadius.circular(AppRadius.sm),
         ),
@@ -377,7 +377,7 @@ class _FilterChip extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
         decoration: BoxDecoration(
           color: isSelected
-              ? AppColors.accent
+              ? colorScheme.primary
               : colorScheme.surfaceContainerHighest,
           borderRadius: BorderRadius.circular(AppRadius.sm),
         ),
@@ -450,7 +450,7 @@ class _ManualMoveSelector extends ConsumerWidget {
                   isSelected
                       ? Icons.check_box
                       : Icons.check_box_outline_blank,
-                  color: isSelected ? AppColors.accent : colorScheme.secondary,
+                  color: isSelected ? colorScheme.primary : colorScheme.secondary,
                   size: 22,
                 ),
                 title: Text(

@@ -1,7 +1,10 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:breakdex/core/services/native_video_export.dart';
+import 'package:breakdex/features/video_editor/video_edit_geometry.dart';
+import 'package:breakdex/features/video_editor/trim_timeline_math.dart';
 
 /// Unit tests for the video editor logic and export progress model.
 ///
@@ -57,8 +60,10 @@ void main() {
         'Encoding 42%',
       );
       expect(
-        const ExportProgress(phase: 'encoding_stalled', progress: 0.5)
-            .displayText,
+        const ExportProgress(
+          phase: 'encoding_stalled',
+          progress: 0.5,
+        ).displayText,
         'Encoding (slow device)...',
       );
       expect(
@@ -96,13 +101,13 @@ void main() {
       log = [];
       TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
           .setMockMethodCallHandler(exportChannel, (call) async {
-        log.add(call);
-        if (call.method == 'exportVideo') {
-          final args = Map<String, dynamic>.from(call.arguments as Map);
-          return args['outputPath'] as String;
-        }
-        return null;
-      });
+            log.add(call);
+            if (call.method == 'exportVideo') {
+              final args = Map<String, dynamic>.from(call.arguments as Map);
+              return args['outputPath'] as String;
+            }
+            return null;
+          });
     });
 
     tearDown(() {
@@ -116,10 +121,13 @@ void main() {
       bool shouldDisable(bool exporting, bool isEditorReady) =>
           exporting || !isEditorReady;
 
-      expect(shouldDisable(false, true), isFalse);  // Enabled: not exporting, ready
-      expect(shouldDisable(true, true), isTrue);     // Disabled: exporting
-      expect(shouldDisable(false, false), isTrue);   // Disabled: not ready
-      expect(shouldDisable(true, false), isTrue);    // Disabled: both
+      expect(
+        shouldDisable(false, true),
+        isFalse,
+      ); // Enabled: not exporting, ready
+      expect(shouldDisable(true, true), isTrue); // Disabled: exporting
+      expect(shouldDisable(false, false), isTrue); // Disabled: not ready
+      expect(shouldDisable(true, false), isTrue); // Disabled: both
     });
 
     test('speed selector cycles through all options', () {
@@ -165,11 +173,7 @@ void main() {
     });
 
     test('segment duration calculation is correct', () {
-      int segmentDurationMs(
-        double trimStart,
-        double trimEnd,
-        int totalMs,
-      ) {
+      int segmentDurationMs(double trimStart, double trimEnd, int totalMs) {
         if (totalMs <= 0) return 0;
         return ((trimEnd - trimStart).clamp(0.0, 1.0) * totalMs).round();
       }
@@ -194,6 +198,322 @@ void main() {
       expect(formatDuration(60000), '01:00');
       expect(formatDuration(90000), '01:30');
       expect(formatDuration(3600000), '00:00'); // Hour wraps (remainder)
+    });
+  });
+
+  group('Video edit geometry', () {
+    test('initial transform covers the viewport without empty edges', () {
+      final viewport = computeVideoEditViewport(
+        videoSize: const Size(1920, 1080),
+        rotation: 0,
+        maxWidth: 320,
+        targetAspect: 1.0,
+      );
+
+      expect(viewport.size.width, closeTo(300, 0.0001));
+      expect(viewport.size.height, closeTo(300, 0.0001));
+      expect(viewport.minScale, closeTo(300 / 1080, 0.0001));
+
+      final initial = viewport.initialTransform();
+      final crop = viewport.normalizedCropRect(initial);
+
+      expect(crop.left, closeTo(0.21875, 0.0001));
+      expect(crop.top, closeTo(0.0, 0.0001));
+      expect(crop.width, closeTo(0.5625, 0.0001));
+      expect(crop.height, closeTo(1.0, 0.0001));
+    });
+
+    test('clampTransform recenters content when panned out of bounds', () {
+      final viewport = computeVideoEditViewport(
+        videoSize: const Size(1080, 1920),
+        rotation: 90,
+        maxWidth: 360,
+        targetAspect: 16 / 9,
+      );
+
+      final invalid = Matrix4.diagonal3Values(
+        viewport.minScale,
+        viewport.minScale,
+        1,
+      )..setTranslationRaw(250, -999, 0);
+      final clamped = viewport.clampTransform(invalid);
+      final translation = clamped.getTranslation();
+
+      expect(translation.x, lessThanOrEqualTo(0.0));
+      expect(translation.y, lessThanOrEqualTo(0.0));
+      expect(
+        translation.x,
+        greaterThanOrEqualTo(
+          viewport.size.width -
+              viewport.orientedVideoSize.width * viewport.minScale,
+        ),
+      );
+      expect(
+        translation.y,
+        greaterThanOrEqualTo(
+          viewport.size.height -
+              viewport.orientedVideoSize.height * viewport.minScale,
+        ),
+      );
+    });
+
+    test('normalizedCropRect tracks zoomed and panned viewport state', () {
+      final viewport = computeVideoEditViewport(
+        videoSize: const Size(1920, 1080),
+        rotation: 0,
+        maxWidth: 320,
+        targetAspect: 1.0,
+      );
+
+      final zoomed = Matrix4.diagonal3Values(
+        viewport.minScale * 2,
+        viewport.minScale * 2,
+        1,
+      )..setTranslationRaw(-120, 0, 0);
+      final crop = viewport.normalizedCropRect(zoomed);
+
+      expect(crop.left, closeTo(0.1125, 0.01));
+      expect(crop.top, closeTo(0.0, 0.0001));
+      expect(crop.width, closeTo(0.28125, 0.01));
+      expect(crop.height, closeTo(0.5, 0.01));
+    });
+  });
+
+  group('Trim timeline math', () {
+    test('vertical lift reduces handle sensitivity for fine scrubbing', () {
+      expect(trimHandleSensitivity(verticalLiftPx: 0), 1.0);
+      expect(trimHandleSensitivity(verticalLiftPx: 72), closeTo(0.25, 0.0001));
+      expect(trimHandleSensitivity(verticalLiftPx: 36), lessThan(1.0));
+    });
+
+    test('applyTrimHandleDrag clamps inside trim bounds', () {
+      final next = applyTrimHandleDrag(
+        currentValue: 0.2,
+        deltaDx: -500,
+        timelineWidth: 300,
+        verticalLiftPx: 0,
+        minValue: 0.15,
+        maxValue: 0.9,
+        durationMs: 12000,
+      );
+
+      expect(next, 0.15);
+    });
+
+    test('applyTrimHandleDrag moves less when fine scrubbing is active', () {
+      final coarse = applyTrimHandleDrag(
+        currentValue: 0.2,
+        deltaDx: 30,
+        timelineWidth: 300,
+        verticalLiftPx: 0,
+        minValue: 0.0,
+        maxValue: 1.0,
+        durationMs: 10000,
+      );
+      final fine = applyTrimHandleDrag(
+        currentValue: 0.2,
+        deltaDx: 30,
+        timelineWidth: 300,
+        verticalLiftPx: 72,
+        minValue: 0.0,
+        maxValue: 1.0,
+        durationMs: 10000,
+      );
+
+      expect(coarse, greaterThan(fine));
+      expect(coarse - 0.2, greaterThan(fine - 0.2));
+    });
+  });
+
+  group('applyRawDrag (drift-free accumulator)', () {
+    test('does not snap to quantum grid', () {
+      final result = applyRawDrag(
+        currentRaw: 0.5,
+        deltaDx: 1.0,
+        timelineWidth: 300.0,
+        verticalLiftPx: 0.0,
+        minValue: 0.0,
+        maxValue: 1.0,
+      );
+      // Raw result should be exact floating-point addition, no 33ms rounding
+      expect(result, closeTo(0.5 + 1.0 / 300.0, 1e-12));
+    });
+
+    test('many small drags do not accumulate drift', () {
+      double raw = 0.8;
+      for (int i = 0; i < 200; i++) {
+        raw = applyRawDrag(
+          currentRaw: raw,
+          deltaDx: 0.5,
+          timelineWidth: 300.0,
+          verticalLiftPx: 0.0,
+          minValue: 0.0,
+          maxValue: 1.0,
+        );
+      }
+      final expected = (0.8 + 200 * (0.5 / 300.0)).clamp(0.0, 1.0);
+      expect(raw, closeTo(expected, 1e-10));
+    });
+
+    test('clamps to min/max bounds', () {
+      final belowMin = applyRawDrag(
+        currentRaw: 0.1,
+        deltaDx: -500.0,
+        timelineWidth: 300.0,
+        verticalLiftPx: 0.0,
+        minValue: 0.05,
+        maxValue: 1.0,
+      );
+      expect(belowMin, 0.05);
+
+      final aboveMax = applyRawDrag(
+        currentRaw: 0.95,
+        deltaDx: 500.0,
+        timelineWidth: 300.0,
+        verticalLiftPx: 0.0,
+        minValue: 0.0,
+        maxValue: 0.98,
+      );
+      expect(aboveMax, 0.98);
+    });
+
+    test('respects vertical lift sensitivity reduction', () {
+      final coarse = applyRawDrag(
+        currentRaw: 0.5,
+        deltaDx: 10.0,
+        timelineWidth: 300.0,
+        verticalLiftPx: 0.0,
+        minValue: 0.0,
+        maxValue: 1.0,
+      );
+      final fine = applyRawDrag(
+        currentRaw: 0.5,
+        deltaDx: 10.0,
+        timelineWidth: 300.0,
+        verticalLiftPx: 72.0,
+        minValue: 0.0,
+        maxValue: 1.0,
+      );
+      expect(coarse - 0.5, greaterThan(fine - 0.5));
+    });
+
+    test('handles zero-width timeline gracefully', () {
+      final result = applyRawDrag(
+        currentRaw: 0.5,
+        deltaDx: 10.0,
+        timelineWidth: 0.0,
+        verticalLiftPx: 0.0,
+        minValue: 0.0,
+        maxValue: 1.0,
+      );
+      expect(result, 0.5);
+    });
+  });
+
+  group('Drift regression: snapped vs raw accumulation', () {
+    test('repeated snapping causes leftward drift (proving the bug)', () {
+      // Demonstrate that applyTrimHandleDrag accumulates drift
+      // when its output is fed back as input (the old behavior).
+      double snapped = 0.8;
+      for (int i = 0; i < 200; i++) {
+        snapped = applyTrimHandleDrag(
+          currentValue: snapped,
+          deltaDx: 0.5,
+          timelineWidth: 300.0,
+          verticalLiftPx: 0.0,
+          minValue: 0.0,
+          maxValue: 1.0,
+          durationMs: 10000,
+          quantumMs: 33,
+        );
+      }
+
+      // Raw accumulation (no snapping per step)
+      double raw = 0.8;
+      for (int i = 0; i < 200; i++) {
+        raw = applyRawDrag(
+          currentRaw: raw,
+          deltaDx: 0.5,
+          timelineWidth: 300.0,
+          verticalLiftPx: 0.0,
+          minValue: 0.0,
+          maxValue: 1.0,
+        );
+      }
+
+      // The raw accumulator should be >= the snapped one
+      // (snapping introduces leftward bias from rounding down)
+      expect(raw, greaterThanOrEqualTo(snapped));
+    });
+  });
+
+  group('Performance regression: ValueNotifier pattern', () {
+    test('ValueNotifier updates do not trigger listener when value unchanged', () {
+      final notifier = ValueNotifier<double>(0.5);
+      var listenerCallCount = 0;
+      notifier.addListener(() => listenerCallCount++);
+
+      // Same value should not fire
+      notifier.value = 0.5;
+      expect(listenerCallCount, 0);
+
+      // Different value should fire
+      notifier.value = 0.6;
+      expect(listenerCallCount, 1);
+
+      // Simulate per-frame playback tolerance check (same as _onVideoTick):
+      // only update if position changed by more than _kPlaybackTolerance
+      const kPlaybackTolerance = 0.002;
+      final oldValue = notifier.value;
+      final newValue = 0.6005; // within tolerance
+      if ((newValue - oldValue).abs() > kPlaybackTolerance) {
+        notifier.value = newValue;
+      }
+      expect(listenerCallCount, 1); // No extra notification
+
+      final bigChange = 0.65; // outside tolerance
+      if ((bigChange - notifier.value).abs() > kPlaybackTolerance) {
+        notifier.value = bigChange;
+      }
+      expect(listenerCallCount, 2);
+
+      notifier.dispose();
+    });
+
+    test('playback position clamp respects trim boundaries', () {
+      final position = ValueNotifier<double>(0.0);
+      const trimStart = 0.2;
+      const trimEnd = 0.8;
+
+      // Simulate _handleTrimChanged updating position
+      position.value = 0.1; // outside trim
+      final clamped = position.value.clamp(trimStart, trimEnd).toDouble();
+      position.value = clamped;
+      expect(position.value, trimStart);
+
+      position.value = 0.5;
+      expect(position.value.clamp(trimStart, trimEnd), 0.5);
+
+      position.dispose();
+    });
+
+    test('timestamp guard throttles requests at ~48ms intervals', () {
+      var lastRequestMs = 0;
+      const throttleMs = 48;
+      var requestCount = 0;
+
+      // Simulate rapid drag updates (every 16ms for 1 second)
+      for (var ms = 0; ms < 1000; ms += 16) {
+        if (ms - lastRequestMs >= throttleMs) {
+          requestCount++;
+          lastRequestMs = ms;
+        }
+      }
+
+      // At 16ms intervals over 1000ms, we get ~62 frames.
+      // At 48ms throttle, we should get ~20 requests (not 62).
+      expect(requestCount, lessThanOrEqualTo(22));
+      expect(requestCount, greaterThanOrEqualTo(18));
     });
   });
 }

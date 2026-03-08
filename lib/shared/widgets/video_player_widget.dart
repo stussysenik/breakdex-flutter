@@ -30,6 +30,7 @@ mixin _VideoTransportMixin<T extends StatefulWidget> on State<T> {
       _hideTimer?.cancel();
     } else {
       videoController.play();
+      setState(() {}); // Rebuild to show pause icon immediately
       scheduleHide();
     }
   }
@@ -86,10 +87,12 @@ class VideoPlayerWidget extends StatefulWidget {
 
 class _VideoPlayerWidgetState extends State<VideoPlayerWidget>
     with _VideoTransportMixin {
+  final _videoService = VideoService();
   late VideoPlayerController _controller;
   bool _initialized = false;
   bool _hasError = false;
   bool _isMuted = false;
+  String? _posterPath;
 
   @override
   VideoPlayerController get videoController => _controller;
@@ -105,7 +108,6 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget>
     super.didUpdateWidget(oldWidget);
     if (oldWidget.videoPath != widget.videoPath) {
       cancelHideTimer();
-      _controller.removeListener(_onTick);
       _controller.dispose();
       _initPlayer();
     }
@@ -114,6 +116,8 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget>
   void _initPlayer() {
     _initialized = false;
     _hasError = false;
+    _posterPath = null;
+    unawaited(_loadPoster());
     _controller = VideoPlayerController.file(File(widget.videoPath))
       ..setLooping(true)
       ..initialize()
@@ -123,7 +127,6 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget>
           )
           .then((_) {
             if (mounted) {
-              _controller.addListener(_onTick);
               if (widget.autoPlay) {
                 _controller.play();
                 scheduleHide();
@@ -136,6 +139,15 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget>
           });
   }
 
+  Future<void> _loadPoster() async {
+    final videoPath = widget.videoPath;
+    final poster = await _videoService.generateThumbnail(videoPath);
+    if (!mounted || poster == null || widget.videoPath != videoPath) {
+      return;
+    }
+    setState(() => _posterPath = poster);
+  }
+
   void _toggleMute() {
     setState(() {
       _isMuted = !_isMuted;
@@ -143,15 +155,9 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget>
     });
   }
 
-  /// Rebuild on every position tick so the seek bar updates smoothly.
-  void _onTick() {
-    if (mounted) setState(() {});
-  }
-
   @override
   void dispose() {
     cancelHideTimer();
-    _controller.removeListener(_onTick);
     _controller.dispose();
     super.dispose();
   }
@@ -193,8 +199,18 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget>
                 ),
               )
             : !_initialized
-            ? const Center(
-                child: CircularProgressIndicator(color: AppColors.accent),
+            ? Stack(
+                fit: StackFit.expand,
+                children: [
+                  if (_posterPath != null)
+                    Image.file(File(_posterPath!), fit: BoxFit.cover),
+                  Container(color: Colors.black26),
+                  Center(
+                    child: CircularProgressIndicator(
+                      color: Theme.of(context).colorScheme.primary,
+                    ),
+                  ),
+                ],
               )
             : GestureDetector(
                 onTap: tapHandler,
@@ -202,12 +218,14 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget>
                 child: Stack(
                   fit: StackFit.expand,
                   children: [
-                    FittedBox(
-                      fit: BoxFit.cover,
-                      child: SizedBox(
-                        width: _controller.value.size.width,
-                        height: _controller.value.size.height,
-                        child: VideoPlayer(_controller),
+                    RepaintBoundary(
+                      child: FittedBox(
+                        fit: BoxFit.cover,
+                        child: SizedBox(
+                          width: _controller.value.size.width,
+                          height: _controller.value.size.height,
+                          child: VideoPlayer(_controller),
+                        ),
                       ),
                     ),
                     // Controls scrim — auto-hides during playback
@@ -409,101 +427,121 @@ class _SeekBarState extends State<_SeekBar> {
 
   @override
   Widget build(BuildContext context) {
-    final value = widget.controller.value;
-    final position = value.position;
-    final duration = value.duration;
-    final progress = duration.inMilliseconds > 0
-        ? (position.inMilliseconds / duration.inMilliseconds).clamp(0.0, 1.0)
-        : 0.0;
+    final colorScheme = Theme.of(context).colorScheme;
 
-    // While dragging, show the scrub position instead of the controller time.
-    final displayPosition = _dragging
-        ? Duration(milliseconds: (_dragValue * duration.inMilliseconds).round())
-        : position;
+    // Static action buttons — never change per frame.
+    final actionButtons = [
+      if (widget.onEdit != null) ...[
+        const SizedBox(width: 4),
+        Semantics(
+          label: 'Edit video',
+          button: true,
+          child: _TransportButton(
+            icon: Icons.tune_rounded,
+            onTap: widget.onEdit!,
+            size: 24,
+          ),
+        ),
+      ],
+      const SizedBox(width: 4),
+      Semantics(
+        label: widget.isFullscreen ? 'Exit fullscreen' : 'Fullscreen',
+        button: true,
+        child: _TransportButton(
+          icon: widget.isFullscreen
+              ? Icons.fullscreen_exit_rounded
+              : Icons.fullscreen_rounded,
+          onTap: widget.isFullscreen
+              ? (widget.onExitFullscreen ?? () {})
+              : (widget.onFullscreen ?? () {}),
+          size: 24,
+        ),
+      ),
+    ];
 
+    // VideoPlayerController IS a ValueNotifier<VideoPlayerValue> — only the
+    // seek bar slider needs to repaint per frame; transport buttons are static.
     return Padding(
       padding: EdgeInsets.symmetric(
         horizontal: widget.isFullscreen ? AppSpacing.md : AppSpacing.sm,
       ),
-      child: Row(
-        children: [
-          SizedBox(
-            width: 38,
-            child: Text(
-              _fmt(displayPosition),
-              style: AppTypography.caption.copyWith(
-                color: Colors.white70,
-                fontSize: 11,
+      child: ValueListenableBuilder<VideoPlayerValue>(
+        valueListenable: widget.controller,
+        builder: (context, value, _) {
+          final position = value.position;
+          final duration = value.duration;
+          final progress = duration.inMilliseconds > 0
+              ? (position.inMilliseconds / duration.inMilliseconds)
+                  .clamp(0.0, 1.0)
+              : 0.0;
+
+          final displayPosition = _dragging
+              ? Duration(
+                  milliseconds:
+                      (_dragValue * duration.inMilliseconds).round(),
+                )
+              : position;
+
+          return Row(
+            children: [
+              SizedBox(
+                width: 38,
+                child: Text(
+                  _fmt(displayPosition),
+                  style: AppTypography.caption.copyWith(
+                    color: Colors.white70,
+                    fontSize: 11,
+                  ),
+                ),
               ),
-            ),
-          ),
-          Expanded(
-            child: SliderTheme(
-              data: SliderThemeData(
-                trackHeight: 3,
-                thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 6),
-                overlayShape: const RoundSliderOverlayShape(overlayRadius: 14),
-                activeTrackColor: AppColors.accent,
-                inactiveTrackColor: Colors.white24,
-                thumbColor: AppColors.accent,
-                overlayColor: AppColors.accent.withValues(alpha: 0.2),
+              Expanded(
+                child: SliderTheme(
+                  data: SliderThemeData(
+                    trackHeight: 3,
+                    thumbShape:
+                        const RoundSliderThumbShape(enabledThumbRadius: 6),
+                    overlayShape:
+                        const RoundSliderOverlayShape(overlayRadius: 14),
+                    activeTrackColor: colorScheme.primary,
+                    inactiveTrackColor: Colors.white24,
+                    thumbColor: colorScheme.primary,
+                    overlayColor:
+                        colorScheme.primary.withValues(alpha: 0.2),
+                  ),
+                  child: Slider(
+                    value: _dragging ? _dragValue : progress,
+                    onChangeStart: (v) => setState(() {
+                      _dragging = true;
+                      _dragValue = v;
+                    }),
+                    onChanged: (v) => setState(() => _dragValue = v),
+                    onChangeEnd: (v) {
+                      setState(() => _dragging = false);
+                      widget.controller.seekTo(
+                        Duration(
+                          milliseconds:
+                              (v * duration.inMilliseconds).round(),
+                        ),
+                      );
+                    },
+                  ),
+                ),
               ),
-              child: Slider(
-                value: _dragging ? _dragValue : progress,
-                onChangeStart: (v) => setState(() {
-                  _dragging = true;
-                  _dragValue = v;
-                }),
-                onChanged: (v) => setState(() => _dragValue = v),
-                onChangeEnd: (v) {
-                  setState(() => _dragging = false);
-                  widget.controller.seekTo(
-                    Duration(
-                      milliseconds: (v * duration.inMilliseconds).round(),
-                    ),
-                  );
-                },
+              SizedBox(
+                width: 38,
+                child: Text(
+                  _fmt(duration),
+                  style: AppTypography.caption.copyWith(
+                    color: Colors.white70,
+                    fontSize: 11,
+                  ),
+                  textAlign: TextAlign.end,
+                ),
               ),
-            ),
-          ),
-          SizedBox(
-            width: 38,
-            child: Text(
-              _fmt(duration),
-              style: AppTypography.caption.copyWith(
-                color: Colors.white70,
-                fontSize: 11,
-              ),
-              textAlign: TextAlign.end,
-            ),
-          ),
-          if (widget.onEdit != null) ...[
-            const SizedBox(width: 4),
-            Semantics(
-              label: 'Edit video',
-              button: true,
-              child: _TransportButton(
-                icon: Icons.tune_rounded,
-                onTap: widget.onEdit!,
-                size: 24,
-              ),
-            ),
-          ],
-          const SizedBox(width: 4),
-          Semantics(
-            label: widget.isFullscreen ? 'Exit fullscreen' : 'Fullscreen',
-            button: true,
-            child: _TransportButton(
-              icon: widget.isFullscreen
-                  ? Icons.fullscreen_exit_rounded
-                  : Icons.fullscreen_rounded,
-              onTap: widget.isFullscreen
-                  ? (widget.onExitFullscreen ?? () {})
-                  : (widget.onFullscreen ?? () {}),
-              size: 24,
-            ),
-          ),
-        ],
+              ...actionButtons,
+            ],
+          );
+        },
       ),
     );
   }
@@ -576,21 +614,15 @@ class _FullscreenVideoPlayerState extends State<_FullscreenVideoPlayer>
       DeviceOrientation.landscapeLeft,
       DeviceOrientation.landscapeRight,
     ]);
-    widget.controller.addListener(_onTick);
     if (widget.controller.value.isPlaying) scheduleHide();
   }
 
   @override
   void dispose() {
     cancelHideTimer();
-    widget.controller.removeListener(_onTick);
     SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
     SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
     super.dispose();
-  }
-
-  void _onTick() {
-    if (mounted) setState(() {});
   }
 
   @override
@@ -823,12 +855,12 @@ class _RobustVideoPlayerState extends State<RobustVideoPlayer> {
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   if (showSpinner)
-                    const SizedBox(
+                    SizedBox(
                       width: 32,
                       height: 32,
                       child: CircularProgressIndicator(
                         strokeWidth: 2,
-                        color: AppColors.accent,
+                        color: Theme.of(context).colorScheme.primary,
                       ),
                     )
                   else

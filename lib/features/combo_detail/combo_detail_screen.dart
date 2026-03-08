@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -10,9 +12,9 @@ import '../../core/database/database.dart';
 import '../../core/database/daos/combos_dao.dart';
 import '../../core/design/spacing.dart';
 import '../../core/design/typography.dart';
-import '../../core/models/combo_stats.dart';
 import '../../core/models/learning_state.dart';
 import '../../core/providers.dart';
+import '../../core/services/native_video_album.dart';
 import '../../shared/widgets/state_pill.dart';
 import '../../shared/widgets/timeline_node.dart';
 import '../../shared/widgets/video_player_widget.dart'
@@ -29,6 +31,7 @@ class ComboDetailScreen extends ConsumerStatefulWidget {
 
 class _ComboDetailScreenState extends ConsumerState<ComboDetailScreen> {
   int _activeIndex = 0;
+  final NativeVideoAlbum _videoAlbum = NativeVideoAlbum();
 
   /// Index of the timeline node currently being pressed (for scale animation).
   int? _pressedNode;
@@ -41,6 +44,7 @@ class _ComboDetailScreenState extends ConsumerState<ComboDetailScreen> {
     final comboMovesStream = ref
         .watch(comboRepositoryProvider)
         .watchComboMoves(widget.comboId);
+    final fsrsCards = ref.watch(fsrsCardsRefreshProvider).valueOrNull ?? const [];
     final colorScheme = Theme.of(context).colorScheme;
 
     return Scaffold(
@@ -64,12 +68,18 @@ class _ComboDetailScreenState extends ConsumerState<ComboDetailScreen> {
                 final currentMove = comboMoves.isNotEmpty
                     ? comboMoves[safeIndex].move
                     : null;
-                final states = comboMoves
-                    .map(
-                      (cm) => LearningState.fromString(cm.move.learningState),
-                    )
-                    .toList();
-                final overallState = compositeState(states);
+                FsrsCard? comboCard;
+                for (final card in fsrsCards) {
+                  if (card.entityType == 'combo' && card.entityId == combo.id) {
+                    comboCard = card;
+                    break;
+                  }
+                }
+                final comboState = switch (comboCard?.fsrsState) {
+                  2 => LearningState.mastery,
+                  1 || 3 => LearningState.learning,
+                  _ => LearningState.newState,
+                };
 
                 return ListView(
                   padding: const EdgeInsets.all(AppSpacing.screenEdge),
@@ -118,6 +128,12 @@ class _ComboDetailScreenState extends ConsumerState<ComboDetailScreen> {
                           color: colorScheme.onSurface,
                         ),
                       ),
+                    ),
+                    const SizedBox(height: AppSpacing.md),
+                    Row(
+                      children: [
+                        StatePill(state: comboState),
+                      ],
                     ),
                     const SizedBox(height: AppSpacing.md),
 
@@ -219,7 +235,7 @@ class _ComboDetailScreenState extends ConsumerState<ComboDetailScreen> {
                           ),
                         ),
                         const SizedBox(width: AppSpacing.sm),
-                        StatePill(state: overallState),
+                        StatePill(state: comboState),
                       ],
                     ),
                   ],
@@ -247,6 +263,18 @@ class _ComboDetailScreenState extends ConsumerState<ComboDetailScreen> {
             MovesCompanion(id: Value(move.id), videoPath: Value(editedPath)),
           );
       await ref.read(videoServiceProvider).replaceVideo(originalPath);
+      unawaited(
+        _videoAlbum
+            .saveToAlbum(
+              videoPath: editedPath,
+              albumName: NativeVideoAlbum.defaultAlbumName(),
+              assetTitle: move.name,
+              category: move.category,
+            )
+            .catchError(
+              (error) => debugPrint('Album save failed (non-fatal): $error'),
+            ),
+      );
     }
   }
 

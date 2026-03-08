@@ -7,9 +7,11 @@ import 'package:go_router/go_router.dart';
 import '../../../core/database/database.dart';
 import '../../../core/design/colors.dart';
 import '../../../core/design/spacing.dart';
+import '../../../core/design/theme.dart';
 import '../../../core/design/typography.dart';
 import '../../../core/models/learning_state.dart';
 import '../../../core/providers.dart';
+import '../../../shared/widgets/app_segmented_control.dart';
 import '../providers/deck_providers.dart';
 import '../providers/review_providers.dart';
 import 'create_deck_sheet.dart';
@@ -26,69 +28,27 @@ class MasteryPrescreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final totalMoves = ref.watch(totalMoveCountProvider).valueOrNull ?? 0;
-    if (totalMoves == 0) return const _ReviewEmptyState();
+    final totalReviewable = ref.watch(totalReviewableCountProvider).valueOrNull;
+    if (totalReviewable == 0) return const _ReviewEmptyState();
 
-    final dueAsync = ref.watch(dueSummaryProvider);
-    final colorScheme = Theme.of(context).colorScheme;
-
-    return CustomScrollView(
-      slivers: [
-        SliverPadding(
-          padding: const EdgeInsets.symmetric(
-            horizontal: AppSpacing.screenEdge,
-          ),
-          sliver: SliverToBoxAdapter(
-            child: dueAsync.when(
-              loading: () => const Padding(
-                padding: EdgeInsets.symmetric(vertical: AppSpacing.md),
-                child: Center(
-                  child: SizedBox(
-                    width: 20,
-                    height: 20,
-                    child: CircularProgressIndicator(strokeWidth: 2),
-                  ),
+    return SingleChildScrollView(
+      padding: const EdgeInsets.fromLTRB(
+        AppSpacing.screenEdge,
+        AppSpacing.md,
+        AppSpacing.screenEdge,
+        AppSpacing.xxl,
+      ),
+      child: Align(
+        alignment: Alignment.topCenter,
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 560),
+          child: source == ReviewSessionSource.stateBased
+              ? const _StateModeSection()
+              : _DecksSection(
+                  onStartDeck: (deck) => _startDeckSession(ref, deck),
                 ),
-              ),
-              error: (_, _) => const SizedBox.shrink(),
-              data: (summary) => Padding(
-                padding: const EdgeInsets.only(bottom: AppSpacing.md),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      summary.totalDueNow == 0
-                          ? 'All caught up'
-                          : '${summary.totalDueNow} due today',
-                      style: AppTypography.titleSmall.copyWith(
-                        color: summary.totalDueNow == 0
-                            ? colorScheme.secondary
-                            : colorScheme.onSurface,
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ),
         ),
-        const SliverToBoxAdapter(child: SizedBox(height: AppSpacing.lg)),
-        if (source == ReviewSessionSource.stateBased)
-          const _StateModeSection()
-        else
-          SliverPadding(
-            padding: const EdgeInsets.symmetric(
-              horizontal: AppSpacing.screenEdge,
-            ),
-            sliver: SliverToBoxAdapter(
-              child: _DecksSection(
-                onStartDeck: (deck) => _startDeckSession(ref, deck),
-              ),
-            ),
-          ),
-        const SliverToBoxAdapter(child: SizedBox(height: AppSpacing.xl)),
-      ],
+      ),
     );
   }
 
@@ -97,6 +57,7 @@ class MasteryPrescreen extends ConsumerWidget {
     ref
         .read(reviewSessionSourceProvider.notifier)
         .set(ReviewSessionSource.deck);
+    ref.read(reviewEntityKindProvider.notifier).state = ReviewEntityKind.moves;
     ref.read(selectedDeckProvider.notifier).state = deck;
     ref.read(reviewStateFilterProvider.notifier).state = null;
     ref.read(reviewSessionTargetMoveIdsProvider.notifier).state = null;
@@ -110,94 +71,62 @@ class _StateModeSection extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final countsAsync = ref.watch(moveStateCountsProvider);
+    final countsAsync = ref.watch(reviewStateMatrixProvider);
 
     return countsAsync.when(
-      loading: () => const SliverToBoxAdapter(
+      loading: () => const Padding(
+        padding: EdgeInsets.symmetric(vertical: AppSpacing.xl),
         child: Center(child: CircularProgressIndicator()),
       ),
-      error: (e, _) =>
-          SliverToBoxAdapter(child: Center(child: Text('Error: $e'))),
-      data: (counts) {
-        final items = [
-          (
-            state: LearningState.newState,
-            title: 'New',
-            subtitle: 'Fresh cards waiting for first reps',
-          ),
-          (
-            state: LearningState.learning,
-            title: 'Learning',
-            subtitle: 'Cards still settling into memory',
-          ),
-          (
-            state: LearningState.mastery,
-            title: 'Mastery',
-            subtitle: 'Cards already in longer-term rotation',
-          ),
-        ];
+      error: (e, _) => Padding(
+        padding: const EdgeInsets.symmetric(vertical: AppSpacing.xl),
+        child: Center(child: Text('Error: $e')),
+      ),
+      data: (matrix) {
+        final selectedKind = ref.watch(reviewEntityKindProvider);
+        final isMoves = selectedKind == ReviewEntityKind.moves;
+        final title = isMoves ? 'Moves' : 'Combos';
+        final subtitle = isMoves
+            ? 'Atomic move cards'
+            : 'Sequence review cards';
+        final counts = isMoves ? matrix.moveCounts : matrix.comboCounts;
 
-        return SliverPadding(
-          padding: const EdgeInsets.symmetric(
-            horizontal: AppSpacing.screenEdge,
-          ),
-          sliver: SliverList(
-            delegate: SliverChildBuilderDelegate((context, index) {
-              if (index == items.length) {
-                return Padding(
-                  padding: const EdgeInsets.only(top: AppSpacing.lg),
-                  child: SizedBox(
-                    height: 50,
-                    child: ElevatedButton(
-                      onPressed: () => _startStateSession(ref, null),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: AppColors.accent,
-                        foregroundColor: Colors.white,
-                        elevation: 0,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(AppRadius.lg),
-                        ),
-                      ),
-                      child: const Text('Start All'),
-                    ),
-                  ),
-                );
-              }
-
-              final item = items[index];
-              final count = counts[item.state] ?? 0;
-              return Padding(
-                    padding: const EdgeInsets.only(bottom: AppSpacing.sm),
-                    child: _StateSessionCard(
-                      title: item.title,
-                      subtitle: item.subtitle,
-                      count: count,
-                      color: item.state.color,
-                      onStart: () => _startStateSession(ref, item.state),
-                    ),
-                  )
-                  .animate()
-                  .fadeIn(
-                    duration: AppMotion.moderate01,
-                    delay: Duration(milliseconds: index * 40),
-                  )
-                  .slideY(
-                    begin: 0.03,
-                    duration: AppMotion.moderate02,
-                    delay: Duration(milliseconds: index * 40),
-                  );
-            }, childCount: items.length + 1),
-          ),
+        return Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            _ReviewLaneToggle(
+              selectedKind: selectedKind,
+              onChanged: (selection) {
+                HapticFeedback.selectionClick();
+                ref.read(reviewEntityKindProvider.notifier).state = selection;
+              },
+            ),
+            const SizedBox(height: AppSpacing.sm),
+            _ReviewEntityPrescreenPanel(
+              title: title,
+              subtitle: subtitle,
+              counts: counts,
+              onStartAll: () => _startStateSession(ref, selectedKind, null),
+              onStartState: (state) =>
+                  _startStateSession(ref, selectedKind, state),
+            ),
+          ],
         );
       },
     );
   }
 
-  void _startStateSession(WidgetRef ref, LearningState? state) {
+  void _startStateSession(
+    WidgetRef ref,
+    ReviewEntityKind kind,
+    LearningState? state,
+  ) {
     HapticFeedback.mediumImpact();
     ref
         .read(reviewSessionSourceProvider.notifier)
         .set(ReviewSessionSource.stateBased);
+    ref.read(reviewEntityKindProvider.notifier).state = kind;
     ref.read(selectedDeckProvider.notifier).state = null;
     ref.read(reviewSessionTargetMoveIdsProvider.notifier).state = null;
     ref.read(reviewStateFilterProvider.notifier).state = state;
@@ -206,88 +135,252 @@ class _StateModeSection extends ConsumerWidget {
   }
 }
 
-/// Minimal state session card — colored dot, title/subtitle, count, chevron.
-///
-/// The entire card is tappable (no separate "Start" button). Designed for
-/// minimal visual noise following SwiftUI list row conventions.
-class _StateSessionCard extends StatelessWidget {
-  const _StateSessionCard({
+class _ReviewLaneToggle extends StatelessWidget {
+  const _ReviewLaneToggle({
+    required this.selectedKind,
+    required this.onChanged,
+  });
+
+  final ReviewEntityKind selectedKind;
+  final ValueChanged<ReviewEntityKind> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    return AppSegmentedControl<ReviewEntityKind>(
+      items: const [
+        AppSegmentedControlItem(
+          value: ReviewEntityKind.moves,
+          icon: Icons.trip_origin_rounded,
+          label: 'Moves',
+        ),
+        AppSegmentedControlItem(
+          value: ReviewEntityKind.combos,
+          icon: Icons.timeline_rounded,
+          label: 'Combos',
+        ),
+      ],
+      selectedValue: selectedKind,
+      onChanged: onChanged,
+    );
+  }
+}
+
+class _ReviewEntityPrescreenPanel extends StatelessWidget {
+  const _ReviewEntityPrescreenPanel({
     required this.title,
     required this.subtitle,
-    required this.count,
-    required this.color,
-    required this.onStart,
+    required this.counts,
+    required this.onStartAll,
+    required this.onStartState,
   });
 
   final String title;
   final String subtitle;
-  final int count;
-  final Color color;
-  final VoidCallback onStart;
+  final Map<LearningState, int> counts;
+  final VoidCallback onStartAll;
+  final void Function(LearningState state) onStartState;
 
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
+    final semanticTheme = AppSemanticTheme.of(context);
+    final total = counts.values.fold(0, (sum, value) => sum + value);
 
-    return Material(
-      color: colorScheme.surfaceContainerHighest,
-      borderRadius: BorderRadius.circular(AppRadius.md),
-      child: InkWell(
-        onTap: onStart,
-        borderRadius: BorderRadius.circular(AppRadius.md),
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: 14),
-          child: Row(
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(AppSpacing.md),
+      decoration: AppSurfaces.panel(
+        context,
+        raised: true,
+        radius: AppRadius.lg,
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Colored dot indicator
-              Container(
-                width: 8,
-                height: 8,
-                decoration: BoxDecoration(
-                  color: color,
-                  shape: BoxShape.circle,
+              Expanded(
+                child: Text(
+                  title,
+                  style: AppTypography.titleMedium.copyWith(
+                    color: colorScheme.onSurface,
+                    fontWeight: FontWeight.w700,
+                  ),
                 ),
               ),
-              const SizedBox(width: AppSpacing.md),
-              // Title + subtitle
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 6,
+                ),
+                decoration: AppSurfaces.panel(context, radius: 999),
+                child: Text(
+                  '$total ready',
+                  style: AppTypography.caption.copyWith(
+                    color: colorScheme.onSurface,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: AppSpacing.xs),
+          Text(
+            subtitle,
+            style: AppTypography.bodySmall.copyWith(
+              color: colorScheme.secondary,
+            ),
+          ),
+          const SizedBox(height: AppSpacing.md),
+          Column(
+            children: [
+              for (final state in LearningState.values) ...[
+                if (state != LearningState.values.first)
+                  const SizedBox(height: AppSpacing.sm),
+                _ReviewStateTile(
+                  state: state,
+                  count: counts[state] ?? 0,
+                  accent: semanticTheme.colorForState(state),
+                  onTap: () => onStartState(state),
+                ),
+              ],
+            ],
+          ),
+          const SizedBox(height: AppSpacing.md),
+          SizedBox(
+            width: double.infinity,
+            child: OutlinedButton(
+              onPressed: total == 0 ? null : onStartAll,
+              style: OutlinedButton.styleFrom(
+                padding: const EdgeInsets.symmetric(vertical: 15),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(AppRadius.sm),
+                ),
+              ),
+              child: Text(
+                total == 0 ? 'Nothing to review' : 'Start ${title.trim()}',
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ReviewStateTile extends StatelessWidget {
+  const _ReviewStateTile({
+    required this.state,
+    required this.count,
+    required this.accent,
+    required this.onTap,
+  });
+
+  final LearningState state;
+  final int count;
+  final Color accent;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final semanticTheme = AppSemanticTheme.of(context);
+    final enabled = count > 0;
+    final subtitle = switch (state) {
+      LearningState.newState => 'First recall',
+      LearningState.learning => 'Short intervals',
+      LearningState.mastery => 'Long intervals',
+    };
+
+    return Semantics(
+      button: true,
+      enabled: enabled,
+      label: '${state.displayText}\n$count\n$subtitle',
+      child: ExcludeSemantics(
+        child: Container(
+          decoration: AppSurfaces.panel(context, radius: AppRadius.sm),
+          child: Material(
+            color: semanticTheme.isMonoOutline
+                ? colorScheme.surface
+                : enabled
+                ? accent.withValues(alpha: 0.08)
+                : colorScheme.surface,
+            borderRadius: BorderRadius.circular(AppRadius.sm),
+            child: InkWell(
+              onTap: enabled ? onTap : null,
+              borderRadius: BorderRadius.circular(AppRadius.sm),
+              child: Container(
+                width: double.infinity,
+                padding: const EdgeInsets.symmetric(
+                  horizontal: AppSpacing.md,
+                  vertical: 14,
+                ),
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(AppRadius.sm),
+                  border: Border.all(
+                    color: enabled
+                        ? accent.withValues(
+                            alpha: semanticTheme.isMonoOutline ? 1 : 0.24,
+                          )
+                        : colorScheme.outline.withValues(alpha: 0.24),
+                    width: semanticTheme.isMonoOutline ? 1.2 : 1,
+                  ),
+                ),
+                child: Row(
                   children: [
-                    Text(
-                      title,
-                      style: AppTypography.bodyMedium.copyWith(
-                        color: colorScheme.onSurface,
-                        fontWeight: FontWeight.w600,
+                    Container(
+                      width: 10,
+                      height: 10,
+                      decoration: BoxDecoration(
+                        color: enabled ? accent : colorScheme.outline,
+                        shape: BoxShape.circle,
                       ),
                     ),
-                    const SizedBox(height: 2),
-                    Text(
-                      subtitle,
-                      style: AppTypography.caption.copyWith(
-                        color: colorScheme.secondary,
+                    const SizedBox(width: AppSpacing.sm),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            state.displayText,
+                            style: AppTypography.bodyMedium.copyWith(
+                              color: colorScheme.onSurface,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            subtitle,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: AppTypography.caption.copyWith(
+                              color: colorScheme.secondary,
+                            ),
+                          ),
+                        ],
                       ),
+                    ),
+                    const SizedBox(width: AppSpacing.md),
+                    Text(
+                      '$count',
+                      style: AppTypography.titleSmall.copyWith(
+                        color: enabled ? accent : colorScheme.secondary,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    const SizedBox(width: AppSpacing.sm),
+                    Icon(
+                      Icons.chevron_right_rounded,
+                      size: 18,
+                      color: enabled
+                          ? colorScheme.secondary
+                          : colorScheme.secondary.withValues(alpha: 0.35),
                     ),
                   ],
                 ),
               ),
-              const SizedBox(width: AppSpacing.sm),
-              // Count
-              Text(
-                '$count',
-                style: AppTypography.bodyMedium.copyWith(
-                  color: colorScheme.secondary,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-              const SizedBox(width: AppSpacing.xs),
-              // Chevron disclosure
-              Icon(
-                Icons.chevron_right_rounded,
-                size: 20,
-                color: colorScheme.secondary.withValues(alpha: 0.5),
-              ),
-            ],
+            ),
           ),
         ),
       ),
@@ -306,6 +399,7 @@ class _DecksSection extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final decksAsync = ref.watch(decksListProvider);
+    final selectedDeck = ref.watch(selectedDeckProvider);
     final colorScheme = Theme.of(context).colorScheme;
 
     return decksAsync.when(
@@ -328,12 +422,16 @@ class _DecksSection extends ConsumerWidget {
               padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm),
               child: Row(
                 children: [
-                  Icon(Icons.add, size: 18, color: AppColors.accent),
+                  Icon(
+                    Icons.add,
+                    size: 18,
+                    color: Theme.of(context).colorScheme.primary,
+                  ),
                   const SizedBox(width: 6),
                   Text(
                     'Create a deck',
                     style: AppTypography.bodySmall.copyWith(
-                      color: AppColors.accent,
+                      color: Theme.of(context).colorScheme.primary,
                       fontWeight: FontWeight.w600,
                     ),
                   ),
@@ -343,33 +441,34 @@ class _DecksSection extends ConsumerWidget {
           );
         }
 
+        final activeDeck = decks.any((deck) => deck.id == selectedDeck?.id)
+            ? selectedDeck!
+            : decks.first;
+
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'Saved Decks',
-              style: AppTypography.caption.copyWith(
-                color: colorScheme.secondary,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-            const SizedBox(height: AppSpacing.xs),
-            Text(
-              'Deck sessions use the deck\u2019s own card filter and membership.',
-              style: AppTypography.bodySmall.copyWith(
-                color: colorScheme.secondary,
+              'Decks',
+              style: AppTypography.titleMedium.copyWith(
+                color: colorScheme.onSurface,
+                fontWeight: FontWeight.w700,
               ),
             ),
             const SizedBox(height: AppSpacing.sm),
             SizedBox(
-              height: 100,
+              height: 108,
               child: ListView(
                 scrollDirection: Axis.horizontal,
                 children: [
                   for (final deck in decks) ...[
                     DeckCard(
                       deck: deck,
-                      onTap: () => onStartDeck(deck),
+                      isSelected: deck.id == activeDeck.id,
+                      onTap: () {
+                        HapticFeedback.selectionClick();
+                        ref.read(selectedDeckProvider.notifier).state = deck;
+                      },
                       onLongPress: () => _confirmDelete(context, ref, deck),
                     ),
                     const SizedBox(width: AppSpacing.sm),
@@ -388,12 +487,16 @@ class _DecksSection extends ConsumerWidget {
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          Icon(Icons.add, color: AppColors.accent, size: 24),
+                          Icon(
+                            Icons.add,
+                            color: Theme.of(context).colorScheme.primary,
+                            size: 24,
+                          ),
                           const SizedBox(height: 4),
                           Text(
                             'Create',
                             style: AppTypography.caption.copyWith(
-                              color: AppColors.accent,
+                              color: Theme.of(context).colorScheme.primary,
                               fontWeight: FontWeight.w600,
                             ),
                           ),
@@ -404,6 +507,15 @@ class _DecksSection extends ConsumerWidget {
                 ],
               ),
             ),
+            const SizedBox(height: AppSpacing.lg),
+            _DeckFocusPanel(deck: activeDeck, onStartDeck: onStartDeck)
+                .animate()
+                .fadeIn(duration: AppMotion.moderate01)
+                .slideY(
+                  begin: 0.03,
+                  duration: AppMotion.moderate02,
+                  curve: AppMotion.entrance,
+                ),
           ],
         );
       },
@@ -451,6 +563,326 @@ class _DecksSection extends ConsumerWidget {
   }
 }
 
+class _DeckFocusPanel extends ConsumerWidget {
+  const _DeckFocusPanel({required this.deck, required this.onStartDeck});
+
+  final Deck deck;
+  final void Function(Deck deck) onStartDeck;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final summaryAsync = ref.watch(deckSummaryProvider(deck.id));
+    final colorScheme = Theme.of(context).colorScheme;
+
+    return summaryAsync.when(
+      loading: () => Container(
+        padding: const EdgeInsets.all(AppSpacing.lg),
+        decoration: BoxDecoration(
+          color: colorScheme.surface,
+          borderRadius: BorderRadius.circular(AppRadius.lg),
+          border: Border.all(color: colorScheme.outline.withValues(alpha: 0.4)),
+        ),
+        child: const Center(child: CircularProgressIndicator()),
+      ),
+      error: (error, _) => Container(
+        padding: const EdgeInsets.all(AppSpacing.lg),
+        decoration: BoxDecoration(
+          color: colorScheme.surface,
+          borderRadius: BorderRadius.circular(AppRadius.lg),
+          border: Border.all(color: colorScheme.outline.withValues(alpha: 0.4)),
+        ),
+        child: Text(
+          'Could not load deck: $error',
+          style: AppTypography.bodySmall.copyWith(color: colorScheme.secondary),
+        ),
+      ),
+      data: (summary) {
+        return Container(
+          padding: const EdgeInsets.all(AppSpacing.lg),
+          decoration: BoxDecoration(
+            color: colorScheme.surface,
+            borderRadius: BorderRadius.circular(AppRadius.lg),
+            border: Border.all(
+              color: Theme.of(
+                context,
+              ).colorScheme.primary.withValues(alpha: 0.2),
+            ),
+            boxShadow: AppShadows.raised(Theme.of(context).brightness),
+          ),
+          child: Column(
+            children: [
+              Text(
+                summary.deck.name,
+                style: AppTypography.titleSmall.copyWith(
+                  color: colorScheme.onSurface,
+                  fontWeight: FontWeight.w700,
+                ),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: AppSpacing.lg),
+              for (final state in LearningState.values) ...[
+                if (state != LearningState.values.first)
+                  const SizedBox(height: AppSpacing.sm),
+                _DeckStateRow(
+                  state: state,
+                  count: summary.movesForState(state).length,
+                  onTap: () =>
+                      _showDeckStateSheet(context, ref, summary, state),
+                ),
+              ],
+              const SizedBox(height: AppSpacing.lg),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  onPressed: summary.totalMoves == 0
+                      ? null
+                      : () {
+                          ref.read(reviewStateFilterProvider.notifier).state =
+                              null;
+                          ref.read(reviewEntityKindProvider.notifier).state =
+                              ReviewEntityKind.moves;
+                          onStartDeck(summary.deck);
+                        },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Theme.of(context).colorScheme.primary,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(AppRadius.sm),
+                    ),
+                  ),
+                  child: Text(
+                    summary.totalMoves == 0 ? 'Deck is empty' : 'Start Deck',
+                    style: AppTypography.bodyMedium.copyWith(
+                      color: Colors.white,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  void _startDeckState(
+    WidgetRef ref,
+    DeckSummary summary,
+    LearningState state,
+  ) {
+    final stateMoves = summary.movesForState(state);
+    if (stateMoves.isEmpty) return;
+
+    HapticFeedback.mediumImpact();
+    ref
+        .read(reviewSessionSourceProvider.notifier)
+        .set(ReviewSessionSource.deck);
+    ref.read(reviewEntityKindProvider.notifier).state = ReviewEntityKind.moves;
+    ref.read(selectedDeckProvider.notifier).state = summary.deck;
+    ref.read(reviewStateFilterProvider.notifier).state = state;
+    ref.read(reviewSessionTargetMoveIdsProvider.notifier).state = stateMoves
+        .map((move) => move.id)
+        .toSet();
+    refreshReviewSession(ref);
+    ref.read(reviewSessionActiveProvider.notifier).state = true;
+  }
+
+  void _showDeckStateSheet(
+    BuildContext context,
+    WidgetRef ref,
+    DeckSummary summary,
+    LearningState state,
+  ) {
+    final moves = summary.movesForState(state);
+    showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Theme.of(context).colorScheme.surface,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(AppRadius.lg)),
+      ),
+      builder: (context) {
+        final colorScheme = Theme.of(context).colorScheme;
+        return SafeArea(
+          top: false,
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(
+              AppSpacing.lg,
+              AppSpacing.lg,
+              AppSpacing.lg,
+              AppSpacing.lg,
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  '${summary.deck.name} · ${state.displayText}',
+                  style: AppTypography.titleSmall.copyWith(
+                    color: colorScheme.onSurface,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                const SizedBox(height: AppSpacing.xs),
+                Text(
+                  '${moves.length} card${moves.length == 1 ? '' : 's'} in this state',
+                  style: AppTypography.bodySmall.copyWith(
+                    color: colorScheme.secondary,
+                  ),
+                ),
+                const SizedBox(height: AppSpacing.md),
+                Flexible(
+                  child: ListView.separated(
+                    shrinkWrap: true,
+                    itemCount: moves.length,
+                    separatorBuilder: (_, _) =>
+                        const SizedBox(height: AppSpacing.sm),
+                    itemBuilder: (context, index) {
+                      final move = moves[index];
+                      return Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: AppSpacing.md,
+                          vertical: 12,
+                        ),
+                        decoration: BoxDecoration(
+                          color: colorScheme.surfaceContainerHighest,
+                          borderRadius: BorderRadius.circular(AppRadius.sm),
+                        ),
+                        child: Row(
+                          children: [
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    move.name,
+                                    style: AppTypography.bodyMedium.copyWith(
+                                      color: colorScheme.onSurface,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                  if (move.category != 'default') ...[
+                                    const SizedBox(height: 2),
+                                    Text(
+                                      move.category,
+                                      style: AppTypography.caption.copyWith(
+                                        color: colorScheme.secondary,
+                                      ),
+                                    ),
+                                  ],
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                      );
+                    },
+                  ),
+                ),
+                const SizedBox(height: AppSpacing.md),
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    onPressed: moves.isEmpty
+                        ? null
+                        : () {
+                            Navigator.pop(context);
+                            _startDeckState(ref, summary, state);
+                          },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: colorScheme.primary,
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(AppRadius.sm),
+                      ),
+                    ),
+                    child: Text('Start ${state.displayText}'),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+}
+
+class _DeckStateRow extends StatelessWidget {
+  const _DeckStateRow({
+    required this.state,
+    required this.count,
+    required this.onTap,
+  });
+
+  final LearningState state;
+  final int count;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final enabled = count > 0;
+
+    return Material(
+      color: enabled
+          ? state.color.withValues(alpha: 0.08)
+          : colorScheme.surfaceContainerHighest,
+      borderRadius: BorderRadius.circular(AppRadius.sm),
+      child: InkWell(
+        onTap: enabled ? onTap : null,
+        borderRadius: BorderRadius.circular(AppRadius.sm),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(
+            horizontal: AppSpacing.md,
+            vertical: 14,
+          ),
+          child: Row(
+            children: [
+              Container(
+                width: 10,
+                height: 10,
+                decoration: BoxDecoration(
+                  color: enabled ? state.color : colorScheme.outline,
+                  shape: BoxShape.circle,
+                ),
+              ),
+              const SizedBox(width: AppSpacing.sm),
+              Expanded(
+                child: Text(
+                  state.displayText,
+                  style: AppTypography.bodyMedium.copyWith(
+                    color: colorScheme.onSurface,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
+              Text(
+                '$count',
+                style: AppTypography.bodyMedium.copyWith(
+                  color: enabled ? state.color : colorScheme.secondary,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+              const SizedBox(width: AppSpacing.sm),
+              Icon(
+                Icons.visibility_outlined,
+                size: 18,
+                color: enabled
+                    ? colorScheme.secondary
+                    : colorScheme.secondary.withValues(alpha: 0.35),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 class _ReviewEmptyState extends StatelessWidget {
   const _ReviewEmptyState();
 
@@ -464,11 +896,7 @@ class _ReviewEmptyState extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(
-              Icons.style_outlined,
-              size: 64,
-              color: colorScheme.secondary,
-            ),
+            Icon(Icons.style_outlined, size: 64, color: colorScheme.secondary),
             const SizedBox(height: AppSpacing.lg),
             Text(
               'Add moves to start training',
@@ -489,7 +917,7 @@ class _ReviewEmptyState extends StatelessWidget {
             ElevatedButton(
               onPressed: () => context.go('/arsenal'),
               style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.accent,
+                backgroundColor: Theme.of(context).colorScheme.primary,
                 foregroundColor: Colors.white,
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(AppRadius.lg),

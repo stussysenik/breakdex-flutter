@@ -29,8 +29,7 @@ class SyncAwareMoveRepository implements MoveRepository {
   @override
   Future<void> insert(MovesCompanion move) async {
     await _inner.insert(move);
-    final hasVideo =
-        move.videoPath.present && move.videoPath.value != null;
+    final hasVideo = move.videoPath.present && move.videoPath.value != null;
     await _syncDao.logChange(
       entityId: move.id.value,
       table: 'moves',
@@ -42,8 +41,7 @@ class SyncAwareMoveRepository implements MoveRepository {
   @override
   Future<void> update(MovesCompanion move) async {
     await _inner.update(move);
-    final hasVideo =
-        move.videoPath.present && move.videoPath.value != null;
+    final hasVideo = move.videoPath.present && move.videoPath.value != null;
     await _syncDao.logChange(
       entityId: move.id.value,
       table: 'moves',
@@ -55,11 +53,7 @@ class SyncAwareMoveRepository implements MoveRepository {
   @override
   Future<void> delete(String id) async {
     await _inner.delete(id);
-    await _syncDao.logChange(
-      entityId: id,
-      table: 'moves',
-      action: 'delete',
-    );
+    await _syncDao.logChange(entityId: id, table: 'moves', action: 'delete');
   }
 }
 
@@ -90,10 +84,13 @@ class SyncAwareComboRepository implements ComboRepository {
   @override
   Future<void> insert(CombosCompanion combo) async {
     await _inner.insert(combo);
+    final hasVideo =
+        combo.activeVideoPath.present && combo.activeVideoPath.value != null;
     await _syncDao.logChange(
       entityId: combo.id.value,
       table: 'combos',
       action: 'create',
+      hasVideo: hasVideo,
     );
   }
 
@@ -110,11 +107,7 @@ class SyncAwareComboRepository implements ComboRepository {
   @override
   Future<void> delete(String id) async {
     await _inner.delete(id);
-    await _syncDao.logChange(
-      entityId: id,
-      table: 'combos',
-      action: 'delete',
-    );
+    await _syncDao.logChange(entityId: id, table: 'combos', action: 'delete');
   }
 
   @override
@@ -139,8 +132,7 @@ class SyncAwareReviewRepository implements ReviewRepository {
   @override
   Stream<List<Review>> watchAll() => _inner.watchAll();
   @override
-  Future<List<Review>> getByMoveId(String moveId) =>
-      _inner.getByMoveId(moveId);
+  Future<List<Review>> getByMoveId(String moveId) => _inner.getByMoveId(moveId);
   @override
   Future<int> countAll() => _inner.countAll();
   @override
@@ -150,8 +142,7 @@ class SyncAwareReviewRepository implements ReviewRepository {
   Future<Map<DateTime, int>> dailyCountsSince(DateTime since) =>
       _inner.dailyCountsSince(since);
   @override
-  Future<Map<String, int>> ratingDistribution() =>
-      _inner.ratingDistribution();
+  Future<Map<String, int>> ratingDistribution() => _inner.ratingDistribution();
   @override
   Future<List<MapEntry<String, int>>> topReviewedMoves(int limit) =>
       _inner.topReviewedMoves(limit);

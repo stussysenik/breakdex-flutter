@@ -195,6 +195,10 @@ ${topMoves.isNotEmpty ? 'Most Practiced:\n$topMoves' : 'No moves practiced yet.'
                 'reviewType': r.reviewType,
                 'moveId': r.moveId,
                 'comboId': r.comboId,
+                'entityIdSnapshot': r.entityIdSnapshot,
+                'entityType': r.entityType,
+                'entityName': r.entityDisplayName,
+                'entityCategory': r.entityCategory,
                 'reviewedAt': r.reviewedAt.toIso8601String(),
                 'fsrsPreState': r.fsrsPreState,
                 'fsrsPostState': r.fsrsPostState,
@@ -439,6 +443,10 @@ ${topMoves.isNotEmpty ? 'Most Practiced:\n$topMoves' : 'No moves practiced yet.'
               reviewType: map['reviewType'] as String,
               moveId: Value(map['moveId'] as String?),
               comboId: Value(map['comboId'] as String?),
+              entityIdSnapshot: Value(map['entityIdSnapshot'] as String?),
+              entityType: Value(map['entityType'] as String?),
+              entityDisplayName: Value(map['entityName'] as String?),
+              entityCategory: Value(map['entityCategory'] as String?),
               reviewedAt: Value(
                 map['reviewedAt'] != null
                     ? DateTime.parse(map['reviewedAt'] as String)

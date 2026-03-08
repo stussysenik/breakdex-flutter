@@ -12,6 +12,10 @@ tags:
 
 ---
 
+# Bring Breakdex to foreground explicitly. On this simulator, relying on the
+# implicit launch path leaves Maestro on SpringBoard.
+- launchApp
+
 # App should launch on Arsenal tab by default
 - assertVisible: "Arsenal"
 
@@ -20,29 +24,29 @@ tags:
 
 # -- Review Tab --
 - tapOn:
-    text: "Review"
+    text: "Review tab\\nReview\\nTab 2 of 4"
 - assertVisible: "Review"
 - assertVisible: "Deck"
 
 # -- Stats Tab --
 - tapOn:
-    text: "Stats"
+    text: "Stats tab\\nStats\\nTab 3 of 4"
 
 # -- Settings Tab --
 - tapOn:
-    text: "Settings"
+    text: "Settings tab\\nSettings\\nTab 4 of 4"
 - assertVisible: "Settings"
 
 # -- Back to Arsenal Tab --
 - tapOn:
-    text: "Arsenal"
+    text: "Arsenal tab\\nArsenal\\nTab 1 of 4"
 - assertVisible: "Arsenal"
 
 # -- Verify segment toggle (Moves / Combos) --
 - tapOn: "Combos"
-- assertVisible: "No combos yet"
+- assertVisible: "Search combos..."
 - tapOn: "Moves"
-- assertVisible: "No moves yet"
+- assertVisible: "Search moves..."
 
 # -- Verify view mode toggle --
 - tapOn: "Gallery"

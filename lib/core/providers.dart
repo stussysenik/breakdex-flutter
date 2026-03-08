@@ -21,6 +21,7 @@ import 'services/sync_service.dart';
 import 'services/connectivity_service.dart';
 import 'services/fsrs_service.dart';
 import 'services/deck_service.dart';
+import 'services/reviewable_naming_service.dart';
 import 'services/scene_3d.dart';
 import 'services/vision_ml.dart';
 import 'models/sync_progress.dart';
@@ -104,6 +105,13 @@ final reviewRepositoryProvider = Provider<ReviewRepository>((ref) {
 
 final videoServiceProvider = Provider<VideoService>((ref) {
   return VideoService();
+});
+
+final reviewableNamingServiceProvider = Provider<ReviewableNamingService>((ref) {
+  return ReviewableNamingService(
+    movesDao: ref.watch(movesDaoProvider),
+    combosDao: ref.watch(combosDaoProvider),
+  );
 });
 
 // Sync
@@ -191,6 +199,38 @@ final syncTriggerProvider = Provider<void>((ref) {
     }
   }
 });
+
+// ---------------------------------------------------------------------------
+// Accent color — user-configurable global accent (defaults to AppColors.accent)
+// ---------------------------------------------------------------------------
+
+final accentColorProvider =
+    NotifierProvider<AccentColorNotifier, Color>(AccentColorNotifier.new);
+
+/// Persists custom accent color in SharedPreferences as an ARGB int.
+/// The theme watches this provider so changing it updates the entire UI.
+class AccentColorNotifier extends Notifier<Color> {
+  static const _key = 'accent_color';
+
+  @override
+  Color build() {
+    final prefs = ref.watch(sharedPreferencesProvider);
+    final v = prefs.getInt(_key);
+    return v != null ? Color(v) : AppColors.accent;
+  }
+
+  Future<void> set(Color color) async {
+    final prefs = ref.read(sharedPreferencesProvider);
+    await prefs.setInt(_key, color.toARGB32());
+    state = color;
+  }
+
+  Future<void> reset() async {
+    final prefs = ref.read(sharedPreferencesProvider);
+    await prefs.remove(_key);
+    state = AppColors.accent;
+  }
+}
 
 // ---------------------------------------------------------------------------
 // Rating colors — configurable per-rating button colors

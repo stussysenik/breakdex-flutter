@@ -7,8 +7,10 @@ import 'package:go_router/go_router.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:path/path.dart' as p;
 import 'package:share_plus/share_plus.dart';
+import '../../core/database/database.dart';
 import '../../core/design/colors.dart';
 import '../../core/design/spacing.dart';
+import '../../core/design/theme.dart';
 import '../../core/design/typography.dart';
 import '../../core/models/learning_state.dart';
 import '../../core/models/sync_progress.dart';
@@ -20,6 +22,9 @@ import '../../shared/widgets/action_tile.dart';
 import '../../core/services/view_names_service.dart';
 import '../stats/providers/stats_providers.dart';
 
+final _settingsMovesProvider = StreamProvider<List<Move>>((ref) {
+  return ref.watch(moveRepositoryProvider).watchAll();
+});
 
 /// Reusable color swatch grid for category/rating color pickers.
 Widget _colorSwatchGrid({
@@ -60,9 +65,16 @@ class SettingsScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = ref.watch(themeSettingProvider);
+    final viewingMode = ref.watch(viewingModeProvider);
     final fontFamily = ref.watch(fontFamilyProvider);
     final categories = ref.watch(categoriesProvider);
+    final moves =
+        ref.watch(_settingsMovesProvider).valueOrNull ?? const <Move>[];
     final colorScheme = Theme.of(context).colorScheme;
+    final categoryUsage = <String, int>{};
+    for (final move in moves) {
+      categoryUsage[move.category] = (categoryUsage[move.category] ?? 0) + 1;
+    }
 
     return Scaffold(
       body: SafeArea(
@@ -72,185 +84,278 @@ class SettingsScreen extends ConsumerWidget {
             const SizedBox(height: AppSpacing.lg),
             Semantics(
               header: true,
-              child: Text('Settings', style: AppTypography.titleLarge.copyWith(
-                color: colorScheme.onSurface,
-              )),
-            ),
-            const SizedBox(height: AppSpacing.xl),
-
-            // Theme + Font + Arsenal title — grouped under APPEARANCE
-            Text(
-              'APPEARANCE',
-              style: AppTypography.sectionHeader.copyWith(
-                color: colorScheme.secondary,
-              ),
-            ),
-            const SizedBox(height: AppSpacing.md),
-            _SegmentedPicker<ThemeSetting>(
-              values: ThemeSetting.values,
-              selected: theme,
-              labelOf: (t) => t.displayName,
-              onChanged: (t) => ref.read(themeSettingProvider.notifier).set(t),
-            ),
-            const SizedBox(height: AppSpacing.lg),
-
-            // Font picker — ChoiceChip wrap for 6 options
-            Text(
-              'Font',
-              style: AppTypography.caption.copyWith(
-                color: colorScheme.secondary,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-            const SizedBox(height: AppSpacing.sm),
-            Wrap(
-              spacing: AppSpacing.sm,
-              runSpacing: AppSpacing.sm,
-              children: AppFontFamily.values.map((f) {
-                final isSelected = f == fontFamily;
-                return ChoiceChip(
-                  label: Text(f.displayName),
-                  selected: isSelected,
-                  onSelected: (_) =>
-                      ref.read(fontFamilyProvider.notifier).set(f),
-                  selectedColor: AppColors.accent,
-                  labelStyle: AppTypography.caption.copyWith(
-                    color: isSelected ? Colors.white : colorScheme.onSurface,
-                    fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
-                  ),
-                  showCheckmark: false,
-                );
-              }).toList(),
-            ),
-            const SizedBox(height: AppSpacing.lg),
-
-            // Arsenal page title — folded into APPEARANCE
-            Consumer(builder: (context, ref, _) {
-              final viewNames = ref.watch(viewNamesProvider);
-              return ActionTile(
-                icon: Icons.title,
-                label: 'Page Title: ${viewNames['title'] ?? 'Arsenal'}',
-                onTap: () => _showRenameArsenalDialog(context, ref, viewNames['title'] ?? 'Arsenal'),
-              );
-            }),
-            const SizedBox(height: AppSpacing.xl),
-
-            // Categories
-            Text(
-              'CATEGORIES',
-              style: AppTypography.sectionHeader.copyWith(
-                color: colorScheme.secondary,
-              ),
-            ),
-            const SizedBox(height: AppSpacing.md),
-            for (final cat in categories)
-              Dismissible(
-                key: ValueKey(cat.name),
-                direction: cat.isDefault
-                    ? DismissDirection.none
-                    : DismissDirection.endToStart,
-                background: Container(
-                  alignment: Alignment.centerRight,
-                  padding: const EdgeInsets.only(right: AppSpacing.screenEdge),
-                  color: AppColors.actionAgain,
-                  child: const Icon(Icons.delete, color: Colors.white),
+              child: Text(
+                'Settings',
+                style: AppTypography.titleLarge.copyWith(
+                  color: colorScheme.onSurface,
                 ),
-                onDismissed: (_) {
-                  HapticFeedback.mediumImpact();
-                  ref.read(categoriesProvider.notifier).removeCategory(cat.name);
+              ),
+            ),
+            const SizedBox(height: AppSpacing.xl),
+
+            _SettingsSection(
+              title: 'Appearance',
+              subtitle:
+                  'Standardized controls for theme, typography, and naming.',
+              child: LayoutBuilder(
+                builder: (context, constraints) {
+                  final isTwoColumn = constraints.maxWidth >= 640;
+                  final panelWidth = isTwoColumn
+                      ? (constraints.maxWidth - AppSpacing.md) / 2
+                      : constraints.maxWidth;
+                  return Wrap(
+                    spacing: AppSpacing.md,
+                    runSpacing: AppSpacing.md,
+                    children: [
+                      SizedBox(
+                        width: panelWidth,
+                        child: _SettingsPanel(
+                          title: 'Viewing',
+                          child: _SegmentedPicker<ViewingMode>(
+                            values: ViewingMode.values,
+                            selected: viewingMode,
+                            labelOf: (mode) => mode.displayName,
+                            onChanged: (mode) => ref
+                                .read(viewingModeProvider.notifier)
+                                .set(mode),
+                          ),
+                        ),
+                      ),
+                      SizedBox(
+                        width: panelWidth,
+                        child: _SettingsPanel(
+                          title: 'Theme',
+                          child: _SegmentedPicker<ThemeSetting>(
+                            values: ThemeSetting.values,
+                            selected: theme,
+                            labelOf: (t) => t.displayName,
+                            onChanged: (t) =>
+                                ref.read(themeSettingProvider.notifier).set(t),
+                          ),
+                        ),
+                      ),
+                      SizedBox(
+                        width: panelWidth,
+                        child: _SettingsPanel(
+                          title: 'Font',
+                          child: Wrap(
+                            spacing: AppSpacing.sm,
+                            runSpacing: AppSpacing.sm,
+                            children: AppFontFamily.values.map((f) {
+                              final isSelected = f == fontFamily;
+                              return ChoiceChip(
+                                label: Text(f.displayName),
+                                selected: isSelected,
+                                onSelected: (_) =>
+                                    ref.read(fontFamilyProvider.notifier).set(f),
+                                selectedColor: colorScheme.primary,
+                                backgroundColor:
+                                    colorScheme.surfaceContainerHighest,
+                                side: BorderSide(
+                                  color: isSelected
+                                      ? colorScheme.primary
+                                      : colorScheme.outline.withValues(
+                                          alpha: 0.45,
+                                        ),
+                                ),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(
+                                    AppRadius.sm,
+                                  ),
+                                ),
+                                labelStyle: AppTypography.caption.copyWith(
+                                  color: isSelected
+                                      ? Colors.white
+                                      : colorScheme.onSurface,
+                                  fontWeight: isSelected
+                                      ? FontWeight.w600
+                                      : FontWeight.w400,
+                                ),
+                                showCheckmark: false,
+                              );
+                            }).toList(),
+                          ),
+                        ),
+                      ),
+                      Consumer(
+                        builder: (context, ref, _) {
+                          final viewNames = ref.watch(viewNamesProvider);
+                          return SizedBox(
+                            width: panelWidth,
+                            child: _SettingsPanel(
+                              title: 'Labels',
+                              child: ActionTile(
+                                icon: Icons.title,
+                                label:
+                                    'Page Title: ${viewNames['title'] ?? 'Arsenal'}',
+                                onTap: () => _showRenameArsenalDialog(
+                                  context,
+                                  ref,
+                                  viewNames['title'] ?? 'Arsenal',
+                                ),
+                              ),
+                            ),
+                          );
+                        },
+                      ),
+                    ],
+                  );
                 },
-                child: GestureDetector(
-                  onTap: () => _showRenameCategoryDialog(context, ref, cat),
-                  child: _CategoryRow(
-                    name: cat.name,
-                    color: cat.color,
-                    isDefault: cat.isDefault,
-                  ),
+              ),
+            ),
+            const SizedBox(height: AppSpacing.xl),
+
+            _SettingsSection(
+              title: 'Categories',
+              subtitle:
+                  'These semantic labels drive review, decks, stats, and gallery organization.',
+              child: _SettingsPanel(
+                title: 'Move Semantics',
+                child: Column(
+                  children: [
+                    for (final cat in categories)
+                      Dismissible(
+                        key: ValueKey(cat.name),
+                        direction: cat.isDefault
+                            ? DismissDirection.none
+                            : DismissDirection.endToStart,
+                        background: Container(
+                          alignment: Alignment.centerRight,
+                          padding: const EdgeInsets.only(
+                            right: AppSpacing.screenEdge,
+                          ),
+                          color: AppColors.actionAgain,
+                          child: const Icon(Icons.delete, color: Colors.white),
+                        ),
+                        onDismissed: (_) {
+                          HapticFeedback.mediumImpact();
+                          ref
+                              .read(categoriesProvider.notifier)
+                              .removeCategory(cat.name);
+                        },
+                        confirmDismiss: (_) => _confirmDeleteCategory(
+                          context,
+                          cat,
+                          usageCount: categoryUsage[cat.name] ?? 0,
+                        ),
+                        child: GestureDetector(
+                          onTap: () =>
+                              _showRenameCategoryDialog(context, ref, cat),
+                          child: _CategoryRow(
+                            name: cat.name,
+                            color: cat.color,
+                            isDefault: cat.isDefault,
+                            usageCount: categoryUsage[cat.name] ?? 0,
+                          ),
+                        ),
+                      ),
+                    const SizedBox(height: AppSpacing.sm),
+                    Align(
+                      alignment: Alignment.centerLeft,
+                      child: TextButton.icon(
+                        onPressed: () => _showAddCategoryDialog(context, ref),
+                        icon: const Icon(Icons.add, size: 18),
+                        label: Text(
+                          'Add Category',
+                          style: AppTypography.bodySmall,
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
               ),
-            const SizedBox(height: AppSpacing.sm),
-            TextButton.icon(
-              onPressed: () => _showAddCategoryDialog(context, ref),
-              icon: const Icon(Icons.add, size: 18),
-              label: Text('Add Category', style: AppTypography.bodySmall),
             ),
             const SizedBox(height: AppSpacing.xl),
 
-            // Unified COLORS section
-            Text(
-              'COLORS',
-              style: AppTypography.sectionHeader.copyWith(
-                color: colorScheme.secondary,
+            _SettingsSection(
+              title: 'Colors',
+              subtitle:
+                  'Outlined panels keep system color choices visually consistent.',
+              child: Column(
+                children: [
+                  _SettingsPanel(
+                    title: 'Learning States',
+                    child: Column(
+                      children: [
+                        for (final state in LearningState.values)
+                          _StateColorRow(state: state),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: AppSpacing.md),
+                  const _SettingsPanel(
+                    title: 'Accent',
+                    child: _AccentColorSection(),
+                  ),
+                  const SizedBox(height: AppSpacing.md),
+                  const _SettingsPanel(
+                    title: 'Ratings',
+                    child: _RatingColorsSection(),
+                  ),
+                ],
               ),
             ),
-            const SizedBox(height: AppSpacing.md),
-            Text(
-              'Learning States',
-              style: AppTypography.caption.copyWith(
-                color: colorScheme.secondary,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-            const SizedBox(height: AppSpacing.sm),
-            for (final state in LearningState.values)
-              _StateColorRow(state: state),
-            const SizedBox(height: AppSpacing.lg),
-            _RatingColorsSection(),
             const SizedBox(height: AppSpacing.xl),
 
-            // Data section
-            Text(
-              'DATA',
-              style: AppTypography.sectionHeader.copyWith(
-                color: colorScheme.secondary,
+            _SettingsSection(
+              title: 'Data',
+              subtitle:
+                  'Backups, imports, and destructive actions are grouped together.',
+              child: _SettingsPanel(
+                title: 'Backup & Reset',
+                child: Column(
+                  children: [
+                    _DataActionTileAsync(
+                      icon: Icons.ios_share,
+                      label: 'Export Stats',
+                      onTap: () async {
+                        final stats = await ref.read(statsBundleProvider.future);
+                        final summary =
+                            StatsExportService.generateTextSummary(stats);
+                        await Share.share(summary);
+                        return null;
+                      },
+                    ),
+                    const SizedBox(height: AppSpacing.sm),
+                    _DataActionTileAsync(
+                      icon: Icons.file_download_outlined,
+                      label: 'Export Full Backup',
+                      onTap: () async {
+                        final db = ref.read(databaseProvider);
+                        final prefs = ref.read(sharedPreferencesProvider);
+                        final result = await StatsExportService.generateJsonExport(
+                          db,
+                          prefs,
+                        );
+                        final dir = await getTemporaryDirectory();
+                        final file = File(
+                          p.join(dir.path, StatsExportService.exportFilename),
+                        );
+                        await file.writeAsString(result.json);
+                        await Share.shareXFiles([XFile(file.path)]);
+                        return 'Exported ${result.totalRecords} records (${result.moveCount} moves, ${result.reviewCount} reviews, ${result.comboCount} combos)';
+                      },
+                      showResultSnackBar: true,
+                    ),
+                    const SizedBox(height: AppSpacing.sm),
+                    _DataActionTileAsync(
+                      icon: Icons.file_upload_outlined,
+                      label: 'Import Backup',
+                      onTap: () async {
+                        await _showImportFlow(context, ref);
+                        return null;
+                      },
+                    ),
+                    const SizedBox(height: AppSpacing.sm),
+                    ActionTile(
+                      icon: Icons.delete_forever,
+                      label: 'Clear All Data',
+                      destructive: true,
+                      onTap: () => _showClearDataDialog(context, ref),
+                    ),
+                  ],
+                ),
               ),
-            ),
-            const SizedBox(height: AppSpacing.md),
-            _DataActionTileAsync(
-              icon: Icons.ios_share,
-              label: 'Export Stats',
-              onTap: () async {
-                final stats = await ref.read(statsBundleProvider.future);
-                final summary =
-                    StatsExportService.generateTextSummary(stats);
-                await Share.share(summary);
-                return null;
-              },
-            ),
-            const SizedBox(height: AppSpacing.sm),
-            _DataActionTileAsync(
-              icon: Icons.file_download_outlined,
-              label: 'Export Full Backup',
-              onTap: () async {
-                final db = ref.read(databaseProvider);
-                final prefs = ref.read(sharedPreferencesProvider);
-                final result =
-                    await StatsExportService.generateJsonExport(db, prefs);
-                final dir = await getTemporaryDirectory();
-                final file = File(
-                  p.join(dir.path, StatsExportService.exportFilename),
-                );
-                await file.writeAsString(result.json);
-                await Share.shareXFiles([XFile(file.path)]);
-                return 'Exported ${result.totalRecords} records (${result.moveCount} moves, ${result.reviewCount} reviews, ${result.comboCount} combos)';
-              },
-              showResultSnackBar: true,
-            ),
-            const SizedBox(height: AppSpacing.sm),
-            _DataActionTileAsync(
-              icon: Icons.file_upload_outlined,
-              label: 'Import Backup',
-              onTap: () async {
-                await _showImportFlow(context, ref);
-                return null;
-              },
-            ),
-            const SizedBox(height: AppSpacing.sm),
-            ActionTile(
-              icon: Icons.delete_forever,
-              label: 'Clear All Data',
-              destructive: true,
-              onTap: () => _showClearDataDialog(context, ref),
             ),
             const SizedBox(height: AppSpacing.xl),
 
@@ -392,7 +497,10 @@ class SettingsScreen extends ConsumerWidget {
       final db = ref.read(databaseProvider);
       final prefs = ref.read(sharedPreferencesProvider);
       final importResult = await StatsExportService.importFromJson(
-        db, prefs, json, mode,
+        db,
+        prefs,
+        json,
+        mode,
       );
 
       if (!context.mounted) return;
@@ -402,23 +510,25 @@ class SettingsScreen extends ConsumerWidget {
       ref.invalidate(statsBundleProvider);
       ref.invalidate(categoriesProvider);
 
-      final msg = 'Imported ${importResult.totalImported} records'
+      final msg =
+          'Imported ${importResult.totalImported} records'
           '${importResult.movesWithMissingVideos.isNotEmpty ? ' (${importResult.movesWithMissingVideos.length} moves need video re-linking)' : ''}';
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(msg)),
-      );
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg)));
     } catch (e) {
       if (!context.mounted) return;
       Navigator.pop(context); // dismiss loading
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Import failed: $e')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Import failed: $e')));
     }
   }
 
   void _showRenameCategoryDialog(
-      BuildContext context, WidgetRef ref, Category cat) {
+    BuildContext context,
+    WidgetRef ref,
+    Category cat,
+  ) {
     showDialog(
       context: context,
       builder: (context) {
@@ -451,16 +561,37 @@ class SettingsScreen extends ConsumerWidget {
               TextButton(
                 onPressed: () {
                   final newName = controller.text.trim();
-                  if (newName.isNotEmpty) {
-                    final movesDao = ref.read(databaseProvider).movesDao;
-                    ref.read(categoriesProvider.notifier).renameCategory(
-                          cat.name,
-                          newName,
-                          selectedColor,
-                          movesDao,
-                        );
-                    HapticFeedback.mediumImpact();
+                  if (newName.isEmpty) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('Category name cannot be empty.'),
+                      ),
+                    );
+                    return;
                   }
+
+                  final exists = ref
+                      .read(categoriesProvider)
+                      .any(
+                        (item) => item.name == newName && item.name != cat.name,
+                      );
+                  if (exists) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text('"$newName" already exists.')),
+                    );
+                    return;
+                  }
+
+                  final movesDao = ref.read(databaseProvider).movesDao;
+                  ref
+                      .read(categoriesProvider.notifier)
+                      .renameCategory(
+                        cat.name,
+                        newName,
+                        selectedColor,
+                        movesDao,
+                      );
+                  HapticFeedback.mediumImpact();
                   Navigator.pop(context);
                 },
                 child: const Text('Save'),
@@ -472,7 +603,11 @@ class SettingsScreen extends ConsumerWidget {
     );
   }
 
-  void _showRenameArsenalDialog(BuildContext context, WidgetRef ref, String current) {
+  void _showRenameArsenalDialog(
+    BuildContext context,
+    WidgetRef ref,
+    String current,
+  ) {
     final controller = TextEditingController(text: current);
     showDialog(
       context: context,
@@ -537,11 +672,29 @@ class SettingsScreen extends ConsumerWidget {
               TextButton(
                 onPressed: () {
                   final name = controller.text.trim();
-                  if (name.isNotEmpty) {
-                    ref.read(categoriesProvider.notifier)
-                        .addCategory(name, selectedColor);
-                    HapticFeedback.mediumImpact();
+                  if (name.isEmpty) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('Category name cannot be empty.'),
+                      ),
+                    );
+                    return;
                   }
+
+                  final exists = ref
+                      .read(categoriesProvider)
+                      .any((item) => item.name == name);
+                  if (exists) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text('"$name" already exists.')),
+                    );
+                    return;
+                  }
+
+                  ref
+                      .read(categoriesProvider.notifier)
+                      .addCategory(name, selectedColor);
+                  HapticFeedback.mediumImpact();
                   Navigator.pop(context);
                 },
                 child: const Text('Add'),
@@ -551,6 +704,55 @@ class SettingsScreen extends ConsumerWidget {
         );
       },
     );
+  }
+
+  Future<bool> _confirmDeleteCategory(
+    BuildContext context,
+    Category category, {
+    required int usageCount,
+  }) async {
+    if (usageCount > 0) {
+      await showDialog<void>(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          title: const Text('Category In Use'),
+          content: Text(
+            'Reassign the $usageCount move${usageCount == 1 ? '' : 's'} in "${category.name}" before deleting it.',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: const Text('OK'),
+            ),
+          ],
+        ),
+      );
+      return false;
+    }
+
+    return await showDialog<bool>(
+          context: context,
+          builder: (ctx) => AlertDialog(
+            title: Text('Delete "${category.name}"?'),
+            content: const Text(
+              'This removes the category label from settings. Existing moves must be reassigned first.',
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(ctx, false),
+                child: const Text('Cancel'),
+              ),
+              TextButton(
+                onPressed: () => Navigator.pop(ctx, true),
+                child: const Text(
+                  'Delete',
+                  style: TextStyle(color: AppColors.actionAgain),
+                ),
+              ),
+            ],
+          ),
+        ) ??
+        false;
   }
 }
 
@@ -593,11 +795,13 @@ class _SegmentedPicker<T> extends StatelessWidget {
                   color: isSelected ? colorScheme.surface : Colors.transparent,
                   borderRadius: BorderRadius.circular(AppRadius.sm - 2),
                   boxShadow: isSelected
-                      ? [BoxShadow(
-                          color: Colors.black.withValues(alpha: 0.08),
-                          blurRadius: 4,
-                          offset: const Offset(0, 1),
-                        )]
+                      ? [
+                          BoxShadow(
+                            color: Colors.black.withValues(alpha: 0.08),
+                            blurRadius: 4,
+                            offset: const Offset(0, 1),
+                          ),
+                        ]
                       : null,
                 ),
                 child: Center(
@@ -607,7 +811,9 @@ class _SegmentedPicker<T> extends StatelessWidget {
                       color: isSelected
                           ? colorScheme.onSurface
                           : colorScheme.secondary,
-                      fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
+                      fontWeight: isSelected
+                          ? FontWeight.w600
+                          : FontWeight.w400,
                       fontSize: fontSize,
                     ),
                     textAlign: TextAlign.center,
@@ -627,11 +833,13 @@ class _CategoryRow extends StatelessWidget {
     required this.name,
     required this.color,
     required this.isDefault,
+    required this.usageCount,
   });
 
   final String name;
   final Color color;
   final bool isDefault;
+  final int usageCount;
 
   @override
   Widget build(BuildContext context) {
@@ -646,9 +854,14 @@ class _CategoryRow extends StatelessWidget {
             decoration: BoxDecoration(color: color, shape: BoxShape.circle),
           ),
           const SizedBox(width: 12),
-          Text(name, style: AppTypography.bodyMedium.copyWith(
-            color: colorScheme.onSurface,
-          )),
+          Expanded(
+            child: Text(
+              name,
+              style: AppTypography.bodyMedium.copyWith(
+                color: colorScheme.onSurface,
+              ),
+            ),
+          ),
           if (isDefault) ...[
             const SizedBox(width: 8),
             Container(
@@ -665,6 +878,85 @@ class _CategoryRow extends StatelessWidget {
               ),
             ),
           ],
+          const SizedBox(width: 8),
+          Text(
+            usageCount == 0 ? 'Unused' : '$usageCount moves',
+            style: AppTypography.caption.copyWith(color: colorScheme.secondary),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _SettingsSection extends StatelessWidget {
+  const _SettingsSection({
+    required this.title,
+    required this.subtitle,
+    required this.child,
+  });
+
+  final String title;
+  final String subtitle;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          title.toUpperCase(),
+          style: AppTypography.sectionHeader.copyWith(
+            color: colorScheme.secondary,
+          ),
+        ),
+        const SizedBox(height: AppSpacing.xs),
+        Text(
+          subtitle,
+          style: AppTypography.bodySmall.copyWith(
+            color: colorScheme.secondary,
+          ),
+        ),
+        const SizedBox(height: AppSpacing.md),
+        child,
+      ],
+    );
+  }
+}
+
+class _SettingsPanel extends StatelessWidget {
+  const _SettingsPanel({required this.title, required this.child});
+
+  final String title;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    return Container(
+      padding: const EdgeInsets.all(AppSpacing.lg),
+      decoration: BoxDecoration(
+        color: colorScheme.surface,
+        borderRadius: BorderRadius.circular(AppRadius.lg),
+        border: Border.all(
+          color: colorScheme.outline.withValues(alpha: 0.22),
+        ),
+        boxShadow: AppShadows.soft(Theme.of(context).brightness),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            title,
+            style: AppTypography.titleSmall.copyWith(
+              color: colorScheme.onSurface,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          const SizedBox(height: AppSpacing.md),
+          child,
         ],
       ),
     );
@@ -693,15 +985,16 @@ class _StateColorRow extends StatelessWidget {
           ),
           const SizedBox(width: 12),
           Expanded(
-            child: Text(state.displayText, style: AppTypography.bodyMedium.copyWith(
-              color: colorScheme.onSurface,
-            )),
+            child: Text(
+              state.displayText,
+              style: AppTypography.bodyMedium.copyWith(
+                color: colorScheme.onSurface,
+              ),
+            ),
           ),
           Text(
             '#${state.color.toARGB32().toRadixString(16).substring(2).toUpperCase()}',
-            style: AppTypography.caption.copyWith(
-              color: colorScheme.secondary,
-            ),
+            style: AppTypography.caption.copyWith(color: colorScheme.secondary),
           ),
         ],
       ),
@@ -732,6 +1025,7 @@ class _DataActionTileAsyncState extends State<_DataActionTileAsync> {
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
+    final messenger = ScaffoldMessenger.of(context);
     return InkWell(
       onTap: _loading
           ? null
@@ -739,18 +1033,12 @@ class _DataActionTileAsyncState extends State<_DataActionTileAsync> {
               setState(() => _loading = true);
               try {
                 final msg = await widget.onTap();
-                if (widget.showResultSnackBar &&
-                    msg != null &&
-                    mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text(msg)),
-                  );
+                if (widget.showResultSnackBar && msg != null && mounted) {
+                  messenger.showSnackBar(SnackBar(content: Text(msg)));
                 }
               } catch (e) {
                 if (mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text('Error: $e')),
-                  );
+                  messenger.showSnackBar(SnackBar(content: Text('Error: $e')));
                 }
               } finally {
                 if (mounted) setState(() => _loading = false);
@@ -759,10 +1047,15 @@ class _DataActionTileAsyncState extends State<_DataActionTileAsync> {
       borderRadius: BorderRadius.circular(AppRadius.sm),
       child: Container(
         padding: const EdgeInsets.symmetric(
-            horizontal: AppSpacing.md, vertical: 14),
+          horizontal: AppSpacing.md,
+          vertical: 14,
+        ),
         decoration: BoxDecoration(
           color: colorScheme.surfaceContainerHighest,
           borderRadius: BorderRadius.circular(AppRadius.sm),
+          border: Border.all(
+            color: colorScheme.outline.withValues(alpha: 0.22),
+          ),
         ),
         child: Row(
           children: [
@@ -831,7 +1124,8 @@ class _LoggedInSyncPanel extends ConsumerWidget {
     final syncService = ref.read(syncServiceProvider);
     final lastSync = syncService.lastSyncAt;
 
-    final isSyncing = syncProgress.whenOrNull(
+    final isSyncing =
+        syncProgress.whenOrNull(
           data: (p) =>
               p.phase != SyncPhase.complete && p.phase != SyncPhase.error,
         ) ??
@@ -843,14 +1137,23 @@ class _LoggedInSyncPanel extends ConsumerWidget {
         // Email display
         Container(
           padding: const EdgeInsets.symmetric(
-              horizontal: AppSpacing.md, vertical: 14),
+            horizontal: AppSpacing.md,
+            vertical: 14,
+          ),
           decoration: BoxDecoration(
             color: colorScheme.surfaceContainerHighest,
             borderRadius: BorderRadius.circular(AppRadius.sm),
+            border: Border.all(
+              color: colorScheme.outline.withValues(alpha: 0.22),
+            ),
           ),
           child: Row(
             children: [
-              Icon(Icons.account_circle, color: AppColors.accent, size: 22),
+              Icon(
+                Icons.account_circle,
+                color: Theme.of(context).colorScheme.primary,
+                size: 22,
+              ),
               const SizedBox(width: AppSpacing.md),
               Expanded(
                 child: Text(
@@ -869,10 +1172,15 @@ class _LoggedInSyncPanel extends ConsumerWidget {
         // Auto-sync toggle
         Container(
           padding: const EdgeInsets.symmetric(
-              horizontal: AppSpacing.md, vertical: 6),
+            horizontal: AppSpacing.md,
+            vertical: 6,
+          ),
           decoration: BoxDecoration(
             color: colorScheme.surfaceContainerHighest,
             borderRadius: BorderRadius.circular(AppRadius.sm),
+            border: Border.all(
+              color: colorScheme.outline.withValues(alpha: 0.22),
+            ),
           ),
           child: Row(
             children: [
@@ -890,7 +1198,7 @@ class _LoggedInSyncPanel extends ConsumerWidget {
                 value: autoSync,
                 onChanged: (_) =>
                     ref.read(autoSyncEnabledProvider.notifier).toggle(),
-                activeTrackColor: AppColors.accent,
+                activeTrackColor: Theme.of(context).colorScheme.primary,
               ),
             ],
           ),
@@ -953,6 +1261,102 @@ class _LoggedInSyncPanel extends ConsumerWidget {
   }
 }
 
+// -- Accent Color Section -----------------------------------------------------
+
+/// Curated accent color palette for global UI personalization.
+const _accentPresetColors = [
+  Color(0xFF2362A2), // Default blue
+  Color(0xFF6929C4), // Violet
+  Color(0xFF8A3FFC), // Purple
+  Color(0xFFDA1E28), // Red
+  Color(0xFFFF6F00), // Amber
+  Color(0xFF198038), // Green
+  Color(0xFF08BDBA), // Teal
+  Color(0xFF33B1FF), // Sky blue
+  Color(0xFFE040FB), // Magenta
+  Color(0xFFFF7EB6), // Pink
+  Color(0xFFD4A017), // Gold
+  Color(0xFFA2AAB4), // Neutral
+];
+
+class _AccentColorSection extends ConsumerWidget {
+  const _AccentColorSection();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final accent = ref.watch(accentColorProvider);
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Expanded(
+              child: Text(
+                'Accent Color',
+                style: AppTypography.caption.copyWith(
+                  color: colorScheme.secondary,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+            TextButton(
+              onPressed: () {
+                HapticFeedback.mediumImpact();
+                ref.read(accentColorProvider.notifier).reset();
+              },
+              child: Text(
+                'Reset',
+                style: AppTypography.caption.copyWith(
+                  color: colorScheme.secondary,
+                ),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: AppSpacing.sm),
+        Row(
+          children: [
+            Container(
+              width: 48,
+              height: 48,
+              decoration: BoxDecoration(
+                color: accent,
+                shape: BoxShape.circle,
+                border: Border.all(color: accent, width: 3),
+                boxShadow: [
+                  BoxShadow(
+                    color: accent.withValues(alpha: 0.4),
+                    blurRadius: 8,
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(width: AppSpacing.md),
+            Text(
+              '#${accent.toARGB32().toRadixString(16).substring(2).toUpperCase()}',
+              style: AppTypography.caption.copyWith(
+                color: colorScheme.secondary,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: AppSpacing.md),
+        _colorSwatchGrid(
+          colors: _accentPresetColors,
+          selected: accent,
+          size: 36,
+          onSelected: (c) {
+            HapticFeedback.mediumImpact();
+            ref.read(accentColorProvider.notifier).set(c);
+          },
+        ),
+      ],
+    );
+  }
+}
+
 // -- Rating Colors Section ---------------------------------------------------
 
 /// Preset palette for rating color customization.
@@ -968,6 +1372,8 @@ const _ratingPresetColors = [
 ];
 
 class _RatingColorsSection extends ConsumerWidget {
+  const _RatingColorsSection();
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final colorScheme = Theme.of(context).colorScheme;
@@ -1055,9 +1461,12 @@ class _RatingColorRow extends ConsumerWidget {
             ),
             const SizedBox(width: 12),
             Expanded(
-              child: Text(label, style: AppTypography.bodyMedium.copyWith(
-                color: colorScheme.onSurface,
-              )),
+              child: Text(
+                label,
+                style: AppTypography.bodyMedium.copyWith(
+                  color: colorScheme.onSurface,
+                ),
+              ),
             ),
             Text(
               '#${currentColor.toARGB32().toRadixString(16).substring(2).toUpperCase()}',

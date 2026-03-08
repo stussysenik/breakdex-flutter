@@ -29,19 +29,17 @@ final appRouter = GoRouter(
           routes: [
             GoRoute(
               path: '/arsenal',
-              builder: (context, state) => const MoveListScreen(),
+              builder: (context, state) => MoveListScreen(),
               routes: [
                 GoRoute(
                   path: 'move/:id',
-                  builder: (context, state) => MoveDetailScreen(
-                    moveId: state.pathParameters['id']!,
-                  ),
+                  builder: (context, state) =>
+                      MoveDetailScreen(moveId: state.pathParameters['id']!),
                 ),
                 GoRoute(
                   path: 'combo/:id',
-                  builder: (context, state) => ComboDetailScreen(
-                    comboId: state.pathParameters['id']!,
-                  ),
+                  builder: (context, state) =>
+                      ComboDetailScreen(comboId: state.pathParameters['id']!),
                 ),
               ],
             ),

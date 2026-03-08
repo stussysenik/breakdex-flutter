@@ -65,8 +65,7 @@ class SyncService {
       await _downloadVideos();
 
       // 6. Update last sync timestamp
-      await prefs.setInt(
-          _lastSyncKey, DateTime.now().millisecondsSinceEpoch);
+      await prefs.setInt(_lastSyncKey, DateTime.now().millisecondsSinceEpoch);
       _emit(const SyncProgress(phase: SyncPhase.complete));
     } catch (e) {
       _emit(const SyncProgress(phase: SyncPhase.error));
@@ -83,17 +82,22 @@ class SyncService {
 
     for (var i = 0; i < pending.length; i++) {
       final entry = pending[i];
-      _emit(SyncProgress(
-        phase: SyncPhase.pushingMetadata,
-        current: i + 1,
-        total: pending.length,
-        currentItem: entry.entityTable,
-      ));
+      _emit(
+        SyncProgress(
+          phase: SyncPhase.pushingMetadata,
+          current: i + 1,
+          total: pending.length,
+          currentItem: entry.entityTable,
+        ),
+      );
 
       try {
         await _pushEntry(entry);
         await syncDao.markSynced(
-            entry.entityId, entry.entityTable, entry.action);
+          entry.entityId,
+          entry.entityTable,
+          entry.action,
+        );
       } catch (e) {
         // Skip failed entries — they'll retry next sync
       }
@@ -105,7 +109,11 @@ class SyncService {
     final userId = authService.userId;
 
     if (entry.action == 'delete') {
-      await _sb.from(table).delete().eq('id', entry.entityId);
+      if (table == 'fsrs_cards') {
+        await _sb.from(table).delete().eq('entity_id', entry.entityId);
+      } else {
+        await _sb.from(table).delete().eq('id', entry.entityId);
+      }
       return;
     }
 
@@ -119,7 +127,9 @@ class SyncService {
   }
 
   Future<Map<String, dynamic>?> _getLocalRecordBody(
-      String table, String id) async {
+    String table,
+    String id,
+  ) async {
     try {
       switch (table) {
         case 'moves':
@@ -136,11 +146,12 @@ class SyncService {
           return {
             'id': combo.id,
             'name': combo.name,
+            'active_video_path': combo.activeVideoPath,
           };
         case 'combo_moves':
-          final result = await (db.select(db.comboMoves)
-                ..where((t) => t.id.equals(id)))
-              .getSingle();
+          final result = await (db.select(
+            db.comboMoves,
+          )..where((t) => t.id.equals(id))).getSingle();
           return {
             'id': result.id,
             'sequence_index': result.sequenceIndex,
@@ -148,9 +159,9 @@ class SyncService {
             'move_id': result.moveId,
           };
         case 'reviews':
-          final results = await (db.select(db.reviews)
-                ..where((t) => t.id.equals(id)))
-              .get();
+          final results = await (db.select(
+            db.reviews,
+          )..where((t) => t.id.equals(id))).get();
           if (results.isEmpty) return null;
           final review = results.first;
           return {
@@ -159,11 +170,34 @@ class SyncService {
             'review_type': review.reviewType,
             'reviewed_at': review.reviewedAt.toIso8601String(),
             'move_id': review.moveId,
+            'combo_id': review.comboId,
+            'entity_id_snapshot': review.entityIdSnapshot,
+            'entity_type': review.entityType,
+            'entity_display_name': review.entityDisplayName,
+            'entity_category': review.entityCategory,
+            'fsrs_pre_state': review.fsrsPreState,
+            'fsrs_post_state': review.fsrsPostState,
+          };
+        case 'fsrs_cards':
+          final card =
+              await db.fsrsCardsDao.getByEntityId(id) ??
+              await db.fsrsCardsDao.getByEntityId(id, entityType: 'combo');
+          if (card == null) return null;
+          return {
+            'entity_id': card.entityId,
+            'entity_type': card.entityType,
+            'stability': card.stability,
+            'difficulty': card.difficulty,
+            'due': card.due.toIso8601String(),
+            'last_review': card.lastReview?.toIso8601String(),
+            'reps': card.reps,
+            'lapses': card.lapses,
+            'fsrs_state': card.fsrsState,
           };
         case 'battle_results':
-          final results = await (db.select(db.battleResults)
-                ..where((t) => t.id.equals(id)))
-              .get();
+          final results = await (db.select(
+            db.battleResults,
+          )..where((t) => t.id.equals(id))).get();
           if (results.isEmpty) return null;
           final br = results.first;
           return {
@@ -195,12 +229,14 @@ class SyncService {
 
     for (var i = 0; i < pending.length; i++) {
       final entry = pending[i];
-      _emit(SyncProgress(
-        phase: SyncPhase.uploadingVideos,
-        current: i + 1,
-        total: pending.length,
-        currentItem: entry.entityId,
-      ));
+      _emit(
+        SyncProgress(
+          phase: SyncPhase.uploadingVideos,
+          current: i + 1,
+          total: pending.length,
+          currentItem: entry.entityId,
+        ),
+      );
 
       try {
         String? videoPath;
@@ -223,7 +259,9 @@ class SyncService {
         final storagePath =
             '$userId/${entry.entityTable}/${entry.entityId}.mp4';
 
-        await _sb.storage.from('videos').upload(
+        await _sb.storage
+            .from('videos')
+            .upload(
               storagePath,
               file,
               fileOptions: const FileOptions(upsert: true),
@@ -249,6 +287,7 @@ class SyncService {
       'combos',
       'combo_moves',
       'reviews',
+      'fsrs_cards',
       'battle_results',
     ]) {
       try {
@@ -269,7 +308,9 @@ class SyncService {
   }
 
   Future<void> _mergeRemoteRecord(
-      String table, Map<String, dynamic> record) async {
+    String table,
+    Map<String, dynamic> record,
+  ) async {
     try {
       switch (table) {
         case 'moves':
@@ -286,6 +327,7 @@ class SyncService {
           final companion = CombosCompanion(
             id: Value(record['id'] as String),
             name: Value(record['name'] as String),
+            activeVideoPath: Value(record['active_video_path'] as String?),
           );
           await db.into(db.combos).insertOnConflictUpdate(companion);
           break;
@@ -303,11 +345,35 @@ class SyncService {
             id: Value(record['id'] as String),
             rating: Value(record['rating'] as String),
             reviewType: Value(record['review_type'] as String),
-            reviewedAt:
-                Value(DateTime.parse(record['reviewed_at'] as String)),
+            reviewedAt: Value(DateTime.parse(record['reviewed_at'] as String)),
             moveId: Value(record['move_id'] as String?),
+            comboId: Value(record['combo_id'] as String?),
+            entityIdSnapshot: Value(record['entity_id_snapshot'] as String?),
+            entityType: Value(record['entity_type'] as String?),
+            entityDisplayName: Value(record['entity_display_name'] as String?),
+            entityCategory: Value(record['entity_category'] as String?),
+            fsrsPreState: Value(record['fsrs_pre_state'] as int?),
+            fsrsPostState: Value(record['fsrs_post_state'] as int?),
           );
           await db.into(db.reviews).insertOnConflictUpdate(companion);
+          break;
+        case 'fsrs_cards':
+          final companion = FsrsCardsCompanion(
+            entityId: Value(record['entity_id'] as String),
+            entityType: Value((record['entity_type'] as String?) ?? 'move'),
+            stability: Value((record['stability'] as num).toDouble()),
+            difficulty: Value((record['difficulty'] as num).toDouble()),
+            due: Value(DateTime.parse(record['due'] as String)),
+            lastReview: Value(
+              record['last_review'] == null
+                  ? null
+                  : DateTime.parse(record['last_review'] as String),
+            ),
+            reps: Value(record['reps'] as int),
+            lapses: Value(record['lapses'] as int),
+            fsrsState: Value(record['fsrs_state'] as int),
+          );
+          await db.into(db.fsrsCards).insertOnConflictUpdate(companion);
           break;
         case 'battle_results':
           final companion = BattleResultsCompanion(
@@ -336,8 +402,9 @@ class SyncService {
 
     try {
       // List all video files for this user in storage
-      final moveVideos =
-          await _sb.storage.from('videos').list(path: '$userId/moves');
+      final moveVideos = await _sb.storage
+          .from('videos')
+          .list(path: '$userId/moves');
 
       final toDownload = <FileObject>[];
       for (final fileObj in moveVideos) {
@@ -357,12 +424,14 @@ class SyncService {
       for (var i = 0; i < toDownload.length; i++) {
         final fileObj = toDownload[i];
         final moveId = p.basenameWithoutExtension(fileObj.name);
-        _emit(SyncProgress(
-          phase: SyncPhase.downloadingVideos,
-          current: i + 1,
-          total: toDownload.length,
-          currentItem: moveId,
-        ));
+        _emit(
+          SyncProgress(
+            phase: SyncPhase.downloadingVideos,
+            current: i + 1,
+            total: toDownload.length,
+            currentItem: moveId,
+          ),
+        );
 
         try {
           final bytes = await _sb.storage
@@ -378,8 +447,61 @@ class SyncService {
 
           await File(localPath).writeAsBytes(bytes);
 
-          await (db.update(db.moves)..where((t) => t.id.equals(moveId)))
-              .write(MovesCompanion(videoPath: Value(localPath)));
+          await (db.update(db.moves)..where((t) => t.id.equals(moveId))).write(
+            MovesCompanion(videoPath: Value(localPath)),
+          );
+        } catch (_) {
+          // Skip — retry next sync
+        }
+      }
+
+      final comboVideos = await _sb.storage
+          .from('videos')
+          .list(path: '$userId/combos');
+      final comboDownloads = <FileObject>[];
+      for (final fileObj in comboVideos) {
+        final comboId = p.basenameWithoutExtension(fileObj.name);
+        try {
+          final localCombo = await db.combosDao.getById(comboId);
+          if (localCombo.activeVideoPath == null ||
+              localCombo.activeVideoPath!.isEmpty) {
+            comboDownloads.add(fileObj);
+          } else if (!await File(localCombo.activeVideoPath!).exists()) {
+            comboDownloads.add(fileObj);
+          }
+        } catch (_) {
+          // Combo doesn't exist locally — skip
+        }
+      }
+
+      for (var i = 0; i < comboDownloads.length; i++) {
+        final fileObj = comboDownloads[i];
+        final comboId = p.basenameWithoutExtension(fileObj.name);
+        _emit(
+          SyncProgress(
+            phase: SyncPhase.downloadingVideos,
+            current: i + 1,
+            total: comboDownloads.length,
+            currentItem: comboId,
+          ),
+        );
+
+        try {
+          final bytes = await _sb.storage
+              .from('videos')
+              .download('$userId/combos/${fileObj.name}');
+
+          final dir = await getApplicationDocumentsDirectory();
+          final combosDir = Directory(p.join(dir.path, 'Combos'));
+          if (!await combosDir.exists()) {
+            await combosDir.create(recursive: true);
+          }
+          final localPath = p.join(combosDir.path, '$comboId.mp4');
+
+          await File(localPath).writeAsBytes(bytes);
+
+          await (db.update(db.combos)..where((t) => t.id.equals(comboId)))
+              .write(CombosCompanion(activeVideoPath: Value(localPath)));
         } catch (_) {
           // Skip — retry next sync
         }
@@ -409,6 +531,7 @@ class SyncService {
         entityId: combo.id,
         table: 'combos',
         action: 'create',
+        hasVideo: combo.activeVideoPath != null,
       );
     }
 
@@ -417,6 +540,15 @@ class SyncService {
       await syncDao.logChange(
         entityId: cm.id,
         table: 'combo_moves',
+        action: 'create',
+      );
+    }
+
+    final fsrsCards = await db.fsrsCardsDao.getAll();
+    for (final card in fsrsCards) {
+      await syncDao.logChange(
+        entityId: card.entityId,
+        table: 'fsrs_cards',
         action: 'create',
       );
     }

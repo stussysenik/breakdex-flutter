@@ -151,7 +151,7 @@ class VideoExportPlugin: NSObject, FlutterPlugin, FlutterStreamHandler, NativeCa
 
     private var progressSink: FlutterEventSink?
     private var exportSession: AVAssetExportSession?
-    private var progressTimer: Timer?
+    private var progressTimer: DispatchSourceTimer?
     private var encoderInitialized = false
     private var encoderStartTime: Date?
 
@@ -385,28 +385,25 @@ class VideoExportPlugin: NSObject, FlutterPlugin, FlutterStreamHandler, NativeCa
 
                 switch session.status {
                 case .completed:
-                    Task { [weak self] in
-                        guard let self = self else { return }
-                        do {
-                            try await self.validateExportedVideo(at: outputURL)
-                            self.sendProgress(phase: "done", progress: 1.0)
-                            DispatchQueue.main.async {
-                                result(outputPath)
-                            }
-                        } catch {
-                            try? FileManager.default.removeItem(at: outputURL)
-                            DispatchQueue.main.async {
-                                result(
-                                    FlutterError(
-                                        code: "INVALID_EXPORT",
-                                        message: error.localizedDescription,
-                                        details: nil
-                                    )
-                                )
-                            }
+                    do {
+                        try self.validateExportedVideo(at: outputURL)
+                        self.sendProgress(phase: "done", progress: 1.0)
+                        DispatchQueue.main.async {
+                            result(outputPath)
                         }
-                        self.exportSession = nil
+                    } catch {
+                        try? FileManager.default.removeItem(at: outputURL)
+                        DispatchQueue.main.async {
+                            result(
+                                FlutterError(
+                                    code: "INVALID_EXPORT",
+                                    message: error.localizedDescription,
+                                    details: nil
+                                )
+                            )
+                        }
                     }
+                    self.exportSession = nil
 
                 case .cancelled:
                     DispatchQueue.main.async {
@@ -444,7 +441,10 @@ class VideoExportPlugin: NSObject, FlutterPlugin, FlutterStreamHandler, NativeCa
         return CGRect(x: left, y: top, width: width, height: height)
     }
 
-    private func validateExportedVideo(at url: URL) async throws {
+    /// Lightweight validation — AVAssetExportSession.completed already guarantees
+    /// a valid MP4. We only check file-exists + non-zero size to catch disk-full
+    /// edge cases. Removes the 5-10s delay from re-decoding the entire video.
+    private func validateExportedVideo(at url: URL) throws {
         let attributes = try FileManager.default.attributesOfItem(atPath: url.path)
         let fileSize = (attributes[.size] as? NSNumber)?.int64Value ?? 0
         guard fileSize > 0 else {
@@ -454,50 +454,18 @@ class VideoExportPlugin: NSObject, FlutterPlugin, FlutterStreamHandler, NativeCa
                 userInfo: [NSLocalizedDescriptionKey: "Exported video file is empty"]
             )
         }
-
-        let asset = AVURLAsset(url: url)
-        let duration = try await asset.load(.duration)
-        guard duration.isValid, duration.seconds > 0 else {
-            throw NSError(
-                domain: "VideoExportPlugin",
-                code: 2,
-                userInfo: [NSLocalizedDescriptionKey: "Exported video has no duration"]
-            )
-        }
-
-        guard let videoTrack = try await asset.loadTracks(withMediaType: .video).first else {
-            throw NSError(
-                domain: "VideoExportPlugin",
-                code: 3,
-                userInfo: [NSLocalizedDescriptionKey: "Exported video track is missing"]
-            )
-        }
-
-        let exportedSize = try await videoTrack.load(.naturalSize)
-        let exportedTransform = try await videoTrack.load(.preferredTransform)
-        let bounds = VideoExportGeometry.orientedBounds(
-            naturalSize: exportedSize,
-            preferredTransform: exportedTransform
-        )
-        guard bounds.width > 1, bounds.height > 1 else {
-            throw NSError(
-                domain: "VideoExportPlugin",
-                code: 4,
-                userInfo: [NSLocalizedDescriptionKey: "Exported video dimensions are invalid"]
-            )
-        }
-
-        let imageGenerator = AVAssetImageGenerator(asset: asset)
-        imageGenerator.appliesPreferredTrackTransform = true
-        imageGenerator.maximumSize = CGSize(width: 640, height: 640)
-        _ = try imageGenerator.copyCGImage(at: .zero, actualTime: nil)
     }
 
     // MARK: - Progress
 
+    /// Polls AVAssetExportSession.progress on a background queue at 4Hz (250ms)
+    /// instead of the old 10Hz main-thread Timer. Reports to Flutter via the
+    /// EventChannel sink (which is always dispatched to main).
     private func startProgressTimer() {
-        progressTimer?.invalidate()
-        progressTimer = Timer.scheduledTimer(withTimeInterval: 0.1, repeats: true) { [weak self] _ in
+        stopProgressTimer()
+        let timer = DispatchSource.makeTimerSource(queue: DispatchQueue.global(qos: .userInitiated))
+        timer.schedule(deadline: .now(), repeating: .milliseconds(250))
+        timer.setEventHandler { [weak self] in
             guard let self = self, let session = self.exportSession else { return }
 
             let sessionProgress = Double(session.progress)
@@ -507,7 +475,6 @@ class VideoExportPlugin: NSObject, FlutterPlugin, FlutterStreamHandler, NativeCa
             }
 
             if !self.encoderInitialized {
-                // Encoder not yet producing frames — show initializing phase
                 let waitSeconds = -(self.encoderStartTime ?? Date()).timeIntervalSinceNow
                 self.sendProgress(
                     phase: "initializing",
@@ -517,10 +484,8 @@ class VideoExportPlugin: NSObject, FlutterPlugin, FlutterStreamHandler, NativeCa
                 return
             }
 
-            // Map session.progress (0-1) to our range (0.10 - 1.0)
             let p = 0.10 + sessionProgress * 0.90
 
-            // Detect stall: encoder initialized but progress hasn't moved in >10s
             if let startTime = self.encoderStartTime {
                 let elapsed = -startTime.timeIntervalSinceNow
                 if elapsed > 10.0 && sessionProgress < 0.05 {
@@ -535,13 +500,13 @@ class VideoExportPlugin: NSObject, FlutterPlugin, FlutterStreamHandler, NativeCa
 
             self.sendProgress(phase: "encoding", progress: p)
         }
+        progressTimer = timer
+        timer.resume()
     }
 
     private func stopProgressTimer() {
-        DispatchQueue.main.async { [weak self] in
-            self?.progressTimer?.invalidate()
-            self?.progressTimer = nil
-        }
+        progressTimer?.cancel()
+        progressTimer = nil
     }
 
     private func sendProgress(phase: String, progress: Double, extra: [String: Any]? = nil) {

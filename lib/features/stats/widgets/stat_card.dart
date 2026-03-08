@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../core/design/theme.dart';
 import '../../../core/design/spacing.dart';
 
 /// Compact stat card with progressive disclosure: zero-value cards dim to 40%
@@ -20,10 +21,13 @@ class StatCard extends StatelessWidget {
       curve: AppMotion.entrance,
       child: Container(
         padding: const EdgeInsets.symmetric(
-            horizontal: AppSpacing.md, vertical: AppSpacing.md),
-        decoration: BoxDecoration(
-          color: cs.surface,
-          borderRadius: BorderRadius.circular(AppRadius.sm),
+          horizontal: AppSpacing.md,
+          vertical: AppSpacing.md,
+        ),
+        decoration: AppSurfaces.panel(
+          context,
+          radius: AppRadius.sm,
+          raised: !_isZero,
         ),
         child: Column(
           children: [
@@ -33,17 +37,17 @@ class StatCard extends StatelessWidget {
                 value,
                 key: ValueKey(value),
                 style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                      fontWeight: FontWeight.w700,
-                    ),
+                  fontWeight: FontWeight.w700,
+                ),
                 overflow: TextOverflow.ellipsis,
               ),
             ),
             const SizedBox(height: 2),
             Text(
               label,
-              style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                    color: cs.secondary,
-                  ),
+              style: Theme.of(
+                context,
+              ).textTheme.labelSmall?.copyWith(color: cs.secondary),
               overflow: TextOverflow.ellipsis,
             ),
           ],

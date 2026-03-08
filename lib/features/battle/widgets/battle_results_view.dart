@@ -51,7 +51,7 @@ class BattleResultsView extends StatelessWidget {
                   '${state.score}',
                   style: Theme.of(context).textTheme.displayMedium?.copyWith(
                         fontWeight: FontWeight.w700,
-                        color: AppColors.accent,
+                        color: Theme.of(context).colorScheme.primary,
                       ),
                 ),
                 const SizedBox(height: 4),
@@ -121,7 +121,7 @@ class BattleResultsView extends StatelessWidget {
                 onPlayAgain();
               },
               style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.accent,
+                backgroundColor: Theme.of(context).colorScheme.primary,
                 foregroundColor: Colors.white,
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(AppRadius.sm),

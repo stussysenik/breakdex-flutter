@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../core/design/colors.dart';
 import '../../core/design/typography.dart';
 import '../../core/models/sync_progress.dart';
 import '../../core/providers.dart';
@@ -23,7 +22,7 @@ class SyncProgressBar extends ConsumerWidget {
         return Container(
           width: double.infinity,
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-          color: AppColors.accent.withValues(alpha: 0.1),
+          color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.1),
           child: Row(
             children: [
               Expanded(
@@ -34,7 +33,7 @@ class SyncProgressBar extends ConsumerWidget {
                     Text(
                       progress.label,
                       style: AppTypography.caption.copyWith(
-                        color: AppColors.accent,
+                        color: Theme.of(context).colorScheme.primary,
                       ),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
@@ -46,9 +45,9 @@ class SyncProgressBar extends ConsumerWidget {
                         value: progress.bytesProgress ?? progress.fraction,
                         minHeight: 3,
                         backgroundColor:
-                            AppColors.accent.withValues(alpha: 0.2),
-                        valueColor: const AlwaysStoppedAnimation<Color>(
-                            AppColors.accent),
+                            Theme.of(context).colorScheme.primary.withValues(alpha: 0.2),
+                        valueColor: AlwaysStoppedAnimation<Color>(
+                            Theme.of(context).colorScheme.primary),
                       ),
                     ),
                   ],

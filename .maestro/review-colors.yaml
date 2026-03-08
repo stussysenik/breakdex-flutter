@@ -16,62 +16,74 @@ tags:
 
 ---
 
+# Explicit launch keeps the app foregrounded on this simulator and seeds
+# deterministic review content for the flow.
+- launchApp:
+    arguments:
+      maestro: true
+      breakdexFixture: review
+
 # ── Prescreen checks ──────────────────────────────────────────────────
 
 # Navigate to Review tab
 - tapOn:
-    text: "Review"
+    text: "Review\\nTab 2 of 4"
 - assertVisible: "Review"
 
-# Verify the Review/Deck segment control renders
+# Verify the shared segmented controls render
 - assertVisible: "Review"
-- assertVisible: "Deck"
+- assertVisible: "Moves"
+- assertVisible: "Combos"
+- assertVisible: "New\\n1\\nFirst recall"
+- assertVisible: "Learning\\n1\\nShort intervals"
+- assertVisible: "Mastery\\n1\\nLong intervals"
 
-# Ensure Review mode is active
-- tapOn: "Review"
-
-# Verify state cards are visible on the mastery prescreen
-- assertVisible: "New"
-- assertVisible: "Learning"
-- assertVisible: "Mastery"
-
-# Verify "Start All" button is visible
-- assertVisible: "Start All"
-
-# Capture prescreen for visual regression
+# Capture the focused moves pre-screen
 - takeScreenshot: e2e-screenshots/review-prescreen
 
-# ── Deck mode check ──────────────────────────────────────────────────
+# Switch to combos and capture the alternate pre-screen.
+- tapOn: "Combos"
+- takeScreenshot: e2e-screenshots/review-combos
+- tapOn: "Moves"
 
-# Switch to Deck mode and verify it renders
-- tapOn: "Deck"
-- takeScreenshot: e2e-screenshots/review-deck
+# Verify the marker visualization mode renders without breaking layout.
+- tapOn:
+    text: "Settings\\nTab 4 of 4"
+- tapOn: "Marker"
+- tapOn:
+    text: "Review\\nTab 2 of 4"
+- assertVisible: "New\\n1\\nFirst recall"
+- takeScreenshot: e2e-screenshots/review-marker
 
-# Switch back to Review
-- tapOn: "Review"
+# Restore the standard blue-accent mode.
+- tapOn:
+    text: "Settings\\nTab 4 of 4"
+- tapOn: "Blue"
+- tapOn:
+    text: "Review\\nTab 2 of 4"
 
 # ── Active session checks ─────────────────────────────────────────────
 
 # Start a session with all moves
-- tapOn: "Start All"
+- tapOn: "New\\n1\\nFirst recall"
 
 # Wait for rating buttons to appear (always visible, no reveal step)
 - extendedWaitUntil:
-    visible: "GOOD"
-    timeout: 5000
+    visible: "Rate GOOD\\nGOOD"
+    timeout: 10000
 
 # Assert all 4 rating buttons visible
-- assertVisible: "AGAIN"
-- assertVisible: "HARD"
-- assertVisible: "GOOD"
-- assertVisible: "EASY"
+- assertVisible: "Rate AGAIN\\nAGAIN"
+- assertVisible: "Rate HARD\\nHARD"
+- assertVisible: "Rate GOOD\\nGOOD"
+- assertVisible: "Rate EASY\\nEASY"
 
 # Capture the active review session with rating buttons
 - takeScreenshot: e2e-screenshots/review-active-session
 
 # Rate a card and verify advance or completion
 - tapOn:
-    id: "Rate Good"
+    text: "Rate GOOD\\nGOOD"
 
 # After rating, capture result state
 - runFlow:
@@ -83,8 +95,8 @@ tags:
 
 - runFlow:
     when:
-      visible: "GOOD"
+      visible: "Rate GOOD\\nGOOD"
     commands:
       - takeScreenshot: e2e-screenshots/review-next-card
-      - assertVisible: "AGAIN"
-      - assertVisible: "EASY"
+      - assertVisible: "Rate AGAIN\\nAGAIN"
+      - assertVisible: "Rate EASY\\nEASY"

@@ -123,7 +123,7 @@ class _SegmentButton extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
         decoration: BoxDecoration(
-          color: isSelected ? AppColors.accent : Colors.transparent,
+          color: isSelected ? Theme.of(context).colorScheme.primary : Colors.transparent,
           borderRadius: BorderRadius.circular(AppRadius.sm - 2),
         ),
         child: Row(
@@ -172,11 +172,11 @@ class _ToolbarButton extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
         decoration: BoxDecoration(
           color: isActive
-              ? AppColors.accent.withValues(alpha: 0.2)
+              ? Theme.of(context).colorScheme.primary.withValues(alpha: 0.2)
               : Colors.transparent,
           borderRadius: BorderRadius.circular(AppRadius.sm),
           border: Border.all(
-            color: isActive ? AppColors.accent : colorScheme.outline,
+            color: isActive ? Theme.of(context).colorScheme.primary : colorScheme.outline,
             width: 0.5,
           ),
         ),
@@ -186,13 +186,13 @@ class _ToolbarButton extends StatelessWidget {
             Icon(
               icon,
               size: 16,
-              color: isActive ? AppColors.accent : colorScheme.secondary,
+              color: isActive ? Theme.of(context).colorScheme.primary : colorScheme.secondary,
             ),
             const SizedBox(width: 4),
             Text(
               label,
               style: AppTypography.caption.copyWith(
-                color: isActive ? AppColors.accent : colorScheme.secondary,
+                color: isActive ? Theme.of(context).colorScheme.primary : colorScheme.secondary,
               ),
             ),
           ],

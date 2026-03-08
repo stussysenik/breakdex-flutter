@@ -106,8 +106,8 @@ class RatingButtonRow extends ConsumerWidget {
 
 /// Tinted pill rating button — subtle translucent background with colored text.
 ///
-/// 44dp height meets Apple HIG minimum touch target. Full pill shape with
-/// `AppRadius.xl` (30). Background uses 10% opacity tint of the rating color.
+/// 48dp height keeps the tap target generous while the sharper radius keeps
+/// the action row looking more deliberate and less bubble-like.
 class _TintedPillButton extends StatelessWidget {
   const _TintedPillButton({
     required this.rating,
@@ -128,15 +128,15 @@ class _TintedPillButton extends StatelessWidget {
       button: true,
       child: Material(
         color: color.withValues(alpha: 0.10),
-        borderRadius: BorderRadius.circular(AppRadius.xl),
+        borderRadius: BorderRadius.circular(AppRadius.sm),
         child: InkWell(
           onTap: () {
             HapticFeedback.lightImpact();
             onRate(rating);
           },
-          borderRadius: BorderRadius.circular(AppRadius.xl),
+          borderRadius: BorderRadius.circular(AppRadius.sm),
           child: SizedBox(
-            height: 44,
+            height: 48,
             child: Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
