@@ -15,8 +15,8 @@ import '../../core/design/typography.dart';
 import '../../core/models/learning_state.dart';
 import '../../core/providers.dart';
 import '../../core/services/native_video_album.dart';
+import '../../shared/widgets/combo_step_line.dart';
 import '../../shared/widgets/state_pill.dart';
-import '../../shared/widgets/timeline_node.dart';
 import '../../shared/widgets/video_player_widget.dart'
     show RobustVideoPlayer, VideoPlaceholder;
 
@@ -32,9 +32,6 @@ class ComboDetailScreen extends ConsumerStatefulWidget {
 class _ComboDetailScreenState extends ConsumerState<ComboDetailScreen> {
   int _activeIndex = 0;
   final NativeVideoAlbum _videoAlbum = NativeVideoAlbum();
-
-  /// Index of the timeline node currently being pressed (for scale animation).
-  int? _pressedNode;
 
   @override
   Widget build(BuildContext context) {
@@ -85,7 +82,7 @@ class _ComboDetailScreenState extends ConsumerState<ComboDetailScreen> {
                 return ListView(
                   padding: const EdgeInsets.all(AppSpacing.screenEdge),
                   children: [
-                    // Header row: back breadcrumb + delete button
+                    // Header row: back breadcrumb + edit/delete actions
                     Row(
                       children: [
                         Expanded(
@@ -108,6 +105,15 @@ class _ComboDetailScreenState extends ConsumerState<ComboDetailScreen> {
                             ),
                           ),
                         ),
+                        GestureDetector(
+                          onTap: () => context.push('/edit-combo/${combo.id}'),
+                          child: Icon(
+                            Icons.edit_outlined,
+                            color: colorScheme.secondary,
+                            size: 20,
+                          ),
+                        ),
+                        const SizedBox(width: AppSpacing.md),
                         GestureDetector(
                           onTap: () => _showDeleteSheet(context, combo),
                           child: Icon(
@@ -134,47 +140,20 @@ class _ComboDetailScreenState extends ConsumerState<ComboDetailScreen> {
                     Row(children: [StatePill(state: comboState)]),
                     const SizedBox(height: AppSpacing.md),
 
-                    // Timeline with tap-scale bounce
-                    SingleChildScrollView(
-                      scrollDirection: Axis.horizontal,
-                      child: Row(
-                        children: [
-                          for (int i = 0; i < comboMoves.length; i++)
-                            GestureDetector(
-                              onTapDown: (_) =>
-                                  setState(() => _pressedNode = i),
-                              onTapUp: (_) {
-                                setState(() {
-                                  _pressedNode = null;
-                                  _activeIndex = i;
-                                });
-                                HapticFeedback.selectionClick();
-                              },
-                              onTapCancel: () =>
-                                  setState(() => _pressedNode = null),
-                              child: AnimatedScale(
-                                scale: _pressedNode == i ? 0.85 : 1.0,
-                                duration: AppMotion.fast02,
-                                curve: AppMotion.expressive,
-                                child: TimelineNode(
-                                  index: i + 1,
-                                  style: i == safeIndex
-                                      ? TimelineNodeStyle.active
-                                      : TimelineNodeStyle.inactive,
-                                  showLeadingLine: i > 0,
-                                  showTrailingLine: i < comboMoves.length - 1,
-                                ),
-                              ),
-                            ),
-                        ],
-                      ),
+                    ComboStepLine(
+                      stepCount: comboMoves.length,
+                      activeIndex: safeIndex,
+                      onStepSelected: (index) {
+                        setState(() => _activeIndex = index);
+                      },
                     ),
                     const SizedBox(height: AppSpacing.lg),
 
-                    // Video with overlay
-                    if (currentMove?.videoPath != null)
+                    if (currentMove != null && currentMove.videoPath != null)
                       RobustVideoPlayer(
-                        videoPath: currentMove!.videoPath!,
+                        key: ValueKey('${currentMove.id}:$safeIndex'),
+                        videoPath: currentMove.videoPath!,
+                        autoPlay: true,
                         onEdit: () => _editVideo(currentMove),
                         overlay: Positioned(
                           bottom: 12,

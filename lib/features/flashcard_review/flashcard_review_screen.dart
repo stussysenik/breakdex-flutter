@@ -272,7 +272,12 @@ class _FlashcardReviewScreenState extends ConsumerState<FlashcardReviewScreen> {
         final videoHeight = hasVideo
             ? (available * 0.42).clamp(220.0, 340.0)
             : (available * 0.30).clamp(180.0, 240.0);
-        final cardHeight = videoHeight + (item.category == null ? 96.0 : 114.0);
+        final metadataHeight = item.isCombo
+            ? 176.0
+            : item.category == null
+            ? 96.0
+            : 114.0;
+        final cardHeight = videoHeight + metadataHeight;
 
         return SingleChildScrollView(
           padding: const EdgeInsets.fromLTRB(
@@ -323,12 +328,16 @@ class _FlashcardReviewScreenState extends ConsumerState<FlashcardReviewScreen> {
                                   }
                                 },
                                 child: ReviewCard(
+                                  key: ValueKey(
+                                    'review-card-${pageItem.entityType}-${pageItem.entityId}',
+                                  ),
                                   title: pageItem.displayName,
                                   state: pageItem.state,
                                   category: pageItem.category,
                                   videoPath: pageItem.videoPath,
                                   originalVideoName: pageItem.originalVideoName,
                                   canEditState: pageItem.isMove,
+                                  combo: pageItem.combo,
                                   onStatePillTap: () {
                                     if (pageItem.isMove &&
                                         pageItem.move != null) {

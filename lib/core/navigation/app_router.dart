@@ -81,6 +81,12 @@ final appRouter = GoRouter(
       builder: (context, state) => const CreateComboScreen(),
     ),
     GoRoute(
+      path: '/edit-combo/:id',
+      parentNavigatorKey: _rootNavigatorKey,
+      builder: (context, state) =>
+          CreateComboScreen(comboId: state.pathParameters['id']!),
+    ),
+    GoRoute(
       path: '/battle',
       parentNavigatorKey: _rootNavigatorKey,
       builder: (context, state) => const BattleScreen(),

@@ -744,7 +744,7 @@ class _ArsenalSegmentControl extends ConsumerWidget {
       selected: segment,
       iconOf: (s) => switch (s) {
         ArsenalSegment.moves => Icons.sports_martial_arts,
-        ArsenalSegment.combos => Icons.playlist_play,
+        ArsenalSegment.combos => Icons.linear_scale_rounded,
       },
       labelOf: (s) => switch (s) {
         ArsenalSegment.moves => 'Moves',
@@ -922,7 +922,7 @@ class _ComboRow extends ConsumerWidget {
                   ),
                   const SizedBox(width: AppSpacing.sm),
                   Icon(
-                    Icons.playlist_play,
+                    Icons.linear_scale_rounded,
                     color: Theme.of(context).colorScheme.primary,
                     size: 24,
                   ),
@@ -1178,7 +1178,11 @@ class _ComboGridCell extends ConsumerWidget {
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Icon(Icons.playlist_play, size: 12, color: Colors.white),
+            const Icon(
+              Icons.linear_scale_rounded,
+              size: 12,
+              color: Colors.white,
+            ),
             const SizedBox(width: 4),
             Text(
               '$moveCount',
@@ -1380,7 +1384,7 @@ class _EmptyState extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         children: [
           Icon(
-            isCombo ? Icons.playlist_play : Icons.sports_martial_arts,
+            isCombo ? Icons.linear_scale_rounded : Icons.sports_martial_arts,
             size: 64,
             color: colorScheme.secondary,
           ),
