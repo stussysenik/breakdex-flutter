@@ -39,11 +39,11 @@ tags:
 - assertVisible: "Mastery\\n1\\nLong intervals"
 
 # Capture the focused moves pre-screen
-- takeScreenshot: e2e-screenshots/review-prescreen
+- takeScreenshot: .maestro-artifacts/review/review-prescreen
 
 # Switch to combos and capture the alternate pre-screen.
 - tapOn: "Combos"
-- takeScreenshot: e2e-screenshots/review-combos
+- takeScreenshot: .maestro-artifacts/review/review-combos
 - tapOn: "Moves"
 
 # Verify the marker visualization mode renders without breaking layout.
@@ -53,7 +53,7 @@ tags:
 - tapOn:
     text: "Review\\nTab 2 of 4"
 - assertVisible: "New\\n1\\nFirst recall"
-- takeScreenshot: e2e-screenshots/review-marker
+- takeScreenshot: .maestro-artifacts/review/review-marker
 
 # Restore the standard blue-accent mode.
 - tapOn:
@@ -79,7 +79,7 @@ tags:
 - assertVisible: "Rate EASY\\nEASY"
 
 # Capture the active review session with rating buttons
-- takeScreenshot: e2e-screenshots/review-active-session
+- takeScreenshot: .maestro-artifacts/review/review-active-session
 
 # Rate a card and verify advance or completion
 - tapOn:
@@ -90,13 +90,13 @@ tags:
     when:
       visible: "Great work!"
     commands:
-      - takeScreenshot: e2e-screenshots/review-completed
+      - takeScreenshot: .maestro-artifacts/review/review-completed
       - assertVisible: "Review Again"
 
 - runFlow:
     when:
       visible: "Rate GOOD\\nGOOD"
     commands:
-      - takeScreenshot: e2e-screenshots/review-next-card
+      - takeScreenshot: .maestro-artifacts/review/review-next-card
       - assertVisible: "Rate AGAIN\\nAGAIN"
       - assertVisible: "Rate EASY\\nEASY"

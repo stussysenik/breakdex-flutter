@@ -51,3 +51,4 @@ senik/
 # Tool configs
 .claude/
 .flowdeck/
+.maestro-artifacts/

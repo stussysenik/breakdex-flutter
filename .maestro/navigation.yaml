@@ -24,22 +24,22 @@ tags:
 
 # -- Review Tab --
 - tapOn:
-    text: "Review tab\\nReview\\nTab 2 of 4"
+    text: "Review\\nTab 2 of 4"
 - assertVisible: "Review"
 - assertVisible: "Deck"
 
 # -- Stats Tab --
 - tapOn:
-    text: "Stats tab\\nStats\\nTab 3 of 4"
+    text: "Stats\\nTab 3 of 4"
 
 # -- Settings Tab --
 - tapOn:
-    text: "Settings tab\\nSettings\\nTab 4 of 4"
+    text: "Settings\\nTab 4 of 4"
 - assertVisible: "Settings"
 
 # -- Back to Arsenal Tab --
 - tapOn:
-    text: "Arsenal tab\\nArsenal\\nTab 1 of 4"
+    text: "Arsenal\\nTab 1 of 4"
 - assertVisible: "Arsenal"
 
 # -- Verify segment toggle (Moves / Combos) --

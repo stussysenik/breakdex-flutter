@@ -49,5 +49,5 @@ flutter run --release -d <device-id>
 ```bash
 flutter analyze
 flutter build ios --simulator
-maestro test .maestro/review-session.yaml
+maestro test --include-tags=review .maestro/
 ```
