@@ -1,4 +1,4 @@
-# Breakdex
+# Breakdex-Flutter
 
 Breakdex is a pocket video database for dance moves, combos, and spaced-repetition review. The app combines a move library, combo builder, video editing, deck-based practice, and review analytics in one Flutter app with native iOS bridges for media workflows.
 
