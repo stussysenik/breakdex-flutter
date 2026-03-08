@@ -103,7 +103,7 @@ class _FlashcardReviewScreenState extends ConsumerState<FlashcardReviewScreen> {
       body: SafeArea(
         child: Column(
           children: [
-            const SizedBox(height: AppSpacing.md),
+            SizedBox(height: sessionActive ? AppSpacing.sm : AppSpacing.md),
 
             // Title + End button
             Padding(
@@ -145,29 +145,32 @@ class _FlashcardReviewScreenState extends ConsumerState<FlashcardReviewScreen> {
               ),
             ),
 
-            const SizedBox(height: AppSpacing.xs),
-            Padding(
-              padding: const EdgeInsets.symmetric(
-                horizontal: AppSpacing.screenEdge,
+            if (!sessionActive) ...[
+              const SizedBox(height: AppSpacing.xs),
+              Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: AppSpacing.screenEdge,
+                ),
+                child: AppSegmentedControl<ReviewMode>(
+                  items: const [
+                    AppSegmentedControlItem(
+                      value: ReviewMode.review,
+                      icon: Icons.grid_view_rounded,
+                      label: 'Review',
+                    ),
+                    AppSegmentedControlItem(
+                      value: ReviewMode.deck,
+                      icon: Icons.layers_rounded,
+                      label: 'Deck',
+                    ),
+                  ],
+                  selectedValue: reviewMode,
+                  onChanged: _setReviewMode,
+                ),
               ),
-              child: AppSegmentedControl<ReviewMode>(
-                items: const [
-                  AppSegmentedControlItem(
-                    value: ReviewMode.review,
-                    icon: Icons.grid_view_rounded,
-                    label: 'Review',
-                  ),
-                  AppSegmentedControlItem(
-                    value: ReviewMode.deck,
-                    icon: Icons.layers_rounded,
-                    label: 'Deck',
-                  ),
-                ],
-                selectedValue: reviewMode,
-                onChanged: _setReviewMode,
-              ),
-            ),
-            const SizedBox(height: AppSpacing.xs),
+              const SizedBox(height: AppSpacing.xs),
+            ] else
+              const SizedBox(height: AppSpacing.sm),
 
             Expanded(
               child: sessionActive
@@ -235,7 +238,7 @@ class _FlashcardReviewScreenState extends ConsumerState<FlashcardReviewScreen> {
                 _ => 'All Cards',
               },
             ),
-            const SizedBox(height: AppSpacing.md),
+            const SizedBox(height: AppSpacing.sm),
 
             // Main content
             Expanded(
@@ -265,102 +268,104 @@ class _FlashcardReviewScreenState extends ConsumerState<FlashcardReviewScreen> {
     return LayoutBuilder(
       builder: (context, constraints) {
         final available = constraints.maxHeight;
-        final videoHeight = (available * 0.58).clamp(180.0, 400.0);
+        final hasVideo = item.videoPath != null;
+        final videoHeight = hasVideo
+            ? (available * 0.42).clamp(220.0, 340.0)
+            : (available * 0.30).clamp(180.0, 240.0);
+        final cardHeight = videoHeight + (item.category == null ? 96.0 : 114.0);
 
-        return Column(
-          children: [
-            // PageView for swipe navigation between moves.
-            // Wrapped in animated scale/opacity for smooth card exit on rating.
-            Expanded(
-              child: AnimatedScale(
-                scale: _cardScale,
-                duration: AppMotion.moderate01,
-                curve: AppMotion.productive,
-                child: AnimatedOpacity(
-                  opacity: _cardOpacity,
-                  duration: AppMotion.moderate01,
-                  child: PageView.builder(
-                    controller: _pageController,
-                    physics: _animatingExit
-                        ? const NeverScrollableScrollPhysics()
-                        : null,
-                    itemCount: _items.length,
-                    onPageChanged: (index) {
-                      HapticFeedback.selectionClick();
-                      setState(() {
-                        _currentIndex = index;
-                      });
-                    },
-                    itemBuilder: (context, index) {
-                      final pageItem = _items[index];
-                      return Semantics(
-                        identifier: 'review-card-${pageItem.entityId}',
-                        label: 'Review card: ${pageItem.displayName}',
-                        child: GestureDetector(
-                          onVerticalDragEnd: (details) {
-                            if (details.primaryVelocity != null &&
-                                details.primaryVelocity! < -300 &&
-                                pageItem.isMove &&
-                                pageItem.move != null) {
-                              _showStatePicker(pageItem.move!, index);
-                            }
+        return SingleChildScrollView(
+          padding: const EdgeInsets.fromLTRB(
+            AppSpacing.screenEdge,
+            0,
+            AppSpacing.screenEdge,
+            AppSpacing.md,
+          ),
+          child: Center(
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 620),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  SizedBox(
+                    height: cardHeight,
+                    child: AnimatedScale(
+                      scale: _cardScale,
+                      duration: AppMotion.moderate01,
+                      curve: AppMotion.productive,
+                      child: AnimatedOpacity(
+                        opacity: _cardOpacity,
+                        duration: AppMotion.moderate01,
+                        child: PageView.builder(
+                          controller: _pageController,
+                          physics: _animatingExit
+                              ? const NeverScrollableScrollPhysics()
+                              : null,
+                          itemCount: _items.length,
+                          onPageChanged: (index) {
+                            HapticFeedback.selectionClick();
+                            setState(() {
+                              _currentIndex = index;
+                            });
                           },
-                          child: ReviewCard(
-                            title: pageItem.displayName,
-                            state: pageItem.state,
-                            category: pageItem.category,
-                            videoPath: pageItem.videoPath,
-                            originalVideoName: pageItem.originalVideoName,
-                            canEditState: pageItem.isMove,
-                            onStatePillTap: () {
-                              if (pageItem.isMove && pageItem.move != null) {
-                                _showStatePicker(pageItem.move!, index);
-                              }
-                            },
-                            videoHeight: videoHeight,
-                            onRepick: pageItem.isMove && pageItem.move != null
-                                ? () => _repickVideo(pageItem.move!, index)
-                                : null,
-                          ),
+                          itemBuilder: (context, index) {
+                            final pageItem = _items[index];
+                            return Semantics(
+                              identifier: 'review-card-${pageItem.entityId}',
+                              label: 'Review card: ${pageItem.displayName}',
+                              child: GestureDetector(
+                                onVerticalDragEnd: (details) {
+                                  if (details.primaryVelocity != null &&
+                                      details.primaryVelocity! < -300 &&
+                                      pageItem.isMove &&
+                                      pageItem.move != null) {
+                                    _showStatePicker(pageItem.move!, index);
+                                  }
+                                },
+                                child: ReviewCard(
+                                  title: pageItem.displayName,
+                                  state: pageItem.state,
+                                  category: pageItem.category,
+                                  videoPath: pageItem.videoPath,
+                                  originalVideoName: pageItem.originalVideoName,
+                                  canEditState: pageItem.isMove,
+                                  onStatePillTap: () {
+                                    if (pageItem.isMove &&
+                                        pageItem.move != null) {
+                                      _showStatePicker(pageItem.move!, index);
+                                    }
+                                  },
+                                  videoHeight: videoHeight,
+                                  onRepick:
+                                      pageItem.isMove && pageItem.move != null
+                                      ? () =>
+                                            _repickVideo(pageItem.move!, index)
+                                      : null,
+                                ),
+                              ),
+                            );
+                          },
                         ),
-                      );
-                    },
-                  ),
-                ),
-              ),
-            ),
-
-            // Raised, fixed action bar
-            Padding(
-              padding: const EdgeInsets.symmetric(
-                horizontal: AppSpacing.screenEdge,
-              ),
-              child: Container(
-                margin: const EdgeInsets.only(bottom: AppSpacing.md),
-                padding: const EdgeInsets.all(AppSpacing.sm),
-                decoration: BoxDecoration(
-                  color: Theme.of(context).colorScheme.surface,
-                  borderRadius: BorderRadius.circular(AppRadius.sm),
-                  border: Border.all(
-                    color: Theme.of(
-                      context,
-                    ).colorScheme.outline.withValues(alpha: 0.22),
-                  ),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.04),
-                      blurRadius: 18,
-                      offset: const Offset(0, 8),
+                      ),
                     ),
-                  ],
-                ),
-                child: RatingButtonRow(
-                  onRate: (rating) => _rateItem(item, rating),
-                  intervalPreviews: intervals,
-                ),
+                  ),
+                  const SizedBox(height: AppSpacing.md),
+                  Container(
+                    padding: const EdgeInsets.all(AppSpacing.sm),
+                    decoration: AppSurfaces.panel(
+                      context,
+                      raised: true,
+                      radius: AppRadius.md,
+                    ),
+                    child: RatingButtonRow(
+                      onRate: (rating) => _rateItem(item, rating),
+                      intervalPreviews: intervals,
+                    ),
+                  ),
+                ],
               ),
             ),
-          ],
+          ),
         );
       },
     );

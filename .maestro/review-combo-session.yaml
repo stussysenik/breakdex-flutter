@@ -1,0 +1,31 @@
+# Flow 4: Combo review session flow
+# Seeds deterministic data, enters the combo lane, and starts the learning combo.
+#
+# Tags: review
+
+appId: com.breakdex.breakdex
+name: Review Combo Session Flow
+tags:
+  - review
+
+---
+
+- launchApp:
+    arguments:
+      maestro: true
+      breakdexFixture: review
+
+- tapOn:
+    point: "146,809"
+- assertVisible: "Review"
+- assertVisible: "Moves"
+- assertVisible: "Combos"
+- tapOn: "Combos"
+- assertVisible: "Combos"
+- assertVisible: "Learning\\n1\\nShort intervals"
+- tapOn: "Learning\\n1\\nShort intervals"
+- extendedWaitUntil:
+    visible: "Combos · Learning"
+    timeout: 10000
+- assertVisible: "Rate GOOD\\nGOOD"
+- assertVisible: "Rate AGAIN\\nAGAIN"

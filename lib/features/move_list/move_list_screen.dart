@@ -22,6 +22,7 @@ import '../../core/services/native_video_album.dart';
 import '../../core/services/settings_service.dart';
 import '../../core/services/video_service.dart';
 import '../../core/services/view_names_service.dart';
+import '../../shared/widgets/celebration_overlay.dart';
 import '../../shared/widgets/state_pill.dart';
 import '../../shared/widgets/video_picker_sheet.dart';
 
@@ -215,9 +216,16 @@ class MoveListScreen extends ConsumerWidget {
                       context,
                       ref,
                     ),
-                    ArsenalSegment.combos => () => context.push(
-                      '/create-combo',
-                    ),
+                    ArsenalSegment.combos => () async {
+                      final comboName = await context.push<String>(
+                        '/create-combo',
+                      );
+                      if (!context.mounted || comboName == null) return;
+                      ref.read(_arsenalSegmentProvider.notifier).state =
+                          ArsenalSegment.combos;
+                      HapticFeedback.mediumImpact();
+                      CelebrationOverlay.show(context, title: comboName);
+                    },
                   },
                   backgroundColor: Theme.of(context).colorScheme.primary,
                   child: const Icon(Icons.add, color: Colors.white),

@@ -22,7 +22,7 @@ tags:
 
 # Navigate to Review tab
 - tapOn:
-    text: "Review\\nTab 2 of 4"
+    point: "146,809"
 - assertVisible: "Review"
 
 # Verify the compact moves lane renders, then start a session.
@@ -49,18 +49,6 @@ tags:
 - tapOn:
     text: "Rate GOOD\\nGOOD"
 
-# After rating, either the next card appears or session completes
-- runFlow:
-    when:
-      visible: "Great work!"
-    commands:
-      - assertVisible: "Great work!"
-      - assertVisible: "Review Again"
-
-# If more cards remain, verify we can still rate
-- runFlow:
-    when:
-      visible: "Rate GOOD\\nGOOD"
-    commands:
-      - assertVisible: "Rate AGAIN\\nAGAIN"
-      - assertVisible: "Rate GOOD\\nGOOD"
+# The seeded "New" fixture contains exactly one card, so completion is deterministic.
+- assertVisible: "Great work!"
+- assertVisible: "Review Again"

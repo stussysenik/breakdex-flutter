@@ -14,6 +14,7 @@ import Flutter
 final class CapabilityRegistry {
     /// All native capabilities — add new ones here, they auto-register.
     static let capabilities: [NativeCapability.Type] = [
+        AppPathsPlugin.self,
         VideoExportPlugin.self,
         VideoPreviewPlugin.self,
         VideoAlbumPlugin.self,

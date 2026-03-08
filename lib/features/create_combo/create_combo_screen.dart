@@ -9,7 +9,6 @@ import '../../core/design/spacing.dart';
 import '../../core/design/typography.dart';
 import '../../core/models/learning_state.dart';
 import '../../core/providers.dart';
-import '../../shared/widgets/celebration_overlay.dart';
 import '../../shared/widgets/primary_button.dart';
 import '../../shared/widgets/secondary_button.dart';
 import '../../shared/widgets/timeline_node.dart';
@@ -27,7 +26,8 @@ class _CreateComboScreenState extends ConsumerState<CreateComboScreen> {
   final List<Move> _selectedMoves = [];
   int _activeIndex = 0;
 
-  Set<String> get _selectedMoveIds => _selectedMoves.map((move) => move.id).toSet();
+  Set<String> get _selectedMoveIds =>
+      _selectedMoves.map((move) => move.id).toSet();
 
   @override
   Widget build(BuildContext context) {
@@ -312,23 +312,27 @@ class _CreateComboScreenState extends ConsumerState<CreateComboScreen> {
       );
 
       await db.transaction(() async {
-        await db.into(db.combos).insert(
-          CombosCompanion.insert(
-            id: comboId,
-            name: name,
-            activeVideoPath: Value(activeVideoPath),
-          ),
-        );
+        await db
+            .into(db.combos)
+            .insert(
+              CombosCompanion.insert(
+                id: comboId,
+                name: name,
+                activeVideoPath: Value(activeVideoPath),
+              ),
+            );
 
         for (final entry in comboMoveEntries) {
-          await db.into(db.comboMoves).insert(
-            ComboMovesCompanion.insert(
-              id: entry.id,
-              sequenceIndex: entry.sequenceIndex,
-              comboId: comboId,
-              moveId: entry.moveId,
-            ),
-          );
+          await db
+              .into(db.comboMoves)
+              .insert(
+                ComboMovesCompanion.insert(
+                  id: entry.id,
+                  sequenceIndex: entry.sequenceIndex,
+                  comboId: comboId,
+                  moveId: entry.moveId,
+                ),
+              );
         }
 
         await ref
@@ -358,9 +362,7 @@ class _CreateComboScreenState extends ConsumerState<CreateComboScreen> {
       });
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(
+        ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
               '$e'.contains('duplicate')
@@ -374,11 +376,7 @@ class _CreateComboScreenState extends ConsumerState<CreateComboScreen> {
     }
 
     if (mounted) {
-      setState(() {
-        _selectedMoves.clear();
-        _activeIndex = 0;
-      });
-      CelebrationOverlay.show(context, title: name);
+      Navigator.of(context).pop(name);
     }
   }
 }

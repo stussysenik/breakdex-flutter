@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../core/design/spacing.dart';
+import '../../../core/design/theme.dart';
 import '../../../core/design/typography.dart';
 import '../../../core/models/learning_state.dart';
 import '../../../shared/widgets/state_pill.dart';
@@ -45,73 +46,94 @@ class ReviewCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
+    final semanticTheme = AppSemanticTheme.of(context);
 
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        // Video — 60% visual weight, edge-to-edge
-        videoPath != null
-            ? RobustVideoPlayer(
-                videoPath: videoPath!,
-                height: videoHeight,
-                onRepick: onRepick,
-                originalVideoName: originalVideoName,
-                autoPlay: true,
-              )
-            : VideoPlaceholder(height: videoHeight),
-        const SizedBox(height: 6),
-
-        // Context band — compact, close to video
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: AppSpacing.screenEdge),
-          child: Row(
-            children: [
-              // Move name (dominant, left-aligned)
-              Expanded(
-                child: Text(
-                  title,
-                  style: AppTypography.titleSmall.copyWith(
-                    color: colorScheme.onSurface,
-                  ),
-                  overflow: TextOverflow.ellipsis,
+    return Container(
+      decoration: AppSurfaces.panel(
+        context,
+        raised: true,
+        radius: AppRadius.lg,
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          ClipRRect(
+            borderRadius: const BorderRadius.vertical(
+              top: Radius.circular(AppRadius.lg),
+            ),
+            child: videoPath != null
+                ? RobustVideoPlayer(
+                    videoPath: videoPath!,
+                    height: videoHeight,
+                    onRepick: onRepick,
+                    originalVideoName: originalVideoName,
+                    autoPlay: true,
+                  )
+                : VideoPlaceholder(height: videoHeight),
+          ),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(
+              AppSpacing.md,
+              AppSpacing.md,
+              AppSpacing.md,
+              AppSpacing.md,
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Expanded(
+                      child: Text(
+                        title,
+                        style: AppTypography.titleSmall.copyWith(
+                          color: colorScheme.onSurface,
+                        ),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                    const SizedBox(width: AppSpacing.sm),
+                    GestureDetector(
+                      onTap: canEditState ? onStatePillTap : null,
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          StatePill(state: state),
+                          if (canEditState) ...[
+                            const SizedBox(width: 4),
+                            Icon(
+                              Icons.edit_outlined,
+                              size: 12,
+                              color: semanticTheme
+                                  .colorForState(state)
+                                  .withValues(alpha: 0.72),
+                            ),
+                          ],
+                        ],
+                      ),
+                    ),
+                  ],
                 ),
-              ),
-              const SizedBox(width: AppSpacing.sm),
-
-              // Category + state pills
-              if (category != null && category != 'default')
-                Padding(
-                  padding: const EdgeInsets.only(right: 6),
-                  child: Text(
+                if (category != null && category != 'default') ...[
+                  const SizedBox(height: 6),
+                  Text(
                     category!.toUpperCase(),
                     style: AppTypography.caption.copyWith(
                       color: colorScheme.secondary,
                       letterSpacing: 1.5,
                       fontSize: 10,
+                      fontWeight: FontWeight.w600,
                     ),
                   ),
-                ),
-              GestureDetector(
-                onTap: canEditState ? onStatePillTap : null,
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    StatePill(state: state),
-                    if (canEditState) ...[
-                      const SizedBox(width: 4),
-                      Icon(
-                        Icons.edit_outlined,
-                        size: 12,
-                        color: state.color.withValues(alpha: 0.6),
-                      ),
-                    ],
-                  ],
-                ),
-              ),
-            ],
+                ],
+              ],
+            ),
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 }

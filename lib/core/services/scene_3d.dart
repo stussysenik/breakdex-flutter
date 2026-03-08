@@ -20,7 +20,10 @@ class Scene3D extends NativeBridge {
   /// [assetPath] can be a bundle asset name (e.g. "skeleton.usdz")
   /// or an absolute file path.
   Future<bool> loadModel(String assetPath) async {
-    final result = await invoke<bool>('loadModel', {'path': assetPath});
+    final normalizedPath = assetPath.trim();
+    if (normalizedPath.isEmpty) return false;
+
+    final result = await invoke<bool>('loadModel', {'path': normalizedPath});
     return result ?? false;
   }
 
@@ -29,6 +32,8 @@ class Scene3D extends NativeBridge {
   /// Creates/updates sphere nodes for each joint and cylinder bones
   /// connecting them. Animates smoothly between positions.
   Future<void> updateSkeleton(List<PoseJoint> joints) {
+    if (joints.isEmpty) return Future<void>.value();
+
     return invoke('updateSkeleton', {
       'joints': joints.map((j) => j.toMap()).toList(),
     });
@@ -45,13 +50,10 @@ class Scene3D extends NativeBridge {
     double? pitch,
     double? yaw,
   }) {
-    return invoke('setCamera', {
-      'x': x,
-      'y': y,
-      'z': z,
-      'pitch': ?pitch,
-      'yaw': ?yaw,
-    });
+    final args = <String, Object>{'x': x, 'y': y, 'z': z};
+    if (pitch != null) args['pitch'] = pitch;
+    if (yaw != null) args['yaw'] = yaw;
+    return invoke('setCamera', args);
   }
 
   /// Configure the scene's key light.
@@ -64,11 +66,9 @@ class Scene3D extends NativeBridge {
     double intensity = 800,
     int? color,
   }) {
-    return invoke('setLighting', {
-      'type': type,
-      'intensity': intensity,
-      'color': ?color,
-    });
+    final args = <String, Object>{'type': type, 'intensity': intensity};
+    if (color != null) args['color'] = color;
+    return invoke('setLighting', args);
   }
 
   /// Play a named animation on the loaded model.

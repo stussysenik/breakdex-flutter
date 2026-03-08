@@ -44,7 +44,8 @@ class _ComboDetailScreenState extends ConsumerState<ComboDetailScreen> {
     final comboMovesStream = ref
         .watch(comboRepositoryProvider)
         .watchComboMoves(widget.comboId);
-    final fsrsCards = ref.watch(fsrsCardsRefreshProvider).valueOrNull ?? const [];
+    final fsrsCards =
+        ref.watch(fsrsCardsRefreshProvider).valueOrNull ?? const [];
     final colorScheme = Theme.of(context).colorScheme;
 
     return Scaffold(
@@ -130,11 +131,7 @@ class _ComboDetailScreenState extends ConsumerState<ComboDetailScreen> {
                       ),
                     ),
                     const SizedBox(height: AppSpacing.md),
-                    Row(
-                      children: [
-                        StatePill(state: comboState),
-                      ],
-                    ),
+                    Row(children: [StatePill(state: comboState)]),
                     const SizedBox(height: AppSpacing.md),
 
                     // Timeline with tap-scale bounce
@@ -206,38 +203,38 @@ class _ComboDetailScreenState extends ConsumerState<ComboDetailScreen> {
 
                     // Current move name + state
                     if (currentMove != null) ...[
-                      Text(
-                        currentMove.name,
-                        style: AppTypography.bodyMedium.copyWith(
-                          color: colorScheme.onSurface,
-                        ),
-                      ),
-                      const SizedBox(height: AppSpacing.sm),
                       Row(
                         children: [
-                          StatePill(
-                            state: LearningState.fromString(
-                              currentMove.learningState,
+                          Expanded(
+                            child: Text(
+                              currentMove.name,
+                              style: AppTypography.bodyMedium.copyWith(
+                                color: colorScheme.onSurface,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ),
+                          Text(
+                            '${safeIndex + 1}/${comboMoves.length}',
+                            style: AppTypography.caption.copyWith(
+                              color: colorScheme.secondary,
+                              fontWeight: FontWeight.w600,
                             ),
                           ),
                         ],
                       ),
-                    ],
-                    const SizedBox(height: AppSpacing.lg),
-
-                    // Overall combo state
-                    Row(
-                      children: [
+                      if (currentMove.category != 'default') ...[
+                        const SizedBox(height: AppSpacing.xs),
                         Text(
-                          'Combo State:',
+                          currentMove.category.toUpperCase(),
                           style: AppTypography.caption.copyWith(
                             color: colorScheme.secondary,
+                            letterSpacing: 1.4,
                           ),
                         ),
-                        const SizedBox(width: AppSpacing.sm),
-                        StatePill(state: comboState),
                       ],
-                    ),
+                    ],
+                    const SizedBox(height: AppSpacing.lg),
                   ],
                 );
               },

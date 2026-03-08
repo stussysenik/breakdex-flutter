@@ -1,9 +1,9 @@
 import 'dart:io';
 import 'package:drift/drift.dart';
 import 'package:drift/native.dart';
-import 'package:path_provider/path_provider.dart';
 import 'package:path/path.dart' as p;
 
+import '../services/app_storage_paths.dart';
 import 'tables/moves.dart';
 import 'tables/combos.dart';
 import 'tables/combo_moves.dart';
@@ -23,7 +23,17 @@ import 'daos/decks_dao.dart';
 part 'database.g.dart';
 
 @DriftDatabase(
-  tables: [Moves, Combos, ComboMoves, Reviews, BattleResults, SyncLog, FsrsCards, Decks, DeckMoves],
+  tables: [
+    Moves,
+    Combos,
+    ComboMoves,
+    Reviews,
+    BattleResults,
+    SyncLog,
+    FsrsCards,
+    Decks,
+    DeckMoves,
+  ],
   daos: [MovesDao, CombosDao, ReviewsDao, SyncDao, FsrsCardsDao, DecksDao],
 )
 class AppDatabase extends _$AppDatabase {
@@ -207,20 +217,20 @@ class AppDatabase extends _$AppDatabase {
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
-        onCreate: (m) async {
-          await m.createAll();
-          await _installIntegrityTriggers();
-        },
-        onUpgrade: (m, from, to) async {
-          if (from < 2) {
-            await m.createTable(battleResults);
-          }
-          if (from < 3) {
-            await m.createTable(syncLog);
-          }
-          if (from < 4) {
-            // Old fsrs_cards with moveId PK — will be migrated in v8
-            await customStatement('''
+    onCreate: (m) async {
+      await m.createAll();
+      await _installIntegrityTriggers();
+    },
+    onUpgrade: (m, from, to) async {
+      if (from < 2) {
+        await m.createTable(battleResults);
+      }
+      if (from < 3) {
+        await m.createTable(syncLog);
+      }
+      if (from < 4) {
+        // Old fsrs_cards with moveId PK — will be migrated in v8
+        await customStatement('''
               CREATE TABLE IF NOT EXISTS fsrs_cards (
                 move_id TEXT NOT NULL PRIMARY KEY REFERENCES moves(id) ON DELETE CASCADE,
                 stability REAL NOT NULL DEFAULT 0.0,
@@ -232,31 +242,32 @@ class AppDatabase extends _$AppDatabase {
                 fsrs_state INTEGER NOT NULL DEFAULT 0
               )
             ''');
-          }
-          if (from < 5) {
-            await m.addColumn(moves, moves.originalVideoName);
-          }
-          if (from < 6) {
-            await m.addColumn(reviews, reviews.fsrsPreState);
-            await m.addColumn(reviews, reviews.fsrsPostState);
-          }
-          if (from < 7) {
-            await m.createTable(decks);
-            await m.createTable(deckMoves);
-          }
-          if (from < 8) {
-            // --- Schema v8: Generalize FSRS cards for moves + combos ---
-            //
-            // Polymorphic pattern: rename moveId → entityId, add entityType.
-            // Composite PK (entityId, entityType) replaces single moveId PK.
-            // Drop FK to moves since polymorphic refs can't FK to two tables.
+      }
+      if (from < 5) {
+        await m.addColumn(moves, moves.originalVideoName);
+      }
+      if (from < 6) {
+        await m.addColumn(reviews, reviews.fsrsPreState);
+        await m.addColumn(reviews, reviews.fsrsPostState);
+      }
+      if (from < 7) {
+        await m.createTable(decks);
+        await m.createTable(deckMoves);
+      }
+      if (from < 8) {
+        // --- Schema v8: Generalize FSRS cards for moves + combos ---
+        //
+        // Polymorphic pattern: rename moveId → entityId, add entityType.
+        // Composite PK (entityId, entityType) replaces single moveId PK.
+        // Drop FK to moves since polymorphic refs can't FK to two tables.
 
-            // 1. Rename old table
-            await customStatement(
-                'ALTER TABLE fsrs_cards RENAME TO fsrs_cards_old');
+        // 1. Rename old table
+        await customStatement(
+          'ALTER TABLE fsrs_cards RENAME TO fsrs_cards_old',
+        );
 
-            // 2. Create new table with entityId + entityType
-            await customStatement('''
+        // 2. Create new table with entityId + entityType
+        await customStatement('''
               CREATE TABLE fsrs_cards (
                 entity_id TEXT NOT NULL,
                 entity_type TEXT NOT NULL DEFAULT 'move',
@@ -271,8 +282,8 @@ class AppDatabase extends _$AppDatabase {
               )
             ''');
 
-            // 3. Copy existing move cards → new table
-            await customStatement('''
+        // 3. Copy existing move cards → new table
+        await customStatement('''
               INSERT INTO fsrs_cards
                 (entity_id, entity_type, stability, difficulty, due,
                  last_review, reps, lapses, fsrs_state)
@@ -282,38 +293,38 @@ class AppDatabase extends _$AppDatabase {
               FROM fsrs_cards_old
             ''');
 
-            // 4. Drop old table
-            await customStatement('DROP TABLE fsrs_cards_old');
+        // 4. Drop old table
+        await customStatement('DROP TABLE fsrs_cards_old');
 
-            // 5. Performance indexes for schedule queries
-            await customStatement('''
+        // 5. Performance indexes for schedule queries
+        await customStatement('''
               CREATE INDEX IF NOT EXISTS idx_fsrs_cards_due
               ON fsrs_cards(due)
             ''');
-            await customStatement('''
+        await customStatement('''
               CREATE INDEX IF NOT EXISTS idx_fsrs_cards_type_due
               ON fsrs_cards(entity_type, due)
             ''');
 
-            // 6. Add comboId column to reviews
-            await m.addColumn(reviews, reviews.comboId);
-          }
-          if (from < 9) {
-            await m.addColumn(reviews, reviews.entityIdSnapshot);
-            await m.addColumn(reviews, reviews.entityType);
-            await m.addColumn(reviews, reviews.entityDisplayName);
-            await m.addColumn(reviews, reviews.entityCategory);
-          }
+        // 6. Add comboId column to reviews
+        await m.addColumn(reviews, reviews.comboId);
+      }
+      if (from < 9) {
+        await m.addColumn(reviews, reviews.entityIdSnapshot);
+        await m.addColumn(reviews, reviews.entityType);
+        await m.addColumn(reviews, reviews.entityDisplayName);
+        await m.addColumn(reviews, reviews.entityCategory);
+      }
 
-          await _backfillReviewSnapshots();
-          await _installIntegrityTriggers();
-        },
-      );
+      await _backfillReviewSnapshots();
+      await _installIntegrityTriggers();
+    },
+  );
 }
 
 LazyDatabase _openConnection() {
   return LazyDatabase(() async {
-    final dir = await getApplicationDocumentsDirectory();
+    final dir = await AppStoragePaths.documentsDirectory();
     final file = File(p.join(dir.path, 'breakdex.db'));
     return NativeDatabase.createInBackground(file);
   });

@@ -13,12 +13,20 @@ class NativeVideoPreview extends NativeBridge {
     int toleranceMs = 200,
     bool exact = false,
   }) async {
+    final normalizedPath = videoPath.trim();
+    if (normalizedPath.isEmpty) {
+      return List<Uint8List?>.filled(timesMs.length, null, growable: false);
+    }
+    if (timesMs.isEmpty) {
+      return const <Uint8List?>[];
+    }
+
     final raw = await method.invokeMethod<List<dynamic>>('generateThumbnails', {
-      'videoPath': videoPath,
+      'videoPath': normalizedPath,
       'timesMs': timesMs,
-      'maxWidth': maxWidth,
-      'quality': quality,
-      'toleranceMs': toleranceMs,
+      'maxWidth': maxWidth < 2 ? 2 : maxWidth,
+      'quality': quality.clamp(1, 100),
+      'toleranceMs': toleranceMs < 0 ? 0 : toleranceMs,
       'exact': exact,
     });
 
