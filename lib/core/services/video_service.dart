@@ -249,14 +249,29 @@ class VideoService {
     }
   }
 
+  /// Resolution tiers for thumbnail generation.
+  static const thumbnailWidthGrid = 200;
+  static const thumbnailWidthList = 400;
+  static const thumbnailWidthFull = 720;
+
   /// Generate thumbnail, cached in .thumbs/ folder and in-memory.
   ///
   /// Uses a two-tier cache: memory (instant) → disk (.thumbs/) → generate.
   /// File I/O for writing bytes is offloaded via `compute()` to keep the
   /// UI thread free during grid scrolls with many uncached thumbnails.
-  Future<String?> generateThumbnail(String videoPath) async {
+  ///
+  /// [maxWidth] controls the resolution tier. Grid cells should pass
+  /// [thumbnailWidthGrid] (200px) for fast decodes; detail screens use
+  /// the default [thumbnailWidthFull] (720px) for sharp previews.
+  Future<String?> generateThumbnail(
+    String videoPath, {
+    int maxWidth = thumbnailWidthFull,
+  }) async {
+    // Cache key includes resolution tier so grid and detail don't collide
+    final cacheKey = '$videoPath@$maxWidth';
+
     // Tier 1: in-memory cache (survives widget rebuilds within the session)
-    if (_thumbCache.containsKey(videoPath)) return _thumbCache[videoPath];
+    if (_thumbCache.containsKey(cacheKey)) return _thumbCache[cacheKey];
 
     try {
       final docs = await getApplicationDocumentsDirectory();
@@ -266,11 +281,16 @@ class VideoService {
       }
 
       final videoName = p.basenameWithoutExtension(videoPath);
-      final thumbPath = p.join(thumbsDir.path, '$videoName.jpg');
+      final thumbPath = p.join(
+        thumbsDir.path,
+        maxWidth == thumbnailWidthFull
+            ? '$videoName.jpg'
+            : '${videoName}_${maxWidth}w.jpg',
+      );
 
       // Tier 2: disk cache
       if (await File(thumbPath).exists()) {
-        _thumbCache[videoPath] = thumbPath;
+        _thumbCache[cacheKey] = thumbPath;
         return thumbPath;
       }
 
@@ -278,20 +298,20 @@ class VideoService {
       final Uint8List? bytes = await VideoThumbnail.thumbnailData(
         video: videoPath,
         imageFormat: ImageFormat.JPEG,
-        maxWidth: 720,
-        quality: 95,
+        maxWidth: maxWidth,
+        quality: maxWidth >= thumbnailWidthFull ? 95 : 85,
       );
       if (bytes == null) {
-        _thumbCache[videoPath] = null;
+        _thumbCache[cacheKey] = null;
         return null;
       }
 
       // Offload file write to a background isolate
       await compute(_writeBytes, _WriteBytesArgs(thumbPath, bytes));
-      _thumbCache[videoPath] = thumbPath;
+      _thumbCache[cacheKey] = thumbPath;
       return thumbPath;
     } catch (_) {
-      _thumbCache[videoPath] = null;
+      _thumbCache[cacheKey] = null;
       return null;
     }
   }
@@ -609,8 +629,9 @@ class VideoService {
   }
 
   /// Invalidate the in-memory thumbnail cache (e.g. after video deletion).
+  /// Clears all resolution tiers for the given video path.
   static void invalidateThumbCache(String videoPath) {
-    _thumbCache.remove(videoPath);
+    _thumbCache.removeWhere((key, _) => key.startsWith(videoPath));
   }
 
   /// Replace a move's video: delete old file + thumbnail, invalidate caches.

@@ -20,6 +20,7 @@ import '../../core/providers.dart';
 import '../../core/services/categories_service.dart';
 import '../../core/services/native_video_album.dart';
 import '../../core/services/settings_service.dart';
+import '../../core/services/thumbnail_load_coordinator.dart';
 import '../../core/services/video_service.dart';
 import '../../core/services/view_names_service.dart';
 import '../../shared/widgets/celebration_overlay.dart';
@@ -75,6 +76,8 @@ class MoveListScreen extends ConsumerWidget {
   MoveListScreen({super.key});
 
   final NativeVideoAlbum _videoAlbum = NativeVideoAlbum();
+  final ThumbnailLoadCoordinator _thumbnailCoordinator =
+      ThumbnailLoadCoordinator();
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -89,7 +92,9 @@ class MoveListScreen extends ConsumerWidget {
     final title = viewNames['title'] ?? 'Arsenal';
 
     return Scaffold(
-      body: SafeArea(
+      body: ThumbnailCoordinatorScope(
+        coordinator: _thumbnailCoordinator,
+        child: SafeArea(
         child: CustomScrollView(
           slivers: [
             // Title + search + controls as pinned header
@@ -219,6 +224,7 @@ class MoveListScreen extends ConsumerWidget {
                   ),
           ],
         ),
+      ),
       ),
       floatingActionButton:
           Semantics(
@@ -1548,10 +1554,18 @@ class _GridThumbnailState extends State<_GridThumbnail> {
   void didUpdateWidget(covariant _GridThumbnail oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.videoPath != widget.videoPath) {
+      // Cancel previous pending load if coordinator is available
+      ThumbnailCoordinatorScope.of(context)?.cancel(oldWidget.videoPath);
       _thumbPath = null;
       _loaded = false;
       _load();
     }
+  }
+
+  @override
+  void dispose() {
+    ThumbnailCoordinatorScope.of(context)?.cancel(widget.videoPath);
+    super.dispose();
   }
 
   Future<void> _load() async {
@@ -1576,14 +1590,25 @@ class _GridThumbnailState extends State<_GridThumbnail> {
       return;
     }
 
-    final path = await _videoService.generateThumbnail(videoPath);
-    if (!mounted || widget.videoPath != videoPath) return;
-    if (mounted) {
-      setState(() {
-        _thumbPath = path;
-        _loaded = true;
-      });
+    // Use coordinator for bounded concurrency if available, else direct
+    final coordinator = ThumbnailCoordinatorScope.of(context);
+    final String? path;
+    if (coordinator != null) {
+      path = await coordinator.enqueue(
+        videoPath,
+        maxWidth: VideoService.thumbnailWidthGrid,
+      );
+    } else {
+      path = await _videoService.generateThumbnail(
+        videoPath,
+        maxWidth: VideoService.thumbnailWidthGrid,
+      );
     }
+    if (!mounted || widget.videoPath != videoPath) return;
+    setState(() {
+      _thumbPath = path;
+      _loaded = true;
+    });
   }
 
   @override
