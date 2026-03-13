@@ -36,7 +36,8 @@ class FlashcardReviewScreen extends ConsumerStatefulWidget {
       _FlashcardReviewScreenState();
 }
 
-class _FlashcardReviewScreenState extends ConsumerState<FlashcardReviewScreen> {
+class _FlashcardReviewScreenState extends ConsumerState<FlashcardReviewScreen>
+    with SingleTickerProviderStateMixin {
   int _currentIndex = 0;
   bool _completed = false;
   List<ReviewSessionItem> _items = [];
@@ -48,6 +49,10 @@ class _FlashcardReviewScreenState extends ConsumerState<FlashcardReviewScreen> {
   double _cardOpacity = 1.0;
   bool _animatingExit = false;
 
+  // Breathing animation — subtle 0.6% scale oscillation when idle.
+  // Signals "alive" state, draws attention to the card, invites interaction.
+  late final AnimationController _breathController;
+
   // Shake-to-skip: accelerometer subscription + debounce
   StreamSubscription<AccelerometerEvent>? _shakeSubscription;
   DateTime _lastShakeTime = DateTime(2000);
@@ -55,7 +60,17 @@ class _FlashcardReviewScreenState extends ConsumerState<FlashcardReviewScreen> {
   static const _shakeCooldown = Duration(milliseconds: 800);
 
   @override
+  void initState() {
+    super.initState();
+    _breathController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 2400),
+    )..repeat(reverse: true);
+  }
+
+  @override
   void dispose() {
+    _breathController.dispose();
     _stopShakeListener();
     _pageController?.dispose();
     super.dispose();
@@ -294,10 +309,24 @@ class _FlashcardReviewScreenState extends ConsumerState<FlashcardReviewScreen> {
                 children: [
                   SizedBox(
                     height: cardHeight,
-                    child: AnimatedScale(
-                      scale: _cardScale,
-                      duration: AppMotion.moderate01,
-                      curve: AppMotion.productive,
+                    // Breathing animation: 0.6% scale oscillation when idle.
+                    // Respects reduce-motion via MediaQuery.disableAnimations.
+                    child: AnimatedBuilder(
+                      animation: _breathController,
+                      builder: (context, child) {
+                        final reduceMotion =
+                            MediaQuery.of(context).disableAnimations;
+                        final breathScale = reduceMotion
+                            ? 1.0
+                            : 1.0 +
+                                (0.006 *
+                                    Curves.easeInOut
+                                        .transform(_breathController.value));
+                        return Transform.scale(
+                          scale: breathScale * _cardScale,
+                          child: child,
+                        );
+                      },
                       child: AnimatedOpacity(
                         opacity: _cardOpacity,
                         duration: AppMotion.moderate01,
