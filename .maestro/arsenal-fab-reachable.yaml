@@ -1,0 +1,45 @@
+# Flow: FAB reachability regression test
+# Verifies the floating action button is tappable above the frosted
+# glass bottom navigation bar on all device sizes.
+#
+# Prerequisites: None (works with empty database)
+# Tags: smoke, regression
+
+appId: com.breakdex.breakdex
+name: Arsenal FAB Reachable
+tags:
+  - smoke
+  - regression
+
+---
+
+- launchApp
+
+# Arsenal should show empty state
+- assertVisible: "Arsenal"
+- assertVisible: "No moves yet"
+
+# Tap the FAB — should be reachable above the bottom nav
+- tapOn:
+    id: "Add new move"
+
+# VideoPickerSheet should appear, proving the FAB was tappable
+- assertVisible: "Import from Photos"
+- takeScreenshot: e2e-screenshots/fab-reachable-moves
+
+# Dismiss the picker sheet by tapping outside / back
+- back
+
+# Switch to Combos segment and verify its FAB works too
+- tapOn: "Combos"
+- assertVisible: "No combos yet"
+- tapOn:
+    id: "Create new combo"
+
+# Should navigate to combo creation screen
+- extendedWaitUntil:
+    visible: "Create Combo"
+    timeout: 5000
+
+- takeScreenshot: e2e-screenshots/fab-reachable-combos
+- back
