@@ -1,3 +1,5 @@
+import 'dart:ui';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -20,56 +22,70 @@ class BottomNavShell extends ConsumerWidget {
     // Watch sync trigger to keep auto-sync alive
     ref.watch(syncTriggerProvider);
 
+    final colorScheme = Theme.of(context).colorScheme;
+    final brightness = Theme.of(context).brightness;
+
     return Scaffold(
+      // Stack the nav bar on top of content so the blur peeks through
+      extendBody: true,
       body: Column(
         children: [
           const SyncProgressBar(),
           Expanded(child: navigationShell),
         ],
       ),
-      bottomNavigationBar: Container(
-        decoration: BoxDecoration(
-          color: Theme.of(context).colorScheme.surface,
-          border: Border(
-            top: BorderSide(
-              color: Theme.of(context).colorScheme.outline,
-              width: 0.5,
-            ),
-          ),
-          boxShadow: AppShadows.raised(Theme.of(context).brightness),
-        ),
-        child: BottomNavigationBar(
-          currentIndex: navigationShell.currentIndex,
-          onTap: (index) => navigationShell.goBranch(
-            index,
-            initialLocation: index == navigationShell.currentIndex,
-          ),
-          items: [
-            BottomNavigationBarItem(
-              icon: const Icon(Icons.grid_view_rounded),
-              label: 'Arsenal',
-            ),
-            BottomNavigationBarItem(
-              icon: const Icon(Icons.style_outlined),
-              label: 'Review',
-            ),
-            BottomNavigationBarItem(
-              icon: const Icon(Icons.insights_rounded),
-              label: 'Stats',
-            ),
-            BottomNavigationBarItem(
-              icon: Badge(
-                isLabelVisible: isLoggedIn && pendingCount > 0,
-                label: Text(
-                  pendingCount > 99 ? '99+' : '$pendingCount',
-                  style: const TextStyle(fontSize: 10, color: Colors.white),
+      bottomNavigationBar: ClipRect(
+        child: BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
+          child: Container(
+            decoration: BoxDecoration(
+              // Semi-transparent surface — content bleeds through the blur
+              color: colorScheme.surface.withValues(alpha: 0.85),
+              border: Border(
+                top: BorderSide(
+                  color: colorScheme.outline.withValues(alpha: 0.2),
+                  width: 0.5,
                 ),
-                backgroundColor: Theme.of(context).colorScheme.primary,
-                child: const Icon(Icons.settings_outlined),
               ),
-              label: 'Settings',
+              boxShadow: AppShadows.layered(brightness),
             ),
-          ],
+            child: BottomNavigationBar(
+              currentIndex: navigationShell.currentIndex,
+              onTap: (index) => navigationShell.goBranch(
+                index,
+                initialLocation: index == navigationShell.currentIndex,
+              ),
+              // Transparent so the frosted container shows through
+              backgroundColor: Colors.transparent,
+              elevation: 0,
+              items: [
+                const BottomNavigationBarItem(
+                  icon: Icon(Icons.grid_view_rounded),
+                  label: 'Arsenal',
+                ),
+                const BottomNavigationBarItem(
+                  icon: Icon(Icons.style_outlined),
+                  label: 'Review',
+                ),
+                const BottomNavigationBarItem(
+                  icon: Icon(Icons.insights_rounded),
+                  label: 'Stats',
+                ),
+                BottomNavigationBarItem(
+                  icon: Badge(
+                    isLabelVisible: isLoggedIn && pendingCount > 0,
+                    label: Text(
+                      pendingCount > 99 ? '99+' : '$pendingCount',
+                      style: const TextStyle(fontSize: 10, color: Colors.white),
+                    ),
+                    backgroundColor: colorScheme.primary,
+                    child: const Icon(Icons.settings_outlined),
+                  ),
+                  label: 'Settings',
+                ),
+              ],
+            ),
+          ),
         ),
       ),
     );
