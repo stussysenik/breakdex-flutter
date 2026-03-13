@@ -1,0 +1,34 @@
+# Flow: Stats dashboard verification
+# Seeds fixture data and verifies the Stats tab renders metrics correctly.
+#
+# Prerequisites: None (uses seeded fixture data)
+# Tags: smoke
+
+appId: com.breakdex.breakdex
+name: Stats Dashboard
+tags:
+  - smoke
+
+---
+
+- launchApp:
+    arguments:
+      maestro: true
+      breakdexFixture: review
+
+# Navigate to Stats tab
+- tapOn:
+    point: "245,809"
+- assertVisible: "Stats"
+
+# Verify key metrics are visible
+- assertVisible: "Tracked Cards"
+- takeScreenshot: e2e-screenshots/stats-dashboard
+
+# Tap the Time toggle to switch to timeline view
+- runFlow:
+    when:
+      visible: "Time"
+    commands:
+      - tapOn: "Time"
+      - takeScreenshot: e2e-screenshots/stats-timeline

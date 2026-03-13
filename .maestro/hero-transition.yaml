@@ -1,0 +1,40 @@
+# Flow: Gallery → detail Hero transition
+# Seeds fixture data, switches to Gallery view, taps a grid cell,
+# and verifies the detail screen renders via Hero animation.
+#
+# Prerequisites: None (uses seeded fixture data)
+# Tags: smoke, regression
+
+appId: com.breakdex.breakdex
+name: Hero Transition
+tags:
+  - smoke
+  - regression
+
+---
+
+- launchApp:
+    arguments:
+      maestro: true
+      breakdexFixture: review
+
+- assertVisible: "Arsenal"
+
+# Switch to Gallery view
+- tapOn: "Gallery"
+- takeScreenshot: e2e-screenshots/hero-gallery
+
+# Tap the first move grid cell
+- tapOn: "Fixture Swipe"
+
+# Assert detail screen renders with the move name
+- extendedWaitUntil:
+    visible: "Fixture Swipe"
+    timeout: 5000
+- assertVisible: "ACTIONS"
+- takeScreenshot: e2e-screenshots/hero-detail
+
+# Navigate back and verify grid still renders
+- back
+- assertVisible: "Arsenal"
+- takeScreenshot: e2e-screenshots/hero-back-to-gallery
