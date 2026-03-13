@@ -1,0 +1,101 @@
+# Flow: INP (Interaction to Next Paint) latency measurement
+# Coarse INP test using tight extendedWaitUntil timeouts.
+# If any timeout fires, the interaction is too slow.
+#
+# Budget: 500ms for in-page transitions, 1000ms for sheet presentations.
+#
+# Prerequisites: None (uses seeded fixture data)
+# Tags: performance
+
+appId: com.breakdex.breakdex
+name: INP Latency
+tags:
+  - performance
+
+---
+
+- launchApp:
+    arguments:
+      maestro: true
+      breakdexFixture: review
+
+- assertVisible: "Arsenal"
+
+# ── Tab switch latency ──────────────────────────────────────────────
+
+# Tab switch: Arsenal → Review (budget: 500ms)
+- tapOn:
+    point: "146,809"
+- extendedWaitUntil:
+    visible: "Review"
+    timeout: 500
+
+# Tab switch: Review → Stats (budget: 500ms)
+- tapOn:
+    point: "245,809"
+- extendedWaitUntil:
+    visible: "Stats"
+    timeout: 500
+
+# Tab switch: Stats → Arsenal (budget: 500ms)
+- tapOn:
+    point: "49,809"
+- extendedWaitUntil:
+    visible: "Arsenal"
+    timeout: 500
+
+# ── Segment toggle latency ──────────────────────────────────────────
+
+# List → Gallery toggle (budget: 500ms)
+- tapOn: "Gallery"
+- extendedWaitUntil:
+    visible: "Gallery"
+    timeout: 500
+
+# Gallery → List toggle (budget: 500ms)
+- tapOn: "List"
+- extendedWaitUntil:
+    visible: "List"
+    timeout: 500
+
+# Moves → Combos segment (budget: 500ms)
+- tapOn: "Combos"
+- extendedWaitUntil:
+    visible: "Search combos..."
+    timeout: 500
+
+# Combos → Moves segment (budget: 500ms)
+- tapOn: "Moves"
+- extendedWaitUntil:
+    visible: "Search moves..."
+    timeout: 500
+
+# ── Rating button latency ───────────────────────────────────────────
+
+# Navigate to Review → start session → rate
+- tapOn:
+    point: "146,809"
+- tapOn: "New\\n1\\nFirst recall"
+- extendedWaitUntil:
+    visible: "Rate GOOD\\nGOOD"
+    timeout: 10000
+- tapOn:
+    text: "Rate GOOD\\nGOOD"
+# Session advance or completion should happen within 500ms
+- extendedWaitUntil:
+    visible: "Great work!"
+    timeout: 500
+
+# ── FAB → sheet presentation latency ────────────────────────────────
+
+# Back to Arsenal, tap FAB (budget: 1000ms for sheet)
+- tapOn:
+    point: "49,809"
+- extendedWaitUntil:
+    visible: "Arsenal"
+    timeout: 500
+- tapOn:
+    id: "Add new move"
+- extendedWaitUntil:
+    visible: "Import from Photos"
+    timeout: 1000

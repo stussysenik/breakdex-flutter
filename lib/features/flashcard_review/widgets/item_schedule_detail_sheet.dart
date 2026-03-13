@@ -89,7 +89,7 @@ class ItemScheduleDetailSheet extends ConsumerWidget {
               children: [
                 Icon(
                   item.item is ReviewableCombo
-                      ? Icons.playlist_play
+                      ? Icons.linear_scale_rounded
                       : Icons.sports_martial_arts,
                   size: 20,
                   color: colorScheme.primary,

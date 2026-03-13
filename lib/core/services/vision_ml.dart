@@ -26,10 +26,13 @@ class VisionML extends NativeBridge {
   /// Returns a list of up to 17 [PoseJoint]s with 3D coordinates and confidence.
   /// Uses Apple Vision's built-in pose detection — no model download needed.
   Future<List<PoseJoint>> detectPose(Uint8List imageData) async {
-    final result = await method.invokeMethod<List<dynamic>>(
-      'detectPose',
-      {'imageData': imageData},
-    );
+    if (imageData.isEmpty) {
+      return const <PoseJoint>[];
+    }
+
+    final result = await method.invokeMethod<List<dynamic>>('detectPose', {
+      'imageData': imageData,
+    });
 
     if (result == null) return [];
 
@@ -43,8 +46,7 @@ class VisionML extends NativeBridge {
   /// Each frame contains all detected joints and a timestamp.
   /// Call [startLivePose] first, then listen to this stream.
   /// Call [stopLivePose] to stop streaming.
-  Stream<PoseFrame> get livePoseStream =>
-      eventStream.map(PoseFrame.fromMap);
+  Stream<PoseFrame> get livePoseStream => eventStream.map(PoseFrame.fromMap);
 
   /// Start live camera pose detection.
   /// Pose data will be emitted on [livePoseStream] at ~30fps.
@@ -58,10 +60,13 @@ class VisionML extends NativeBridge {
   /// Returns PNG mask bytes where white pixels = person, black = background.
   /// Uses DeepLabV3 CoreML model (must be bundled in the app).
   Future<Uint8List?> segmentPerson(Uint8List imageData) async {
-    final result = await method.invokeMethod<Uint8List>(
-      'segmentPerson',
-      {'imageData': imageData},
-    );
+    if (imageData.isEmpty) {
+      return null;
+    }
+
+    final result = await method.invokeMethod<Uint8List>('segmentPerson', {
+      'imageData': imageData,
+    });
     return result;
   }
 }

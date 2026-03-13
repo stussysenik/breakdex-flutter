@@ -1,0 +1,34 @@
+appId: com.breakdex.breakdex
+name: "Arsenal Scroll Performance"
+tags:
+  - performance
+  - scroll
+---
+# Arsenal grid scroll FPS measurement
+- launchApp
+- assertVisible: "Arsenal"
+
+# Switch to grid view if not already
+- tapOn: "Gallery"
+- scroll:
+    direction: DOWN
+    duration: 3000
+
+# Scroll back up
+- scroll:
+    direction: UP
+    duration: 2000
+
+# Switch to list view
+- tapOn: "List"
+- scroll:
+    direction: DOWN
+    duration: 3000
+
+# Tab switch timing — measure how fast tabs respond
+- tapOn: "Review"
+- assertVisible: "Review"
+- tapOn: "Stats"
+- assertVisible: "Stats"
+- tapOn: "Arsenal"
+- assertVisible: "Arsenal"

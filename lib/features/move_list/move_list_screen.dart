@@ -20,8 +20,11 @@ import '../../core/providers.dart';
 import '../../core/services/categories_service.dart';
 import '../../core/services/native_video_album.dart';
 import '../../core/services/settings_service.dart';
+import '../../core/services/thumbnail_load_coordinator.dart';
 import '../../core/services/video_service.dart';
 import '../../core/services/view_names_service.dart';
+import '../../shared/widgets/celebration_overlay.dart';
+import '../../shared/widgets/pressable.dart';
 import '../../shared/widgets/state_pill.dart';
 import '../../shared/widgets/video_picker_sheet.dart';
 
@@ -73,6 +76,8 @@ class MoveListScreen extends ConsumerWidget {
   MoveListScreen({super.key});
 
   final NativeVideoAlbum _videoAlbum = NativeVideoAlbum();
+  final ThumbnailLoadCoordinator _thumbnailCoordinator =
+      ThumbnailLoadCoordinator();
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -87,124 +92,155 @@ class MoveListScreen extends ConsumerWidget {
     final title = viewNames['title'] ?? 'Arsenal';
 
     return Scaffold(
-      body: SafeArea(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Title
-            Padding(
-              padding: const EdgeInsets.fromLTRB(
-                AppSpacing.screenEdge,
-                AppSpacing.lg,
-                AppSpacing.screenEdge,
-                0,
-              ),
-              child: Text(
-                title,
-                style: AppTypography.titleLarge.copyWith(
-                  color: colorScheme.onSurface,
-                ),
-              ),
-            ),
-            const SizedBox(height: AppSpacing.md),
-
-            // Search bar
-            Padding(
-              padding: const EdgeInsets.symmetric(
-                horizontal: AppSpacing.screenEdge,
-              ),
-              child: Semantics(
-                label: 'Search',
-                textField: true,
-                child: TextField(
-                  onChanged: (v) =>
-                      ref.read(_searchQueryProvider.notifier).state = v,
-                  decoration: InputDecoration(
-                    hintText: segment == ArsenalSegment.moves
-                        ? 'Search moves...'
-                        : 'Search combos...',
-                    prefixIcon: Icon(
-                      Icons.search,
-                      color: colorScheme.secondary,
+      body: ThumbnailCoordinatorScope(
+        coordinator: _thumbnailCoordinator,
+        child: SafeArea(
+        child: CustomScrollView(
+          slivers: [
+            // Title + search + controls as pinned header
+            SliverToBoxAdapter(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Title
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(
+                      AppSpacing.screenEdge,
+                      AppSpacing.lg,
+                      AppSpacing.screenEdge,
+                      0,
+                    ),
+                    child: Text(
+                      title,
+                      style: AppTypography.titleLarge.copyWith(
+                        color: colorScheme.onSurface,
+                      ),
                     ),
                   ),
-                ),
+                  const SizedBox(height: AppSpacing.md),
+
+                  // Search bar
+                  Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: AppSpacing.screenEdge,
+                    ),
+                    child: Semantics(
+                      label: 'Search',
+                      textField: true,
+                      child: TextField(
+                        onChanged: (v) =>
+                            ref.read(_searchQueryProvider.notifier).state = v,
+                        decoration: InputDecoration(
+                          hintText: segment == ArsenalSegment.moves
+                              ? 'Search moves...'
+                              : 'Search combos...',
+                          prefixIcon: Icon(
+                            Icons.search,
+                            color: colorScheme.secondary,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: AppSpacing.md),
+
+                  // Moves / Combos segment toggle
+                  _ArsenalSegmentControl(segment: segment),
+                  const SizedBox(height: AppSpacing.sm),
+
+                  _ViewModeToggle(viewMode: viewMode, viewNames: viewNames),
+                  const SizedBox(height: AppSpacing.sm),
+                ],
               ),
             ),
-            const SizedBox(height: AppSpacing.md),
 
-            // Moves / Combos segment toggle
-            _ArsenalSegmentControl(segment: segment),
-            const SizedBox(height: AppSpacing.sm),
+            // Content — sliver-based for compositor-friendly scrolling
+            segment == ArsenalSegment.moves
+                ? movesAsync.when(
+                    loading: () => const SliverFillRemaining(
+                      child: Center(child: CircularProgressIndicator()),
+                    ),
+                    error: (e, _) => SliverFillRemaining(
+                      child: Center(child: Text('Error: $e')),
+                    ),
+                    data: (moves) {
+                      final filtered = searchQuery.isEmpty
+                          ? moves
+                          : moves
+                                .where(
+                                  (m) => m.name.toLowerCase().contains(
+                                    searchQuery.toLowerCase(),
+                                  ),
+                                )
+                                .toList();
 
-            _ViewModeToggle(viewMode: viewMode, viewNames: viewNames),
-            const SizedBox(height: AppSpacing.sm),
-
-            // Content
-            Expanded(
-              child: segment == ArsenalSegment.moves
-                  ? movesAsync.when(
-                      loading: () =>
-                          const Center(child: CircularProgressIndicator()),
-                      error: (e, _) => Center(child: Text('Error: $e')),
-                      data: (moves) {
-                        final filtered = searchQuery.isEmpty
-                            ? moves
-                            : moves
-                                  .where(
-                                    (m) => m.name.toLowerCase().contains(
-                                      searchQuery.toLowerCase(),
-                                    ),
-                                  )
-                                  .toList();
-
-                        if (filtered.isEmpty) {
-                          return _EmptyState(
+                      if (filtered.isEmpty) {
+                        return SliverFillRemaining(
+                          child: _EmptyState(
                             hasSearch: searchQuery.isNotEmpty,
                             isCombo: false,
-                          );
-                        }
+                          ),
+                        );
+                      }
 
-                        return switch (viewMode) {
-                          ViewMode.grid => _MoveGrid(moves: filtered),
-                          ViewMode.list => _MoveList(moves: filtered),
-                        };
-                      },
-                    )
-                  : combosAsync.when(
-                      loading: () =>
-                          const Center(child: CircularProgressIndicator()),
-                      error: (e, _) => Center(child: Text('Error: $e')),
-                      data: (combosWithCounts) {
-                        final filtered = searchQuery.isEmpty
-                            ? combosWithCounts
-                            : combosWithCounts
-                                  .where(
-                                    (c) => c.$1.name.toLowerCase().contains(
-                                      searchQuery.toLowerCase(),
-                                    ),
-                                  )
-                                  .toList();
+                      return switch (viewMode) {
+                        ViewMode.grid => _MoveGridSliver(moves: filtered),
+                        ViewMode.list => _MoveListSliver(moves: filtered),
+                      };
+                    },
+                  )
+                : combosAsync.when(
+                    loading: () => const SliverFillRemaining(
+                      child: Center(child: CircularProgressIndicator()),
+                    ),
+                    error: (e, _) => SliverFillRemaining(
+                      child: Center(child: Text('Error: $e')),
+                    ),
+                    data: (combosWithCounts) {
+                      final filtered = searchQuery.isEmpty
+                          ? combosWithCounts
+                          : combosWithCounts
+                                .where(
+                                  (c) => c.$1.name.toLowerCase().contains(
+                                    searchQuery.toLowerCase(),
+                                  ),
+                                )
+                                .toList();
 
-                        if (filtered.isEmpty) {
-                          return _EmptyState(
+                      if (filtered.isEmpty) {
+                        return SliverFillRemaining(
+                          child: _EmptyState(
                             hasSearch: searchQuery.isNotEmpty,
                             isCombo: true,
-                          );
-                        }
+                          ),
+                        );
+                      }
 
-                        return switch (viewMode) {
-                          ViewMode.grid => _ComboGrid(combos: filtered),
-                          ViewMode.list => _CombosContent(combos: filtered),
-                        };
-                      },
-                    ),
+                      return switch (viewMode) {
+                        ViewMode.grid => _ComboGridSliver(combos: filtered),
+                        ViewMode.list => _CombosContentSliver(combos: filtered),
+                      };
+                    },
+                  ),
+
+            // Bottom padding so last items aren't hidden behind frosted nav bar
+            SliverPadding(
+              padding: EdgeInsets.only(
+                bottom: kBottomNavigationBarHeight +
+                    MediaQuery.of(context).padding.bottom +
+                    AppSpacing.lg,
+              ),
             ),
           ],
         ),
       ),
-      floatingActionButton:
-          Semantics(
+      ),
+      floatingActionButton: Padding(
+        padding: EdgeInsets.only(
+          bottom: kBottomNavigationBarHeight +
+              MediaQuery.of(context).padding.bottom,
+        ),
+        child: Semantics(
                 label: segment == ArsenalSegment.moves
                     ? 'Add new move'
                     : 'Create new combo',
@@ -215,9 +251,16 @@ class MoveListScreen extends ConsumerWidget {
                       context,
                       ref,
                     ),
-                    ArsenalSegment.combos => () => context.push(
-                      '/create-combo',
-                    ),
+                    ArsenalSegment.combos => () async {
+                      final comboName = await context.push<String>(
+                        '/create-combo',
+                      );
+                      if (!context.mounted || comboName == null) return;
+                      ref.read(_arsenalSegmentProvider.notifier).state =
+                          ArsenalSegment.combos;
+                      HapticFeedback.mediumImpact();
+                      CelebrationOverlay.show(context, title: comboName);
+                    },
                   },
                   backgroundColor: Theme.of(context).colorScheme.primary,
                   child: const Icon(Icons.add, color: Colors.white),
@@ -231,6 +274,7 @@ class MoveListScreen extends ConsumerWidget {
                 curve: AppMotion.expressive,
               )
               .fadeIn(duration: AppMotion.moderate01),
+      ),
     );
   }
 
@@ -736,7 +780,7 @@ class _ArsenalSegmentControl extends ConsumerWidget {
       selected: segment,
       iconOf: (s) => switch (s) {
         ArsenalSegment.moves => Icons.sports_martial_arts,
-        ArsenalSegment.combos => Icons.playlist_play,
+        ArsenalSegment.combos => Icons.linear_scale_rounded,
       },
       labelOf: (s) => switch (s) {
         ArsenalSegment.moves => 'Moves',
@@ -837,14 +881,14 @@ class _PillToggleRow<T> extends StatelessWidget {
 
 // -- Combos Content ----------------------------------------------------------
 
-class _CombosContent extends StatelessWidget {
-  const _CombosContent({required this.combos});
+class _CombosContentSliver extends StatelessWidget {
+  const _CombosContentSliver({required this.combos});
 
   final List<(Combo, int)> combos;
 
   @override
   Widget build(BuildContext context) {
-    return _staggeredList(
+    return _sliverStaggeredList(
       itemCount: combos.length,
       builder: (index) {
         final (combo, moveCount) = combos[index];
@@ -914,7 +958,7 @@ class _ComboRow extends ConsumerWidget {
                   ),
                   const SizedBox(width: AppSpacing.sm),
                   Icon(
-                    Icons.playlist_play,
+                    Icons.linear_scale_rounded,
                     color: Theme.of(context).colorScheme.primary,
                     size: 24,
                   ),
@@ -1007,49 +1051,58 @@ class _MoveCountDots extends StatelessWidget {
 
 // -- Combo Grid View ---------------------------------------------------------
 
-// -- Shared arsenal layout builders -------------------------------------------
+// -- Shared arsenal sliver layout builders ------------------------------------
 
-/// Staggered-animated ListView shared by both Moves and Combos list modes.
-Widget _staggeredList({
+/// Staggered-animated SliverList shared by both Moves and Combos list modes.
+/// Uses SliverList for compositor-friendly scrolling within CustomScrollView.
+Widget _sliverStaggeredList({
   required int itemCount,
   required Widget Function(int index) builder,
 }) {
-  return ListView.builder(
+  return SliverPadding(
     padding: const EdgeInsets.symmetric(horizontal: AppSpacing.screenEdge),
-    itemCount: itemCount,
-    itemBuilder: (_, index) => builder(index)
-        .animate()
-        .fadeIn(
-          duration: AppMotion.moderate01,
-          delay: Duration(milliseconds: index.clamp(0, 15) * 40),
-        )
-        .slideY(
-          begin: 0.03,
-          duration: AppMotion.moderate02,
-          delay: Duration(milliseconds: index.clamp(0, 15) * 40),
-        ),
+    sliver: SliverList.builder(
+      itemCount: itemCount,
+      itemBuilder: (_, index) => builder(index)
+          .animate()
+          .fadeIn(
+            duration: AppMotion.moderate01,
+            delay: Duration(milliseconds: index.clamp(0, 15) * 40),
+          )
+          .slideY(
+            begin: 0.03,
+            duration: AppMotion.moderate02,
+            delay: Duration(milliseconds: index.clamp(0, 15) * 40),
+          ),
+    ),
   );
 }
 
-/// 2-column GridView shared by both Moves and Combos grid modes.
-Widget _arsenalGrid({
+/// 2-column SliverGrid shared by both Moves and Combos grid modes.
+Widget _sliverArsenalGrid({
   required int itemCount,
   required Widget Function(int index) builder,
 }) {
-  return GridView.builder(
+  return SliverPadding(
     padding: const EdgeInsets.symmetric(horizontal: AppSpacing.screenEdge),
-    gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-      crossAxisCount: 2,
-      mainAxisSpacing: AppSpacing.sm,
-      crossAxisSpacing: AppSpacing.sm,
-      childAspectRatio: 0.8,
+    sliver: SliverGrid.builder(
+      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: 2,
+        mainAxisSpacing: AppSpacing.sm,
+        crossAxisSpacing: AppSpacing.sm,
+        childAspectRatio: 0.8,
+      ),
+      itemCount: itemCount,
+      itemBuilder: (_, index) => builder(index),
     ),
-    itemCount: itemCount,
-    itemBuilder: (_, index) => builder(index),
   );
 }
 
 /// Shared grid card shell for both move and combo grid cells.
+///
+/// Press physics: scale 1.0→0.96 with spring curve on tap-down,
+/// shadow compresses, subtle haptic feedback. Uses [Pressable] for
+/// consistent press animation across the app.
 class _GridCardShell extends StatelessWidget {
   const _GridCardShell({
     required this.onTap,
@@ -1057,6 +1110,7 @@ class _GridCardShell extends StatelessWidget {
     required this.name,
     required this.topRightWidget,
     this.subtitle,
+    this.heroTag,
   });
 
   final VoidCallback onTap;
@@ -1065,12 +1119,15 @@ class _GridCardShell extends StatelessWidget {
   final Widget topRightWidget;
   final Widget? subtitle;
 
+  /// Optional Hero tag for shared-element transitions (grid → detail).
+  final String? heroTag;
+
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
     final semanticTheme = AppSemanticTheme.of(context);
-    return GestureDetector(
-      onTap: onTap,
+
+    Widget card = RepaintBoundary(
       child: Container(
         clipBehavior: Clip.antiAlias,
         decoration: AppSurfaces.panel(
@@ -1121,19 +1178,29 @@ class _GridCardShell extends StatelessWidget {
         ),
       ),
     );
+
+    if (heroTag != null) {
+      card = Hero(tag: heroTag!, child: card);
+    }
+
+    return Pressable(
+      onTap: onTap,
+      scaleEnd: 0.96,
+      child: card,
+    );
   }
 }
 
 /// Grid layout for combos — mirrors `_MoveGrid` but uses a styled placeholder
 /// instead of a video thumbnail (combos don't have their own video).
-class _ComboGrid extends StatelessWidget {
-  const _ComboGrid({required this.combos});
+class _ComboGridSliver extends StatelessWidget {
+  const _ComboGridSliver({required this.combos});
 
   final List<(Combo, int)> combos;
 
   @override
   Widget build(BuildContext context) {
-    return _arsenalGrid(
+    return _sliverArsenalGrid(
       itemCount: combos.length,
       builder: (index) {
         final (combo, moveCount) = combos[index];
@@ -1170,7 +1237,11 @@ class _ComboGridCell extends ConsumerWidget {
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Icon(Icons.playlist_play, size: 12, color: Colors.white),
+            const Icon(
+              Icons.linear_scale_rounded,
+              size: 12,
+              color: Colors.white,
+            ),
             const SizedBox(width: 4),
             Text(
               '$moveCount',
@@ -1372,7 +1443,7 @@ class _EmptyState extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         children: [
           Icon(
-            isCombo ? Icons.playlist_play : Icons.sports_martial_arts,
+            isCombo ? Icons.linear_scale_rounded : Icons.sports_martial_arts,
             size: 64,
             color: colorScheme.secondary,
           ),
@@ -1406,14 +1477,14 @@ class _EmptyState extends StatelessWidget {
 
 // -- List View ---------------------------------------------------------------
 
-class _MoveList extends StatelessWidget {
-  const _MoveList({required this.moves});
+class _MoveListSliver extends StatelessWidget {
+  const _MoveListSliver({required this.moves});
 
   final List<Move> moves;
 
   @override
   Widget build(BuildContext context) {
-    return _staggeredList(
+    return _sliverStaggeredList(
       itemCount: moves.length,
       builder: (index) => _MoveRow(move: moves[index]),
     );
@@ -1422,14 +1493,14 @@ class _MoveList extends StatelessWidget {
 
 // -- Grid View ---------------------------------------------------------------
 
-class _MoveGrid extends StatelessWidget {
-  const _MoveGrid({required this.moves});
+class _MoveGridSliver extends StatelessWidget {
+  const _MoveGridSliver({required this.moves});
 
   final List<Move> moves;
 
   @override
   Widget build(BuildContext context) {
-    return _arsenalGrid(
+    return _sliverArsenalGrid(
       itemCount: moves.length,
       builder: (index) => _MoveGridCell(move: moves[index]),
     );
@@ -1451,6 +1522,7 @@ class _MoveGridCell extends ConsumerWidget {
         HapticFeedback.lightImpact();
         context.go('/arsenal/move/${move.id}');
       },
+      heroTag: 'move-thumb-${move.id}',
       background: move.videoPath != null
           ? _GridThumbnail(videoPath: move.videoPath!)
           : Container(
@@ -1496,10 +1568,18 @@ class _GridThumbnailState extends State<_GridThumbnail> {
   void didUpdateWidget(covariant _GridThumbnail oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.videoPath != widget.videoPath) {
+      // Cancel previous pending load if coordinator is available
+      ThumbnailCoordinatorScope.of(context)?.cancel(oldWidget.videoPath);
       _thumbPath = null;
       _loaded = false;
       _load();
     }
+  }
+
+  @override
+  void dispose() {
+    ThumbnailCoordinatorScope.of(context)?.cancel(widget.videoPath);
+    super.dispose();
   }
 
   Future<void> _load() async {
@@ -1524,14 +1604,25 @@ class _GridThumbnailState extends State<_GridThumbnail> {
       return;
     }
 
-    final path = await _videoService.generateThumbnail(videoPath);
-    if (!mounted || widget.videoPath != videoPath) return;
-    if (mounted) {
-      setState(() {
-        _thumbPath = path;
-        _loaded = true;
-      });
+    // Use coordinator for bounded concurrency if available, else direct
+    final coordinator = ThumbnailCoordinatorScope.of(context);
+    final String? path;
+    if (coordinator != null) {
+      path = await coordinator.enqueue(
+        videoPath,
+        maxWidth: VideoService.thumbnailWidthGrid,
+      );
+    } else {
+      path = await _videoService.generateThumbnail(
+        videoPath,
+        maxWidth: VideoService.thumbnailWidthGrid,
+      );
     }
+    if (!mounted || widget.videoPath != videoPath) return;
+    setState(() {
+      _thumbPath = path;
+      _loaded = true;
+    });
   }
 
   @override
@@ -1553,17 +1644,19 @@ class _GridThumbnailState extends State<_GridThumbnail> {
         ),
       );
     }
+    if (_loaded) {
+      return Container(
+        color: colorScheme.surfaceContainerHighest,
+        child: Icon(Icons.videocam_off, size: 40, color: colorScheme.secondary),
+      );
+    }
+    // Shimmer placeholder while thumbnail loads — smoother than a spinner
+    // and consistent with the RobustVideoPlayer loading state.
     return Container(
       color: colorScheme.surfaceContainerHighest,
-      child: _loaded
-          ? Icon(Icons.videocam_off, size: 40, color: colorScheme.secondary)
-          : const Center(
-              child: SizedBox(
-                width: 20,
-                height: 20,
-                child: CircularProgressIndicator(strokeWidth: 2),
-              ),
-            ),
+    ).animate(onPlay: (c) => c.repeat()).shimmer(
+      duration: 1200.ms,
+      color: Colors.white12,
     );
   }
 }
@@ -1580,7 +1673,8 @@ class _MoveRow extends ConsumerWidget {
     final state = LearningState.fromString(move.learningState);
     final colorScheme = Theme.of(context).colorScheme;
 
-    return Dismissible(
+    return RepaintBoundary(
+      child: Dismissible(
       key: ValueKey(move.id),
       direction: DismissDirection.endToStart,
       background: Container(
@@ -1655,6 +1749,7 @@ class _MoveRow extends ConsumerWidget {
           ),
         ),
       ),
+    ),
     );
   }
 }

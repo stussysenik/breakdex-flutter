@@ -1,0 +1,42 @@
+# Flow: Deck-based review session
+# Seeds fixture data, navigates to the Deck segment on the Review tab,
+# and verifies deck selection and card rating.
+#
+# Prerequisites: None (uses seeded fixture data with deck)
+# Tags: review
+
+appId: com.breakdex.breakdex
+name: Deck Session
+tags:
+  - review
+
+---
+
+- launchApp:
+    arguments:
+      maestro: true
+      breakdexFixture: review
+
+# Navigate to Review tab
+- tapOn:
+    point: "146,809"
+- assertVisible: "Review"
+
+# Switch to Deck segment
+- tapOn: "Deck"
+- takeScreenshot: e2e-screenshots/deck-segment
+
+# Tap into the fixture deck
+- runFlow:
+    when:
+      visible: "Fixture Deck"
+    commands:
+      - tapOn: "Fixture Deck"
+      - extendedWaitUntil:
+          visible: "Rate GOOD\\nGOOD"
+          timeout: 10000
+      - takeScreenshot: e2e-screenshots/deck-session-active
+      # Rate the card
+      - tapOn:
+          text: "Rate GOOD\\nGOOD"
+      - takeScreenshot: e2e-screenshots/deck-session-rated

@@ -47,7 +47,8 @@ class ScheduleReviewScreen extends ConsumerWidget {
             child: dueSummaryAsync.when(
               loading: () => const Center(
                 child: SizedBox(
-                  width: 20, height: 20,
+                  width: 20,
+                  height: 20,
                   child: CircularProgressIndicator(strokeWidth: 2),
                 ),
               ),
@@ -93,9 +94,7 @@ class ScheduleReviewScreen extends ConsumerWidget {
           padding: const EdgeInsets.symmetric(
             horizontal: AppSpacing.screenEdge,
           ),
-          sliver: const SliverToBoxAdapter(
-            child: SrsParametersCard(),
-          ),
+          sliver: const SliverToBoxAdapter(child: SrsParametersCard()),
         ),
         const SliverToBoxAdapter(child: SizedBox(height: AppSpacing.lg)),
 
@@ -108,7 +107,9 @@ class ScheduleReviewScreen extends ConsumerWidget {
             child: Row(
               children: [
                 Text(
-                  _isToday(selectedDate) ? 'Due Today' : 'Due ${_fmtDate(selectedDate)}',
+                  _isToday(selectedDate)
+                      ? 'Due Today'
+                      : 'Due ${_fmtDate(selectedDate)}',
                   style: AppTypography.bodyMedium.copyWith(
                     color: colorScheme.onSurface,
                     fontWeight: FontWeight.w600,
@@ -136,9 +137,8 @@ class ScheduleReviewScreen extends ConsumerWidget {
           loading: () => const SliverToBoxAdapter(
             child: Center(child: CircularProgressIndicator()),
           ),
-          error: (e, _) => SliverToBoxAdapter(
-            child: Center(child: Text('Error: $e')),
-          ),
+          error: (e, _) =>
+              SliverToBoxAdapter(child: Center(child: Text('Error: $e'))),
           data: (items) {
             if (items.isEmpty) {
               return SliverToBoxAdapter(
@@ -204,8 +204,18 @@ class ScheduleReviewScreen extends ConsumerWidget {
 
   static String _fmtDate(DateTime date) {
     final months = [
-      'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-      'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'May',
+      'Jun',
+      'Jul',
+      'Aug',
+      'Sep',
+      'Oct',
+      'Nov',
+      'Dec',
     ];
     return '${months[date.month - 1]} ${date.day}';
   }
@@ -221,98 +231,141 @@ class _ScheduleEmptyState extends StatelessWidget {
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
 
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xl),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            SizedBox(
-              height: 100,
-              width: 120,
-              child: Stack(
-                alignment: Alignment.center,
-                children: [
-                  Transform.rotate(
-                    angle: -0.12,
-                    child: Container(
-                      width: 80,
-                      height: 60,
-                      decoration: BoxDecoration(
-                        color: AppColors.stateNew.withValues(alpha: 0.15),
-                        borderRadius: BorderRadius.circular(AppRadius.md),
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final contentWidth = constraints.maxWidth > 480
+            ? 420.0
+            : constraints.maxWidth - (AppSpacing.screenEdge * 2);
+
+        return SingleChildScrollView(
+          padding: const EdgeInsets.symmetric(
+            horizontal: AppSpacing.screenEdge,
+            vertical: AppSpacing.lg,
+          ),
+          child: ConstrainedBox(
+            constraints: BoxConstraints(
+              minHeight: constraints.maxHeight - (AppSpacing.lg * 2),
+            ),
+            child: Center(
+              child: SizedBox(
+                width: contentWidth.clamp(280.0, 420.0),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    SizedBox(
+                      height: 108,
+                      width: 128,
+                      child: Stack(
+                        alignment: Alignment.center,
+                        children: [
+                          Transform.rotate(
+                                angle: -0.12,
+                                child: Container(
+                                  width: 80,
+                                  height: 60,
+                                  decoration: BoxDecoration(
+                                    color: AppColors.stateNew.withValues(
+                                      alpha: 0.15,
+                                    ),
+                                    borderRadius: BorderRadius.circular(
+                                      AppRadius.md,
+                                    ),
+                                  ),
+                                ),
+                              )
+                              .animate()
+                              .fadeIn(
+                                duration: AppMotion.moderate02,
+                                delay: const Duration(milliseconds: 80),
+                              )
+                              .slideY(begin: 0.1),
+                          Transform.rotate(
+                                angle: 0.08,
+                                child: Container(
+                                  width: 80,
+                                  height: 60,
+                                  decoration: BoxDecoration(
+                                    color: AppColors.stateLearning.withValues(
+                                      alpha: 0.15,
+                                    ),
+                                    borderRadius: BorderRadius.circular(
+                                      AppRadius.md,
+                                    ),
+                                  ),
+                                ),
+                              )
+                              .animate()
+                              .fadeIn(
+                                duration: AppMotion.moderate02,
+                                delay: const Duration(milliseconds: 160),
+                              )
+                              .slideY(begin: 0.1),
+                          Container(
+                                width: 80,
+                                height: 60,
+                                decoration: BoxDecoration(
+                                  color: AppColors.stateMastery.withValues(
+                                    alpha: 0.15,
+                                  ),
+                                  borderRadius: BorderRadius.circular(
+                                    AppRadius.md,
+                                  ),
+                                ),
+                              )
+                              .animate()
+                              .fadeIn(
+                                duration: AppMotion.moderate02,
+                                delay: const Duration(milliseconds: 240),
+                              )
+                              .slideY(begin: 0.1),
+                        ],
                       ),
                     ),
-                  )
-                      .animate()
-                      .fadeIn(
-                          duration: AppMotion.moderate02,
-                          delay: const Duration(milliseconds: 80))
-                      .slideY(begin: 0.1),
-                  Transform.rotate(
-                    angle: 0.08,
-                    child: Container(
-                      width: 80,
-                      height: 60,
-                      decoration: BoxDecoration(
-                        color:
-                            AppColors.stateLearning.withValues(alpha: 0.15),
-                        borderRadius: BorderRadius.circular(AppRadius.md),
+                    const SizedBox(height: AppSpacing.xl),
+                    Text(
+                      'Add moves to start training',
+                      style: AppTypography.titleMedium.copyWith(
+                        color: colorScheme.onSurface,
+                        fontWeight: FontWeight.w700,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: AppSpacing.md),
+                    Text(
+                      'Record your breakdancing moves, then review with spaced repetition.',
+                      style: AppTypography.bodyMedium.copyWith(
+                        color: colorScheme.secondary,
+                        height: 1.45,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: AppSpacing.xxl),
+                    ElevatedButton(
+                      onPressed: () => context.go('/arsenal'),
+                      style: ElevatedButton.styleFrom(
+                        minimumSize: const Size.fromHeight(60),
+                        backgroundColor: Theme.of(context).colorScheme.primary,
+                        foregroundColor: Colors.white,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(AppRadius.sm),
+                        ),
+                      ),
+                      child: Text(
+                        'Go to Arsenal',
+                        style: AppTypography.bodyMedium.copyWith(
+                          color: Colors.white,
+                          fontWeight: FontWeight.w700,
+                        ),
                       ),
                     ),
-                  )
-                      .animate()
-                      .fadeIn(
-                          duration: AppMotion.moderate02,
-                          delay: const Duration(milliseconds: 160))
-                      .slideY(begin: 0.1),
-                  Container(
-                    width: 80,
-                    height: 60,
-                    decoration: BoxDecoration(
-                      color: AppColors.stateMastery.withValues(alpha: 0.15),
-                      borderRadius: BorderRadius.circular(AppRadius.md),
-                    ),
-                  )
-                      .animate()
-                      .fadeIn(
-                          duration: AppMotion.moderate02,
-                          delay: const Duration(milliseconds: 240))
-                      .slideY(begin: 0.1),
-                ],
-              ),
-            ),
-            const SizedBox(height: AppSpacing.lg),
-            Text(
-              'Add moves to start training',
-              style: AppTypography.titleSmall.copyWith(
-                color: colorScheme.onSurface,
-              ),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: AppSpacing.sm),
-            Text(
-              'Record your breakdancing moves, then review with spaced repetition.',
-              style: AppTypography.bodySmall.copyWith(
-                color: colorScheme.secondary,
-              ),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: AppSpacing.lg),
-            ElevatedButton(
-              onPressed: () => context.go('/arsenal'),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Theme.of(context).colorScheme.primary,
-                foregroundColor: Colors.white,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(AppRadius.lg),
+                  ],
                 ),
               ),
-              child: const Text('Go to Arsenal'),
             ),
-          ],
-        ),
-      ),
+          ),
+        );
+      },
     );
   }
 }

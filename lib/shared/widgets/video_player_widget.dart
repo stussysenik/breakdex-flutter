@@ -228,19 +228,24 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget>
                         ),
                       ),
                     ),
-                    // Controls scrim — auto-hides during playback
-                    AnimatedOpacity(
-                      opacity: _showControls ? 1.0 : 0.0,
-                      duration: AppMotion.moderate01,
-                      child: IgnorePointer(
-                        ignoring: !_showControls,
-                        child: _VideoControls(
-                          controller: _controller,
-                          onTogglePlay: togglePlay,
-                          onSkipBack: () => skip(-_kSkipSeconds),
-                          onSkipForward: () => skip(_kSkipSeconds),
-                          onFullscreen: _openFullscreen,
-                          onEdit: widget.onEdit,
+                    // Controls scrim — auto-hides during playback.
+                    // RepaintBoundary isolates the animated opacity, gradient
+                    // scrim, and per-frame ValueListenableBuilder seek bar
+                    // from the video surface so neither dirties the other.
+                    RepaintBoundary(
+                      child: AnimatedOpacity(
+                        opacity: _showControls ? 1.0 : 0.0,
+                        duration: AppMotion.moderate01,
+                        child: IgnorePointer(
+                          ignoring: !_showControls,
+                          child: _VideoControls(
+                            controller: _controller,
+                            onTogglePlay: togglePlay,
+                            onSkipBack: () => skip(-_kSkipSeconds),
+                            onSkipForward: () => skip(_kSkipSeconds),
+                            onFullscreen: _openFullscreen,
+                            onEdit: widget.onEdit,
+                          ),
                         ),
                       ),
                     ),

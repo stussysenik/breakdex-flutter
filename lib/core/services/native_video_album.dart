@@ -23,11 +23,23 @@ class NativeVideoAlbum extends NativeBridge {
     String? assetTitle,
     String? category,
   }) async {
-    await method.invokeMethod<void>('saveToAlbum', {
-      'videoPath': videoPath,
-      'albumName': albumName,
-      ...?assetTitle == null ? null : {'assetTitle': assetTitle},
-      ...?category == null ? null : {'category': category},
-    });
+    final normalizedPath = videoPath.trim();
+    final normalizedAlbum = albumName.trim();
+    if (normalizedPath.isEmpty || normalizedAlbum.isEmpty) {
+      return;
+    }
+
+    final args = <String, dynamic>{
+      'videoPath': normalizedPath,
+      'albumName': normalizedAlbum,
+    };
+    if (assetTitle != null && assetTitle.trim().isNotEmpty) {
+      args['assetTitle'] = assetTitle.trim();
+    }
+    if (category != null && category.trim().isNotEmpty) {
+      args['category'] = category.trim();
+    }
+
+    await method.invokeMethod<void>('saveToAlbum', args);
   }
 }

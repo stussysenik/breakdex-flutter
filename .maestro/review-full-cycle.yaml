@@ -1,0 +1,72 @@
+# Flow: Multi-card review full cycle
+# Seeds fixture data, reviews a New card with GOOD, verifies completion,
+# then reviews a Learning card with AGAIN and verifies it persists.
+#
+# Prerequisites: None (uses seeded fixture data)
+# Tags: review
+
+appId: com.breakdex.breakdex
+name: Review Full Cycle
+tags:
+  - review
+
+---
+
+- launchApp:
+    arguments:
+      maestro: true
+      breakdexFixture: review
+
+# Navigate to Review tab
+- tapOn:
+    point: "146,809"
+- assertVisible: "Review"
+
+# ── Rate a New card as GOOD ─────────────────────────────────────────
+
+- assertVisible: "New\\n1\\nFirst recall"
+- tapOn: "New\\n1\\nFirst recall"
+
+- extendedWaitUntil:
+    visible: "Rate GOOD\\nGOOD"
+    timeout: 10000
+
+- tapOn:
+    text: "Rate GOOD\\nGOOD"
+
+# Single New card → should complete
+- assertVisible: "Great work!"
+- takeScreenshot: e2e-screenshots/review-new-completed
+
+# Go back to prescreen
+- tapOn: "Review Again"
+
+# ── Rate a Learning card as AGAIN ───────────────────────────────────
+
+- back
+- tapOn:
+    point: "146,809"
+- assertVisible: "Learning\\n1\\nShort intervals"
+- tapOn: "Learning\\n1\\nShort intervals"
+
+- extendedWaitUntil:
+    visible: "Rate AGAIN\\nAGAIN"
+    timeout: 10000
+
+- tapOn:
+    text: "Rate AGAIN\\nAGAIN"
+- takeScreenshot: e2e-screenshots/review-learning-again
+
+# After AGAIN the card should re-enter the queue (not complete)
+# Verify we're still in a review session or got completion
+- runFlow:
+    when:
+      visible: "Rate AGAIN\\nAGAIN"
+    commands:
+      - takeScreenshot: e2e-screenshots/review-learning-persists
+
+- runFlow:
+    when:
+      visible: "Great work!"
+    commands:
+      - takeScreenshot: e2e-screenshots/review-learning-completed

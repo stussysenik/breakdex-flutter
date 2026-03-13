@@ -573,6 +573,73 @@ List<ReviewTimelineEntry> _buildReviewTimeline(
   return items;
 }
 
+// ---------------------------------------------------------------------------
+// Granular providers — lightweight alternatives to statsBundleProvider.
+// Each fetches only the data it needs, so screens that display a single
+// stat (e.g. calendar heatmap, streak badge) don't trigger 12 concurrent
+// DB queries on every rebuild.
+// ---------------------------------------------------------------------------
+
+/// Calendar heatmap data — one year of daily review counts.
+final dailyCountsProvider =
+    FutureProvider.autoDispose<Map<DateTime, int>>((ref) async {
+  ref.watch(statsRefreshProvider);
+  final db = ref.watch(databaseProvider);
+  return db.reviewsDao.dailyCountsSince(
+    DateTime.now().subtract(const Duration(days: 365)),
+  );
+});
+
+/// Leaderboard — top 5 most-reviewed moves with category + FSRS enrichment.
+final topMovesProvider =
+    FutureProvider.autoDispose<List<TopMoveInfo>>((ref) async {
+  ref.watch(statsRefreshProvider);
+  final db = ref.watch(databaseProvider);
+  final topEntries = await db.reviewsDao.topReviewedMoves(5);
+  final allMoves = await db.movesDao.getAll();
+  final moveMap = {for (final m in allMoves) m.id: m};
+  final moveIds = moveMap.keys.toSet();
+
+  final filtered = topEntries.where((e) => moveIds.contains(e.key)).toList();
+  final fsrsCards = await db.fsrsCardsDao.getAll();
+  final fsrsMap = {for (final c in fsrsCards) c.entityId: c};
+
+  return filtered
+      .map((entry) {
+        final move = moveMap[entry.key];
+        if (move == null) return null;
+        final card = fsrsMap[move.id];
+        return TopMoveInfo(
+          moveId: move.id,
+          moveName: move.name,
+          reviewCount: entry.value,
+          category: move.category,
+          fsrsStateLabel: _fsrsStateLabel(card?.fsrsState ?? 0),
+          lastReviewed: card?.lastReview,
+        );
+      })
+      .whereType<TopMoveInfo>()
+      .toList();
+});
+
+/// Due summary — FSRS card states and due counts.
+final dueSummaryProvider =
+    FutureProvider.autoDispose<({DueSummary due, TotalStateCounts counts})>(
+        (ref) async {
+  ref.watch(fsrsCardsRefreshProvider);
+  final fsrs = ref.watch(fsrsServiceProvider);
+  return (
+    due: await fsrs.getDueSummary(),
+    counts: await fsrs.getTotalStateCounts(),
+  );
+});
+
+/// Streak — single int, lightweight read for badge display.
+final streakProvider = FutureProvider.autoDispose<int>((ref) async {
+  ref.watch(statsRefreshProvider);
+  return ref.watch(databaseProvider).reviewsDao.graduationStreak();
+});
+
 class _MutableCardStats {
   _MutableCardStats({
     required this.entityId,

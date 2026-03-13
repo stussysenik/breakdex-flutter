@@ -185,6 +185,26 @@ class _ReviewEntityPrescreenPanel extends StatelessWidget {
     final colorScheme = Theme.of(context).colorScheme;
     final semanticTheme = AppSemanticTheme.of(context);
     final total = counts.values.fold(0, (sum, value) => sum + value);
+    final readyStates = LearningState.values
+        .where((state) => (counts[state] ?? 0) > 0)
+        .toList(growable: false);
+    final singleReadyState = readyStates.length == 1
+        ? readyStates.single
+        : null;
+    final primaryActionLabel = switch (singleReadyState) {
+      LearningState.newState => 'Start New',
+      LearningState.learning => 'Start Learning',
+      LearningState.mastery => 'Start Mastery',
+      null when total == 0 => 'Nothing to review',
+      _ => 'Review all ready',
+    };
+    final primaryAction = switch (singleReadyState) {
+      LearningState.newState => () => onStartState(LearningState.newState),
+      LearningState.learning => () => onStartState(LearningState.learning),
+      LearningState.mastery => () => onStartState(LearningState.mastery),
+      null when total == 0 => null,
+      _ => onStartAll,
+    };
 
     return Container(
       width: double.infinity,
@@ -250,16 +270,21 @@ class _ReviewEntityPrescreenPanel extends StatelessWidget {
           const SizedBox(height: AppSpacing.md),
           SizedBox(
             width: double.infinity,
-            child: OutlinedButton(
-              onPressed: total == 0 ? null : onStartAll,
-              style: OutlinedButton.styleFrom(
-                padding: const EdgeInsets.symmetric(vertical: 15),
+            child: ElevatedButton(
+              onPressed: primaryAction,
+              style: ElevatedButton.styleFrom(
+                minimumSize: const Size.fromHeight(54),
+                backgroundColor: total == 0 ? null : colorScheme.primary,
+                foregroundColor: total == 0 ? null : colorScheme.onPrimary,
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(AppRadius.sm),
                 ),
               ),
               child: Text(
-                total == 0 ? 'Nothing to review' : 'Start ${title.trim()}',
+                primaryActionLabel,
+                style: AppTypography.bodyMedium.copyWith(
+                  fontWeight: FontWeight.w700,
+                ),
               ),
             ),
           ),
@@ -890,44 +915,77 @@ class _ReviewEmptyState extends StatelessWidget {
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
 
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xl),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(Icons.style_outlined, size: 64, color: colorScheme.secondary),
-            const SizedBox(height: AppSpacing.lg),
-            Text(
-              'Add moves to start training',
-              style: AppTypography.titleSmall.copyWith(
-                color: colorScheme.onSurface,
-              ),
-              textAlign: TextAlign.center,
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final contentWidth = constraints.maxWidth > 480
+            ? 420.0
+            : constraints.maxWidth - (AppSpacing.screenEdge * 2);
+
+        return SingleChildScrollView(
+          padding: const EdgeInsets.symmetric(
+            horizontal: AppSpacing.screenEdge,
+            vertical: AppSpacing.lg,
+          ),
+          child: ConstrainedBox(
+            constraints: BoxConstraints(
+              minHeight: constraints.maxHeight - (AppSpacing.lg * 2),
             ),
-            const SizedBox(height: AppSpacing.sm),
-            Text(
-              'Record your breakdancing moves, then review with spaced repetition.',
-              style: AppTypography.bodySmall.copyWith(
-                color: colorScheme.secondary,
-              ),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: AppSpacing.lg),
-            ElevatedButton(
-              onPressed: () => context.go('/arsenal'),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Theme.of(context).colorScheme.primary,
-                foregroundColor: Colors.white,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(AppRadius.lg),
+            child: Center(
+              child: SizedBox(
+                width: contentWidth.clamp(280.0, 420.0),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Icon(
+                      Icons.style_outlined,
+                      size: 72,
+                      color: colorScheme.secondary,
+                    ),
+                    const SizedBox(height: AppSpacing.xl),
+                    Text(
+                      'Add moves to start training',
+                      style: AppTypography.titleMedium.copyWith(
+                        color: colorScheme.onSurface,
+                        fontWeight: FontWeight.w700,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: AppSpacing.md),
+                    Text(
+                      'Record your breakdancing moves, then review with spaced repetition.',
+                      style: AppTypography.bodyMedium.copyWith(
+                        color: colorScheme.secondary,
+                        height: 1.45,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: AppSpacing.xxl),
+                    ElevatedButton(
+                      onPressed: () => context.go('/arsenal'),
+                      style: ElevatedButton.styleFrom(
+                        minimumSize: const Size.fromHeight(60),
+                        backgroundColor: Theme.of(context).colorScheme.primary,
+                        foregroundColor: Colors.white,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(AppRadius.sm),
+                        ),
+                      ),
+                      child: Text(
+                        'Go to Arsenal',
+                        style: AppTypography.bodyMedium.copyWith(
+                          color: Colors.white,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
               ),
-              child: const Text('Go to Arsenal'),
             ),
-          ],
-        ),
-      ),
+          ),
+        );
+      },
     );
   }
 }

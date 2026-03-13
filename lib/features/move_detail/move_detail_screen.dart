@@ -73,12 +73,15 @@ class MoveDetailScreen extends ConsumerWidget {
 
                 // Video player
                 if (move.videoPath != null)
-                  RobustVideoPlayer(
-                    videoPath: move.videoPath!,
-                    onRepick: () => _addOrReplaceVideo(context, ref, move),
-                    onEdit: () => _editVideo(context, ref, move),
-                    ghostThumbnailPath: _thumbnailPathFor(move.videoPath!),
-                    originalVideoName: move.originalVideoName,
+                  Hero(
+                    tag: 'move-thumb-${move.id}',
+                    child: RobustVideoPlayer(
+                      videoPath: move.videoPath!,
+                      onRepick: () => _addOrReplaceVideo(context, ref, move),
+                      onEdit: () => _editVideo(context, ref, move),
+                      ghostThumbnailPath: _thumbnailPathFor(move.videoPath!),
+                      originalVideoName: move.originalVideoName,
+                    ),
                   )
                 else
                   Semantics(

@@ -1,0 +1,46 @@
+# Flow: Settings customization workflows
+# Navigates to Settings and tests category management and theme switching.
+#
+# Prerequisites: None
+# Tags: settings
+
+appId: com.breakdex.breakdex
+name: Settings Customization
+tags:
+  - settings
+
+---
+
+- launchApp
+
+# Navigate to Settings tab
+- tapOn:
+    point: "344,809"
+- assertVisible: "Settings"
+- takeScreenshot: e2e-screenshots/settings-main
+
+# ── Category management ─────────────────────────────────────────────
+
+# Add a new category
+- runFlow:
+    when:
+      visible: "Add Category"
+    commands:
+      - tapOn: "Add Category"
+      - inputText: "E2E Category"
+      - tapOn: "Save"
+      - assertVisible: "E2E Category"
+      - takeScreenshot: e2e-screenshots/settings-category-added
+
+# ── Theme switching ─────────────────────────────────────────────────
+
+# Switch to Marker theme
+- runFlow:
+    when:
+      visible: "Marker"
+    commands:
+      - tapOn: "Marker"
+      - takeScreenshot: e2e-screenshots/settings-marker-theme
+      # Revert to Blue
+      - tapOn: "Blue"
+      - takeScreenshot: e2e-screenshots/settings-blue-theme

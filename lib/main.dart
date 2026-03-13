@@ -4,7 +4,6 @@ import 'dart:ui';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:path_provider/path_provider.dart';
 import 'package:path/path.dart' as p;
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -12,6 +11,7 @@ import 'core/database/database.dart';
 import 'core/design/theme.dart';
 import 'core/navigation/app_router.dart';
 import 'core/providers.dart';
+import 'core/services/app_storage_paths.dart';
 import 'core/services/automation_fixture_service.dart';
 import 'core/services/fsrs_migration_service.dart';
 import 'core/services/settings_service.dart';
@@ -25,7 +25,7 @@ Future<void> _backupDatabaseIfNeeded(SharedPreferences prefs) async {
 
   if (lastBackupSchema < currentSchema) {
     try {
-      final dir = await getApplicationDocumentsDirectory();
+      final dir = await AppStoragePaths.documentsDirectory();
       final dbFile = File(p.join(dir.path, 'breakdex.db'));
       if (await dbFile.exists()) {
         final timestamp = DateTime.now().millisecondsSinceEpoch;
@@ -57,7 +57,7 @@ Future<AppDatabase> _openDatabaseSafely() async {
     debugPrint('DB init failed ($e) — creating fresh database');
     // Attempt to delete the corrupted file so the next open succeeds
     try {
-      final dir = await getApplicationDocumentsDirectory();
+      final dir = await AppStoragePaths.documentsDirectory();
       final dbFile = File(p.join(dir.path, 'breakdex.db'));
       if (await dbFile.exists()) await dbFile.delete();
     } catch (_) {}

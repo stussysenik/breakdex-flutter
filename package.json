@@ -1,0 +1,39 @@
+{
+  "name": "breakdex-flutter",
+  "version": "1.0.0",
+  "description": "Breakdex is a pocket video database for dance moves, combos, and spaced-repetition review. The app combines a move library, combo builder, video editing, deck-based practice, and review analytics in one Flutter app with native iOS bridges for media workflows.",
+  "main": "index.js",
+  "directories": {
+    "doc": "docs",
+    "lib": "lib",
+    "test": "test"
+  },
+  "private": true,
+  "scripts": {
+    "prepare": "husky"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/stussysenik/breakdex-flutter.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/stussysenik/breakdex-flutter/issues"
+  },
+  "homepage": "https://github.com/stussysenik/breakdex-flutter#readme",
+  "devDependencies": {
+    "@commitlint/cli": "^20.4.4",
+    "@commitlint/config-conventional": "^20.4.4",
+    "@semantic-release/changelog": "^6.0.3",
+    "@semantic-release/commit-analyzer": "^13.0.1",
+    "@semantic-release/git": "^10.0.1",
+    "@semantic-release/github": "^11.0.6",
+    "@semantic-release/release-notes-generator": "^14.1.0",
+    "husky": "^9.1.7",
+    "semantic-release": "^24.2.9",
+    "semantic-release-pub": "^0.10.26"
+  }
+}

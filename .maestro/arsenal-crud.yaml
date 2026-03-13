@@ -1,0 +1,75 @@
+# Flow: Arsenal CRUD operations
+# Seeds fixture data and verifies list/grid rendering, search filtering,
+# move detail drill-down, and combo detail navigation.
+#
+# Prerequisites: None (uses seeded fixture data)
+# Tags: arsenal
+
+appId: com.breakdex.breakdex
+name: Arsenal CRUD
+tags:
+  - arsenal
+
+---
+
+- launchApp:
+    arguments:
+      maestro: true
+      breakdexFixture: review
+
+# ── Moves list view ─────────────────────────────────────────────────
+
+- assertVisible: "Arsenal"
+
+# Fixture seeds 3 moves — verify they render in list view
+- assertVisible: "Fixture Swipe"
+- assertVisible: "Fixture Freeze"
+- assertVisible: "Fixture Windmill"
+- takeScreenshot: e2e-screenshots/arsenal-list-view
+
+# ── Gallery view ────────────────────────────────────────────────────
+
+- tapOn: "Gallery"
+- takeScreenshot: e2e-screenshots/arsenal-gallery-view
+
+# ── Search filtering ────────────────────────────────────────────────
+
+- tapOn: "List"
+- tapOn:
+    id: "Search"
+- inputText: "Fixture Swipe"
+- assertVisible: "Fixture Swipe"
+- takeScreenshot: e2e-screenshots/arsenal-search-found
+
+# Clear and search for non-existent move
+- clearText
+- inputText: "zzz"
+- assertVisible: "No results"
+- takeScreenshot: e2e-screenshots/arsenal-search-empty
+
+# Clear search
+- clearText
+
+# ── Move detail ─────────────────────────────────────────────────────
+
+- tapOn: "Fixture Swipe"
+- extendedWaitUntil:
+    visible: "ACTIONS"
+    timeout: 5000
+- assertVisible: "Fixture Swipe"
+- takeScreenshot: e2e-screenshots/arsenal-move-detail
+- back
+
+# ── Combos segment ──────────────────────────────────────────────────
+
+- tapOn: "Combos"
+- assertVisible: "Fixture Combo"
+- takeScreenshot: e2e-screenshots/arsenal-combos
+
+# Combo detail
+- tapOn: "Fixture Combo"
+- extendedWaitUntil:
+    visible: "Fixture Combo"
+    timeout: 5000
+- takeScreenshot: e2e-screenshots/arsenal-combo-detail
+- back

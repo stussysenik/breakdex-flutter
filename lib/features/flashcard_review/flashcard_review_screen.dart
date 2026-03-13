@@ -36,7 +36,8 @@ class FlashcardReviewScreen extends ConsumerStatefulWidget {
       _FlashcardReviewScreenState();
 }
 
-class _FlashcardReviewScreenState extends ConsumerState<FlashcardReviewScreen> {
+class _FlashcardReviewScreenState extends ConsumerState<FlashcardReviewScreen>
+    with SingleTickerProviderStateMixin {
   int _currentIndex = 0;
   bool _completed = false;
   List<ReviewSessionItem> _items = [];
@@ -48,6 +49,10 @@ class _FlashcardReviewScreenState extends ConsumerState<FlashcardReviewScreen> {
   double _cardOpacity = 1.0;
   bool _animatingExit = false;
 
+  // Breathing animation — subtle 0.6% scale oscillation when idle.
+  // Signals "alive" state, draws attention to the card, invites interaction.
+  late final AnimationController _breathController;
+
   // Shake-to-skip: accelerometer subscription + debounce
   StreamSubscription<AccelerometerEvent>? _shakeSubscription;
   DateTime _lastShakeTime = DateTime(2000);
@@ -55,7 +60,17 @@ class _FlashcardReviewScreenState extends ConsumerState<FlashcardReviewScreen> {
   static const _shakeCooldown = Duration(milliseconds: 800);
 
   @override
+  void initState() {
+    super.initState();
+    _breathController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 2400),
+    )..repeat(reverse: true);
+  }
+
+  @override
   void dispose() {
+    _breathController.dispose();
     _stopShakeListener();
     _pageController?.dispose();
     super.dispose();
@@ -103,7 +118,7 @@ class _FlashcardReviewScreenState extends ConsumerState<FlashcardReviewScreen> {
       body: SafeArea(
         child: Column(
           children: [
-            const SizedBox(height: AppSpacing.md),
+            SizedBox(height: sessionActive ? AppSpacing.sm : AppSpacing.md),
 
             // Title + End button
             Padding(
@@ -145,29 +160,32 @@ class _FlashcardReviewScreenState extends ConsumerState<FlashcardReviewScreen> {
               ),
             ),
 
-            const SizedBox(height: AppSpacing.xs),
-            Padding(
-              padding: const EdgeInsets.symmetric(
-                horizontal: AppSpacing.screenEdge,
+            if (!sessionActive) ...[
+              const SizedBox(height: AppSpacing.xs),
+              Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: AppSpacing.screenEdge,
+                ),
+                child: AppSegmentedControl<ReviewMode>(
+                  items: const [
+                    AppSegmentedControlItem(
+                      value: ReviewMode.review,
+                      icon: Icons.grid_view_rounded,
+                      label: 'Review',
+                    ),
+                    AppSegmentedControlItem(
+                      value: ReviewMode.deck,
+                      icon: Icons.layers_rounded,
+                      label: 'Deck',
+                    ),
+                  ],
+                  selectedValue: reviewMode,
+                  onChanged: _setReviewMode,
+                ),
               ),
-              child: AppSegmentedControl<ReviewMode>(
-                items: const [
-                  AppSegmentedControlItem(
-                    value: ReviewMode.review,
-                    icon: Icons.grid_view_rounded,
-                    label: 'Review',
-                  ),
-                  AppSegmentedControlItem(
-                    value: ReviewMode.deck,
-                    icon: Icons.layers_rounded,
-                    label: 'Deck',
-                  ),
-                ],
-                selectedValue: reviewMode,
-                onChanged: _setReviewMode,
-              ),
-            ),
-            const SizedBox(height: AppSpacing.xs),
+              const SizedBox(height: AppSpacing.xs),
+            ] else
+              const SizedBox(height: AppSpacing.sm),
 
             Expanded(
               child: sessionActive
@@ -235,7 +253,7 @@ class _FlashcardReviewScreenState extends ConsumerState<FlashcardReviewScreen> {
                 _ => 'All Cards',
               },
             ),
-            const SizedBox(height: AppSpacing.md),
+            const SizedBox(height: AppSpacing.sm),
 
             // Main content
             Expanded(
@@ -265,102 +283,127 @@ class _FlashcardReviewScreenState extends ConsumerState<FlashcardReviewScreen> {
     return LayoutBuilder(
       builder: (context, constraints) {
         final available = constraints.maxHeight;
-        final videoHeight = (available * 0.58).clamp(180.0, 400.0);
+        final hasVideo = item.videoPath != null;
+        final videoHeight = hasVideo
+            ? (available * 0.42).clamp(220.0, 340.0)
+            : (available * 0.30).clamp(180.0, 240.0);
+        final metadataHeight = item.isCombo
+            ? 176.0
+            : item.category == null
+            ? 96.0
+            : 114.0;
+        final cardHeight = videoHeight + metadataHeight;
 
-        return Column(
-          children: [
-            // PageView for swipe navigation between moves.
-            // Wrapped in animated scale/opacity for smooth card exit on rating.
-            Expanded(
-              child: AnimatedScale(
-                scale: _cardScale,
-                duration: AppMotion.moderate01,
-                curve: AppMotion.productive,
-                child: AnimatedOpacity(
-                  opacity: _cardOpacity,
-                  duration: AppMotion.moderate01,
-                  child: PageView.builder(
-                    controller: _pageController,
-                    physics: _animatingExit
-                        ? const NeverScrollableScrollPhysics()
-                        : null,
-                    itemCount: _items.length,
-                    onPageChanged: (index) {
-                      HapticFeedback.selectionClick();
-                      setState(() {
-                        _currentIndex = index;
-                      });
-                    },
-                    itemBuilder: (context, index) {
-                      final pageItem = _items[index];
-                      return Semantics(
-                        identifier: 'review-card-${pageItem.entityId}',
-                        label: 'Review card: ${pageItem.displayName}',
-                        child: GestureDetector(
-                          onVerticalDragEnd: (details) {
-                            if (details.primaryVelocity != null &&
-                                details.primaryVelocity! < -300 &&
-                                pageItem.isMove &&
-                                pageItem.move != null) {
-                              _showStatePicker(pageItem.move!, index);
-                            }
+        return SingleChildScrollView(
+          padding: const EdgeInsets.fromLTRB(
+            AppSpacing.screenEdge,
+            0,
+            AppSpacing.screenEdge,
+            AppSpacing.md,
+          ),
+          child: Center(
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 620),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  SizedBox(
+                    height: cardHeight,
+                    // Breathing animation: 0.6% scale oscillation when idle.
+                    // Respects reduce-motion via MediaQuery.disableAnimations.
+                    child: AnimatedBuilder(
+                      animation: _breathController,
+                      builder: (context, child) {
+                        final reduceMotion =
+                            MediaQuery.of(context).disableAnimations;
+                        final breathScale = reduceMotion
+                            ? 1.0
+                            : 1.0 +
+                                (0.006 *
+                                    Curves.easeInOut
+                                        .transform(_breathController.value));
+                        return Transform.scale(
+                          scale: breathScale * _cardScale,
+                          child: child,
+                        );
+                      },
+                      child: AnimatedOpacity(
+                        opacity: _cardOpacity,
+                        duration: AppMotion.moderate01,
+                        child: PageView.builder(
+                          controller: _pageController,
+                          physics: _animatingExit
+                              ? const NeverScrollableScrollPhysics()
+                              : null,
+                          itemCount: _items.length,
+                          onPageChanged: (index) {
+                            HapticFeedback.selectionClick();
+                            setState(() {
+                              _currentIndex = index;
+                            });
                           },
-                          child: ReviewCard(
-                            title: pageItem.displayName,
-                            state: pageItem.state,
-                            category: pageItem.category,
-                            videoPath: pageItem.videoPath,
-                            originalVideoName: pageItem.originalVideoName,
-                            canEditState: pageItem.isMove,
-                            onStatePillTap: () {
-                              if (pageItem.isMove && pageItem.move != null) {
-                                _showStatePicker(pageItem.move!, index);
-                              }
-                            },
-                            videoHeight: videoHeight,
-                            onRepick: pageItem.isMove && pageItem.move != null
-                                ? () => _repickVideo(pageItem.move!, index)
-                                : null,
-                          ),
+                          itemBuilder: (context, index) {
+                            final pageItem = _items[index];
+                            return Semantics(
+                              identifier: 'review-card-${pageItem.entityId}',
+                              label: 'Review card: ${pageItem.displayName}',
+                              child: GestureDetector(
+                                onVerticalDragEnd: (details) {
+                                  if (details.primaryVelocity != null &&
+                                      details.primaryVelocity! < -300 &&
+                                      pageItem.isMove &&
+                                      pageItem.move != null) {
+                                    _showStatePicker(pageItem.move!, index);
+                                  }
+                                },
+                                child: ReviewCard(
+                                  key: ValueKey(
+                                    'review-card-${pageItem.entityType}-${pageItem.entityId}',
+                                  ),
+                                  title: pageItem.displayName,
+                                  state: pageItem.state,
+                                  category: pageItem.category,
+                                  videoPath: pageItem.videoPath,
+                                  originalVideoName: pageItem.originalVideoName,
+                                  canEditState: pageItem.isMove,
+                                  combo: pageItem.combo,
+                                  onStatePillTap: () {
+                                    if (pageItem.isMove &&
+                                        pageItem.move != null) {
+                                      _showStatePicker(pageItem.move!, index);
+                                    }
+                                  },
+                                  videoHeight: videoHeight,
+                                  onRepick:
+                                      pageItem.isMove && pageItem.move != null
+                                      ? () =>
+                                            _repickVideo(pageItem.move!, index)
+                                      : null,
+                                ),
+                              ),
+                            );
+                          },
                         ),
-                      );
-                    },
-                  ),
-                ),
-              ),
-            ),
-
-            // Raised, fixed action bar
-            Padding(
-              padding: const EdgeInsets.symmetric(
-                horizontal: AppSpacing.screenEdge,
-              ),
-              child: Container(
-                margin: const EdgeInsets.only(bottom: AppSpacing.md),
-                padding: const EdgeInsets.all(AppSpacing.sm),
-                decoration: BoxDecoration(
-                  color: Theme.of(context).colorScheme.surface,
-                  borderRadius: BorderRadius.circular(AppRadius.sm),
-                  border: Border.all(
-                    color: Theme.of(
-                      context,
-                    ).colorScheme.outline.withValues(alpha: 0.22),
-                  ),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.04),
-                      blurRadius: 18,
-                      offset: const Offset(0, 8),
+                      ),
                     ),
-                  ],
-                ),
-                child: RatingButtonRow(
-                  onRate: (rating) => _rateItem(item, rating),
-                  intervalPreviews: intervals,
-                ),
+                  ),
+                  const SizedBox(height: AppSpacing.md),
+                  Container(
+                    padding: const EdgeInsets.all(AppSpacing.sm),
+                    decoration: AppSurfaces.panel(
+                      context,
+                      raised: true,
+                      radius: AppRadius.md,
+                    ),
+                    child: RatingButtonRow(
+                      onRate: (rating) => _rateItem(item, rating),
+                      intervalPreviews: intervals,
+                    ),
+                  ),
+                ],
               ),
             ),
-          ],
+          ),
         );
       },
     );

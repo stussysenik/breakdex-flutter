@@ -17,11 +17,7 @@ import '../../../core/models/reviewable_item.dart';
 /// - SRS detail line: stability, difficulty, retrievability, reps
 /// - Entity type icon (move vs combo)
 class ScheduledItemRow extends StatelessWidget {
-  const ScheduledItemRow({
-    super.key,
-    required this.item,
-    required this.onTap,
-  });
+  const ScheduledItemRow({super.key, required this.item, required this.onTap});
 
   final ReviewableItemWithCard item;
   final VoidCallback onTap;
@@ -86,7 +82,7 @@ class ScheduledItemRow extends StatelessWidget {
                     ),
                     child: Icon(
                       item.item is ReviewableCombo
-                          ? Icons.playlist_play
+                          ? Icons.linear_scale_rounded
                           : Icons.sports_martial_arts,
                       color: colorScheme.secondary,
                       size: 20,
@@ -110,7 +106,7 @@ class ScheduledItemRow extends StatelessWidget {
                           // Entity type icon
                           Icon(
                             item.item is ReviewableCombo
-                                ? Icons.playlist_play
+                                ? Icons.linear_scale_rounded
                                 : Icons.sports_martial_arts,
                             size: 12,
                             color: colorScheme.secondary,
@@ -209,10 +205,10 @@ class ScheduledItemRow extends StatelessWidget {
   }
 
   static Color _stateColor(int fsrsState) => switch (fsrsState) {
-        0 => AppColors.stateNew,
-        1 => AppColors.stateLearning,
-        2 => AppColors.stateMastery,
-        3 => AppColors.actionHard,
-        _ => AppColors.stateNew,
-      };
+    0 => AppColors.stateNew,
+    1 => AppColors.stateLearning,
+    2 => AppColors.stateMastery,
+    3 => AppColors.actionHard,
+    _ => AppColors.stateNew,
+  };
 }
