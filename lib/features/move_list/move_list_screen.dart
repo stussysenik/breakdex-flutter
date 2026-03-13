@@ -222,12 +222,25 @@ class MoveListScreen extends ConsumerWidget {
                       };
                     },
                   ),
+
+            // Bottom padding so last items aren't hidden behind frosted nav bar
+            SliverPadding(
+              padding: EdgeInsets.only(
+                bottom: kBottomNavigationBarHeight +
+                    MediaQuery.of(context).padding.bottom +
+                    AppSpacing.lg,
+              ),
+            ),
           ],
         ),
       ),
       ),
-      floatingActionButton:
-          Semantics(
+      floatingActionButton: Padding(
+        padding: EdgeInsets.only(
+          bottom: kBottomNavigationBarHeight +
+              MediaQuery.of(context).padding.bottom,
+        ),
+        child: Semantics(
                 label: segment == ArsenalSegment.moves
                     ? 'Add new move'
                     : 'Create new combo',
@@ -261,6 +274,7 @@ class MoveListScreen extends ConsumerWidget {
                 curve: AppMotion.expressive,
               )
               .fadeIn(duration: AppMotion.moderate01),
+      ),
     );
   }
 
