@@ -57,6 +57,7 @@ TextStyle _fontStyle(
 }
 
 String? _resolvedFontFamily(AppFontFamily family) => switch (family) {
+  AppFontFamily.inter => 'Inter',
   AppFontFamily.spaceMono ||
   AppFontFamily.jetBrainsMono => switch (defaultTargetPlatform) {
     TargetPlatform.iOS || TargetPlatform.macOS => 'Menlo',
@@ -92,6 +93,7 @@ abstract final class AppTypography {
     double? letterSpacing,
     double? height,
   }) => TextStyle(
+    fontFamily: 'Inter',
     fontSize: fontSize,
     fontWeight: fontWeight,
     letterSpacing: letterSpacing,
