@@ -21,7 +21,6 @@ dependencies:
   video_thumbnail: ^0.5.3
   # ffmpeg_kit_flutter_new: ^4.1.0  # Replaced by native AVFoundation export
   shared_preferences: ^2.5.3
-  google_fonts: ^8.0.2
   flutter_animate: ^4.5.2
   path_provider: ^2.1.5
   path: ^1.9.1
@@ -46,3 +45,6 @@ dev_dependencies:
 
 flutter:
   uses-material-design: true
+
+  assets:
+    - assets/textures/grain.png
