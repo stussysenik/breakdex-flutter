@@ -1,0 +1,2 @@
+# Intentionally empty — lint checks run in CI.
+# Commit-msg hook enforces conventional commits via commitlint.

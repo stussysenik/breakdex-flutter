@@ -48,6 +48,9 @@ app.*.map.json
 00008130-*/
 senik/
 
+# Node.js (semantic-release, commitlint, husky)
+node_modules/
+
 # Tool configs
 .claude/
 .flowdeck/

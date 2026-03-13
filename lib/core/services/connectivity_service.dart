@@ -9,7 +9,7 @@ import 'package:flutter/foundation.dart';
 class ConnectivityService {
   final _connectivity = Connectivity();
   late final StreamController<bool> _controller;
-  StreamSubscription? _sub;
+  StreamSubscription<List<ConnectivityResult>>? _sub;
 
   ConnectivityService() {
     _controller = StreamController<bool>.broadcast(
