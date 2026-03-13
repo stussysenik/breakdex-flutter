@@ -1630,17 +1630,19 @@ class _GridThumbnailState extends State<_GridThumbnail> {
         ),
       );
     }
+    if (_loaded) {
+      return Container(
+        color: colorScheme.surfaceContainerHighest,
+        child: Icon(Icons.videocam_off, size: 40, color: colorScheme.secondary),
+      );
+    }
+    // Shimmer placeholder while thumbnail loads — smoother than a spinner
+    // and consistent with the RobustVideoPlayer loading state.
     return Container(
       color: colorScheme.surfaceContainerHighest,
-      child: _loaded
-          ? Icon(Icons.videocam_off, size: 40, color: colorScheme.secondary)
-          : const Center(
-              child: SizedBox(
-                width: 20,
-                height: 20,
-                child: CircularProgressIndicator(strokeWidth: 2),
-              ),
-            ),
+    ).animate(onPlay: (c) => c.repeat()).shimmer(
+      duration: 1200.ms,
+      color: Colors.white12,
     );
   }
 }
