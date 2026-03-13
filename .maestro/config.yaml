@@ -17,6 +17,10 @@ initFlow:
 # Tags for selective test runs
 # Run subsets: maestro test --tags=smoke .maestro/
 tags:
-  smoke: [navigation.yaml]
+  smoke: [navigation.yaml, arsenal-fab-reachable.yaml, stats-dashboard.yaml, hero-transition.yaml]
   video: [import-and-trim.yaml, video-playback.yaml, export-flow.yaml]
-  review: [review-session.yaml, review-colors.yaml]
+  review: [review-session.yaml, review-colors.yaml, review-combo-session.yaml, review-full-cycle.yaml, deck-session.yaml]
+  arsenal: [arsenal-crud.yaml]
+  settings: [settings-customization.yaml]
+  performance: [scroll_performance.yaml, inp-latency.yaml]
+  regression: [arsenal-fab-reachable.yaml, hero-transition.yaml]
