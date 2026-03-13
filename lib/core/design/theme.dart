@@ -35,9 +35,59 @@ abstract final class AppShadows {
       offset: const Offset(0, 16),
     ),
   ];
+
+  /// Two-shadow stack simulating real lighting: an ambient fill (soft, centered)
+  /// plus a key-light shadow (directional, offset). Produces depth that a
+  /// single shadow cannot match — closer to cinematic lighting than Material
+  /// elevation. Use on hero cards, floating panels, and bottom nav.
+  static List<BoxShadow> layered(Brightness brightness) => [
+    // Ambient — soft, centered, simulates scattered room light
+    BoxShadow(
+      color: brightness == Brightness.light
+          ? const Color(0x0A0F0B08)
+          : const Color(0x1A000000),
+      blurRadius: 20,
+      spreadRadius: 1,
+    ),
+    // Key light — directional, overhead, simulates primary light source
+    BoxShadow(
+      color: brightness == Brightness.light
+          ? const Color(0x1A0F0B08)
+          : const Color(0x40000000),
+      blurRadius: 16,
+      offset: const Offset(0, 6),
+    ),
+  ];
 }
 
 enum AppSurfaceTone { base, muted, emphasis }
+
+/// Tileable noise grain overlay — opt-in via `AppSurfaces.panel(withGrain: true)`.
+///
+/// Renders a 256x256 tileable noise PNG at 0.04 opacity on top of the surface.
+/// Adds tactile materiality to flat cards without hurting scroll performance
+/// (the image is decoded once and cached by the framework's ImageCache).
+class GrainOverlay extends StatelessWidget {
+  const GrainOverlay({super.key, this.opacity = 0.04});
+
+  final double opacity;
+
+  @override
+  Widget build(BuildContext context) {
+    return Positioned.fill(
+      child: IgnorePointer(
+        child: Opacity(
+          opacity: opacity,
+          child: Image.asset(
+            'assets/textures/grain.png',
+            repeat: ImageRepeat.repeat,
+            filterQuality: FilterQuality.none,
+          ),
+        ),
+      ),
+    );
+  }
+}
 
 abstract final class AppSurfaces {
   static BoxDecoration panel(
