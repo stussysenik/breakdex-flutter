@@ -16,6 +16,7 @@ import '../../core/models/learning_state.dart';
 import '../../core/providers.dart';
 import '../../core/services/native_video_album.dart';
 import '../../shared/widgets/combo_step_line.dart';
+import '../../shared/widgets/notes_section.dart';
 import '../../shared/widgets/state_pill.dart';
 import '../../shared/widgets/video_player_widget.dart'
     show RobustVideoPlayer, VideoPlaceholder;
@@ -213,6 +214,20 @@ class _ComboDetailScreenState extends ConsumerState<ComboDetailScreen> {
                         ),
                       ],
                     ],
+                    const SizedBox(height: AppSpacing.lg),
+
+                    // Notes
+                    NotesSection(
+                      notes: combo.notes,
+                      onChanged: (text) {
+                        ref.read(comboRepositoryProvider).update(
+                          CombosCompanion(
+                            id: Value(combo.id),
+                            notes: Value(text.isEmpty ? null : text),
+                          ),
+                        );
+                      },
+                    ),
                     const SizedBox(height: AppSpacing.lg),
                   ],
                 );

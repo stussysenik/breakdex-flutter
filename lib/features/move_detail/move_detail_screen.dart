@@ -17,8 +17,9 @@ import '../../core/services/categories_service.dart';
 import '../../core/services/native_video_album.dart';
 import '../../shared/widgets/state_pill.dart';
 import '../../shared/widgets/video_player_widget.dart'
-    show RobustVideoPlayer, VideoPlaceholder;
+    show RobustVideoPlayer;
 import '../../shared/widgets/action_tile.dart';
+import '../../shared/widgets/notes_section.dart';
 import '../../shared/widgets/video_picker_sheet.dart';
 
 class MoveDetailScreen extends ConsumerWidget {
@@ -100,13 +101,11 @@ class MoveDetailScreen extends ConsumerWidget {
                     },
                   )
                 else
-                  Semantics(
-                    label: 'Add video',
-                    button: true,
-                    child: GestureDetector(
-                      onTap: () => _addOrReplaceVideo(context, ref, move),
-                      child: const VideoPlaceholder(icon: Icons.add_a_photo),
-                    ),
+                  _VideoMissingCard(
+                    move: move,
+                    onReRecord: () => _addOrReplaceVideo(context, ref, move),
+                    onImport: () => _addOrReplaceVideo(context, ref, move),
+                    onDelete: () => _deleteMove(context, ref, move),
                   ),
                 const SizedBox(height: AppSpacing.lg),
 
@@ -146,6 +145,20 @@ class MoveDetailScreen extends ConsumerWidget {
                   style: AppTypography.bodyMedium.copyWith(
                     color: colorScheme.onSurface,
                   ),
+                ),
+                const SizedBox(height: AppSpacing.lg),
+
+                // Notes
+                NotesSection(
+                  notes: move.notes,
+                  onChanged: (text) {
+                    ref.read(moveRepositoryProvider).update(
+                      MovesCompanion(
+                        id: Value(move.id),
+                        notes: Value(text.isEmpty ? null : text),
+                      ),
+                    );
+                  },
                 ),
                 const SizedBox(height: AppSpacing.md),
                 Divider(color: colorScheme.outline),
@@ -619,6 +632,140 @@ class _EditableCategoryChip extends StatelessWidget {
   }
 }
 
+/// Card shown when a move has no video and no cloud copy — the video is truly
+/// gone (orphaned legacy move or deleted file). Shows move metadata so the user
+/// can identify it, and offers re-record / import / delete actions.
+class _VideoMissingCard extends StatelessWidget {
+  final Move move;
+  final VoidCallback onReRecord;
+  final VoidCallback onImport;
+  final VoidCallback onDelete;
+
+  const _VideoMissingCard({
+    required this.move,
+    required this.onReRecord,
+    required this.onImport,
+    required this.onDelete,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+
+    return Container(
+      padding: const EdgeInsets.all(AppSpacing.lg),
+      decoration: BoxDecoration(
+        color: colorScheme.surfaceContainerHighest,
+        borderRadius: BorderRadius.circular(AppRadius.md),
+        border: Border.all(
+          color: colorScheme.outline.withValues(alpha: 0.15),
+        ),
+      ),
+      child: Column(
+        children: [
+          Icon(
+            Icons.videocam_off_outlined,
+            size: 48,
+            color: colorScheme.onSurface.withValues(alpha: 0.3),
+          ),
+          const SizedBox(height: AppSpacing.md),
+          Text(
+            'Video Missing',
+            style: AppTypography.bodySmall.merge(
+              const TextStyle(fontWeight: FontWeight.w600),
+            ).copyWith(color: colorScheme.onSurface),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            'The original video couldn\'t be found.',
+            style: AppTypography.caption.copyWith(
+              color: colorScheme.onSurface.withValues(alpha: 0.5),
+            ),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: AppSpacing.lg),
+          Row(
+            children: [
+              Expanded(
+                child: _MissingActionButton(
+                  icon: Icons.videocam,
+                  label: 'Re-record',
+                  onTap: onReRecord,
+                ),
+              ),
+              const SizedBox(width: AppSpacing.sm),
+              Expanded(
+                child: _MissingActionButton(
+                  icon: Icons.photo_library_outlined,
+                  label: 'Import',
+                  onTap: onImport,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: AppSpacing.sm),
+          GestureDetector(
+            onTap: onDelete,
+            child: Text(
+              'Delete move',
+              style: AppTypography.caption.copyWith(
+                color: AppColors.actionAgain.withValues(alpha: 0.7),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _MissingActionButton extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final VoidCallback onTap;
+
+  const _MissingActionButton({
+    required this.icon,
+    required this.label,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+
+    return GestureDetector(
+      onTap: () {
+        HapticFeedback.mediumImpact();
+        onTap();
+      },
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 12),
+        decoration: BoxDecoration(
+          color: colorScheme.surface,
+          borderRadius: BorderRadius.circular(AppRadius.sm),
+          border: Border.all(
+            color: AppColors.accent.withValues(alpha: 0.3),
+          ),
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(icon, size: 18, color: AppColors.accent),
+            const SizedBox(width: 6),
+            Text(
+              label,
+              style: AppTypography.bodySmall.merge(
+                const TextStyle(fontWeight: FontWeight.w600),
+              ).copyWith(color: AppColors.accent),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
 /// Overlay shown when a video exists only in the cloud (freed locally).
 /// Tapping triggers an on-demand download, then updates the move's videoPath.
 class _CloudVideoPlaceholder extends ConsumerStatefulWidget {
@@ -652,7 +799,7 @@ class _CloudVideoPlaceholderState
     final localPath = await downloader.ensureLocal(
       widget.move.contentHash!,
       onProgress: (transferred, total) {
-        if (mounted && total != null && total > 0) {
+        if (mounted && total > 0) {
           setState(() => _progress = transferred / total);
         }
       },
