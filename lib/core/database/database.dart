@@ -65,7 +65,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.forTesting(super.e);
 
   @override
-  int get schemaVersion => 10;
+  int get schemaVersion => 11;
 
   Future<void> _installIntegrityTriggers() async {
     await customStatement('''
@@ -370,6 +370,11 @@ class AppDatabase extends _$AppDatabase {
           CREATE INDEX IF NOT EXISTS idx_sync_operations_status
           ON sync_operations(status, priority)
         ''');
+      }
+
+      if (from < 11) {
+        await m.addColumn(moves, moves.notes);
+        await m.addColumn(combos, combos.notes);
       }
 
       await _backfillReviewSnapshots();

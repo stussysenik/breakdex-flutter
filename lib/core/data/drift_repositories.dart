@@ -65,6 +65,9 @@ class DriftComboRepository implements ComboRepository {
   Future<void> insert(CombosCompanion combo) => _dao.insertCombo(combo);
 
   @override
+  Future<void> update(CombosCompanion combo) => _dao.updateCombo(combo);
+
+  @override
   Future<void> addMove(ComboMovesCompanion entry) => _dao.addMoveToCombo(entry);
 
   @override

@@ -7,6 +7,7 @@ class Moves extends Table {
   TextColumn get category => text().withDefault(const Constant('default'))();
   TextColumn get videoPath => text().nullable()();
   TextColumn get originalVideoName => text().nullable()();
+  TextColumn get notes => text().nullable()();
   TextColumn get contentHash => text().nullable()();
   DateTimeColumn get createdAt => dateTime().withDefault(currentDateAndTime)();
 

@@ -69,6 +69,10 @@ class CombosDao extends DatabaseAccessor<AppDatabase> with _$CombosDaoMixin {
   Future<void> addMoveToCombo(ComboMovesCompanion entry) =>
       into(comboMoves).insert(entry);
 
+  Future<void> updateCombo(CombosCompanion entry) =>
+      (update(combos)..where((t) => t.id.equals(entry.id.value)))
+          .write(entry);
+
   Future<void> deleteCombo(String id) =>
       (delete(combos)..where((t) => t.id.equals(id))).go();
 

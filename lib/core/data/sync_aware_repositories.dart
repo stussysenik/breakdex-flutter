@@ -95,6 +95,19 @@ class SyncAwareComboRepository implements ComboRepository {
   }
 
   @override
+  Future<void> update(CombosCompanion combo) async {
+    await _inner.update(combo);
+    final hasVideo =
+        combo.activeVideoPath.present && combo.activeVideoPath.value != null;
+    await _syncDao.logChange(
+      entityId: combo.id.value,
+      table: 'combos',
+      action: 'update',
+      hasVideo: hasVideo,
+    );
+  }
+
+  @override
   Future<void> addMove(ComboMovesCompanion entry) async {
     await _inner.addMove(entry);
     await _syncDao.logChange(

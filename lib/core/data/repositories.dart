@@ -24,6 +24,7 @@ abstract class ComboRepository {
   Stream<Combo> watchById(String id);
   Stream<List<ComboMoveWithDetail>> watchComboMoves(String comboId);
   Future<void> insert(CombosCompanion combo);
+  Future<void> update(CombosCompanion combo);
   Future<void> addMove(ComboMovesCompanion entry);
   Future<void> delete(String id);
   Future<void> removeMove(String id);

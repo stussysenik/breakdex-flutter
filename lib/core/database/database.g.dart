@@ -74,6 +74,15 @@ class $MovesTable extends Moves with TableInfo<$MovesTable, Move> {
         type: DriftSqlType.string,
         requiredDuringInsert: false,
       );
+  static const VerificationMeta _notesMeta = const VerificationMeta('notes');
+  @override
+  late final GeneratedColumn<String> notes = GeneratedColumn<String>(
+    'notes',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
   static const VerificationMeta _contentHashMeta = const VerificationMeta(
     'contentHash',
   );
@@ -105,6 +114,7 @@ class $MovesTable extends Moves with TableInfo<$MovesTable, Move> {
     category,
     videoPath,
     originalVideoName,
+    notes,
     contentHash,
     createdAt,
   ];
@@ -163,6 +173,12 @@ class $MovesTable extends Moves with TableInfo<$MovesTable, Move> {
         ),
       );
     }
+    if (data.containsKey('notes')) {
+      context.handle(
+        _notesMeta,
+        notes.isAcceptableOrUnknown(data['notes']!, _notesMeta),
+      );
+    }
     if (data.containsKey('content_hash')) {
       context.handle(
         _contentHashMeta,
@@ -211,6 +227,10 @@ class $MovesTable extends Moves with TableInfo<$MovesTable, Move> {
         DriftSqlType.string,
         data['${effectivePrefix}original_video_name'],
       ),
+      notes: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}notes'],
+      ),
       contentHash: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
         data['${effectivePrefix}content_hash'],
@@ -235,6 +255,7 @@ class Move extends DataClass implements Insertable<Move> {
   final String category;
   final String? videoPath;
   final String? originalVideoName;
+  final String? notes;
   final String? contentHash;
   final DateTime createdAt;
   const Move({
@@ -244,6 +265,7 @@ class Move extends DataClass implements Insertable<Move> {
     required this.category,
     this.videoPath,
     this.originalVideoName,
+    this.notes,
     this.contentHash,
     required this.createdAt,
   });
@@ -259,6 +281,9 @@ class Move extends DataClass implements Insertable<Move> {
     }
     if (!nullToAbsent || originalVideoName != null) {
       map['original_video_name'] = Variable<String>(originalVideoName);
+    }
+    if (!nullToAbsent || notes != null) {
+      map['notes'] = Variable<String>(notes);
     }
     if (!nullToAbsent || contentHash != null) {
       map['content_hash'] = Variable<String>(contentHash);
@@ -279,6 +304,9 @@ class Move extends DataClass implements Insertable<Move> {
       originalVideoName: originalVideoName == null && nullToAbsent
           ? const Value.absent()
           : Value(originalVideoName),
+      notes: notes == null && nullToAbsent
+          ? const Value.absent()
+          : Value(notes),
       contentHash: contentHash == null && nullToAbsent
           ? const Value.absent()
           : Value(contentHash),
@@ -300,6 +328,7 @@ class Move extends DataClass implements Insertable<Move> {
       originalVideoName: serializer.fromJson<String?>(
         json['originalVideoName'],
       ),
+      notes: serializer.fromJson<String?>(json['notes']),
       contentHash: serializer.fromJson<String?>(json['contentHash']),
       createdAt: serializer.fromJson<DateTime>(json['createdAt']),
     );
@@ -314,6 +343,7 @@ class Move extends DataClass implements Insertable<Move> {
       'category': serializer.toJson<String>(category),
       'videoPath': serializer.toJson<String?>(videoPath),
       'originalVideoName': serializer.toJson<String?>(originalVideoName),
+      'notes': serializer.toJson<String?>(notes),
       'contentHash': serializer.toJson<String?>(contentHash),
       'createdAt': serializer.toJson<DateTime>(createdAt),
     };
@@ -326,6 +356,7 @@ class Move extends DataClass implements Insertable<Move> {
     String? category,
     Value<String?> videoPath = const Value.absent(),
     Value<String?> originalVideoName = const Value.absent(),
+    Value<String?> notes = const Value.absent(),
     Value<String?> contentHash = const Value.absent(),
     DateTime? createdAt,
   }) => Move(
@@ -337,6 +368,7 @@ class Move extends DataClass implements Insertable<Move> {
     originalVideoName: originalVideoName.present
         ? originalVideoName.value
         : this.originalVideoName,
+    notes: notes.present ? notes.value : this.notes,
     contentHash: contentHash.present ? contentHash.value : this.contentHash,
     createdAt: createdAt ?? this.createdAt,
   );
@@ -352,6 +384,7 @@ class Move extends DataClass implements Insertable<Move> {
       originalVideoName: data.originalVideoName.present
           ? data.originalVideoName.value
           : this.originalVideoName,
+      notes: data.notes.present ? data.notes.value : this.notes,
       contentHash: data.contentHash.present
           ? data.contentHash.value
           : this.contentHash,
@@ -368,6 +401,7 @@ class Move extends DataClass implements Insertable<Move> {
           ..write('category: $category, ')
           ..write('videoPath: $videoPath, ')
           ..write('originalVideoName: $originalVideoName, ')
+          ..write('notes: $notes, ')
           ..write('contentHash: $contentHash, ')
           ..write('createdAt: $createdAt')
           ..write(')'))
@@ -382,6 +416,7 @@ class Move extends DataClass implements Insertable<Move> {
     category,
     videoPath,
     originalVideoName,
+    notes,
     contentHash,
     createdAt,
   );
@@ -395,6 +430,7 @@ class Move extends DataClass implements Insertable<Move> {
           other.category == this.category &&
           other.videoPath == this.videoPath &&
           other.originalVideoName == this.originalVideoName &&
+          other.notes == this.notes &&
           other.contentHash == this.contentHash &&
           other.createdAt == this.createdAt);
 }
@@ -406,6 +442,7 @@ class MovesCompanion extends UpdateCompanion<Move> {
   final Value<String> category;
   final Value<String?> videoPath;
   final Value<String?> originalVideoName;
+  final Value<String?> notes;
   final Value<String?> contentHash;
   final Value<DateTime> createdAt;
   final Value<int> rowid;
@@ -416,6 +453,7 @@ class MovesCompanion extends UpdateCompanion<Move> {
     this.category = const Value.absent(),
     this.videoPath = const Value.absent(),
     this.originalVideoName = const Value.absent(),
+    this.notes = const Value.absent(),
     this.contentHash = const Value.absent(),
     this.createdAt = const Value.absent(),
     this.rowid = const Value.absent(),
@@ -427,6 +465,7 @@ class MovesCompanion extends UpdateCompanion<Move> {
     this.category = const Value.absent(),
     this.videoPath = const Value.absent(),
     this.originalVideoName = const Value.absent(),
+    this.notes = const Value.absent(),
     this.contentHash = const Value.absent(),
     this.createdAt = const Value.absent(),
     this.rowid = const Value.absent(),
@@ -439,6 +478,7 @@ class MovesCompanion extends UpdateCompanion<Move> {
     Expression<String>? category,
     Expression<String>? videoPath,
     Expression<String>? originalVideoName,
+    Expression<String>? notes,
     Expression<String>? contentHash,
     Expression<DateTime>? createdAt,
     Expression<int>? rowid,
@@ -450,6 +490,7 @@ class MovesCompanion extends UpdateCompanion<Move> {
       if (category != null) 'category': category,
       if (videoPath != null) 'video_path': videoPath,
       if (originalVideoName != null) 'original_video_name': originalVideoName,
+      if (notes != null) 'notes': notes,
       if (contentHash != null) 'content_hash': contentHash,
       if (createdAt != null) 'created_at': createdAt,
       if (rowid != null) 'rowid': rowid,
@@ -463,6 +504,7 @@ class MovesCompanion extends UpdateCompanion<Move> {
     Value<String>? category,
     Value<String?>? videoPath,
     Value<String?>? originalVideoName,
+    Value<String?>? notes,
     Value<String?>? contentHash,
     Value<DateTime>? createdAt,
     Value<int>? rowid,
@@ -474,6 +516,7 @@ class MovesCompanion extends UpdateCompanion<Move> {
       category: category ?? this.category,
       videoPath: videoPath ?? this.videoPath,
       originalVideoName: originalVideoName ?? this.originalVideoName,
+      notes: notes ?? this.notes,
       contentHash: contentHash ?? this.contentHash,
       createdAt: createdAt ?? this.createdAt,
       rowid: rowid ?? this.rowid,
@@ -501,6 +544,9 @@ class MovesCompanion extends UpdateCompanion<Move> {
     if (originalVideoName.present) {
       map['original_video_name'] = Variable<String>(originalVideoName.value);
     }
+    if (notes.present) {
+      map['notes'] = Variable<String>(notes.value);
+    }
     if (contentHash.present) {
       map['content_hash'] = Variable<String>(contentHash.value);
     }
@@ -522,6 +568,7 @@ class MovesCompanion extends UpdateCompanion<Move> {
           ..write('category: $category, ')
           ..write('videoPath: $videoPath, ')
           ..write('originalVideoName: $originalVideoName, ')
+          ..write('notes: $notes, ')
           ..write('contentHash: $contentHash, ')
           ..write('createdAt: $createdAt, ')
           ..write('rowid: $rowid')
@@ -554,6 +601,15 @@ class $CombosTable extends Combos with TableInfo<$CombosTable, Combo> {
     type: DriftSqlType.string,
     requiredDuringInsert: true,
   );
+  static const VerificationMeta _notesMeta = const VerificationMeta('notes');
+  @override
+  late final GeneratedColumn<String> notes = GeneratedColumn<String>(
+    'notes',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
   static const VerificationMeta _activeVideoPathMeta = const VerificationMeta(
     'activeVideoPath',
   );
@@ -580,6 +636,7 @@ class $CombosTable extends Combos with TableInfo<$CombosTable, Combo> {
   List<GeneratedColumn> get $columns => [
     id,
     name,
+    notes,
     activeVideoPath,
     contentHash,
   ];
@@ -607,6 +664,12 @@ class $CombosTable extends Combos with TableInfo<$CombosTable, Combo> {
       );
     } else if (isInserting) {
       context.missing(_nameMeta);
+    }
+    if (data.containsKey('notes')) {
+      context.handle(
+        _notesMeta,
+        notes.isAcceptableOrUnknown(data['notes']!, _notesMeta),
+      );
     }
     if (data.containsKey('active_video_path')) {
       context.handle(
@@ -643,6 +706,10 @@ class $CombosTable extends Combos with TableInfo<$CombosTable, Combo> {
         DriftSqlType.string,
         data['${effectivePrefix}name'],
       )!,
+      notes: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}notes'],
+      ),
       activeVideoPath: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
         data['${effectivePrefix}active_video_path'],
@@ -663,11 +730,13 @@ class $CombosTable extends Combos with TableInfo<$CombosTable, Combo> {
 class Combo extends DataClass implements Insertable<Combo> {
   final String id;
   final String name;
+  final String? notes;
   final String? activeVideoPath;
   final String? contentHash;
   const Combo({
     required this.id,
     required this.name,
+    this.notes,
     this.activeVideoPath,
     this.contentHash,
   });
@@ -676,6 +745,9 @@ class Combo extends DataClass implements Insertable<Combo> {
     final map = <String, Expression>{};
     map['id'] = Variable<String>(id);
     map['name'] = Variable<String>(name);
+    if (!nullToAbsent || notes != null) {
+      map['notes'] = Variable<String>(notes);
+    }
     if (!nullToAbsent || activeVideoPath != null) {
       map['active_video_path'] = Variable<String>(activeVideoPath);
     }
@@ -689,6 +761,9 @@ class Combo extends DataClass implements Insertable<Combo> {
     return CombosCompanion(
       id: Value(id),
       name: Value(name),
+      notes: notes == null && nullToAbsent
+          ? const Value.absent()
+          : Value(notes),
       activeVideoPath: activeVideoPath == null && nullToAbsent
           ? const Value.absent()
           : Value(activeVideoPath),
@@ -706,6 +781,7 @@ class Combo extends DataClass implements Insertable<Combo> {
     return Combo(
       id: serializer.fromJson<String>(json['id']),
       name: serializer.fromJson<String>(json['name']),
+      notes: serializer.fromJson<String?>(json['notes']),
       activeVideoPath: serializer.fromJson<String?>(json['activeVideoPath']),
       contentHash: serializer.fromJson<String?>(json['contentHash']),
     );
@@ -716,6 +792,7 @@ class Combo extends DataClass implements Insertable<Combo> {
     return <String, dynamic>{
       'id': serializer.toJson<String>(id),
       'name': serializer.toJson<String>(name),
+      'notes': serializer.toJson<String?>(notes),
       'activeVideoPath': serializer.toJson<String?>(activeVideoPath),
       'contentHash': serializer.toJson<String?>(contentHash),
     };
@@ -724,11 +801,13 @@ class Combo extends DataClass implements Insertable<Combo> {
   Combo copyWith({
     String? id,
     String? name,
+    Value<String?> notes = const Value.absent(),
     Value<String?> activeVideoPath = const Value.absent(),
     Value<String?> contentHash = const Value.absent(),
   }) => Combo(
     id: id ?? this.id,
     name: name ?? this.name,
+    notes: notes.present ? notes.value : this.notes,
     activeVideoPath: activeVideoPath.present
         ? activeVideoPath.value
         : this.activeVideoPath,
@@ -738,6 +817,7 @@ class Combo extends DataClass implements Insertable<Combo> {
     return Combo(
       id: data.id.present ? data.id.value : this.id,
       name: data.name.present ? data.name.value : this.name,
+      notes: data.notes.present ? data.notes.value : this.notes,
       activeVideoPath: data.activeVideoPath.present
           ? data.activeVideoPath.value
           : this.activeVideoPath,
@@ -752,6 +832,7 @@ class Combo extends DataClass implements Insertable<Combo> {
     return (StringBuffer('Combo(')
           ..write('id: $id, ')
           ..write('name: $name, ')
+          ..write('notes: $notes, ')
           ..write('activeVideoPath: $activeVideoPath, ')
           ..write('contentHash: $contentHash')
           ..write(')'))
@@ -759,13 +840,15 @@ class Combo extends DataClass implements Insertable<Combo> {
   }
 
   @override
-  int get hashCode => Object.hash(id, name, activeVideoPath, contentHash);
+  int get hashCode =>
+      Object.hash(id, name, notes, activeVideoPath, contentHash);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
       (other is Combo &&
           other.id == this.id &&
           other.name == this.name &&
+          other.notes == this.notes &&
           other.activeVideoPath == this.activeVideoPath &&
           other.contentHash == this.contentHash);
 }
@@ -773,12 +856,14 @@ class Combo extends DataClass implements Insertable<Combo> {
 class CombosCompanion extends UpdateCompanion<Combo> {
   final Value<String> id;
   final Value<String> name;
+  final Value<String?> notes;
   final Value<String?> activeVideoPath;
   final Value<String?> contentHash;
   final Value<int> rowid;
   const CombosCompanion({
     this.id = const Value.absent(),
     this.name = const Value.absent(),
+    this.notes = const Value.absent(),
     this.activeVideoPath = const Value.absent(),
     this.contentHash = const Value.absent(),
     this.rowid = const Value.absent(),
@@ -786,6 +871,7 @@ class CombosCompanion extends UpdateCompanion<Combo> {
   CombosCompanion.insert({
     required String id,
     required String name,
+    this.notes = const Value.absent(),
     this.activeVideoPath = const Value.absent(),
     this.contentHash = const Value.absent(),
     this.rowid = const Value.absent(),
@@ -794,6 +880,7 @@ class CombosCompanion extends UpdateCompanion<Combo> {
   static Insertable<Combo> custom({
     Expression<String>? id,
     Expression<String>? name,
+    Expression<String>? notes,
     Expression<String>? activeVideoPath,
     Expression<String>? contentHash,
     Expression<int>? rowid,
@@ -801,6 +888,7 @@ class CombosCompanion extends UpdateCompanion<Combo> {
     return RawValuesInsertable({
       if (id != null) 'id': id,
       if (name != null) 'name': name,
+      if (notes != null) 'notes': notes,
       if (activeVideoPath != null) 'active_video_path': activeVideoPath,
       if (contentHash != null) 'content_hash': contentHash,
       if (rowid != null) 'rowid': rowid,
@@ -810,6 +898,7 @@ class CombosCompanion extends UpdateCompanion<Combo> {
   CombosCompanion copyWith({
     Value<String>? id,
     Value<String>? name,
+    Value<String?>? notes,
     Value<String?>? activeVideoPath,
     Value<String?>? contentHash,
     Value<int>? rowid,
@@ -817,6 +906,7 @@ class CombosCompanion extends UpdateCompanion<Combo> {
     return CombosCompanion(
       id: id ?? this.id,
       name: name ?? this.name,
+      notes: notes ?? this.notes,
       activeVideoPath: activeVideoPath ?? this.activeVideoPath,
       contentHash: contentHash ?? this.contentHash,
       rowid: rowid ?? this.rowid,
@@ -831,6 +921,9 @@ class CombosCompanion extends UpdateCompanion<Combo> {
     }
     if (name.present) {
       map['name'] = Variable<String>(name.value);
+    }
+    if (notes.present) {
+      map['notes'] = Variable<String>(notes.value);
     }
     if (activeVideoPath.present) {
       map['active_video_path'] = Variable<String>(activeVideoPath.value);
@@ -849,6 +942,7 @@ class CombosCompanion extends UpdateCompanion<Combo> {
     return (StringBuffer('CombosCompanion(')
           ..write('id: $id, ')
           ..write('name: $name, ')
+          ..write('notes: $notes, ')
           ..write('activeVideoPath: $activeVideoPath, ')
           ..write('contentHash: $contentHash, ')
           ..write('rowid: $rowid')
@@ -7386,6 +7480,7 @@ typedef $$MovesTableCreateCompanionBuilder =
       Value<String> category,
       Value<String?> videoPath,
       Value<String?> originalVideoName,
+      Value<String?> notes,
       Value<String?> contentHash,
       Value<DateTime> createdAt,
       Value<int> rowid,
@@ -7398,6 +7493,7 @@ typedef $$MovesTableUpdateCompanionBuilder =
       Value<String> category,
       Value<String?> videoPath,
       Value<String?> originalVideoName,
+      Value<String?> notes,
       Value<String?> contentHash,
       Value<DateTime> createdAt,
       Value<int> rowid,
@@ -7498,6 +7594,11 @@ class $$MovesTableFilterComposer extends Composer<_$AppDatabase, $MovesTable> {
 
   ColumnFilters<String> get originalVideoName => $composableBuilder(
     column: $table.originalVideoName,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get notes => $composableBuilder(
+    column: $table.notes,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -7626,6 +7727,11 @@ class $$MovesTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<String> get notes => $composableBuilder(
+    column: $table.notes,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<String> get contentHash => $composableBuilder(
     column: $table.contentHash,
     builder: (column) => ColumnOrderings(column),
@@ -7667,6 +7773,9 @@ class $$MovesTableAnnotationComposer
     column: $table.originalVideoName,
     builder: (column) => column,
   );
+
+  GeneratedColumn<String> get notes =>
+      $composableBuilder(column: $table.notes, builder: (column) => column);
 
   GeneratedColumn<String> get contentHash => $composableBuilder(
     column: $table.contentHash,
@@ -7790,6 +7899,7 @@ class $$MovesTableTableManager
                 Value<String> category = const Value.absent(),
                 Value<String?> videoPath = const Value.absent(),
                 Value<String?> originalVideoName = const Value.absent(),
+                Value<String?> notes = const Value.absent(),
                 Value<String?> contentHash = const Value.absent(),
                 Value<DateTime> createdAt = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
@@ -7800,6 +7910,7 @@ class $$MovesTableTableManager
                 category: category,
                 videoPath: videoPath,
                 originalVideoName: originalVideoName,
+                notes: notes,
                 contentHash: contentHash,
                 createdAt: createdAt,
                 rowid: rowid,
@@ -7812,6 +7923,7 @@ class $$MovesTableTableManager
                 Value<String> category = const Value.absent(),
                 Value<String?> videoPath = const Value.absent(),
                 Value<String?> originalVideoName = const Value.absent(),
+                Value<String?> notes = const Value.absent(),
                 Value<String?> contentHash = const Value.absent(),
                 Value<DateTime> createdAt = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
@@ -7822,6 +7934,7 @@ class $$MovesTableTableManager
                 category: category,
                 videoPath: videoPath,
                 originalVideoName: originalVideoName,
+                notes: notes,
                 contentHash: contentHash,
                 createdAt: createdAt,
                 rowid: rowid,
@@ -7925,6 +8038,7 @@ typedef $$CombosTableCreateCompanionBuilder =
     CombosCompanion Function({
       required String id,
       required String name,
+      Value<String?> notes,
       Value<String?> activeVideoPath,
       Value<String?> contentHash,
       Value<int> rowid,
@@ -7933,6 +8047,7 @@ typedef $$CombosTableUpdateCompanionBuilder =
     CombosCompanion Function({
       Value<String> id,
       Value<String> name,
+      Value<String?> notes,
       Value<String?> activeVideoPath,
       Value<String?> contentHash,
       Value<int> rowid,
@@ -7996,6 +8111,11 @@ class $$CombosTableFilterComposer
 
   ColumnFilters<String> get name => $composableBuilder(
     column: $table.name,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get notes => $composableBuilder(
+    column: $table.notes,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -8079,6 +8199,11 @@ class $$CombosTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<String> get notes => $composableBuilder(
+    column: $table.notes,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<String> get activeVideoPath => $composableBuilder(
     column: $table.activeVideoPath,
     builder: (column) => ColumnOrderings(column),
@@ -8104,6 +8229,9 @@ class $$CombosTableAnnotationComposer
 
   GeneratedColumn<String> get name =>
       $composableBuilder(column: $table.name, builder: (column) => column);
+
+  GeneratedColumn<String> get notes =>
+      $composableBuilder(column: $table.notes, builder: (column) => column);
 
   GeneratedColumn<String> get activeVideoPath => $composableBuilder(
     column: $table.activeVideoPath,
@@ -8196,12 +8324,14 @@ class $$CombosTableTableManager
               ({
                 Value<String> id = const Value.absent(),
                 Value<String> name = const Value.absent(),
+                Value<String?> notes = const Value.absent(),
                 Value<String?> activeVideoPath = const Value.absent(),
                 Value<String?> contentHash = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => CombosCompanion(
                 id: id,
                 name: name,
+                notes: notes,
                 activeVideoPath: activeVideoPath,
                 contentHash: contentHash,
                 rowid: rowid,
@@ -8210,12 +8340,14 @@ class $$CombosTableTableManager
               ({
                 required String id,
                 required String name,
+                Value<String?> notes = const Value.absent(),
                 Value<String?> activeVideoPath = const Value.absent(),
                 Value<String?> contentHash = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => CombosCompanion.insert(
                 id: id,
                 name: name,
+                notes: notes,
                 activeVideoPath: activeVideoPath,
                 contentHash: contentHash,
                 rowid: rowid,
