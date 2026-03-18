@@ -27,6 +27,7 @@ import '../../shared/widgets/celebration_overlay.dart';
 import '../../shared/widgets/pressable.dart';
 import '../../shared/widgets/state_pill.dart';
 import '../../shared/widgets/video_picker_sheet.dart';
+import '../sync_onboarding/sync_onboarding_card.dart';
 
 // -- Providers ---------------------------------------------------------------
 
@@ -152,6 +153,11 @@ class MoveListScreen extends ConsumerWidget {
                   const SizedBox(height: AppSpacing.sm),
                 ],
               ),
+            ),
+
+            // iCloud onboarding — shown once on first launch
+            const SliverToBoxAdapter(
+              child: SyncOnboardingCard(),
             ),
 
             // Content — sliver-based for compositor-friendly scrolling
@@ -353,17 +359,19 @@ class MoveListScreen extends ConsumerWidget {
       throw StateError('duplicate_card_name');
     }
 
+    final moveId = const Uuid().v4();
     await ref
         .read(moveRepositoryProvider)
         .insert(
           MovesCompanion.insert(
-            id: const Uuid().v4(),
+            id: moveId,
             name: normalizedName,
             category: Value(safeCategory),
             videoPath: Value(videoPath),
           ),
         );
     if (videoPath != null) {
+      // Save to photo album (non-fatal)
       unawaited(
         _videoAlbum
             .saveToAlbum(
@@ -375,6 +383,16 @@ class MoveListScreen extends ConsumerWidget {
             .catchError(
               (error) => debugPrint('Album save failed (non-fatal): $error'),
             ),
+      );
+
+      // Sync hook: hash → manifest → queue upload (non-fatal, fire-and-forget)
+      unawaited(
+        ref.read(videoImportSyncHookProvider).onVideoImported(
+          localPath: videoPath,
+          moveId: moveId,
+        ).catchError(
+          (error) => debugPrint('Sync hook failed (non-fatal): $error'),
+        ),
       );
     }
   }

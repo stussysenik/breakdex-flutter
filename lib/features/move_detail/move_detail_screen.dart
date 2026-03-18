@@ -71,7 +71,10 @@ class MoveDetailScreen extends ConsumerWidget {
                 ),
                 const SizedBox(height: AppSpacing.lg),
 
-                // Video player
+                // Video player — 3 states:
+                // 1. Local file exists → play it
+                // 2. Cloud-only (contentHash but no local file) → download overlay
+                // 3. No video at all → add video placeholder
                 if (move.videoPath != null)
                   Hero(
                     tag: 'move-thumb-${move.id}',
@@ -82,6 +85,19 @@ class MoveDetailScreen extends ConsumerWidget {
                       ghostThumbnailPath: _thumbnailPathFor(move.videoPath!),
                       originalVideoName: move.originalVideoName,
                     ),
+                  )
+                else if (move.contentHash != null)
+                  _CloudVideoPlaceholder(
+                    move: move,
+                    onDownloaded: (localPath) async {
+                      // Update move with re-downloaded local path
+                      await ref
+                          .read(moveRepositoryProvider)
+                          .update(MovesCompanion(
+                            id: Value(move.id),
+                            videoPath: Value(localPath),
+                          ));
+                    },
                   )
                 else
                   Semantics(
@@ -597,6 +613,136 @@ class _EditableCategoryChip extends StatelessWidget {
               ),
             ),
           ],
+        ),
+      ),
+    );
+  }
+}
+
+/// Overlay shown when a video exists only in the cloud (freed locally).
+/// Tapping triggers an on-demand download, then updates the move's videoPath.
+class _CloudVideoPlaceholder extends ConsumerStatefulWidget {
+  final Move move;
+  final ValueChanged<String> onDownloaded;
+
+  const _CloudVideoPlaceholder({
+    required this.move,
+    required this.onDownloaded,
+  });
+
+  @override
+  ConsumerState<_CloudVideoPlaceholder> createState() =>
+      _CloudVideoPlaceholderState();
+}
+
+class _CloudVideoPlaceholderState
+    extends ConsumerState<_CloudVideoPlaceholder> {
+  bool _downloading = false;
+  double _progress = 0;
+  String? _error;
+
+  Future<void> _download() async {
+    setState(() {
+      _downloading = true;
+      _progress = 0;
+      _error = null;
+    });
+
+    final downloader = ref.read(onDemandDownloaderProvider);
+    final localPath = await downloader.ensureLocal(
+      widget.move.contentHash!,
+      onProgress: (transferred, total) {
+        if (mounted && total != null && total > 0) {
+          setState(() => _progress = transferred / total);
+        }
+      },
+    );
+
+    if (!mounted) return;
+
+    if (localPath != null) {
+      widget.onDownloaded(localPath);
+    } else {
+      setState(() {
+        _downloading = false;
+        _error = 'Download failed. Check your connection.';
+      });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+
+    return Container(
+      height: 220,
+      decoration: BoxDecoration(
+        color: colorScheme.surfaceContainerHighest,
+        borderRadius: BorderRadius.circular(AppRadius.md),
+        border: Border.all(
+          color: colorScheme.outline.withValues(alpha: 0.15),
+        ),
+      ),
+      child: Material(
+        color: Colors.transparent,
+        borderRadius: BorderRadius.circular(AppRadius.md),
+        child: InkWell(
+          borderRadius: BorderRadius.circular(AppRadius.md),
+          onTap: _downloading ? null : _download,
+          child: Center(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                if (_downloading) ...[
+                  SizedBox(
+                    width: 48,
+                    height: 48,
+                    child: CircularProgressIndicator(
+                      value: _progress > 0 ? _progress : null,
+                      strokeWidth: 3,
+                      color: AppColors.accent,
+                    ),
+                  ),
+                  const SizedBox(height: AppSpacing.md),
+                  Text(
+                    'Downloading from cloud…',
+                    style: AppTypography.bodySmall.copyWith(
+                      color: colorScheme.onSurface.withValues(alpha: 0.6),
+                    ),
+                  ),
+                ] else ...[
+                  Icon(
+                    Icons.cloud_download_outlined,
+                    size: 48,
+                    color: AppColors.accent.withValues(alpha: 0.7),
+                  ),
+                  const SizedBox(height: AppSpacing.md),
+                  Text(
+                    'Video stored in cloud',
+                    style: AppTypography.bodySmall.merge(
+                      const TextStyle(fontWeight: FontWeight.w600),
+                    ).copyWith(color: colorScheme.onSurface),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    'Tap to download and play',
+                    style: AppTypography.caption.copyWith(
+                      color: colorScheme.onSurface.withValues(alpha: 0.5),
+                    ),
+                  ),
+                  if (_error != null) ...[
+                    const SizedBox(height: AppSpacing.sm),
+                    Text(
+                      _error!,
+                      style: AppTypography.caption.copyWith(
+                        color: Colors.red.withValues(alpha: 0.8),
+                      ),
+                    ),
+                  ],
+                ],
+              ],
+            ),
+          ),
         ),
       ),
     );

@@ -13,9 +13,11 @@ import '../../core/design/spacing.dart';
 import '../../core/design/theme.dart';
 import '../../core/design/typography.dart';
 import '../../core/models/learning_state.dart';
-import '../../core/models/sync_progress.dart';
 import '../../core/providers.dart';
 import '../../core/services/categories_service.dart';
+import '../../core/sync/asset_sync_engine.dart' show SyncProgress;
+import '../../core/sync/gdrive_setup_service.dart';
+import '../../core/sync/icloud_setup_service.dart';
 import '../../core/services/settings_service.dart';
 import '../../core/services/stats_export_service.dart';
 import '../../shared/widgets/action_tile.dart';
@@ -205,6 +207,10 @@ class SettingsScreen extends ConsumerWidget {
             ),
             const SizedBox(height: AppSpacing.xl),
 
+            // Cloud Sync — no auth dependency, iCloud uses device Apple ID
+            _CloudSyncSection(),
+            const SizedBox(height: AppSpacing.xl),
+
             _SettingsSection(
               title: 'Categories',
               subtitle:
@@ -357,10 +363,6 @@ class SettingsScreen extends ConsumerWidget {
                 ),
               ),
             ),
-            const SizedBox(height: AppSpacing.xl),
-
-            // Cloud Sync
-            _CloudSyncSection(),
             const SizedBox(height: AppSpacing.xl),
 
             // Version footer
@@ -1087,177 +1089,296 @@ class _CloudSyncSection extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final colorScheme = Theme.of(context).colorScheme;
-    final isLoggedIn = ref.watch(isLoggedInProvider);
+    final iCloudAvailable = ref.watch(iCloudAvailableProvider);
+    final configuredProviders = ref.watch(cloudProvidersProvider);
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          'CLOUD SYNC',
-          style: AppTypography.sectionHeader.copyWith(
-            color: colorScheme.secondary,
-          ),
-        ),
-        const SizedBox(height: AppSpacing.md),
-        if (!isLoggedIn)
-          ActionTile(
-            icon: Icons.cloud_outlined,
-            label: 'Sign in to sync',
-            onTap: () => context.push('/auth'),
-          )
-        else
-          _LoggedInSyncPanel(),
-      ],
-    );
-  }
-}
-
-class _LoggedInSyncPanel extends ConsumerWidget {
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final colorScheme = Theme.of(context).colorScheme;
-    final auth = ref.watch(authServiceProvider);
-    final autoSync = ref.watch(autoSyncEnabledProvider);
-    final pendingCount =
-        ref.watch(pendingChangesCountProvider).valueOrNull ?? 0;
-    final syncProgress = ref.watch(syncProgressProvider);
-    final syncService = ref.read(syncServiceProvider);
-    final lastSync = syncService.lastSyncAt;
-
-    final isSyncing =
-        syncProgress.whenOrNull(
-          data: (p) =>
-              p.phase != SyncPhase.complete && p.phase != SyncPhase.error,
+    // Check if iCloud is already configured & enabled in the DB
+    final iCloudConnected = configuredProviders.whenOrNull(
+          data: (providers) =>
+              providers.any((p) => p.providerType == 'icloud'),
         ) ??
         false;
 
+    // Check if Google Drive is configured & enabled
+    final gDriveConnected = configuredProviders.whenOrNull(
+          data: (providers) =>
+              providers.any((p) => p.providerType == 'gdrive'),
+        ) ??
+        false;
+
+    final syncHealth = ref.watch(syncHealthProvider);
+    final syncProgress = ref.watch(assetSyncProgressProvider).valueOrNull;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // Email display
-        Container(
-          padding: const EdgeInsets.symmetric(
-            horizontal: AppSpacing.md,
-            vertical: 14,
-          ),
-          decoration: BoxDecoration(
-            color: colorScheme.surfaceContainerHighest,
-            borderRadius: BorderRadius.circular(AppRadius.sm),
-            border: Border.all(
-              color: colorScheme.outline.withValues(alpha: 0.22),
-            ),
-          ),
-          child: Row(
-            children: [
-              Icon(
-                Icons.account_circle,
-                color: Theme.of(context).colorScheme.primary,
-                size: 22,
-              ),
-              const SizedBox(width: AppSpacing.md),
-              Expanded(
-                child: Text(
-                  auth.userEmail,
-                  style: AppTypography.bodyMedium.copyWith(
-                    color: colorScheme.onSurface,
-                  ),
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ),
-            ],
-          ),
-        ),
-        const SizedBox(height: AppSpacing.sm),
-
-        // Auto-sync toggle
-        Container(
-          padding: const EdgeInsets.symmetric(
-            horizontal: AppSpacing.md,
-            vertical: 6,
-          ),
-          decoration: BoxDecoration(
-            color: colorScheme.surfaceContainerHighest,
-            borderRadius: BorderRadius.circular(AppRadius.sm),
-            border: Border.all(
-              color: colorScheme.outline.withValues(alpha: 0.22),
-            ),
-          ),
-          child: Row(
-            children: [
-              Icon(Icons.sync, color: colorScheme.onSurface, size: 22),
-              const SizedBox(width: AppSpacing.md),
-              Expanded(
-                child: Text(
-                  'Auto-sync',
-                  style: AppTypography.bodyMedium.copyWith(
-                    color: colorScheme.onSurface,
-                  ),
-                ),
-              ),
-              Switch.adaptive(
-                value: autoSync,
-                onChanged: (_) =>
-                    ref.read(autoSyncEnabledProvider.notifier).toggle(),
-                activeTrackColor: Theme.of(context).colorScheme.primary,
-              ),
-            ],
-          ),
-        ),
-        const SizedBox(height: AppSpacing.sm),
-
-        // Sync now button
-        ActionTile(
-          icon: Icons.cloud_sync,
-          label: isSyncing
-              ? 'Syncing...'
-              : 'Sync Now${pendingCount > 0 ? ' ($pendingCount pending)' : ''}',
-          onTap: isSyncing
-              ? () {}
-              : () async {
-                  HapticFeedback.mediumImpact();
-                  await ref.read(syncServiceProvider).sync();
-                },
-        ),
-        const SizedBox(height: AppSpacing.sm),
-
-        // Last sync time
-        if (lastSync != null)
-          Padding(
-            padding: const EdgeInsets.only(left: AppSpacing.md),
-            child: Text(
-              'Last synced: ${_formatLastSync(lastSync)}',
-              style: AppTypography.caption.copyWith(
+        Row(
+          children: [
+            Text(
+              'VIDEO BACKUP',
+              style: AppTypography.sectionHeader.copyWith(
                 color: colorScheme.secondary,
               ),
             ),
+            const SizedBox(width: AppSpacing.sm),
+            _SyncHealthDot(health: syncHealth),
+          ],
+        ),
+        if (syncProgress != null && syncHealth != SyncHealth.noProviders) ...[
+          const SizedBox(height: 4),
+          Text(
+            syncProgress.statusLabel,
+            style: AppTypography.caption.copyWith(
+              color: colorScheme.onSurface.withValues(alpha: 0.5),
+            ),
           ),
+        ],
         const SizedBox(height: AppSpacing.md),
 
-        // Sign out
+        // iCloud row
+        _SyncProviderRow(
+          icon: Icons.cloud_outlined,
+          title: 'iCloud Drive',
+          status: iCloudConnected
+              ? _ProviderStatus.connected
+              : iCloudAvailable.when(
+                  data: (available) => available
+                      ? _ProviderStatus.available
+                      : _ProviderStatus.unavailable,
+                  loading: () => _ProviderStatus.loading,
+                  error: (_, __) => _ProviderStatus.unavailable,
+                ),
+          onTap: iCloudConnected
+              ? null
+              : () => _enableICloud(context, ref),
+        ),
+        const SizedBox(height: AppSpacing.sm),
+
+        // Google Drive
+        _SyncProviderRow(
+          icon: Icons.add_to_drive_outlined,
+          title: 'Google Drive',
+          status: gDriveConnected
+              ? _ProviderStatus.connected
+              : _ProviderStatus.available,
+          onTap: gDriveConnected
+              ? null
+              : () => _enableGDrive(context, ref),
+        ),
+        const SizedBox(height: AppSpacing.sm),
+
+        // S3 — coming soon
+        _SyncProviderRow(
+          icon: Icons.storage_outlined,
+          title: 'S3 Compatible',
+          status: _ProviderStatus.comingSoon,
+          onTap: null,
+        ),
+        const SizedBox(height: AppSpacing.lg),
+
+        // Links to sync screens
         ActionTile(
-          icon: Icons.logout,
-          label: 'Sign Out',
-          destructive: true,
-          onTap: () async {
-            HapticFeedback.mediumImpact();
-            await ref.read(authServiceProvider).logout();
-            ref.invalidate(isLoggedInProvider);
-            ref.invalidate(moveRepositoryProvider);
-            ref.invalidate(comboRepositoryProvider);
-            ref.invalidate(reviewRepositoryProvider);
-          },
+          icon: Icons.sync,
+          label: 'Sync Status',
+          onTap: () => context.push('/settings/sync-status'),
+        ),
+        const SizedBox(height: AppSpacing.sm),
+        ActionTile(
+          icon: Icons.cleaning_services_outlined,
+          label: 'Free Up Space',
+          onTap: () => context.push('/settings/free-space'),
+        ),
+        const SizedBox(height: AppSpacing.sm),
+        ActionTile(
+          icon: Icons.help_outline,
+          label: 'How Backup Works',
+          onTap: () => context.push('/settings/sync-help'),
         ),
       ],
     );
   }
 
-  String _formatLastSync(DateTime dt) {
-    final now = DateTime.now();
-    final diff = now.difference(dt);
-    if (diff.inMinutes < 1) return 'just now';
-    if (diff.inMinutes < 60) return '${diff.inMinutes}m ago';
-    if (diff.inHours < 24) return '${diff.inHours}h ago';
-    return '${diff.inDays}d ago';
+  Future<void> _enableGDrive(BuildContext context, WidgetRef ref) async {
+    HapticFeedback.mediumImpact();
+    final result = await ref.read(gDriveSetupProvider).enable();
+    if (!context.mounted) return;
+
+    switch (result) {
+      case GDriveSetupResult.enabled:
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Google Drive connected')),
+        );
+      case GDriveSetupResult.alreadyEnabled:
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Google Drive is already connected'),
+          ),
+        );
+      case GDriveSetupResult.cancelled:
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Google sign-in was cancelled')),
+        );
+    }
+  }
+
+  Future<void> _enableICloud(BuildContext context, WidgetRef ref) async {
+    HapticFeedback.mediumImpact();
+    final result = await ref.read(iCloudSetupProvider).enable();
+    if (!context.mounted) return;
+
+    switch (result) {
+      case ICloudSetupResult.enabled:
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('iCloud Drive enabled')),
+        );
+      case ICloudSetupResult.alreadyEnabled:
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('iCloud Drive is already enabled')),
+        );
+      case ICloudSetupResult.notAvailable:
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text(
+              'Enable iCloud Drive in iOS Settings > [your name] > iCloud',
+            ),
+            duration: Duration(seconds: 4),
+          ),
+        );
+    }
+  }
+}
+
+enum _ProviderStatus { connected, available, unavailable, comingSoon, loading }
+
+class _SyncProviderRow extends StatelessWidget {
+  final IconData icon;
+  final String title;
+  final _ProviderStatus status;
+  final VoidCallback? onTap;
+
+  const _SyncProviderRow({
+    required this.icon,
+    required this.title,
+    required this.status,
+    this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final isDisabled =
+        status == _ProviderStatus.comingSoon ||
+        status == _ProviderStatus.unavailable;
+
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(
+          horizontal: AppSpacing.md,
+          vertical: 14,
+        ),
+        decoration: BoxDecoration(
+          color: colorScheme.surfaceContainerHighest,
+          borderRadius: BorderRadius.circular(AppRadius.sm),
+          border: Border.all(
+            color: status == _ProviderStatus.connected
+                ? AppColors.stateMastery.withValues(alpha: 0.4)
+                : colorScheme.outline.withValues(alpha: 0.22),
+          ),
+        ),
+        child: Row(
+          children: [
+            Icon(
+              icon,
+              color: isDisabled
+                  ? colorScheme.onSurface.withValues(alpha: 0.3)
+                  : colorScheme.onSurface,
+              size: 22,
+            ),
+            const SizedBox(width: AppSpacing.md),
+            Expanded(
+              child: Text(
+                title,
+                style: AppTypography.bodyMedium.copyWith(
+                  color: isDisabled
+                      ? colorScheme.onSurface.withValues(alpha: 0.3)
+                      : colorScheme.onSurface,
+                ),
+              ),
+            ),
+            _statusLabel(colorScheme),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _statusLabel(ColorScheme colorScheme) {
+    switch (status) {
+      case _ProviderStatus.connected:
+        return Text(
+          'Connected',
+          style: AppTypography.caption.copyWith(
+            color: AppColors.stateMastery,
+            fontWeight: FontWeight.w600,
+          ),
+        );
+      case _ProviderStatus.available:
+        return Text(
+          'Tap to enable',
+          style: AppTypography.caption.copyWith(
+            color: AppColors.accent,
+          ),
+        );
+      case _ProviderStatus.unavailable:
+        return Text(
+          'Not available',
+          style: AppTypography.caption.copyWith(
+            color: colorScheme.onSurface.withValues(alpha: 0.3),
+          ),
+        );
+      case _ProviderStatus.comingSoon:
+        return Text(
+          'Coming soon',
+          style: AppTypography.caption.copyWith(
+            color: colorScheme.onSurface.withValues(alpha: 0.3),
+          ),
+        );
+      case _ProviderStatus.loading:
+        return const SizedBox(
+          width: 16,
+          height: 16,
+          child: CircularProgressIndicator(strokeWidth: 2),
+        );
+    }
+  }
+}
+
+/// Colored dot indicator for overall sync health.
+///
+/// green = all synced, blue = syncing, amber = pending,
+/// red = error, gray = no providers configured.
+class _SyncHealthDot extends StatelessWidget {
+  final SyncHealth health;
+  const _SyncHealthDot({required this.health});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 8,
+      height: 8,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        color: switch (health) {
+          SyncHealth.allSynced => AppColors.stateMastery,
+          SyncHealth.syncing => Colors.blue,
+          SyncHealth.pendingUpload => Colors.amber,
+          SyncHealth.error => Colors.red,
+          SyncHealth.noProviders =>
+            Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.3),
+        },
+      ),
+    );
   }
 }
 

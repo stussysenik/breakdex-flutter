@@ -12,6 +12,10 @@ import '../../features/battle/battle_screen.dart';
 import '../../features/video_editor/video_editor_screen.dart';
 import '../../features/move_analysis/move_analysis_screen.dart';
 import '../../features/auth/auth_screen.dart';
+import '../../features/settings/free_space_screen.dart';
+import '../../features/settings/sync_providers_screen.dart';
+import '../../features/settings/sync_status_screen.dart';
+import '../../features/settings/help/asset_sync_help_screen.dart';
 import '../../shared/widgets/bottom_nav_shell.dart';
 
 final _rootNavigatorKey = GlobalKey<NavigatorState>();
@@ -116,6 +120,26 @@ final appRouter = GoRouter(
       path: '/auth',
       parentNavigatorKey: _rootNavigatorKey,
       builder: (context, state) => const AuthScreen(),
+    ),
+    GoRoute(
+      path: '/settings/sync-providers',
+      parentNavigatorKey: _rootNavigatorKey,
+      builder: (context, state) => const SyncProvidersScreen(),
+    ),
+    GoRoute(
+      path: '/settings/sync-status',
+      parentNavigatorKey: _rootNavigatorKey,
+      builder: (context, state) => const SyncStatusScreen(),
+    ),
+    GoRoute(
+      path: '/settings/free-space',
+      parentNavigatorKey: _rootNavigatorKey,
+      builder: (context, state) => const FreeSpaceScreen(),
+    ),
+    GoRoute(
+      path: '/settings/sync-help',
+      parentNavigatorKey: _rootNavigatorKey,
+      builder: (context, state) => const AssetSyncHelpScreen(),
     ),
   ],
 );
