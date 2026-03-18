@@ -15,6 +15,8 @@ import 'core/services/app_storage_paths.dart';
 import 'core/services/automation_fixture_service.dart';
 import 'core/services/fsrs_migration_service.dart';
 import 'core/services/settings_service.dart';
+import 'core/sync/asset_hash_service.dart';
+import 'core/sync/legacy_asset_migration.dart';
 
 /// Create a timestamped backup of the database file before migrations run.
 /// This is a safety net — if a migration corrupts data, the user can recover
@@ -148,6 +150,28 @@ void main() async {
   // window lightweight so iOS doesn't Jetsam-kill us for memory/CPU pressure.
   WidgetsBinding.instance.addPostFrameCallback((_) async {
     await _runMigrations(db, prefs);
+
+    // Migrate existing videos (pre-sync) into the content-addressable manifest.
+    // Idempotent — skips moves that already have a contentHash.
+    try {
+      final migration = LegacyAssetMigration(
+        movesDao: db.movesDao,
+        manifestDao: db.assetManifestDao,
+        copiesDao: db.assetCopiesDao,
+        hashService: AssetHashService(),
+        db: db,
+      );
+      await for (final progress in migration.migrate()) {
+        if (progress.currentMoveName != null) {
+          debugPrint(
+            'Legacy asset migration: ${progress.completed}/${progress.total}'
+            ' — ${progress.currentMoveName}',
+          );
+        }
+      }
+    } catch (e) {
+      debugPrint('Legacy asset migration failed: $e');
+    }
   });
 }
 
@@ -156,6 +180,13 @@ class BreakdexApp extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    // Activate manifest sync — watches all DAOs and uploads manifest.json
+    // to cloud storage on any metadata change (debounced 5s).
+    ref.watch(manifestSyncTriggerProvider);
+
+    // Auto-retry asset sync when connectivity is restored (offline → online).
+    ref.watch(syncConnectivityTriggerProvider);
+
     final themeSetting = ref.watch(themeSettingProvider);
     final viewingMode = ref.watch(viewingModeProvider);
     final fontFamily = ref.watch(fontFamilyProvider);

@@ -25,6 +25,7 @@
 		CC0000020000000100000003 /* VisionMLPlugin.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC0000010000000100000003 /* VisionMLPlugin.swift */; };
 		CC0000020000000100000004 /* SceneKit3DPlugin.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC0000010000000100000004 /* SceneKit3DPlugin.swift */; };
 		CC0000020000000100000005 /* SceneKit3DFactory.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC0000010000000100000005 /* SceneKit3DFactory.swift */; };
+		FF0000020000000100000001 /* iCloudSyncPlugin.swift in Sources */ = {isa = PBXBuildFile; fileRef = FF0000010000000100000001 /* iCloudSyncPlugin.swift */; };
 		CC0000020000000100000006 /* SceneKit3DView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC0000010000000100000006 /* SceneKit3DView.swift */; };
 		CC0000020000000100000007 /* Models in Resources */ = {isa = PBXBuildFile; fileRef = CC0000010000000100000007 /* Models */; };
 		CC0000020000000100000008 /* skeleton.usdz in Resources */ = {isa = PBXBuildFile; fileRef = CC0000010000000100000008 /* skeleton.usdz */; };
@@ -90,6 +91,7 @@
 		CC0000010000000100000008 /* skeleton.usdz */ = {isa = PBXFileReference; lastKnownFileType = file.usdz; path = skeleton.usdz; sourceTree = "<group>"; };
 		DD0000010000000100000001 /* VideoPreviewPlugin.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VideoPreviewPlugin.swift; sourceTree = "<group>"; };
 		EE0000010000000100000001 /* VideoAlbumPlugin.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VideoAlbumPlugin.swift; sourceTree = "<group>"; };
+		FF0000010000000100000001 /* iCloudSyncPlugin.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = iCloudSyncPlugin.swift; sourceTree = "<group>"; };
 		AF94D9764DE5B8791CE776D4 /* Pods-RunnerTests.profile.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-RunnerTests.profile.xcconfig"; path = "Target Support Files/Pods-RunnerTests/Pods-RunnerTests.profile.xcconfig"; sourceTree = "<group>"; };
 		B9C120C05EAF4F2180E99EE4 /* Pods-RunnerTests.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-RunnerTests.debug.xcconfig"; path = "Target Support Files/Pods-RunnerTests/Pods-RunnerTests.debug.xcconfig"; sourceTree = "<group>"; };
 		C9BDFBFC543230F46D560C47 /* Pods-RunnerTests.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-RunnerTests.release.xcconfig"; path = "Target Support Files/Pods-RunnerTests/Pods-RunnerTests.release.xcconfig"; sourceTree = "<group>"; };
@@ -206,6 +208,7 @@
 				CC0000010000000100000002 /* NativeCapability.swift */,
 				CC0000010000000100000003 /* VisionMLPlugin.swift */,
 				CC0000010000000100000004 /* SceneKit3DPlugin.swift */,
+				FF0000010000000100000001 /* iCloudSyncPlugin.swift */,
 				CC0000010000000100000005 /* SceneKit3DFactory.swift */,
 				CC0000010000000100000006 /* SceneKit3DView.swift */,
 				CC0000010000000100000007 /* Models */,
@@ -456,6 +459,7 @@
 				CC0000020000000100000004 /* SceneKit3DPlugin.swift in Sources */,
 				CC0000020000000100000005 /* SceneKit3DFactory.swift in Sources */,
 				CC0000020000000100000006 /* SceneKit3DView.swift in Sources */,
+				FF0000020000000100000001 /* iCloudSyncPlugin.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

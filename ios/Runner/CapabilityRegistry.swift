@@ -21,6 +21,7 @@ final class CapabilityRegistry {
         NativeVideoImportPlugin.self,
         VisionMLPlugin.self,
         SceneKit3DPlugin.self,
+        iCloudSyncPlugin.self,
     ]
 
     /// Register every capability with the Flutter engine's plugin registry.
