@@ -13,12 +13,20 @@ import 'tables/sync_log.dart';
 import 'tables/fsrs_cards.dart';
 import 'tables/decks.dart';
 import 'tables/deck_moves.dart';
+import 'tables/asset_manifest.dart';
+import 'tables/asset_copies.dart';
+import 'tables/sync_providers.dart';
+import 'tables/sync_operations.dart';
 import 'daos/moves_dao.dart';
 import 'daos/combos_dao.dart';
 import 'daos/reviews_dao.dart';
 import 'daos/sync_dao.dart';
 import 'daos/fsrs_cards_dao.dart';
 import 'daos/decks_dao.dart';
+import 'daos/asset_manifest_dao.dart';
+import 'daos/asset_copies_dao.dart';
+import 'daos/sync_operations_dao.dart';
+import 'daos/sync_providers_dao.dart';
 
 part 'database.g.dart';
 
@@ -33,8 +41,23 @@ part 'database.g.dart';
     FsrsCards,
     Decks,
     DeckMoves,
+    AssetManifest,
+    AssetCopies,
+    SyncProviders,
+    SyncOperations,
   ],
-  daos: [MovesDao, CombosDao, ReviewsDao, SyncDao, FsrsCardsDao, DecksDao],
+  daos: [
+    MovesDao,
+    CombosDao,
+    ReviewsDao,
+    SyncDao,
+    FsrsCardsDao,
+    DecksDao,
+    AssetManifestDao,
+    AssetCopiesDao,
+    SyncOperationsDao,
+    SyncProvidersDao,
+  ],
 )
 class AppDatabase extends _$AppDatabase {
   AppDatabase() : super(_openConnection());
@@ -42,7 +65,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.forTesting(super.e);
 
   @override
-  int get schemaVersion => 9;
+  int get schemaVersion => 10;
 
   Future<void> _installIntegrityTriggers() async {
     await customStatement('''
@@ -314,6 +337,39 @@ class AppDatabase extends _$AppDatabase {
         await m.addColumn(reviews, reviews.entityType);
         await m.addColumn(reviews, reviews.entityDisplayName);
         await m.addColumn(reviews, reviews.entityCategory);
+      }
+      if (from < 10) {
+        // --- Schema v10: Asset sync engine tables ---
+        //
+        // Content-addressable manifest + copy tracking + cloud provider config
+        // + sync operation queue. Enables multi-provider video backup with
+        // two-copy enforcement and soft deletes.
+        await m.createTable(assetManifest);
+        await m.createTable(assetCopies);
+        await m.createTable(syncProviders);
+        await m.createTable(syncOperations);
+
+        // Add content_hash FK column to moves and combos for linking to manifest.
+        await customStatement(
+          'ALTER TABLE moves ADD COLUMN content_hash TEXT REFERENCES asset_manifest(content_hash)',
+        );
+        await customStatement(
+          'ALTER TABLE combos ADD COLUMN content_hash TEXT REFERENCES asset_manifest(content_hash)',
+        );
+
+        // Index for fast manifest lookups by local path and sync state.
+        await customStatement('''
+          CREATE INDEX IF NOT EXISTS idx_asset_manifest_local_path
+          ON asset_manifest(local_path)
+        ''');
+        await customStatement('''
+          CREATE INDEX IF NOT EXISTS idx_asset_copies_hash
+          ON asset_copies(content_hash)
+        ''');
+        await customStatement('''
+          CREATE INDEX IF NOT EXISTS idx_sync_operations_status
+          ON sync_operations(status, priority)
+        ''');
       }
 
       await _backfillReviewSnapshots();

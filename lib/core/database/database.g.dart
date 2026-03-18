@@ -74,6 +74,17 @@ class $MovesTable extends Moves with TableInfo<$MovesTable, Move> {
         type: DriftSqlType.string,
         requiredDuringInsert: false,
       );
+  static const VerificationMeta _contentHashMeta = const VerificationMeta(
+    'contentHash',
+  );
+  @override
+  late final GeneratedColumn<String> contentHash = GeneratedColumn<String>(
+    'content_hash',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
   static const VerificationMeta _createdAtMeta = const VerificationMeta(
     'createdAt',
   );
@@ -94,6 +105,7 @@ class $MovesTable extends Moves with TableInfo<$MovesTable, Move> {
     category,
     videoPath,
     originalVideoName,
+    contentHash,
     createdAt,
   ];
   @override
@@ -151,6 +163,15 @@ class $MovesTable extends Moves with TableInfo<$MovesTable, Move> {
         ),
       );
     }
+    if (data.containsKey('content_hash')) {
+      context.handle(
+        _contentHashMeta,
+        contentHash.isAcceptableOrUnknown(
+          data['content_hash']!,
+          _contentHashMeta,
+        ),
+      );
+    }
     if (data.containsKey('created_at')) {
       context.handle(
         _createdAtMeta,
@@ -190,6 +211,10 @@ class $MovesTable extends Moves with TableInfo<$MovesTable, Move> {
         DriftSqlType.string,
         data['${effectivePrefix}original_video_name'],
       ),
+      contentHash: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}content_hash'],
+      ),
       createdAt: attachedDatabase.typeMapping.read(
         DriftSqlType.dateTime,
         data['${effectivePrefix}created_at'],
@@ -210,6 +235,7 @@ class Move extends DataClass implements Insertable<Move> {
   final String category;
   final String? videoPath;
   final String? originalVideoName;
+  final String? contentHash;
   final DateTime createdAt;
   const Move({
     required this.id,
@@ -218,6 +244,7 @@ class Move extends DataClass implements Insertable<Move> {
     required this.category,
     this.videoPath,
     this.originalVideoName,
+    this.contentHash,
     required this.createdAt,
   });
   @override
@@ -232,6 +259,9 @@ class Move extends DataClass implements Insertable<Move> {
     }
     if (!nullToAbsent || originalVideoName != null) {
       map['original_video_name'] = Variable<String>(originalVideoName);
+    }
+    if (!nullToAbsent || contentHash != null) {
+      map['content_hash'] = Variable<String>(contentHash);
     }
     map['created_at'] = Variable<DateTime>(createdAt);
     return map;
@@ -249,6 +279,9 @@ class Move extends DataClass implements Insertable<Move> {
       originalVideoName: originalVideoName == null && nullToAbsent
           ? const Value.absent()
           : Value(originalVideoName),
+      contentHash: contentHash == null && nullToAbsent
+          ? const Value.absent()
+          : Value(contentHash),
       createdAt: Value(createdAt),
     );
   }
@@ -267,6 +300,7 @@ class Move extends DataClass implements Insertable<Move> {
       originalVideoName: serializer.fromJson<String?>(
         json['originalVideoName'],
       ),
+      contentHash: serializer.fromJson<String?>(json['contentHash']),
       createdAt: serializer.fromJson<DateTime>(json['createdAt']),
     );
   }
@@ -280,6 +314,7 @@ class Move extends DataClass implements Insertable<Move> {
       'category': serializer.toJson<String>(category),
       'videoPath': serializer.toJson<String?>(videoPath),
       'originalVideoName': serializer.toJson<String?>(originalVideoName),
+      'contentHash': serializer.toJson<String?>(contentHash),
       'createdAt': serializer.toJson<DateTime>(createdAt),
     };
   }
@@ -291,6 +326,7 @@ class Move extends DataClass implements Insertable<Move> {
     String? category,
     Value<String?> videoPath = const Value.absent(),
     Value<String?> originalVideoName = const Value.absent(),
+    Value<String?> contentHash = const Value.absent(),
     DateTime? createdAt,
   }) => Move(
     id: id ?? this.id,
@@ -301,6 +337,7 @@ class Move extends DataClass implements Insertable<Move> {
     originalVideoName: originalVideoName.present
         ? originalVideoName.value
         : this.originalVideoName,
+    contentHash: contentHash.present ? contentHash.value : this.contentHash,
     createdAt: createdAt ?? this.createdAt,
   );
   Move copyWithCompanion(MovesCompanion data) {
@@ -315,6 +352,9 @@ class Move extends DataClass implements Insertable<Move> {
       originalVideoName: data.originalVideoName.present
           ? data.originalVideoName.value
           : this.originalVideoName,
+      contentHash: data.contentHash.present
+          ? data.contentHash.value
+          : this.contentHash,
       createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
     );
   }
@@ -328,6 +368,7 @@ class Move extends DataClass implements Insertable<Move> {
           ..write('category: $category, ')
           ..write('videoPath: $videoPath, ')
           ..write('originalVideoName: $originalVideoName, ')
+          ..write('contentHash: $contentHash, ')
           ..write('createdAt: $createdAt')
           ..write(')'))
         .toString();
@@ -341,6 +382,7 @@ class Move extends DataClass implements Insertable<Move> {
     category,
     videoPath,
     originalVideoName,
+    contentHash,
     createdAt,
   );
   @override
@@ -353,6 +395,7 @@ class Move extends DataClass implements Insertable<Move> {
           other.category == this.category &&
           other.videoPath == this.videoPath &&
           other.originalVideoName == this.originalVideoName &&
+          other.contentHash == this.contentHash &&
           other.createdAt == this.createdAt);
 }
 
@@ -363,6 +406,7 @@ class MovesCompanion extends UpdateCompanion<Move> {
   final Value<String> category;
   final Value<String?> videoPath;
   final Value<String?> originalVideoName;
+  final Value<String?> contentHash;
   final Value<DateTime> createdAt;
   final Value<int> rowid;
   const MovesCompanion({
@@ -372,6 +416,7 @@ class MovesCompanion extends UpdateCompanion<Move> {
     this.category = const Value.absent(),
     this.videoPath = const Value.absent(),
     this.originalVideoName = const Value.absent(),
+    this.contentHash = const Value.absent(),
     this.createdAt = const Value.absent(),
     this.rowid = const Value.absent(),
   });
@@ -382,6 +427,7 @@ class MovesCompanion extends UpdateCompanion<Move> {
     this.category = const Value.absent(),
     this.videoPath = const Value.absent(),
     this.originalVideoName = const Value.absent(),
+    this.contentHash = const Value.absent(),
     this.createdAt = const Value.absent(),
     this.rowid = const Value.absent(),
   }) : id = Value(id),
@@ -393,6 +439,7 @@ class MovesCompanion extends UpdateCompanion<Move> {
     Expression<String>? category,
     Expression<String>? videoPath,
     Expression<String>? originalVideoName,
+    Expression<String>? contentHash,
     Expression<DateTime>? createdAt,
     Expression<int>? rowid,
   }) {
@@ -403,6 +450,7 @@ class MovesCompanion extends UpdateCompanion<Move> {
       if (category != null) 'category': category,
       if (videoPath != null) 'video_path': videoPath,
       if (originalVideoName != null) 'original_video_name': originalVideoName,
+      if (contentHash != null) 'content_hash': contentHash,
       if (createdAt != null) 'created_at': createdAt,
       if (rowid != null) 'rowid': rowid,
     });
@@ -415,6 +463,7 @@ class MovesCompanion extends UpdateCompanion<Move> {
     Value<String>? category,
     Value<String?>? videoPath,
     Value<String?>? originalVideoName,
+    Value<String?>? contentHash,
     Value<DateTime>? createdAt,
     Value<int>? rowid,
   }) {
@@ -425,6 +474,7 @@ class MovesCompanion extends UpdateCompanion<Move> {
       category: category ?? this.category,
       videoPath: videoPath ?? this.videoPath,
       originalVideoName: originalVideoName ?? this.originalVideoName,
+      contentHash: contentHash ?? this.contentHash,
       createdAt: createdAt ?? this.createdAt,
       rowid: rowid ?? this.rowid,
     );
@@ -451,6 +501,9 @@ class MovesCompanion extends UpdateCompanion<Move> {
     if (originalVideoName.present) {
       map['original_video_name'] = Variable<String>(originalVideoName.value);
     }
+    if (contentHash.present) {
+      map['content_hash'] = Variable<String>(contentHash.value);
+    }
     if (createdAt.present) {
       map['created_at'] = Variable<DateTime>(createdAt.value);
     }
@@ -469,6 +522,7 @@ class MovesCompanion extends UpdateCompanion<Move> {
           ..write('category: $category, ')
           ..write('videoPath: $videoPath, ')
           ..write('originalVideoName: $originalVideoName, ')
+          ..write('contentHash: $contentHash, ')
           ..write('createdAt: $createdAt, ')
           ..write('rowid: $rowid')
           ..write(')'))
@@ -511,8 +565,24 @@ class $CombosTable extends Combos with TableInfo<$CombosTable, Combo> {
     type: DriftSqlType.string,
     requiredDuringInsert: false,
   );
+  static const VerificationMeta _contentHashMeta = const VerificationMeta(
+    'contentHash',
+  );
   @override
-  List<GeneratedColumn> get $columns => [id, name, activeVideoPath];
+  late final GeneratedColumn<String> contentHash = GeneratedColumn<String>(
+    'content_hash',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    name,
+    activeVideoPath,
+    contentHash,
+  ];
   @override
   String get aliasedName => _alias ?? actualTableName;
   @override
@@ -547,6 +617,15 @@ class $CombosTable extends Combos with TableInfo<$CombosTable, Combo> {
         ),
       );
     }
+    if (data.containsKey('content_hash')) {
+      context.handle(
+        _contentHashMeta,
+        contentHash.isAcceptableOrUnknown(
+          data['content_hash']!,
+          _contentHashMeta,
+        ),
+      );
+    }
     return context;
   }
 
@@ -568,6 +647,10 @@ class $CombosTable extends Combos with TableInfo<$CombosTable, Combo> {
         DriftSqlType.string,
         data['${effectivePrefix}active_video_path'],
       ),
+      contentHash: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}content_hash'],
+      ),
     );
   }
 
@@ -581,7 +664,13 @@ class Combo extends DataClass implements Insertable<Combo> {
   final String id;
   final String name;
   final String? activeVideoPath;
-  const Combo({required this.id, required this.name, this.activeVideoPath});
+  final String? contentHash;
+  const Combo({
+    required this.id,
+    required this.name,
+    this.activeVideoPath,
+    this.contentHash,
+  });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
@@ -589,6 +678,9 @@ class Combo extends DataClass implements Insertable<Combo> {
     map['name'] = Variable<String>(name);
     if (!nullToAbsent || activeVideoPath != null) {
       map['active_video_path'] = Variable<String>(activeVideoPath);
+    }
+    if (!nullToAbsent || contentHash != null) {
+      map['content_hash'] = Variable<String>(contentHash);
     }
     return map;
   }
@@ -600,6 +692,9 @@ class Combo extends DataClass implements Insertable<Combo> {
       activeVideoPath: activeVideoPath == null && nullToAbsent
           ? const Value.absent()
           : Value(activeVideoPath),
+      contentHash: contentHash == null && nullToAbsent
+          ? const Value.absent()
+          : Value(contentHash),
     );
   }
 
@@ -612,6 +707,7 @@ class Combo extends DataClass implements Insertable<Combo> {
       id: serializer.fromJson<String>(json['id']),
       name: serializer.fromJson<String>(json['name']),
       activeVideoPath: serializer.fromJson<String?>(json['activeVideoPath']),
+      contentHash: serializer.fromJson<String?>(json['contentHash']),
     );
   }
   @override
@@ -621,6 +717,7 @@ class Combo extends DataClass implements Insertable<Combo> {
       'id': serializer.toJson<String>(id),
       'name': serializer.toJson<String>(name),
       'activeVideoPath': serializer.toJson<String?>(activeVideoPath),
+      'contentHash': serializer.toJson<String?>(contentHash),
     };
   }
 
@@ -628,12 +725,14 @@ class Combo extends DataClass implements Insertable<Combo> {
     String? id,
     String? name,
     Value<String?> activeVideoPath = const Value.absent(),
+    Value<String?> contentHash = const Value.absent(),
   }) => Combo(
     id: id ?? this.id,
     name: name ?? this.name,
     activeVideoPath: activeVideoPath.present
         ? activeVideoPath.value
         : this.activeVideoPath,
+    contentHash: contentHash.present ? contentHash.value : this.contentHash,
   );
   Combo copyWithCompanion(CombosCompanion data) {
     return Combo(
@@ -642,6 +741,9 @@ class Combo extends DataClass implements Insertable<Combo> {
       activeVideoPath: data.activeVideoPath.present
           ? data.activeVideoPath.value
           : this.activeVideoPath,
+      contentHash: data.contentHash.present
+          ? data.contentHash.value
+          : this.contentHash,
     );
   }
 
@@ -650,37 +752,42 @@ class Combo extends DataClass implements Insertable<Combo> {
     return (StringBuffer('Combo(')
           ..write('id: $id, ')
           ..write('name: $name, ')
-          ..write('activeVideoPath: $activeVideoPath')
+          ..write('activeVideoPath: $activeVideoPath, ')
+          ..write('contentHash: $contentHash')
           ..write(')'))
         .toString();
   }
 
   @override
-  int get hashCode => Object.hash(id, name, activeVideoPath);
+  int get hashCode => Object.hash(id, name, activeVideoPath, contentHash);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
       (other is Combo &&
           other.id == this.id &&
           other.name == this.name &&
-          other.activeVideoPath == this.activeVideoPath);
+          other.activeVideoPath == this.activeVideoPath &&
+          other.contentHash == this.contentHash);
 }
 
 class CombosCompanion extends UpdateCompanion<Combo> {
   final Value<String> id;
   final Value<String> name;
   final Value<String?> activeVideoPath;
+  final Value<String?> contentHash;
   final Value<int> rowid;
   const CombosCompanion({
     this.id = const Value.absent(),
     this.name = const Value.absent(),
     this.activeVideoPath = const Value.absent(),
+    this.contentHash = const Value.absent(),
     this.rowid = const Value.absent(),
   });
   CombosCompanion.insert({
     required String id,
     required String name,
     this.activeVideoPath = const Value.absent(),
+    this.contentHash = const Value.absent(),
     this.rowid = const Value.absent(),
   }) : id = Value(id),
        name = Value(name);
@@ -688,12 +795,14 @@ class CombosCompanion extends UpdateCompanion<Combo> {
     Expression<String>? id,
     Expression<String>? name,
     Expression<String>? activeVideoPath,
+    Expression<String>? contentHash,
     Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
       if (name != null) 'name': name,
       if (activeVideoPath != null) 'active_video_path': activeVideoPath,
+      if (contentHash != null) 'content_hash': contentHash,
       if (rowid != null) 'rowid': rowid,
     });
   }
@@ -702,12 +811,14 @@ class CombosCompanion extends UpdateCompanion<Combo> {
     Value<String>? id,
     Value<String>? name,
     Value<String?>? activeVideoPath,
+    Value<String?>? contentHash,
     Value<int>? rowid,
   }) {
     return CombosCompanion(
       id: id ?? this.id,
       name: name ?? this.name,
       activeVideoPath: activeVideoPath ?? this.activeVideoPath,
+      contentHash: contentHash ?? this.contentHash,
       rowid: rowid ?? this.rowid,
     );
   }
@@ -724,6 +835,9 @@ class CombosCompanion extends UpdateCompanion<Combo> {
     if (activeVideoPath.present) {
       map['active_video_path'] = Variable<String>(activeVideoPath.value);
     }
+    if (contentHash.present) {
+      map['content_hash'] = Variable<String>(contentHash.value);
+    }
     if (rowid.present) {
       map['rowid'] = Variable<int>(rowid.value);
     }
@@ -736,6 +850,7 @@ class CombosCompanion extends UpdateCompanion<Combo> {
           ..write('id: $id, ')
           ..write('name: $name, ')
           ..write('activeVideoPath: $activeVideoPath, ')
+          ..write('contentHash: $contentHash, ')
           ..write('rowid: $rowid')
           ..write(')'))
         .toString();
@@ -4084,6 +4199,3085 @@ class DeckMovesCompanion extends UpdateCompanion<DeckMove> {
   }
 }
 
+class $AssetManifestTable extends AssetManifest
+    with TableInfo<$AssetManifestTable, AssetManifestData> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $AssetManifestTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _contentHashMeta = const VerificationMeta(
+    'contentHash',
+  );
+  @override
+  late final GeneratedColumn<String> contentHash = GeneratedColumn<String>(
+    'content_hash',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _fileSizeBytesMeta = const VerificationMeta(
+    'fileSizeBytes',
+  );
+  @override
+  late final GeneratedColumn<int> fileSizeBytes = GeneratedColumn<int>(
+    'file_size_bytes',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _mimeTypeMeta = const VerificationMeta(
+    'mimeType',
+  );
+  @override
+  late final GeneratedColumn<String> mimeType = GeneratedColumn<String>(
+    'mime_type',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant('video/mp4'),
+  );
+  static const VerificationMeta _durationMsMeta = const VerificationMeta(
+    'durationMs',
+  );
+  @override
+  late final GeneratedColumn<int> durationMs = GeneratedColumn<int>(
+    'duration_ms',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _widthMeta = const VerificationMeta('width');
+  @override
+  late final GeneratedColumn<int> width = GeneratedColumn<int>(
+    'width',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _heightMeta = const VerificationMeta('height');
+  @override
+  late final GeneratedColumn<int> height = GeneratedColumn<int>(
+    'height',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _localPathMeta = const VerificationMeta(
+    'localPath',
+  );
+  @override
+  late final GeneratedColumn<String> localPath = GeneratedColumn<String>(
+    'local_path',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _localVerifiedAtMeta = const VerificationMeta(
+    'localVerifiedAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> localVerifiedAt =
+      GeneratedColumn<DateTime>(
+        'local_verified_at',
+        aliasedName,
+        true,
+        type: DriftSqlType.dateTime,
+        requiredDuringInsert: false,
+      );
+  static const VerificationMeta _sourceTypeMeta = const VerificationMeta(
+    'sourceType',
+  );
+  @override
+  late final GeneratedColumn<String> sourceType = GeneratedColumn<String>(
+    'source_type',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _sourceNameMeta = const VerificationMeta(
+    'sourceName',
+  );
+  @override
+  late final GeneratedColumn<String> sourceName = GeneratedColumn<String>(
+    'source_name',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _importedAtMeta = const VerificationMeta(
+    'importedAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> importedAt = GeneratedColumn<DateTime>(
+    'imported_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _deletedAtMeta = const VerificationMeta(
+    'deletedAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> deletedAt = GeneratedColumn<DateTime>(
+    'deleted_at',
+    aliasedName,
+    true,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _tombstoneReasonMeta = const VerificationMeta(
+    'tombstoneReason',
+  );
+  @override
+  late final GeneratedColumn<String> tombstoneReason = GeneratedColumn<String>(
+    'tombstone_reason',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _copyCountMeta = const VerificationMeta(
+    'copyCount',
+  );
+  @override
+  late final GeneratedColumn<int> copyCount = GeneratedColumn<int>(
+    'copy_count',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(1),
+  );
+  static const VerificationMeta _lastSyncAtMeta = const VerificationMeta(
+    'lastSyncAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> lastSyncAt = GeneratedColumn<DateTime>(
+    'last_sync_at',
+    aliasedName,
+    true,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    contentHash,
+    fileSizeBytes,
+    mimeType,
+    durationMs,
+    width,
+    height,
+    localPath,
+    localVerifiedAt,
+    sourceType,
+    sourceName,
+    importedAt,
+    deletedAt,
+    tombstoneReason,
+    copyCount,
+    lastSyncAt,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'asset_manifest';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<AssetManifestData> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('content_hash')) {
+      context.handle(
+        _contentHashMeta,
+        contentHash.isAcceptableOrUnknown(
+          data['content_hash']!,
+          _contentHashMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_contentHashMeta);
+    }
+    if (data.containsKey('file_size_bytes')) {
+      context.handle(
+        _fileSizeBytesMeta,
+        fileSizeBytes.isAcceptableOrUnknown(
+          data['file_size_bytes']!,
+          _fileSizeBytesMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_fileSizeBytesMeta);
+    }
+    if (data.containsKey('mime_type')) {
+      context.handle(
+        _mimeTypeMeta,
+        mimeType.isAcceptableOrUnknown(data['mime_type']!, _mimeTypeMeta),
+      );
+    }
+    if (data.containsKey('duration_ms')) {
+      context.handle(
+        _durationMsMeta,
+        durationMs.isAcceptableOrUnknown(data['duration_ms']!, _durationMsMeta),
+      );
+    }
+    if (data.containsKey('width')) {
+      context.handle(
+        _widthMeta,
+        width.isAcceptableOrUnknown(data['width']!, _widthMeta),
+      );
+    }
+    if (data.containsKey('height')) {
+      context.handle(
+        _heightMeta,
+        height.isAcceptableOrUnknown(data['height']!, _heightMeta),
+      );
+    }
+    if (data.containsKey('local_path')) {
+      context.handle(
+        _localPathMeta,
+        localPath.isAcceptableOrUnknown(data['local_path']!, _localPathMeta),
+      );
+    }
+    if (data.containsKey('local_verified_at')) {
+      context.handle(
+        _localVerifiedAtMeta,
+        localVerifiedAt.isAcceptableOrUnknown(
+          data['local_verified_at']!,
+          _localVerifiedAtMeta,
+        ),
+      );
+    }
+    if (data.containsKey('source_type')) {
+      context.handle(
+        _sourceTypeMeta,
+        sourceType.isAcceptableOrUnknown(data['source_type']!, _sourceTypeMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_sourceTypeMeta);
+    }
+    if (data.containsKey('source_name')) {
+      context.handle(
+        _sourceNameMeta,
+        sourceName.isAcceptableOrUnknown(data['source_name']!, _sourceNameMeta),
+      );
+    }
+    if (data.containsKey('imported_at')) {
+      context.handle(
+        _importedAtMeta,
+        importedAt.isAcceptableOrUnknown(data['imported_at']!, _importedAtMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_importedAtMeta);
+    }
+    if (data.containsKey('deleted_at')) {
+      context.handle(
+        _deletedAtMeta,
+        deletedAt.isAcceptableOrUnknown(data['deleted_at']!, _deletedAtMeta),
+      );
+    }
+    if (data.containsKey('tombstone_reason')) {
+      context.handle(
+        _tombstoneReasonMeta,
+        tombstoneReason.isAcceptableOrUnknown(
+          data['tombstone_reason']!,
+          _tombstoneReasonMeta,
+        ),
+      );
+    }
+    if (data.containsKey('copy_count')) {
+      context.handle(
+        _copyCountMeta,
+        copyCount.isAcceptableOrUnknown(data['copy_count']!, _copyCountMeta),
+      );
+    }
+    if (data.containsKey('last_sync_at')) {
+      context.handle(
+        _lastSyncAtMeta,
+        lastSyncAt.isAcceptableOrUnknown(
+          data['last_sync_at']!,
+          _lastSyncAtMeta,
+        ),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {contentHash};
+  @override
+  AssetManifestData map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return AssetManifestData(
+      contentHash: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}content_hash'],
+      )!,
+      fileSizeBytes: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}file_size_bytes'],
+      )!,
+      mimeType: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}mime_type'],
+      )!,
+      durationMs: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}duration_ms'],
+      ),
+      width: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}width'],
+      ),
+      height: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}height'],
+      ),
+      localPath: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}local_path'],
+      ),
+      localVerifiedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}local_verified_at'],
+      ),
+      sourceType: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}source_type'],
+      )!,
+      sourceName: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}source_name'],
+      ),
+      importedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}imported_at'],
+      )!,
+      deletedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}deleted_at'],
+      ),
+      tombstoneReason: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}tombstone_reason'],
+      ),
+      copyCount: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}copy_count'],
+      )!,
+      lastSyncAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}last_sync_at'],
+      ),
+    );
+  }
+
+  @override
+  $AssetManifestTable createAlias(String alias) {
+    return $AssetManifestTable(attachedDatabase, alias);
+  }
+}
+
+class AssetManifestData extends DataClass
+    implements Insertable<AssetManifestData> {
+  /// SHA-256 hex digest of the file contents — serves as the primary key.
+  final String contentHash;
+
+  /// File size in bytes at import time.
+  final int fileSizeBytes;
+
+  /// MIME type, defaults to video/mp4 for breakdance training clips.
+  final String mimeType;
+
+  /// Video duration in milliseconds (populated from metadata when available).
+  final int? durationMs;
+
+  /// Video width in pixels.
+  final int? width;
+
+  /// Video height in pixels.
+  final int? height;
+
+  /// Absolute path to the local copy (null if only exists in cloud).
+  final String? localPath;
+
+  /// Last time the local file was verified to match [contentHash].
+  final DateTime? localVerifiedAt;
+
+  /// How this asset entered the library.
+  /// Values: camera, photos, files, cloud_download, legacy_migration
+  final String sourceType;
+
+  /// Human-readable source name (e.g. original filename, album name).
+  final String? sourceName;
+
+  /// When this asset was first imported into the library.
+  final DateTime importedAt;
+
+  /// Soft-delete timestamp. Non-null means the asset is in the "trash".
+  /// The file is retained for a 30-day grace period before hard deletion.
+  final DateTime? deletedAt;
+
+  /// Why the asset was soft-deleted: user, replaced, corrupted.
+  final String? tombstoneReason;
+
+  /// Number of verified copies (local + cloud). Must be >= 2 before local
+  /// deletion is permitted.
+  final int copyCount;
+
+  /// Last time any copy was synced to a cloud provider.
+  final DateTime? lastSyncAt;
+  const AssetManifestData({
+    required this.contentHash,
+    required this.fileSizeBytes,
+    required this.mimeType,
+    this.durationMs,
+    this.width,
+    this.height,
+    this.localPath,
+    this.localVerifiedAt,
+    required this.sourceType,
+    this.sourceName,
+    required this.importedAt,
+    this.deletedAt,
+    this.tombstoneReason,
+    required this.copyCount,
+    this.lastSyncAt,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['content_hash'] = Variable<String>(contentHash);
+    map['file_size_bytes'] = Variable<int>(fileSizeBytes);
+    map['mime_type'] = Variable<String>(mimeType);
+    if (!nullToAbsent || durationMs != null) {
+      map['duration_ms'] = Variable<int>(durationMs);
+    }
+    if (!nullToAbsent || width != null) {
+      map['width'] = Variable<int>(width);
+    }
+    if (!nullToAbsent || height != null) {
+      map['height'] = Variable<int>(height);
+    }
+    if (!nullToAbsent || localPath != null) {
+      map['local_path'] = Variable<String>(localPath);
+    }
+    if (!nullToAbsent || localVerifiedAt != null) {
+      map['local_verified_at'] = Variable<DateTime>(localVerifiedAt);
+    }
+    map['source_type'] = Variable<String>(sourceType);
+    if (!nullToAbsent || sourceName != null) {
+      map['source_name'] = Variable<String>(sourceName);
+    }
+    map['imported_at'] = Variable<DateTime>(importedAt);
+    if (!nullToAbsent || deletedAt != null) {
+      map['deleted_at'] = Variable<DateTime>(deletedAt);
+    }
+    if (!nullToAbsent || tombstoneReason != null) {
+      map['tombstone_reason'] = Variable<String>(tombstoneReason);
+    }
+    map['copy_count'] = Variable<int>(copyCount);
+    if (!nullToAbsent || lastSyncAt != null) {
+      map['last_sync_at'] = Variable<DateTime>(lastSyncAt);
+    }
+    return map;
+  }
+
+  AssetManifestCompanion toCompanion(bool nullToAbsent) {
+    return AssetManifestCompanion(
+      contentHash: Value(contentHash),
+      fileSizeBytes: Value(fileSizeBytes),
+      mimeType: Value(mimeType),
+      durationMs: durationMs == null && nullToAbsent
+          ? const Value.absent()
+          : Value(durationMs),
+      width: width == null && nullToAbsent
+          ? const Value.absent()
+          : Value(width),
+      height: height == null && nullToAbsent
+          ? const Value.absent()
+          : Value(height),
+      localPath: localPath == null && nullToAbsent
+          ? const Value.absent()
+          : Value(localPath),
+      localVerifiedAt: localVerifiedAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(localVerifiedAt),
+      sourceType: Value(sourceType),
+      sourceName: sourceName == null && nullToAbsent
+          ? const Value.absent()
+          : Value(sourceName),
+      importedAt: Value(importedAt),
+      deletedAt: deletedAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(deletedAt),
+      tombstoneReason: tombstoneReason == null && nullToAbsent
+          ? const Value.absent()
+          : Value(tombstoneReason),
+      copyCount: Value(copyCount),
+      lastSyncAt: lastSyncAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(lastSyncAt),
+    );
+  }
+
+  factory AssetManifestData.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return AssetManifestData(
+      contentHash: serializer.fromJson<String>(json['contentHash']),
+      fileSizeBytes: serializer.fromJson<int>(json['fileSizeBytes']),
+      mimeType: serializer.fromJson<String>(json['mimeType']),
+      durationMs: serializer.fromJson<int?>(json['durationMs']),
+      width: serializer.fromJson<int?>(json['width']),
+      height: serializer.fromJson<int?>(json['height']),
+      localPath: serializer.fromJson<String?>(json['localPath']),
+      localVerifiedAt: serializer.fromJson<DateTime?>(json['localVerifiedAt']),
+      sourceType: serializer.fromJson<String>(json['sourceType']),
+      sourceName: serializer.fromJson<String?>(json['sourceName']),
+      importedAt: serializer.fromJson<DateTime>(json['importedAt']),
+      deletedAt: serializer.fromJson<DateTime?>(json['deletedAt']),
+      tombstoneReason: serializer.fromJson<String?>(json['tombstoneReason']),
+      copyCount: serializer.fromJson<int>(json['copyCount']),
+      lastSyncAt: serializer.fromJson<DateTime?>(json['lastSyncAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'contentHash': serializer.toJson<String>(contentHash),
+      'fileSizeBytes': serializer.toJson<int>(fileSizeBytes),
+      'mimeType': serializer.toJson<String>(mimeType),
+      'durationMs': serializer.toJson<int?>(durationMs),
+      'width': serializer.toJson<int?>(width),
+      'height': serializer.toJson<int?>(height),
+      'localPath': serializer.toJson<String?>(localPath),
+      'localVerifiedAt': serializer.toJson<DateTime?>(localVerifiedAt),
+      'sourceType': serializer.toJson<String>(sourceType),
+      'sourceName': serializer.toJson<String?>(sourceName),
+      'importedAt': serializer.toJson<DateTime>(importedAt),
+      'deletedAt': serializer.toJson<DateTime?>(deletedAt),
+      'tombstoneReason': serializer.toJson<String?>(tombstoneReason),
+      'copyCount': serializer.toJson<int>(copyCount),
+      'lastSyncAt': serializer.toJson<DateTime?>(lastSyncAt),
+    };
+  }
+
+  AssetManifestData copyWith({
+    String? contentHash,
+    int? fileSizeBytes,
+    String? mimeType,
+    Value<int?> durationMs = const Value.absent(),
+    Value<int?> width = const Value.absent(),
+    Value<int?> height = const Value.absent(),
+    Value<String?> localPath = const Value.absent(),
+    Value<DateTime?> localVerifiedAt = const Value.absent(),
+    String? sourceType,
+    Value<String?> sourceName = const Value.absent(),
+    DateTime? importedAt,
+    Value<DateTime?> deletedAt = const Value.absent(),
+    Value<String?> tombstoneReason = const Value.absent(),
+    int? copyCount,
+    Value<DateTime?> lastSyncAt = const Value.absent(),
+  }) => AssetManifestData(
+    contentHash: contentHash ?? this.contentHash,
+    fileSizeBytes: fileSizeBytes ?? this.fileSizeBytes,
+    mimeType: mimeType ?? this.mimeType,
+    durationMs: durationMs.present ? durationMs.value : this.durationMs,
+    width: width.present ? width.value : this.width,
+    height: height.present ? height.value : this.height,
+    localPath: localPath.present ? localPath.value : this.localPath,
+    localVerifiedAt: localVerifiedAt.present
+        ? localVerifiedAt.value
+        : this.localVerifiedAt,
+    sourceType: sourceType ?? this.sourceType,
+    sourceName: sourceName.present ? sourceName.value : this.sourceName,
+    importedAt: importedAt ?? this.importedAt,
+    deletedAt: deletedAt.present ? deletedAt.value : this.deletedAt,
+    tombstoneReason: tombstoneReason.present
+        ? tombstoneReason.value
+        : this.tombstoneReason,
+    copyCount: copyCount ?? this.copyCount,
+    lastSyncAt: lastSyncAt.present ? lastSyncAt.value : this.lastSyncAt,
+  );
+  AssetManifestData copyWithCompanion(AssetManifestCompanion data) {
+    return AssetManifestData(
+      contentHash: data.contentHash.present
+          ? data.contentHash.value
+          : this.contentHash,
+      fileSizeBytes: data.fileSizeBytes.present
+          ? data.fileSizeBytes.value
+          : this.fileSizeBytes,
+      mimeType: data.mimeType.present ? data.mimeType.value : this.mimeType,
+      durationMs: data.durationMs.present
+          ? data.durationMs.value
+          : this.durationMs,
+      width: data.width.present ? data.width.value : this.width,
+      height: data.height.present ? data.height.value : this.height,
+      localPath: data.localPath.present ? data.localPath.value : this.localPath,
+      localVerifiedAt: data.localVerifiedAt.present
+          ? data.localVerifiedAt.value
+          : this.localVerifiedAt,
+      sourceType: data.sourceType.present
+          ? data.sourceType.value
+          : this.sourceType,
+      sourceName: data.sourceName.present
+          ? data.sourceName.value
+          : this.sourceName,
+      importedAt: data.importedAt.present
+          ? data.importedAt.value
+          : this.importedAt,
+      deletedAt: data.deletedAt.present ? data.deletedAt.value : this.deletedAt,
+      tombstoneReason: data.tombstoneReason.present
+          ? data.tombstoneReason.value
+          : this.tombstoneReason,
+      copyCount: data.copyCount.present ? data.copyCount.value : this.copyCount,
+      lastSyncAt: data.lastSyncAt.present
+          ? data.lastSyncAt.value
+          : this.lastSyncAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('AssetManifestData(')
+          ..write('contentHash: $contentHash, ')
+          ..write('fileSizeBytes: $fileSizeBytes, ')
+          ..write('mimeType: $mimeType, ')
+          ..write('durationMs: $durationMs, ')
+          ..write('width: $width, ')
+          ..write('height: $height, ')
+          ..write('localPath: $localPath, ')
+          ..write('localVerifiedAt: $localVerifiedAt, ')
+          ..write('sourceType: $sourceType, ')
+          ..write('sourceName: $sourceName, ')
+          ..write('importedAt: $importedAt, ')
+          ..write('deletedAt: $deletedAt, ')
+          ..write('tombstoneReason: $tombstoneReason, ')
+          ..write('copyCount: $copyCount, ')
+          ..write('lastSyncAt: $lastSyncAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    contentHash,
+    fileSizeBytes,
+    mimeType,
+    durationMs,
+    width,
+    height,
+    localPath,
+    localVerifiedAt,
+    sourceType,
+    sourceName,
+    importedAt,
+    deletedAt,
+    tombstoneReason,
+    copyCount,
+    lastSyncAt,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is AssetManifestData &&
+          other.contentHash == this.contentHash &&
+          other.fileSizeBytes == this.fileSizeBytes &&
+          other.mimeType == this.mimeType &&
+          other.durationMs == this.durationMs &&
+          other.width == this.width &&
+          other.height == this.height &&
+          other.localPath == this.localPath &&
+          other.localVerifiedAt == this.localVerifiedAt &&
+          other.sourceType == this.sourceType &&
+          other.sourceName == this.sourceName &&
+          other.importedAt == this.importedAt &&
+          other.deletedAt == this.deletedAt &&
+          other.tombstoneReason == this.tombstoneReason &&
+          other.copyCount == this.copyCount &&
+          other.lastSyncAt == this.lastSyncAt);
+}
+
+class AssetManifestCompanion extends UpdateCompanion<AssetManifestData> {
+  final Value<String> contentHash;
+  final Value<int> fileSizeBytes;
+  final Value<String> mimeType;
+  final Value<int?> durationMs;
+  final Value<int?> width;
+  final Value<int?> height;
+  final Value<String?> localPath;
+  final Value<DateTime?> localVerifiedAt;
+  final Value<String> sourceType;
+  final Value<String?> sourceName;
+  final Value<DateTime> importedAt;
+  final Value<DateTime?> deletedAt;
+  final Value<String?> tombstoneReason;
+  final Value<int> copyCount;
+  final Value<DateTime?> lastSyncAt;
+  final Value<int> rowid;
+  const AssetManifestCompanion({
+    this.contentHash = const Value.absent(),
+    this.fileSizeBytes = const Value.absent(),
+    this.mimeType = const Value.absent(),
+    this.durationMs = const Value.absent(),
+    this.width = const Value.absent(),
+    this.height = const Value.absent(),
+    this.localPath = const Value.absent(),
+    this.localVerifiedAt = const Value.absent(),
+    this.sourceType = const Value.absent(),
+    this.sourceName = const Value.absent(),
+    this.importedAt = const Value.absent(),
+    this.deletedAt = const Value.absent(),
+    this.tombstoneReason = const Value.absent(),
+    this.copyCount = const Value.absent(),
+    this.lastSyncAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  AssetManifestCompanion.insert({
+    required String contentHash,
+    required int fileSizeBytes,
+    this.mimeType = const Value.absent(),
+    this.durationMs = const Value.absent(),
+    this.width = const Value.absent(),
+    this.height = const Value.absent(),
+    this.localPath = const Value.absent(),
+    this.localVerifiedAt = const Value.absent(),
+    required String sourceType,
+    this.sourceName = const Value.absent(),
+    required DateTime importedAt,
+    this.deletedAt = const Value.absent(),
+    this.tombstoneReason = const Value.absent(),
+    this.copyCount = const Value.absent(),
+    this.lastSyncAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  }) : contentHash = Value(contentHash),
+       fileSizeBytes = Value(fileSizeBytes),
+       sourceType = Value(sourceType),
+       importedAt = Value(importedAt);
+  static Insertable<AssetManifestData> custom({
+    Expression<String>? contentHash,
+    Expression<int>? fileSizeBytes,
+    Expression<String>? mimeType,
+    Expression<int>? durationMs,
+    Expression<int>? width,
+    Expression<int>? height,
+    Expression<String>? localPath,
+    Expression<DateTime>? localVerifiedAt,
+    Expression<String>? sourceType,
+    Expression<String>? sourceName,
+    Expression<DateTime>? importedAt,
+    Expression<DateTime>? deletedAt,
+    Expression<String>? tombstoneReason,
+    Expression<int>? copyCount,
+    Expression<DateTime>? lastSyncAt,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (contentHash != null) 'content_hash': contentHash,
+      if (fileSizeBytes != null) 'file_size_bytes': fileSizeBytes,
+      if (mimeType != null) 'mime_type': mimeType,
+      if (durationMs != null) 'duration_ms': durationMs,
+      if (width != null) 'width': width,
+      if (height != null) 'height': height,
+      if (localPath != null) 'local_path': localPath,
+      if (localVerifiedAt != null) 'local_verified_at': localVerifiedAt,
+      if (sourceType != null) 'source_type': sourceType,
+      if (sourceName != null) 'source_name': sourceName,
+      if (importedAt != null) 'imported_at': importedAt,
+      if (deletedAt != null) 'deleted_at': deletedAt,
+      if (tombstoneReason != null) 'tombstone_reason': tombstoneReason,
+      if (copyCount != null) 'copy_count': copyCount,
+      if (lastSyncAt != null) 'last_sync_at': lastSyncAt,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  AssetManifestCompanion copyWith({
+    Value<String>? contentHash,
+    Value<int>? fileSizeBytes,
+    Value<String>? mimeType,
+    Value<int?>? durationMs,
+    Value<int?>? width,
+    Value<int?>? height,
+    Value<String?>? localPath,
+    Value<DateTime?>? localVerifiedAt,
+    Value<String>? sourceType,
+    Value<String?>? sourceName,
+    Value<DateTime>? importedAt,
+    Value<DateTime?>? deletedAt,
+    Value<String?>? tombstoneReason,
+    Value<int>? copyCount,
+    Value<DateTime?>? lastSyncAt,
+    Value<int>? rowid,
+  }) {
+    return AssetManifestCompanion(
+      contentHash: contentHash ?? this.contentHash,
+      fileSizeBytes: fileSizeBytes ?? this.fileSizeBytes,
+      mimeType: mimeType ?? this.mimeType,
+      durationMs: durationMs ?? this.durationMs,
+      width: width ?? this.width,
+      height: height ?? this.height,
+      localPath: localPath ?? this.localPath,
+      localVerifiedAt: localVerifiedAt ?? this.localVerifiedAt,
+      sourceType: sourceType ?? this.sourceType,
+      sourceName: sourceName ?? this.sourceName,
+      importedAt: importedAt ?? this.importedAt,
+      deletedAt: deletedAt ?? this.deletedAt,
+      tombstoneReason: tombstoneReason ?? this.tombstoneReason,
+      copyCount: copyCount ?? this.copyCount,
+      lastSyncAt: lastSyncAt ?? this.lastSyncAt,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (contentHash.present) {
+      map['content_hash'] = Variable<String>(contentHash.value);
+    }
+    if (fileSizeBytes.present) {
+      map['file_size_bytes'] = Variable<int>(fileSizeBytes.value);
+    }
+    if (mimeType.present) {
+      map['mime_type'] = Variable<String>(mimeType.value);
+    }
+    if (durationMs.present) {
+      map['duration_ms'] = Variable<int>(durationMs.value);
+    }
+    if (width.present) {
+      map['width'] = Variable<int>(width.value);
+    }
+    if (height.present) {
+      map['height'] = Variable<int>(height.value);
+    }
+    if (localPath.present) {
+      map['local_path'] = Variable<String>(localPath.value);
+    }
+    if (localVerifiedAt.present) {
+      map['local_verified_at'] = Variable<DateTime>(localVerifiedAt.value);
+    }
+    if (sourceType.present) {
+      map['source_type'] = Variable<String>(sourceType.value);
+    }
+    if (sourceName.present) {
+      map['source_name'] = Variable<String>(sourceName.value);
+    }
+    if (importedAt.present) {
+      map['imported_at'] = Variable<DateTime>(importedAt.value);
+    }
+    if (deletedAt.present) {
+      map['deleted_at'] = Variable<DateTime>(deletedAt.value);
+    }
+    if (tombstoneReason.present) {
+      map['tombstone_reason'] = Variable<String>(tombstoneReason.value);
+    }
+    if (copyCount.present) {
+      map['copy_count'] = Variable<int>(copyCount.value);
+    }
+    if (lastSyncAt.present) {
+      map['last_sync_at'] = Variable<DateTime>(lastSyncAt.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('AssetManifestCompanion(')
+          ..write('contentHash: $contentHash, ')
+          ..write('fileSizeBytes: $fileSizeBytes, ')
+          ..write('mimeType: $mimeType, ')
+          ..write('durationMs: $durationMs, ')
+          ..write('width: $width, ')
+          ..write('height: $height, ')
+          ..write('localPath: $localPath, ')
+          ..write('localVerifiedAt: $localVerifiedAt, ')
+          ..write('sourceType: $sourceType, ')
+          ..write('sourceName: $sourceName, ')
+          ..write('importedAt: $importedAt, ')
+          ..write('deletedAt: $deletedAt, ')
+          ..write('tombstoneReason: $tombstoneReason, ')
+          ..write('copyCount: $copyCount, ')
+          ..write('lastSyncAt: $lastSyncAt, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $AssetCopiesTable extends AssetCopies
+    with TableInfo<$AssetCopiesTable, AssetCopy> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $AssetCopiesTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+    'id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _contentHashMeta = const VerificationMeta(
+    'contentHash',
+  );
+  @override
+  late final GeneratedColumn<String> contentHash = GeneratedColumn<String>(
+    'content_hash',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES asset_manifest (content_hash)',
+    ),
+  );
+  static const VerificationMeta _providerMeta = const VerificationMeta(
+    'provider',
+  );
+  @override
+  late final GeneratedColumn<String> provider = GeneratedColumn<String>(
+    'provider',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _remotePathMeta = const VerificationMeta(
+    'remotePath',
+  );
+  @override
+  late final GeneratedColumn<String> remotePath = GeneratedColumn<String>(
+    'remote_path',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _remoteEtagMeta = const VerificationMeta(
+    'remoteEtag',
+  );
+  @override
+  late final GeneratedColumn<String> remoteEtag = GeneratedColumn<String>(
+    'remote_etag',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _verifiedAtMeta = const VerificationMeta(
+    'verifiedAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> verifiedAt = GeneratedColumn<DateTime>(
+    'verified_at',
+    aliasedName,
+    true,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _statusMeta = const VerificationMeta('status');
+  @override
+  late final GeneratedColumn<String> status = GeneratedColumn<String>(
+    'status',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant('pending'),
+  );
+  static const VerificationMeta _uploadProgressMeta = const VerificationMeta(
+    'uploadProgress',
+  );
+  @override
+  late final GeneratedColumn<double> uploadProgress = GeneratedColumn<double>(
+    'upload_progress',
+    aliasedName,
+    true,
+    type: DriftSqlType.double,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _errorMessageMeta = const VerificationMeta(
+    'errorMessage',
+  );
+  @override
+  late final GeneratedColumn<String> errorMessage = GeneratedColumn<String>(
+    'error_message',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _createdAtMeta = const VerificationMeta(
+    'createdAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> createdAt = GeneratedColumn<DateTime>(
+    'created_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _updatedAtMeta = const VerificationMeta(
+    'updatedAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> updatedAt = GeneratedColumn<DateTime>(
+    'updated_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    contentHash,
+    provider,
+    remotePath,
+    remoteEtag,
+    verifiedAt,
+    status,
+    uploadProgress,
+    errorMessage,
+    createdAt,
+    updatedAt,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'asset_copies';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<AssetCopy> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    } else if (isInserting) {
+      context.missing(_idMeta);
+    }
+    if (data.containsKey('content_hash')) {
+      context.handle(
+        _contentHashMeta,
+        contentHash.isAcceptableOrUnknown(
+          data['content_hash']!,
+          _contentHashMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_contentHashMeta);
+    }
+    if (data.containsKey('provider')) {
+      context.handle(
+        _providerMeta,
+        provider.isAcceptableOrUnknown(data['provider']!, _providerMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_providerMeta);
+    }
+    if (data.containsKey('remote_path')) {
+      context.handle(
+        _remotePathMeta,
+        remotePath.isAcceptableOrUnknown(data['remote_path']!, _remotePathMeta),
+      );
+    }
+    if (data.containsKey('remote_etag')) {
+      context.handle(
+        _remoteEtagMeta,
+        remoteEtag.isAcceptableOrUnknown(data['remote_etag']!, _remoteEtagMeta),
+      );
+    }
+    if (data.containsKey('verified_at')) {
+      context.handle(
+        _verifiedAtMeta,
+        verifiedAt.isAcceptableOrUnknown(data['verified_at']!, _verifiedAtMeta),
+      );
+    }
+    if (data.containsKey('status')) {
+      context.handle(
+        _statusMeta,
+        status.isAcceptableOrUnknown(data['status']!, _statusMeta),
+      );
+    }
+    if (data.containsKey('upload_progress')) {
+      context.handle(
+        _uploadProgressMeta,
+        uploadProgress.isAcceptableOrUnknown(
+          data['upload_progress']!,
+          _uploadProgressMeta,
+        ),
+      );
+    }
+    if (data.containsKey('error_message')) {
+      context.handle(
+        _errorMessageMeta,
+        errorMessage.isAcceptableOrUnknown(
+          data['error_message']!,
+          _errorMessageMeta,
+        ),
+      );
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(
+        _createdAtMeta,
+        createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_createdAtMeta);
+    }
+    if (data.containsKey('updated_at')) {
+      context.handle(
+        _updatedAtMeta,
+        updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_updatedAtMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  AssetCopy map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return AssetCopy(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}id'],
+      )!,
+      contentHash: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}content_hash'],
+      )!,
+      provider: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}provider'],
+      )!,
+      remotePath: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}remote_path'],
+      ),
+      remoteEtag: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}remote_etag'],
+      ),
+      verifiedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}verified_at'],
+      ),
+      status: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}status'],
+      )!,
+      uploadProgress: attachedDatabase.typeMapping.read(
+        DriftSqlType.double,
+        data['${effectivePrefix}upload_progress'],
+      ),
+      errorMessage: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}error_message'],
+      ),
+      createdAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}created_at'],
+      )!,
+      updatedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}updated_at'],
+      )!,
+    );
+  }
+
+  @override
+  $AssetCopiesTable createAlias(String alias) {
+    return $AssetCopiesTable(attachedDatabase, alias);
+  }
+}
+
+class AssetCopy extends DataClass implements Insertable<AssetCopy> {
+  /// UUID for this copy record.
+  final String id;
+
+  /// FK to [AssetManifest.contentHash] — which asset this copy belongs to.
+  final String contentHash;
+
+  /// Storage provider: local, icloud, gdrive, s3.
+  final String provider;
+
+  /// Provider-specific path or key (e.g. iCloud container path, S3 object key).
+  final String? remotePath;
+
+  /// Provider-specific etag or version identifier for cache invalidation.
+  final String? remoteEtag;
+
+  /// Last time this copy was verified to exist and match [contentHash].
+  final DateTime? verifiedAt;
+
+  /// Copy lifecycle: pending → uploading → verified → failed → deleted.
+  final String status;
+
+  /// Upload/download progress as a fraction (0.0–1.0).
+  final double? uploadProgress;
+
+  /// Last error message if status is 'failed'.
+  final String? errorMessage;
+
+  /// When this copy record was created.
+  final DateTime createdAt;
+
+  /// When this copy record was last updated.
+  final DateTime updatedAt;
+  const AssetCopy({
+    required this.id,
+    required this.contentHash,
+    required this.provider,
+    this.remotePath,
+    this.remoteEtag,
+    this.verifiedAt,
+    required this.status,
+    this.uploadProgress,
+    this.errorMessage,
+    required this.createdAt,
+    required this.updatedAt,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    map['content_hash'] = Variable<String>(contentHash);
+    map['provider'] = Variable<String>(provider);
+    if (!nullToAbsent || remotePath != null) {
+      map['remote_path'] = Variable<String>(remotePath);
+    }
+    if (!nullToAbsent || remoteEtag != null) {
+      map['remote_etag'] = Variable<String>(remoteEtag);
+    }
+    if (!nullToAbsent || verifiedAt != null) {
+      map['verified_at'] = Variable<DateTime>(verifiedAt);
+    }
+    map['status'] = Variable<String>(status);
+    if (!nullToAbsent || uploadProgress != null) {
+      map['upload_progress'] = Variable<double>(uploadProgress);
+    }
+    if (!nullToAbsent || errorMessage != null) {
+      map['error_message'] = Variable<String>(errorMessage);
+    }
+    map['created_at'] = Variable<DateTime>(createdAt);
+    map['updated_at'] = Variable<DateTime>(updatedAt);
+    return map;
+  }
+
+  AssetCopiesCompanion toCompanion(bool nullToAbsent) {
+    return AssetCopiesCompanion(
+      id: Value(id),
+      contentHash: Value(contentHash),
+      provider: Value(provider),
+      remotePath: remotePath == null && nullToAbsent
+          ? const Value.absent()
+          : Value(remotePath),
+      remoteEtag: remoteEtag == null && nullToAbsent
+          ? const Value.absent()
+          : Value(remoteEtag),
+      verifiedAt: verifiedAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(verifiedAt),
+      status: Value(status),
+      uploadProgress: uploadProgress == null && nullToAbsent
+          ? const Value.absent()
+          : Value(uploadProgress),
+      errorMessage: errorMessage == null && nullToAbsent
+          ? const Value.absent()
+          : Value(errorMessage),
+      createdAt: Value(createdAt),
+      updatedAt: Value(updatedAt),
+    );
+  }
+
+  factory AssetCopy.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return AssetCopy(
+      id: serializer.fromJson<String>(json['id']),
+      contentHash: serializer.fromJson<String>(json['contentHash']),
+      provider: serializer.fromJson<String>(json['provider']),
+      remotePath: serializer.fromJson<String?>(json['remotePath']),
+      remoteEtag: serializer.fromJson<String?>(json['remoteEtag']),
+      verifiedAt: serializer.fromJson<DateTime?>(json['verifiedAt']),
+      status: serializer.fromJson<String>(json['status']),
+      uploadProgress: serializer.fromJson<double?>(json['uploadProgress']),
+      errorMessage: serializer.fromJson<String?>(json['errorMessage']),
+      createdAt: serializer.fromJson<DateTime>(json['createdAt']),
+      updatedAt: serializer.fromJson<DateTime>(json['updatedAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'contentHash': serializer.toJson<String>(contentHash),
+      'provider': serializer.toJson<String>(provider),
+      'remotePath': serializer.toJson<String?>(remotePath),
+      'remoteEtag': serializer.toJson<String?>(remoteEtag),
+      'verifiedAt': serializer.toJson<DateTime?>(verifiedAt),
+      'status': serializer.toJson<String>(status),
+      'uploadProgress': serializer.toJson<double?>(uploadProgress),
+      'errorMessage': serializer.toJson<String?>(errorMessage),
+      'createdAt': serializer.toJson<DateTime>(createdAt),
+      'updatedAt': serializer.toJson<DateTime>(updatedAt),
+    };
+  }
+
+  AssetCopy copyWith({
+    String? id,
+    String? contentHash,
+    String? provider,
+    Value<String?> remotePath = const Value.absent(),
+    Value<String?> remoteEtag = const Value.absent(),
+    Value<DateTime?> verifiedAt = const Value.absent(),
+    String? status,
+    Value<double?> uploadProgress = const Value.absent(),
+    Value<String?> errorMessage = const Value.absent(),
+    DateTime? createdAt,
+    DateTime? updatedAt,
+  }) => AssetCopy(
+    id: id ?? this.id,
+    contentHash: contentHash ?? this.contentHash,
+    provider: provider ?? this.provider,
+    remotePath: remotePath.present ? remotePath.value : this.remotePath,
+    remoteEtag: remoteEtag.present ? remoteEtag.value : this.remoteEtag,
+    verifiedAt: verifiedAt.present ? verifiedAt.value : this.verifiedAt,
+    status: status ?? this.status,
+    uploadProgress: uploadProgress.present
+        ? uploadProgress.value
+        : this.uploadProgress,
+    errorMessage: errorMessage.present ? errorMessage.value : this.errorMessage,
+    createdAt: createdAt ?? this.createdAt,
+    updatedAt: updatedAt ?? this.updatedAt,
+  );
+  AssetCopy copyWithCompanion(AssetCopiesCompanion data) {
+    return AssetCopy(
+      id: data.id.present ? data.id.value : this.id,
+      contentHash: data.contentHash.present
+          ? data.contentHash.value
+          : this.contentHash,
+      provider: data.provider.present ? data.provider.value : this.provider,
+      remotePath: data.remotePath.present
+          ? data.remotePath.value
+          : this.remotePath,
+      remoteEtag: data.remoteEtag.present
+          ? data.remoteEtag.value
+          : this.remoteEtag,
+      verifiedAt: data.verifiedAt.present
+          ? data.verifiedAt.value
+          : this.verifiedAt,
+      status: data.status.present ? data.status.value : this.status,
+      uploadProgress: data.uploadProgress.present
+          ? data.uploadProgress.value
+          : this.uploadProgress,
+      errorMessage: data.errorMessage.present
+          ? data.errorMessage.value
+          : this.errorMessage,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+      updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('AssetCopy(')
+          ..write('id: $id, ')
+          ..write('contentHash: $contentHash, ')
+          ..write('provider: $provider, ')
+          ..write('remotePath: $remotePath, ')
+          ..write('remoteEtag: $remoteEtag, ')
+          ..write('verifiedAt: $verifiedAt, ')
+          ..write('status: $status, ')
+          ..write('uploadProgress: $uploadProgress, ')
+          ..write('errorMessage: $errorMessage, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    id,
+    contentHash,
+    provider,
+    remotePath,
+    remoteEtag,
+    verifiedAt,
+    status,
+    uploadProgress,
+    errorMessage,
+    createdAt,
+    updatedAt,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is AssetCopy &&
+          other.id == this.id &&
+          other.contentHash == this.contentHash &&
+          other.provider == this.provider &&
+          other.remotePath == this.remotePath &&
+          other.remoteEtag == this.remoteEtag &&
+          other.verifiedAt == this.verifiedAt &&
+          other.status == this.status &&
+          other.uploadProgress == this.uploadProgress &&
+          other.errorMessage == this.errorMessage &&
+          other.createdAt == this.createdAt &&
+          other.updatedAt == this.updatedAt);
+}
+
+class AssetCopiesCompanion extends UpdateCompanion<AssetCopy> {
+  final Value<String> id;
+  final Value<String> contentHash;
+  final Value<String> provider;
+  final Value<String?> remotePath;
+  final Value<String?> remoteEtag;
+  final Value<DateTime?> verifiedAt;
+  final Value<String> status;
+  final Value<double?> uploadProgress;
+  final Value<String?> errorMessage;
+  final Value<DateTime> createdAt;
+  final Value<DateTime> updatedAt;
+  final Value<int> rowid;
+  const AssetCopiesCompanion({
+    this.id = const Value.absent(),
+    this.contentHash = const Value.absent(),
+    this.provider = const Value.absent(),
+    this.remotePath = const Value.absent(),
+    this.remoteEtag = const Value.absent(),
+    this.verifiedAt = const Value.absent(),
+    this.status = const Value.absent(),
+    this.uploadProgress = const Value.absent(),
+    this.errorMessage = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  AssetCopiesCompanion.insert({
+    required String id,
+    required String contentHash,
+    required String provider,
+    this.remotePath = const Value.absent(),
+    this.remoteEtag = const Value.absent(),
+    this.verifiedAt = const Value.absent(),
+    this.status = const Value.absent(),
+    this.uploadProgress = const Value.absent(),
+    this.errorMessage = const Value.absent(),
+    required DateTime createdAt,
+    required DateTime updatedAt,
+    this.rowid = const Value.absent(),
+  }) : id = Value(id),
+       contentHash = Value(contentHash),
+       provider = Value(provider),
+       createdAt = Value(createdAt),
+       updatedAt = Value(updatedAt);
+  static Insertable<AssetCopy> custom({
+    Expression<String>? id,
+    Expression<String>? contentHash,
+    Expression<String>? provider,
+    Expression<String>? remotePath,
+    Expression<String>? remoteEtag,
+    Expression<DateTime>? verifiedAt,
+    Expression<String>? status,
+    Expression<double>? uploadProgress,
+    Expression<String>? errorMessage,
+    Expression<DateTime>? createdAt,
+    Expression<DateTime>? updatedAt,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (contentHash != null) 'content_hash': contentHash,
+      if (provider != null) 'provider': provider,
+      if (remotePath != null) 'remote_path': remotePath,
+      if (remoteEtag != null) 'remote_etag': remoteEtag,
+      if (verifiedAt != null) 'verified_at': verifiedAt,
+      if (status != null) 'status': status,
+      if (uploadProgress != null) 'upload_progress': uploadProgress,
+      if (errorMessage != null) 'error_message': errorMessage,
+      if (createdAt != null) 'created_at': createdAt,
+      if (updatedAt != null) 'updated_at': updatedAt,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  AssetCopiesCompanion copyWith({
+    Value<String>? id,
+    Value<String>? contentHash,
+    Value<String>? provider,
+    Value<String?>? remotePath,
+    Value<String?>? remoteEtag,
+    Value<DateTime?>? verifiedAt,
+    Value<String>? status,
+    Value<double?>? uploadProgress,
+    Value<String?>? errorMessage,
+    Value<DateTime>? createdAt,
+    Value<DateTime>? updatedAt,
+    Value<int>? rowid,
+  }) {
+    return AssetCopiesCompanion(
+      id: id ?? this.id,
+      contentHash: contentHash ?? this.contentHash,
+      provider: provider ?? this.provider,
+      remotePath: remotePath ?? this.remotePath,
+      remoteEtag: remoteEtag ?? this.remoteEtag,
+      verifiedAt: verifiedAt ?? this.verifiedAt,
+      status: status ?? this.status,
+      uploadProgress: uploadProgress ?? this.uploadProgress,
+      errorMessage: errorMessage ?? this.errorMessage,
+      createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (contentHash.present) {
+      map['content_hash'] = Variable<String>(contentHash.value);
+    }
+    if (provider.present) {
+      map['provider'] = Variable<String>(provider.value);
+    }
+    if (remotePath.present) {
+      map['remote_path'] = Variable<String>(remotePath.value);
+    }
+    if (remoteEtag.present) {
+      map['remote_etag'] = Variable<String>(remoteEtag.value);
+    }
+    if (verifiedAt.present) {
+      map['verified_at'] = Variable<DateTime>(verifiedAt.value);
+    }
+    if (status.present) {
+      map['status'] = Variable<String>(status.value);
+    }
+    if (uploadProgress.present) {
+      map['upload_progress'] = Variable<double>(uploadProgress.value);
+    }
+    if (errorMessage.present) {
+      map['error_message'] = Variable<String>(errorMessage.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<DateTime>(createdAt.value);
+    }
+    if (updatedAt.present) {
+      map['updated_at'] = Variable<DateTime>(updatedAt.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('AssetCopiesCompanion(')
+          ..write('id: $id, ')
+          ..write('contentHash: $contentHash, ')
+          ..write('provider: $provider, ')
+          ..write('remotePath: $remotePath, ')
+          ..write('remoteEtag: $remoteEtag, ')
+          ..write('verifiedAt: $verifiedAt, ')
+          ..write('status: $status, ')
+          ..write('uploadProgress: $uploadProgress, ')
+          ..write('errorMessage: $errorMessage, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $SyncProvidersTable extends SyncProviders
+    with TableInfo<$SyncProvidersTable, SyncProvider> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $SyncProvidersTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+    'id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _providerTypeMeta = const VerificationMeta(
+    'providerType',
+  );
+  @override
+  late final GeneratedColumn<String> providerType = GeneratedColumn<String>(
+    'provider_type',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _displayNameMeta = const VerificationMeta(
+    'displayName',
+  );
+  @override
+  late final GeneratedColumn<String> displayName = GeneratedColumn<String>(
+    'display_name',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _enabledMeta = const VerificationMeta(
+    'enabled',
+  );
+  @override
+  late final GeneratedColumn<bool> enabled = GeneratedColumn<bool>(
+    'enabled',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("enabled" IN (0, 1))',
+    ),
+    defaultValue: const Constant(true),
+  );
+  static const VerificationMeta _configJsonMeta = const VerificationMeta(
+    'configJson',
+  );
+  @override
+  late final GeneratedColumn<String> configJson = GeneratedColumn<String>(
+    'config_json',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _quotaBytesMeta = const VerificationMeta(
+    'quotaBytes',
+  );
+  @override
+  late final GeneratedColumn<int> quotaBytes = GeneratedColumn<int>(
+    'quota_bytes',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _usedBytesMeta = const VerificationMeta(
+    'usedBytes',
+  );
+  @override
+  late final GeneratedColumn<int> usedBytes = GeneratedColumn<int>(
+    'used_bytes',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _lastAuthAtMeta = const VerificationMeta(
+    'lastAuthAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> lastAuthAt = GeneratedColumn<DateTime>(
+    'last_auth_at',
+    aliasedName,
+    true,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _createdAtMeta = const VerificationMeta(
+    'createdAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> createdAt = GeneratedColumn<DateTime>(
+    'created_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    providerType,
+    displayName,
+    enabled,
+    configJson,
+    quotaBytes,
+    usedBytes,
+    lastAuthAt,
+    createdAt,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'sync_providers';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<SyncProvider> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    } else if (isInserting) {
+      context.missing(_idMeta);
+    }
+    if (data.containsKey('provider_type')) {
+      context.handle(
+        _providerTypeMeta,
+        providerType.isAcceptableOrUnknown(
+          data['provider_type']!,
+          _providerTypeMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_providerTypeMeta);
+    }
+    if (data.containsKey('display_name')) {
+      context.handle(
+        _displayNameMeta,
+        displayName.isAcceptableOrUnknown(
+          data['display_name']!,
+          _displayNameMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_displayNameMeta);
+    }
+    if (data.containsKey('enabled')) {
+      context.handle(
+        _enabledMeta,
+        enabled.isAcceptableOrUnknown(data['enabled']!, _enabledMeta),
+      );
+    }
+    if (data.containsKey('config_json')) {
+      context.handle(
+        _configJsonMeta,
+        configJson.isAcceptableOrUnknown(data['config_json']!, _configJsonMeta),
+      );
+    }
+    if (data.containsKey('quota_bytes')) {
+      context.handle(
+        _quotaBytesMeta,
+        quotaBytes.isAcceptableOrUnknown(data['quota_bytes']!, _quotaBytesMeta),
+      );
+    }
+    if (data.containsKey('used_bytes')) {
+      context.handle(
+        _usedBytesMeta,
+        usedBytes.isAcceptableOrUnknown(data['used_bytes']!, _usedBytesMeta),
+      );
+    }
+    if (data.containsKey('last_auth_at')) {
+      context.handle(
+        _lastAuthAtMeta,
+        lastAuthAt.isAcceptableOrUnknown(
+          data['last_auth_at']!,
+          _lastAuthAtMeta,
+        ),
+      );
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(
+        _createdAtMeta,
+        createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_createdAtMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  SyncProvider map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return SyncProvider(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}id'],
+      )!,
+      providerType: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}provider_type'],
+      )!,
+      displayName: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}display_name'],
+      )!,
+      enabled: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}enabled'],
+      )!,
+      configJson: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}config_json'],
+      ),
+      quotaBytes: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}quota_bytes'],
+      ),
+      usedBytes: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}used_bytes'],
+      ),
+      lastAuthAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}last_auth_at'],
+      ),
+      createdAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}created_at'],
+      )!,
+    );
+  }
+
+  @override
+  $SyncProvidersTable createAlias(String alias) {
+    return $SyncProvidersTable(attachedDatabase, alias);
+  }
+}
+
+class SyncProvider extends DataClass implements Insertable<SyncProvider> {
+  /// UUID for this provider configuration.
+  final String id;
+
+  /// Provider type identifier: icloud, gdrive, s3.
+  final String providerType;
+
+  /// User-facing display name (e.g. "My Google Drive", "Work S3 Bucket").
+  final String displayName;
+
+  /// Whether this provider is active for sync operations.
+  final bool enabled;
+
+  /// Provider-specific configuration as JSON (e.g. bucket name, endpoint).
+  final String? configJson;
+
+  /// Total storage quota in bytes (null if unknown/unlimited).
+  final int? quotaBytes;
+
+  /// Used storage in bytes (null if unknown).
+  final int? usedBytes;
+
+  /// Last successful authentication timestamp.
+  final DateTime? lastAuthAt;
+
+  /// When this provider was first configured.
+  final DateTime createdAt;
+  const SyncProvider({
+    required this.id,
+    required this.providerType,
+    required this.displayName,
+    required this.enabled,
+    this.configJson,
+    this.quotaBytes,
+    this.usedBytes,
+    this.lastAuthAt,
+    required this.createdAt,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    map['provider_type'] = Variable<String>(providerType);
+    map['display_name'] = Variable<String>(displayName);
+    map['enabled'] = Variable<bool>(enabled);
+    if (!nullToAbsent || configJson != null) {
+      map['config_json'] = Variable<String>(configJson);
+    }
+    if (!nullToAbsent || quotaBytes != null) {
+      map['quota_bytes'] = Variable<int>(quotaBytes);
+    }
+    if (!nullToAbsent || usedBytes != null) {
+      map['used_bytes'] = Variable<int>(usedBytes);
+    }
+    if (!nullToAbsent || lastAuthAt != null) {
+      map['last_auth_at'] = Variable<DateTime>(lastAuthAt);
+    }
+    map['created_at'] = Variable<DateTime>(createdAt);
+    return map;
+  }
+
+  SyncProvidersCompanion toCompanion(bool nullToAbsent) {
+    return SyncProvidersCompanion(
+      id: Value(id),
+      providerType: Value(providerType),
+      displayName: Value(displayName),
+      enabled: Value(enabled),
+      configJson: configJson == null && nullToAbsent
+          ? const Value.absent()
+          : Value(configJson),
+      quotaBytes: quotaBytes == null && nullToAbsent
+          ? const Value.absent()
+          : Value(quotaBytes),
+      usedBytes: usedBytes == null && nullToAbsent
+          ? const Value.absent()
+          : Value(usedBytes),
+      lastAuthAt: lastAuthAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(lastAuthAt),
+      createdAt: Value(createdAt),
+    );
+  }
+
+  factory SyncProvider.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return SyncProvider(
+      id: serializer.fromJson<String>(json['id']),
+      providerType: serializer.fromJson<String>(json['providerType']),
+      displayName: serializer.fromJson<String>(json['displayName']),
+      enabled: serializer.fromJson<bool>(json['enabled']),
+      configJson: serializer.fromJson<String?>(json['configJson']),
+      quotaBytes: serializer.fromJson<int?>(json['quotaBytes']),
+      usedBytes: serializer.fromJson<int?>(json['usedBytes']),
+      lastAuthAt: serializer.fromJson<DateTime?>(json['lastAuthAt']),
+      createdAt: serializer.fromJson<DateTime>(json['createdAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'providerType': serializer.toJson<String>(providerType),
+      'displayName': serializer.toJson<String>(displayName),
+      'enabled': serializer.toJson<bool>(enabled),
+      'configJson': serializer.toJson<String?>(configJson),
+      'quotaBytes': serializer.toJson<int?>(quotaBytes),
+      'usedBytes': serializer.toJson<int?>(usedBytes),
+      'lastAuthAt': serializer.toJson<DateTime?>(lastAuthAt),
+      'createdAt': serializer.toJson<DateTime>(createdAt),
+    };
+  }
+
+  SyncProvider copyWith({
+    String? id,
+    String? providerType,
+    String? displayName,
+    bool? enabled,
+    Value<String?> configJson = const Value.absent(),
+    Value<int?> quotaBytes = const Value.absent(),
+    Value<int?> usedBytes = const Value.absent(),
+    Value<DateTime?> lastAuthAt = const Value.absent(),
+    DateTime? createdAt,
+  }) => SyncProvider(
+    id: id ?? this.id,
+    providerType: providerType ?? this.providerType,
+    displayName: displayName ?? this.displayName,
+    enabled: enabled ?? this.enabled,
+    configJson: configJson.present ? configJson.value : this.configJson,
+    quotaBytes: quotaBytes.present ? quotaBytes.value : this.quotaBytes,
+    usedBytes: usedBytes.present ? usedBytes.value : this.usedBytes,
+    lastAuthAt: lastAuthAt.present ? lastAuthAt.value : this.lastAuthAt,
+    createdAt: createdAt ?? this.createdAt,
+  );
+  SyncProvider copyWithCompanion(SyncProvidersCompanion data) {
+    return SyncProvider(
+      id: data.id.present ? data.id.value : this.id,
+      providerType: data.providerType.present
+          ? data.providerType.value
+          : this.providerType,
+      displayName: data.displayName.present
+          ? data.displayName.value
+          : this.displayName,
+      enabled: data.enabled.present ? data.enabled.value : this.enabled,
+      configJson: data.configJson.present
+          ? data.configJson.value
+          : this.configJson,
+      quotaBytes: data.quotaBytes.present
+          ? data.quotaBytes.value
+          : this.quotaBytes,
+      usedBytes: data.usedBytes.present ? data.usedBytes.value : this.usedBytes,
+      lastAuthAt: data.lastAuthAt.present
+          ? data.lastAuthAt.value
+          : this.lastAuthAt,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('SyncProvider(')
+          ..write('id: $id, ')
+          ..write('providerType: $providerType, ')
+          ..write('displayName: $displayName, ')
+          ..write('enabled: $enabled, ')
+          ..write('configJson: $configJson, ')
+          ..write('quotaBytes: $quotaBytes, ')
+          ..write('usedBytes: $usedBytes, ')
+          ..write('lastAuthAt: $lastAuthAt, ')
+          ..write('createdAt: $createdAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    id,
+    providerType,
+    displayName,
+    enabled,
+    configJson,
+    quotaBytes,
+    usedBytes,
+    lastAuthAt,
+    createdAt,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is SyncProvider &&
+          other.id == this.id &&
+          other.providerType == this.providerType &&
+          other.displayName == this.displayName &&
+          other.enabled == this.enabled &&
+          other.configJson == this.configJson &&
+          other.quotaBytes == this.quotaBytes &&
+          other.usedBytes == this.usedBytes &&
+          other.lastAuthAt == this.lastAuthAt &&
+          other.createdAt == this.createdAt);
+}
+
+class SyncProvidersCompanion extends UpdateCompanion<SyncProvider> {
+  final Value<String> id;
+  final Value<String> providerType;
+  final Value<String> displayName;
+  final Value<bool> enabled;
+  final Value<String?> configJson;
+  final Value<int?> quotaBytes;
+  final Value<int?> usedBytes;
+  final Value<DateTime?> lastAuthAt;
+  final Value<DateTime> createdAt;
+  final Value<int> rowid;
+  const SyncProvidersCompanion({
+    this.id = const Value.absent(),
+    this.providerType = const Value.absent(),
+    this.displayName = const Value.absent(),
+    this.enabled = const Value.absent(),
+    this.configJson = const Value.absent(),
+    this.quotaBytes = const Value.absent(),
+    this.usedBytes = const Value.absent(),
+    this.lastAuthAt = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  SyncProvidersCompanion.insert({
+    required String id,
+    required String providerType,
+    required String displayName,
+    this.enabled = const Value.absent(),
+    this.configJson = const Value.absent(),
+    this.quotaBytes = const Value.absent(),
+    this.usedBytes = const Value.absent(),
+    this.lastAuthAt = const Value.absent(),
+    required DateTime createdAt,
+    this.rowid = const Value.absent(),
+  }) : id = Value(id),
+       providerType = Value(providerType),
+       displayName = Value(displayName),
+       createdAt = Value(createdAt);
+  static Insertable<SyncProvider> custom({
+    Expression<String>? id,
+    Expression<String>? providerType,
+    Expression<String>? displayName,
+    Expression<bool>? enabled,
+    Expression<String>? configJson,
+    Expression<int>? quotaBytes,
+    Expression<int>? usedBytes,
+    Expression<DateTime>? lastAuthAt,
+    Expression<DateTime>? createdAt,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (providerType != null) 'provider_type': providerType,
+      if (displayName != null) 'display_name': displayName,
+      if (enabled != null) 'enabled': enabled,
+      if (configJson != null) 'config_json': configJson,
+      if (quotaBytes != null) 'quota_bytes': quotaBytes,
+      if (usedBytes != null) 'used_bytes': usedBytes,
+      if (lastAuthAt != null) 'last_auth_at': lastAuthAt,
+      if (createdAt != null) 'created_at': createdAt,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  SyncProvidersCompanion copyWith({
+    Value<String>? id,
+    Value<String>? providerType,
+    Value<String>? displayName,
+    Value<bool>? enabled,
+    Value<String?>? configJson,
+    Value<int?>? quotaBytes,
+    Value<int?>? usedBytes,
+    Value<DateTime?>? lastAuthAt,
+    Value<DateTime>? createdAt,
+    Value<int>? rowid,
+  }) {
+    return SyncProvidersCompanion(
+      id: id ?? this.id,
+      providerType: providerType ?? this.providerType,
+      displayName: displayName ?? this.displayName,
+      enabled: enabled ?? this.enabled,
+      configJson: configJson ?? this.configJson,
+      quotaBytes: quotaBytes ?? this.quotaBytes,
+      usedBytes: usedBytes ?? this.usedBytes,
+      lastAuthAt: lastAuthAt ?? this.lastAuthAt,
+      createdAt: createdAt ?? this.createdAt,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (providerType.present) {
+      map['provider_type'] = Variable<String>(providerType.value);
+    }
+    if (displayName.present) {
+      map['display_name'] = Variable<String>(displayName.value);
+    }
+    if (enabled.present) {
+      map['enabled'] = Variable<bool>(enabled.value);
+    }
+    if (configJson.present) {
+      map['config_json'] = Variable<String>(configJson.value);
+    }
+    if (quotaBytes.present) {
+      map['quota_bytes'] = Variable<int>(quotaBytes.value);
+    }
+    if (usedBytes.present) {
+      map['used_bytes'] = Variable<int>(usedBytes.value);
+    }
+    if (lastAuthAt.present) {
+      map['last_auth_at'] = Variable<DateTime>(lastAuthAt.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<DateTime>(createdAt.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('SyncProvidersCompanion(')
+          ..write('id: $id, ')
+          ..write('providerType: $providerType, ')
+          ..write('displayName: $displayName, ')
+          ..write('enabled: $enabled, ')
+          ..write('configJson: $configJson, ')
+          ..write('quotaBytes: $quotaBytes, ')
+          ..write('usedBytes: $usedBytes, ')
+          ..write('lastAuthAt: $lastAuthAt, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $SyncOperationsTable extends SyncOperations
+    with TableInfo<$SyncOperationsTable, SyncOperation> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $SyncOperationsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+    'id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _contentHashMeta = const VerificationMeta(
+    'contentHash',
+  );
+  @override
+  late final GeneratedColumn<String> contentHash = GeneratedColumn<String>(
+    'content_hash',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _providerIdMeta = const VerificationMeta(
+    'providerId',
+  );
+  @override
+  late final GeneratedColumn<String> providerId = GeneratedColumn<String>(
+    'provider_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _operationTypeMeta = const VerificationMeta(
+    'operationType',
+  );
+  @override
+  late final GeneratedColumn<String> operationType = GeneratedColumn<String>(
+    'operation_type',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _statusMeta = const VerificationMeta('status');
+  @override
+  late final GeneratedColumn<String> status = GeneratedColumn<String>(
+    'status',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant('queued'),
+  );
+  static const VerificationMeta _priorityMeta = const VerificationMeta(
+    'priority',
+  );
+  @override
+  late final GeneratedColumn<int> priority = GeneratedColumn<int>(
+    'priority',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0),
+  );
+  static const VerificationMeta _retryCountMeta = const VerificationMeta(
+    'retryCount',
+  );
+  @override
+  late final GeneratedColumn<int> retryCount = GeneratedColumn<int>(
+    'retry_count',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0),
+  );
+  static const VerificationMeta _maxRetriesMeta = const VerificationMeta(
+    'maxRetries',
+  );
+  @override
+  late final GeneratedColumn<int> maxRetries = GeneratedColumn<int>(
+    'max_retries',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(3),
+  );
+  static const VerificationMeta _errorMessageMeta = const VerificationMeta(
+    'errorMessage',
+  );
+  @override
+  late final GeneratedColumn<String> errorMessage = GeneratedColumn<String>(
+    'error_message',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _bytesTransferredMeta = const VerificationMeta(
+    'bytesTransferred',
+  );
+  @override
+  late final GeneratedColumn<int> bytesTransferred = GeneratedColumn<int>(
+    'bytes_transferred',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0),
+  );
+  static const VerificationMeta _totalBytesMeta = const VerificationMeta(
+    'totalBytes',
+  );
+  @override
+  late final GeneratedColumn<int> totalBytes = GeneratedColumn<int>(
+    'total_bytes',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0),
+  );
+  static const VerificationMeta _createdAtMeta = const VerificationMeta(
+    'createdAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> createdAt = GeneratedColumn<DateTime>(
+    'created_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _startedAtMeta = const VerificationMeta(
+    'startedAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> startedAt = GeneratedColumn<DateTime>(
+    'started_at',
+    aliasedName,
+    true,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _completedAtMeta = const VerificationMeta(
+    'completedAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> completedAt = GeneratedColumn<DateTime>(
+    'completed_at',
+    aliasedName,
+    true,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    contentHash,
+    providerId,
+    operationType,
+    status,
+    priority,
+    retryCount,
+    maxRetries,
+    errorMessage,
+    bytesTransferred,
+    totalBytes,
+    createdAt,
+    startedAt,
+    completedAt,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'sync_operations';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<SyncOperation> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    } else if (isInserting) {
+      context.missing(_idMeta);
+    }
+    if (data.containsKey('content_hash')) {
+      context.handle(
+        _contentHashMeta,
+        contentHash.isAcceptableOrUnknown(
+          data['content_hash']!,
+          _contentHashMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_contentHashMeta);
+    }
+    if (data.containsKey('provider_id')) {
+      context.handle(
+        _providerIdMeta,
+        providerId.isAcceptableOrUnknown(data['provider_id']!, _providerIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_providerIdMeta);
+    }
+    if (data.containsKey('operation_type')) {
+      context.handle(
+        _operationTypeMeta,
+        operationType.isAcceptableOrUnknown(
+          data['operation_type']!,
+          _operationTypeMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_operationTypeMeta);
+    }
+    if (data.containsKey('status')) {
+      context.handle(
+        _statusMeta,
+        status.isAcceptableOrUnknown(data['status']!, _statusMeta),
+      );
+    }
+    if (data.containsKey('priority')) {
+      context.handle(
+        _priorityMeta,
+        priority.isAcceptableOrUnknown(data['priority']!, _priorityMeta),
+      );
+    }
+    if (data.containsKey('retry_count')) {
+      context.handle(
+        _retryCountMeta,
+        retryCount.isAcceptableOrUnknown(data['retry_count']!, _retryCountMeta),
+      );
+    }
+    if (data.containsKey('max_retries')) {
+      context.handle(
+        _maxRetriesMeta,
+        maxRetries.isAcceptableOrUnknown(data['max_retries']!, _maxRetriesMeta),
+      );
+    }
+    if (data.containsKey('error_message')) {
+      context.handle(
+        _errorMessageMeta,
+        errorMessage.isAcceptableOrUnknown(
+          data['error_message']!,
+          _errorMessageMeta,
+        ),
+      );
+    }
+    if (data.containsKey('bytes_transferred')) {
+      context.handle(
+        _bytesTransferredMeta,
+        bytesTransferred.isAcceptableOrUnknown(
+          data['bytes_transferred']!,
+          _bytesTransferredMeta,
+        ),
+      );
+    }
+    if (data.containsKey('total_bytes')) {
+      context.handle(
+        _totalBytesMeta,
+        totalBytes.isAcceptableOrUnknown(data['total_bytes']!, _totalBytesMeta),
+      );
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(
+        _createdAtMeta,
+        createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_createdAtMeta);
+    }
+    if (data.containsKey('started_at')) {
+      context.handle(
+        _startedAtMeta,
+        startedAt.isAcceptableOrUnknown(data['started_at']!, _startedAtMeta),
+      );
+    }
+    if (data.containsKey('completed_at')) {
+      context.handle(
+        _completedAtMeta,
+        completedAt.isAcceptableOrUnknown(
+          data['completed_at']!,
+          _completedAtMeta,
+        ),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  SyncOperation map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return SyncOperation(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}id'],
+      )!,
+      contentHash: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}content_hash'],
+      )!,
+      providerId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}provider_id'],
+      )!,
+      operationType: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}operation_type'],
+      )!,
+      status: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}status'],
+      )!,
+      priority: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}priority'],
+      )!,
+      retryCount: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}retry_count'],
+      )!,
+      maxRetries: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}max_retries'],
+      )!,
+      errorMessage: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}error_message'],
+      ),
+      bytesTransferred: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}bytes_transferred'],
+      )!,
+      totalBytes: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}total_bytes'],
+      )!,
+      createdAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}created_at'],
+      )!,
+      startedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}started_at'],
+      ),
+      completedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}completed_at'],
+      ),
+    );
+  }
+
+  @override
+  $SyncOperationsTable createAlias(String alias) {
+    return $SyncOperationsTable(attachedDatabase, alias);
+  }
+}
+
+class SyncOperation extends DataClass implements Insertable<SyncOperation> {
+  /// UUID for this operation.
+  final String id;
+
+  /// Content hash of the asset being operated on.
+  final String contentHash;
+
+  /// Which provider this operation targets.
+  final String providerId;
+
+  /// What the operation does: upload, download, verify, delete_remote.
+  final String operationType;
+
+  /// Lifecycle: queued → in_progress → completed → failed.
+  final String status;
+
+  /// Higher priority operations are processed first.
+  final int priority;
+
+  /// How many times this operation has been retried.
+  final int retryCount;
+
+  /// Maximum retry attempts before giving up.
+  final int maxRetries;
+
+  /// Error message from the last failed attempt.
+  final String? errorMessage;
+
+  /// Bytes transferred so far (for progress tracking).
+  final int bytesTransferred;
+
+  /// Total bytes to transfer (for progress calculation).
+  final int totalBytes;
+
+  /// When this operation was queued.
+  final DateTime createdAt;
+
+  /// When processing started.
+  final DateTime? startedAt;
+
+  /// When the operation completed (successfully or after final failure).
+  final DateTime? completedAt;
+  const SyncOperation({
+    required this.id,
+    required this.contentHash,
+    required this.providerId,
+    required this.operationType,
+    required this.status,
+    required this.priority,
+    required this.retryCount,
+    required this.maxRetries,
+    this.errorMessage,
+    required this.bytesTransferred,
+    required this.totalBytes,
+    required this.createdAt,
+    this.startedAt,
+    this.completedAt,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    map['content_hash'] = Variable<String>(contentHash);
+    map['provider_id'] = Variable<String>(providerId);
+    map['operation_type'] = Variable<String>(operationType);
+    map['status'] = Variable<String>(status);
+    map['priority'] = Variable<int>(priority);
+    map['retry_count'] = Variable<int>(retryCount);
+    map['max_retries'] = Variable<int>(maxRetries);
+    if (!nullToAbsent || errorMessage != null) {
+      map['error_message'] = Variable<String>(errorMessage);
+    }
+    map['bytes_transferred'] = Variable<int>(bytesTransferred);
+    map['total_bytes'] = Variable<int>(totalBytes);
+    map['created_at'] = Variable<DateTime>(createdAt);
+    if (!nullToAbsent || startedAt != null) {
+      map['started_at'] = Variable<DateTime>(startedAt);
+    }
+    if (!nullToAbsent || completedAt != null) {
+      map['completed_at'] = Variable<DateTime>(completedAt);
+    }
+    return map;
+  }
+
+  SyncOperationsCompanion toCompanion(bool nullToAbsent) {
+    return SyncOperationsCompanion(
+      id: Value(id),
+      contentHash: Value(contentHash),
+      providerId: Value(providerId),
+      operationType: Value(operationType),
+      status: Value(status),
+      priority: Value(priority),
+      retryCount: Value(retryCount),
+      maxRetries: Value(maxRetries),
+      errorMessage: errorMessage == null && nullToAbsent
+          ? const Value.absent()
+          : Value(errorMessage),
+      bytesTransferred: Value(bytesTransferred),
+      totalBytes: Value(totalBytes),
+      createdAt: Value(createdAt),
+      startedAt: startedAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(startedAt),
+      completedAt: completedAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(completedAt),
+    );
+  }
+
+  factory SyncOperation.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return SyncOperation(
+      id: serializer.fromJson<String>(json['id']),
+      contentHash: serializer.fromJson<String>(json['contentHash']),
+      providerId: serializer.fromJson<String>(json['providerId']),
+      operationType: serializer.fromJson<String>(json['operationType']),
+      status: serializer.fromJson<String>(json['status']),
+      priority: serializer.fromJson<int>(json['priority']),
+      retryCount: serializer.fromJson<int>(json['retryCount']),
+      maxRetries: serializer.fromJson<int>(json['maxRetries']),
+      errorMessage: serializer.fromJson<String?>(json['errorMessage']),
+      bytesTransferred: serializer.fromJson<int>(json['bytesTransferred']),
+      totalBytes: serializer.fromJson<int>(json['totalBytes']),
+      createdAt: serializer.fromJson<DateTime>(json['createdAt']),
+      startedAt: serializer.fromJson<DateTime?>(json['startedAt']),
+      completedAt: serializer.fromJson<DateTime?>(json['completedAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'contentHash': serializer.toJson<String>(contentHash),
+      'providerId': serializer.toJson<String>(providerId),
+      'operationType': serializer.toJson<String>(operationType),
+      'status': serializer.toJson<String>(status),
+      'priority': serializer.toJson<int>(priority),
+      'retryCount': serializer.toJson<int>(retryCount),
+      'maxRetries': serializer.toJson<int>(maxRetries),
+      'errorMessage': serializer.toJson<String?>(errorMessage),
+      'bytesTransferred': serializer.toJson<int>(bytesTransferred),
+      'totalBytes': serializer.toJson<int>(totalBytes),
+      'createdAt': serializer.toJson<DateTime>(createdAt),
+      'startedAt': serializer.toJson<DateTime?>(startedAt),
+      'completedAt': serializer.toJson<DateTime?>(completedAt),
+    };
+  }
+
+  SyncOperation copyWith({
+    String? id,
+    String? contentHash,
+    String? providerId,
+    String? operationType,
+    String? status,
+    int? priority,
+    int? retryCount,
+    int? maxRetries,
+    Value<String?> errorMessage = const Value.absent(),
+    int? bytesTransferred,
+    int? totalBytes,
+    DateTime? createdAt,
+    Value<DateTime?> startedAt = const Value.absent(),
+    Value<DateTime?> completedAt = const Value.absent(),
+  }) => SyncOperation(
+    id: id ?? this.id,
+    contentHash: contentHash ?? this.contentHash,
+    providerId: providerId ?? this.providerId,
+    operationType: operationType ?? this.operationType,
+    status: status ?? this.status,
+    priority: priority ?? this.priority,
+    retryCount: retryCount ?? this.retryCount,
+    maxRetries: maxRetries ?? this.maxRetries,
+    errorMessage: errorMessage.present ? errorMessage.value : this.errorMessage,
+    bytesTransferred: bytesTransferred ?? this.bytesTransferred,
+    totalBytes: totalBytes ?? this.totalBytes,
+    createdAt: createdAt ?? this.createdAt,
+    startedAt: startedAt.present ? startedAt.value : this.startedAt,
+    completedAt: completedAt.present ? completedAt.value : this.completedAt,
+  );
+  SyncOperation copyWithCompanion(SyncOperationsCompanion data) {
+    return SyncOperation(
+      id: data.id.present ? data.id.value : this.id,
+      contentHash: data.contentHash.present
+          ? data.contentHash.value
+          : this.contentHash,
+      providerId: data.providerId.present
+          ? data.providerId.value
+          : this.providerId,
+      operationType: data.operationType.present
+          ? data.operationType.value
+          : this.operationType,
+      status: data.status.present ? data.status.value : this.status,
+      priority: data.priority.present ? data.priority.value : this.priority,
+      retryCount: data.retryCount.present
+          ? data.retryCount.value
+          : this.retryCount,
+      maxRetries: data.maxRetries.present
+          ? data.maxRetries.value
+          : this.maxRetries,
+      errorMessage: data.errorMessage.present
+          ? data.errorMessage.value
+          : this.errorMessage,
+      bytesTransferred: data.bytesTransferred.present
+          ? data.bytesTransferred.value
+          : this.bytesTransferred,
+      totalBytes: data.totalBytes.present
+          ? data.totalBytes.value
+          : this.totalBytes,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+      startedAt: data.startedAt.present ? data.startedAt.value : this.startedAt,
+      completedAt: data.completedAt.present
+          ? data.completedAt.value
+          : this.completedAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('SyncOperation(')
+          ..write('id: $id, ')
+          ..write('contentHash: $contentHash, ')
+          ..write('providerId: $providerId, ')
+          ..write('operationType: $operationType, ')
+          ..write('status: $status, ')
+          ..write('priority: $priority, ')
+          ..write('retryCount: $retryCount, ')
+          ..write('maxRetries: $maxRetries, ')
+          ..write('errorMessage: $errorMessage, ')
+          ..write('bytesTransferred: $bytesTransferred, ')
+          ..write('totalBytes: $totalBytes, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('startedAt: $startedAt, ')
+          ..write('completedAt: $completedAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    id,
+    contentHash,
+    providerId,
+    operationType,
+    status,
+    priority,
+    retryCount,
+    maxRetries,
+    errorMessage,
+    bytesTransferred,
+    totalBytes,
+    createdAt,
+    startedAt,
+    completedAt,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is SyncOperation &&
+          other.id == this.id &&
+          other.contentHash == this.contentHash &&
+          other.providerId == this.providerId &&
+          other.operationType == this.operationType &&
+          other.status == this.status &&
+          other.priority == this.priority &&
+          other.retryCount == this.retryCount &&
+          other.maxRetries == this.maxRetries &&
+          other.errorMessage == this.errorMessage &&
+          other.bytesTransferred == this.bytesTransferred &&
+          other.totalBytes == this.totalBytes &&
+          other.createdAt == this.createdAt &&
+          other.startedAt == this.startedAt &&
+          other.completedAt == this.completedAt);
+}
+
+class SyncOperationsCompanion extends UpdateCompanion<SyncOperation> {
+  final Value<String> id;
+  final Value<String> contentHash;
+  final Value<String> providerId;
+  final Value<String> operationType;
+  final Value<String> status;
+  final Value<int> priority;
+  final Value<int> retryCount;
+  final Value<int> maxRetries;
+  final Value<String?> errorMessage;
+  final Value<int> bytesTransferred;
+  final Value<int> totalBytes;
+  final Value<DateTime> createdAt;
+  final Value<DateTime?> startedAt;
+  final Value<DateTime?> completedAt;
+  final Value<int> rowid;
+  const SyncOperationsCompanion({
+    this.id = const Value.absent(),
+    this.contentHash = const Value.absent(),
+    this.providerId = const Value.absent(),
+    this.operationType = const Value.absent(),
+    this.status = const Value.absent(),
+    this.priority = const Value.absent(),
+    this.retryCount = const Value.absent(),
+    this.maxRetries = const Value.absent(),
+    this.errorMessage = const Value.absent(),
+    this.bytesTransferred = const Value.absent(),
+    this.totalBytes = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.startedAt = const Value.absent(),
+    this.completedAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  SyncOperationsCompanion.insert({
+    required String id,
+    required String contentHash,
+    required String providerId,
+    required String operationType,
+    this.status = const Value.absent(),
+    this.priority = const Value.absent(),
+    this.retryCount = const Value.absent(),
+    this.maxRetries = const Value.absent(),
+    this.errorMessage = const Value.absent(),
+    this.bytesTransferred = const Value.absent(),
+    this.totalBytes = const Value.absent(),
+    required DateTime createdAt,
+    this.startedAt = const Value.absent(),
+    this.completedAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  }) : id = Value(id),
+       contentHash = Value(contentHash),
+       providerId = Value(providerId),
+       operationType = Value(operationType),
+       createdAt = Value(createdAt);
+  static Insertable<SyncOperation> custom({
+    Expression<String>? id,
+    Expression<String>? contentHash,
+    Expression<String>? providerId,
+    Expression<String>? operationType,
+    Expression<String>? status,
+    Expression<int>? priority,
+    Expression<int>? retryCount,
+    Expression<int>? maxRetries,
+    Expression<String>? errorMessage,
+    Expression<int>? bytesTransferred,
+    Expression<int>? totalBytes,
+    Expression<DateTime>? createdAt,
+    Expression<DateTime>? startedAt,
+    Expression<DateTime>? completedAt,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (contentHash != null) 'content_hash': contentHash,
+      if (providerId != null) 'provider_id': providerId,
+      if (operationType != null) 'operation_type': operationType,
+      if (status != null) 'status': status,
+      if (priority != null) 'priority': priority,
+      if (retryCount != null) 'retry_count': retryCount,
+      if (maxRetries != null) 'max_retries': maxRetries,
+      if (errorMessage != null) 'error_message': errorMessage,
+      if (bytesTransferred != null) 'bytes_transferred': bytesTransferred,
+      if (totalBytes != null) 'total_bytes': totalBytes,
+      if (createdAt != null) 'created_at': createdAt,
+      if (startedAt != null) 'started_at': startedAt,
+      if (completedAt != null) 'completed_at': completedAt,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  SyncOperationsCompanion copyWith({
+    Value<String>? id,
+    Value<String>? contentHash,
+    Value<String>? providerId,
+    Value<String>? operationType,
+    Value<String>? status,
+    Value<int>? priority,
+    Value<int>? retryCount,
+    Value<int>? maxRetries,
+    Value<String?>? errorMessage,
+    Value<int>? bytesTransferred,
+    Value<int>? totalBytes,
+    Value<DateTime>? createdAt,
+    Value<DateTime?>? startedAt,
+    Value<DateTime?>? completedAt,
+    Value<int>? rowid,
+  }) {
+    return SyncOperationsCompanion(
+      id: id ?? this.id,
+      contentHash: contentHash ?? this.contentHash,
+      providerId: providerId ?? this.providerId,
+      operationType: operationType ?? this.operationType,
+      status: status ?? this.status,
+      priority: priority ?? this.priority,
+      retryCount: retryCount ?? this.retryCount,
+      maxRetries: maxRetries ?? this.maxRetries,
+      errorMessage: errorMessage ?? this.errorMessage,
+      bytesTransferred: bytesTransferred ?? this.bytesTransferred,
+      totalBytes: totalBytes ?? this.totalBytes,
+      createdAt: createdAt ?? this.createdAt,
+      startedAt: startedAt ?? this.startedAt,
+      completedAt: completedAt ?? this.completedAt,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (contentHash.present) {
+      map['content_hash'] = Variable<String>(contentHash.value);
+    }
+    if (providerId.present) {
+      map['provider_id'] = Variable<String>(providerId.value);
+    }
+    if (operationType.present) {
+      map['operation_type'] = Variable<String>(operationType.value);
+    }
+    if (status.present) {
+      map['status'] = Variable<String>(status.value);
+    }
+    if (priority.present) {
+      map['priority'] = Variable<int>(priority.value);
+    }
+    if (retryCount.present) {
+      map['retry_count'] = Variable<int>(retryCount.value);
+    }
+    if (maxRetries.present) {
+      map['max_retries'] = Variable<int>(maxRetries.value);
+    }
+    if (errorMessage.present) {
+      map['error_message'] = Variable<String>(errorMessage.value);
+    }
+    if (bytesTransferred.present) {
+      map['bytes_transferred'] = Variable<int>(bytesTransferred.value);
+    }
+    if (totalBytes.present) {
+      map['total_bytes'] = Variable<int>(totalBytes.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<DateTime>(createdAt.value);
+    }
+    if (startedAt.present) {
+      map['started_at'] = Variable<DateTime>(startedAt.value);
+    }
+    if (completedAt.present) {
+      map['completed_at'] = Variable<DateTime>(completedAt.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('SyncOperationsCompanion(')
+          ..write('id: $id, ')
+          ..write('contentHash: $contentHash, ')
+          ..write('providerId: $providerId, ')
+          ..write('operationType: $operationType, ')
+          ..write('status: $status, ')
+          ..write('priority: $priority, ')
+          ..write('retryCount: $retryCount, ')
+          ..write('maxRetries: $maxRetries, ')
+          ..write('errorMessage: $errorMessage, ')
+          ..write('bytesTransferred: $bytesTransferred, ')
+          ..write('totalBytes: $totalBytes, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('startedAt: $startedAt, ')
+          ..write('completedAt: $completedAt, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$AppDatabase extends GeneratedDatabase {
   _$AppDatabase(QueryExecutor e) : super(e);
   $AppDatabaseManager get managers => $AppDatabaseManager(this);
@@ -4096,12 +7290,28 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   late final $FsrsCardsTable fsrsCards = $FsrsCardsTable(this);
   late final $DecksTable decks = $DecksTable(this);
   late final $DeckMovesTable deckMoves = $DeckMovesTable(this);
+  late final $AssetManifestTable assetManifest = $AssetManifestTable(this);
+  late final $AssetCopiesTable assetCopies = $AssetCopiesTable(this);
+  late final $SyncProvidersTable syncProviders = $SyncProvidersTable(this);
+  late final $SyncOperationsTable syncOperations = $SyncOperationsTable(this);
   late final MovesDao movesDao = MovesDao(this as AppDatabase);
   late final CombosDao combosDao = CombosDao(this as AppDatabase);
   late final ReviewsDao reviewsDao = ReviewsDao(this as AppDatabase);
   late final SyncDao syncDao = SyncDao(this as AppDatabase);
   late final FsrsCardsDao fsrsCardsDao = FsrsCardsDao(this as AppDatabase);
   late final DecksDao decksDao = DecksDao(this as AppDatabase);
+  late final AssetManifestDao assetManifestDao = AssetManifestDao(
+    this as AppDatabase,
+  );
+  late final AssetCopiesDao assetCopiesDao = AssetCopiesDao(
+    this as AppDatabase,
+  );
+  late final SyncOperationsDao syncOperationsDao = SyncOperationsDao(
+    this as AppDatabase,
+  );
+  late final SyncProvidersDao syncProvidersDao = SyncProvidersDao(
+    this as AppDatabase,
+  );
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
@@ -4116,6 +7326,10 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     fsrsCards,
     decks,
     deckMoves,
+    assetManifest,
+    assetCopies,
+    syncProviders,
+    syncOperations,
   ];
   @override
   StreamQueryUpdateRules get streamUpdateRules => const StreamQueryUpdateRules([
@@ -4172,6 +7386,7 @@ typedef $$MovesTableCreateCompanionBuilder =
       Value<String> category,
       Value<String?> videoPath,
       Value<String?> originalVideoName,
+      Value<String?> contentHash,
       Value<DateTime> createdAt,
       Value<int> rowid,
     });
@@ -4183,6 +7398,7 @@ typedef $$MovesTableUpdateCompanionBuilder =
       Value<String> category,
       Value<String?> videoPath,
       Value<String?> originalVideoName,
+      Value<String?> contentHash,
       Value<DateTime> createdAt,
       Value<int> rowid,
     });
@@ -4282,6 +7498,11 @@ class $$MovesTableFilterComposer extends Composer<_$AppDatabase, $MovesTable> {
 
   ColumnFilters<String> get originalVideoName => $composableBuilder(
     column: $table.originalVideoName,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get contentHash => $composableBuilder(
+    column: $table.contentHash,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -4405,6 +7626,11 @@ class $$MovesTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<String> get contentHash => $composableBuilder(
+    column: $table.contentHash,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<DateTime> get createdAt => $composableBuilder(
     column: $table.createdAt,
     builder: (column) => ColumnOrderings(column),
@@ -4439,6 +7665,11 @@ class $$MovesTableAnnotationComposer
 
   GeneratedColumn<String> get originalVideoName => $composableBuilder(
     column: $table.originalVideoName,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get contentHash => $composableBuilder(
+    column: $table.contentHash,
     builder: (column) => column,
   );
 
@@ -4559,6 +7790,7 @@ class $$MovesTableTableManager
                 Value<String> category = const Value.absent(),
                 Value<String?> videoPath = const Value.absent(),
                 Value<String?> originalVideoName = const Value.absent(),
+                Value<String?> contentHash = const Value.absent(),
                 Value<DateTime> createdAt = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => MovesCompanion(
@@ -4568,6 +7800,7 @@ class $$MovesTableTableManager
                 category: category,
                 videoPath: videoPath,
                 originalVideoName: originalVideoName,
+                contentHash: contentHash,
                 createdAt: createdAt,
                 rowid: rowid,
               ),
@@ -4579,6 +7812,7 @@ class $$MovesTableTableManager
                 Value<String> category = const Value.absent(),
                 Value<String?> videoPath = const Value.absent(),
                 Value<String?> originalVideoName = const Value.absent(),
+                Value<String?> contentHash = const Value.absent(),
                 Value<DateTime> createdAt = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => MovesCompanion.insert(
@@ -4588,6 +7822,7 @@ class $$MovesTableTableManager
                 category: category,
                 videoPath: videoPath,
                 originalVideoName: originalVideoName,
+                contentHash: contentHash,
                 createdAt: createdAt,
                 rowid: rowid,
               ),
@@ -4691,6 +7926,7 @@ typedef $$CombosTableCreateCompanionBuilder =
       required String id,
       required String name,
       Value<String?> activeVideoPath,
+      Value<String?> contentHash,
       Value<int> rowid,
     });
 typedef $$CombosTableUpdateCompanionBuilder =
@@ -4698,6 +7934,7 @@ typedef $$CombosTableUpdateCompanionBuilder =
       Value<String> id,
       Value<String> name,
       Value<String?> activeVideoPath,
+      Value<String?> contentHash,
       Value<int> rowid,
     });
 
@@ -4764,6 +8001,11 @@ class $$CombosTableFilterComposer
 
   ColumnFilters<String> get activeVideoPath => $composableBuilder(
     column: $table.activeVideoPath,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get contentHash => $composableBuilder(
+    column: $table.contentHash,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -4841,6 +8083,11 @@ class $$CombosTableOrderingComposer
     column: $table.activeVideoPath,
     builder: (column) => ColumnOrderings(column),
   );
+
+  ColumnOrderings<String> get contentHash => $composableBuilder(
+    column: $table.contentHash,
+    builder: (column) => ColumnOrderings(column),
+  );
 }
 
 class $$CombosTableAnnotationComposer
@@ -4860,6 +8107,11 @@ class $$CombosTableAnnotationComposer
 
   GeneratedColumn<String> get activeVideoPath => $composableBuilder(
     column: $table.activeVideoPath,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get contentHash => $composableBuilder(
+    column: $table.contentHash,
     builder: (column) => column,
   );
 
@@ -4945,11 +8197,13 @@ class $$CombosTableTableManager
                 Value<String> id = const Value.absent(),
                 Value<String> name = const Value.absent(),
                 Value<String?> activeVideoPath = const Value.absent(),
+                Value<String?> contentHash = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => CombosCompanion(
                 id: id,
                 name: name,
                 activeVideoPath: activeVideoPath,
+                contentHash: contentHash,
                 rowid: rowid,
               ),
           createCompanionCallback:
@@ -4957,11 +8211,13 @@ class $$CombosTableTableManager
                 required String id,
                 required String name,
                 Value<String?> activeVideoPath = const Value.absent(),
+                Value<String?> contentHash = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => CombosCompanion.insert(
                 id: id,
                 name: name,
                 activeVideoPath: activeVideoPath,
+                contentHash: contentHash,
                 rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0
@@ -7443,6 +10699,1650 @@ typedef $$DeckMovesTableProcessedTableManager =
       DeckMove,
       PrefetchHooks Function({bool deckId, bool moveId})
     >;
+typedef $$AssetManifestTableCreateCompanionBuilder =
+    AssetManifestCompanion Function({
+      required String contentHash,
+      required int fileSizeBytes,
+      Value<String> mimeType,
+      Value<int?> durationMs,
+      Value<int?> width,
+      Value<int?> height,
+      Value<String?> localPath,
+      Value<DateTime?> localVerifiedAt,
+      required String sourceType,
+      Value<String?> sourceName,
+      required DateTime importedAt,
+      Value<DateTime?> deletedAt,
+      Value<String?> tombstoneReason,
+      Value<int> copyCount,
+      Value<DateTime?> lastSyncAt,
+      Value<int> rowid,
+    });
+typedef $$AssetManifestTableUpdateCompanionBuilder =
+    AssetManifestCompanion Function({
+      Value<String> contentHash,
+      Value<int> fileSizeBytes,
+      Value<String> mimeType,
+      Value<int?> durationMs,
+      Value<int?> width,
+      Value<int?> height,
+      Value<String?> localPath,
+      Value<DateTime?> localVerifiedAt,
+      Value<String> sourceType,
+      Value<String?> sourceName,
+      Value<DateTime> importedAt,
+      Value<DateTime?> deletedAt,
+      Value<String?> tombstoneReason,
+      Value<int> copyCount,
+      Value<DateTime?> lastSyncAt,
+      Value<int> rowid,
+    });
+
+final class $$AssetManifestTableReferences
+    extends
+        BaseReferences<_$AppDatabase, $AssetManifestTable, AssetManifestData> {
+  $$AssetManifestTableReferences(
+    super.$_db,
+    super.$_table,
+    super.$_typedResult,
+  );
+
+  static MultiTypedResultKey<$AssetCopiesTable, List<AssetCopy>>
+  _assetCopiesRefsTable(_$AppDatabase db) => MultiTypedResultKey.fromTable(
+    db.assetCopies,
+    aliasName: $_aliasNameGenerator(
+      db.assetManifest.contentHash,
+      db.assetCopies.contentHash,
+    ),
+  );
+
+  $$AssetCopiesTableProcessedTableManager get assetCopiesRefs {
+    final manager = $$AssetCopiesTableTableManager($_db, $_db.assetCopies)
+        .filter(
+          (f) => f.contentHash.contentHash.sqlEquals(
+            $_itemColumn<String>('content_hash')!,
+          ),
+        );
+
+    final cache = $_typedResult.readTableOrNull(_assetCopiesRefsTable($_db));
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
+}
+
+class $$AssetManifestTableFilterComposer
+    extends Composer<_$AppDatabase, $AssetManifestTable> {
+  $$AssetManifestTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get contentHash => $composableBuilder(
+    column: $table.contentHash,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get fileSizeBytes => $composableBuilder(
+    column: $table.fileSizeBytes,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get mimeType => $composableBuilder(
+    column: $table.mimeType,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get durationMs => $composableBuilder(
+    column: $table.durationMs,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get width => $composableBuilder(
+    column: $table.width,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get height => $composableBuilder(
+    column: $table.height,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get localPath => $composableBuilder(
+    column: $table.localPath,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get localVerifiedAt => $composableBuilder(
+    column: $table.localVerifiedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get sourceType => $composableBuilder(
+    column: $table.sourceType,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get sourceName => $composableBuilder(
+    column: $table.sourceName,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get importedAt => $composableBuilder(
+    column: $table.importedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get deletedAt => $composableBuilder(
+    column: $table.deletedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get tombstoneReason => $composableBuilder(
+    column: $table.tombstoneReason,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get copyCount => $composableBuilder(
+    column: $table.copyCount,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get lastSyncAt => $composableBuilder(
+    column: $table.lastSyncAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  Expression<bool> assetCopiesRefs(
+    Expression<bool> Function($$AssetCopiesTableFilterComposer f) f,
+  ) {
+    final $$AssetCopiesTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.contentHash,
+      referencedTable: $db.assetCopies,
+      getReferencedColumn: (t) => t.contentHash,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$AssetCopiesTableFilterComposer(
+            $db: $db,
+            $table: $db.assetCopies,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+}
+
+class $$AssetManifestTableOrderingComposer
+    extends Composer<_$AppDatabase, $AssetManifestTable> {
+  $$AssetManifestTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get contentHash => $composableBuilder(
+    column: $table.contentHash,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get fileSizeBytes => $composableBuilder(
+    column: $table.fileSizeBytes,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get mimeType => $composableBuilder(
+    column: $table.mimeType,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get durationMs => $composableBuilder(
+    column: $table.durationMs,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get width => $composableBuilder(
+    column: $table.width,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get height => $composableBuilder(
+    column: $table.height,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get localPath => $composableBuilder(
+    column: $table.localPath,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get localVerifiedAt => $composableBuilder(
+    column: $table.localVerifiedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get sourceType => $composableBuilder(
+    column: $table.sourceType,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get sourceName => $composableBuilder(
+    column: $table.sourceName,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get importedAt => $composableBuilder(
+    column: $table.importedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get deletedAt => $composableBuilder(
+    column: $table.deletedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get tombstoneReason => $composableBuilder(
+    column: $table.tombstoneReason,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get copyCount => $composableBuilder(
+    column: $table.copyCount,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get lastSyncAt => $composableBuilder(
+    column: $table.lastSyncAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$AssetManifestTableAnnotationComposer
+    extends Composer<_$AppDatabase, $AssetManifestTable> {
+  $$AssetManifestTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get contentHash => $composableBuilder(
+    column: $table.contentHash,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get fileSizeBytes => $composableBuilder(
+    column: $table.fileSizeBytes,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get mimeType =>
+      $composableBuilder(column: $table.mimeType, builder: (column) => column);
+
+  GeneratedColumn<int> get durationMs => $composableBuilder(
+    column: $table.durationMs,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get width =>
+      $composableBuilder(column: $table.width, builder: (column) => column);
+
+  GeneratedColumn<int> get height =>
+      $composableBuilder(column: $table.height, builder: (column) => column);
+
+  GeneratedColumn<String> get localPath =>
+      $composableBuilder(column: $table.localPath, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get localVerifiedAt => $composableBuilder(
+    column: $table.localVerifiedAt,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get sourceType => $composableBuilder(
+    column: $table.sourceType,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get sourceName => $composableBuilder(
+    column: $table.sourceName,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<DateTime> get importedAt => $composableBuilder(
+    column: $table.importedAt,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<DateTime> get deletedAt =>
+      $composableBuilder(column: $table.deletedAt, builder: (column) => column);
+
+  GeneratedColumn<String> get tombstoneReason => $composableBuilder(
+    column: $table.tombstoneReason,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get copyCount =>
+      $composableBuilder(column: $table.copyCount, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get lastSyncAt => $composableBuilder(
+    column: $table.lastSyncAt,
+    builder: (column) => column,
+  );
+
+  Expression<T> assetCopiesRefs<T extends Object>(
+    Expression<T> Function($$AssetCopiesTableAnnotationComposer a) f,
+  ) {
+    final $$AssetCopiesTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.contentHash,
+      referencedTable: $db.assetCopies,
+      getReferencedColumn: (t) => t.contentHash,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$AssetCopiesTableAnnotationComposer(
+            $db: $db,
+            $table: $db.assetCopies,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+}
+
+class $$AssetManifestTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $AssetManifestTable,
+          AssetManifestData,
+          $$AssetManifestTableFilterComposer,
+          $$AssetManifestTableOrderingComposer,
+          $$AssetManifestTableAnnotationComposer,
+          $$AssetManifestTableCreateCompanionBuilder,
+          $$AssetManifestTableUpdateCompanionBuilder,
+          (AssetManifestData, $$AssetManifestTableReferences),
+          AssetManifestData,
+          PrefetchHooks Function({bool assetCopiesRefs})
+        > {
+  $$AssetManifestTableTableManager(_$AppDatabase db, $AssetManifestTable table)
+    : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$AssetManifestTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$AssetManifestTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$AssetManifestTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<String> contentHash = const Value.absent(),
+                Value<int> fileSizeBytes = const Value.absent(),
+                Value<String> mimeType = const Value.absent(),
+                Value<int?> durationMs = const Value.absent(),
+                Value<int?> width = const Value.absent(),
+                Value<int?> height = const Value.absent(),
+                Value<String?> localPath = const Value.absent(),
+                Value<DateTime?> localVerifiedAt = const Value.absent(),
+                Value<String> sourceType = const Value.absent(),
+                Value<String?> sourceName = const Value.absent(),
+                Value<DateTime> importedAt = const Value.absent(),
+                Value<DateTime?> deletedAt = const Value.absent(),
+                Value<String?> tombstoneReason = const Value.absent(),
+                Value<int> copyCount = const Value.absent(),
+                Value<DateTime?> lastSyncAt = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => AssetManifestCompanion(
+                contentHash: contentHash,
+                fileSizeBytes: fileSizeBytes,
+                mimeType: mimeType,
+                durationMs: durationMs,
+                width: width,
+                height: height,
+                localPath: localPath,
+                localVerifiedAt: localVerifiedAt,
+                sourceType: sourceType,
+                sourceName: sourceName,
+                importedAt: importedAt,
+                deletedAt: deletedAt,
+                tombstoneReason: tombstoneReason,
+                copyCount: copyCount,
+                lastSyncAt: lastSyncAt,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String contentHash,
+                required int fileSizeBytes,
+                Value<String> mimeType = const Value.absent(),
+                Value<int?> durationMs = const Value.absent(),
+                Value<int?> width = const Value.absent(),
+                Value<int?> height = const Value.absent(),
+                Value<String?> localPath = const Value.absent(),
+                Value<DateTime?> localVerifiedAt = const Value.absent(),
+                required String sourceType,
+                Value<String?> sourceName = const Value.absent(),
+                required DateTime importedAt,
+                Value<DateTime?> deletedAt = const Value.absent(),
+                Value<String?> tombstoneReason = const Value.absent(),
+                Value<int> copyCount = const Value.absent(),
+                Value<DateTime?> lastSyncAt = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => AssetManifestCompanion.insert(
+                contentHash: contentHash,
+                fileSizeBytes: fileSizeBytes,
+                mimeType: mimeType,
+                durationMs: durationMs,
+                width: width,
+                height: height,
+                localPath: localPath,
+                localVerifiedAt: localVerifiedAt,
+                sourceType: sourceType,
+                sourceName: sourceName,
+                importedAt: importedAt,
+                deletedAt: deletedAt,
+                tombstoneReason: tombstoneReason,
+                copyCount: copyCount,
+                lastSyncAt: lastSyncAt,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map(
+                (e) => (
+                  e.readTable(table),
+                  $$AssetManifestTableReferences(db, table, e),
+                ),
+              )
+              .toList(),
+          prefetchHooksCallback: ({assetCopiesRefs = false}) {
+            return PrefetchHooks(
+              db: db,
+              explicitlyWatchedTables: [if (assetCopiesRefs) db.assetCopies],
+              addJoins: null,
+              getPrefetchedDataCallback: (items) async {
+                return [
+                  if (assetCopiesRefs)
+                    await $_getPrefetchedData<
+                      AssetManifestData,
+                      $AssetManifestTable,
+                      AssetCopy
+                    >(
+                      currentTable: table,
+                      referencedTable: $$AssetManifestTableReferences
+                          ._assetCopiesRefsTable(db),
+                      managerFromTypedResult: (p0) =>
+                          $$AssetManifestTableReferences(
+                            db,
+                            table,
+                            p0,
+                          ).assetCopiesRefs,
+                      referencedItemsForCurrentItem: (item, referencedItems) =>
+                          referencedItems.where(
+                            (e) => e.contentHash == item.contentHash,
+                          ),
+                      typedResults: items,
+                    ),
+                ];
+              },
+            );
+          },
+        ),
+      );
+}
+
+typedef $$AssetManifestTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $AssetManifestTable,
+      AssetManifestData,
+      $$AssetManifestTableFilterComposer,
+      $$AssetManifestTableOrderingComposer,
+      $$AssetManifestTableAnnotationComposer,
+      $$AssetManifestTableCreateCompanionBuilder,
+      $$AssetManifestTableUpdateCompanionBuilder,
+      (AssetManifestData, $$AssetManifestTableReferences),
+      AssetManifestData,
+      PrefetchHooks Function({bool assetCopiesRefs})
+    >;
+typedef $$AssetCopiesTableCreateCompanionBuilder =
+    AssetCopiesCompanion Function({
+      required String id,
+      required String contentHash,
+      required String provider,
+      Value<String?> remotePath,
+      Value<String?> remoteEtag,
+      Value<DateTime?> verifiedAt,
+      Value<String> status,
+      Value<double?> uploadProgress,
+      Value<String?> errorMessage,
+      required DateTime createdAt,
+      required DateTime updatedAt,
+      Value<int> rowid,
+    });
+typedef $$AssetCopiesTableUpdateCompanionBuilder =
+    AssetCopiesCompanion Function({
+      Value<String> id,
+      Value<String> contentHash,
+      Value<String> provider,
+      Value<String?> remotePath,
+      Value<String?> remoteEtag,
+      Value<DateTime?> verifiedAt,
+      Value<String> status,
+      Value<double?> uploadProgress,
+      Value<String?> errorMessage,
+      Value<DateTime> createdAt,
+      Value<DateTime> updatedAt,
+      Value<int> rowid,
+    });
+
+final class $$AssetCopiesTableReferences
+    extends BaseReferences<_$AppDatabase, $AssetCopiesTable, AssetCopy> {
+  $$AssetCopiesTableReferences(super.$_db, super.$_table, super.$_typedResult);
+
+  static $AssetManifestTable _contentHashTable(_$AppDatabase db) =>
+      db.assetManifest.createAlias(
+        $_aliasNameGenerator(
+          db.assetCopies.contentHash,
+          db.assetManifest.contentHash,
+        ),
+      );
+
+  $$AssetManifestTableProcessedTableManager get contentHash {
+    final $_column = $_itemColumn<String>('content_hash')!;
+
+    final manager = $$AssetManifestTableTableManager(
+      $_db,
+      $_db.assetManifest,
+    ).filter((f) => f.contentHash.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_contentHashTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+}
+
+class $$AssetCopiesTableFilterComposer
+    extends Composer<_$AppDatabase, $AssetCopiesTable> {
+  $$AssetCopiesTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get provider => $composableBuilder(
+    column: $table.provider,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get remotePath => $composableBuilder(
+    column: $table.remotePath,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get remoteEtag => $composableBuilder(
+    column: $table.remoteEtag,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get verifiedAt => $composableBuilder(
+    column: $table.verifiedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get status => $composableBuilder(
+    column: $table.status,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<double> get uploadProgress => $composableBuilder(
+    column: $table.uploadProgress,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get errorMessage => $composableBuilder(
+    column: $table.errorMessage,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  $$AssetManifestTableFilterComposer get contentHash {
+    final $$AssetManifestTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.contentHash,
+      referencedTable: $db.assetManifest,
+      getReferencedColumn: (t) => t.contentHash,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$AssetManifestTableFilterComposer(
+            $db: $db,
+            $table: $db.assetManifest,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$AssetCopiesTableOrderingComposer
+    extends Composer<_$AppDatabase, $AssetCopiesTable> {
+  $$AssetCopiesTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get provider => $composableBuilder(
+    column: $table.provider,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get remotePath => $composableBuilder(
+    column: $table.remotePath,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get remoteEtag => $composableBuilder(
+    column: $table.remoteEtag,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get verifiedAt => $composableBuilder(
+    column: $table.verifiedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get status => $composableBuilder(
+    column: $table.status,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<double> get uploadProgress => $composableBuilder(
+    column: $table.uploadProgress,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get errorMessage => $composableBuilder(
+    column: $table.errorMessage,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  $$AssetManifestTableOrderingComposer get contentHash {
+    final $$AssetManifestTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.contentHash,
+      referencedTable: $db.assetManifest,
+      getReferencedColumn: (t) => t.contentHash,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$AssetManifestTableOrderingComposer(
+            $db: $db,
+            $table: $db.assetManifest,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$AssetCopiesTableAnnotationComposer
+    extends Composer<_$AppDatabase, $AssetCopiesTable> {
+  $$AssetCopiesTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get provider =>
+      $composableBuilder(column: $table.provider, builder: (column) => column);
+
+  GeneratedColumn<String> get remotePath => $composableBuilder(
+    column: $table.remotePath,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get remoteEtag => $composableBuilder(
+    column: $table.remoteEtag,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<DateTime> get verifiedAt => $composableBuilder(
+    column: $table.verifiedAt,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get status =>
+      $composableBuilder(column: $table.status, builder: (column) => column);
+
+  GeneratedColumn<double> get uploadProgress => $composableBuilder(
+    column: $table.uploadProgress,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get errorMessage => $composableBuilder(
+    column: $table.errorMessage,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<DateTime> get createdAt =>
+      $composableBuilder(column: $table.createdAt, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get updatedAt =>
+      $composableBuilder(column: $table.updatedAt, builder: (column) => column);
+
+  $$AssetManifestTableAnnotationComposer get contentHash {
+    final $$AssetManifestTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.contentHash,
+      referencedTable: $db.assetManifest,
+      getReferencedColumn: (t) => t.contentHash,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$AssetManifestTableAnnotationComposer(
+            $db: $db,
+            $table: $db.assetManifest,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$AssetCopiesTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $AssetCopiesTable,
+          AssetCopy,
+          $$AssetCopiesTableFilterComposer,
+          $$AssetCopiesTableOrderingComposer,
+          $$AssetCopiesTableAnnotationComposer,
+          $$AssetCopiesTableCreateCompanionBuilder,
+          $$AssetCopiesTableUpdateCompanionBuilder,
+          (AssetCopy, $$AssetCopiesTableReferences),
+          AssetCopy,
+          PrefetchHooks Function({bool contentHash})
+        > {
+  $$AssetCopiesTableTableManager(_$AppDatabase db, $AssetCopiesTable table)
+    : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$AssetCopiesTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$AssetCopiesTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$AssetCopiesTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<String> id = const Value.absent(),
+                Value<String> contentHash = const Value.absent(),
+                Value<String> provider = const Value.absent(),
+                Value<String?> remotePath = const Value.absent(),
+                Value<String?> remoteEtag = const Value.absent(),
+                Value<DateTime?> verifiedAt = const Value.absent(),
+                Value<String> status = const Value.absent(),
+                Value<double?> uploadProgress = const Value.absent(),
+                Value<String?> errorMessage = const Value.absent(),
+                Value<DateTime> createdAt = const Value.absent(),
+                Value<DateTime> updatedAt = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => AssetCopiesCompanion(
+                id: id,
+                contentHash: contentHash,
+                provider: provider,
+                remotePath: remotePath,
+                remoteEtag: remoteEtag,
+                verifiedAt: verifiedAt,
+                status: status,
+                uploadProgress: uploadProgress,
+                errorMessage: errorMessage,
+                createdAt: createdAt,
+                updatedAt: updatedAt,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String id,
+                required String contentHash,
+                required String provider,
+                Value<String?> remotePath = const Value.absent(),
+                Value<String?> remoteEtag = const Value.absent(),
+                Value<DateTime?> verifiedAt = const Value.absent(),
+                Value<String> status = const Value.absent(),
+                Value<double?> uploadProgress = const Value.absent(),
+                Value<String?> errorMessage = const Value.absent(),
+                required DateTime createdAt,
+                required DateTime updatedAt,
+                Value<int> rowid = const Value.absent(),
+              }) => AssetCopiesCompanion.insert(
+                id: id,
+                contentHash: contentHash,
+                provider: provider,
+                remotePath: remotePath,
+                remoteEtag: remoteEtag,
+                verifiedAt: verifiedAt,
+                status: status,
+                uploadProgress: uploadProgress,
+                errorMessage: errorMessage,
+                createdAt: createdAt,
+                updatedAt: updatedAt,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map(
+                (e) => (
+                  e.readTable(table),
+                  $$AssetCopiesTableReferences(db, table, e),
+                ),
+              )
+              .toList(),
+          prefetchHooksCallback: ({contentHash = false}) {
+            return PrefetchHooks(
+              db: db,
+              explicitlyWatchedTables: [],
+              addJoins:
+                  <
+                    T extends TableManagerState<
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic
+                    >
+                  >(state) {
+                    if (contentHash) {
+                      state =
+                          state.withJoin(
+                                currentTable: table,
+                                currentColumn: table.contentHash,
+                                referencedTable: $$AssetCopiesTableReferences
+                                    ._contentHashTable(db),
+                                referencedColumn: $$AssetCopiesTableReferences
+                                    ._contentHashTable(db)
+                                    .contentHash,
+                              )
+                              as T;
+                    }
+
+                    return state;
+                  },
+              getPrefetchedDataCallback: (items) async {
+                return [];
+              },
+            );
+          },
+        ),
+      );
+}
+
+typedef $$AssetCopiesTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $AssetCopiesTable,
+      AssetCopy,
+      $$AssetCopiesTableFilterComposer,
+      $$AssetCopiesTableOrderingComposer,
+      $$AssetCopiesTableAnnotationComposer,
+      $$AssetCopiesTableCreateCompanionBuilder,
+      $$AssetCopiesTableUpdateCompanionBuilder,
+      (AssetCopy, $$AssetCopiesTableReferences),
+      AssetCopy,
+      PrefetchHooks Function({bool contentHash})
+    >;
+typedef $$SyncProvidersTableCreateCompanionBuilder =
+    SyncProvidersCompanion Function({
+      required String id,
+      required String providerType,
+      required String displayName,
+      Value<bool> enabled,
+      Value<String?> configJson,
+      Value<int?> quotaBytes,
+      Value<int?> usedBytes,
+      Value<DateTime?> lastAuthAt,
+      required DateTime createdAt,
+      Value<int> rowid,
+    });
+typedef $$SyncProvidersTableUpdateCompanionBuilder =
+    SyncProvidersCompanion Function({
+      Value<String> id,
+      Value<String> providerType,
+      Value<String> displayName,
+      Value<bool> enabled,
+      Value<String?> configJson,
+      Value<int?> quotaBytes,
+      Value<int?> usedBytes,
+      Value<DateTime?> lastAuthAt,
+      Value<DateTime> createdAt,
+      Value<int> rowid,
+    });
+
+class $$SyncProvidersTableFilterComposer
+    extends Composer<_$AppDatabase, $SyncProvidersTable> {
+  $$SyncProvidersTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get providerType => $composableBuilder(
+    column: $table.providerType,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get displayName => $composableBuilder(
+    column: $table.displayName,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get enabled => $composableBuilder(
+    column: $table.enabled,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get configJson => $composableBuilder(
+    column: $table.configJson,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get quotaBytes => $composableBuilder(
+    column: $table.quotaBytes,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get usedBytes => $composableBuilder(
+    column: $table.usedBytes,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get lastAuthAt => $composableBuilder(
+    column: $table.lastAuthAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$SyncProvidersTableOrderingComposer
+    extends Composer<_$AppDatabase, $SyncProvidersTable> {
+  $$SyncProvidersTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get providerType => $composableBuilder(
+    column: $table.providerType,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get displayName => $composableBuilder(
+    column: $table.displayName,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<bool> get enabled => $composableBuilder(
+    column: $table.enabled,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get configJson => $composableBuilder(
+    column: $table.configJson,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get quotaBytes => $composableBuilder(
+    column: $table.quotaBytes,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get usedBytes => $composableBuilder(
+    column: $table.usedBytes,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get lastAuthAt => $composableBuilder(
+    column: $table.lastAuthAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$SyncProvidersTableAnnotationComposer
+    extends Composer<_$AppDatabase, $SyncProvidersTable> {
+  $$SyncProvidersTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get providerType => $composableBuilder(
+    column: $table.providerType,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get displayName => $composableBuilder(
+    column: $table.displayName,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<bool> get enabled =>
+      $composableBuilder(column: $table.enabled, builder: (column) => column);
+
+  GeneratedColumn<String> get configJson => $composableBuilder(
+    column: $table.configJson,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get quotaBytes => $composableBuilder(
+    column: $table.quotaBytes,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get usedBytes =>
+      $composableBuilder(column: $table.usedBytes, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get lastAuthAt => $composableBuilder(
+    column: $table.lastAuthAt,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<DateTime> get createdAt =>
+      $composableBuilder(column: $table.createdAt, builder: (column) => column);
+}
+
+class $$SyncProvidersTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $SyncProvidersTable,
+          SyncProvider,
+          $$SyncProvidersTableFilterComposer,
+          $$SyncProvidersTableOrderingComposer,
+          $$SyncProvidersTableAnnotationComposer,
+          $$SyncProvidersTableCreateCompanionBuilder,
+          $$SyncProvidersTableUpdateCompanionBuilder,
+          (
+            SyncProvider,
+            BaseReferences<_$AppDatabase, $SyncProvidersTable, SyncProvider>,
+          ),
+          SyncProvider,
+          PrefetchHooks Function()
+        > {
+  $$SyncProvidersTableTableManager(_$AppDatabase db, $SyncProvidersTable table)
+    : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$SyncProvidersTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$SyncProvidersTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$SyncProvidersTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<String> id = const Value.absent(),
+                Value<String> providerType = const Value.absent(),
+                Value<String> displayName = const Value.absent(),
+                Value<bool> enabled = const Value.absent(),
+                Value<String?> configJson = const Value.absent(),
+                Value<int?> quotaBytes = const Value.absent(),
+                Value<int?> usedBytes = const Value.absent(),
+                Value<DateTime?> lastAuthAt = const Value.absent(),
+                Value<DateTime> createdAt = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => SyncProvidersCompanion(
+                id: id,
+                providerType: providerType,
+                displayName: displayName,
+                enabled: enabled,
+                configJson: configJson,
+                quotaBytes: quotaBytes,
+                usedBytes: usedBytes,
+                lastAuthAt: lastAuthAt,
+                createdAt: createdAt,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String id,
+                required String providerType,
+                required String displayName,
+                Value<bool> enabled = const Value.absent(),
+                Value<String?> configJson = const Value.absent(),
+                Value<int?> quotaBytes = const Value.absent(),
+                Value<int?> usedBytes = const Value.absent(),
+                Value<DateTime?> lastAuthAt = const Value.absent(),
+                required DateTime createdAt,
+                Value<int> rowid = const Value.absent(),
+              }) => SyncProvidersCompanion.insert(
+                id: id,
+                providerType: providerType,
+                displayName: displayName,
+                enabled: enabled,
+                configJson: configJson,
+                quotaBytes: quotaBytes,
+                usedBytes: usedBytes,
+                lastAuthAt: lastAuthAt,
+                createdAt: createdAt,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$SyncProvidersTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $SyncProvidersTable,
+      SyncProvider,
+      $$SyncProvidersTableFilterComposer,
+      $$SyncProvidersTableOrderingComposer,
+      $$SyncProvidersTableAnnotationComposer,
+      $$SyncProvidersTableCreateCompanionBuilder,
+      $$SyncProvidersTableUpdateCompanionBuilder,
+      (
+        SyncProvider,
+        BaseReferences<_$AppDatabase, $SyncProvidersTable, SyncProvider>,
+      ),
+      SyncProvider,
+      PrefetchHooks Function()
+    >;
+typedef $$SyncOperationsTableCreateCompanionBuilder =
+    SyncOperationsCompanion Function({
+      required String id,
+      required String contentHash,
+      required String providerId,
+      required String operationType,
+      Value<String> status,
+      Value<int> priority,
+      Value<int> retryCount,
+      Value<int> maxRetries,
+      Value<String?> errorMessage,
+      Value<int> bytesTransferred,
+      Value<int> totalBytes,
+      required DateTime createdAt,
+      Value<DateTime?> startedAt,
+      Value<DateTime?> completedAt,
+      Value<int> rowid,
+    });
+typedef $$SyncOperationsTableUpdateCompanionBuilder =
+    SyncOperationsCompanion Function({
+      Value<String> id,
+      Value<String> contentHash,
+      Value<String> providerId,
+      Value<String> operationType,
+      Value<String> status,
+      Value<int> priority,
+      Value<int> retryCount,
+      Value<int> maxRetries,
+      Value<String?> errorMessage,
+      Value<int> bytesTransferred,
+      Value<int> totalBytes,
+      Value<DateTime> createdAt,
+      Value<DateTime?> startedAt,
+      Value<DateTime?> completedAt,
+      Value<int> rowid,
+    });
+
+class $$SyncOperationsTableFilterComposer
+    extends Composer<_$AppDatabase, $SyncOperationsTable> {
+  $$SyncOperationsTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get contentHash => $composableBuilder(
+    column: $table.contentHash,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get providerId => $composableBuilder(
+    column: $table.providerId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get operationType => $composableBuilder(
+    column: $table.operationType,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get status => $composableBuilder(
+    column: $table.status,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get priority => $composableBuilder(
+    column: $table.priority,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get retryCount => $composableBuilder(
+    column: $table.retryCount,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get maxRetries => $composableBuilder(
+    column: $table.maxRetries,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get errorMessage => $composableBuilder(
+    column: $table.errorMessage,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get bytesTransferred => $composableBuilder(
+    column: $table.bytesTransferred,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get totalBytes => $composableBuilder(
+    column: $table.totalBytes,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get startedAt => $composableBuilder(
+    column: $table.startedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get completedAt => $composableBuilder(
+    column: $table.completedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$SyncOperationsTableOrderingComposer
+    extends Composer<_$AppDatabase, $SyncOperationsTable> {
+  $$SyncOperationsTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get contentHash => $composableBuilder(
+    column: $table.contentHash,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get providerId => $composableBuilder(
+    column: $table.providerId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get operationType => $composableBuilder(
+    column: $table.operationType,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get status => $composableBuilder(
+    column: $table.status,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get priority => $composableBuilder(
+    column: $table.priority,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get retryCount => $composableBuilder(
+    column: $table.retryCount,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get maxRetries => $composableBuilder(
+    column: $table.maxRetries,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get errorMessage => $composableBuilder(
+    column: $table.errorMessage,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get bytesTransferred => $composableBuilder(
+    column: $table.bytesTransferred,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get totalBytes => $composableBuilder(
+    column: $table.totalBytes,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get startedAt => $composableBuilder(
+    column: $table.startedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get completedAt => $composableBuilder(
+    column: $table.completedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$SyncOperationsTableAnnotationComposer
+    extends Composer<_$AppDatabase, $SyncOperationsTable> {
+  $$SyncOperationsTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get contentHash => $composableBuilder(
+    column: $table.contentHash,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get providerId => $composableBuilder(
+    column: $table.providerId,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get operationType => $composableBuilder(
+    column: $table.operationType,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get status =>
+      $composableBuilder(column: $table.status, builder: (column) => column);
+
+  GeneratedColumn<int> get priority =>
+      $composableBuilder(column: $table.priority, builder: (column) => column);
+
+  GeneratedColumn<int> get retryCount => $composableBuilder(
+    column: $table.retryCount,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get maxRetries => $composableBuilder(
+    column: $table.maxRetries,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get errorMessage => $composableBuilder(
+    column: $table.errorMessage,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get bytesTransferred => $composableBuilder(
+    column: $table.bytesTransferred,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get totalBytes => $composableBuilder(
+    column: $table.totalBytes,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<DateTime> get createdAt =>
+      $composableBuilder(column: $table.createdAt, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get startedAt =>
+      $composableBuilder(column: $table.startedAt, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get completedAt => $composableBuilder(
+    column: $table.completedAt,
+    builder: (column) => column,
+  );
+}
+
+class $$SyncOperationsTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $SyncOperationsTable,
+          SyncOperation,
+          $$SyncOperationsTableFilterComposer,
+          $$SyncOperationsTableOrderingComposer,
+          $$SyncOperationsTableAnnotationComposer,
+          $$SyncOperationsTableCreateCompanionBuilder,
+          $$SyncOperationsTableUpdateCompanionBuilder,
+          (
+            SyncOperation,
+            BaseReferences<_$AppDatabase, $SyncOperationsTable, SyncOperation>,
+          ),
+          SyncOperation,
+          PrefetchHooks Function()
+        > {
+  $$SyncOperationsTableTableManager(
+    _$AppDatabase db,
+    $SyncOperationsTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$SyncOperationsTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$SyncOperationsTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$SyncOperationsTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<String> id = const Value.absent(),
+                Value<String> contentHash = const Value.absent(),
+                Value<String> providerId = const Value.absent(),
+                Value<String> operationType = const Value.absent(),
+                Value<String> status = const Value.absent(),
+                Value<int> priority = const Value.absent(),
+                Value<int> retryCount = const Value.absent(),
+                Value<int> maxRetries = const Value.absent(),
+                Value<String?> errorMessage = const Value.absent(),
+                Value<int> bytesTransferred = const Value.absent(),
+                Value<int> totalBytes = const Value.absent(),
+                Value<DateTime> createdAt = const Value.absent(),
+                Value<DateTime?> startedAt = const Value.absent(),
+                Value<DateTime?> completedAt = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => SyncOperationsCompanion(
+                id: id,
+                contentHash: contentHash,
+                providerId: providerId,
+                operationType: operationType,
+                status: status,
+                priority: priority,
+                retryCount: retryCount,
+                maxRetries: maxRetries,
+                errorMessage: errorMessage,
+                bytesTransferred: bytesTransferred,
+                totalBytes: totalBytes,
+                createdAt: createdAt,
+                startedAt: startedAt,
+                completedAt: completedAt,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String id,
+                required String contentHash,
+                required String providerId,
+                required String operationType,
+                Value<String> status = const Value.absent(),
+                Value<int> priority = const Value.absent(),
+                Value<int> retryCount = const Value.absent(),
+                Value<int> maxRetries = const Value.absent(),
+                Value<String?> errorMessage = const Value.absent(),
+                Value<int> bytesTransferred = const Value.absent(),
+                Value<int> totalBytes = const Value.absent(),
+                required DateTime createdAt,
+                Value<DateTime?> startedAt = const Value.absent(),
+                Value<DateTime?> completedAt = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => SyncOperationsCompanion.insert(
+                id: id,
+                contentHash: contentHash,
+                providerId: providerId,
+                operationType: operationType,
+                status: status,
+                priority: priority,
+                retryCount: retryCount,
+                maxRetries: maxRetries,
+                errorMessage: errorMessage,
+                bytesTransferred: bytesTransferred,
+                totalBytes: totalBytes,
+                createdAt: createdAt,
+                startedAt: startedAt,
+                completedAt: completedAt,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$SyncOperationsTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $SyncOperationsTable,
+      SyncOperation,
+      $$SyncOperationsTableFilterComposer,
+      $$SyncOperationsTableOrderingComposer,
+      $$SyncOperationsTableAnnotationComposer,
+      $$SyncOperationsTableCreateCompanionBuilder,
+      $$SyncOperationsTableUpdateCompanionBuilder,
+      (
+        SyncOperation,
+        BaseReferences<_$AppDatabase, $SyncOperationsTable, SyncOperation>,
+      ),
+      SyncOperation,
+      PrefetchHooks Function()
+    >;
 
 class $AppDatabaseManager {
   final _$AppDatabase _db;
@@ -7465,4 +12365,12 @@ class $AppDatabaseManager {
       $$DecksTableTableManager(_db, _db.decks);
   $$DeckMovesTableTableManager get deckMoves =>
       $$DeckMovesTableTableManager(_db, _db.deckMoves);
+  $$AssetManifestTableTableManager get assetManifest =>
+      $$AssetManifestTableTableManager(_db, _db.assetManifest);
+  $$AssetCopiesTableTableManager get assetCopies =>
+      $$AssetCopiesTableTableManager(_db, _db.assetCopies);
+  $$SyncProvidersTableTableManager get syncProviders =>
+      $$SyncProvidersTableTableManager(_db, _db.syncProviders);
+  $$SyncOperationsTableTableManager get syncOperations =>
+      $$SyncOperationsTableTableManager(_db, _db.syncOperations);
 }
