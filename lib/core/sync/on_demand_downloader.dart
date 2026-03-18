@@ -7,6 +7,7 @@ import 'package:path/path.dart' as p;
 import '../database/database.dart';
 import '../database/daos/asset_copies_dao.dart';
 import '../database/daos/asset_manifest_dao.dart';
+import '../database/daos/sync_dao.dart';
 import '../services/app_storage_paths.dart';
 import 'asset_hash_service.dart';
 import 'cloud_provider.dart';
@@ -25,16 +26,19 @@ class OnDemandDownloader {
   final AssetCopiesDao _copiesDao;
   final AssetHashService _hashService;
   final List<CloudProvider> Function() _getProviders;
+  final SyncDao? _syncDao;
 
   OnDemandDownloader({
     required AssetManifestDao manifestDao,
     required AssetCopiesDao copiesDao,
     required AssetHashService hashService,
     required List<CloudProvider> Function() getProviders,
+    SyncDao? syncDao,
   })  : _manifestDao = manifestDao,
         _copiesDao = copiesDao,
         _hashService = hashService,
-        _getProviders = getProviders;
+        _getProviders = getProviders,
+        _syncDao = syncDao;
 
   /// Ensure a local copy exists for the given content hash.
   ///
@@ -126,6 +130,19 @@ class OnDemandDownloader {
       ));
 
       await _manifestDao.updateCopyCount(contentHash);
+
+      // Log the cloud → local state transition for audit trail
+      if (_syncDao != null) {
+        try {
+          await _syncDao.logChange(
+            entityId: contentHash,
+            table: 'asset_manifest',
+            action: 'download_restored',
+          );
+        } catch (_) {
+          // Non-fatal — logging is informational
+        }
+      }
 
       debugPrint('[OnDemandDownloader] Downloaded to $localPath');
       return localPath;

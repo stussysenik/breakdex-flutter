@@ -31,6 +31,14 @@ class GDriveProvider extends CloudProvider {
   /// Resumable upload threshold: files larger than 5 MB use resumable upload.
   static const _resumableThreshold = 5 * 1024 * 1024;
 
+  /// Whether Google Drive is configured with a valid OAuth client ID.
+  ///
+  /// Returns `false` until a real `GoogleService-Info.plist` (iOS) or
+  /// `google-services.json` (Android) is bundled with the app. This prevents
+  /// the `google_sign_in` SDK from being instantiated with a placeholder
+  /// client ID, which causes a SIGABRT at launch.
+  static bool get isConfigured => false; // TODO: flip to true once GDrive OAuth is set up
+
   @override
   String get providerType => 'gdrive';
 
@@ -50,6 +58,11 @@ class GDriveProvider extends CloudProvider {
 
   @override
   Future<bool> authenticate() async {
+    if (!isConfigured) {
+      debugPrint('[GDriveProvider] Not configured — skipping auth');
+      return false;
+    }
+
     try {
       final googleSignIn = GoogleSignIn(
         scopes: [drive.DriveApi.driveFileScope],

@@ -7,6 +7,7 @@ import 'package:uuid/uuid.dart';
 import '../database/database.dart';
 import '../database/daos/asset_copies_dao.dart';
 import '../database/daos/asset_manifest_dao.dart';
+import '../database/daos/sync_dao.dart';
 import '../database/daos/sync_operations_dao.dart';
 import '../services/connectivity_service.dart';
 import 'asset_hash_service.dart';
@@ -97,6 +98,7 @@ class AssetSyncEngine {
   // ignore: unused_field
   final SafetyGuard _safetyGuard;
   final List<CloudProvider> _providers;
+  final SyncDao? _syncDao;
 
   static const _uuid = Uuid();
 
@@ -113,13 +115,15 @@ class AssetSyncEngine {
     required NetworkPolicy networkPolicy,
     required SafetyGuard safetyGuard,
     required List<CloudProvider> providers,
+    SyncDao? syncDao,
   })  : _manifestDao = manifestDao,
         _copiesDao = copiesDao,
         _opsDao = opsDao,
         _hashService = hashService,
         _networkPolicy = networkPolicy,
         _safetyGuard = safetyGuard,
-        _providers = providers;
+        _providers = providers,
+        _syncDao = syncDao;
 
   /// Stream of sync progress updates.
   Stream<SyncProgress> get progressStream => _progressController.stream;
@@ -491,6 +495,33 @@ class AssetSyncEngine {
       );
       await _opsDao.requeueForRetry(op.id);
       await _executeOperation(op, connectionType);
+    }
+  }
+
+  /// Log a video asset state transition to sync_log for auditability.
+  ///
+  /// Creates a traceable record when a video moves between states:
+  /// local → cloud_only, cloud_only → local, present → missing, etc.
+  /// The [reason] field captures _why_ the transition happened (e.g.
+  /// "user freed space", "on-demand download", "file not found").
+  Future<void> logStateTransition({
+    required String contentHash,
+    required String fromState,
+    required String toState,
+    required String reason,
+  }) async {
+    if (_syncDao == null) return;
+    try {
+      await _syncDao.logChange(
+        entityId: contentHash,
+        table: 'asset_manifest',
+        action: 'state_transition:${fromState}_to_$toState:$reason',
+      );
+      debugPrint(
+        '[AssetSync] State transition: $contentHash $fromState → $toState ($reason)',
+      );
+    } catch (e) {
+      debugPrint('[AssetSync] Failed to log state transition: $e');
     }
   }
 

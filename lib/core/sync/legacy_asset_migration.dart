@@ -93,7 +93,15 @@ class LegacyAssetMigration {
     final file = File(videoPath);
 
     if (!await file.exists()) {
-      debugPrint('Skipping ${move.name}: video file missing at $videoPath');
+      debugPrint(
+        '[LegacyMigration] ${move.name}: video missing at $videoPath — clearing stale path',
+      );
+      // Clear the stale videoPath so the move enters the "Missing" state
+      // cleanly. All metadata (name, category, date, notes) is preserved.
+      await _movesDao.updateMove(MovesCompanion(
+        id: Value(move.id),
+        videoPath: const Value(null),
+      ));
       return;
     }
 

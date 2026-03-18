@@ -11,6 +11,10 @@ import '../../core/sync/cloud_provider.dart';
 import '../../core/sync/gdrive_setup_service.dart';
 import '../../core/sync/icloud_setup_service.dart';
 
+/// Feature flag: Google Drive requires OAuth client ID setup (GoogleService-
+/// Info.plist). Flip to `true` once the Google Cloud project is provisioned.
+const kGDriveEnabled = false;
+
 /// Configuration screen for cloud storage providers.
 ///
 /// Shows a list of configured providers with their status (connected, syncing,
@@ -294,39 +298,40 @@ class _AddProviderButton extends ConsumerWidget {
                 }
               },
             ),
-            _ProviderOption(
-              icon: Icons.add_to_drive_outlined,
-              title: 'Google Drive',
-              subtitle: 'Requires Google account sign-in',
-              onTap: () async {
-                Navigator.pop(ctx);
-                HapticFeedback.mediumImpact();
-                final result =
-                    await ref.read(gDriveSetupProvider).enable();
-                if (!context.mounted) return;
-                switch (result) {
-                  case GDriveSetupResult.enabled:
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('Google Drive connected'),
-                      ),
-                    );
-                  case GDriveSetupResult.alreadyEnabled:
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content:
-                            Text('Google Drive is already connected'),
-                      ),
-                    );
-                  case GDriveSetupResult.cancelled:
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('Google sign-in was cancelled'),
-                      ),
-                    );
-                }
-              },
-            ),
+            if (kGDriveEnabled)
+              _ProviderOption(
+                icon: Icons.add_to_drive_outlined,
+                title: 'Google Drive',
+                subtitle: 'Requires Google account sign-in',
+                onTap: () async {
+                  Navigator.pop(ctx);
+                  HapticFeedback.mediumImpact();
+                  final result =
+                      await ref.read(gDriveSetupProvider).enable();
+                  if (!context.mounted) return;
+                  switch (result) {
+                    case GDriveSetupResult.enabled:
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('Google Drive connected'),
+                        ),
+                      );
+                    case GDriveSetupResult.alreadyEnabled:
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content:
+                              Text('Google Drive is already connected'),
+                        ),
+                      );
+                    case GDriveSetupResult.cancelled:
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('Google sign-in was cancelled'),
+                        ),
+                      );
+                  }
+                },
+              ),
             _ProviderOption(
               icon: Icons.storage_outlined,
               title: 'S3 Compatible',

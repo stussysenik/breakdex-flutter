@@ -20,7 +20,12 @@ class GDriveSetupService {
   GDriveSetupService({required this.syncProvidersDao});
 
   /// Trigger Google Sign-In and configure Drive provider.
+  ///
+  /// Returns [GDriveSetupResult.cancelled] immediately if the Google OAuth
+  /// client ID hasn't been configured yet (see [GDriveProvider.isConfigured]).
   Future<GDriveSetupResult> enable() async {
+    if (!GDriveProvider.isConfigured) return GDriveSetupResult.cancelled;
+
     // Check if already configured
     final existing = await syncProvidersDao.getByType('gdrive');
     if (existing != null) {
