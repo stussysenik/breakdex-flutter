@@ -3,7 +3,6 @@ import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:path/path.dart' as p;
 import 'package:share_plus/share_plus.dart';
@@ -15,10 +14,10 @@ import '../../core/design/typography.dart';
 import '../../core/models/learning_state.dart';
 import '../../core/providers.dart';
 import '../../core/services/categories_service.dart';
-import '../../core/sync/asset_sync_engine.dart' show SyncProgress;
-import '../../core/sync/gdrive_setup_service.dart';
-import '../../core/sync/icloud_setup_service.dart';
 import '../../core/services/settings_service.dart';
+import 'widgets/cloud_sync_section.dart';
+import 'widgets/accent_color_section.dart';
+import 'widgets/rating_colors_section.dart';
 import '../../core/services/stats_export_service.dart';
 import '../../shared/widgets/action_tile.dart';
 import '../../core/services/view_names_service.dart';
@@ -29,7 +28,7 @@ final _settingsMovesProvider = StreamProvider<List<Move>>((ref) {
 });
 
 /// Reusable color swatch grid for category/rating color pickers.
-Widget _colorSwatchGrid({
+Widget colorSwatchGrid({
   required List<Color> colors,
   required Color selected,
   required ValueChanged<Color> onSelected,
@@ -208,7 +207,7 @@ class SettingsScreen extends ConsumerWidget {
             const SizedBox(height: AppSpacing.xl),
 
             // Cloud Sync — no auth dependency, iCloud uses device Apple ID
-            _CloudSyncSection(),
+            const CloudSyncSection(),
             const SizedBox(height: AppSpacing.xl),
 
             _SettingsSection(
@@ -291,12 +290,12 @@ class SettingsScreen extends ConsumerWidget {
                   const SizedBox(height: AppSpacing.md),
                   const _SettingsPanel(
                     title: 'Accent',
-                    child: _AccentColorSection(),
+                    child: AccentColorSection(),
                   ),
                   const SizedBox(height: AppSpacing.md),
                   const _SettingsPanel(
                     title: 'Ratings',
-                    child: _RatingColorsSection(),
+                    child: RatingColorsSection(),
                   ),
                 ],
               ),
@@ -548,7 +547,7 @@ class SettingsScreen extends ConsumerWidget {
                   decoration: const InputDecoration(hintText: 'Category name'),
                 ),
                 const SizedBox(height: AppSpacing.md),
-                _colorSwatchGrid(
+                colorSwatchGrid(
                   colors: categoryPresetColors,
                   selected: selectedColor,
                   onSelected: (c) => setDialogState(() => selectedColor = c),
@@ -659,7 +658,7 @@ class SettingsScreen extends ConsumerWidget {
                   decoration: const InputDecoration(hintText: 'Category name'),
                 ),
                 const SizedBox(height: AppSpacing.md),
-                _colorSwatchGrid(
+                colorSwatchGrid(
                   colors: categoryPresetColors,
                   selected: selectedColor,
                   onSelected: (c) => setDialogState(() => selectedColor = c),
@@ -1085,544 +1084,3 @@ class _DataActionTileAsyncState extends State<_DataActionTileAsync> {
   }
 }
 
-class _CloudSyncSection extends ConsumerWidget {
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final colorScheme = Theme.of(context).colorScheme;
-    final iCloudAvailable = ref.watch(iCloudAvailableProvider);
-    final configuredProviders = ref.watch(cloudProvidersProvider);
-
-    // Check if iCloud is already configured & enabled in the DB
-    final iCloudConnected = configuredProviders.whenOrNull(
-          data: (providers) =>
-              providers.any((p) => p.providerType == 'icloud'),
-        ) ??
-        false;
-
-    // Check if Google Drive is configured & enabled
-    final gDriveConnected = configuredProviders.whenOrNull(
-          data: (providers) =>
-              providers.any((p) => p.providerType == 'gdrive'),
-        ) ??
-        false;
-
-    final syncHealth = ref.watch(syncHealthProvider);
-    final syncProgress = ref.watch(assetSyncProgressProvider).valueOrNull;
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          children: [
-            Text(
-              'VIDEO BACKUP',
-              style: AppTypography.sectionHeader.copyWith(
-                color: colorScheme.secondary,
-              ),
-            ),
-            const SizedBox(width: AppSpacing.sm),
-            _SyncHealthDot(health: syncHealth),
-          ],
-        ),
-        if (syncProgress != null && syncHealth != SyncHealth.noProviders) ...[
-          const SizedBox(height: 4),
-          Text(
-            syncProgress.statusLabel,
-            style: AppTypography.caption.copyWith(
-              color: colorScheme.onSurface.withValues(alpha: 0.5),
-            ),
-          ),
-        ],
-        const SizedBox(height: AppSpacing.md),
-
-        // iCloud row
-        _SyncProviderRow(
-          icon: Icons.cloud_outlined,
-          title: 'iCloud Drive',
-          status: iCloudConnected
-              ? _ProviderStatus.connected
-              : iCloudAvailable.when(
-                  data: (available) => available
-                      ? _ProviderStatus.available
-                      : _ProviderStatus.unavailable,
-                  loading: () => _ProviderStatus.loading,
-                  error: (_, __) => _ProviderStatus.unavailable,
-                ),
-          onTap: iCloudConnected
-              ? null
-              : () => _enableICloud(context, ref),
-        ),
-        const SizedBox(height: AppSpacing.sm),
-
-        // Google Drive
-        _SyncProviderRow(
-          icon: Icons.add_to_drive_outlined,
-          title: 'Google Drive',
-          status: gDriveConnected
-              ? _ProviderStatus.connected
-              : _ProviderStatus.available,
-          onTap: gDriveConnected
-              ? null
-              : () => _enableGDrive(context, ref),
-        ),
-        const SizedBox(height: AppSpacing.sm),
-
-        // S3 — coming soon
-        _SyncProviderRow(
-          icon: Icons.storage_outlined,
-          title: 'S3 Compatible',
-          status: _ProviderStatus.comingSoon,
-          onTap: null,
-        ),
-        const SizedBox(height: AppSpacing.lg),
-
-        // Links to sync screens
-        ActionTile(
-          icon: Icons.sync,
-          label: 'Sync Status',
-          onTap: () => context.push('/settings/sync-status'),
-        ),
-        const SizedBox(height: AppSpacing.sm),
-        ActionTile(
-          icon: Icons.cleaning_services_outlined,
-          label: 'Free Up Space',
-          onTap: () => context.push('/settings/free-space'),
-        ),
-        const SizedBox(height: AppSpacing.sm),
-        ActionTile(
-          icon: Icons.help_outline,
-          label: 'How Backup Works',
-          onTap: () => context.push('/settings/sync-help'),
-        ),
-      ],
-    );
-  }
-
-  Future<void> _enableGDrive(BuildContext context, WidgetRef ref) async {
-    HapticFeedback.mediumImpact();
-    final result = await ref.read(gDriveSetupProvider).enable();
-    if (!context.mounted) return;
-
-    switch (result) {
-      case GDriveSetupResult.enabled:
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Google Drive connected')),
-        );
-      case GDriveSetupResult.alreadyEnabled:
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Google Drive is already connected'),
-          ),
-        );
-      case GDriveSetupResult.cancelled:
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Google sign-in was cancelled')),
-        );
-    }
-  }
-
-  Future<void> _enableICloud(BuildContext context, WidgetRef ref) async {
-    HapticFeedback.mediumImpact();
-    final result = await ref.read(iCloudSetupProvider).enable();
-    if (!context.mounted) return;
-
-    switch (result) {
-      case ICloudSetupResult.enabled:
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('iCloud Drive enabled')),
-        );
-      case ICloudSetupResult.alreadyEnabled:
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('iCloud Drive is already enabled')),
-        );
-      case ICloudSetupResult.notAvailable:
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text(
-              'Enable iCloud Drive in iOS Settings > [your name] > iCloud',
-            ),
-            duration: Duration(seconds: 4),
-          ),
-        );
-    }
-  }
-}
-
-enum _ProviderStatus { connected, available, unavailable, comingSoon, loading }
-
-class _SyncProviderRow extends StatelessWidget {
-  final IconData icon;
-  final String title;
-  final _ProviderStatus status;
-  final VoidCallback? onTap;
-
-  const _SyncProviderRow({
-    required this.icon,
-    required this.title,
-    required this.status,
-    this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
-    final isDisabled =
-        status == _ProviderStatus.comingSoon ||
-        status == _ProviderStatus.unavailable;
-
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.symmetric(
-          horizontal: AppSpacing.md,
-          vertical: 14,
-        ),
-        decoration: BoxDecoration(
-          color: colorScheme.surfaceContainerHighest,
-          borderRadius: BorderRadius.circular(AppRadius.sm),
-          border: Border.all(
-            color: status == _ProviderStatus.connected
-                ? AppColors.stateMastery.withValues(alpha: 0.4)
-                : colorScheme.outline.withValues(alpha: 0.22),
-          ),
-        ),
-        child: Row(
-          children: [
-            Icon(
-              icon,
-              color: isDisabled
-                  ? colorScheme.onSurface.withValues(alpha: 0.3)
-                  : colorScheme.onSurface,
-              size: 22,
-            ),
-            const SizedBox(width: AppSpacing.md),
-            Expanded(
-              child: Text(
-                title,
-                style: AppTypography.bodyMedium.copyWith(
-                  color: isDisabled
-                      ? colorScheme.onSurface.withValues(alpha: 0.3)
-                      : colorScheme.onSurface,
-                ),
-              ),
-            ),
-            _statusLabel(colorScheme),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _statusLabel(ColorScheme colorScheme) {
-    switch (status) {
-      case _ProviderStatus.connected:
-        return Text(
-          'Connected',
-          style: AppTypography.caption.copyWith(
-            color: AppColors.stateMastery,
-            fontWeight: FontWeight.w600,
-          ),
-        );
-      case _ProviderStatus.available:
-        return Text(
-          'Tap to enable',
-          style: AppTypography.caption.copyWith(
-            color: AppColors.accent,
-          ),
-        );
-      case _ProviderStatus.unavailable:
-        return Text(
-          'Not available',
-          style: AppTypography.caption.copyWith(
-            color: colorScheme.onSurface.withValues(alpha: 0.3),
-          ),
-        );
-      case _ProviderStatus.comingSoon:
-        return Text(
-          'Coming soon',
-          style: AppTypography.caption.copyWith(
-            color: colorScheme.onSurface.withValues(alpha: 0.3),
-          ),
-        );
-      case _ProviderStatus.loading:
-        return const SizedBox(
-          width: 16,
-          height: 16,
-          child: CircularProgressIndicator(strokeWidth: 2),
-        );
-    }
-  }
-}
-
-/// Colored dot indicator for overall sync health.
-///
-/// green = all synced, blue = syncing, amber = pending,
-/// red = error, gray = no providers configured.
-class _SyncHealthDot extends StatelessWidget {
-  final SyncHealth health;
-  const _SyncHealthDot({required this.health});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: 8,
-      height: 8,
-      decoration: BoxDecoration(
-        shape: BoxShape.circle,
-        color: switch (health) {
-          SyncHealth.allSynced => AppColors.stateMastery,
-          SyncHealth.syncing => Colors.blue,
-          SyncHealth.pendingUpload => Colors.amber,
-          SyncHealth.error => Colors.red,
-          SyncHealth.noProviders =>
-            Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.3),
-        },
-      ),
-    );
-  }
-}
-
-// -- Accent Color Section -----------------------------------------------------
-
-/// Curated accent color palette for global UI personalization.
-const _accentPresetColors = [
-  Color(0xFF2362A2), // Default blue
-  Color(0xFF6929C4), // Violet
-  Color(0xFF8A3FFC), // Purple
-  Color(0xFFDA1E28), // Red
-  Color(0xFFFF6F00), // Amber
-  Color(0xFF198038), // Green
-  Color(0xFF08BDBA), // Teal
-  Color(0xFF33B1FF), // Sky blue
-  Color(0xFFE040FB), // Magenta
-  Color(0xFFFF7EB6), // Pink
-  Color(0xFFD4A017), // Gold
-  Color(0xFFA2AAB4), // Neutral
-];
-
-class _AccentColorSection extends ConsumerWidget {
-  const _AccentColorSection();
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final colorScheme = Theme.of(context).colorScheme;
-    final accent = ref.watch(accentColorProvider);
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          children: [
-            Expanded(
-              child: Text(
-                'Accent Color',
-                style: AppTypography.caption.copyWith(
-                  color: colorScheme.secondary,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ),
-            TextButton(
-              onPressed: () {
-                HapticFeedback.mediumImpact();
-                ref.read(accentColorProvider.notifier).reset();
-              },
-              child: Text(
-                'Reset',
-                style: AppTypography.caption.copyWith(
-                  color: colorScheme.secondary,
-                ),
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: AppSpacing.sm),
-        Row(
-          children: [
-            Container(
-              width: 48,
-              height: 48,
-              decoration: BoxDecoration(
-                color: accent,
-                shape: BoxShape.circle,
-                border: Border.all(color: accent, width: 3),
-                boxShadow: [
-                  BoxShadow(
-                    color: accent.withValues(alpha: 0.4),
-                    blurRadius: 8,
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(width: AppSpacing.md),
-            Text(
-              '#${accent.toARGB32().toRadixString(16).substring(2).toUpperCase()}',
-              style: AppTypography.caption.copyWith(
-                color: colorScheme.secondary,
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: AppSpacing.md),
-        _colorSwatchGrid(
-          colors: _accentPresetColors,
-          selected: accent,
-          size: 36,
-          onSelected: (c) {
-            HapticFeedback.mediumImpact();
-            ref.read(accentColorProvider.notifier).set(c);
-          },
-        ),
-      ],
-    );
-  }
-}
-
-// -- Rating Colors Section ---------------------------------------------------
-
-/// Preset palette for rating color customization.
-const _ratingPresetColors = [
-  Color(0xFFDA1E28), // Red
-  Color(0xFFFF6F00), // Amber
-  Color(0xFF8E6A00), // Gold
-  Color(0xFFE040FB), // Purple
-  Color(0xFF198038), // Green
-  Color(0xFF08BDBA), // Teal
-  Color(0xFF2362A2), // Blue
-  Color(0xFF6929C4), // Violet
-];
-
-class _RatingColorsSection extends ConsumerWidget {
-  const _RatingColorsSection();
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final colorScheme = Theme.of(context).colorScheme;
-    final rc = ref.watch(ratingColorsProvider);
-
-    final entries = [
-      ('AGAIN', 'again', rc.again, Icons.close_rounded),
-      ('HARD', 'hard', rc.hard, Icons.remove_rounded),
-      ('GOOD', 'good', rc.good, Icons.check_rounded),
-      ('EASY', 'easy', rc.easy, Icons.star_rounded),
-    ];
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          children: [
-            Expanded(
-              child: Text(
-                'Rating Buttons',
-                style: AppTypography.caption.copyWith(
-                  color: colorScheme.secondary,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ),
-            TextButton(
-              onPressed: () {
-                HapticFeedback.mediumImpact();
-                ref.read(ratingColorsProvider.notifier).resetAll();
-              },
-              child: Text(
-                'Reset',
-                style: AppTypography.caption.copyWith(
-                  color: colorScheme.secondary,
-                ),
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: AppSpacing.md),
-        for (final (label, key, color, icon) in entries)
-          _RatingColorRow(
-            label: label,
-            colorKey: key,
-            currentColor: color,
-            icon: icon,
-          ),
-      ],
-    );
-  }
-}
-
-class _RatingColorRow extends ConsumerWidget {
-  const _RatingColorRow({
-    required this.label,
-    required this.colorKey,
-    required this.currentColor,
-    required this.icon,
-  });
-
-  final String label;
-  final String colorKey;
-  final Color currentColor;
-  final IconData icon;
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final colorScheme = Theme.of(context).colorScheme;
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 6),
-      child: GestureDetector(
-        onTap: () => _showColorPicker(context, ref),
-        child: Row(
-          children: [
-            Icon(icon, size: 18, color: currentColor),
-            const SizedBox(width: 10),
-            Container(
-              width: 24,
-              height: 24,
-              decoration: BoxDecoration(
-                color: currentColor,
-                borderRadius: BorderRadius.circular(6),
-              ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Text(
-                label,
-                style: AppTypography.bodyMedium.copyWith(
-                  color: colorScheme.onSurface,
-                ),
-              ),
-            ),
-            Text(
-              '#${currentColor.toARGB32().toRadixString(16).substring(2).toUpperCase()}',
-              style: AppTypography.caption.copyWith(
-                color: colorScheme.secondary,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  void _showColorPicker(BuildContext context, WidgetRef ref) {
-    showDialog(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: Text('$label Color'),
-        content: _colorSwatchGrid(
-          colors: _ratingPresetColors,
-          selected: currentColor,
-          size: 40,
-          onSelected: (c) {
-            HapticFeedback.mediumImpact();
-            ref.read(ratingColorsProvider.notifier).setColor(colorKey, c);
-            Navigator.pop(ctx);
-          },
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: const Text('Cancel'),
-          ),
-        ],
-      ),
-    );
-  }
-}
