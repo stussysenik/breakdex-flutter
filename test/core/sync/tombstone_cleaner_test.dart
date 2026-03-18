@@ -6,7 +6,7 @@ import 'package:breakdex/core/sync/tombstone_cleaner.dart';
 import 'package:drift/drift.dart' hide isNull, isNotNull;
 import 'package:flutter_test/flutter_test.dart';
 
-import '../helpers/test_database.dart';
+import '../../helpers/test_database.dart';
 
 /// A fake cloud provider for testing tombstone cleanup.
 class FakeCloudProvider implements CloudProvider {

@@ -3,7 +3,7 @@ import 'package:breakdex/core/sync/safety_guard.dart';
 import 'package:drift/drift.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-import '../helpers/test_database.dart';
+import '../../helpers/test_database.dart';
 
 void main() {
   late AppDatabase db;

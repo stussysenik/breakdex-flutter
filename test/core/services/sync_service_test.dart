@@ -2,8 +2,8 @@ import 'package:drift/drift.dart' hide isNull, isNotNull;
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:breakdex/core/database/database.dart';
-import '../helpers/test_database.dart';
-import '../helpers/test_data.dart';
+import '../../helpers/test_database.dart';
+import '../../helpers/test_data.dart';
 
 /// Unit tests for sync-related database operations.
 ///

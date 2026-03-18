@@ -7,8 +7,8 @@ import 'package:breakdex/core/services/stats_export_service.dart';
 import 'package:breakdex/features/stats/providers/stats_providers.dart';
 import 'package:breakdex/core/services/fsrs_service.dart';
 
-import '../helpers/test_database.dart';
-import '../helpers/test_data.dart';
+import '../../helpers/test_database.dart';
+import '../../helpers/test_data.dart';
 
 void main() {
   late AppDatabase db;
