@@ -125,7 +125,10 @@ Rating Breakdown:
 ${topMoves.isNotEmpty ? 'Most Practiced:\n$topMoves' : 'No moves practiced yet.'}''';
   }
 
-  /// Generates a full JSON export of all data (schema v6).
+  /// Generates a full JSON export of all data (schema v7).
+  ///
+  /// v7 changes from v6:
+  /// - moves and combos include notes field
   ///
   /// v6 changes from v5:
   /// - fsrsCards uses entityId/entityType instead of moveId (polymorphic)
@@ -154,7 +157,7 @@ ${topMoves.isNotEmpty ? 'Most Practiced:\n$topMoves' : 'No moves practiced yet.'
     }
 
     final data = {
-      'schemaVersion': 6,
+      'schemaVersion': 7,
       'exportedAt': DateTime.now().toIso8601String(),
       'appVersion': '0.6.0',
       'categories': categoriesJson,
@@ -168,6 +171,7 @@ ${topMoves.isNotEmpty ? 'Most Practiced:\n$topMoves' : 'No moves practiced yet.'
                     ? p.basename(m.videoPath!)
                     : null,
                 'originalVideoName': m.originalVideoName,
+                'notes': m.notes,
                 'createdAt': m.createdAt.toIso8601String(),
               })
           .toList(),
@@ -175,6 +179,7 @@ ${topMoves.isNotEmpty ? 'Most Practiced:\n$topMoves' : 'No moves practiced yet.'
           .map((c) => {
                 'id': c.id,
                 'name': c.name,
+                'notes': c.notes,
                 'activeVideoFilename': c.activeVideoPath != null
                     ? p.basename(c.activeVideoPath!)
                     : null,
@@ -272,7 +277,7 @@ ${topMoves.isNotEmpty ? 'Most Practiced:\n$topMoves' : 'No moves practiced yet.'
       final data = jsonDecode(json) as Map<String, dynamic>;
       final version = data['schemaVersion'] as int? ?? 1;
 
-      if (version > 6) {
+      if (version > 7) {
         return const ImportValidation(
           valid: false,
           error:
@@ -377,6 +382,7 @@ ${topMoves.isNotEmpty ? 'Most Practiced:\n$topMoves' : 'No moves practiced yet.'
               videoPath: const Value(null),
               originalVideoName:
                   Value(map['originalVideoName'] as String?),
+              notes: Value(map['notes'] as String?),
               createdAt: Value(
                 map['createdAt'] != null
                     ? DateTime.parse(map['createdAt'] as String)
@@ -399,6 +405,7 @@ ${topMoves.isNotEmpty ? 'Most Practiced:\n$topMoves' : 'No moves practiced yet.'
         await db.into(db.combos).insert(CombosCompanion.insert(
               id: id,
               name: map['name'] as String,
+              notes: Value(map['notes'] as String?),
               activeVideoPath: const Value(null),
             ));
         combosImported++;
