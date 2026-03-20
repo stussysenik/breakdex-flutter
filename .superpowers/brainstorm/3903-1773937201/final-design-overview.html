@@ -1,0 +1,170 @@
+<h2>Immersive Review Design — Complete System</h2>
+<p class="subtitle">Three contexts: Review Tab cards, Move review, and Combo review</p>
+
+<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;">
+  <!-- Review Tab Card -->
+  <div class="mockup">
+    <div class="mockup-header">REVIEW TAB (Browse)</div>
+    <div class="mockup-body" style="background:#111;color:#fff;font-family:system-ui;padding:0;overflow:hidden;height:480px;display:flex;flex-direction:column;">
+      <!-- Tab bar -->
+      <div style="padding:10px 16px 6px;display:flex;justify-content:space-between;align-items:center;">
+        <span style="font-size:14px;font-weight:700;">Review</span>
+        <div style="display:flex;gap:2px;font-size:10px;">
+          <span style="padding:4px 10px;background:#2a2a4a;border-radius:6px;color:#fff;">State</span>
+          <span style="padding:4px 10px;border-radius:6px;color:#666;">Deck</span>
+        </div>
+      </div>
+      <!-- Filter chips -->
+      <div style="padding:4px 16px 8px;display:flex;gap:6px;">
+        <span style="font-size:9px;padding:3px 8px;background:#1a3a1a;border-radius:10px;color:#4f4;">Due: 8</span>
+        <span style="font-size:9px;padding:3px 8px;background:#3a2a1a;border-radius:10px;color:#fa0;">New: 3</span>
+        <span style="font-size:9px;padding:3px 8px;background:#1a1a3a;border-radius:10px;color:#48f;">Learning: 12</span>
+      </div>
+      <!-- Card list with video previews -->
+      <div style="flex:1;overflow:hidden;padding:0 12px;">
+        <!-- Card 1 - visible, autoplay -->
+        <div style="background:#1a1a2e;border-radius:10px;overflow:hidden;margin-bottom:8px;">
+          <div style="height:120px;background:linear-gradient(135deg,#2a1a4a,#1a2a4a);display:flex;align-items:center;justify-content:center;position:relative;">
+            <div style="position:absolute;top:6px;right:6px;font-size:8px;background:rgba(76,175,80,0.3);padding:1px 6px;border-radius:4px;color:#4f4;">PLAYING</div>
+            <div style="width:30px;height:30px;border-radius:50%;border:1.5px solid rgba(255,255,255,0.15);display:flex;align-items:center;justify-content:center;opacity:0.2;">
+              <div style="width:8px;height:10px;display:flex;gap:2px;"><div style="width:3px;background:rgba(255,255,255,0.5);"></div><div style="width:3px;background:rgba(255,255,255,0.5);"></div></div>
+            </div>
+          </div>
+          <div style="padding:8px 10px;display:flex;justify-content:space-between;align-items:center;">
+            <div>
+              <div style="font-size:13px;font-weight:600;">Windmill</div>
+              <div style="font-size:9px;color:#888;">Power Moves · Due now</div>
+            </div>
+            <span style="font-size:8px;padding:2px 6px;background:rgba(76,175,80,0.15);border-radius:6px;color:#4CAF50;">LEARNING</span>
+          </div>
+        </div>
+        <!-- Card 2 -->
+        <div style="background:#1a1a2e;border-radius:10px;overflow:hidden;margin-bottom:8px;">
+          <div style="height:120px;background:linear-gradient(135deg,#1a2a3a,#2a1a3a);display:flex;align-items:center;justify-content:center;position:relative;">
+            <div style="width:30px;height:30px;border-radius:50%;border:1.5px solid rgba(255,255,255,0.15);display:flex;align-items:center;justify-content:center;opacity:0.3;">
+              <div style="width:0;height:0;border-left:10px solid rgba(255,255,255,0.5);border-top:6px solid transparent;border-bottom:6px solid transparent;margin-left:2px;"></div>
+            </div>
+          </div>
+          <div style="padding:8px 10px;display:flex;justify-content:space-between;align-items:center;">
+            <div>
+              <div style="font-size:13px;font-weight:600;">Flare</div>
+              <div style="font-size:9px;color:#888;">Power Moves · Due in 2h</div>
+            </div>
+            <span style="font-size:8px;padding:2px 6px;background:rgba(255,170,0,0.15);border-radius:6px;color:#fa0;">NEW</span>
+          </div>
+        </div>
+        <!-- Card 3 (partial) -->
+        <div style="background:#1a1a2e;border-radius:10px;overflow:hidden;">
+          <div style="height:60px;background:linear-gradient(135deg,#2a2a1a,#1a2a2a);"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Move Review - Immersive -->
+  <div class="mockup">
+    <div class="mockup-header">MOVE REVIEW (Session)</div>
+    <div class="mockup-body" style="background:#000;color:#fff;font-family:system-ui;padding:0;overflow:hidden;height:480px;display:flex;flex-direction:column;">
+      <div style="flex:1;background:linear-gradient(135deg,#2a1a4a,#1a2a4a);position:relative;">
+        <!-- Progress dots -->
+        <div style="position:absolute;top:8px;left:0;right:0;display:flex;justify-content:center;gap:4px;z-index:2;">
+          <div style="width:5px;height:5px;border-radius:50%;background:#4CAF50;"></div>
+          <div style="width:5px;height:5px;border-radius:50%;background:#4CAF50;"></div>
+          <div style="width:5px;height:5px;border-radius:50%;background:#4CAF50;"></div>
+          <div style="width:5px;height:5px;border-radius:50%;background:rgba(255,255,255,0.15);"></div>
+          <div style="width:5px;height:5px;border-radius:50%;background:rgba(255,255,255,0.15);"></div>
+        </div>
+        <div style="position:absolute;top:6px;right:10px;font-size:9px;color:#f44;background:rgba(0,0,0,0.4);padding:2px 8px;border-radius:8px;">End</div>
+
+        <!-- Autoplay indicator -->
+        <div style="position:absolute;top:6px;left:10px;font-size:8px;color:rgba(255,255,255,0.4);background:rgba(0,0,0,0.3);padding:2px 6px;border-radius:6px;">▶ AUTO</div>
+
+        <!-- Bottom overlay -->
+        <div style="position:absolute;bottom:0;left:0;right:0;padding:20px 16px 12px;background:linear-gradient(transparent,rgba(0,0,0,0.85));">
+          <div style="display:flex;justify-content:space-between;align-items:center;">
+            <span style="font-size:17px;font-weight:700;">Windmill</span>
+            <span style="font-size:8px;padding:2px 8px;background:rgba(76,175,80,0.2);border:1px solid rgba(76,175,80,0.4);border-radius:8px;color:#4CAF50;">LEARNING</span>
+          </div>
+          <span style="font-size:10px;color:rgba(255,255,255,0.4);">Power Moves</span>
+        </div>
+      </div>
+      <!-- Slim rating strip -->
+      <div style="padding:8px 16px 20px;display:flex;gap:6px;background:#000;">
+        <div style="flex:1;padding:8px 0;border-radius:10px;background:rgba(244,68,68,0.1);text-align:center;color:#f44;font-size:14px;">✕<br><span style="font-size:8px;color:#666;">1m</span></div>
+        <div style="flex:1;padding:8px 0;border-radius:10px;background:rgba(255,170,0,0.1);text-align:center;color:#fa0;font-size:14px;">−<br><span style="font-size:8px;color:#666;">6m</span></div>
+        <div style="flex:1;padding:8px 0;border-radius:10px;background:rgba(68,255,68,0.1);text-align:center;color:#4f4;font-size:14px;">✓<br><span style="font-size:8px;color:#666;">2d</span></div>
+        <div style="flex:1;padding:8px 0;border-radius:10px;background:rgba(68,136,255,0.1);text-align:center;color:#48f;font-size:14px;">★<br><span style="font-size:8px;color:#666;">5d</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Combo Review - Immersive -->
+  <div class="mockup">
+    <div class="mockup-header">COMBO REVIEW (Session)</div>
+    <div class="mockup-body" style="background:#000;color:#fff;font-family:system-ui;padding:0;overflow:hidden;height:480px;display:flex;flex-direction:column;">
+      <div style="flex:1;background:linear-gradient(135deg,#1a2a4a,#2a1a3a);position:relative;">
+        <!-- Progress dots -->
+        <div style="position:absolute;top:8px;left:0;right:0;display:flex;justify-content:center;gap:4px;z-index:2;">
+          <div style="width:5px;height:5px;border-radius:50%;background:#4CAF50;"></div>
+          <div style="width:5px;height:5px;border-radius:50%;background:#4CAF50;"></div>
+          <div style="width:5px;height:5px;border-radius:50%;background:rgba(255,255,255,0.15);"></div>
+          <div style="width:5px;height:5px;border-radius:50%;background:rgba(255,255,255,0.15);"></div>
+        </div>
+        <div style="position:absolute;top:6px;right:10px;font-size:9px;color:#f44;background:rgba(0,0,0,0.4);padding:2px 8px;border-radius:8px;">End</div>
+        <div style="position:absolute;top:6px;left:10px;font-size:8px;color:rgba(255,255,255,0.4);background:rgba(0,0,0,0.3);padding:2px 6px;border-radius:6px;">▶ AUTO</div>
+
+        <!-- Bottom overlay with step timeline -->
+        <div style="position:absolute;bottom:0;left:0;right:0;padding:16px 16px 10px;background:linear-gradient(transparent,rgba(0,0,0,0.9));">
+          <div style="display:flex;justify-content:space-between;align-items:center;">
+            <span style="font-size:17px;font-weight:700;">Power Combo #3</span>
+            <span style="font-size:8px;padding:2px 8px;background:rgba(76,175,80,0.2);border:1px solid rgba(76,175,80,0.4);border-radius:8px;color:#4CAF50;">LEARNING</span>
+          </div>
+          <!-- Step timeline - always visible, tappable -->
+          <div style="display:flex;align-items:center;margin-top:8px;gap:0;">
+            <div style="display:flex;flex-direction:column;align-items:center;gap:2px;">
+              <div style="width:22px;height:22px;border-radius:50%;background:rgba(255,255,255,0.2);border:1.5px solid rgba(255,255,255,0.6);display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;">1</div>
+              <span style="font-size:8px;color:rgba(255,255,255,0.7);">Windmill</span>
+            </div>
+            <div style="flex:1;height:1.5px;background:rgba(255,255,255,0.2);margin:0 4px;margin-bottom:14px;"></div>
+            <div style="display:flex;flex-direction:column;align-items:center;gap:2px;">
+              <div style="width:22px;height:22px;border-radius:50%;background:rgba(255,255,255,0.06);display:flex;align-items:center;justify-content:center;font-size:9px;color:rgba(255,255,255,0.3);">2</div>
+              <span style="font-size:8px;color:rgba(255,255,255,0.3);">Flare</span>
+            </div>
+            <div style="flex:1;height:1.5px;background:rgba(255,255,255,0.1);margin:0 4px;margin-bottom:14px;"></div>
+            <div style="display:flex;flex-direction:column;align-items:center;gap:2px;">
+              <div style="width:22px;height:22px;border-radius:50%;background:rgba(255,255,255,0.06);display:flex;align-items:center;justify-content:center;font-size:9px;color:rgba(255,255,255,0.3);">3</div>
+              <span style="font-size:8px;color:rgba(255,255,255,0.3);">1990</span>
+            </div>
+          </div>
+        </div>
+      </div>
+      <!-- Slim rating strip -->
+      <div style="padding:8px 16px 20px;display:flex;gap:6px;background:#000;">
+        <div style="flex:1;padding:8px 0;border-radius:10px;background:rgba(244,68,68,0.1);text-align:center;color:#f44;font-size:14px;">✕<br><span style="font-size:8px;color:#666;">1m</span></div>
+        <div style="flex:1;padding:8px 0;border-radius:10px;background:rgba(255,170,0,0.1);text-align:center;color:#fa0;font-size:14px;">−<br><span style="font-size:8px;color:#666;">6m</span></div>
+        <div style="flex:1;padding:8px 0;border-radius:10px;background:rgba(68,255,68,0.1);text-align:center;color:#4f4;font-size:14px;">✓<br><span style="font-size:8px;color:#666;">2d</span></div>
+        <div style="flex:1;padding:8px 0;border-radius:10px;background:rgba(68,136,255,0.1);text-align:center;color:#48f;font-size:14px;">★<br><span style="font-size:8px;color:#666;">5d</span></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<h3 style="margin-top:20px;">Design Principles Applied</h3>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:8px;">
+  <div style="background:rgba(255,255,255,0.05);border-radius:8px;padding:12px;">
+    <div class="label" style="color:#4CAF50;">70/30 Rule</div>
+    <p style="font-size:13px;margin:4px 0 0;">Video gets ~70% of screen. Rating strip gets ~30% importance — slim, functional, icon + interval only.</p>
+  </div>
+  <div style="background:rgba(255,255,255,0.05);border-radius:8px;padding:12px;">
+    <div class="label" style="color:#48f;">Autoplay Everywhere</div>
+    <p style="font-size:13px;margin:4px 0 0;">Videos autoplay on visibility — both in the tab browse list and during review session. Tap to pause, never tap to play.</p>
+  </div>
+  <div style="background:rgba(255,255,255,0.05);border-radius:8px;padding:12px;">
+    <div class="label" style="color:#fa0;">Overlay, Don't Stack</div>
+    <p style="font-size:13px;margin:4px 0 0;">Move name, state pill, category all overlaid on video with gradient scrim. No separate metadata panel stealing pixels.</p>
+  </div>
+  <div style="background:rgba(255,255,255,0.05);border-radius:8px;padding:12px;">
+    <div class="label" style="color:#f44;">Steps Always Visible</div>
+    <p style="font-size:13px;margin:4px 0 0;">Combo step timeline (numbered circles + connecting lines) is always visible at bottom of video. Tap to switch step. Rating is for the whole combo.</p>
+  </div>
+</div>
