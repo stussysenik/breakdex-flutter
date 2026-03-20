@@ -12,6 +12,7 @@ import 'package:video_player/video_player.dart';
 import 'package:video_thumbnail/video_thumbnail.dart';
 
 import 'native_video_preview.dart';
+import 'video_path_resolver.dart';
 
 enum VideoFileStatus { ready, missing, error }
 
@@ -267,8 +268,9 @@ class VideoService {
     String videoPath, {
     int maxWidth = thumbnailWidthFull,
   }) async {
-    // Cache key includes resolution tier so grid and detail don't collide
-    final cacheKey = '$videoPath@$maxWidth';
+    // Cache key uses relative path so sessions before/after migration share
+    // the same cache entries. Resolution tier suffix prevents grid/detail collision.
+    final cacheKey = '${VideoPathResolver.toRelative(videoPath)}@$maxWidth';
 
     // Tier 1: in-memory cache (survives widget rebuilds within the session)
     if (_thumbCache.containsKey(cacheKey)) return _thumbCache[cacheKey];
@@ -503,7 +505,7 @@ class VideoService {
     required int quality,
     required bool exact,
   }) {
-    return '$videoPath|$timeMs|$maxWidth|$quality|${exact ? '1' : '0'}';
+    return '${VideoPathResolver.toRelative(videoPath)}|$timeMs|$maxWidth|$quality|${exact ? '1' : '0'}';
   }
 
   static Uint8List? _readFrameThumbnail(String key) {
@@ -564,7 +566,7 @@ class VideoService {
       destination: File(dest),
       timeout: const Duration(seconds: 90),
     );
-    return dest;
+    return VideoPathResolver.toRelative(dest);
   }
 
   Future<void> _copyFileWithTimeout({
@@ -631,7 +633,8 @@ class VideoService {
   /// Invalidate the in-memory thumbnail cache (e.g. after video deletion).
   /// Clears all resolution tiers for the given video path.
   static void invalidateThumbCache(String videoPath) {
-    _thumbCache.removeWhere((key, _) => key.startsWith(videoPath));
+    final normalized = VideoPathResolver.toRelative(videoPath);
+    _thumbCache.removeWhere((key, _) => key.startsWith(normalized));
   }
 
   /// Replace a move's video: delete old file + thumbnail, invalidate caches.

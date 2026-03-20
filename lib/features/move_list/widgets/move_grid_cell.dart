@@ -17,7 +17,7 @@ class _MoveGridCell extends ConsumerWidget {
       },
       heroTag: 'move-thumb-${move.id}',
       background: move.videoPath != null
-          ? _GridThumbnail(videoPath: move.videoPath!)
+          ? _GridThumbnail(videoPath: move.resolvedVideoPath!)
           : Container(
               color: colorScheme.surfaceContainerHighest,
               child: Column(

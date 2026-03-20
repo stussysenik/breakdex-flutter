@@ -11,6 +11,8 @@ class TimelineNode extends StatelessWidget {
     this.onTap,
     this.showLeadingLine = false,
     this.showTrailingLine = true,
+    this.overlay = false,
+    this.label,
   });
 
   final int index;
@@ -19,60 +21,99 @@ class TimelineNode extends StatelessWidget {
   final bool showLeadingLine;
   final bool showTrailingLine;
 
+  /// Overlay mode: white/semi-transparent colors for dark video backgrounds.
+  final bool overlay;
+
+  /// Optional label shown below the circle (e.g. step name).
+  final String? label;
+
   @override
   Widget build(BuildContext context) {
     final isAdd = style == TimelineNodeStyle.add;
     final isActive = style == TimelineNodeStyle.active;
-    final secondary = Theme.of(context).colorScheme.secondary;
-    final separator = Theme.of(context).colorScheme.outline;
 
-    return GestureDetector(
-      onTap: onTap,
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          if (showLeadingLine)
-            Container(
-              width: 24,
-              height: 2,
-              color: separator,
-            ),
-          Container(
-            width: 36,
-            height: 36,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              color: isAdd ? Colors.transparent : null,
-              border: Border.all(
-                color: isActive
-                    ? Theme.of(context).colorScheme.primary
-                    : isAdd
-                        ? secondary
-                        : separator,
-                width: isActive ? 3 : 2,
-              ),
-            ),
-            child: Center(
-              child: isAdd
-                  ? Icon(Icons.add, size: 18, color: secondary)
-                  : Text(
-                      '$index',
-                      style: AppTypography.caption.copyWith(
-                        color: isActive ? Theme.of(context).colorScheme.primary : secondary,
-                        fontWeight:
-                            isActive ? FontWeight.w700 : FontWeight.w500,
-                      ),
-                    ),
+    // Overlay uses white-based colors; normal uses theme colors.
+    final Color activeColor;
+    final Color inactiveColor;
+    final Color lineColor;
+    if (overlay) {
+      activeColor = Colors.white;
+      inactiveColor = Colors.white.withValues(alpha: 0.3);
+      lineColor = Colors.white.withValues(alpha: 0.15);
+    } else {
+      activeColor = Theme.of(context).colorScheme.primary;
+      inactiveColor = isAdd
+          ? Theme.of(context).colorScheme.secondary
+          : Theme.of(context).colorScheme.outline;
+      lineColor = Theme.of(context).colorScheme.outline;
+    }
+
+    final nodeColor = isActive ? activeColor : inactiveColor;
+    final textColor = isActive
+        ? activeColor
+        : (overlay
+            ? Colors.white.withValues(alpha: 0.3)
+            : Theme.of(context).colorScheme.secondary);
+
+    final node = Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        if (showLeadingLine)
+          Container(width: 24, height: 2, color: lineColor),
+        Container(
+          width: 36,
+          height: 36,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            color: isAdd ? Colors.transparent : null,
+            border: Border.all(
+              color: nodeColor,
+              width: isActive ? 3 : 2,
             ),
           ),
-          if (showTrailingLine)
-            Container(
-              width: 24,
-              height: 2,
-              color: separator,
-            ),
-        ],
-      ),
+          child: Center(
+            child: isAdd
+                ? Icon(Icons.add, size: 18, color: inactiveColor)
+                : Text(
+                    '$index',
+                    style: AppTypography.caption.copyWith(
+                      color: textColor,
+                      fontWeight: isActive ? FontWeight.w700 : FontWeight.w500,
+                    ),
+                  ),
+          ),
+        ),
+        if (showTrailingLine)
+          Container(width: 24, height: 2, color: lineColor),
+      ],
     );
+
+    if (label != null) {
+      return GestureDetector(
+        onTap: onTap,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            node,
+            const SizedBox(height: 4),
+            SizedBox(
+              width: 56,
+              child: Text(
+                label!,
+                style: AppTypography.caption.copyWith(
+                  color: textColor,
+                  fontSize: 9,
+                ),
+                textAlign: TextAlign.center,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    return GestureDetector(onTap: onTap, child: node);
   }
 }

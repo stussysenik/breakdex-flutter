@@ -17,13 +17,13 @@ import '../../core/design/typography.dart';
 import '../../core/models/learning_state.dart';
 import '../../core/models/reviewable_item.dart';
 import '../../core/providers.dart';
+import '../../core/services/video_path_resolver.dart';
 import '../../shared/widgets/primary_button.dart';
 import 'providers/deck_providers.dart';
 import 'providers/review_providers.dart';
 import 'widgets/rating_button_row.dart';
 import 'widgets/mastery_prescreen.dart';
 import 'widgets/review_card.dart';
-import 'widgets/review_dashboard.dart';
 import 'widgets/state_picker_sheet.dart';
 import '../../shared/widgets/video_picker_sheet.dart';
 import '../../shared/widgets/app_segmented_control.dart';
@@ -114,13 +114,22 @@ class _FlashcardReviewScreenState extends ConsumerState<FlashcardReviewScreen>
     final reviewMode = ref.watch(reviewModeProvider);
     final sessionActive = ref.watch(reviewSessionActiveProvider);
 
+    // When session is active, the immersive card fills the screen —
+    // header and segment control are hidden. End button lives in the
+    // card's top overlay instead.
+    if (sessionActive) {
+      return Scaffold(
+        body: SafeArea(child: _buildFlashcardSession()),
+      );
+    }
+
     return Scaffold(
       body: SafeArea(
         child: Column(
           children: [
-            SizedBox(height: sessionActive ? AppSpacing.sm : AppSpacing.md),
+            const SizedBox(height: AppSpacing.md),
 
-            // Title + End button
+            // Title (no End button — it's in the card overlay now)
             Padding(
               padding: const EdgeInsets.symmetric(
                 horizontal: AppSpacing.screenEdge,
@@ -135,66 +144,40 @@ class _FlashcardReviewScreenState extends ConsumerState<FlashcardReviewScreen>
                       ),
                     ),
                   ),
-                  if (sessionActive)
-                    OutlinedButton(
-                      onPressed: _endSession,
-                      style: OutlinedButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 12,
-                          vertical: 10,
-                        ),
-                        foregroundColor: colorScheme.secondary,
-                        side: BorderSide(
-                          color: colorScheme.outline.withValues(alpha: 0.28),
-                        ),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(AppRadius.sm),
-                        ),
-                        textStyle: AppTypography.bodySmall.copyWith(
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                      child: const Text('End'),
-                    ),
                 ],
               ),
             ),
 
-            if (!sessionActive) ...[
-              const SizedBox(height: AppSpacing.xs),
-              Padding(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: AppSpacing.screenEdge,
-                ),
-                child: AppSegmentedControl<ReviewMode>(
-                  items: const [
-                    AppSegmentedControlItem(
-                      value: ReviewMode.review,
-                      icon: Icons.grid_view_rounded,
-                      label: 'Review',
-                    ),
-                    AppSegmentedControlItem(
-                      value: ReviewMode.deck,
-                      icon: Icons.layers_rounded,
-                      label: 'Deck',
-                    ),
-                  ],
-                  selectedValue: reviewMode,
-                  onChanged: _setReviewMode,
-                ),
+            const SizedBox(height: AppSpacing.xs),
+            Padding(
+              padding: const EdgeInsets.symmetric(
+                horizontal: AppSpacing.screenEdge,
               ),
-              const SizedBox(height: AppSpacing.xs),
-            ] else
-              const SizedBox(height: AppSpacing.sm),
+              child: AppSegmentedControl<ReviewMode>(
+                items: const [
+                  AppSegmentedControlItem(
+                    value: ReviewMode.review,
+                    icon: Icons.grid_view_rounded,
+                    label: 'Review',
+                  ),
+                  AppSegmentedControlItem(
+                    value: ReviewMode.deck,
+                    icon: Icons.layers_rounded,
+                    label: 'Deck',
+                  ),
+                ],
+                selectedValue: reviewMode,
+                onChanged: _setReviewMode,
+              ),
+            ),
+            const SizedBox(height: AppSpacing.xs),
 
             Expanded(
-              child: sessionActive
-                  ? _buildFlashcardSession()
-                  : MasteryPrescreen(
-                      source: reviewMode == ReviewMode.deck
-                          ? ReviewSessionSource.deck
-                          : ReviewSessionSource.stateBased,
-                    ),
+              child: MasteryPrescreen(
+                source: reviewMode == ReviewMode.deck
+                    ? ReviewSessionSource.deck
+                    : ReviewSessionSource.stateBased,
+              ),
             ),
           ],
         ),
@@ -204,10 +187,6 @@ class _FlashcardReviewScreenState extends ConsumerState<FlashcardReviewScreen>
 
   Widget _buildFlashcardSession() {
     final itemsAsync = ref.watch(filteredReviewSessionItemsProvider);
-    final sessionSource = ref.watch(reviewSessionSourceProvider);
-    final selectedDeck = ref.watch(selectedDeckProvider);
-    final stateFilter = ref.watch(reviewStateFilterProvider);
-    final entityKind = ref.watch(reviewEntityKindProvider);
 
     // Reset session when filters change (provider re-fetches)
     ref.listen(filteredReviewSessionItemsProvider, (prev, next) {
@@ -236,40 +215,15 @@ class _FlashcardReviewScreenState extends ConsumerState<FlashcardReviewScreen>
 
         final colorScheme = Theme.of(context).colorScheme;
 
-        return Column(
-          children: [
-            // Dashboard: filter chips + progress
-            ReviewDashboard(
-              currentIndex: _currentIndex,
-              totalInSession: _items.length,
-              sessionLabel: switch (sessionSource) {
-                ReviewSessionSource.deck when selectedDeck != null =>
-                  stateFilter == null
-                      ? '${selectedDeck.name} · Moves'
-                      : '${selectedDeck.name} · ${stateFilter.displayText}',
-                ReviewSessionSource.stateBased when stateFilter != null =>
-                  '${_entityKindLabel(entityKind)} · ${stateFilter.displayText}',
-                ReviewSessionSource.stateBased => _entityKindLabel(entityKind),
-                _ => 'All Cards',
-              },
-            ),
-            const SizedBox(height: AppSpacing.sm),
-
-            // Main content
-            Expanded(
-              child: _items.isEmpty
-                  ? _buildEmpty(colorScheme)
-                  : _completed
-                  ? _buildCompleted(colorScheme)
-                  : _buildReviewContent(),
-            ),
-          ],
-        );
+        // No dashboard — progress dots are inside the immersive card overlay
+        if (_items.isEmpty) return _buildEmpty(colorScheme);
+        if (_completed) return _buildCompleted(colorScheme);
+        return _buildReviewContent();
       },
     );
   }
 
-  /// PageView-based review content with true 60/30/10 viewport split.
+  /// Immersive review layout: card fills ~70%, compact rating strip ~30%.
   Widget _buildReviewContent() {
     final item = _items[_currentIndex];
     final intervalsAsync = ref.watch(
@@ -279,133 +233,117 @@ class _FlashcardReviewScreenState extends ConsumerState<FlashcardReviewScreen>
       )),
     );
     final intervals = intervalsAsync.valueOrNull;
+    final bottomPadding = MediaQuery.of(context).padding.bottom;
 
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final available = constraints.maxHeight;
-        final hasVideo = item.videoPath != null;
-        final videoHeight = hasVideo
-            ? (available * 0.42).clamp(220.0, 340.0)
-            : (available * 0.30).clamp(180.0, 240.0);
-        final metadataHeight = item.isCombo
-            ? 176.0
-            : item.category == null
-            ? 96.0
-            : 114.0;
-        final cardHeight = videoHeight + metadataHeight;
-
-        return SingleChildScrollView(
-          padding: const EdgeInsets.fromLTRB(
-            AppSpacing.screenEdge,
-            0,
-            AppSpacing.screenEdge,
-            AppSpacing.md,
-          ),
-          child: Center(
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 620),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  SizedBox(
-                    height: cardHeight,
-                    // Breathing animation: 0.6% scale oscillation when idle.
-                    // Respects reduce-motion via MediaQuery.disableAnimations.
-                    child: AnimatedBuilder(
-                      animation: _breathController,
-                      builder: (context, child) {
-                        final reduceMotion =
-                            MediaQuery.of(context).disableAnimations;
-                        final breathScale = reduceMotion
-                            ? 1.0
-                            : 1.0 +
-                                (0.006 *
-                                    Curves.easeInOut
-                                        .transform(_breathController.value));
-                        return Transform.scale(
-                          scale: breathScale * _cardScale,
-                          child: child,
-                        );
-                      },
-                      child: AnimatedOpacity(
-                        opacity: _cardOpacity,
-                        duration: AppMotion.moderate01,
-                        child: PageView.builder(
-                          controller: _pageController,
-                          physics: _animatingExit
-                              ? const NeverScrollableScrollPhysics()
-                              : null,
-                          itemCount: _items.length,
-                          onPageChanged: (index) {
-                            HapticFeedback.selectionClick();
-                            setState(() {
-                              _currentIndex = index;
-                            });
+    return Column(
+      children: [
+        // Immersive card fills available space
+        Expanded(
+          // Breathing animation: 0.6% scale oscillation when idle.
+          child: AnimatedBuilder(
+            animation: _breathController,
+            builder: (context, child) {
+              final reduceMotion =
+                  MediaQuery.of(context).disableAnimations;
+              final breathScale = reduceMotion
+                  ? 1.0
+                  : 1.0 +
+                      (0.006 *
+                          Curves.easeInOut
+                              .transform(_breathController.value));
+              return Transform.scale(
+                scale: breathScale * _cardScale,
+                child: child,
+              );
+            },
+            child: AnimatedOpacity(
+              opacity: _cardOpacity,
+              duration: AppMotion.moderate01,
+              child: Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: AppSpacing.sm,
+                ),
+                child: PageView.builder(
+                  controller: _pageController,
+                  physics: _animatingExit
+                      ? const NeverScrollableScrollPhysics()
+                      : null,
+                  itemCount: _items.length,
+                  onPageChanged: (index) {
+                    HapticFeedback.selectionClick();
+                    setState(() {
+                      _currentIndex = index;
+                    });
+                  },
+                  itemBuilder: (context, index) {
+                    final pageItem = _items[index];
+                    return Padding(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: AppSpacing.xs,
+                      ),
+                      child: Semantics(
+                        identifier: 'review-card-${pageItem.entityId}',
+                        label: 'Review card: ${pageItem.displayName}',
+                        child: GestureDetector(
+                          onVerticalDragEnd: (details) {
+                            if (details.primaryVelocity != null &&
+                                details.primaryVelocity! < -300 &&
+                                pageItem.isMove &&
+                                pageItem.move != null) {
+                              _showStatePicker(pageItem.move!, index);
+                            }
                           },
-                          itemBuilder: (context, index) {
-                            final pageItem = _items[index];
-                            return Semantics(
-                              identifier: 'review-card-${pageItem.entityId}',
-                              label: 'Review card: ${pageItem.displayName}',
-                              child: GestureDetector(
-                                onVerticalDragEnd: (details) {
-                                  if (details.primaryVelocity != null &&
-                                      details.primaryVelocity! < -300 &&
-                                      pageItem.isMove &&
-                                      pageItem.move != null) {
-                                    _showStatePicker(pageItem.move!, index);
-                                  }
-                                },
-                                child: ReviewCard(
-                                  key: ValueKey(
-                                    'review-card-${pageItem.entityType}-${pageItem.entityId}',
-                                  ),
-                                  title: pageItem.displayName,
-                                  state: pageItem.state,
-                                  category: pageItem.category,
-                                  videoPath: pageItem.videoPath,
-                                  originalVideoName: pageItem.originalVideoName,
-                                  canEditState: pageItem.isMove,
-                                  combo: pageItem.combo,
-                                  onStatePillTap: () {
-                                    if (pageItem.isMove &&
-                                        pageItem.move != null) {
-                                      _showStatePicker(pageItem.move!, index);
-                                    }
-                                  },
-                                  videoHeight: videoHeight,
-                                  onRepick:
-                                      pageItem.isMove && pageItem.move != null
-                                      ? () =>
-                                            _repickVideo(pageItem.move!, index)
-                                      : null,
-                                ),
-                              ),
-                            );
-                          },
+                          child: ReviewCard(
+                            key: ValueKey(
+                              'review-card-${pageItem.entityType}-${pageItem.entityId}',
+                            ),
+                            title: pageItem.displayName,
+                            state: pageItem.state,
+                            category: pageItem.category,
+                            videoPath: pageItem.videoPath,
+                            originalVideoName: pageItem.originalVideoName,
+                            canEditState: pageItem.isMove,
+                            combo: pageItem.combo,
+                            currentIndex: _currentIndex,
+                            totalItems: _items.length,
+                            onEnd: _endSession,
+                            onStatePillTap: () {
+                              if (pageItem.isMove &&
+                                  pageItem.move != null) {
+                                _showStatePicker(pageItem.move!, index);
+                              }
+                            },
+                            onRepick:
+                                pageItem.isMove && pageItem.move != null
+                                ? () =>
+                                      _repickVideo(pageItem.move!, index)
+                                : null,
+                          ),
                         ),
                       ),
-                    ),
-                  ),
-                  const SizedBox(height: AppSpacing.md),
-                  Container(
-                    padding: const EdgeInsets.all(AppSpacing.sm),
-                    decoration: AppSurfaces.panel(
-                      context,
-                      raised: true,
-                      radius: AppRadius.md,
-                    ),
-                    child: RatingButtonRow(
-                      onRate: (rating) => _rateItem(item, rating),
-                      intervalPreviews: intervals,
-                    ),
-                  ),
-                ],
+                    );
+                  },
+                ),
               ),
             ),
           ),
-        );
-      },
+        ),
+
+        // Slim compact rating strip — no panel wrapper
+        Padding(
+          padding: EdgeInsets.fromLTRB(
+            AppSpacing.screenEdge,
+            AppSpacing.sm,
+            AppSpacing.screenEdge,
+            AppSpacing.sm + bottomPadding,
+          ),
+          child: RatingButtonRow(
+            compact: true,
+            onRate: (rating) => _rateItem(item, rating),
+            intervalPreviews: intervals,
+          ),
+        ),
+      ],
     );
   }
 
@@ -632,16 +570,17 @@ class _FlashcardReviewScreenState extends ConsumerState<FlashcardReviewScreen>
 
     final videoService = ref.read(videoServiceProvider);
 
+    final relativePath = VideoPathResolver.toRelative(result.localPath);
     await ref
         .read(moveRepositoryProvider)
         .update(
           MovesCompanion(
             id: Value(move.id),
-            videoPath: Value(result.localPath),
+            videoPath: Value(relativePath),
             originalVideoName: Value(result.originalFileName),
           ),
         );
-    await videoService.replaceVideo(move.videoPath);
+    await videoService.replaceVideo(move.resolvedVideoPath);
 
     setState(() {
       _items[index] = ReviewSessionItem(
@@ -650,10 +589,10 @@ class _FlashcardReviewScreenState extends ConsumerState<FlashcardReviewScreen>
         displayName: move.name,
         state: _items[index].state,
         category: move.category,
-        videoPath: result.localPath,
+        videoPath: VideoPathResolver.toAbsolute(relativePath),
         originalVideoName: result.originalFileName,
         move: move.copyWith(
-          videoPath: Value(result.localPath),
+          videoPath: Value(relativePath),
           originalVideoName: Value(result.originalFileName),
         ),
       );
@@ -701,7 +640,7 @@ class _FlashcardReviewScreenState extends ConsumerState<FlashcardReviewScreen>
         displayName: move.name,
         state: newState,
         category: move.category,
-        videoPath: move.videoPath,
+        videoPath: move.resolvedVideoPath,
         originalVideoName: move.originalVideoName,
         move: move.copyWith(learningState: newState.dbValue),
       );
@@ -755,7 +694,7 @@ class _FlashcardReviewScreenState extends ConsumerState<FlashcardReviewScreen>
           displayName: move.name,
           state: _fsrsStateToLearningState(fsrsResult.postState),
           category: move.category,
-          videoPath: move.videoPath,
+          videoPath: move.resolvedVideoPath,
           originalVideoName: move.originalVideoName,
           move: move.copyWith(
             learningState: _fsrsStateToLearningState(
@@ -797,7 +736,7 @@ class _FlashcardReviewScreenState extends ConsumerState<FlashcardReviewScreen>
           displayName: combo.name,
           state: _fsrsStateToLearningState(fsrsResult.postState),
           category: 'combo',
-          videoPath: combo.activeVideoPath,
+          videoPath: combo.resolvedActiveVideoPath,
           combo: combo,
         );
       });
@@ -846,11 +785,6 @@ class _FlashcardReviewScreenState extends ConsumerState<FlashcardReviewScreen>
       setState(() => _completed = true);
     }
   }
-
-  String _entityKindLabel(ReviewEntityKind kind) => switch (kind) {
-    ReviewEntityKind.moves => 'Moves',
-    ReviewEntityKind.combos => 'Combos',
-  };
 
   LearningState _fsrsStateToLearningState(int fsrsState) => switch (fsrsState) {
     2 => LearningState.mastery,

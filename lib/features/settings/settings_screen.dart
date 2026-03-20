@@ -14,6 +14,7 @@ import '../../core/design/typography.dart';
 import '../../core/models/learning_state.dart';
 import '../../core/providers.dart';
 import '../../core/services/categories_service.dart';
+import '../../core/services/video_path_resolver.dart';
 import '../../core/services/settings_service.dart';
 import 'widgets/cloud_sync_section.dart';
 import 'widgets/accent_color_section.dart';
@@ -403,7 +404,7 @@ class SettingsScreen extends ConsumerWidget {
               final moves = await db.movesDao.getAll();
               for (final move in moves) {
                 if (move.videoPath != null) {
-                  await videoService.deleteVideo(move.videoPath!);
+                  await videoService.deleteVideo(VideoPathResolver.toAbsolute(move.videoPath!));
                 }
               }
               // Delete all rows from every table

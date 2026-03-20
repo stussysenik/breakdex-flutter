@@ -10,6 +10,7 @@ import '../database/database.dart';
 import '../database/daos/sync_dao.dart';
 import '../models/sync_progress.dart';
 import 'auth_service.dart';
+import 'video_path_resolver.dart';
 
 const _lastSyncKey = 'last_sync_at';
 
@@ -253,7 +254,8 @@ class SyncService {
 
         if (videoPath == null) continue;
 
-        final file = File(videoPath);
+        final absolutePath = VideoPathResolver.toAbsolute(videoPath);
+        final file = File(absolutePath);
         if (!await file.exists()) continue;
 
         final storagePath =
@@ -327,7 +329,11 @@ class SyncService {
           final companion = CombosCompanion(
             id: Value(record['id'] as String),
             name: Value(record['name'] as String),
-            activeVideoPath: Value(record['active_video_path'] as String?),
+            activeVideoPath: Value(
+              record['active_video_path'] != null
+                  ? VideoPathResolver.toRelative(record['active_video_path'] as String)
+                  : null,
+            ),
           );
           await db.into(db.combos).insertOnConflictUpdate(companion);
           break;
@@ -413,7 +419,7 @@ class SyncService {
           final localMove = await db.movesDao.getById(moveId);
           if (localMove.videoPath == null || localMove.videoPath!.isEmpty) {
             toDownload.add(fileObj);
-          } else if (!await File(localMove.videoPath!).exists()) {
+          } else if (!await File(VideoPathResolver.toAbsolute(localMove.videoPath!)).exists()) {
             toDownload.add(fileObj);
           }
         } catch (_) {
@@ -448,7 +454,7 @@ class SyncService {
           await File(localPath).writeAsBytes(bytes);
 
           await (db.update(db.moves)..where((t) => t.id.equals(moveId))).write(
-            MovesCompanion(videoPath: Value(localPath)),
+            MovesCompanion(videoPath: Value(VideoPathResolver.toRelative(localPath))),
           );
         } catch (_) {
           // Skip — retry next sync
@@ -466,7 +472,7 @@ class SyncService {
           if (localCombo.activeVideoPath == null ||
               localCombo.activeVideoPath!.isEmpty) {
             comboDownloads.add(fileObj);
-          } else if (!await File(localCombo.activeVideoPath!).exists()) {
+          } else if (!await File(VideoPathResolver.toAbsolute(localCombo.activeVideoPath!)).exists()) {
             comboDownloads.add(fileObj);
           }
         } catch (_) {
@@ -501,7 +507,7 @@ class SyncService {
           await File(localPath).writeAsBytes(bytes);
 
           await (db.update(db.combos)..where((t) => t.id.equals(comboId)))
-              .write(CombosCompanion(activeVideoPath: Value(localPath)));
+              .write(CombosCompanion(activeVideoPath: Value(VideoPathResolver.toRelative(localPath))));
         } catch (_) {
           // Skip — retry next sync
         }

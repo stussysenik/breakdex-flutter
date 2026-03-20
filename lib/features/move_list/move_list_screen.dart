@@ -16,6 +16,7 @@ import '../../core/design/spacing.dart';
 import '../../core/design/theme.dart';
 import '../../core/design/typography.dart';
 import '../../core/models/learning_state.dart';
+import '../../core/models/reviewable_item.dart' show MoveVideoPath, ComboVideoPath;
 import '../../core/providers.dart';
 import '../../core/services/categories_service.dart';
 import '../../core/services/native_video_album.dart';

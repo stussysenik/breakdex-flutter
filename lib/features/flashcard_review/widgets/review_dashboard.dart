@@ -1,8 +1,74 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/design/spacing.dart';
 import '../../../core/design/typography.dart';
+
+/// Lightweight dot progress indicator for the immersive review overlay.
+///
+/// Shows a row of small dots (5px) — filled for completed, hollow for
+/// remaining. When total > 12, collapses to first 5 dots + counter + last 5
+/// to stay compact. Designed for overlay on dark video backgrounds.
+class ProgressDots extends StatelessWidget {
+  const ProgressDots({
+    super.key,
+    required this.currentIndex,
+    required this.total,
+  });
+
+  final int currentIndex;
+  final int total;
+
+  @override
+  Widget build(BuildContext context) {
+    if (total <= 0) return const SizedBox.shrink();
+
+    if (total > 12) {
+      final showCount = math.min(5, total);
+      return Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          for (int i = 0; i < showCount; i++) _dot(i <= currentIndex),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 4),
+            child: Text(
+              '${currentIndex + 1}/$total',
+              style: AppTypography.caption.copyWith(
+                color: Colors.white.withValues(alpha: 0.6),
+                fontSize: 9,
+              ),
+            ),
+          ),
+          for (int i = total - showCount; i < total; i++)
+            _dot(i <= currentIndex),
+        ],
+      );
+    }
+
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        for (int i = 0; i < total; i++) _dot(i <= currentIndex),
+      ],
+    );
+  }
+
+  Widget _dot(bool filled) {
+    return Container(
+      width: 5,
+      height: 5,
+      margin: const EdgeInsets.symmetric(horizontal: 2),
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        color: filled
+            ? Colors.white.withValues(alpha: 0.9)
+            : Colors.white.withValues(alpha: 0.25),
+      ),
+    );
+  }
+}
 
 /// Minimal in-session dashboard — progress bar + counter only.
 ///

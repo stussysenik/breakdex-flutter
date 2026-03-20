@@ -151,10 +151,10 @@ class _ComboPreviewBackground extends ConsumerWidget {
         final comboMoves = snapshot.data ?? const <ComboMoveWithDetail>[];
         final previewPath =
             comboMoves
-                .map((item) => item.move.videoPath)
+                .map((item) => item.move.resolvedVideoPath)
                 .whereType<String>()
                 .firstOrNull ??
-            combo.activeVideoPath;
+            combo.resolvedActiveVideoPath;
 
         if (previewPath != null && previewPath.isNotEmpty) {
           return _GridThumbnail(videoPath: previewPath);

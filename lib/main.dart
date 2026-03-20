@@ -13,6 +13,7 @@ import 'core/navigation/app_router.dart';
 import 'core/providers.dart';
 import 'core/services/app_storage_paths.dart';
 import 'core/services/automation_fixture_service.dart';
+import 'core/services/video_path_resolver.dart';
 import 'core/services/fsrs_migration_service.dart';
 import 'core/services/settings_service.dart';
 import 'core/sync/asset_hash_service.dart';
@@ -113,6 +114,10 @@ void main() async {
 
   final prefs = await SharedPreferences.getInstance();
 
+  // Cache the current documents directory path so VideoPathResolver can
+  // convert between relative (DB) and absolute (file system) paths.
+  await VideoPathResolver.initialize();
+
   // Backup database before migration (safety net for schema changes)
   await _backupDatabaseIfNeeded(prefs);
 
@@ -150,6 +155,14 @@ void main() async {
   // window lightweight so iOS doesn't Jetsam-kill us for memory/CPU pressure.
   WidgetsBinding.instance.addPostFrameCallback((_) async {
     await _runMigrations(db, prefs);
+
+    // Convert any legacy absolute video paths to relative form.
+    // Idempotent — runs once, gated by SharedPreferences.
+    try {
+      await VideoPathHealer.healAll(db, prefs);
+    } catch (e) {
+      debugPrint('Video path healing failed: $e');
+    }
 
     // Migrate existing videos (pre-sync) into the content-addressable manifest.
     // Idempotent — skips moves that already have a contentHash.

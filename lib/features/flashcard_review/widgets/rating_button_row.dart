@@ -20,6 +20,7 @@ class RatingButtonRow extends ConsumerWidget {
     super.key,
     required this.onRate,
     this.intervalPreviews,
+    this.compact = false,
   });
 
   final void Function(ReviewRating rating) onRate;
@@ -28,6 +29,10 @@ class RatingButtonRow extends ConsumerWidget {
   /// scheduled interval below each button so the learner sees the
   /// consequence of each rating before tapping.
   final Map<ReviewRating, Duration>? intervalPreviews;
+
+  /// Compact mode: icon + interval only, no text label, 44pt height.
+  /// Designed for the immersive review layout's slim rating strip.
+  final bool compact;
 
   /// Distinct icon per rating for color-blind accessibility.
   /// Shape + color = double encoding (WCAG 1.4.1 Use of Color).
@@ -58,27 +63,35 @@ class RatingButtonRow extends ConsumerWidget {
           if (rating != ReviewRating.values.first)
             const SizedBox(width: AppSpacing.sm),
           Expanded(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                _TintedPillButton(
-                  rating: rating,
-                  icon: _iconForRating(rating),
-                  color: _colorForRating(rating, rc),
-                  onRate: onRate,
-                ),
-                if (intervalPreviews != null) ...[
-                  const SizedBox(height: 2),
-                  Text(
-                    _formatInterval(intervalPreviews![rating]),
-                    style: AppTypography.caption.copyWith(
-                      color: colorScheme.secondary,
-                      fontSize: 10,
-                    ),
+            child: compact
+                ? _CompactRatingButton(
+                    rating: rating,
+                    icon: _iconForRating(rating),
+                    color: _colorForRating(rating, rc),
+                    onRate: onRate,
+                    intervalLabel: _formatInterval(intervalPreviews?[rating]),
+                  )
+                : Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      _TintedPillButton(
+                        rating: rating,
+                        icon: _iconForRating(rating),
+                        color: _colorForRating(rating, rc),
+                        onRate: onRate,
+                      ),
+                      if (intervalPreviews != null) ...[
+                        const SizedBox(height: 2),
+                        Text(
+                          _formatInterval(intervalPreviews![rating]),
+                          style: AppTypography.caption.copyWith(
+                            color: colorScheme.secondary,
+                            fontSize: 10,
+                          ),
+                        ),
+                      ],
+                    ],
                   ),
-                ],
-              ],
-            ),
           ),
         ],
       ],
@@ -101,6 +114,64 @@ class RatingButtonRow extends ConsumerWidget {
     final days = duration.inDays;
     if (days < 30) return '${days}d';
     return '${(days / 30).round()}mo';
+  }
+}
+
+/// Compact rating button — icon + interval only, 44pt height.
+///
+/// Used in the immersive review layout's slim rating strip where vertical
+/// space is at a premium. Keeps accessibility semantics for screen readers.
+class _CompactRatingButton extends StatelessWidget {
+  const _CompactRatingButton({
+    required this.rating,
+    required this.icon,
+    required this.color,
+    required this.onRate,
+    required this.intervalLabel,
+  });
+
+  final ReviewRating rating;
+  final IconData icon;
+  final Color color;
+  final void Function(ReviewRating rating) onRate;
+  final String intervalLabel;
+
+  @override
+  Widget build(BuildContext context) {
+    return Semantics(
+      label: 'Rate ${rating.displayText}',
+      button: true,
+      child: Material(
+        color: color.withValues(alpha: 0.10),
+        borderRadius: BorderRadius.circular(AppRadius.sm),
+        child: InkWell(
+          onTap: () {
+            HapticFeedback.lightImpact();
+            onRate(rating);
+          },
+          borderRadius: BorderRadius.circular(AppRadius.sm),
+          child: SizedBox(
+            height: 44,
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(icon, size: 16, color: color),
+                if (intervalLabel.isNotEmpty) ...[
+                  const SizedBox(height: 1),
+                  Text(
+                    intervalLabel,
+                    style: AppTypography.caption.copyWith(
+                      color: color.withValues(alpha: 0.7),
+                      fontSize: 9,
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
   }
 }
 
