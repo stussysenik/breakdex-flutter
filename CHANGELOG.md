@@ -1,3 +1,31 @@
+# [1.1.0](https://github.com/stussysenik/breakdex-flutter/compare/v1.0.0...v1.1.0) (2026-03-24)
+
+
+### Bug Fixes
+
+* **nav:** complete /arsenal → /moves route migration + UX improvements ([f4ca855](https://github.com/stussysenik/breakdex-flutter/commit/f4ca855940eeaa4dd29a8dfed3975a86f0038a23))
+* **video:** improve fullscreen player UX and iOS export queuing ([05078a9](https://github.com/stussysenik/breakdex-flutter/commit/05078a92b1ca91a37d5548aa2b877357a3da4162))
+
+
+### Features
+
+* **db:** add content-addressable sync tables, DAOs, and schema v9 ([c811f48](https://github.com/stussysenik/breakdex-flutter/commit/c811f482004bb21c7b97a17a0fd08a5e595458ec))
+* **db:** add notes column to moves and combos (schema v11) ([531853c](https://github.com/stussysenik/breakdex-flutter/commit/531853c751b5b5d1c24c944ecf94edda968ad5c7))
+* **db:** add schema v12 with lab system tables and DAOs ([cab8ce1](https://github.com/stussysenik/breakdex-flutter/commit/cab8ce125a5a6bb4b8ef40f822ee3e811d0ab595))
+* **export:** bump export schema to v7 with notes fields ([8a7e019](https://github.com/stussysenik/breakdex-flutter/commit/8a7e01917a2ac7ac67e41fedfd6f90cc4bacbe44))
+* **flow:** improve graph layout, add multi-select set creation, fix chip overflow ([99271e2](https://github.com/stussysenik/breakdex-flutter/commit/99271e24cfe0dde30ace9f784c2bd6ce2cf0ee03))
+* immersive review card, lab system, flow graph, and nav rebrand ([9a94160](https://github.com/stussysenik/breakdex-flutter/commit/9a94160242df90b9de71bdf725bf4c825f6826df))
+* **ios:** configure iCloud entitlements, Google OAuth URL scheme, and connectivity auto-retry ([4900b4e](https://github.com/stussysenik/breakdex-flutter/commit/4900b4e77d09268d73a45a949d55cb62c6e64589))
+* **lab:** add lab feature with projects, sets, milestones, and aura ([adbc140](https://github.com/stussysenik/breakdex-flutter/commit/adbc1402fc83a05f8b74887056ecd559746c2528))
+* **nav:** rebrand 5-tab navigation (Moves, Drill, Progress, Lab, Flow) ([13e6632](https://github.com/stussysenik/breakdex-flutter/commit/13e6632fc6da355e2464967403c7e5e1a6b7241a))
+* **notes:** add NotesSection widget with markdown, [@mentions](https://github.com/mentions), auto-save ([a1befba](https://github.com/stussysenik/breakdex-flutter/commit/a1befba0b4011cf839e4cdf3fe3dd14239d42ef9))
+* **review:** enhance flashcard review with immersive card layout ([b6339c3](https://github.com/stussysenik/breakdex-flutter/commit/b6339c3aba20d329ebef8d767b49b4ce84f07407))
+* **stats:** add timeline calendar view to progress screen ([eb15edf](https://github.com/stussysenik/breakdex-flutter/commit/eb15edf59a788c2f0bd837fc2ed1f61aa9b9575d))
+* **sync:** add cloud sync engine with retry, backoff, and multi-provider support ([a93c7f1](https://github.com/stussysenik/breakdex-flutter/commit/a93c7f15e543f17bec6dc8f3b0aa88fbc3dc1d61))
+* **sync:** add state transition audit logging and defensive guards ([c367ccb](https://github.com/stussysenik/breakdex-flutter/commit/c367ccbc2a01402ebcfc1970107953a735d77d90))
+* **ui:** add settings gear button and rename Arsenal to Moves ([13b7e7f](https://github.com/stussysenik/breakdex-flutter/commit/13b7e7f55c0c55654f6c52c4eb74f5f59afbe14e))
+* **ui:** add sync health indicators, cloud video overlay, onboarding, and web viewer ([aa2bdee](https://github.com/stussysenik/breakdex-flutter/commit/aa2bdeeebf30de8fa84be62d33324e54064a4ac9))
+
 # 1.0.0 (2026-03-13)
 
 
