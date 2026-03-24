@@ -95,19 +95,23 @@ final class VideoAlbumPlugin: NSObject, FlutterPlugin, NativeCapability {
                 }
                 return
             }
-            self?.prepareTaggedCopy(
-                fileURL: fileURL,
-                assetTitle: assetTitle,
-                category: category,
-                albumName: albumName
-            ) { preparedURL, shouldCleanup in
-                self?.performSave(
-                    fileURL: preparedURL,
-                    originalFilename: assetFilename,
-                    albumName: albumName,
-                    shouldCleanup: shouldCleanup,
-                    result: result
-                )
+            // Move the export + save chain to a background queue so the
+            // passthrough re-mux doesn't block the main thread.
+            DispatchQueue.global(qos: .userInitiated).async {
+                self?.prepareTaggedCopy(
+                    fileURL: fileURL,
+                    assetTitle: assetTitle,
+                    category: category,
+                    albumName: albumName
+                ) { preparedURL, shouldCleanup in
+                    self?.performSave(
+                        fileURL: preparedURL,
+                        originalFilename: assetFilename,
+                        albumName: albumName,
+                        shouldCleanup: shouldCleanup,
+                        result: result
+                    )
+                }
             }
         }
     }
@@ -173,13 +177,26 @@ final class VideoAlbumPlugin: NSObject, FlutterPlugin, NativeCapability {
         )
         export.shouldOptimizeForNetworkUse = true
 
+        // 15-second timeout: if the export stalls, cancel and fall back to
+        // saving the original file without metadata tags.
+        let timeoutWork = DispatchWorkItem { [weak export] in
+            guard let export, export.status == .exporting || export.status == .waiting else { return }
+            print("[VideoAlbumPlugin] Export timed out after 15s — cancelling and falling back to original file")
+            export.cancelExport()
+        }
+        DispatchQueue.global(qos: .userInitiated).asyncAfter(
+            deadline: .now() + 15,
+            execute: timeoutWork
+        )
+
         export.exportAsynchronously {
-            DispatchQueue.main.async {
-                if export.status == .completed {
-                    completion(outputURL, true)
-                } else {
-                    completion(fileURL, false)
-                }
+            timeoutWork.cancel()
+            if export.status == .completed {
+                completion(outputURL, true)
+            } else {
+                // Clean up the partial temp file on failure/cancellation.
+                try? FileManager.default.removeItem(at: outputURL)
+                completion(fileURL, false)
             }
         }
     }
@@ -205,10 +222,13 @@ final class VideoAlbumPlugin: NSObject, FlutterPlugin, NativeCapability {
             let albumCollection = self.fetchAlbum(named: albumName)
             let albumChangeRequest: PHAssetCollectionChangeRequest
 
-            if let existing = albumCollection {
-                guard let changeReq = PHAssetCollectionChangeRequest(for: existing) else { return }
+            if let existing = albumCollection,
+               let changeReq = PHAssetCollectionChangeRequest(for: existing) {
                 albumChangeRequest = changeReq
             } else {
+                if albumCollection != nil {
+                    print("[VideoAlbumPlugin] Warning: could not create change request for existing album \"\(albumName)\" — falling back to creating a new album")
+                }
                 albumChangeRequest = PHAssetCollectionChangeRequest.creationRequestForAssetCollection(
                     withTitle: albumName
                 )

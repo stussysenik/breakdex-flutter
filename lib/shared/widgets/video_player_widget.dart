@@ -165,7 +165,10 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget>
 
   void _openFullscreen() {
     cancelHideTimer();
-    Navigator.of(context).push(
+    // Use rootNavigator so the fullscreen player covers the tab bar shell.
+    // Without this, StatefulShellRoute's BottomNavShell stays visible and
+    // clips the seek bar (which contains the exit-fullscreen button).
+    Navigator.of(context, rootNavigator: true).push(
       PageRouteBuilder(
         pageBuilder: (_, _, _) => _FullscreenVideoPlayer(
           controller: _controller,
@@ -660,6 +663,32 @@ class _FullscreenVideoPlayerState extends State<_FullscreenVideoPlayer>
                   isFullscreen: true,
                   onExitFullscreen: () => Navigator.of(context).pop(),
                   onEdit: widget.onEdit,
+                ),
+              ),
+            ),
+            // Always-visible close button — never auto-hidden so the user
+            // always has an obvious way to exit fullscreen.
+            Positioned(
+              top: MediaQuery.of(context).padding.top + 8,
+              left: 8,
+              child: SafeArea(
+                top: false,
+                child: GestureDetector(
+                  onTap: () => Navigator.of(context).pop(),
+                  behavior: HitTestBehavior.opaque,
+                  child: Container(
+                    width: 44,
+                    height: 44,
+                    decoration: BoxDecoration(
+                      color: Colors.black.withValues(alpha: 0.4),
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(
+                      Icons.close_rounded,
+                      color: Colors.white,
+                      size: 24,
+                    ),
+                  ),
                 ),
               ),
             ),
