@@ -4,10 +4,10 @@ import 'package:drift/drift.dart' as drift;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:intl/intl.dart';
 import 'package:uuid/uuid.dart';
 
 import '../../../core/database/database.dart';
+import '../../../core/utils/time_format.dart';
 import '../../../core/design/colors.dart';
 import '../../../core/design/spacing.dart';
 import '../../../core/design/typography.dart';
@@ -361,7 +361,7 @@ class _TimelineRow extends StatelessWidget {
                   // Timestamp
                   const SizedBox(height: 4),
                   Text(
-                    _formatTimestamp(item.timestamp),
+                    relativeTime(item.timestamp),
                     style: AppTypography.caption.copyWith(
                       color: colorScheme.secondary.withValues(alpha: 0.5),
                     ),
@@ -375,13 +375,4 @@ class _TimelineRow extends StatelessWidget {
     );
   }
 
-  String _formatTimestamp(DateTime dt) {
-    final now = DateTime.now();
-    final diff = now.difference(dt);
-
-    if (diff.inMinutes < 60) return '${diff.inMinutes}m ago';
-    if (diff.inHours < 24) return '${diff.inHours}h ago';
-    if (diff.inDays < 7) return '${diff.inDays}d ago';
-    return DateFormat('MMM d, yyyy').format(dt);
-  }
 }

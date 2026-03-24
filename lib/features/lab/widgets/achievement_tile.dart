@@ -55,7 +55,7 @@ class AchievementTile extends StatelessWidget {
     final icon = tierIcon(tier);
 
     return GestureDetector(
-      onTap: () => context.push('/arsenal/move/$moveId'),
+      onTap: () => context.push('/moves/move/$moveId'),
       child: Container(
         decoration: BoxDecoration(
           color: color.withValues(alpha: 0.08),

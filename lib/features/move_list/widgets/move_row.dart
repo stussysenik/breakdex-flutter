@@ -29,7 +29,7 @@ class _MoveRow extends ConsumerWidget {
         label: '${move.name}, ${state.displayText}',
         button: true,
         child: InkWell(
-          onTap: () => context.go('/arsenal/move/${move.id}'),
+          onTap: () => context.go('/moves/move/${move.id}'),
           child: Container(
             margin: const EdgeInsets.only(bottom: AppSpacing.sm),
             decoration: BoxDecoration(

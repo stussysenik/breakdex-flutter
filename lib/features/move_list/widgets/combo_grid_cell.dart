@@ -32,7 +32,7 @@ class _ComboGridCell extends ConsumerWidget {
     return _GridCardShell(
       onTap: () {
         HapticFeedback.lightImpact();
-        context.go('/arsenal/combo/${combo.id}');
+        context.go('/moves/combo/${combo.id}');
       },
       background: _ComboPreviewBackground(combo: combo),
       name: combo.name,

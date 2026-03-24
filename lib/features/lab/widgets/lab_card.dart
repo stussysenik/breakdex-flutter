@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../core/database/database.dart';
+import '../../../core/utils/time_format.dart';
 import '../../../core/design/colors.dart';
 import '../../../core/design/spacing.dart';
 import '../../../core/design/theme.dart';
@@ -91,7 +92,7 @@ class LabCard extends StatelessWidget {
                 ),
                 const Spacer(),
                 Text(
-                  _timeAgo(lab.updatedAt),
+                  relativeTime(lab.updatedAt),
                   style: AppTypography.caption.copyWith(
                     color: colorScheme.secondary,
                   ),
@@ -141,18 +142,6 @@ class LabCard extends StatelessWidget {
     );
   }
 
-  /// Human-readable relative time string for card metadata.
-  String _timeAgo(DateTime dateTime) {
-    final now = DateTime.now();
-    final diff = now.difference(dateTime);
-
-    if (diff.inMinutes < 1) return 'just now';
-    if (diff.inMinutes < 60) return '${diff.inMinutes}m ago';
-    if (diff.inHours < 24) return '${diff.inHours}h ago';
-    if (diff.inDays < 7) return '${diff.inDays}d ago';
-    if (diff.inDays < 30) return '${(diff.inDays / 7).floor()}w ago';
-    return '${(diff.inDays / 30).floor()}mo ago';
-  }
 }
 
 // -- Status Pill --------------------------------------------------------------

@@ -55,7 +55,7 @@ class _ComboRow extends ConsumerWidget {
         label: '${combo.name}, $moveCount moves',
         button: true,
         child: InkWell(
-          onTap: () => context.go('/arsenal/combo/${combo.id}'),
+          onTap: () => context.go('/moves/combo/${combo.id}'),
           borderRadius: BorderRadius.circular(AppRadius.sm),
           child: Container(
             margin: const EdgeInsets.only(bottom: AppSpacing.sm),

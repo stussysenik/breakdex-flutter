@@ -965,6 +965,53 @@ class _FlowGraphCanvasState extends ConsumerState<FlowGraphCanvas> {
     }
   }
 
+  /// Frosted 28x28 circle button for graph overlays (info, re-center, etc.).
+  Widget _frostedCircleButton({
+    required VoidCallback onTap,
+    required IconData icon,
+    required ColorScheme colorScheme,
+  }) {
+    return GestureDetector(
+      onTap: () {
+        HapticFeedback.selectionClick();
+        onTap();
+      },
+      child: ClipOval(
+        child: BackdropFilter(
+          filter: ui.ImageFilter.blur(sigmaX: 6, sigmaY: 6),
+          child: Container(
+            width: 28,
+            height: 28,
+            decoration: BoxDecoration(
+              color: colorScheme.surface.withValues(alpha: 0.7),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(icon, size: 16, color: colorScheme.secondary),
+          ),
+        ),
+      ),
+    );
+  }
+
+  /// Resets the viewport so the entire graph fits on screen — same calculation
+  /// as the initial auto-fit but callable on demand (e.g. re-center button).
+  void _zoomToFit() {
+    if (_layoutNodes.isEmpty || !mounted) return;
+    final viewportWidth = context.size?.width ?? 400;
+    final viewportHeight = context.size?.height ?? 600;
+    final scaleX = viewportWidth / _canvasWidth;
+    final scaleY = viewportHeight / _canvasHeight;
+    final fitScale = min(scaleX, scaleY) * 0.95;
+    final clampedScale = fitScale.clamp(0.3, 1.0);
+    final dx = (viewportWidth - _canvasWidth * clampedScale) / 2;
+    final dy = (viewportHeight - _canvasHeight * clampedScale) / 2;
+
+    // ignore: deprecated_member_use
+    _transformController.value = Matrix4.identity()
+      ..translate(dx, dy) // ignore: deprecated_member_use
+      ..scale(clampedScale); // ignore: deprecated_member_use
+  }
+
   Widget _emptyPlaceholder(IconData icon, String message) {
     final secondary = Theme.of(context).colorScheme.secondary;
     return Center(
@@ -1000,33 +1047,14 @@ class _FlowGraphCanvasState extends ConsumerState<FlowGraphCanvas> {
     _runLayoutIfNeeded(rawNodes, edges, viewMode);
 
     // Auto-fit: zoom out so the entire graph is visible on first render.
-    // Uses WidgetsBinding.addPostFrameCallback to set the transform after
-    // the InteractiveViewer has been laid out and knows its constraints.
     if (!_hasSetInitialTransform && _layoutNodes.isNotEmpty) {
       _hasSetInitialTransform = true;
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (!mounted) return;
-        final viewportWidth = context.size?.width ?? 400;
-        final viewportHeight = context.size?.height ?? 600;
-        final scaleX = viewportWidth / _canvasWidth;
-        final scaleY = viewportHeight / _canvasHeight;
-        final fitScale = min(scaleX, scaleY) * 0.95; // 5% margin
-        final clampedScale = fitScale.clamp(0.3, 1.0);
-
-        // Center the canvas in the viewport.
-        final dx = (viewportWidth - _canvasWidth * clampedScale) / 2;
-        final dy = (viewportHeight - _canvasHeight * clampedScale) / 2;
-
-        // ignore: deprecated_member_use
-        _transformController.value = Matrix4.identity()
-          ..translate(dx, dy) // ignore: deprecated_member_use
-          ..scale(clampedScale); // ignore: deprecated_member_use
-      });
+      WidgetsBinding.instance.addPostFrameCallback((_) => _zoomToFit());
     }
 
     if (rawNodes.isEmpty) {
       return _emptyPlaceholder(Icons.hub_rounded,
-          'Add moves to your Arsenal\nto see them mapped here.');
+          'Add moves to your library\nto see them mapped here.');
     }
 
     if (viewMode == FlowViewMode.focus && _selectedNodeId == null) {
@@ -1093,40 +1121,29 @@ class _FlowGraphCanvasState extends ConsumerState<FlowGraphCanvas> {
           ),
 
         // Child 2: Info toggle — re-shows the legend after dismissal.
-        // Small 28x28 frosted circle in the top-right corner.
         if (_layoutNodes.isNotEmpty)
           Positioned(
             top: 8,
             right: 8,
-            child: GestureDetector(
-              onTap: () {
-                HapticFeedback.selectionClick();
-                setState(() => _showLegend = !_showLegend);
-              },
-              child: ClipOval(
-                child: BackdropFilter(
-                  filter: ui.ImageFilter.blur(sigmaX: 6, sigmaY: 6),
-                  child: Container(
-                    width: 28,
-                    height: 28,
-                    decoration: BoxDecoration(
-                      color: colorScheme.surface.withValues(alpha: 0.7),
-                      shape: BoxShape.circle,
-                    ),
-                    child: Icon(
-                      Icons.info_outline,
-                      size: 16,
-                      color: colorScheme.secondary,
-                    ),
-                  ),
-                ),
-              ),
+            child: _frostedCircleButton(
+              onTap: () => setState(() => _showLegend = !_showLegend),
+              icon: Icons.info_outline,
+              colorScheme: colorScheme,
             ),
           ),
 
-        // Child 3: Focus pill — floats below the selected node in Map mode.
-        // Positioned in screen space (outside InteractiveViewer) using the
-        // transform matrix to convert canvas coords to screen coords.
+        // Child 3: Re-center button — resets zoom/pan to fit the full graph.
+        if (_layoutNodes.isNotEmpty)
+          Positioned(
+            top: 44,
+            right: 8,
+            child: _frostedCircleButton(
+              onTap: _zoomToFit,
+              icon: Icons.center_focus_strong,
+              colorScheme: colorScheme,
+            ),
+          ),
+
         // Child 4: Multi-select bottom bar for set creation.
         if (_multiSelectMode)
           Positioned(

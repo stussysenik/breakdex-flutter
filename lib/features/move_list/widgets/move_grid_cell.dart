@@ -13,7 +13,7 @@ class _MoveGridCell extends ConsumerWidget {
     return _GridCardShell(
       onTap: () {
         HapticFeedback.lightImpact();
-        context.go('/arsenal/move/${move.id}');
+        context.go('/moves/move/${move.id}');
       },
       heroTag: 'move-thumb-${move.id}',
       background: move.videoPath != null

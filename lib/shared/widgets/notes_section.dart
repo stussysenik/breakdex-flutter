@@ -251,7 +251,7 @@ class _NotesSectionState extends ConsumerState<NotesSection> {
 
   void _navigateToMention(String href) {
     if (href.startsWith('/')) {
-      context.push('/arsenal$href');
+      context.push('/moves$href');
     }
   }
 }

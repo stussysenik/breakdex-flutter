@@ -202,7 +202,7 @@ class _AuraPill extends ConsumerWidget {
         return GestureDetector(
           onTap: () {
             unawaited(HapticFeedback.selectionClick());
-            context.push('/arsenal/move/$connectedMoveId');
+            context.push('/moves/move/$connectedMoveId');
           },
           child: Semantics(
             label: '$moveName (${affinity.label})',

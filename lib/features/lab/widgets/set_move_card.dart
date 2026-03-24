@@ -42,7 +42,7 @@ class _SetMoveCardState extends State<SetMoveCard> {
     final colorScheme = Theme.of(context).colorScheme;
 
     return GestureDetector(
-      onTap: () => context.push('/arsenal/move/${widget.move.id}'),
+      onTap: () => context.push('/moves/move/${widget.move.id}'),
       onLongPress: () {
         HapticFeedback.mediumImpact();
         setState(() => _showDelete = !_showDelete);

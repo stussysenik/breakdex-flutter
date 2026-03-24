@@ -11,6 +11,7 @@ import '../../core/database/database.dart';
 import '../../core/design/spacing.dart';
 import '../../core/design/typography.dart';
 import '../../shared/widgets/app_segmented_control.dart';
+import '../../core/utils/time_format.dart';
 import '../../shared/widgets/settings_gear_button.dart';
 import 'providers/lab_providers.dart';
 import 'widgets/lab_board_view.dart';
@@ -181,7 +182,7 @@ class _LabScreenState extends ConsumerState<LabScreen> {
         ),
         const SizedBox(height: AppSpacing.md),
 
-        // 5-segment toggle: Projects | Board | Sets | Aura | Calendar
+        // 3-segment toggle: Projects | Board | Sets
         Padding(
           padding: const EdgeInsets.symmetric(
             horizontal: AppSpacing.screenEdge,
@@ -251,11 +252,55 @@ class _LabScreenState extends ConsumerState<LabScreen> {
               ],
             ),
           ),
+          // Recent quick-log entries — compact horizontal chip feed
+          Consumer(
+            builder: (context, ref, _) {
+              final entriesAsync = ref.watch(labEntriesStreamProvider);
+              final entries = entriesAsync.valueOrNull ?? [];
+              if (entries.isEmpty) return const SizedBox.shrink();
+
+              return SizedBox(
+                height: 32,
+                child: ListView.separated(
+                  scrollDirection: Axis.horizontal,
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: AppSpacing.screenEdge,
+                  ),
+                  itemCount: entries.length,
+                  separatorBuilder: (_, _) =>
+                      const SizedBox(width: AppSpacing.xs),
+                  itemBuilder: (context, index) {
+                    final entry = entries[index];
+                    final ago = relativeTime(entry.createdAt);
+                    return Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 6,
+                      ),
+                      decoration: BoxDecoration(
+                        color: colorScheme.surfaceContainerHighest,
+                        borderRadius: BorderRadius.circular(14),
+                      ),
+                      child: Text(
+                        '${entry.content.length > 30 ? '${entry.content.substring(0, 30)}…' : entry.content} · $ago',
+                        style: AppTypography.caption.copyWith(
+                          color: colorScheme.onSurfaceVariant,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    );
+                  },
+                ),
+              );
+            },
+          ),
           const SizedBox(height: AppSpacing.md),
         ],
       ],
     );
   }
+
 }
 
 // -- Create Lab Bottom Sheet --------------------------------------------------

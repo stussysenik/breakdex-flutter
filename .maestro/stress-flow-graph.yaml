@@ -136,15 +136,15 @@ name: "Flow Graph Exploratory Stress Test"
 - tapOn:
     text: "Create Set"
     optional: true
-- inputText: "Flow Stress Set"
-  optional: true
+- inputText:
+    text: "Flow Stress Set"
+    optional: true
 - tapOn:
     text: "Create"
     optional: true
 - takeScreenshot: "flow-graph-set-created"
 # Navigate back to Flow
 - back
-  optional: true
 - tapOn:
     id: "flow-tab"
     optional: true
@@ -156,35 +156,35 @@ name: "Flow Graph Exploratory Stress Test"
       - tapOn:
           point: "365,410"
 
-# Phase 12: Zoom stress — aggressive scroll (pinch simulation)
-- scroll:
-    point: "188,500"
-    direction: "UP"
+# Phase 12: Pan stress — swipe gestures across the graph canvas
+- swipe:
+    start: "188,500"
+    end: "188,300"
     duration: 500
-- scroll:
-    point: "188,500"
-    direction: "DOWN"
+- swipe:
+    start: "188,300"
+    end: "188,500"
     duration: 500
-- scroll:
-    point: "188,500"
-    direction: "UP"
+- swipe:
+    start: "188,500"
+    end: "50,300"
     duration: 300
-- scroll:
-    point: "188,500"
-    direction: "DOWN"
+- swipe:
+    start: "50,300"
+    end: "300,600"
     duration: 300
 - repeat:
     times: 5
     commands:
-      - scroll:
-          point: "188,500"
-          direction: "UP"
+      - swipe:
+          start: "188,500"
+          end: "188,300"
           duration: 200
-      - scroll:
-          point: "188,500"
-          direction: "DOWN"
+      - swipe:
+          start: "188,300"
+          end: "188,500"
           duration: 200
-- takeScreenshot: "flow-graph-after-zoom-spam"
+- takeScreenshot: "flow-graph-after-pan-spam"
 
 # Phase 13: Full 5-tab cycle 3x
 - repeat:
