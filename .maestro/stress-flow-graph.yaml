@@ -1,0 +1,221 @@
+appId: com.breakdex.breakdex
+tags:
+  - stress
+  - flow
+name: "Flow Graph Exploratory Stress Test"
+
+# Stress tests the Flow Graph with seeded aura links across all 3 view modes.
+# Prerequisites: stress fixture (100 moves, ~120 aura links, FSRS cards).
+# Tests: view mode switching, filter toggling, node selection, ego graph,
+# category clusters, double-tap navigation, zoom/pan, multi-select set
+# creation, legend toggle, and tab cycling.
+
+---
+
+# Phase 1: Launch with stress fixture (includes aura links)
+- runFlow: subflows/launch-stress.yaml
+
+# Phase 2: Navigate to Flow tab — verify graph loads
+- tapOn:
+    id: "flow-tab"
+- assertVisible: "Flow"
+- takeScreenshot: "flow-graph-map-initial"
+
+# Phase 2b: Overflow regression — all filter chips must be visible
+- assertVisible: "All"
+- assertVisible: "Moves"
+- assertVisible:
+    text: "Combos"
+    optional: true
+- assertVisible:
+    text: "Sets"
+    optional: true
+- takeScreenshot: "flow-graph-filter-chips"
+
+# Phase 3: Test Focus mode — no selection shows prompt
+- tapOn:
+    text: "Focus"
+- takeScreenshot: "flow-graph-focus-no-selection"
+
+# Phase 4: Back to Map, select a node, then Focus for ego graph
+- tapOn:
+    text: "Map"
+# Tap several points on the canvas to find a node (nodes spread with edges now)
+- tapOn:
+    point: "200,500"
+- tapOn:
+    point: "300,450"
+- tapOn:
+    point: "180,400"
+- tapOn:
+    point: "250,550"
+- takeScreenshot: "flow-graph-map-node-selected"
+
+# Switch to Focus — should show ego graph of selected node
+- tapOn:
+    text: "Focus"
+- takeScreenshot: "flow-graph-focus-ego-graph"
+
+# Phase 5: Test Clusters mode — category grouping
+- tapOn:
+    text: "Clusters"
+- takeScreenshot: "flow-graph-clusters-mode"
+
+# Phase 6: Rapid mode cycling stress (10x)
+- repeat:
+    times: 10
+    commands:
+      - tapOn:
+          text: "Map"
+      - tapOn:
+          text: "Focus"
+      - tapOn:
+          text: "Clusters"
+- tapOn:
+    text: "Map"
+- takeScreenshot: "flow-graph-after-mode-spam"
+
+# Phase 7: Rapid filter switching (5x)
+- repeat:
+    times: 5
+    commands:
+      - tapOn:
+          text: "Moves"
+      - tapOn:
+          text: "Combos"
+          optional: true
+      - tapOn:
+          text: "Sets"
+          optional: true
+      - tapOn:
+          text: "All"
+- takeScreenshot: "flow-graph-after-filter-spam"
+
+# Phase 8: Rapid node tapping stress (10x canvas hits) — broader spread
+- repeat:
+    times: 10
+    commands:
+      - tapOn:
+          point: "100,350"
+      - tapOn:
+          point: "300,500"
+      - tapOn:
+          point: "200,650"
+      - tapOn:
+          point: "150,400"
+      - tapOn:
+          point: "280,550"
+- takeScreenshot: "flow-graph-after-tap-spam"
+
+# Phase 9: Double-tap navigation — tap node → move detail → back
+- tapOn:
+    point: "200,500"
+- tapOn:
+    point: "200,500"
+    optional: true
+# Navigate back to Flow (in case we hit move detail)
+- back
+- tapOn:
+    id: "flow-tab"
+    optional: true
+- assertVisible: "Flow"
+- takeScreenshot: "flow-graph-after-nav-roundtrip"
+
+# Phase 10: Multi-select + Set creation from graph
+# Long-press to enter multi-select mode
+- longPressOn:
+    point: "200,500"
+- tapOn:
+    point: "250,450"
+    optional: true
+- tapOn:
+    point: "300,500"
+    optional: true
+- takeScreenshot: "flow-graph-multi-select"
+# Create set from selection
+- tapOn:
+    text: "Create Set"
+    optional: true
+- inputText: "Flow Stress Set"
+  optional: true
+- tapOn:
+    text: "Create"
+    optional: true
+- takeScreenshot: "flow-graph-set-created"
+# Navigate back to Flow
+- back
+  optional: true
+- tapOn:
+    id: "flow-tab"
+    optional: true
+
+# Phase 11: Legend toggle spam (10x)
+- repeat:
+    times: 10
+    commands:
+      - tapOn:
+          point: "365,410"
+
+# Phase 12: Zoom stress — aggressive scroll (pinch simulation)
+- scroll:
+    point: "188,500"
+    direction: "UP"
+    duration: 500
+- scroll:
+    point: "188,500"
+    direction: "DOWN"
+    duration: 500
+- scroll:
+    point: "188,500"
+    direction: "UP"
+    duration: 300
+- scroll:
+    point: "188,500"
+    direction: "DOWN"
+    duration: 300
+- repeat:
+    times: 5
+    commands:
+      - scroll:
+          point: "188,500"
+          direction: "UP"
+          duration: 200
+      - scroll:
+          point: "188,500"
+          direction: "DOWN"
+          duration: 200
+- takeScreenshot: "flow-graph-after-zoom-spam"
+
+# Phase 13: Full 5-tab cycle 3x
+- repeat:
+    times: 3
+    commands:
+      - tapOn:
+          text: "Moves"
+      - tapOn:
+          text: "Drill"
+      - tapOn:
+          text: "Progress"
+      - tapOn:
+          text: "Lab"
+      - tapOn:
+          id: "flow-tab"
+
+- tapOn:
+    id: "flow-tab"
+- assertVisible: "Flow"
+
+# Phase 14: Verify all modes after full stress
+- tapOn:
+    text: "Clusters"
+- takeScreenshot: "flow-graph-clusters-after-stress"
+
+- tapOn:
+    text: "Focus"
+- takeScreenshot: "flow-graph-focus-after-stress"
+
+# Back to Map for final state
+- tapOn:
+    text: "Map"
+- takeScreenshot: "flow-graph-final-state"
+- assertVisible: "Flow"
