@@ -34,6 +34,10 @@ abstract final class VideoPathResolver {
     }
   }
 
+  /// Test-only setter to bypass [AppStoragePaths] in unit tests.
+  @visibleForTesting
+  static set docsPathOverride(String path) => _docsPath = path;
+
   /// Whether a path is already relative (doesn't start with `/`).
   static bool isRelative(String path) => !path.startsWith('/');
 
