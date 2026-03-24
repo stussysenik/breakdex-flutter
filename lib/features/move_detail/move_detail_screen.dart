@@ -9,17 +9,20 @@ import 'package:share_plus/share_plus.dart';
 
 import '../../core/database/database.dart';
 import '../../core/design/colors.dart';
+import '../../core/models/reviewable_item.dart' show MoveVideoPath;
 import '../../core/design/spacing.dart';
 import '../../core/design/typography.dart';
 import '../../core/models/learning_state.dart';
 import '../../core/providers.dart';
 import '../../core/services/categories_service.dart';
+import '../../core/services/video_path_resolver.dart';
 import '../../core/services/native_video_album.dart';
 import '../../shared/widgets/state_pill.dart';
 import '../../shared/widgets/video_player_widget.dart'
     show RobustVideoPlayer;
 import '../../shared/widgets/action_tile.dart';
 import '../../shared/widgets/notes_section.dart';
+import '../lab/widgets/move_aura_section.dart';
 import '../../shared/widgets/video_picker_sheet.dart';
 
 class MoveDetailScreen extends ConsumerWidget {
@@ -80,10 +83,10 @@ class MoveDetailScreen extends ConsumerWidget {
                   Hero(
                     tag: 'move-thumb-${move.id}',
                     child: RobustVideoPlayer(
-                      videoPath: move.videoPath!,
+                      videoPath: move.resolvedVideoPath!,
                       onRepick: () => _addOrReplaceVideo(context, ref, move),
                       onEdit: () => _editVideo(context, ref, move),
-                      ghostThumbnailPath: _thumbnailPathFor(move.videoPath!),
+                      ghostThumbnailPath: _thumbnailPathFor(move.resolvedVideoPath!),
                       originalVideoName: move.originalVideoName,
                     ),
                   )
@@ -91,12 +94,12 @@ class MoveDetailScreen extends ConsumerWidget {
                   _CloudVideoPlaceholder(
                     move: move,
                     onDownloaded: (localPath) async {
-                      // Update move with re-downloaded local path
+                      // Update move with re-downloaded local path (relative)
                       await ref
                           .read(moveRepositoryProvider)
                           .update(MovesCompanion(
                             id: Value(move.id),
-                            videoPath: Value(localPath),
+                            videoPath: Value(VideoPathResolver.toRelative(localPath)),
                           ));
                     },
                   )
@@ -160,7 +163,12 @@ class MoveDetailScreen extends ConsumerWidget {
                     );
                   },
                 ),
+                const SizedBox(height: AppSpacing.lg),
+
+                // Bboy Aura — move transition affinities
+                MoveAuraSection(moveId: move.id),
                 const SizedBox(height: AppSpacing.md),
+
                 Divider(color: colorScheme.outline),
                 const SizedBox(height: AppSpacing.md),
 
@@ -179,7 +187,7 @@ class MoveDetailScreen extends ConsumerWidget {
                     label: 'Analyze Move',
                     onTap: () => context.push(
                       '/move-analysis',
-                      extra: {'moveId': move.id, 'videoPath': move.videoPath},
+                      extra: {'moveId': move.id, 'videoPath': move.resolvedVideoPath},
                     ),
                   ),
                   const SizedBox(height: AppSpacing.sm),
@@ -244,7 +252,7 @@ class MoveDetailScreen extends ConsumerWidget {
 
   Future<void> _shareVideo(BuildContext context, Move move) async {
     if (move.videoPath == null) return;
-    await Share.shareXFiles([XFile(move.videoPath!)], subject: move.name);
+    await Share.shareXFiles([XFile(move.resolvedVideoPath!)], subject: move.name);
   }
 
   Future<void> _addOrReplaceVideo(
@@ -256,7 +264,7 @@ class MoveDetailScreen extends ConsumerWidget {
       context,
       previousVideoName: move.originalVideoName,
       previousThumbnailPath: move.videoPath != null
-          ? _thumbnailPathFor(move.videoPath!)
+          ? _thumbnailPathFor(move.resolvedVideoPath!)
           : null,
     );
     if (result == null) return;
@@ -266,11 +274,11 @@ class MoveDetailScreen extends ConsumerWidget {
         .update(
           MovesCompanion(
             id: Value(move.id),
-            videoPath: Value(result.localPath),
+            videoPath: Value(VideoPathResolver.toRelative(result.localPath)),
             originalVideoName: Value(result.originalFileName),
           ),
         );
-    await videoService.replaceVideo(move.videoPath);
+    await videoService.replaceVideo(move.resolvedVideoPath);
     if (!context.mounted) return;
     await _saveSemanticAlbumCopy(
       context,
@@ -288,16 +296,16 @@ class MoveDetailScreen extends ConsumerWidget {
     if (move.videoPath == null) return;
     final editedPath = await context.push<String>(
       '/video-editor',
-      extra: {'videoPath': move.videoPath},
+      extra: {'videoPath': move.resolvedVideoPath},
     );
     if (editedPath != null && context.mounted) {
       final videoService = ref.read(videoServiceProvider);
       await ref
           .read(moveRepositoryProvider)
           .update(
-            MovesCompanion(id: Value(move.id), videoPath: Value(editedPath)),
+            MovesCompanion(id: Value(move.id), videoPath: Value(VideoPathResolver.toRelative(editedPath))),
           );
-      await videoService.replaceVideo(move.videoPath);
+      await videoService.replaceVideo(move.resolvedVideoPath);
       if (!context.mounted) return;
       await _saveSemanticAlbumCopy(
         context,
@@ -336,7 +344,7 @@ class MoveDetailScreen extends ConsumerWidget {
     if (confirm != true) return;
     HapticFeedback.mediumImpact();
     if (move.videoPath != null) {
-      await ref.read(videoServiceProvider).deleteVideo(move.videoPath!);
+      await ref.read(videoServiceProvider).deleteVideo(move.resolvedVideoPath!);
     }
     await ref
         .read(moveRepositoryProvider)
@@ -541,7 +549,7 @@ class MoveDetailScreen extends ConsumerWidget {
     if (confirm != true) return;
     HapticFeedback.mediumImpact();
     if (move.videoPath != null) {
-      await ref.read(videoServiceProvider).deleteVideo(move.videoPath!);
+      await ref.read(videoServiceProvider).deleteVideo(move.resolvedVideoPath!);
     }
     await ref.read(moveRepositoryProvider).delete(move.id);
     if (context.mounted) context.pop();

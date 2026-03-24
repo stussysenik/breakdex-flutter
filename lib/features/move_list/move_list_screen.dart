@@ -16,6 +16,7 @@ import '../../core/design/spacing.dart';
 import '../../core/design/theme.dart';
 import '../../core/design/typography.dart';
 import '../../core/models/learning_state.dart';
+import '../../core/models/reviewable_item.dart' show MoveVideoPath, ComboVideoPath;
 import '../../core/providers.dart';
 import '../../core/services/categories_service.dart';
 import '../../core/services/native_video_album.dart';
@@ -26,6 +27,7 @@ import '../../core/services/view_names_service.dart';
 import '../../shared/widgets/celebration_overlay.dart';
 import '../../shared/widgets/pressable.dart';
 import '../../shared/widgets/state_pill.dart';
+import '../../shared/widgets/settings_gear_button.dart';
 import '../../shared/widgets/video_picker_sheet.dart';
 import '../sync_onboarding/sync_onboarding_card.dart';
 
@@ -95,7 +97,7 @@ class MoveListScreen extends ConsumerWidget {
     final segment = ref.watch(_arsenalSegmentProvider);
     final colorScheme = Theme.of(context).colorScheme;
 
-    final title = viewNames['title'] ?? 'Arsenal';
+    final title = viewNames['title'] ?? 'Moves';
 
     return Scaffold(
       body: ThumbnailCoordinatorScope(
@@ -108,7 +110,7 @@ class MoveListScreen extends ConsumerWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Title
+                  // Title + gear
                   Padding(
                     padding: const EdgeInsets.fromLTRB(
                       AppSpacing.screenEdge,
@@ -116,11 +118,17 @@ class MoveListScreen extends ConsumerWidget {
                       AppSpacing.screenEdge,
                       0,
                     ),
-                    child: Text(
-                      title,
-                      style: AppTypography.titleLarge.copyWith(
-                        color: colorScheme.onSurface,
-                      ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          title,
+                          style: AppTypography.titleLarge.copyWith(
+                            color: colorScheme.onSurface,
+                          ),
+                        ),
+                        const SettingsGearButton(),
+                      ],
                     ),
                   ),
                   const SizedBox(height: AppSpacing.md),

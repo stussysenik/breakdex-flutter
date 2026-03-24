@@ -8,6 +8,7 @@ import '../database/daos/asset_copies_dao.dart';
 import '../database/daos/asset_manifest_dao.dart';
 import '../database/daos/moves_dao.dart';
 import '../services/connectivity_service.dart';
+import '../services/video_path_resolver.dart';
 import 'asset_hash_service.dart';
 import 'asset_sync_engine.dart';
 
@@ -67,10 +68,11 @@ class VideoImportSyncHook {
       final now = DateTime.now();
 
       // Step 3: Insert asset_manifest row (deduplicates by contentHash PK)
+      // Store relative path so it survives iOS container UUID changes.
       await _manifestDao.upsert(AssetManifestCompanion.insert(
         contentHash: contentHash,
         fileSizeBytes: stat.size,
-        localPath: Value(localPath),
+        localPath: Value(VideoPathResolver.toRelative(localPath)),
         localVerifiedAt: Value(now),
         sourceType: 'photos',
         importedAt: now,

@@ -1,3 +1,5 @@
+import 'dart:math';
+
 import 'package:drift/drift.dart' show Value;
 import 'package:flutter/foundation.dart';
 import 'package:flutter_launch_arguments/flutter_launch_arguments.dart';
@@ -29,7 +31,6 @@ class AutomationFixtureService {
     : _launchArguments = launchArguments ?? FlutterLaunchArgumentReader();
 
   static const fixtureKey = 'breakdexFixture';
-  static const maestroKey = 'maestro';
 
   final LaunchArgumentReader _launchArguments;
 
@@ -40,16 +41,13 @@ class AutomationFixtureService {
     if (kReleaseMode) return;
 
     final fixture = await _launchArguments.getString(fixtureKey);
-    final isMaestro = await _launchArguments.getBool(maestroKey) ?? false;
-
-    if (fixture == null || fixture.isEmpty) {
-      if (!isMaestro) return;
-      return;
-    }
+    if (fixture == null || fixture.isEmpty) return;
 
     switch (fixture) {
-      case 'review':
-        await _seedReviewFixture(db);
+      case 'review' || 'stress':
+        fixture == 'review'
+            ? await _seedReviewFixture(db)
+            : await _seedStressFixture(db);
         await prefs?.setString('review_mode', 'review');
         await prefs?.setString('review_session_source', 'stateBased');
       default:
@@ -57,19 +55,26 @@ class AutomationFixtureService {
     }
   }
 
+  /// Delete all user data tables in dependency order.
+  static Future<void> _clearAllTables(AppDatabase db) async {
+    await db.delete(db.reviews).go();
+    await db.delete(db.comboMoves).go();
+    await db.delete(db.deckMoves).go();
+    await db.delete(db.decks).go();
+    await db.delete(db.fsrsCards).go();
+    await db.delete(db.auraLinks).go();
+    await db.delete(db.auraPresets).go();
+    await db.delete(db.combos).go();
+    await db.delete(db.moves).go();
+    await db.delete(db.battleResults).go();
+    await db.delete(db.syncLog).go();
+  }
+
   Future<void> _seedReviewFixture(AppDatabase db) async {
     final now = DateTime.now().toUtc();
 
     await db.transaction(() async {
-      await db.delete(db.reviews).go();
-      await db.delete(db.comboMoves).go();
-      await db.delete(db.deckMoves).go();
-      await db.delete(db.decks).go();
-      await db.delete(db.fsrsCards).go();
-      await db.delete(db.combos).go();
-      await db.delete(db.moves).go();
-      await db.delete(db.battleResults).go();
-      await db.delete(db.syncLog).go();
+      await _clearAllTables(db);
 
       await db.batch((batch) {
         batch.insertAll(db.moves, [
@@ -228,5 +233,334 @@ class AutomationFixtureService {
         ]);
       });
     });
+  }
+
+  // ---------------------------------------------------------------------------
+  // Stress fixture: bulk data for Maestro chaos testing.
+  //
+  // Seeds 100 moves, 30 combos (2-8 steps each), 10 decks, 130 FSRS cards,
+  // and 500 reviews. Uses a seeded RNG (seed=42) for deterministic output.
+  // ---------------------------------------------------------------------------
+
+  static const _categories = [
+    'Power Moves',
+    'Footwork',
+    'Freezes',
+    'Toprock',
+    'default',
+  ];
+
+  static String _padIdx(int i) => (i + 1).toString().padLeft(3, '0');
+  static String _moveId(int i) => 'stress-move-${_padIdx(i)}';
+
+  static const _ratingWeights = [
+    ReviewRating.good,  ReviewRating.good,  ReviewRating.good,  // 60%
+    ReviewRating.good,  ReviewRating.good,  ReviewRating.good,
+    ReviewRating.again, ReviewRating.again,                     // 20%
+    ReviewRating.hard,                                          // 10%
+    ReviewRating.easy,                                          // 10%
+  ];
+
+  Future<void> _seedStressFixture(AppDatabase db) async {
+    final now = DateTime.now().toUtc();
+    final rng = Random(42);
+
+    await db.transaction(() async {
+      await _clearAllTables(db);
+
+      final moves = _stressMoves(now, rng);
+      final combos = _stressCombos(now);
+      final comboMoves = _stressComboMoves(moves);
+      final decks = _stressDecks(now);
+      final deckMoves = _stressDeckMoves(moves);
+      final fsrsCards = _stressFsrsCards(now, rng, moves.length, combos.length);
+      final reviews = _stressReviews(now, rng, moves.length, combos.length);
+      final auraLinks = _stressAuraLinks();
+
+      await db.batch((batch) {
+        batch.insertAll(db.moves, moves);
+        batch.insertAll(db.combos, combos);
+        batch.insertAll(db.comboMoves, comboMoves);
+        batch.insertAll(db.decks, decks);
+        batch.insertAll(db.deckMoves, deckMoves);
+        batch.insertAll(db.fsrsCards, fsrsCards);
+        batch.insertAll(db.reviews, reviews);
+        batch.insertAll(db.auraLinks, auraLinks);
+      });
+    });
+  }
+
+  /// 100 moves: 40 new (0-39), 35 learning (40-74), 25 mastery (75-99).
+  static List<MovesCompanion> _stressMoves(DateTime now, Random rng) {
+    LearningState stateFor(int i) {
+      if (i < 40) return LearningState.newState;
+      if (i < 75) return LearningState.learning;
+      return LearningState.mastery;
+    }
+
+    return List.generate(100, (i) => MovesCompanion.insert(
+          id: _moveId(i),
+          name: 'Stress Move ${_padIdx(i)}',
+          learningState: Value(stateFor(i).dbValue),
+          category: Value(_categories[i % _categories.length]),
+          createdAt: Value(now.subtract(Duration(days: 90 - i))),
+        ));
+  }
+
+  /// 30 combos.
+  static List<CombosCompanion> _stressCombos(DateTime now) =>
+      List.generate(30, (i) => CombosCompanion.insert(
+            id: 'stress-combo-${i + 1}',
+            name: 'Stress Combo ${i + 1}',
+          ));
+
+  /// 2-8 steps per combo, drawn from the first 100 moves.
+  static List<ComboMovesCompanion> _stressComboMoves(
+      List<MovesCompanion> moves) {
+    final result = <ComboMovesCompanion>[];
+    for (var c = 0; c < 30; c++) {
+      final stepCount = c % 7 + 2; // 2–8
+      for (var s = 0; s < stepCount; s++) {
+        final moveIdx = (c * 7 + s) % moves.length;
+        result.add(ComboMovesCompanion.insert(
+          id: 'stress-cm-${c + 1}-$s',
+          sequenceIndex: s,
+          comboId: 'stress-combo-${c + 1}',
+          moveId: _moveId(moveIdx),
+        ));
+      }
+    }
+    return result;
+  }
+
+  /// 10 decks.
+  static List<DecksCompanion> _stressDecks(DateTime now) =>
+      List.generate(10, (i) => DecksCompanion.insert(
+            id: 'stress-deck-${i + 1}',
+            name: 'Stress Deck ${i + 1}',
+            deckType: const Value('manual'),
+            sessionSize: Value(5 + i),
+            createdAt: Value(now),
+            updatedAt: Value(now),
+          ));
+
+  /// 5-15 moves per deck, capped at 15.
+  static List<DeckMovesCompanion> _stressDeckMoves(
+      List<MovesCompanion> moves) {
+    final result = <DeckMovesCompanion>[];
+    for (var d = 0; d < 10; d++) {
+      final count = (5 + d * 2).clamp(5, 15);
+      for (var m = 0; m < count; m++) {
+        final moveIdx = (d * 10 + m) % moves.length;
+        result.add(DeckMovesCompanion.insert(
+          deckId: 'stress-deck-${d + 1}',
+          moveId: _moveId(moveIdx),
+        ));
+      }
+    }
+    return result;
+  }
+
+  /// FSRS card for every move (100) and every combo (30) = 130 cards.
+  static List<FsrsCardsCompanion> _stressFsrsCards(
+      DateTime now, Random rng, int moveCount, int comboCount) {
+    final cards = <FsrsCardsCompanion>[];
+
+    for (var i = 0; i < moveCount; i++) {
+      final (state, stab, diff, reps, lapses, dueOff, lastOff) =
+          _fsrsParams(i, rng);
+      cards.add(FsrsCardsCompanion.insert(
+        entityId: _moveId(i),
+        entityType: const Value('move'),
+        fsrsState: Value(state),
+        stability: Value(stab),
+        difficulty: Value(diff),
+        reps: Value(reps),
+        lapses: Value(lapses),
+        due: Value(now.subtract(dueOff)),
+        lastReview: lastOff != null ? Value(now.subtract(lastOff)) : const Value.absent(),
+      ));
+    }
+
+    for (var i = 0; i < comboCount; i++) {
+      // Reuse learning-bucket params (index 40-74 range maps to fsrsState=1).
+      final (state, stab, diff, reps, lapses, dueOff, lastOff) =
+          _fsrsParams(40 + (i % 35), rng);
+      cards.add(FsrsCardsCompanion.insert(
+        entityId: 'stress-combo-${i + 1}',
+        entityType: const Value('combo'),
+        fsrsState: Value(state),
+        stability: Value(stab),
+        difficulty: Value(diff),
+        reps: Value(reps),
+        lapses: Value(lapses),
+        due: Value(now.subtract(dueOff)),
+        lastReview: lastOff != null ? Value(now.subtract(lastOff)) : const Value.absent(),
+      ));
+    }
+
+    return cards;
+  }
+
+  /// Returns (fsrsState, stability, difficulty, reps, lapses, dueOffset,
+  /// lastReviewOffset?) tuned to the move's state bucket (0-39 new, 40-74
+  /// learning, 75-99 mastery).
+  static (int, double, double, int, int, Duration, Duration?) _fsrsParams(
+      int i, Random rng) {
+    if (i < 40) {
+      return (0, 0.0, 0.0, 0, 0, Duration(minutes: 1 + rng.nextInt(10)), null);
+    }
+    if (i < 75) {
+      return (
+        1,
+        0.5 + rng.nextDouble() * 4.5,
+        2.0 + rng.nextDouble() * 5.0,
+        1 + rng.nextInt(4),
+        rng.nextInt(2),
+        Duration(minutes: 1 + rng.nextInt(60)),
+        Duration(hours: 4 + rng.nextInt(44)),
+      );
+    }
+    return (
+      2,
+      5.0 + rng.nextDouble() * 25.0,
+      1.0 + rng.nextDouble() * 3.0,
+      5 + rng.nextInt(11),
+      rng.nextInt(3),
+      Duration(hours: 1 + rng.nextInt(168)),
+      Duration(days: 1 + rng.nextInt(14)),
+    );
+  }
+
+  /// 500 reviews spread over 90 days: 400 move reviews, 100 combo reviews.
+  static List<ReviewsCompanion> _stressReviews(
+      DateTime now, Random rng, int moveCount, int comboCount) {
+    final reviews = <ReviewsCompanion>[];
+
+    for (var i = 0; i < 400; i++) {
+      final moveIdx = i % moveCount;
+      final rating = _ratingWeights[rng.nextInt(_ratingWeights.length)];
+      final daysAgo = rng.nextInt(90);
+      reviews.add(ReviewsCompanion.insert(
+        id: 'stress-review-m-$i',
+        rating: rating.dbValue,
+        reviewType: ReviewType.move.dbValue,
+        reviewedAt: Value(now.subtract(Duration(days: daysAgo, hours: rng.nextInt(24)))),
+        moveId: Value(_moveId(moveIdx)),
+        entityIdSnapshot: Value(_moveId(moveIdx)),
+        entityType: const Value('move'),
+        entityDisplayName: Value('Stress Move ${_padIdx(moveIdx)}'),
+        entityCategory: Value(_categories[moveIdx % _categories.length]),
+        fsrsPreState: Value(rng.nextInt(3)),
+        fsrsPostState: Value(rng.nextInt(3)),
+      ));
+    }
+
+    for (var i = 0; i < 100; i++) {
+      final comboIdx = i % comboCount;
+      final rating = _ratingWeights[rng.nextInt(_ratingWeights.length)];
+      final daysAgo = rng.nextInt(90);
+      reviews.add(ReviewsCompanion.insert(
+        id: 'stress-review-c-$i',
+        rating: rating.dbValue,
+        reviewType: ReviewType.combo.dbValue,
+        reviewedAt: Value(now.subtract(Duration(days: daysAgo, hours: rng.nextInt(24)))),
+        comboId: Value('stress-combo-${comboIdx + 1}'),
+        entityIdSnapshot: Value('stress-combo-${comboIdx + 1}'),
+        entityType: const Value('combo'),
+        entityDisplayName: Value('Stress Combo ${comboIdx + 1}'),
+        entityCategory: const Value('combo'),
+        fsrsPreState: Value(rng.nextInt(3)),
+        fsrsPostState: Value(rng.nextInt(3)),
+      ));
+    }
+
+    return reviews;
+  }
+
+  // ---------------------------------------------------------------------------
+  // Aura links: ~120 deterministic move-to-move transition edges.
+  //
+  // Three affinity tiers:
+  //   natural  – intra-category chains (consecutive + skip connections)
+  //   possible – cross-category bridges between logically related styles
+  //   stretch  – long-range weak ties across distant categories
+  //
+  // Move indices cycle through _categories[i % 5]:
+  //   0 → Power Moves, 1 → Footwork, 2 → Freezes, 3 → Toprock, 4 → default
+  // So Power Moves = {0,5,10,15,...,95}, Footwork = {1,6,11,...,96}, etc.
+  // ---------------------------------------------------------------------------
+
+  /// Generate ~120 deterministic aura links spanning all three affinity types.
+  static List<AuraLinksCompanion> _stressAuraLinks() {
+    final links = <AuraLinksCompanion>[];
+    final seen = <(String, String)>{};
+
+    void add(int from, int to, String affinity) {
+      final key = (_moveId(from), _moveId(to));
+      if (seen.contains(key)) return;
+      seen.add(key);
+      links.add(AuraLinksCompanion.insert(
+        fromMoveId: _moveId(from),
+        toMoveId: _moveId(to),
+        affinity: affinity,
+      ));
+    }
+
+    // -- Natural links (~60): intra-category chains ---------------------------
+    // For each of 5 categories, connect consecutive same-category members plus
+    // skip connections (stride of 10 in the global index = 2 positions within
+    // the category).
+    for (var cat = 0; cat < 5; cat++) {
+      final members = [for (var i = cat; i < 100; i += 5) i]; // 20 per cat
+
+      // Consecutive chains: members[j] → members[j+1]
+      for (var j = 0; j < members.length - 1; j++) {
+        add(members[j], members[j + 1], 'natural');
+      }
+
+      // Skip connections: members[j] → members[j+2]
+      for (var j = 0; j < members.length - 2; j++) {
+        add(members[j], members[j + 2], 'natural');
+      }
+    }
+
+    // -- Possible links (~40): cross-category bridges -------------------------
+    // Toprock → Footwork
+    for (var k = 0; k < 10; k++) {
+      add(3 + k * 5, 1 + k * 5, 'possible');
+    }
+    // Footwork → Power Moves
+    for (var k = 0; k < 10; k++) {
+      add(1 + k * 5, 0 + k * 5, 'possible');
+    }
+    // Power Moves → Freezes
+    for (var k = 0; k < 10; k++) {
+      add(0 + k * 5, 2 + k * 5, 'possible');
+    }
+    // Freezes → Toprock
+    for (var k = 0; k < 10; k++) {
+      add(2 + k * 5, 3 + k * 5, 'possible');
+    }
+
+    // -- Stretch links (~20): long-range weak ties ----------------------------
+    // Power → default
+    for (var k = 0; k < 5; k++) {
+      add(k * 10, k * 10 + 4, 'stretch');
+    }
+    // Footwork → Freezes
+    for (var k = 0; k < 5; k++) {
+      add(1 + k * 10, 2 + k * 10, 'stretch');
+    }
+    // Toprock → default
+    for (var k = 0; k < 5; k++) {
+      add(3 + k * 10, 4 + k * 10, 'stretch');
+    }
+    // default → Power
+    for (var k = 0; k < 5; k++) {
+      add(4 + k * 10, 5 + k * 10, 'stretch');
+    }
+
+    return links;
   }
 }

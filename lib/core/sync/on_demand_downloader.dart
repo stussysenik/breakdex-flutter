@@ -9,6 +9,7 @@ import '../database/daos/asset_copies_dao.dart';
 import '../database/daos/asset_manifest_dao.dart';
 import '../database/daos/sync_dao.dart';
 import '../services/app_storage_paths.dart';
+import '../services/video_path_resolver.dart';
 import 'asset_hash_service.dart';
 import 'cloud_provider.dart';
 
@@ -57,8 +58,9 @@ class OnDemandDownloader {
     }
 
     if (manifest.localPath != null) {
-      final file = File(manifest.localPath!);
-      if (await file.exists()) return manifest.localPath;
+      final absolutePath = VideoPathResolver.toAbsolute(manifest.localPath!);
+      final file = File(absolutePath);
+      if (await file.exists()) return absolutePath;
     }
 
     // Find a verified remote copy
@@ -110,10 +112,10 @@ class OnDemandDownloader {
         return null;
       }
 
-      // Update manifest with new local path
+      // Update manifest with new local path (relative for portability)
       await _manifestDao.upsert(AssetManifestCompanion(
         contentHash: Value(contentHash),
-        localPath: Value(localPath),
+        localPath: Value(VideoPathResolver.toRelative(localPath)),
         localVerifiedAt: Value(DateTime.now()),
       ));
 

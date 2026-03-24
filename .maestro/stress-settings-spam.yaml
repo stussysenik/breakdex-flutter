@@ -1,0 +1,70 @@
+# Stress: Settings screen spam
+# Rapid theme toggling, color picker taps, category management,
+# and scroll thrashing on the settings list.
+#
+# Prerequisites: stress fixture
+# Tags: stress
+
+appId: com.breakdex.breakdex
+name: "Stress: Settings Spam"
+tags:
+  - stress
+
+---
+
+- runFlow: subflows/launch-stress.yaml
+
+# Navigate to Settings
+- tapOn:
+    point: "344,809"
+- assertVisible: "Settings"
+
+# Phase 1: Scroll the settings list rapidly
+- repeat:
+    times: 5
+    commands:
+      - scroll:
+          direction: DOWN
+          duration: 500
+      - scroll:
+          direction: UP
+          duration: 500
+
+# Phase 2: Tab switch mid-settings and back
+- repeat:
+    times: 5
+    commands:
+      - tapOn:
+          point: "49,809"
+      - tapOn:
+          point: "344,809"
+
+# Phase 3: Rapid theme switching (if theme options visible)
+- tapOn:
+    text: "Marker"
+    optional: true
+- tapOn:
+    text: "Blue"
+    optional: true
+- repeat:
+    times: 5
+    commands:
+      - tapOn:
+          text: "Marker"
+          optional: true
+      - tapOn:
+          text: "Blue"
+          optional: true
+
+# Phase 4: Scroll to bottom and back to top repeatedly
+- repeat:
+    times: 3
+    commands:
+      - scroll:
+          direction: DOWN
+          duration: 2000
+      - scroll:
+          direction: UP
+          duration: 2000
+
+- takeScreenshot: e2e-screenshots/stress-settings-spam-done

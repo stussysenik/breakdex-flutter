@@ -1,0 +1,62 @@
+appId: com.breakdex.breakdex
+tags:
+  - smoke
+  - verify
+name: "Verify route fixes + flow re-center"
+
+# Lightweight test for the /arsenal → /moves route fix and
+# the new re-center button on the Flow graph.
+# No stress fixture needed — works with existing app data.
+
+---
+
+# Launch Breakdex
+- launchApp
+
+# Phase 1: Verify Moves tab loads — title may be "Arsenal" (customizable)
+# but bottom nav should show "Moves"
+- assertVisible: "Search moves..."
+- takeScreenshot: "verify-moves-tab"
+
+# Phase 2: Navigate to Flow tab via semantic ID
+- tapOn:
+    id: "flow-tab"
+- takeScreenshot: "verify-flow-tab"
+
+# Phase 3: Pan the graph (swipe gestures)
+- swipe:
+    start: "200,400"
+    end: "100,300"
+    duration: 400
+- swipe:
+    start: "100,300"
+    end: "300,500"
+    duration: 400
+- takeScreenshot: "verify-flow-after-pan"
+
+# Phase 4: Tap the re-center button (top-right, second frosted circle)
+- tapOn:
+    point: "375,156"
+- takeScreenshot: "verify-flow-after-recenter"
+
+# Phase 5: Navigate to Lab tab via semantic ID, verify quick log
+- tapOn:
+    id: "lab-tab"
+- assertVisible: "Quick log..."
+- takeScreenshot: "verify-lab-quicklog"
+
+# Phase 6: Navigate back to Moves tab (center at 39,789 in point coords)
+- tapOn:
+    point: "39,789"
+- assertVisible: "Search moves..."
+
+# Phase 7: Tap a move to verify navigation works (was /arsenal, now /moves)
+- tapOn:
+    text: "Stress Move 100"
+    optional: true
+- takeScreenshot: "verify-move-detail"
+
+# Phase 8: Go back and verify no "Page Not Found" error
+- back
+- assertVisible: "Search moves..."
+- takeScreenshot: "verify-final-state"

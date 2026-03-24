@@ -962,7 +962,7 @@ class _ReviewEmptyState extends StatelessWidget {
                     ),
                     const SizedBox(height: AppSpacing.xxl),
                     ElevatedButton(
-                      onPressed: () => context.go('/arsenal'),
+                      onPressed: () => context.go('/moves'),
                       style: ElevatedButton.styleFrom(
                         minimumSize: const Size.fromHeight(60),
                         backgroundColor: Theme.of(context).colorScheme.primary,

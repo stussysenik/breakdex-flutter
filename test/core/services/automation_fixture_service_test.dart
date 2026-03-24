@@ -24,7 +24,6 @@ void main() {
     final service = AutomationFixtureService(
       launchArguments: _FakeLaunchArguments({
         AutomationFixtureService.fixtureKey: 'review',
-        AutomationFixtureService.maestroKey: true,
       }),
     );
 
@@ -44,5 +43,36 @@ void main() {
     expect(decks.single.name, 'Fixture Deck');
     expect(cards, hasLength(4));
     expect(reviewCount, 3);
+  });
+
+  test('stress fixture seeds aura links with all affinity types', () async {
+    final db = createTestDatabase();
+    addTearDown(db.close);
+
+    final service = AutomationFixtureService(
+      launchArguments: _FakeLaunchArguments({
+        AutomationFixtureService.fixtureKey: 'stress',
+      }),
+    );
+
+    await service.seedIfRequested(db);
+
+    // Fetch all aura links via a raw select on the table.
+    final allLinks =
+        await db.select(db.auraLinks).get();
+
+    // Should have at least 100 links total.
+    expect(allLinks.length, greaterThanOrEqualTo(100));
+
+    // All three affinity types must be present.
+    final affinities = allLinks.map((l) => l.affinity).toSet();
+    expect(affinities, containsAll(['natural', 'possible', 'stretch']));
+
+    // No duplicate (fromMoveId, toMoveId) pairs — enforced by PK, but verify
+    // the generator itself doesn't attempt duplicates.
+    final pairSet = allLinks
+        .map((l) => '${l.fromMoveId}|${l.toMoveId}')
+        .toSet();
+    expect(pairSet.length, allLinks.length);
   });
 }

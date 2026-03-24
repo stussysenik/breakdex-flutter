@@ -6,6 +6,7 @@ import 'package:breakdex/core/sync/asset_hash_service.dart';
 import 'package:breakdex/core/sync/asset_sync_engine.dart';
 import 'package:breakdex/core/sync/network_policy.dart';
 import 'package:breakdex/core/sync/safety_guard.dart';
+import 'package:breakdex/core/services/video_path_resolver.dart';
 import 'package:breakdex/core/sync/video_import_sync_hook.dart';
 import 'package:drift/drift.dart' hide isNotNull, isNull;
 import 'package:flutter_test/flutter_test.dart';
@@ -24,6 +25,9 @@ void main() {
     db = createTestDatabase();
     hashService = AssetHashService();
     connectivityService = ConnectivityService();
+    // VideoPathResolver must be initialized before any hook call that
+    // converts paths to relative form.
+    VideoPathResolver.docsPathOverride = Directory.systemTemp.path;
 
     SharedPreferences.setMockInitialValues({});
     final prefs = await SharedPreferences.getInstance();
@@ -87,7 +91,8 @@ void main() {
       expect(manifest, isNotNull);
       expect(manifest!.fileSizeBytes, equals(1024));
       expect(manifest.sourceType, equals('photos'));
-      expect(manifest.localPath, equals(tempFile.path));
+      // Stored as relative path after VideoPathResolver.toRelative
+      expect(manifest.localPath, equals(VideoPathResolver.toRelative(tempFile.path)));
 
       // Verify: local copy exists and is verified
       final copies = await db.assetCopiesDao.getByHash(move.contentHash!);

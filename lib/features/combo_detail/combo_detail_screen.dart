@@ -13,7 +13,9 @@ import '../../core/database/daos/combos_dao.dart';
 import '../../core/design/spacing.dart';
 import '../../core/design/typography.dart';
 import '../../core/models/learning_state.dart';
+import '../../core/models/reviewable_item.dart' show MoveVideoPath;
 import '../../core/providers.dart';
+import '../../core/services/video_path_resolver.dart';
 import '../../core/services/native_video_album.dart';
 import '../../shared/widgets/combo_step_line.dart';
 import '../../shared/widgets/notes_section.dart';
@@ -153,7 +155,7 @@ class _ComboDetailScreenState extends ConsumerState<ComboDetailScreen> {
                     if (currentMove != null && currentMove.videoPath != null)
                       RobustVideoPlayer(
                         key: ValueKey('${currentMove.id}:$safeIndex'),
-                        videoPath: currentMove.videoPath!,
+                        videoPath: currentMove.resolvedVideoPath!,
                         autoPlay: true,
                         onEdit: () => _editVideo(currentMove),
                         overlay: Positioned(
@@ -242,18 +244,18 @@ class _ComboDetailScreenState extends ConsumerState<ComboDetailScreen> {
   /// Opens the video editor for a combo move's video and updates the move on return.
   Future<void> _editVideo(Move move) async {
     if (move.videoPath == null) return;
-    final originalPath = move.videoPath;
+    final resolvedPath = move.resolvedVideoPath;
     final editedPath = await context.push<String>(
       '/video-editor',
-      extra: {'videoPath': move.videoPath},
+      extra: {'videoPath': resolvedPath},
     );
     if (editedPath != null && mounted) {
       await ref
           .read(moveRepositoryProvider)
           .update(
-            MovesCompanion(id: Value(move.id), videoPath: Value(editedPath)),
+            MovesCompanion(id: Value(move.id), videoPath: Value(VideoPathResolver.toRelative(editedPath))),
           );
-      await ref.read(videoServiceProvider).replaceVideo(originalPath);
+      await ref.read(videoServiceProvider).replaceVideo(resolvedPath);
       unawaited(
         _videoAlbum
             .saveToAlbum(

@@ -7,6 +7,7 @@ import 'package:video_player/video_player.dart';
 import '../../core/design/colors.dart';
 import '../../core/design/spacing.dart';
 import '../../core/design/typography.dart';
+import '../../core/services/video_path_resolver.dart';
 import '../../core/services/video_service.dart';
 
 /// Skip amount for forward/backward navigation.
@@ -164,7 +165,10 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget>
 
   void _openFullscreen() {
     cancelHideTimer();
-    Navigator.of(context).push(
+    // Use rootNavigator so the fullscreen player covers the tab bar shell.
+    // Without this, StatefulShellRoute's BottomNavShell stays visible and
+    // clips the seek bar (which contains the exit-fullscreen button).
+    Navigator.of(context, rootNavigator: true).push(
       PageRouteBuilder(
         pageBuilder: (_, _, _) => _FullscreenVideoPlayer(
           controller: _controller,
@@ -662,6 +666,32 @@ class _FullscreenVideoPlayerState extends State<_FullscreenVideoPlayer>
                 ),
               ),
             ),
+            // Always-visible close button — never auto-hidden so the user
+            // always has an obvious way to exit fullscreen.
+            Positioned(
+              top: MediaQuery.of(context).padding.top + 8,
+              left: 8,
+              child: SafeArea(
+                top: false,
+                child: GestureDetector(
+                  onTap: () => Navigator.of(context).pop(),
+                  behavior: HitTestBehavior.opaque,
+                  child: Container(
+                    width: 44,
+                    height: 44,
+                    decoration: BoxDecoration(
+                      color: Colors.black.withValues(alpha: 0.4),
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(
+                      Icons.close_rounded,
+                      color: Colors.white,
+                      size: 24,
+                    ),
+                  ),
+                ),
+              ),
+            ),
           ],
         ),
       ),
@@ -715,6 +745,7 @@ class RobustVideoPlayer extends StatefulWidget {
     this.ghostThumbnailPath,
     this.originalVideoName,
     this.autoPlay = false,
+    this.borderRadius,
   });
 
   final String videoPath;
@@ -728,6 +759,10 @@ class RobustVideoPlayer extends StatefulWidget {
   /// can identify which clip needs to be re-imported.
   final String? originalVideoName;
   final bool autoPlay;
+
+  /// Custom border radius. Pass [BorderRadius.zero] for immersive layouts
+  /// where the parent handles clipping.
+  final BorderRadius? borderRadius;
 
   @override
   State<RobustVideoPlayer> createState() => _RobustVideoPlayerState();
@@ -754,14 +789,34 @@ class _RobustVideoPlayerState extends State<RobustVideoPlayer> {
   }
 
   /// Check or retry video file availability. [isRetry] controls the loading state label.
+  ///
+  /// Self-healing: when the file at [widget.videoPath] is missing, falls back
+  /// to [VideoPathResolver.resolve] which scans known directories for a file
+  /// with the same basename. This silently recovers from stale absolute paths
+  /// left over from iOS container UUID changes.
+  String? _resolvedPath;
+
   Future<void> _checkFile({bool isRetry = false}) async {
     setState(
       () => _state = isRetry ? _PlayerState.retrying : _PlayerState.checking,
     );
+    _resolvedPath = null;
     final status = await _videoService.checkVideoFileWithRetry(
       widget.videoPath,
     );
     if (!mounted) return;
+
+    if (status == VideoFileStatus.missing) {
+      // Self-healing fallback: scan disk for the file at an alternate location
+      final found = await VideoPathResolver.resolve(widget.videoPath);
+      if (!mounted) return;
+      if (found != null) {
+        _resolvedPath = found;
+        setState(() => _state = _PlayerState.ready);
+        return;
+      }
+    }
+
     setState(() {
       _state = switch (status) {
         VideoFileStatus.ready => _PlayerState.ready,
@@ -784,8 +839,9 @@ class _RobustVideoPlayerState extends State<RobustVideoPlayer> {
         colorScheme: colorScheme,
       ),
       _PlayerState.ready => VideoPlayerWidget(
-        videoPath: widget.videoPath,
+        videoPath: _resolvedPath ?? widget.videoPath,
         height: widget.height,
+        borderRadius: widget.borderRadius,
         overlay: widget.overlay,
         onEdit: widget.onEdit,
         autoPlay: widget.autoPlay,
@@ -814,7 +870,7 @@ class _RobustVideoPlayerState extends State<RobustVideoPlayer> {
           width: double.infinity,
           decoration: BoxDecoration(
             color: Theme.of(context).colorScheme.surfaceContainerHighest,
-            borderRadius: BorderRadius.circular(AppRadius.lg),
+            borderRadius: widget.borderRadius ?? BorderRadius.circular(AppRadius.lg),
           ),
         )
         .animate(onPlay: (c) => c.repeat())
@@ -831,7 +887,7 @@ class _RobustVideoPlayerState extends State<RobustVideoPlayer> {
     bool showSpinner = false,
   }) {
     return ClipRRect(
-      borderRadius: BorderRadius.circular(AppRadius.lg),
+      borderRadius: widget.borderRadius ?? BorderRadius.circular(AppRadius.lg),
       child: SizedBox(
         height: widget.height,
         width: double.infinity,

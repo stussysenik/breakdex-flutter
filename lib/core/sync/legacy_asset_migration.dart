@@ -7,6 +7,7 @@ import '../database/daos/asset_copies_dao.dart';
 import '../database/daos/asset_manifest_dao.dart';
 import '../database/daos/moves_dao.dart';
 import '../database/database.dart';
+import '../services/video_path_resolver.dart';
 import 'asset_hash_service.dart';
 
 /// Progress snapshot emitted during legacy migration.
@@ -90,7 +91,9 @@ class LegacyAssetMigration {
 
   Future<void> _migrateMove(Move move) async {
     final videoPath = move.videoPath!;
-    final file = File(videoPath);
+    // Resolve to absolute path for file operations (may be relative or stale)
+    final absolutePath = VideoPathResolver.toAbsolute(videoPath);
+    final file = File(absolutePath);
 
     if (!await file.exists()) {
       debugPrint(
@@ -105,7 +108,7 @@ class LegacyAssetMigration {
       return;
     }
 
-    final hash = await _hashService.computeHash(videoPath);
+    final hash = await _hashService.computeHash(absolutePath);
     final stat = await file.stat();
     final now = DateTime.now();
 
@@ -116,7 +119,7 @@ class LegacyAssetMigration {
       await _manifestDao.insertManifest(AssetManifestCompanion.insert(
         contentHash: hash,
         fileSizeBytes: stat.size,
-        localPath: Value(videoPath),
+        localPath: Value(VideoPathResolver.toRelative(videoPath)),
         localVerifiedAt: Value(now),
         sourceType: 'legacy_migration',
         sourceName: Value(move.originalVideoName ?? move.name),

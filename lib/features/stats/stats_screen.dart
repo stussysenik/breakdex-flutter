@@ -10,8 +10,10 @@ import '../../core/design/theme.dart';
 import '../../core/design/typography.dart';
 import '../../core/services/stats_export_service.dart';
 import '../../shared/widgets/app_segmented_control.dart';
+import '../../shared/widgets/settings_gear_button.dart';
 import 'providers/stats_providers.dart';
 import 'widgets/heat_map_grid.dart';
+import 'widgets/calendar_view.dart';
 import 'widgets/stat_card.dart';
 
 class StatsScreen extends ConsumerStatefulWidget {
@@ -21,9 +23,12 @@ class StatsScreen extends ConsumerStatefulWidget {
   ConsumerState<StatsScreen> createState() => _StatsScreenState();
 }
 
+enum _ProgressMode { numbers, timeline }
+
 enum _StatsMode { card, time }
 
 class _StatsScreenState extends ConsumerState<StatsScreen> {
+  _ProgressMode _progressMode = _ProgressMode.numbers;
   _StatsMode _mode = _StatsMode.card;
 
   @override
@@ -32,7 +37,9 @@ class _StatsScreenState extends ConsumerState<StatsScreen> {
 
     return Scaffold(
       body: SafeArea(
-        child: statsAsync.when(
+        child: _progressMode == _ProgressMode.timeline
+            ? _buildTimelineView(context)
+            : statsAsync.when(
           loading: () => const Center(child: CircularProgressIndicator()),
           error: (e, _) => Center(child: Text('Error: $e')),
           data: (stats) {
@@ -63,7 +70,9 @@ class _StatsScreenState extends ConsumerState<StatsScreen> {
                             Semantics(
                               header: true,
                               child: Text(
-                                'Stats',
+                                _progressMode == _ProgressMode.numbers
+                                  ? 'Progress'
+                                  : 'Timeline',
                                 style: AppTypography.titleLarge.copyWith(
                                   color: Theme.of(
                                     context,
@@ -82,8 +91,44 @@ class _StatsScreenState extends ConsumerState<StatsScreen> {
                             ),
                           ],
                         ),
-                        _ShareButton(stats: stats),
+                        Row(
+                          children: [
+                            _ShareButton(stats: stats),
+                            const SizedBox(width: AppSpacing.sm),
+                            const SettingsGearButton(),
+                          ],
+                        ),
                       ],
+                    ),
+                  ),
+                ),
+
+                // Numbers / Timeline toggle
+                SliverPadding(
+                  padding: const EdgeInsets.fromLTRB(
+                    AppSpacing.screenEdge,
+                    AppSpacing.md,
+                    AppSpacing.screenEdge,
+                    0,
+                  ),
+                  sliver: SliverToBoxAdapter(
+                    child: AppSegmentedControl<_ProgressMode>(
+                      items: const [
+                        AppSegmentedControlItem(
+                          value: _ProgressMode.numbers,
+                          icon: Icons.bar_chart_rounded,
+                          label: 'Numbers',
+                        ),
+                        AppSegmentedControlItem(
+                          value: _ProgressMode.timeline,
+                          icon: Icons.calendar_month_outlined,
+                          label: 'Timeline',
+                        ),
+                      ],
+                      selectedValue: _progressMode,
+                      onChanged: (mode) => setState(() {
+                        _progressMode = mode;
+                      }),
                     ),
                   ),
                 ),
@@ -329,6 +374,80 @@ class _StatsScreenState extends ConsumerState<StatsScreen> {
           },
         ),
       ),
+    );
+  }
+
+  Widget _buildTimelineView(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Title row
+        Padding(
+          padding: const EdgeInsets.fromLTRB(
+            AppSpacing.screenEdge,
+            AppSpacing.lg,
+            AppSpacing.screenEdge,
+            0,
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Semantics(
+                    header: true,
+                    child: Text(
+                      'Timeline',
+                      style: AppTypography.titleLarge.copyWith(
+                        color: colorScheme.onSurface,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    'Activity across your training.',
+                    style: AppTypography.bodySmall.copyWith(
+                      color: colorScheme.secondary,
+                    ),
+                  ),
+                ],
+              ),
+              const SettingsGearButton(),
+            ],
+          ),
+        ),
+        const SizedBox(height: AppSpacing.md),
+        // Numbers / Timeline toggle
+        Padding(
+          padding: const EdgeInsets.symmetric(
+            horizontal: AppSpacing.screenEdge,
+          ),
+          child: AppSegmentedControl<_ProgressMode>(
+            items: const [
+              AppSegmentedControlItem(
+                value: _ProgressMode.numbers,
+                icon: Icons.bar_chart_rounded,
+                label: 'Numbers',
+              ),
+              AppSegmentedControlItem(
+                value: _ProgressMode.timeline,
+                icon: Icons.calendar_month_outlined,
+                label: 'Timeline',
+              ),
+            ],
+            selectedValue: _progressMode,
+            onChanged: (mode) => setState(() {
+              _progressMode = mode;
+            }),
+          ),
+        ),
+        const SizedBox(height: AppSpacing.md),
+        // Calendar view fills remaining space
+        const Expanded(child: LabCalendarView()),
+      ],
     );
   }
 }

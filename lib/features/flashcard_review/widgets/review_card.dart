@@ -4,7 +4,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/database/database.dart';
 import '../../../core/database/daos/combos_dao.dart';
 import '../../../core/design/spacing.dart';
-import '../../../core/design/theme.dart';
 import '../../../core/design/typography.dart';
 import '../../../core/models/learning_state.dart';
 import '../../../core/providers.dart';
@@ -12,25 +11,30 @@ import '../../../shared/widgets/combo_step_line.dart';
 import '../../../shared/widgets/state_pill.dart';
 import '../../../shared/widgets/video_player_widget.dart'
     show RobustVideoPlayer, VideoPlaceholder;
+import 'review_dashboard.dart';
 
-/// 60/30/10 review card — video dominates, metadata is compact.
+/// Immersive review card — video fills the card, metadata overlaid via
+/// gradient scrim. Designed for a 70/30 split where the card fills ~70%
+/// of the screen and the rating strip takes ~30%.
 ///
-/// Move cards remain simple. Combo cards reuse the same sequence step-line
-/// from the combo detail screen so the learner can scrub each move while
-/// still rating the combo as a single card.
+/// Move cards show the video full-bleed with name, state pill, and category
+/// overlaid on a bottom gradient. Combo cards add the step-line timeline
+/// so the learner can scrub each move while rating the combo as one card.
 class ReviewCard extends ConsumerStatefulWidget {
   const ReviewCard({
     super.key,
     required this.title,
     required this.state,
     required this.onStatePillTap,
-    required this.videoHeight,
+    required this.currentIndex,
+    required this.totalItems,
     this.category,
     this.videoPath,
     this.originalVideoName,
     this.canEditState = true,
     this.onRepick,
     this.combo,
+    this.onEnd,
   });
 
   final String title;
@@ -40,9 +44,17 @@ class ReviewCard extends ConsumerStatefulWidget {
   final String? originalVideoName;
   final bool canEditState;
   final VoidCallback onStatePillTap;
-  final double videoHeight;
   final VoidCallback? onRepick;
   final Combo? combo;
+
+  /// Current card index in the session (0-based).
+  final int currentIndex;
+
+  /// Total number of cards in the session.
+  final int totalItems;
+
+  /// Callback to end the review session (shown as top-right button).
+  final VoidCallback? onEnd;
 
   @override
   ConsumerState<ReviewCard> createState() => _ReviewCardState();
@@ -77,25 +89,12 @@ class _ReviewCardState extends ConsumerState<ReviewCard> {
     if (widget.combo == null) {
       final hasVideo =
           widget.videoPath != null && widget.videoPath!.trim().isNotEmpty;
-      return _buildSurface(
+      return _buildImmersiveCard(
         context,
-        video: hasVideo
-            ? RobustVideoPlayer(
-                key: ValueKey(widget.videoPath),
-                videoPath: widget.videoPath!,
-                height: widget.videoHeight,
-                onRepick: widget.onRepick,
-                originalVideoName: widget.originalVideoName,
-                autoPlay: true,
-              )
-            : VideoPlaceholder(height: widget.videoHeight),
-        metadata: _ReviewMetadata(
-          title: widget.title,
-          state: widget.state,
-          category: widget.category,
-          canEditState: widget.canEditState,
-          onStatePillTap: widget.onStatePillTap,
-        ),
+        videoPath: hasVideo ? widget.videoPath : null,
+        originalVideoName: widget.originalVideoName,
+        title: widget.title,
+        category: widget.category,
       );
     }
 
@@ -119,188 +118,216 @@ class _ReviewCardState extends ConsumerState<ReviewCard> {
             ? rawStepVideoPath
             : null;
         final currentVideoPath = stepVideoPath ?? widget.combo!.activeVideoPath;
+        final hasVideo =
+            currentVideoPath != null && currentVideoPath.trim().isNotEmpty;
 
-        return _buildSurface(
+        return _buildImmersiveCard(
           context,
-          video: currentVideoPath != null && currentVideoPath.trim().isNotEmpty
-              ? RobustVideoPlayer(
-                  key: ValueKey(
-                    '${widget.combo!.id}:$safeIndex:$currentVideoPath',
-                  ),
-                  videoPath: currentVideoPath,
-                  height: widget.videoHeight,
-                  originalVideoName:
-                      currentStep?.originalVideoName ??
-                      widget.originalVideoName,
-                  autoPlay: true,
-                )
-              : VideoPlaceholder(height: widget.videoHeight),
-          metadata: _ReviewMetadata(
-            title: widget.title,
-            state: widget.state,
-            category: null,
-            canEditState: false,
-            onStatePillTap: widget.onStatePillTap,
-            comboSteps: comboMoves,
-            activeComboStepIndex: safeIndex,
-            activeStep: currentStep,
-            onComboStepSelected: (index) {
-              setState(() => _activeComboStepIndex = index);
-            },
-          ),
+          videoPath: hasVideo ? currentVideoPath : null,
+          originalVideoName:
+              currentStep?.originalVideoName ?? widget.originalVideoName,
+          title: widget.title,
+          category: null, // combos don't show category
+          comboMoves: comboMoves,
+          activeComboStepIndex: safeIndex,
+          activeStep: currentStep,
         );
       },
     );
   }
 
-  Widget _buildSurface(
+  /// Builds the immersive Stack-based card: video fills background,
+  /// gradient scrim at bottom, metadata overlaid, progress dots at top.
+  Widget _buildImmersiveCard(
     BuildContext context, {
-    required Widget video,
-    required Widget metadata,
+    required String? videoPath,
+    required String? originalVideoName,
+    required String title,
+    String? category,
+    List<ComboMoveWithDetail> comboMoves = const [],
+    int activeComboStepIndex = 0,
+    Move? activeStep,
   }) {
-    return Container(
-      decoration: AppSurfaces.panel(
-        context,
-        raised: true,
-        radius: AppRadius.lg,
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.stretch,
+    final isCombo = comboMoves.isNotEmpty;
+
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(AppRadius.lg),
+      child: Stack(
+        fit: StackFit.expand,
         children: [
-          ClipRRect(
-            borderRadius: const BorderRadius.vertical(
-              top: Radius.circular(AppRadius.lg),
+          // 1. Video fills entire card
+          Positioned.fill(
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                if (videoPath == null) {
+                  return VideoPlaceholder(height: constraints.maxHeight);
+                }
+                return RobustVideoPlayer(
+                  key: ValueKey(
+                    isCombo
+                        ? '${widget.combo!.id}:$activeComboStepIndex:$videoPath'
+                        : videoPath,
+                  ),
+                  videoPath: videoPath,
+                  height: constraints.maxHeight,
+                  borderRadius: BorderRadius.zero,
+                  onRepick: widget.onRepick,
+                  originalVideoName: originalVideoName,
+                  autoPlay: true,
+                );
+              },
             ),
-            child: video,
           ),
-          Padding(
-            padding: const EdgeInsets.fromLTRB(
-              AppSpacing.md,
-              AppSpacing.md,
-              AppSpacing.md,
-              AppSpacing.md,
-            ),
-            child: metadata,
-          ),
-        ],
-      ),
-    );
-  }
-}
 
-class _ReviewMetadata extends StatelessWidget {
-  const _ReviewMetadata({
-    required this.title,
-    required this.state,
-    required this.canEditState,
-    required this.onStatePillTap,
-    this.category,
-    this.comboSteps = const <ComboMoveWithDetail>[],
-    this.activeComboStepIndex = 0,
-    this.activeStep,
-    this.onComboStepSelected,
-  });
-
-  final String title;
-  final LearningState state;
-  final String? category;
-  final bool canEditState;
-  final VoidCallback onStatePillTap;
-  final List<ComboMoveWithDetail> comboSteps;
-  final int activeComboStepIndex;
-  final Move? activeStep;
-  final ValueChanged<int>? onComboStepSelected;
-
-  bool get isCombo => comboSteps.isNotEmpty || onComboStepSelected != null;
-
-  @override
-  Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
-    final semanticTheme = AppSemanticTheme.of(context);
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Expanded(
-              child: Text(
-                title,
-                style: AppTypography.titleSmall.copyWith(
-                  color: colorScheme.onSurface,
+          // 2. Gradient scrim — transparent top, dark bottom for metadata
+          Positioned.fill(
+            child: IgnorePointer(
+              child: DecoratedBox(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    colors: [
+                      Colors.black.withValues(alpha: 0.35),
+                      Colors.transparent,
+                      Colors.transparent,
+                      Colors.black.withValues(alpha: 0.85),
+                    ],
+                    stops: const [0.0, 0.15, 0.5, 1.0],
+                  ),
                 ),
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
               ),
             ),
-            const SizedBox(width: AppSpacing.sm),
-            GestureDetector(
-              onTap: canEditState ? onStatePillTap : null,
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  StatePill(state: state),
-                  if (canEditState) ...[
-                    const SizedBox(width: 4),
-                    Icon(
-                      Icons.edit_outlined,
-                      size: 12,
-                      color: semanticTheme
-                          .colorForState(state)
-                          .withValues(alpha: 0.72),
+          ),
+
+          // 3. Top overlay — progress dots + end button
+          Positioned(
+            top: 12,
+            left: 16,
+            right: 16,
+            child: Row(
+              children: [
+                // Spacer to balance end button width
+                const SizedBox(width: 44),
+                Expanded(
+                  child: Center(
+                    child: ProgressDots(
+                      currentIndex: widget.currentIndex,
+                      total: widget.totalItems,
+                    ),
+                  ),
+                ),
+                if (widget.onEnd != null)
+                  GestureDetector(
+                    onTap: widget.onEnd,
+                    behavior: HitTestBehavior.opaque,
+                    child: Container(
+                      width: 44,
+                      height: 32,
+                      decoration: BoxDecoration(
+                        color: Colors.black.withValues(alpha: 0.3),
+                        borderRadius: BorderRadius.circular(AppRadius.xs),
+                      ),
+                      alignment: Alignment.center,
+                      child: Text(
+                        'End',
+                        style: AppTypography.caption.copyWith(
+                          color: Colors.white.withValues(alpha: 0.8),
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                  )
+                else
+                  const SizedBox(width: 44),
+              ],
+            ),
+          ),
+
+          // 4. Bottom overlay — metadata
+          Positioned(
+            left: 16,
+            right: 16,
+            bottom: 16,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // Combo step line (above title when present)
+                if (isCombo) ...[
+                  ComboStepLine(
+                    stepCount: comboMoves.length,
+                    activeIndex: activeComboStepIndex,
+                    onStepSelected: (index) {
+                      setState(() => _activeComboStepIndex = index);
+                    },
+                    overlay: true,
+                    stepNames: comboMoves
+                        .map((cm) => cm.move.name)
+                        .toList(),
+                  ),
+                  const SizedBox(height: AppSpacing.sm),
+                ],
+
+                // Title row + state pill
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    Expanded(
+                      child: Text(
+                        title,
+                        style: AppTypography.titleSmall.copyWith(
+                          color: Colors.white,
+                          fontWeight: FontWeight.w700,
+                          fontSize: 18,
+                        ),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                    const SizedBox(width: AppSpacing.sm),
+                    GestureDetector(
+                      onTap: widget.canEditState ? widget.onStatePillTap : null,
+                      child: StatePill(
+                        state: widget.state,
+                        overlay: true,
+                      ),
                     ),
                   ],
-                ],
-              ),
-            ),
-          ],
-        ),
-        if (isCombo) ...[
-          const SizedBox(height: AppSpacing.md),
-          ComboStepLine(
-            stepCount: comboSteps.length,
-            activeIndex: activeComboStepIndex,
-            onStepSelected: onComboStepSelected ?? (_) {},
-          ),
-          if (activeStep != null) ...[
-            const SizedBox(height: AppSpacing.md),
-            Text(
-              activeStep!.name,
-              style: AppTypography.bodyMedium.copyWith(
-                color: colorScheme.onSurface,
-                fontWeight: FontWeight.w600,
-              ),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-            ),
-            if (activeStep!.category != 'default') ...[
-              const SizedBox(height: 6),
-              Text(
-                activeStep!.category.toUpperCase(),
-                style: AppTypography.caption.copyWith(
-                  color: colorScheme.secondary,
-                  letterSpacing: 1.4,
-                  fontSize: 10,
-                  fontWeight: FontWeight.w600,
                 ),
-              ),
-            ],
-          ],
-        ] else if (category != null && category != 'default') ...[
-          const SizedBox(height: 6),
-          Text(
-            category!.toUpperCase(),
-            style: AppTypography.caption.copyWith(
-              color: colorScheme.secondary,
-              letterSpacing: 1.5,
-              fontSize: 10,
-              fontWeight: FontWeight.w600,
+
+                // Category label
+                if (category != null && category != 'default') ...[
+                  const SizedBox(height: 4),
+                  Text(
+                    category.toUpperCase(),
+                    style: AppTypography.caption.copyWith(
+                      color: Colors.white.withValues(alpha: 0.5),
+                      letterSpacing: 1.5,
+                      fontSize: 11,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
+
+                // Active step name for combos
+                if (isCombo && activeStep != null) ...[
+                  const SizedBox(height: 4),
+                  Text(
+                    activeStep.name,
+                    style: AppTypography.bodySmall.copyWith(
+                      color: Colors.white.withValues(alpha: 0.7),
+                      fontWeight: FontWeight.w600,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ],
+              ],
             ),
           ),
         ],
-      ],
+      ),
     );
   }
 }

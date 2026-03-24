@@ -168,7 +168,11 @@ LearningState _moveReviewState(Move move, FsrsCard? card) {
 }
 
 final reviewStateMatrixProvider = FutureProvider<ReviewStateMatrix>((ref) async {
+  // Watch ALL data streams so counts stay in sync with session items.
+  // Without these, matrix can diverge from filteredReviewSessionItemsProvider
+  // when moves/combos are added or deleted between queries.
   ref.watch(fsrsCardsRefreshProvider);
+  ref.watch(moveStateCountsProvider);
   final db = ref.watch(databaseProvider);
 
   final results = await Future.wait([
@@ -223,6 +227,10 @@ final filteredReviewSessionItemsProvider =
       final targetMoveIds = ref.watch(reviewSessionTargetMoveIdsProvider);
       final entityKind = ref.watch(reviewEntityKindProvider);
       final db = ref.watch(databaseProvider);
+      // Watch FSRS cards stream so state classifications stay in sync with
+      // reviewStateMatrixProvider counts. Without this, prescreen counts
+      // can diverge from actual session items after a rating.
+      ref.watch(fsrsCardsRefreshProvider);
 
       final cards = await db.fsrsCardsDao.getAll();
       final moveCardMap = {
@@ -246,7 +254,7 @@ final filteredReviewSessionItemsProvider =
                 displayName: move.name,
                 state: _moveReviewState(move, moveCardMap[move.id]),
                 category: move.category,
-                videoPath: move.videoPath,
+                videoPath: move.resolvedVideoPath,
                 originalVideoName: move.originalVideoName,
                 move: move,
               ),
@@ -263,7 +271,7 @@ final filteredReviewSessionItemsProvider =
                 displayName: move.name,
                 state: _moveReviewState(move, moveCardMap[move.id]),
                 category: move.category,
-                videoPath: move.videoPath,
+                videoPath: move.resolvedVideoPath,
                 originalVideoName: move.originalVideoName,
                 move: move,
               ),
@@ -279,7 +287,7 @@ final filteredReviewSessionItemsProvider =
                 displayName: move.name,
                 state: _moveReviewState(move, moveCardMap[move.id]),
                 category: move.category,
-                videoPath: move.videoPath,
+                videoPath: move.resolvedVideoPath,
                 originalVideoName: move.originalVideoName,
                 move: move,
               ),
@@ -295,7 +303,7 @@ final filteredReviewSessionItemsProvider =
                 displayName: combo.name,
                 state: _stateFromFsrsValue(comboCardMap[combo.id]?.fsrsState),
                 category: 'combo',
-                videoPath: combo.activeVideoPath,
+                videoPath: combo.resolvedActiveVideoPath,
                 combo: combo,
               ),
             )
@@ -351,8 +359,12 @@ final totalMoveCountProvider = StreamProvider<int>((ref) {
 });
 
 /// Total number of reviewable entities across moves and combos.
+///
+/// Watches move/combo streams so the count updates when new entities are
+/// added — not just when FSRS cards change.
 final totalReviewableCountProvider = FutureProvider<int>((ref) async {
   ref.watch(fsrsCardsRefreshProvider);
+  ref.watch(moveStateCountsProvider);
   final db = ref.watch(databaseProvider);
   final results = await Future.wait([
     db.movesDao.getAll(),

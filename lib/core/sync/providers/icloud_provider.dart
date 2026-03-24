@@ -60,11 +60,24 @@ class ICloudProvider extends CloudProvider {
     TransferProgress? onProgress,
     CancellationToken? cancel,
   }) async {
-    final result =
-        await _channel.invokeMapMethod<String, dynamic>('upload', {
-      'localPath': localPath,
-      'remotePath': remotePath,
-    });
+    final Map<String, dynamic>? result;
+    try {
+      result = await _channel.invokeMapMethod<String, dynamic>('upload', {
+        'localPath': localPath,
+        'remotePath': remotePath,
+      });
+    } on PlatformException catch (e) {
+      if (e.code == 'NO_ICLOUD') {
+        // Container unavailable (simulator, signed-out, or entitlement issue).
+        // Throw a lightweight error so ManifestSync logs a one-liner, not a
+        // full stack trace.
+        throw CloudProviderUnavailableException(
+          provider: displayName,
+          reason: 'iCloud container not available',
+        );
+      }
+      rethrow;
+    }
 
     if (result == null) {
       throw PlatformException(

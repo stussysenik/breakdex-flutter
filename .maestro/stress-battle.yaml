@@ -1,0 +1,18 @@
+# Stress: Battle mode (stub)
+# Battle is at /battle route but has no visible UI entry point yet.
+# This stub verifies the app loads with stress data and remains stable.
+# Expand once the battle UI entry point is wired up.
+#
+# Prerequisites: stress fixture
+# Tags: stress
+
+appId: com.breakdex.breakdex
+name: "Stress: Battle Mode (stub)"
+tags:
+  - stress
+
+---
+
+- runFlow: subflows/launch-stress.yaml
+- assertVisible: "Arsenal"
+- takeScreenshot: e2e-screenshots/stress-battle-stub

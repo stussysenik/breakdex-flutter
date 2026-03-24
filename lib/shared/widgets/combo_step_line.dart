@@ -11,12 +11,20 @@ class ComboStepLine extends StatefulWidget {
     required this.activeIndex,
     required this.onStepSelected,
     this.onAddStep,
+    this.overlay = false,
+    this.stepNames,
   });
 
   final int stepCount;
   final int activeIndex;
   final ValueChanged<int> onStepSelected;
   final VoidCallback? onAddStep;
+
+  /// Overlay mode: white/semi-transparent colors for dark video backgrounds.
+  final bool overlay;
+
+  /// Optional step names shown below each circle (e.g. move names).
+  final List<String>? stepNames;
 
   @override
   State<ComboStepLine> createState() => _ComboStepLineState();
@@ -66,6 +74,11 @@ class _ComboStepLineState extends State<ComboStepLine> {
                     showTrailingLine:
                         index < widget.stepCount - 1 ||
                         widget.onAddStep != null,
+                    overlay: widget.overlay,
+                    label: widget.stepNames != null &&
+                            index < widget.stepNames!.length
+                        ? widget.stepNames![index]
+                        : null,
                   ),
                 ),
               ),
@@ -93,6 +106,7 @@ class _ComboStepLineState extends State<ComboStepLine> {
                     style: TimelineNodeStyle.add,
                     showLeadingLine: widget.stepCount > 0,
                     showTrailingLine: false,
+                    overlay: widget.overlay,
                   ),
                 ),
               ),

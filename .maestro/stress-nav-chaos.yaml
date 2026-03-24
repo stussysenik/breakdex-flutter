@@ -1,0 +1,93 @@
+# Stress: Navigation chaos
+# Rapid tab switching, deep drill-in/back cycles, modal open/close spam,
+# and review session start/end thrashing.
+#
+# Prerequisites: stress fixture
+# Tags: stress
+
+appId: com.breakdex.breakdex
+name: "Stress: Navigation Chaos"
+tags:
+  - stress
+
+---
+
+- runFlow: subflows/launch-stress.yaml
+
+# Phase 1: Bottom nav spam — cycle all 4 tabs x10 (40 rapid switches)
+- repeat:
+    times: 10
+    commands:
+      - tapOn:
+          point: "146,809"
+      - tapOn:
+          point: "245,809"
+      - tapOn:
+          point: "344,809"
+      - tapOn:
+          point: "49,809"
+
+# Phase 2: Move detail → immediate back (10 cycles)
+- assertVisible: "Arsenal"
+- repeat:
+    times: 5
+    commands:
+      - tapOn:
+          text: "Stress Move 001"
+          optional: true
+      - back
+      - tapOn:
+          text: "Stress Move 002"
+          optional: true
+      - back
+
+# Phase 3: Combo detail → immediate back
+- tapOn: "Combos"
+- repeat:
+    times: 5
+    commands:
+      - tapOn:
+          text: "Stress Combo 1"
+          optional: true
+      - back
+
+# Phase 4: Modal open → back → open (FAB spam)
+- tapOn: "Moves"
+- repeat:
+    times: 5
+    commands:
+      - tapOn:
+          id: "Add new move"
+          optional: true
+      - back
+
+# Phase 5: Review session start → end → restart cycle
+- tapOn:
+    point: "146,809"
+- extendedWaitUntil:
+    visible: "Review"
+    timeout: 5000
+- repeat:
+    times: 3
+    commands:
+      - tapOn:
+          text: "Review all ready"
+          optional: true
+      - extendedWaitUntil:
+          visible: "Rate"
+          timeout: 10000
+      - tapOn: "End"
+      - extendedWaitUntil:
+          visible: "Review"
+          timeout: 5000
+
+# Phase 6: Tab switch during content load
+- repeat:
+    times: 5
+    commands:
+      - tapOn:
+          point: "49,809"
+      - tapOn:
+          point: "245,809"
+
+- takeScreenshot: e2e-screenshots/stress-nav-chaos-done

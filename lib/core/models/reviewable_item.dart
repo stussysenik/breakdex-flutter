@@ -2,6 +2,7 @@ import 'dart:math';
 
 import '../database/database.dart';
 import '../database/daos/fsrs_cards_dao.dart';
+import '../services/video_path_resolver.dart';
 
 /// A polymorphic wrapper for anything that can be reviewed — moves and combos.
 ///
@@ -32,7 +33,7 @@ class ReviewableMove extends ReviewableItem {
   @override
   String? get category => move.category;
   @override
-  String? get videoPath => move.videoPath;
+  String? get videoPath => move.resolvedVideoPath;
 }
 
 /// A combo that can be reviewed.
@@ -50,7 +51,22 @@ class ReviewableCombo extends ReviewableItem {
   @override
   String? get category => null; // Combos don't have categories
   @override
-  String? get videoPath => combo.activeVideoPath;
+  String? get videoPath => combo.resolvedActiveVideoPath;
+}
+
+/// Resolves stored (possibly relative) video paths to absolute paths at
+/// access time. This lets the DB store portable relative paths while all
+/// UI consumers receive ready-to-use absolute paths.
+extension MoveVideoPath on Move {
+  String? get resolvedVideoPath =>
+      videoPath != null ? VideoPathResolver.toAbsolute(videoPath!) : null;
+}
+
+extension ComboVideoPath on Combo {
+  String? get resolvedActiveVideoPath =>
+      activeVideoPath != null
+          ? VideoPathResolver.toAbsolute(activeVideoPath!)
+          : null;
 }
 
 /// A reviewable item paired with its FSRS card (scheduling data).

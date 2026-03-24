@@ -1,0 +1,175 @@
+<h2>Review Card Redesign: Video-First Layout</h2>
+<p class="subtitle">You're at practice — every pixel counts. Which approach maximizes video while keeping controls accessible?</p>
+
+<div class="split">
+  <div class="mockup">
+    <div class="mockup-header">CURRENT LAYOUT (42% video)</div>
+    <div class="mockup-body" style="background:#111;color:#fff;font-family:system-ui;padding:0;overflow:hidden;height:520px;display:flex;flex-direction:column;">
+      <!-- Dashboard bar -->
+      <div style="padding:8px 16px;display:flex;justify-content:space-between;align-items:center;background:#1a1a2e;font-size:11px;">
+        <span style="color:#888;">Review Session</span>
+        <span style="color:#666;">3 / 12</span>
+        <span style="color:#f44;font-size:10px;">End</span>
+      </div>
+      <!-- Progress bar -->
+      <div style="height:3px;background:#222;">
+        <div style="width:25%;height:100%;background:#4CAF50;"></div>
+      </div>
+      <!-- Card -->
+      <div style="flex:1;padding:12px 16px;display:flex;flex-direction:column;gap:8px;">
+        <div style="background:#1e1e3a;border-radius:12px;overflow:hidden;flex:1;display:flex;flex-direction:column;">
+          <!-- Video area - 42% -->
+          <div style="flex:0 0 42%;background:linear-gradient(135deg,#2a1a4a,#1a2a4a);display:flex;align-items:center;justify-content:center;position:relative;">
+            <div style="width:50px;height:50px;border-radius:50%;border:2px solid rgba(255,255,255,0.3);display:flex;align-items:center;justify-content:center;">
+              <div style="width:0;height:0;border-left:14px solid rgba(255,255,255,0.5);border-top:9px solid transparent;border-bottom:9px solid transparent;margin-left:4px;"></div>
+            </div>
+            <div style="position:absolute;bottom:6px;left:8px;right:8px;display:flex;align-items:center;gap:6px;font-size:9px;color:#888;">
+              <span>0:03</span>
+              <div style="flex:1;height:2px;background:#333;border-radius:1px;"><div style="width:30%;height:100%;background:#fff;border-radius:1px;"></div></div>
+              <span>0:08</span>
+            </div>
+          </div>
+          <!-- Metadata - 58% -->
+          <div style="flex:1;padding:14px 16px;display:flex;flex-direction:column;gap:8px;">
+            <div style="display:flex;justify-content:space-between;align-items:center;">
+              <span style="font-size:16px;font-weight:600;">Windmill</span>
+              <span style="font-size:10px;padding:2px 8px;background:#2a4a2a;border-radius:8px;color:#4CAF50;">LEARNING</span>
+            </div>
+            <span style="font-size:11px;color:#888;padding:2px 6px;background:#222;border-radius:4px;width:fit-content;">Power Moves</span>
+          </div>
+        </div>
+      </div>
+      <!-- Rating buttons -->
+      <div style="padding:12px 16px 20px;display:flex;gap:8px;">
+        <div style="flex:1;padding:12px 0;border-radius:10px;background:#3a1a1a;text-align:center;font-size:12px;color:#f44;">
+          <div style="font-size:16px;">✕</div>Again
+        </div>
+        <div style="flex:1;padding:12px 0;border-radius:10px;background:#3a3a1a;text-align:center;font-size:12px;color:#fa0;">
+          <div style="font-size:16px;">−</div>Hard
+        </div>
+        <div style="flex:1;padding:12px 0;border-radius:10px;background:#1a3a1a;text-align:center;font-size:12px;color:#4f4;">
+          <div style="font-size:16px;">✓</div>Good
+        </div>
+        <div style="flex:1;padding:12px 0;border-radius:10px;background:#1a2a3a;text-align:center;font-size:12px;color:#48f;">
+          <div style="font-size:16px;">★</div>Easy
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="mockup">
+    <div class="mockup-header">PROPOSED: IMMERSIVE (70%+ video)</div>
+    <div class="mockup-body" style="background:#000;color:#fff;font-family:system-ui;padding:0;overflow:hidden;height:520px;display:flex;flex-direction:column;">
+      <!-- Minimal top bar overlaid -->
+      <div style="position:relative;flex:1;display:flex;flex-direction:column;">
+        <!-- Video fills most of card -->
+        <div style="flex:1;background:linear-gradient(135deg,#2a1a4a,#1a2a4a);display:flex;align-items:center;justify-content:center;position:relative;min-height:0;">
+          <!-- Overlay: progress dots top -->
+          <div style="position:absolute;top:8px;left:0;right:0;display:flex;justify-content:center;gap:4px;z-index:2;">
+            <div style="width:6px;height:6px;border-radius:50%;background:#4CAF50;"></div>
+            <div style="width:6px;height:6px;border-radius:50%;background:#4CAF50;"></div>
+            <div style="width:6px;height:6px;border-radius:50%;background:#4CAF50;"></div>
+            <div style="width:6px;height:6px;border-radius:50%;background:rgba(255,255,255,0.15);"></div>
+            <div style="width:6px;height:6px;border-radius:50%;background:rgba(255,255,255,0.15);"></div>
+            <div style="width:6px;height:6px;border-radius:50%;background:rgba(255,255,255,0.15);"></div>
+            <div style="width:6px;height:6px;border-radius:50%;background:rgba(255,255,255,0.15);"></div>
+            <div style="width:6px;height:6px;border-radius:50%;background:rgba(255,255,255,0.15);"></div>
+            <div style="width:6px;height:6px;border-radius:50%;background:rgba(255,255,255,0.15);"></div>
+            <div style="width:6px;height:6px;border-radius:50%;background:rgba(255,255,255,0.15);"></div>
+            <div style="width:6px;height:6px;border-radius:50%;background:rgba(255,255,255,0.15);"></div>
+            <div style="width:6px;height:6px;border-radius:50%;background:rgba(255,255,255,0.15);"></div>
+          </div>
+          <!-- End session -->
+          <div style="position:absolute;top:8px;right:12px;font-size:10px;color:#f44;background:rgba(0,0,0,0.4);padding:2px 8px;border-radius:8px;z-index:2;">End</div>
+
+          <!-- Play icon -->
+          <div style="width:50px;height:50px;border-radius:50%;border:2px solid rgba(255,255,255,0.2);display:flex;align-items:center;justify-content:center;opacity:0.3;">
+            <div style="width:0;height:0;border-left:14px solid rgba(255,255,255,0.5);border-top:9px solid transparent;border-bottom:9px solid transparent;margin-left:4px;"></div>
+          </div>
+
+          <!-- Overlay: move name + state at bottom of video -->
+          <div style="position:absolute;bottom:0;left:0;right:0;padding:24px 16px 12px;background:linear-gradient(transparent,rgba(0,0,0,0.8));z-index:2;">
+            <div style="display:flex;justify-content:space-between;align-items:center;">
+              <span style="font-size:18px;font-weight:700;letter-spacing:-0.3px;">Windmill</span>
+              <span style="font-size:9px;padding:2px 8px;background:rgba(76,175,80,0.2);border:1px solid rgba(76,175,80,0.4);border-radius:8px;color:#4CAF50;">LEARNING</span>
+            </div>
+            <span style="font-size:11px;color:rgba(255,255,255,0.5);margin-top:2px;">Power Moves</span>
+          </div>
+
+          <!-- Seek bar overlaid at video bottom -->
+          <div style="position:absolute;bottom:52px;left:16px;right:16px;display:flex;align-items:center;gap:6px;font-size:9px;color:rgba(255,255,255,0.4);z-index:2;">
+            <span>0:03</span>
+            <div style="flex:1;height:2px;background:rgba(255,255,255,0.1);border-radius:1px;"><div style="width:30%;height:100%;background:rgba(255,255,255,0.6);border-radius:1px;"></div></div>
+            <span>0:08</span>
+          </div>
+        </div>
+      </div>
+      <!-- Compact rating strip -->
+      <div style="padding:10px 16px 24px;display:flex;gap:8px;background:#000;">
+        <div style="flex:1;padding:10px 0;border-radius:12px;background:rgba(244,68,68,0.12);text-align:center;font-size:11px;color:#f44;display:flex;flex-direction:column;align-items:center;gap:2px;">
+          <span style="font-size:15px;">✕</span>
+          <span style="font-size:9px;color:#888;">1m</span>
+        </div>
+        <div style="flex:1;padding:10px 0;border-radius:12px;background:rgba(255,170,0,0.12);text-align:center;font-size:11px;color:#fa0;display:flex;flex-direction:column;align-items:center;gap:2px;">
+          <span style="font-size:15px;">−</span>
+          <span style="font-size:9px;color:#888;">6m</span>
+        </div>
+        <div style="flex:1;padding:10px 0;border-radius:12px;background:rgba(68,255,68,0.12);text-align:center;font-size:11px;color:#4f4;display:flex;flex-direction:column;align-items:center;gap:2px;">
+          <span style="font-size:15px;">✓</span>
+          <span style="font-size:9px;color:#888;">2d</span>
+        </div>
+        <div style="flex:1;padding:10px 0;border-radius:12px;background:rgba(68,136,255,0.12);text-align:center;font-size:11px;color:#48f;display:flex;flex-direction:column;align-items:center;gap:2px;">
+          <span style="font-size:15px;">★</span>
+          <span style="font-size:9px;color:#888;">5d</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<h3 style="margin-top:24px;">Key Differences</h3>
+<div class="pros-cons">
+  <div class="pros">
+    <h4>Immersive Approach Gains</h4>
+    <ul>
+      <li>Video fills ~70% of screen (up from 42%)</li>
+      <li>Move name/state overlaid on video gradient — no wasted metadata panel</li>
+      <li>Progress shown as minimal dots instead of dashboard bar</li>
+      <li>Rating buttons condensed to a slim strip (~30% importance)</li>
+      <li>Autoplay on card visibility — tap to pause, not tap to play</li>
+    </ul>
+  </div>
+  <div class="cons">
+    <h4>Trade-offs</h4>
+    <ul>
+      <li>Less room for combo step line (needs separate treatment)</li>
+      <li>Overlaid text needs careful contrast on varied video content</li>
+      <li>Rating button text labels removed (icon + interval only)</li>
+    </ul>
+  </div>
+</div>
+
+<h3>Which direction resonates?</h3>
+<div class="options">
+  <div class="option" data-choice="immersive" onclick="toggleSelect(this)">
+    <div class="letter">A</div>
+    <div class="content">
+      <h3>Full Immersive (Recommended)</h3>
+      <p>Video fills the screen, metadata overlaid, buttons are a slim strip. Maximum practice focus.</p>
+    </div>
+  </div>
+  <div class="option" data-choice="hybrid" onclick="toggleSelect(this)">
+    <div class="letter">B</div>
+    <div class="content">
+      <h3>Hybrid — Bigger Video, Keep Card</h3>
+      <p>Keep the card container but bump video to ~65%. Metadata stays below video but condensed to one line.</p>
+    </div>
+  </div>
+  <div class="option" data-choice="tiktok" onclick="toggleSelect(this)">
+    <div class="letter">C</div>
+    <div class="content">
+      <h3>TikTok-Style Full Bleed</h3>
+      <p>Video is literally fullscreen edge-to-edge, everything else floats on top. Swipe to rate.</p>
+    </div>
+  </div>
+</div>

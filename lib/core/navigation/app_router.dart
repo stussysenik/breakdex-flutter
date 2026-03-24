@@ -6,7 +6,10 @@ import '../../features/move_detail/move_detail_screen.dart';
 import '../../features/flashcard_review/flashcard_review_screen.dart';
 import '../../features/create_combo/create_combo_screen.dart';
 import '../../features/combo_detail/combo_detail_screen.dart';
+import '../../features/lab/lab_screen.dart';
+import '../../features/lab/lab_detail_screen.dart';
 import '../../features/settings/settings_screen.dart';
+import '../../features/flow/flow_screen.dart';
 import '../../features/stats/stats_screen.dart';
 import '../../features/battle/battle_screen.dart';
 import '../../features/video_editor/video_editor_screen.dart';
@@ -22,17 +25,17 @@ final _rootNavigatorKey = GlobalKey<NavigatorState>();
 
 final appRouter = GoRouter(
   navigatorKey: _rootNavigatorKey,
-  initialLocation: '/arsenal',
+  initialLocation: '/moves',
   routes: [
     StatefulShellRoute.indexedStack(
       builder: (context, state, navigationShell) =>
           BottomNavShell(navigationShell: navigationShell),
       branches: [
-        // Arsenal (Move List)
+        // Moves (Move List)
         StatefulShellBranch(
           routes: [
             GoRoute(
-              path: '/arsenal',
+              path: '/moves',
               builder: (context, state) => MoveListScreen(),
               routes: [
                 GoRoute(
@@ -49,30 +52,54 @@ final appRouter = GoRouter(
             ),
           ],
         ),
-        // Review
+        // Drill
         StatefulShellBranch(
           routes: [
             GoRoute(
-              path: '/review',
+              path: '/drill',
               builder: (context, state) => const FlashcardReviewScreen(),
             ),
           ],
         ),
-        // Stats
+        // Progress
         StatefulShellBranch(
           routes: [
             GoRoute(
-              path: '/stats',
+              path: '/progress',
               builder: (context, state) => const StatsScreen(),
             ),
           ],
         ),
-        // Settings
+        // Lab
         StatefulShellBranch(
           routes: [
             GoRoute(
-              path: '/settings',
-              builder: (context, state) => const SettingsScreen(),
+              path: '/lab',
+              builder: (context, state) => const LabScreen(),
+              routes: [
+                GoRoute(
+                  path: ':id',
+                  builder: (context, state) => LabDetailScreen(
+                    labId: state.pathParameters['id']!,
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+        // Flow (move transition map)
+        StatefulShellBranch(
+          routes: [
+            GoRoute(
+              path: '/flow',
+              builder: (context, state) => const FlowScreen(),
+              routes: [
+                GoRoute(
+                  path: 'move/:id',
+                  builder: (context, state) =>
+                      MoveDetailScreen(moveId: state.pathParameters['id']!),
+                ),
+              ],
             ),
           ],
         ),
@@ -120,6 +147,11 @@ final appRouter = GoRouter(
       path: '/auth',
       parentNavigatorKey: _rootNavigatorKey,
       builder: (context, state) => const AuthScreen(),
+    ),
+    GoRoute(
+      path: '/settings',
+      parentNavigatorKey: _rootNavigatorKey,
+      builder: (context, state) => const SettingsScreen(),
     ),
     GoRoute(
       path: '/settings/sync-providers',

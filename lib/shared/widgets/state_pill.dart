@@ -3,17 +3,27 @@ import '../../core/design/typography.dart';
 import '../../core/models/learning_state.dart';
 
 class StatePill extends StatelessWidget {
-  const StatePill({super.key, required this.state});
+  const StatePill({super.key, required this.state, this.overlay = false});
 
   final LearningState state;
+
+  /// Overlay mode: semi-transparent background with a 1px border for
+  /// high contrast on dark gradient scrims (video overlay).
+  final bool overlay;
 
   @override
   Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
       decoration: BoxDecoration(
-        color: state.color.withValues(alpha: 0.15),
+        color: state.color.withValues(alpha: overlay ? 0.20 : 0.15),
         borderRadius: BorderRadius.circular(20),
+        border: overlay
+            ? Border.all(
+                color: state.color.withValues(alpha: 0.40),
+                width: 1,
+              )
+            : null,
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,

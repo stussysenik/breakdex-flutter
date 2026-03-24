@@ -40,6 +40,22 @@ class RemoteAsset {
   });
 }
 
+/// Thrown when a cloud provider's backing service is unavailable
+/// (e.g. iCloud container missing, not signed in). Caught by the sync engine
+/// to log a one-liner instead of a full stack trace.
+class CloudProviderUnavailableException implements Exception {
+  final String provider;
+  final String reason;
+
+  const CloudProviderUnavailableException({
+    required this.provider,
+    required this.reason,
+  });
+
+  @override
+  String toString() => '$provider unavailable: $reason';
+}
+
 /// Abstract interface for cloud storage providers.
 ///
 /// Each provider (iCloud, Google Drive, S3-compatible) implements this

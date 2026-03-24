@@ -1,0 +1,767 @@
+import 'dart:async';
+
+import 'package:drift/drift.dart' as drift;
+import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
+
+import '../../core/database/database.dart';
+import '../../core/design/colors.dart';
+import '../../core/design/spacing.dart';
+import '../../core/design/theme.dart';
+import '../../core/design/typography.dart';
+import '../../core/providers.dart';
+import '../../shared/widgets/notes_section.dart';
+import 'providers/lab_providers.dart';
+import 'widgets/lab_timeline.dart';
+import 'widgets/linked_moves_section.dart';
+import 'widgets/milestone_list.dart';
+import 'widgets/set_builder.dart';
+
+/// Full detail screen for a single lab (project or set).
+///
+/// Layout adapts based on lab type:
+/// - **Set**: shows the horizontal Set Builder sequencer for move ordering,
+///   plus milestones and notes.
+/// - **Project**: shows a vertical timeline of entries/milestones, linked
+///   moves, milestones list, and notes.
+///
+/// The header region includes:
+/// - Editable lab name (tap to rename)
+/// - Tappable status pill that cycles: idea -> attempting -> landed -> clean
+/// - Lab type icon (science beaker for project, playlist for set)
+/// - Relative creation time ("Created 78 days ago")
+///
+/// FAB at the bottom provides quick actions: add milestone, add entry
+/// (project only), and link move.
+class LabDetailScreen extends ConsumerStatefulWidget {
+  const LabDetailScreen({super.key, required this.labId});
+
+  final String labId;
+
+  @override
+  ConsumerState<LabDetailScreen> createState() => _LabDetailScreenState();
+}
+
+class _LabDetailScreenState extends ConsumerState<LabDetailScreen> {
+  /// Status cycle order for the tappable status pill.
+  static const _statusCycle = ['idea', 'attempting', 'landed', 'clean'];
+
+  // ---------------------------------------------------------------------------
+  // Status cycling
+  // ---------------------------------------------------------------------------
+
+  /// Advance the lab's status to the next stage in the cycle. Wraps around
+  /// from 'clean' back to 'idea' so the user can reset if needed.
+  Future<void> _cycleStatus(Lab lab) async {
+    final currentIndex = _statusCycle.indexOf(lab.status);
+    final nextIndex = (currentIndex + 1) % _statusCycle.length;
+    final nextStatus = _statusCycle[nextIndex];
+
+    await ref.read(labsDaoProvider).updateLab(
+          LabsCompanion(
+            id: drift.Value(lab.id),
+            status: drift.Value(nextStatus),
+            updatedAt: drift.Value(DateTime.now()),
+          ),
+        );
+    unawaited(HapticFeedback.selectionClick());
+  }
+
+  // ---------------------------------------------------------------------------
+  // Rename
+  // ---------------------------------------------------------------------------
+
+  Future<void> _rename(Lab lab) async {
+    final controller = TextEditingController(text: lab.name);
+    final newName = await showDialog<String>(
+      context: context,
+      builder: (ctx) {
+        return AlertDialog(
+          title: const Text('Rename Lab'),
+          content: TextField(
+            controller: controller,
+            autofocus: true,
+            decoration: const InputDecoration(hintText: 'Lab name'),
+            textInputAction: TextInputAction.done,
+            onSubmitted: (value) => Navigator.pop(ctx, value.trim()),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: const Text('Cancel'),
+            ),
+            TextButton(
+              onPressed: () => Navigator.pop(ctx, controller.text.trim()),
+              child: const Text('Save'),
+            ),
+          ],
+        );
+      },
+    );
+
+    if (newName == null || newName.isEmpty || newName == lab.name) return;
+
+    await ref.read(labsDaoProvider).updateLab(
+          LabsCompanion(
+            id: drift.Value(lab.id),
+            name: drift.Value(newName),
+            updatedAt: drift.Value(DateTime.now()),
+          ),
+        );
+    unawaited(HapticFeedback.lightImpact());
+  }
+
+  // ---------------------------------------------------------------------------
+  // Move picker bottom sheet
+  // ---------------------------------------------------------------------------
+
+  /// Shows a bottom sheet with a searchable list of all moves. When the user
+  /// selects one, it's linked to the current lab. Already-linked moves are
+  /// shown as disabled (greyed out) to prevent duplicates.
+  Future<void> _showMovePicker() async {
+    final labMoves = ref.read(labMovesProvider(widget.labId)).valueOrNull ?? [];
+    final linkedMoveIds = labMoves.map((e) => e.move.id).toSet();
+
+    if (!mounted) return;
+
+    final selectedMoveId = await showModalBottomSheet<String>(
+      context: context,
+      isScrollControlled: true,
+      builder: (_) => _MovePickerSheet(linkedMoveIds: linkedMoveIds),
+    );
+
+    if (selectedMoveId == null || !mounted) return;
+
+    await ref.read(labsDaoProvider).addMoveToLab(
+          widget.labId,
+          selectedMoveId,
+          labMoves.length,
+        );
+    unawaited(HapticFeedback.mediumImpact());
+  }
+
+  // ---------------------------------------------------------------------------
+  // Delete lab
+  // ---------------------------------------------------------------------------
+
+  Future<void> _deleteLab(Lab lab) async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Delete Lab?'),
+        content: Text(
+          'Permanently delete "${lab.name}" and all its milestones, entries, and move links?',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text(
+              'Delete',
+              style: TextStyle(color: AppColors.actionAgain),
+            ),
+          ),
+        ],
+      ),
+    );
+    if (confirm != true || !mounted) return;
+
+    await ref.read(labsDaoProvider).deleteLab(lab.id);
+    unawaited(HapticFeedback.mediumImpact());
+    if (mounted) context.pop();
+  }
+
+  // ---------------------------------------------------------------------------
+  // Build
+  // ---------------------------------------------------------------------------
+
+  @override
+  Widget build(BuildContext context) {
+    final labAsync = ref.watch(labDetailProvider(widget.labId));
+    final colorScheme = Theme.of(context).colorScheme;
+
+    return Scaffold(
+      body: SafeArea(
+        child: labAsync.when(
+          loading: () => const Center(child: CircularProgressIndicator()),
+          error: (e, _) => Center(
+            child: Text(
+              'Error loading lab: $e',
+              style: AppTypography.bodySmall.copyWith(
+                color: AppColors.actionAgain,
+              ),
+            ),
+          ),
+          data: (lab) {
+            if (lab == null) {
+              return Center(
+                child: Text(
+                  'Lab not found',
+                  style: AppTypography.bodyMedium.copyWith(
+                    color: colorScheme.secondary,
+                  ),
+                ),
+              );
+            }
+
+            final isSet = lab.labType == 'set';
+
+            return ListView(
+              padding: const EdgeInsets.only(
+                top: AppSpacing.screenEdge,
+                bottom: kBottomNavigationBarHeight + AppSpacing.xxl,
+              ),
+              children: [
+                // -- Back breadcrumb ------------------------------------------
+                Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: AppSpacing.screenEdge,
+                  ),
+                  child: GestureDetector(
+                    onTap: () => context.pop(),
+                    child: Row(
+                      children: [
+                        Icon(
+                          Icons.chevron_left,
+                          color: colorScheme.secondary,
+                          size: 20,
+                        ),
+                        Text(
+                          'Lab',
+                          style: AppTypography.bodyMedium.copyWith(
+                            color: colorScheme.secondary,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                const SizedBox(height: AppSpacing.lg),
+
+                // -- Lab type icon + name (tappable to rename) ----------------
+                Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: AppSpacing.screenEdge,
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(
+                        isSet
+                            ? Icons.playlist_play_rounded
+                            : Icons.science_outlined,
+                        color: AppColors.accent,
+                        size: 24,
+                      ),
+                      const SizedBox(width: AppSpacing.sm),
+                      Expanded(
+                        child: GestureDetector(
+                          onTap: () => _rename(lab),
+                          child: Text(
+                            lab.name,
+                            style: AppTypography.titleLarge.copyWith(
+                              color: colorScheme.onSurface,
+                            ),
+                          ),
+                        ),
+                      ),
+                      // More menu
+                      PopupMenuButton<String>(
+                        icon: Icon(
+                          Icons.more_horiz_rounded,
+                          color: colorScheme.secondary,
+                        ),
+                        onSelected: (value) {
+                          switch (value) {
+                            case 'rename':
+                              _rename(lab);
+                            case 'delete':
+                              _deleteLab(lab);
+                          }
+                        },
+                        itemBuilder: (_) => [
+                          const PopupMenuItem(
+                            value: 'rename',
+                            child: Text('Rename'),
+                          ),
+                          const PopupMenuItem(
+                            value: 'delete',
+                            child: Text(
+                              'Delete Lab',
+                              style: TextStyle(color: AppColors.actionAgain),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: AppSpacing.sm),
+
+                // -- Status pill (tappable) + metadata row --------------------
+                Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: AppSpacing.screenEdge,
+                  ),
+                  child: Wrap(
+                    spacing: AppSpacing.sm,
+                    runSpacing: AppSpacing.sm,
+                    crossAxisAlignment: WrapCrossAlignment.center,
+                    children: [
+                      // Tappable status pill
+                      GestureDetector(
+                        onTap: () => _cycleStatus(lab),
+                        child: _LabStatusPill(status: lab.status),
+                      ),
+                      // Lab type badge
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 10,
+                          vertical: 4,
+                        ),
+                        decoration: BoxDecoration(
+                          color: colorScheme.surfaceContainerHighest,
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        child: Text(
+                          isSet ? 'Set' : 'Project',
+                          style: AppTypography.caption.copyWith(
+                            color: colorScheme.secondary,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: AppSpacing.sm),
+
+                // -- Created time ago -----------------------------------------
+                Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: AppSpacing.screenEdge,
+                  ),
+                  child: Text(
+                    'Created ${_daysAgo(lab.createdAt)}',
+                    style: AppTypography.caption.copyWith(
+                      color: colorScheme.secondary.withValues(alpha: 0.6),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: AppSpacing.lg),
+
+                // -- Type-specific content ------------------------------------
+                if (isSet) ...[
+                  // Set Builder — horizontal move sequencer
+                  SetBuilder(
+                    labId: widget.labId,
+                    onAddMove: _showMovePicker,
+                  ),
+                  const SizedBox(height: AppSpacing.lg),
+                ] else ...[
+                  // Project: Timeline view
+                  LabTimeline(labId: widget.labId),
+                  const SizedBox(height: AppSpacing.lg),
+
+                  // Project: Linked moves
+                  LinkedMovesSection(
+                    labId: widget.labId,
+                    onAddMove: _showMovePicker,
+                  ),
+                  const SizedBox(height: AppSpacing.lg),
+                ],
+
+                // -- Milestones (both types) ----------------------------------
+                MilestoneList(labId: widget.labId),
+                const SizedBox(height: AppSpacing.lg),
+
+                // -- Notes (both types) ---------------------------------------
+                Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: AppSpacing.screenEdge,
+                  ),
+                  child: NotesSection(
+                    notes: lab.notes,
+                    onChanged: (text) {
+                      ref.read(labsDaoProvider).updateLab(
+                            LabsCompanion(
+                              id: drift.Value(lab.id),
+                              notes: drift.Value(
+                                text.isEmpty ? null : text,
+                              ),
+                              updatedAt: drift.Value(DateTime.now()),
+                            ),
+                          );
+                    },
+                  ),
+                ),
+                const SizedBox(height: AppSpacing.lg),
+
+                // -- Danger zone / actions ------------------------------------
+                Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: AppSpacing.screenEdge,
+                  ),
+                  child: Divider(color: colorScheme.outline),
+                ),
+                const SizedBox(height: AppSpacing.md),
+                Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: AppSpacing.screenEdge,
+                  ),
+                  child: Text(
+                    'ACTIONS',
+                    style: AppTypography.sectionHeader.copyWith(
+                      color: colorScheme.secondary,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: AppSpacing.sm),
+                Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: AppSpacing.screenEdge,
+                  ),
+                  child: _ActionRow(
+                    icon: Icons.link_rounded,
+                    label: 'Link Move',
+                    onTap: _showMovePicker,
+                  ),
+                ),
+                const SizedBox(height: AppSpacing.sm),
+                Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: AppSpacing.screenEdge,
+                  ),
+                  child: _ActionRow(
+                    icon: Icons.delete_forever,
+                    label: 'Delete Lab',
+                    destructive: true,
+                    onTap: () => _deleteLab(lab),
+                  ),
+                ),
+              ],
+            );
+          },
+        ),
+      ),
+    );
+  }
+
+  /// Returns a human-readable "X days ago" string from a creation date.
+  String _daysAgo(DateTime created) {
+    final diff = DateTime.now().difference(created);
+    if (diff.inDays == 0) return 'today';
+    if (diff.inDays == 1) return '1 day ago';
+    return '${diff.inDays} days ago';
+  }
+}
+
+// =============================================================================
+// Lab Status Pill — reusable, color-coded pill for the 4-stage progression
+// =============================================================================
+
+class _LabStatusPill extends StatelessWidget {
+  const _LabStatusPill({required this.status});
+
+  final String status;
+
+  @override
+  Widget build(BuildContext context) {
+    final (label, color) = _statusMeta(status);
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.15),
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            width: 6,
+            height: 6,
+            decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+          ),
+          const SizedBox(width: 6),
+          Text(
+            label.toUpperCase(),
+            style: AppTypography.caption.copyWith(
+              color: color,
+              fontWeight: FontWeight.w600,
+              letterSpacing: 0.5,
+            ),
+          ),
+          const SizedBox(width: 4),
+          Icon(
+            Icons.touch_app_rounded,
+            size: 12,
+            color: color.withValues(alpha: 0.6),
+          ),
+        ],
+      ),
+    );
+  }
+
+  static (String, Color) _statusMeta(String status) => switch (status) {
+        'idea' => ('Idea', const Color(0xFFA7B1C2)),
+        'attempting' => ('Attempting', AppColors.stateLearning),
+        'landed' => ('Landed', AppColors.stateMastery),
+        'clean' => ('Clean', const Color(0xFF0D9F9A)),
+        _ => ('Idea', const Color(0xFFA7B1C2)),
+      };
+}
+
+// =============================================================================
+// Move Picker Bottom Sheet — searchable list of all moves
+// =============================================================================
+
+class _MovePickerSheet extends ConsumerStatefulWidget {
+  const _MovePickerSheet({required this.linkedMoveIds});
+
+  final Set<String> linkedMoveIds;
+
+  @override
+  ConsumerState<_MovePickerSheet> createState() => _MovePickerSheetState();
+}
+
+class _MovePickerSheetState extends ConsumerState<_MovePickerSheet> {
+  final _searchController = TextEditingController();
+  String _query = '';
+
+  @override
+  void initState() {
+    super.initState();
+    _searchController.addListener(() {
+      setState(() => _query = _searchController.text.toLowerCase());
+    });
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+
+    return DraggableScrollableSheet(
+      initialChildSize: 0.7,
+      minChildSize: 0.4,
+      maxChildSize: 0.9,
+      expand: false,
+      builder: (context, scrollController) {
+        return Column(
+          children: [
+            // Drag handle
+            Padding(
+              padding: const EdgeInsets.only(top: AppSpacing.md),
+              child: Center(
+                child: Container(
+                  width: 36,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: colorScheme.secondary.withValues(alpha: 0.3),
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(height: AppSpacing.md),
+
+            // Title
+            Padding(
+              padding: const EdgeInsets.symmetric(
+                horizontal: AppSpacing.screenEdge,
+              ),
+              child: Text(
+                'Add Move',
+                style: AppTypography.titleMedium.copyWith(
+                  color: colorScheme.onSurface,
+                ),
+              ),
+            ),
+            const SizedBox(height: AppSpacing.md),
+
+            // Search field
+            Padding(
+              padding: const EdgeInsets.symmetric(
+                horizontal: AppSpacing.screenEdge,
+              ),
+              child: TextField(
+                controller: _searchController,
+                autofocus: true,
+                decoration: const InputDecoration(
+                  hintText: 'Search moves...',
+                  prefixIcon: Icon(Icons.search),
+                ),
+              ),
+            ),
+            const SizedBox(height: AppSpacing.sm),
+
+            // Move list
+            Expanded(
+              child: FutureBuilder<List<Move>>(
+                future: ref.read(moveRepositoryProvider).getAll(),
+                builder: (context, snapshot) {
+                  if (!snapshot.hasData) {
+                    return const Center(child: CircularProgressIndicator());
+                  }
+
+                  final allMoves = snapshot.data!;
+                  final filtered = _query.isEmpty
+                      ? allMoves
+                      : allMoves
+                          .where((m) =>
+                              m.name.toLowerCase().contains(_query))
+                          .toList();
+
+                  if (filtered.isEmpty) {
+                    return Center(
+                      child: Text(
+                        'No moves found',
+                        style: AppTypography.bodySmall.copyWith(
+                          color: colorScheme.secondary,
+                        ),
+                      ),
+                    );
+                  }
+
+                  return ListView.builder(
+                    controller: scrollController,
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: AppSpacing.screenEdge,
+                    ),
+                    itemCount: filtered.length,
+                    itemBuilder: (context, index) {
+                      final move = filtered[index];
+                      final isLinked =
+                          widget.linkedMoveIds.contains(move.id);
+
+                      return ListTile(
+                        leading: Container(
+                          width: 36,
+                          height: 36,
+                          decoration: BoxDecoration(
+                            color: isLinked
+                                ? colorScheme.surfaceContainerHighest
+                                : AppColors.accent.withValues(alpha: 0.12),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Center(
+                            child: Text(
+                              move.name.isNotEmpty
+                                  ? move.name[0].toUpperCase()
+                                  : '?',
+                              style: AppTypography.bodySmall.copyWith(
+                                color: isLinked
+                                    ? colorScheme.secondary
+                                    : AppColors.accent,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                          ),
+                        ),
+                        title: Text(
+                          move.name,
+                          style: AppTypography.bodySmall.copyWith(
+                            color: isLinked
+                                ? colorScheme.secondary.withValues(
+                                    alpha: 0.5)
+                                : colorScheme.onSurface,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                        subtitle: Text(
+                          move.category,
+                          style: AppTypography.caption.copyWith(
+                            color: colorScheme.secondary,
+                          ),
+                        ),
+                        trailing: isLinked
+                            ? const Icon(
+                                Icons.check_rounded,
+                                color: AppColors.stateMastery,
+                                size: 20,
+                              )
+                            : null,
+                        enabled: !isLinked,
+                        onTap: isLinked
+                            ? null
+                            : () {
+                                HapticFeedback.selectionClick();
+                                Navigator.pop(context, move.id);
+                              },
+                      );
+                    },
+                  );
+                },
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+}
+
+// =============================================================================
+// Action Row — simple row with icon, label, chevron
+// =============================================================================
+
+class _ActionRow extends StatelessWidget {
+  const _ActionRow({
+    required this.icon,
+    required this.label,
+    required this.onTap,
+    this.destructive = false,
+  });
+
+  final IconData icon;
+  final String label;
+  final VoidCallback onTap;
+  final bool destructive;
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final color = destructive ? AppColors.actionAgain : colorScheme.onSurface;
+
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(AppRadius.sm),
+      child: Container(
+        padding: const EdgeInsets.symmetric(
+          horizontal: AppSpacing.md,
+          vertical: 14,
+        ),
+        decoration: BoxDecoration(
+          color: colorScheme.surfaceContainerHighest,
+          borderRadius: BorderRadius.circular(AppRadius.sm),
+          border: Border.all(
+            color: colorScheme.outline.withValues(alpha: 0.32),
+          ),
+          boxShadow: AppShadows.soft(Theme.of(context).brightness),
+        ),
+        child: Row(
+          children: [
+            Icon(icon, color: color, size: 22),
+            const SizedBox(width: AppSpacing.md),
+            Text(
+              label,
+              style: AppTypography.bodyMedium.copyWith(color: color),
+            ),
+            const Spacer(),
+            Icon(Icons.chevron_right, color: colorScheme.secondary, size: 20),
+          ],
+        ),
+      ),
+    );
+  }
+}
