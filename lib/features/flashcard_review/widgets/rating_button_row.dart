@@ -117,10 +117,11 @@ class RatingButtonRow extends ConsumerWidget {
   }
 }
 
-/// Compact rating button — icon + interval only, 44pt height.
+/// Compact rating button — icon + label + interval, 60pt height.
 ///
-/// Used in the immersive review layout's slim rating strip where vertical
-/// space is at a premium. Keeps accessibility semantics for screen readers.
+/// Used in the immersive review layout's rating strip. Shows the rating
+/// label (Again/Hard/Good/Easy) for expressiveness, with the scheduled
+/// interval below it so the learner sees the consequence before tapping.
 class _CompactRatingButton extends StatelessWidget {
   const _CompactRatingButton({
     required this.rating,
@@ -146,22 +147,31 @@ class _CompactRatingButton extends StatelessWidget {
         borderRadius: BorderRadius.circular(AppRadius.sm),
         child: InkWell(
           onTap: () {
-            HapticFeedback.lightImpact();
+            HapticFeedback.mediumImpact();
             onRate(rating);
           },
           borderRadius: BorderRadius.circular(AppRadius.sm),
           child: SizedBox(
-            height: 44,
+            height: 60,
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Icon(icon, size: 16, color: color),
+                Icon(icon, size: 18, color: color),
+                const SizedBox(height: 2),
+                Text(
+                  rating.displayText,
+                  style: AppTypography.caption.copyWith(
+                    color: color,
+                    fontSize: 10,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
                 if (intervalLabel.isNotEmpty) ...[
                   const SizedBox(height: 1),
                   Text(
                     intervalLabel,
                     style: AppTypography.caption.copyWith(
-                      color: color.withValues(alpha: 0.7),
+                      color: color.withValues(alpha: 0.5),
                       fontSize: 9,
                     ),
                   ),

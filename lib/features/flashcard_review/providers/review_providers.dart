@@ -359,8 +359,12 @@ final totalMoveCountProvider = StreamProvider<int>((ref) {
 });
 
 /// Total number of reviewable entities across moves and combos.
+///
+/// Watches move/combo streams so the count updates when new entities are
+/// added — not just when FSRS cards change.
 final totalReviewableCountProvider = FutureProvider<int>((ref) async {
   ref.watch(fsrsCardsRefreshProvider);
+  ref.watch(moveStateCountsProvider);
   final db = ref.watch(databaseProvider);
   final results = await Future.wait([
     db.movesDao.getAll(),

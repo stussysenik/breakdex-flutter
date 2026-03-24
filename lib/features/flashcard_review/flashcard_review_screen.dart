@@ -27,6 +27,9 @@ import 'widgets/review_card.dart';
 import 'widgets/state_picker_sheet.dart';
 import '../../shared/widgets/video_picker_sheet.dart';
 import '../../shared/widgets/app_segmented_control.dart';
+import '../../shared/widgets/settings_gear_button.dart';
+import '../../shared/widgets/celebration_overlay.dart';
+import '../lab/providers/achievement_providers.dart';
 
 class FlashcardReviewScreen extends ConsumerStatefulWidget {
   const FlashcardReviewScreen({super.key});
@@ -138,12 +141,13 @@ class _FlashcardReviewScreenState extends ConsumerState<FlashcardReviewScreen>
                 children: [
                   Expanded(
                     child: Text(
-                      'Review',
+                      'Drill',
                       style: AppTypography.titleLarge.copyWith(
                         color: colorScheme.onSurface,
                       ),
                     ),
                   ),
+                  const SettingsGearButton(),
                 ],
               ),
             ),
@@ -329,13 +333,13 @@ class _FlashcardReviewScreenState extends ConsumerState<FlashcardReviewScreen>
           ),
         ),
 
-        // Slim compact rating strip — no panel wrapper
+        // Rating strip — vertically centered between card and nav bar
         Padding(
           padding: EdgeInsets.fromLTRB(
             AppSpacing.screenEdge,
-            AppSpacing.sm,
+            AppSpacing.md,
             AppSpacing.screenEdge,
-            AppSpacing.sm + bottomPadding,
+            AppSpacing.md + bottomPadding,
           ),
           child: RatingButtonRow(
             compact: true,
@@ -406,7 +410,7 @@ class _FlashcardReviewScreenState extends ConsumerState<FlashcardReviewScreen>
             ),
             const SizedBox(height: AppSpacing.lg),
             ElevatedButton.icon(
-              onPressed: () => context.go('/arsenal'),
+              onPressed: () => context.go('/moves'),
               icon: const Icon(Icons.add),
               label: const Text('Add a Move'),
               style: ElevatedButton.styleFrom(
@@ -703,6 +707,10 @@ class _FlashcardReviewScreenState extends ConsumerState<FlashcardReviewScreen>
           ),
         );
       });
+
+      // Achievement Garden: check if this review pushed the move to a new tier.
+      // Runs after review + FSRS update so tier criteria reflect the latest data.
+      _checkAchievementAdvancement(move.id, move.name);
     } else if (item.isCombo && item.combo != null) {
       final combo = item.combo!;
       final fsrsResult = await ref
@@ -743,6 +751,26 @@ class _FlashcardReviewScreenState extends ConsumerState<FlashcardReviewScreen>
     }
 
     _animatedAdvance();
+  }
+
+  /// Fire-and-forget achievement tier check after a move review.
+  ///
+  /// Runs asynchronously so it doesn't block the card advance animation.
+  /// If the move earns a higher tier, the celebration overlay fires on top
+  /// of the current screen. The overlay auto-dismisses after 1.5s.
+  void _checkAchievementAdvancement(String moveId, String moveName) {
+    final service = ref.read(achievementServiceProvider);
+    service.checkAndAdvanceTier(moveId).then((newTier) {
+      if (newTier != null && mounted) {
+        final label = switch (newTier) {
+          'sprouting' => '\u{1F331} $moveName is sprouting!',
+          'growing' => '\u{1F33F} $moveName is growing!',
+          'mastered' => '\u{1F48E} $moveName mastered!',
+          _ => '$moveName leveled up!',
+        };
+        CelebrationOverlay.show(context, title: label);
+      }
+    });
   }
 
   void _skip() {
