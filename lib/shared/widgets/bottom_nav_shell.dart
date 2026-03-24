@@ -15,10 +15,6 @@ class BottomNavShell extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final pendingCount =
-        ref.watch(pendingChangesCountProvider).valueOrNull ?? 0;
-    final isLoggedIn = ref.watch(isLoggedInProvider);
-
     // Watch sync trigger to keep auto-sync alive
     ref.watch(syncTriggerProvider);
 
@@ -61,27 +57,29 @@ class BottomNavShell extends ConsumerWidget {
               items: [
                 const BottomNavigationBarItem(
                   icon: Icon(Icons.grid_view_rounded),
-                  label: 'Arsenal',
+                  label: 'Moves',
                 ),
                 const BottomNavigationBarItem(
                   icon: Icon(Icons.style_outlined),
-                  label: 'Review',
+                  label: 'Drill',
                 ),
                 const BottomNavigationBarItem(
                   icon: Icon(Icons.insights_rounded),
-                  label: 'Stats',
+                  label: 'Progress',
                 ),
                 BottomNavigationBarItem(
-                  icon: Badge(
-                    isLabelVisible: isLoggedIn && pendingCount > 0,
-                    label: Text(
-                      pendingCount > 99 ? '99+' : '$pendingCount',
-                      style: const TextStyle(fontSize: 10, color: Colors.white),
-                    ),
-                    backgroundColor: colorScheme.primary,
-                    child: const Icon(Icons.settings_outlined),
+                  icon: Semantics(
+                    identifier: 'lab-tab',
+                    child: const Icon(Icons.science_outlined),
                   ),
-                  label: 'Settings',
+                  label: 'Lab',
+                ),
+                BottomNavigationBarItem(
+                  icon: Semantics(
+                    identifier: 'flow-tab',
+                    child: const Icon(Icons.auto_awesome_outlined),
+                  ),
+                  label: 'Flow',
                 ),
               ],
             ),
