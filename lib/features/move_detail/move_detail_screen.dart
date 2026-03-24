@@ -22,6 +22,7 @@ import '../../shared/widgets/video_player_widget.dart'
     show RobustVideoPlayer;
 import '../../shared/widgets/action_tile.dart';
 import '../../shared/widgets/notes_section.dart';
+import '../lab/widgets/move_aura_section.dart';
 import '../../shared/widgets/video_picker_sheet.dart';
 
 class MoveDetailScreen extends ConsumerWidget {
@@ -162,7 +163,12 @@ class MoveDetailScreen extends ConsumerWidget {
                     );
                   },
                 ),
+                const SizedBox(height: AppSpacing.lg),
+
+                // Bboy Aura — move transition affinities
+                MoveAuraSection(moveId: move.id),
                 const SizedBox(height: AppSpacing.md),
+
                 Divider(color: colorScheme.outline),
                 const SizedBox(height: AppSpacing.md),
 
