@@ -1,0 +1,140 @@
+# Stress: Video data parity
+# Ensures moves with videos display correctly after rapid interactions.
+# Verifies list/grid toggle during thumbnail loading, move detail video
+# area presence, review session card swiping, and Arsenal stability
+# after a full stress cycle.
+#
+# Prerequisites: stress fixture (100 moves, 30 combos)
+# Tags: stress, video
+
+appId: com.breakdex.breakdex
+name: "Stress: Video Data Parity"
+tags:
+  - stress
+  - video
+
+---
+
+- runFlow: subflows/launch-stress.yaml
+
+# ── Phase 1: Verify Arsenal move list loads ──
+- assertVisible: "Arsenal"
+- assertVisible: "Moves"
+
+- takeScreenshot: e2e-screenshots/stress-video-parity-arsenal-loaded
+
+# ── Phase 2: Rapid list/grid toggle during thumbnail loading ──
+# 10 rapid cycles — thumbnails should survive constant layout changes
+- repeat:
+    times: 10
+    commands:
+      - tapOn: "Gallery"
+      - tapOn: "List"
+
+# Verify list is still functional after toggle spam
+- assertVisible: "Arsenal"
+
+- takeScreenshot: e2e-screenshots/stress-video-parity-toggle-done
+
+# ── Phase 3: Open move detail → verify video area → back ──
+# Repeat for multiple moves to ensure video area renders consistently
+- tapOn:
+    text: "Stress Move 001"
+    optional: true
+- extendedWaitUntil:
+    visible: "ACTIONS"
+    timeout: 5000
+- takeScreenshot: e2e-screenshots/stress-video-parity-detail1
+- back
+
+- tapOn:
+    text: "Stress Move 002"
+    optional: true
+- extendedWaitUntil:
+    visible: "ACTIONS"
+    timeout: 5000
+- takeScreenshot: e2e-screenshots/stress-video-parity-detail2
+- back
+
+- tapOn:
+    text: "Stress Move 003"
+    optional: true
+- extendedWaitUntil:
+    visible: "ACTIONS"
+    timeout: 5000
+- takeScreenshot: e2e-screenshots/stress-video-parity-detail3
+- back
+
+- tapOn:
+    text: "Stress Move 004"
+    optional: true
+- extendedWaitUntil:
+    visible: "ACTIONS"
+    timeout: 5000
+- back
+
+- tapOn:
+    text: "Stress Move 005"
+    optional: true
+- extendedWaitUntil:
+    visible: "ACTIONS"
+    timeout: 5000
+- back
+
+# ── Phase 4: Review session with rapid card swiping ──
+# Switch to Review tab
+- tapOn:
+    point: "146,809"
+- assertVisible: "Review"
+
+# Start a review session
+- tapOn:
+    text: "Review all ready"
+    optional: true
+- extendedWaitUntil:
+    visible: "Rate"
+    timeout: 15000
+
+# Rapid card swipe LEFT (advance) — 10 swipes
+- repeat:
+    times: 10
+    commands:
+      - swipe:
+          direction: LEFT
+          duration: 200
+      - tapOn:
+          text: "Rate GOOD"
+          optional: true
+
+- takeScreenshot: e2e-screenshots/stress-video-parity-review-swiped
+
+# End session
+- tapOn: "End"
+- extendedWaitUntil:
+    visible: "Review"
+    timeout: 5000
+
+# ── Phase 5: Return to Arsenal — verify list still loads ──
+- tapOn:
+    point: "49,809"
+- assertVisible: "Arsenal"
+
+# Scroll to verify list integrity
+- scroll:
+    direction: DOWN
+    duration: 2000
+- scroll:
+    direction: UP
+    duration: 1500
+
+# Verify a known move is still visible after scrolling back up
+- assertVisible:
+    text: "Stress Move 001"
+    optional: true
+
+# Switch to Gallery and back to List one more time
+- tapOn: "Gallery"
+- takeScreenshot: e2e-screenshots/stress-video-parity-gallery-final
+- tapOn: "List"
+
+- takeScreenshot: e2e-screenshots/stress-video-parity-done

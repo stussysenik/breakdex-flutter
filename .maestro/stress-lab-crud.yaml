@@ -1,0 +1,102 @@
+# Stress: Lab CRUD overload
+# Creates labs, toggles views, opens details, tests quick log.
+#
+# Prerequisites: stress fixture (100 moves, 30 combos)
+# Tags: stress
+
+appId: com.breakdex.breakdex
+name: "Stress: Lab CRUD"
+tags:
+  - stress
+
+---
+
+- runFlow: subflows/launch-stress.yaml
+
+# ── Phase 1: Navigate to Lab tab ──
+- tapOn:
+    id: "lab-tab"
+
+- takeScreenshot: e2e-screenshots/stress-lab-crud-initial
+
+# ── Phase 2: Create a lab ──
+- tapOn:
+    id: "create-new-lab"
+- inputText: "Alpha Lab"
+- tapOn: "Create"
+
+# Wait for bottom sheet to dismiss and list to update
+- extendedWaitUntil:
+    visible:
+      id: "create-new-lab"
+    timeout: 5000
+
+- takeScreenshot: e2e-screenshots/stress-lab-crud-created
+
+# ── Phase 3: Toggle list/board view 10 times rapidly ──
+- repeat:
+    times: 10
+    commands:
+      - tapOn:
+          text: "Board"
+          optional: true
+      - tapOn:
+          text: "List"
+          optional: true
+
+- takeScreenshot: e2e-screenshots/stress-lab-crud-toggle-done
+
+# ── Phase 4: Board view ──
+- tapOn:
+    text: "Board"
+    optional: true
+- takeScreenshot: e2e-screenshots/stress-lab-crud-board
+- tapOn:
+    text: "List"
+    optional: true
+
+# ── Phase 5: Quick log entry ──
+- tapOn:
+    text: "Quick log..."
+    optional: true
+- inputText: "Great session today"
+- pressKey: Enter
+
+- takeScreenshot: e2e-screenshots/stress-lab-crud-quicklog
+
+# ── Phase 6: Create 2 more labs rapidly ──
+- tapOn:
+    id: "create-new-lab"
+- inputText: "Beta Set"
+- tapOn:
+    text: "Set"
+    optional: true
+- tapOn: "Create"
+- extendedWaitUntil:
+    visible:
+      id: "create-new-lab"
+    timeout: 5000
+
+- tapOn:
+    id: "create-new-lab"
+- inputText: "Gamma Project"
+- tapOn: "Create"
+- extendedWaitUntil:
+    visible:
+      id: "create-new-lab"
+    timeout: 5000
+
+- takeScreenshot: e2e-screenshots/stress-lab-crud-3-created
+
+# ── Phase 7: Rapid board toggle while labs exist ──
+- repeat:
+    times: 5
+    commands:
+      - tapOn:
+          text: "Board"
+          optional: true
+      - tapOn:
+          text: "List"
+          optional: true
+
+- takeScreenshot: e2e-screenshots/stress-lab-crud-done

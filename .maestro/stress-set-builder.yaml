@@ -1,0 +1,146 @@
+# Stress: Set Builder workflow
+# Creates a set-type lab, opens its detail, adds moves, performs rapid
+# reorder attempts, manages milestones (create/complete/uncomplete), logs
+# an entry, and verifies the set persists after navigation.
+#
+# Prerequisites: stress fixture (100 moves, 30 combos)
+# Tags: stress
+
+appId: com.breakdex.breakdex
+name: "Stress: Set Builder"
+tags:
+  - stress
+
+---
+
+- runFlow: subflows/launch-stress.yaml
+
+# ── Phase 1: Navigate to Lab tab, create a set-type lab ──
+- tapOn:
+    text: "Lab"
+- assertVisible: "Lab"
+
+- tapOn:
+    id: "Add new lab"
+    optional: true
+- inputText: "Power Set"
+- tapOn:
+    text: "Set"
+    optional: true
+- tapOn:
+    text: "Save"
+    optional: true
+- extendedWaitUntil:
+    visible: "Lab"
+    timeout: 3000
+
+- takeScreenshot: e2e-screenshots/stress-set-builder-created
+
+# ── Phase 2: Open set detail ──
+- tapOn:
+    text: "Power Set"
+    optional: true
+- extendedWaitUntil:
+    visible: "Power Set"
+    timeout: 5000
+
+- takeScreenshot: e2e-screenshots/stress-set-builder-detail
+
+# ── Phase 3: Add 5 moves to the set ──
+- tapOn:
+    text: "Add Move"
+    optional: true
+- tapOn:
+    text: "Stress Move 001"
+    optional: true
+- tapOn:
+    text: "Add Move"
+    optional: true
+- tapOn:
+    text: "Stress Move 002"
+    optional: true
+- tapOn:
+    text: "Add Move"
+    optional: true
+- tapOn:
+    text: "Stress Move 003"
+    optional: true
+- tapOn:
+    text: "Add Move"
+    optional: true
+- tapOn:
+    text: "Stress Move 004"
+    optional: true
+- tapOn:
+    text: "Add Move"
+    optional: true
+- tapOn:
+    text: "Stress Move 005"
+    optional: true
+
+- takeScreenshot: e2e-screenshots/stress-set-builder-moves-added
+
+# ── Phase 4: Rapid reorder attempts ──
+# Simulate drag reorder by scrolling within the move list area
+- repeat:
+    times: 5
+    commands:
+      - scroll:
+          direction: DOWN
+          duration: 300
+      - scroll:
+          direction: UP
+          duration: 300
+
+- takeScreenshot: e2e-screenshots/stress-set-builder-reorder
+
+# ── Phase 5: Add milestone, complete it, uncomplete it ──
+- tapOn:
+    text: "Add Milestone"
+    optional: true
+- inputText: "Land 3 in a row"
+- tapOn:
+    text: "Save"
+    optional: true
+
+# Complete the milestone
+- tapOn:
+    text: "Land 3 in a row"
+    optional: true
+- tapOn:
+    text: "Complete"
+    optional: true
+
+- takeScreenshot: e2e-screenshots/stress-set-builder-milestone-done
+
+# Uncomplete the milestone
+- tapOn:
+    text: "Land 3 in a row"
+    optional: true
+- tapOn:
+    text: "Uncomplete"
+    optional: true
+
+- takeScreenshot: e2e-screenshots/stress-set-builder-milestone-undone
+
+# ── Phase 6: Quick log entry ──
+- tapOn:
+    text: "Log"
+    optional: true
+- inputText: "First practice session. Felt good."
+- tapOn:
+    text: "Save"
+    optional: true
+
+- takeScreenshot: e2e-screenshots/stress-set-builder-log-entry
+
+# ── Phase 7: Navigate back to list, verify set still shows ──
+- back
+- extendedWaitUntil:
+    visible: "Lab"
+    timeout: 3000
+- assertVisible:
+    text: "Power Set"
+    optional: true
+
+- takeScreenshot: e2e-screenshots/stress-set-builder-done

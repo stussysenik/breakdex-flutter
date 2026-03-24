@@ -1,0 +1,77 @@
+# Stress: Combo CRUD operations
+# Rapid combo detail enter/exit, combo list scrolling, segment switching,
+# and create combo screen entry/exit.
+#
+# Prerequisites: stress fixture (30 combos)
+# Tags: stress
+
+appId: com.breakdex.breakdex
+name: "Stress: Combo CRUD"
+tags:
+  - stress
+
+---
+
+- runFlow: subflows/launch-stress.yaml
+
+- assertVisible: "Arsenal"
+
+# Switch to Combos segment
+- tapOn: "Combos"
+
+# Phase 1: Scroll the 30-combo list
+- scroll:
+    direction: DOWN
+    duration: 3000
+- scroll:
+    direction: UP
+    duration: 2000
+
+# Phase 2: Rapidly enter and exit combo details
+- repeat:
+    times: 5
+    commands:
+      - tapOn:
+          text: "Stress Combo 1"
+          optional: true
+      - extendedWaitUntil:
+          visible: "Stress Combo 1"
+          timeout: 5000
+      - back
+
+- repeat:
+    times: 5
+    commands:
+      - tapOn:
+          text: "Stress Combo 2"
+          optional: true
+      - extendedWaitUntil:
+          visible: "Stress Combo 2"
+          timeout: 5000
+      - back
+
+# Phase 3: Rapid segment switching between Moves and Combos
+- repeat:
+    times: 10
+    commands:
+      - tapOn: "Moves"
+      - tapOn: "Combos"
+
+# Phase 4: Create combo FAB → back (no save)
+- tapOn:
+    id: "Create new combo"
+    optional: true
+- back
+
+# Phase 5: Gallery/List toggle on combos
+- repeat:
+    times: 5
+    commands:
+      - tapOn:
+          text: "Gallery"
+          optional: true
+      - tapOn:
+          text: "List"
+          optional: true
+
+- takeScreenshot: e2e-screenshots/stress-combo-crud-done

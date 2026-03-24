@@ -1,0 +1,160 @@
+# Stress: Lab Calendar interactions
+# Navigates to the Calendar sub-view, swipes through months, switches between
+# Calendar and other Lab tabs rapidly, and verifies calendar updates after a
+# review session.
+#
+# Prerequisites: stress fixture (100 moves, 30 combos)
+# Tags: stress
+
+appId: com.breakdex.breakdex
+name: "Stress: Lab Calendar"
+tags:
+  - stress
+
+---
+
+- runFlow: subflows/launch-stress.yaml
+
+# ── Phase 1: Navigate to Lab → Calendar ──
+- tapOn:
+    id: "lab-tab"
+- tapOn:
+    text: "Calendar"
+    optional: true
+
+- takeScreenshot: e2e-screenshots/stress-lab-calendar-initial
+
+# ── Phase 2: Tap today's date area (center of calendar grid) ──
+- tapOn:
+    text: "24"
+    optional: true
+
+- takeScreenshot: e2e-screenshots/stress-lab-calendar-today-tapped
+
+# ── Phase 3: Swipe to navigate months — forward 5 months ──
+- repeat:
+    times: 5
+    commands:
+      - swipe:
+          direction: LEFT
+          duration: 300
+
+- takeScreenshot: e2e-screenshots/stress-lab-calendar-forward
+
+# ── Phase 4: Swipe back 5 months to return to current month ──
+- repeat:
+    times: 5
+    commands:
+      - swipe:
+          direction: RIGHT
+          duration: 300
+
+- takeScreenshot: e2e-screenshots/stress-lab-calendar-back-to-now
+
+# ── Phase 5: Rapid Calendar ↔ other tab switching ──
+- repeat:
+    times: 5
+    commands:
+      - tapOn:
+          text: "Calendar"
+          optional: true
+      - tapOn:
+          text: "Projects"
+          optional: true
+
+- repeat:
+    times: 5
+    commands:
+      - tapOn:
+          text: "Calendar"
+          optional: true
+      - tapOn:
+          text: "Aura"
+          optional: true
+
+- repeat:
+    times: 5
+    commands:
+      - tapOn:
+          text: "Calendar"
+          optional: true
+      - tapOn:
+          text: "Sets"
+          optional: true
+
+- takeScreenshot: e2e-screenshots/stress-lab-calendar-tab-switching
+
+# ── Phase 6: Go to Review, complete a review, come back to Calendar ──
+- tapOn:
+    text: "Review"
+    optional: true
+- tapOn:
+    point: "146,809"
+    optional: true
+
+- extendedWaitUntil:
+    visible: "Review"
+    timeout: 5000
+
+# Start a review session and rate a few cards
+- tapOn:
+    text: "Review all ready"
+    optional: true
+- extendedWaitUntil:
+    visible: "Rate"
+    timeout: 15000
+
+# Rate 3 cards to generate review data
+- tapOn:
+    text: "Rate GOOD"
+    optional: true
+- extendedWaitUntil:
+    visible: "Rate"
+    timeout: 5000
+- tapOn:
+    text: "Rate GOOD"
+    optional: true
+- extendedWaitUntil:
+    visible: "Rate"
+    timeout: 5000
+- tapOn:
+    text: "Rate EASY"
+    optional: true
+- extendedWaitUntil:
+    visible: "Rate"
+    timeout: 5000
+
+# End the review session
+- tapOn:
+    text: "End"
+    optional: true
+- extendedWaitUntil:
+    visible: "Review"
+    timeout: 5000
+
+- takeScreenshot: e2e-screenshots/stress-lab-calendar-post-review
+
+# ── Phase 7: Return to Lab → Calendar and verify update ──
+- tapOn:
+    id: "lab-tab"
+- tapOn:
+    text: "Calendar"
+    optional: true
+
+- takeScreenshot: e2e-screenshots/stress-lab-calendar-after-review
+
+# ── Phase 8: Rapid month swiping to stress the calendar renderer ──
+- repeat:
+    times: 10
+    commands:
+      - swipe:
+          direction: LEFT
+          duration: 200
+- repeat:
+    times: 10
+    commands:
+      - swipe:
+          direction: RIGHT
+          duration: 200
+
+- takeScreenshot: e2e-screenshots/stress-lab-calendar-done

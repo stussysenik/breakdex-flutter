@@ -1,0 +1,116 @@
+# Stress: Achievement Garden
+# Navigates to the achievement garden view, scrolls through tiles, taps
+# tiles rapidly, switches to Review tab for 5 rapid reviews, switches
+# back to verify garden updates, and screenshots at each phase.
+#
+# Prerequisites: stress fixture (100 moves, 30 combos)
+# Tags: stress
+
+appId: com.breakdex.breakdex
+name: "Stress: Achievement Garden"
+tags:
+  - stress
+
+---
+
+- runFlow: subflows/launch-stress.yaml
+
+# ── Phase 1: Navigate to Lab tab (garden lives here) ──
+- tapOn:
+    text: "Lab"
+- assertVisible: "Lab"
+
+- takeScreenshot: e2e-screenshots/stress-achievement-garden-initial
+
+# ── Phase 2: Navigate to achievement garden section ──
+- tapOn:
+    text: "Garden"
+    optional: true
+
+- takeScreenshot: e2e-screenshots/stress-achievement-garden-opened
+
+# ── Phase 3: Scroll through achievement garden ──
+- scroll:
+    direction: DOWN
+    duration: 3000
+- scroll:
+    direction: UP
+    duration: 2000
+
+- takeScreenshot: e2e-screenshots/stress-achievement-garden-scrolled
+
+# ── Phase 4: Tap tiles rapidly ──
+# Tap various achievement tiles in quick succession to stress-test
+# the detail popup/tooltip rendering
+- repeat:
+    times: 10
+    commands:
+      - tapOn:
+          index: 0
+          optional: true
+      - tapOn:
+          index: 1
+          optional: true
+      - tapOn:
+          index: 2
+          optional: true
+
+- takeScreenshot: e2e-screenshots/stress-achievement-garden-tapped
+
+# ── Phase 5: Switch to Review tab, complete 5 rapid reviews ──
+- tapOn:
+    text: "Review"
+    optional: true
+- extendedWaitUntil:
+    visible: "Review"
+    timeout: 5000
+
+- takeScreenshot: e2e-screenshots/stress-achievement-garden-review-tab
+
+# Start a review session
+- tapOn:
+    text: "Review all ready"
+    optional: true
+- extendedWaitUntil:
+    visible: "Rate"
+    timeout: 15000
+
+# 5 rapid reviews — tap GOOD each time
+- repeat:
+    times: 5
+    commands:
+      - tapOn:
+          text: "Rate GOOD"
+          optional: true
+
+- takeScreenshot: e2e-screenshots/stress-achievement-garden-reviews-done
+
+# End session
+- tapOn:
+    text: "End"
+    optional: true
+- extendedWaitUntil:
+    visible: "Review"
+    timeout: 5000
+
+# ── Phase 6: Switch back to Lab/Garden, verify update ──
+- tapOn:
+    text: "Lab"
+    optional: true
+- assertVisible: "Lab"
+
+- tapOn:
+    text: "Garden"
+    optional: true
+
+- takeScreenshot: e2e-screenshots/stress-achievement-garden-after-reviews
+
+# ── Phase 7: Final scroll to verify no visual glitches ──
+- scroll:
+    direction: DOWN
+    duration: 2000
+- scroll:
+    direction: UP
+    duration: 1500
+
+- takeScreenshot: e2e-screenshots/stress-achievement-garden-done

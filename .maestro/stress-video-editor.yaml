@@ -1,0 +1,87 @@
+# Stress: Video editor controls
+# Rapid speed cycling, rotation spam, aspect ratio changes, timeline
+# dragging, and pinch-zoom extremes.
+#
+# Note: Requires a video to be importable from the simulator photo library.
+# If no video is available, the flow will fail at the import step.
+#
+# Prerequisites: stress fixture, simulator with at least one video in Photos
+# Tags: stress, video
+
+appId: com.breakdex.breakdex
+name: "Stress: Video Editor Controls"
+tags:
+  - stress
+  - video
+
+---
+
+- runFlow: subflows/launch-stress.yaml
+
+- assertVisible: "Arsenal"
+
+# Open FAB → import a video
+- tapOn:
+    id: "Add new move"
+- tapOn: "Import from Photos"
+
+# Handle permissions dialog if it appears
+- tapOn:
+    text: "Allow Full Access"
+    optional: true
+
+# Select the first video
+- tapOn:
+    index: 0
+    optional: true
+
+# Wait for the video editor to load
+- extendedWaitUntil:
+    visible: "Export"
+    timeout: 20000
+
+# Phase 1: Rapid playback speed cycling (3 full cycles)
+- repeat:
+    times: 3
+    commands:
+      - tapOn:
+          text: "0.25"
+          optional: true
+      - tapOn:
+          text: "0.5"
+          optional: true
+      - tapOn:
+          text: "1"
+          optional: true
+      - tapOn:
+          text: "1.5"
+          optional: true
+      - tapOn:
+          text: "2"
+          optional: true
+
+# Phase 2: Rotation spam — 12 taps (three full 360° cycles)
+- repeat:
+    times: 12
+    commands:
+      - tapOn:
+          id: "Rotate"
+          optional: true
+
+# Phase 3: Rapid timeline seek via swipe
+- repeat:
+    times: 10
+    commands:
+      - swipe:
+          start: "20%, 85%"
+          end: "80%, 85%"
+          duration: 200
+      - swipe:
+          start: "80%, 85%"
+          end: "20%, 85%"
+          duration: 200
+
+# Phase 4: Back without saving
+- back
+
+- takeScreenshot: e2e-screenshots/stress-video-editor-done

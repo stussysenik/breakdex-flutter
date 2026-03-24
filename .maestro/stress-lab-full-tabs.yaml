@@ -1,0 +1,138 @@
+# Stress: Lab full tab switching
+# Rapidly cycles through all 5 Lab sub-views (Projects, Board, Sets, Aura,
+# Calendar) to stress the segment control, then verifies each view renders.
+#
+# Prerequisites: stress fixture (100 moves, 30 combos)
+# Tags: stress
+
+appId: com.breakdex.breakdex
+name: "Stress: Lab Full Tabs"
+tags:
+  - stress
+
+---
+
+- runFlow: subflows/launch-stress.yaml
+
+# ── Phase 1: Navigate to Lab tab ──
+- tapOn:
+    id: "lab-tab"
+
+- takeScreenshot: e2e-screenshots/stress-lab-full-tabs-initial
+
+# ── Phase 2: Rapid cycle through all 5 sub-tabs (10 full rounds = 50 taps) ──
+- repeat:
+    times: 10
+    commands:
+      - tapOn:
+          text: "Projects"
+          optional: true
+      - tapOn:
+          text: "Board"
+          optional: true
+      - tapOn:
+          text: "Sets"
+          optional: true
+      - tapOn:
+          text: "Aura"
+          optional: true
+      - tapOn:
+          text: "Calendar"
+          optional: true
+
+- takeScreenshot: e2e-screenshots/stress-lab-full-tabs-rapid-done
+
+# ── Phase 3: Reverse cycle to stress the other direction (5 rounds) ──
+- repeat:
+    times: 5
+    commands:
+      - tapOn:
+          text: "Calendar"
+          optional: true
+      - tapOn:
+          text: "Aura"
+          optional: true
+      - tapOn:
+          text: "Sets"
+          optional: true
+      - tapOn:
+          text: "Board"
+          optional: true
+      - tapOn:
+          text: "Projects"
+          optional: true
+
+- takeScreenshot: e2e-screenshots/stress-lab-full-tabs-reverse-done
+
+# ── Phase 4: Projects — create a lab and verify ──
+- tapOn:
+    text: "Projects"
+    optional: true
+
+- tapOn:
+    id: "create-new-lab"
+- inputText: "Stress Full Tab Lab"
+- tapOn: "Create"
+
+- extendedWaitUntil:
+    visible:
+      id: "create-new-lab"
+    timeout: 5000
+
+- takeScreenshot: e2e-screenshots/stress-lab-full-tabs-project-created
+
+# ── Phase 5: Board — verify kanban columns render ──
+- tapOn:
+    text: "Board"
+    optional: true
+
+# Board view should render columns; give it a moment to lay out
+- extendedWaitUntil:
+    visible:
+      text: "Board"
+    timeout: 3000
+
+- takeScreenshot: e2e-screenshots/stress-lab-full-tabs-board
+
+# ── Phase 6: Sets — verify sets view renders ──
+- tapOn:
+    text: "Sets"
+    optional: true
+
+- takeScreenshot: e2e-screenshots/stress-lab-full-tabs-sets
+
+# ── Phase 7: Aura — verify aura view renders ──
+- tapOn:
+    text: "Aura"
+    optional: true
+
+- takeScreenshot: e2e-screenshots/stress-lab-full-tabs-aura
+
+# ── Phase 8: Calendar — verify calendar grid renders ──
+- tapOn:
+    text: "Calendar"
+    optional: true
+
+- takeScreenshot: e2e-screenshots/stress-lab-full-tabs-calendar
+
+# ── Phase 9: One more rapid burst while views have content ──
+- repeat:
+    times: 5
+    commands:
+      - tapOn:
+          text: "Projects"
+          optional: true
+      - tapOn:
+          text: "Calendar"
+          optional: true
+      - tapOn:
+          text: "Board"
+          optional: true
+      - tapOn:
+          text: "Aura"
+          optional: true
+      - tapOn:
+          text: "Sets"
+          optional: true
+
+- takeScreenshot: e2e-screenshots/stress-lab-full-tabs-done

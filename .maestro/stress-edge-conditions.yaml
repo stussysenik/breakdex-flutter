@@ -1,0 +1,111 @@
+# Stress: Edge conditions
+# Tests empty states, filtered-to-zero states, back navigation from every
+# screen, deck mode without selection, and full review completion.
+#
+# Prerequisites: none (Phase 1 uses empty DB), then stress fixture
+# Tags: stress
+
+appId: com.breakdex.breakdex
+name: "Stress: Edge Conditions"
+tags:
+  - stress
+
+---
+
+# ── Phase 1: Empty database — verify all empty states ─────────────
+- launchApp
+
+# Arsenal empty state
+- assertVisible: "Arsenal"
+- takeScreenshot: e2e-screenshots/stress-edge-empty-arsenal
+
+# Review empty state
+- tapOn:
+    point: "146,809"
+- assertVisible: "Review"
+- takeScreenshot: e2e-screenshots/stress-edge-empty-review
+
+# Stats empty state
+- tapOn:
+    point: "245,809"
+- assertVisible: "Stats"
+- takeScreenshot: e2e-screenshots/stress-edge-empty-stats
+
+# Settings renders fine with no data
+- tapOn:
+    point: "344,809"
+- assertVisible: "Settings"
+
+# ── Phase 2: Relaunch with stress data ────────────────────────────
+- runFlow: subflows/launch-stress.yaml
+
+# Verify arsenal loaded with 100 moves
+- assertVisible: "Arsenal"
+
+# ── Phase 3: Deck mode without selection ──────────────────────────
+- tapOn:
+    point: "146,809"
+- assertVisible: "Review"
+- tapOn:
+    text: "Deck"
+    optional: true
+- takeScreenshot: e2e-screenshots/stress-edge-no-deck
+
+# ── Phase 4: Back navigation from every reachable screen ──────────
+
+# Arsenal detail → back
+- tapOn:
+    point: "49,809"
+- tapOn:
+    text: "Stress Move 001"
+    optional: true
+- back
+- assertVisible: "Arsenal"
+
+# Combo detail → back
+- tapOn: "Combos"
+- tapOn:
+    text: "Stress Combo 1"
+    optional: true
+- back
+- assertVisible: "Arsenal"
+
+# Settings → Arsenal
+- tapOn:
+    point: "344,809"
+- assertVisible: "Settings"
+- tapOn:
+    point: "49,809"
+- assertVisible: "Arsenal"
+
+# ── Phase 5: Rate "New" moves to completion ───────────────────────
+- tapOn:
+    point: "146,809"
+- tapOn:
+    text: "Moves"
+    optional: true
+
+# Tap the New state tile to start a filtered session (40 new cards)
+- tapOn:
+    text: "New"
+    optional: true
+
+- extendedWaitUntil:
+    visible: "Rate"
+    timeout: 15000
+
+# Rate all 40 new cards as GOOD
+- repeat:
+    times: 45
+    commands:
+      - tapOn:
+          text: "Rate GOOD"
+          optional: true
+
+# Verify completion screen appears
+- extendedWaitUntil:
+    visible: "Great work!"
+    timeout: 10000
+- takeScreenshot: e2e-screenshots/stress-edge-completed
+
+- takeScreenshot: e2e-screenshots/stress-edge-conditions-done

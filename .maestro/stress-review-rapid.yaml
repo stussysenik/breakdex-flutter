@@ -1,0 +1,117 @@
+# Stress: Rapid-fire review session
+# Overwhelms the review card with rapid ratings, swipe spam, animation
+# interrupts, and state picker open/close cycles.
+#
+# Prerequisites: stress fixture (100 moves, 30 combos)
+# Tags: stress
+
+appId: com.breakdex.breakdex
+name: "Stress: Rapid Review"
+tags:
+  - stress
+
+---
+
+- runFlow: subflows/launch-stress.yaml
+
+# Navigate to Review tab
+- tapOn:
+    point: "146,809"
+- assertVisible: "Review"
+
+# Start session with all cards (tap the primary CTA)
+- tapOn: "Review all ready"
+- extendedWaitUntil:
+    visible: "Rate GOOD"
+    timeout: 15000
+
+# Phase 1: Rapid GOOD ratings (20 cards)
+- repeat:
+    times: 20
+    commands:
+      - tapOn:
+          text: "Rate GOOD"
+      - extendedWaitUntil:
+          visible: "Rate GOOD"
+          timeout: 5000
+
+# Phase 2: Alternating ratings — cycle all 4 buttons (5 rounds = 20 cards)
+- repeat:
+    times: 5
+    commands:
+      - tapOn:
+          text: "Rate AGAIN"
+      - extendedWaitUntil:
+          visible: "Rate"
+          timeout: 5000
+      - tapOn:
+          text: "Rate HARD"
+      - extendedWaitUntil:
+          visible: "Rate"
+          timeout: 5000
+      - tapOn:
+          text: "Rate GOOD"
+      - extendedWaitUntil:
+          visible: "Rate"
+          timeout: 5000
+      - tapOn:
+          text: "Rate EASY"
+      - extendedWaitUntil:
+          visible: "Rate"
+          timeout: 5000
+
+# Phase 3: Swipe LEFT mid-card + optional rating (interrupt animations)
+- repeat:
+    times: 10
+    commands:
+      - swipe:
+          direction: LEFT
+          duration: 200
+      - tapOn:
+          text: "Rate GOOD"
+          optional: true
+
+# Phase 4: Swipe backward then forward rapidly
+- repeat:
+    times: 5
+    commands:
+      - swipe:
+          direction: RIGHT
+          duration: 150
+      - swipe:
+          direction: LEFT
+          duration: 150
+
+# Phase 5: End session mid-review and re-enter
+- tapOn: "End"
+- extendedWaitUntil:
+    visible: "Review"
+    timeout: 5000
+
+# Phase 6: Re-enter and spam state picker open/close
+- tapOn: "Review all ready"
+- extendedWaitUntil:
+    visible: "Rate"
+    timeout: 15000
+
+- repeat:
+    times: 5
+    commands:
+      # Swipe up to trigger state picker sheet
+      - swipe:
+          start: "50%, 40%"
+          end: "50%, 20%"
+          duration: 200
+      # Dismiss sheet (back gesture)
+      - back
+      - extendedWaitUntil:
+          visible: "Rate"
+          timeout: 3000
+
+# Clean exit
+- tapOn: "End"
+- extendedWaitUntil:
+    visible: "Review"
+    timeout: 5000
+
+- takeScreenshot: e2e-screenshots/stress-review-rapid-done

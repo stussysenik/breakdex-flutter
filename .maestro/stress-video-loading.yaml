@@ -1,0 +1,138 @@
+# Stress: Video player init/dispose cycles & loading performance
+# Rapid open/close of move detail screens forces video init+dispose,
+# fast tab switching while videos may be loading, scroll through
+# move list with thumbnail loading, and sequential detail visits.
+#
+# Target: all transitions should feel swift, ideally sub-500ms response.
+#
+# Prerequisites: stress fixture (100 moves, 30 combos)
+# Tags: stress, video
+
+appId: com.breakdex.breakdex
+name: "Stress: Video Loading Performance"
+tags:
+  - stress
+  - video
+
+---
+
+- runFlow: subflows/launch-stress.yaml
+
+- assertVisible: "Arsenal"
+
+# ── Phase 1: Rapid open/close of move detail (video init + dispose) ──
+# 10 rapid cycles — open a move, immediately back out
+- repeat:
+    times: 10
+    commands:
+      - tapOn:
+          text: "Stress Move 001"
+          optional: true
+      - back
+
+- takeScreenshot: e2e-screenshots/stress-video-loading-phase1
+
+# ── Phase 2: Quick tab switches during potential video loading ──
+# Cycle Arsenal → Review → Stats → Settings 15 times (60 rapid switches)
+- repeat:
+    times: 15
+    commands:
+      # Arsenal tab
+      - tapOn:
+          point: "49,809"
+      # Review tab
+      - tapOn:
+          point: "146,809"
+      # Stats tab
+      - tapOn:
+          point: "245,809"
+      # Settings tab
+      - tapOn:
+          point: "344,809"
+
+# Return to Arsenal for next phase
+- tapOn:
+    point: "49,809"
+- assertVisible: "Arsenal"
+
+- takeScreenshot: e2e-screenshots/stress-video-loading-phase2
+
+# ── Phase 3: Rapid scroll through move list (thumbnail loading) ──
+# Scroll down fast, then back up — thumbnails loading while scrolling
+- scroll:
+    direction: DOWN
+    duration: 2000
+- scroll:
+    direction: DOWN
+    duration: 2000
+- scroll:
+    direction: UP
+    duration: 1500
+- scroll:
+    direction: DOWN
+    duration: 1000
+- scroll:
+    direction: UP
+    duration: 3000
+
+- takeScreenshot: e2e-screenshots/stress-video-loading-phase3
+
+# ── Phase 4: Enter detail → wait for video area → back → next move ──
+# 5 sequential cycles visiting different moves
+- tapOn:
+    text: "Stress Move 001"
+    optional: true
+- extendedWaitUntil:
+    visible: "ACTIONS"
+    timeout: 5000
+- takeScreenshot: e2e-screenshots/stress-video-loading-move1
+- back
+
+- tapOn:
+    text: "Stress Move 002"
+    optional: true
+- extendedWaitUntil:
+    visible: "ACTIONS"
+    timeout: 5000
+- takeScreenshot: e2e-screenshots/stress-video-loading-move2
+- back
+
+- tapOn:
+    text: "Stress Move 003"
+    optional: true
+- extendedWaitUntil:
+    visible: "ACTIONS"
+    timeout: 5000
+- takeScreenshot: e2e-screenshots/stress-video-loading-move3
+- back
+
+- tapOn:
+    text: "Stress Move 004"
+    optional: true
+- extendedWaitUntil:
+    visible: "ACTIONS"
+    timeout: 5000
+- back
+
+- tapOn:
+    text: "Stress Move 005"
+    optional: true
+- extendedWaitUntil:
+    visible: "ACTIONS"
+    timeout: 5000
+- back
+
+# ── Phase 5: Rapid detail open during scroll (interrupt pattern) ──
+# Scroll a bit, tap a move mid-scroll, back out — stress init timing
+- repeat:
+    times: 5
+    commands:
+      - scroll:
+          direction: DOWN
+          duration: 300
+      - tapOn:
+          text: "Stress Move 0"
+          optional: true
+      - back
+
+- takeScreenshot: e2e-screenshots/stress-video-loading-done

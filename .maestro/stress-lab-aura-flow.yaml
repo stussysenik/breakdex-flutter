@@ -1,0 +1,118 @@
+# Stress: Lab Aura interactions
+# Navigates to the Aura sub-view, taps move tiles rapidly, switches between
+# Aura and other Lab tabs, and checks aura context from move detail.
+#
+# Prerequisites: stress fixture (100 moves, 30 combos)
+# Tags: stress
+
+appId: com.breakdex.breakdex
+name: "Stress: Lab Aura Flow"
+tags:
+  - stress
+
+---
+
+- runFlow: subflows/launch-stress.yaml
+
+# ── Phase 1: Navigate to Lab → Aura ──
+- tapOn:
+    id: "lab-tab"
+- tapOn:
+    text: "Aura"
+    optional: true
+
+- takeScreenshot: e2e-screenshots/stress-lab-aura-initial
+
+# ── Phase 2: Tap move tiles rapidly if they exist ──
+# The Aura view may show move tiles; tap a few in quick succession
+- tapOn:
+    text: "Stress Move 001"
+    optional: true
+- back
+- tapOn:
+    text: "Stress Move 002"
+    optional: true
+- back
+- tapOn:
+    text: "Stress Move 003"
+    optional: true
+- back
+
+- takeScreenshot: e2e-screenshots/stress-lab-aura-after-taps
+
+# ── Phase 3: Rapid Aura ↔ other tab switching (5 cycles per pair) ──
+- repeat:
+    times: 5
+    commands:
+      - tapOn:
+          text: "Aura"
+          optional: true
+      - tapOn:
+          text: "Projects"
+          optional: true
+
+- repeat:
+    times: 5
+    commands:
+      - tapOn:
+          text: "Aura"
+          optional: true
+      - tapOn:
+          text: "Board"
+          optional: true
+
+- repeat:
+    times: 5
+    commands:
+      - tapOn:
+          text: "Aura"
+          optional: true
+      - tapOn:
+          text: "Calendar"
+          optional: true
+
+- takeScreenshot: e2e-screenshots/stress-lab-aura-tab-switching
+
+# ── Phase 4: Navigate to Arsenal, open move detail, check for aura section ──
+- tapOn:
+    text: "Arsenal"
+    optional: true
+- tapOn:
+    id: "arsenal-tab"
+    optional: true
+
+- tapOn:
+    text: "Stress Move 001"
+    optional: true
+- extendedWaitUntil:
+    visible: "Stress Move 001"
+    timeout: 5000
+
+- takeScreenshot: e2e-screenshots/stress-lab-aura-move-detail
+
+# Scroll down to look for aura section on move detail
+- scroll:
+    direction: DOWN
+    duration: 2000
+
+- takeScreenshot: e2e-screenshots/stress-lab-aura-move-detail-scrolled
+
+# ── Phase 5: Back to Lab → Aura ──
+- back
+- tapOn:
+    id: "lab-tab"
+- tapOn:
+    text: "Aura"
+    optional: true
+
+- takeScreenshot: e2e-screenshots/stress-lab-aura-return
+
+# ── Phase 6: Scroll the Aura view if it has content ──
+- scroll:
+    direction: DOWN
+    duration: 3000
+- scroll:
+    direction: UP
+    duration: 2000
+
+- takeScreenshot: e2e-screenshots/stress-lab-aura-done

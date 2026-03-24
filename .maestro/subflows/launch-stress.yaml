@@ -1,0 +1,7 @@
+# Shared preamble: launch app with stress fixture (100 moves, 30 combos, etc.)
+appId: com.breakdex.breakdex
+---
+- launchApp:
+    arguments:
+      maestro: true
+      breakdexFixture: stress

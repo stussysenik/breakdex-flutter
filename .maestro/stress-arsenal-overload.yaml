@@ -1,0 +1,92 @@
+# Stress: Arsenal list overload
+# Scrolls through 100 moves, rapid search/clear cycles, rapid list/grid
+# toggling, segment switching, and detail drill-in/back cycles.
+#
+# Prerequisites: stress fixture (100 moves, 30 combos)
+# Tags: stress
+
+appId: com.breakdex.breakdex
+name: "Stress: Arsenal Overload"
+tags:
+  - stress
+
+---
+
+- runFlow: subflows/launch-stress.yaml
+
+- assertVisible: "Arsenal"
+
+# Phase 1: Scroll the full 100-move list
+- scroll:
+    direction: DOWN
+    duration: 5000
+- scroll:
+    direction: UP
+    duration: 3000
+
+# Phase 2: Rapid list/grid toggle (10 cycles)
+- repeat:
+    times: 10
+    commands:
+      - tapOn: "Gallery"
+      - tapOn: "List"
+
+# Phase 3: Grid mode scroll
+- tapOn: "Gallery"
+- scroll:
+    direction: DOWN
+    duration: 4000
+- scroll:
+    direction: UP
+    duration: 2000
+- tapOn: "List"
+
+# Phase 4: Rapid search typing + clearing
+- tapOn: "Search moves..."
+- repeat:
+    times: 5
+    commands:
+      - inputText: "Stress Move 0"
+      - eraseText: 14
+      - inputText: "zzz"
+      - eraseText: 3
+      - inputText: "Stress"
+      - eraseText: 6
+
+# Phase 5: Search → detail → back
+- inputText: "Stress Move 001"
+- tapOn:
+    text: "Stress Move 001"
+    optional: true
+- extendedWaitUntil:
+    visible: "Stress Move 001"
+    timeout: 5000
+- back
+- eraseText: 15
+
+# Phase 6: Rapid Moves/Combos segment switching
+- repeat:
+    times: 10
+    commands:
+      - tapOn: "Combos"
+      - tapOn: "Moves"
+
+# Phase 7: FAB during scroll
+- scroll:
+    direction: DOWN
+    duration: 1000
+- tapOn:
+    id: "Add new move"
+    optional: true
+- back
+
+# Phase 8: Combos list with 30 combos — scroll
+- tapOn: "Combos"
+- scroll:
+    direction: DOWN
+    duration: 3000
+- scroll:
+    direction: UP
+    duration: 2000
+
+- takeScreenshot: e2e-screenshots/stress-arsenal-overload-done
