@@ -7372,6 +7372,2600 @@ class SyncOperationsCompanion extends UpdateCompanion<SyncOperation> {
   }
 }
 
+class $LabsTable extends Labs with TableInfo<$LabsTable, Lab> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $LabsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+    'id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _nameMeta = const VerificationMeta('name');
+  @override
+  late final GeneratedColumn<String> name = GeneratedColumn<String>(
+    'name',
+    aliasedName,
+    false,
+    additionalChecks: GeneratedColumn.checkTextLength(minTextLength: 1),
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _labTypeMeta = const VerificationMeta(
+    'labType',
+  );
+  @override
+  late final GeneratedColumn<String> labType = GeneratedColumn<String>(
+    'lab_type',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant('project'),
+  );
+  static const VerificationMeta _statusMeta = const VerificationMeta('status');
+  @override
+  late final GeneratedColumn<String> status = GeneratedColumn<String>(
+    'status',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant('idea'),
+  );
+  static const VerificationMeta _notesMeta = const VerificationMeta('notes');
+  @override
+  late final GeneratedColumn<String> notes = GeneratedColumn<String>(
+    'notes',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _createdAtMeta = const VerificationMeta(
+    'createdAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> createdAt = GeneratedColumn<DateTime>(
+    'created_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+    defaultValue: currentDateAndTime,
+  );
+  static const VerificationMeta _updatedAtMeta = const VerificationMeta(
+    'updatedAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> updatedAt = GeneratedColumn<DateTime>(
+    'updated_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+    defaultValue: currentDateAndTime,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    name,
+    labType,
+    status,
+    notes,
+    createdAt,
+    updatedAt,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'labs';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<Lab> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    } else if (isInserting) {
+      context.missing(_idMeta);
+    }
+    if (data.containsKey('name')) {
+      context.handle(
+        _nameMeta,
+        name.isAcceptableOrUnknown(data['name']!, _nameMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_nameMeta);
+    }
+    if (data.containsKey('lab_type')) {
+      context.handle(
+        _labTypeMeta,
+        labType.isAcceptableOrUnknown(data['lab_type']!, _labTypeMeta),
+      );
+    }
+    if (data.containsKey('status')) {
+      context.handle(
+        _statusMeta,
+        status.isAcceptableOrUnknown(data['status']!, _statusMeta),
+      );
+    }
+    if (data.containsKey('notes')) {
+      context.handle(
+        _notesMeta,
+        notes.isAcceptableOrUnknown(data['notes']!, _notesMeta),
+      );
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(
+        _createdAtMeta,
+        createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta),
+      );
+    }
+    if (data.containsKey('updated_at')) {
+      context.handle(
+        _updatedAtMeta,
+        updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  Lab map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return Lab(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}id'],
+      )!,
+      name: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}name'],
+      )!,
+      labType: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}lab_type'],
+      )!,
+      status: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}status'],
+      )!,
+      notes: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}notes'],
+      ),
+      createdAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}created_at'],
+      )!,
+      updatedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}updated_at'],
+      )!,
+    );
+  }
+
+  @override
+  $LabsTable createAlias(String alias) {
+    return $LabsTable(attachedDatabase, alias);
+  }
+}
+
+class Lab extends DataClass implements Insertable<Lab> {
+  final String id;
+  final String name;
+
+  /// 'project' or 'set'
+  final String labType;
+
+  /// 'idea', 'attempting', 'landed', or 'clean'
+  final String status;
+  final String? notes;
+  final DateTime createdAt;
+  final DateTime updatedAt;
+  const Lab({
+    required this.id,
+    required this.name,
+    required this.labType,
+    required this.status,
+    this.notes,
+    required this.createdAt,
+    required this.updatedAt,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    map['name'] = Variable<String>(name);
+    map['lab_type'] = Variable<String>(labType);
+    map['status'] = Variable<String>(status);
+    if (!nullToAbsent || notes != null) {
+      map['notes'] = Variable<String>(notes);
+    }
+    map['created_at'] = Variable<DateTime>(createdAt);
+    map['updated_at'] = Variable<DateTime>(updatedAt);
+    return map;
+  }
+
+  LabsCompanion toCompanion(bool nullToAbsent) {
+    return LabsCompanion(
+      id: Value(id),
+      name: Value(name),
+      labType: Value(labType),
+      status: Value(status),
+      notes: notes == null && nullToAbsent
+          ? const Value.absent()
+          : Value(notes),
+      createdAt: Value(createdAt),
+      updatedAt: Value(updatedAt),
+    );
+  }
+
+  factory Lab.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return Lab(
+      id: serializer.fromJson<String>(json['id']),
+      name: serializer.fromJson<String>(json['name']),
+      labType: serializer.fromJson<String>(json['labType']),
+      status: serializer.fromJson<String>(json['status']),
+      notes: serializer.fromJson<String?>(json['notes']),
+      createdAt: serializer.fromJson<DateTime>(json['createdAt']),
+      updatedAt: serializer.fromJson<DateTime>(json['updatedAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'name': serializer.toJson<String>(name),
+      'labType': serializer.toJson<String>(labType),
+      'status': serializer.toJson<String>(status),
+      'notes': serializer.toJson<String?>(notes),
+      'createdAt': serializer.toJson<DateTime>(createdAt),
+      'updatedAt': serializer.toJson<DateTime>(updatedAt),
+    };
+  }
+
+  Lab copyWith({
+    String? id,
+    String? name,
+    String? labType,
+    String? status,
+    Value<String?> notes = const Value.absent(),
+    DateTime? createdAt,
+    DateTime? updatedAt,
+  }) => Lab(
+    id: id ?? this.id,
+    name: name ?? this.name,
+    labType: labType ?? this.labType,
+    status: status ?? this.status,
+    notes: notes.present ? notes.value : this.notes,
+    createdAt: createdAt ?? this.createdAt,
+    updatedAt: updatedAt ?? this.updatedAt,
+  );
+  Lab copyWithCompanion(LabsCompanion data) {
+    return Lab(
+      id: data.id.present ? data.id.value : this.id,
+      name: data.name.present ? data.name.value : this.name,
+      labType: data.labType.present ? data.labType.value : this.labType,
+      status: data.status.present ? data.status.value : this.status,
+      notes: data.notes.present ? data.notes.value : this.notes,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+      updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('Lab(')
+          ..write('id: $id, ')
+          ..write('name: $name, ')
+          ..write('labType: $labType, ')
+          ..write('status: $status, ')
+          ..write('notes: $notes, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode =>
+      Object.hash(id, name, labType, status, notes, createdAt, updatedAt);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is Lab &&
+          other.id == this.id &&
+          other.name == this.name &&
+          other.labType == this.labType &&
+          other.status == this.status &&
+          other.notes == this.notes &&
+          other.createdAt == this.createdAt &&
+          other.updatedAt == this.updatedAt);
+}
+
+class LabsCompanion extends UpdateCompanion<Lab> {
+  final Value<String> id;
+  final Value<String> name;
+  final Value<String> labType;
+  final Value<String> status;
+  final Value<String?> notes;
+  final Value<DateTime> createdAt;
+  final Value<DateTime> updatedAt;
+  final Value<int> rowid;
+  const LabsCompanion({
+    this.id = const Value.absent(),
+    this.name = const Value.absent(),
+    this.labType = const Value.absent(),
+    this.status = const Value.absent(),
+    this.notes = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  LabsCompanion.insert({
+    required String id,
+    required String name,
+    this.labType = const Value.absent(),
+    this.status = const Value.absent(),
+    this.notes = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  }) : id = Value(id),
+       name = Value(name);
+  static Insertable<Lab> custom({
+    Expression<String>? id,
+    Expression<String>? name,
+    Expression<String>? labType,
+    Expression<String>? status,
+    Expression<String>? notes,
+    Expression<DateTime>? createdAt,
+    Expression<DateTime>? updatedAt,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (name != null) 'name': name,
+      if (labType != null) 'lab_type': labType,
+      if (status != null) 'status': status,
+      if (notes != null) 'notes': notes,
+      if (createdAt != null) 'created_at': createdAt,
+      if (updatedAt != null) 'updated_at': updatedAt,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  LabsCompanion copyWith({
+    Value<String>? id,
+    Value<String>? name,
+    Value<String>? labType,
+    Value<String>? status,
+    Value<String?>? notes,
+    Value<DateTime>? createdAt,
+    Value<DateTime>? updatedAt,
+    Value<int>? rowid,
+  }) {
+    return LabsCompanion(
+      id: id ?? this.id,
+      name: name ?? this.name,
+      labType: labType ?? this.labType,
+      status: status ?? this.status,
+      notes: notes ?? this.notes,
+      createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (name.present) {
+      map['name'] = Variable<String>(name.value);
+    }
+    if (labType.present) {
+      map['lab_type'] = Variable<String>(labType.value);
+    }
+    if (status.present) {
+      map['status'] = Variable<String>(status.value);
+    }
+    if (notes.present) {
+      map['notes'] = Variable<String>(notes.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<DateTime>(createdAt.value);
+    }
+    if (updatedAt.present) {
+      map['updated_at'] = Variable<DateTime>(updatedAt.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('LabsCompanion(')
+          ..write('id: $id, ')
+          ..write('name: $name, ')
+          ..write('labType: $labType, ')
+          ..write('status: $status, ')
+          ..write('notes: $notes, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $MilestonesTable extends Milestones
+    with TableInfo<$MilestonesTable, Milestone> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $MilestonesTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+    'id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _labIdMeta = const VerificationMeta('labId');
+  @override
+  late final GeneratedColumn<String> labId = GeneratedColumn<String>(
+    'lab_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES labs (id) ON DELETE CASCADE',
+    ),
+  );
+  static const VerificationMeta _titleMeta = const VerificationMeta('title');
+  @override
+  late final GeneratedColumn<String> title = GeneratedColumn<String>(
+    'title',
+    aliasedName,
+    false,
+    additionalChecks: GeneratedColumn.checkTextLength(minTextLength: 1),
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _notesMeta = const VerificationMeta('notes');
+  @override
+  late final GeneratedColumn<String> notes = GeneratedColumn<String>(
+    'notes',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _completedAtMeta = const VerificationMeta(
+    'completedAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> completedAt = GeneratedColumn<DateTime>(
+    'completed_at',
+    aliasedName,
+    true,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _createdAtMeta = const VerificationMeta(
+    'createdAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> createdAt = GeneratedColumn<DateTime>(
+    'created_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+    defaultValue: currentDateAndTime,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    labId,
+    title,
+    notes,
+    completedAt,
+    createdAt,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'milestones';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<Milestone> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    } else if (isInserting) {
+      context.missing(_idMeta);
+    }
+    if (data.containsKey('lab_id')) {
+      context.handle(
+        _labIdMeta,
+        labId.isAcceptableOrUnknown(data['lab_id']!, _labIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_labIdMeta);
+    }
+    if (data.containsKey('title')) {
+      context.handle(
+        _titleMeta,
+        title.isAcceptableOrUnknown(data['title']!, _titleMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_titleMeta);
+    }
+    if (data.containsKey('notes')) {
+      context.handle(
+        _notesMeta,
+        notes.isAcceptableOrUnknown(data['notes']!, _notesMeta),
+      );
+    }
+    if (data.containsKey('completed_at')) {
+      context.handle(
+        _completedAtMeta,
+        completedAt.isAcceptableOrUnknown(
+          data['completed_at']!,
+          _completedAtMeta,
+        ),
+      );
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(
+        _createdAtMeta,
+        createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  Milestone map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return Milestone(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}id'],
+      )!,
+      labId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}lab_id'],
+      )!,
+      title: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}title'],
+      )!,
+      notes: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}notes'],
+      ),
+      completedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}completed_at'],
+      ),
+      createdAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}created_at'],
+      )!,
+    );
+  }
+
+  @override
+  $MilestonesTable createAlias(String alias) {
+    return $MilestonesTable(attachedDatabase, alias);
+  }
+}
+
+class Milestone extends DataClass implements Insertable<Milestone> {
+  final String id;
+  final String labId;
+  final String title;
+  final String? notes;
+  final DateTime? completedAt;
+  final DateTime createdAt;
+  const Milestone({
+    required this.id,
+    required this.labId,
+    required this.title,
+    this.notes,
+    this.completedAt,
+    required this.createdAt,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    map['lab_id'] = Variable<String>(labId);
+    map['title'] = Variable<String>(title);
+    if (!nullToAbsent || notes != null) {
+      map['notes'] = Variable<String>(notes);
+    }
+    if (!nullToAbsent || completedAt != null) {
+      map['completed_at'] = Variable<DateTime>(completedAt);
+    }
+    map['created_at'] = Variable<DateTime>(createdAt);
+    return map;
+  }
+
+  MilestonesCompanion toCompanion(bool nullToAbsent) {
+    return MilestonesCompanion(
+      id: Value(id),
+      labId: Value(labId),
+      title: Value(title),
+      notes: notes == null && nullToAbsent
+          ? const Value.absent()
+          : Value(notes),
+      completedAt: completedAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(completedAt),
+      createdAt: Value(createdAt),
+    );
+  }
+
+  factory Milestone.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return Milestone(
+      id: serializer.fromJson<String>(json['id']),
+      labId: serializer.fromJson<String>(json['labId']),
+      title: serializer.fromJson<String>(json['title']),
+      notes: serializer.fromJson<String?>(json['notes']),
+      completedAt: serializer.fromJson<DateTime?>(json['completedAt']),
+      createdAt: serializer.fromJson<DateTime>(json['createdAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'labId': serializer.toJson<String>(labId),
+      'title': serializer.toJson<String>(title),
+      'notes': serializer.toJson<String?>(notes),
+      'completedAt': serializer.toJson<DateTime?>(completedAt),
+      'createdAt': serializer.toJson<DateTime>(createdAt),
+    };
+  }
+
+  Milestone copyWith({
+    String? id,
+    String? labId,
+    String? title,
+    Value<String?> notes = const Value.absent(),
+    Value<DateTime?> completedAt = const Value.absent(),
+    DateTime? createdAt,
+  }) => Milestone(
+    id: id ?? this.id,
+    labId: labId ?? this.labId,
+    title: title ?? this.title,
+    notes: notes.present ? notes.value : this.notes,
+    completedAt: completedAt.present ? completedAt.value : this.completedAt,
+    createdAt: createdAt ?? this.createdAt,
+  );
+  Milestone copyWithCompanion(MilestonesCompanion data) {
+    return Milestone(
+      id: data.id.present ? data.id.value : this.id,
+      labId: data.labId.present ? data.labId.value : this.labId,
+      title: data.title.present ? data.title.value : this.title,
+      notes: data.notes.present ? data.notes.value : this.notes,
+      completedAt: data.completedAt.present
+          ? data.completedAt.value
+          : this.completedAt,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('Milestone(')
+          ..write('id: $id, ')
+          ..write('labId: $labId, ')
+          ..write('title: $title, ')
+          ..write('notes: $notes, ')
+          ..write('completedAt: $completedAt, ')
+          ..write('createdAt: $createdAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode =>
+      Object.hash(id, labId, title, notes, completedAt, createdAt);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is Milestone &&
+          other.id == this.id &&
+          other.labId == this.labId &&
+          other.title == this.title &&
+          other.notes == this.notes &&
+          other.completedAt == this.completedAt &&
+          other.createdAt == this.createdAt);
+}
+
+class MilestonesCompanion extends UpdateCompanion<Milestone> {
+  final Value<String> id;
+  final Value<String> labId;
+  final Value<String> title;
+  final Value<String?> notes;
+  final Value<DateTime?> completedAt;
+  final Value<DateTime> createdAt;
+  final Value<int> rowid;
+  const MilestonesCompanion({
+    this.id = const Value.absent(),
+    this.labId = const Value.absent(),
+    this.title = const Value.absent(),
+    this.notes = const Value.absent(),
+    this.completedAt = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  MilestonesCompanion.insert({
+    required String id,
+    required String labId,
+    required String title,
+    this.notes = const Value.absent(),
+    this.completedAt = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  }) : id = Value(id),
+       labId = Value(labId),
+       title = Value(title);
+  static Insertable<Milestone> custom({
+    Expression<String>? id,
+    Expression<String>? labId,
+    Expression<String>? title,
+    Expression<String>? notes,
+    Expression<DateTime>? completedAt,
+    Expression<DateTime>? createdAt,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (labId != null) 'lab_id': labId,
+      if (title != null) 'title': title,
+      if (notes != null) 'notes': notes,
+      if (completedAt != null) 'completed_at': completedAt,
+      if (createdAt != null) 'created_at': createdAt,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  MilestonesCompanion copyWith({
+    Value<String>? id,
+    Value<String>? labId,
+    Value<String>? title,
+    Value<String?>? notes,
+    Value<DateTime?>? completedAt,
+    Value<DateTime>? createdAt,
+    Value<int>? rowid,
+  }) {
+    return MilestonesCompanion(
+      id: id ?? this.id,
+      labId: labId ?? this.labId,
+      title: title ?? this.title,
+      notes: notes ?? this.notes,
+      completedAt: completedAt ?? this.completedAt,
+      createdAt: createdAt ?? this.createdAt,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (labId.present) {
+      map['lab_id'] = Variable<String>(labId.value);
+    }
+    if (title.present) {
+      map['title'] = Variable<String>(title.value);
+    }
+    if (notes.present) {
+      map['notes'] = Variable<String>(notes.value);
+    }
+    if (completedAt.present) {
+      map['completed_at'] = Variable<DateTime>(completedAt.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<DateTime>(createdAt.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('MilestonesCompanion(')
+          ..write('id: $id, ')
+          ..write('labId: $labId, ')
+          ..write('title: $title, ')
+          ..write('notes: $notes, ')
+          ..write('completedAt: $completedAt, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $LabMovesTable extends LabMoves with TableInfo<$LabMovesTable, LabMove> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $LabMovesTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _labIdMeta = const VerificationMeta('labId');
+  @override
+  late final GeneratedColumn<String> labId = GeneratedColumn<String>(
+    'lab_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES labs (id) ON DELETE CASCADE',
+    ),
+  );
+  static const VerificationMeta _moveIdMeta = const VerificationMeta('moveId');
+  @override
+  late final GeneratedColumn<String> moveId = GeneratedColumn<String>(
+    'move_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES moves (id) ON DELETE CASCADE',
+    ),
+  );
+  static const VerificationMeta _sequenceIndexMeta = const VerificationMeta(
+    'sequenceIndex',
+  );
+  @override
+  late final GeneratedColumn<int> sequenceIndex = GeneratedColumn<int>(
+    'sequence_index',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _addedAtMeta = const VerificationMeta(
+    'addedAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> addedAt = GeneratedColumn<DateTime>(
+    'added_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+    defaultValue: currentDateAndTime,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [labId, moveId, sequenceIndex, addedAt];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'lab_moves';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<LabMove> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('lab_id')) {
+      context.handle(
+        _labIdMeta,
+        labId.isAcceptableOrUnknown(data['lab_id']!, _labIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_labIdMeta);
+    }
+    if (data.containsKey('move_id')) {
+      context.handle(
+        _moveIdMeta,
+        moveId.isAcceptableOrUnknown(data['move_id']!, _moveIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_moveIdMeta);
+    }
+    if (data.containsKey('sequence_index')) {
+      context.handle(
+        _sequenceIndexMeta,
+        sequenceIndex.isAcceptableOrUnknown(
+          data['sequence_index']!,
+          _sequenceIndexMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_sequenceIndexMeta);
+    }
+    if (data.containsKey('added_at')) {
+      context.handle(
+        _addedAtMeta,
+        addedAt.isAcceptableOrUnknown(data['added_at']!, _addedAtMeta),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {labId, moveId};
+  @override
+  LabMove map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return LabMove(
+      labId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}lab_id'],
+      )!,
+      moveId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}move_id'],
+      )!,
+      sequenceIndex: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}sequence_index'],
+      )!,
+      addedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}added_at'],
+      )!,
+    );
+  }
+
+  @override
+  $LabMovesTable createAlias(String alias) {
+    return $LabMovesTable(attachedDatabase, alias);
+  }
+}
+
+class LabMove extends DataClass implements Insertable<LabMove> {
+  final String labId;
+  final String moveId;
+  final int sequenceIndex;
+  final DateTime addedAt;
+  const LabMove({
+    required this.labId,
+    required this.moveId,
+    required this.sequenceIndex,
+    required this.addedAt,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['lab_id'] = Variable<String>(labId);
+    map['move_id'] = Variable<String>(moveId);
+    map['sequence_index'] = Variable<int>(sequenceIndex);
+    map['added_at'] = Variable<DateTime>(addedAt);
+    return map;
+  }
+
+  LabMovesCompanion toCompanion(bool nullToAbsent) {
+    return LabMovesCompanion(
+      labId: Value(labId),
+      moveId: Value(moveId),
+      sequenceIndex: Value(sequenceIndex),
+      addedAt: Value(addedAt),
+    );
+  }
+
+  factory LabMove.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return LabMove(
+      labId: serializer.fromJson<String>(json['labId']),
+      moveId: serializer.fromJson<String>(json['moveId']),
+      sequenceIndex: serializer.fromJson<int>(json['sequenceIndex']),
+      addedAt: serializer.fromJson<DateTime>(json['addedAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'labId': serializer.toJson<String>(labId),
+      'moveId': serializer.toJson<String>(moveId),
+      'sequenceIndex': serializer.toJson<int>(sequenceIndex),
+      'addedAt': serializer.toJson<DateTime>(addedAt),
+    };
+  }
+
+  LabMove copyWith({
+    String? labId,
+    String? moveId,
+    int? sequenceIndex,
+    DateTime? addedAt,
+  }) => LabMove(
+    labId: labId ?? this.labId,
+    moveId: moveId ?? this.moveId,
+    sequenceIndex: sequenceIndex ?? this.sequenceIndex,
+    addedAt: addedAt ?? this.addedAt,
+  );
+  LabMove copyWithCompanion(LabMovesCompanion data) {
+    return LabMove(
+      labId: data.labId.present ? data.labId.value : this.labId,
+      moveId: data.moveId.present ? data.moveId.value : this.moveId,
+      sequenceIndex: data.sequenceIndex.present
+          ? data.sequenceIndex.value
+          : this.sequenceIndex,
+      addedAt: data.addedAt.present ? data.addedAt.value : this.addedAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('LabMove(')
+          ..write('labId: $labId, ')
+          ..write('moveId: $moveId, ')
+          ..write('sequenceIndex: $sequenceIndex, ')
+          ..write('addedAt: $addedAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(labId, moveId, sequenceIndex, addedAt);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is LabMove &&
+          other.labId == this.labId &&
+          other.moveId == this.moveId &&
+          other.sequenceIndex == this.sequenceIndex &&
+          other.addedAt == this.addedAt);
+}
+
+class LabMovesCompanion extends UpdateCompanion<LabMove> {
+  final Value<String> labId;
+  final Value<String> moveId;
+  final Value<int> sequenceIndex;
+  final Value<DateTime> addedAt;
+  final Value<int> rowid;
+  const LabMovesCompanion({
+    this.labId = const Value.absent(),
+    this.moveId = const Value.absent(),
+    this.sequenceIndex = const Value.absent(),
+    this.addedAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  LabMovesCompanion.insert({
+    required String labId,
+    required String moveId,
+    required int sequenceIndex,
+    this.addedAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  }) : labId = Value(labId),
+       moveId = Value(moveId),
+       sequenceIndex = Value(sequenceIndex);
+  static Insertable<LabMove> custom({
+    Expression<String>? labId,
+    Expression<String>? moveId,
+    Expression<int>? sequenceIndex,
+    Expression<DateTime>? addedAt,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (labId != null) 'lab_id': labId,
+      if (moveId != null) 'move_id': moveId,
+      if (sequenceIndex != null) 'sequence_index': sequenceIndex,
+      if (addedAt != null) 'added_at': addedAt,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  LabMovesCompanion copyWith({
+    Value<String>? labId,
+    Value<String>? moveId,
+    Value<int>? sequenceIndex,
+    Value<DateTime>? addedAt,
+    Value<int>? rowid,
+  }) {
+    return LabMovesCompanion(
+      labId: labId ?? this.labId,
+      moveId: moveId ?? this.moveId,
+      sequenceIndex: sequenceIndex ?? this.sequenceIndex,
+      addedAt: addedAt ?? this.addedAt,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (labId.present) {
+      map['lab_id'] = Variable<String>(labId.value);
+    }
+    if (moveId.present) {
+      map['move_id'] = Variable<String>(moveId.value);
+    }
+    if (sequenceIndex.present) {
+      map['sequence_index'] = Variable<int>(sequenceIndex.value);
+    }
+    if (addedAt.present) {
+      map['added_at'] = Variable<DateTime>(addedAt.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('LabMovesCompanion(')
+          ..write('labId: $labId, ')
+          ..write('moveId: $moveId, ')
+          ..write('sequenceIndex: $sequenceIndex, ')
+          ..write('addedAt: $addedAt, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $LabEntriesTable extends LabEntries
+    with TableInfo<$LabEntriesTable, LabEntry> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $LabEntriesTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+    'id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _labIdMeta = const VerificationMeta('labId');
+  @override
+  late final GeneratedColumn<String> labId = GeneratedColumn<String>(
+    'lab_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES labs (id) ON DELETE CASCADE',
+    ),
+  );
+  static const VerificationMeta _contentMeta = const VerificationMeta(
+    'content',
+  );
+  @override
+  late final GeneratedColumn<String> content = GeneratedColumn<String>(
+    'content',
+    aliasedName,
+    false,
+    additionalChecks: GeneratedColumn.checkTextLength(minTextLength: 1),
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _videoPathMeta = const VerificationMeta(
+    'videoPath',
+  );
+  @override
+  late final GeneratedColumn<String> videoPath = GeneratedColumn<String>(
+    'video_path',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _createdAtMeta = const VerificationMeta(
+    'createdAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> createdAt = GeneratedColumn<DateTime>(
+    'created_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+    defaultValue: currentDateAndTime,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    labId,
+    content,
+    videoPath,
+    createdAt,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'lab_entries';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<LabEntry> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    } else if (isInserting) {
+      context.missing(_idMeta);
+    }
+    if (data.containsKey('lab_id')) {
+      context.handle(
+        _labIdMeta,
+        labId.isAcceptableOrUnknown(data['lab_id']!, _labIdMeta),
+      );
+    }
+    if (data.containsKey('content')) {
+      context.handle(
+        _contentMeta,
+        content.isAcceptableOrUnknown(data['content']!, _contentMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_contentMeta);
+    }
+    if (data.containsKey('video_path')) {
+      context.handle(
+        _videoPathMeta,
+        videoPath.isAcceptableOrUnknown(data['video_path']!, _videoPathMeta),
+      );
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(
+        _createdAtMeta,
+        createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  LabEntry map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return LabEntry(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}id'],
+      )!,
+      labId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}lab_id'],
+      ),
+      content: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}content'],
+      )!,
+      videoPath: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}video_path'],
+      ),
+      createdAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}created_at'],
+      )!,
+    );
+  }
+
+  @override
+  $LabEntriesTable createAlias(String alias) {
+    return $LabEntriesTable(attachedDatabase, alias);
+  }
+}
+
+class LabEntry extends DataClass implements Insertable<LabEntry> {
+  final String id;
+  final String? labId;
+  final String content;
+  final String? videoPath;
+  final DateTime createdAt;
+  const LabEntry({
+    required this.id,
+    this.labId,
+    required this.content,
+    this.videoPath,
+    required this.createdAt,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    if (!nullToAbsent || labId != null) {
+      map['lab_id'] = Variable<String>(labId);
+    }
+    map['content'] = Variable<String>(content);
+    if (!nullToAbsent || videoPath != null) {
+      map['video_path'] = Variable<String>(videoPath);
+    }
+    map['created_at'] = Variable<DateTime>(createdAt);
+    return map;
+  }
+
+  LabEntriesCompanion toCompanion(bool nullToAbsent) {
+    return LabEntriesCompanion(
+      id: Value(id),
+      labId: labId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(labId),
+      content: Value(content),
+      videoPath: videoPath == null && nullToAbsent
+          ? const Value.absent()
+          : Value(videoPath),
+      createdAt: Value(createdAt),
+    );
+  }
+
+  factory LabEntry.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return LabEntry(
+      id: serializer.fromJson<String>(json['id']),
+      labId: serializer.fromJson<String?>(json['labId']),
+      content: serializer.fromJson<String>(json['content']),
+      videoPath: serializer.fromJson<String?>(json['videoPath']),
+      createdAt: serializer.fromJson<DateTime>(json['createdAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'labId': serializer.toJson<String?>(labId),
+      'content': serializer.toJson<String>(content),
+      'videoPath': serializer.toJson<String?>(videoPath),
+      'createdAt': serializer.toJson<DateTime>(createdAt),
+    };
+  }
+
+  LabEntry copyWith({
+    String? id,
+    Value<String?> labId = const Value.absent(),
+    String? content,
+    Value<String?> videoPath = const Value.absent(),
+    DateTime? createdAt,
+  }) => LabEntry(
+    id: id ?? this.id,
+    labId: labId.present ? labId.value : this.labId,
+    content: content ?? this.content,
+    videoPath: videoPath.present ? videoPath.value : this.videoPath,
+    createdAt: createdAt ?? this.createdAt,
+  );
+  LabEntry copyWithCompanion(LabEntriesCompanion data) {
+    return LabEntry(
+      id: data.id.present ? data.id.value : this.id,
+      labId: data.labId.present ? data.labId.value : this.labId,
+      content: data.content.present ? data.content.value : this.content,
+      videoPath: data.videoPath.present ? data.videoPath.value : this.videoPath,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('LabEntry(')
+          ..write('id: $id, ')
+          ..write('labId: $labId, ')
+          ..write('content: $content, ')
+          ..write('videoPath: $videoPath, ')
+          ..write('createdAt: $createdAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(id, labId, content, videoPath, createdAt);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is LabEntry &&
+          other.id == this.id &&
+          other.labId == this.labId &&
+          other.content == this.content &&
+          other.videoPath == this.videoPath &&
+          other.createdAt == this.createdAt);
+}
+
+class LabEntriesCompanion extends UpdateCompanion<LabEntry> {
+  final Value<String> id;
+  final Value<String?> labId;
+  final Value<String> content;
+  final Value<String?> videoPath;
+  final Value<DateTime> createdAt;
+  final Value<int> rowid;
+  const LabEntriesCompanion({
+    this.id = const Value.absent(),
+    this.labId = const Value.absent(),
+    this.content = const Value.absent(),
+    this.videoPath = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  LabEntriesCompanion.insert({
+    required String id,
+    this.labId = const Value.absent(),
+    required String content,
+    this.videoPath = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  }) : id = Value(id),
+       content = Value(content);
+  static Insertable<LabEntry> custom({
+    Expression<String>? id,
+    Expression<String>? labId,
+    Expression<String>? content,
+    Expression<String>? videoPath,
+    Expression<DateTime>? createdAt,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (labId != null) 'lab_id': labId,
+      if (content != null) 'content': content,
+      if (videoPath != null) 'video_path': videoPath,
+      if (createdAt != null) 'created_at': createdAt,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  LabEntriesCompanion copyWith({
+    Value<String>? id,
+    Value<String?>? labId,
+    Value<String>? content,
+    Value<String?>? videoPath,
+    Value<DateTime>? createdAt,
+    Value<int>? rowid,
+  }) {
+    return LabEntriesCompanion(
+      id: id ?? this.id,
+      labId: labId ?? this.labId,
+      content: content ?? this.content,
+      videoPath: videoPath ?? this.videoPath,
+      createdAt: createdAt ?? this.createdAt,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (labId.present) {
+      map['lab_id'] = Variable<String>(labId.value);
+    }
+    if (content.present) {
+      map['content'] = Variable<String>(content.value);
+    }
+    if (videoPath.present) {
+      map['video_path'] = Variable<String>(videoPath.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<DateTime>(createdAt.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('LabEntriesCompanion(')
+          ..write('id: $id, ')
+          ..write('labId: $labId, ')
+          ..write('content: $content, ')
+          ..write('videoPath: $videoPath, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $AchievementsTable extends Achievements
+    with TableInfo<$AchievementsTable, Achievement> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $AchievementsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+    'id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _moveIdMeta = const VerificationMeta('moveId');
+  @override
+  late final GeneratedColumn<String> moveId = GeneratedColumn<String>(
+    'move_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES moves (id) ON DELETE CASCADE',
+    ),
+  );
+  static const VerificationMeta _tierMeta = const VerificationMeta('tier');
+  @override
+  late final GeneratedColumn<String> tier = GeneratedColumn<String>(
+    'tier',
+    aliasedName,
+    false,
+    additionalChecks: GeneratedColumn.checkTextLength(minTextLength: 1),
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _unlockedAtMeta = const VerificationMeta(
+    'unlockedAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> unlockedAt = GeneratedColumn<DateTime>(
+    'unlocked_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _createdAtMeta = const VerificationMeta(
+    'createdAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> createdAt = GeneratedColumn<DateTime>(
+    'created_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+    defaultValue: currentDateAndTime,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    moveId,
+    tier,
+    unlockedAt,
+    createdAt,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'achievements';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<Achievement> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    } else if (isInserting) {
+      context.missing(_idMeta);
+    }
+    if (data.containsKey('move_id')) {
+      context.handle(
+        _moveIdMeta,
+        moveId.isAcceptableOrUnknown(data['move_id']!, _moveIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_moveIdMeta);
+    }
+    if (data.containsKey('tier')) {
+      context.handle(
+        _tierMeta,
+        tier.isAcceptableOrUnknown(data['tier']!, _tierMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_tierMeta);
+    }
+    if (data.containsKey('unlocked_at')) {
+      context.handle(
+        _unlockedAtMeta,
+        unlockedAt.isAcceptableOrUnknown(data['unlocked_at']!, _unlockedAtMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_unlockedAtMeta);
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(
+        _createdAtMeta,
+        createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  Achievement map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return Achievement(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}id'],
+      )!,
+      moveId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}move_id'],
+      )!,
+      tier: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}tier'],
+      )!,
+      unlockedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}unlocked_at'],
+      )!,
+      createdAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}created_at'],
+      )!,
+    );
+  }
+
+  @override
+  $AchievementsTable createAlias(String alias) {
+    return $AchievementsTable(attachedDatabase, alias);
+  }
+}
+
+class Achievement extends DataClass implements Insertable<Achievement> {
+  final String id;
+  final String moveId;
+
+  /// 'seed', 'sprouting', 'growing', or 'mastered'
+  final String tier;
+  final DateTime unlockedAt;
+  final DateTime createdAt;
+  const Achievement({
+    required this.id,
+    required this.moveId,
+    required this.tier,
+    required this.unlockedAt,
+    required this.createdAt,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    map['move_id'] = Variable<String>(moveId);
+    map['tier'] = Variable<String>(tier);
+    map['unlocked_at'] = Variable<DateTime>(unlockedAt);
+    map['created_at'] = Variable<DateTime>(createdAt);
+    return map;
+  }
+
+  AchievementsCompanion toCompanion(bool nullToAbsent) {
+    return AchievementsCompanion(
+      id: Value(id),
+      moveId: Value(moveId),
+      tier: Value(tier),
+      unlockedAt: Value(unlockedAt),
+      createdAt: Value(createdAt),
+    );
+  }
+
+  factory Achievement.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return Achievement(
+      id: serializer.fromJson<String>(json['id']),
+      moveId: serializer.fromJson<String>(json['moveId']),
+      tier: serializer.fromJson<String>(json['tier']),
+      unlockedAt: serializer.fromJson<DateTime>(json['unlockedAt']),
+      createdAt: serializer.fromJson<DateTime>(json['createdAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'moveId': serializer.toJson<String>(moveId),
+      'tier': serializer.toJson<String>(tier),
+      'unlockedAt': serializer.toJson<DateTime>(unlockedAt),
+      'createdAt': serializer.toJson<DateTime>(createdAt),
+    };
+  }
+
+  Achievement copyWith({
+    String? id,
+    String? moveId,
+    String? tier,
+    DateTime? unlockedAt,
+    DateTime? createdAt,
+  }) => Achievement(
+    id: id ?? this.id,
+    moveId: moveId ?? this.moveId,
+    tier: tier ?? this.tier,
+    unlockedAt: unlockedAt ?? this.unlockedAt,
+    createdAt: createdAt ?? this.createdAt,
+  );
+  Achievement copyWithCompanion(AchievementsCompanion data) {
+    return Achievement(
+      id: data.id.present ? data.id.value : this.id,
+      moveId: data.moveId.present ? data.moveId.value : this.moveId,
+      tier: data.tier.present ? data.tier.value : this.tier,
+      unlockedAt: data.unlockedAt.present
+          ? data.unlockedAt.value
+          : this.unlockedAt,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('Achievement(')
+          ..write('id: $id, ')
+          ..write('moveId: $moveId, ')
+          ..write('tier: $tier, ')
+          ..write('unlockedAt: $unlockedAt, ')
+          ..write('createdAt: $createdAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(id, moveId, tier, unlockedAt, createdAt);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is Achievement &&
+          other.id == this.id &&
+          other.moveId == this.moveId &&
+          other.tier == this.tier &&
+          other.unlockedAt == this.unlockedAt &&
+          other.createdAt == this.createdAt);
+}
+
+class AchievementsCompanion extends UpdateCompanion<Achievement> {
+  final Value<String> id;
+  final Value<String> moveId;
+  final Value<String> tier;
+  final Value<DateTime> unlockedAt;
+  final Value<DateTime> createdAt;
+  final Value<int> rowid;
+  const AchievementsCompanion({
+    this.id = const Value.absent(),
+    this.moveId = const Value.absent(),
+    this.tier = const Value.absent(),
+    this.unlockedAt = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  AchievementsCompanion.insert({
+    required String id,
+    required String moveId,
+    required String tier,
+    required DateTime unlockedAt,
+    this.createdAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  }) : id = Value(id),
+       moveId = Value(moveId),
+       tier = Value(tier),
+       unlockedAt = Value(unlockedAt);
+  static Insertable<Achievement> custom({
+    Expression<String>? id,
+    Expression<String>? moveId,
+    Expression<String>? tier,
+    Expression<DateTime>? unlockedAt,
+    Expression<DateTime>? createdAt,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (moveId != null) 'move_id': moveId,
+      if (tier != null) 'tier': tier,
+      if (unlockedAt != null) 'unlocked_at': unlockedAt,
+      if (createdAt != null) 'created_at': createdAt,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  AchievementsCompanion copyWith({
+    Value<String>? id,
+    Value<String>? moveId,
+    Value<String>? tier,
+    Value<DateTime>? unlockedAt,
+    Value<DateTime>? createdAt,
+    Value<int>? rowid,
+  }) {
+    return AchievementsCompanion(
+      id: id ?? this.id,
+      moveId: moveId ?? this.moveId,
+      tier: tier ?? this.tier,
+      unlockedAt: unlockedAt ?? this.unlockedAt,
+      createdAt: createdAt ?? this.createdAt,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (moveId.present) {
+      map['move_id'] = Variable<String>(moveId.value);
+    }
+    if (tier.present) {
+      map['tier'] = Variable<String>(tier.value);
+    }
+    if (unlockedAt.present) {
+      map['unlocked_at'] = Variable<DateTime>(unlockedAt.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<DateTime>(createdAt.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('AchievementsCompanion(')
+          ..write('id: $id, ')
+          ..write('moveId: $moveId, ')
+          ..write('tier: $tier, ')
+          ..write('unlockedAt: $unlockedAt, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $AuraLinksTable extends AuraLinks
+    with TableInfo<$AuraLinksTable, AuraLink> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $AuraLinksTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _fromMoveIdMeta = const VerificationMeta(
+    'fromMoveId',
+  );
+  @override
+  late final GeneratedColumn<String> fromMoveId = GeneratedColumn<String>(
+    'from_move_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES moves (id) ON DELETE CASCADE',
+    ),
+  );
+  static const VerificationMeta _toMoveIdMeta = const VerificationMeta(
+    'toMoveId',
+  );
+  @override
+  late final GeneratedColumn<String> toMoveId = GeneratedColumn<String>(
+    'to_move_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES moves (id) ON DELETE CASCADE',
+    ),
+  );
+  static const VerificationMeta _affinityMeta = const VerificationMeta(
+    'affinity',
+  );
+  @override
+  late final GeneratedColumn<String> affinity = GeneratedColumn<String>(
+    'affinity',
+    aliasedName,
+    false,
+    additionalChecks: GeneratedColumn.checkTextLength(minTextLength: 1),
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _notesMeta = const VerificationMeta('notes');
+  @override
+  late final GeneratedColumn<String> notes = GeneratedColumn<String>(
+    'notes',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _createdAtMeta = const VerificationMeta(
+    'createdAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> createdAt = GeneratedColumn<DateTime>(
+    'created_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+    defaultValue: currentDateAndTime,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    fromMoveId,
+    toMoveId,
+    affinity,
+    notes,
+    createdAt,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'aura_links';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<AuraLink> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('from_move_id')) {
+      context.handle(
+        _fromMoveIdMeta,
+        fromMoveId.isAcceptableOrUnknown(
+          data['from_move_id']!,
+          _fromMoveIdMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_fromMoveIdMeta);
+    }
+    if (data.containsKey('to_move_id')) {
+      context.handle(
+        _toMoveIdMeta,
+        toMoveId.isAcceptableOrUnknown(data['to_move_id']!, _toMoveIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_toMoveIdMeta);
+    }
+    if (data.containsKey('affinity')) {
+      context.handle(
+        _affinityMeta,
+        affinity.isAcceptableOrUnknown(data['affinity']!, _affinityMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_affinityMeta);
+    }
+    if (data.containsKey('notes')) {
+      context.handle(
+        _notesMeta,
+        notes.isAcceptableOrUnknown(data['notes']!, _notesMeta),
+      );
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(
+        _createdAtMeta,
+        createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {fromMoveId, toMoveId};
+  @override
+  AuraLink map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return AuraLink(
+      fromMoveId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}from_move_id'],
+      )!,
+      toMoveId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}to_move_id'],
+      )!,
+      affinity: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}affinity'],
+      )!,
+      notes: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}notes'],
+      ),
+      createdAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}created_at'],
+      )!,
+    );
+  }
+
+  @override
+  $AuraLinksTable createAlias(String alias) {
+    return $AuraLinksTable(attachedDatabase, alias);
+  }
+}
+
+class AuraLink extends DataClass implements Insertable<AuraLink> {
+  final String fromMoveId;
+  final String toMoveId;
+
+  /// 'natural', 'possible', or 'stretch'
+  final String affinity;
+  final String? notes;
+  final DateTime createdAt;
+  const AuraLink({
+    required this.fromMoveId,
+    required this.toMoveId,
+    required this.affinity,
+    this.notes,
+    required this.createdAt,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['from_move_id'] = Variable<String>(fromMoveId);
+    map['to_move_id'] = Variable<String>(toMoveId);
+    map['affinity'] = Variable<String>(affinity);
+    if (!nullToAbsent || notes != null) {
+      map['notes'] = Variable<String>(notes);
+    }
+    map['created_at'] = Variable<DateTime>(createdAt);
+    return map;
+  }
+
+  AuraLinksCompanion toCompanion(bool nullToAbsent) {
+    return AuraLinksCompanion(
+      fromMoveId: Value(fromMoveId),
+      toMoveId: Value(toMoveId),
+      affinity: Value(affinity),
+      notes: notes == null && nullToAbsent
+          ? const Value.absent()
+          : Value(notes),
+      createdAt: Value(createdAt),
+    );
+  }
+
+  factory AuraLink.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return AuraLink(
+      fromMoveId: serializer.fromJson<String>(json['fromMoveId']),
+      toMoveId: serializer.fromJson<String>(json['toMoveId']),
+      affinity: serializer.fromJson<String>(json['affinity']),
+      notes: serializer.fromJson<String?>(json['notes']),
+      createdAt: serializer.fromJson<DateTime>(json['createdAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'fromMoveId': serializer.toJson<String>(fromMoveId),
+      'toMoveId': serializer.toJson<String>(toMoveId),
+      'affinity': serializer.toJson<String>(affinity),
+      'notes': serializer.toJson<String?>(notes),
+      'createdAt': serializer.toJson<DateTime>(createdAt),
+    };
+  }
+
+  AuraLink copyWith({
+    String? fromMoveId,
+    String? toMoveId,
+    String? affinity,
+    Value<String?> notes = const Value.absent(),
+    DateTime? createdAt,
+  }) => AuraLink(
+    fromMoveId: fromMoveId ?? this.fromMoveId,
+    toMoveId: toMoveId ?? this.toMoveId,
+    affinity: affinity ?? this.affinity,
+    notes: notes.present ? notes.value : this.notes,
+    createdAt: createdAt ?? this.createdAt,
+  );
+  AuraLink copyWithCompanion(AuraLinksCompanion data) {
+    return AuraLink(
+      fromMoveId: data.fromMoveId.present
+          ? data.fromMoveId.value
+          : this.fromMoveId,
+      toMoveId: data.toMoveId.present ? data.toMoveId.value : this.toMoveId,
+      affinity: data.affinity.present ? data.affinity.value : this.affinity,
+      notes: data.notes.present ? data.notes.value : this.notes,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('AuraLink(')
+          ..write('fromMoveId: $fromMoveId, ')
+          ..write('toMoveId: $toMoveId, ')
+          ..write('affinity: $affinity, ')
+          ..write('notes: $notes, ')
+          ..write('createdAt: $createdAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode =>
+      Object.hash(fromMoveId, toMoveId, affinity, notes, createdAt);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is AuraLink &&
+          other.fromMoveId == this.fromMoveId &&
+          other.toMoveId == this.toMoveId &&
+          other.affinity == this.affinity &&
+          other.notes == this.notes &&
+          other.createdAt == this.createdAt);
+}
+
+class AuraLinksCompanion extends UpdateCompanion<AuraLink> {
+  final Value<String> fromMoveId;
+  final Value<String> toMoveId;
+  final Value<String> affinity;
+  final Value<String?> notes;
+  final Value<DateTime> createdAt;
+  final Value<int> rowid;
+  const AuraLinksCompanion({
+    this.fromMoveId = const Value.absent(),
+    this.toMoveId = const Value.absent(),
+    this.affinity = const Value.absent(),
+    this.notes = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  AuraLinksCompanion.insert({
+    required String fromMoveId,
+    required String toMoveId,
+    required String affinity,
+    this.notes = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  }) : fromMoveId = Value(fromMoveId),
+       toMoveId = Value(toMoveId),
+       affinity = Value(affinity);
+  static Insertable<AuraLink> custom({
+    Expression<String>? fromMoveId,
+    Expression<String>? toMoveId,
+    Expression<String>? affinity,
+    Expression<String>? notes,
+    Expression<DateTime>? createdAt,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (fromMoveId != null) 'from_move_id': fromMoveId,
+      if (toMoveId != null) 'to_move_id': toMoveId,
+      if (affinity != null) 'affinity': affinity,
+      if (notes != null) 'notes': notes,
+      if (createdAt != null) 'created_at': createdAt,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  AuraLinksCompanion copyWith({
+    Value<String>? fromMoveId,
+    Value<String>? toMoveId,
+    Value<String>? affinity,
+    Value<String?>? notes,
+    Value<DateTime>? createdAt,
+    Value<int>? rowid,
+  }) {
+    return AuraLinksCompanion(
+      fromMoveId: fromMoveId ?? this.fromMoveId,
+      toMoveId: toMoveId ?? this.toMoveId,
+      affinity: affinity ?? this.affinity,
+      notes: notes ?? this.notes,
+      createdAt: createdAt ?? this.createdAt,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (fromMoveId.present) {
+      map['from_move_id'] = Variable<String>(fromMoveId.value);
+    }
+    if (toMoveId.present) {
+      map['to_move_id'] = Variable<String>(toMoveId.value);
+    }
+    if (affinity.present) {
+      map['affinity'] = Variable<String>(affinity.value);
+    }
+    if (notes.present) {
+      map['notes'] = Variable<String>(notes.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<DateTime>(createdAt.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('AuraLinksCompanion(')
+          ..write('fromMoveId: $fromMoveId, ')
+          ..write('toMoveId: $toMoveId, ')
+          ..write('affinity: $affinity, ')
+          ..write('notes: $notes, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $AuraPresetsTable extends AuraPresets
+    with TableInfo<$AuraPresetsTable, AuraPreset> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $AuraPresetsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+    'id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _nameMeta = const VerificationMeta('name');
+  @override
+  late final GeneratedColumn<String> name = GeneratedColumn<String>(
+    'name',
+    aliasedName,
+    false,
+    additionalChecks: GeneratedColumn.checkTextLength(minTextLength: 1),
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _isDefaultMeta = const VerificationMeta(
+    'isDefault',
+  );
+  @override
+  late final GeneratedColumn<int> isDefault = GeneratedColumn<int>(
+    'is_default',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0),
+  );
+  static const VerificationMeta _createdAtMeta = const VerificationMeta(
+    'createdAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> createdAt = GeneratedColumn<DateTime>(
+    'created_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+    defaultValue: currentDateAndTime,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [id, name, isDefault, createdAt];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'aura_presets';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<AuraPreset> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    } else if (isInserting) {
+      context.missing(_idMeta);
+    }
+    if (data.containsKey('name')) {
+      context.handle(
+        _nameMeta,
+        name.isAcceptableOrUnknown(data['name']!, _nameMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_nameMeta);
+    }
+    if (data.containsKey('is_default')) {
+      context.handle(
+        _isDefaultMeta,
+        isDefault.isAcceptableOrUnknown(data['is_default']!, _isDefaultMeta),
+      );
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(
+        _createdAtMeta,
+        createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  AuraPreset map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return AuraPreset(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}id'],
+      )!,
+      name: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}name'],
+      )!,
+      isDefault: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}is_default'],
+      )!,
+      createdAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}created_at'],
+      )!,
+    );
+  }
+
+  @override
+  $AuraPresetsTable createAlias(String alias) {
+    return $AuraPresetsTable(attachedDatabase, alias);
+  }
+}
+
+class AuraPreset extends DataClass implements Insertable<AuraPreset> {
+  final String id;
+  final String name;
+
+  /// 1 = active aura preset, 0 = inactive
+  final int isDefault;
+  final DateTime createdAt;
+  const AuraPreset({
+    required this.id,
+    required this.name,
+    required this.isDefault,
+    required this.createdAt,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    map['name'] = Variable<String>(name);
+    map['is_default'] = Variable<int>(isDefault);
+    map['created_at'] = Variable<DateTime>(createdAt);
+    return map;
+  }
+
+  AuraPresetsCompanion toCompanion(bool nullToAbsent) {
+    return AuraPresetsCompanion(
+      id: Value(id),
+      name: Value(name),
+      isDefault: Value(isDefault),
+      createdAt: Value(createdAt),
+    );
+  }
+
+  factory AuraPreset.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return AuraPreset(
+      id: serializer.fromJson<String>(json['id']),
+      name: serializer.fromJson<String>(json['name']),
+      isDefault: serializer.fromJson<int>(json['isDefault']),
+      createdAt: serializer.fromJson<DateTime>(json['createdAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'name': serializer.toJson<String>(name),
+      'isDefault': serializer.toJson<int>(isDefault),
+      'createdAt': serializer.toJson<DateTime>(createdAt),
+    };
+  }
+
+  AuraPreset copyWith({
+    String? id,
+    String? name,
+    int? isDefault,
+    DateTime? createdAt,
+  }) => AuraPreset(
+    id: id ?? this.id,
+    name: name ?? this.name,
+    isDefault: isDefault ?? this.isDefault,
+    createdAt: createdAt ?? this.createdAt,
+  );
+  AuraPreset copyWithCompanion(AuraPresetsCompanion data) {
+    return AuraPreset(
+      id: data.id.present ? data.id.value : this.id,
+      name: data.name.present ? data.name.value : this.name,
+      isDefault: data.isDefault.present ? data.isDefault.value : this.isDefault,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('AuraPreset(')
+          ..write('id: $id, ')
+          ..write('name: $name, ')
+          ..write('isDefault: $isDefault, ')
+          ..write('createdAt: $createdAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(id, name, isDefault, createdAt);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is AuraPreset &&
+          other.id == this.id &&
+          other.name == this.name &&
+          other.isDefault == this.isDefault &&
+          other.createdAt == this.createdAt);
+}
+
+class AuraPresetsCompanion extends UpdateCompanion<AuraPreset> {
+  final Value<String> id;
+  final Value<String> name;
+  final Value<int> isDefault;
+  final Value<DateTime> createdAt;
+  final Value<int> rowid;
+  const AuraPresetsCompanion({
+    this.id = const Value.absent(),
+    this.name = const Value.absent(),
+    this.isDefault = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  AuraPresetsCompanion.insert({
+    required String id,
+    required String name,
+    this.isDefault = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  }) : id = Value(id),
+       name = Value(name);
+  static Insertable<AuraPreset> custom({
+    Expression<String>? id,
+    Expression<String>? name,
+    Expression<int>? isDefault,
+    Expression<DateTime>? createdAt,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (name != null) 'name': name,
+      if (isDefault != null) 'is_default': isDefault,
+      if (createdAt != null) 'created_at': createdAt,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  AuraPresetsCompanion copyWith({
+    Value<String>? id,
+    Value<String>? name,
+    Value<int>? isDefault,
+    Value<DateTime>? createdAt,
+    Value<int>? rowid,
+  }) {
+    return AuraPresetsCompanion(
+      id: id ?? this.id,
+      name: name ?? this.name,
+      isDefault: isDefault ?? this.isDefault,
+      createdAt: createdAt ?? this.createdAt,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (name.present) {
+      map['name'] = Variable<String>(name.value);
+    }
+    if (isDefault.present) {
+      map['is_default'] = Variable<int>(isDefault.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<DateTime>(createdAt.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('AuraPresetsCompanion(')
+          ..write('id: $id, ')
+          ..write('name: $name, ')
+          ..write('isDefault: $isDefault, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$AppDatabase extends GeneratedDatabase {
   _$AppDatabase(QueryExecutor e) : super(e);
   $AppDatabaseManager get managers => $AppDatabaseManager(this);
@@ -7388,6 +9982,13 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   late final $AssetCopiesTable assetCopies = $AssetCopiesTable(this);
   late final $SyncProvidersTable syncProviders = $SyncProvidersTable(this);
   late final $SyncOperationsTable syncOperations = $SyncOperationsTable(this);
+  late final $LabsTable labs = $LabsTable(this);
+  late final $MilestonesTable milestones = $MilestonesTable(this);
+  late final $LabMovesTable labMoves = $LabMovesTable(this);
+  late final $LabEntriesTable labEntries = $LabEntriesTable(this);
+  late final $AchievementsTable achievements = $AchievementsTable(this);
+  late final $AuraLinksTable auraLinks = $AuraLinksTable(this);
+  late final $AuraPresetsTable auraPresets = $AuraPresetsTable(this);
   late final MovesDao movesDao = MovesDao(this as AppDatabase);
   late final CombosDao combosDao = CombosDao(this as AppDatabase);
   late final ReviewsDao reviewsDao = ReviewsDao(this as AppDatabase);
@@ -7406,6 +10007,13 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   late final SyncProvidersDao syncProvidersDao = SyncProvidersDao(
     this as AppDatabase,
   );
+  late final LabsDao labsDao = LabsDao(this as AppDatabase);
+  late final MilestonesDao milestonesDao = MilestonesDao(this as AppDatabase);
+  late final LabEntriesDao labEntriesDao = LabEntriesDao(this as AppDatabase);
+  late final AchievementsDao achievementsDao = AchievementsDao(
+    this as AppDatabase,
+  );
+  late final AuraDao auraDao = AuraDao(this as AppDatabase);
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
@@ -7424,6 +10032,13 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     assetCopies,
     syncProviders,
     syncOperations,
+    labs,
+    milestones,
+    labMoves,
+    labEntries,
+    achievements,
+    auraLinks,
+    auraPresets,
   ];
   @override
   StreamQueryUpdateRules get streamUpdateRules => const StreamQueryUpdateRules([
@@ -7468,6 +10083,55 @@ abstract class _$AppDatabase extends GeneratedDatabase {
         limitUpdateKind: UpdateKind.delete,
       ),
       result: [TableUpdate('deck_moves', kind: UpdateKind.delete)],
+    ),
+    WritePropagation(
+      on: TableUpdateQuery.onTableName(
+        'labs',
+        limitUpdateKind: UpdateKind.delete,
+      ),
+      result: [TableUpdate('milestones', kind: UpdateKind.delete)],
+    ),
+    WritePropagation(
+      on: TableUpdateQuery.onTableName(
+        'labs',
+        limitUpdateKind: UpdateKind.delete,
+      ),
+      result: [TableUpdate('lab_moves', kind: UpdateKind.delete)],
+    ),
+    WritePropagation(
+      on: TableUpdateQuery.onTableName(
+        'moves',
+        limitUpdateKind: UpdateKind.delete,
+      ),
+      result: [TableUpdate('lab_moves', kind: UpdateKind.delete)],
+    ),
+    WritePropagation(
+      on: TableUpdateQuery.onTableName(
+        'labs',
+        limitUpdateKind: UpdateKind.delete,
+      ),
+      result: [TableUpdate('lab_entries', kind: UpdateKind.delete)],
+    ),
+    WritePropagation(
+      on: TableUpdateQuery.onTableName(
+        'moves',
+        limitUpdateKind: UpdateKind.delete,
+      ),
+      result: [TableUpdate('achievements', kind: UpdateKind.delete)],
+    ),
+    WritePropagation(
+      on: TableUpdateQuery.onTableName(
+        'moves',
+        limitUpdateKind: UpdateKind.delete,
+      ),
+      result: [TableUpdate('aura_links', kind: UpdateKind.delete)],
+    ),
+    WritePropagation(
+      on: TableUpdateQuery.onTableName(
+        'moves',
+        limitUpdateKind: UpdateKind.delete,
+      ),
+      result: [TableUpdate('aura_links', kind: UpdateKind.delete)],
     ),
   ]);
 }
@@ -7553,6 +10217,79 @@ final class $$MovesTableReferences
     ).filter((f) => f.moveId.id.sqlEquals($_itemColumn<String>('id')!));
 
     final cache = $_typedResult.readTableOrNull(_deckMovesRefsTable($_db));
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
+
+  static MultiTypedResultKey<$LabMovesTable, List<LabMove>> _labMovesRefsTable(
+    _$AppDatabase db,
+  ) => MultiTypedResultKey.fromTable(
+    db.labMoves,
+    aliasName: $_aliasNameGenerator(db.moves.id, db.labMoves.moveId),
+  );
+
+  $$LabMovesTableProcessedTableManager get labMovesRefs {
+    final manager = $$LabMovesTableTableManager(
+      $_db,
+      $_db.labMoves,
+    ).filter((f) => f.moveId.id.sqlEquals($_itemColumn<String>('id')!));
+
+    final cache = $_typedResult.readTableOrNull(_labMovesRefsTable($_db));
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
+
+  static MultiTypedResultKey<$AchievementsTable, List<Achievement>>
+  _achievementsRefsTable(_$AppDatabase db) => MultiTypedResultKey.fromTable(
+    db.achievements,
+    aliasName: $_aliasNameGenerator(db.moves.id, db.achievements.moveId),
+  );
+
+  $$AchievementsTableProcessedTableManager get achievementsRefs {
+    final manager = $$AchievementsTableTableManager(
+      $_db,
+      $_db.achievements,
+    ).filter((f) => f.moveId.id.sqlEquals($_itemColumn<String>('id')!));
+
+    final cache = $_typedResult.readTableOrNull(_achievementsRefsTable($_db));
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
+
+  static MultiTypedResultKey<$AuraLinksTable, List<AuraLink>>
+  _auraLinksFromRefsTable(_$AppDatabase db) => MultiTypedResultKey.fromTable(
+    db.auraLinks,
+    aliasName: $_aliasNameGenerator(db.moves.id, db.auraLinks.fromMoveId),
+  );
+
+  $$AuraLinksTableProcessedTableManager get auraLinksFromRefs {
+    final manager = $$AuraLinksTableTableManager(
+      $_db,
+      $_db.auraLinks,
+    ).filter((f) => f.fromMoveId.id.sqlEquals($_itemColumn<String>('id')!));
+
+    final cache = $_typedResult.readTableOrNull(_auraLinksFromRefsTable($_db));
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
+
+  static MultiTypedResultKey<$AuraLinksTable, List<AuraLink>>
+  _auraLinksToRefsTable(_$AppDatabase db) => MultiTypedResultKey.fromTable(
+    db.auraLinks,
+    aliasName: $_aliasNameGenerator(db.moves.id, db.auraLinks.toMoveId),
+  );
+
+  $$AuraLinksTableProcessedTableManager get auraLinksToRefs {
+    final manager = $$AuraLinksTableTableManager(
+      $_db,
+      $_db.auraLinks,
+    ).filter((f) => f.toMoveId.id.sqlEquals($_itemColumn<String>('id')!));
+
+    final cache = $_typedResult.readTableOrNull(_auraLinksToRefsTable($_db));
     return ProcessedTableManager(
       manager.$state.copyWith(prefetchedData: cache),
     );
@@ -7678,6 +10415,106 @@ class $$MovesTableFilterComposer extends Composer<_$AppDatabase, $MovesTable> {
           }) => $$DeckMovesTableFilterComposer(
             $db: $db,
             $table: $db.deckMoves,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+
+  Expression<bool> labMovesRefs(
+    Expression<bool> Function($$LabMovesTableFilterComposer f) f,
+  ) {
+    final $$LabMovesTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.labMoves,
+      getReferencedColumn: (t) => t.moveId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$LabMovesTableFilterComposer(
+            $db: $db,
+            $table: $db.labMoves,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+
+  Expression<bool> achievementsRefs(
+    Expression<bool> Function($$AchievementsTableFilterComposer f) f,
+  ) {
+    final $$AchievementsTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.achievements,
+      getReferencedColumn: (t) => t.moveId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$AchievementsTableFilterComposer(
+            $db: $db,
+            $table: $db.achievements,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+
+  Expression<bool> auraLinksFromRefs(
+    Expression<bool> Function($$AuraLinksTableFilterComposer f) f,
+  ) {
+    final $$AuraLinksTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.auraLinks,
+      getReferencedColumn: (t) => t.fromMoveId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$AuraLinksTableFilterComposer(
+            $db: $db,
+            $table: $db.auraLinks,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+
+  Expression<bool> auraLinksToRefs(
+    Expression<bool> Function($$AuraLinksTableFilterComposer f) f,
+  ) {
+    final $$AuraLinksTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.auraLinks,
+      getReferencedColumn: (t) => t.toMoveId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$AuraLinksTableFilterComposer(
+            $db: $db,
+            $table: $db.auraLinks,
             $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
             joinBuilder: joinBuilder,
             $removeJoinBuilderFromRootComposer:
@@ -7859,6 +10696,106 @@ class $$MovesTableAnnotationComposer
     );
     return f(composer);
   }
+
+  Expression<T> labMovesRefs<T extends Object>(
+    Expression<T> Function($$LabMovesTableAnnotationComposer a) f,
+  ) {
+    final $$LabMovesTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.labMoves,
+      getReferencedColumn: (t) => t.moveId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$LabMovesTableAnnotationComposer(
+            $db: $db,
+            $table: $db.labMoves,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+
+  Expression<T> achievementsRefs<T extends Object>(
+    Expression<T> Function($$AchievementsTableAnnotationComposer a) f,
+  ) {
+    final $$AchievementsTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.achievements,
+      getReferencedColumn: (t) => t.moveId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$AchievementsTableAnnotationComposer(
+            $db: $db,
+            $table: $db.achievements,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+
+  Expression<T> auraLinksFromRefs<T extends Object>(
+    Expression<T> Function($$AuraLinksTableAnnotationComposer a) f,
+  ) {
+    final $$AuraLinksTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.auraLinks,
+      getReferencedColumn: (t) => t.fromMoveId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$AuraLinksTableAnnotationComposer(
+            $db: $db,
+            $table: $db.auraLinks,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+
+  Expression<T> auraLinksToRefs<T extends Object>(
+    Expression<T> Function($$AuraLinksTableAnnotationComposer a) f,
+  ) {
+    final $$AuraLinksTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.auraLinks,
+      getReferencedColumn: (t) => t.toMoveId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$AuraLinksTableAnnotationComposer(
+            $db: $db,
+            $table: $db.auraLinks,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
 }
 
 class $$MovesTableTableManager
@@ -7878,6 +10815,10 @@ class $$MovesTableTableManager
             bool comboMovesRefs,
             bool reviewsRefs,
             bool deckMovesRefs,
+            bool labMovesRefs,
+            bool achievementsRefs,
+            bool auraLinksFromRefs,
+            bool auraLinksToRefs,
           })
         > {
   $$MovesTableTableManager(_$AppDatabase db, $MovesTable table)
@@ -7950,6 +10891,10 @@ class $$MovesTableTableManager
                 comboMovesRefs = false,
                 reviewsRefs = false,
                 deckMovesRefs = false,
+                labMovesRefs = false,
+                achievementsRefs = false,
+                auraLinksFromRefs = false,
+                auraLinksToRefs = false,
               }) {
                 return PrefetchHooks(
                   db: db,
@@ -7957,6 +10902,10 @@ class $$MovesTableTableManager
                     if (comboMovesRefs) db.comboMoves,
                     if (reviewsRefs) db.reviews,
                     if (deckMovesRefs) db.deckMoves,
+                    if (labMovesRefs) db.labMoves,
+                    if (achievementsRefs) db.achievements,
+                    if (auraLinksFromRefs) db.auraLinks,
+                    if (auraLinksToRefs) db.auraLinks,
                   ],
                   addJoins: null,
                   getPrefetchedDataCallback: (items) async {
@@ -8008,6 +10957,78 @@ class $$MovesTableTableManager
                               ),
                           typedResults: items,
                         ),
+                      if (labMovesRefs)
+                        await $_getPrefetchedData<Move, $MovesTable, LabMove>(
+                          currentTable: table,
+                          referencedTable: $$MovesTableReferences
+                              ._labMovesRefsTable(db),
+                          managerFromTypedResult: (p0) =>
+                              $$MovesTableReferences(
+                                db,
+                                table,
+                                p0,
+                              ).labMovesRefs,
+                          referencedItemsForCurrentItem:
+                              (item, referencedItems) => referencedItems.where(
+                                (e) => e.moveId == item.id,
+                              ),
+                          typedResults: items,
+                        ),
+                      if (achievementsRefs)
+                        await $_getPrefetchedData<
+                          Move,
+                          $MovesTable,
+                          Achievement
+                        >(
+                          currentTable: table,
+                          referencedTable: $$MovesTableReferences
+                              ._achievementsRefsTable(db),
+                          managerFromTypedResult: (p0) =>
+                              $$MovesTableReferences(
+                                db,
+                                table,
+                                p0,
+                              ).achievementsRefs,
+                          referencedItemsForCurrentItem:
+                              (item, referencedItems) => referencedItems.where(
+                                (e) => e.moveId == item.id,
+                              ),
+                          typedResults: items,
+                        ),
+                      if (auraLinksFromRefs)
+                        await $_getPrefetchedData<Move, $MovesTable, AuraLink>(
+                          currentTable: table,
+                          referencedTable: $$MovesTableReferences
+                              ._auraLinksFromRefsTable(db),
+                          managerFromTypedResult: (p0) =>
+                              $$MovesTableReferences(
+                                db,
+                                table,
+                                p0,
+                              ).auraLinksFromRefs,
+                          referencedItemsForCurrentItem:
+                              (item, referencedItems) => referencedItems.where(
+                                (e) => e.fromMoveId == item.id,
+                              ),
+                          typedResults: items,
+                        ),
+                      if (auraLinksToRefs)
+                        await $_getPrefetchedData<Move, $MovesTable, AuraLink>(
+                          currentTable: table,
+                          referencedTable: $$MovesTableReferences
+                              ._auraLinksToRefsTable(db),
+                          managerFromTypedResult: (p0) =>
+                              $$MovesTableReferences(
+                                db,
+                                table,
+                                p0,
+                              ).auraLinksToRefs,
+                          referencedItemsForCurrentItem:
+                              (item, referencedItems) => referencedItems.where(
+                                (e) => e.toMoveId == item.id,
+                              ),
+                          typedResults: items,
+                        ),
                     ];
                   },
                 );
@@ -8032,6 +11053,10 @@ typedef $$MovesTableProcessedTableManager =
         bool comboMovesRefs,
         bool reviewsRefs,
         bool deckMovesRefs,
+        bool labMovesRefs,
+        bool achievementsRefs,
+        bool auraLinksFromRefs,
+        bool auraLinksToRefs,
       })
     >;
 typedef $$CombosTableCreateCompanionBuilder =
@@ -12475,6 +15500,2471 @@ typedef $$SyncOperationsTableProcessedTableManager =
       SyncOperation,
       PrefetchHooks Function()
     >;
+typedef $$LabsTableCreateCompanionBuilder =
+    LabsCompanion Function({
+      required String id,
+      required String name,
+      Value<String> labType,
+      Value<String> status,
+      Value<String?> notes,
+      Value<DateTime> createdAt,
+      Value<DateTime> updatedAt,
+      Value<int> rowid,
+    });
+typedef $$LabsTableUpdateCompanionBuilder =
+    LabsCompanion Function({
+      Value<String> id,
+      Value<String> name,
+      Value<String> labType,
+      Value<String> status,
+      Value<String?> notes,
+      Value<DateTime> createdAt,
+      Value<DateTime> updatedAt,
+      Value<int> rowid,
+    });
+
+final class $$LabsTableReferences
+    extends BaseReferences<_$AppDatabase, $LabsTable, Lab> {
+  $$LabsTableReferences(super.$_db, super.$_table, super.$_typedResult);
+
+  static MultiTypedResultKey<$MilestonesTable, List<Milestone>>
+  _milestonesRefsTable(_$AppDatabase db) => MultiTypedResultKey.fromTable(
+    db.milestones,
+    aliasName: $_aliasNameGenerator(db.labs.id, db.milestones.labId),
+  );
+
+  $$MilestonesTableProcessedTableManager get milestonesRefs {
+    final manager = $$MilestonesTableTableManager(
+      $_db,
+      $_db.milestones,
+    ).filter((f) => f.labId.id.sqlEquals($_itemColumn<String>('id')!));
+
+    final cache = $_typedResult.readTableOrNull(_milestonesRefsTable($_db));
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
+
+  static MultiTypedResultKey<$LabMovesTable, List<LabMove>> _labMovesRefsTable(
+    _$AppDatabase db,
+  ) => MultiTypedResultKey.fromTable(
+    db.labMoves,
+    aliasName: $_aliasNameGenerator(db.labs.id, db.labMoves.labId),
+  );
+
+  $$LabMovesTableProcessedTableManager get labMovesRefs {
+    final manager = $$LabMovesTableTableManager(
+      $_db,
+      $_db.labMoves,
+    ).filter((f) => f.labId.id.sqlEquals($_itemColumn<String>('id')!));
+
+    final cache = $_typedResult.readTableOrNull(_labMovesRefsTable($_db));
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
+
+  static MultiTypedResultKey<$LabEntriesTable, List<LabEntry>>
+  _labEntriesRefsTable(_$AppDatabase db) => MultiTypedResultKey.fromTable(
+    db.labEntries,
+    aliasName: $_aliasNameGenerator(db.labs.id, db.labEntries.labId),
+  );
+
+  $$LabEntriesTableProcessedTableManager get labEntriesRefs {
+    final manager = $$LabEntriesTableTableManager(
+      $_db,
+      $_db.labEntries,
+    ).filter((f) => f.labId.id.sqlEquals($_itemColumn<String>('id')!));
+
+    final cache = $_typedResult.readTableOrNull(_labEntriesRefsTable($_db));
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
+}
+
+class $$LabsTableFilterComposer extends Composer<_$AppDatabase, $LabsTable> {
+  $$LabsTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get name => $composableBuilder(
+    column: $table.name,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get labType => $composableBuilder(
+    column: $table.labType,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get status => $composableBuilder(
+    column: $table.status,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get notes => $composableBuilder(
+    column: $table.notes,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  Expression<bool> milestonesRefs(
+    Expression<bool> Function($$MilestonesTableFilterComposer f) f,
+  ) {
+    final $$MilestonesTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.milestones,
+      getReferencedColumn: (t) => t.labId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$MilestonesTableFilterComposer(
+            $db: $db,
+            $table: $db.milestones,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+
+  Expression<bool> labMovesRefs(
+    Expression<bool> Function($$LabMovesTableFilterComposer f) f,
+  ) {
+    final $$LabMovesTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.labMoves,
+      getReferencedColumn: (t) => t.labId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$LabMovesTableFilterComposer(
+            $db: $db,
+            $table: $db.labMoves,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+
+  Expression<bool> labEntriesRefs(
+    Expression<bool> Function($$LabEntriesTableFilterComposer f) f,
+  ) {
+    final $$LabEntriesTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.labEntries,
+      getReferencedColumn: (t) => t.labId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$LabEntriesTableFilterComposer(
+            $db: $db,
+            $table: $db.labEntries,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+}
+
+class $$LabsTableOrderingComposer extends Composer<_$AppDatabase, $LabsTable> {
+  $$LabsTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get name => $composableBuilder(
+    column: $table.name,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get labType => $composableBuilder(
+    column: $table.labType,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get status => $composableBuilder(
+    column: $table.status,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get notes => $composableBuilder(
+    column: $table.notes,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$LabsTableAnnotationComposer
+    extends Composer<_$AppDatabase, $LabsTable> {
+  $$LabsTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get name =>
+      $composableBuilder(column: $table.name, builder: (column) => column);
+
+  GeneratedColumn<String> get labType =>
+      $composableBuilder(column: $table.labType, builder: (column) => column);
+
+  GeneratedColumn<String> get status =>
+      $composableBuilder(column: $table.status, builder: (column) => column);
+
+  GeneratedColumn<String> get notes =>
+      $composableBuilder(column: $table.notes, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get createdAt =>
+      $composableBuilder(column: $table.createdAt, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get updatedAt =>
+      $composableBuilder(column: $table.updatedAt, builder: (column) => column);
+
+  Expression<T> milestonesRefs<T extends Object>(
+    Expression<T> Function($$MilestonesTableAnnotationComposer a) f,
+  ) {
+    final $$MilestonesTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.milestones,
+      getReferencedColumn: (t) => t.labId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$MilestonesTableAnnotationComposer(
+            $db: $db,
+            $table: $db.milestones,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+
+  Expression<T> labMovesRefs<T extends Object>(
+    Expression<T> Function($$LabMovesTableAnnotationComposer a) f,
+  ) {
+    final $$LabMovesTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.labMoves,
+      getReferencedColumn: (t) => t.labId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$LabMovesTableAnnotationComposer(
+            $db: $db,
+            $table: $db.labMoves,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+
+  Expression<T> labEntriesRefs<T extends Object>(
+    Expression<T> Function($$LabEntriesTableAnnotationComposer a) f,
+  ) {
+    final $$LabEntriesTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.labEntries,
+      getReferencedColumn: (t) => t.labId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$LabEntriesTableAnnotationComposer(
+            $db: $db,
+            $table: $db.labEntries,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+}
+
+class $$LabsTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $LabsTable,
+          Lab,
+          $$LabsTableFilterComposer,
+          $$LabsTableOrderingComposer,
+          $$LabsTableAnnotationComposer,
+          $$LabsTableCreateCompanionBuilder,
+          $$LabsTableUpdateCompanionBuilder,
+          (Lab, $$LabsTableReferences),
+          Lab,
+          PrefetchHooks Function({
+            bool milestonesRefs,
+            bool labMovesRefs,
+            bool labEntriesRefs,
+          })
+        > {
+  $$LabsTableTableManager(_$AppDatabase db, $LabsTable table)
+    : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$LabsTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$LabsTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$LabsTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<String> id = const Value.absent(),
+                Value<String> name = const Value.absent(),
+                Value<String> labType = const Value.absent(),
+                Value<String> status = const Value.absent(),
+                Value<String?> notes = const Value.absent(),
+                Value<DateTime> createdAt = const Value.absent(),
+                Value<DateTime> updatedAt = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => LabsCompanion(
+                id: id,
+                name: name,
+                labType: labType,
+                status: status,
+                notes: notes,
+                createdAt: createdAt,
+                updatedAt: updatedAt,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String id,
+                required String name,
+                Value<String> labType = const Value.absent(),
+                Value<String> status = const Value.absent(),
+                Value<String?> notes = const Value.absent(),
+                Value<DateTime> createdAt = const Value.absent(),
+                Value<DateTime> updatedAt = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => LabsCompanion.insert(
+                id: id,
+                name: name,
+                labType: labType,
+                status: status,
+                notes: notes,
+                createdAt: createdAt,
+                updatedAt: updatedAt,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map(
+                (e) =>
+                    (e.readTable(table), $$LabsTableReferences(db, table, e)),
+              )
+              .toList(),
+          prefetchHooksCallback:
+              ({
+                milestonesRefs = false,
+                labMovesRefs = false,
+                labEntriesRefs = false,
+              }) {
+                return PrefetchHooks(
+                  db: db,
+                  explicitlyWatchedTables: [
+                    if (milestonesRefs) db.milestones,
+                    if (labMovesRefs) db.labMoves,
+                    if (labEntriesRefs) db.labEntries,
+                  ],
+                  addJoins: null,
+                  getPrefetchedDataCallback: (items) async {
+                    return [
+                      if (milestonesRefs)
+                        await $_getPrefetchedData<Lab, $LabsTable, Milestone>(
+                          currentTable: table,
+                          referencedTable: $$LabsTableReferences
+                              ._milestonesRefsTable(db),
+                          managerFromTypedResult: (p0) => $$LabsTableReferences(
+                            db,
+                            table,
+                            p0,
+                          ).milestonesRefs,
+                          referencedItemsForCurrentItem:
+                              (item, referencedItems) => referencedItems.where(
+                                (e) => e.labId == item.id,
+                              ),
+                          typedResults: items,
+                        ),
+                      if (labMovesRefs)
+                        await $_getPrefetchedData<Lab, $LabsTable, LabMove>(
+                          currentTable: table,
+                          referencedTable: $$LabsTableReferences
+                              ._labMovesRefsTable(db),
+                          managerFromTypedResult: (p0) =>
+                              $$LabsTableReferences(db, table, p0).labMovesRefs,
+                          referencedItemsForCurrentItem:
+                              (item, referencedItems) => referencedItems.where(
+                                (e) => e.labId == item.id,
+                              ),
+                          typedResults: items,
+                        ),
+                      if (labEntriesRefs)
+                        await $_getPrefetchedData<Lab, $LabsTable, LabEntry>(
+                          currentTable: table,
+                          referencedTable: $$LabsTableReferences
+                              ._labEntriesRefsTable(db),
+                          managerFromTypedResult: (p0) => $$LabsTableReferences(
+                            db,
+                            table,
+                            p0,
+                          ).labEntriesRefs,
+                          referencedItemsForCurrentItem:
+                              (item, referencedItems) => referencedItems.where(
+                                (e) => e.labId == item.id,
+                              ),
+                          typedResults: items,
+                        ),
+                    ];
+                  },
+                );
+              },
+        ),
+      );
+}
+
+typedef $$LabsTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $LabsTable,
+      Lab,
+      $$LabsTableFilterComposer,
+      $$LabsTableOrderingComposer,
+      $$LabsTableAnnotationComposer,
+      $$LabsTableCreateCompanionBuilder,
+      $$LabsTableUpdateCompanionBuilder,
+      (Lab, $$LabsTableReferences),
+      Lab,
+      PrefetchHooks Function({
+        bool milestonesRefs,
+        bool labMovesRefs,
+        bool labEntriesRefs,
+      })
+    >;
+typedef $$MilestonesTableCreateCompanionBuilder =
+    MilestonesCompanion Function({
+      required String id,
+      required String labId,
+      required String title,
+      Value<String?> notes,
+      Value<DateTime?> completedAt,
+      Value<DateTime> createdAt,
+      Value<int> rowid,
+    });
+typedef $$MilestonesTableUpdateCompanionBuilder =
+    MilestonesCompanion Function({
+      Value<String> id,
+      Value<String> labId,
+      Value<String> title,
+      Value<String?> notes,
+      Value<DateTime?> completedAt,
+      Value<DateTime> createdAt,
+      Value<int> rowid,
+    });
+
+final class $$MilestonesTableReferences
+    extends BaseReferences<_$AppDatabase, $MilestonesTable, Milestone> {
+  $$MilestonesTableReferences(super.$_db, super.$_table, super.$_typedResult);
+
+  static $LabsTable _labIdTable(_$AppDatabase db) => db.labs.createAlias(
+    $_aliasNameGenerator(db.milestones.labId, db.labs.id),
+  );
+
+  $$LabsTableProcessedTableManager get labId {
+    final $_column = $_itemColumn<String>('lab_id')!;
+
+    final manager = $$LabsTableTableManager(
+      $_db,
+      $_db.labs,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_labIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+}
+
+class $$MilestonesTableFilterComposer
+    extends Composer<_$AppDatabase, $MilestonesTable> {
+  $$MilestonesTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get title => $composableBuilder(
+    column: $table.title,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get notes => $composableBuilder(
+    column: $table.notes,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get completedAt => $composableBuilder(
+    column: $table.completedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  $$LabsTableFilterComposer get labId {
+    final $$LabsTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.labId,
+      referencedTable: $db.labs,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$LabsTableFilterComposer(
+            $db: $db,
+            $table: $db.labs,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$MilestonesTableOrderingComposer
+    extends Composer<_$AppDatabase, $MilestonesTable> {
+  $$MilestonesTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get title => $composableBuilder(
+    column: $table.title,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get notes => $composableBuilder(
+    column: $table.notes,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get completedAt => $composableBuilder(
+    column: $table.completedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  $$LabsTableOrderingComposer get labId {
+    final $$LabsTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.labId,
+      referencedTable: $db.labs,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$LabsTableOrderingComposer(
+            $db: $db,
+            $table: $db.labs,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$MilestonesTableAnnotationComposer
+    extends Composer<_$AppDatabase, $MilestonesTable> {
+  $$MilestonesTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get title =>
+      $composableBuilder(column: $table.title, builder: (column) => column);
+
+  GeneratedColumn<String> get notes =>
+      $composableBuilder(column: $table.notes, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get completedAt => $composableBuilder(
+    column: $table.completedAt,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<DateTime> get createdAt =>
+      $composableBuilder(column: $table.createdAt, builder: (column) => column);
+
+  $$LabsTableAnnotationComposer get labId {
+    final $$LabsTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.labId,
+      referencedTable: $db.labs,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$LabsTableAnnotationComposer(
+            $db: $db,
+            $table: $db.labs,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$MilestonesTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $MilestonesTable,
+          Milestone,
+          $$MilestonesTableFilterComposer,
+          $$MilestonesTableOrderingComposer,
+          $$MilestonesTableAnnotationComposer,
+          $$MilestonesTableCreateCompanionBuilder,
+          $$MilestonesTableUpdateCompanionBuilder,
+          (Milestone, $$MilestonesTableReferences),
+          Milestone,
+          PrefetchHooks Function({bool labId})
+        > {
+  $$MilestonesTableTableManager(_$AppDatabase db, $MilestonesTable table)
+    : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$MilestonesTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$MilestonesTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$MilestonesTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<String> id = const Value.absent(),
+                Value<String> labId = const Value.absent(),
+                Value<String> title = const Value.absent(),
+                Value<String?> notes = const Value.absent(),
+                Value<DateTime?> completedAt = const Value.absent(),
+                Value<DateTime> createdAt = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => MilestonesCompanion(
+                id: id,
+                labId: labId,
+                title: title,
+                notes: notes,
+                completedAt: completedAt,
+                createdAt: createdAt,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String id,
+                required String labId,
+                required String title,
+                Value<String?> notes = const Value.absent(),
+                Value<DateTime?> completedAt = const Value.absent(),
+                Value<DateTime> createdAt = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => MilestonesCompanion.insert(
+                id: id,
+                labId: labId,
+                title: title,
+                notes: notes,
+                completedAt: completedAt,
+                createdAt: createdAt,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map(
+                (e) => (
+                  e.readTable(table),
+                  $$MilestonesTableReferences(db, table, e),
+                ),
+              )
+              .toList(),
+          prefetchHooksCallback: ({labId = false}) {
+            return PrefetchHooks(
+              db: db,
+              explicitlyWatchedTables: [],
+              addJoins:
+                  <
+                    T extends TableManagerState<
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic
+                    >
+                  >(state) {
+                    if (labId) {
+                      state =
+                          state.withJoin(
+                                currentTable: table,
+                                currentColumn: table.labId,
+                                referencedTable: $$MilestonesTableReferences
+                                    ._labIdTable(db),
+                                referencedColumn: $$MilestonesTableReferences
+                                    ._labIdTable(db)
+                                    .id,
+                              )
+                              as T;
+                    }
+
+                    return state;
+                  },
+              getPrefetchedDataCallback: (items) async {
+                return [];
+              },
+            );
+          },
+        ),
+      );
+}
+
+typedef $$MilestonesTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $MilestonesTable,
+      Milestone,
+      $$MilestonesTableFilterComposer,
+      $$MilestonesTableOrderingComposer,
+      $$MilestonesTableAnnotationComposer,
+      $$MilestonesTableCreateCompanionBuilder,
+      $$MilestonesTableUpdateCompanionBuilder,
+      (Milestone, $$MilestonesTableReferences),
+      Milestone,
+      PrefetchHooks Function({bool labId})
+    >;
+typedef $$LabMovesTableCreateCompanionBuilder =
+    LabMovesCompanion Function({
+      required String labId,
+      required String moveId,
+      required int sequenceIndex,
+      Value<DateTime> addedAt,
+      Value<int> rowid,
+    });
+typedef $$LabMovesTableUpdateCompanionBuilder =
+    LabMovesCompanion Function({
+      Value<String> labId,
+      Value<String> moveId,
+      Value<int> sequenceIndex,
+      Value<DateTime> addedAt,
+      Value<int> rowid,
+    });
+
+final class $$LabMovesTableReferences
+    extends BaseReferences<_$AppDatabase, $LabMovesTable, LabMove> {
+  $$LabMovesTableReferences(super.$_db, super.$_table, super.$_typedResult);
+
+  static $LabsTable _labIdTable(_$AppDatabase db) =>
+      db.labs.createAlias($_aliasNameGenerator(db.labMoves.labId, db.labs.id));
+
+  $$LabsTableProcessedTableManager get labId {
+    final $_column = $_itemColumn<String>('lab_id')!;
+
+    final manager = $$LabsTableTableManager(
+      $_db,
+      $_db.labs,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_labIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+
+  static $MovesTable _moveIdTable(_$AppDatabase db) => db.moves.createAlias(
+    $_aliasNameGenerator(db.labMoves.moveId, db.moves.id),
+  );
+
+  $$MovesTableProcessedTableManager get moveId {
+    final $_column = $_itemColumn<String>('move_id')!;
+
+    final manager = $$MovesTableTableManager(
+      $_db,
+      $_db.moves,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_moveIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+}
+
+class $$LabMovesTableFilterComposer
+    extends Composer<_$AppDatabase, $LabMovesTable> {
+  $$LabMovesTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<int> get sequenceIndex => $composableBuilder(
+    column: $table.sequenceIndex,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get addedAt => $composableBuilder(
+    column: $table.addedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  $$LabsTableFilterComposer get labId {
+    final $$LabsTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.labId,
+      referencedTable: $db.labs,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$LabsTableFilterComposer(
+            $db: $db,
+            $table: $db.labs,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  $$MovesTableFilterComposer get moveId {
+    final $$MovesTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.moveId,
+      referencedTable: $db.moves,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$MovesTableFilterComposer(
+            $db: $db,
+            $table: $db.moves,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$LabMovesTableOrderingComposer
+    extends Composer<_$AppDatabase, $LabMovesTable> {
+  $$LabMovesTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<int> get sequenceIndex => $composableBuilder(
+    column: $table.sequenceIndex,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get addedAt => $composableBuilder(
+    column: $table.addedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  $$LabsTableOrderingComposer get labId {
+    final $$LabsTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.labId,
+      referencedTable: $db.labs,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$LabsTableOrderingComposer(
+            $db: $db,
+            $table: $db.labs,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  $$MovesTableOrderingComposer get moveId {
+    final $$MovesTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.moveId,
+      referencedTable: $db.moves,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$MovesTableOrderingComposer(
+            $db: $db,
+            $table: $db.moves,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$LabMovesTableAnnotationComposer
+    extends Composer<_$AppDatabase, $LabMovesTable> {
+  $$LabMovesTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<int> get sequenceIndex => $composableBuilder(
+    column: $table.sequenceIndex,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<DateTime> get addedAt =>
+      $composableBuilder(column: $table.addedAt, builder: (column) => column);
+
+  $$LabsTableAnnotationComposer get labId {
+    final $$LabsTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.labId,
+      referencedTable: $db.labs,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$LabsTableAnnotationComposer(
+            $db: $db,
+            $table: $db.labs,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  $$MovesTableAnnotationComposer get moveId {
+    final $$MovesTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.moveId,
+      referencedTable: $db.moves,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$MovesTableAnnotationComposer(
+            $db: $db,
+            $table: $db.moves,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$LabMovesTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $LabMovesTable,
+          LabMove,
+          $$LabMovesTableFilterComposer,
+          $$LabMovesTableOrderingComposer,
+          $$LabMovesTableAnnotationComposer,
+          $$LabMovesTableCreateCompanionBuilder,
+          $$LabMovesTableUpdateCompanionBuilder,
+          (LabMove, $$LabMovesTableReferences),
+          LabMove,
+          PrefetchHooks Function({bool labId, bool moveId})
+        > {
+  $$LabMovesTableTableManager(_$AppDatabase db, $LabMovesTable table)
+    : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$LabMovesTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$LabMovesTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$LabMovesTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<String> labId = const Value.absent(),
+                Value<String> moveId = const Value.absent(),
+                Value<int> sequenceIndex = const Value.absent(),
+                Value<DateTime> addedAt = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => LabMovesCompanion(
+                labId: labId,
+                moveId: moveId,
+                sequenceIndex: sequenceIndex,
+                addedAt: addedAt,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String labId,
+                required String moveId,
+                required int sequenceIndex,
+                Value<DateTime> addedAt = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => LabMovesCompanion.insert(
+                labId: labId,
+                moveId: moveId,
+                sequenceIndex: sequenceIndex,
+                addedAt: addedAt,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map(
+                (e) => (
+                  e.readTable(table),
+                  $$LabMovesTableReferences(db, table, e),
+                ),
+              )
+              .toList(),
+          prefetchHooksCallback: ({labId = false, moveId = false}) {
+            return PrefetchHooks(
+              db: db,
+              explicitlyWatchedTables: [],
+              addJoins:
+                  <
+                    T extends TableManagerState<
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic
+                    >
+                  >(state) {
+                    if (labId) {
+                      state =
+                          state.withJoin(
+                                currentTable: table,
+                                currentColumn: table.labId,
+                                referencedTable: $$LabMovesTableReferences
+                                    ._labIdTable(db),
+                                referencedColumn: $$LabMovesTableReferences
+                                    ._labIdTable(db)
+                                    .id,
+                              )
+                              as T;
+                    }
+                    if (moveId) {
+                      state =
+                          state.withJoin(
+                                currentTable: table,
+                                currentColumn: table.moveId,
+                                referencedTable: $$LabMovesTableReferences
+                                    ._moveIdTable(db),
+                                referencedColumn: $$LabMovesTableReferences
+                                    ._moveIdTable(db)
+                                    .id,
+                              )
+                              as T;
+                    }
+
+                    return state;
+                  },
+              getPrefetchedDataCallback: (items) async {
+                return [];
+              },
+            );
+          },
+        ),
+      );
+}
+
+typedef $$LabMovesTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $LabMovesTable,
+      LabMove,
+      $$LabMovesTableFilterComposer,
+      $$LabMovesTableOrderingComposer,
+      $$LabMovesTableAnnotationComposer,
+      $$LabMovesTableCreateCompanionBuilder,
+      $$LabMovesTableUpdateCompanionBuilder,
+      (LabMove, $$LabMovesTableReferences),
+      LabMove,
+      PrefetchHooks Function({bool labId, bool moveId})
+    >;
+typedef $$LabEntriesTableCreateCompanionBuilder =
+    LabEntriesCompanion Function({
+      required String id,
+      Value<String?> labId,
+      required String content,
+      Value<String?> videoPath,
+      Value<DateTime> createdAt,
+      Value<int> rowid,
+    });
+typedef $$LabEntriesTableUpdateCompanionBuilder =
+    LabEntriesCompanion Function({
+      Value<String> id,
+      Value<String?> labId,
+      Value<String> content,
+      Value<String?> videoPath,
+      Value<DateTime> createdAt,
+      Value<int> rowid,
+    });
+
+final class $$LabEntriesTableReferences
+    extends BaseReferences<_$AppDatabase, $LabEntriesTable, LabEntry> {
+  $$LabEntriesTableReferences(super.$_db, super.$_table, super.$_typedResult);
+
+  static $LabsTable _labIdTable(_$AppDatabase db) => db.labs.createAlias(
+    $_aliasNameGenerator(db.labEntries.labId, db.labs.id),
+  );
+
+  $$LabsTableProcessedTableManager? get labId {
+    final $_column = $_itemColumn<String>('lab_id');
+    if ($_column == null) return null;
+    final manager = $$LabsTableTableManager(
+      $_db,
+      $_db.labs,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_labIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+}
+
+class $$LabEntriesTableFilterComposer
+    extends Composer<_$AppDatabase, $LabEntriesTable> {
+  $$LabEntriesTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get content => $composableBuilder(
+    column: $table.content,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get videoPath => $composableBuilder(
+    column: $table.videoPath,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  $$LabsTableFilterComposer get labId {
+    final $$LabsTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.labId,
+      referencedTable: $db.labs,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$LabsTableFilterComposer(
+            $db: $db,
+            $table: $db.labs,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$LabEntriesTableOrderingComposer
+    extends Composer<_$AppDatabase, $LabEntriesTable> {
+  $$LabEntriesTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get content => $composableBuilder(
+    column: $table.content,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get videoPath => $composableBuilder(
+    column: $table.videoPath,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  $$LabsTableOrderingComposer get labId {
+    final $$LabsTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.labId,
+      referencedTable: $db.labs,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$LabsTableOrderingComposer(
+            $db: $db,
+            $table: $db.labs,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$LabEntriesTableAnnotationComposer
+    extends Composer<_$AppDatabase, $LabEntriesTable> {
+  $$LabEntriesTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get content =>
+      $composableBuilder(column: $table.content, builder: (column) => column);
+
+  GeneratedColumn<String> get videoPath =>
+      $composableBuilder(column: $table.videoPath, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get createdAt =>
+      $composableBuilder(column: $table.createdAt, builder: (column) => column);
+
+  $$LabsTableAnnotationComposer get labId {
+    final $$LabsTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.labId,
+      referencedTable: $db.labs,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$LabsTableAnnotationComposer(
+            $db: $db,
+            $table: $db.labs,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$LabEntriesTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $LabEntriesTable,
+          LabEntry,
+          $$LabEntriesTableFilterComposer,
+          $$LabEntriesTableOrderingComposer,
+          $$LabEntriesTableAnnotationComposer,
+          $$LabEntriesTableCreateCompanionBuilder,
+          $$LabEntriesTableUpdateCompanionBuilder,
+          (LabEntry, $$LabEntriesTableReferences),
+          LabEntry,
+          PrefetchHooks Function({bool labId})
+        > {
+  $$LabEntriesTableTableManager(_$AppDatabase db, $LabEntriesTable table)
+    : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$LabEntriesTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$LabEntriesTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$LabEntriesTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<String> id = const Value.absent(),
+                Value<String?> labId = const Value.absent(),
+                Value<String> content = const Value.absent(),
+                Value<String?> videoPath = const Value.absent(),
+                Value<DateTime> createdAt = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => LabEntriesCompanion(
+                id: id,
+                labId: labId,
+                content: content,
+                videoPath: videoPath,
+                createdAt: createdAt,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String id,
+                Value<String?> labId = const Value.absent(),
+                required String content,
+                Value<String?> videoPath = const Value.absent(),
+                Value<DateTime> createdAt = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => LabEntriesCompanion.insert(
+                id: id,
+                labId: labId,
+                content: content,
+                videoPath: videoPath,
+                createdAt: createdAt,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map(
+                (e) => (
+                  e.readTable(table),
+                  $$LabEntriesTableReferences(db, table, e),
+                ),
+              )
+              .toList(),
+          prefetchHooksCallback: ({labId = false}) {
+            return PrefetchHooks(
+              db: db,
+              explicitlyWatchedTables: [],
+              addJoins:
+                  <
+                    T extends TableManagerState<
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic
+                    >
+                  >(state) {
+                    if (labId) {
+                      state =
+                          state.withJoin(
+                                currentTable: table,
+                                currentColumn: table.labId,
+                                referencedTable: $$LabEntriesTableReferences
+                                    ._labIdTable(db),
+                                referencedColumn: $$LabEntriesTableReferences
+                                    ._labIdTable(db)
+                                    .id,
+                              )
+                              as T;
+                    }
+
+                    return state;
+                  },
+              getPrefetchedDataCallback: (items) async {
+                return [];
+              },
+            );
+          },
+        ),
+      );
+}
+
+typedef $$LabEntriesTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $LabEntriesTable,
+      LabEntry,
+      $$LabEntriesTableFilterComposer,
+      $$LabEntriesTableOrderingComposer,
+      $$LabEntriesTableAnnotationComposer,
+      $$LabEntriesTableCreateCompanionBuilder,
+      $$LabEntriesTableUpdateCompanionBuilder,
+      (LabEntry, $$LabEntriesTableReferences),
+      LabEntry,
+      PrefetchHooks Function({bool labId})
+    >;
+typedef $$AchievementsTableCreateCompanionBuilder =
+    AchievementsCompanion Function({
+      required String id,
+      required String moveId,
+      required String tier,
+      required DateTime unlockedAt,
+      Value<DateTime> createdAt,
+      Value<int> rowid,
+    });
+typedef $$AchievementsTableUpdateCompanionBuilder =
+    AchievementsCompanion Function({
+      Value<String> id,
+      Value<String> moveId,
+      Value<String> tier,
+      Value<DateTime> unlockedAt,
+      Value<DateTime> createdAt,
+      Value<int> rowid,
+    });
+
+final class $$AchievementsTableReferences
+    extends BaseReferences<_$AppDatabase, $AchievementsTable, Achievement> {
+  $$AchievementsTableReferences(super.$_db, super.$_table, super.$_typedResult);
+
+  static $MovesTable _moveIdTable(_$AppDatabase db) => db.moves.createAlias(
+    $_aliasNameGenerator(db.achievements.moveId, db.moves.id),
+  );
+
+  $$MovesTableProcessedTableManager get moveId {
+    final $_column = $_itemColumn<String>('move_id')!;
+
+    final manager = $$MovesTableTableManager(
+      $_db,
+      $_db.moves,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_moveIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+}
+
+class $$AchievementsTableFilterComposer
+    extends Composer<_$AppDatabase, $AchievementsTable> {
+  $$AchievementsTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get tier => $composableBuilder(
+    column: $table.tier,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get unlockedAt => $composableBuilder(
+    column: $table.unlockedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  $$MovesTableFilterComposer get moveId {
+    final $$MovesTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.moveId,
+      referencedTable: $db.moves,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$MovesTableFilterComposer(
+            $db: $db,
+            $table: $db.moves,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$AchievementsTableOrderingComposer
+    extends Composer<_$AppDatabase, $AchievementsTable> {
+  $$AchievementsTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get tier => $composableBuilder(
+    column: $table.tier,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get unlockedAt => $composableBuilder(
+    column: $table.unlockedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  $$MovesTableOrderingComposer get moveId {
+    final $$MovesTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.moveId,
+      referencedTable: $db.moves,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$MovesTableOrderingComposer(
+            $db: $db,
+            $table: $db.moves,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$AchievementsTableAnnotationComposer
+    extends Composer<_$AppDatabase, $AchievementsTable> {
+  $$AchievementsTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get tier =>
+      $composableBuilder(column: $table.tier, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get unlockedAt => $composableBuilder(
+    column: $table.unlockedAt,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<DateTime> get createdAt =>
+      $composableBuilder(column: $table.createdAt, builder: (column) => column);
+
+  $$MovesTableAnnotationComposer get moveId {
+    final $$MovesTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.moveId,
+      referencedTable: $db.moves,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$MovesTableAnnotationComposer(
+            $db: $db,
+            $table: $db.moves,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$AchievementsTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $AchievementsTable,
+          Achievement,
+          $$AchievementsTableFilterComposer,
+          $$AchievementsTableOrderingComposer,
+          $$AchievementsTableAnnotationComposer,
+          $$AchievementsTableCreateCompanionBuilder,
+          $$AchievementsTableUpdateCompanionBuilder,
+          (Achievement, $$AchievementsTableReferences),
+          Achievement,
+          PrefetchHooks Function({bool moveId})
+        > {
+  $$AchievementsTableTableManager(_$AppDatabase db, $AchievementsTable table)
+    : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$AchievementsTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$AchievementsTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$AchievementsTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<String> id = const Value.absent(),
+                Value<String> moveId = const Value.absent(),
+                Value<String> tier = const Value.absent(),
+                Value<DateTime> unlockedAt = const Value.absent(),
+                Value<DateTime> createdAt = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => AchievementsCompanion(
+                id: id,
+                moveId: moveId,
+                tier: tier,
+                unlockedAt: unlockedAt,
+                createdAt: createdAt,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String id,
+                required String moveId,
+                required String tier,
+                required DateTime unlockedAt,
+                Value<DateTime> createdAt = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => AchievementsCompanion.insert(
+                id: id,
+                moveId: moveId,
+                tier: tier,
+                unlockedAt: unlockedAt,
+                createdAt: createdAt,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map(
+                (e) => (
+                  e.readTable(table),
+                  $$AchievementsTableReferences(db, table, e),
+                ),
+              )
+              .toList(),
+          prefetchHooksCallback: ({moveId = false}) {
+            return PrefetchHooks(
+              db: db,
+              explicitlyWatchedTables: [],
+              addJoins:
+                  <
+                    T extends TableManagerState<
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic
+                    >
+                  >(state) {
+                    if (moveId) {
+                      state =
+                          state.withJoin(
+                                currentTable: table,
+                                currentColumn: table.moveId,
+                                referencedTable: $$AchievementsTableReferences
+                                    ._moveIdTable(db),
+                                referencedColumn: $$AchievementsTableReferences
+                                    ._moveIdTable(db)
+                                    .id,
+                              )
+                              as T;
+                    }
+
+                    return state;
+                  },
+              getPrefetchedDataCallback: (items) async {
+                return [];
+              },
+            );
+          },
+        ),
+      );
+}
+
+typedef $$AchievementsTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $AchievementsTable,
+      Achievement,
+      $$AchievementsTableFilterComposer,
+      $$AchievementsTableOrderingComposer,
+      $$AchievementsTableAnnotationComposer,
+      $$AchievementsTableCreateCompanionBuilder,
+      $$AchievementsTableUpdateCompanionBuilder,
+      (Achievement, $$AchievementsTableReferences),
+      Achievement,
+      PrefetchHooks Function({bool moveId})
+    >;
+typedef $$AuraLinksTableCreateCompanionBuilder =
+    AuraLinksCompanion Function({
+      required String fromMoveId,
+      required String toMoveId,
+      required String affinity,
+      Value<String?> notes,
+      Value<DateTime> createdAt,
+      Value<int> rowid,
+    });
+typedef $$AuraLinksTableUpdateCompanionBuilder =
+    AuraLinksCompanion Function({
+      Value<String> fromMoveId,
+      Value<String> toMoveId,
+      Value<String> affinity,
+      Value<String?> notes,
+      Value<DateTime> createdAt,
+      Value<int> rowid,
+    });
+
+final class $$AuraLinksTableReferences
+    extends BaseReferences<_$AppDatabase, $AuraLinksTable, AuraLink> {
+  $$AuraLinksTableReferences(super.$_db, super.$_table, super.$_typedResult);
+
+  static $MovesTable _fromMoveIdTable(_$AppDatabase db) => db.moves.createAlias(
+    $_aliasNameGenerator(db.auraLinks.fromMoveId, db.moves.id),
+  );
+
+  $$MovesTableProcessedTableManager get fromMoveId {
+    final $_column = $_itemColumn<String>('from_move_id')!;
+
+    final manager = $$MovesTableTableManager(
+      $_db,
+      $_db.moves,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_fromMoveIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+
+  static $MovesTable _toMoveIdTable(_$AppDatabase db) => db.moves.createAlias(
+    $_aliasNameGenerator(db.auraLinks.toMoveId, db.moves.id),
+  );
+
+  $$MovesTableProcessedTableManager get toMoveId {
+    final $_column = $_itemColumn<String>('to_move_id')!;
+
+    final manager = $$MovesTableTableManager(
+      $_db,
+      $_db.moves,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_toMoveIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+}
+
+class $$AuraLinksTableFilterComposer
+    extends Composer<_$AppDatabase, $AuraLinksTable> {
+  $$AuraLinksTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get affinity => $composableBuilder(
+    column: $table.affinity,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get notes => $composableBuilder(
+    column: $table.notes,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  $$MovesTableFilterComposer get fromMoveId {
+    final $$MovesTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.fromMoveId,
+      referencedTable: $db.moves,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$MovesTableFilterComposer(
+            $db: $db,
+            $table: $db.moves,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  $$MovesTableFilterComposer get toMoveId {
+    final $$MovesTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.toMoveId,
+      referencedTable: $db.moves,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$MovesTableFilterComposer(
+            $db: $db,
+            $table: $db.moves,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$AuraLinksTableOrderingComposer
+    extends Composer<_$AppDatabase, $AuraLinksTable> {
+  $$AuraLinksTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get affinity => $composableBuilder(
+    column: $table.affinity,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get notes => $composableBuilder(
+    column: $table.notes,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  $$MovesTableOrderingComposer get fromMoveId {
+    final $$MovesTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.fromMoveId,
+      referencedTable: $db.moves,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$MovesTableOrderingComposer(
+            $db: $db,
+            $table: $db.moves,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  $$MovesTableOrderingComposer get toMoveId {
+    final $$MovesTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.toMoveId,
+      referencedTable: $db.moves,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$MovesTableOrderingComposer(
+            $db: $db,
+            $table: $db.moves,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$AuraLinksTableAnnotationComposer
+    extends Composer<_$AppDatabase, $AuraLinksTable> {
+  $$AuraLinksTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get affinity =>
+      $composableBuilder(column: $table.affinity, builder: (column) => column);
+
+  GeneratedColumn<String> get notes =>
+      $composableBuilder(column: $table.notes, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get createdAt =>
+      $composableBuilder(column: $table.createdAt, builder: (column) => column);
+
+  $$MovesTableAnnotationComposer get fromMoveId {
+    final $$MovesTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.fromMoveId,
+      referencedTable: $db.moves,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$MovesTableAnnotationComposer(
+            $db: $db,
+            $table: $db.moves,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  $$MovesTableAnnotationComposer get toMoveId {
+    final $$MovesTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.toMoveId,
+      referencedTable: $db.moves,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$MovesTableAnnotationComposer(
+            $db: $db,
+            $table: $db.moves,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$AuraLinksTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $AuraLinksTable,
+          AuraLink,
+          $$AuraLinksTableFilterComposer,
+          $$AuraLinksTableOrderingComposer,
+          $$AuraLinksTableAnnotationComposer,
+          $$AuraLinksTableCreateCompanionBuilder,
+          $$AuraLinksTableUpdateCompanionBuilder,
+          (AuraLink, $$AuraLinksTableReferences),
+          AuraLink,
+          PrefetchHooks Function({bool fromMoveId, bool toMoveId})
+        > {
+  $$AuraLinksTableTableManager(_$AppDatabase db, $AuraLinksTable table)
+    : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$AuraLinksTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$AuraLinksTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$AuraLinksTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<String> fromMoveId = const Value.absent(),
+                Value<String> toMoveId = const Value.absent(),
+                Value<String> affinity = const Value.absent(),
+                Value<String?> notes = const Value.absent(),
+                Value<DateTime> createdAt = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => AuraLinksCompanion(
+                fromMoveId: fromMoveId,
+                toMoveId: toMoveId,
+                affinity: affinity,
+                notes: notes,
+                createdAt: createdAt,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String fromMoveId,
+                required String toMoveId,
+                required String affinity,
+                Value<String?> notes = const Value.absent(),
+                Value<DateTime> createdAt = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => AuraLinksCompanion.insert(
+                fromMoveId: fromMoveId,
+                toMoveId: toMoveId,
+                affinity: affinity,
+                notes: notes,
+                createdAt: createdAt,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map(
+                (e) => (
+                  e.readTable(table),
+                  $$AuraLinksTableReferences(db, table, e),
+                ),
+              )
+              .toList(),
+          prefetchHooksCallback: ({fromMoveId = false, toMoveId = false}) {
+            return PrefetchHooks(
+              db: db,
+              explicitlyWatchedTables: [],
+              addJoins:
+                  <
+                    T extends TableManagerState<
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic
+                    >
+                  >(state) {
+                    if (fromMoveId) {
+                      state =
+                          state.withJoin(
+                                currentTable: table,
+                                currentColumn: table.fromMoveId,
+                                referencedTable: $$AuraLinksTableReferences
+                                    ._fromMoveIdTable(db),
+                                referencedColumn: $$AuraLinksTableReferences
+                                    ._fromMoveIdTable(db)
+                                    .id,
+                              )
+                              as T;
+                    }
+                    if (toMoveId) {
+                      state =
+                          state.withJoin(
+                                currentTable: table,
+                                currentColumn: table.toMoveId,
+                                referencedTable: $$AuraLinksTableReferences
+                                    ._toMoveIdTable(db),
+                                referencedColumn: $$AuraLinksTableReferences
+                                    ._toMoveIdTable(db)
+                                    .id,
+                              )
+                              as T;
+                    }
+
+                    return state;
+                  },
+              getPrefetchedDataCallback: (items) async {
+                return [];
+              },
+            );
+          },
+        ),
+      );
+}
+
+typedef $$AuraLinksTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $AuraLinksTable,
+      AuraLink,
+      $$AuraLinksTableFilterComposer,
+      $$AuraLinksTableOrderingComposer,
+      $$AuraLinksTableAnnotationComposer,
+      $$AuraLinksTableCreateCompanionBuilder,
+      $$AuraLinksTableUpdateCompanionBuilder,
+      (AuraLink, $$AuraLinksTableReferences),
+      AuraLink,
+      PrefetchHooks Function({bool fromMoveId, bool toMoveId})
+    >;
+typedef $$AuraPresetsTableCreateCompanionBuilder =
+    AuraPresetsCompanion Function({
+      required String id,
+      required String name,
+      Value<int> isDefault,
+      Value<DateTime> createdAt,
+      Value<int> rowid,
+    });
+typedef $$AuraPresetsTableUpdateCompanionBuilder =
+    AuraPresetsCompanion Function({
+      Value<String> id,
+      Value<String> name,
+      Value<int> isDefault,
+      Value<DateTime> createdAt,
+      Value<int> rowid,
+    });
+
+class $$AuraPresetsTableFilterComposer
+    extends Composer<_$AppDatabase, $AuraPresetsTable> {
+  $$AuraPresetsTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get name => $composableBuilder(
+    column: $table.name,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get isDefault => $composableBuilder(
+    column: $table.isDefault,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$AuraPresetsTableOrderingComposer
+    extends Composer<_$AppDatabase, $AuraPresetsTable> {
+  $$AuraPresetsTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get name => $composableBuilder(
+    column: $table.name,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get isDefault => $composableBuilder(
+    column: $table.isDefault,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$AuraPresetsTableAnnotationComposer
+    extends Composer<_$AppDatabase, $AuraPresetsTable> {
+  $$AuraPresetsTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get name =>
+      $composableBuilder(column: $table.name, builder: (column) => column);
+
+  GeneratedColumn<int> get isDefault =>
+      $composableBuilder(column: $table.isDefault, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get createdAt =>
+      $composableBuilder(column: $table.createdAt, builder: (column) => column);
+}
+
+class $$AuraPresetsTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $AuraPresetsTable,
+          AuraPreset,
+          $$AuraPresetsTableFilterComposer,
+          $$AuraPresetsTableOrderingComposer,
+          $$AuraPresetsTableAnnotationComposer,
+          $$AuraPresetsTableCreateCompanionBuilder,
+          $$AuraPresetsTableUpdateCompanionBuilder,
+          (
+            AuraPreset,
+            BaseReferences<_$AppDatabase, $AuraPresetsTable, AuraPreset>,
+          ),
+          AuraPreset,
+          PrefetchHooks Function()
+        > {
+  $$AuraPresetsTableTableManager(_$AppDatabase db, $AuraPresetsTable table)
+    : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$AuraPresetsTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$AuraPresetsTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$AuraPresetsTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<String> id = const Value.absent(),
+                Value<String> name = const Value.absent(),
+                Value<int> isDefault = const Value.absent(),
+                Value<DateTime> createdAt = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => AuraPresetsCompanion(
+                id: id,
+                name: name,
+                isDefault: isDefault,
+                createdAt: createdAt,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String id,
+                required String name,
+                Value<int> isDefault = const Value.absent(),
+                Value<DateTime> createdAt = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => AuraPresetsCompanion.insert(
+                id: id,
+                name: name,
+                isDefault: isDefault,
+                createdAt: createdAt,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$AuraPresetsTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $AuraPresetsTable,
+      AuraPreset,
+      $$AuraPresetsTableFilterComposer,
+      $$AuraPresetsTableOrderingComposer,
+      $$AuraPresetsTableAnnotationComposer,
+      $$AuraPresetsTableCreateCompanionBuilder,
+      $$AuraPresetsTableUpdateCompanionBuilder,
+      (
+        AuraPreset,
+        BaseReferences<_$AppDatabase, $AuraPresetsTable, AuraPreset>,
+      ),
+      AuraPreset,
+      PrefetchHooks Function()
+    >;
 
 class $AppDatabaseManager {
   final _$AppDatabase _db;
@@ -12505,4 +17995,17 @@ class $AppDatabaseManager {
       $$SyncProvidersTableTableManager(_db, _db.syncProviders);
   $$SyncOperationsTableTableManager get syncOperations =>
       $$SyncOperationsTableTableManager(_db, _db.syncOperations);
+  $$LabsTableTableManager get labs => $$LabsTableTableManager(_db, _db.labs);
+  $$MilestonesTableTableManager get milestones =>
+      $$MilestonesTableTableManager(_db, _db.milestones);
+  $$LabMovesTableTableManager get labMoves =>
+      $$LabMovesTableTableManager(_db, _db.labMoves);
+  $$LabEntriesTableTableManager get labEntries =>
+      $$LabEntriesTableTableManager(_db, _db.labEntries);
+  $$AchievementsTableTableManager get achievements =>
+      $$AchievementsTableTableManager(_db, _db.achievements);
+  $$AuraLinksTableTableManager get auraLinks =>
+      $$AuraLinksTableTableManager(_db, _db.auraLinks);
+  $$AuraPresetsTableTableManager get auraPresets =>
+      $$AuraPresetsTableTableManager(_db, _db.auraPresets);
 }

@@ -17,6 +17,13 @@ import 'tables/asset_manifest.dart';
 import 'tables/asset_copies.dart';
 import 'tables/sync_providers.dart';
 import 'tables/sync_operations.dart';
+import 'tables/labs.dart';
+import 'tables/milestones.dart';
+import 'tables/lab_moves.dart';
+import 'tables/lab_entries.dart';
+import 'tables/achievements.dart';
+import 'tables/aura_links.dart';
+import 'tables/aura_presets.dart';
 import 'daos/moves_dao.dart';
 import 'daos/combos_dao.dart';
 import 'daos/reviews_dao.dart';
@@ -27,6 +34,11 @@ import 'daos/asset_manifest_dao.dart';
 import 'daos/asset_copies_dao.dart';
 import 'daos/sync_operations_dao.dart';
 import 'daos/sync_providers_dao.dart';
+import 'daos/labs_dao.dart';
+import 'daos/milestones_dao.dart';
+import 'daos/lab_entries_dao.dart';
+import 'daos/achievements_dao.dart';
+import 'daos/aura_dao.dart';
 
 part 'database.g.dart';
 
@@ -45,6 +57,13 @@ part 'database.g.dart';
     AssetCopies,
     SyncProviders,
     SyncOperations,
+    Labs,
+    Milestones,
+    LabMoves,
+    LabEntries,
+    Achievements,
+    AuraLinks,
+    AuraPresets,
   ],
   daos: [
     MovesDao,
@@ -57,6 +76,11 @@ part 'database.g.dart';
     AssetCopiesDao,
     SyncOperationsDao,
     SyncProvidersDao,
+    LabsDao,
+    MilestonesDao,
+    LabEntriesDao,
+    AchievementsDao,
+    AuraDao,
   ],
 )
 class AppDatabase extends _$AppDatabase {
@@ -65,7 +89,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.forTesting(super.e);
 
   @override
-  int get schemaVersion => 11;
+  int get schemaVersion => 12;
 
   Future<void> _installIntegrityTriggers() async {
     await customStatement('''
@@ -375,6 +399,31 @@ class AppDatabase extends _$AppDatabase {
       if (from < 11) {
         await m.addColumn(moves, moves.notes);
         await m.addColumn(combos, combos.notes);
+      }
+
+      if (from < 12) {
+        // --- Schema v12: Labs system ---
+        // Labs (projects + sets), milestones, lab-move links,
+        // daily log entries, achievements, bboy aura.
+        await m.createTable(labs);
+        await m.createTable(milestones);
+        await m.createTable(labMoves);
+        await m.createTable(labEntries);
+        await m.createTable(achievements);
+        await m.createTable(auraLinks);
+        await m.createTable(auraPresets);
+
+        // Backfill seed achievements for every existing move.
+        await customStatement('''
+          INSERT OR IGNORE INTO achievements (id, move_id, tier, unlocked_at, created_at)
+          SELECT
+            lower(hex(randomblob(16))),
+            id,
+            'seed',
+            strftime('%s', 'now'),
+            strftime('%s', 'now')
+          FROM moves
+        ''');
       }
 
       await _backfillReviewSnapshots();
