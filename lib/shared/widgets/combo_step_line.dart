@@ -32,6 +32,47 @@ class ComboStepLine extends StatefulWidget {
 
 class _ComboStepLineState extends State<ComboStepLine> {
   int? _pressedIndex;
+  final ScrollController _scrollController = ScrollController();
+
+  @override
+  void initState() {
+    super.initState();
+    _scrollToActiveStep();
+  }
+
+  @override
+  void didUpdateWidget(ComboStepLine oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.activeIndex != widget.activeIndex) {
+      _scrollToActiveStep();
+    }
+  }
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  /// Smoothly scrolls to center the active step node in the viewport.
+  ///
+  /// Uses a post-frame callback so the scroll position is calculated after
+  /// layout — each node is ~84 px wide (24 leading + 36 circle + 24 trailing),
+  /// though the first node lacks a leading line and the last lacks a trailing.
+  void _scrollToActiveStep() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted || !_scrollController.hasClients) return;
+      const nodeWidth = 84.0;
+      final targetOffset = (widget.activeIndex * nodeWidth) -
+          (_scrollController.position.viewportDimension / 2) +
+          (nodeWidth / 2);
+      _scrollController.animateTo(
+        targetOffset.clamp(0.0, _scrollController.position.maxScrollExtent),
+        duration: const Duration(milliseconds: 300),
+        curve: Curves.easeOutCubic,
+      );
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -44,6 +85,7 @@ class _ComboStepLineState extends State<ComboStepLine> {
         : widget.activeIndex.clamp(0, widget.stepCount - 1);
 
     return SingleChildScrollView(
+      controller: _scrollController,
       scrollDirection: Axis.horizontal,
       child: Row(
         children: [

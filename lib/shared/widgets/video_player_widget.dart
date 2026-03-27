@@ -73,6 +73,11 @@ class VideoPlayerWidget extends StatefulWidget {
     this.overlay,
     this.onEdit,
     this.autoPlay = false,
+    this.minimal = false,
+    this.looping = true,
+    this.muted = false,
+    this.playbackSpeed = 1.0,
+    this.onPlayStateChanged,
   });
 
   final String videoPath;
@@ -81,6 +86,23 @@ class VideoPlayerWidget extends StatefulWidget {
   final Widget? overlay;
   final VoidCallback? onEdit;
   final bool autoPlay;
+
+  /// When true, disables the transport-controls overlay and mute toggle,
+  /// showing only a simple center play/pause icon suitable for embedding
+  /// inside a parent that provides its own controls (e.g. review cards).
+  final bool minimal;
+
+  /// External control of looping. Defaults to true (existing behavior).
+  final bool looping;
+
+  /// External control of mute. Defaults to false (existing behavior).
+  final bool muted;
+
+  /// External control of playback speed. Defaults to 1.0.
+  final double playbackSpeed;
+
+  /// Fires whenever the video transitions between playing and paused.
+  final ValueChanged<bool>? onPlayStateChanged;
 
   @override
   State<VideoPlayerWidget> createState() => _VideoPlayerWidgetState();
@@ -98,6 +120,14 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget>
   @override
   VideoPlayerController get videoController => _controller;
 
+  /// Override togglePlay to fire the external [onPlayStateChanged] callback
+  /// whenever the play/pause state changes.
+  @override
+  void togglePlay() {
+    super.togglePlay();
+    widget.onPlayStateChanged?.call(_controller.value.isPlaying);
+  }
+
   @override
   void initState() {
     super.initState();
@@ -111,6 +141,21 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget>
       cancelHideTimer();
       _controller.dispose();
       _initPlayer();
+      return;
+    }
+    // React to external parameter changes without reinitializing the player.
+    if (_initialized) {
+      if (oldWidget.looping != widget.looping) {
+        _controller.setLooping(widget.looping);
+      }
+      if (oldWidget.muted != widget.muted) {
+        _controller.setVolume(widget.muted ? 0.0 : 1.0);
+        // Keep internal mute state in sync when controlled externally.
+        _isMuted = widget.muted;
+      }
+      if (oldWidget.playbackSpeed != widget.playbackSpeed) {
+        _controller.setPlaybackSpeed(widget.playbackSpeed);
+      }
     }
   }
 
@@ -120,7 +165,7 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget>
     _posterPath = null;
     unawaited(_loadPoster());
     _controller = VideoPlayerController.file(File(widget.videoPath))
-      ..setLooping(true)
+      ..setLooping(widget.looping)
       ..initialize()
           .timeout(
             const Duration(seconds: 10),
@@ -128,6 +173,11 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget>
           )
           .then((_) {
             if (mounted) {
+              // Apply external mute/speed settings after initialization.
+              if (widget.muted) _controller.setVolume(0.0);
+              if (widget.playbackSpeed != 1.0) {
+                _controller.setPlaybackSpeed(widget.playbackSpeed);
+              }
               if (widget.autoPlay) {
                 _controller.play();
                 scheduleHide();
@@ -210,9 +260,18 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget>
                     Image.file(File(_posterPath!), fit: BoxFit.cover),
                   Container(color: Colors.black26),
                   Center(
-                    child: CircularProgressIndicator(
-                      color: Theme.of(context).colorScheme.primary,
-                    ),
+                    child: widget.minimal
+                        ? const SizedBox(
+                            width: 48,
+                            height: 48,
+                            child: CircularProgressIndicator(
+                              color: Colors.white,
+                              strokeWidth: 3,
+                            ),
+                          )
+                        : CircularProgressIndicator(
+                            color: Theme.of(context).colorScheme.primary,
+                          ),
                   ),
                 ],
               )
@@ -232,73 +291,94 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget>
                         ),
                       ),
                     ),
-                    // Controls scrim — auto-hides during playback.
-                    // RepaintBoundary isolates the animated opacity, gradient
-                    // scrim, and per-frame ValueListenableBuilder seek bar
-                    // from the video surface so neither dirties the other.
-                    RepaintBoundary(
-                      child: AnimatedOpacity(
-                        opacity: _showControls ? 1.0 : 0.0,
-                        duration: AppMotion.moderate01,
-                        child: IgnorePointer(
-                          ignoring: !_showControls,
-                          child: _VideoControls(
-                            controller: _controller,
-                            onTogglePlay: togglePlay,
-                            onSkipBack: () => skip(-_kSkipSeconds),
-                            onSkipForward: () => skip(_kSkipSeconds),
-                            onFullscreen: _openFullscreen,
-                            onEdit: widget.onEdit,
-                          ),
-                        ),
-                      ),
-                    ),
-                    // Persistent center play/pause icon — never fully hidden.
-                    // Always-visible at reduced opacity so users know where to tap.
-                    IgnorePointer(
-                      child: Center(
+                    if (!widget.minimal) ...[
+                      // Controls scrim — auto-hides during playback.
+                      // RepaintBoundary isolates the animated opacity, gradient
+                      // scrim, and per-frame ValueListenableBuilder seek bar
+                      // from the video surface so neither dirties the other.
+                      RepaintBoundary(
                         child: AnimatedOpacity(
-                          opacity: _showControls ? 0.0 : 0.4,
+                          opacity: _showControls ? 1.0 : 0.0,
                           duration: AppMotion.moderate01,
-                          child: Icon(
-                            _controller.value.isPlaying
-                                ? Icons.pause_circle_filled_rounded
-                                : Icons.play_circle_filled_rounded,
-                            color: Colors.white,
-                            size: 56,
+                          child: IgnorePointer(
+                            ignoring: !_showControls,
+                            child: _VideoControls(
+                              controller: _controller,
+                              onTogglePlay: togglePlay,
+                              onSkipBack: () => skip(-_kSkipSeconds),
+                              onSkipForward: () => skip(_kSkipSeconds),
+                              onFullscreen: _openFullscreen,
+                              onEdit: widget.onEdit,
+                            ),
                           ),
                         ),
                       ),
-                    ),
-                    // Persistent mute toggle — top-right corner, always tappable
-                    Positioned(
-                      top: 8,
-                      right: 8,
-                      child: Semantics(
-                        label: _isMuted ? 'Unmute' : 'Mute',
-                        button: true,
-                        child: GestureDetector(
-                          onTap: _toggleMute,
-                          behavior: HitTestBehavior.opaque,
-                          child: Container(
-                            width: 48,
-                            height: 48,
-                            alignment: Alignment.center,
-                            child: AnimatedOpacity(
-                              opacity: _showControls ? 0.9 : 0.5,
-                              duration: AppMotion.moderate01,
-                              child: Icon(
-                                _isMuted
-                                    ? Icons.volume_off_rounded
-                                    : Icons.volume_up_rounded,
-                                color: Colors.white,
-                                size: 22,
+                      // Persistent center play/pause icon — never fully hidden.
+                      // Always-visible at reduced opacity so users know where to tap.
+                      IgnorePointer(
+                        child: Center(
+                          child: AnimatedOpacity(
+                            opacity: _showControls ? 0.0 : 0.4,
+                            duration: AppMotion.moderate01,
+                            child: Icon(
+                              _controller.value.isPlaying
+                                  ? Icons.pause_circle_filled_rounded
+                                  : Icons.play_circle_filled_rounded,
+                              color: Colors.white,
+                              size: 56,
+                            ),
+                          ),
+                        ),
+                      ),
+                      // Persistent mute toggle — top-right corner, always tappable
+                      Positioned(
+                        top: 8,
+                        right: 8,
+                        child: Semantics(
+                          label: _isMuted ? 'Unmute' : 'Mute',
+                          button: true,
+                          child: GestureDetector(
+                            onTap: _toggleMute,
+                            behavior: HitTestBehavior.opaque,
+                            child: Container(
+                              width: 48,
+                              height: 48,
+                              alignment: Alignment.center,
+                              child: AnimatedOpacity(
+                                opacity: _showControls ? 0.9 : 0.5,
+                                duration: AppMotion.moderate01,
+                                child: Icon(
+                                  _isMuted
+                                      ? Icons.volume_off_rounded
+                                      : Icons.volume_up_rounded,
+                                  color: Colors.white,
+                                  size: 22,
+                                ),
                               ),
                             ),
                           ),
                         ),
                       ),
-                    ),
+                    ],
+                    if (widget.minimal) ...[
+                      // Minimal mode: simple center play/pause icon.
+                      // Visible at 0.6 opacity when paused, invisible when playing.
+                      IgnorePointer(
+                        child: Center(
+                          child: AnimatedOpacity(
+                            opacity: _controller.value.isPlaying ? 0.0 : 0.6,
+                            duration: AppMotion.moderate01,
+                            child: Icon(
+                              _controller.value.isPlaying
+                                  ? Icons.pause_circle_filled_rounded
+                                  : Icons.play_circle_filled_rounded,
+                              color: Colors.white,
+                              size: 72,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
                     if (widget.overlay != null) widget.overlay!,
                   ],
                 ),
@@ -746,6 +826,11 @@ class RobustVideoPlayer extends StatefulWidget {
     this.originalVideoName,
     this.autoPlay = false,
     this.borderRadius,
+    this.minimal = false,
+    this.looping = true,
+    this.muted = false,
+    this.playbackSpeed = 1.0,
+    this.onPlayStateChanged,
   });
 
   final String videoPath;
@@ -763,6 +848,21 @@ class RobustVideoPlayer extends StatefulWidget {
   /// Custom border radius. Pass [BorderRadius.zero] for immersive layouts
   /// where the parent handles clipping.
   final BorderRadius? borderRadius;
+
+  /// Forwarded to [VideoPlayerWidget.minimal].
+  final bool minimal;
+
+  /// Forwarded to [VideoPlayerWidget.looping].
+  final bool looping;
+
+  /// Forwarded to [VideoPlayerWidget.muted].
+  final bool muted;
+
+  /// Forwarded to [VideoPlayerWidget.playbackSpeed].
+  final double playbackSpeed;
+
+  /// Forwarded to [VideoPlayerWidget.onPlayStateChanged].
+  final ValueChanged<bool>? onPlayStateChanged;
 
   @override
   State<RobustVideoPlayer> createState() => _RobustVideoPlayerState();
@@ -845,6 +945,11 @@ class _RobustVideoPlayerState extends State<RobustVideoPlayer> {
         overlay: widget.overlay,
         onEdit: widget.onEdit,
         autoPlay: widget.autoPlay,
+        minimal: widget.minimal,
+        looping: widget.looping,
+        muted: widget.muted,
+        playbackSpeed: widget.playbackSpeed,
+        onPlayStateChanged: widget.onPlayStateChanged,
       ).animate().fadeIn(duration: 300.ms),
       _PlayerState.missing => _buildStatusCard(
         icon: Icons.cloud_off,

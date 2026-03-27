@@ -52,6 +52,17 @@ class _FlashcardReviewScreenState extends ConsumerState<FlashcardReviewScreen>
   double _cardOpacity = 1.0;
   bool _animatingExit = false;
 
+  // Double-tap guard — prevents multiple ratings while the card is
+  // animating out. Set true at the start of _rateItem, cleared after
+  // the page animation completes (not just the exit fade).
+  bool _isProcessingRating = false;
+
+  // Playback controls — managed at the screen level so they persist across
+  // card transitions and the instrument panel can toggle them.
+  bool _loopEnabled = true;
+  double _playbackSpeed = 1.0;
+  static const _speedPresets = [0.5, 1.0, 1.5, 2.0];
+
   // Breathing animation — subtle 0.6% scale oscillation when idle.
   // Signals "alive" state, draws attention to the card, invites interaction.
   late final AnimationController _breathController;
@@ -95,6 +106,7 @@ class _FlashcardReviewScreenState extends ConsumerState<FlashcardReviewScreen>
     _cardScale = 1.0;
     _cardOpacity = 1.0;
     _animatingExit = false;
+    _isProcessingRating = false;
   }
 
   void _endSession({bool clearTarget = true}) {
@@ -103,6 +115,83 @@ class _FlashcardReviewScreenState extends ConsumerState<FlashcardReviewScreen>
       ref.read(reviewSessionTargetMoveIdsProvider.notifier).state = null;
     }
     ref.read(reviewSessionActiveProvider.notifier).state = false;
+  }
+
+  /// Shows a confirmation sheet before ending the session — prevents
+  /// accidental taps from destroying the practitioner's flow state.
+  void _confirmEndSession() {
+    final reviewed = _currentIndex;
+    final total = _items.length;
+    showModalBottomSheet<void>(
+      context: context,
+      builder: (context) {
+        final colorScheme = Theme.of(context).colorScheme;
+        return SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.all(AppSpacing.screenEdge),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  'End session?',
+                  style: AppTypography.titleSmall.copyWith(
+                    color: colorScheme.onSurface,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                const SizedBox(height: AppSpacing.sm),
+                Text(
+                  "You've reviewed $reviewed of $total cards.",
+                  style: AppTypography.bodySmall.copyWith(
+                    color: colorScheme.secondary,
+                  ),
+                ),
+                const SizedBox(height: AppSpacing.lg),
+                Row(
+                  children: [
+                    Expanded(
+                      child: OutlinedButton(
+                        onPressed: () => Navigator.of(context).pop(),
+                        child: const Text('Continue'),
+                      ),
+                    ),
+                    const SizedBox(width: AppSpacing.md),
+                    Expanded(
+                      child: FilledButton(
+                        onPressed: () {
+                          Navigator.of(context).pop();
+                          _endSession();
+                        },
+                        style: FilledButton.styleFrom(
+                          backgroundColor: colorScheme.error,
+                          foregroundColor: colorScheme.onError,
+                        ),
+                        child: const Text('End'),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  void _cycleSpeed() {
+    setState(() {
+      final currentIdx = _speedPresets.indexOf(_playbackSpeed);
+      final nextIdx =
+          currentIdx < 0 ? 1 : (currentIdx + 1) % _speedPresets.length;
+      _playbackSpeed = _speedPresets[nextIdx];
+    });
+  }
+
+  void _toggleLoop() {
+    setState(() {
+      _loopEnabled = !_loopEnabled;
+    });
   }
 
   void _setReviewMode(ReviewMode mode) {
@@ -310,7 +399,7 @@ class _FlashcardReviewScreenState extends ConsumerState<FlashcardReviewScreen>
                             combo: pageItem.combo,
                             currentIndex: _currentIndex,
                             totalItems: _items.length,
-                            onEnd: _endSession,
+                            onEnd: _confirmEndSession,
                             onStatePillTap: () {
                               if (pageItem.isMove &&
                                   pageItem.move != null) {
@@ -322,6 +411,10 @@ class _FlashcardReviewScreenState extends ConsumerState<FlashcardReviewScreen>
                                 ? () =>
                                       _repickVideo(pageItem.move!, index)
                                 : null,
+                            loopEnabled: _loopEnabled,
+                            onLoopToggle: _toggleLoop,
+                            playbackSpeed: _playbackSpeed,
+                            onSpeedCycle: _cycleSpeed,
                           ),
                         ),
                       ),
@@ -333,13 +426,13 @@ class _FlashcardReviewScreenState extends ConsumerState<FlashcardReviewScreen>
           ),
         ),
 
-        // Rating strip — vertically centered between card and nav bar
+        // Rating strip — sits directly below the instrument panel
         Padding(
           padding: EdgeInsets.fromLTRB(
             AppSpacing.screenEdge,
-            AppSpacing.md,
+            AppSpacing.sm,
             AppSpacing.screenEdge,
-            AppSpacing.md + bottomPadding,
+            AppSpacing.sm + bottomPadding,
           ),
           child: RatingButtonRow(
             compact: true,
@@ -652,7 +745,8 @@ class _FlashcardReviewScreenState extends ConsumerState<FlashcardReviewScreen>
   }
 
   Future<void> _rateItem(ReviewSessionItem item, ReviewRating rating) async {
-    HapticFeedback.mediumImpact();
+    if (_isProcessingRating) return;
+    _isProcessingRating = true;
 
     if (item.isMove && item.move != null) {
       final move = item.move!;
@@ -780,6 +874,10 @@ class _FlashcardReviewScreenState extends ConsumerState<FlashcardReviewScreen>
 
   /// Plays a scale-down + fade exit animation, then advances to the next card.
   /// The easeOutBack overshoot on the page transition gives a fluid "pop" feel.
+  ///
+  /// `_animatingExit` stays true for the full duration — exit fade (150ms) +
+  /// page slide (300ms) — so the PageView's NeverScrollableScrollPhysics blocks
+  /// swipes until the transition is completely finished.
   void _animatedAdvance() {
     if (_animatingExit) return;
     setState(() {
@@ -791,10 +889,20 @@ class _FlashcardReviewScreenState extends ConsumerState<FlashcardReviewScreen>
     Future.delayed(AppMotion.moderate01, () {
       if (!mounted) return;
       _advance();
+      // Reset visual properties immediately so the new card appears at full
+      // scale/opacity, but keep _animatingExit true until the 300ms page
+      // animation finishes to prevent swipe interference.
       setState(() {
         _cardScale = 1.0;
         _cardOpacity = 1.0;
-        _animatingExit = false;
+      });
+
+      Future.delayed(const Duration(milliseconds: 300), () {
+        if (!mounted) return;
+        setState(() {
+          _animatingExit = false;
+        });
+        _isProcessingRating = false;
       });
     });
   }

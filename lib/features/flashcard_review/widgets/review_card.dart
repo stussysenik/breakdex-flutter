@@ -4,22 +4,22 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/database/database.dart';
 import '../../../core/database/daos/combos_dao.dart';
 import '../../../core/design/spacing.dart';
-import '../../../core/design/typography.dart';
 import '../../../core/models/learning_state.dart';
 import '../../../core/providers.dart';
-import '../../../shared/widgets/combo_step_line.dart';
-import '../../../shared/widgets/state_pill.dart';
 import '../../../shared/widgets/video_player_widget.dart'
     show RobustVideoPlayer, VideoPlaceholder;
+import 'instrument_panel.dart';
 import 'review_dashboard.dart';
 
-/// Immersive review card — video fills the card, metadata overlaid via
-/// gradient scrim. Designed for a 70/30 split where the card fills ~70%
-/// of the screen and the rating strip takes ~30%.
+/// Redesigned immersive review card — video fills the top zone with a clean
+/// surface (no metadata overlays), and an instrument panel below provides
+/// all metadata and playback controls.
 ///
-/// Move cards show the video full-bleed with name, state pill, and category
-/// overlaid on a bottom gradient. Combo cards add the step-line timeline
-/// so the learner can scrub each move while rating the combo as one card.
+/// The card returns a [Column] with two zones:
+/// 1. **Video surface** (Expanded) — full-bleed video with only progress dots
+///    and a close button overlaid via a short top gradient scrim.
+/// 2. **Instrument panel** (intrinsic height) — title, state pill, category,
+///    combo step line, loop toggle, and speed selector.
 class ReviewCard extends ConsumerStatefulWidget {
   const ReviewCard({
     super.key,
@@ -35,6 +35,10 @@ class ReviewCard extends ConsumerStatefulWidget {
     this.onRepick,
     this.combo,
     this.onEnd,
+    this.loopEnabled = true,
+    this.onLoopToggle,
+    this.playbackSpeed = 1.0,
+    this.onSpeedCycle,
   });
 
   final String title;
@@ -55,6 +59,20 @@ class ReviewCard extends ConsumerStatefulWidget {
 
   /// Callback to end the review session (shown as top-right button).
   final VoidCallback? onEnd;
+
+  // ── Playback control props ──────────────────────────────────────────────
+
+  /// Whether the video is looping.
+  final bool loopEnabled;
+
+  /// Toggles loop on/off.
+  final VoidCallback? onLoopToggle;
+
+  /// Current playback speed (0.5, 1.0, 1.5, 2.0).
+  final double playbackSpeed;
+
+  /// Cycles to the next speed preset.
+  final VoidCallback? onSpeedCycle;
 
   @override
   ConsumerState<ReviewCard> createState() => _ReviewCardState();
@@ -89,7 +107,7 @@ class _ReviewCardState extends ConsumerState<ReviewCard> {
     if (widget.combo == null) {
       final hasVideo =
           widget.videoPath != null && widget.videoPath!.trim().isNotEmpty;
-      return _buildImmersiveCard(
+      return _buildCard(
         context,
         videoPath: hasVideo ? widget.videoPath : null,
         originalVideoName: widget.originalVideoName,
@@ -121,7 +139,7 @@ class _ReviewCardState extends ConsumerState<ReviewCard> {
         final hasVideo =
             currentVideoPath != null && currentVideoPath.trim().isNotEmpty;
 
-        return _buildImmersiveCard(
+        return _buildCard(
           context,
           videoPath: hasVideo ? currentVideoPath : null,
           originalVideoName:
@@ -136,9 +154,8 @@ class _ReviewCardState extends ConsumerState<ReviewCard> {
     );
   }
 
-  /// Builds the immersive Stack-based card: video fills background,
-  /// gradient scrim at bottom, metadata overlaid, progress dots at top.
-  Widget _buildImmersiveCard(
+  /// Builds the two-zone card: [Expanded video surface] + [InstrumentPanel].
+  Widget _buildCard(
     BuildContext context, {
     required String? videoPath,
     required String? originalVideoName,
@@ -150,184 +167,133 @@ class _ReviewCardState extends ConsumerState<ReviewCard> {
   }) {
     final isCombo = comboMoves.isNotEmpty;
 
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(AppRadius.lg),
-      child: Stack(
-        fit: StackFit.expand,
-        children: [
-          // 1. Video fills entire card
-          Positioned.fill(
-            child: LayoutBuilder(
-              builder: (context, constraints) {
-                if (videoPath == null) {
-                  return VideoPlaceholder(height: constraints.maxHeight);
-                }
-                return RobustVideoPlayer(
-                  key: ValueKey(
-                    isCombo
-                        ? '${widget.combo!.id}:$activeComboStepIndex:$videoPath'
-                        : videoPath,
-                  ),
-                  videoPath: videoPath,
-                  height: constraints.maxHeight,
-                  borderRadius: BorderRadius.zero,
-                  onRepick: widget.onRepick,
-                  originalVideoName: originalVideoName,
-                  autoPlay: true,
-                );
-              },
-            ),
-          ),
-
-          // 2. Gradient scrim — transparent top, dark bottom for metadata
-          Positioned.fill(
-            child: IgnorePointer(
-              child: DecoratedBox(
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.topCenter,
-                    end: Alignment.bottomCenter,
-                    colors: [
-                      Colors.black.withValues(alpha: 0.35),
-                      Colors.transparent,
-                      Colors.transparent,
-                      Colors.black.withValues(alpha: 0.85),
-                    ],
-                    stops: const [0.0, 0.15, 0.5, 1.0],
-                  ),
-                ),
-              ),
-            ),
-          ),
-
-          // 3. Top overlay — progress dots + end button
-          Positioned(
-            top: 12,
-            left: 16,
-            right: 16,
-            child: Row(
+    return Column(
+      children: [
+        // ── Zone B: Video surface (takes remaining space) ────────────────
+        Expanded(
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(AppRadius.lg),
+            child: Stack(
+              fit: StackFit.expand,
               children: [
-                // Spacer to balance end button width
-                const SizedBox(width: 44),
-                Expanded(
-                  child: Center(
-                    child: ProgressDots(
-                      currentIndex: widget.currentIndex,
-                      total: widget.totalItems,
-                    ),
-                  ),
-                ),
-                if (widget.onEnd != null)
-                  GestureDetector(
-                    onTap: widget.onEnd,
-                    behavior: HitTestBehavior.opaque,
-                    child: Container(
-                      width: 44,
-                      height: 32,
-                      decoration: BoxDecoration(
-                        color: Colors.black.withValues(alpha: 0.3),
-                        borderRadius: BorderRadius.circular(AppRadius.xs),
-                      ),
-                      alignment: Alignment.center,
-                      child: Text(
-                        'End',
-                        style: AppTypography.caption.copyWith(
-                          color: Colors.white.withValues(alpha: 0.8),
-                          fontWeight: FontWeight.w600,
+                // 1. Video fills entire surface — minimal mode strips
+                //    internal controls so the video is a clean viewport.
+                Positioned.fill(
+                  child: LayoutBuilder(
+                    builder: (context, constraints) {
+                      if (videoPath == null) {
+                        return VideoPlaceholder(
+                            height: constraints.maxHeight);
+                      }
+                      return RobustVideoPlayer(
+                        key: ValueKey(
+                          isCombo
+                              ? '${widget.combo!.id}:$activeComboStepIndex:$videoPath'
+                              : videoPath,
                         ),
-                      ),
-                    ),
-                  )
-                else
-                  const SizedBox(width: 44),
-              ],
-            ),
-          ),
-
-          // 4. Bottom overlay — metadata
-          Positioned(
-            left: 16,
-            right: 16,
-            bottom: 16,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                // Combo step line (above title when present)
-                if (isCombo) ...[
-                  ComboStepLine(
-                    stepCount: comboMoves.length,
-                    activeIndex: activeComboStepIndex,
-                    onStepSelected: (index) {
-                      setState(() => _activeComboStepIndex = index);
+                        videoPath: videoPath,
+                        height: constraints.maxHeight,
+                        borderRadius: BorderRadius.zero,
+                        onRepick: widget.onRepick,
+                        originalVideoName: originalVideoName,
+                        autoPlay: true,
+                        minimal: true,
+                        looping: widget.loopEnabled,
+                        playbackSpeed: widget.playbackSpeed,
+                      );
                     },
-                    overlay: true,
-                    stepNames: comboMoves
-                        .map((cm) => cm.move.name)
-                        .toList(),
                   ),
-                  const SizedBox(height: AppSpacing.sm),
-                ],
-
-                // Title row + state pill
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  children: [
-                    Expanded(
-                      child: Text(
-                        title,
-                        style: AppTypography.titleSmall.copyWith(
-                          color: Colors.white,
-                          fontWeight: FontWeight.w700,
-                          fontSize: 18,
-                        ),
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
-                    const SizedBox(width: AppSpacing.sm),
-                    GestureDetector(
-                      onTap: widget.canEditState ? widget.onStatePillTap : null,
-                      child: StatePill(
-                        state: widget.state,
-                        overlay: true,
-                      ),
-                    ),
-                  ],
                 ),
 
-                // Category label
-                if (category != null && category != 'default') ...[
-                  const SizedBox(height: 4),
-                  Text(
-                    category.toUpperCase(),
-                    style: AppTypography.caption.copyWith(
-                      color: Colors.white.withValues(alpha: 0.5),
-                      letterSpacing: 1.5,
-                      fontSize: 11,
-                      fontWeight: FontWeight.w600,
+                // 2. Short top-only gradient scrim — just enough for
+                //    progress dots and close button readability.
+                Positioned(
+                  top: 0,
+                  left: 0,
+                  right: 0,
+                  height: 80,
+                  child: IgnorePointer(
+                    child: DecoratedBox(
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          begin: Alignment.topCenter,
+                          end: Alignment.bottomCenter,
+                          colors: [
+                            Colors.black.withValues(alpha: 0.30),
+                            Colors.transparent,
+                          ],
+                        ),
+                      ),
                     ),
                   ),
-                ],
+                ),
 
-                // Active step name for combos
-                if (isCombo && activeStep != null) ...[
-                  const SizedBox(height: 4),
-                  Text(
-                    activeStep.name,
-                    style: AppTypography.bodySmall.copyWith(
-                      color: Colors.white.withValues(alpha: 0.7),
-                      fontWeight: FontWeight.w600,
-                    ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
+                // 3. Top overlay — progress dots + close button (48x48)
+                Positioned(
+                  top: 12,
+                  left: 16,
+                  right: 16,
+                  child: Row(
+                    children: [
+                      // Spacer to balance close button width
+                      const SizedBox(width: 48),
+                      Expanded(
+                        child: Center(
+                          child: ProgressDots(
+                            currentIndex: widget.currentIndex,
+                            total: widget.totalItems,
+                          ),
+                        ),
+                      ),
+                      if (widget.onEnd != null)
+                        GestureDetector(
+                          onTap: widget.onEnd,
+                          behavior: HitTestBehavior.opaque,
+                          child: Container(
+                            width: 48,
+                            height: 48,
+                            decoration: BoxDecoration(
+                              color: Colors.black.withValues(alpha: 0.25),
+                              shape: BoxShape.circle,
+                            ),
+                            child: const Icon(
+                              Icons.close_rounded,
+                              color: Colors.white,
+                              size: 22,
+                            ),
+                          ),
+                        )
+                      else
+                        const SizedBox(width: 48),
+                    ],
                   ),
-                ],
+                ),
               ],
             ),
           ),
-        ],
-      ),
+        ),
+
+        // ── Zone C: Instrument panel ─────────────────────────────────────
+        InstrumentPanel(
+          title: title,
+          state: widget.state,
+          category: category,
+          canEditState: widget.canEditState,
+          onStatePillTap: widget.onStatePillTap,
+          comboMoves: comboMoves,
+          activeComboStepIndex: activeComboStepIndex,
+          onStepSelected: isCombo
+              ? (index) {
+                  setState(() => _activeComboStepIndex = index);
+                }
+              : null,
+          activeStep: activeStep,
+          loopEnabled: widget.loopEnabled,
+          onLoopToggle: widget.onLoopToggle,
+          playbackSpeed: widget.playbackSpeed,
+          onSpeedCycle: widget.onSpeedCycle,
+        ),
+      ],
     );
   }
 }

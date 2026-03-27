@@ -38,7 +38,7 @@ class RatingButtonRow extends ConsumerWidget {
   /// Shape + color = double encoding (WCAG 1.4.1 Use of Color).
   static IconData _iconForRating(ReviewRating rating) => switch (rating) {
         ReviewRating.again => Icons.close_rounded,    // X shape — "wrong"
-        ReviewRating.hard  => Icons.remove_rounded,   // Minus — "struggle"
+        ReviewRating.hard  => Icons.trending_flat_rounded, // Wave — "struggled"
         ReviewRating.good  => Icons.check_rounded,    // Checkmark — "got it"
         ReviewRating.easy  => Icons.star_rounded,     // Star — "effortless"
       };
@@ -61,7 +61,7 @@ class RatingButtonRow extends ConsumerWidget {
       children: [
         for (final rating in ReviewRating.values) ...[
           if (rating != ReviewRating.values.first)
-            const SizedBox(width: AppSpacing.sm),
+            const SizedBox(width: 12),
           Expanded(
             child: compact
                 ? _CompactRatingButton(
@@ -147,16 +147,25 @@ class _CompactRatingButton extends StatelessWidget {
         borderRadius: BorderRadius.circular(AppRadius.sm),
         child: InkWell(
           onTap: () {
-            HapticFeedback.mediumImpact();
+            switch (rating) {
+              case ReviewRating.again:
+                HapticFeedback.heavyImpact();
+              case ReviewRating.hard:
+                HapticFeedback.mediumImpact();
+              case ReviewRating.good:
+                HapticFeedback.lightImpact();
+              case ReviewRating.easy:
+                HapticFeedback.selectionClick();
+            }
             onRate(rating);
           },
           borderRadius: BorderRadius.circular(AppRadius.sm),
           child: SizedBox(
-            height: 60,
+            height: 72,
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Icon(icon, size: 18, color: color),
+                Icon(icon, size: 24, color: color),
                 const SizedBox(height: 2),
                 Text(
                   rating.displayText,

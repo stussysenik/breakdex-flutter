@@ -326,11 +326,7 @@ class _ReviewStateTile extends StatelessWidget {
         child: Container(
           decoration: AppSurfaces.panel(context, radius: AppRadius.sm),
           child: Material(
-            color: semanticTheme.isMonoOutline
-                ? colorScheme.surface
-                : enabled
-                ? accent.withValues(alpha: 0.08)
-                : colorScheme.surface,
+            color: colorScheme.surface,
             borderRadius: BorderRadius.circular(AppRadius.sm),
             child: InkWell(
               onTap: enabled ? onTap : null,
@@ -853,9 +849,7 @@ class _DeckStateRow extends StatelessWidget {
     final enabled = count > 0;
 
     return Material(
-      color: enabled
-          ? state.color.withValues(alpha: 0.08)
-          : colorScheme.surfaceContainerHighest,
+      color: colorScheme.surface,
       borderRadius: BorderRadius.circular(AppRadius.sm),
       child: InkWell(
         onTap: enabled ? onTap : null,

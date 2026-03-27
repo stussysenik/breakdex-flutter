@@ -49,11 +49,18 @@ class TimelineNode extends StatelessWidget {
     }
 
     final nodeColor = isActive ? activeColor : inactiveColor;
-    final textColor = isActive
-        ? activeColor
-        : (overlay
-            ? Colors.white.withValues(alpha: 0.3)
-            : Theme.of(context).colorScheme.secondary);
+
+    // Active nodes use a filled circle with contrasting text;
+    // inactive nodes stay hollow with a border-only style.
+    final Color textColor;
+    if (isActive) {
+      // Filled circle — text must contrast with the fill color.
+      textColor = overlay ? Colors.black87 : Colors.white;
+    } else {
+      textColor = overlay
+          ? Colors.white.withValues(alpha: 0.3)
+          : Theme.of(context).colorScheme.secondary;
+    }
 
     final node = Row(
       mainAxisSize: MainAxisSize.min,
@@ -65,11 +72,11 @@ class TimelineNode extends StatelessWidget {
           height: 36,
           decoration: BoxDecoration(
             shape: BoxShape.circle,
-            color: isAdd ? Colors.transparent : null,
-            border: Border.all(
-              color: nodeColor,
-              width: isActive ? 3 : 2,
-            ),
+            // Active: solid fill; Inactive/Add: transparent with border.
+            color: isActive ? activeColor : (isAdd ? Colors.transparent : null),
+            border: isActive
+                ? null
+                : Border.all(color: nodeColor, width: 2),
           ),
           child: Center(
             child: isAdd
