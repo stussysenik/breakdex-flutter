@@ -1,3 +1,10 @@
+# [1.2.0](https://github.com/stussysenik/breakdex-flutter/compare/v1.1.0...v1.2.0) (2026-03-27)
+
+
+### Features
+
+* **review:** redesign review card with instrument panel and enhanced controls ([ac4f588](https://github.com/stussysenik/breakdex-flutter/commit/ac4f588a244f658937b11c1535255b4c600f1c7a))
+
 # [1.1.0](https://github.com/stussysenik/breakdex-flutter/compare/v1.0.0...v1.1.0) (2026-03-24)
 
 
