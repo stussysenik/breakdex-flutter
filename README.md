@@ -16,6 +16,9 @@
 
 ## About
 
+![Demo](demo.gif)
+
+
 Breakdex combines a move library, combo builder, video editor, deck-based practice, and review analytics into a single Flutter app. It uses spaced-repetition (FSRS) to schedule reviews so you practice the moves you need most, right when you need them.
 
 ## Features
