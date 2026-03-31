@@ -12,6 +12,7 @@ import 'package:uuid/uuid.dart';
 import '../../../core/database/database.dart';
 import '../../../core/design/colors.dart';
 import '../../../core/design/spacing.dart';
+import '../../../core/design/theme.dart';
 import '../../../core/design/typography.dart';
 import '../../../core/services/categories_service.dart';
 import '../../lab/providers/lab_providers.dart';
@@ -64,7 +65,9 @@ class _ForceLayout {
       node.vy = 0;
     }
 
-    _simulate(nodes, edges,
+    _simulate(
+      nodes,
+      edges,
       width: width,
       height: height,
       repulsionMultiplier: 1.0,
@@ -84,9 +87,9 @@ class _ForceLayout {
 
   /// Compute absolute gravity centers for a given canvas size.
   static Map<String, Offset> categoryGravity(double w, double h) => {
-        for (final e in _categoryGravityRatios.entries)
-          e.key: Offset(w * e.value.$1, h * e.value.$2),
-      };
+    for (final e in _categoryGravityRatios.entries)
+      e.key: Offset(w * e.value.$1, h * e.value.$2),
+  };
 
   /// Cluster layout — per-category gravity instead of generic centering.
   void runClustered(
@@ -109,7 +112,9 @@ class _ForceLayout {
       node.vy = 0;
     }
 
-    _simulate(nodes, edges,
+    _simulate(
+      nodes,
+      edges,
       width: width,
       height: height,
       repulsionMultiplier: 1.5,
@@ -258,10 +263,10 @@ class _FlowGraphPainter extends CustomPainter {
   static const double _gridDotRadius = 1;
 
   double _radiusForMastery(int masteryState) => switch (masteryState) {
-        2 => _radiusMastery,
-        1 => _radiusLearning,
-        _ => _radiusNew,
-      };
+    2 => _radiusMastery,
+    1 => _radiusLearning,
+    _ => _radiusNew,
+  };
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -302,23 +307,22 @@ class _FlowGraphPainter extends CustomPainter {
         ? AppColors.lightText.withValues(alpha: 0.22)
         : AppColors.darkText.withValues(alpha: 0.22);
 
-    final gravityMap =
-        _ForceLayout.categoryGravity(size.width, size.height);
+    final gravityMap = _ForceLayout.categoryGravity(size.width, size.height);
 
     for (final entry in gravityMap.entries) {
-      final paragraphBuilder = ui.ParagraphBuilder(
-        ui.ParagraphStyle(
-          textAlign: TextAlign.center,
-          maxLines: 1,
-        ),
-      )
-        ..pushStyle(ui.TextStyle(
-          color: textColor,
-          fontSize: 22,
-          fontWeight: FontWeight.w700,
-          fontFamily: 'Inter',
-        ))
-        ..addText(entry.key);
+      final paragraphBuilder =
+          ui.ParagraphBuilder(
+              ui.ParagraphStyle(textAlign: TextAlign.center, maxLines: 1),
+            )
+            ..pushStyle(
+              ui.TextStyle(
+                color: textColor,
+                fontSize: 22,
+                fontWeight: FontWeight.w700,
+                fontFamily: 'Inter',
+              ),
+            )
+            ..addText(entry.key);
 
       final paragraph = paragraphBuilder.build()
         ..layout(const ui.ParagraphConstraints(width: 200));
@@ -354,7 +358,8 @@ class _FlowGraphPainter extends CustomPainter {
       final to = _nodeById[edge.toId];
       if (from == null || to == null) continue;
 
-      final isConnected = selectedNodeId != null &&
+      final isConnected =
+          selectedNodeId != null &&
           (edge.fromId == selectedNodeId || edge.toId == selectedNodeId);
       final isDimmed = selectedNodeId != null && !isConnected;
 
@@ -395,19 +400,30 @@ class _FlowGraphPainter extends CustomPainter {
         final perpY = (to.x - from.x) * 0.1 * sign;
         final path = Path()
           ..moveTo(start.dx, start.dy)
-          ..quadraticBezierTo(
-            midX + perpX, midY + perpY, end.dx, end.dy);
+          ..quadraticBezierTo(midX + perpX, midY + perpY, end.dx, end.dy);
         canvas.drawPath(path, paint);
       } else {
         switch (edge.affinity) {
           case 'natural':
             canvas.drawLine(start, end, paint);
           case 'possible':
-            _drawDashedLine(canvas, start, end, paint,
-                dashWidth: 8, gapWidth: 4);
+            _drawDashedLine(
+              canvas,
+              start,
+              end,
+              paint,
+              dashWidth: 8,
+              gapWidth: 4,
+            );
           default:
-            _drawDashedLine(canvas, start, end, paint,
-                dashWidth: 3, gapWidth: 3);
+            _drawDashedLine(
+              canvas,
+              start,
+              end,
+              paint,
+              dashWidth: 3,
+              gapWidth: 3,
+            );
         }
       }
     }
@@ -468,8 +484,7 @@ class _FlowGraphPainter extends CustomPainter {
 
       final isSelected = node.id == selectedNodeId;
       final isConnected = connectedNodeIds.contains(node.id);
-      final isDimmed =
-          selectedNodeId != null && !isSelected && !isConnected;
+      final isDimmed = selectedNodeId != null && !isSelected && !isConnected;
 
       // Compute effective color with selection-aware opacity.
       Color fillColor;
@@ -545,8 +560,7 @@ class _FlowGraphPainter extends CustomPainter {
 
       final isSelected = node.id == selectedNodeId;
       final isConnected = connectedNodeIds.contains(node.id);
-      final isDimmed =
-          selectedNodeId != null && !isSelected && !isConnected;
+      final isDimmed = selectedNodeId != null && !isSelected && !isConnected;
       if (isDimmed) continue;
 
       final labelY = node.masteryState == 2
@@ -558,8 +572,12 @@ class _FlowGraphPainter extends CustomPainter {
 
     // Mastery nodes first (they earned their labels), then multi-selected.
     candidates.sort((a, b) {
-      final aBoost = multiSelectedIds.contains(a.node.id) ? 3 : a.node.masteryState;
-      final bBoost = multiSelectedIds.contains(b.node.id) ? 3 : b.node.masteryState;
+      final aBoost = multiSelectedIds.contains(a.node.id)
+          ? 3
+          : a.node.masteryState;
+      final bBoost = multiSelectedIds.contains(b.node.id)
+          ? 3
+          : b.node.masteryState;
       return bBoost.compareTo(aBoost);
     });
 
@@ -572,23 +590,27 @@ class _FlowGraphPainter extends CustomPainter {
       placed.add(rect);
 
       final fontSize = c.node.masteryState == 2 ? 13.0 : 12.0;
-      final fontWeight =
-          c.node.masteryState == 2 ? FontWeight.w600 : FontWeight.w500;
+      final fontWeight = c.node.masteryState == 2
+          ? FontWeight.w600
+          : FontWeight.w500;
 
-      final paragraphBuilder = ui.ParagraphBuilder(
-        ui.ParagraphStyle(
-          textAlign: TextAlign.center,
-          maxLines: 1,
-          ellipsis: '\u2026',
-        ),
-      )
-        ..pushStyle(ui.TextStyle(
-          color: textColor,
-          fontSize: fontSize,
-          fontWeight: fontWeight,
-          fontFamily: 'Inter',
-        ))
-        ..addText(c.node.name);
+      final paragraphBuilder =
+          ui.ParagraphBuilder(
+              ui.ParagraphStyle(
+                textAlign: TextAlign.center,
+                maxLines: 1,
+                ellipsis: '\u2026',
+              ),
+            )
+            ..pushStyle(
+              ui.TextStyle(
+                color: textColor,
+                fontSize: fontSize,
+                fontWeight: fontWeight,
+                fontFamily: 'Inter',
+              ),
+            )
+            ..addText(c.node.name);
 
       final paragraph = paragraphBuilder.build()
         ..layout(const ui.ParagraphConstraints(width: 80));
@@ -647,18 +669,8 @@ class _FlowGraphCanvasState extends ConsumerState<FlowGraphCanvas> {
   /// All edges in the graph.
   List<GraphEdge> _layoutEdges = [];
 
-  /// The currently selected (tapped) node ID, or null if nothing selected.
-  String? _selectedNodeId;
-
-  /// Set of node IDs connected to the selected node (for spotlight effect).
-  Set<String> _connectedNodeIds = {};
-
   /// Stores the position from onDoubleTapDown so onDoubleTap can hit-test.
   Offset? _doubleTapPosition;
-
-  /// Node ID for the floating "Focus" pill — shown when a node is selected
-  /// in Map mode. Tapping the pill switches to Focus (ego graph) mode.
-  String? _focusPillNodeId;
 
   /// Whether multi-select mode is active (entered via long-press on a node).
   bool _multiSelectMode = false;
@@ -693,9 +705,7 @@ class _FlowGraphCanvasState extends ConsumerState<FlowGraphCanvas> {
   /// stored in SharedPreferences with user-chosen colors. Falls back to
   /// AppColors.lightSecondary for unknown categories.
   Map<String, Color> _buildCategoryColors(List<Category> categories) {
-    return {
-      for (final cat in categories) cat.name: cat.color,
-    };
+    return {for (final cat in categories) cat.name: cat.color};
   }
 
   /// Runs the force layout simulation on the current node/edge data.
@@ -711,12 +721,13 @@ class _FlowGraphCanvasState extends ConsumerState<FlowGraphCanvas> {
     List<GraphNode> rawNodes,
     List<GraphEdge> edges,
     FlowViewMode viewMode,
+    String? selectedNodeId,
   ) {
     // Compute a lightweight hash including view mode and selection so
     // layout recomputes when switching modes or selecting nodes.
     final hash = Object.hashAll([
       viewMode.index,
-      _selectedNodeId ?? '',
+      selectedNodeId ?? '',
       ...rawNodes.map((n) => n.id),
       ...edges.map((e) => '${e.fromId}-${e.toId}'),
     ]);
@@ -730,23 +741,25 @@ class _FlowGraphCanvasState extends ConsumerState<FlowGraphCanvas> {
     List<GraphEdge> filteredEdges;
 
     if (viewMode == FlowViewMode.focus) {
-      if (_selectedNodeId == null) {
+      if (selectedNodeId == null) {
         _layoutNodes = [];
         _layoutEdges = [];
         return;
       }
       // Collect 1-hop neighbor IDs.
-      final neighborIds = <String>{_selectedNodeId!};
+      final neighborIds = <String>{selectedNodeId};
       for (final edge in edges) {
-        if (edge.fromId == _selectedNodeId) neighborIds.add(edge.toId);
-        if (edge.toId == _selectedNodeId) neighborIds.add(edge.fromId);
+        if (edge.fromId == selectedNodeId) neighborIds.add(edge.toId);
+        if (edge.toId == selectedNodeId) neighborIds.add(edge.fromId);
       }
-      filteredNodes =
-          rawNodes.where((n) => neighborIds.contains(n.id)).toList();
+      filteredNodes = rawNodes
+          .where((n) => neighborIds.contains(n.id))
+          .toList();
       filteredEdges = edges
-          .where((e) =>
-              neighborIds.contains(e.fromId) &&
-              neighborIds.contains(e.toId))
+          .where(
+            (e) =>
+                neighborIds.contains(e.fromId) && neighborIds.contains(e.toId),
+          )
           .toList();
     } else {
       filteredNodes = rawNodes;
@@ -756,12 +769,14 @@ class _FlowGraphCanvasState extends ConsumerState<FlowGraphCanvas> {
     // Deep-copy nodes so the force layout can mutate positions without
     // affecting the provider's data.
     _layoutNodes = filteredNodes
-        .map((n) => GraphNode(
-              id: n.id,
-              name: n.name,
-              category: n.category,
-              masteryState: n.masteryState,
-            ))
+        .map(
+          (n) => GraphNode(
+            id: n.id,
+            name: n.name,
+            category: n.category,
+            masteryState: n.masteryState,
+          ),
+        )
         .toList();
     _layoutEdges = filteredEdges;
 
@@ -807,7 +822,8 @@ class _FlowGraphCanvasState extends ConsumerState<FlowGraphCanvas> {
   /// + 8px padding) for fat-finger friendliness.
   String? _hitTestNode(Offset localPosition) {
     for (final node in _layoutNodes) {
-      final effectiveRadius = switch (node.masteryState) {
+      final effectiveRadius =
+          switch (node.masteryState) {
             2 => _FlowGraphPainter._radiusMastery,
             1 => _FlowGraphPainter._radiusLearning,
             _ => _FlowGraphPainter._radiusNew,
@@ -832,13 +848,12 @@ class _FlowGraphCanvasState extends ConsumerState<FlowGraphCanvas> {
 
   /// Reset spotlight selection state.
   void _clearSelection() {
-    _selectedNodeId = null;
-    _connectedNodeIds = {};
-    _focusPillNodeId = null;
+    ref.read(selectedNodeProvider.notifier).state = null;
   }
 
   void _onTapUp(TapUpDetails details) {
     final hitId = _hitTestNode(_screenToCanvas(details.localPosition));
+    final selectedNodeId = ref.read(selectedNodeProvider);
 
     setState(() {
       // Multi-select mode: toggle nodes in/out of selection set.
@@ -858,12 +873,10 @@ class _FlowGraphCanvasState extends ConsumerState<FlowGraphCanvas> {
       }
 
       // Normal mode: spotlight selection.
-      if (hitId == null || hitId == _selectedNodeId) {
+      if (hitId == null || hitId == selectedNodeId) {
         _clearSelection();
       } else {
-        _selectedNodeId = hitId;
-        _connectedNodeIds = _computeConnectedIds(hitId);
-        _focusPillNodeId = hitId;
+        ref.read(selectedNodeProvider.notifier).state = hitId;
         HapticFeedback.selectionClick();
       }
     });
@@ -895,9 +908,7 @@ class _FlowGraphCanvasState extends ConsumerState<FlowGraphCanvas> {
           content: TextField(
             controller: controller,
             autofocus: true,
-            decoration: const InputDecoration(
-              hintText: 'Set name',
-            ),
+            decoration: const InputDecoration(hintText: 'Set name'),
             onSubmitted: (v) => Navigator.pop(ctx, v.trim()),
           ),
           actions: [
@@ -906,8 +917,7 @@ class _FlowGraphCanvasState extends ConsumerState<FlowGraphCanvas> {
               child: const Text('Cancel'),
             ),
             TextButton(
-              onPressed: () =>
-                  Navigator.pop(ctx, controller.text.trim()),
+              onPressed: () => Navigator.pop(ctx, controller.text.trim()),
               child: const Text('Create'),
             ),
           ],
@@ -920,11 +930,7 @@ class _FlowGraphCanvasState extends ConsumerState<FlowGraphCanvas> {
     final labId = const Uuid().v4();
     final dao = ref.read(labsDaoProvider);
     await dao.insertLab(
-      LabsCompanion.insert(
-        id: labId,
-        name: name,
-        labType: const Value('set'),
-      ),
+      LabsCompanion.insert(id: labId, name: name, labType: const Value('set')),
     );
 
     // Add moves in the order they appear in the layout nodes list.
@@ -965,28 +971,32 @@ class _FlowGraphCanvasState extends ConsumerState<FlowGraphCanvas> {
     }
   }
 
-  /// Frosted 28x28 circle button for graph overlays (info, re-center, etc.).
-  Widget _frostedCircleButton({
+  /// Compact, accessible overlay button for graph utilities.
+  Widget _overlayControlButton({
     required VoidCallback onTap,
     required IconData icon,
-    required ColorScheme colorScheme,
+    required String semanticsLabel,
+    required String semanticsIdentifier,
   }) {
-    return GestureDetector(
-      onTap: () {
-        HapticFeedback.selectionClick();
-        onTap();
-      },
-      child: ClipOval(
-        child: BackdropFilter(
-          filter: ui.ImageFilter.blur(sigmaX: 6, sigmaY: 6),
-          child: Container(
-            width: 28,
-            height: 28,
-            decoration: BoxDecoration(
-              color: colorScheme.surface.withValues(alpha: 0.7),
-              shape: BoxShape.circle,
-            ),
-            child: Icon(icon, size: 16, color: colorScheme.secondary),
+    final colorScheme = Theme.of(context).colorScheme;
+
+    return Semantics(
+      button: true,
+      label: semanticsLabel,
+      identifier: semanticsIdentifier,
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: () {
+            HapticFeedback.selectionClick();
+            onTap();
+          },
+          borderRadius: BorderRadius.circular(AppRadius.sm),
+          child: Ink(
+            width: 36,
+            height: 36,
+            decoration: AppSurfaces.panel(context, radius: AppRadius.sm),
+            child: Icon(icon, size: 18, color: colorScheme.onSurface),
           ),
         ),
       ),
@@ -1020,12 +1030,13 @@ class _FlowGraphCanvasState extends ConsumerState<FlowGraphCanvas> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(icon, size: 48,
-                color: secondary.withValues(alpha: 0.4)),
+            Icon(icon, size: 48, color: secondary.withValues(alpha: 0.4)),
             const SizedBox(height: AppSpacing.md),
-            Text(message,
-                textAlign: TextAlign.center,
-                style: AppTypography.bodySmall.copyWith(color: secondary)),
+            Text(
+              message,
+              textAlign: TextAlign.center,
+              style: AppTypography.bodySmall.copyWith(color: secondary),
+            ),
           ],
         ),
       ),
@@ -1036,15 +1047,30 @@ class _FlowGraphCanvasState extends ConsumerState<FlowGraphCanvas> {
   Widget build(BuildContext context) {
     final graphData = ref.watch(flowGraphDataProvider);
     final viewMode = ref.watch(flowViewModeProvider);
+    final selectedNodeId = ref.watch(selectedNodeProvider);
     final rawNodes = graphData.nodes;
     final edges = graphData.edges;
     final categories = ref.watch(categoriesProvider);
     final brightness = Theme.of(context).brightness;
     final colorScheme = Theme.of(context).colorScheme;
     final categoryColors = _buildCategoryColors(categories);
+    final hasSelectedNode =
+        selectedNodeId != null &&
+        rawNodes.any((node) => node.id == selectedNodeId);
+    final effectiveSelectedNodeId = hasSelectedNode ? selectedNodeId : null;
+
+    if (selectedNodeId != null && !hasSelectedNode) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        ref.read(selectedNodeProvider.notifier).state = null;
+      });
+    }
 
     // Run force layout (idempotent — only recomputes when data changes).
-    _runLayoutIfNeeded(rawNodes, edges, viewMode);
+    _runLayoutIfNeeded(rawNodes, edges, viewMode, effectiveSelectedNodeId);
+    final connectedNodeIds = effectiveSelectedNodeId == null
+        ? const <String>{}
+        : _computeConnectedIds(effectiveSelectedNodeId);
 
     // Auto-fit: zoom out so the entire graph is visible on first render.
     if (!_hasSetInitialTransform && _layoutNodes.isNotEmpty) {
@@ -1053,13 +1079,17 @@ class _FlowGraphCanvasState extends ConsumerState<FlowGraphCanvas> {
     }
 
     if (rawNodes.isEmpty) {
-      return _emptyPlaceholder(Icons.hub_rounded,
-          'Add moves to your library\nto see them mapped here.');
+      return _emptyPlaceholder(
+        Icons.hub_outlined,
+        'Add moves to your library\nto see them mapped here.',
+      );
     }
 
-    if (viewMode == FlowViewMode.focus && _selectedNodeId == null) {
-      return _emptyPlaceholder(Icons.adjust_rounded,
-          'Select a move in Map mode\nto see its connections here.');
+    if (viewMode == FlowViewMode.focus && effectiveSelectedNodeId == null) {
+      return _emptyPlaceholder(
+        Icons.center_focus_strong_rounded,
+        'Select a move in Map mode\nto see its connections here.',
+      );
     }
 
     // Canvas background color from the design system.
@@ -1073,34 +1103,39 @@ class _FlowGraphCanvasState extends ConsumerState<FlowGraphCanvas> {
         ClipRect(
           child: Container(
             color: canvasBg,
-            child: InteractiveViewer(
-              transformationController: _transformController,
-              minScale: 0.3,
-              maxScale: 3.0,
-              boundaryMargin: const EdgeInsets.all(100),
-              child: GestureDetector(
-                onTapUp: _onTapUp,
-                onLongPressStart: _onLongPress,
-                onDoubleTapDown: (details) =>
-                    _doubleTapPosition = details.localPosition,
-                onDoubleTap: _onDoubleTap,
-                behavior: HitTestBehavior.opaque,
-                child: SizedBox(
-                  width: _canvasWidth,
-                  height: _canvasHeight,
-                  child: CustomPaint(
-                    painter: _FlowGraphPainter(
-                      nodes: _layoutNodes,
-                      edges: _layoutEdges,
-                      categoryColors: categoryColors,
-                      selectedNodeId: _selectedNodeId,
-                      connectedNodeIds: _connectedNodeIds,
-                      brightness: brightness,
-                      viewMode: viewMode,
-                      zoomScale: _transformController.value.getMaxScaleOnAxis(),
-                      multiSelectedIds: _multiSelectedIds,
+            child: Semantics(
+              identifier: 'flow-graph-canvas',
+              label: 'Flow graph canvas',
+              child: InteractiveViewer(
+                transformationController: _transformController,
+                minScale: 0.3,
+                maxScale: 3.0,
+                boundaryMargin: const EdgeInsets.all(100),
+                child: GestureDetector(
+                  onTapUp: _onTapUp,
+                  onLongPressStart: _onLongPress,
+                  onDoubleTapDown: (details) =>
+                      _doubleTapPosition = details.localPosition,
+                  onDoubleTap: _onDoubleTap,
+                  behavior: HitTestBehavior.opaque,
+                  child: SizedBox(
+                    width: _canvasWidth,
+                    height: _canvasHeight,
+                    child: CustomPaint(
+                      painter: _FlowGraphPainter(
+                        nodes: _layoutNodes,
+                        edges: _layoutEdges,
+                        categoryColors: categoryColors,
+                        selectedNodeId: effectiveSelectedNodeId,
+                        connectedNodeIds: connectedNodeIds,
+                        brightness: brightness,
+                        viewMode: viewMode,
+                        zoomScale: _transformController.value
+                            .getMaxScaleOnAxis(),
+                        multiSelectedIds: _multiSelectedIds,
+                      ),
+                      size: Size(_canvasWidth, _canvasHeight),
                     ),
-                    size: Size(_canvasWidth, _canvasHeight),
                   ),
                 ),
               ),
@@ -1125,10 +1160,13 @@ class _FlowGraphCanvasState extends ConsumerState<FlowGraphCanvas> {
           Positioned(
             top: 8,
             right: 8,
-            child: _frostedCircleButton(
+            child: _overlayControlButton(
               onTap: () => setState(() => _showLegend = !_showLegend),
-              icon: Icons.info_outline,
-              colorScheme: colorScheme,
+              icon: Icons.help_outline_rounded,
+              semanticsLabel: _showLegend
+                  ? 'Hide flow graph legend'
+                  : 'Show flow graph legend',
+              semanticsIdentifier: 'flow-legend-toggle',
             ),
           ),
 
@@ -1137,10 +1175,11 @@ class _FlowGraphCanvasState extends ConsumerState<FlowGraphCanvas> {
           Positioned(
             top: 44,
             right: 8,
-            child: _frostedCircleButton(
+            child: _overlayControlButton(
               onTap: _zoomToFit,
-              icon: Icons.center_focus_strong,
-              colorScheme: colorScheme,
+              icon: Icons.center_focus_strong_rounded,
+              semanticsLabel: 'Recenter flow graph',
+              semanticsIdentifier: 'flow-recenter',
             ),
           ),
 
@@ -1152,43 +1191,50 @@ class _FlowGraphCanvasState extends ConsumerState<FlowGraphCanvas> {
             right: AppSpacing.sm,
             child: ClipRRect(
               borderRadius: BorderRadius.circular(AppRadius.md),
-              child: BackdropFilter(
-                filter: ui.ImageFilter.blur(sigmaX: 8, sigmaY: 8),
-                child: Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: AppSpacing.md,
-                    vertical: AppSpacing.sm,
+              child: Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: AppSpacing.md,
+                  vertical: AppSpacing.sm,
+                ),
+                decoration: BoxDecoration(
+                  color: colorScheme.surface,
+                  borderRadius: BorderRadius.circular(AppRadius.md),
+                  border: Border.all(
+                    color: colorScheme.outline.withValues(alpha: 0.18),
                   ),
-                  decoration: BoxDecoration(
-                    color: colorScheme.surface.withValues(alpha: 0.92),
-                    borderRadius: BorderRadius.circular(AppRadius.md),
-                    border: Border.all(
-                      color: colorScheme.outline.withValues(alpha: 0.1),
-                    ),
-                  ),
-                  child: Row(
-                    children: [
-                      GestureDetector(
+                ),
+                child: Row(
+                  children: [
+                    Semantics(
+                      button: true,
+                      label: 'Cancel multi-select',
+                      identifier: 'flow-selection-cancel',
+                      child: GestureDetector(
                         onTap: () => setState(() {
                           _multiSelectMode = false;
                           _multiSelectedIds = {};
                         }),
                         child: Icon(
-                          Icons.close,
+                          Icons.close_rounded,
                           size: 20,
                           color: colorScheme.secondary,
                         ),
                       ),
-                      const SizedBox(width: AppSpacing.md),
-                      Text(
-                        '${_multiSelectedIds.length} selected',
-                        style: AppTypography.bodySmall.copyWith(
-                          color: colorScheme.onSurface,
-                          fontWeight: FontWeight.w600,
-                        ),
+                    ),
+                    const SizedBox(width: AppSpacing.md),
+                    Text(
+                      '${_multiSelectedIds.length} selected',
+                      style: AppTypography.bodySmall.copyWith(
+                        color: colorScheme.onSurface,
+                        fontWeight: FontWeight.w600,
                       ),
-                      const Spacer(),
-                      GestureDetector(
+                    ),
+                    const Spacer(),
+                    Semantics(
+                      button: true,
+                      label: 'Create a set from selected moves',
+                      identifier: 'flow-create-set',
+                      child: GestureDetector(
                         onTap: _createSetFromSelection,
                         child: Container(
                           padding: const EdgeInsets.symmetric(
@@ -1208,56 +1254,12 @@ class _FlowGraphCanvasState extends ConsumerState<FlowGraphCanvas> {
                           ),
                         ),
                       ),
-                    ],
-                  ),
+                    ),
+                  ],
                 ),
               ),
             ),
           ),
-
-        // Child 5: Focus pill — floats below the selected node in Map mode.
-        if (_focusPillNodeId != null && viewMode == FlowViewMode.map)
-          Builder(builder: (context) {
-            final node = _layoutNodes
-                .where((n) => n.id == _focusPillNodeId)
-                .firstOrNull;
-            if (node == null) return const SizedBox.shrink();
-
-            // Transform the node's canvas position to screen space.
-            final screenPoint = MatrixUtils.transformPoint(
-              _transformController.value,
-              Offset(node.x, node.y + 30), // 30px below node center
-            );
-
-            return Positioned(
-              left: screenPoint.dx - 36, // roughly center the ~72px pill
-              top: screenPoint.dy,
-              child: GestureDetector(
-                onTap: () {
-                  HapticFeedback.selectionClick();
-                  ref.read(flowViewModeProvider.notifier).state =
-                      FlowViewMode.focus;
-                },
-                child: Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: AppSpacing.xs + 2,
-                    vertical: AppSpacing.xs,
-                  ),
-                  decoration: BoxDecoration(
-                    color: colorScheme.primary,
-                    borderRadius: BorderRadius.circular(AppRadius.sm),
-                  ),
-                  child: Text(
-                    'Focus \u2192',
-                    style: AppTypography.caption.copyWith(
-                      color: Colors.white,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ),
-              ),
-            );
-          }),
       ],
     );
   }

@@ -19,30 +19,35 @@ class SettingsGearButton extends ConsumerWidget {
     final isLoggedIn = ref.watch(isLoggedInProvider);
     final colorScheme = Theme.of(context).colorScheme;
 
-    return GestureDetector(
-      onTap: () => context.push('/settings'),
-      child: Container(
-        width: 36,
-        height: 36,
-        decoration: BoxDecoration(
-          shape: BoxShape.circle,
-          color: colorScheme.surface.withValues(alpha: 0.6),
-          border: Border.all(
-            color: colorScheme.outline.withValues(alpha: 0.1),
-            width: 0.5,
+    return Semantics(
+      identifier: 'settings-gear',
+      label: 'Settings',
+      button: true,
+      child: GestureDetector(
+        onTap: () => context.push('/settings'),
+        child: Container(
+          width: 36,
+          height: 36,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            color: colorScheme.surface.withValues(alpha: 0.6),
+            border: Border.all(
+              color: colorScheme.outline.withValues(alpha: 0.1),
+              width: 0.5,
+            ),
           ),
-        ),
-        child: Badge(
-          isLabelVisible: isLoggedIn && pendingCount > 0,
-          label: Text(
-            pendingCount > 99 ? '99+' : '$pendingCount',
-            style: const TextStyle(fontSize: 10, color: Colors.white),
-          ),
-          backgroundColor: colorScheme.primary,
-          child: Icon(
-            Icons.settings_outlined,
-            size: 20,
-            color: colorScheme.secondary,
+          child: Badge(
+            isLabelVisible: isLoggedIn && pendingCount > 0,
+            label: Text(
+              pendingCount > 99 ? '99+' : '$pendingCount',
+              style: const TextStyle(fontSize: 10, color: Colors.white),
+            ),
+            backgroundColor: colorScheme.primary,
+            child: Icon(
+              Icons.settings_outlined,
+              size: 20,
+              color: colorScheme.secondary,
+            ),
           ),
         ),
       ),

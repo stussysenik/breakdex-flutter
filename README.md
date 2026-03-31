@@ -1,7 +1,7 @@
 <h1 align="center">Breakdex</h1>
 
 <p align="center">
-  <em>A pocket video database for dance moves, combos, and spaced-repetition review.</em>
+  <em>A pocket video database for dance moves, combos, transition mapping, and spaced-repetition review.</em>
 </p>
 
 <p align="center">
@@ -16,25 +16,66 @@
 
 ## About
 
-Breakdex combines a move library, combo builder, video editor, deck-based practice, and review analytics into a single Flutter app. It uses spaced-repetition (FSRS) to schedule reviews so you practice the moves you need most, right when you need them.
+Breakdex combines a move library, combo builder, flow graph, video tooling, deck-based practice, and review analytics into a single Flutter app. It uses FSRS spaced repetition to schedule reviews so you train the moves that are most at risk of decaying.
+
+## Purpose
+
+The product goal is simple: make long-term breaking practice more deliberate. Breakdex is meant to help you collect moves cleanly, understand how they connect, rehearse them on time, and read back the results without scattering your workflow across notes, chat, and camera roll.
+
+## Why It Exists
+
+Most practice systems are good at one slice of the problem and weak at the rest. A move list without scheduling does not protect memory. A flashcard system without video does not match the medium. A graph without analytics is just decoration. Breakdex exists to join those layers into one loop.
+
+## Release Snapshot
+
+<!-- release:meta:start -->
+- Release tag: `v1.1.0`
+- Release version: `1.1.0`
+- Pubspec version: `1.1.0+3`
+- Released: `2026-03-31`
+- Metadata refreshed: `2026-03-31`
+<!-- release:meta:end -->
+
+### Latest Tagged Notes
+
+<!-- release:notes:start -->
+- No tagged release notes found yet.
+<!-- release:notes:end -->
+
+Additional project records:
+
+- [Progress](progress.md)
+- [Hyperdata Ledger](docs/hyperdata-ledger.md)
+- [Architecture Notes](docs/architecture.md)
+
+## How It Works
+
+1. Capture moves and combos with a video-first flow.
+2. Link moves through the Flow graph so compatibility becomes visible.
+3. Review through FSRS-driven sessions to keep retention moving forward.
+4. Use stats and graph context to decide what deserves the next sprint.
 
 ## Features
 
 ### Arsenal
 
-Store atomic moves and combo sequences with category semantics, searchable in both list and gallery views. Video-first creation flow: pick or record, trim, name, and save.
+Store atomic moves and combo sequences with category semantics, searchable in list and gallery views. Creation stays video-first: pick or record, trim, name, and save.
 
 ### Review
 
-State-based and deck-based sessions with per-card progression. Four response grades (Again, Hard, Good, Easy) drive the FSRS scheduler to optimize your retention.
+Run state-based and deck-based sessions with four response grades: Again, Hard, Good, and Easy. Ratings feed the FSRS scheduler so review timing stays grounded in actual recall.
+
+### Flow
+
+Map move-to-move transitions as a graph. The Flow tab supports whole-network mapping, single-move focus mode, clustered category inspection, multi-select set creation, and a persistent inspector for direct connection counts.
 
 ### Stats
 
-Track card counts by learning state, response quality distribution, timeline history, and retention curves. Reactive dashboard updates live after each review.
+Track card counts by learning state, response quality distribution, timeline history, and retention curves. The app is moving toward a broader analytics layer that can support calendar and heat-map style planning surfaces.
 
 ### Settings
 
-Configure themes, manage categories, rename views, and control sync and export preferences.
+Control theme, font, custom colors, categories, sync, and export behavior from a single place. iOS export/share now uses a native UIKit bridge.
 
 ## Screenshots
 
@@ -77,29 +118,28 @@ flutter run --release -d <device-id>
 ## Architecture
 
 | Layer | Technology |
-|-------|-----------|
-| **Storage** | Drift (SQLite) with versioned migrations |
-| **State** | Riverpod providers with stream-based reactivity |
-| **Scheduling** | FSRS 2.0 spaced-repetition algorithm |
-| **Routing** | GoRouter with deep linking |
-| **Design** | Inter font, AppColors/AppSpacing/AppTypography tokens |
-| **Animation** | flutter_animate with motion constants |
+| --- | --- |
+| Storage | Drift (SQLite) with versioned migrations |
+| State | Riverpod providers with stream-based reactivity |
+| Scheduling | FSRS 2.0 spaced-repetition algorithm |
+| Routing | GoRouter with deep linking |
+| Design | Inter font, tokenized color/spacing/type surfaces |
+| Native iOS | UIKit bridges for media/share workflows |
 
 ## Testing
 
 End-to-end tests use [Maestro](https://maestro.mobile.dev) with tag-based groups:
 
 ```bash
-# Run all E2E tests
 maestro test .maestro/
+maestro test --tags=stress .maestro/
+maestro test .maestro/stress-flow-graph.yaml
+```
 
-# Run by tag
-maestro test --tags=smoke .maestro/
-maestro test --tags=review .maestro/
-maestro test --tags=arsenal .maestro/
-maestro test --tags=performance .maestro/
-maestro test --tags=regression .maestro/
-maestro test --tags=settings .maestro/
+Run targeted Flutter tests with:
+
+```bash
+flutter test
 ```
 
 INP latency measurement:
@@ -110,14 +150,25 @@ bash scripts/inp-measure.sh
 
 ## Release
 
-This project uses [semantic-release](https://github.com/semantic-release/semantic-release) for automated versioning. Conventional commit messages on `main` trigger the pipeline:
+This project uses [semantic-release](https://github.com/semantic-release/semantic-release) with git tags in the `v${version}` format. Conventional commits pushed to `main` drive the pipeline.
 
-1. **Analyze** commits since last release
-2. **Generate** changelog from commit messages
-3. **Bump** version in `pubspec.yaml`
-4. **Publish** GitHub release with changelog
+Release automation now does all of the following in one path:
 
-Commit prefixes: `feat:` (minor), `fix:` (patch), `perf:` (patch), `BREAKING CHANGE` (major).
+1. Analyze commits since the previous tag.
+2. Generate release notes and update `CHANGELOG.md`.
+3. Update `pubspec.yaml` via `semantic-release-pub`.
+4. Refresh release metadata blocks in `README.md`, `progress.md`, and `docs/hyperdata-ledger.md`.
+5. Commit the generated release artifacts and publish the GitHub release.
+
+Useful commands:
+
+```bash
+npm ci
+npm run release:sync-docs
+npm run release:dry-run
+```
+
+Commit prefixes: `feat:` for minor releases, `fix:` and `perf:` for patch releases, and `BREAKING CHANGE:` for major releases.
 
 ## License
 

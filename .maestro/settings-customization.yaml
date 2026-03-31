@@ -13,10 +13,12 @@ tags:
 
 - launchApp
 
-# Navigate to Settings tab
+# Navigate to Settings
 - tapOn:
-    point: "344,809"
-- assertVisible: "Settings"
+    id: "settings-gear"
+- extendedWaitUntil:
+    visible: "Viewing"
+    timeout: 10000
 - takeScreenshot: e2e-screenshots/settings-main
 
 # ── Category management ─────────────────────────────────────────────

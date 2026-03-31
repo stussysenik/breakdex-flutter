@@ -5,17 +5,19 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:path/path.dart' as p;
-import 'package:share_plus/share_plus.dart';
 import '../../core/database/database.dart';
 import '../../core/design/colors.dart';
 import '../../core/design/spacing.dart';
 import '../../core/design/theme.dart';
 import '../../core/design/typography.dart';
+import '../../core/app_metadata.dart';
 import '../../core/models/learning_state.dart';
 import '../../core/providers.dart';
 import '../../core/services/categories_service.dart';
+import '../../core/services/native_share_sheet.dart';
 import '../../core/services/video_path_resolver.dart';
 import '../../core/services/settings_service.dart';
+import '../../core/utils/share_sheet.dart';
 import 'widgets/cloud_sync_section.dart';
 import 'widgets/accent_color_section.dart';
 import 'widgets/rating_colors_section.dart';
@@ -148,8 +150,9 @@ class SettingsScreen extends ConsumerWidget {
                               return ChoiceChip(
                                 label: Text(f.displayName),
                                 selected: isSelected,
-                                onSelected: (_) =>
-                                    ref.read(fontFamilyProvider.notifier).set(f),
+                                onSelected: (_) => ref
+                                    .read(fontFamilyProvider.notifier)
+                                    .set(f),
                                 selectedColor: colorScheme.primary,
                                 backgroundColor:
                                     colorScheme.surfaceContainerHighest,
@@ -314,11 +317,18 @@ class SettingsScreen extends ConsumerWidget {
                     _DataActionTileAsync(
                       icon: Icons.ios_share,
                       label: 'Export Stats',
-                      onTap: () async {
-                        final stats = await ref.read(statsBundleProvider.future);
-                        final summary =
-                            StatsExportService.generateTextSummary(stats);
-                        await Share.share(summary);
+                      onTap: (tileContext) async {
+                        final origin = sharePositionOrigin(tileContext);
+                        final stats = await ref.read(
+                          statsBundleProvider.future,
+                        );
+                        final summary = StatsExportService.generateTextSummary(
+                          stats,
+                        );
+                        await NativeShareSheet.shareText(
+                          text: summary,
+                          sharePositionOrigin: origin,
+                        );
                         return null;
                       },
                     ),
@@ -326,19 +336,24 @@ class SettingsScreen extends ConsumerWidget {
                     _DataActionTileAsync(
                       icon: Icons.file_download_outlined,
                       label: 'Export Full Backup',
-                      onTap: () async {
+                      onTap: (tileContext) async {
+                        final origin = sharePositionOrigin(tileContext);
                         final db = ref.read(databaseProvider);
                         final prefs = ref.read(sharedPreferencesProvider);
-                        final result = await StatsExportService.generateJsonExport(
-                          db,
-                          prefs,
-                        );
+                        final result =
+                            await StatsExportService.generateJsonExport(
+                              db,
+                              prefs,
+                            );
                         final dir = await getTemporaryDirectory();
                         final file = File(
                           p.join(dir.path, StatsExportService.exportFilename),
                         );
                         await file.writeAsString(result.json);
-                        await Share.shareXFiles([XFile(file.path)]);
+                        await NativeShareSheet.shareFiles(
+                          filePaths: [file.path],
+                          sharePositionOrigin: origin,
+                        );
                         return 'Exported ${result.totalRecords} records (${result.moveCount} moves, ${result.reviewCount} reviews, ${result.comboCount} combos)';
                       },
                       showResultSnackBar: true,
@@ -347,7 +362,7 @@ class SettingsScreen extends ConsumerWidget {
                     _DataActionTileAsync(
                       icon: Icons.file_upload_outlined,
                       label: 'Import Backup',
-                      onTap: () async {
+                      onTap: (_) async {
                         await _showImportFlow(context, ref);
                         return null;
                       },
@@ -368,7 +383,7 @@ class SettingsScreen extends ConsumerWidget {
             // Version footer
             Center(
               child: Text(
-                'Breakdex v0.5.0 (Build 1)',
+                AppMetadata.footerLabel,
                 style: AppTypography.caption.copyWith(
                   color: colorScheme.secondary,
                 ),
@@ -404,7 +419,9 @@ class SettingsScreen extends ConsumerWidget {
               final moves = await db.movesDao.getAll();
               for (final move in moves) {
                 if (move.videoPath != null) {
-                  await videoService.deleteVideo(VideoPathResolver.toAbsolute(move.videoPath!));
+                  await videoService.deleteVideo(
+                    VideoPathResolver.toAbsolute(move.videoPath!),
+                  );
                 }
               }
               // Delete all rows from every table
@@ -917,9 +934,7 @@ class _SettingsSection extends StatelessWidget {
         const SizedBox(height: AppSpacing.xs),
         Text(
           subtitle,
-          style: AppTypography.bodySmall.copyWith(
-            color: colorScheme.secondary,
-          ),
+          style: AppTypography.bodySmall.copyWith(color: colorScheme.secondary),
         ),
         const SizedBox(height: AppSpacing.md),
         child,
@@ -942,9 +957,7 @@ class _SettingsPanel extends StatelessWidget {
       decoration: BoxDecoration(
         color: colorScheme.surface,
         borderRadius: BorderRadius.circular(AppRadius.lg),
-        border: Border.all(
-          color: colorScheme.outline.withValues(alpha: 0.22),
-        ),
+        border: Border.all(color: colorScheme.outline.withValues(alpha: 0.22)),
         boxShadow: AppShadows.soft(Theme.of(context).brightness),
       ),
       child: Column(
@@ -1014,7 +1027,7 @@ class _DataActionTileAsync extends StatefulWidget {
 
   final IconData icon;
   final String label;
-  final Future<String?> Function() onTap;
+  final Future<String?> Function(BuildContext context) onTap;
   final bool showResultSnackBar;
 
   @override
@@ -1034,7 +1047,7 @@ class _DataActionTileAsyncState extends State<_DataActionTileAsync> {
           : () async {
               setState(() => _loading = true);
               try {
-                final msg = await widget.onTap();
+                final msg = await widget.onTap(context);
                 if (widget.showResultSnackBar && msg != null && mounted) {
                   messenger.showSnackBar(SnackBar(content: Text(msg)));
                 }
@@ -1084,4 +1097,3 @@ class _DataActionTileAsyncState extends State<_DataActionTileAsync> {
     );
   }
 }
-

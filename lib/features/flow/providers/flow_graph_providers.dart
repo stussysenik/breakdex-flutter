@@ -109,13 +109,66 @@ class FlowGraphData {
   /// All edges (aura links) in the graph.
   final List<GraphEdge> edges;
 
-  const FlowGraphData({
-    required this.nodes,
-    required this.edges,
-  });
+  const FlowGraphData({required this.nodes, required this.edges});
 
   /// Empty graph — used as the initial/loading state.
   static const empty = FlowGraphData(nodes: [], edges: []);
+}
+
+/// Aggregated graph metrics for the Flow header and analytics summary.
+class FlowGraphSummary {
+  const FlowGraphSummary({
+    required this.nodeCount,
+    required this.edgeCount,
+    required this.categoryCount,
+    required this.masteredCount,
+    required this.learningCount,
+    required this.newCount,
+    required this.isolatedCount,
+  });
+
+  final int nodeCount;
+  final int edgeCount;
+  final int categoryCount;
+  final int masteredCount;
+  final int learningCount;
+  final int newCount;
+  final int isolatedCount;
+}
+
+/// Computed detail model for the currently selected node.
+class SelectedFlowNodeDetails {
+  const SelectedFlowNodeDetails({
+    required this.node,
+    required this.incomingCount,
+    required this.outgoingCount,
+    required this.neighborCount,
+    required this.reciprocalCount,
+    required this.sameCategoryCount,
+    required this.naturalTransitionCount,
+    required this.possibleTransitionCount,
+    required this.stretchTransitionCount,
+    required this.neighborNames,
+  });
+
+  final GraphNode node;
+  final int incomingCount;
+  final int outgoingCount;
+  final int neighborCount;
+  final int reciprocalCount;
+  final int sameCategoryCount;
+  final int naturalTransitionCount;
+  final int possibleTransitionCount;
+  final int stretchTransitionCount;
+  final List<String> neighborNames;
+
+  int get crossCategoryCount => neighborCount - sameCategoryCount;
+
+  String get masteryLabel => switch (node.masteryState) {
+    2 => 'Mastered',
+    1 => 'Learning',
+    _ => 'New',
+  };
 }
 
 // ---------------------------------------------------------------------------
@@ -154,15 +207,15 @@ final selectedNodeProvider = StateProvider<String?>((ref) => null);
 ///
 /// Persisted in widget state (not SharedPreferences) since it's a
 /// transient UI preference, not a user setting worth persisting.
-final flowViewModeProvider =
-    StateProvider<FlowViewMode>((ref) => FlowViewMode.map);
+final flowViewModeProvider = StateProvider<FlowViewMode>(
+  (ref) => FlowViewMode.map,
+);
 
 /// The active entity filter (All / Moves / Combos / Sets).
 ///
 /// Controls which node types are visible. When set to [FlowFilter.moves],
 /// only move nodes appear. Combo/set support is a future extension.
-final flowFilterProvider =
-    StateProvider<FlowFilter>((ref) => FlowFilter.all);
+final flowFilterProvider = StateProvider<FlowFilter>((ref) => FlowFilter.all);
 
 /// Reactive provider that combines moves, aura links, and FSRS cards
 /// into a [FlowGraphData] structure ready for the graph canvas.
@@ -225,6 +278,111 @@ final flowGraphDataProvider = Provider<FlowGraphData>((ref) {
   }).toList();
 
   return FlowGraphData(nodes: nodes, edges: edges);
+});
+
+/// Aggregates top-level Flow metrics for the compact dashboard row.
+final flowGraphSummaryProvider = Provider<FlowGraphSummary>((ref) {
+  final graphData = ref.watch(flowGraphDataProvider);
+
+  var masteredCount = 0;
+  var learningCount = 0;
+  var newCount = 0;
+  final categories = <String>{};
+  final linkedNodeIds = <String>{};
+
+  for (final node in graphData.nodes) {
+    categories.add(node.category);
+    switch (node.masteryState) {
+      case 2:
+        masteredCount++;
+        break;
+      case 1:
+        learningCount++;
+        break;
+      default:
+        newCount++;
+    }
+  }
+
+  for (final edge in graphData.edges) {
+    linkedNodeIds
+      ..add(edge.fromId)
+      ..add(edge.toId);
+  }
+
+  return FlowGraphSummary(
+    nodeCount: graphData.nodes.length,
+    edgeCount: graphData.edges.length,
+    categoryCount: categories.length,
+    masteredCount: masteredCount,
+    learningCount: learningCount,
+    newCount: newCount,
+    isolatedCount: graphData.nodes
+        .where((node) => !linkedNodeIds.contains(node.id))
+        .length,
+  );
+});
+
+/// Provides the selected node plus its graph-local connection profile.
+final selectedFlowNodeDetailsProvider = Provider<SelectedFlowNodeDetails?>((
+  ref,
+) {
+  final selectedId = ref.watch(selectedNodeProvider);
+  if (selectedId == null) return null;
+
+  final graphData = ref.watch(flowGraphDataProvider);
+  final nodeById = {for (final node in graphData.nodes) node.id: node};
+  final node = nodeById[selectedId];
+  if (node == null) return null;
+
+  final incomingIds = <String>{};
+  final outgoingIds = <String>{};
+  var naturalTransitionCount = 0;
+  var possibleTransitionCount = 0;
+  var stretchTransitionCount = 0;
+
+  for (final edge in graphData.edges) {
+    final touchesNode = edge.fromId == selectedId || edge.toId == selectedId;
+    if (!touchesNode) continue;
+
+    if (edge.fromId == selectedId) {
+      outgoingIds.add(edge.toId);
+    }
+    if (edge.toId == selectedId) {
+      incomingIds.add(edge.fromId);
+    }
+
+    switch (edge.affinity) {
+      case 'natural':
+        naturalTransitionCount++;
+      case 'possible':
+        possibleTransitionCount++;
+      default:
+        stretchTransitionCount++;
+    }
+  }
+
+  final neighborIds = {...incomingIds, ...outgoingIds};
+  final reciprocalCount = incomingIds.intersection(outgoingIds).length;
+  final sameCategoryCount = neighborIds
+      .where((id) => nodeById[id]?.category == node.category)
+      .length;
+  final neighborNames =
+      neighborIds.map((id) => nodeById[id]?.name).whereType<String>().toList()
+        ..sort((a, b) => a.compareTo(b));
+
+  return SelectedFlowNodeDetails(
+    node: node,
+    incomingCount: incomingIds.length,
+    outgoingCount: outgoingIds.length,
+    neighborCount: neighborIds.length,
+    reciprocalCount: reciprocalCount,
+    sameCategoryCount: sameCategoryCount,
+    naturalTransitionCount: naturalTransitionCount,
+    possibleTransitionCount: possibleTransitionCount,
+    stretchTransitionCount: stretchTransitionCount,
+    neighborNames: neighborNames,
+  );
 });
 
 /// Maps the 4-state FSRS model to a 3-tier visual mastery scale.

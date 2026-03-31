@@ -18,11 +18,11 @@ tags:
 
 # Navigate to Stats tab
 - tapOn:
-    point: "245,809"
-- assertVisible: "Stats"
+    id: "progress-tab"
+- assertVisible: "Progress"
 
 # Verify key metrics are visible
-- assertVisible: "Tracked Cards"
+- assertVisible: "Retention"
 - takeScreenshot: e2e-screenshots/stats-dashboard
 
 # Tap the Time toggle to switch to timeline view

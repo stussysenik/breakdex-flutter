@@ -1,0 +1,37 @@
+# Flow: Settings export/share verification
+# Verifies that both settings export actions can present the iOS share sheet.
+#
+# Prerequisites: review fixture enabled so Stats export has content.
+# Tags: settings
+
+appId: com.breakdex.breakdex
+name: Settings Export
+tags:
+  - settings
+
+---
+
+- launchApp:
+    arguments:
+      maestro: true
+      breakdexFixture: review
+
+- assertVisible: "Arsenal"
+
+- tapOn:
+    id: "settings-gear"
+
+- scrollUntilVisible:
+    element: "Export Stats"
+    direction: DOWN
+    timeout: 20000
+    speed: 80
+    waitToSettleTimeoutMs: 300
+    visibilityPercentage: 50
+    centerElement: true
+
+- tapOn: "Export Stats"
+- assertNotVisible: "Error:"
+
+- tapOn: "Export Full Backup"
+- assertNotVisible: "Error:"

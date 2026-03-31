@@ -5,7 +5,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:path/path.dart' as p;
-import 'package:share_plus/share_plus.dart';
 
 import '../../core/database/database.dart';
 import '../../core/design/colors.dart';
@@ -15,11 +14,12 @@ import '../../core/design/typography.dart';
 import '../../core/models/learning_state.dart';
 import '../../core/providers.dart';
 import '../../core/services/categories_service.dart';
+import '../../core/services/native_share_sheet.dart';
 import '../../core/services/video_path_resolver.dart';
 import '../../core/services/native_video_album.dart';
+import '../../core/utils/share_sheet.dart';
 import '../../shared/widgets/state_pill.dart';
-import '../../shared/widgets/video_player_widget.dart'
-    show RobustVideoPlayer;
+import '../../shared/widgets/video_player_widget.dart' show RobustVideoPlayer;
 import '../../shared/widgets/action_tile.dart';
 import '../../shared/widgets/notes_section.dart';
 import '../lab/widgets/move_aura_section.dart';
@@ -86,7 +86,9 @@ class MoveDetailScreen extends ConsumerWidget {
                       videoPath: move.resolvedVideoPath!,
                       onRepick: () => _addOrReplaceVideo(context, ref, move),
                       onEdit: () => _editVideo(context, ref, move),
-                      ghostThumbnailPath: _thumbnailPathFor(move.resolvedVideoPath!),
+                      ghostThumbnailPath: _thumbnailPathFor(
+                        move.resolvedVideoPath!,
+                      ),
                       originalVideoName: move.originalVideoName,
                     ),
                   )
@@ -97,10 +99,14 @@ class MoveDetailScreen extends ConsumerWidget {
                       // Update move with re-downloaded local path (relative)
                       await ref
                           .read(moveRepositoryProvider)
-                          .update(MovesCompanion(
-                            id: Value(move.id),
-                            videoPath: Value(VideoPathResolver.toRelative(localPath)),
-                          ));
+                          .update(
+                            MovesCompanion(
+                              id: Value(move.id),
+                              videoPath: Value(
+                                VideoPathResolver.toRelative(localPath),
+                              ),
+                            ),
+                          );
                     },
                   )
                 else
@@ -155,12 +161,14 @@ class MoveDetailScreen extends ConsumerWidget {
                 NotesSection(
                   notes: move.notes,
                   onChanged: (text) {
-                    ref.read(moveRepositoryProvider).update(
-                      MovesCompanion(
-                        id: Value(move.id),
-                        notes: Value(text.isEmpty ? null : text),
-                      ),
-                    );
+                    ref
+                        .read(moveRepositoryProvider)
+                        .update(
+                          MovesCompanion(
+                            id: Value(move.id),
+                            notes: Value(text.isEmpty ? null : text),
+                          ),
+                        );
                   },
                 ),
                 const SizedBox(height: AppSpacing.lg),
@@ -187,7 +195,10 @@ class MoveDetailScreen extends ConsumerWidget {
                     label: 'Analyze Move',
                     onTap: () => context.push(
                       '/move-analysis',
-                      extra: {'moveId': move.id, 'videoPath': move.resolvedVideoPath},
+                      extra: {
+                        'moveId': move.id,
+                        'videoPath': move.resolvedVideoPath,
+                      },
                     ),
                   ),
                   const SizedBox(height: AppSpacing.sm),
@@ -197,10 +208,12 @@ class MoveDetailScreen extends ConsumerWidget {
                     onTap: () => _editVideo(context, ref, move),
                   ),
                   const SizedBox(height: AppSpacing.sm),
-                  ActionTile(
-                    icon: Icons.ios_share,
-                    label: 'Share Video',
-                    onTap: () => _shareVideo(context, move),
+                  Builder(
+                    builder: (tileContext) => ActionTile(
+                      icon: Icons.ios_share,
+                      label: 'Share Video',
+                      onTap: () => _shareVideo(tileContext, move),
+                    ),
                   ),
                   const SizedBox(height: AppSpacing.sm),
                   ActionTile(
@@ -252,7 +265,12 @@ class MoveDetailScreen extends ConsumerWidget {
 
   Future<void> _shareVideo(BuildContext context, Move move) async {
     if (move.videoPath == null) return;
-    await Share.shareXFiles([XFile(move.resolvedVideoPath!)], subject: move.name);
+    final origin = sharePositionOrigin(context);
+    await NativeShareSheet.shareFiles(
+      filePaths: [move.resolvedVideoPath!],
+      subject: move.name,
+      sharePositionOrigin: origin,
+    );
   }
 
   Future<void> _addOrReplaceVideo(
@@ -303,7 +321,10 @@ class MoveDetailScreen extends ConsumerWidget {
       await ref
           .read(moveRepositoryProvider)
           .update(
-            MovesCompanion(id: Value(move.id), videoPath: Value(VideoPathResolver.toRelative(editedPath))),
+            MovesCompanion(
+              id: Value(move.id),
+              videoPath: Value(VideoPathResolver.toRelative(editedPath)),
+            ),
           );
       await videoService.replaceVideo(move.resolvedVideoPath);
       if (!context.mounted) return;
@@ -381,7 +402,9 @@ class MoveDetailScreen extends ConsumerWidget {
                 onPressed: isEmpty
                     ? null
                     : () async {
-                        final naming = ref.read(reviewableNamingServiceProvider);
+                        final naming = ref.read(
+                          reviewableNamingServiceProvider,
+                        );
                         final normalized = naming.normalize(controller.text);
                         final exists = await naming.isNameTaken(
                           normalized,
@@ -665,9 +688,7 @@ class _VideoMissingCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: colorScheme.surfaceContainerHighest,
         borderRadius: BorderRadius.circular(AppRadius.md),
-        border: Border.all(
-          color: colorScheme.outline.withValues(alpha: 0.15),
-        ),
+        border: Border.all(color: colorScheme.outline.withValues(alpha: 0.15)),
       ),
       child: Column(
         children: [
@@ -679,9 +700,9 @@ class _VideoMissingCard extends StatelessWidget {
           const SizedBox(height: AppSpacing.md),
           Text(
             'Video Missing',
-            style: AppTypography.bodySmall.merge(
-              const TextStyle(fontWeight: FontWeight.w600),
-            ).copyWith(color: colorScheme.onSurface),
+            style: AppTypography.bodySmall
+                .merge(const TextStyle(fontWeight: FontWeight.w600))
+                .copyWith(color: colorScheme.onSurface),
           ),
           const SizedBox(height: 4),
           Text(
@@ -752,9 +773,7 @@ class _MissingActionButton extends StatelessWidget {
         decoration: BoxDecoration(
           color: colorScheme.surface,
           borderRadius: BorderRadius.circular(AppRadius.sm),
-          border: Border.all(
-            color: AppColors.accent.withValues(alpha: 0.3),
-          ),
+          border: Border.all(color: AppColors.accent.withValues(alpha: 0.3)),
         ),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -763,9 +782,9 @@ class _MissingActionButton extends StatelessWidget {
             const SizedBox(width: 6),
             Text(
               label,
-              style: AppTypography.bodySmall.merge(
-                const TextStyle(fontWeight: FontWeight.w600),
-              ).copyWith(color: AppColors.accent),
+              style: AppTypography.bodySmall
+                  .merge(const TextStyle(fontWeight: FontWeight.w600))
+                  .copyWith(color: AppColors.accent),
             ),
           ],
         ),
@@ -834,9 +853,7 @@ class _CloudVideoPlaceholderState
       decoration: BoxDecoration(
         color: colorScheme.surfaceContainerHighest,
         borderRadius: BorderRadius.circular(AppRadius.md),
-        border: Border.all(
-          color: colorScheme.outline.withValues(alpha: 0.15),
-        ),
+        border: Border.all(color: colorScheme.outline.withValues(alpha: 0.15)),
       ),
       child: Material(
         color: Colors.transparent,
@@ -874,9 +891,9 @@ class _CloudVideoPlaceholderState
                   const SizedBox(height: AppSpacing.md),
                   Text(
                     'Video stored in cloud',
-                    style: AppTypography.bodySmall.merge(
-                      const TextStyle(fontWeight: FontWeight.w600),
-                    ).copyWith(color: colorScheme.onSurface),
+                    style: AppTypography.bodySmall
+                        .merge(const TextStyle(fontWeight: FontWeight.w600))
+                        .copyWith(color: colorScheme.onSurface),
                   ),
                   const SizedBox(height: 4),
                   Text(

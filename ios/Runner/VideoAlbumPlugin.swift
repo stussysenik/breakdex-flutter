@@ -394,3 +394,159 @@ final class VideoAlbumPlugin: NSObject, FlutterPlugin, NativeCapability {
         ).firstObject
     }
 }
+
+final class ShareSheetPlugin: NSObject, FlutterPlugin, NativeCapability {
+    static var channelName: String { "share_sheet" }
+
+    static func register(with registrar: FlutterPluginRegistrar) {
+        let channel = FlutterMethodChannel(
+            name: "com.breakdex/share_sheet",
+            binaryMessenger: registrar.messenger()
+        )
+        let instance = ShareSheetPlugin()
+        registrar.addMethodCallDelegate(instance, channel: channel)
+    }
+
+    func handle(_ call: FlutterMethodCall, result: @escaping FlutterResult) {
+        guard let args = call.arguments as? [String: Any] else {
+            result(
+                FlutterError(
+                    code: "INVALID_ARGS",
+                    message: "Missing share sheet arguments",
+                    details: nil
+                )
+            )
+            return
+        }
+
+        switch call.method {
+        case "shareText":
+            guard let text = args["text"] as? String else {
+                result(
+                    FlutterError(
+                        code: "INVALID_ARGS",
+                        message: "Missing text payload",
+                        details: nil
+                    )
+                )
+                return
+            }
+
+            presentShareSheet(
+                items: [text],
+                subject: args["subject"] as? String,
+                args: args,
+                result: result
+            )
+
+        case "shareFiles":
+            guard let paths = args["paths"] as? [String], !paths.isEmpty else {
+                result(
+                    FlutterError(
+                        code: "INVALID_ARGS",
+                        message: "Missing file paths",
+                        details: nil
+                    )
+                )
+                return
+            }
+
+            let urls = paths.map(URL.init(fileURLWithPath:))
+            presentShareSheet(
+                items: urls,
+                subject: args["subject"] as? String,
+                args: args,
+                result: result
+            )
+
+        default:
+            result(FlutterMethodNotImplemented)
+        }
+    }
+
+    private func presentShareSheet(
+        items: [Any],
+        subject: String?,
+        args: [String: Any],
+        result: @escaping FlutterResult
+    ) {
+        DispatchQueue.main.async {
+            guard let controller = Self.topViewController() else {
+                result(
+                    FlutterError(
+                        code: "NO_CONTROLLER",
+                        message: "Unable to find a view controller for share sheet presentation",
+                        details: nil
+                    )
+                )
+                return
+            }
+
+            let activityController = UIActivityViewController(
+                activityItems: items,
+                applicationActivities: nil
+            )
+
+            if let subject, !subject.isEmpty {
+                activityController.setValue(subject, forKey: "subject")
+            }
+
+            if let popover = activityController.popoverPresentationController {
+                popover.sourceView = controller.view
+                popover.sourceRect = self.sourceRect(from: args, in: controller.view)
+            }
+
+            controller.present(activityController, animated: true) {
+                result(nil)
+            }
+        }
+    }
+
+    private func sourceRect(from args: [String: Any], in view: UIView) -> CGRect {
+        let fallback = CGRect(
+            x: view.bounds.midX,
+            y: view.bounds.midY,
+            width: 1,
+            height: 1
+        )
+
+        guard let x = args["originX"] as? Double,
+              let y = args["originY"] as? Double,
+              let width = args["originWidth"] as? Double,
+              let height = args["originHeight"] as? Double else {
+            return fallback
+        }
+
+        let candidate = CGRect(
+            x: x,
+            y: y,
+            width: max(width, 1),
+            height: max(height, 1)
+        )
+
+        let intersection = candidate.intersection(view.bounds)
+        return intersection.isNull || intersection.isEmpty ? fallback : intersection
+    }
+
+    private static func topViewController(
+        from controller: UIViewController? = UIApplication.shared.connectedScenes
+            .compactMap({ $0 as? UIWindowScene })
+            .flatMap(\.windows)
+            .first(where: \.isKeyWindow)?
+            .rootViewController
+    ) -> UIViewController? {
+        if let navigationController = controller as? UINavigationController {
+            return topViewController(from: navigationController.visibleViewController)
+        }
+
+        if let tabBarController = controller as? UITabBarController {
+            return topViewController(from: tabBarController.selectedViewController)
+        }
+
+        if let presentedViewController = controller?.presentedViewController {
+            return topViewController(from: presentedViewController)
+        }
+
+        return controller
+    }
+}

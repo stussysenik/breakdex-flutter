@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:drift/drift.dart';
 import 'package:path/path.dart' as p;
 import 'package:shared_preferences/shared_preferences.dart';
+import '../app_metadata.dart';
 import '../database/database.dart';
 import '../../features/stats/providers/stats_providers.dart';
 
@@ -100,11 +101,14 @@ class StatsExportService {
     String pct(int count) =>
         total > 0 ? '${(count / total * 100).round()}%' : '0%';
 
-    final topMoves = stats.topMoveEntries.take(5).map((e) {
-      final move = stats.allMoves.where((m) => m.id == e.key).firstOrNull;
-      final name = move?.name ?? e.key;
-      return '  $name — ${e.value} reviews';
-    }).join('\n');
+    final topMoves = stats.topMoveEntries
+        .take(5)
+        .map((e) {
+          final move = stats.allMoves.where((m) => m.id == e.key).firstOrNull;
+          final name = move?.name ?? e.key;
+          return '  $name — ${e.value} reviews';
+        })
+        .join('\n');
 
     final retPct = (stats.overallRetention * 100).round();
     final due = stats.dueSummary;
@@ -157,101 +161,112 @@ ${topMoves.isNotEmpty ? 'Most Practiced:\n$topMoves' : 'No moves practiced yet.'
     }
 
     final data = {
-      'schemaVersion': 7,
+      'schemaVersion': AppMetadata.exportSchemaVersion,
       'exportedAt': DateTime.now().toIso8601String(),
-      'appVersion': '0.6.0',
+      'appVersion': AppMetadata.releaseVersion,
       'categories': categoriesJson,
       'moves': moves
-          .map((m) => {
-                'id': m.id,
-                'name': m.name,
-                'category': m.category,
-                'learningState': m.learningState,
-                'videoFilename': m.videoPath != null
-                    ? p.basename(m.videoPath!)
-                    : null,
-                'originalVideoName': m.originalVideoName,
-                'notes': m.notes,
-                'createdAt': m.createdAt.toIso8601String(),
-              })
+          .map(
+            (m) => {
+              'id': m.id,
+              'name': m.name,
+              'category': m.category,
+              'learningState': m.learningState,
+              'videoFilename': m.videoPath != null
+                  ? p.basename(m.videoPath!)
+                  : null,
+              'originalVideoName': m.originalVideoName,
+              'notes': m.notes,
+              'createdAt': m.createdAt.toIso8601String(),
+            },
+          )
           .toList(),
       'combos': combos
-          .map((c) => {
-                'id': c.id,
-                'name': c.name,
-                'notes': c.notes,
-                'activeVideoFilename': c.activeVideoPath != null
-                    ? p.basename(c.activeVideoPath!)
-                    : null,
-              })
+          .map(
+            (c) => {
+              'id': c.id,
+              'name': c.name,
+              'notes': c.notes,
+              'activeVideoFilename': c.activeVideoPath != null
+                  ? p.basename(c.activeVideoPath!)
+                  : null,
+            },
+          )
           .toList(),
       'comboMoves': comboMoves
-          .map((cm) => {
-                'id': cm.id,
-                'sequenceIndex': cm.sequenceIndex,
-                'comboId': cm.comboId,
-                'moveId': cm.moveId,
-              })
+          .map(
+            (cm) => {
+              'id': cm.id,
+              'sequenceIndex': cm.sequenceIndex,
+              'comboId': cm.comboId,
+              'moveId': cm.moveId,
+            },
+          )
           .toList(),
       'reviews': reviews
-          .map((r) => {
-                'id': r.id,
-                'rating': r.rating,
-                'reviewType': r.reviewType,
-                'moveId': r.moveId,
-                'comboId': r.comboId,
-                'entityIdSnapshot': r.entityIdSnapshot,
-                'entityType': r.entityType,
-                'entityName': r.entityDisplayName,
-                'entityCategory': r.entityCategory,
-                'reviewedAt': r.reviewedAt.toIso8601String(),
-                'fsrsPreState': r.fsrsPreState,
-                'fsrsPostState': r.fsrsPostState,
-              })
+          .map(
+            (r) => {
+              'id': r.id,
+              'rating': r.rating,
+              'reviewType': r.reviewType,
+              'moveId': r.moveId,
+              'comboId': r.comboId,
+              'entityIdSnapshot': r.entityIdSnapshot,
+              'entityType': r.entityType,
+              'entityName': r.entityDisplayName,
+              'entityCategory': r.entityCategory,
+              'reviewedAt': r.reviewedAt.toIso8601String(),
+              'fsrsPreState': r.fsrsPreState,
+              'fsrsPostState': r.fsrsPostState,
+            },
+          )
           .toList(),
       'battleResults': battleResults
-          .map((b) => {
-                'id': b.id,
-                'score': b.score,
-                'movesReviewed': b.movesReviewed,
-                'goodCount': b.goodCount,
-                'hardCount': b.hardCount,
-                'againCount': b.againCount,
-                'longestStreak': b.longestStreak,
-                'difficulty': b.difficulty,
-                'playedAt': b.playedAt.toIso8601String(),
-              })
+          .map(
+            (b) => {
+              'id': b.id,
+              'score': b.score,
+              'movesReviewed': b.movesReviewed,
+              'goodCount': b.goodCount,
+              'hardCount': b.hardCount,
+              'againCount': b.againCount,
+              'longestStreak': b.longestStreak,
+              'difficulty': b.difficulty,
+              'playedAt': b.playedAt.toIso8601String(),
+            },
+          )
           .toList(),
       // v6: entityId + entityType instead of moveId
       'fsrsCards': fsrsCards
-          .map((fc) => {
-                'entityId': fc.entityId,
-                'entityType': fc.entityType,
-                'stability': fc.stability,
-                'difficulty': fc.difficulty,
-                'due': fc.due.toIso8601String(),
-                'lastReview': fc.lastReview?.toIso8601String(),
-                'reps': fc.reps,
-                'lapses': fc.lapses,
-                'fsrsState': fc.fsrsState,
-              })
+          .map(
+            (fc) => {
+              'entityId': fc.entityId,
+              'entityType': fc.entityType,
+              'stability': fc.stability,
+              'difficulty': fc.difficulty,
+              'due': fc.due.toIso8601String(),
+              'lastReview': fc.lastReview?.toIso8601String(),
+              'reps': fc.reps,
+              'lapses': fc.lapses,
+              'fsrsState': fc.fsrsState,
+            },
+          )
           .toList(),
       'decks': decks
-          .map((d) => {
-                'id': d.id,
-                'name': d.name,
-                'deckType': d.deckType,
-                'filterCriteria': d.filterCriteria,
-                'sessionSize': d.sessionSize,
-                'createdAt': d.createdAt.toIso8601String(),
-                'updatedAt': d.updatedAt.toIso8601String(),
-              })
+          .map(
+            (d) => {
+              'id': d.id,
+              'name': d.name,
+              'deckType': d.deckType,
+              'filterCriteria': d.filterCriteria,
+              'sessionSize': d.sessionSize,
+              'createdAt': d.createdAt.toIso8601String(),
+              'updatedAt': d.updatedAt.toIso8601String(),
+            },
+          )
           .toList(),
       'deckMoves': deckMoves
-          .map((dm) => {
-                'deckId': dm.deckId,
-                'moveId': dm.moveId,
-              })
+          .map((dm) => {'deckId': dm.deckId, 'moveId': dm.moveId})
           .toList(),
     };
 
@@ -277,7 +292,7 @@ ${topMoves.isNotEmpty ? 'Most Practiced:\n$topMoves' : 'No moves practiced yet.'
       final data = jsonDecode(json) as Map<String, dynamic>;
       final version = data['schemaVersion'] as int? ?? 1;
 
-      if (version > 7) {
+      if (version > AppMetadata.exportSchemaVersion) {
         return const ImportValidation(
           valid: false,
           error:
@@ -369,26 +384,29 @@ ${topMoves.isNotEmpty ? 'Most Practiced:\n$topMoves' : 'No moves practiced yet.'
         final id = map['id'] as String;
         if (mode == ImportMode.merge && existingMoveIds.contains(id)) continue;
 
-        final hasVideo = map['videoFilename'] != null ||
+        final hasVideo =
+            map['videoFilename'] != null ||
             (version == 1 && map['videoPath'] != null);
         if (hasVideo) missingVideos.add(map['name'] as String);
 
-        await db.into(db.moves).insert(MovesCompanion.insert(
-              id: id,
-              name: map['name'] as String,
-              learningState:
-                  Value(map['learningState'] as String? ?? 'NEW'),
-              category: Value(map['category'] as String? ?? 'default'),
-              videoPath: const Value(null),
-              originalVideoName:
-                  Value(map['originalVideoName'] as String?),
-              notes: Value(map['notes'] as String?),
-              createdAt: Value(
-                map['createdAt'] != null
-                    ? DateTime.parse(map['createdAt'] as String)
-                    : DateTime.now(),
+        await db
+            .into(db.moves)
+            .insert(
+              MovesCompanion.insert(
+                id: id,
+                name: map['name'] as String,
+                learningState: Value(map['learningState'] as String? ?? 'NEW'),
+                category: Value(map['category'] as String? ?? 'default'),
+                videoPath: const Value(null),
+                originalVideoName: Value(map['originalVideoName'] as String?),
+                notes: Value(map['notes'] as String?),
+                createdAt: Value(
+                  map['createdAt'] != null
+                      ? DateTime.parse(map['createdAt'] as String)
+                      : DateTime.now(),
+                ),
               ),
-            ));
+            );
         movesImported++;
       }
 
@@ -402,12 +420,16 @@ ${topMoves.isNotEmpty ? 'Most Practiced:\n$topMoves' : 'No moves practiced yet.'
         final id = map['id'] as String;
         if (mode == ImportMode.merge && existingComboIds.contains(id)) continue;
 
-        await db.into(db.combos).insert(CombosCompanion.insert(
-              id: id,
-              name: map['name'] as String,
-              notes: Value(map['notes'] as String?),
-              activeVideoPath: const Value(null),
-            ));
+        await db
+            .into(db.combos)
+            .insert(
+              CombosCompanion.insert(
+                id: id,
+                name: map['name'] as String,
+                notes: Value(map['notes'] as String?),
+                activeVideoPath: const Value(null),
+              ),
+            );
         combosImported++;
       }
 
@@ -422,12 +444,16 @@ ${topMoves.isNotEmpty ? 'Most Practiced:\n$topMoves' : 'No moves practiced yet.'
           final id = map['id'] as String;
           if (mode == ImportMode.merge && existingCmIds.contains(id)) continue;
 
-          await db.into(db.comboMoves).insert(ComboMovesCompanion.insert(
-                id: id,
-                sequenceIndex: map['sequenceIndex'] as int,
-                comboId: map['comboId'] as String,
-                moveId: map['moveId'] as String,
-              ));
+          await db
+              .into(db.comboMoves)
+              .insert(
+                ComboMovesCompanion.insert(
+                  id: id,
+                  sequenceIndex: map['sequenceIndex'] as int,
+                  comboId: map['comboId'] as String,
+                  moveId: map['moveId'] as String,
+                ),
+              );
           comboMovesImported++;
         }
       }
@@ -444,24 +470,28 @@ ${topMoves.isNotEmpty ? 'Most Practiced:\n$topMoves' : 'No moves practiced yet.'
           continue;
         }
 
-        await db.into(db.reviews).insert(ReviewsCompanion.insert(
-              id: id,
-              rating: map['rating'] as String,
-              reviewType: map['reviewType'] as String,
-              moveId: Value(map['moveId'] as String?),
-              comboId: Value(map['comboId'] as String?),
-              entityIdSnapshot: Value(map['entityIdSnapshot'] as String?),
-              entityType: Value(map['entityType'] as String?),
-              entityDisplayName: Value(map['entityName'] as String?),
-              entityCategory: Value(map['entityCategory'] as String?),
-              reviewedAt: Value(
-                map['reviewedAt'] != null
-                    ? DateTime.parse(map['reviewedAt'] as String)
-                    : DateTime.now(),
+        await db
+            .into(db.reviews)
+            .insert(
+              ReviewsCompanion.insert(
+                id: id,
+                rating: map['rating'] as String,
+                reviewType: map['reviewType'] as String,
+                moveId: Value(map['moveId'] as String?),
+                comboId: Value(map['comboId'] as String?),
+                entityIdSnapshot: Value(map['entityIdSnapshot'] as String?),
+                entityType: Value(map['entityType'] as String?),
+                entityDisplayName: Value(map['entityName'] as String?),
+                entityCategory: Value(map['entityCategory'] as String?),
+                reviewedAt: Value(
+                  map['reviewedAt'] != null
+                      ? DateTime.parse(map['reviewedAt'] as String)
+                      : DateTime.now(),
+                ),
+                fsrsPreState: Value(map['fsrsPreState'] as int?),
+                fsrsPostState: Value(map['fsrsPostState'] as int?),
               ),
-              fsrsPreState: Value(map['fsrsPreState'] as int?),
-              fsrsPostState: Value(map['fsrsPostState'] as int?),
-            ));
+            );
         reviewsImported++;
       }
 
@@ -475,21 +505,25 @@ ${topMoves.isNotEmpty ? 'Most Practiced:\n$topMoves' : 'No moves practiced yet.'
         final id = map['id'] as String;
         if (mode == ImportMode.merge && existingBrIds.contains(id)) continue;
 
-        await db.into(db.battleResults).insert(BattleResultsCompanion.insert(
-              id: id,
-              score: map['score'] as int,
-              movesReviewed: map['movesReviewed'] as int,
-              goodCount: map['goodCount'] as int? ?? 0,
-              hardCount: map['hardCount'] as int? ?? 0,
-              againCount: map['againCount'] as int? ?? 0,
-              longestStreak: map['longestStreak'] as int? ?? 0,
-              difficulty: map['difficulty'] as String,
-              playedAt: Value(
-                map['playedAt'] != null
-                    ? DateTime.parse(map['playedAt'] as String)
-                    : DateTime.now(),
+        await db
+            .into(db.battleResults)
+            .insert(
+              BattleResultsCompanion.insert(
+                id: id,
+                score: map['score'] as int,
+                movesReviewed: map['movesReviewed'] as int,
+                goodCount: map['goodCount'] as int? ?? 0,
+                hardCount: map['hardCount'] as int? ?? 0,
+                againCount: map['againCount'] as int? ?? 0,
+                longestStreak: map['longestStreak'] as int? ?? 0,
+                difficulty: map['difficulty'] as String,
+                playedAt: Value(
+                  map['playedAt'] != null
+                      ? DateTime.parse(map['playedAt'] as String)
+                      : DateTime.now(),
+                ),
               ),
-            ));
+            );
         battleResultsImported++;
       }
 
@@ -504,30 +538,34 @@ ${topMoves.isNotEmpty ? 'Most Practiced:\n$topMoves' : 'No moves practiced yet.'
           final entityType = map['entityType'] as String? ?? 'move';
 
           if (mode == ImportMode.merge) {
-            final existing = await db.fsrsCardsDao
-                .getByEntityId(entityId, entityType: entityType);
+            final existing = await db.fsrsCardsDao.getByEntityId(
+              entityId,
+              entityType: entityType,
+            );
             if (existing != null) continue;
           }
 
-          await db.fsrsCardsDao.upsert(FsrsCardsCompanion(
-            entityId: Value(entityId),
-            entityType: Value(entityType),
-            stability: Value((map['stability'] as num?)?.toDouble() ?? 0.0),
-            difficulty: Value((map['difficulty'] as num?)?.toDouble() ?? 0.0),
-            due: Value(
-              map['due'] != null
-                  ? DateTime.parse(map['due'] as String)
-                  : DateTime.now().toUtc(),
+          await db.fsrsCardsDao.upsert(
+            FsrsCardsCompanion(
+              entityId: Value(entityId),
+              entityType: Value(entityType),
+              stability: Value((map['stability'] as num?)?.toDouble() ?? 0.0),
+              difficulty: Value((map['difficulty'] as num?)?.toDouble() ?? 0.0),
+              due: Value(
+                map['due'] != null
+                    ? DateTime.parse(map['due'] as String)
+                    : DateTime.now().toUtc(),
+              ),
+              lastReview: Value(
+                map['lastReview'] != null
+                    ? DateTime.parse(map['lastReview'] as String)
+                    : null,
+              ),
+              reps: Value(map['reps'] as int? ?? 0),
+              lapses: Value(map['lapses'] as int? ?? 0),
+              fsrsState: Value(map['fsrsState'] as int? ?? 0),
             ),
-            lastReview: Value(
-              map['lastReview'] != null
-                  ? DateTime.parse(map['lastReview'] as String)
-                  : null,
-            ),
-            reps: Value(map['reps'] as int? ?? 0),
-            lapses: Value(map['lapses'] as int? ?? 0),
-            fsrsState: Value(map['fsrsState'] as int? ?? 0),
-          ));
+          );
           fsrsCardsImported++;
         }
       }
@@ -541,25 +579,30 @@ ${topMoves.isNotEmpty ? 'Most Practiced:\n$topMoves' : 'No moves practiced yet.'
         for (final d in decksJson) {
           final map = d as Map<String, dynamic>;
           final id = map['id'] as String;
-          if (mode == ImportMode.merge && existingDeckIds.contains(id)) continue;
+          if (mode == ImportMode.merge && existingDeckIds.contains(id))
+            continue;
 
-          await db.into(db.decks).insert(DecksCompanion.insert(
-                id: id,
-                name: map['name'] as String,
-                deckType: Value(map['deckType'] as String? ?? 'smart'),
-                filterCriteria: Value(map['filterCriteria'] as String?),
-                sessionSize: Value(map['sessionSize'] as int?),
-                createdAt: Value(
-                  map['createdAt'] != null
-                      ? DateTime.parse(map['createdAt'] as String)
-                      : DateTime.now(),
+          await db
+              .into(db.decks)
+              .insert(
+                DecksCompanion.insert(
+                  id: id,
+                  name: map['name'] as String,
+                  deckType: Value(map['deckType'] as String? ?? 'smart'),
+                  filterCriteria: Value(map['filterCriteria'] as String?),
+                  sessionSize: Value(map['sessionSize'] as int?),
+                  createdAt: Value(
+                    map['createdAt'] != null
+                        ? DateTime.parse(map['createdAt'] as String)
+                        : DateTime.now(),
+                  ),
+                  updatedAt: Value(
+                    map['updatedAt'] != null
+                        ? DateTime.parse(map['updatedAt'] as String)
+                        : DateTime.now(),
+                  ),
                 ),
-                updatedAt: Value(
-                  map['updatedAt'] != null
-                      ? DateTime.parse(map['updatedAt'] as String)
-                      : DateTime.now(),
-                ),
-              ));
+              );
           decksImported++;
         }
       }
@@ -568,8 +611,8 @@ ${topMoves.isNotEmpty ? 'Most Practiced:\n$topMoves' : 'No moves practiced yet.'
       if (deckMovesJson.isNotEmpty) {
         final existingDmKeys = mode == ImportMode.merge
             ? (await db.select(db.deckMoves).get())
-                .map((dm) => '${dm.deckId}:${dm.moveId}')
-                .toSet()
+                  .map((dm) => '${dm.deckId}:${dm.moveId}')
+                  .toSet()
             : <String>{};
 
         for (final dm in deckMovesJson) {
@@ -577,12 +620,14 @@ ${topMoves.isNotEmpty ? 'Most Practiced:\n$topMoves' : 'No moves practiced yet.'
           final deckId = map['deckId'] as String;
           final moveId = map['moveId'] as String;
           final key = '$deckId:$moveId';
-          if (mode == ImportMode.merge && existingDmKeys.contains(key)) continue;
+          if (mode == ImportMode.merge && existingDmKeys.contains(key))
+            continue;
 
-          await db.into(db.deckMoves).insert(DeckMovesCompanion.insert(
-                deckId: deckId,
-                moveId: moveId,
-              ));
+          await db
+              .into(db.deckMoves)
+              .insert(
+                DeckMovesCompanion.insert(deckId: deckId, moveId: moveId),
+              );
           deckMovesImported++;
         }
       }

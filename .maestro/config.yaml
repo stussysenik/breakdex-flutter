@@ -18,10 +18,11 @@ initFlow:
 # Run subsets: maestro test --tags=smoke .maestro/
 tags:
   smoke: [navigation.yaml, arsenal-fab-reachable.yaml, stats-dashboard.yaml, hero-transition.yaml]
+  flow: [flow-clarity.yaml, stress-flow-graph.yaml]
   video: [import-and-trim.yaml, video-playback.yaml, export-flow.yaml]
   review: [review-session.yaml, review-colors.yaml, review-combo-session.yaml, review-full-cycle.yaml, deck-session.yaml]
   arsenal: [arsenal-crud.yaml]
-  settings: [settings-customization.yaml]
+  settings: [settings-customization.yaml, settings-export.yaml]
   performance: [scroll_performance.yaml, inp-latency.yaml]
   regression: [arsenal-fab-reachable.yaml, hero-transition.yaml]
   stress: [stress-review-rapid.yaml, stress-arsenal-overload.yaml, stress-nav-chaos.yaml, stress-video-editor.yaml, stress-video-loading.yaml, stress-video-parity.yaml, stress-battle.yaml, stress-settings-spam.yaml, stress-combo-crud.yaml, stress-edge-conditions.yaml, stress-lab-crud.yaml, stress-set-builder.yaml, stress-achievement-garden.yaml, stress-lab-full-tabs.yaml, stress-lab-aura-flow.yaml, stress-lab-calendar.yaml]

@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'package:breakdex/core/app_metadata.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:breakdex/core/database/database.dart';
@@ -28,7 +29,7 @@ void main() {
   // Group A: validateImportJson
   // =========================================================================
   group('validateImportJson', () {
-    test('valid v6 JSON returns valid:true with correct counts', () {
+    test('valid current-schema JSON returns valid:true with correct counts', () {
       final json = makeExportJson(
         moves: [
           makeJsonMove(),
@@ -43,7 +44,7 @@ void main() {
       final result = StatsExportService.validateImportJson(json);
 
       expect(result.valid, isTrue);
-      expect(result.schemaVersion, 6);
+      expect(result.schemaVersion, AppMetadata.exportSchemaVersion);
       expect(result.moveCount, 2);
       expect(result.reviewCount, 1);
       expect(result.comboCount, 1);
@@ -71,8 +72,11 @@ void main() {
       expect(result.categoryCount, 0);
     });
 
-    test('schema version > 6 rejected with newer version error', () {
-      final json = makeExportJson(schemaVersion: 7, moves: []);
+    test('schema version > current rejected with newer version error', () {
+      final json = makeExportJson(
+        schemaVersion: AppMetadata.exportSchemaVersion + 1,
+        moves: [],
+      );
 
       final result = StatsExportService.validateImportJson(json);
 
@@ -188,7 +192,7 @@ void main() {
       final result = await StatsExportService.generateJsonExport(db, prefs);
       final data = jsonDecode(result.json) as Map<String, dynamic>;
 
-      expect(data['schemaVersion'], 6);
+      expect(data['schemaVersion'], AppMetadata.exportSchemaVersion);
       expect(data['moves'], isEmpty);
       expect(data['reviews'], isEmpty);
       expect(data['combos'], isEmpty);

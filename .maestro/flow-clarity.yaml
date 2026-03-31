@@ -1,0 +1,33 @@
+appId: com.breakdex.breakdex
+tags:
+  - flow
+  - smoke
+name: "Flow clarity regression"
+
+---
+
+- runFlow: subflows/launch-stress.yaml
+
+- tapOn:
+    id: "flow-tab"
+- assertVisible: "Flow"
+- assertVisible: "Whole practice network"
+- assertVisible: "Moves are graphable now."
+- assertVisible:
+    id: "flow-legend-toggle"
+- assertVisible:
+    id: "flow-recenter"
+- assertVisible: "Moves"
+
+- tapOn:
+    text: "Focus"
+- assertVisible: "One-move inspection"
+- assertVisible: "Select a move in Map mode"
+
+- tapOn:
+    text: "Zones"
+- assertVisible: "Category zones"
+
+- tapOn:
+    text: "Map"
+- assertVisible: "Whole practice network"

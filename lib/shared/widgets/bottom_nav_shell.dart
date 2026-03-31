@@ -55,16 +55,25 @@ class BottomNavShell extends ConsumerWidget {
               backgroundColor: Colors.transparent,
               elevation: 0,
               items: [
-                const BottomNavigationBarItem(
-                  icon: Icon(Icons.grid_view_rounded),
+                BottomNavigationBarItem(
+                  icon: Semantics(
+                    identifier: 'moves-tab',
+                    child: const Icon(Icons.grid_view_rounded),
+                  ),
                   label: 'Moves',
                 ),
-                const BottomNavigationBarItem(
-                  icon: Icon(Icons.style_outlined),
+                BottomNavigationBarItem(
+                  icon: Semantics(
+                    identifier: 'drill-tab',
+                    child: const Icon(Icons.style_outlined),
+                  ),
                   label: 'Drill',
                 ),
-                const BottomNavigationBarItem(
-                  icon: Icon(Icons.insights_rounded),
+                BottomNavigationBarItem(
+                  icon: Semantics(
+                    identifier: 'progress-tab',
+                    child: const Icon(Icons.insights_rounded),
+                  ),
                   label: 'Progress',
                 ),
                 BottomNavigationBarItem(

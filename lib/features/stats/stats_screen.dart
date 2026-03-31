@@ -3,12 +3,13 @@ import 'package:flutter/services.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
-import 'package:share_plus/share_plus.dart';
 import '../../core/design/colors.dart';
 import '../../core/design/spacing.dart';
 import '../../core/design/theme.dart';
 import '../../core/design/typography.dart';
+import '../../core/services/native_share_sheet.dart';
 import '../../core/services/stats_export_service.dart';
+import '../../core/utils/share_sheet.dart';
 import '../../shared/widgets/app_segmented_control.dart';
 import '../../shared/widgets/settings_gear_button.dart';
 import 'providers/stats_providers.dart';
@@ -40,339 +41,360 @@ class _StatsScreenState extends ConsumerState<StatsScreen> {
         child: _progressMode == _ProgressMode.timeline
             ? _buildTimelineView(context)
             : statsAsync.when(
-          loading: () => const Center(child: CircularProgressIndicator()),
-          error: (e, _) => Center(child: Text('Error: $e')),
-          data: (stats) {
-            final moveCards = stats.cardStats
-                .where((item) => item.entityType == 'move')
-                .length;
-            final comboCards = stats.cardStats
-                .where((item) => item.entityType == 'combo')
-                .length;
+                loading: () => const Center(child: CircularProgressIndicator()),
+                error: (e, _) => Center(child: Text('Error: $e')),
+                data: (stats) {
+                  final moveCards = stats.cardStats
+                      .where((item) => item.entityType == 'move')
+                      .length;
+                  final comboCards = stats.cardStats
+                      .where((item) => item.entityType == 'combo')
+                      .length;
 
-            return CustomScrollView(
-              slivers: [
-                // 1. Title + share button
-                SliverPadding(
-                  padding: const EdgeInsets.fromLTRB(
-                    AppSpacing.screenEdge,
-                    AppSpacing.lg,
-                    AppSpacing.screenEdge,
-                    0,
-                  ),
-                  sliver: SliverToBoxAdapter(
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Semantics(
+                  return CustomScrollView(
+                    slivers: [
+                      // 1. Title + share button
+                      SliverPadding(
+                        padding: const EdgeInsets.fromLTRB(
+                          AppSpacing.screenEdge,
+                          AppSpacing.lg,
+                          AppSpacing.screenEdge,
+                          0,
+                        ),
+                        sliver: SliverToBoxAdapter(
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Semantics(
+                                    header: true,
+                                    child: Text(
+                                      _progressMode == _ProgressMode.numbers
+                                          ? 'Progress'
+                                          : 'Timeline',
+                                      style: AppTypography.titleLarge.copyWith(
+                                        color: Theme.of(
+                                          context,
+                                        ).colorScheme.onSurface,
+                                      ),
+                                    ),
+                                  ),
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    _mode == _StatsMode.card
+                                        ? 'Cards, outcomes, and retention.'
+                                        : 'Timeline, days, and exact reactions.',
+                                    style: AppTypography.bodySmall.copyWith(
+                                      color: Theme.of(
+                                        context,
+                                      ).colorScheme.secondary,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              Row(
+                                children: [
+                                  _ShareButton(stats: stats),
+                                  const SizedBox(width: AppSpacing.sm),
+                                  const SettingsGearButton(),
+                                ],
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+
+                      // Numbers / Timeline toggle
+                      SliverPadding(
+                        padding: const EdgeInsets.fromLTRB(
+                          AppSpacing.screenEdge,
+                          AppSpacing.md,
+                          AppSpacing.screenEdge,
+                          0,
+                        ),
+                        sliver: SliverToBoxAdapter(
+                          child: AppSegmentedControl<_ProgressMode>(
+                            items: const [
+                              AppSegmentedControlItem(
+                                value: _ProgressMode.numbers,
+                                icon: Icons.bar_chart_rounded,
+                                label: 'Numbers',
+                              ),
+                              AppSegmentedControlItem(
+                                value: _ProgressMode.timeline,
+                                icon: Icons.calendar_month_outlined,
+                                label: 'Timeline',
+                              ),
+                            ],
+                            selectedValue: _progressMode,
+                            onChanged: (mode) => setState(() {
+                              _progressMode = mode;
+                            }),
+                          ),
+                        ),
+                      ),
+
+                      SliverPadding(
+                        padding: const EdgeInsets.fromLTRB(
+                          AppSpacing.screenEdge,
+                          AppSpacing.md,
+                          AppSpacing.screenEdge,
+                          0,
+                        ),
+                        sliver: SliverToBoxAdapter(
+                          child: _StatsHeroCard(mode: _mode, stats: stats),
+                        ),
+                      ),
+
+                      SliverPadding(
+                        padding: const EdgeInsets.fromLTRB(
+                          AppSpacing.screenEdge,
+                          AppSpacing.md,
+                          AppSpacing.screenEdge,
+                          0,
+                        ),
+                        sliver: SliverToBoxAdapter(
+                          child: AppSegmentedControl<_StatsMode>(
+                            items: const [
+                              AppSegmentedControlItem(
+                                value: _StatsMode.card,
+                                icon: Icons.view_agenda_rounded,
+                                label: 'Card',
+                              ),
+                              AppSegmentedControlItem(
+                                value: _StatsMode.time,
+                                icon: Icons.schedule_rounded,
+                                label: 'Time',
+                              ),
+                            ],
+                            selectedValue: _mode,
+                            onChanged: (selection) {
+                              HapticFeedback.selectionClick();
+                              setState(() => _mode = selection);
+                            },
+                          ),
+                        ),
+                      ),
+
+                      SliverPadding(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: AppSpacing.screenEdge,
+                          vertical: AppSpacing.md,
+                        ),
+                        sliver: SliverToBoxAdapter(
+                          child: Row(
+                            children: [
+                              Expanded(
+                                child: StatCard(
+                                  label: _mode == _StatsMode.card
+                                      ? 'Retention'
+                                      : 'Streak',
+                                  value: _mode == _StatsMode.card
+                                      ? '${(stats.overallRetention * 100).round()}%'
+                                      : '${stats.currentStreak}',
+                                ),
+                              ),
+                              const SizedBox(width: AppSpacing.sm),
+                              Expanded(
+                                child: StatCard(
+                                  label: _mode == _StatsMode.card
+                                      ? 'Events'
+                                      : '30d Active',
+                                  value: _mode == _StatsMode.card
+                                      ? '${stats.reviewTimeline.length}'
+                                      : '${stats.dailyBreakdown.where((day) => day.reviewCount > 0).length}',
+                                ),
+                              ),
+                              const SizedBox(width: AppSpacing.sm),
+                              Expanded(
+                                child: StatCard(
+                                  label: _mode == _StatsMode.card
+                                      ? 'Moves / Combos'
+                                      : 'Timeline',
+                                  value: _mode == _StatsMode.card
+                                      ? '$moveCards / $comboCards'
+                                      : '${stats.reviewTimeline.length}',
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+
+                      if (_mode == _StatsMode.card) ...[
+                        SliverPadding(
+                          padding: const EdgeInsets.fromLTRB(
+                            AppSpacing.screenEdge,
+                            AppSpacing.md,
+                            AppSpacing.screenEdge,
+                            0,
+                          ),
+                          sliver: SliverToBoxAdapter(
+                            child: Semantics(
                               header: true,
                               child: Text(
-                                _progressMode == _ProgressMode.numbers
-                                  ? 'Progress'
-                                  : 'Timeline',
-                                style: AppTypography.titleLarge.copyWith(
+                                'Per Card',
+                                style: AppTypography.titleMedium.copyWith(
                                   color: Theme.of(
                                     context,
                                   ).colorScheme.onSurface,
                                 ),
                               ),
                             ),
-                            const SizedBox(height: 4),
-                            Text(
-                              _mode == _StatsMode.card
-                                  ? 'Cards, outcomes, and retention.'
-                                  : 'Timeline, days, and exact reactions.',
-                              style: AppTypography.bodySmall.copyWith(
-                                color: Theme.of(context).colorScheme.secondary,
+                          ),
+                        ),
+                        SliverList(
+                          delegate: SliverChildBuilderDelegate((
+                            context,
+                            index,
+                          ) {
+                            final item = stats.cardStats[index];
+                            return Padding(
+                              padding: const EdgeInsets.fromLTRB(
+                                AppSpacing.screenEdge,
+                                AppSpacing.md,
+                                AppSpacing.screenEdge,
+                                0,
+                              ),
+                              child: _CardStatTile(item: item),
+                            ).animate().fadeIn(
+                              duration: AppMotion.moderate01,
+                              delay: Duration(
+                                milliseconds: index.clamp(0, 12) * 35,
+                              ),
+                            );
+                          }, childCount: stats.cardStats.length),
+                        ),
+                      ] else ...[
+                        SliverPadding(
+                          padding: const EdgeInsets.fromLTRB(
+                            AppSpacing.screenEdge,
+                            AppSpacing.md,
+                            AppSpacing.screenEdge,
+                            0,
+                          ),
+                          sliver: SliverToBoxAdapter(
+                            child: Semantics(
+                              header: true,
+                              child: Text(
+                                'Activity',
+                                style: AppTypography.titleMedium.copyWith(
+                                  color: Theme.of(
+                                    context,
+                                  ).colorScheme.onSurface,
+                                ),
                               ),
                             ),
-                          ],
+                          ),
                         ),
-                        Row(
-                          children: [
-                            _ShareButton(stats: stats),
-                            const SizedBox(width: AppSpacing.sm),
-                            const SettingsGearButton(),
-                          ],
+                        SliverPadding(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: AppSpacing.screenEdge,
+                            vertical: AppSpacing.md,
+                          ),
+                          sliver: SliverToBoxAdapter(
+                            child: HeatMapGrid(dailyCounts: stats.dailyCounts),
+                          ),
+                        ),
+                        SliverPadding(
+                          padding: const EdgeInsets.fromLTRB(
+                            AppSpacing.screenEdge,
+                            0,
+                            AppSpacing.screenEdge,
+                            0,
+                          ),
+                          sliver: const SliverToBoxAdapter(
+                            child: _SelectedDayDetailCard(),
+                          ),
+                        ),
+                        SliverPadding(
+                          padding: const EdgeInsets.fromLTRB(
+                            AppSpacing.screenEdge,
+                            AppSpacing.md,
+                            AppSpacing.screenEdge,
+                            0,
+                          ),
+                          sliver: SliverToBoxAdapter(
+                            child: Semantics(
+                              header: true,
+                              child: Text(
+                                'Last 7 Days',
+                                style: AppTypography.titleMedium.copyWith(
+                                  color: Theme.of(
+                                    context,
+                                  ).colorScheme.onSurface,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                        SliverList(
+                          delegate: SliverChildBuilderDelegate((
+                            context,
+                            index,
+                          ) {
+                            final day = stats.dailyBreakdown[index];
+                            return Padding(
+                              padding: const EdgeInsets.fromLTRB(
+                                AppSpacing.screenEdge,
+                                AppSpacing.md,
+                                AppSpacing.screenEdge,
+                                0,
+                              ),
+                              child: _DayTimelineCard(day: day),
+                            );
+                          }, childCount: stats.dailyBreakdown.take(7).length),
+                        ),
+                        SliverPadding(
+                          padding: const EdgeInsets.fromLTRB(
+                            AppSpacing.screenEdge,
+                            AppSpacing.lg,
+                            AppSpacing.screenEdge,
+                            0,
+                          ),
+                          sliver: SliverToBoxAdapter(
+                            child: Semantics(
+                              header: true,
+                              child: Text(
+                                'Recent Reactions',
+                                style: AppTypography.titleMedium.copyWith(
+                                  color: Theme.of(
+                                    context,
+                                  ).colorScheme.onSurface,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                        SliverList(
+                          delegate: SliverChildBuilderDelegate((
+                            context,
+                            index,
+                          ) {
+                            final entry = stats.reviewTimeline[index];
+                            return Padding(
+                              padding: const EdgeInsets.fromLTRB(
+                                AppSpacing.screenEdge,
+                                AppSpacing.md,
+                                AppSpacing.screenEdge,
+                                0,
+                              ),
+                              child: _TimelineEntryTile(entry: entry),
+                            );
+                          }, childCount: stats.reviewTimeline.take(24).length),
                         ),
                       ],
-                    ),
-                  ),
-                ),
 
-                // Numbers / Timeline toggle
-                SliverPadding(
-                  padding: const EdgeInsets.fromLTRB(
-                    AppSpacing.screenEdge,
-                    AppSpacing.md,
-                    AppSpacing.screenEdge,
-                    0,
-                  ),
-                  sliver: SliverToBoxAdapter(
-                    child: AppSegmentedControl<_ProgressMode>(
-                      items: const [
-                        AppSegmentedControlItem(
-                          value: _ProgressMode.numbers,
-                          icon: Icons.bar_chart_rounded,
-                          label: 'Numbers',
-                        ),
-                        AppSegmentedControlItem(
-                          value: _ProgressMode.timeline,
-                          icon: Icons.calendar_month_outlined,
-                          label: 'Timeline',
-                        ),
-                      ],
-                      selectedValue: _progressMode,
-                      onChanged: (mode) => setState(() {
-                        _progressMode = mode;
-                      }),
-                    ),
-                  ),
-                ),
-
-                SliverPadding(
-                  padding: const EdgeInsets.fromLTRB(
-                    AppSpacing.screenEdge,
-                    AppSpacing.md,
-                    AppSpacing.screenEdge,
-                    0,
-                  ),
-                  sliver: SliverToBoxAdapter(
-                    child: _StatsHeroCard(mode: _mode, stats: stats),
-                  ),
-                ),
-
-                SliverPadding(
-                  padding: const EdgeInsets.fromLTRB(
-                    AppSpacing.screenEdge,
-                    AppSpacing.md,
-                    AppSpacing.screenEdge,
-                    0,
-                  ),
-                  sliver: SliverToBoxAdapter(
-                    child: AppSegmentedControl<_StatsMode>(
-                      items: const [
-                        AppSegmentedControlItem(
-                          value: _StatsMode.card,
-                          icon: Icons.view_agenda_rounded,
-                          label: 'Card',
-                        ),
-                        AppSegmentedControlItem(
-                          value: _StatsMode.time,
-                          icon: Icons.schedule_rounded,
-                          label: 'Time',
-                        ),
-                      ],
-                      selectedValue: _mode,
-                      onChanged: (selection) {
-                        HapticFeedback.selectionClick();
-                        setState(() => _mode = selection);
-                      },
-                    ),
-                  ),
-                ),
-
-                SliverPadding(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: AppSpacing.screenEdge,
-                    vertical: AppSpacing.md,
-                  ),
-                  sliver: SliverToBoxAdapter(
-                    child: Row(
-                      children: [
-                        Expanded(
-                          child: StatCard(
-                            label: _mode == _StatsMode.card
-                                ? 'Retention'
-                                : 'Streak',
-                            value: _mode == _StatsMode.card
-                                ? '${(stats.overallRetention * 100).round()}%'
-                                : '${stats.currentStreak}',
-                          ),
-                        ),
-                        const SizedBox(width: AppSpacing.sm),
-                        Expanded(
-                          child: StatCard(
-                            label: _mode == _StatsMode.card
-                                ? 'Events'
-                                : '30d Active',
-                            value: _mode == _StatsMode.card
-                                ? '${stats.reviewTimeline.length}'
-                                : '${stats.dailyBreakdown.where((day) => day.reviewCount > 0).length}',
-                          ),
-                        ),
-                        const SizedBox(width: AppSpacing.sm),
-                        Expanded(
-                          child: StatCard(
-                            label: _mode == _StatsMode.card
-                                ? 'Moves / Combos'
-                                : 'Timeline',
-                            value: _mode == _StatsMode.card
-                                ? '$moveCards / $comboCards'
-                                : '${stats.reviewTimeline.length}',
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-
-                if (_mode == _StatsMode.card) ...[
-                  SliverPadding(
-                    padding: const EdgeInsets.fromLTRB(
-                      AppSpacing.screenEdge,
-                      AppSpacing.md,
-                      AppSpacing.screenEdge,
-                      0,
-                    ),
-                    sliver: SliverToBoxAdapter(
-                      child: Semantics(
-                        header: true,
-                        child: Text(
-                          'Per Card',
-                          style: AppTypography.titleMedium.copyWith(
-                            color: Theme.of(context).colorScheme.onSurface,
-                          ),
-                        ),
+                      // Bottom spacing
+                      const SliverToBoxAdapter(
+                        child: SizedBox(height: AppSpacing.xl),
                       ),
-                    ),
-                  ),
-                  SliverList(
-                    delegate: SliverChildBuilderDelegate((context, index) {
-                      final item = stats.cardStats[index];
-                      return Padding(
-                        padding: const EdgeInsets.fromLTRB(
-                          AppSpacing.screenEdge,
-                          AppSpacing.md,
-                          AppSpacing.screenEdge,
-                          0,
-                        ),
-                        child: _CardStatTile(item: item),
-                      ).animate().fadeIn(
-                        duration: AppMotion.moderate01,
-                        delay: Duration(milliseconds: index.clamp(0, 12) * 35),
-                      );
-                    }, childCount: stats.cardStats.length),
-                  ),
-                ] else ...[
-                  SliverPadding(
-                    padding: const EdgeInsets.fromLTRB(
-                      AppSpacing.screenEdge,
-                      AppSpacing.md,
-                      AppSpacing.screenEdge,
-                      0,
-                    ),
-                    sliver: SliverToBoxAdapter(
-                      child: Semantics(
-                        header: true,
-                        child: Text(
-                          'Activity',
-                          style: AppTypography.titleMedium.copyWith(
-                            color: Theme.of(context).colorScheme.onSurface,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-                  SliverPadding(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: AppSpacing.screenEdge,
-                      vertical: AppSpacing.md,
-                    ),
-                    sliver: SliverToBoxAdapter(
-                      child: HeatMapGrid(dailyCounts: stats.dailyCounts),
-                    ),
-                  ),
-                  SliverPadding(
-                    padding: const EdgeInsets.fromLTRB(
-                      AppSpacing.screenEdge,
-                      0,
-                      AppSpacing.screenEdge,
-                      0,
-                    ),
-                    sliver: const SliverToBoxAdapter(
-                      child: _SelectedDayDetailCard(),
-                    ),
-                  ),
-                  SliverPadding(
-                    padding: const EdgeInsets.fromLTRB(
-                      AppSpacing.screenEdge,
-                      AppSpacing.md,
-                      AppSpacing.screenEdge,
-                      0,
-                    ),
-                    sliver: SliverToBoxAdapter(
-                      child: Semantics(
-                        header: true,
-                        child: Text(
-                          'Last 7 Days',
-                          style: AppTypography.titleMedium.copyWith(
-                            color: Theme.of(context).colorScheme.onSurface,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-                  SliverList(
-                    delegate: SliverChildBuilderDelegate((context, index) {
-                      final day = stats.dailyBreakdown[index];
-                      return Padding(
-                        padding: const EdgeInsets.fromLTRB(
-                          AppSpacing.screenEdge,
-                          AppSpacing.md,
-                          AppSpacing.screenEdge,
-                          0,
-                        ),
-                        child: _DayTimelineCard(day: day),
-                      );
-                    }, childCount: stats.dailyBreakdown.take(7).length),
-                  ),
-                  SliverPadding(
-                    padding: const EdgeInsets.fromLTRB(
-                      AppSpacing.screenEdge,
-                      AppSpacing.lg,
-                      AppSpacing.screenEdge,
-                      0,
-                    ),
-                    sliver: SliverToBoxAdapter(
-                      child: Semantics(
-                        header: true,
-                        child: Text(
-                          'Recent Reactions',
-                          style: AppTypography.titleMedium.copyWith(
-                            color: Theme.of(context).colorScheme.onSurface,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-                  SliverList(
-                    delegate: SliverChildBuilderDelegate((context, index) {
-                      final entry = stats.reviewTimeline[index];
-                      return Padding(
-                        padding: const EdgeInsets.fromLTRB(
-                          AppSpacing.screenEdge,
-                          AppSpacing.md,
-                          AppSpacing.screenEdge,
-                          0,
-                        ),
-                        child: _TimelineEntryTile(entry: entry),
-                      );
-                    }, childCount: stats.reviewTimeline.take(24).length),
-                  ),
-                ],
-
-                // Bottom spacing
-                const SliverToBoxAdapter(
-                  child: SizedBox(height: AppSpacing.xl),
-                ),
-              ],
-            );
-          },
-        ),
+                    ],
+                  );
+                },
+              ),
       ),
     );
   }
@@ -937,7 +959,11 @@ class _ShareButtonState extends State<_ShareButton> {
     setState(() => _sharing = true);
     try {
       final summary = StatsExportService.generateTextSummary(widget.stats);
-      await Share.share(summary);
+      final origin = sharePositionOrigin(context);
+      await NativeShareSheet.shareText(
+        text: summary,
+        sharePositionOrigin: origin,
+      );
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(

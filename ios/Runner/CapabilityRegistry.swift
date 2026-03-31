@@ -18,6 +18,7 @@ final class CapabilityRegistry {
         VideoExportPlugin.self,
         VideoPreviewPlugin.self,
         VideoAlbumPlugin.self,
+        ShareSheetPlugin.self,
         NativeVideoImportPlugin.self,
         VisionMLPlugin.self,
         SceneKit3DPlugin.self,

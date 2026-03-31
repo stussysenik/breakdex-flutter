@@ -1,18 +1,19 @@
 import 'dart:convert';
 
 import 'package:drift/drift.dart';
+import 'package:breakdex/core/app_metadata.dart';
 import 'package:breakdex/core/database/database.dart';
 
 /// Factory functions for generating test data — both JSON export format
 /// and direct DB insertions. Keeps test files focused on assertions.
 
 // ---------------------------------------------------------------------------
-// JSON builders — produce maps matching export schema v6
+// JSON builders — produce maps matching the current export schema.
 // ---------------------------------------------------------------------------
 
-/// Builds a valid v6 export JSON string from optional entity lists.
+/// Builds a valid export JSON string from optional entity lists.
 String makeExportJson({
-  int schemaVersion = 6,
+  int schemaVersion = AppMetadata.exportSchemaVersion,
   List<Map<String, dynamic>>? moves,
   List<Map<String, dynamic>>? reviews,
   List<Map<String, dynamic>>? combos,
@@ -26,7 +27,7 @@ String makeExportJson({
   return jsonEncode({
     'schemaVersion': schemaVersion,
     'exportedAt': DateTime.now().toIso8601String(),
-    'appVersion': '0.6.0',
+    'appVersion': AppMetadata.releaseVersion,
     'moves': ?moves,
     'reviews': ?reviews,
     'combos': ?combos,
