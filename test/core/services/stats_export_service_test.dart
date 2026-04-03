@@ -29,29 +29,32 @@ void main() {
   // Group A: validateImportJson
   // =========================================================================
   group('validateImportJson', () {
-    test('valid current-schema JSON returns valid:true with correct counts', () {
-      final json = makeExportJson(
-        moves: [
-          makeJsonMove(),
-          makeJsonMove(id: 'move-2', name: 'Headspin'),
-        ],
-        reviews: [makeJsonReview()],
-        combos: [makeJsonCombo()],
-        battleResults: [makeJsonBattleResult()],
-        categories: [makeJsonCategory()],
-      );
+    test(
+      'valid current-schema JSON returns valid:true with correct counts',
+      () {
+        final json = makeExportJson(
+          moves: [
+            makeJsonMove(),
+            makeJsonMove(id: 'move-2', name: 'Headspin'),
+          ],
+          reviews: [makeJsonReview()],
+          combos: [makeJsonCombo()],
+          battleResults: [makeJsonBattleResult()],
+          categories: [makeJsonCategory()],
+        );
 
-      final result = StatsExportService.validateImportJson(json);
+        final result = StatsExportService.validateImportJson(json);
 
-      expect(result.valid, isTrue);
-      expect(result.schemaVersion, AppMetadata.exportSchemaVersion);
-      expect(result.moveCount, 2);
-      expect(result.reviewCount, 1);
-      expect(result.comboCount, 1);
-      expect(result.battleResultCount, 1);
-      expect(result.categoryCount, 1);
-      expect(result.error, isNull);
-    });
+        expect(result.valid, isTrue);
+        expect(result.schemaVersion, AppMetadata.exportSchemaVersion);
+        expect(result.moveCount, 2);
+        expect(result.reviewCount, 1);
+        expect(result.comboCount, 1);
+        expect(result.battleResultCount, 1);
+        expect(result.categoryCount, 1);
+        expect(result.error, isNull);
+      },
+    );
 
     test('empty arrays returns valid:true with all counts 0', () {
       final json = makeExportJson(
@@ -1491,6 +1494,8 @@ void main() {
         dailyBreakdown: [],
         cardStats: const [],
         reviewTimeline: const [],
+        moveProgressGroups: const [],
+        comboProgressGroups: const [],
       );
     }
 

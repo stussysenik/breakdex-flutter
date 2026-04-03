@@ -144,6 +144,7 @@ class CardReviewStats {
     required this.entityType,
     required this.displayName,
     required this.category,
+    this.stateLabel = 'New',
     required this.shownCount,
     required this.againCount,
     required this.hardCount,
@@ -158,6 +159,7 @@ class CardReviewStats {
   final String entityType;
   final String displayName;
   final String category;
+  final String stateLabel;
   final int shownCount;
   final int againCount;
   final int hardCount;
@@ -170,6 +172,90 @@ class CardReviewStats {
   int get successfulCount => goodCount + easyCount;
   double get successRatio =>
       shownCount > 0 ? successfulCount / shownCount : 0.0;
+}
+
+enum ProgressDueBucket { now, today, tomorrow, later, unscheduled }
+
+class MoveProgressItem {
+  const MoveProgressItem({
+    required this.moveId,
+    required this.moveName,
+    required this.category,
+    required this.stateLabel,
+    required this.statusLabel,
+    required this.reviewCount,
+    required this.dueBucket,
+    this.lastReviewedAt,
+  });
+
+  final String moveId;
+  final String moveName;
+  final String category;
+  final String stateLabel;
+  final String statusLabel;
+  final int reviewCount;
+  final ProgressDueBucket dueBucket;
+  final DateTime? lastReviewedAt;
+}
+
+class MoveProgressGroup {
+  const MoveProgressGroup({
+    required this.category,
+    required this.items,
+    required this.reviewedCount,
+    required this.dueNowCount,
+    required this.dueTodayCount,
+    required this.dueTomorrowCount,
+  });
+
+  final String category;
+  final List<MoveProgressItem> items;
+  final int reviewedCount;
+  final int dueNowCount;
+  final int dueTodayCount;
+  final int dueTomorrowCount;
+
+  int get totalCount => items.length;
+}
+
+class ComboProgressStep {
+  const ComboProgressStep({
+    required this.moveId,
+    required this.moveName,
+    required this.category,
+    required this.sequenceIndex,
+    required this.stateLabel,
+    required this.dueBucket,
+  });
+
+  final String moveId;
+  final String moveName;
+  final String category;
+  final int sequenceIndex;
+  final String stateLabel;
+  final ProgressDueBucket dueBucket;
+}
+
+class ComboProgressGroup {
+  const ComboProgressGroup({
+    required this.comboId,
+    required this.comboName,
+    required this.stateLabel,
+    required this.statusLabel,
+    required this.reviewCount,
+    required this.dueBucket,
+    required this.steps,
+    this.lastReviewedAt,
+  });
+
+  final String comboId;
+  final String comboName;
+  final String stateLabel;
+  final String statusLabel;
+  final int reviewCount;
+  final ProgressDueBucket dueBucket;
+  final List<ComboProgressStep> steps;
+  final DateTime? lastReviewedAt;
 }
 
 class ReviewTimelineEntry {
@@ -218,6 +304,8 @@ class StatsBundle {
   final List<DayStats> dailyBreakdown;
   final List<CardReviewStats> cardStats;
   final List<ReviewTimelineEntry> reviewTimeline;
+  final List<MoveProgressGroup> moveProgressGroups;
+  final List<ComboProgressGroup> comboProgressGroups;
 
   const StatsBundle({
     required this.ratingDistribution,
@@ -233,6 +321,8 @@ class StatsBundle {
     required this.dailyBreakdown,
     required this.cardStats,
     required this.reviewTimeline,
+    required this.moveProgressGroups,
+    required this.comboProgressGroups,
   });
 }
 
@@ -287,6 +377,8 @@ final statsBundleProvider = FutureProvider<StatsBundle>((ref) async {
     fsrsService.getTotalStateCounts(), // 9 — total state counts
     db.combosDao.getAll(), // 10 — all combos
     reviewsDao.getAllOrdered(), // 11 — all reviews for card/time modes
+    db.fsrsCardsDao.getAll(), // 12 — all FSRS cards for state + due grouping
+    db.select(db.comboMoves).get(), // 13 — combo structure for parent-first UI
   ]);
 
   // Build daily breakdown from last 30 days of reviews
@@ -296,6 +388,12 @@ final statsBundleProvider = FutureProvider<StatsBundle>((ref) async {
   final comboMap = {for (final c in allCombos) c.id: c};
   final last30Reviews = results[8] as List<Review>;
   final allReviews = results[11] as List<Review>;
+  final fsrsCards = results[12] as List<FsrsCard>;
+  final comboMoves = results[13] as List<ComboMove>;
+  final fsrsMap = {
+    for (final card in fsrsCards)
+      _entityKey(card.entityType, card.entityId): card,
+  };
   final dailyBreakdown = _buildDailyBreakdown(
     last30Reviews,
     thirtyDaysAgo,
@@ -303,8 +401,22 @@ final statsBundleProvider = FutureProvider<StatsBundle>((ref) async {
     moveMap,
     comboMap,
   );
-  final cardStats = _buildCardStats(allReviews, moveMap, comboMap);
+  final cardStats = _buildCardStats(allReviews, moveMap, comboMap, fsrsMap);
   final reviewTimeline = _buildReviewTimeline(allReviews, moveMap, comboMap);
+  final moveProgressGroups = _buildMoveProgressGroups(
+    allMoves,
+    cardStats,
+    fsrsMap,
+    now,
+  );
+  final comboProgressGroups = _buildComboProgressGroups(
+    allCombos,
+    comboMoves,
+    moveMap,
+    cardStats,
+    fsrsMap,
+    now,
+  );
 
   // Filter out top move entries where the move no longer exists
   final moveIds = {for (final m in allMoves) m.id};
@@ -313,13 +425,11 @@ final statsBundleProvider = FutureProvider<StatsBundle>((ref) async {
       .toList();
 
   // Build enriched top-moves list with category, state, last reviewed
-  final fsrsCards = await db.fsrsCardsDao.getAll();
-  final fsrsMap = {for (final c in fsrsCards) c.entityId: c};
   final topMoves = topMoveEntries
       .map((entry) {
         final move = moveMap[entry.key];
         if (move == null) return null;
-        final card = fsrsMap[move.id];
+        final card = fsrsMap[_entityKey('move', move.id)];
         return TopMoveInfo(
           moveId: move.id,
           moveName: move.name,
@@ -346,6 +456,8 @@ final statsBundleProvider = FutureProvider<StatsBundle>((ref) async {
     dailyBreakdown: dailyBreakdown,
     cardStats: cardStats,
     reviewTimeline: reviewTimeline,
+    moveProgressGroups: moveProgressGroups,
+    comboProgressGroups: comboProgressGroups,
   );
 });
 
@@ -387,7 +499,11 @@ _ResolvedReviewEntity? _resolveReviewEntity(
   final entityId = review.entityIdSnapshot ?? review.moveId ?? review.comboId;
   final entityType =
       review.entityType ??
-      (review.comboId != null ? 'combo' : review.moveId != null ? 'move' : null);
+      (review.comboId != null
+          ? 'combo'
+          : review.moveId != null
+          ? 'move'
+          : null);
   final entityDisplayName = review.entityDisplayName;
   if (entityId == null && entityDisplayName == null && entityType == null) {
     return null;
@@ -397,7 +513,8 @@ _ResolvedReviewEntity? _resolveReviewEntity(
     entityId: entityId ?? review.id,
     entityType: entityType ?? 'move',
     displayName: entityDisplayName ?? 'Deleted card',
-    category: review.entityCategory ?? (entityType == 'combo' ? 'combo' : 'deleted'),
+    category:
+        review.entityCategory ?? (entityType == 'combo' ? 'combo' : 'deleted'),
     isDeleted: true,
   );
 }
@@ -472,10 +589,203 @@ List<DayStats> _buildDailyBreakdown(
   return result;
 }
 
+String _entityKey(String entityType, String entityId) =>
+    '$entityType:$entityId';
+
+ProgressDueBucket _dueBucketForCard(FsrsCard? card, DateTime now) {
+  if (card == null) return ProgressDueBucket.unscheduled;
+
+  final due = card.due.toLocal();
+  final startOfToday = DateTime(now.year, now.month, now.day);
+  final endOfToday = startOfToday.add(const Duration(days: 1));
+  final endOfTomorrow = startOfToday.add(const Duration(days: 2));
+
+  if (!due.isAfter(now)) return ProgressDueBucket.now;
+  if (due.isBefore(endOfToday)) return ProgressDueBucket.today;
+  if (due.isBefore(endOfTomorrow)) return ProgressDueBucket.tomorrow;
+  return ProgressDueBucket.later;
+}
+
+int _dueBucketPriority(ProgressDueBucket bucket) => switch (bucket) {
+  ProgressDueBucket.now => 0,
+  ProgressDueBucket.today => 1,
+  ProgressDueBucket.tomorrow => 2,
+  ProgressDueBucket.later => 3,
+  ProgressDueBucket.unscheduled => 4,
+};
+
+String _statusLabelForSubject({
+  required int reviewCount,
+  required double successRatio,
+  required ProgressDueBucket dueBucket,
+}) {
+  if (reviewCount == 0) return 'Unstarted';
+  if (dueBucket == ProgressDueBucket.now) return 'Ready now';
+  if (dueBucket == ProgressDueBucket.today) return 'Up today';
+  if (dueBucket == ProgressDueBucket.tomorrow) return 'Tomorrow';
+  if (successRatio >= 0.85) return 'Stable';
+  if (successRatio >= 0.65) return 'Active';
+  return 'Needs reps';
+}
+
+List<MoveProgressGroup> _buildMoveProgressGroups(
+  List<Move> moves,
+  List<CardReviewStats> cardStats,
+  Map<String, FsrsCard> fsrsMap,
+  DateTime now,
+) {
+  final moveStatsById = {
+    for (final item in cardStats)
+      if (item.entityType == 'move') item.entityId: item,
+  };
+  final grouped = <String, List<MoveProgressItem>>{};
+
+  for (final move in moves) {
+    final stats = moveStatsById[move.id];
+    final card = fsrsMap[_entityKey('move', move.id)];
+    final dueBucket = _dueBucketForCard(card, now);
+    grouped
+        .putIfAbsent(move.category, () => [])
+        .add(
+          MoveProgressItem(
+            moveId: move.id,
+            moveName: move.name,
+            category: move.category,
+            stateLabel: _fsrsStateLabel(card?.fsrsState ?? 0),
+            statusLabel: _statusLabelForSubject(
+              reviewCount: stats?.shownCount ?? 0,
+              successRatio: stats?.successRatio ?? 0,
+              dueBucket: dueBucket,
+            ),
+            reviewCount: stats?.shownCount ?? 0,
+            dueBucket: dueBucket,
+            lastReviewedAt: stats?.lastReviewedAt ?? card?.lastReview,
+          ),
+        );
+  }
+
+  final groups = grouped.entries.map((entry) {
+    final items = [...entry.value]
+      ..sort((a, b) {
+        final dueCompare = _dueBucketPriority(
+          a.dueBucket,
+        ).compareTo(_dueBucketPriority(b.dueBucket));
+        if (dueCompare != 0) return dueCompare;
+        final reviewCompare = b.reviewCount.compareTo(a.reviewCount);
+        if (reviewCompare != 0) return reviewCompare;
+        return a.moveName.toLowerCase().compareTo(b.moveName.toLowerCase());
+      });
+
+    return MoveProgressGroup(
+      category: entry.key,
+      items: items,
+      reviewedCount: items.where((item) => item.reviewCount > 0).length,
+      dueNowCount: items
+          .where((item) => item.dueBucket == ProgressDueBucket.now)
+          .length,
+      dueTodayCount: items
+          .where(
+            (item) =>
+                item.dueBucket == ProgressDueBucket.now ||
+                item.dueBucket == ProgressDueBucket.today,
+          )
+          .length,
+      dueTomorrowCount: items
+          .where((item) => item.dueBucket == ProgressDueBucket.tomorrow)
+          .length,
+    );
+  }).toList();
+
+  groups.sort((a, b) {
+    final dueCompare = b.dueNowCount.compareTo(a.dueNowCount);
+    if (dueCompare != 0) return dueCompare;
+    final reviewedCompare = b.reviewedCount.compareTo(a.reviewedCount);
+    if (reviewedCompare != 0) return reviewedCompare;
+    if (a.category == 'default') return 1;
+    if (b.category == 'default') return -1;
+    return a.category.toLowerCase().compareTo(b.category.toLowerCase());
+  });
+
+  return groups;
+}
+
+List<ComboProgressGroup> _buildComboProgressGroups(
+  List<Combo> combos,
+  List<ComboMove> comboMoves,
+  Map<String, Move> moveMap,
+  List<CardReviewStats> cardStats,
+  Map<String, FsrsCard> fsrsMap,
+  DateTime now,
+) {
+  final comboStatsById = {
+    for (final item in cardStats)
+      if (item.entityType == 'combo') item.entityId: item,
+  };
+  final comboMovesById = <String, List<ComboMove>>{};
+  for (final comboMove in comboMoves) {
+    comboMovesById.putIfAbsent(comboMove.comboId, () => []).add(comboMove);
+  }
+
+  final groups = combos.map((combo) {
+    final steps = [...(comboMovesById[combo.id] ?? const <ComboMove>[])]
+      ..sort((a, b) => a.sequenceIndex.compareTo(b.sequenceIndex));
+    final comboStats = comboStatsById[combo.id];
+    final comboCard = fsrsMap[_entityKey('combo', combo.id)];
+    final comboDueBucket = _dueBucketForCard(comboCard, now);
+
+    return ComboProgressGroup(
+      comboId: combo.id,
+      comboName: combo.name,
+      stateLabel: _fsrsStateLabel(comboCard?.fsrsState ?? 0),
+      statusLabel: steps.isEmpty
+          ? 'No steps yet'
+          : _statusLabelForSubject(
+              reviewCount: comboStats?.shownCount ?? 0,
+              successRatio: comboStats?.successRatio ?? 0,
+              dueBucket: comboDueBucket,
+            ),
+      reviewCount: comboStats?.shownCount ?? 0,
+      dueBucket: comboDueBucket,
+      lastReviewedAt: comboStats?.lastReviewedAt ?? comboCard?.lastReview,
+      steps: steps
+          .map((step) {
+            final move = moveMap[step.moveId];
+            if (move == null) return null;
+            final moveCard = fsrsMap[_entityKey('move', move.id)];
+            return ComboProgressStep(
+              moveId: move.id,
+              moveName: move.name,
+              category: move.category,
+              sequenceIndex: step.sequenceIndex,
+              stateLabel: _fsrsStateLabel(moveCard?.fsrsState ?? 0),
+              dueBucket: _dueBucketForCard(moveCard, now),
+            );
+          })
+          .whereType<ComboProgressStep>()
+          .toList(growable: false),
+    );
+  }).toList();
+
+  groups.sort((a, b) {
+    final dueCompare = _dueBucketPriority(
+      a.dueBucket,
+    ).compareTo(_dueBucketPriority(b.dueBucket));
+    if (dueCompare != 0) return dueCompare;
+    final reviewCompare = b.reviewCount.compareTo(a.reviewCount);
+    if (reviewCompare != 0) return reviewCompare;
+    final stepCompare = b.steps.length.compareTo(a.steps.length);
+    if (stepCompare != 0) return stepCompare;
+    return a.comboName.toLowerCase().compareTo(b.comboName.toLowerCase());
+  });
+
+  return groups;
+}
+
 List<CardReviewStats> _buildCardStats(
   List<Review> reviews,
   Map<String, Move> moveMap,
   Map<String, Combo> comboMap,
+  Map<String, FsrsCard> fsrsMap,
 ) {
   final aggregates = <String, _MutableCardStats>{};
 
@@ -521,6 +831,11 @@ List<CardReviewStats> _buildCardStats(
           entityType: aggregate.entityType,
           displayName: aggregate.displayName,
           category: aggregate.category,
+          stateLabel: _fsrsStateLabel(
+            fsrsMap[_entityKey(aggregate.entityType, aggregate.entityId)]
+                    ?.fsrsState ??
+                0,
+          ),
           shownCount: aggregate.shownCount,
           againCount: aggregate.againCount,
           hardCount: aggregate.hardCount,
@@ -581,8 +896,9 @@ List<ReviewTimelineEntry> _buildReviewTimeline(
 // ---------------------------------------------------------------------------
 
 /// Calendar heatmap data — one year of daily review counts.
-final dailyCountsProvider =
-    FutureProvider.autoDispose<Map<DateTime, int>>((ref) async {
+final dailyCountsProvider = FutureProvider.autoDispose<Map<DateTime, int>>((
+  ref,
+) async {
   ref.watch(statsRefreshProvider);
   final db = ref.watch(databaseProvider);
   return db.reviewsDao.dailyCountsSince(
@@ -591,8 +907,9 @@ final dailyCountsProvider =
 });
 
 /// Leaderboard — top 5 most-reviewed moves with category + FSRS enrichment.
-final topMovesProvider =
-    FutureProvider.autoDispose<List<TopMoveInfo>>((ref) async {
+final topMovesProvider = FutureProvider.autoDispose<List<TopMoveInfo>>((
+  ref,
+) async {
   ref.watch(statsRefreshProvider);
   final db = ref.watch(databaseProvider);
   final topEntries = await db.reviewsDao.topReviewedMoves(5);
@@ -602,13 +919,16 @@ final topMovesProvider =
 
   final filtered = topEntries.where((e) => moveIds.contains(e.key)).toList();
   final fsrsCards = await db.fsrsCardsDao.getAll();
-  final fsrsMap = {for (final c in fsrsCards) c.entityId: c};
+  final fsrsMap = {
+    for (final card in fsrsCards)
+      _entityKey(card.entityType, card.entityId): card,
+  };
 
   return filtered
       .map((entry) {
         final move = moveMap[entry.key];
         if (move == null) return null;
-        final card = fsrsMap[move.id];
+        final card = fsrsMap[_entityKey('move', move.id)];
         return TopMoveInfo(
           moveId: move.id,
           moveName: move.name,
@@ -624,15 +944,16 @@ final topMovesProvider =
 
 /// Due summary — FSRS card states and due counts.
 final dueSummaryProvider =
-    FutureProvider.autoDispose<({DueSummary due, TotalStateCounts counts})>(
-        (ref) async {
-  ref.watch(fsrsCardsRefreshProvider);
-  final fsrs = ref.watch(fsrsServiceProvider);
-  return (
-    due: await fsrs.getDueSummary(),
-    counts: await fsrs.getTotalStateCounts(),
-  );
-});
+    FutureProvider.autoDispose<({DueSummary due, TotalStateCounts counts})>((
+      ref,
+    ) async {
+      ref.watch(fsrsCardsRefreshProvider);
+      final fsrs = ref.watch(fsrsServiceProvider);
+      return (
+        due: await fsrs.getDueSummary(),
+        counts: await fsrs.getTotalStateCounts(),
+      );
+    });
 
 /// Streak — single int, lightweight read for badge display.
 final streakProvider = FutureProvider.autoDispose<int>((ref) async {

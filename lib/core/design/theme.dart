@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../models/learning_state.dart';
+import '../models/learning_state_colors.dart';
 import '../services/settings_service.dart';
 import 'colors.dart';
 import 'spacing.dart';
@@ -223,10 +224,17 @@ class AppSemanticTheme extends ThemeExtension<AppSemanticTheme> {
   }
 }
 
+extension AppSemanticThemeContext on BuildContext {
+  AppSemanticTheme get semanticTheme => AppSemanticTheme.of(this);
+
+  Color stateColor(LearningState state) => semanticTheme.colorForState(state);
+}
+
 abstract final class AppTheme {
   static ThemeData light({
     AppFontFamily family = AppFontFamily.inter,
     Color accent = AppColors.accent,
+    LearningStateColors stateColors = LearningStateColors.defaults,
     ViewingMode viewingMode = ViewingMode.standard,
   }) => _build(
     brightness: Brightness.light,
@@ -250,12 +258,14 @@ abstract final class AppTheme {
         : AppColors.lightSeparator,
     family: family,
     accent: accent,
+    stateColors: stateColors,
     viewingMode: viewingMode,
   );
 
   static ThemeData dark({
     AppFontFamily family = AppFontFamily.inter,
     Color accent = AppColors.accent,
+    LearningStateColors stateColors = LearningStateColors.defaults,
     ViewingMode viewingMode = ViewingMode.standard,
   }) => _build(
     brightness: Brightness.dark,
@@ -279,6 +289,7 @@ abstract final class AppTheme {
         : AppColors.darkSeparator,
     family: family,
     accent: accent,
+    stateColors: stateColors,
     viewingMode: viewingMode,
   );
 
@@ -292,6 +303,7 @@ abstract final class AppTheme {
     required Color separator,
     required AppFontFamily family,
     required Color accent,
+    required LearningStateColors stateColors,
     required ViewingMode viewingMode,
   }) {
     final effectiveAccent = viewingMode == ViewingMode.monoOutline
@@ -317,6 +329,10 @@ abstract final class AppTheme {
             actionHard: AppColors.actionHard,
             actionGood: AppColors.actionGood,
             actionEasy: AppColors.actionEasy,
+          ).copyWith(
+            stateNew: stateColors.newState,
+            stateLearning: stateColors.learning,
+            stateMastery: stateColors.mastery,
           );
     final textTheme = AppTypography.textTheme(text, secondary, family: family);
     final colorScheme = ColorScheme(
@@ -479,6 +495,14 @@ abstract final class AppTheme {
         unselectedItemColor: secondary,
         type: BottomNavigationBarType.fixed,
         elevation: 0,
+        selectedLabelStyle: AppTypography.caption.copyWith(
+          color: effectiveAccent,
+          fontWeight: FontWeight.w700,
+        ),
+        unselectedLabelStyle: AppTypography.caption.copyWith(
+          color: secondary,
+          fontWeight: FontWeight.w600,
+        ),
       ),
     );
   }

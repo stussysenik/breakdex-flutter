@@ -13,6 +13,7 @@ import '../../core/design/typography.dart';
 import '../../shared/widgets/app_segmented_control.dart';
 import '../../core/utils/time_format.dart';
 import '../../shared/widgets/settings_gear_button.dart';
+import '../../shared/widgets/wip_badge.dart';
 import 'providers/lab_providers.dart';
 import 'widgets/lab_board_view.dart';
 import 'widgets/lab_list_view.dart';
@@ -47,10 +48,7 @@ class _LabScreenState extends ConsumerState<LabScreen> {
 
     final dao = ref.read(labEntriesDaoProvider);
     await dao.insertEntry(
-      LabEntriesCompanion.insert(
-        id: const Uuid().v4(),
-        content: content,
-      ),
+      LabEntriesCompanion.insert(id: const Uuid().v4(), content: content),
     );
 
     _quickLogController.clear();
@@ -92,60 +90,59 @@ class _LabScreenState extends ConsumerState<LabScreen> {
     return Scaffold(
       body: SafeArea(
         child: CustomScrollView(
-                slivers: [
-                  // Header: title + segment toggle + quick log
-                  SliverToBoxAdapter(
-                    child: _buildHeader(
-                      context,
-                      viewMode,
-                      colorScheme,
-                      true,
-                    ),
-                  ),
+          slivers: [
+            // Header: title + segment toggle + quick log
+            SliverToBoxAdapter(
+              child: _buildHeader(context, viewMode, colorScheme, true),
+            ),
 
-                  // Content — switches based on selected mode
-                  switch (viewMode) {
-                    LabViewMode.projects =>
-                      const LabListView(labTypeFilter: 'project'),
-                    LabViewMode.board => const LabBoardView(),
-                    LabViewMode.sets => const LabSetsView(),
-                  },
-
-                  // Bottom padding for frosted nav bar
-                  SliverPadding(
-                    padding: EdgeInsets.only(
-                      bottom: kBottomNavigationBarHeight +
-                          MediaQuery.of(context).padding.bottom +
-                          AppSpacing.lg,
-                    ),
-                  ),
-                ],
+            // Content — switches based on selected mode
+            switch (viewMode) {
+              LabViewMode.projects => const LabListView(
+                labTypeFilter: 'project',
               ),
+              LabViewMode.board => const LabBoardView(),
+              LabViewMode.sets => const LabSetsView(),
+            },
+
+            // Bottom padding for frosted nav bar
+            SliverPadding(
+              padding: EdgeInsets.only(
+                bottom:
+                    kBottomNavigationBarHeight +
+                    MediaQuery.of(context).padding.bottom +
+                    AppSpacing.lg,
+              ),
+            ),
+          ],
+        ),
       ),
       floatingActionButton: Padding(
-              padding: EdgeInsets.only(
-                bottom: kBottomNavigationBarHeight +
-                    MediaQuery.of(context).padding.bottom,
-              ),
-              child: Semantics(
-                identifier: 'create-new-lab',
-                label: 'Create new lab',
-                button: true,
-                child: FloatingActionButton(
-                  onPressed: _showCreateLabSheet,
-                  backgroundColor: colorScheme.primary,
-                  child: const Icon(Icons.add, color: Colors.white),
-                ),
-              )
-                  .animate()
-                  .scale(
-                    begin: const Offset(0, 0),
-                    end: const Offset(1, 1),
-                    duration: AppMotion.moderate02,
-                    curve: AppMotion.expressive,
-                  )
-                  .fadeIn(duration: AppMotion.moderate01),
-            ),
+        padding: EdgeInsets.only(
+          bottom:
+              kBottomNavigationBarHeight +
+              MediaQuery.of(context).padding.bottom,
+        ),
+        child:
+            Semantics(
+                  identifier: 'create-new-lab',
+                  label: 'Create new lab',
+                  button: true,
+                  child: FloatingActionButton(
+                    onPressed: _showCreateLabSheet,
+                    backgroundColor: colorScheme.primary,
+                    child: const Icon(Icons.add, color: Colors.white),
+                  ),
+                )
+                .animate()
+                .scale(
+                  begin: const Offset(0, 0),
+                  end: const Offset(1, 1),
+                  duration: AppMotion.moderate02,
+                  curve: AppMotion.expressive,
+                )
+                .fadeIn(duration: AppMotion.moderate01),
+      ),
     );
   }
 
@@ -170,14 +167,34 @@ class _LabScreenState extends ConsumerState<LabScreen> {
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(
-                'Lab',
-                style: AppTypography.titleLarge.copyWith(
-                  color: colorScheme.onSurface,
-                ),
+              Row(
+                children: [
+                  Text(
+                    'Lab',
+                    style: AppTypography.titleLarge.copyWith(
+                      color: colorScheme.onSurface,
+                    ),
+                  ),
+                  const SizedBox(width: AppSpacing.sm),
+                  const WipBadge(compact: true),
+                ],
               ),
               const SettingsGearButton(),
             ],
+          ),
+        ),
+        Padding(
+          padding: const EdgeInsets.fromLTRB(
+            AppSpacing.screenEdge,
+            AppSpacing.xs,
+            AppSpacing.screenEdge,
+            0,
+          ),
+          child: Text(
+            'Projects, boards, and sets are still being shaped, so expect this surface to keep tightening.',
+            style: AppTypography.bodySmall.copyWith(
+              color: colorScheme.secondary,
+            ),
           ),
         ),
         const SizedBox(height: AppSpacing.md),
@@ -300,7 +317,6 @@ class _LabScreenState extends ConsumerState<LabScreen> {
       ],
     );
   }
-
 }
 
 // -- Create Lab Bottom Sheet --------------------------------------------------
@@ -342,10 +358,10 @@ class _CreateLabSheetState extends State<_CreateLabSheet> {
   void _submit() {
     if (_nameEmpty) return;
     HapticFeedback.mediumImpact();
-    Navigator.pop(
-      context,
-      (name: _nameController.text.trim(), type: _selectedType),
-    );
+    Navigator.pop(context, (
+      name: _nameController.text.trim(),
+      type: _selectedType,
+    ));
   }
 
   @override

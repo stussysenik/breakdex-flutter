@@ -1,0 +1,76 @@
+import 'package:flutter/material.dart';
+
+import '../../core/design/spacing.dart';
+import '../../core/design/typography.dart';
+
+class WipBadge extends StatelessWidget {
+  const WipBadge({super.key, this.label = 'WIP', this.compact = false});
+
+  final String label;
+  final bool compact;
+
+  static const _badgeColor = Color(0xFFD97706);
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    return Container(
+      padding: EdgeInsets.symmetric(
+        horizontal: compact ? AppSpacing.sm : 10,
+        vertical: compact ? 4 : 5,
+      ),
+      decoration: BoxDecoration(
+        color: _badgeColor.withValues(alpha: 0.14),
+        borderRadius: BorderRadius.circular(999),
+        border: Border.all(color: _badgeColor.withValues(alpha: 0.28)),
+      ),
+      child: Text(
+        label,
+        style: AppTypography.caption.copyWith(
+          color: colorScheme.brightness == Brightness.dark
+              ? const Color(0xFFFFC57A)
+              : _badgeColor,
+          fontWeight: FontWeight.w700,
+          letterSpacing: 0.6,
+        ),
+      ),
+    );
+  }
+}
+
+class WipTabIcon extends StatelessWidget {
+  const WipTabIcon({super.key, required this.icon});
+
+  final IconData icon;
+
+  static const _badgeColor = Color(0xFFD97706);
+
+  @override
+  Widget build(BuildContext context) {
+    return Stack(
+      clipBehavior: Clip.none,
+      children: [
+        Icon(icon),
+        Positioned(
+          right: -6,
+          top: -4,
+          child: ExcludeSemantics(
+            child: Container(
+              width: 14,
+              height: 14,
+              decoration: const BoxDecoration(
+                color: _badgeColor,
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(
+                Icons.construction_rounded,
+                size: 8,
+                color: Colors.white,
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}

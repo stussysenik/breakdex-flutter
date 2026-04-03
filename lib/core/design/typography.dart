@@ -71,21 +71,50 @@ String? _resolvedFontFamily(AppFontFamily family) => switch (family) {
 /// The static fields use the default Inter. For user-selected fonts,
 /// call the factory constructors or use the instance methods.
 abstract final class AppTypography {
+  static const _titleLargeSize = 30.0;
+  static const _titleMediumSize = 24.0;
+  static const _titleSmallSize = 20.0;
+  static const _bodyMediumSize = 16.0;
+  static const _bodySmallSize = 14.0;
+  static const _captionSize = 12.0;
+
   // Default (Inter) styles — used throughout the app via static access
-  static TextStyle get titleLarge =>
-      _base(fontSize: 32, fontWeight: FontWeight.w700);
-  static TextStyle get titleMedium =>
-      _base(fontSize: 24, fontWeight: FontWeight.w600);
-  static TextStyle get titleSmall =>
-      _base(fontSize: 20, fontWeight: FontWeight.w500);
-  static TextStyle get bodyMedium =>
-      _base(fontSize: 16, fontWeight: FontWeight.w400);
-  static TextStyle get bodySmall =>
-      _base(fontSize: 14, fontWeight: FontWeight.w400);
-  static TextStyle get caption =>
-      _base(fontSize: 12, fontWeight: FontWeight.w400);
-  static TextStyle get sectionHeader =>
-      _base(fontSize: 12, fontWeight: FontWeight.w600, letterSpacing: 2);
+  static TextStyle get titleLarge => _base(
+    fontSize: _titleLargeSize,
+    fontWeight: FontWeight.w700,
+    height: 36 / _titleLargeSize,
+  );
+  static TextStyle get titleMedium => _base(
+    fontSize: _titleMediumSize,
+    fontWeight: FontWeight.w600,
+    height: 30 / _titleMediumSize,
+  );
+  static TextStyle get titleSmall => _base(
+    fontSize: _titleSmallSize,
+    fontWeight: FontWeight.w600,
+    height: 26 / _titleSmallSize,
+  );
+  static TextStyle get bodyMedium => _base(
+    fontSize: _bodyMediumSize,
+    fontWeight: FontWeight.w400,
+    height: 24 / _bodyMediumSize,
+  );
+  static TextStyle get bodySmall => _base(
+    fontSize: _bodySmallSize,
+    fontWeight: FontWeight.w400,
+    height: 20 / _bodySmallSize,
+  );
+  static TextStyle get caption => _base(
+    fontSize: _captionSize,
+    fontWeight: FontWeight.w500,
+    height: 16 / _captionSize,
+  );
+  static TextStyle get sectionHeader => _base(
+    fontSize: _captionSize,
+    fontWeight: FontWeight.w700,
+    letterSpacing: 1.2,
+    height: 16 / _captionSize,
+  );
 
   static TextStyle _base({
     required double fontSize,
@@ -110,21 +139,61 @@ abstract final class AppTypography {
     Color secondaryColor, {
     AppFontFamily family = AppFontFamily.inter,
   }) {
-    TextStyle s(double size, FontWeight weight) =>
-        _fontStyle(family, fontSize: size, fontWeight: weight);
+    TextStyle s(
+      double size,
+      FontWeight weight, {
+      double? letterSpacing,
+      double? height,
+    }) => _fontStyle(
+      family,
+      fontSize: size,
+      fontWeight: weight,
+      letterSpacing: letterSpacing,
+      height: height,
+    );
 
     return TextTheme(
-      headlineLarge: s(32, FontWeight.w700).copyWith(color: textColor),
-      headlineMedium: s(24, FontWeight.w600).copyWith(color: textColor),
-      headlineSmall: s(20, FontWeight.w500).copyWith(color: textColor),
-      bodyLarge: s(16, FontWeight.w400).copyWith(color: textColor),
-      bodyMedium: s(16, FontWeight.w400).copyWith(color: textColor),
-      bodySmall: s(14, FontWeight.w400).copyWith(color: secondaryColor),
-      labelSmall: s(12, FontWeight.w400).copyWith(color: secondaryColor),
-      labelLarge: s(
-        12,
+      headlineLarge: s(
+        _titleLargeSize,
+        FontWeight.w700,
+        height: 36 / _titleLargeSize,
+      ).copyWith(color: textColor),
+      headlineMedium: s(
+        _titleMediumSize,
         FontWeight.w600,
-      ).copyWith(color: secondaryColor, letterSpacing: 2),
+        height: 30 / _titleMediumSize,
+      ).copyWith(color: textColor),
+      headlineSmall: s(
+        _titleSmallSize,
+        FontWeight.w600,
+        height: 26 / _titleSmallSize,
+      ).copyWith(color: textColor),
+      bodyLarge: s(
+        _bodyMediumSize,
+        FontWeight.w400,
+        height: 24 / _bodyMediumSize,
+      ).copyWith(color: textColor),
+      bodyMedium: s(
+        _bodyMediumSize,
+        FontWeight.w400,
+        height: 24 / _bodyMediumSize,
+      ).copyWith(color: textColor),
+      bodySmall: s(
+        _bodySmallSize,
+        FontWeight.w400,
+        height: 20 / _bodySmallSize,
+      ).copyWith(color: secondaryColor),
+      labelSmall: s(
+        _captionSize,
+        FontWeight.w500,
+        height: 16 / _captionSize,
+      ).copyWith(color: secondaryColor),
+      labelLarge: s(
+        _captionSize,
+        FontWeight.w700,
+        letterSpacing: 1.2,
+        height: 16 / _captionSize,
+      ).copyWith(color: secondaryColor),
     );
   }
 }

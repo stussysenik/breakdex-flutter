@@ -6,7 +6,9 @@ import 'package:go_router/go_router.dart';
 
 import '../../core/providers.dart';
 import '../../core/design/theme.dart';
+import '../../core/services/media_playback_coordinator.dart';
 import 'sync_progress_bar.dart';
+import 'wip_badge.dart';
 
 class BottomNavShell extends ConsumerWidget {
   const BottomNavShell({super.key, required this.navigationShell});
@@ -47,10 +49,13 @@ class BottomNavShell extends ConsumerWidget {
             ),
             child: BottomNavigationBar(
               currentIndex: navigationShell.currentIndex,
-              onTap: (index) => navigationShell.goBranch(
-                index,
-                initialLocation: index == navigationShell.currentIndex,
-              ),
+              onTap: (index) {
+                MediaPlaybackCoordinator.shared.pauseAll();
+                navigationShell.goBranch(
+                  index,
+                  initialLocation: index == navigationShell.currentIndex,
+                );
+              },
               // Transparent so the frosted container shows through
               backgroundColor: Colors.transparent,
               elevation: 0,
@@ -72,21 +77,24 @@ class BottomNavShell extends ConsumerWidget {
                 BottomNavigationBarItem(
                   icon: Semantics(
                     identifier: 'progress-tab',
-                    child: const Icon(Icons.insights_rounded),
+                    label: 'Progress, work in progress',
+                    child: const WipTabIcon(icon: Icons.insights_rounded),
                   ),
                   label: 'Progress',
                 ),
                 BottomNavigationBarItem(
                   icon: Semantics(
                     identifier: 'lab-tab',
-                    child: const Icon(Icons.science_outlined),
+                    label: 'Lab, work in progress',
+                    child: const WipTabIcon(icon: Icons.science_outlined),
                   ),
                   label: 'Lab',
                 ),
                 BottomNavigationBarItem(
                   icon: Semantics(
                     identifier: 'flow-tab',
-                    child: const Icon(Icons.auto_awesome_outlined),
+                    label: 'Flow, work in progress',
+                    child: const WipTabIcon(icon: Icons.auto_awesome_outlined),
                   ),
                   label: 'Flow',
                 ),

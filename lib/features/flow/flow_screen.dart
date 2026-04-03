@@ -10,6 +10,7 @@ import '../../core/design/typography.dart';
 import '../../core/services/categories_service.dart';
 import '../../shared/widgets/app_segmented_control.dart';
 import '../../shared/widgets/settings_gear_button.dart';
+import '../../shared/widgets/wip_badge.dart';
 import 'providers/flow_graph_providers.dart';
 import 'widgets/flow_coach_marks.dart';
 import 'widgets/flow_graph_canvas.dart';
@@ -54,15 +55,21 @@ class FlowScreen extends ConsumerWidget {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text(
-                            'Flow',
-                            style: AppTypography.titleLarge.copyWith(
-                              color: colorScheme.onSurface,
-                            ),
+                          Row(
+                            children: [
+                              Text(
+                                'Flow',
+                                style: AppTypography.titleLarge.copyWith(
+                                  color: colorScheme.onSurface,
+                                ),
+                              ),
+                              const SizedBox(width: AppSpacing.sm),
+                              const WipBadge(compact: true),
+                            ],
                           ),
                           const SizedBox(height: AppSpacing.xs),
                           Text(
-                            'See what connects, inspect one move at a time, and spot weak bridges fast.',
+                            'See what connects, inspect one move at a time, and spot weak bridges fast. This surface is still being tuned.',
                             style: AppTypography.bodySmall.copyWith(
                               color: colorScheme.secondary,
                               height: 1.35,
@@ -138,7 +145,9 @@ class FlowScreen extends ConsumerWidget {
                               key: ValueKey(selectedDetails.node.id),
                               details: selectedDetails,
                               categoryColor:
-                                  categoryColors[selectedDetails.node.category] ??
+                                  categoryColors[selectedDetails
+                                      .node
+                                      .category] ??
                                   colorScheme.primary,
                               isFocusMode: viewMode == FlowViewMode.focus,
                               onFocus: () {
@@ -150,7 +159,9 @@ class FlowScreen extends ConsumerWidget {
                               ),
                               onClear: () {
                                 if (viewMode == FlowViewMode.focus) {
-                                  ref.read(flowViewModeProvider.notifier).state =
+                                  ref
+                                          .read(flowViewModeProvider.notifier)
+                                          .state =
                                       FlowViewMode.map;
                                 }
                                 ref.read(selectedNodeProvider.notifier).state =
