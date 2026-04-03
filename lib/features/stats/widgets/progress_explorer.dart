@@ -675,48 +675,57 @@ class _MoveTreeRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
 
-    return InkWell(
-      borderRadius: BorderRadius.circular(AppRadius.sm),
-      onTap: () => context.push('/moves/move/${item.moveId}'),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 8),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    item.moveName,
-                    style: AppTypography.bodyMedium.copyWith(
-                      color: colorScheme.onSurface,
-                      fontWeight: FontWeight.w700,
-                    ),
+    return Semantics(
+      button: true,
+      label:
+          '${item.moveName}, ${item.stateLabel}, ${_bucketLabel(item.dueBucket)}, ${item.reviewCount} reviews',
+      hint: 'Open move details',
+      child: InkWell(
+        borderRadius: BorderRadius.circular(AppRadius.sm),
+        onTap: () => context.push('/moves/move/${item.moveId}'),
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(minHeight: 44),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 8),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        item.moveName,
+                        style: AppTypography.bodyMedium.copyWith(
+                          color: colorScheme.onSurface,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        [
+                          item.stateLabel,
+                          item.reviewCount == 0
+                              ? 'No reviews yet'
+                              : '${item.reviewCount} reviews',
+                          if (item.lastReviewedAt != null)
+                            'Last ${DateFormat('MMM d').format(item.lastReviewedAt!.toLocal())}',
+                        ].join(' · '),
+                        style: AppTypography.bodySmall.copyWith(
+                          color: colorScheme.secondary,
+                        ),
+                      ),
+                    ],
                   ),
-                  const SizedBox(height: 2),
-                  Text(
-                    [
-                      item.stateLabel,
-                      item.reviewCount == 0
-                          ? 'No reviews yet'
-                          : '${item.reviewCount} reviews',
-                      if (item.lastReviewedAt != null)
-                        'Last ${DateFormat('MMM d').format(item.lastReviewedAt!.toLocal())}',
-                    ].join(' · '),
-                    style: AppTypography.bodySmall.copyWith(
-                      color: colorScheme.secondary,
-                    ),
-                  ),
-                ],
-              ),
+                ),
+                const SizedBox(width: AppSpacing.md),
+                _MetaPill(
+                  label: _bucketLabel(item.dueBucket),
+                  accent: _dueBucketColor(context, item.dueBucket),
+                ),
+              ],
             ),
-            const SizedBox(width: AppSpacing.md),
-            _MetaPill(
-              label: _bucketLabel(item.dueBucket),
-              accent: _dueBucketColor(context, item.dueBucket),
-            ),
-          ],
+          ),
         ),
       ),
     );
@@ -776,7 +785,7 @@ class _MoveGraphExplorer extends StatelessWidget {
             ),
             const SizedBox(height: AppSpacing.xs),
             Text(
-              'Tap a parent to focus the graph. Tap a child node to inspect it or open move detail.',
+              'Tap a parent to focus the graph. Tap a child node to inspect it below, then jump straight into training.',
               style: AppTypography.bodySmall.copyWith(
                 color: colorScheme.secondary,
               ),
@@ -846,8 +855,7 @@ class _MoveGraphExplorer extends StatelessWidget {
                             selected: item.moveId == selectedItem.moveId,
                             semanticsLabel:
                                 '${item.moveName}, ${item.stateLabel}, ${_bucketLabel(item.dueBucket)}, ${item.reviewCount} reviews',
-                            semanticsHint:
-                                'Focus this move in the graph and open move details',
+                            semanticsHint: 'Focus this move in the graph',
                             onTap: () => onSelectMove(item.moveId),
                           ),
                       ],
@@ -857,9 +865,15 @@ class _MoveGraphExplorer extends StatelessWidget {
               ),
             ),
             const SizedBox(height: AppSpacing.md),
-            _MoveGraphDetailCard(
-              parentLabel: _displayCategoryName(selectedGroup.category),
-              item: selectedItem,
+            AnimatedSwitcher(
+              duration: AppMotion.moderate01,
+              switchInCurve: AppMotion.productive,
+              switchOutCurve: AppMotion.productive,
+              child: _MoveGraphDetailCard(
+                key: ValueKey(selectedItem.moveId),
+                parentLabel: _displayCategoryName(selectedGroup.category),
+                item: selectedItem,
+              ),
             ),
           ],
         ),
@@ -940,76 +954,85 @@ class _ComboStepRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
 
-    return InkWell(
-      borderRadius: BorderRadius.circular(AppRadius.sm),
-      onTap: () => context.push('/moves/move/${step.moveId}'),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          SizedBox(
-            width: 32,
-            child: Column(
-              children: [
-                Container(
-                  width: 24,
-                  height: 24,
-                  decoration: BoxDecoration(
-                    color: colorScheme.surfaceContainerHighest,
-                    shape: BoxShape.circle,
-                  ),
-                  alignment: Alignment.center,
-                  child: Text(
-                    '${step.sequenceIndex + 1}',
-                    style: AppTypography.caption.copyWith(
-                      color: colorScheme.onSurface,
-                      fontWeight: FontWeight.w700,
+    return Semantics(
+      button: true,
+      label:
+          'Step ${step.sequenceIndex + 1}, ${step.moveName}, ${step.stateLabel}, ${_bucketLabel(step.dueBucket)}',
+      hint: 'Open move details',
+      child: InkWell(
+        borderRadius: BorderRadius.circular(AppRadius.sm),
+        onTap: () => context.push('/moves/move/${step.moveId}'),
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(minHeight: 44),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              SizedBox(
+                width: 32,
+                child: Column(
+                  children: [
+                    Container(
+                      width: 24,
+                      height: 24,
+                      decoration: BoxDecoration(
+                        color: colorScheme.surfaceContainerHighest,
+                        shape: BoxShape.circle,
+                      ),
+                      alignment: Alignment.center,
+                      child: Text(
+                        '${step.sequenceIndex + 1}',
+                        style: AppTypography.caption.copyWith(
+                          color: colorScheme.onSurface,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
                     ),
+                    if (!isLast)
+                      Container(
+                        width: 2,
+                        height: 28,
+                        margin: const EdgeInsets.symmetric(vertical: 4),
+                        color: colorScheme.outline.withValues(alpha: 0.18),
+                      ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: AppSpacing.sm),
+              Expanded(
+                child: Padding(
+                  padding: const EdgeInsets.only(top: 2),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        step.moveName,
+                        style: AppTypography.bodyMedium.copyWith(
+                          color: colorScheme.onSurface,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        '${_displayCategoryName(step.category)} · ${step.stateLabel}',
+                        style: AppTypography.bodySmall.copyWith(
+                          color: colorScheme.secondary,
+                        ),
+                      ),
+                    ],
                   ),
                 ),
-                if (!isLast)
-                  Container(
-                    width: 2,
-                    height: 28,
-                    margin: const EdgeInsets.symmetric(vertical: 4),
-                    color: colorScheme.outline.withValues(alpha: 0.18),
-                  ),
-              ],
-            ),
-          ),
-          const SizedBox(width: AppSpacing.sm),
-          Expanded(
-            child: Padding(
-              padding: const EdgeInsets.only(top: 2),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    step.moveName,
-                    style: AppTypography.bodyMedium.copyWith(
-                      color: colorScheme.onSurface,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
-                    '${_displayCategoryName(step.category)} · ${step.stateLabel}',
-                    style: AppTypography.bodySmall.copyWith(
-                      color: colorScheme.secondary,
-                    ),
-                  ),
-                ],
               ),
-            ),
+              const SizedBox(width: AppSpacing.sm),
+              Padding(
+                padding: const EdgeInsets.only(top: 2),
+                child: _MetaPill(
+                  label: _bucketLabel(step.dueBucket),
+                  accent: _dueBucketColor(context, step.dueBucket),
+                ),
+              ),
+            ],
           ),
-          const SizedBox(width: AppSpacing.sm),
-          Padding(
-            padding: const EdgeInsets.only(top: 2),
-            child: _MetaPill(
-              label: _bucketLabel(step.dueBucket),
-              accent: _dueBucketColor(context, step.dueBucket),
-            ),
-          ),
-        ],
+        ),
       ),
     );
   }
@@ -1071,7 +1094,7 @@ class _ComboGraphExplorer extends StatelessWidget {
             ),
             const SizedBox(height: AppSpacing.xs),
             Text(
-              'Focus a combo parent first, then walk the step graph from left to right.',
+              'Focus a combo parent first, then walk the step graph from left to right and inspect the selected step below.',
               style: AppTypography.bodySmall.copyWith(
                 color: colorScheme.secondary,
               ),
@@ -1155,8 +1178,7 @@ class _ComboGraphExplorer extends StatelessWidget {
                                     selectedStep?.moveId,
                                 semanticsLabel:
                                     'Step ${selectedGroup.steps[index].sequenceIndex + 1}, ${selectedGroup.steps[index].moveName}, ${selectedGroup.steps[index].stateLabel}, ${_bucketLabel(selectedGroup.steps[index].dueBucket)}',
-                                semanticsHint:
-                                    'Focus this step in the graph and open move details',
+                                semanticsHint: 'Focus this step in the graph',
                                 onTap: () => onSelectStep(
                                   selectedGroup.steps[index].moveId,
                                 ),
@@ -1179,7 +1201,18 @@ class _ComboGraphExplorer extends StatelessWidget {
               ),
             ),
             const SizedBox(height: AppSpacing.md),
-            _ComboGraphDetailCard(group: selectedGroup, step: selectedStep),
+            AnimatedSwitcher(
+              duration: AppMotion.moderate01,
+              switchInCurve: AppMotion.productive,
+              switchOutCurve: AppMotion.productive,
+              child: _ComboGraphDetailCard(
+                key: ValueKey(
+                  '${selectedGroup.comboId}:${selectedStep?.moveId ?? 'combo'}',
+                ),
+                group: selectedGroup,
+                step: selectedStep,
+              ),
+            ),
           ],
         ),
       ),
@@ -1247,7 +1280,11 @@ class _GraphParentChip extends StatelessWidget {
 }
 
 class _MoveGraphDetailCard extends StatelessWidget {
-  const _MoveGraphDetailCard({required this.parentLabel, required this.item});
+  const _MoveGraphDetailCard({
+    super.key,
+    required this.parentLabel,
+    required this.item,
+  });
 
   final String parentLabel;
   final MoveProgressItem item;
@@ -1297,9 +1334,19 @@ class _MoveGraphDetailCard extends StatelessWidget {
               ],
             ),
             const SizedBox(height: AppSpacing.md),
-            FilledButton(
-              onPressed: () => context.push('/moves/move/${item.moveId}'),
-              child: const Text('Open Move'),
+            Wrap(
+              spacing: AppSpacing.sm,
+              runSpacing: AppSpacing.sm,
+              children: [
+                FilledButton(
+                  onPressed: () => context.push('/moves/move/${item.moveId}'),
+                  child: const Text('Open Move'),
+                ),
+                OutlinedButton(
+                  onPressed: () => context.push('/flow/move/${item.moveId}'),
+                  child: const Text('Open In Flow'),
+                ),
+              ],
             ),
           ],
         ),
@@ -1309,7 +1356,11 @@ class _MoveGraphDetailCard extends StatelessWidget {
 }
 
 class _ComboGraphDetailCard extends StatelessWidget {
-  const _ComboGraphDetailCard({required this.group, required this.step});
+  const _ComboGraphDetailCard({
+    super.key,
+    required this.group,
+    required this.step,
+  });
 
   final ComboProgressGroup group;
   final ComboProgressStep? step;
@@ -1361,6 +1412,11 @@ class _ComboGraphDetailCard extends StatelessWidget {
                         context.push('/moves/move/${step!.moveId}'),
                     child: const Text('Open Step'),
                   ),
+                if (step != null)
+                  OutlinedButton(
+                    onPressed: () => context.push('/flow/move/${step!.moveId}'),
+                    child: const Text('Train In Flow'),
+                  ),
               ],
             ),
           ],
@@ -1383,21 +1439,27 @@ class _ParentNode extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return InkWell(
-      borderRadius: BorderRadius.circular(999),
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-        decoration: BoxDecoration(
-          color: accent.withValues(alpha: 0.12),
-          borderRadius: BorderRadius.circular(999),
-          border: Border.all(color: accent.withValues(alpha: 0.24)),
-        ),
-        child: Text(
-          label,
-          style: AppTypography.bodyMedium.copyWith(
-            color: accent,
-            fontWeight: FontWeight.w700,
+    return Semantics(
+      button: onTap != null,
+      label: label,
+      hint: onTap == null ? null : 'Open parent details',
+      child: InkWell(
+        borderRadius: BorderRadius.circular(999),
+        onTap: onTap,
+        child: Container(
+          constraints: const BoxConstraints(minHeight: 44),
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+          decoration: BoxDecoration(
+            color: accent.withValues(alpha: 0.12),
+            borderRadius: BorderRadius.circular(999),
+            border: Border.all(color: accent.withValues(alpha: 0.24)),
+          ),
+          child: Text(
+            label,
+            style: AppTypography.bodyMedium.copyWith(
+              color: accent,
+              fontWeight: FontWeight.w700,
+            ),
           ),
         ),
       ),

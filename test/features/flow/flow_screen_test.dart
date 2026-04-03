@@ -12,9 +12,7 @@ void main() {
   late FlowGraphData graphData;
 
   setUp(() {
-    SharedPreferences.setMockInitialValues({
-      'flow_coach_shown': true,
-    });
+    SharedPreferences.setMockInitialValues({'flow_coach_shown': true});
 
     graphData = FlowGraphData(
       nodes: [
@@ -83,10 +81,7 @@ void main() {
           selectedNodeProvider.overrideWith((ref) => selectedNodeId),
           flowViewModeProvider.overrideWith((ref) => mode),
         ],
-        child: MaterialApp(
-          theme: AppTheme.light(),
-          home: const FlowScreen(),
-        ),
+        child: MaterialApp(theme: AppTheme.light(), home: const FlowScreen()),
       ),
     );
 
@@ -104,7 +99,9 @@ void main() {
       findsOneWidget,
     );
     expect(
-      find.textContaining('See what connects, inspect one move at a time'),
+      find.textContaining(
+        'Tap a node to inspect it. Double-tap opens move detail.',
+      ),
       findsOneWidget,
     );
     expect(find.text('Moves'), findsWidgets);
@@ -115,10 +112,7 @@ void main() {
   testWidgets('shows the selected move inspector and its actions', (
     tester,
   ) async {
-    await pumpFlowScreen(
-      tester,
-      selectedNodeId: 'move-b',
-    );
+    await pumpFlowScreen(tester, selectedNodeId: 'move-b');
 
     expect(find.text('Swipe'), findsOneWidget);
     expect(find.text('Power Moves'), findsOneWidget);
