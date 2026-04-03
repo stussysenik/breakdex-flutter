@@ -33,6 +33,10 @@ enum _ProgressStructureMode { tree, graph }
 class _ProgressExplorerState extends State<ProgressExplorer> {
   _ProgressSubjectMode _subjectMode = _ProgressSubjectMode.moves;
   _ProgressStructureMode _structureMode = _ProgressStructureMode.tree;
+  String? _selectedMoveParentCategory;
+  String? _selectedMoveChildId;
+  String? _selectedComboId;
+  String? _selectedComboStepId;
 
   @override
   Widget build(BuildContext context) {
@@ -59,14 +63,25 @@ class _ProgressExplorerState extends State<ProgressExplorer> {
           sliver: SliverToBoxAdapter(
             child: Column(
               children: [
-                _ProgressStartCard(stats: stats, subjectMode: _subjectMode),
-                const SizedBox(height: AppSpacing.md),
+                if (_structureMode == _ProgressStructureMode.tree) ...[
+                  _ProgressStartCard(stats: stats, subjectMode: _subjectMode),
+                  const SizedBox(height: AppSpacing.md),
+                ],
                 _ExplorerControls(
                   subjectMode: _subjectMode,
                   structureMode: _structureMode,
                   onSubjectChanged: (value) {
                     HapticFeedback.selectionClick();
-                    setState(() => _subjectMode = value);
+                    setState(() {
+                      _subjectMode = value;
+                      if (value == _ProgressSubjectMode.moves) {
+                        _selectedComboId = null;
+                        _selectedComboStepId = null;
+                      } else {
+                        _selectedMoveParentCategory = null;
+                        _selectedMoveChildId = null;
+                      }
+                    });
                   },
                   onStructureChanged: (value) {
                     HapticFeedback.selectionClick();
@@ -77,25 +92,27 @@ class _ProgressExplorerState extends State<ProgressExplorer> {
             ),
           ),
         ),
-        SliverPadding(
-          padding: const EdgeInsets.fromLTRB(
-            AppSpacing.screenEdge,
-            AppSpacing.md,
-            AppSpacing.screenEdge,
-            0,
-          ),
-          sliver: SliverToBoxAdapter(
-            child: _SectionHeading(
-              title: _subjectMode == _ProgressSubjectMode.moves
-                  ? 'Move Parents'
-                  : 'Combo Parents',
-              subtitle: _structureMode == _ProgressStructureMode.tree
-                  ? 'Start from the parent, then open the exact child you want to drill.'
-                  : 'See the parent-child graph first, then jump into the right detail.',
+        if (_structureMode == _ProgressStructureMode.tree) ...[
+          SliverPadding(
+            padding: const EdgeInsets.fromLTRB(
+              AppSpacing.screenEdge,
+              AppSpacing.md,
+              AppSpacing.screenEdge,
+              0,
+            ),
+            sliver: SliverToBoxAdapter(
+              child: _SectionHeading(
+                title: _subjectMode == _ProgressSubjectMode.moves
+                    ? 'Move Parents'
+                    : 'Combo Parents',
+                subtitle:
+                    'Start from the parent, then open the exact child you want to drill.',
+              ),
             ),
           ),
-        ),
-        ..._buildParentSlivers(context),
+          ..._buildParentSlivers(context),
+        ] else
+          ..._buildGraphSlivers(context),
         SliverPadding(
           padding: const EdgeInsets.fromLTRB(
             AppSpacing.screenEdge,
@@ -132,14 +149,11 @@ class _ProgressExplorerState extends State<ProgressExplorer> {
           sliver: SliverList(
             delegate: SliverChildBuilderDelegate((context, index) {
               final group = groups[index];
-              final card = _structureMode == _ProgressStructureMode.tree
-                  ? _MoveTreeGroupCard(group: group)
-                  : _MoveGraphGroupCard(group: group);
               return Padding(
                 padding: EdgeInsets.only(
                   bottom: index == groups.length - 1 ? 0 : AppSpacing.md,
                 ),
-                child: card,
+                child: _MoveTreeGroupCard(group: group),
               );
             }, childCount: groups.length),
           ),
@@ -167,16 +181,57 @@ class _ProgressExplorerState extends State<ProgressExplorer> {
         sliver: SliverList(
           delegate: SliverChildBuilderDelegate((context, index) {
             final group = groups[index];
-            final card = _structureMode == _ProgressStructureMode.tree
-                ? _ComboTreeCard(group: group)
-                : _ComboGraphCard(group: group);
             return Padding(
               padding: EdgeInsets.only(
                 bottom: index == groups.length - 1 ? 0 : AppSpacing.md,
               ),
-              child: card,
+              child: _ComboTreeCard(group: group),
             );
           }, childCount: groups.length),
+        ),
+      ),
+    ];
+  }
+
+  List<Widget> _buildGraphSlivers(BuildContext context) {
+    return [
+      SliverPadding(
+        padding: const EdgeInsets.fromLTRB(
+          AppSpacing.screenEdge,
+          AppSpacing.md,
+          AppSpacing.screenEdge,
+          0,
+        ),
+        sliver: SliverToBoxAdapter(
+          child: _subjectMode == _ProgressSubjectMode.moves
+              ? _MoveGraphExplorer(
+                  groups: widget.stats.moveProgressGroups,
+                  selectedCategory: _selectedMoveParentCategory,
+                  selectedMoveId: _selectedMoveChildId,
+                  onSelectCategory: (category) {
+                    setState(() {
+                      _selectedMoveParentCategory = category;
+                      _selectedMoveChildId = null;
+                    });
+                  },
+                  onSelectMove: (moveId) {
+                    setState(() => _selectedMoveChildId = moveId);
+                  },
+                )
+              : _ComboGraphExplorer(
+                  groups: widget.stats.comboProgressGroups,
+                  selectedComboId: _selectedComboId,
+                  selectedStepId: _selectedComboStepId,
+                  onSelectCombo: (comboId) {
+                    setState(() {
+                      _selectedComboId = comboId;
+                      _selectedComboStepId = null;
+                    });
+                  },
+                  onSelectStep: (moveId) {
+                    setState(() => _selectedComboStepId = moveId);
+                  },
+                ),
         ),
       ),
     ];
@@ -668,69 +723,146 @@ class _MoveTreeRow extends StatelessWidget {
   }
 }
 
-class _MoveGraphGroupCard extends StatelessWidget {
-  const _MoveGraphGroupCard({required this.group});
+class _MoveGraphExplorer extends StatelessWidget {
+  const _MoveGraphExplorer({
+    required this.groups,
+    required this.selectedCategory,
+    required this.selectedMoveId,
+    required this.onSelectCategory,
+    required this.onSelectMove,
+  });
 
-  final MoveProgressGroup group;
+  final List<MoveProgressGroup> groups;
+  final String? selectedCategory;
+  final String? selectedMoveId;
+  final ValueChanged<String> onSelectCategory;
+  final ValueChanged<String> onSelectMove;
 
   @override
   Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
+    if (groups.isEmpty) {
+      return const _EmptyParentCard(
+        title: 'No move graph yet',
+        subtitle: 'Add moves first, then switch back to graph view.',
+      );
+    }
 
-    return Container(
-      padding: const EdgeInsets.all(AppSpacing.md),
-      decoration: AppSurfaces.panel(
-        context,
-        radius: AppRadius.md,
-        raised: true,
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            '${_displayCategoryName(group.category)} graph',
-            style: AppTypography.titleSmall.copyWith(
-              color: colorScheme.onSurface,
+    final colorScheme = Theme.of(context).colorScheme;
+    final selectedGroup = groups.firstWhere(
+      (group) => group.category == selectedCategory,
+      orElse: () => groups.first,
+    );
+    final selectedItem = selectedGroup.items.firstWhere(
+      (item) => item.moveId == selectedMoveId,
+      orElse: () => selectedGroup.items.first,
+    );
+
+    return FocusTraversalGroup(
+      child: Container(
+        padding: const EdgeInsets.all(AppSpacing.md),
+        decoration: AppSurfaces.panel(
+          context,
+          radius: AppRadius.md,
+          raised: true,
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Graph Interface',
+              style: AppTypography.titleSmall.copyWith(
+                color: colorScheme.onSurface,
+              ),
             ),
-          ),
-          const SizedBox(height: AppSpacing.xs),
-          Text(
-            '${group.totalCount} child moves in a visual parent graph',
-            style: AppTypography.bodySmall.copyWith(
-              color: colorScheme.secondary,
+            const SizedBox(height: AppSpacing.xs),
+            Text(
+              'Tap a parent to focus the graph. Tap a child node to inspect it or open move detail.',
+              style: AppTypography.bodySmall.copyWith(
+                color: colorScheme.secondary,
+              ),
             ),
-          ),
-          const SizedBox(height: AppSpacing.md),
-          Center(
-            child: _ParentNode(
-              label: _displayCategoryName(group.category),
-              accent: colorScheme.primary,
-              onTap: null,
-            ),
-          ),
-          const SizedBox(height: AppSpacing.sm),
-          Center(
-            child: Container(
-              width: 2,
-              height: 18,
-              color: colorScheme.outline.withValues(alpha: 0.2),
-            ),
-          ),
-          const SizedBox(height: AppSpacing.sm),
-          Wrap(
-            spacing: AppSpacing.sm,
-            runSpacing: AppSpacing.sm,
-            children: [
-              for (final item in group.items)
-                _ChildNode(
-                  label: item.moveName,
-                  accent: _dueBucketColor(context, item.dueBucket),
-                  subtitle: item.statusLabel,
-                  onTap: () => context.push('/moves/move/${item.moveId}'),
+            const SizedBox(height: AppSpacing.md),
+            Semantics(
+              container: true,
+              label: 'Move graph parents',
+              child: SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                child: Row(
+                  children: [
+                    for (int index = 0; index < groups.length; index++) ...[
+                      _GraphParentChip(
+                        label: _displayCategoryName(groups[index].category),
+                        subtitle: '${groups[index].dueNowCount} ready now',
+                        selected:
+                            groups[index].category == selectedGroup.category,
+                        onTap: () => onSelectCategory(groups[index].category),
+                      ),
+                      if (index != groups.length - 1)
+                        const SizedBox(width: AppSpacing.sm),
+                    ],
+                  ],
                 ),
-            ],
-          ),
-        ],
+              ),
+            ),
+            const SizedBox(height: AppSpacing.md),
+            Semantics(
+              container: true,
+              label:
+                  '${_displayCategoryName(selectedGroup.category)} move graph, ${selectedGroup.items.length} child nodes',
+              child: Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(AppSpacing.md),
+                decoration: BoxDecoration(
+                  color: colorScheme.surface,
+                  borderRadius: BorderRadius.circular(AppRadius.md),
+                  border: Border.all(
+                    color: colorScheme.outline.withValues(alpha: 0.14),
+                  ),
+                ),
+                child: Column(
+                  children: [
+                    _ParentNode(
+                      label: _displayCategoryName(selectedGroup.category),
+                      accent: colorScheme.primary,
+                      onTap: null,
+                    ),
+                    const SizedBox(height: AppSpacing.sm),
+                    Container(
+                      width: 2,
+                      height: 18,
+                      color: colorScheme.outline.withValues(alpha: 0.2),
+                    ),
+                    const SizedBox(height: AppSpacing.sm),
+                    Wrap(
+                      alignment: WrapAlignment.center,
+                      spacing: AppSpacing.sm,
+                      runSpacing: AppSpacing.sm,
+                      children: [
+                        for (final item in selectedGroup.items)
+                          _ChildNode(
+                            label: item.moveName,
+                            accent: _dueBucketColor(context, item.dueBucket),
+                            subtitle: item.statusLabel,
+                            selected: item.moveId == selectedItem.moveId,
+                            semanticsLabel:
+                                '${item.moveName}, ${item.stateLabel}, ${_bucketLabel(item.dueBucket)}, ${item.reviewCount} reviews',
+                            semanticsHint:
+                                'Focus this move in the graph and open move details',
+                            onTap: () => onSelectMove(item.moveId),
+                          ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: AppSpacing.md),
+            _MoveGraphDetailCard(
+              parentLabel: _displayCategoryName(selectedGroup.category),
+              item: selectedItem,
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -883,75 +1015,356 @@ class _ComboStepRow extends StatelessWidget {
   }
 }
 
-class _ComboGraphCard extends StatelessWidget {
-  const _ComboGraphCard({required this.group});
+class _ComboGraphExplorer extends StatelessWidget {
+  const _ComboGraphExplorer({
+    required this.groups,
+    required this.selectedComboId,
+    required this.selectedStepId,
+    required this.onSelectCombo,
+    required this.onSelectStep,
+  });
 
-  final ComboProgressGroup group;
+  final List<ComboProgressGroup> groups;
+  final String? selectedComboId;
+  final String? selectedStepId;
+  final ValueChanged<String> onSelectCombo;
+  final ValueChanged<String> onSelectStep;
+
+  @override
+  Widget build(BuildContext context) {
+    if (groups.isEmpty) {
+      return const _EmptyParentCard(
+        title: 'No combo graph yet',
+        subtitle:
+            'Create a combo first, then use graph view to inspect the path.',
+      );
+    }
+
+    final colorScheme = Theme.of(context).colorScheme;
+    final selectedGroup = groups.firstWhere(
+      (group) => group.comboId == selectedComboId,
+      orElse: () => groups.first,
+    );
+    final ComboProgressStep? selectedStep = selectedGroup.steps.isEmpty
+        ? null
+        : selectedGroup.steps.firstWhere(
+            (step) => step.moveId == selectedStepId,
+            orElse: () => selectedGroup.steps.first,
+          );
+
+    return FocusTraversalGroup(
+      child: Container(
+        padding: const EdgeInsets.all(AppSpacing.md),
+        decoration: AppSurfaces.panel(
+          context,
+          radius: AppRadius.md,
+          raised: true,
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Graph Interface',
+              style: AppTypography.titleSmall.copyWith(
+                color: colorScheme.onSurface,
+              ),
+            ),
+            const SizedBox(height: AppSpacing.xs),
+            Text(
+              'Focus a combo parent first, then walk the step graph from left to right.',
+              style: AppTypography.bodySmall.copyWith(
+                color: colorScheme.secondary,
+              ),
+            ),
+            const SizedBox(height: AppSpacing.md),
+            Semantics(
+              container: true,
+              label: 'Combo graph parents',
+              child: SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                child: Row(
+                  children: [
+                    for (int index = 0; index < groups.length; index++) ...[
+                      _GraphParentChip(
+                        label: groups[index].comboName,
+                        subtitle: '${groups[index].steps.length} steps',
+                        selected:
+                            groups[index].comboId == selectedGroup.comboId,
+                        onTap: () => onSelectCombo(groups[index].comboId),
+                      ),
+                      if (index != groups.length - 1)
+                        const SizedBox(width: AppSpacing.sm),
+                    ],
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: AppSpacing.md),
+            Semantics(
+              container: true,
+              label:
+                  '${selectedGroup.comboName} combo graph, ${selectedGroup.steps.length} steps',
+              child: Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(AppSpacing.md),
+                decoration: BoxDecoration(
+                  color: colorScheme.surface,
+                  borderRadius: BorderRadius.circular(AppRadius.md),
+                  border: Border.all(
+                    color: colorScheme.outline.withValues(alpha: 0.14),
+                  ),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _ParentNode(
+                      label: selectedGroup.comboName,
+                      accent: colorScheme.primary,
+                      onTap: () =>
+                          context.push('/moves/combo/${selectedGroup.comboId}'),
+                    ),
+                    const SizedBox(height: AppSpacing.md),
+                    if (selectedGroup.steps.isEmpty)
+                      Text(
+                        'No steps mapped yet.',
+                        style: AppTypography.bodySmall.copyWith(
+                          color: colorScheme.secondary,
+                        ),
+                      )
+                    else
+                      SingleChildScrollView(
+                        scrollDirection: Axis.horizontal,
+                        child: Row(
+                          children: [
+                            for (
+                              int index = 0;
+                              index < selectedGroup.steps.length;
+                              index++
+                            ) ...[
+                              _StepNode(
+                                index:
+                                    selectedGroup.steps[index].sequenceIndex +
+                                    1,
+                                label: selectedGroup.steps[index].moveName,
+                                accent: _dueBucketColor(
+                                  context,
+                                  selectedGroup.steps[index].dueBucket,
+                                ),
+                                selected:
+                                    selectedGroup.steps[index].moveId ==
+                                    selectedStep?.moveId,
+                                semanticsLabel:
+                                    'Step ${selectedGroup.steps[index].sequenceIndex + 1}, ${selectedGroup.steps[index].moveName}, ${selectedGroup.steps[index].stateLabel}, ${_bucketLabel(selectedGroup.steps[index].dueBucket)}',
+                                semanticsHint:
+                                    'Focus this step in the graph and open move details',
+                                onTap: () => onSelectStep(
+                                  selectedGroup.steps[index].moveId,
+                                ),
+                              ),
+                              if (index != selectedGroup.steps.length - 1) ...[
+                                const SizedBox(width: AppSpacing.xs),
+                                Icon(
+                                  Icons.arrow_forward_rounded,
+                                  size: 18,
+                                  color: colorScheme.secondary,
+                                ),
+                                const SizedBox(width: AppSpacing.xs),
+                              ],
+                            ],
+                          ],
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: AppSpacing.md),
+            _ComboGraphDetailCard(group: selectedGroup, step: selectedStep),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _GraphParentChip extends StatelessWidget {
+  const _GraphParentChip({
+    required this.label,
+    required this.subtitle,
+    required this.selected,
+    required this.onTap,
+  });
+
+  final String label;
+  final String subtitle;
+  final bool selected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final accent = selected ? colorScheme.primary : colorScheme.secondary;
+
+    return Semantics(
+      button: true,
+      selected: selected,
+      label: '$label, $subtitle',
+      hint: 'Focus this parent in the graph',
+      child: InkWell(
+        borderRadius: BorderRadius.circular(999),
+        onTap: onTap,
+        child: AnimatedContainer(
+          duration: AppMotion.moderate01,
+          curve: AppMotion.productive,
+          constraints: const BoxConstraints(minHeight: 44),
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+          decoration: BoxDecoration(
+            color: accent.withValues(alpha: selected ? 0.14 : 0.08),
+            borderRadius: BorderRadius.circular(999),
+            border: Border.all(color: accent.withValues(alpha: 0.24)),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                label,
+                style: AppTypography.bodySmall.copyWith(
+                  color: selected ? colorScheme.onSurface : accent,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+              const SizedBox(height: 2),
+              Text(
+                subtitle,
+                style: AppTypography.caption.copyWith(color: accent),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _MoveGraphDetailCard extends StatelessWidget {
+  const _MoveGraphDetailCard({required this.parentLabel, required this.item});
+
+  final String parentLabel;
+  final MoveProgressItem item;
 
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
 
-    return Container(
-      padding: const EdgeInsets.all(AppSpacing.md),
-      decoration: AppSurfaces.panel(
-        context,
-        radius: AppRadius.md,
-        raised: true,
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            group.comboName,
-            style: AppTypography.titleSmall.copyWith(
-              color: colorScheme.onSurface,
+    return Semantics(
+      container: true,
+      label:
+          'Selected move ${item.moveName}, in $parentLabel, ${item.stateLabel}, ${_bucketLabel(item.dueBucket)}',
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(AppSpacing.md),
+        decoration: AppSurfaces.panel(context, radius: AppRadius.md),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              item.moveName,
+              style: AppTypography.titleSmall.copyWith(
+                color: colorScheme.onSurface,
+              ),
             ),
-          ),
-          const SizedBox(height: AppSpacing.xs),
-          Text(
-            'Graph view for the combo parent and its step path.',
-            style: AppTypography.bodySmall.copyWith(
-              color: colorScheme.secondary,
+            const SizedBox(height: AppSpacing.xs),
+            Text(
+              '$parentLabel · ${item.stateLabel} · ${item.reviewCount} reviews',
+              style: AppTypography.bodySmall.copyWith(
+                color: colorScheme.secondary,
+              ),
             ),
-          ),
-          const SizedBox(height: AppSpacing.md),
-          _ParentNode(
-            label: group.comboName,
-            accent: colorScheme.primary,
-            onTap: () => context.push('/moves/combo/${group.comboId}'),
-          ),
-          const SizedBox(height: AppSpacing.md),
-          SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            child: Row(
+            const SizedBox(height: AppSpacing.sm),
+            Wrap(
+              spacing: AppSpacing.xs,
+              runSpacing: AppSpacing.xs,
               children: [
-                for (int index = 0; index < group.steps.length; index++) ...[
-                  _StepNode(
-                    index: group.steps[index].sequenceIndex + 1,
-                    label: group.steps[index].moveName,
-                    accent: _dueBucketColor(
-                      context,
-                      group.steps[index].dueBucket,
-                    ),
-                    onTap: () => context.push(
-                      '/moves/move/${group.steps[index].moveId}',
-                    ),
+                _MetaPill(
+                  label: _bucketLabel(item.dueBucket),
+                  accent: _dueBucketColor(context, item.dueBucket),
+                ),
+                if (item.lastReviewedAt != null)
+                  _MetaPill(
+                    label:
+                        'Last ${DateFormat('MMM d').format(item.lastReviewedAt!.toLocal())}',
                   ),
-                  if (index != group.steps.length - 1) ...[
-                    const SizedBox(width: AppSpacing.xs),
-                    Icon(
-                      Icons.arrow_forward_rounded,
-                      size: 18,
-                      color: colorScheme.secondary,
-                    ),
-                    const SizedBox(width: AppSpacing.xs),
-                  ],
-                ],
               ],
             ),
-          ),
-        ],
+            const SizedBox(height: AppSpacing.md),
+            FilledButton(
+              onPressed: () => context.push('/moves/move/${item.moveId}'),
+              child: const Text('Open Move'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _ComboGraphDetailCard extends StatelessWidget {
+  const _ComboGraphDetailCard({required this.group, required this.step});
+
+  final ComboProgressGroup group;
+  final ComboProgressStep? step;
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+
+    return Semantics(
+      container: true,
+      label: step == null
+          ? 'Selected combo ${group.comboName}'
+          : 'Selected combo step ${step!.moveName} in ${group.comboName}',
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(AppSpacing.md),
+        decoration: AppSurfaces.panel(context, radius: AppRadius.md),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              step?.moveName ?? group.comboName,
+              style: AppTypography.titleSmall.copyWith(
+                color: colorScheme.onSurface,
+              ),
+            ),
+            const SizedBox(height: AppSpacing.xs),
+            Text(
+              step == null
+                  ? '${group.steps.length} steps in this combo'
+                  : 'In ${group.comboName} · ${step!.stateLabel} · ${_bucketLabel(step!.dueBucket)}',
+              style: AppTypography.bodySmall.copyWith(
+                color: colorScheme.secondary,
+              ),
+            ),
+            const SizedBox(height: AppSpacing.md),
+            Wrap(
+              spacing: AppSpacing.sm,
+              runSpacing: AppSpacing.sm,
+              children: [
+                FilledButton(
+                  onPressed: () =>
+                      context.push('/moves/combo/${group.comboId}'),
+                  child: const Text('Open Combo'),
+                ),
+                if (step != null)
+                  OutlinedButton(
+                    onPressed: () =>
+                        context.push('/moves/move/${step!.moveId}'),
+                    child: const Text('Open Step'),
+                  ),
+              ],
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -997,47 +1410,65 @@ class _ChildNode extends StatelessWidget {
     required this.label,
     required this.accent,
     required this.subtitle,
+    required this.selected,
+    required this.semanticsLabel,
+    required this.semanticsHint,
     required this.onTap,
   });
 
   final String label;
   final Color accent;
   final String subtitle;
+  final bool selected;
+  final String semanticsLabel;
+  final String semanticsHint;
   final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
 
-    return InkWell(
-      borderRadius: BorderRadius.circular(AppRadius.md),
-      onTap: onTap,
-      child: Container(
-        width: 148,
-        padding: const EdgeInsets.all(AppSpacing.sm),
-        decoration: BoxDecoration(
-          color: colorScheme.surface,
-          borderRadius: BorderRadius.circular(AppRadius.md),
-          border: Border.all(color: accent.withValues(alpha: 0.22)),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              label,
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-              style: AppTypography.bodySmall.copyWith(
-                color: colorScheme.onSurface,
-                fontWeight: FontWeight.w700,
+    return Semantics(
+      button: true,
+      selected: selected,
+      label: semanticsLabel,
+      hint: semanticsHint,
+      child: InkWell(
+        borderRadius: BorderRadius.circular(AppRadius.md),
+        onTap: onTap,
+        child: AnimatedContainer(
+          duration: AppMotion.moderate01,
+          curve: AppMotion.productive,
+          width: 148,
+          constraints: const BoxConstraints(minHeight: 72),
+          padding: const EdgeInsets.all(AppSpacing.sm),
+          decoration: BoxDecoration(
+            color: colorScheme.surface,
+            borderRadius: BorderRadius.circular(AppRadius.md),
+            border: Border.all(
+              color: accent.withValues(alpha: selected ? 0.52 : 0.22),
+              width: selected ? 1.4 : 1,
+            ),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                label,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style: AppTypography.bodySmall.copyWith(
+                  color: colorScheme.onSurface,
+                  fontWeight: FontWeight.w700,
+                ),
               ),
-            ),
-            const SizedBox(height: AppSpacing.xs),
-            Text(
-              subtitle,
-              style: AppTypography.caption.copyWith(color: accent),
-            ),
-          ],
+              const SizedBox(height: AppSpacing.xs),
+              Text(
+                subtitle,
+                style: AppTypography.caption.copyWith(color: accent),
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -1049,47 +1480,65 @@ class _StepNode extends StatelessWidget {
     required this.index,
     required this.label,
     required this.accent,
+    required this.selected,
+    required this.semanticsLabel,
+    required this.semanticsHint,
     required this.onTap,
   });
 
   final int index;
   final String label;
   final Color accent;
+  final bool selected;
+  final String semanticsLabel;
+  final String semanticsHint;
   final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
 
-    return InkWell(
-      borderRadius: BorderRadius.circular(AppRadius.md),
-      onTap: onTap,
-      child: Container(
-        width: 136,
-        padding: const EdgeInsets.all(AppSpacing.sm),
-        decoration: BoxDecoration(
-          color: colorScheme.surface,
-          borderRadius: BorderRadius.circular(AppRadius.md),
-          border: Border.all(color: accent.withValues(alpha: 0.22)),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Step $index',
-              style: AppTypography.caption.copyWith(color: accent),
+    return Semantics(
+      button: true,
+      selected: selected,
+      label: semanticsLabel,
+      hint: semanticsHint,
+      child: InkWell(
+        borderRadius: BorderRadius.circular(AppRadius.md),
+        onTap: onTap,
+        child: AnimatedContainer(
+          duration: AppMotion.moderate01,
+          curve: AppMotion.productive,
+          width: 136,
+          constraints: const BoxConstraints(minHeight: 72),
+          padding: const EdgeInsets.all(AppSpacing.sm),
+          decoration: BoxDecoration(
+            color: colorScheme.surface,
+            borderRadius: BorderRadius.circular(AppRadius.md),
+            border: Border.all(
+              color: accent.withValues(alpha: selected ? 0.52 : 0.22),
+              width: selected ? 1.4 : 1,
             ),
-            const SizedBox(height: AppSpacing.xs),
-            Text(
-              label,
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-              style: AppTypography.bodySmall.copyWith(
-                color: colorScheme.onSurface,
-                fontWeight: FontWeight.w700,
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Step $index',
+                style: AppTypography.caption.copyWith(color: accent),
               ),
-            ),
-          ],
+              const SizedBox(height: AppSpacing.xs),
+              Text(
+                label,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style: AppTypography.bodySmall.copyWith(
+                  color: colorScheme.onSurface,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
