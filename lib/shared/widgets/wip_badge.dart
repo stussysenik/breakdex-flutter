@@ -52,20 +52,23 @@ class WipTabIcon extends StatelessWidget {
       children: [
         Icon(icon),
         Positioned(
-          right: -6,
-          top: -4,
+          right: -10,
+          top: -6,
           child: ExcludeSemantics(
             child: Container(
-              width: 14,
-              height: 14,
+              padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
               decoration: const BoxDecoration(
                 color: _badgeColor,
-                shape: BoxShape.circle,
+                borderRadius: BorderRadius.all(Radius.circular(999)),
               ),
-              child: const Icon(
-                Icons.construction_rounded,
-                size: 8,
-                color: Colors.white,
+              child: Text(
+                'WIP',
+                style: AppTypography.caption.copyWith(
+                  color: Colors.white,
+                  fontSize: 8,
+                  fontWeight: FontWeight.w700,
+                  height: 1,
+                ),
               ),
             ),
           ),

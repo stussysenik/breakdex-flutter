@@ -57,7 +57,24 @@ class _ProgressExplorerState extends State<ProgressExplorer> {
             0,
           ),
           sliver: SliverToBoxAdapter(
-            child: _ProgressStartCard(stats: stats, subjectMode: _subjectMode),
+            child: Column(
+              children: [
+                _ProgressStartCard(stats: stats, subjectMode: _subjectMode),
+                const SizedBox(height: AppSpacing.md),
+                _ExplorerControls(
+                  subjectMode: _subjectMode,
+                  structureMode: _structureMode,
+                  onSubjectChanged: (value) {
+                    HapticFeedback.selectionClick();
+                    setState(() => _subjectMode = value);
+                  },
+                  onStructureChanged: (value) {
+                    HapticFeedback.selectionClick();
+                    setState(() => _structureMode = value);
+                  },
+                ),
+              ],
+            ),
           ),
         ),
         SliverPadding(
@@ -68,73 +85,13 @@ class _ProgressExplorerState extends State<ProgressExplorer> {
             0,
           ),
           sliver: SliverToBoxAdapter(
-            child: _SegmentSection<_ProgressSubjectMode>(
-              label: 'Track',
-              value: _subjectMode,
-              items: const [
-                AppSegmentedControlItem(
-                  value: _ProgressSubjectMode.moves,
-                  icon: Icons.sports_martial_arts_rounded,
-                  label: 'Moves',
-                ),
-                AppSegmentedControlItem(
-                  value: _ProgressSubjectMode.combos,
-                  icon: Icons.linear_scale_rounded,
-                  label: 'Combos',
-                ),
-              ],
-              onChanged: (value) {
-                HapticFeedback.selectionClick();
-                setState(() => _subjectMode = value);
-              },
-            ),
-          ),
-        ),
-        SliverPadding(
-          padding: const EdgeInsets.fromLTRB(
-            AppSpacing.screenEdge,
-            AppSpacing.sm,
-            AppSpacing.screenEdge,
-            0,
-          ),
-          sliver: SliverToBoxAdapter(
-            child: _SegmentSection<_ProgressStructureMode>(
-              label: 'View',
-              value: _structureMode,
-              items: const [
-                AppSegmentedControlItem(
-                  value: _ProgressStructureMode.tree,
-                  icon: Icons.account_tree_outlined,
-                  label: 'Tree',
-                ),
-                AppSegmentedControlItem(
-                  value: _ProgressStructureMode.graph,
-                  icon: Icons.hub_outlined,
-                  label: 'Graph',
-                ),
-              ],
-              onChanged: (value) {
-                HapticFeedback.selectionClick();
-                setState(() => _structureMode = value);
-              },
-            ),
-          ),
-        ),
-        SliverPadding(
-          padding: const EdgeInsets.fromLTRB(
-            AppSpacing.screenEdge,
-            AppSpacing.lg,
-            AppSpacing.screenEdge,
-            0,
-          ),
-          sliver: SliverToBoxAdapter(
             child: _SectionHeading(
               title: _subjectMode == _ProgressSubjectMode.moves
                   ? 'Move Parents'
                   : 'Combo Parents',
               subtitle: _structureMode == _ProgressStructureMode.tree
                   ? 'Start from the parent, then open the exact child you want to drill.'
-                  : 'See the parent-child shape first, then jump into the right detail.',
+                  : 'See the parent-child graph first, then jump into the right detail.',
             ),
           ),
         ),
@@ -279,7 +236,7 @@ class _ProgressHeader extends StatelessWidget {
               ),
               const SizedBox(height: AppSpacing.xs),
               Text(
-                'Parent first. Pick moves or combos, read the structure, then open the exact child you are training. Deep analytics stay tucked below for now.',
+                'Parent-first practice map.',
                 style: AppTypography.bodySmall.copyWith(
                   color: colorScheme.secondary,
                 ),
@@ -309,32 +266,11 @@ class _ProgressStartCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
-    final moveParent = stats.moveProgressGroups.isEmpty
-        ? null
-        : stats.moveProgressGroups.first;
-    final comboParent = stats.comboProgressGroups.isEmpty
-        ? null
-        : stats.comboProgressGroups.first;
+    final moveRecommendation = _recommendedMoveParent(stats);
+    final comboRecommendation = _recommendedComboParent(stats);
     final highlight = subjectMode == _ProgressSubjectMode.moves
-        ? (moveParent == null
-              ? null
-              : (
-                  title: _displayCategoryName(moveParent.category),
-                  subtitle:
-                      '${moveParent.dueNowCount} ready now across ${moveParent.totalCount} moves',
-                  meta:
-                      '${moveParent.reviewedCount} reviewed · ${moveParent.dueTomorrowCount} tomorrow',
-                ))
-        : (comboParent == null
-              ? null
-              : (
-                  title: comboParent.comboName,
-                  subtitle:
-                      '${comboParent.steps.length} steps · ${comboParent.statusLabel.toLowerCase()}',
-                  meta: comboParent.lastReviewedAt == null
-                      ? 'No combo reviews yet'
-                      : 'Last seen ${DateFormat('MMM d').format(comboParent.lastReviewedAt!.toLocal())}',
-                ));
+        ? moveRecommendation
+        : comboRecommendation;
 
     return Container(
       padding: const EdgeInsets.all(AppSpacing.lg),
@@ -348,7 +284,7 @@ class _ProgressStartCard extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'Start Here',
+            'Resume',
             style: AppTypography.caption.copyWith(
               color: colorScheme.secondary,
               fontWeight: FontWeight.w700,
@@ -365,18 +301,20 @@ class _ProgressStartCard extends StatelessWidget {
           const SizedBox(height: AppSpacing.xs),
           Text(
             highlight?.subtitle ??
-                'As you add moves and combos, this card will point to the clearest parent path to open next.',
+                'As you add moves and combos, this card will point to the next parent path to resume.',
             style: AppTypography.bodySmall.copyWith(
               color: colorScheme.secondary,
             ),
           ),
           if (highlight != null) ...[
             const SizedBox(height: AppSpacing.sm),
-            Text(
-              highlight.meta,
-              style: AppTypography.caption.copyWith(
-                color: colorScheme.secondary,
-              ),
+            Wrap(
+              spacing: AppSpacing.xs,
+              runSpacing: AppSpacing.xs,
+              children: [
+                _MetaPill(label: highlight.reason),
+                if (highlight.meta != null) _MetaPill(label: highlight.meta!),
+              ],
             ),
           ],
           const SizedBox(height: AppSpacing.md),
@@ -445,8 +383,122 @@ class _QueueChip extends StatelessWidget {
   }
 }
 
-class _SegmentSection<T> extends StatelessWidget {
-  const _SegmentSection({
+class _ExplorerControls extends StatelessWidget {
+  const _ExplorerControls({
+    required this.subjectMode,
+    required this.structureMode,
+    required this.onSubjectChanged,
+    required this.onStructureChanged,
+  });
+
+  final _ProgressSubjectMode subjectMode;
+  final _ProgressStructureMode structureMode;
+  final ValueChanged<_ProgressSubjectMode> onSubjectChanged;
+  final ValueChanged<_ProgressStructureMode> onStructureChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+
+    return Container(
+      padding: const EdgeInsets.all(AppSpacing.md),
+      decoration: AppSurfaces.panel(
+        context,
+        radius: AppRadius.md,
+        raised: true,
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Scope',
+            style: AppTypography.caption.copyWith(
+              color: colorScheme.secondary,
+              fontWeight: FontWeight.w700,
+              letterSpacing: 0.8,
+            ),
+          ),
+          const SizedBox(height: AppSpacing.sm),
+          LayoutBuilder(
+            builder: (context, constraints) {
+              final stacked = constraints.maxWidth < 560;
+              const subjectItems = [
+                AppSegmentedControlItem(
+                  value: _ProgressSubjectMode.moves,
+                  icon: Icons.sports_martial_arts_rounded,
+                  label: 'Moves',
+                ),
+                AppSegmentedControlItem(
+                  value: _ProgressSubjectMode.combos,
+                  icon: Icons.linear_scale_rounded,
+                  label: 'Combos',
+                ),
+              ];
+              const structureItems = [
+                AppSegmentedControlItem(
+                  value: _ProgressStructureMode.tree,
+                  icon: Icons.account_tree_outlined,
+                  label: 'Tree',
+                ),
+                AppSegmentedControlItem(
+                  value: _ProgressStructureMode.graph,
+                  icon: Icons.hub_outlined,
+                  label: 'Graph',
+                ),
+              ];
+
+              if (stacked) {
+                return Column(
+                  children: [
+                    _ControlGroup<_ProgressSubjectMode>(
+                      label: 'Track',
+                      value: subjectMode,
+                      items: subjectItems,
+                      onChanged: onSubjectChanged,
+                    ),
+                    const SizedBox(height: AppSpacing.sm),
+                    _ControlGroup<_ProgressStructureMode>(
+                      label: 'Read As',
+                      value: structureMode,
+                      items: structureItems,
+                      onChanged: onStructureChanged,
+                    ),
+                  ],
+                );
+              }
+
+              return Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Expanded(
+                    child: _ControlGroup<_ProgressSubjectMode>(
+                      label: 'Track',
+                      value: subjectMode,
+                      items: subjectItems,
+                      onChanged: onSubjectChanged,
+                    ),
+                  ),
+                  const SizedBox(width: AppSpacing.sm),
+                  Expanded(
+                    child: _ControlGroup<_ProgressStructureMode>(
+                      label: 'Read As',
+                      value: structureMode,
+                      items: structureItems,
+                      onChanged: onStructureChanged,
+                    ),
+                  ),
+                ],
+              );
+            },
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ControlGroup<T> extends StatelessWidget {
+  const _ControlGroup({
     required this.label,
     required this.value,
     required this.items,
@@ -470,7 +522,6 @@ class _SegmentSection<T> extends StatelessWidget {
           style: AppTypography.caption.copyWith(
             color: colorScheme.secondary,
             fontWeight: FontWeight.w700,
-            letterSpacing: 0.8,
           ),
         ),
         const SizedBox(height: AppSpacing.xs),
@@ -588,34 +639,27 @@ class _MoveTreeRow extends StatelessWidget {
                       fontWeight: FontWeight.w700,
                     ),
                   ),
-                  const SizedBox(height: AppSpacing.xs),
-                  Wrap(
-                    spacing: AppSpacing.xs,
-                    runSpacing: AppSpacing.xs,
-                    children: [
-                      _MetaPill(label: item.stateLabel),
-                      _MetaPill(
-                        label: item.statusLabel,
-                        accent: _dueBucketColor(context, item.dueBucket),
-                      ),
-                      _MetaPill(
-                        label: item.reviewCount == 0
-                            ? 'No reviews'
-                            : '${item.reviewCount} reviews',
-                      ),
-                    ],
+                  const SizedBox(height: 2),
+                  Text(
+                    [
+                      item.stateLabel,
+                      item.reviewCount == 0
+                          ? 'No reviews yet'
+                          : '${item.reviewCount} reviews',
+                      if (item.lastReviewedAt != null)
+                        'Last ${DateFormat('MMM d').format(item.lastReviewedAt!.toLocal())}',
+                    ].join(' · '),
+                    style: AppTypography.bodySmall.copyWith(
+                      color: colorScheme.secondary,
+                    ),
                   ),
                 ],
               ),
             ),
             const SizedBox(width: AppSpacing.md),
-            Text(
-              item.lastReviewedAt == null
-                  ? 'Open'
-                  : DateFormat('MMM d').format(item.lastReviewedAt!.toLocal()),
-              style: AppTypography.caption.copyWith(
-                color: colorScheme.secondary,
-              ),
+            _MetaPill(
+              label: _bucketLabel(item.dueBucket),
+              accent: _dueBucketColor(context, item.dueBucket),
             ),
           ],
         ),
@@ -644,14 +688,14 @@ class _MoveGraphGroupCard extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            '${_displayCategoryName(group.category)} hub',
+            '${_displayCategoryName(group.category)} graph',
             style: AppTypography.titleSmall.copyWith(
               color: colorScheme.onSurface,
             ),
           ),
           const SizedBox(height: AppSpacing.xs),
           Text(
-            '${group.totalCount} connected children',
+            '${group.totalCount} child moves in a visual parent graph',
             style: AppTypography.bodySmall.copyWith(
               color: colorScheme.secondary,
             ),
@@ -725,18 +769,17 @@ class _ComboTreeCard extends StatelessWidget {
                       color: colorScheme.onSurface,
                     ),
                   ),
-                  const SizedBox(height: AppSpacing.xs),
-                  Wrap(
-                    spacing: AppSpacing.xs,
-                    runSpacing: AppSpacing.xs,
-                    children: [
-                      _MetaPill(label: group.stateLabel),
-                      _MetaPill(
-                        label: group.statusLabel,
-                        accent: _dueBucketColor(context, group.dueBucket),
-                      ),
-                      _MetaPill(label: '${group.steps.length} steps'),
-                    ],
+                  const SizedBox(height: 2),
+                  Text(
+                    [
+                      group.stateLabel,
+                      group.statusLabel,
+                      '${group.steps.length} steps',
+                      if (group.reviewCount > 0) '${group.reviewCount} reviews',
+                    ].join(' · '),
+                    style: AppTypography.bodySmall.copyWith(
+                      color: colorScheme.secondary,
+                    ),
                   ),
                 ],
               ),
@@ -815,21 +858,23 @@ class _ComboStepRow extends StatelessWidget {
                       fontWeight: FontWeight.w700,
                     ),
                   ),
-                  const SizedBox(height: AppSpacing.xs),
-                  Wrap(
-                    spacing: AppSpacing.xs,
-                    runSpacing: AppSpacing.xs,
-                    children: [
-                      _MetaPill(label: _displayCategoryName(step.category)),
-                      _MetaPill(label: step.stateLabel),
-                      _MetaPill(
-                        label: _bucketLabel(step.dueBucket),
-                        accent: _dueBucketColor(context, step.dueBucket),
-                      ),
-                    ],
+                  const SizedBox(height: 2),
+                  Text(
+                    '${_displayCategoryName(step.category)} · ${step.stateLabel}',
+                    style: AppTypography.bodySmall.copyWith(
+                      color: colorScheme.secondary,
+                    ),
                   ),
                 ],
               ),
+            ),
+          ),
+          const SizedBox(width: AppSpacing.sm),
+          Padding(
+            padding: const EdgeInsets.only(top: 2),
+            child: _MetaPill(
+              label: _bucketLabel(step.dueBucket),
+              accent: _dueBucketColor(context, step.dueBucket),
             ),
           ),
         ],
@@ -865,7 +910,7 @@ class _ComboGraphCard extends StatelessWidget {
           ),
           const SizedBox(height: AppSpacing.xs),
           Text(
-            'Path view for the combo parent and its child sequence.',
+            'Graph view for the combo parent and its step path.',
             style: AppTypography.bodySmall.copyWith(
               color: colorScheme.secondary,
             ),
@@ -1113,13 +1158,13 @@ class _DeepSignalsPanel extends StatelessWidget {
           iconColor: colorScheme.secondary,
           collapsedIconColor: colorScheme.secondary,
           title: Text(
-            'Deep Signals',
+            'Superfan Analytics',
             style: AppTypography.titleSmall.copyWith(
               color: colorScheme.onSurface,
             ),
           ),
           subtitle: Text(
-            'Optional superfan analytics while this tab is still settling.',
+            'Optional deep metrics while Progress is still settling.',
             style: AppTypography.bodySmall.copyWith(
               color: colorScheme.secondary,
             ),
@@ -1278,6 +1323,116 @@ class _EmptyParentCard extends StatelessWidget {
   }
 }
 
+class _RecommendationSummary {
+  const _RecommendationSummary({
+    required this.title,
+    required this.subtitle,
+    required this.reason,
+    this.meta,
+  });
+
+  final String title;
+  final String subtitle;
+  final String reason;
+  final String? meta;
+}
+
+_RecommendationSummary? _recommendedMoveParent(StatsBundle stats) {
+  final ranked = <(MoveProgressGroup, MoveProgressItem)>[];
+  for (final group in stats.moveProgressGroups) {
+    for (final item in group.items) {
+      ranked.add((group, item));
+    }
+  }
+  if (ranked.isEmpty) return null;
+
+  ranked.sort((a, b) {
+    final dueCompare = _dueBucketPriority(
+      a.$2.dueBucket,
+    ).compareTo(_dueBucketPriority(b.$2.dueBucket));
+    if (dueCompare != 0) return dueCompare;
+    final reviewCompare = b.$2.reviewCount.compareTo(a.$2.reviewCount);
+    if (reviewCompare != 0) return reviewCompare;
+    final aTime = a.$2.lastReviewedAt ?? DateTime.fromMillisecondsSinceEpoch(0);
+    final bTime = b.$2.lastReviewedAt ?? DateTime.fromMillisecondsSinceEpoch(0);
+    return bTime.compareTo(aTime);
+  });
+
+  final group = ranked.first.$1;
+  final item = ranked.first.$2;
+  return _RecommendationSummary(
+    title: _displayCategoryName(group.category),
+    subtitle:
+        'Start with ${item.moveName}. ${_moveResumeSubtitle(group, item)}',
+    reason: _bucketReason(item.dueBucket),
+    meta: '${item.stateLabel} · ${item.reviewCount} reviews',
+  );
+}
+
+String _moveResumeSubtitle(MoveProgressGroup group, MoveProgressItem item) {
+  return switch (item.dueBucket) {
+    ProgressDueBucket.now =>
+      '${group.dueNowCount} move${group.dueNowCount == 1 ? '' : 's'} ready now in this parent.',
+    ProgressDueBucket.today =>
+      '${group.dueTodayCount} move${group.dueTodayCount == 1 ? '' : 's'} up today in this parent.',
+    ProgressDueBucket.tomorrow => 'This parent comes back tomorrow.',
+    ProgressDueBucket.later => 'This parent looks stable for now.',
+    ProgressDueBucket.unscheduled => 'This parent is still mostly unstarted.',
+  };
+}
+
+_RecommendationSummary? _recommendedComboParent(StatsBundle stats) {
+  final groups = [...stats.comboProgressGroups];
+  if (groups.isEmpty) return null;
+
+  groups.sort((a, b) {
+    final dueCompare = _dueBucketPriority(
+      a.dueBucket,
+    ).compareTo(_dueBucketPriority(b.dueBucket));
+    if (dueCompare != 0) return dueCompare;
+    final reviewCompare = b.reviewCount.compareTo(a.reviewCount);
+    if (reviewCompare != 0) return reviewCompare;
+    final aTime = a.lastReviewedAt ?? DateTime.fromMillisecondsSinceEpoch(0);
+    final bTime = b.lastReviewedAt ?? DateTime.fromMillisecondsSinceEpoch(0);
+    return bTime.compareTo(aTime);
+  });
+
+  final group = groups.first;
+  ComboProgressStep? nextStep;
+  for (final step in group.steps) {
+    if (step.dueBucket == ProgressDueBucket.now) {
+      nextStep = step;
+      break;
+    }
+  }
+  nextStep ??=
+      group.steps
+          .where((step) => step.dueBucket == ProgressDueBucket.today)
+          .isNotEmpty
+      ? group.steps
+            .where((step) => step.dueBucket == ProgressDueBucket.today)
+            .first
+      : null;
+  nextStep ??= group.steps.isEmpty ? null : group.steps.first;
+
+  return _RecommendationSummary(
+    title: group.comboName,
+    subtitle: nextStep == null
+        ? '${group.statusLabel}. Build the combo path first.'
+        : 'Resume with ${nextStep.moveName}. ${group.steps.length} steps in this combo.',
+    reason: _bucketReason(group.dueBucket),
+    meta: '${group.stateLabel} · ${group.reviewCount} reviews',
+  );
+}
+
+String _bucketReason(ProgressDueBucket bucket) => switch (bucket) {
+  ProgressDueBucket.now => 'Best next move',
+  ProgressDueBucket.today => 'Up today',
+  ProgressDueBucket.tomorrow => 'Coming tomorrow',
+  ProgressDueBucket.later => 'Stable for now',
+  ProgressDueBucket.unscheduled => 'Still unstarted',
+};
+
 Color _dueBucketColor(BuildContext context, ProgressDueBucket bucket) {
   final colorScheme = Theme.of(context).colorScheme;
   return switch (bucket) {
@@ -1288,6 +1443,14 @@ Color _dueBucketColor(BuildContext context, ProgressDueBucket bucket) {
     ProgressDueBucket.unscheduled => colorScheme.secondary,
   };
 }
+
+int _dueBucketPriority(ProgressDueBucket bucket) => switch (bucket) {
+  ProgressDueBucket.now => 0,
+  ProgressDueBucket.today => 1,
+  ProgressDueBucket.tomorrow => 2,
+  ProgressDueBucket.later => 3,
+  ProgressDueBucket.unscheduled => 4,
+};
 
 String _bucketLabel(ProgressDueBucket bucket) => switch (bucket) {
   ProgressDueBucket.now => 'Ready now',

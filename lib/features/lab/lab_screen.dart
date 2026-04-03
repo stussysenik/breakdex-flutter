@@ -191,7 +191,7 @@ class _LabScreenState extends ConsumerState<LabScreen> {
             0,
           ),
           child: Text(
-            'Projects, boards, and sets are still being shaped, so expect this surface to keep tightening.',
+            'WIP: projects, boards, and sets are still being shaped, so use this as an active workspace, not a locked final system.',
             style: AppTypography.bodySmall.copyWith(
               color: colorScheme.secondary,
             ),

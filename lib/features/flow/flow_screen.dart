@@ -69,7 +69,7 @@ class FlowScreen extends ConsumerWidget {
                           ),
                           const SizedBox(height: AppSpacing.xs),
                           Text(
-                            'See what connects, inspect one move at a time, and spot weak bridges fast. This surface is still being tuned.',
+                            'WIP: use this to inspect connections and weak bridges, but expect the interaction model to keep tightening.',
                             style: AppTypography.bodySmall.copyWith(
                               color: colorScheme.secondary,
                               height: 1.35,

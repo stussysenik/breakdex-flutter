@@ -95,7 +95,7 @@ void main() {
 
     await tester.pumpAndSettle();
 
-    expect(find.text('Start Here'), findsOneWidget);
+    expect(find.text('Resume'), findsOneWidget);
     expect(find.text('Move Parents'), findsOneWidget);
     expect(find.text('Now'), findsOneWidget);
     expect(find.text('Today'), findsOneWidget);
