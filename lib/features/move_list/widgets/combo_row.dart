@@ -47,8 +47,8 @@ class _ComboRow extends ConsumerWidget {
         child: const Icon(Icons.delete, color: Colors.white),
       ),
       onDismissed: (_) {
-        HapticFeedback.heavyImpact();
-        ref.read(comboRepositoryProvider).delete(combo.id);
+        unawaited(HapticFeedback.heavyImpact());
+        unawaited(_deleteCombo(ref));
       },
       child: Semantics(
         identifier: 'combo-row-${combo.id}',
@@ -119,5 +119,10 @@ class _ComboRow extends ConsumerWidget {
         ),
       ),
     );
+  }
+
+  Future<void> _deleteCombo(WidgetRef ref) async {
+    await ref.read(mediaCleanupServiceProvider).cleanupComboMedia(combo);
+    await ref.read(comboRepositoryProvider).delete(combo.id);
   }
 }

@@ -49,20 +49,20 @@ class LegacyAssetMigration {
     required AssetCopiesDao copiesDao,
     required AssetHashService hashService,
     required AppDatabase db,
-  })  : _movesDao = movesDao,
-        _manifestDao = manifestDao,
-        _copiesDao = copiesDao,
-        _hashService = hashService,
-        _db = db;
+  }) : _movesDao = movesDao,
+       _manifestDao = manifestDao,
+       _copiesDao = copiesDao,
+       _hashService = hashService,
+       _db = db;
 
   /// Run the migration, yielding progress updates.
   ///
   /// This is a no-op if all moves already have content hashes.
   Stream<MigrationProgress> migrate() async* {
-    final allMoves = await _movesDao.getAll();
-    final pending = allMoves.where(
-      (m) => m.videoPath != null && m.contentHash == null,
-    ).toList();
+    final allMoves = await _movesDao.getAllIncludingArchived();
+    final pending = allMoves
+        .where((m) => m.videoPath != null && m.contentHash == null)
+        .toList();
 
     if (pending.isEmpty) {
       yield const MigrationProgress(completed: 0, total: 0);
@@ -101,10 +101,9 @@ class LegacyAssetMigration {
       );
       // Clear the stale videoPath so the move enters the "Missing" state
       // cleanly. All metadata (name, category, date, notes) is preserved.
-      await _movesDao.updateMove(MovesCompanion(
-        id: Value(move.id),
-        videoPath: const Value(null),
-      ));
+      await _movesDao.updateMove(
+        MovesCompanion(id: Value(move.id), videoPath: const Value(null)),
+      );
       return;
     }
 
@@ -116,34 +115,36 @@ class LegacyAssetMigration {
     // succeed or none do.
     await _db.transaction(() async {
       // Insert manifest entry (no-op if hash already exists = dedup)
-      await _manifestDao.insertManifest(AssetManifestCompanion.insert(
-        contentHash: hash,
-        fileSizeBytes: stat.size,
-        localPath: Value(VideoPathResolver.toRelative(videoPath)),
-        localVerifiedAt: Value(now),
-        sourceType: 'legacy_migration',
-        sourceName: Value(move.originalVideoName ?? move.name),
-        importedAt: now,
-      ));
+      await _manifestDao.insertManifest(
+        AssetManifestCompanion.insert(
+          contentHash: hash,
+          fileSizeBytes: stat.size,
+          localPath: Value(VideoPathResolver.toRelative(videoPath)),
+          localVerifiedAt: Value(now),
+          sourceType: 'legacy_migration',
+          sourceName: Value(move.originalVideoName ?? move.name),
+          importedAt: now,
+        ),
+      );
 
       // Insert local copy record
-      final copyId =
-          '${move.id}_local'; // Deterministic ID for idempotency
-      await _copiesDao.upsertCopy(AssetCopiesCompanion.insert(
-        id: copyId,
-        contentHash: hash,
-        provider: 'local',
-        status: const Value('verified'),
-        verifiedAt: Value(now),
-        createdAt: now,
-        updatedAt: now,
-      ));
+      final copyId = '${move.id}_local'; // Deterministic ID for idempotency
+      await _copiesDao.upsertCopy(
+        AssetCopiesCompanion.insert(
+          id: copyId,
+          contentHash: hash,
+          provider: 'local',
+          status: const Value('verified'),
+          verifiedAt: Value(now),
+          createdAt: now,
+          updatedAt: now,
+        ),
+      );
 
       // Link the move to its content hash
-      await _movesDao.updateMove(MovesCompanion(
-        id: Value(move.id),
-        contentHash: Value(hash),
-      ));
+      await _movesDao.updateMove(
+        MovesCompanion(id: Value(move.id), contentHash: Value(hash)),
+      );
     });
   }
 }

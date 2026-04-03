@@ -1,10 +1,13 @@
 import 'dart:ui';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../core/design/colors.dart';
 import '../../../core/design/spacing.dart';
+import '../../../core/design/theme.dart';
 import '../../../core/design/typography.dart';
+import '../../../core/models/learning_state.dart';
+import '../../../core/providers.dart';
 
 /// Frosted glass legend overlay for the Flow Graph.
 ///
@@ -17,15 +20,16 @@ import '../../../core/design/typography.dart';
 /// The panel uses a frosted glass aesthetic (backdrop blur + translucent
 /// surface) to float above the graph without fully obscuring it — the user
 /// can still see nodes through the legend while learning the visual language.
-class FlowGraphLegend extends StatelessWidget {
+class FlowGraphLegend extends ConsumerWidget {
   const FlowGraphLegend({super.key, this.onDismiss});
 
   /// Called when the user taps "dismiss" — parent hides the legend.
   final VoidCallback? onDismiss;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final colorScheme = Theme.of(context).colorScheme;
+    final stateLabels = ref.watch(learningStateLabelsProvider);
 
     return ClipRRect(
       borderRadius: BorderRadius.circular(AppRadius.sm),
@@ -39,10 +43,7 @@ class FlowGraphLegend extends StatelessWidget {
               color: colorScheme.outline.withValues(alpha: 0.06),
             ),
           ),
-          padding: const EdgeInsets.symmetric(
-            horizontal: 10,
-            vertical: 8,
-          ),
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
@@ -53,7 +54,9 @@ class FlowGraphLegend extends StatelessWidget {
               Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Expanded(child: _buildNodesColumn(colorScheme)),
+                  Expanded(
+                    child: _buildNodesColumn(context, colorScheme, stateLabels),
+                  ),
                   Expanded(child: _buildEdgesColumn(colorScheme)),
                   Expanded(child: _buildGesturesColumn(colorScheme)),
                 ],
@@ -101,7 +104,11 @@ class FlowGraphLegend extends StatelessWidget {
   // Column 1 — Nodes
   // ---------------------------------------------------------------------------
 
-  Widget _buildNodesColumn(ColorScheme colorScheme) {
+  Widget _buildNodesColumn(
+    BuildContext context,
+    ColorScheme colorScheme,
+    Map<LearningState, String> stateLabels,
+  ) {
     final labelColor = colorScheme.onSurface.withValues(alpha: 0.75);
 
     return Column(
@@ -118,27 +125,29 @@ class FlowGraphLegend extends StatelessWidget {
         // Mastered: large circle with halo ring.
         _nodeRow(
           circleRadius: 5,
-          color: AppColors.stateMastery,
+          color: context.stateColor(LearningState.mastery),
           halo: true,
-          label: 'Mastered',
+          label: resolveLearningStateLabel(stateLabels, LearningState.mastery),
           labelColor: labelColor,
         ),
         const SizedBox(height: 3),
         // Learning: mid-size solid circle.
         _nodeRow(
           circleRadius: 3.5,
-          color: AppColors.stateLearning,
+          color: context.stateColor(LearningState.learning),
           halo: false,
-          label: 'Learning',
+          label: resolveLearningStateLabel(stateLabels, LearningState.learning),
           labelColor: labelColor,
         ),
         const SizedBox(height: 3),
         // New: tiny, faded circle.
         _nodeRow(
           circleRadius: 2,
-          color: AppColors.stateNew.withValues(alpha: 0.40),
+          color: context
+              .stateColor(LearningState.newState)
+              .withValues(alpha: 0.40),
           halo: false,
-          label: 'New',
+          label: resolveLearningStateLabel(stateLabels, LearningState.newState),
           labelColor: labelColor,
         ),
       ],
@@ -290,10 +299,7 @@ class FlowGraphLegend extends StatelessWidget {
   Widget _gestureRow(String text, Color color) {
     return Text(
       text,
-      style: AppTypography.caption.copyWith(
-        fontSize: 10,
-        color: color,
-      ),
+      style: AppTypography.caption.copyWith(fontSize: 10, color: color),
     );
   }
 }

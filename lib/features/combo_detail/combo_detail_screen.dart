@@ -15,6 +15,7 @@ import '../../core/design/typography.dart';
 import '../../core/models/learning_state.dart';
 import '../../core/models/reviewable_item.dart' show MoveVideoPath;
 import '../../core/providers.dart';
+import '../../core/services/media_playback_coordinator.dart';
 import '../../core/services/video_path_resolver.dart';
 import '../../core/services/native_video_album.dart';
 import '../../shared/widgets/combo_step_line.dart';
@@ -222,12 +223,14 @@ class _ComboDetailScreenState extends ConsumerState<ComboDetailScreen> {
                     NotesSection(
                       notes: combo.notes,
                       onChanged: (text) {
-                        ref.read(comboRepositoryProvider).update(
-                          CombosCompanion(
-                            id: Value(combo.id),
-                            notes: Value(text.isEmpty ? null : text),
-                          ),
-                        );
+                        ref
+                            .read(comboRepositoryProvider)
+                            .update(
+                              CombosCompanion(
+                                id: Value(combo.id),
+                                notes: Value(text.isEmpty ? null : text),
+                              ),
+                            );
                       },
                     ),
                     const SizedBox(height: AppSpacing.lg),
@@ -245,29 +248,60 @@ class _ComboDetailScreenState extends ConsumerState<ComboDetailScreen> {
   Future<void> _editVideo(Move move) async {
     if (move.videoPath == null) return;
     final resolvedPath = move.resolvedVideoPath;
+    MediaPlaybackCoordinator.shared.pauseAll();
     final editedPath = await context.push<String>(
       '/video-editor',
       extra: {'videoPath': resolvedPath},
     );
     if (editedPath != null && mounted) {
       await ref
+          .read(mediaCleanupServiceProvider)
+          .cleanupDetachedAsset(
+            title: move.name,
+            category: move.category,
+            storedVideoPath: move.videoPath,
+            resolvedVideoPath: move.resolvedVideoPath,
+            contentHash: move.contentHash,
+            managedAlbumAssetId: move.managedAlbumAssetId,
+            excludingMoveId: move.id,
+          );
+      await ref
           .read(moveRepositoryProvider)
           .update(
-            MovesCompanion(id: Value(move.id), videoPath: Value(VideoPathResolver.toRelative(editedPath))),
-          );
-      await ref.read(videoServiceProvider).replaceVideo(resolvedPath);
-      unawaited(
-        _videoAlbum
-            .saveToAlbum(
-              videoPath: editedPath,
-              albumName: NativeVideoAlbum.defaultAlbumName(),
-              assetTitle: move.name,
-              category: move.category,
-            )
-            .catchError(
-              (error) => debugPrint('Album save failed (non-fatal): $error'),
+            MovesCompanion(
+              id: Value(move.id),
+              videoPath: Value(VideoPathResolver.toRelative(editedPath)),
+              managedAlbumAssetId: const Value(null),
+              managedAlbumFilename: const Value(null),
+              managedAlbumName: const Value(null),
+              contentHash: const Value(null),
             ),
+          );
+      unawaited(
+        ref
+            .read(videoImportSyncHookProvider)
+            .onVideoImported(localPath: editedPath, moveId: move.id),
       );
+      try {
+        final managedCopy = await _videoAlbum.saveToAlbum(
+          videoPath: editedPath,
+          albumName: NativeVideoAlbum.defaultAlbumName(),
+          assetTitle: move.name,
+          category: move.category,
+        );
+        await ref
+            .read(moveRepositoryProvider)
+            .update(
+              MovesCompanion(
+                id: Value(move.id),
+                managedAlbumAssetId: Value(managedCopy?.assetLocalIdentifier),
+                managedAlbumFilename: Value(managedCopy?.filename),
+                managedAlbumName: Value(managedCopy?.albumName),
+              ),
+            );
+      } catch (error) {
+        debugPrint('Album save failed (non-fatal): $error');
+      }
     }
   }
 
@@ -283,10 +317,14 @@ class _ComboDetailScreenState extends ConsumerState<ComboDetailScreen> {
         actions: [
           CupertinoActionSheetAction(
             isDestructiveAction: true,
-            onPressed: () {
+            onPressed: () async {
               Navigator.pop(context); // dismiss sheet
-              HapticFeedback.heavyImpact();
-              ref.read(comboRepositoryProvider).delete(combo.id);
+              unawaited(HapticFeedback.heavyImpact());
+              await ref
+                  .read(mediaCleanupServiceProvider)
+                  .cleanupComboMedia(combo);
+              await ref.read(comboRepositoryProvider).delete(combo.id);
+              if (!context.mounted) return;
               context.pop(); // navigate back
             },
             child: const Text('Delete Combo'),

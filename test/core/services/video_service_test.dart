@@ -1,5 +1,10 @@
+import 'dart:io';
+
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
+
+import 'package:breakdex/core/services/video_path_resolver.dart';
+import 'package:breakdex/core/services/video_service.dart';
 
 /// Unit tests for the native video import MethodChannel contract.
 ///
@@ -16,22 +21,55 @@ void main() {
     log = [];
     TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
         .setMockMethodCallHandler(importChannel, (call) async {
-      log.add(call);
-      switch (call.method) {
-        case 'pickFromPhotos':
-          return _responses[call.method];
-        case 'pickFromFiles':
-          return _responses[call.method];
-        default:
-          return null;
-      }
-    });
+          log.add(call);
+          switch (call.method) {
+            case 'pickFromPhotos':
+              return _responses[call.method];
+            case 'pickFromFiles':
+              return _responses[call.method];
+            default:
+              return null;
+          }
+        });
   });
 
   tearDown(() {
     TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
         .setMockMethodCallHandler(importChannel, null);
     _responses.clear();
+  });
+
+  group('Video cleanup', () {
+    late Directory tempDocsDir;
+
+    setUp(() async {
+      tempDocsDir = await Directory.systemTemp.createTemp('breakdex-video-');
+      VideoPathResolver.docsPathOverride = tempDocsDir.path;
+    });
+
+    tearDown(() async {
+      VideoPathResolver.docsPathOverride = '';
+      await tempDocsDir.delete(recursive: true);
+    });
+
+    test(
+      'deleteVideo removes the file and thumbnail for relative paths',
+      () async {
+        final movesDir = Directory('${tempDocsDir.path}/Moves');
+        final thumbsDir = Directory('${movesDir.path}/.thumbs');
+        await thumbsDir.create(recursive: true);
+
+        final video = File('${movesDir.path}/abc.mp4');
+        final thumb = File('${thumbsDir.path}/abc.jpg');
+        await video.writeAsString('video');
+        await thumb.writeAsString('thumb');
+
+        await VideoService().deleteVideo('Moves/abc.mp4');
+
+        expect(await video.exists(), isFalse);
+        expect(await thumb.exists(), isFalse);
+      },
+    );
   });
 
   group('Native video import channel', () {
@@ -86,41 +124,49 @@ void main() {
       expect(result, isNull);
     });
 
-    test('PlatformException with "cancelled" message is a cancellation', () async {
-      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
-          .setMockMethodCallHandler(importChannel, (call) async {
-        throw PlatformException(
-          code: 'CANCELLED',
-          message: 'User cancelled the picker',
-        );
-      });
+    test(
+      'PlatformException with "cancelled" message is a cancellation',
+      () async {
+        TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+            .setMockMethodCallHandler(importChannel, (call) async {
+              throw PlatformException(
+                code: 'CANCELLED',
+                message: 'User cancelled the picker',
+              );
+            });
 
-      expect(
-        () => importChannel.invokeMapMethod<String, dynamic>('pickFromPhotos'),
-        throwsA(isA<PlatformException>().having(
-          (e) => e.message?.toLowerCase().contains('cancelled'),
-          'message contains cancelled',
-          true,
-        )),
-      );
-    });
+        expect(
+          () =>
+              importChannel.invokeMapMethod<String, dynamic>('pickFromPhotos'),
+          throwsA(
+            isA<PlatformException>().having(
+              (e) => e.message?.toLowerCase().contains('cancelled'),
+              'message contains cancelled',
+              true,
+            ),
+          ),
+        );
+      },
+    );
 
     test('PlatformException with actual error propagates', () async {
       TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
           .setMockMethodCallHandler(importChannel, (call) async {
-        throw PlatformException(
-          code: 'PERMISSION_DENIED',
-          message: 'Photo library access denied',
-        );
-      });
+            throw PlatformException(
+              code: 'PERMISSION_DENIED',
+              message: 'Photo library access denied',
+            );
+          });
 
       expect(
         () => importChannel.invokeMapMethod<String, dynamic>('pickFromPhotos'),
-        throwsA(isA<PlatformException>().having(
-          (e) => e.code,
-          'error code',
-          'PERMISSION_DENIED',
-        )),
+        throwsA(
+          isA<PlatformException>().having(
+            (e) => e.code,
+            'error code',
+            'PERMISSION_DENIED',
+          ),
+        ),
       );
     });
 
@@ -146,17 +192,17 @@ void main() {
     setUp(() {
       TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
           .setMockMethodCallHandler(exportChannel, (call) async {
-        log.add(call);
-        switch (call.method) {
-          case 'exportVideo':
-            final args = Map<String, dynamic>.from(call.arguments as Map);
-            return args['outputPath'] as String;
-          case 'cancelExport':
-            return null;
-          default:
-            return null;
-        }
-      });
+            log.add(call);
+            switch (call.method) {
+              case 'exportVideo':
+                final args = Map<String, dynamic>.from(call.arguments as Map);
+                return args['outputPath'] as String;
+              case 'cancelExport':
+                return null;
+              default:
+                return null;
+            }
+          });
     });
 
     tearDown(() {
@@ -165,18 +211,15 @@ void main() {
     });
 
     test('exportVideo sends correct parameters', () async {
-      final result = await exportChannel.invokeMethod<String>(
-        'exportVideo',
-        {
-          'inputPath': '/input.mp4',
-          'outputPath': '/output.mp4',
-          'trimStartMs': 1000,
-          'trimEndMs': 5000,
-          'speed': 1.0,
-          'rotation': 90,
-          'aspectRatio': null,
-        },
-      );
+      final result = await exportChannel.invokeMethod<String>('exportVideo', {
+        'inputPath': '/input.mp4',
+        'outputPath': '/output.mp4',
+        'trimStartMs': 1000,
+        'trimEndMs': 5000,
+        'speed': 1.0,
+        'rotation': 90,
+        'aspectRatio': null,
+      });
 
       expect(result, '/output.mp4');
       final call = log.last;
@@ -189,22 +232,19 @@ void main() {
     });
 
     test('exportVideo with crop rect sends crop parameters', () async {
-      await exportChannel.invokeMethod<String>(
-        'exportVideo',
-        {
-          'inputPath': '/input.mp4',
-          'outputPath': '/output.mp4',
-          'trimStartMs': 0,
-          'trimEndMs': 3000,
-          'speed': 0.5,
-          'rotation': 0,
-          'aspectRatio': null,
-          'cropLeft': 0.1,
-          'cropTop': 0.2,
-          'cropWidth': 0.5,
-          'cropHeight': 0.5,
-        },
-      );
+      await exportChannel.invokeMethod<String>('exportVideo', {
+        'inputPath': '/input.mp4',
+        'outputPath': '/output.mp4',
+        'trimStartMs': 0,
+        'trimEndMs': 3000,
+        'speed': 0.5,
+        'rotation': 0,
+        'aspectRatio': null,
+        'cropLeft': 0.1,
+        'cropTop': 0.2,
+        'cropWidth': 0.5,
+        'cropHeight': 0.5,
+      });
 
       final args = Map<String, dynamic>.from(log.last.arguments as Map);
       expect(args['cropLeft'], 0.1);

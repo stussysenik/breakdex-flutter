@@ -16,9 +16,22 @@ tags:
 # Navigate to Settings
 - tapOn:
     id: "settings-gear"
-- extendedWaitUntil:
-    visible: "Viewing"
-    timeout: 10000
+- scrollUntilVisible:
+    element: "Settings"
+    direction: UP
+    timeout: 20000
+    speed: 80
+    waitToSettleTimeoutMs: 300
+    visibilityPercentage: 50
+    centerElement: false
+- scrollUntilVisible:
+    element: "Move Semantics"
+    direction: DOWN
+    timeout: 20000
+    speed: 20
+    waitToSettleTimeoutMs: 300
+    visibilityPercentage: 50
+    centerElement: false
 - takeScreenshot: e2e-screenshots/settings-main
 
 # ── Category management ─────────────────────────────────────────────
@@ -26,17 +39,25 @@ tags:
 # Add a new category
 - runFlow:
     when:
-      visible: "Add Category"
+      visible: "Add"
     commands:
-      - tapOn: "Add Category"
+      - tapOn: "Add"
       - inputText: "E2E Category"
-      - tapOn: "Save"
+      - tapOn: "Add"
       - assertVisible: "E2E Category"
       - takeScreenshot: e2e-screenshots/settings-category-added
 
 # ── Theme switching ─────────────────────────────────────────────────
 
 # Switch to Marker theme
+- scrollUntilVisible:
+    element: "Marker"
+    direction: UP
+    timeout: 20000
+    speed: 20
+    waitToSettleTimeoutMs: 300
+    visibilityPercentage: 50
+    centerElement: true
 - runFlow:
     when:
       visible: "Marker"

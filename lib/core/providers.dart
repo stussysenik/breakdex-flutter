@@ -2,10 +2,8 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import 'database/database.dart';
 import 'database/daos/moves_dao.dart';
 import 'database/daos/combos_dao.dart';
@@ -19,15 +17,23 @@ import 'data/drift_repositories.dart';
 import 'data/sync_aware_repositories.dart';
 import 'design/colors.dart';
 import 'design/typography.dart';
+import 'models/learning_state.dart';
+import 'models/learning_state_colors.dart';
+import 'models/review_card_display_settings.dart';
 import 'models/reviewable_item.dart';
 import 'services/auth_service.dart';
 import 'services/settings_service.dart';
 import 'services/video_service.dart';
+import 'services/media_cleanup_service.dart';
+import 'services/managed_album_reconciliation_service.dart';
+import 'services/media_playback_coordinator.dart';
 import 'services/sync_service.dart';
 import 'services/connectivity_service.dart';
 import 'services/fsrs_service.dart';
+import 'services/manual_review_state_service.dart';
 import 'services/deck_service.dart';
 import 'services/reviewable_naming_service.dart';
+import 'services/native_video_album.dart';
 import 'services/scene_3d.dart';
 import 'services/vision_ml.dart';
 import 'models/sync_progress.dart';
@@ -55,6 +61,9 @@ import 'sync/video_import_sync_hook.dart';
 
 part 'providers/sync_providers.dart';
 part 'providers/theme_providers.dart';
+part 'providers/review_card_display_providers.dart';
+part 'providers/learning_state_label_providers.dart';
+part 'providers/video_playback_preferences_providers.dart';
 
 final databaseProvider = Provider<AppDatabase>((ref) {
   final db = AppDatabase();
@@ -85,6 +94,17 @@ final fsrsCardsDaoProvider = Provider<FsrsCardsDao>((ref) {
 
 final fsrsServiceProvider = Provider<FsrsService>((ref) {
   return FsrsService(ref.watch(fsrsCardsDaoProvider));
+});
+
+final manualReviewStateServiceProvider = Provider<ManualReviewStateService>((
+  ref,
+) {
+  return ManualReviewStateService(
+    moveRepository: ref.watch(moveRepositoryProvider),
+    fsrsCardsDao: ref.watch(fsrsCardsDaoProvider),
+    fsrsService: ref.watch(fsrsServiceProvider),
+    syncDao: ref.watch(syncDaoProvider),
+  );
 });
 
 final decksDaoProvider = Provider<DecksDao>((ref) {
@@ -141,7 +161,48 @@ final videoServiceProvider = Provider<VideoService>((ref) {
   return VideoService();
 });
 
-final reviewableNamingServiceProvider = Provider<ReviewableNamingService>((ref) {
+final mediaPlaybackCoordinatorProvider = Provider<MediaPlaybackCoordinator>((
+  ref,
+) {
+  return mediaPlaybackCoordinator;
+});
+
+final mediaCleanupServiceProvider = Provider<MediaCleanupService>((ref) {
+  return MediaCleanupService(
+    db: ref.watch(databaseProvider),
+    videoService: ref.watch(videoServiceProvider),
+  );
+});
+
+final nativeVideoAlbumProvider = Provider<NativeVideoAlbum>((ref) {
+  return NativeVideoAlbum();
+});
+
+final managedAlbumReconciliationServiceProvider =
+    Provider<ManagedAlbumReconciliationService>((ref) {
+      return ManagedAlbumReconciliationService(
+        movesDao: ref.watch(movesDaoProvider),
+        moveRepository: ref.watch(moveRepositoryProvider),
+        mediaCleanupService: ref.watch(mediaCleanupServiceProvider),
+        videoAlbum: ref.watch(nativeVideoAlbumProvider),
+        videoService: ref.watch(videoServiceProvider),
+      );
+    });
+
+final managedAlbumLifecycleProvider = Provider<void>((ref) {
+  final controller = ManagedAlbumLifecycleController(
+    service: ref.watch(managedAlbumReconciliationServiceProvider),
+    videoAlbum: ref.watch(nativeVideoAlbumProvider),
+  );
+  controller.start();
+  ref.onDispose(() {
+    unawaited(controller.dispose());
+  });
+});
+
+final reviewableNamingServiceProvider = Provider<ReviewableNamingService>((
+  ref,
+) {
   return ReviewableNamingService(
     movesDao: ref.watch(movesDaoProvider),
     combosDao: ref.watch(combosDaoProvider),
@@ -177,8 +238,9 @@ final connectivityProvider = StreamProvider<bool>((ref) {
   return ref.watch(connectivityServiceProvider).onlineStream;
 });
 
-final autoSyncEnabledProvider =
-    NotifierProvider<AutoSyncNotifier, bool>(AutoSyncNotifier.new);
+final autoSyncEnabledProvider = NotifierProvider<AutoSyncNotifier, bool>(
+  AutoSyncNotifier.new,
+);
 
 class AutoSyncNotifier extends Notifier<bool> {
   static const _key = 'auto_sync_enabled';
@@ -228,8 +290,9 @@ final fsrsCardsRefreshProvider = StreamProvider<List<FsrsCard>>((ref) {
 // Review mode — persisted toggle between Review and Deck views
 // ---------------------------------------------------------------------------
 
-final reviewModeProvider =
-    NotifierProvider<ReviewModeNotifier, ReviewMode>(ReviewModeNotifier.new);
+final reviewModeProvider = NotifierProvider<ReviewModeNotifier, ReviewMode>(
+  ReviewModeNotifier.new,
+);
 
 class ReviewModeNotifier extends Notifier<ReviewMode> {
   static const _key = 'review_mode';

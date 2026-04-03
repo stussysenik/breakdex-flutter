@@ -14,15 +14,41 @@ class SyncDao extends DatabaseAccessor<AppDatabase> with _$SyncDaoMixin {
     required String action,
     bool hasVideo = false,
   }) async {
-    await into(syncLog).insertOnConflictUpdate(
-      SyncLogCompanion.insert(
-        entityId: entityId,
-        entityTable: table,
-        action: action,
-        synced: const Value(false),
-        videoSynced: Value(hasVideo ? false : true),
-      ),
-    );
+    final existing =
+        await (select(syncLog)..where(
+              (t) =>
+                  t.entityId.equals(entityId) &
+                  t.entityTable.equals(table) &
+                  t.action.equals(action),
+            ))
+            .getSingleOrNull();
+
+    if (existing == null) {
+      await into(syncLog).insert(
+        SyncLogCompanion.insert(
+          entityId: entityId,
+          entityTable: table,
+          action: action,
+          synced: const Value(false),
+          videoSynced: Value(hasVideo ? false : true),
+        ),
+      );
+      return;
+    }
+
+    await (update(syncLog)..where(
+          (t) =>
+              t.entityId.equals(entityId) &
+              t.entityTable.equals(table) &
+              t.action.equals(action),
+        ))
+        .write(
+          SyncLogCompanion(
+            changedAt: Value(DateTime.now()),
+            synced: const Value(false),
+            videoSynced: hasVideo ? const Value(false) : const Value.absent(),
+          ),
+        );
   }
 
   Future<List<SyncLogData>> getPendingChanges() {
@@ -41,26 +67,26 @@ class SyncDao extends DatabaseAccessor<AppDatabase> with _$SyncDaoMixin {
   }
 
   Future<void> markSynced(String entityId, String table, String action) {
-    return (update(syncLog)
-          ..where((t) =>
+    return (update(syncLog)..where(
+          (t) =>
               t.entityId.equals(entityId) &
               t.entityTable.equals(table) &
-              t.action.equals(action)))
+              t.action.equals(action),
+        ))
         .write(const SyncLogCompanion(synced: Value(true)));
   }
 
   Future<List<SyncLogData>> getPendingVideoUploads() {
     return (select(syncLog)
-          ..where(
-              (t) => t.videoSynced.equals(false) & t.synced.equals(true))
+          ..where((t) => t.videoSynced.equals(false) & t.synced.equals(true))
           ..orderBy([(t) => OrderingTerm.asc(t.changedAt)]))
         .get();
   }
 
   Future<void> markVideoSynced(String entityId, String table) {
-    return (update(syncLog)
-          ..where(
-              (t) => t.entityId.equals(entityId) & t.entityTable.equals(table)))
+    return (update(syncLog)..where(
+          (t) => t.entityId.equals(entityId) & t.entityTable.equals(table),
+        ))
         .write(const SyncLogCompanion(videoSynced: Value(true)));
   }
 

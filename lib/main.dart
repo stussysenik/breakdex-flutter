@@ -24,7 +24,7 @@ import 'core/sync/legacy_asset_migration.dart';
 /// from the backup file in the documents directory.
 Future<void> _backupDatabaseIfNeeded(SharedPreferences prefs) async {
   final lastBackupSchema = prefs.getInt('last_backup_schema') ?? 0;
-  const currentSchema = 9;
+  const currentSchema = 14;
 
   if (lastBackupSchema < currentSchema) {
     try {
@@ -200,10 +200,14 @@ class BreakdexApp extends ConsumerWidget {
     // Auto-retry asset sync when connectivity is restored (offline → online).
     ref.watch(syncConnectivityTriggerProvider);
 
+    // Reconcile managed Photos album copies with move archive state.
+    ref.watch(managedAlbumLifecycleProvider);
+
     final themeSetting = ref.watch(themeSettingProvider);
     final viewingMode = ref.watch(viewingModeProvider);
     final fontFamily = ref.watch(fontFamilyProvider);
     final accent = ref.watch(accentColorProvider);
+    final stateColors = ref.watch(learningStateColorsProvider);
 
     return MaterialApp.router(
       title: 'Breakdex',
@@ -211,11 +215,13 @@ class BreakdexApp extends ConsumerWidget {
       theme: AppTheme.light(
         family: fontFamily,
         accent: accent,
+        stateColors: stateColors,
         viewingMode: viewingMode,
       ),
       darkTheme: AppTheme.dark(
         family: fontFamily,
         accent: accent,
+        stateColors: stateColors,
         viewingMode: viewingMode,
       ),
       themeMode: themeSetting.themeMode,

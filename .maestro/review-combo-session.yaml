@@ -16,16 +16,19 @@ tags:
       breakdexFixture: review
 
 - tapOn:
-    point: "146,809"
-- assertVisible: "Review"
+    id: "drill-tab"
+- assertVisible: "Drill"
 - assertVisible: "Moves"
 - assertVisible: "Combos"
 - tapOn: "Combos"
 - assertVisible: "Combos"
 - assertVisible: "Learning\\n1\\nShort intervals"
 - tapOn: "Learning\\n1\\nShort intervals"
+- assertVisible: "Fixture Combo"
+- assertVisible: "Tap anywhere to reveal the video"
+- tapOn: "Tap anywhere to reveal the video"
 - extendedWaitUntil:
-    visible: "Combos · Learning"
+    visible: "Rate GOOD"
     timeout: 10000
-- assertVisible: "Rate GOOD\\nGOOD"
-- assertVisible: "Rate AGAIN\\nAGAIN"
+- assertVisible: "Rate GOOD"
+- assertVisible: "Rate AGAIN"

@@ -1,5 +1,6 @@
 import Flutter
 import Foundation
+import Photos
 import PhotosUI
 import UIKit
 import UniformTypeIdentifiers
@@ -187,8 +188,11 @@ final class NativeVideoImportPlugin: NSObject, FlutterPlugin, FlutterStreamHandl
     /// Copies a video file into Documents/Moves/ with a unique UUID filename.
     /// Works with any readable URL — temp files from PHPicker, inbox copies
     /// from UIDocumentPicker(asCopy: true), etc.
-    private func copyToMovesDir(url: URL) throws -> ImportedVideo {
-        let filename = url.lastPathComponent
+    private func copyToMovesDir(url: URL, preferredOriginalFileName: String? = nil) throws -> ImportedVideo {
+        let filename = normalizedOriginalFilename(
+            preferredOriginalFileName,
+            fallbackURL: url
+        )
         let ext = url.pathExtension.isEmpty ? "mp4" : url.pathExtension
 
         let docs = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
@@ -199,6 +203,35 @@ final class NativeVideoImportPlugin: NSObject, FlutterPlugin, FlutterStreamHandl
         try FileManager.default.copyItem(at: url, to: destination)
 
         return ImportedVideo(localPath: destination.path, originalFileName: filename)
+    }
+
+    private func normalizedOriginalFilename(_ preferred: String?, fallbackURL: URL) -> String {
+        let trimmedPreferred = preferred?.trimmingCharacters(in: .whitespacesAndNewlines)
+        if let trimmedPreferred, !trimmedPreferred.isEmpty {
+            return trimmedPreferred
+        }
+        return fallbackURL.lastPathComponent
+    }
+
+    private func originalFilename(for assetIdentifier: String?) -> String? {
+        guard let assetIdentifier else { return nil }
+        let trimmedIdentifier = assetIdentifier.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmedIdentifier.isEmpty else { return nil }
+
+        let fetchResult = PHAsset.fetchAssets(
+            withLocalIdentifiers: [trimmedIdentifier],
+            options: nil
+        )
+        guard let asset = fetchResult.firstObject else { return nil }
+
+        let resources = PHAssetResource.assetResources(for: asset)
+        let preferredResource = resources.first {
+            $0.type == .video || $0.type == .fullSizeVideo || $0.type == .pairedVideo
+        } ?? resources.first
+
+        let originalFilename = preferredResource?.originalFilename
+        let trimmedFilename = originalFilename?.trimmingCharacters(in: .whitespacesAndNewlines)
+        return (trimmedFilename?.isEmpty == false) ? trimmedFilename : nil
     }
 }
 
@@ -250,7 +283,10 @@ extension NativeVideoImportPlugin: PHPickerViewControllerDelegate {
 
             // CRITICAL: Copy inside this closure — url is invalidated when we return
             do {
-                let imported = try self.copyToMovesDir(url: url)
+                let imported = try self.copyToMovesDir(
+                    url: url,
+                    preferredOriginalFileName: self.originalFilename(for: item.assetIdentifier)
+                )
                 DispatchQueue.main.async {
                     self.progressObservation?.invalidate()
                     self.progressObservation = nil

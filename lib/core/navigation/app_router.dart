@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
+import 'app_route_observer.dart';
 import '../../features/move_list/move_list_screen.dart';
 import '../../features/move_detail/move_detail_screen.dart';
 import '../../features/flashcard_review/flashcard_review_screen.dart';
@@ -9,6 +10,7 @@ import '../../features/combo_detail/combo_detail_screen.dart';
 import '../../features/lab/lab_screen.dart';
 import '../../features/lab/lab_detail_screen.dart';
 import '../../features/settings/settings_screen.dart';
+import '../../features/settings/recently_deleted_screen.dart';
 import '../../features/flow/flow_screen.dart';
 import '../../features/stats/stats_screen.dart';
 import '../../features/battle/battle_screen.dart';
@@ -26,6 +28,7 @@ final _rootNavigatorKey = GlobalKey<NavigatorState>();
 final appRouter = GoRouter(
   navigatorKey: _rootNavigatorKey,
   initialLocation: '/moves',
+  observers: [appRouteObserver],
   routes: [
     StatefulShellRoute.indexedStack(
       builder: (context, state, navigationShell) =>
@@ -79,9 +82,8 @@ final appRouter = GoRouter(
               routes: [
                 GoRoute(
                   path: ':id',
-                  builder: (context, state) => LabDetailScreen(
-                    labId: state.pathParameters['id']!,
-                  ),
+                  builder: (context, state) =>
+                      LabDetailScreen(labId: state.pathParameters['id']!),
                 ),
               ],
             ),
@@ -115,7 +117,7 @@ final appRouter = GoRouter(
       path: '/edit-combo/:id',
       parentNavigatorKey: _rootNavigatorKey,
       builder: (context, state) =>
-          CreateComboScreen(comboId: state.pathParameters['id']!),
+          CreateComboScreen(comboId: state.pathParameters['id']),
     ),
     GoRoute(
       path: '/battle',
@@ -167,6 +169,11 @@ final appRouter = GoRouter(
       path: '/settings/free-space',
       parentNavigatorKey: _rootNavigatorKey,
       builder: (context, state) => const FreeSpaceScreen(),
+    ),
+    GoRoute(
+      path: '/settings/recently-deleted',
+      parentNavigatorKey: _rootNavigatorKey,
+      builder: (context, state) => const RecentlyDeletedScreen(),
     ),
     GoRoute(
       path: '/settings/sync-help',

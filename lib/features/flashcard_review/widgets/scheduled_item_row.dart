@@ -2,10 +2,13 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../core/design/colors.dart';
 import '../../../core/design/spacing.dart';
+import '../../../core/design/theme.dart';
 import '../../../core/design/typography.dart';
+import '../../../core/providers.dart';
+import '../../../core/services/fsrs_service.dart';
 import '../../../core/models/reviewable_item.dart';
 
 /// A row in the schedule item list showing an item's name, state, and SRS data.
@@ -16,17 +19,19 @@ import '../../../core/models/reviewable_item.dart';
 /// - Item name + category
 /// - SRS detail line: stability, difficulty, retrievability, reps
 /// - Entity type icon (move vs combo)
-class ScheduledItemRow extends StatelessWidget {
+class ScheduledItemRow extends ConsumerWidget {
   const ScheduledItemRow({super.key, required this.item, required this.onTap});
 
   final ReviewableItemWithCard item;
   final VoidCallback onTap;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final colorScheme = Theme.of(context).colorScheme;
     final card = item.card;
-    final stateColor = _stateColor(card?.fsrsState ?? 0);
+    final visibleState = learningStateFromFsrsState(card?.fsrsState);
+    final stateColor = context.stateColor(visibleState);
+    final labels = ref.watch(learningStateLabelsProvider);
     final retPct = (item.retrievability * 100).round();
 
     return GestureDetector(
@@ -143,7 +148,7 @@ class ScheduledItemRow extends StatelessWidget {
                         )
                       else
                         Text(
-                          'New — not yet reviewed',
+                          '${resolveLearningStateLabel(labels, visibleState)} — not yet reviewed',
                           style: AppTypography.caption.copyWith(
                             color: stateColor,
                             fontSize: 10,
@@ -203,12 +208,4 @@ class ScheduledItemRow extends StatelessWidget {
     if (s < 30) return '${s.round()}d';
     return '${(s / 30).toStringAsFixed(1)}mo';
   }
-
-  static Color _stateColor(int fsrsState) => switch (fsrsState) {
-    0 => AppColors.stateNew,
-    1 => AppColors.stateLearning,
-    2 => AppColors.stateMastery,
-    3 => AppColors.actionHard,
-    _ => AppColors.stateNew,
-  };
 }

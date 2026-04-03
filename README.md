@@ -32,9 +32,20 @@ Most practice systems are good at one slice of the problem and weak at the rest.
 - Release tag: `v1.1.0`
 - Release version: `1.1.0`
 - Pubspec version: `1.1.0+3`
-- Released: `2026-03-31`
-- Metadata refreshed: `2026-03-31`
+- Released: `2026-04-03`
+- Metadata refreshed: `2026-04-03`
 <!-- release:meta:end -->
+
+## Automatic Provenance
+
+<!-- release:provenance:start -->
+- Source branch: `feature/flow-ui-ios-release`
+- Source revision: `b88baff`
+- Source commit: `b88baffdf8430a60d8ffe797f1f251d7d0d28e58`
+- Source describe: `v1.1.0-6-gb88baff`
+- Generator: `scripts/update_release_metadata.cjs`
+- Inputs: `CHANGELOG.md`, `pubspec.yaml`, and local git metadata
+<!-- release:provenance:end -->
 
 ### Latest Tagged Notes
 
@@ -44,7 +55,10 @@ Most practice systems are good at one slice of the problem and weak at the rest.
 
 Additional project records:
 
-- [Progress](progress.md)
+- [Vision](VISION.MD)
+- [Roadmap](ROADMAP.MD)
+- [Tech Stack](TECHSTACK.MD)
+- [Progress](PROGRESS.MD)
 - [Hyperdata Ledger](docs/hyperdata-ledger.md)
 - [Architecture Notes](docs/architecture.md)
 
@@ -157,7 +171,7 @@ Release automation now does all of the following in one path:
 1. Analyze commits since the previous tag.
 2. Generate release notes and update `CHANGELOG.md`.
 3. Update `pubspec.yaml` via `semantic-release-pub`.
-4. Refresh release metadata blocks in `README.md`, `progress.md`, and `docs/hyperdata-ledger.md`.
+4. Refresh release metadata and provenance blocks in `README.md`, `VISION.MD`, `ROADMAP.MD`, `TECHSTACK.MD`, `PROGRESS.MD`, and `docs/hyperdata-ledger.md`.
 5. Commit the generated release artifacts and publish the GitHub release.
 
 Useful commands:

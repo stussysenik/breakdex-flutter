@@ -53,7 +53,7 @@ class MasteryPrescreen extends ConsumerWidget {
   }
 
   void _startDeckSession(WidgetRef ref, Deck deck) {
-    HapticFeedback.mediumImpact();
+    HapticFeedback.heavyImpact();
     ref
         .read(reviewSessionSourceProvider.notifier)
         .set(ReviewSessionSource.deck);
@@ -84,11 +84,9 @@ class _StateModeSection extends ConsumerWidget {
       ),
       data: (matrix) {
         final selectedKind = ref.watch(reviewEntityKindProvider);
+        final stateLabels = ref.watch(learningStateLabelsProvider);
         final isMoves = selectedKind == ReviewEntityKind.moves;
         final title = isMoves ? 'Moves' : 'Combos';
-        final subtitle = isMoves
-            ? 'Atomic move cards'
-            : 'Sequence review cards';
         final counts = isMoves ? matrix.moveCounts : matrix.comboCounts;
 
         return Column(
@@ -105,7 +103,7 @@ class _StateModeSection extends ConsumerWidget {
             const SizedBox(height: AppSpacing.sm),
             _ReviewEntityPrescreenPanel(
               title: title,
-              subtitle: subtitle,
+              stateLabels: stateLabels,
               counts: counts,
               onStartAll: () => _startStateSession(ref, selectedKind, null),
               onStartState: (state) =>
@@ -122,7 +120,7 @@ class _StateModeSection extends ConsumerWidget {
     ReviewEntityKind kind,
     LearningState? state,
   ) {
-    HapticFeedback.mediumImpact();
+    HapticFeedback.heavyImpact();
     ref
         .read(reviewSessionSourceProvider.notifier)
         .set(ReviewSessionSource.stateBased);
@@ -168,14 +166,14 @@ class _ReviewLaneToggle extends StatelessWidget {
 class _ReviewEntityPrescreenPanel extends StatelessWidget {
   const _ReviewEntityPrescreenPanel({
     required this.title,
-    required this.subtitle,
+    required this.stateLabels,
     required this.counts,
     required this.onStartAll,
     required this.onStartState,
   });
 
   final String title;
-  final String subtitle;
+  final Map<LearningState, String> stateLabels;
   final Map<LearningState, int> counts;
   final VoidCallback onStartAll;
   final void Function(LearningState state) onStartState;
@@ -183,22 +181,22 @@ class _ReviewEntityPrescreenPanel extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
-    final semanticTheme = AppSemanticTheme.of(context);
     final total = counts.values.fold(0, (sum, value) => sum + value);
-    final readyStates = LearningState.values
+    final countSequence = LearningState.values
+        .map((state) => counts[state] ?? 0)
+        .join(' + ');
+    final dueStates = LearningState.values
         .where((state) => (counts[state] ?? 0) > 0)
         .toList(growable: false);
-    final singleReadyState = readyStates.length == 1
-        ? readyStates.single
-        : null;
-    final primaryActionLabel = switch (singleReadyState) {
-      LearningState.newState => 'Start New',
-      LearningState.learning => 'Start Learning',
-      LearningState.mastery => 'Start Mastery',
-      null when total == 0 => 'Nothing to review',
-      _ => 'Review all ready',
+    final singleDueState = dueStates.length == 1 ? dueStates.single : null;
+    final primaryActionLabel = switch (singleDueState) {
+      LearningState.newState => 'Start ${_labelFor(LearningState.newState)}',
+      LearningState.learning => 'Start ${_labelFor(LearningState.learning)}',
+      LearningState.mastery => 'Start ${_labelFor(LearningState.mastery)}',
+      null when total == 0 => 'Nothing due',
+      _ => 'Review all',
     };
-    final primaryAction = switch (singleReadyState) {
+    final primaryAction = switch (singleDueState) {
       LearningState.newState => () => onStartState(LearningState.newState),
       LearningState.learning => () => onStartState(LearningState.learning),
       LearningState.mastery => () => onStartState(LearningState.mastery),
@@ -206,188 +204,214 @@ class _ReviewEntityPrescreenPanel extends StatelessWidget {
       _ => onStartAll,
     };
 
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(AppSpacing.md),
-      decoration: AppSurfaces.panel(
-        context,
-        raised: true,
-        radius: AppRadius.lg,
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final width = constraints.maxWidth;
+        final panelPadding = (width * 0.038).clamp(18.0, 24.0);
+        final sectionGap = (panelPadding * 1.35).clamp(16.0, 22.0);
+        final rowGap = (panelPadding * 0.62).clamp(10.0, 14.0);
+        final rowHeight = (width * 0.17).clamp(88.0, 102.0);
+        final countColumnWidth = (width * 0.14).clamp(70.0, 82.0);
+
+        return Container(
+          width: double.infinity,
+          padding: EdgeInsets.all(panelPadding),
+          decoration: AppSurfaces.panel(
+            context,
+            tone: AppSurfaceTone.muted,
+            raised: true,
+            radius: AppRadius.lg,
+          ),
+          child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Expanded(
-                child: Text(
-                  title,
-                  style: AppTypography.titleMedium.copyWith(
-                    color: colorScheme.onSurface,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-              ),
-              Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 10,
-                  vertical: 6,
-                ),
-                decoration: AppSurfaces.panel(context, radius: 999),
-                child: Text(
-                  '$total ready',
-                  style: AppTypography.caption.copyWith(
-                    color: colorScheme.onSurface,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: AppSpacing.xs),
-          Text(
-            subtitle,
-            style: AppTypography.bodySmall.copyWith(
-              color: colorScheme.secondary,
-            ),
-          ),
-          const SizedBox(height: AppSpacing.md),
-          Column(
-            children: [
-              for (final state in LearningState.values) ...[
-                if (state != LearningState.values.first)
-                  const SizedBox(height: AppSpacing.sm),
-                _ReviewStateTile(
-                  state: state,
-                  count: counts[state] ?? 0,
-                  accent: semanticTheme.colorForState(state),
-                  onTap: () => onStartState(state),
-                ),
-              ],
-            ],
-          ),
-          const SizedBox(height: AppSpacing.md),
-          SizedBox(
-            width: double.infinity,
-            child: ElevatedButton(
-              onPressed: primaryAction,
-              style: ElevatedButton.styleFrom(
-                minimumSize: const Size.fromHeight(54),
-                backgroundColor: total == 0 ? null : colorScheme.primary,
-                foregroundColor: total == 0 ? null : colorScheme.onPrimary,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(AppRadius.sm),
-                ),
-              ),
-              child: Text(
-                primaryActionLabel,
-                style: AppTypography.bodyMedium.copyWith(
+              Text(
+                title,
+                style: AppTypography.titleMedium.copyWith(
+                  color: colorScheme.onSurface,
                   fontWeight: FontWeight.w700,
                 ),
               ),
-            ),
+              SizedBox(height: sectionGap),
+              Column(
+                children: [
+                  for (final state in LearningState.values) ...[
+                    if (state != LearningState.values.first)
+                      SizedBox(height: rowGap),
+                    _ReviewStateTile(
+                      state: state,
+                      label: _labelFor(state),
+                      count: counts[state] ?? 0,
+                      minHeight: rowHeight,
+                      countColumnWidth: countColumnWidth,
+                      onTap: () => onStartState(state),
+                    ),
+                  ],
+                ],
+              ),
+              if (total > 0) SizedBox(height: sectionGap),
+              if (total > 0)
+                Center(
+                  child: Semantics(
+                    identifier: 'review-total-summary',
+                    label: '$countSequence = $total',
+                    child: Text(
+                      '$countSequence = $total',
+                      textAlign: TextAlign.center,
+                      style: AppTypography.bodySmall.copyWith(
+                        color: colorScheme.secondary,
+                        fontWeight: FontWeight.w700,
+                        letterSpacing: 0.2,
+                      ),
+                    ),
+                  ),
+                ),
+              if (total > 0) SizedBox(height: rowGap),
+              SizedBox(
+                width: double.infinity,
+                child: FilledButton.icon(
+                  onPressed: primaryAction,
+                  style: FilledButton.styleFrom(
+                    minimumSize: Size.fromHeight(rowHeight * 0.78),
+                    backgroundColor: total == 0 ? null : colorScheme.primary,
+                    foregroundColor: total == 0 ? null : colorScheme.onPrimary,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(AppRadius.md),
+                    ),
+                  ),
+                  icon: const Icon(Icons.play_arrow_rounded, size: 22),
+                  label: Text(
+                    primaryActionLabel,
+                    style: AppTypography.titleSmall.copyWith(
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ),
+              ),
+            ],
           ),
-        ],
-      ),
+        );
+      },
     );
   }
+
+  String _labelFor(LearningState state) =>
+      resolveLearningStateLabel(stateLabels, state);
 }
 
 class _ReviewStateTile extends StatelessWidget {
   const _ReviewStateTile({
     required this.state,
+    required this.label,
     required this.count,
-    required this.accent,
+    required this.minHeight,
+    required this.countColumnWidth,
     required this.onTap,
   });
 
   final LearningState state;
+  final String label;
   final int count;
-  final Color accent;
+  final double minHeight;
+  final double countColumnWidth;
   final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
-    final semanticTheme = AppSemanticTheme.of(context);
     final enabled = count > 0;
-    final subtitle = switch (state) {
-      LearningState.newState => 'First recall',
-      LearningState.learning => 'Short intervals',
-      LearningState.mastery => 'Long intervals',
-    };
+    final accent = context.stateColor(state);
 
     return Semantics(
+      identifier: 'review-state-tile-${_stateIdentifier(state)}',
       button: true,
       enabled: enabled,
-      label: '${state.displayText}\n$count\n$subtitle',
+      label: '$label, $count due',
       child: ExcludeSemantics(
         child: Container(
-          decoration: AppSurfaces.panel(context, radius: AppRadius.sm),
+          decoration: AppSurfaces.panel(
+            context,
+            tone: enabled ? AppSurfaceTone.base : AppSurfaceTone.muted,
+            radius: AppRadius.sm,
+            borderColor: enabled
+                ? accent.withValues(alpha: 0.2)
+                : colorScheme.outline.withValues(alpha: 0.16),
+          ),
           child: Material(
-            color: colorScheme.surface,
+            color: Colors.transparent,
             borderRadius: BorderRadius.circular(AppRadius.sm),
             child: InkWell(
               onTap: enabled ? onTap : null,
               borderRadius: BorderRadius.circular(AppRadius.sm),
               child: Container(
                 width: double.infinity,
+                constraints: BoxConstraints(minHeight: minHeight),
                 padding: const EdgeInsets.symmetric(
                   horizontal: AppSpacing.md,
-                  vertical: 14,
+                  vertical: AppSpacing.md,
                 ),
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(AppRadius.sm),
                   border: Border.all(
-                    color: enabled
-                        ? accent.withValues(
-                            alpha: semanticTheme.isMonoOutline ? 1 : 0.24,
-                          )
-                        : colorScheme.outline.withValues(alpha: 0.24),
-                    width: semanticTheme.isMonoOutline ? 1.2 : 1,
+                    color: colorScheme.outline.withValues(
+                      alpha: enabled ? 0.24 : 0.16,
+                    ),
                   ),
                 ),
                 child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
                     Container(
                       width: 10,
-                      height: 10,
+                      height: 44,
                       decoration: BoxDecoration(
-                        color: enabled ? accent : colorScheme.outline,
-                        shape: BoxShape.circle,
+                        color: accent.withValues(alpha: enabled ? 0.9 : 0.28),
+                        borderRadius: BorderRadius.circular(999),
                       ),
                     ),
-                    const SizedBox(width: AppSpacing.sm),
+                    const SizedBox(width: AppSpacing.md),
                     Expanded(
+                      flex: 6,
+                      child: Text(
+                        label,
+                        style: AppTypography.titleSmall.copyWith(
+                          color: enabled
+                              ? colorScheme.onSurface
+                              : colorScheme.secondary,
+                          fontWeight: FontWeight.w700,
+                          height: 1.08,
+                        ),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                    const SizedBox(width: AppSpacing.md),
+                    SizedBox(
+                      width: countColumnWidth,
                       child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisSize: MainAxisSize.min,
+                        crossAxisAlignment: CrossAxisAlignment.end,
                         children: [
                           Text(
-                            state.displayText,
-                            style: AppTypography.bodyMedium.copyWith(
-                              color: colorScheme.onSurface,
-                              fontWeight: FontWeight.w700,
+                            '$count',
+                            style: AppTypography.titleLarge.copyWith(
+                              color: enabled
+                                  ? colorScheme.onSurface
+                                  : colorScheme.secondary,
+                              fontWeight: FontWeight.w800,
+                              height: 1,
                             ),
                           ),
                           const SizedBox(height: 2),
                           Text(
-                            subtitle,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
+                            'ready',
                             style: AppTypography.caption.copyWith(
                               color: colorScheme.secondary,
+                              fontWeight: FontWeight.w700,
+                              letterSpacing: 0.4,
                             ),
                           ),
                         ],
-                      ),
-                    ),
-                    const SizedBox(width: AppSpacing.md),
-                    Text(
-                      '$count',
-                      style: AppTypography.titleSmall.copyWith(
-                        color: enabled ? accent : colorScheme.secondary,
-                        fontWeight: FontWeight.w700,
                       ),
                     ),
                     const SizedBox(width: AppSpacing.sm),
@@ -407,6 +431,12 @@ class _ReviewStateTile extends StatelessWidget {
       ),
     );
   }
+
+  String _stateIdentifier(LearningState state) => switch (state) {
+    LearningState.newState => 'new',
+    LearningState.learning => 'learning',
+    LearningState.mastery => 'mastery',
+  };
 }
 
 /// Decks section with progressive disclosure:
@@ -564,7 +594,7 @@ class _DecksSection extends ConsumerWidget {
                 if (ref.read(selectedDeckProvider)?.id == deck.id) {
                   ref.read(selectedDeckProvider.notifier).state = null;
                 }
-                HapticFeedback.mediumImpact();
+                await HapticFeedback.mediumImpact();
               } catch (e) {
                 if (context.mounted) {
                   ScaffoldMessenger.of(context).showSnackBar(
@@ -593,6 +623,7 @@ class _DeckFocusPanel extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final summaryAsync = ref.watch(deckSummaryProvider(deck.id));
+    final stateLabels = ref.watch(learningStateLabelsProvider);
     final colorScheme = Theme.of(context).colorScheme;
 
     return summaryAsync.when(
@@ -646,6 +677,7 @@ class _DeckFocusPanel extends ConsumerWidget {
                   const SizedBox(height: AppSpacing.sm),
                 _DeckStateRow(
                   state: state,
+                  label: resolveLearningStateLabel(stateLabels, state),
                   count: summary.movesForState(state).length,
                   onTap: () =>
                       _showDeckStateSheet(context, ref, summary, state),
@@ -717,6 +749,10 @@ class _DeckFocusPanel extends ConsumerWidget {
     LearningState state,
   ) {
     final moves = summary.movesForState(state);
+    final label = resolveLearningStateLabel(
+      ref.read(learningStateLabelsProvider),
+      state,
+    );
     showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
@@ -740,7 +776,7 @@ class _DeckFocusPanel extends ConsumerWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  '${summary.deck.name} · ${state.displayText}',
+                  '${summary.deck.name} · $label',
                   style: AppTypography.titleSmall.copyWith(
                     color: colorScheme.onSurface,
                     fontWeight: FontWeight.w700,
@@ -820,7 +856,7 @@ class _DeckFocusPanel extends ConsumerWidget {
                         borderRadius: BorderRadius.circular(AppRadius.sm),
                       ),
                     ),
-                    child: Text('Start ${state.displayText}'),
+                    child: Text('Start $label'),
                   ),
                 ),
               ],
@@ -835,17 +871,20 @@ class _DeckFocusPanel extends ConsumerWidget {
 class _DeckStateRow extends StatelessWidget {
   const _DeckStateRow({
     required this.state,
+    required this.label,
     required this.count,
     required this.onTap,
   });
 
   final LearningState state;
+  final String label;
   final int count;
   final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
+    final stateColor = context.stateColor(state);
     final enabled = count > 0;
 
     return Material(
@@ -865,14 +904,14 @@ class _DeckStateRow extends StatelessWidget {
                 width: 10,
                 height: 10,
                 decoration: BoxDecoration(
-                  color: enabled ? state.color : colorScheme.outline,
+                  color: enabled ? stateColor : colorScheme.outline,
                   shape: BoxShape.circle,
                 ),
               ),
               const SizedBox(width: AppSpacing.sm),
               Expanded(
                 child: Text(
-                  state.displayText,
+                  label,
                   style: AppTypography.bodyMedium.copyWith(
                     color: colorScheme.onSurface,
                     fontWeight: FontWeight.w700,
@@ -882,7 +921,9 @@ class _DeckStateRow extends StatelessWidget {
               Text(
                 '$count',
                 style: AppTypography.bodyMedium.copyWith(
-                  color: enabled ? state.color : colorScheme.secondary,
+                  color: enabled
+                      ? colorScheme.onSurface
+                      : colorScheme.secondary,
                   fontWeight: FontWeight.w700,
                 ),
               ),

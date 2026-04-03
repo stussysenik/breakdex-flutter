@@ -8,9 +8,8 @@ import '../models/reviewable_item.dart';
 
 /// Anki-style due count breakdown by card state.
 ///
-/// FSRS categorizes cards into states — this mirrors Anki's top-bar triptych
-/// that shows "New / Learning / Review" counts so you know what to expect
-/// before starting a session.
+/// FSRS categorizes cards into states. The app mirrors Anki's
+/// "New / Learning / Review" breakdown for due cards before a session starts.
 class DueSummary {
   /// Cards never reviewed (fsrsState==0), due now.
   final int newDue;
@@ -88,8 +87,7 @@ class CategoryMastery {
   });
 
   /// Mastery percentage: cards in Review state / total cards.
-  double get masteryPercent =>
-      totalCards > 0 ? reviewCount / totalCards : 0.0;
+  double get masteryPercent => totalCards > 0 ? reviewCount / totalCards : 0.0;
 }
 
 /// Result of processing an FSRS review, containing scheduling data and
@@ -162,23 +160,20 @@ class FsrsService {
   final fsrs.Scheduler _scheduler;
 
   FsrsService(this._dao)
-      : _scheduler = fsrs.Scheduler(
-          desiredRetention: 0.85,
-          learningSteps: [
-            const Duration(minutes: 1),
-            const Duration(minutes: 10),
-          ],
-          relearningSteps: [
-            const Duration(minutes: 10),
-          ],
-          maximumInterval: 36500,
-          enableFuzzing: true,
-        );
+    : _scheduler = fsrs.Scheduler(
+        desiredRetention: 0.85,
+        // Keep learning lightweight: one short reinforcement step before
+        // graduating to the longer review intervals.
+        learningSteps: [const Duration(minutes: 10)],
+        relearningSteps: [const Duration(minutes: 10)],
+        maximumInterval: 36500,
+        enableFuzzing: true,
+      );
 
   /// Static config exposed for the SRS parameters card UI.
   static const config = FsrsConfig(
     desiredRetention: 0.85,
-    learningSteps: [Duration(minutes: 1), Duration(minutes: 10)],
+    learningSteps: [Duration(minutes: 10)],
     relearningSteps: [Duration(minutes: 10)],
     maximumInterval: 36500,
     enableFuzzing: true,
@@ -207,24 +202,24 @@ class FsrsService {
     final postState = updated.state.value;
 
     // Track reps and lapses ourselves since the fsrs package Card doesn't
-    final newReps = (rating != ReviewRating.again)
-        ? dbCard.reps + 1
-        : 0;
+    final newReps = (rating != ReviewRating.again) ? dbCard.reps + 1 : 0;
     final newLapses = (rating == ReviewRating.again && dbCard.fsrsState == 2)
         ? dbCard.lapses + 1
         : dbCard.lapses;
 
-    await _dao.upsert(FsrsCardsCompanion(
-      entityId: Value(entityId),
-      entityType: Value(entityType),
-      stability: Value(updated.stability ?? 0.0),
-      difficulty: Value(updated.difficulty ?? 0.0),
-      due: Value(updated.due),
-      lastReview: Value(updated.lastReview ?? DateTime.now().toUtc()),
-      reps: Value(newReps),
-      lapses: Value(newLapses),
-      fsrsState: Value(postState),
-    ));
+    await _dao.upsert(
+      FsrsCardsCompanion(
+        entityId: Value(entityId),
+        entityType: Value(entityType),
+        stability: Value(updated.stability ?? 0.0),
+        difficulty: Value(updated.difficulty ?? 0.0),
+        due: Value(updated.due),
+        lastReview: Value(updated.lastReview ?? DateTime.now().toUtc()),
+        reps: Value(newReps),
+        lapses: Value(newLapses),
+        fsrsState: Value(postState),
+      ),
+    );
 
     return FsrsReviewResult(
       dueDate: updated.due,
@@ -234,10 +229,11 @@ class FsrsService {
   }
 
   /// Get the current retrievability for an entity.
-  Future<double> getRetrievability(String entityId,
-      {String entityType = 'move'}) async {
-    final dbCard =
-        await _dao.getByEntityId(entityId, entityType: entityType);
+  Future<double> getRetrievability(
+    String entityId, {
+    String entityType = 'move',
+  }) async {
+    final dbCard = await _dao.getByEntityId(entityId, entityType: entityType);
     if (dbCard == null || dbCard.lastReview == null) return 0.0;
 
     final fsrsCard = _dbToFsrs(dbCard);
@@ -253,13 +249,9 @@ class FsrsService {
   }
 
   /// Get all reviewable items with their FSRS cards (the unified list).
-  Future<List<ReviewableItemWithCard>> getAllItems({
-    String? category,
-  }) async {
+  Future<List<ReviewableItemWithCard>> getAllItems({String? category}) async {
     final entities = await _dao.getCardsWithEntities(category: category);
-    return entities
-        .map((e) => ReviewableItemWithCard.fromEntity(e))
-        .toList();
+    return entities.map((e) => ReviewableItemWithCard.fromEntity(e)).toList();
   }
 
   /// Anki-style due summary: breaks down due cards by FSRS state.
@@ -274,9 +266,11 @@ class FsrsService {
 
     for (final card in allCards) {
       final isDueNow = !card.due.isAfter(now);
-      final isDueToday = card.due.isBefore(endOfToday) ||
+      final isDueToday =
+          card.due.isBefore(endOfToday) ||
           card.due.isAtSameMomentAs(endOfToday);
-      final isDueTomorrow = !isDueToday &&
+      final isDueTomorrow =
+          !isDueToday &&
           (card.due.isBefore(endOfTomorrow) ||
               card.due.isAtSameMomentAs(endOfTomorrow));
 
@@ -309,8 +303,7 @@ class FsrsService {
     String entityId, {
     String entityType = 'move',
   }) async {
-    final dbCard =
-        await _dao.ensureCard(entityId, entityType: entityType);
+    final dbCard = await _dao.ensureCard(entityId, entityType: entityType);
     final fsrsCard = _dbToFsrs(dbCard);
     final now = DateTime.now().toUtc();
 
@@ -329,8 +322,7 @@ class FsrsService {
     String entityId, {
     String entityType = 'move',
   }) async {
-    final dbCard =
-        await _dao.getByEntityId(entityId, entityType: entityType);
+    final dbCard = await _dao.getByEntityId(entityId, entityType: entityType);
     if (dbCard == null) {
       return const SrsCoefficients(
         stability: 0,
@@ -479,9 +471,19 @@ class FsrsService {
 
   /// Map our app's ReviewRating enum to the fsrs package Rating.
   fsrs.Rating _mapRating(ReviewRating rating) => switch (rating) {
-        ReviewRating.again => fsrs.Rating.again,
-        ReviewRating.hard => fsrs.Rating.hard,
-        ReviewRating.good => fsrs.Rating.good,
-        ReviewRating.easy => fsrs.Rating.easy,
-      };
+    ReviewRating.again => fsrs.Rating.again,
+    ReviewRating.hard => fsrs.Rating.hard,
+    ReviewRating.good => fsrs.Rating.good,
+    ReviewRating.easy => fsrs.Rating.easy,
+  };
 }
+
+/// Maps an FSRS state to the app's visible learning state labels.
+///
+/// FSRS keeps relearning in state 3, but the UI groups it with Learning so
+/// the user sees a simple NEW / LEARNING / MASTERY progression.
+LearningState learningStateFromFsrsState(int? fsrsState) => switch (fsrsState) {
+  2 => LearningState.mastery,
+  1 || 3 => LearningState.learning,
+  _ => LearningState.newState,
+};

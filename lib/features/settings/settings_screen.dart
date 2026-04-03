@@ -1,14 +1,15 @@
+import 'dart:async';
 import 'dart:io';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:path/path.dart' as p;
 import '../../core/database/database.dart';
 import '../../core/design/colors.dart';
 import '../../core/design/spacing.dart';
-import '../../core/design/theme.dart';
 import '../../core/design/typography.dart';
 import '../../core/app_metadata.dart';
 import '../../core/models/learning_state.dart';
@@ -21,47 +22,21 @@ import '../../core/utils/share_sheet.dart';
 import 'widgets/cloud_sync_section.dart';
 import 'widgets/accent_color_section.dart';
 import 'widgets/rating_colors_section.dart';
+import 'widgets/review_card_display_section.dart';
+import 'widgets/review_states_section.dart';
 import '../../core/services/stats_export_service.dart';
 import '../../shared/widgets/action_tile.dart';
 import '../../core/services/view_names_service.dart';
+import '../../shared/widgets/color_setting_tile.dart';
+import '../../shared/widgets/settings_list_group.dart';
 import '../stats/providers/stats_providers.dart';
+import 'recently_deleted_screen.dart';
 
 final _settingsMovesProvider = StreamProvider<List<Move>>((ref) {
   return ref.watch(moveRepositoryProvider).watchAll();
 });
 
-/// Reusable color swatch grid for category/rating color pickers.
-Widget colorSwatchGrid({
-  required List<Color> colors,
-  required Color selected,
-  required ValueChanged<Color> onSelected,
-  double size = 32,
-}) {
-  return Wrap(
-    spacing: AppSpacing.sm,
-    runSpacing: AppSpacing.sm,
-    children: colors.map((c) {
-      final isSelected = c.toARGB32() == selected.toARGB32();
-      return GestureDetector(
-        onTap: () => onSelected(c),
-        child: Container(
-          width: size,
-          height: size,
-          decoration: BoxDecoration(
-            color: c,
-            shape: BoxShape.circle,
-            border: isSelected
-                ? Border.all(color: Colors.white, width: 2.5)
-                : null,
-            boxShadow: isSelected
-                ? [BoxShadow(color: c.withValues(alpha: 0.5), blurRadius: 6)]
-                : null,
-          ),
-        ),
-      );
-    }).toList(),
-  );
-}
+enum ReviewSettingsResetAction { cardPlayback, states, all }
 
 class SettingsScreen extends ConsumerWidget {
   const SettingsScreen({super.key});
@@ -74,6 +49,8 @@ class SettingsScreen extends ConsumerWidget {
     final categories = ref.watch(categoriesProvider);
     final moves =
         ref.watch(_settingsMovesProvider).valueOrNull ?? const <Move>[];
+    final archivedMoveCount =
+        ref.watch(archivedMovesCountProvider).valueOrNull ?? 0;
     final colorScheme = Theme.of(context).colorScheme;
     final categoryUsage = <String, int>{};
     for (final move in moves) {
@@ -85,6 +62,33 @@ class SettingsScreen extends ConsumerWidget {
         child: ListView(
           padding: const EdgeInsets.all(AppSpacing.screenEdge),
           children: [
+            Semantics(
+              identifier: 'settings-back',
+              label: 'Back',
+              button: true,
+              child: GestureDetector(
+                behavior: HitTestBehavior.opaque,
+                onTap: () => context.pop(),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(vertical: AppSpacing.xs),
+                  child: Row(
+                    children: [
+                      Icon(
+                        Icons.chevron_left,
+                        color: colorScheme.secondary,
+                        size: 20,
+                      ),
+                      Text(
+                        'Back',
+                        style: AppTypography.bodyMedium.copyWith(
+                          color: colorScheme.secondary,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
             const SizedBox(height: AppSpacing.lg),
             Semantics(
               header: true,
@@ -95,7 +99,7 @@ class SettingsScreen extends ConsumerWidget {
                 ),
               ),
             ),
-            const SizedBox(height: AppSpacing.xl),
+            const SizedBox(height: AppSpacing.lg),
 
             _SettingsSection(
               title: 'Appearance',
@@ -208,108 +212,172 @@ class SettingsScreen extends ConsumerWidget {
                 },
               ),
             ),
-            const SizedBox(height: AppSpacing.xl),
+            const SizedBox(height: AppSpacing.lg),
 
             // Cloud Sync — no auth dependency, iCloud uses device Apple ID
             const CloudSyncSection(),
-            const SizedBox(height: AppSpacing.xl),
+            const SizedBox(height: AppSpacing.lg),
 
             _SettingsSection(
               title: 'Categories',
-              subtitle:
-                  'These semantic labels drive review, decks, stats, and gallery organization.',
+              subtitle: 'Used across review, decks, stats, and albums.',
               child: _SettingsPanel(
                 title: 'Move Semantics',
-                child: Column(
+                action: TextButton.icon(
+                  onPressed: () => _showAddCategoryDialog(context, ref),
+                  icon: const Icon(Icons.add, size: 16),
+                  label: const Text('Add'),
+                ),
+                child: SettingsListGroup(
                   children: [
                     for (final cat in categories)
-                      Dismissible(
-                        key: ValueKey(cat.name),
-                        direction: cat.isDefault
-                            ? DismissDirection.none
-                            : DismissDirection.endToStart,
-                        background: Container(
-                          alignment: Alignment.centerRight,
-                          padding: const EdgeInsets.only(
-                            right: AppSpacing.screenEdge,
-                          ),
-                          color: AppColors.actionAgain,
-                          child: const Icon(Icons.delete, color: Colors.white),
-                        ),
-                        onDismissed: (_) {
-                          HapticFeedback.mediumImpact();
-                          ref
-                              .read(categoriesProvider.notifier)
-                              .removeCategory(cat.name);
-                        },
-                        confirmDismiss: (_) => _confirmDeleteCategory(
+                      _CategoryRow(
+                        name: cat.name,
+                        color: cat.color,
+                        isDefault: cat.isDefault,
+                        usageCount: categoryUsage[cat.name] ?? 0,
+                        onTap: () => _showCategoryActionsSheet(
                           context,
+                          ref,
                           cat,
                           usageCount: categoryUsage[cat.name] ?? 0,
                         ),
-                        child: GestureDetector(
-                          onTap: () =>
-                              _showRenameCategoryDialog(context, ref, cat),
-                          child: _CategoryRow(
-                            name: cat.name,
-                            color: cat.color,
-                            isDefault: cat.isDefault,
-                            usageCount: categoryUsage[cat.name] ?? 0,
+                      ),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: AppSpacing.lg),
+
+            _SettingsSection(
+              title: 'Review',
+              subtitle:
+                  'Quiet playback, first-look card details, and review states.',
+              child: _SettingsPanel(
+                title: 'Cards & States',
+                action: PopupMenuButton<ReviewSettingsResetAction>(
+                  tooltip: 'Reset review settings',
+                  onSelected: (action) async {
+                    await HapticFeedback.mediumImpact();
+                    switch (action) {
+                      case ReviewSettingsResetAction.cardPlayback:
+                        await ref
+                            .read(reviewCardDisplaySettingsProvider.notifier)
+                            .reset();
+                        await ref
+                            .read(silentPracticePlaybackProvider.notifier)
+                            .reset();
+                      case ReviewSettingsResetAction.states:
+                        await ref
+                            .read(learningStateLabelsProvider.notifier)
+                            .reset();
+                        await ref
+                            .read(learningStateColorsProvider.notifier)
+                            .resetAll();
+                      case ReviewSettingsResetAction.all:
+                        await ref
+                            .read(reviewCardDisplaySettingsProvider.notifier)
+                            .reset();
+                        await ref
+                            .read(silentPracticePlaybackProvider.notifier)
+                            .reset();
+                        await ref
+                            .read(learningStateLabelsProvider.notifier)
+                            .reset();
+                        await ref
+                            .read(learningStateColorsProvider.notifier)
+                            .resetAll();
+                    }
+                  },
+                  itemBuilder: (context) => const [
+                    PopupMenuItem(
+                      value: ReviewSettingsResetAction.cardPlayback,
+                      child: Text('Reset card + playback'),
+                    ),
+                    PopupMenuItem(
+                      value: ReviewSettingsResetAction.states,
+                      child: Text('Reset state names + colors'),
+                    ),
+                    PopupMenuItem(
+                      value: ReviewSettingsResetAction.all,
+                      child: Text('Reset all review settings'),
+                    ),
+                  ],
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Card & Playback',
+                      style: AppTypography.caption.copyWith(
+                        color: colorScheme.secondary,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    const SizedBox(height: AppSpacing.xs),
+                    const ReviewCardDisplaySection(),
+                    const SizedBox(height: AppSpacing.md),
+                    Text(
+                      'State Names & Colors',
+                      style: AppTypography.caption.copyWith(
+                        color: colorScheme.secondary,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    const SizedBox(height: AppSpacing.xs),
+                    ReviewStatesSection(
+                      onRename: (state, currentLabel) =>
+                          _showRenameLearningStateDialog(
+                            context,
+                            ref,
+                            state,
+                            currentLabel,
                           ),
-                        ),
-                      ),
-                    const SizedBox(height: AppSpacing.sm),
-                    Align(
-                      alignment: Alignment.centerLeft,
-                      child: TextButton.icon(
-                        onPressed: () => _showAddCategoryDialog(context, ref),
-                        icon: const Icon(Icons.add, size: 18),
-                        label: Text(
-                          'Add Category',
-                          style: AppTypography.bodySmall,
-                        ),
-                      ),
                     ),
                   ],
                 ),
               ),
             ),
-            const SizedBox(height: AppSpacing.xl),
+            const SizedBox(height: AppSpacing.lg),
 
             _SettingsSection(
               title: 'Colors',
-              subtitle:
-                  'Outlined panels keep system color choices visually consistent.',
+              subtitle: 'Accent and grading colors.',
               child: Column(
                 children: [
                   _SettingsPanel(
-                    title: 'Learning States',
-                    child: Column(
-                      children: [
-                        for (final state in LearningState.values)
-                          _StateColorRow(state: state),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: AppSpacing.md),
-                  const _SettingsPanel(
                     title: 'Accent',
-                    child: AccentColorSection(),
+                    action: TextButton(
+                      onPressed: () async {
+                        await HapticFeedback.mediumImpact();
+                        await ref.read(accentColorProvider.notifier).reset();
+                      },
+                      child: const Text('Reset'),
+                    ),
+                    child: const AccentColorSection(),
                   ),
                   const SizedBox(height: AppSpacing.md),
-                  const _SettingsPanel(
+                  _SettingsPanel(
                     title: 'Ratings',
-                    child: RatingColorsSection(),
+                    action: TextButton(
+                      onPressed: () async {
+                        await HapticFeedback.mediumImpact();
+                        await ref
+                            .read(ratingColorsProvider.notifier)
+                            .resetAll();
+                      },
+                      child: const Text('Reset'),
+                    ),
+                    child: const RatingColorsSection(),
                   ),
                 ],
               ),
             ),
-            const SizedBox(height: AppSpacing.xl),
+            const SizedBox(height: AppSpacing.lg),
 
             _SettingsSection(
               title: 'Data',
-              subtitle:
-                  'Backups, imports, and destructive actions are grouped together.',
+              subtitle: 'Backups, imports, and destructive actions.',
               child: _SettingsPanel(
                 title: 'Backup & Reset',
                 child: Column(
@@ -369,6 +437,14 @@ class SettingsScreen extends ConsumerWidget {
                     ),
                     const SizedBox(height: AppSpacing.sm),
                     ActionTile(
+                      icon: Icons.restore_from_trash_outlined,
+                      label: archivedMoveCount == 0
+                          ? 'Recently Deleted'
+                          : 'Recently Deleted ($archivedMoveCount)',
+                      onTap: () => context.push('/settings/recently-deleted'),
+                    ),
+                    const SizedBox(height: AppSpacing.sm),
+                    ActionTile(
                       icon: Icons.delete_forever,
                       label: 'Clear All Data',
                       destructive: true,
@@ -378,7 +454,7 @@ class SettingsScreen extends ConsumerWidget {
                 ),
               ),
             ),
-            const SizedBox(height: AppSpacing.xl),
+            const SizedBox(height: AppSpacing.lg),
 
             // Version footer
             Center(
@@ -412,11 +488,11 @@ class SettingsScreen extends ConsumerWidget {
           TextButton(
             onPressed: () async {
               Navigator.pop(context);
-              HapticFeedback.mediumImpact();
+              await HapticFeedback.mediumImpact();
               final db = ref.read(databaseProvider);
               final videoService = ref.read(videoServiceProvider);
               // Delete video files before clearing DB
-              final moves = await db.movesDao.getAll();
+              final moves = await db.movesDao.getAllIncludingArchived();
               for (final move in moves) {
                 if (move.videoPath != null) {
                   await videoService.deleteVideo(
@@ -506,10 +582,12 @@ class SettingsScreen extends ConsumerWidget {
     if (mode == null || !context.mounted) return;
 
     // Show loading
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (_) => const Center(child: CircularProgressIndicator()),
+    unawaited(
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (_) => const Center(child: CircularProgressIndicator()),
+      ),
     );
 
     try {
@@ -543,6 +621,86 @@ class SettingsScreen extends ConsumerWidget {
     }
   }
 
+  Future<void> _showCategoryActionsSheet(
+    BuildContext context,
+    WidgetRef ref,
+    Category category, {
+    required int usageCount,
+  }) async {
+    final action = await showModalBottomSheet<_CategorySheetAction>(
+      context: context,
+      backgroundColor: Theme.of(context).colorScheme.surface,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(AppRadius.lg)),
+      ),
+      builder: (context) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(
+            AppSpacing.lg,
+            AppSpacing.md,
+            AppSpacing.lg,
+            AppSpacing.lg,
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                category.name,
+                style: AppTypography.titleSmall.copyWith(
+                  color: Theme.of(context).colorScheme.onSurface,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+              const SizedBox(height: AppSpacing.md),
+              ListTile(
+                contentPadding: EdgeInsets.zero,
+                leading: const Icon(Icons.edit_outlined),
+                title: const Text('Edit category'),
+                onTap: () =>
+                    Navigator.pop(context, _CategorySheetAction.rename),
+              ),
+              if (!category.isDefault)
+                ListTile(
+                  contentPadding: EdgeInsets.zero,
+                  leading: const Icon(
+                    Icons.delete_outline,
+                    color: AppColors.actionAgain,
+                  ),
+                  title: const Text(
+                    'Delete category',
+                    style: TextStyle(color: AppColors.actionAgain),
+                  ),
+                  onTap: () =>
+                      Navigator.pop(context, _CategorySheetAction.delete),
+                ),
+            ],
+          ),
+        ),
+      ),
+    );
+
+    if (!context.mounted || action == null) return;
+
+    switch (action) {
+      case _CategorySheetAction.rename:
+        _showRenameCategoryDialog(context, ref, category);
+        return;
+      case _CategorySheetAction.delete:
+        final confirmed = await _confirmDeleteCategory(
+          context,
+          category,
+          usageCount: usageCount,
+        );
+        if (!confirmed) return;
+        await HapticFeedback.mediumImpact();
+        await ref
+            .read(categoriesProvider.notifier)
+            .removeCategory(category.name);
+        return;
+    }
+  }
+
   void _showRenameCategoryDialog(
     BuildContext context,
     WidgetRef ref,
@@ -565,10 +723,21 @@ class SettingsScreen extends ConsumerWidget {
                   decoration: const InputDecoration(hintText: 'Category name'),
                 ),
                 const SizedBox(height: AppSpacing.md),
-                colorSwatchGrid(
-                  colors: categoryPresetColors,
-                  selected: selectedColor,
-                  onSelected: (c) => setDialogState(() => selectedColor = c),
+                ColorSettingTile(
+                  title: 'Category color',
+                  subtitle: formatColorHex(selectedColor),
+                  color: selectedColor,
+                  onTap: () async {
+                    final nextColor = await showColorEditorDialog(
+                      context,
+                      initialColor: selectedColor,
+                      title: 'Category Color',
+                      subtitle: 'Pick any color for this category label.',
+                      presets: categoryPresetColors,
+                    );
+                    if (nextColor == null || !context.mounted) return;
+                    setDialogState(() => selectedColor = nextColor);
+                  },
                 ),
               ],
             ),
@@ -658,6 +827,47 @@ class SettingsScreen extends ConsumerWidget {
     );
   }
 
+  void _showRenameLearningStateDialog(
+    BuildContext context,
+    WidgetRef ref,
+    LearningState state,
+    String current,
+  ) {
+    final controller = TextEditingController(text: current);
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text('Rename ${defaultLearningStateLabels[state]}'),
+        content: TextField(
+          controller: controller,
+          autofocus: true,
+          decoration: InputDecoration(
+            hintText: defaultLearningStateLabels[state],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () {
+              final name = controller.text.trim();
+              if (name.isNotEmpty) {
+                ref
+                    .read(learningStateLabelsProvider.notifier)
+                    .rename(state, name);
+                HapticFeedback.mediumImpact();
+              }
+              Navigator.pop(ctx);
+            },
+            child: const Text('Save'),
+          ),
+        ],
+      ),
+    );
+  }
+
   void _showAddCategoryDialog(BuildContext context, WidgetRef ref) {
     showDialog(
       context: context,
@@ -676,10 +886,21 @@ class SettingsScreen extends ConsumerWidget {
                   decoration: const InputDecoration(hintText: 'Category name'),
                 ),
                 const SizedBox(height: AppSpacing.md),
-                colorSwatchGrid(
-                  colors: categoryPresetColors,
-                  selected: selectedColor,
-                  onSelected: (c) => setDialogState(() => selectedColor = c),
+                ColorSettingTile(
+                  title: 'Category color',
+                  subtitle: formatColorHex(selectedColor),
+                  color: selectedColor,
+                  onTap: () async {
+                    final nextColor = await showColorEditorDialog(
+                      context,
+                      initialColor: selectedColor,
+                      title: 'Category Color',
+                      subtitle: 'Pick any color for this category label.',
+                      presets: categoryPresetColors,
+                    );
+                    if (nextColor == null || !context.mounted) return;
+                    setDialogState(() => selectedColor = nextColor);
+                  },
                 ),
               ],
             ),
@@ -853,70 +1074,52 @@ class _CategoryRow extends StatelessWidget {
     required this.color,
     required this.isDefault,
     required this.usageCount,
+    required this.onTap,
   });
 
   final String name;
   final Color color;
   final bool isDefault;
   final int usageCount;
+  final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 6),
-      child: Row(
-        children: [
-          Container(
-            width: 10,
-            height: 10,
-            decoration: BoxDecoration(color: color, shape: BoxShape.circle),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Text(
-              name,
-              style: AppTypography.bodyMedium.copyWith(
-                color: colorScheme.onSurface,
-              ),
-            ),
-          ),
-          if (isDefault) ...[
-            const SizedBox(width: 8),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-              decoration: BoxDecoration(
-                color: colorScheme.surfaceContainerHighest,
-                borderRadius: BorderRadius.circular(4),
-              ),
-              child: Text(
-                'default',
-                style: AppTypography.caption.copyWith(
-                  color: colorScheme.secondary,
-                ),
-              ),
-            ),
-          ],
-          const SizedBox(width: 8),
-          Text(
-            usageCount == 0 ? 'Unused' : '$usageCount moves',
-            style: AppTypography.caption.copyWith(color: colorScheme.secondary),
-          ),
-        ],
+    final meta = [
+      if (isDefault) 'Default',
+      usageCount == 0 ? 'Unused' : '$usageCount moves',
+    ].join(' · ');
+
+    return SettingsListRow(
+      onTap: onTap,
+      leading: Container(
+        width: 10,
+        height: 10,
+        decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+      ),
+      title: name,
+      subtitle: meta,
+      trailing: Icon(
+        Icons.chevron_right_rounded,
+        color: colorScheme.secondary,
+        size: 18,
       ),
     );
   }
 }
 
+enum _CategorySheetAction { rename, delete }
+
 class _SettingsSection extends StatelessWidget {
   const _SettingsSection({
     required this.title,
-    required this.subtitle,
+    this.subtitle,
     required this.child,
   });
 
   final String title;
-  final String subtitle;
+  final String? subtitle;
   final Widget child;
 
   @override
@@ -931,12 +1134,16 @@ class _SettingsSection extends StatelessWidget {
             color: colorScheme.secondary,
           ),
         ),
-        const SizedBox(height: AppSpacing.xs),
-        Text(
-          subtitle,
-          style: AppTypography.bodySmall.copyWith(color: colorScheme.secondary),
-        ),
-        const SizedBox(height: AppSpacing.md),
+        if (subtitle != null) ...[
+          const SizedBox(height: AppSpacing.xs),
+          Text(
+            subtitle!,
+            style: AppTypography.bodySmall.copyWith(
+              color: colorScheme.secondary,
+            ),
+          ),
+        ],
+        const SizedBox(height: AppSpacing.sm),
         child,
       ],
     );
@@ -944,73 +1151,44 @@ class _SettingsSection extends StatelessWidget {
 }
 
 class _SettingsPanel extends StatelessWidget {
-  const _SettingsPanel({required this.title, required this.child});
+  const _SettingsPanel({required this.title, required this.child, this.action});
 
   final String title;
   final Widget child;
+  final Widget? action;
 
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
     return Container(
-      padding: const EdgeInsets.all(AppSpacing.lg),
+      padding: const EdgeInsets.all(AppSpacing.md),
       decoration: BoxDecoration(
         color: colorScheme.surface,
-        borderRadius: BorderRadius.circular(AppRadius.lg),
-        border: Border.all(color: colorScheme.outline.withValues(alpha: 0.22)),
-        boxShadow: AppShadows.soft(Theme.of(context).brightness),
+        borderRadius: BorderRadius.circular(AppRadius.md),
+        border: Border.all(color: colorScheme.outline.withValues(alpha: 0.18)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            title,
-            style: AppTypography.titleSmall.copyWith(
-              color: colorScheme.onSurface,
-              fontWeight: FontWeight.w700,
-            ),
-          ),
-          const SizedBox(height: AppSpacing.md),
-          child,
-        ],
-      ),
-    );
-  }
-}
-
-class _StateColorRow extends StatelessWidget {
-  const _StateColorRow({required this.state});
-
-  final LearningState state;
-
-  @override
-  Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 6),
-      child: Row(
-        children: [
-          Container(
-            width: 24,
-            height: 24,
-            decoration: BoxDecoration(
-              color: state.color,
-              borderRadius: BorderRadius.circular(6),
-            ),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Text(
-              state.displayText,
-              style: AppTypography.bodyMedium.copyWith(
-                color: colorScheme.onSurface,
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  title,
+                  style: AppTypography.titleSmall.copyWith(
+                    color: colorScheme.onSurface,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
               ),
-            ),
+              ...switch (action) {
+                final value? => <Widget>[value],
+                null => const <Widget>[],
+              },
+            ],
           ),
-          Text(
-            '#${state.color.toARGB32().toRadixString(16).substring(2).toUpperCase()}',
-            style: AppTypography.caption.copyWith(color: colorScheme.secondary),
-          ),
+          const SizedBox(height: AppSpacing.sm),
+          child,
         ],
       ),
     );

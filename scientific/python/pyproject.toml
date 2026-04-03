@@ -1,0 +1,36 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "breakdex-science"
+version = "0.1.0"
+description = "Scientific validation and AI research workbench for Breakdex."
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+  "dspy",
+  "langchain",
+  "langsmith",
+  "numpy",
+  "pandas",
+  "scipy",
+]
+
+[project.scripts]
+breakdex-science = "breakdex_science.cli:main"
+
+[dependency-groups]
+dev = [
+  "pytest",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src"]
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/breakdex_science"]
+
+[tool.uv]
+package = true

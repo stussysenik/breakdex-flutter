@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../core/design/colors.dart';
 import '../../../core/design/spacing.dart';
+import '../../../core/design/theme.dart';
 import '../../../core/design/typography.dart';
+import '../../../core/models/learning_state.dart';
+import '../../../core/providers.dart';
 import '../../../core/services/fsrs_service.dart';
 
 /// Anki-style 3-column total card breakdown: New / Learning / Mastery.
@@ -10,35 +13,34 @@ import '../../../core/services/fsrs_service.dart';
 /// Uses [TotalStateCounts] to show the **total** number of cards in each
 /// FSRS state, not just due ones. LEARN combines learning + relearning
 /// since both represent cards the user is actively working on.
-class DueCardsSummary extends StatelessWidget {
-  const DueCardsSummary({
-    super.key,
-    required this.totalStateCounts,
-  });
+class DueCardsSummary extends ConsumerWidget {
+  const DueCardsSummary({super.key, required this.totalStateCounts});
 
   final TotalStateCounts totalStateCounts;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final labels = ref.watch(learningStateLabelsProvider);
+
     return Row(
       children: [
         _DueColumn(
-          label: 'NEW',
+          label: resolveLearningStateLabel(labels, LearningState.newState),
           count: totalStateCounts.newCount,
-          color: AppColors.stateNew,
+          color: context.stateColor(LearningState.newState),
         ),
         const SizedBox(width: AppSpacing.sm),
         _DueColumn(
-          label: 'LEARN',
-          count: totalStateCounts.learningCount +
-              totalStateCounts.relearningCount,
-          color: AppColors.stateLearning,
+          label: resolveLearningStateLabel(labels, LearningState.learning),
+          count:
+              totalStateCounts.learningCount + totalStateCounts.relearningCount,
+          color: context.stateColor(LearningState.learning),
         ),
         const SizedBox(width: AppSpacing.sm),
         _DueColumn(
-          label: 'MASTERY',
+          label: resolveLearningStateLabel(labels, LearningState.mastery),
           count: totalStateCounts.reviewCount,
-          color: AppColors.stateMastery,
+          color: context.stateColor(LearningState.mastery),
         ),
       ],
     );
@@ -77,8 +79,10 @@ class _DueColumn extends StatelessWidget {
               style: AppTypography.caption.copyWith(
                 color: color,
                 fontWeight: FontWeight.w700,
-                letterSpacing: 0.5,
               ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              textAlign: TextAlign.center,
             ),
             const SizedBox(height: 2),
             Text(

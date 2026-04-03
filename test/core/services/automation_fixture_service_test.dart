@@ -17,6 +17,8 @@ class _FakeLaunchArguments implements LaunchArgumentReader {
 }
 
 void main() {
+  TestWidgetsFlutterBinding.ensureInitialized();
+
   test('review fixture seeds reviewable content for maestro flows', () async {
     final db = createTestDatabase();
     addTearDown(db.close);

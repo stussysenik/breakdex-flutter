@@ -1,11 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../core/design/spacing.dart';
-import '../../../core/design/typography.dart';
 import '../../../core/providers.dart';
-import '../settings_screen.dart' show colorSwatchGrid;
+import '../../../shared/widgets/color_setting_tile.dart';
 
 /// Curated accent color palette for global UI personalization.
 const accentPresetColors = [
@@ -28,75 +25,24 @@ class AccentColorSection extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final colorScheme = Theme.of(context).colorScheme;
     final accent = ref.watch(accentColorProvider);
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          children: [
-            Expanded(
-              child: Text(
-                'Accent Color',
-                style: AppTypography.caption.copyWith(
-                  color: colorScheme.secondary,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ),
-            TextButton(
-              onPressed: () {
-                HapticFeedback.mediumImpact();
-                ref.read(accentColorProvider.notifier).reset();
-              },
-              child: Text(
-                'Reset',
-                style: AppTypography.caption.copyWith(
-                  color: colorScheme.secondary,
-                ),
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: AppSpacing.sm),
-        Row(
-          children: [
-            Container(
-              width: 48,
-              height: 48,
-              decoration: BoxDecoration(
-                color: accent,
-                shape: BoxShape.circle,
-                border: Border.all(color: accent, width: 3),
-                boxShadow: [
-                  BoxShadow(
-                    color: accent.withValues(alpha: 0.4),
-                    blurRadius: 8,
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(width: AppSpacing.md),
-            Text(
-              '#${accent.toARGB32().toRadixString(16).substring(2).toUpperCase()}',
-              style: AppTypography.caption.copyWith(
-                color: colorScheme.secondary,
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: AppSpacing.md),
-        colorSwatchGrid(
-          colors: accentPresetColors,
-          selected: accent,
-          size: 36,
-          onSelected: (c) {
-            HapticFeedback.mediumImpact();
-            ref.read(accentColorProvider.notifier).set(c);
-          },
-        ),
-      ],
+    return ColorSettingTile(
+      title: 'Accent Color',
+      subtitle: formatColorHex(accent),
+      color: accent,
+      onTap: () async {
+        final selected = await showColorEditorDialog(
+          context,
+          initialColor: accent,
+          title: 'Accent Color',
+          subtitle: 'Choose any accent color for the app chrome.',
+          presets: accentPresetColors,
+        );
+        if (selected != null) {
+          await ref.read(accentColorProvider.notifier).set(selected);
+        }
+      },
     );
   }
 }

@@ -5,9 +5,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:uuid/uuid.dart';
 
 import '../../../core/database/database.dart';
-import '../../../core/design/colors.dart';
 import '../../../core/design/spacing.dart';
+import '../../../core/design/theme.dart';
 import '../../../core/design/typography.dart';
+import '../../../core/models/learning_state.dart';
 import '../../../core/providers.dart';
 import '../../../core/services/categories_service.dart';
 import '../../../core/services/deck_service.dart';
@@ -56,6 +57,7 @@ class _CreateDeckSheetState extends ConsumerState<CreateDeckSheet> {
   Widget build(BuildContext context) {
     final categories = ref.watch(categoriesProvider);
     final colorScheme = Theme.of(context).colorScheme;
+    final stateLabels = ref.watch(learningStateLabelsProvider);
 
     return Padding(
       padding: EdgeInsets.fromLTRB(
@@ -69,10 +71,12 @@ class _CreateDeckSheetState extends ConsumerState<CreateDeckSheet> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Create Deck',
-                style: AppTypography.titleMedium.copyWith(
-                  color: colorScheme.onSurface,
-                )),
+            Text(
+              'Create Deck',
+              style: AppTypography.titleMedium.copyWith(
+                color: colorScheme.onSurface,
+              ),
+            ),
             const SizedBox(height: AppSpacing.md),
 
             // Name
@@ -109,11 +113,13 @@ class _CreateDeckSheetState extends ConsumerState<CreateDeckSheet> {
 
             if (_isSmart) ...[
               // Category filter
-              Text('Categories',
-                  style: AppTypography.caption.copyWith(
-                    color: colorScheme.secondary,
-                    fontWeight: FontWeight.w600,
-                  )),
+              Text(
+                'Categories',
+                style: AppTypography.caption.copyWith(
+                  color: colorScheme.secondary,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
               const SizedBox(height: AppSpacing.sm),
               Wrap(
                 spacing: 6,
@@ -137,37 +143,48 @@ class _CreateDeckSheetState extends ConsumerState<CreateDeckSheet> {
               const SizedBox(height: AppSpacing.md),
 
               // FSRS state filter
-              Text('Card States',
-                  style: AppTypography.caption.copyWith(
-                    color: colorScheme.secondary,
-                    fontWeight: FontWeight.w600,
-                  )),
+              Text(
+                'Card States',
+                style: AppTypography.caption.copyWith(
+                  color: colorScheme.secondary,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
               const SizedBox(height: AppSpacing.sm),
               Wrap(
                 spacing: 6,
                 runSpacing: 6,
                 children: [
                   _FilterChip(
-                    label: 'New',
-                    dotColor: AppColors.stateNew,
+                    label: resolveLearningStateLabel(
+                      stateLabels,
+                      LearningState.newState,
+                    ),
+                    dotColor: context.stateColor(LearningState.newState),
                     isSelected: _selectedStates.contains(0),
                     onTap: () => _toggleState(0),
                   ),
                   _FilterChip(
-                    label: 'Learning',
-                    dotColor: AppColors.stateLearning,
+                    label: resolveLearningStateLabel(
+                      stateLabels,
+                      LearningState.learning,
+                    ),
+                    dotColor: context.stateColor(LearningState.learning),
                     isSelected: _selectedStates.contains(1),
                     onTap: () => _toggleState(1),
                   ),
                   _FilterChip(
-                    label: 'Review',
-                    dotColor: AppColors.stateMastery,
+                    label: resolveLearningStateLabel(
+                      stateLabels,
+                      LearningState.mastery,
+                    ),
+                    dotColor: context.stateColor(LearningState.mastery),
                     isSelected: _selectedStates.contains(2),
                     onTap: () => _toggleState(2),
                   ),
                   _FilterChip(
                     label: 'Relearning',
-                    dotColor: AppColors.actionHard,
+                    dotColor: context.stateColor(LearningState.learning),
                     isSelected: _selectedStates.contains(3),
                     onTap: () => _toggleState(3),
                   ),
@@ -184,19 +201,23 @@ class _CreateDeckSheetState extends ConsumerState<CreateDeckSheet> {
                     activeTrackColor: Theme.of(context).colorScheme.primary,
                   ),
                   const SizedBox(width: AppSpacing.sm),
-                  Text('Due only',
-                      style: AppTypography.bodySmall.copyWith(
-                        color: colorScheme.onSurface,
-                      )),
+                  Text(
+                    'Due only',
+                    style: AppTypography.bodySmall.copyWith(
+                      color: colorScheme.onSurface,
+                    ),
+                  ),
                 ],
               ),
             ] else ...[
               // Manual deck: move selection
-              Text('Select Moves',
-                  style: AppTypography.caption.copyWith(
-                    color: colorScheme.secondary,
-                    fontWeight: FontWeight.w600,
-                  )),
+              Text(
+                'Select Moves',
+                style: AppTypography.caption.copyWith(
+                  color: colorScheme.secondary,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
               const SizedBox(height: AppSpacing.sm),
               _ManualMoveSelector(
                 selectedIds: _selectedMoveIds,
@@ -212,11 +233,13 @@ class _CreateDeckSheetState extends ConsumerState<CreateDeckSheet> {
             const SizedBox(height: AppSpacing.md),
 
             // Session size
-            Text('Session Size',
-                style: AppTypography.caption.copyWith(
-                  color: colorScheme.secondary,
-                  fontWeight: FontWeight.w600,
-                )),
+            Text(
+              'Session Size',
+              style: AppTypography.caption.copyWith(
+                color: colorScheme.secondary,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
             const SizedBox(height: AppSpacing.sm),
             Wrap(
               spacing: 6,
@@ -241,8 +264,9 @@ class _CreateDeckSheetState extends ConsumerState<CreateDeckSheet> {
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Theme.of(context).colorScheme.primary,
                   foregroundColor: Colors.white,
-                  disabledBackgroundColor:
-                      Theme.of(context).colorScheme.primary.withValues(alpha: 0.3),
+                  disabledBackgroundColor: Theme.of(
+                    context,
+                  ).colorScheme.primary.withValues(alpha: 0.3),
                 ),
                 child: const Text('Create Deck'),
               ),
@@ -282,27 +306,31 @@ class _CreateDeckSheetState extends ConsumerState<CreateDeckSheet> {
         fsrsStates: _selectedStates.toList(),
         dueOnly: _dueOnly,
       );
-      await dao.insertDeck(DecksCompanion.insert(
-        id: id,
-        name: name,
-        deckType: const Value('smart'),
-        filterCriteria: Value(filter.toJson()),
-        sessionSize: Value(_sessionSize),
-      ));
+      await dao.insertDeck(
+        DecksCompanion.insert(
+          id: id,
+          name: name,
+          deckType: const Value('smart'),
+          filterCriteria: Value(filter.toJson()),
+          sessionSize: Value(_sessionSize),
+        ),
+      );
     } else {
-      await dao.insertDeck(DecksCompanion.insert(
-        id: id,
-        name: name,
-        deckType: const Value('manual'),
-        sessionSize: Value(_sessionSize),
-      ));
+      await dao.insertDeck(
+        DecksCompanion.insert(
+          id: id,
+          name: name,
+          deckType: const Value('manual'),
+          sessionSize: Value(_sessionSize),
+        ),
+      );
       // Add selected moves
       for (final moveId in _selectedMoveIds) {
         await dao.addMoveToDeck(id, moveId);
       }
     }
 
-    HapticFeedback.mediumImpact();
+    await HapticFeedback.mediumImpact();
     if (mounted) Navigator.pop(context);
   }
 }
@@ -336,9 +364,11 @@ class _TypeChip extends StatelessWidget {
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(icon,
-                size: 16,
-                color: isSelected ? Colors.white : colorScheme.secondary),
+            Icon(
+              icon,
+              size: 16,
+              color: isSelected ? Colors.white : colorScheme.secondary,
+            ),
             const SizedBox(width: 6),
             Text(
               label,
@@ -430,10 +460,10 @@ class _ManualMoveSelector extends ConsumerWidget {
       builder: (context, snapshot) {
         final moves = snapshot.data ?? [];
         if (moves.isEmpty) {
-          return Text('No moves available',
-              style: AppTypography.caption.copyWith(
-                color: colorScheme.secondary,
-              ));
+          return Text(
+            'No moves available',
+            style: AppTypography.caption.copyWith(color: colorScheme.secondary),
+          );
         }
         return ConstrainedBox(
           constraints: const BoxConstraints(maxHeight: 200),
@@ -447,10 +477,10 @@ class _ManualMoveSelector extends ConsumerWidget {
                 dense: true,
                 contentPadding: EdgeInsets.zero,
                 leading: Icon(
-                  isSelected
-                      ? Icons.check_box
-                      : Icons.check_box_outline_blank,
-                  color: isSelected ? colorScheme.primary : colorScheme.secondary,
+                  isSelected ? Icons.check_box : Icons.check_box_outline_blank,
+                  color: isSelected
+                      ? colorScheme.primary
+                      : colorScheme.secondary,
                   size: 22,
                 ),
                 title: Text(

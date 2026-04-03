@@ -1,12 +1,16 @@
 const fs = require('node:fs');
 const path = require('node:path');
+const {execSync} = require('node:child_process');
 
 const repoRoot = process.cwd();
 const pubspecPath = path.join(repoRoot, 'pubspec.yaml');
 const changelogPath = path.join(repoRoot, 'CHANGELOG.md');
 const targets = [
   path.join(repoRoot, 'README.md'),
-  path.join(repoRoot, 'progress.md'),
+  path.join(repoRoot, 'VISION.MD'),
+  path.join(repoRoot, 'ROADMAP.MD'),
+  path.join(repoRoot, 'TECHSTACK.MD'),
+  path.join(repoRoot, 'PROGRESS.MD'),
   path.join(repoRoot, 'docs', 'hyperdata-ledger.md'),
 ];
 
@@ -17,6 +21,10 @@ const releaseVersion = process.argv[2] || pubspecVersion.split('+')[0];
 const releaseTag = process.argv[3] || `v${releaseVersion}`;
 const refreshedAt = new Date().toISOString().slice(0, 10);
 const latestRelease = readLatestRelease(changelog, releaseVersion);
+const gitBranch = readGitBranch();
+const gitRevision = safeGit('git rev-parse --short HEAD');
+const gitCommit = safeGit('git rev-parse HEAD');
+const gitDescribe = safeGit('git describe --tags --always');
 
 const metaBlock = [
   '<!-- release:meta:start -->',
@@ -34,10 +42,22 @@ const notesBlock = [
   '<!-- release:notes:end -->',
 ].join('\n');
 
+const provenanceBlock = [
+  '<!-- release:provenance:start -->',
+  `- Source branch: \`${gitBranch}\``,
+  `- Source revision: \`${gitRevision}\``,
+  `- Source commit: \`${gitCommit}\``,
+  `- Source describe: \`${gitDescribe}\``,
+  '- Generator: `scripts/update_release_metadata.cjs`',
+  '- Inputs: `CHANGELOG.md`, `pubspec.yaml`, and local git metadata',
+  '<!-- release:provenance:end -->',
+].join('\n');
+
 for (const filePath of targets) {
   let source = fs.readFileSync(filePath, 'utf8');
   source = replaceMarkedBlock(source, 'meta', metaBlock, filePath);
   source = replaceMarkedBlock(source, 'notes', notesBlock, filePath);
+  source = replaceMarkedBlock(source, 'provenance', provenanceBlock, filePath);
   fs.writeFileSync(filePath, source);
 }
 
@@ -125,6 +145,26 @@ function sanitizeBullet(bullet) {
       .replace(/\[@[^\]]+\]\([^)]+\)/g, '')
       .replace(/\s+/g, ' ')
       .trim();
+}
+
+function readGitBranch() {
+  const githubRefName = process.env.GITHUB_REF_NAME;
+  if (githubRefName) return githubRefName;
+
+  const branch = safeGit('git rev-parse --abbrev-ref HEAD');
+  return branch || 'HEAD';
+}
+
+function safeGit(command) {
+  try {
+    return execSync(command, {
+      cwd: repoRoot,
+      encoding: 'utf8',
+      stdio: ['ignore', 'pipe', 'ignore'],
+    }).trim();
+  } catch (_) {
+    return 'unknown';
+  }
 }
 
 function replaceMarkedBlock(source, markerName, replacement, filePath) {

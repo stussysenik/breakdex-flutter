@@ -24,7 +24,8 @@ tags:
     id: "Add new move"
 
 # VideoPickerSheet should appear, proving the FAB was tappable
-- assertVisible: "Import from Photos"
+- assertVisible: "Add Video"
+- assertVisible: "Photo Library"
 - takeScreenshot: e2e-screenshots/fab-reachable-moves
 
 # Dismiss the picker sheet by tapping outside / back

@@ -55,3 +55,9 @@ node_modules/
 .claude/
 .flowdeck/
 .maestro-artifacts/
+.maestro-test-output/
+.superpowers/
+.env.local
+.env.lcoal
+verify-*.png
+review-launcher-design.png

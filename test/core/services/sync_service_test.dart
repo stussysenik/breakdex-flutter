@@ -1,7 +1,10 @@
 import 'package:drift/drift.dart' hide isNull, isNotNull;
 import 'package:flutter_test/flutter_test.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:breakdex/core/database/database.dart';
+import 'package:breakdex/core/services/auth_service.dart';
+import 'package:breakdex/core/services/sync_service.dart';
 import '../../helpers/test_database.dart';
 import '../../helpers/test_data.dart';
 
@@ -31,7 +34,7 @@ void main() {
       // The sync-aware repository should have logged this change.
       // If using raw inserts (bypassing SyncAwareRepo), sync_log may not
       // be populated — this test verifies the DAO layer.
-      expect(pendingChanges, isA<List>());
+      expect(pendingChanges, isA<List<SyncLogData>>());
     });
 
     test('inserting a review creates a sync_log entry', () async {
@@ -44,16 +47,16 @@ void main() {
       );
 
       final pendingChanges = await db.syncDao.getPendingChanges();
-      expect(pendingChanges, isA<List>());
+      expect(pendingChanges, isA<List<SyncLogData>>());
     });
 
     test('deleting a move marks it in sync_log', () async {
       await seedMove(db, id: 'sync-move-3', name: 'To Delete');
 
       // Delete via DAO
-      await (db.delete(db.moves)
-            ..where((m) => m.id.equals('sync-move-3')))
-          .go();
+      await (db.delete(
+        db.moves,
+      )..where((m) => m.id.equals('sync-move-3'))).go();
 
       // Verify the move is gone
       final remaining = await db.select(db.moves).get();
@@ -71,6 +74,41 @@ void main() {
   });
 
   group('Sync metadata tracking', () {
+    test('later metadata-only writes preserve pending video uploads', () async {
+      await seedMove(
+        db,
+        id: 'video-sync-2',
+        name: 'Video Move',
+        videoPath: '/path/to/video.mp4',
+      );
+
+      await db.syncDao.logChange(
+        entityId: 'video-sync-2',
+        table: 'moves',
+        action: 'update',
+        hasVideo: true,
+      );
+      await db.syncDao.markSynced('video-sync-2', 'moves', 'update');
+      await db.syncDao.logChange(
+        entityId: 'video-sync-2',
+        table: 'moves',
+        action: 'update',
+        hasVideo: false,
+      );
+
+      final row =
+          await (db.select(db.syncLog)..where(
+                (t) =>
+                    t.entityId.equals('video-sync-2') &
+                    t.entityTable.equals('moves') &
+                    t.action.equals('update'),
+              ))
+              .getSingle();
+
+      expect(row.synced, isFalse);
+      expect(row.videoSynced, isFalse);
+    });
+
     test('moves table supports videoSynced flag via videoPath', () async {
       await seedMove(
         db,
@@ -79,9 +117,9 @@ void main() {
         videoPath: '/path/to/video.mp4',
       );
 
-      final move = await (db.select(db.moves)
-            ..where((m) => m.id.equals('video-sync-1')))
-          .getSingle();
+      final move = await (db.select(
+        db.moves,
+      )..where((m) => m.id.equals('video-sync-1'))).getSingle();
 
       expect(move.videoPath, '/path/to/video.mp4');
     });
@@ -94,12 +132,13 @@ void main() {
         videoPath: '/old/path.mp4',
       );
 
-      await (db.update(db.moves)..where((m) => m.id.equals('update-1')))
-          .write(const MovesCompanion(videoPath: Value('/new/path.mp4')));
+      await (db.update(db.moves)..where((m) => m.id.equals('update-1'))).write(
+        const MovesCompanion(videoPath: Value('/new/path.mp4')),
+      );
 
-      final updated = await (db.select(db.moves)
-            ..where((m) => m.id.equals('update-1')))
-          .getSingle();
+      final updated = await (db.select(
+        db.moves,
+      )..where((m) => m.id.equals('update-1'))).getSingle();
 
       expect(updated.name, 'Original');
       expect(updated.videoPath, '/new/path.mp4');
@@ -116,11 +155,43 @@ void main() {
       await (db.update(db.moves)..where((m) => m.id.equals('clear-video-1')))
           .write(const MovesCompanion(videoPath: Value(null)));
 
-      final updated = await (db.select(db.moves)
-            ..where((m) => m.id.equals('clear-video-1')))
-          .getSingle();
+      final updated = await (db.select(
+        db.moves,
+      )..where((m) => m.id.equals('clear-video-1'))).getSingle();
 
       expect(updated.videoPath, isNull);
+    });
+  });
+
+  group('Sync reconciliation', () {
+    late SharedPreferences prefs;
+    late SyncService syncService;
+
+    setUp(() async {
+      SharedPreferences.setMockInitialValues({});
+      prefs = await SharedPreferences.getInstance();
+      syncService = SyncService(
+        authService: AuthService(prefs),
+        syncDao: db.syncDao,
+        db: db,
+        prefs: prefs,
+      );
+    });
+
+    test('reconcileMoveLearningStates copies FSRS state onto moves', () async {
+      await seedMove(db, id: 'sync-state-1', name: 'State Move');
+      await seedFsrsCard(
+        db,
+        entityId: 'sync-state-1',
+        entityType: 'move',
+        fsrsState: 2,
+      );
+
+      final updated = await syncService.reconcileMoveLearningStates();
+      final move = await db.movesDao.getById('sync-state-1');
+
+      expect(updated, 1);
+      expect(move.learningState, 'MASTERY');
     });
   });
 
@@ -132,30 +203,34 @@ void main() {
 
       await db
           .into(db.comboMoves)
-          .insert(ComboMovesCompanion.insert(
-            id: 'cm-sync-1',
-            comboId: 'sync-combo-1',
-            moveId: 'combo-m1',
-            sequenceIndex: 0,
-          ));
+          .insert(
+            ComboMovesCompanion.insert(
+              id: 'cm-sync-1',
+              comboId: 'sync-combo-1',
+              moveId: 'combo-m1',
+              sequenceIndex: 0,
+            ),
+          );
       await db
           .into(db.comboMoves)
-          .insert(ComboMovesCompanion.insert(
-            id: 'cm-sync-2',
-            comboId: 'sync-combo-1',
-            moveId: 'combo-m2',
-            sequenceIndex: 1,
-          ));
+          .insert(
+            ComboMovesCompanion.insert(
+              id: 'cm-sync-2',
+              comboId: 'sync-combo-1',
+              moveId: 'combo-m2',
+              sequenceIndex: 1,
+            ),
+          );
 
       // Verify combo and its moves exist
-      final combo = await (db.select(db.combos)
-            ..where((c) => c.id.equals('sync-combo-1')))
-          .getSingle();
+      final combo = await (db.select(
+        db.combos,
+      )..where((c) => c.id.equals('sync-combo-1'))).getSingle();
       expect(combo.name, 'Test Combo');
 
-      final comboMoves = await (db.select(db.comboMoves)
-            ..where((cm) => cm.comboId.equals('sync-combo-1')))
-          .get();
+      final comboMoves = await (db.select(
+        db.comboMoves,
+      )..where((cm) => cm.comboId.equals('sync-combo-1'))).get();
       expect(comboMoves.length, 2);
     });
   });

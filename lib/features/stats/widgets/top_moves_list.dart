@@ -2,18 +2,17 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
-import '../../../core/design/colors.dart';
 import '../../../core/design/spacing.dart';
+import '../../../core/design/theme.dart';
 import '../../../core/design/typography.dart';
+import '../../../core/models/learning_state.dart';
+import '../../../core/providers.dart';
 import '../../../core/services/categories_service.dart';
 import '../providers/stats_providers.dart';
 
 /// Top practiced moves list with enriched subtitle: category + FSRS state + last reviewed.
 class TopMovesList extends ConsumerWidget {
-  const TopMovesList({
-    super.key,
-    required this.topMoves,
-  });
+  const TopMovesList({super.key, required this.topMoves});
 
   final List<TopMoveInfo> topMoves;
 
@@ -21,13 +20,15 @@ class TopMovesList extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final cs = Theme.of(context).colorScheme;
     final categories = ref.watch(categoriesProvider);
+    final stateLabels = ref.watch(learningStateLabelsProvider);
 
     if (topMoves.isEmpty) {
-      return Text('No reviews yet',
-          style: Theme.of(context)
-              .textTheme
-              .bodySmall
-              ?.copyWith(color: cs.secondary));
+      return Text(
+        'No reviews yet',
+        style: Theme.of(
+          context,
+        ).textTheme.bodySmall?.copyWith(color: cs.secondary),
+      );
     }
 
     return Container(
@@ -39,11 +40,16 @@ class TopMovesList extends ConsumerWidget {
         children: [
           for (int i = 0; i < topMoves.length; i++) ...[
             if (i > 0)
-              Divider(height: 1, indent: AppSpacing.md, endIndent: AppSpacing.md),
+              const Divider(
+                height: 1,
+                indent: AppSpacing.md,
+                endIndent: AppSpacing.md,
+              ),
             _MoveRow(
               rank: i + 1,
               info: topMoves[i],
               categories: categories,
+              stateLabels: stateLabels,
             ),
           ],
         ],
@@ -57,32 +63,27 @@ class _MoveRow extends StatelessWidget {
     required this.rank,
     required this.info,
     required this.categories,
+    required this.stateLabels,
   });
 
   final int rank;
   final TopMoveInfo info;
   final List<Category> categories;
+  final Map<LearningState, String> stateLabels;
 
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
 
     // Resolve category color
-    final catMatch = categories.where((c) => c.name == info.category).firstOrNull;
+    final catMatch = categories
+        .where((c) => c.name == info.category)
+        .firstOrNull;
     final catColor = catMatch?.color ?? cs.secondary;
 
-    // FSRS state color
-    Color stateColor;
-    switch (info.fsrsStateLabel) {
-      case 'Mastered':
-        stateColor = AppColors.stateMastery;
-      case 'Learning':
-        stateColor = AppColors.stateLearning;
-      case 'Relearning':
-        stateColor = AppColors.actionHard;
-      default:
-        stateColor = AppColors.stateNew;
-    }
+    final visibleState = _visibleState(info.fsrsStateLabel);
+    final stateColor = context.stateColor(visibleState);
+    final stateLabel = resolveLearningStateLabel(stateLabels, visibleState);
 
     // Last reviewed date
     final lastReviewedText = info.lastReviewed != null
@@ -91,7 +92,9 @@ class _MoveRow extends StatelessWidget {
 
     return Padding(
       padding: const EdgeInsets.symmetric(
-          horizontal: AppSpacing.md, vertical: 12),
+        horizontal: AppSpacing.md,
+        vertical: 12,
+      ),
       child: Row(
         children: [
           SizedBox(
@@ -99,9 +102,9 @@ class _MoveRow extends StatelessWidget {
             child: Text(
               '#$rank',
               style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                    color: cs.secondary,
-                    fontWeight: FontWeight.w600,
-                  ),
+                color: cs.secondary,
+                fontWeight: FontWeight.w600,
+              ),
             ),
           ),
           const SizedBox(width: AppSpacing.sm),
@@ -120,13 +123,16 @@ class _MoveRow extends StatelessWidget {
               children: [
                 Text(
                   info.moveName,
-                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        fontWeight: FontWeight.w500,
-                      ),
+                  style: Theme.of(
+                    context,
+                  ).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w500),
+                  maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 ),
-                // Subtitle: category dot + category name + state + last reviewed
-                Row(
+                Wrap(
+                  spacing: 6,
+                  runSpacing: 2,
+                  crossAxisAlignment: WrapCrossAlignment.center,
                   children: [
                     if (info.category != 'default') ...[
                       Container(
@@ -145,10 +151,9 @@ class _MoveRow extends StatelessWidget {
                           fontSize: 10,
                         ),
                       ),
-                      const SizedBox(width: 6),
                     ],
                     Text(
-                      info.fsrsStateLabel,
+                      stateLabel,
                       style: AppTypography.caption.copyWith(
                         color: stateColor,
                         fontSize: 10,
@@ -157,7 +162,7 @@ class _MoveRow extends StatelessWidget {
                     ),
                     if (lastReviewedText.isNotEmpty) ...[
                       Text(
-                        ' · $lastReviewedText',
+                        lastReviewedText,
                         style: AppTypography.caption.copyWith(
                           color: cs.secondary,
                           fontSize: 10,
@@ -171,12 +176,21 @@ class _MoveRow extends StatelessWidget {
           ),
           Text(
             '${info.reviewCount}',
-            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: cs.secondary,
-                ),
+            style: Theme.of(
+              context,
+            ).textTheme.bodyMedium?.copyWith(color: cs.secondary),
           ),
         ],
       ),
     );
+  }
+
+  LearningState _visibleState(String rawLabel) {
+    final normalized = rawLabel.trim().toLowerCase();
+    return switch (normalized) {
+      'mastered' || 'review' || 'mastery' => LearningState.mastery,
+      'learning' || 'learn' || 'relearning' => LearningState.learning,
+      _ => LearningState.newState,
+    };
   }
 }

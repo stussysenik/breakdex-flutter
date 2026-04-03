@@ -141,7 +141,7 @@ ${topMoves.isNotEmpty ? 'Most Practiced:\n$topMoves' : 'No moves practiced yet.'
     AppDatabase db,
     SharedPreferences prefs,
   ) async {
-    final moves = await db.movesDao.getAll();
+    final moves = await db.movesDao.getAllIncludingArchived();
     final reviews = await db.reviewsDao.watchAll().first;
     final battleResults = await db.select(db.battleResults).get();
     final combos = await db.combosDao.getAll();
@@ -176,6 +176,8 @@ ${topMoves.isNotEmpty ? 'Most Practiced:\n$topMoves' : 'No moves practiced yet.'
                   ? p.basename(m.videoPath!)
                   : null,
               'originalVideoName': m.originalVideoName,
+              'archivedAt': m.archivedAt?.toIso8601String(),
+              'archiveReason': m.archiveReason,
               'notes': m.notes,
               'createdAt': m.createdAt.toIso8601String(),
             },
@@ -376,7 +378,9 @@ ${topMoves.isNotEmpty ? 'Most Practiced:\n$topMoves' : 'No moves practiced yet.'
 
       // Import moves
       final existingMoveIds = mode == ImportMode.merge
-          ? (await db.movesDao.getAll()).map((m) => m.id).toSet()
+          ? (await db.movesDao.getAllIncludingArchived())
+                .map((m) => m.id)
+                .toSet()
           : <String>{};
 
       for (final m in movesJson) {
@@ -399,6 +403,12 @@ ${topMoves.isNotEmpty ? 'Most Practiced:\n$topMoves' : 'No moves practiced yet.'
                 category: Value(map['category'] as String? ?? 'default'),
                 videoPath: const Value(null),
                 originalVideoName: Value(map['originalVideoName'] as String?),
+                archivedAt: Value(
+                  map['archivedAt'] != null
+                      ? DateTime.parse(map['archivedAt'] as String)
+                      : null,
+                ),
+                archiveReason: Value(map['archiveReason'] as String?),
                 notes: Value(map['notes'] as String?),
                 createdAt: Value(
                   map['createdAt'] != null
@@ -579,8 +589,9 @@ ${topMoves.isNotEmpty ? 'Most Practiced:\n$topMoves' : 'No moves practiced yet.'
         for (final d in decksJson) {
           final map = d as Map<String, dynamic>;
           final id = map['id'] as String;
-          if (mode == ImportMode.merge && existingDeckIds.contains(id))
+          if (mode == ImportMode.merge && existingDeckIds.contains(id)) {
             continue;
+          }
 
           await db
               .into(db.decks)
@@ -620,8 +631,9 @@ ${topMoves.isNotEmpty ? 'Most Practiced:\n$topMoves' : 'No moves practiced yet.'
           final deckId = map['deckId'] as String;
           final moveId = map['moveId'] as String;
           final key = '$deckId:$moveId';
-          if (mode == ImportMode.merge && existingDmKeys.contains(key))
+          if (mode == ImportMode.merge && existingDmKeys.contains(key)) {
             continue;
+          }
 
           await db
               .into(db.deckMoves)

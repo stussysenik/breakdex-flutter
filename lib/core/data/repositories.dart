@@ -5,13 +5,17 @@ import '../database/daos/combos_dao.dart';
 /// Implementations can wrap Drift, REST APIs, SpacetimeDB, etc.
 abstract class MoveRepository {
   Stream<List<Move>> watchAll();
+  Stream<List<Move>> watchArchived();
   Stream<List<Move>> watchByCategory(String category);
   Stream<Move> watchById(String id);
   Future<List<Move>> getAll();
+  Future<List<Move>> getArchived();
   Future<Move> getById(String id);
   Future<void> insert(MovesCompanion move);
   Future<void> update(MovesCompanion move);
   Future<void> delete(String id);
+  Future<void> archive(String id, {required String reason});
+  Future<void> restore(String id);
   Stream<List<Move>> watchByState(String state);
 }
 

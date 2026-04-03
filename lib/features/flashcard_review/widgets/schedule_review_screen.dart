@@ -5,7 +5,9 @@ import 'package:go_router/go_router.dart';
 
 import '../../../core/design/colors.dart';
 import '../../../core/design/spacing.dart';
+import '../../../core/design/theme.dart';
 import '../../../core/design/typography.dart';
+import '../../../core/models/learning_state.dart';
 import '../providers/review_providers.dart';
 import 'item_schedule_detail_sheet.dart';
 import 'schedule_calendar.dart';
@@ -90,11 +92,11 @@ class ScheduleReviewScreen extends ConsumerWidget {
         const SliverToBoxAdapter(child: SizedBox(height: AppSpacing.md)),
 
         // SRS parameters
-        SliverPadding(
-          padding: const EdgeInsets.symmetric(
+        const SliverPadding(
+          padding: EdgeInsets.symmetric(
             horizontal: AppSpacing.screenEdge,
           ),
-          sliver: const SliverToBoxAdapter(child: SrsParametersCard()),
+          sliver: SliverToBoxAdapter(child: SrsParametersCard()),
         ),
         const SliverToBoxAdapter(child: SizedBox(height: AppSpacing.lg)),
 
@@ -265,9 +267,9 @@ class _ScheduleEmptyState extends StatelessWidget {
                                   width: 80,
                                   height: 60,
                                   decoration: BoxDecoration(
-                                    color: AppColors.stateNew.withValues(
-                                      alpha: 0.15,
-                                    ),
+                                    color: context
+                                        .stateColor(LearningState.newState)
+                                        .withValues(alpha: 0.15),
                                     borderRadius: BorderRadius.circular(
                                       AppRadius.md,
                                     ),
@@ -286,9 +288,9 @@ class _ScheduleEmptyState extends StatelessWidget {
                                   width: 80,
                                   height: 60,
                                   decoration: BoxDecoration(
-                                    color: AppColors.stateLearning.withValues(
-                                      alpha: 0.15,
-                                    ),
+                                    color: context
+                                        .stateColor(LearningState.learning)
+                                        .withValues(alpha: 0.15),
                                     borderRadius: BorderRadius.circular(
                                       AppRadius.md,
                                     ),
@@ -305,9 +307,9 @@ class _ScheduleEmptyState extends StatelessWidget {
                                 width: 80,
                                 height: 60,
                                 decoration: BoxDecoration(
-                                  color: AppColors.stateMastery.withValues(
-                                    alpha: 0.15,
-                                  ),
+                                  color: context
+                                      .stateColor(LearningState.mastery)
+                                      .withValues(alpha: 0.15),
                                   borderRadius: BorderRadius.circular(
                                     AppRadius.md,
                                   ),

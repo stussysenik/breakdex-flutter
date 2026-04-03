@@ -12,6 +12,9 @@ class DriftMoveRepository implements MoveRepository {
   Stream<List<Move>> watchAll() => _dao.watchAll();
 
   @override
+  Stream<List<Move>> watchArchived() => _dao.watchArchived();
+
+  @override
   Stream<List<Move>> watchByCategory(String category) =>
       _dao.watchByCategory(category);
 
@@ -20,6 +23,9 @@ class DriftMoveRepository implements MoveRepository {
 
   @override
   Future<List<Move>> getAll() => _dao.getAll();
+
+  @override
+  Future<List<Move>> getArchived() => _dao.getArchived();
 
   @override
   Future<Move> getById(String id) => _dao.getById(id);
@@ -32,6 +38,13 @@ class DriftMoveRepository implements MoveRepository {
 
   @override
   Future<void> delete(String id) => _dao.deleteMove(id);
+
+  @override
+  Future<void> archive(String id, {required String reason}) =>
+      _dao.archiveMove(id, reason: reason);
+
+  @override
+  Future<void> restore(String id) => _dao.restoreMove(id);
 
   @override
   Stream<List<Move>> watchByState(String state) => _dao.watchByState(state);

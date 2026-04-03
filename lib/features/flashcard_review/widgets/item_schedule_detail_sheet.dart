@@ -4,10 +4,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/design/colors.dart';
 import '../../../core/design/spacing.dart';
+import '../../../core/design/theme.dart';
 import '../../../core/design/typography.dart';
 import '../../../core/models/learning_state.dart';
 import '../../../core/models/reviewable_item.dart';
 import '../../../core/providers.dart';
+import '../../../core/services/fsrs_service.dart';
 import '../providers/deck_providers.dart';
 import '../providers/review_providers.dart';
 
@@ -226,19 +228,16 @@ class ItemScheduleDetailSheet extends ConsumerWidget {
   }
 }
 
-class _StateBadge extends StatelessWidget {
+class _StateBadge extends ConsumerWidget {
   const _StateBadge({required this.fsrsState});
   final int fsrsState;
 
   @override
-  Widget build(BuildContext context) {
-    final (label, color) = switch (fsrsState) {
-      0 => ('NEW', AppColors.stateNew),
-      1 => ('LEARN', AppColors.stateLearning),
-      2 => ('REVIEW', AppColors.stateMastery),
-      3 => ('RELEARN', AppColors.actionHard),
-      _ => ('NEW', AppColors.stateNew),
-    };
+  Widget build(BuildContext context, WidgetRef ref) {
+    final visibleState = learningStateFromFsrsState(fsrsState);
+    final labels = ref.watch(learningStateLabelsProvider);
+    final label = resolveLearningStateLabel(labels, visibleState);
+    final color = context.stateColor(visibleState);
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
@@ -253,7 +252,6 @@ class _StateBadge extends StatelessWidget {
           color: color,
           fontWeight: FontWeight.w700,
           fontSize: 10,
-          letterSpacing: 0.5,
         ),
       ),
     );

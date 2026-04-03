@@ -10,9 +10,20 @@ This ledger records what Breakdex is trying to be at the system level: a move li
 - Release tag: `v1.1.0`
 - Release version: `1.1.0`
 - Pubspec version: `1.1.0+3`
-- Released: `2026-03-31`
-- Metadata refreshed: `2026-03-31`
+- Released: `2026-04-03`
+- Metadata refreshed: `2026-04-03`
 <!-- release:meta:end -->
+
+## Automatic Provenance
+
+<!-- release:provenance:start -->
+- Source branch: `feature/flow-ui-ios-release`
+- Source revision: `b88baff`
+- Source commit: `b88baffdf8430a60d8ffe797f1f251d7d0d28e58`
+- Source describe: `v1.1.0-6-gb88baff`
+- Generator: `scripts/update_release_metadata.cjs`
+- Inputs: `CHANGELOG.md`, `pubspec.yaml`, and local git metadata
+<!-- release:provenance:end -->
 
 ## Latest Tagged Notes
 

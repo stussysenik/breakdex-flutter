@@ -19,49 +19,47 @@ tags:
 
 # Navigate to Review tab
 - tapOn:
-    point: "146,809"
-- assertVisible: "Review"
+    id: "drill-tab"
+- assertVisible: "Drill"
 
 # ── Rate a New card as GOOD ─────────────────────────────────────────
 
 - assertVisible: "New\\n1\\nFirst recall"
 - tapOn: "New\\n1\\nFirst recall"
 
+- assertVisible: "Tap anywhere to reveal the video"
+- tapOn: "Tap anywhere to reveal the video"
 - extendedWaitUntil:
-    visible: "Rate GOOD\\nGOOD"
+    visible: "Rate GOOD"
     timeout: 10000
 
-- tapOn:
-    text: "Rate GOOD\\nGOOD"
+- tapOn: "Rate GOOD"
 
 # Single New card → should complete
 - assertVisible: "Great work!"
 - takeScreenshot: e2e-screenshots/review-new-completed
 
 # Go back to prescreen
-- tapOn: "Review Again"
+- tapOn: "Back to Review"
 
 # ── Rate a Learning card as AGAIN ───────────────────────────────────
 
-- back
-- tapOn:
-    point: "146,809"
 - assertVisible: "Learning\\n1\\nShort intervals"
 - tapOn: "Learning\\n1\\nShort intervals"
 
+- assertVisible: "Tap anywhere to reveal the video"
+- tapOn: "Tap anywhere to reveal the video"
 - extendedWaitUntil:
-    visible: "Rate AGAIN\\nAGAIN"
+    visible: "Rate AGAIN"
     timeout: 10000
 
-- tapOn:
-    text: "Rate AGAIN\\nAGAIN"
+- tapOn: "Rate AGAIN"
 - takeScreenshot: e2e-screenshots/review-learning-again
 
-# After AGAIN the card should re-enter the queue (not complete)
-# Verify we're still in a review session or got completion
+# After AGAIN the session should continue with a fresh front face.
 - runFlow:
     when:
-      visible: "Rate AGAIN\\nAGAIN"
+      visible: "Tap anywhere to reveal the video"
     commands:
       - takeScreenshot: e2e-screenshots/review-learning-persists
 

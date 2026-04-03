@@ -5,26 +5,31 @@ import '../../../core/database/database.dart';
 import '../../../core/database/daos/combos_dao.dart';
 import '../../../core/design/spacing.dart';
 import '../../../core/models/learning_state.dart';
+import '../../../core/models/review_card_display_settings.dart';
 import '../../../core/providers.dart';
 import '../../../shared/widgets/video_player_widget.dart'
     show RobustVideoPlayer, VideoPlaceholder;
 import 'instrument_panel.dart';
 import 'review_dashboard.dart';
 
-/// Redesigned immersive review card — video fills the top zone with a clean
-/// surface (no metadata overlays), and an instrument panel below provides
-/// all metadata and playback controls.
+/// Two-stage review card.
+///
+/// Stage 1 shows the actual video plus configurable learning information.
+/// Stage 2 keeps the video in place and swaps the metadata panel out so the
+/// footer can focus on grading controls.
 ///
 /// The card returns a [Column] with two zones:
-/// 1. **Video surface** (Expanded) — full-bleed video with only progress dots
-///    and a close button overlaid via a short top gradient scrim.
-/// 2. **Instrument panel** (intrinsic height) — title, state pill, category,
-///    combo step line, loop toggle, and speed selector.
+/// 1. **Video surface** (Expanded) — full-bleed video with only a textual
+///    progress badge and a close button overlaid via a short top gradient scrim.
+/// 2. **Instrument panel** (intrinsic height) — configurable metadata shown
+///    only during the first stage.
 class ReviewCard extends ConsumerStatefulWidget {
   const ReviewCard({
     super.key,
     required this.title,
     required this.state,
+    required this.displaySettings,
+    required this.showMetadataPanel,
     required this.onStatePillTap,
     required this.currentIndex,
     required this.totalItems,
@@ -43,6 +48,8 @@ class ReviewCard extends ConsumerStatefulWidget {
 
   final String title;
   final LearningState state;
+  final ReviewCardDisplaySettings displaySettings;
+  final bool showMetadataPanel;
   final String? category;
   final String? videoPath;
   final String? originalVideoName;
@@ -182,8 +189,7 @@ class _ReviewCardState extends ConsumerState<ReviewCard> {
                   child: LayoutBuilder(
                     builder: (context, constraints) {
                       if (videoPath == null) {
-                        return VideoPlaceholder(
-                            height: constraints.maxHeight);
+                        return VideoPlaceholder(height: constraints.maxHeight);
                       }
                       return RobustVideoPlayer(
                         key: ValueKey(
@@ -206,7 +212,7 @@ class _ReviewCardState extends ConsumerState<ReviewCard> {
                 ),
 
                 // 2. Short top-only gradient scrim — just enough for
-                //    progress dots and close button readability.
+                //    the session counter and close button readability.
                 Positioned(
                   top: 0,
                   left: 0,
@@ -228,7 +234,7 @@ class _ReviewCardState extends ConsumerState<ReviewCard> {
                   ),
                 ),
 
-                // 3. Top overlay — progress dots + close button (48x48)
+                // 3. Top overlay — count badge + close button (48x48)
                 Positioned(
                   top: 12,
                   left: 16,
@@ -239,7 +245,7 @@ class _ReviewCardState extends ConsumerState<ReviewCard> {
                       const SizedBox(width: 48),
                       Expanded(
                         child: Center(
-                          child: ProgressDots(
+                          child: ReviewPositionBadge(
                             currentIndex: widget.currentIndex,
                             total: widget.totalItems,
                           ),
@@ -277,8 +283,10 @@ class _ReviewCardState extends ConsumerState<ReviewCard> {
         InstrumentPanel(
           title: title,
           state: widget.state,
+          displaySettings: widget.displaySettings,
           category: category,
           canEditState: widget.canEditState,
+          showMetadata: widget.showMetadataPanel,
           onStatePillTap: widget.onStatePillTap,
           comboMoves: comboMoves,
           activeComboStepIndex: activeComboStepIndex,

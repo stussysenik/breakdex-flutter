@@ -74,6 +74,61 @@ class $MovesTable extends Moves with TableInfo<$MovesTable, Move> {
         type: DriftSqlType.string,
         requiredDuringInsert: false,
       );
+  static const VerificationMeta _managedAlbumAssetIdMeta =
+      const VerificationMeta('managedAlbumAssetId');
+  @override
+  late final GeneratedColumn<String> managedAlbumAssetId =
+      GeneratedColumn<String>(
+        'managed_album_asset_id',
+        aliasedName,
+        true,
+        type: DriftSqlType.string,
+        requiredDuringInsert: false,
+      );
+  static const VerificationMeta _managedAlbumFilenameMeta =
+      const VerificationMeta('managedAlbumFilename');
+  @override
+  late final GeneratedColumn<String> managedAlbumFilename =
+      GeneratedColumn<String>(
+        'managed_album_filename',
+        aliasedName,
+        true,
+        type: DriftSqlType.string,
+        requiredDuringInsert: false,
+      );
+  static const VerificationMeta _managedAlbumNameMeta = const VerificationMeta(
+    'managedAlbumName',
+  );
+  @override
+  late final GeneratedColumn<String> managedAlbumName = GeneratedColumn<String>(
+    'managed_album_name',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _archivedAtMeta = const VerificationMeta(
+    'archivedAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> archivedAt = GeneratedColumn<DateTime>(
+    'archived_at',
+    aliasedName,
+    true,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _archiveReasonMeta = const VerificationMeta(
+    'archiveReason',
+  );
+  @override
+  late final GeneratedColumn<String> archiveReason = GeneratedColumn<String>(
+    'archive_reason',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
   static const VerificationMeta _notesMeta = const VerificationMeta('notes');
   @override
   late final GeneratedColumn<String> notes = GeneratedColumn<String>(
@@ -114,6 +169,11 @@ class $MovesTable extends Moves with TableInfo<$MovesTable, Move> {
     category,
     videoPath,
     originalVideoName,
+    managedAlbumAssetId,
+    managedAlbumFilename,
+    managedAlbumName,
+    archivedAt,
+    archiveReason,
     notes,
     contentHash,
     createdAt,
@@ -173,6 +233,48 @@ class $MovesTable extends Moves with TableInfo<$MovesTable, Move> {
         ),
       );
     }
+    if (data.containsKey('managed_album_asset_id')) {
+      context.handle(
+        _managedAlbumAssetIdMeta,
+        managedAlbumAssetId.isAcceptableOrUnknown(
+          data['managed_album_asset_id']!,
+          _managedAlbumAssetIdMeta,
+        ),
+      );
+    }
+    if (data.containsKey('managed_album_filename')) {
+      context.handle(
+        _managedAlbumFilenameMeta,
+        managedAlbumFilename.isAcceptableOrUnknown(
+          data['managed_album_filename']!,
+          _managedAlbumFilenameMeta,
+        ),
+      );
+    }
+    if (data.containsKey('managed_album_name')) {
+      context.handle(
+        _managedAlbumNameMeta,
+        managedAlbumName.isAcceptableOrUnknown(
+          data['managed_album_name']!,
+          _managedAlbumNameMeta,
+        ),
+      );
+    }
+    if (data.containsKey('archived_at')) {
+      context.handle(
+        _archivedAtMeta,
+        archivedAt.isAcceptableOrUnknown(data['archived_at']!, _archivedAtMeta),
+      );
+    }
+    if (data.containsKey('archive_reason')) {
+      context.handle(
+        _archiveReasonMeta,
+        archiveReason.isAcceptableOrUnknown(
+          data['archive_reason']!,
+          _archiveReasonMeta,
+        ),
+      );
+    }
     if (data.containsKey('notes')) {
       context.handle(
         _notesMeta,
@@ -227,6 +329,26 @@ class $MovesTable extends Moves with TableInfo<$MovesTable, Move> {
         DriftSqlType.string,
         data['${effectivePrefix}original_video_name'],
       ),
+      managedAlbumAssetId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}managed_album_asset_id'],
+      ),
+      managedAlbumFilename: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}managed_album_filename'],
+      ),
+      managedAlbumName: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}managed_album_name'],
+      ),
+      archivedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}archived_at'],
+      ),
+      archiveReason: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}archive_reason'],
+      ),
       notes: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
         data['${effectivePrefix}notes'],
@@ -255,6 +377,11 @@ class Move extends DataClass implements Insertable<Move> {
   final String category;
   final String? videoPath;
   final String? originalVideoName;
+  final String? managedAlbumAssetId;
+  final String? managedAlbumFilename;
+  final String? managedAlbumName;
+  final DateTime? archivedAt;
+  final String? archiveReason;
   final String? notes;
   final String? contentHash;
   final DateTime createdAt;
@@ -265,6 +392,11 @@ class Move extends DataClass implements Insertable<Move> {
     required this.category,
     this.videoPath,
     this.originalVideoName,
+    this.managedAlbumAssetId,
+    this.managedAlbumFilename,
+    this.managedAlbumName,
+    this.archivedAt,
+    this.archiveReason,
     this.notes,
     this.contentHash,
     required this.createdAt,
@@ -281,6 +413,21 @@ class Move extends DataClass implements Insertable<Move> {
     }
     if (!nullToAbsent || originalVideoName != null) {
       map['original_video_name'] = Variable<String>(originalVideoName);
+    }
+    if (!nullToAbsent || managedAlbumAssetId != null) {
+      map['managed_album_asset_id'] = Variable<String>(managedAlbumAssetId);
+    }
+    if (!nullToAbsent || managedAlbumFilename != null) {
+      map['managed_album_filename'] = Variable<String>(managedAlbumFilename);
+    }
+    if (!nullToAbsent || managedAlbumName != null) {
+      map['managed_album_name'] = Variable<String>(managedAlbumName);
+    }
+    if (!nullToAbsent || archivedAt != null) {
+      map['archived_at'] = Variable<DateTime>(archivedAt);
+    }
+    if (!nullToAbsent || archiveReason != null) {
+      map['archive_reason'] = Variable<String>(archiveReason);
     }
     if (!nullToAbsent || notes != null) {
       map['notes'] = Variable<String>(notes);
@@ -304,6 +451,21 @@ class Move extends DataClass implements Insertable<Move> {
       originalVideoName: originalVideoName == null && nullToAbsent
           ? const Value.absent()
           : Value(originalVideoName),
+      managedAlbumAssetId: managedAlbumAssetId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(managedAlbumAssetId),
+      managedAlbumFilename: managedAlbumFilename == null && nullToAbsent
+          ? const Value.absent()
+          : Value(managedAlbumFilename),
+      managedAlbumName: managedAlbumName == null && nullToAbsent
+          ? const Value.absent()
+          : Value(managedAlbumName),
+      archivedAt: archivedAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(archivedAt),
+      archiveReason: archiveReason == null && nullToAbsent
+          ? const Value.absent()
+          : Value(archiveReason),
       notes: notes == null && nullToAbsent
           ? const Value.absent()
           : Value(notes),
@@ -328,6 +490,15 @@ class Move extends DataClass implements Insertable<Move> {
       originalVideoName: serializer.fromJson<String?>(
         json['originalVideoName'],
       ),
+      managedAlbumAssetId: serializer.fromJson<String?>(
+        json['managedAlbumAssetId'],
+      ),
+      managedAlbumFilename: serializer.fromJson<String?>(
+        json['managedAlbumFilename'],
+      ),
+      managedAlbumName: serializer.fromJson<String?>(json['managedAlbumName']),
+      archivedAt: serializer.fromJson<DateTime?>(json['archivedAt']),
+      archiveReason: serializer.fromJson<String?>(json['archiveReason']),
       notes: serializer.fromJson<String?>(json['notes']),
       contentHash: serializer.fromJson<String?>(json['contentHash']),
       createdAt: serializer.fromJson<DateTime>(json['createdAt']),
@@ -343,6 +514,11 @@ class Move extends DataClass implements Insertable<Move> {
       'category': serializer.toJson<String>(category),
       'videoPath': serializer.toJson<String?>(videoPath),
       'originalVideoName': serializer.toJson<String?>(originalVideoName),
+      'managedAlbumAssetId': serializer.toJson<String?>(managedAlbumAssetId),
+      'managedAlbumFilename': serializer.toJson<String?>(managedAlbumFilename),
+      'managedAlbumName': serializer.toJson<String?>(managedAlbumName),
+      'archivedAt': serializer.toJson<DateTime?>(archivedAt),
+      'archiveReason': serializer.toJson<String?>(archiveReason),
       'notes': serializer.toJson<String?>(notes),
       'contentHash': serializer.toJson<String?>(contentHash),
       'createdAt': serializer.toJson<DateTime>(createdAt),
@@ -356,6 +532,11 @@ class Move extends DataClass implements Insertable<Move> {
     String? category,
     Value<String?> videoPath = const Value.absent(),
     Value<String?> originalVideoName = const Value.absent(),
+    Value<String?> managedAlbumAssetId = const Value.absent(),
+    Value<String?> managedAlbumFilename = const Value.absent(),
+    Value<String?> managedAlbumName = const Value.absent(),
+    Value<DateTime?> archivedAt = const Value.absent(),
+    Value<String?> archiveReason = const Value.absent(),
     Value<String?> notes = const Value.absent(),
     Value<String?> contentHash = const Value.absent(),
     DateTime? createdAt,
@@ -368,6 +549,19 @@ class Move extends DataClass implements Insertable<Move> {
     originalVideoName: originalVideoName.present
         ? originalVideoName.value
         : this.originalVideoName,
+    managedAlbumAssetId: managedAlbumAssetId.present
+        ? managedAlbumAssetId.value
+        : this.managedAlbumAssetId,
+    managedAlbumFilename: managedAlbumFilename.present
+        ? managedAlbumFilename.value
+        : this.managedAlbumFilename,
+    managedAlbumName: managedAlbumName.present
+        ? managedAlbumName.value
+        : this.managedAlbumName,
+    archivedAt: archivedAt.present ? archivedAt.value : this.archivedAt,
+    archiveReason: archiveReason.present
+        ? archiveReason.value
+        : this.archiveReason,
     notes: notes.present ? notes.value : this.notes,
     contentHash: contentHash.present ? contentHash.value : this.contentHash,
     createdAt: createdAt ?? this.createdAt,
@@ -384,6 +578,21 @@ class Move extends DataClass implements Insertable<Move> {
       originalVideoName: data.originalVideoName.present
           ? data.originalVideoName.value
           : this.originalVideoName,
+      managedAlbumAssetId: data.managedAlbumAssetId.present
+          ? data.managedAlbumAssetId.value
+          : this.managedAlbumAssetId,
+      managedAlbumFilename: data.managedAlbumFilename.present
+          ? data.managedAlbumFilename.value
+          : this.managedAlbumFilename,
+      managedAlbumName: data.managedAlbumName.present
+          ? data.managedAlbumName.value
+          : this.managedAlbumName,
+      archivedAt: data.archivedAt.present
+          ? data.archivedAt.value
+          : this.archivedAt,
+      archiveReason: data.archiveReason.present
+          ? data.archiveReason.value
+          : this.archiveReason,
       notes: data.notes.present ? data.notes.value : this.notes,
       contentHash: data.contentHash.present
           ? data.contentHash.value
@@ -401,6 +610,11 @@ class Move extends DataClass implements Insertable<Move> {
           ..write('category: $category, ')
           ..write('videoPath: $videoPath, ')
           ..write('originalVideoName: $originalVideoName, ')
+          ..write('managedAlbumAssetId: $managedAlbumAssetId, ')
+          ..write('managedAlbumFilename: $managedAlbumFilename, ')
+          ..write('managedAlbumName: $managedAlbumName, ')
+          ..write('archivedAt: $archivedAt, ')
+          ..write('archiveReason: $archiveReason, ')
           ..write('notes: $notes, ')
           ..write('contentHash: $contentHash, ')
           ..write('createdAt: $createdAt')
@@ -416,6 +630,11 @@ class Move extends DataClass implements Insertable<Move> {
     category,
     videoPath,
     originalVideoName,
+    managedAlbumAssetId,
+    managedAlbumFilename,
+    managedAlbumName,
+    archivedAt,
+    archiveReason,
     notes,
     contentHash,
     createdAt,
@@ -430,6 +649,11 @@ class Move extends DataClass implements Insertable<Move> {
           other.category == this.category &&
           other.videoPath == this.videoPath &&
           other.originalVideoName == this.originalVideoName &&
+          other.managedAlbumAssetId == this.managedAlbumAssetId &&
+          other.managedAlbumFilename == this.managedAlbumFilename &&
+          other.managedAlbumName == this.managedAlbumName &&
+          other.archivedAt == this.archivedAt &&
+          other.archiveReason == this.archiveReason &&
           other.notes == this.notes &&
           other.contentHash == this.contentHash &&
           other.createdAt == this.createdAt);
@@ -442,6 +666,11 @@ class MovesCompanion extends UpdateCompanion<Move> {
   final Value<String> category;
   final Value<String?> videoPath;
   final Value<String?> originalVideoName;
+  final Value<String?> managedAlbumAssetId;
+  final Value<String?> managedAlbumFilename;
+  final Value<String?> managedAlbumName;
+  final Value<DateTime?> archivedAt;
+  final Value<String?> archiveReason;
   final Value<String?> notes;
   final Value<String?> contentHash;
   final Value<DateTime> createdAt;
@@ -453,6 +682,11 @@ class MovesCompanion extends UpdateCompanion<Move> {
     this.category = const Value.absent(),
     this.videoPath = const Value.absent(),
     this.originalVideoName = const Value.absent(),
+    this.managedAlbumAssetId = const Value.absent(),
+    this.managedAlbumFilename = const Value.absent(),
+    this.managedAlbumName = const Value.absent(),
+    this.archivedAt = const Value.absent(),
+    this.archiveReason = const Value.absent(),
     this.notes = const Value.absent(),
     this.contentHash = const Value.absent(),
     this.createdAt = const Value.absent(),
@@ -465,6 +699,11 @@ class MovesCompanion extends UpdateCompanion<Move> {
     this.category = const Value.absent(),
     this.videoPath = const Value.absent(),
     this.originalVideoName = const Value.absent(),
+    this.managedAlbumAssetId = const Value.absent(),
+    this.managedAlbumFilename = const Value.absent(),
+    this.managedAlbumName = const Value.absent(),
+    this.archivedAt = const Value.absent(),
+    this.archiveReason = const Value.absent(),
     this.notes = const Value.absent(),
     this.contentHash = const Value.absent(),
     this.createdAt = const Value.absent(),
@@ -478,6 +717,11 @@ class MovesCompanion extends UpdateCompanion<Move> {
     Expression<String>? category,
     Expression<String>? videoPath,
     Expression<String>? originalVideoName,
+    Expression<String>? managedAlbumAssetId,
+    Expression<String>? managedAlbumFilename,
+    Expression<String>? managedAlbumName,
+    Expression<DateTime>? archivedAt,
+    Expression<String>? archiveReason,
     Expression<String>? notes,
     Expression<String>? contentHash,
     Expression<DateTime>? createdAt,
@@ -490,6 +734,13 @@ class MovesCompanion extends UpdateCompanion<Move> {
       if (category != null) 'category': category,
       if (videoPath != null) 'video_path': videoPath,
       if (originalVideoName != null) 'original_video_name': originalVideoName,
+      if (managedAlbumAssetId != null)
+        'managed_album_asset_id': managedAlbumAssetId,
+      if (managedAlbumFilename != null)
+        'managed_album_filename': managedAlbumFilename,
+      if (managedAlbumName != null) 'managed_album_name': managedAlbumName,
+      if (archivedAt != null) 'archived_at': archivedAt,
+      if (archiveReason != null) 'archive_reason': archiveReason,
       if (notes != null) 'notes': notes,
       if (contentHash != null) 'content_hash': contentHash,
       if (createdAt != null) 'created_at': createdAt,
@@ -504,6 +755,11 @@ class MovesCompanion extends UpdateCompanion<Move> {
     Value<String>? category,
     Value<String?>? videoPath,
     Value<String?>? originalVideoName,
+    Value<String?>? managedAlbumAssetId,
+    Value<String?>? managedAlbumFilename,
+    Value<String?>? managedAlbumName,
+    Value<DateTime?>? archivedAt,
+    Value<String?>? archiveReason,
     Value<String?>? notes,
     Value<String?>? contentHash,
     Value<DateTime>? createdAt,
@@ -516,6 +772,11 @@ class MovesCompanion extends UpdateCompanion<Move> {
       category: category ?? this.category,
       videoPath: videoPath ?? this.videoPath,
       originalVideoName: originalVideoName ?? this.originalVideoName,
+      managedAlbumAssetId: managedAlbumAssetId ?? this.managedAlbumAssetId,
+      managedAlbumFilename: managedAlbumFilename ?? this.managedAlbumFilename,
+      managedAlbumName: managedAlbumName ?? this.managedAlbumName,
+      archivedAt: archivedAt ?? this.archivedAt,
+      archiveReason: archiveReason ?? this.archiveReason,
       notes: notes ?? this.notes,
       contentHash: contentHash ?? this.contentHash,
       createdAt: createdAt ?? this.createdAt,
@@ -544,6 +805,25 @@ class MovesCompanion extends UpdateCompanion<Move> {
     if (originalVideoName.present) {
       map['original_video_name'] = Variable<String>(originalVideoName.value);
     }
+    if (managedAlbumAssetId.present) {
+      map['managed_album_asset_id'] = Variable<String>(
+        managedAlbumAssetId.value,
+      );
+    }
+    if (managedAlbumFilename.present) {
+      map['managed_album_filename'] = Variable<String>(
+        managedAlbumFilename.value,
+      );
+    }
+    if (managedAlbumName.present) {
+      map['managed_album_name'] = Variable<String>(managedAlbumName.value);
+    }
+    if (archivedAt.present) {
+      map['archived_at'] = Variable<DateTime>(archivedAt.value);
+    }
+    if (archiveReason.present) {
+      map['archive_reason'] = Variable<String>(archiveReason.value);
+    }
     if (notes.present) {
       map['notes'] = Variable<String>(notes.value);
     }
@@ -568,6 +848,11 @@ class MovesCompanion extends UpdateCompanion<Move> {
           ..write('category: $category, ')
           ..write('videoPath: $videoPath, ')
           ..write('originalVideoName: $originalVideoName, ')
+          ..write('managedAlbumAssetId: $managedAlbumAssetId, ')
+          ..write('managedAlbumFilename: $managedAlbumFilename, ')
+          ..write('managedAlbumName: $managedAlbumName, ')
+          ..write('archivedAt: $archivedAt, ')
+          ..write('archiveReason: $archiveReason, ')
           ..write('notes: $notes, ')
           ..write('contentHash: $contentHash, ')
           ..write('createdAt: $createdAt, ')
@@ -10144,6 +10429,11 @@ typedef $$MovesTableCreateCompanionBuilder =
       Value<String> category,
       Value<String?> videoPath,
       Value<String?> originalVideoName,
+      Value<String?> managedAlbumAssetId,
+      Value<String?> managedAlbumFilename,
+      Value<String?> managedAlbumName,
+      Value<DateTime?> archivedAt,
+      Value<String?> archiveReason,
       Value<String?> notes,
       Value<String?> contentHash,
       Value<DateTime> createdAt,
@@ -10157,6 +10447,11 @@ typedef $$MovesTableUpdateCompanionBuilder =
       Value<String> category,
       Value<String?> videoPath,
       Value<String?> originalVideoName,
+      Value<String?> managedAlbumAssetId,
+      Value<String?> managedAlbumFilename,
+      Value<String?> managedAlbumName,
+      Value<DateTime?> archivedAt,
+      Value<String?> archiveReason,
       Value<String?> notes,
       Value<String?> contentHash,
       Value<DateTime> createdAt,
@@ -10331,6 +10626,31 @@ class $$MovesTableFilterComposer extends Composer<_$AppDatabase, $MovesTable> {
 
   ColumnFilters<String> get originalVideoName => $composableBuilder(
     column: $table.originalVideoName,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get managedAlbumAssetId => $composableBuilder(
+    column: $table.managedAlbumAssetId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get managedAlbumFilename => $composableBuilder(
+    column: $table.managedAlbumFilename,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get managedAlbumName => $composableBuilder(
+    column: $table.managedAlbumName,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get archivedAt => $composableBuilder(
+    column: $table.archivedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get archiveReason => $composableBuilder(
+    column: $table.archiveReason,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -10564,6 +10884,31 @@ class $$MovesTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<String> get managedAlbumAssetId => $composableBuilder(
+    column: $table.managedAlbumAssetId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get managedAlbumFilename => $composableBuilder(
+    column: $table.managedAlbumFilename,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get managedAlbumName => $composableBuilder(
+    column: $table.managedAlbumName,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get archivedAt => $composableBuilder(
+    column: $table.archivedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get archiveReason => $composableBuilder(
+    column: $table.archiveReason,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<String> get notes => $composableBuilder(
     column: $table.notes,
     builder: (column) => ColumnOrderings(column),
@@ -10608,6 +10953,31 @@ class $$MovesTableAnnotationComposer
 
   GeneratedColumn<String> get originalVideoName => $composableBuilder(
     column: $table.originalVideoName,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get managedAlbumAssetId => $composableBuilder(
+    column: $table.managedAlbumAssetId,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get managedAlbumFilename => $composableBuilder(
+    column: $table.managedAlbumFilename,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get managedAlbumName => $composableBuilder(
+    column: $table.managedAlbumName,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<DateTime> get archivedAt => $composableBuilder(
+    column: $table.archivedAt,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get archiveReason => $composableBuilder(
+    column: $table.archiveReason,
     builder: (column) => column,
   );
 
@@ -10840,6 +11210,11 @@ class $$MovesTableTableManager
                 Value<String> category = const Value.absent(),
                 Value<String?> videoPath = const Value.absent(),
                 Value<String?> originalVideoName = const Value.absent(),
+                Value<String?> managedAlbumAssetId = const Value.absent(),
+                Value<String?> managedAlbumFilename = const Value.absent(),
+                Value<String?> managedAlbumName = const Value.absent(),
+                Value<DateTime?> archivedAt = const Value.absent(),
+                Value<String?> archiveReason = const Value.absent(),
                 Value<String?> notes = const Value.absent(),
                 Value<String?> contentHash = const Value.absent(),
                 Value<DateTime> createdAt = const Value.absent(),
@@ -10851,6 +11226,11 @@ class $$MovesTableTableManager
                 category: category,
                 videoPath: videoPath,
                 originalVideoName: originalVideoName,
+                managedAlbumAssetId: managedAlbumAssetId,
+                managedAlbumFilename: managedAlbumFilename,
+                managedAlbumName: managedAlbumName,
+                archivedAt: archivedAt,
+                archiveReason: archiveReason,
                 notes: notes,
                 contentHash: contentHash,
                 createdAt: createdAt,
@@ -10864,6 +11244,11 @@ class $$MovesTableTableManager
                 Value<String> category = const Value.absent(),
                 Value<String?> videoPath = const Value.absent(),
                 Value<String?> originalVideoName = const Value.absent(),
+                Value<String?> managedAlbumAssetId = const Value.absent(),
+                Value<String?> managedAlbumFilename = const Value.absent(),
+                Value<String?> managedAlbumName = const Value.absent(),
+                Value<DateTime?> archivedAt = const Value.absent(),
+                Value<String?> archiveReason = const Value.absent(),
                 Value<String?> notes = const Value.absent(),
                 Value<String?> contentHash = const Value.absent(),
                 Value<DateTime> createdAt = const Value.absent(),
@@ -10875,6 +11260,11 @@ class $$MovesTableTableManager
                 category: category,
                 videoPath: videoPath,
                 originalVideoName: originalVideoName,
+                managedAlbumAssetId: managedAlbumAssetId,
+                managedAlbumFilename: managedAlbumFilename,
+                managedAlbumName: managedAlbumName,
+                archivedAt: archivedAt,
+                archiveReason: archiveReason,
                 notes: notes,
                 contentHash: contentHash,
                 createdAt: createdAt,

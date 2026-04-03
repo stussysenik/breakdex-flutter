@@ -62,10 +62,13 @@ class SyncService {
       // 4. Pull remote changes
       await _pullRemote();
 
-      // 5. Download missing videos
+      // 5. Reconcile legacy move state from authoritative FSRS cards.
+      await reconcileMoveLearningStates();
+
+      // 6. Download missing videos
       await _downloadVideos();
 
-      // 6. Update last sync timestamp
+      // 7. Update last sync timestamp
       await prefs.setInt(_lastSyncKey, DateTime.now().millisecondsSinceEpoch);
       _emit(const SyncProgress(phase: SyncPhase.complete));
     } catch (e) {
@@ -110,6 +113,7 @@ class SyncService {
     final userId = authService.userId;
 
     if (entry.action == 'delete') {
+      await _deleteRemoteVideoIfNeeded(table, entry.entityId, userId);
       if (table == 'fsrs_cards') {
         await _sb.from(table).delete().eq('entity_id', entry.entityId);
       } else {
@@ -127,6 +131,21 @@ class SyncService {
     await _sb.from(table).upsert(body);
   }
 
+  Future<void> _deleteRemoteVideoIfNeeded(
+    String table,
+    String entityId,
+    String userId,
+  ) async {
+    if (table != 'moves' && table != 'combos') return;
+
+    final storagePath = '$userId/$table/$entityId.mp4';
+    try {
+      await _sb.storage.from('videos').remove([storagePath]);
+    } catch (_) {
+      // Best-effort cleanup; metadata delete should still complete.
+    }
+  }
+
   Future<Map<String, dynamic>?> _getLocalRecordBody(
     String table,
     String id,
@@ -140,6 +159,8 @@ class SyncService {
             'name': move.name,
             'learning_state': move.learningState,
             'category': move.category,
+            'archived_at': move.archivedAt?.toIso8601String(),
+            'archive_reason': move.archiveReason,
             'created_at': move.createdAt.toIso8601String(),
           };
         case 'combos':
@@ -309,6 +330,35 @@ class SyncService {
     }
   }
 
+  /// Align the legacy `moves.learningState` column with FSRS card state.
+  ///
+  /// Remote sync can update `fsrs_cards` without touching `moves`, which
+  /// leaves the Arsenal list looking stale. This pass restores the derived
+  /// move state from the FSRS source of truth.
+  Future<int> reconcileMoveLearningStates() async {
+    final moves = await db.movesDao.getAll();
+    if (moves.isEmpty) return 0;
+
+    final cards = await db.fsrsCardsDao.getAll();
+    final stateByMoveId = {
+      for (final card in cards.where((card) => card.entityType == 'move'))
+        card.entityId: _learningStateFromFsrs(card.fsrsState),
+    };
+
+    var updatedCount = 0;
+    for (final move in moves) {
+      final desiredState = stateByMoveId[move.id];
+      if (desiredState == null || desiredState == move.learningState) continue;
+
+      await db.movesDao.updateMove(
+        MovesCompanion(id: Value(move.id), learningState: Value(desiredState)),
+      );
+      updatedCount++;
+    }
+
+    return updatedCount;
+  }
+
   Future<void> _mergeRemoteRecord(
     String table,
     Map<String, dynamic> record,
@@ -321,6 +371,12 @@ class SyncService {
             name: Value(record['name'] as String),
             learningState: Value(record['learning_state'] as String),
             category: Value(record['category'] as String),
+            archivedAt: Value(
+              record['archived_at'] == null
+                  ? null
+                  : DateTime.parse(record['archived_at'] as String),
+            ),
+            archiveReason: Value(record['archive_reason'] as String?),
             createdAt: Value(DateTime.parse(record['created_at'] as String)),
           );
           await db.into(db.moves).insertOnConflictUpdate(companion);
@@ -331,7 +387,9 @@ class SyncService {
             name: Value(record['name'] as String),
             activeVideoPath: Value(
               record['active_video_path'] != null
-                  ? VideoPathResolver.toRelative(record['active_video_path'] as String)
+                  ? VideoPathResolver.toRelative(
+                      record['active_video_path'] as String,
+                    )
                   : null,
             ),
           );
@@ -419,7 +477,9 @@ class SyncService {
           final localMove = await db.movesDao.getById(moveId);
           if (localMove.videoPath == null || localMove.videoPath!.isEmpty) {
             toDownload.add(fileObj);
-          } else if (!await File(VideoPathResolver.toAbsolute(localMove.videoPath!)).exists()) {
+          } else if (!await File(
+            VideoPathResolver.toAbsolute(localMove.videoPath!),
+          ).exists()) {
             toDownload.add(fileObj);
           }
         } catch (_) {
@@ -454,7 +514,9 @@ class SyncService {
           await File(localPath).writeAsBytes(bytes);
 
           await (db.update(db.moves)..where((t) => t.id.equals(moveId))).write(
-            MovesCompanion(videoPath: Value(VideoPathResolver.toRelative(localPath))),
+            MovesCompanion(
+              videoPath: Value(VideoPathResolver.toRelative(localPath)),
+            ),
           );
         } catch (_) {
           // Skip — retry next sync
@@ -472,7 +534,9 @@ class SyncService {
           if (localCombo.activeVideoPath == null ||
               localCombo.activeVideoPath!.isEmpty) {
             comboDownloads.add(fileObj);
-          } else if (!await File(VideoPathResolver.toAbsolute(localCombo.activeVideoPath!)).exists()) {
+          } else if (!await File(
+            VideoPathResolver.toAbsolute(localCombo.activeVideoPath!),
+          ).exists()) {
             comboDownloads.add(fileObj);
           }
         } catch (_) {
@@ -506,8 +570,13 @@ class SyncService {
 
           await File(localPath).writeAsBytes(bytes);
 
-          await (db.update(db.combos)..where((t) => t.id.equals(comboId)))
-              .write(CombosCompanion(activeVideoPath: Value(VideoPathResolver.toRelative(localPath))));
+          await (db.update(
+            db.combos,
+          )..where((t) => t.id.equals(comboId))).write(
+            CombosCompanion(
+              activeVideoPath: Value(VideoPathResolver.toRelative(localPath)),
+            ),
+          );
         } catch (_) {
           // Skip — retry next sync
         }
@@ -581,4 +650,10 @@ class SyncService {
   void _emit(SyncProgress progress) {
     _progressController.add(progress);
   }
+
+  String _learningStateFromFsrs(int fsrsState) => switch (fsrsState) {
+    2 => 'MASTERY',
+    1 || 3 => 'LEARNING',
+    _ => 'NEW',
+  };
 }

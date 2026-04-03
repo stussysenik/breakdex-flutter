@@ -27,6 +27,15 @@ void main() {
         overrides: [
           databaseProvider.overrideWithValue(db),
           sharedPreferencesProvider.overrideWithValue(prefs),
+          fsrsCardsRefreshProvider.overrideWith(
+            (ref) => Stream.value(<FsrsCard>[]),
+          ),
+          moveStateCountsProvider.overrideWith(
+            (ref) => Stream.value(
+              {for (final state in LearningState.values) state: 0},
+            ),
+          ),
+          comboRefreshProvider.overrideWith((ref) => Stream.value(0)),
         ],
       );
     });
@@ -65,7 +74,7 @@ void main() {
             ),
           );
 
-      container
+      await container
           .read(reviewSessionSourceProvider.notifier)
           .set(ReviewSessionSource.stateBased);
       container.read(reviewStateFilterProvider.notifier).state =
@@ -83,7 +92,7 @@ void main() {
       await db.decksDao.addMoveToDeck('deck-1', 'move-2');
       final deck = await db.decksDao.getById('deck-1');
 
-      container
+      await container
           .read(reviewSessionSourceProvider.notifier)
           .set(ReviewSessionSource.deck);
       container.read(selectedDeckProvider.notifier).state = deck;
@@ -100,7 +109,7 @@ void main() {
       await db.decksDao.addMoveToDeck('deck-1', 'move-2');
       final deck = await db.decksDao.getById('deck-1');
 
-      container
+      await container
           .read(reviewSessionSourceProvider.notifier)
           .set(ReviewSessionSource.deck);
       container.read(selectedDeckProvider.notifier).state = deck;

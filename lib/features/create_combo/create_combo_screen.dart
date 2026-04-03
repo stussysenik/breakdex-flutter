@@ -360,7 +360,7 @@ class _CreateComboScreenState extends ConsumerState<CreateComboScreen> {
                   setDialogState(
                     () => errorText = '"$normalized" already exists.',
                   );
-                  HapticFeedback.heavyImpact();
+                  await HapticFeedback.heavyImpact();
                   return;
                 }
                 Navigator.pop(context, normalized);
@@ -389,7 +389,7 @@ class _CreateComboScreenState extends ConsumerState<CreateComboScreen> {
     final selectedIds = _selectedMoveIds;
     if (!mounted) return;
 
-    showModalBottomSheet(
+    await showModalBottomSheet(
       context: context,
       backgroundColor: Theme.of(context).colorScheme.surface,
       shape: const RoundedRectangleBorder(
@@ -433,7 +433,9 @@ class _CreateComboScreenState extends ConsumerState<CreateComboScreen> {
                     size: 10,
                     color: selectedIds.contains(move.id)
                         ? Theme.of(context).colorScheme.primary
-                        : LearningState.fromString(move.learningState).color,
+                        : context.stateColor(
+                            LearningState.fromString(move.learningState),
+                          ),
                   ),
                   enabled: !selectedIds.contains(move.id),
                   onTap: () {
@@ -464,7 +466,7 @@ class _CreateComboScreenState extends ConsumerState<CreateComboScreen> {
     if (name == null || name.isEmpty) return;
     _comboName = name;
 
-    HapticFeedback.mediumImpact();
+    await HapticFeedback.mediumImpact();
 
     final comboId = const Uuid().v4();
     final db = ref.read(databaseProvider);

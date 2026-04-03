@@ -1,0 +1,46 @@
+# Flow: Arbitrary color editor surface
+# Verifies a settings color editor exposes RGBA channel controls rather than
+# only fixed presets.
+
+appId: com.breakdex.breakdex
+name: Settings Color Editor
+tags:
+  - settings
+  - verify
+
+---
+
+- launchApp
+
+- tapOn:
+    id: "settings-gear"
+- scrollUntilVisible:
+    element: "Settings"
+    direction: UP
+    timeout: 20000
+    speed: 80
+    waitToSettleTimeoutMs: 300
+    visibilityPercentage: 50
+    centerElement: false
+- scrollUntilVisible:
+    element: "Ratings"
+    direction: DOWN
+    timeout: 20000
+    speed: 20
+    waitToSettleTimeoutMs: 300
+    visibilityPercentage: 50
+    centerElement: false
+
+- tapOn: "AGAIN"
+- extendedWaitUntil:
+    visible: "Opacity"
+    timeout: 5000
+
+- assertVisible: "Quick picks"
+- assertVisible: "Opacity"
+- assertVisible: "Red"
+- assertVisible: "Green"
+- assertVisible: "Blue"
+- assertVisible: "Save"
+
+- tapOn: "Save"

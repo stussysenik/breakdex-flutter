@@ -54,6 +54,9 @@ flutter:
 
   assets:
     - assets/textures/grain.png
+    - assets/fixtures-blue-beat.mp4
+    - assets/fixtures-red-beat.mp4
+    - assets/fixtures-green-beat.mp4
 
   fonts:
     - family: Inter

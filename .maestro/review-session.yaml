@@ -1,9 +1,9 @@
 # Flow 2: Review session flow
-# Starts a review session, rates a card (always visible), and verifies
-# the session completes or advances.
+# Starts a review session with the seeded fixture, verifies the simplified
+# launcher plus two-stage review flow, rates a card, and checks deterministic
+# completion.
 #
-# Prerequisites: At least one move must exist in the database.
-#   Run import-and-trim.yaml first, or seed the database.
+# Prerequisites: None (uses seeded fixture data)
 # Tags: review
 
 appId: com.breakdex.breakdex
@@ -22,32 +22,28 @@ tags:
 
 # Navigate to Review tab
 - tapOn:
-    point: "146,809"
-- assertVisible: "Review"
+    id: "drill-tab"
+- assertVisible: "Drill"
 
-# Verify the compact moves lane renders, then start a session.
+# Verify the simplified moves lane renders, then start a session.
 - assertVisible: "Moves"
 - assertVisible: "Combos"
-- assertVisible: "New\\n1\\nFirst recall"
-- assertVisible: "Learning\\n1\\nShort intervals"
-- assertVisible: "Mastery\\n1\\nLong intervals"
-- tapOn: "New\\n1\\nFirst recall"
+- assertVisible: "3 cards total"
+- assertVisible: "Review all due"
+- tapOn: "New\\n1"
 
-# Rating buttons are always visible (no tap-to-reveal).
-# Wait for a rating button to confirm the review card loaded.
-- extendedWaitUntil:
-    visible: "Rate GOOD\\nGOOD"
-    timeout: 10000
+# First look should show the video card info and only one path forward.
+- assertVisible: "Fixture Swipe"
+- assertVisible: "New"
+- assertVisible: "Assess"
 
-# Verify all rating buttons are visible
-- assertVisible: "Rate AGAIN\\nAGAIN"
-- assertVisible: "Rate HARD\\nHARD"
-- assertVisible: "Rate GOOD\\nGOOD"
-- assertVisible: "Rate EASY\\nEASY"
-
-# Rate the card as "Good"
+# Move into assessment, then rate the card.
+- tapOn: "Assess"
+# Maestro intermittently misses the compact rating labels on iOS even though
+# the strip is visible, so use the hierarchy-confirmed center of the GOOD
+# button on the iPhone 16 Pro simulator.
 - tapOn:
-    text: "Rate GOOD\\nGOOD"
+    point: "247,645"
 
 # The seeded "New" fixture contains exactly one card, so completion is deterministic.
 - assertVisible: "Great work!"

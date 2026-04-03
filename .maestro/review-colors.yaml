@@ -27,8 +27,8 @@ tags:
 
 # Navigate to Review tab
 - tapOn:
-    text: "Review\\nTab 2 of 4"
-- assertVisible: "Review"
+    id: "drill-tab"
+- assertVisible: "Drill"
 
 # Verify the shared segmented controls render
 - assertVisible: "Review"
@@ -48,42 +48,43 @@ tags:
 
 # Verify the marker visualization mode renders without breaking layout.
 - tapOn:
-    text: "Settings\\nTab 4 of 4"
+    id: "settings-gear"
 - tapOn: "Marker"
 - tapOn:
-    text: "Review\\nTab 2 of 4"
+    id: "drill-tab"
 - assertVisible: "New\\n1\\nFirst recall"
 - takeScreenshot: .maestro-artifacts/review/review-marker
 
 # Restore the standard blue-accent mode.
 - tapOn:
-    text: "Settings\\nTab 4 of 4"
+    id: "settings-gear"
 - tapOn: "Blue"
 - tapOn:
-    text: "Review\\nTab 2 of 4"
+    id: "drill-tab"
 
 # ── Active session checks ─────────────────────────────────────────────
 
 # Start a session with all moves
 - tapOn: "New\\n1\\nFirst recall"
 
-# Wait for rating buttons to appear (always visible, no reveal step)
+# Front face should render before the rating strip.
+- assertVisible: "Tap anywhere to reveal the video"
+- tapOn: "Tap anywhere to reveal the video"
 - extendedWaitUntil:
-    visible: "Rate GOOD\\nGOOD"
+    visible: "Rate GOOD"
     timeout: 10000
 
 # Assert all 4 rating buttons visible
-- assertVisible: "Rate AGAIN\\nAGAIN"
-- assertVisible: "Rate HARD\\nHARD"
-- assertVisible: "Rate GOOD\\nGOOD"
-- assertVisible: "Rate EASY\\nEASY"
+- assertVisible: "Rate AGAIN"
+- assertVisible: "Rate HARD"
+- assertVisible: "Rate GOOD"
+- assertVisible: "Rate EASY"
 
 # Capture the active review session with rating buttons
 - takeScreenshot: .maestro-artifacts/review/review-active-session
 
 # Rate a card and verify advance or completion
-- tapOn:
-    text: "Rate GOOD\\nGOOD"
+- tapOn: "Rate GOOD"
 
 # After rating, capture result state
 - runFlow:
@@ -95,8 +96,7 @@ tags:
 
 - runFlow:
     when:
-      visible: "Rate GOOD\\nGOOD"
+      visible: "Tap anywhere to reveal the video"
     commands:
       - takeScreenshot: .maestro-artifacts/review/review-next-card
-      - assertVisible: "Rate AGAIN\\nAGAIN"
-      - assertVisible: "Rate EASY\\nEASY"
+      - assertVisible: "Tap anywhere to reveal the video"

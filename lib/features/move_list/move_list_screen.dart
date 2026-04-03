@@ -16,13 +16,16 @@ import '../../core/design/spacing.dart';
 import '../../core/design/theme.dart';
 import '../../core/design/typography.dart';
 import '../../core/models/learning_state.dart';
-import '../../core/models/reviewable_item.dart' show MoveVideoPath, ComboVideoPath;
+import '../../core/models/reviewable_item.dart'
+    show MoveVideoPath, ComboVideoPath;
 import '../../core/providers.dart';
 import '../../core/services/categories_service.dart';
 import '../../core/services/native_video_album.dart';
 import '../../core/services/settings_service.dart';
 import '../../core/services/thumbnail_load_coordinator.dart';
 import '../../core/services/video_service.dart';
+import '../../core/services/media_playback_coordinator.dart';
+import '../../core/services/video_path_resolver.dart';
 import '../../core/services/view_names_service.dart';
 import '../../shared/widgets/celebration_overlay.dart';
 import '../../shared/widgets/pressable.dart';
@@ -103,196 +106,199 @@ class MoveListScreen extends ConsumerWidget {
       body: ThumbnailCoordinatorScope(
         coordinator: _thumbnailCoordinator,
         child: SafeArea(
-        child: CustomScrollView(
-          slivers: [
-            // Title + search + controls as pinned header
-            SliverToBoxAdapter(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Title + gear
-                  Padding(
-                    padding: const EdgeInsets.fromLTRB(
-                      AppSpacing.screenEdge,
-                      AppSpacing.lg,
-                      AppSpacing.screenEdge,
-                      0,
-                    ),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text(
-                          title,
-                          style: AppTypography.titleLarge.copyWith(
-                            color: colorScheme.onSurface,
+          child: CustomScrollView(
+            slivers: [
+              // Title + search + controls as pinned header
+              SliverToBoxAdapter(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Title + gear
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(
+                        AppSpacing.screenEdge,
+                        AppSpacing.lg,
+                        AppSpacing.screenEdge,
+                        0,
+                      ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(
+                            title,
+                            style: AppTypography.titleLarge.copyWith(
+                              color: colorScheme.onSurface,
+                            ),
                           ),
-                        ),
-                        const SettingsGearButton(),
-                      ],
+                          const SettingsGearButton(),
+                        ],
+                      ),
                     ),
-                  ),
-                  const SizedBox(height: AppSpacing.md),
+                    const SizedBox(height: AppSpacing.md),
 
-                  // Search bar
-                  Padding(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: AppSpacing.screenEdge,
-                    ),
-                    child: Semantics(
-                      label: 'Search',
-                      textField: true,
-                      child: TextField(
-                        onChanged: (v) =>
-                            ref.read(_searchQueryProvider.notifier).state = v,
-                        decoration: InputDecoration(
-                          hintText: segment == ArsenalSegment.moves
-                              ? 'Search moves...'
-                              : 'Search combos...',
-                          prefixIcon: Icon(
-                            Icons.search,
-                            color: colorScheme.secondary,
+                    // Search bar
+                    Padding(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: AppSpacing.screenEdge,
+                      ),
+                      child: Semantics(
+                        label: 'Search',
+                        textField: true,
+                        child: TextField(
+                          onChanged: (v) =>
+                              ref.read(_searchQueryProvider.notifier).state = v,
+                          decoration: InputDecoration(
+                            hintText: segment == ArsenalSegment.moves
+                                ? 'Search moves...'
+                                : 'Search combos...',
+                            prefixIcon: Icon(
+                              Icons.search,
+                              color: colorScheme.secondary,
+                            ),
                           ),
                         ),
                       ),
                     ),
-                  ),
-                  const SizedBox(height: AppSpacing.md),
+                    const SizedBox(height: AppSpacing.md),
 
-                  // Moves / Combos segment toggle
-                  _ArsenalSegmentControl(segment: segment),
-                  const SizedBox(height: AppSpacing.sm),
+                    // Moves / Combos segment toggle
+                    _ArsenalSegmentControl(segment: segment),
+                    const SizedBox(height: AppSpacing.sm),
 
-                  _ViewModeToggle(viewMode: viewMode, viewNames: viewNames),
-                  const SizedBox(height: AppSpacing.sm),
-                ],
+                    _ViewModeToggle(viewMode: viewMode, viewNames: viewNames),
+                    const SizedBox(height: AppSpacing.sm),
+                  ],
+                ),
               ),
-            ),
 
-            // iCloud onboarding — shown once on first launch
-            const SliverToBoxAdapter(
-              child: SyncOnboardingCard(),
-            ),
+              // iCloud onboarding — shown once on first launch
+              const SliverToBoxAdapter(child: SyncOnboardingCard()),
 
-            // Content — sliver-based for compositor-friendly scrolling
-            segment == ArsenalSegment.moves
-                ? movesAsync.when(
-                    loading: () => const SliverFillRemaining(
-                      child: Center(child: CircularProgressIndicator()),
-                    ),
-                    error: (e, _) => SliverFillRemaining(
-                      child: Center(child: Text('Error: $e')),
-                    ),
-                    data: (moves) {
-                      final filtered = searchQuery.isEmpty
-                          ? moves
-                          : moves
-                                .where(
-                                  (m) => m.name.toLowerCase().contains(
-                                    searchQuery.toLowerCase(),
-                                  ),
-                                )
-                                .toList();
+              // Content — sliver-based for compositor-friendly scrolling
+              segment == ArsenalSegment.moves
+                  ? movesAsync.when(
+                      loading: () => const SliverFillRemaining(
+                        child: Center(child: CircularProgressIndicator()),
+                      ),
+                      error: (e, _) => SliverFillRemaining(
+                        child: Center(child: Text('Error: $e')),
+                      ),
+                      data: (moves) {
+                        final filtered = searchQuery.isEmpty
+                            ? moves
+                            : moves
+                                  .where(
+                                    (m) => m.name.toLowerCase().contains(
+                                      searchQuery.toLowerCase(),
+                                    ),
+                                  )
+                                  .toList();
 
-                      if (filtered.isEmpty) {
-                        return SliverFillRemaining(
-                          child: _EmptyState(
-                            hasSearch: searchQuery.isNotEmpty,
-                            isCombo: false,
+                        if (filtered.isEmpty) {
+                          return SliverFillRemaining(
+                            child: _EmptyState(
+                              hasSearch: searchQuery.isNotEmpty,
+                              isCombo: false,
+                            ),
+                          );
+                        }
+
+                        return switch (viewMode) {
+                          ViewMode.grid => _MoveGridSliver(moves: filtered),
+                          ViewMode.list => _MoveListSliver(moves: filtered),
+                        };
+                      },
+                    )
+                  : combosAsync.when(
+                      loading: () => const SliverFillRemaining(
+                        child: Center(child: CircularProgressIndicator()),
+                      ),
+                      error: (e, _) => SliverFillRemaining(
+                        child: Center(child: Text('Error: $e')),
+                      ),
+                      data: (combosWithCounts) {
+                        final filtered = searchQuery.isEmpty
+                            ? combosWithCounts
+                            : combosWithCounts
+                                  .where(
+                                    (c) => c.$1.name.toLowerCase().contains(
+                                      searchQuery.toLowerCase(),
+                                    ),
+                                  )
+                                  .toList();
+
+                        if (filtered.isEmpty) {
+                          return SliverFillRemaining(
+                            child: _EmptyState(
+                              hasSearch: searchQuery.isNotEmpty,
+                              isCombo: true,
+                            ),
+                          );
+                        }
+
+                        return switch (viewMode) {
+                          ViewMode.grid => _ComboGridSliver(combos: filtered),
+                          ViewMode.list => _CombosContentSliver(
+                            combos: filtered,
                           ),
-                        );
-                      }
-
-                      return switch (viewMode) {
-                        ViewMode.grid => _MoveGridSliver(moves: filtered),
-                        ViewMode.list => _MoveListSliver(moves: filtered),
-                      };
-                    },
-                  )
-                : combosAsync.when(
-                    loading: () => const SliverFillRemaining(
-                      child: Center(child: CircularProgressIndicator()),
+                        };
+                      },
                     ),
-                    error: (e, _) => SliverFillRemaining(
-                      child: Center(child: Text('Error: $e')),
-                    ),
-                    data: (combosWithCounts) {
-                      final filtered = searchQuery.isEmpty
-                          ? combosWithCounts
-                          : combosWithCounts
-                                .where(
-                                  (c) => c.$1.name.toLowerCase().contains(
-                                    searchQuery.toLowerCase(),
-                                  ),
-                                )
-                                .toList();
 
-                      if (filtered.isEmpty) {
-                        return SliverFillRemaining(
-                          child: _EmptyState(
-                            hasSearch: searchQuery.isNotEmpty,
-                            isCombo: true,
-                          ),
-                        );
-                      }
-
-                      return switch (viewMode) {
-                        ViewMode.grid => _ComboGridSliver(combos: filtered),
-                        ViewMode.list => _CombosContentSliver(combos: filtered),
-                      };
-                    },
-                  ),
-
-            // Bottom padding so last items aren't hidden behind frosted nav bar
-            SliverPadding(
-              padding: EdgeInsets.only(
-                bottom: kBottomNavigationBarHeight +
-                    MediaQuery.of(context).padding.bottom +
-                    AppSpacing.lg,
+              // Bottom padding so last items aren't hidden behind frosted nav bar
+              SliverPadding(
+                padding: EdgeInsets.only(
+                  bottom:
+                      kBottomNavigationBarHeight +
+                      MediaQuery.of(context).padding.bottom +
+                      AppSpacing.lg,
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
-      ),
       ),
       floatingActionButton: Padding(
         padding: EdgeInsets.only(
-          bottom: kBottomNavigationBarHeight +
+          bottom:
+              kBottomNavigationBarHeight +
               MediaQuery.of(context).padding.bottom,
         ),
-        child: Semantics(
-                label: segment == ArsenalSegment.moves
-                    ? 'Add new move'
-                    : 'Create new combo',
-                button: true,
-                child: FloatingActionButton(
-                  onPressed: switch (segment) {
-                    ArsenalSegment.moves => () => _startVideoFirstFlow(
-                      context,
-                      ref,
-                    ),
-                    ArsenalSegment.combos => () async {
-                      final comboName = await context.push<String>(
-                        '/create-combo',
-                      );
-                      if (!context.mounted || comboName == null) return;
-                      ref.read(_arsenalSegmentProvider.notifier).state =
-                          ArsenalSegment.combos;
-                      HapticFeedback.mediumImpact();
-                      CelebrationOverlay.show(context, title: comboName);
+        child:
+            Semantics(
+                  label: segment == ArsenalSegment.moves
+                      ? 'Add new move'
+                      : 'Create new combo',
+                  button: true,
+                  child: FloatingActionButton(
+                    onPressed: switch (segment) {
+                      ArsenalSegment.moves => () => _startVideoFirstFlow(
+                        context,
+                        ref,
+                      ),
+                      ArsenalSegment.combos => () async {
+                        final comboName = await context.push<String>(
+                          '/create-combo',
+                        );
+                        if (!context.mounted || comboName == null) return;
+                        ref.read(_arsenalSegmentProvider.notifier).state =
+                            ArsenalSegment.combos;
+                        unawaited(HapticFeedback.mediumImpact());
+                        CelebrationOverlay.show(context, title: comboName);
+                      },
                     },
-                  },
-                  backgroundColor: Theme.of(context).colorScheme.primary,
-                  child: const Icon(Icons.add, color: Colors.white),
-                ),
-              )
-              .animate()
-              .scale(
-                begin: const Offset(0, 0),
-                end: const Offset(1, 1),
-                duration: AppMotion.moderate02,
-                curve: AppMotion.expressive,
-              )
-              .fadeIn(duration: AppMotion.moderate01),
+                    backgroundColor: Theme.of(context).colorScheme.primary,
+                    child: const Icon(Icons.add, color: Colors.white),
+                  ),
+                )
+                .animate()
+                .scale(
+                  begin: const Offset(0, 0),
+                  end: const Offset(1, 1),
+                  duration: AppMotion.moderate02,
+                  curve: AppMotion.expressive,
+                )
+                .fadeIn(duration: AppMotion.moderate01),
       ),
     );
   }
@@ -302,6 +308,7 @@ class MoveListScreen extends ConsumerWidget {
   /// If user taps "Skip", falls through to a simplified name-only sheet.
   Future<void> _startVideoFirstFlow(BuildContext context, WidgetRef ref) async {
     // 1. Open video picker immediately
+    MediaPlaybackCoordinator.shared.pauseAll();
     final pickerResult = await VideoPickerSheet.show(context);
     if (!context.mounted) return;
 
@@ -310,6 +317,7 @@ class MoveListScreen extends ConsumerWidget {
 
     // 2. Optional video editor
     String videoPath = pickerResult.localPath;
+    MediaPlaybackCoordinator.shared.pauseAll();
     final editedPath = await context.push<String>(
       '/video-editor',
       extra: {'videoPath': videoPath},
@@ -339,8 +347,14 @@ class MoveListScreen extends ConsumerWidget {
     if (result == null || result.name.isEmpty || !context.mounted) return;
 
     try {
-      await _createMove(ref, result.name, result.category, videoPath);
-      HapticFeedback.mediumImpact();
+      await _createMove(
+        ref,
+        result.name,
+        result.category,
+        videoPath,
+        pickerResult.originalFileName,
+      );
+      unawaited(HapticFeedback.mediumImpact());
     } catch (error) {
       if (!context.mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -360,6 +374,7 @@ class MoveListScreen extends ConsumerWidget {
     String name,
     String? category,
     String? videoPath,
+    String? originalVideoName,
   ) async {
     final safeCategory = category ?? 'default';
     final normalizedName = ref
@@ -372,6 +387,9 @@ class MoveListScreen extends ConsumerWidget {
       throw StateError('duplicate_card_name');
     }
 
+    final storedVideoPath = videoPath == null
+        ? null
+        : VideoPathResolver.toRelative(videoPath);
     final moveId = const Uuid().v4();
     await ref
         .read(moveRepositoryProvider)
@@ -380,32 +398,42 @@ class MoveListScreen extends ConsumerWidget {
             id: moveId,
             name: normalizedName,
             category: Value(safeCategory),
-            videoPath: Value(videoPath),
+            videoPath: Value(storedVideoPath),
+            originalVideoName: Value(originalVideoName),
           ),
         );
     if (videoPath != null) {
-      // Save to photo album (non-fatal)
-      unawaited(
-        _videoAlbum
-            .saveToAlbum(
-              videoPath: videoPath,
-              albumName: NativeVideoAlbum.defaultAlbumName(),
-              assetTitle: normalizedName,
-              category: safeCategory,
-            )
-            .catchError(
-              (error) => debugPrint('Album save failed (non-fatal): $error'),
-            ),
-      );
+      try {
+        final managedCopy = await _videoAlbum.saveToAlbum(
+          videoPath: videoPath,
+          albumName: NativeVideoAlbum.defaultAlbumName(),
+          assetTitle: normalizedName,
+          category: safeCategory,
+        );
+        if (managedCopy != null) {
+          await ref
+              .read(moveRepositoryProvider)
+              .update(
+                MovesCompanion(
+                  id: Value(moveId),
+                  managedAlbumAssetId: Value(managedCopy.assetLocalIdentifier),
+                  managedAlbumFilename: Value(managedCopy.filename),
+                  managedAlbumName: Value(managedCopy.albumName),
+                ),
+              );
+        }
+      } catch (error) {
+        debugPrint('Album save failed (non-fatal): $error');
+      }
 
       // Sync hook: hash → manifest → queue upload (non-fatal, fire-and-forget)
       unawaited(
-        ref.read(videoImportSyncHookProvider).onVideoImported(
-          localPath: videoPath,
-          moveId: moveId,
-        ).catchError(
-          (error) => debugPrint('Sync hook failed (non-fatal): $error'),
-        ),
+        ref
+            .read(videoImportSyncHookProvider)
+            .onVideoImported(localPath: videoPath, moveId: moveId)
+            .catchError(
+              (error) => debugPrint('Sync hook failed (non-fatal): $error'),
+            ),
       );
     }
   }
@@ -458,11 +486,11 @@ class _VideoNamingSheetState extends ConsumerState<_VideoNamingSheet> {
 
     if (isTaken) {
       setState(() => _errorText = '"$normalized" already exists.');
-      HapticFeedback.heavyImpact();
+      unawaited(HapticFeedback.heavyImpact());
       return;
     }
 
-    HapticFeedback.mediumImpact();
+    unawaited(HapticFeedback.mediumImpact());
     Navigator.pop(context, (name: normalized, category: selectedCategory));
   }
 
@@ -791,8 +819,10 @@ class _ViewModeToggle extends ConsumerWidget {
     );
 
     if (newName != null && newName.isNotEmpty) {
-      ref.read(viewNamesProvider.notifier).rename(mode.name, newName);
-      HapticFeedback.mediumImpact();
+      unawaited(
+        ref.read(viewNamesProvider.notifier).rename(mode.name, newName),
+      );
+      unawaited(HapticFeedback.mediumImpact());
     }
   }
 }
@@ -1036,4 +1066,3 @@ class _MoveGridSliver extends StatelessWidget {
     );
   }
 }
-

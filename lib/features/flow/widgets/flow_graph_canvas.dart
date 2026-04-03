@@ -274,7 +274,7 @@ class _FlowGraphPainter extends CustomPainter {
     if (viewMode == FlowViewMode.clusters) _drawCategoryLabels(canvas, size);
     _drawEdges(canvas);
     _drawNodes(canvas);
-    _drawLabels(canvas);
+    _drawLabels(canvas, size);
   }
 
   /// Draws a subtle dot grid as a spatial reference layer.
@@ -544,16 +544,26 @@ class _FlowGraphPainter extends CustomPainter {
   /// - Mastery: 13px w600 — prominent, rewarding
   /// - Learning: 12px w500 — present but secondary
   /// - New: hidden — no label until the move is practiced
-  void _drawLabels(Canvas canvas) {
+  void _drawLabels(Canvas canvas, Size size) {
     // Too zoomed out — labels are illegible, skip entirely.
     if (zoomScale < 0.5) return;
 
     final textColor = brightness == Brightness.light
         ? AppColors.lightText.withValues(alpha: 0.85)
         : AppColors.darkText.withValues(alpha: 0.85);
+    final maxLabelWidth = min(132.0, max(80.0, size.width * 0.18));
 
     // Build label candidates with priority sorting.
-    final candidates = <({GraphNode node, double x, double y})>[];
+    final candidates =
+        <
+          ({
+            GraphNode node,
+            double x,
+            double y,
+            Rect rect,
+            ui.Paragraph paragraph,
+          })
+        >[];
     for (final node in nodes) {
       final radius = _radiusForMastery(node.masteryState);
       if (radius < 8) continue; // tiny nodes get no labels
@@ -566,34 +576,10 @@ class _FlowGraphPainter extends CustomPainter {
       final labelY = node.masteryState == 2
           ? node.y + radius + _haloGap + _haloWidth + 6
           : node.y + radius + 6;
-      final labelX = node.x - 40;
-      candidates.add((node: node, x: labelX, y: labelY));
-    }
-
-    // Mastery nodes first (they earned their labels), then multi-selected.
-    candidates.sort((a, b) {
-      final aBoost = multiSelectedIds.contains(a.node.id)
-          ? 3
-          : a.node.masteryState;
-      final bBoost = multiSelectedIds.contains(b.node.id)
-          ? 3
-          : b.node.masteryState;
-      return bBoost.compareTo(aBoost);
-    });
-
-    // Greedy collision-aware placement.
-    final placed = <Rect>[];
-    for (final c in candidates) {
-      final rect = Rect.fromLTWH(c.x, c.y, 80, 16);
-      final overlaps = placed.any((r) => r.overlaps(rect));
-      if (overlaps) continue;
-      placed.add(rect);
-
-      final fontSize = c.node.masteryState == 2 ? 13.0 : 12.0;
-      final fontWeight = c.node.masteryState == 2
+      final fontSize = node.masteryState == 2 ? 13.0 : 12.0;
+      final fontWeight = node.masteryState == 2
           ? FontWeight.w600
           : FontWeight.w500;
-
       final paragraphBuilder =
           ui.ParagraphBuilder(
               ui.ParagraphStyle(
@@ -610,11 +596,51 @@ class _FlowGraphPainter extends CustomPainter {
                 fontFamily: 'Inter',
               ),
             )
-            ..addText(c.node.name);
+            ..addText(node.name);
 
       final paragraph = paragraphBuilder.build()
-        ..layout(const ui.ParagraphConstraints(width: 80));
-      canvas.drawParagraph(paragraph, Offset(c.x, c.y));
+        ..layout(ui.ParagraphConstraints(width: maxLabelWidth));
+
+      final labelWidth = paragraph.longestLine;
+      final labelHeight = paragraph.height;
+      final labelX = (node.x - labelWidth / 2)
+          .clamp(4.0, max(4.0, size.width - labelWidth - 4.0))
+          .toDouble();
+      final clampedY = labelY
+          .clamp(4.0, max(4.0, size.height - labelHeight - 4.0))
+          .toDouble();
+      candidates.add((
+        node: node,
+        x: labelX,
+        y: clampedY,
+        rect: Rect.fromLTWH(
+          labelX - 4,
+          clampedY - 2,
+          labelWidth + 8,
+          labelHeight + 4,
+        ),
+        paragraph: paragraph,
+      ));
+    }
+
+    // Mastery nodes first (they earned their labels), then multi-selected.
+    candidates.sort((a, b) {
+      final aBoost = multiSelectedIds.contains(a.node.id)
+          ? 3
+          : a.node.masteryState;
+      final bBoost = multiSelectedIds.contains(b.node.id)
+          ? 3
+          : b.node.masteryState;
+      return bBoost.compareTo(aBoost);
+    });
+
+    // Greedy collision-aware placement.
+    final placed = <Rect>[];
+    for (final c in candidates) {
+      final overlaps = placed.any((r) => r.overlaps(c.rect));
+      if (overlaps) continue;
+      placed.add(c.rect);
+      canvas.drawParagraph(c.paragraph, Offset(c.x, c.y));
     }
   }
 

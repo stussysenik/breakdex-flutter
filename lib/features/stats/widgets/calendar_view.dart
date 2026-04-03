@@ -91,65 +91,63 @@ class _LabCalendarViewState extends ConsumerState<LabCalendarView> {
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
 
-    return SliverToBoxAdapter(
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: AppSpacing.screenEdge),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Month navigation header
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                IconButton(
-                  onPressed: _goToPreviousMonth,
-                  icon: const Icon(Icons.chevron_left_rounded),
-                  iconSize: 28,
-                  color: colorScheme.onSurface,
-                ),
-                Text(
-                  _formatMonth(_displayedMonth),
-                  style: AppTypography.titleSmall.copyWith(
-                    color: colorScheme.onSurface,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-                IconButton(
-                  onPressed: _goToNextMonth,
-                  icon: const Icon(Icons.chevron_right_rounded),
-                  iconSize: 28,
-                  color: colorScheme.onSurface,
-                ),
-              ],
-            ),
-            const SizedBox(height: AppSpacing.sm),
-
-            // Weekday headers
-            _WeekdayHeaders(colorScheme: colorScheme),
-            const SizedBox(height: AppSpacing.xs),
-
-            // Page view for swiping months
-            SizedBox(
-              // 6 rows max * cell height + spacing
-              height: 6 * 52.0 + 5 * AppSpacing.xs,
-              child: PageView.builder(
-                controller: _pageController,
-                onPageChanged: _onPageChanged,
-                itemBuilder: (context, page) {
-                  final month = _monthForPage(page);
-                  return _MonthGrid(
-                    month: month,
-                    onDayTap: (date) => _showDayDetail(context, date),
-                  );
-                },
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.screenEdge),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Month navigation header
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              IconButton(
+                onPressed: _goToPreviousMonth,
+                icon: const Icon(Icons.chevron_left_rounded),
+                iconSize: 28,
+                color: colorScheme.onSurface,
               ),
-            ),
-            const SizedBox(height: AppSpacing.md),
+              Text(
+                _formatMonth(_displayedMonth),
+                style: AppTypography.titleSmall.copyWith(
+                  color: colorScheme.onSurface,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              IconButton(
+                onPressed: _goToNextMonth,
+                icon: const Icon(Icons.chevron_right_rounded),
+                iconSize: 28,
+                color: colorScheme.onSurface,
+              ),
+            ],
+          ),
+          const SizedBox(height: AppSpacing.sm),
 
-            // Legend
-            _Legend(colorScheme: colorScheme),
-          ],
-        ),
+          // Weekday headers
+          _WeekdayHeaders(colorScheme: colorScheme),
+          const SizedBox(height: AppSpacing.xs),
+
+          // Page view for swiping months
+          SizedBox(
+            // 6 rows max * cell height + spacing
+            height: 6 * 52.0 + 5 * AppSpacing.xs,
+            child: PageView.builder(
+              controller: _pageController,
+              onPageChanged: _onPageChanged,
+              itemBuilder: (context, page) {
+                final month = _monthForPage(page);
+                return _MonthGrid(
+                  month: month,
+                  onDayTap: (date) => _showDayDetail(context, date),
+                );
+              },
+            ),
+          ),
+          const SizedBox(height: AppSpacing.md),
+
+          // Legend
+          _Legend(colorScheme: colorScheme),
+        ],
       ),
     );
   }
@@ -166,8 +164,18 @@ class _LabCalendarViewState extends ConsumerState<LabCalendarView> {
 
   String _formatMonth(DateTime month) {
     const months = [
-      'January', 'February', 'March', 'April', 'May', 'June',
-      'July', 'August', 'September', 'October', 'November', 'December',
+      'January',
+      'February',
+      'March',
+      'April',
+      'May',
+      'June',
+      'July',
+      'August',
+      'September',
+      'October',
+      'November',
+      'December',
     ];
     return '${months[month.month - 1]} ${month.year}';
   }
@@ -371,10 +379,7 @@ class _Dot extends StatelessWidget {
       width: 5,
       height: 5,
       margin: const EdgeInsets.symmetric(horizontal: 1),
-      decoration: BoxDecoration(
-        color: color,
-        shape: BoxShape.circle,
-      ),
+      decoration: BoxDecoration(color: color, shape: BoxShape.circle),
     );
   }
 }
@@ -437,9 +442,7 @@ class _LegendItem extends StatelessWidget {
         const SizedBox(width: 4),
         Text(
           label,
-          style: AppTypography.caption.copyWith(
-            color: colorScheme.secondary,
-          ),
+          style: AppTypography.caption.copyWith(color: colorScheme.secondary),
         ),
       ],
     );
@@ -570,8 +573,18 @@ class _DayDetailSheet extends ConsumerWidget {
 
   String _formatDate(DateTime d) {
     const months = [
-      'January', 'February', 'March', 'April', 'May', 'June',
-      'July', 'August', 'September', 'October', 'November', 'December',
+      'January',
+      'February',
+      'March',
+      'April',
+      'May',
+      'June',
+      'July',
+      'August',
+      'September',
+      'October',
+      'November',
+      'December',
     ];
     return '${months[d.month - 1]} ${d.day}, ${d.year}';
   }
@@ -599,8 +612,10 @@ class _MonthActivity {
 /// day-of-month. This is a FutureProvider because the underlying DAOs
 /// provide futures for range queries (reviews) and we convert streams
 /// to futures for entries/milestones.
-final _monthActivityProvider =
-    FutureProvider.family<_MonthActivity, DateTime>((ref, month) async {
+final _monthActivityProvider = FutureProvider.family<_MonthActivity, DateTime>((
+  ref,
+  month,
+) async {
   final start = DateTime(month.year, month.month, 1);
   final end = DateTime(month.year, month.month + 1, 0, 23, 59, 59);
 
@@ -667,60 +682,69 @@ class _DayActivityItem {
 /// Provider that fetches all activity details for a specific day.
 final _dayDetailProvider =
     FutureProvider.family<List<_DayActivityItem>, DateTime>((ref, date) async {
-  final start = DateTime(date.year, date.month, date.day);
-  final end = start.add(const Duration(days: 1));
-  final items = <_DayActivityItem>[];
+      final start = DateTime(date.year, date.month, date.day);
+      final end = start.add(const Duration(days: 1));
+      final items = <_DayActivityItem>[];
 
-  // Reviews
-  final reviewsDao = ref.watch(reviewsDaoProvider);
-  final reviews = await reviewsDao.getInRange(start, end);
-  for (final r in reviews) {
-    items.add(_DayActivityItem(
-      typeLabel: 'Review',
-      description: '${r.rating} review'
-          '${r.moveId != null ? ' (move)' : ''}'
-          '${r.comboId != null ? ' (combo)' : ''}',
-      color: AppColors.stateLearning,
-      timestamp: r.reviewedAt,
-    ));
-  }
-
-  // Lab entries
-  final entriesDao = ref.watch(labEntriesDaoProvider);
-  final allEntries = await entriesDao.watchByLab(null).first;
-  for (final e in allEntries) {
-    if (e.createdAt.isAfter(start.subtract(const Duration(seconds: 1))) &&
-        e.createdAt.isBefore(end)) {
-      items.add(_DayActivityItem(
-        typeLabel: 'Lab Entry',
-        description: e.content,
-        color: const Color(0xFF9333EA),
-        timestamp: e.createdAt,
-      ));
-    }
-  }
-
-  // Milestones
-  final labsDao = ref.watch(labsDaoProvider);
-  final labs = await labsDao.getAll();
-  final milestonesDao = ref.watch(milestonesDaoProvider);
-  for (final lab in labs) {
-    final milestones = await milestonesDao.watchByLab(lab.id).first;
-    for (final m in milestones) {
-      if (m.completedAt != null &&
-          m.completedAt!.isAfter(start.subtract(const Duration(seconds: 1))) &&
-          m.completedAt!.isBefore(end)) {
-        items.add(_DayActivityItem(
-          typeLabel: 'Milestone',
-          description: '${m.title} (${lab.name})',
-          color: AppColors.stateMastery,
-          timestamp: m.completedAt!,
-        ));
+      // Reviews
+      final reviewsDao = ref.watch(reviewsDaoProvider);
+      final reviews = await reviewsDao.getInRange(start, end);
+      for (final r in reviews) {
+        items.add(
+          _DayActivityItem(
+            typeLabel: 'Review',
+            description:
+                '${r.rating} review'
+                '${r.moveId != null ? ' (move)' : ''}'
+                '${r.comboId != null ? ' (combo)' : ''}',
+            color: AppColors.stateLearning,
+            timestamp: r.reviewedAt,
+          ),
+        );
       }
-    }
-  }
 
-  // Sort by timestamp
-  items.sort((a, b) => a.timestamp.compareTo(b.timestamp));
-  return items;
-});
+      // Lab entries
+      final entriesDao = ref.watch(labEntriesDaoProvider);
+      final allEntries = await entriesDao.watchByLab(null).first;
+      for (final e in allEntries) {
+        if (e.createdAt.isAfter(start.subtract(const Duration(seconds: 1))) &&
+            e.createdAt.isBefore(end)) {
+          items.add(
+            _DayActivityItem(
+              typeLabel: 'Lab Entry',
+              description: e.content,
+              color: const Color(0xFF9333EA),
+              timestamp: e.createdAt,
+            ),
+          );
+        }
+      }
+
+      // Milestones
+      final labsDao = ref.watch(labsDaoProvider);
+      final labs = await labsDao.getAll();
+      final milestonesDao = ref.watch(milestonesDaoProvider);
+      for (final lab in labs) {
+        final milestones = await milestonesDao.watchByLab(lab.id).first;
+        for (final m in milestones) {
+          if (m.completedAt != null &&
+              m.completedAt!.isAfter(
+                start.subtract(const Duration(seconds: 1)),
+              ) &&
+              m.completedAt!.isBefore(end)) {
+            items.add(
+              _DayActivityItem(
+                typeLabel: 'Milestone',
+                description: '${m.title} (${lab.name})',
+                color: AppColors.stateMastery,
+                timestamp: m.completedAt!,
+              ),
+            );
+          }
+        }
+      }
+
+      // Sort by timestamp
+      items.sort((a, b) => a.timestamp.compareTo(b.timestamp));
+      return items;
+    });

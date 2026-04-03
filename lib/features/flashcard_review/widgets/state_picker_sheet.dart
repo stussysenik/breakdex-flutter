@@ -1,12 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/design/spacing.dart';
+import '../../../core/design/theme.dart';
 import '../../../core/design/typography.dart';
 import '../../../core/models/learning_state.dart';
+import '../../../core/providers.dart';
 
 /// Bottom sheet for manually overriding a move's learning state.
-class StatePickerSheet extends StatelessWidget {
+class StatePickerSheet extends ConsumerWidget {
   const StatePickerSheet({
     super.key,
     required this.currentState,
@@ -27,16 +30,15 @@ class StatePickerSheet extends StatelessWidget {
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(AppRadius.lg)),
       ),
-      builder: (_) => StatePickerSheet(
-        currentState: currentState,
-        moveName: moveName,
-      ),
+      builder: (_) =>
+          StatePickerSheet(currentState: currentState, moveName: moveName),
     );
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final colorScheme = Theme.of(context).colorScheme;
+    final labels = ref.watch(learningStateLabelsProvider);
 
     const descriptions = {
       LearningState.newState: 'Start fresh — reset progress',
@@ -72,6 +74,7 @@ class StatePickerSheet extends StatelessWidget {
             const SizedBox(height: AppSpacing.lg),
             for (final state in LearningState.values) ...[
               _StateOption(
+                label: resolveLearningStateLabel(labels, state),
                 state: state,
                 description: descriptions[state] ?? '',
                 isCurrent: state == currentState,
@@ -93,12 +96,14 @@ class StatePickerSheet extends StatelessWidget {
 class _StateOption extends StatelessWidget {
   const _StateOption({
     required this.state,
+    required this.label,
     required this.description,
     required this.isCurrent,
     required this.onTap,
   });
 
   final LearningState state;
+  final String label;
   final String description;
   final bool isCurrent;
   final VoidCallback onTap;
@@ -106,6 +111,7 @@ class _StateOption extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
+    final stateColor = AppSemanticTheme.of(context).colorForState(state);
     return GestureDetector(
       onTap: onTap,
       child: AnimatedContainer(
@@ -113,11 +119,11 @@ class _StateOption extends StatelessWidget {
         padding: const EdgeInsets.all(AppSpacing.md),
         decoration: BoxDecoration(
           color: isCurrent
-              ? state.color.withValues(alpha: 0.1)
+              ? stateColor.withValues(alpha: 0.1)
               : colorScheme.surfaceContainerHighest,
           borderRadius: BorderRadius.circular(AppRadius.md),
           border: isCurrent
-              ? Border.all(color: state.color.withValues(alpha: 0.4), width: 1.5)
+              ? Border.all(color: stateColor.withValues(alpha: 0.4), width: 1.5)
               : null,
         ),
         child: Row(
@@ -126,7 +132,7 @@ class _StateOption extends StatelessWidget {
               width: 12,
               height: 12,
               decoration: BoxDecoration(
-                color: state.color,
+                color: stateColor,
                 shape: BoxShape.circle,
               ),
             ),
@@ -136,7 +142,7 @@ class _StateOption extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    state.displayText,
+                    label,
                     style: AppTypography.bodyMedium.copyWith(
                       color: colorScheme.onSurface,
                       fontWeight: FontWeight.w600,
@@ -153,7 +159,7 @@ class _StateOption extends StatelessWidget {
               ),
             ),
             if (isCurrent)
-              Icon(Icons.check_circle, color: state.color, size: 20),
+              Icon(Icons.check_circle, color: stateColor, size: 20),
           ],
         ),
       ),

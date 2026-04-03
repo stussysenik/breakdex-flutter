@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:drift/drift.dart' hide Column;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -14,6 +16,7 @@ import '../../core/design/typography.dart';
 import '../../core/models/learning_state.dart';
 import '../../core/providers.dart';
 import '../../core/services/categories_service.dart';
+import '../../core/services/media_playback_coordinator.dart';
 import '../../core/services/native_share_sheet.dart';
 import '../../core/services/video_path_resolver.dart';
 import '../../core/services/native_video_album.dart';
@@ -21,7 +24,9 @@ import '../../core/utils/share_sheet.dart';
 import '../../shared/widgets/state_pill.dart';
 import '../../shared/widgets/video_player_widget.dart' show RobustVideoPlayer;
 import '../../shared/widgets/action_tile.dart';
+import '../../shared/widgets/color_setting_tile.dart';
 import '../../shared/widgets/notes_section.dart';
+import '../flashcard_review/widgets/state_picker_sheet.dart';
 import '../lab/widgets/move_aura_section.dart';
 import '../../shared/widgets/video_picker_sheet.dart';
 
@@ -135,9 +140,25 @@ class MoveDetailScreen extends ConsumerWidget {
                   spacing: AppSpacing.sm,
                   runSpacing: AppSpacing.sm,
                   children: [
-                    StatePill(state: state),
-                    _CategoryBadge(category: move.category),
+                    StatePill(
+                      state: state,
+                      onTap: () =>
+                          _changeReviewState(context, ref, move, state),
+                      showDisclosure: true,
+                      semanticsIdentifier: 'move-detail-state-pill',
+                    ),
+                    _CategoryBadge(
+                      category: move.category,
+                      onTap: () => _changeCategory(context, ref, move),
+                    ),
                   ],
+                ),
+                const SizedBox(height: AppSpacing.xs),
+                Text(
+                  'Tap state or category to edit.',
+                  style: AppTypography.caption.copyWith(
+                    color: colorScheme.secondary,
+                  ),
                 ),
                 const SizedBox(height: AppSpacing.lg),
 
@@ -155,6 +176,14 @@ class MoveDetailScreen extends ConsumerWidget {
                     color: colorScheme.onSurface,
                   ),
                 ),
+                if (_sourceFileNameFor(move) case final sourceFileName?) ...[
+                  const SizedBox(height: AppSpacing.lg),
+                  _MetadataValue(label: 'Source file', value: sourceFileName),
+                ],
+                if (_albumFileNameFor(move) case final albumFileName?) ...[
+                  const SizedBox(height: AppSpacing.sm),
+                  _MetadataValue(label: 'Album file', value: albumFileName),
+                ],
                 const SizedBox(height: AppSpacing.lg),
 
                 // Notes
@@ -193,13 +222,16 @@ class MoveDetailScreen extends ConsumerWidget {
                   ActionTile(
                     icon: Icons.auto_fix_high,
                     label: 'Analyze Move',
-                    onTap: () => context.push(
-                      '/move-analysis',
-                      extra: {
-                        'moveId': move.id,
-                        'videoPath': move.resolvedVideoPath,
-                      },
-                    ),
+                    onTap: () {
+                      MediaPlaybackCoordinator.shared.pauseAll();
+                      context.push(
+                        '/move-analysis',
+                        extra: {
+                          'moveId': move.id,
+                          'videoPath': move.resolvedVideoPath,
+                        },
+                      );
+                    },
                   ),
                   const SizedBox(height: AppSpacing.sm),
                   ActionTile(
@@ -236,12 +268,6 @@ class MoveDetailScreen extends ConsumerWidget {
                 ),
                 const SizedBox(height: AppSpacing.sm),
                 ActionTile(
-                  icon: Icons.category_outlined,
-                  label: 'Change Category',
-                  onTap: () => _changeCategory(context, ref, move),
-                ),
-                const SizedBox(height: AppSpacing.sm),
-                ActionTile(
                   icon: Icons.delete_forever,
                   label: 'Delete Move',
                   destructive: true,
@@ -265,6 +291,7 @@ class MoveDetailScreen extends ConsumerWidget {
 
   Future<void> _shareVideo(BuildContext context, Move move) async {
     if (move.videoPath == null) return;
+    MediaPlaybackCoordinator.shared.pauseAll();
     final origin = sharePositionOrigin(context);
     await NativeShareSheet.shareFiles(
       filePaths: [move.resolvedVideoPath!],
@@ -278,6 +305,7 @@ class MoveDetailScreen extends ConsumerWidget {
     WidgetRef ref,
     Move move,
   ) async {
+    MediaPlaybackCoordinator.shared.pauseAll();
     final result = await VideoPickerSheet.show(
       context,
       previousVideoName: move.originalVideoName,
@@ -286,7 +314,17 @@ class MoveDetailScreen extends ConsumerWidget {
           : null,
     );
     if (result == null) return;
-    final videoService = ref.read(videoServiceProvider);
+    await ref
+        .read(mediaCleanupServiceProvider)
+        .cleanupDetachedAsset(
+          title: move.name,
+          category: move.category,
+          storedVideoPath: move.videoPath,
+          resolvedVideoPath: move.resolvedVideoPath,
+          contentHash: move.contentHash,
+          managedAlbumAssetId: move.managedAlbumAssetId,
+          excludingMoveId: move.id,
+        );
     await ref
         .read(moveRepositoryProvider)
         .update(
@@ -294,15 +332,28 @@ class MoveDetailScreen extends ConsumerWidget {
             id: Value(move.id),
             videoPath: Value(VideoPathResolver.toRelative(result.localPath)),
             originalVideoName: Value(result.originalFileName),
+            managedAlbumAssetId: const Value(null),
+            managedAlbumFilename: const Value(null),
+            managedAlbumName: const Value(null),
+            contentHash: const Value(null),
           ),
         );
-    await videoService.replaceVideo(move.resolvedVideoPath);
+    unawaited(
+      ref
+          .read(videoImportSyncHookProvider)
+          .onVideoImported(localPath: result.localPath, moveId: move.id),
+    );
     if (!context.mounted) return;
-    await _saveSemanticAlbumCopy(
+    final managedCopy = await _saveSemanticAlbumCopy(
       context,
       videoPath: result.localPath,
       title: move.name,
       category: move.category,
+    );
+    await _storeManagedAlbumCopyMetadata(
+      ref,
+      moveId: move.id,
+      copy: managedCopy,
     );
   }
 
@@ -312,27 +363,51 @@ class MoveDetailScreen extends ConsumerWidget {
     Move move,
   ) async {
     if (move.videoPath == null) return;
+    MediaPlaybackCoordinator.shared.pauseAll();
     final editedPath = await context.push<String>(
       '/video-editor',
       extra: {'videoPath': move.resolvedVideoPath},
     );
     if (editedPath != null && context.mounted) {
-      final videoService = ref.read(videoServiceProvider);
+      await ref
+          .read(mediaCleanupServiceProvider)
+          .cleanupDetachedAsset(
+            title: move.name,
+            category: move.category,
+            storedVideoPath: move.videoPath,
+            resolvedVideoPath: move.resolvedVideoPath,
+            contentHash: move.contentHash,
+            managedAlbumAssetId: move.managedAlbumAssetId,
+            excludingMoveId: move.id,
+          );
       await ref
           .read(moveRepositoryProvider)
           .update(
             MovesCompanion(
               id: Value(move.id),
               videoPath: Value(VideoPathResolver.toRelative(editedPath)),
+              managedAlbumAssetId: const Value(null),
+              managedAlbumFilename: const Value(null),
+              managedAlbumName: const Value(null),
+              contentHash: const Value(null),
             ),
           );
-      await videoService.replaceVideo(move.resolvedVideoPath);
+      unawaited(
+        ref
+            .read(videoImportSyncHookProvider)
+            .onVideoImported(localPath: editedPath, moveId: move.id),
+      );
       if (!context.mounted) return;
-      await _saveSemanticAlbumCopy(
+      final managedCopy = await _saveSemanticAlbumCopy(
         context,
         videoPath: editedPath,
         title: move.name,
         category: move.category,
+      );
+      await _storeManagedAlbumCopyMetadata(
+        ref,
+        moveId: move.id,
+        copy: managedCopy,
       );
     }
   }
@@ -363,14 +438,20 @@ class MoveDetailScreen extends ConsumerWidget {
       ),
     );
     if (confirm != true) return;
-    HapticFeedback.mediumImpact();
-    if (move.videoPath != null) {
-      await ref.read(videoServiceProvider).deleteVideo(move.resolvedVideoPath!);
-    }
+    unawaited(HapticFeedback.mediumImpact());
+    await ref.read(mediaCleanupServiceProvider).cleanupMoveMedia(move);
     await ref
         .read(moveRepositoryProvider)
         .update(
-          MovesCompanion(id: Value(move.id), videoPath: const Value(null)),
+          MovesCompanion(
+            id: Value(move.id),
+            videoPath: const Value(null),
+            originalVideoName: const Value(null),
+            managedAlbumAssetId: const Value(null),
+            managedAlbumFilename: const Value(null),
+            managedAlbumName: const Value(null),
+            contentHash: const Value(null),
+          ),
         );
   }
 
@@ -415,7 +496,7 @@ class MoveDetailScreen extends ConsumerWidget {
                           setDialogState(
                             () => errorText = '"$normalized" already exists.',
                           );
-                          HapticFeedback.heavyImpact();
+                          unawaited(HapticFeedback.heavyImpact());
                           return;
                         }
                         Navigator.pop(ctx, normalized);
@@ -432,6 +513,19 @@ class MoveDetailScreen extends ConsumerWidget {
       await ref
           .read(moveRepositoryProvider)
           .update(MovesCompanion(id: Value(move.id), name: Value(newName)));
+      if (move.videoPath != null && context.mounted) {
+        await _syncManagedAlbumCopy(
+          context,
+          ref: ref,
+          moveId: move.id,
+          videoPath: move.resolvedVideoPath!,
+          previousAssetLocalIdentifier: move.managedAlbumAssetId,
+          previousTitle: move.name,
+          previousCategory: move.category,
+          nextTitle: newName,
+          nextCategory: move.category,
+        );
+      }
     } catch (error) {
       if (!context.mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -446,68 +540,108 @@ class MoveDetailScreen extends ConsumerWidget {
     }
   }
 
+  Future<void> _changeReviewState(
+    BuildContext context,
+    WidgetRef ref,
+    Move move,
+    LearningState currentState,
+  ) async {
+    unawaited(HapticFeedback.selectionClick());
+    final nextState = await StatePickerSheet.show(
+      context,
+      currentState: currentState,
+      moveName: move.name,
+    );
+    if (nextState == null || nextState == currentState) return;
+    await ref
+        .read(manualReviewStateServiceProvider)
+        .setMoveState(move, nextState);
+  }
+
   Future<void> _changeCategory(
     BuildContext context,
     WidgetRef ref,
     Move move,
   ) async {
-    final categories = ref.read(categoriesProvider);
-    if (categories.isEmpty) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('Create a category first.')));
-      return;
-    }
-
     final newCategory = await showModalBottomSheet<String>(
       context: context,
       backgroundColor: Theme.of(context).colorScheme.surface,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(AppRadius.lg)),
       ),
-      builder: (sheetContext) => SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(
-            AppSpacing.screenEdge,
-            AppSpacing.lg,
-            AppSpacing.screenEdge,
-            AppSpacing.lg,
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                'Move Category',
-                style: AppTypography.titleSmall.copyWith(
-                  color: Theme.of(context).colorScheme.onSurface,
-                  fontWeight: FontWeight.w700,
-                ),
+      builder: (sheetContext) => Consumer(
+        builder: (sheetContext, sheetRef, _) {
+          final categories = sheetRef.watch(categoriesProvider);
+          return SafeArea(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(
+                AppSpacing.screenEdge,
+                AppSpacing.lg,
+                AppSpacing.screenEdge,
+                AppSpacing.lg,
               ),
-              const SizedBox(height: AppSpacing.xs),
-              Text(
-                'Keep each move anchored to a dance category so review and stats stay meaningful.',
-                style: AppTypography.bodySmall.copyWith(
-                  color: Theme.of(context).colorScheme.secondary,
-                ),
-              ),
-              const SizedBox(height: AppSpacing.md),
-              Wrap(
-                spacing: AppSpacing.sm,
-                runSpacing: AppSpacing.sm,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  for (final category in categories)
-                    _EditableCategoryChip(
-                      label: category.name,
-                      color: category.color,
-                      selected: category.name == move.category,
-                      onTap: () => Navigator.pop(sheetContext, category.name),
+                  Text(
+                    'Move Category',
+                    style: AppTypography.titleSmall.copyWith(
+                      color: Theme.of(context).colorScheme.onSurface,
+                      fontWeight: FontWeight.w700,
                     ),
+                  ),
+                  const SizedBox(height: AppSpacing.xs),
+                  Text(
+                    categories.isEmpty
+                        ? 'Create the first category and it will be applied right away.'
+                        : 'Keep each move anchored to a dance category so review and stats stay meaningful.',
+                    style: AppTypography.bodySmall.copyWith(
+                      color: Theme.of(context).colorScheme.secondary,
+                    ),
+                  ),
+                  const SizedBox(height: AppSpacing.md),
+                  if (categories.isNotEmpty)
+                    Wrap(
+                      spacing: AppSpacing.sm,
+                      runSpacing: AppSpacing.sm,
+                      children: [
+                        for (final category in categories)
+                          _EditableCategoryChip(
+                            label: category.name,
+                            color: category.color,
+                            selected: category.name == move.category,
+                            onTap: () =>
+                                Navigator.pop(sheetContext, category.name),
+                          ),
+                      ],
+                    ),
+                  SizedBox(height: categories.isNotEmpty ? AppSpacing.lg : 0),
+                  SizedBox(
+                    width: double.infinity,
+                    child: FilledButton.tonalIcon(
+                      onPressed: () async {
+                        final created = await _showAddCategoryDialog(
+                          sheetContext,
+                          sheetRef,
+                        );
+                        if (created != null && sheetContext.mounted) {
+                          Navigator.pop(sheetContext, created);
+                        }
+                      },
+                      icon: const Icon(Icons.add),
+                      label: Text(
+                        categories.isEmpty
+                            ? 'Create first category'
+                            : 'Add category',
+                      ),
+                    ),
+                  ),
                 ],
               ),
-            ],
-          ),
-        ),
+            ),
+          );
+        },
       ),
     );
 
@@ -518,16 +652,135 @@ class MoveDetailScreen extends ConsumerWidget {
         .update(
           MovesCompanion(id: Value(move.id), category: Value(newCategory)),
         );
+    if (move.videoPath != null && context.mounted) {
+      await _syncManagedAlbumCopy(
+        context,
+        ref: ref,
+        moveId: move.id,
+        videoPath: move.resolvedVideoPath!,
+        previousAssetLocalIdentifier: move.managedAlbumAssetId,
+        previousTitle: move.name,
+        previousCategory: move.category,
+        nextTitle: move.name,
+        nextCategory: newCategory,
+      );
+    }
   }
 
-  Future<void> _saveSemanticAlbumCopy(
+  Future<String?> _showAddCategoryDialog(BuildContext context, WidgetRef ref) {
+    return showDialog<String>(
+      context: context,
+      builder: (context) {
+        final controller = TextEditingController();
+        Color selectedColor = categoryPresetColors[0];
+        String? errorText;
+        return StatefulBuilder(
+          builder: (context, setDialogState) => AlertDialog(
+            title: const Text('New Category'),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextField(
+                  controller: controller,
+                  autofocus: true,
+                  decoration: InputDecoration(
+                    hintText: 'Category name',
+                    errorText: errorText,
+                  ),
+                  onChanged: (_) => setDialogState(() => errorText = null),
+                ),
+                const SizedBox(height: AppSpacing.md),
+                ColorSettingTile(
+                  title: 'Category color',
+                  subtitle: formatColorHex(selectedColor),
+                  color: selectedColor,
+                  onTap: () async {
+                    final nextColor = await showColorEditorDialog(
+                      context,
+                      initialColor: selectedColor,
+                      title: 'Category Color',
+                      subtitle: 'Pick any color for this category label.',
+                      presets: categoryPresetColors,
+                    );
+                    if (nextColor == null || !context.mounted) return;
+                    setDialogState(() => selectedColor = nextColor);
+                  },
+                ),
+              ],
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('Cancel'),
+              ),
+              TextButton(
+                onPressed: () async {
+                  final name = controller.text.trim();
+                  if (name.isEmpty) {
+                    setDialogState(
+                      () => errorText = 'Category name cannot be empty.',
+                    );
+                    return;
+                  }
+                  final exists = ref
+                      .read(categoriesProvider)
+                      .any((item) => item.name == name);
+                  if (exists) {
+                    setDialogState(() => errorText = '"$name" already exists.');
+                    unawaited(HapticFeedback.heavyImpact());
+                    return;
+                  }
+
+                  await ref
+                      .read(categoriesProvider.notifier)
+                      .addCategory(name, selectedColor);
+                  if (!context.mounted) return;
+                  unawaited(HapticFeedback.mediumImpact());
+                  Navigator.pop(context, name);
+                },
+                child: const Text('Add'),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  String? _sourceFileNameFor(Move move) {
+    final originalName = move.originalVideoName?.trim();
+    if (originalName != null && originalName.isNotEmpty) {
+      return originalName;
+    }
+    final resolvedPath = move.resolvedVideoPath;
+    if (resolvedPath == null || resolvedPath.trim().isEmpty) return null;
+    return p.basename(resolvedPath);
+  }
+
+  String? _albumFileNameFor(Move move) {
+    final persistedName = move.managedAlbumFilename?.trim();
+    if (persistedName != null && persistedName.isNotEmpty) {
+      return persistedName;
+    }
+    if (move.videoPath == null && move.originalVideoName == null) return null;
+    final extensionSource =
+        move.resolvedVideoPath ?? move.originalVideoName ?? '';
+    final extension = p.extension(extensionSource).replaceFirst('.', '');
+    return NativeVideoAlbum.semanticFilename(
+      assetTitle: move.name,
+      category: move.category,
+      fileExtension: extension,
+    );
+  }
+
+  Future<ManagedAlbumCopy?> _saveSemanticAlbumCopy(
     BuildContext context, {
     required String videoPath,
     required String title,
     required String category,
   }) async {
     try {
-      await _videoAlbum.saveToAlbum(
+      return await _videoAlbum.saveToAlbum(
         videoPath: videoPath,
         albumName: NativeVideoAlbum.defaultAlbumName(),
         assetTitle: title,
@@ -539,6 +792,63 @@ class MoveDetailScreen extends ConsumerWidget {
           context,
         ).showSnackBar(SnackBar(content: Text('Album copy failed: $error')));
       }
+      return null;
+    }
+  }
+
+  Future<void> _storeManagedAlbumCopyMetadata(
+    WidgetRef ref, {
+    required String moveId,
+    required ManagedAlbumCopy? copy,
+  }) {
+    return ref
+        .read(moveRepositoryProvider)
+        .update(
+          MovesCompanion(
+            id: Value(moveId),
+            managedAlbumAssetId: Value(copy?.assetLocalIdentifier),
+            managedAlbumFilename: Value(copy?.filename),
+            managedAlbumName: Value(copy?.albumName),
+          ),
+        );
+  }
+
+  Future<void> _syncManagedAlbumCopy(
+    BuildContext context, {
+    required WidgetRef ref,
+    required String moveId,
+    required String videoPath,
+    required String? previousAssetLocalIdentifier,
+    required String previousTitle,
+    required String previousCategory,
+    required String nextTitle,
+    required String nextCategory,
+  }) async {
+    try {
+      await _videoAlbum.deleteManagedCopies(
+        assetTitle: previousTitle,
+        category: previousCategory,
+        fileExtension: p.extension(videoPath),
+        assetLocalIdentifier: previousAssetLocalIdentifier,
+      );
+      if (!context.mounted) return;
+      final managedCopy = await _saveSemanticAlbumCopy(
+        context,
+        videoPath: videoPath,
+        title: nextTitle,
+        category: nextCategory,
+      );
+      await _storeManagedAlbumCopyMetadata(
+        ref,
+        moveId: moveId,
+        copy: managedCopy,
+      );
+    } catch (error) {
+      await _storeManagedAlbumCopyMetadata(ref, moveId: moveId, copy: null);
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Album sync failed: $error')));
     }
   }
 
@@ -570,24 +880,27 @@ class MoveDetailScreen extends ConsumerWidget {
       ),
     );
     if (confirm != true) return;
-    HapticFeedback.mediumImpact();
-    if (move.videoPath != null) {
-      await ref.read(videoServiceProvider).deleteVideo(move.resolvedVideoPath!);
-    }
+    unawaited(HapticFeedback.mediumImpact());
+    await ref.read(mediaCleanupServiceProvider).cleanupMoveMedia(move);
     await ref.read(moveRepositoryProvider).delete(move.id);
     if (context.mounted) context.pop();
   }
 }
 
-class _CategoryBadge extends StatelessWidget {
-  const _CategoryBadge({required this.category});
+class _CategoryBadge extends ConsumerWidget {
+  const _CategoryBadge({required this.category, this.onTap});
 
   final String category;
+  final VoidCallback? onTap;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final colorScheme = Theme.of(context).colorScheme;
-    return Container(
+    final categories = ref.watch(categoriesProvider);
+    final match = categories.where((item) => item.name == category).firstOrNull;
+    final dotColor = match?.color ?? colorScheme.secondary;
+
+    final badge = Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       decoration: BoxDecoration(
         color: colorScheme.surfaceContainerHighest,
@@ -596,16 +909,45 @@ class _CategoryBadge extends StatelessWidget {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(Icons.category_outlined, size: 14, color: colorScheme.secondary),
+          Container(
+            width: 8,
+            height: 8,
+            decoration: BoxDecoration(color: dotColor, shape: BoxShape.circle),
+          ),
           const SizedBox(width: 6),
-          Text(
-            category,
-            style: AppTypography.caption.copyWith(
-              color: colorScheme.onSurface,
-              fontWeight: FontWeight.w600,
+          Flexible(
+            child: Text(
+              category,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: AppTypography.caption.copyWith(
+                color: colorScheme.onSurface,
+                fontWeight: FontWeight.w600,
+              ),
             ),
           ),
+          if (onTap != null) ...[
+            const SizedBox(width: 4),
+            Icon(Icons.expand_more, size: 14, color: colorScheme.secondary),
+          ],
         ],
+      ),
+    );
+
+    if (onTap == null) {
+      return badge;
+    }
+
+    return Semantics(
+      button: true,
+      label: 'Change category from $category',
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(AppRadius.md),
+          child: badge,
+        ),
       ),
     );
   }
@@ -659,6 +1001,36 @@ class _EditableCategoryChip extends StatelessWidget {
           ],
         ),
       ),
+    );
+  }
+}
+
+class _MetadataValue extends StatelessWidget {
+  const _MetadataValue({required this.label, required this.value});
+
+  final String label;
+  final String value;
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label,
+          style: AppTypography.caption.copyWith(color: colorScheme.secondary),
+        ),
+        const SizedBox(height: 2),
+        Text(
+          value,
+          style: AppTypography.bodyMedium.copyWith(
+            color: colorScheme.onSurface,
+          ),
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+        ),
+      ],
     );
   }
 }
@@ -765,7 +1137,7 @@ class _MissingActionButton extends StatelessWidget {
 
     return GestureDetector(
       onTap: () {
-        HapticFeedback.mediumImpact();
+        unawaited(HapticFeedback.mediumImpact());
         onTap();
       },
       child: Container(

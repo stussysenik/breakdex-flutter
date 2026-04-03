@@ -6,6 +6,7 @@ import '../../../core/database/daos/combos_dao.dart';
 import '../../../core/design/spacing.dart';
 import '../../../core/design/typography.dart';
 import '../../../core/models/learning_state.dart';
+import '../../../core/models/review_card_display_settings.dart';
 import '../../../shared/widgets/combo_step_line.dart';
 import '../../../shared/widgets/state_pill.dart';
 
@@ -27,8 +28,10 @@ class InstrumentPanel extends StatelessWidget {
     super.key,
     required this.title,
     required this.state,
+    required this.displaySettings,
     this.category,
     this.canEditState = true,
+    this.showMetadata = true,
     this.onStatePillTap,
     // Combo props
     this.comboMoves = const [],
@@ -48,12 +51,18 @@ class InstrumentPanel extends StatelessWidget {
   /// Current FSRS learning state — rendered via [StatePill].
   final LearningState state;
 
+  /// Configurable visibility for the stage-1 learning information.
+  final ReviewCardDisplaySettings displaySettings;
+
   /// Optional category label (e.g. "POWER MOVES"). Hidden when null or
   /// equal to `'default'` to avoid visual noise.
   final String? category;
 
   /// Whether the state pill is tappable (opens the state picker sheet).
   final bool canEditState;
+
+  /// Stage 2 hides the metadata panel so the learner only sees grading.
+  final bool showMetadata;
 
   /// Called when the learner taps the [StatePill] to manually override
   /// the learning state.
@@ -95,6 +104,29 @@ class InstrumentPanel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    if (!showMetadata) return const SizedBox.shrink();
+
+    final showTitle = displaySettings.showTitle;
+    final showState = displaySettings.showState;
+    final showCategory =
+        !_isCombo &&
+        displaySettings.showCategory &&
+        category != null &&
+        category != 'default';
+    final showComboTimeline = _isCombo && displaySettings.showComboTimeline;
+    final showActiveStepLabel =
+        _isCombo && displaySettings.showComboStepName && activeStep != null;
+    final showPlaybackControls = displaySettings.showPlaybackControls;
+
+    if (!(showTitle ||
+        showState ||
+        showCategory ||
+        showComboTimeline ||
+        showActiveStepLabel ||
+        showPlaybackControls)) {
+      return const SizedBox.shrink();
+    }
+
     final colorScheme = Theme.of(context).colorScheme;
 
     return Container(
@@ -117,31 +149,37 @@ class InstrumentPanel extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           children: [
             // ── Row 1: Title + State Pill ────────────────────────────────
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: [
-                Expanded(
-                  child: Text(
-                    title,
-                    style: AppTypography.titleSmall.copyWith(
-                      color: colorScheme.onSurface,
-                      fontWeight: FontWeight.w700,
-                      fontSize: 18,
+            if (showTitle || showState)
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  if (showTitle)
+                    Expanded(
+                      child: Text(
+                        title,
+                        style: AppTypography.titleSmall.copyWith(
+                          color: colorScheme.onSurface,
+                          fontWeight: FontWeight.w700,
+                          fontSize: 18,
+                        ),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    )
+                  else
+                    const Spacer(),
+                  if (showTitle && showState)
+                    const SizedBox(width: AppSpacing.sm),
+                  if (showState)
+                    GestureDetector(
+                      onTap: canEditState ? onStatePillTap : null,
+                      child: StatePill(state: state, overlay: false),
                     ),
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ),
-                const SizedBox(width: AppSpacing.sm),
-                GestureDetector(
-                  onTap: canEditState ? onStatePillTap : null,
-                  child: StatePill(state: state, overlay: false),
-                ),
-              ],
-            ),
+                ],
+              ),
 
             // ── Combo: step line timeline ────────────────────────────────
-            if (_isCombo) ...[
+            if (showComboTimeline) ...[
               const SizedBox(height: AppSpacing.sm),
               ComboStepLine(
                 stepCount: comboMoves.length,
@@ -154,52 +192,56 @@ class InstrumentPanel extends StatelessWidget {
               const SizedBox(height: AppSpacing.sm),
             ],
 
-            const SizedBox(height: AppSpacing.xs),
+            if ((showTitle || showState) &&
+                (showCategory || showActiveStepLabel || showPlaybackControls))
+              const SizedBox(height: AppSpacing.xs),
 
             // ── Row 2: Secondary label + playback controls ───────────────
-            Row(
-              children: [
-                // Left side — category (moves) or active step name (combos)
-                if (_isCombo && activeStep != null)
-                  Expanded(
-                    child: Text(
-                      activeStep!.name,
-                      style: AppTypography.bodySmall.copyWith(
-                        color: colorScheme.secondary,
-                        fontWeight: FontWeight.w600,
+            if (showCategory || showActiveStepLabel || showPlaybackControls)
+              Row(
+                children: [
+                  if (showActiveStepLabel)
+                    Expanded(
+                      child: Text(
+                        activeStep!.name,
+                        style: AppTypography.bodySmall.copyWith(
+                          color: colorScheme.secondary,
+                          fontWeight: FontWeight.w600,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                       ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
+                    )
+                  else if (showCategory)
+                    Expanded(
+                      child: Text(
+                        category!.toUpperCase(),
+                        style: AppTypography.caption.copyWith(
+                          color: colorScheme.secondary,
+                          letterSpacing: 1.5,
+                          fontSize: 11,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    )
+                  else
+                    const Spacer(),
+                  if (showPlaybackControls) ...[
+                    _InstrumentButton(
+                      icon: loopEnabled
+                          ? Icons.repeat_one_rounded
+                          : Icons.repeat_rounded,
+                      isActive: loopEnabled,
+                      onTap: onLoopToggle,
                     ),
-                  )
-                else if (!_isCombo &&
-                    category != null &&
-                    category != 'default')
-                  Text(
-                    category!.toUpperCase(),
-                    style: AppTypography.caption.copyWith(
-                      color: colorScheme.secondary,
-                      letterSpacing: 1.5,
-                      fontSize: 11,
-                      fontWeight: FontWeight.w600,
+                    const SizedBox(width: AppSpacing.md),
+                    _SpeedButton(
+                      speed: playbackSpeed,
+                      onTap: onSpeedCycle,
                     ),
-                  ),
-                const Spacer(),
-                // Right side — playback controls
-                _InstrumentButton(
-                  icon: loopEnabled
-                      ? Icons.repeat_one_rounded
-                      : Icons.repeat_rounded,
-                  isActive: loopEnabled,
-                  onTap: onLoopToggle,
-                ),
-                const SizedBox(width: AppSpacing.md),
-                _SpeedButton(
-                  speed: playbackSpeed,
-                  onTap: onSpeedCycle,
-                ),
-              ],
-            ),
+                  ],
+                ],
+              ),
           ],
         ),
       ),

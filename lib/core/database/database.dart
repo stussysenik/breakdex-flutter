@@ -89,7 +89,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.forTesting(super.e);
 
   @override
-  int get schemaVersion => 12;
+  int get schemaVersion => 14;
 
   Future<void> _installIntegrityTriggers() async {
     await customStatement('''
@@ -424,6 +424,17 @@ class AppDatabase extends _$AppDatabase {
             strftime('%s', 'now')
           FROM moves
         ''');
+      }
+
+      if (from < 13) {
+        await m.addColumn(moves, moves.managedAlbumAssetId);
+        await m.addColumn(moves, moves.managedAlbumFilename);
+        await m.addColumn(moves, moves.managedAlbumName);
+      }
+
+      if (from < 14) {
+        await m.addColumn(moves, moves.archivedAt);
+        await m.addColumn(moves, moves.archiveReason);
       }
 
       await _backfillReviewSnapshots();

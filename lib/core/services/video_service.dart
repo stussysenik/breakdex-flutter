@@ -365,7 +365,7 @@ class VideoService {
       _rememberFrameThumbnail(cacheKey, bytes);
       return bytes;
     } finally {
-      _frameThumbInFlight.remove(cacheKey);
+      unawaited(_frameThumbInFlight.remove(cacheKey));
     }
   }
 
@@ -645,16 +645,18 @@ class VideoService {
   }
 
   Future<void> deleteVideo(String path) async {
-    invalidateThumbCache(path);
-    final file = File(path);
+    final absolutePath = VideoPathResolver.toAbsolute(path);
+    invalidateThumbCache(absolutePath);
+
+    final file = File(absolutePath);
     if (await file.exists()) {
       await file.delete();
     }
+
     // Also delete cached thumbnail
-    final videoName = p.basenameWithoutExtension(path);
-    final docs = await getApplicationDocumentsDirectory();
+    final videoName = p.basenameWithoutExtension(absolutePath);
     final thumbFile = File(
-      p.join(docs.path, 'Moves', '.thumbs', '$videoName.jpg'),
+      p.join(p.dirname(absolutePath), '.thumbs', '$videoName.jpg'),
     );
     if (await thumbFile.exists()) {
       await thumbFile.delete();

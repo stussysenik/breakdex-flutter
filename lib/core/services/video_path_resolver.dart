@@ -49,7 +49,10 @@ abstract final class VideoPathResolver {
   /// 3. Absolute but different container UUID → find `/Documents/` marker
   /// 4. Fallback → `Moves/{basename}`
   static String toRelative(String path) {
-    assert(_docsPath.isNotEmpty, 'VideoPathResolver.initialize() must be called first');
+    assert(
+      _docsPath.isNotEmpty,
+      'VideoPathResolver.initialize() must be called first',
+    );
     // Already relative — nothing to do
     if (!path.startsWith('/')) return path;
 
@@ -79,7 +82,10 @@ abstract final class VideoPathResolver {
   /// 2. Starts with current docs prefix → return as-is
   /// 3. Absolute with wrong prefix → extract relative via /Documents/ marker
   static String toAbsolute(String path) {
-    assert(_docsPath.isNotEmpty, 'VideoPathResolver.initialize() must be called first');
+    assert(
+      _docsPath.isNotEmpty,
+      'VideoPathResolver.initialize() must be called first',
+    );
     // Relative path — prepend docs directory
     if (!path.startsWith('/')) {
       return '$_docsPath/$path';
@@ -109,15 +115,14 @@ abstract final class VideoPathResolver {
     // First try the normal toAbsolute resolution
     final candidate = toAbsolute(storedPath);
     try {
-      final exists = await File(candidate).exists().timeout(
-            const Duration(seconds: 3),
-            onTimeout: () => false,
-          );
+      final exists = await File(
+        candidate,
+      ).exists().timeout(const Duration(seconds: 3), onTimeout: () => false);
       if (exists) {
         final stat = await File(candidate).stat().timeout(
-              const Duration(seconds: 3),
-              onTimeout: () => throw Exception('stat timed out'),
-            );
+          const Duration(seconds: 3),
+          onTimeout: () => throw Exception('stat timed out'),
+        );
         if (stat.size > 0) return candidate;
       }
     } catch (_) {
@@ -166,16 +171,13 @@ abstract final class VideoPathHealer {
 
     try {
       // Heal moves.videoPath
-      final moves = await db.movesDao.getAll();
+      final moves = await db.movesDao.getAllIncludingArchived();
       for (final move in moves) {
         if (move.videoPath != null &&
             !VideoPathResolver.isRelative(move.videoPath!)) {
           final relative = VideoPathResolver.toRelative(move.videoPath!);
           await db.movesDao.updateMove(
-            MovesCompanion(
-              id: Value(move.id),
-              videoPath: Value(relative),
-            ),
+            MovesCompanion(id: Value(move.id), videoPath: Value(relative)),
           );
           healed++;
         }
@@ -186,10 +188,8 @@ abstract final class VideoPathHealer {
       for (final combo in combos) {
         if (combo.activeVideoPath != null &&
             !VideoPathResolver.isRelative(combo.activeVideoPath!)) {
-          final relative =
-              VideoPathResolver.toRelative(combo.activeVideoPath!);
-          await (db.update(db.combos)
-                ..where((t) => t.id.equals(combo.id)))
+          final relative = VideoPathResolver.toRelative(combo.activeVideoPath!);
+          await (db.update(db.combos)..where((t) => t.id.equals(combo.id)))
               .write(CombosCompanion(activeVideoPath: Value(relative)));
           healed++;
         }
@@ -200,8 +200,7 @@ abstract final class VideoPathHealer {
       for (final manifest in manifests) {
         if (manifest.localPath != null &&
             !VideoPathResolver.isRelative(manifest.localPath!)) {
-          final relative =
-              VideoPathResolver.toRelative(manifest.localPath!);
+          final relative = VideoPathResolver.toRelative(manifest.localPath!);
           await db.assetManifestDao.upsert(
             AssetManifestCompanion(
               contentHash: Value(manifest.contentHash),
@@ -214,7 +213,9 @@ abstract final class VideoPathHealer {
 
       await prefs.setBool(_prefsKey, true);
       if (healed > 0) {
-        debugPrint('[VideoPathHealer] Healed $healed absolute paths → relative');
+        debugPrint(
+          '[VideoPathHealer] Healed $healed absolute paths → relative',
+        );
       }
     } catch (e) {
       debugPrint('[VideoPathHealer] Healing failed: $e');

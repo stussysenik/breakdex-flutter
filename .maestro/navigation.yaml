@@ -24,23 +24,26 @@ tags:
 
 # -- Review Tab --
 - tapOn:
-    point: "146,809"
-- assertVisible: "Review"
+    id: "drill-tab"
+- assertVisible: "Drill"
 - assertVisible: "Deck"
 
 # -- Stats Tab --
 - tapOn:
-    point: "245,809"
-- assertVisible: "Stats"
+    id: "progress-tab"
+- assertVisible: "Progress"
 
 # -- Settings Tab --
 - tapOn:
-    point: "344,809"
+    id: "settings-gear"
 - assertVisible: "Settings"
 
 # -- Back to Arsenal Tab --
 - tapOn:
-    point: "49,809"
+    id: "settings-back"
+- assertVisible: "Progress"
+- tapOn:
+    id: "moves-tab"
 - assertVisible: "Arsenal"
 
 # -- Verify segment toggle (Moves / Combos) --

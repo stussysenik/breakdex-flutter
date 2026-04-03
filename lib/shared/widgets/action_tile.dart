@@ -34,6 +34,7 @@ class ActionTile extends StatelessWidget {
             horizontal: AppSpacing.md,
             vertical: 14,
           ),
+          constraints: const BoxConstraints(minHeight: 56),
           decoration: BoxDecoration(
             color: colorScheme.surfaceContainerHighest,
             borderRadius: BorderRadius.circular(AppRadius.sm),
@@ -46,11 +47,15 @@ class ActionTile extends StatelessWidget {
             children: [
               Icon(icon, color: color, size: 22),
               const SizedBox(width: AppSpacing.md),
-              Text(
-                label,
-                style: AppTypography.bodyMedium.copyWith(color: color),
+              Expanded(
+                child: Text(
+                  label,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: AppTypography.bodyMedium.copyWith(color: color),
+                ),
               ),
-              const Spacer(),
+              const SizedBox(width: AppSpacing.sm),
               Icon(Icons.chevron_right, color: colorScheme.secondary, size: 20),
             ],
           ),

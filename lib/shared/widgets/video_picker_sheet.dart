@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../../core/design/spacing.dart';
 import '../../core/design/typography.dart';
+import '../../core/services/media_playback_coordinator.dart';
 import '../../core/services/video_service.dart';
 
 /// Bottom sheet with 3 video source options: Camera, Photo Library, Files (iCloud).
@@ -26,6 +27,7 @@ class VideoPickerSheet extends StatefulWidget {
     String? previousVideoName,
     String? previousThumbnailPath,
   }) {
+    MediaPlaybackCoordinator.shared.pauseAll();
     return showModalBottomSheet<VideoPickResult>(
       context: context,
       backgroundColor: Theme.of(context).colorScheme.surface,
@@ -93,8 +95,12 @@ class _VideoPickerSheetState extends State<VideoPickerSheet> {
   }
 
   Future<void> _pickFromPhotos() async {
-    HapticFeedback.selectionClick();
-    setState(() { _loading = true; _progress = 0.0; _statusText = 'Opening photo library...'; });
+    unawaited(HapticFeedback.selectionClick());
+    setState(() {
+      _loading = true;
+      _progress = 0.0;
+      _statusText = 'Opening photo library...';
+    });
     _startProgressListener();
     try {
       // Do not timeout the picker interaction itself; users may need
@@ -107,8 +113,12 @@ class _VideoPickerSheetState extends State<VideoPickerSheet> {
   }
 
   Future<void> _pickFromFiles() async {
-    HapticFeedback.selectionClick();
-    setState(() { _loading = true; _progress = 0.0; _statusText = 'Opening files...'; });
+    unawaited(HapticFeedback.selectionClick());
+    setState(() {
+      _loading = true;
+      _progress = 0.0;
+      _statusText = 'Opening files...';
+    });
     _startProgressListener();
     try {
       // Do not timeout the picker interaction itself; users may need
@@ -121,8 +131,11 @@ class _VideoPickerSheetState extends State<VideoPickerSheet> {
   }
 
   Future<void> _recordVideo() async {
-    HapticFeedback.selectionClick();
-    setState(() { _loading = true; _statusText = 'Opening camera...'; });
+    unawaited(HapticFeedback.selectionClick());
+    setState(() {
+      _loading = true;
+      _statusText = 'Opening camera...';
+    });
     try {
       final result = await _videoService.recordVideo(onStatus: _onStatus);
       if (mounted) Navigator.pop(context, result);
@@ -198,9 +211,9 @@ class _VideoPickerSheetState extends State<VideoPickerSheet> {
         if (_loading)
           Positioned.fill(
             child: Container(
-              decoration: BoxDecoration(
+              decoration: const BoxDecoration(
                 color: Colors.black54,
-                borderRadius: const BorderRadius.vertical(
+                borderRadius: BorderRadius.vertical(
                   top: Radius.circular(AppRadius.lg),
                 ),
               ),

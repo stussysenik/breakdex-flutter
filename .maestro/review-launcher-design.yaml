@@ -1,0 +1,24 @@
+# Focused launcher validation for proportion and hierarchy checks.
+appId: com.breakdex.breakdex
+name: Review Launcher Design
+tags:
+  - review
+  - design
+
+---
+
+- launchApp:
+    arguments:
+      maestro: true
+      breakdexFixture: review
+
+- tapOn:
+    id: "drill-tab"
+
+- assertVisible: "Drill"
+- assertVisible: "Moves"
+- assertVisible: "Combos"
+- assertVisible: "1 + 1 + 1 = 3"
+- assertVisible: "Review all"
+
+- takeScreenshot: review-launcher-design

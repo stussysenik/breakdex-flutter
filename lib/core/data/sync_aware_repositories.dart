@@ -14,12 +14,16 @@ class SyncAwareMoveRepository implements MoveRepository {
   @override
   Stream<List<Move>> watchAll() => _inner.watchAll();
   @override
+  Stream<List<Move>> watchArchived() => _inner.watchArchived();
+  @override
   Stream<List<Move>> watchByCategory(String category) =>
       _inner.watchByCategory(category);
   @override
   Stream<Move> watchById(String id) => _inner.watchById(id);
   @override
   Future<List<Move>> getAll() => _inner.getAll();
+  @override
+  Future<List<Move>> getArchived() => _inner.getArchived();
   @override
   Future<Move> getById(String id) => _inner.getById(id);
   @override
@@ -54,6 +58,18 @@ class SyncAwareMoveRepository implements MoveRepository {
   Future<void> delete(String id) async {
     await _inner.delete(id);
     await _syncDao.logChange(entityId: id, table: 'moves', action: 'delete');
+  }
+
+  @override
+  Future<void> archive(String id, {required String reason}) async {
+    await _inner.archive(id, reason: reason);
+    await _syncDao.logChange(entityId: id, table: 'moves', action: 'update');
+  }
+
+  @override
+  Future<void> restore(String id) async {
+    await _inner.restore(id);
+    await _syncDao.logChange(entityId: id, table: 'moves', action: 'update');
   }
 }
 

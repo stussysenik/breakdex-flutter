@@ -15,7 +15,10 @@ plugins:
         [
           "CHANGELOG.md",
           "README.md",
-          "progress.md",
+          "VISION.MD",
+          "ROADMAP.MD",
+          "TECHSTACK.MD",
+          "PROGRESS.MD",
           "docs/hyperdata-ledger.md",
           "pubspec.yaml",
           "package.json",

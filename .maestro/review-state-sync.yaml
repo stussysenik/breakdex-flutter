@@ -1,0 +1,45 @@
+# Validates that a manual move-state override stays aligned with the drill launcher.
+
+appId: com.breakdex.breakdex
+name: Review State Sync
+tags:
+  - review
+  - regression
+
+---
+
+- launchApp:
+    arguments:
+      maestro: true
+      breakdexFixture: review
+
+- tapOn:
+    id: "moves-tab"
+- assertVisible:
+    id: "move-row-fixture-move-mastery"
+- tapOn:
+    id: "move-row-fixture-move-mastery"
+
+# Fixture Freeze starts in Mastery. Reset it to New from move detail.
+- tapOn:
+    id: "move-detail-state-pill"
+- assertVisible: "Set State"
+- tapOn: "New"
+- assertVisible: "New"
+
+- back
+- tapOn:
+    id: "drill-tab"
+- assertVisible: "Drill"
+- assertVisible:
+    id: "review-total-summary"
+    text: "2 + 1 + 0 = 3"
+- assertVisible:
+    id: "review-state-tile-new"
+    text: "New, 2 due"
+- assertVisible:
+    id: "review-state-tile-learning"
+    text: "Learning, 1 due"
+- assertVisible:
+    id: "review-state-tile-mastery"
+    text: "Mastery, 0 due"

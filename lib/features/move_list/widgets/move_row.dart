@@ -8,112 +8,123 @@ class _MoveRow extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final state = LearningState.fromString(move.learningState);
+    final stateLabels = ref.watch(learningStateLabelsProvider);
+    final stateLabel = resolveLearningStateLabel(stateLabels, state);
+    final stateColor = AppSemanticTheme.of(context).colorForState(state);
     final colorScheme = Theme.of(context).colorScheme;
 
     return RepaintBoundary(
       child: Dismissible(
-      key: ValueKey(move.id),
-      direction: DismissDirection.endToStart,
-      background: Container(
-        alignment: Alignment.centerRight,
-        padding: const EdgeInsets.only(right: AppSpacing.screenEdge),
-        color: AppColors.actionAgain,
-        child: const Icon(Icons.delete, color: Colors.white),
-      ),
-      onDismissed: (_) {
-        HapticFeedback.heavyImpact();
-        ref.read(moveRepositoryProvider).delete(move.id);
-      },
-      child: Semantics(
-        identifier: 'move-row-${move.id}',
-        label: '${move.name}, ${state.displayText}',
-        button: true,
-        child: InkWell(
-          onTap: () => context.go('/moves/move/${move.id}'),
-          child: Container(
-            margin: const EdgeInsets.only(bottom: AppSpacing.sm),
-            decoration: BoxDecoration(
-              color: colorScheme.surface,
-              borderRadius: BorderRadius.circular(AppRadius.sm),
-            ),
-            child: IntrinsicHeight(
-              child: Row(
-                children: [
-                  Container(
-                    width: 5,
-                    decoration: BoxDecoration(
-                      color: state.color,
-                      borderRadius: const BorderRadius.only(
-                        topLeft: Radius.circular(AppRadius.sm),
-                        bottomLeft: Radius.circular(AppRadius.sm),
+        key: ValueKey(move.id),
+        direction: DismissDirection.endToStart,
+        background: Container(
+          alignment: Alignment.centerRight,
+          padding: const EdgeInsets.only(right: AppSpacing.screenEdge),
+          color: AppColors.actionAgain,
+          child: const Icon(Icons.delete, color: Colors.white),
+        ),
+        onDismissed: (_) {
+          unawaited(HapticFeedback.heavyImpact());
+          unawaited(_deleteMove(ref));
+        },
+        child: Semantics(
+          identifier: 'move-row-${move.id}',
+          label: '${move.name}, $stateLabel',
+          button: true,
+          child: InkWell(
+            onTap: () => context.go('/moves/move/${move.id}'),
+            child: Container(
+              margin: const EdgeInsets.only(bottom: AppSpacing.sm),
+              decoration: BoxDecoration(
+                color: colorScheme.surface,
+                borderRadius: BorderRadius.circular(AppRadius.sm),
+              ),
+              child: IntrinsicHeight(
+                child: Row(
+                  children: [
+                    Container(
+                      width: 5,
+                      decoration: BoxDecoration(
+                        color: stateColor,
+                        borderRadius: const BorderRadius.only(
+                          topLeft: Radius.circular(AppRadius.sm),
+                          bottomLeft: Radius.circular(AppRadius.sm),
+                        ),
                       ),
                     ),
-                  ),
-                  Expanded(
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: AppSpacing.md,
-                        vertical: 14,
-                      ),
-                      child: Row(
-                        children: [
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              mainAxisAlignment: MainAxisAlignment.center,
+                    Expanded(
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: AppSpacing.md,
+                          vertical: 14,
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Row(
                               children: [
-                                Row(
-                                  children: [
-                                    Flexible(
-                                      child: Text(
-                                        move.name,
-                                        style: AppTypography.bodyMedium.copyWith(
-                                          color: colorScheme.onSurface,
-                                        ),
-                                      ),
+                                Expanded(
+                                  child: Text(
+                                    move.name,
+                                    maxLines: 2,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: AppTypography.bodyMedium.copyWith(
+                                      color: colorScheme.onSurface,
                                     ),
-                                    // Subtle indicator for moves with no video
-                                    if (move.videoPath == null &&
-                                        move.contentHash == null) ...[
-                                      const SizedBox(width: 6),
-                                      Icon(
-                                        Icons.videocam_off,
-                                        size: 14,
-                                        color: colorScheme.secondary
-                                            .withValues(alpha: 0.5),
-                                      ),
-                                    ] else if (move.videoPath == null &&
-                                        move.contentHash != null) ...[
-                                      const SizedBox(width: 6),
-                                      Icon(
-                                        Icons.cloud_download_outlined,
-                                        size: 14,
-                                        color: AppColors.accent
-                                            .withValues(alpha: 0.5),
-                                      ),
-                                    ],
-                                  ],
+                                  ),
                                 ),
-                                if (move.category != 'default') ...[
-                                  const SizedBox(height: 2),
-                                  _CategoryLabel(category: move.category),
+                                if (move.videoPath == null &&
+                                    move.contentHash == null) ...[
+                                  const SizedBox(width: 6),
+                                  Icon(
+                                    Icons.videocam_off,
+                                    size: 14,
+                                    color: colorScheme.secondary.withValues(
+                                      alpha: 0.5,
+                                    ),
+                                  ),
+                                ] else if (move.videoPath == null &&
+                                    move.contentHash != null) ...[
+                                  const SizedBox(width: 6),
+                                  Icon(
+                                    Icons.cloud_download_outlined,
+                                    size: 14,
+                                    color: AppColors.accent.withValues(
+                                      alpha: 0.5,
+                                    ),
+                                  ),
                                 ],
                               ],
                             ),
-                          ),
-                          StatePill(state: state),
-                        ],
+                            const SizedBox(height: 6),
+                            Wrap(
+                              spacing: AppSpacing.sm,
+                              runSpacing: AppSpacing.xs,
+                              crossAxisAlignment: WrapCrossAlignment.center,
+                              children: [
+                                if (move.category != 'default')
+                                  _CategoryLabel(category: move.category),
+                                StatePill(state: state),
+                              ],
+                            ),
+                          ],
+                        ),
                       ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
             ),
           ),
         ),
       ),
-    ),
     );
+  }
+
+  Future<void> _deleteMove(WidgetRef ref) async {
+    await ref.read(mediaCleanupServiceProvider).cleanupMoveMedia(move);
+    await ref.read(moveRepositoryProvider).delete(move.id);
   }
 }
 
@@ -145,6 +156,8 @@ class _CategoryLabel extends ConsumerWidget {
         const SizedBox(width: 4),
         Text(
           category,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
           style: AppTypography.caption.copyWith(color: textColor, fontSize: 10),
         ),
       ],

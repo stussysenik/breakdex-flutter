@@ -4,8 +4,9 @@ part of '../providers.dart';
 // Font family — persisted in SharedPreferences
 // ---------------------------------------------------------------------------
 
-final fontFamilyProvider =
-    NotifierProvider<FontFamilyNotifier, AppFontFamily>(FontFamilyNotifier.new);
+final fontFamilyProvider = NotifierProvider<FontFamilyNotifier, AppFontFamily>(
+  FontFamilyNotifier.new,
+);
 
 class FontFamilyNotifier extends Notifier<AppFontFamily> {
   static const _key = 'font_family';
@@ -27,8 +28,9 @@ class FontFamilyNotifier extends Notifier<AppFontFamily> {
 // Accent color — user-configurable global accent (defaults to AppColors.accent)
 // ---------------------------------------------------------------------------
 
-final accentColorProvider =
-    NotifierProvider<AccentColorNotifier, Color>(AccentColorNotifier.new);
+final accentColorProvider = NotifierProvider<AccentColorNotifier, Color>(
+  AccentColorNotifier.new,
+);
 
 /// Persists custom accent color in SharedPreferences as an ARGB int.
 /// The theme watches this provider so changing it updates the entire UI.
@@ -37,21 +39,60 @@ class AccentColorNotifier extends Notifier<Color> {
 
   @override
   Color build() {
-    final prefs = ref.watch(sharedPreferencesProvider);
-    final v = prefs.getInt(_key);
-    return v != null ? Color(v) : AppColors.accent;
+    return _readColor(ref, _key, AppColors.accent);
   }
 
   Future<void> set(Color color) async {
-    final prefs = ref.read(sharedPreferencesProvider);
-    await prefs.setInt(_key, color.toARGB32());
+    await _writeColor(ref, _key, color);
     state = color;
   }
 
   Future<void> reset() async {
-    final prefs = ref.read(sharedPreferencesProvider);
-    await prefs.remove(_key);
+    await _removeColor(ref, _key);
     state = AppColors.accent;
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Learning state colors — configurable per-state semantic color
+// ---------------------------------------------------------------------------
+
+final learningStateColorsProvider =
+    NotifierProvider<LearningStateColorsNotifier, LearningStateColors>(
+      LearningStateColorsNotifier.new,
+    );
+
+class LearningStateColorsNotifier extends Notifier<LearningStateColors> {
+  static const _prefix = 'learning_state_color_';
+
+  @override
+  LearningStateColors build() {
+    return LearningStateColors(
+      newState: _readColor(ref, '${_prefix}new', AppColors.stateNew),
+      learning: _readColor(ref, '${_prefix}learning', AppColors.stateLearning),
+      mastery: _readColor(ref, '${_prefix}mastery', AppColors.stateMastery),
+    );
+  }
+
+  Future<void> setColor(LearningState stateKey, Color color) async {
+    final key = switch (stateKey) {
+      LearningState.newState => 'new',
+      LearningState.learning => 'learning',
+      LearningState.mastery => 'mastery',
+    };
+    await _writeColor(ref, _prefix + key, color);
+    state = switch (stateKey) {
+      LearningState.newState => state.copyWith(newState: color),
+      LearningState.learning => state.copyWith(learning: color),
+      LearningState.mastery => state.copyWith(mastery: color),
+    };
+  }
+
+  Future<void> resetAll() async {
+    for (final key in ['new', 'learning', 'mastery']) {
+      await _removeColor(ref, _prefix + key);
+    }
+    state = LearningStateColors.defaults;
   }
 }
 
@@ -82,18 +123,27 @@ class RatingColors {
 
   /// Look up the color for a given rating name (AGAIN, HARD, GOOD, EASY).
   Color forName(String name) => switch (name) {
-        'AGAIN' => again,
-        'HARD' => hard,
-        'GOOD' => good,
-        'EASY' => easy,
-        _ => again,
-      };
+    'AGAIN' => again,
+    'HARD' => hard,
+    'GOOD' => good,
+    'EASY' => easy,
+    _ => again,
+  };
+
+  RatingColors copyWith({Color? again, Color? hard, Color? good, Color? easy}) {
+    return RatingColors(
+      again: again ?? this.again,
+      hard: hard ?? this.hard,
+      good: good ?? this.good,
+      easy: easy ?? this.easy,
+    );
+  }
 }
 
 final ratingColorsProvider =
     NotifierProvider<RatingColorsNotifier, RatingColors>(
-  RatingColorsNotifier.new,
-);
+      RatingColorsNotifier.new,
+    );
 
 /// Persists custom rating colors in SharedPreferences as ARGB hex ints.
 class RatingColorsNotifier extends Notifier<RatingColors> {
@@ -101,36 +151,46 @@ class RatingColorsNotifier extends Notifier<RatingColors> {
 
   @override
   RatingColors build() {
-    final prefs = ref.watch(sharedPreferencesProvider);
     return RatingColors(
-      again: _read(prefs, 'again', AppColors.actionAgain),
-      hard: _read(prefs, 'hard', AppColors.actionHard),
-      good: _read(prefs, 'good', AppColors.actionGood),
-      easy: _read(prefs, 'easy', AppColors.actionEasy),
+      again: _readColor(ref, '${_prefix}again', AppColors.actionAgain),
+      hard: _readColor(ref, '${_prefix}hard', AppColors.actionHard),
+      good: _readColor(ref, '${_prefix}good', AppColors.actionGood),
+      easy: _readColor(ref, '${_prefix}easy', AppColors.actionEasy),
     );
-  }
-
-  Color _read(SharedPreferences prefs, String key, Color fallback) {
-    final v = prefs.getInt('$_prefix$key');
-    return v != null ? Color(v) : fallback;
   }
 
   Future<void> setColor(String key, Color color) async {
-    final prefs = ref.read(sharedPreferencesProvider);
-    await prefs.setInt('$_prefix$key', color.toARGB32());
-    state = RatingColors(
-      again: key == 'again' ? color : state.again,
-      hard: key == 'hard' ? color : state.hard,
-      good: key == 'good' ? color : state.good,
-      easy: key == 'easy' ? color : state.easy,
-    );
+    final prefKey = _prefix + key;
+    await _writeColor(ref, prefKey, color);
+    state = switch (key) {
+      'again' => state.copyWith(again: color),
+      'hard' => state.copyWith(hard: color),
+      'good' => state.copyWith(good: color),
+      'easy' => state.copyWith(easy: color),
+      _ => state,
+    };
   }
 
   Future<void> resetAll() async {
-    final prefs = ref.read(sharedPreferencesProvider);
     for (final key in ['again', 'hard', 'good', 'easy']) {
-      await prefs.remove('$_prefix$key');
+      await _removeColor(ref, _prefix + key);
     }
     state = RatingColors.defaults;
   }
+}
+
+Color _readColor(Ref ref, String key, Color fallback) {
+  final prefs = ref.read(sharedPreferencesProvider);
+  final value = prefs.getInt(key);
+  return value != null ? Color(value) : fallback;
+}
+
+Future<void> _writeColor(Ref ref, String key, Color color) async {
+  final prefs = ref.read(sharedPreferencesProvider);
+  await prefs.setInt(key, color.toARGB32());
+}
+
+Future<void> _removeColor(Ref ref, String key) async {
+  final prefs = ref.read(sharedPreferencesProvider);
+  await prefs.remove(key);
 }

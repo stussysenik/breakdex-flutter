@@ -3,6 +3,33 @@ import AVFoundation
 import Photos
 import UIKit
 
+private struct TrackedManagedAsset {
+    let moveId: String
+    let assetLocalIdentifier: String
+    let albumName: String
+
+    init?(_ payload: [String: Any]) {
+        guard let moveId = payload["moveId"] as? String,
+              let assetLocalIdentifier = payload["assetLocalIdentifier"] as? String,
+              let albumName = payload["albumName"] as? String else {
+            return nil
+        }
+
+        let trimmedMoveId = moveId.trimmingCharacters(in: .whitespacesAndNewlines)
+        let trimmedAssetId = assetLocalIdentifier.trimmingCharacters(in: .whitespacesAndNewlines)
+        let trimmedAlbumName = albumName.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmedMoveId.isEmpty,
+              !trimmedAssetId.isEmpty,
+              !trimmedAlbumName.isEmpty else {
+            return nil
+        }
+
+        self.moveId = trimmedMoveId
+        self.assetLocalIdentifier = trimmedAssetId
+        self.albumName = trimmedAlbumName
+    }
+}
+
 /// Saves exported video clips to a dated Photos album (e.g. "Breakdex 03-07-2026").
 ///
 /// This plugin uses the write-only `PHPhotoLibrary.authorizationStatus(for: .addOnly)`
@@ -12,8 +39,12 @@ import UIKit
 ///
 /// **Dart channel:** `com.breakdex/video_album`
 /// **Methods:** `saveToAlbum(videoPath:, albumName:)`
-final class VideoAlbumPlugin: NSObject, FlutterPlugin, NativeCapability {
+final class VideoAlbumPlugin: NSObject, FlutterPlugin, FlutterStreamHandler, PHPhotoLibraryChangeObserver, NativeCapability {
     static var channelName: String { "video_album" }
+    static var eventChannelName: String? { "video_album/stream" }
+
+    private var eventSink: FlutterEventSink?
+    private var observingPhotoLibrary = false
 
     static func register(with registrar: FlutterPluginRegistrar) {
         let channel = FlutterMethodChannel(
@@ -22,10 +53,41 @@ final class VideoAlbumPlugin: NSObject, FlutterPlugin, NativeCapability {
         )
         let instance = VideoAlbumPlugin()
         registrar.addMethodCallDelegate(instance, channel: channel)
+
+        let eventChannel = FlutterEventChannel(
+            name: "com.breakdex/video_album/stream",
+            binaryMessenger: registrar.messenger()
+        )
+        eventChannel.setStreamHandler(instance)
+    }
+
+    deinit {
+        stopObservingPhotoLibrary()
+    }
+
+    func onListen(withArguments arguments: Any?, eventSink events: @escaping FlutterEventSink) -> FlutterError? {
+        eventSink = events
+        startObservingPhotoLibraryIfAuthorized()
+        return nil
+    }
+
+    func onCancel(withArguments arguments: Any?) -> FlutterError? {
+        eventSink = nil
+        stopObservingPhotoLibrary()
+        return nil
+    }
+
+    func photoLibraryDidChange(_ changeInstance: PHChange) {
+        guard eventSink != nil else { return }
+        DispatchQueue.main.async { [weak self] in
+            self?.eventSink?(["type": "libraryChanged"])
+        }
     }
 
     func handle(_ call: FlutterMethodCall, result: @escaping FlutterResult) {
         switch call.method {
+        case "requestReadAccess":
+            requestReadAccess(result: result)
         case "saveToAlbum":
             guard let args = call.arguments as? [String: Any],
                   let videoPath = args["videoPath"] as? String,
@@ -48,6 +110,79 @@ final class VideoAlbumPlugin: NSObject, FlutterPlugin, NativeCapability {
                 category: category,
                 result: result
             )
+        case "deleteManagedCopies":
+            guard let args = call.arguments as? [String: Any],
+                  let assetTitle = args["assetTitle"] as? String else {
+                result(
+                    FlutterError(
+                        code: "INVALID_ARGS",
+                        message: "Missing assetTitle",
+                        details: nil
+                    )
+                )
+                return
+            }
+            let category = args["category"] as? String
+            let fileExtension = args["fileExtension"] as? String
+            let assetLocalIdentifier = args["assetLocalIdentifier"] as? String
+            deleteManagedCopies(
+                assetTitle: assetTitle,
+                category: category,
+                fileExtension: fileExtension,
+                assetLocalIdentifier: assetLocalIdentifier,
+                result: result
+            )
+        case "findMissingManagedAssets":
+            guard let args = call.arguments as? [String: Any],
+                  let identifiers = args["assetLocalIdentifiers"] as? [String] else {
+                result(
+                    FlutterError(
+                        code: "INVALID_ARGS",
+                        message: "Missing assetLocalIdentifiers",
+                        details: nil
+                    )
+                )
+                return
+            }
+            findMissingManagedAssets(
+                assetLocalIdentifiers: identifiers,
+                result: result
+            )
+        case "reconcileManagedAssets":
+            guard let args = call.arguments as? [String: Any],
+                  let payloads = args["trackedAssets"] as? [[String: Any]] else {
+                result(
+                    FlutterError(
+                        code: "INVALID_ARGS",
+                        message: "Missing trackedAssets",
+                        details: nil
+                    )
+                )
+                return
+            }
+            let source = (args["source"] as? String) ?? "manual"
+            let trackedAssets = payloads.compactMap(TrackedManagedAsset.init)
+            reconcileManagedAssets(
+                trackedAssets: trackedAssets,
+                source: source,
+                result: result
+            )
+        case "restoreManagedAsset":
+            guard let args = call.arguments as? [String: Any],
+                  let assetLocalIdentifier = args["assetLocalIdentifier"] as? String else {
+                result(
+                    FlutterError(
+                        code: "INVALID_ARGS",
+                        message: "Missing assetLocalIdentifier",
+                        details: nil
+                    )
+                )
+                return
+            }
+            restoreManagedAsset(
+                assetLocalIdentifier: assetLocalIdentifier,
+                result: result
+            )
 
         default:
             result(FlutterMethodNotImplemented)
@@ -55,6 +190,24 @@ final class VideoAlbumPlugin: NSObject, FlutterPlugin, NativeCapability {
     }
 
     // MARK: - Photos Library
+
+    private func requestReadAccess(result: @escaping FlutterResult) {
+        let currentStatus = PHPhotoLibrary.authorizationStatus(for: .readWrite)
+        guard currentStatus == .notDetermined else {
+            startObservingPhotoLibraryIfAuthorized()
+            DispatchQueue.main.async {
+                result(self.authorizationStatusValue(currentStatus))
+            }
+            return
+        }
+
+        PHPhotoLibrary.requestAuthorization(for: .readWrite) { [weak self] status in
+            self?.startObservingPhotoLibraryIfAuthorized()
+            DispatchQueue.main.async {
+                result(self?.authorizationStatusValue(status) ?? "unknown")
+            }
+        }
+    }
 
     private func saveToAlbum(
         videoPath: String,
@@ -244,7 +397,11 @@ final class VideoAlbumPlugin: NSObject, FlutterPlugin, NativeCapability {
                     try? FileManager.default.removeItem(at: fileURL)
                 }
                 if success {
-                    result(nil)
+                    result([
+                        "assetLocalIdentifier": assetPlaceholder?.localIdentifier ?? "",
+                        "filename": originalFilename,
+                        "albumName": albumName,
+                    ])
                 } else {
                     result(
                         FlutterError(
@@ -253,6 +410,362 @@ final class VideoAlbumPlugin: NSObject, FlutterPlugin, NativeCapability {
                             details: nil
                         )
                     )
+                }
+            }
+        }
+    }
+
+    private func deleteManagedCopies(
+        assetTitle: String,
+        category: String?,
+        fileExtension: String?,
+        assetLocalIdentifier: String?,
+        result: @escaping FlutterResult
+    ) {
+        PHPhotoLibrary.requestAuthorization(for: .readWrite) { [weak self] status in
+            guard status == .authorized || status == .limited else {
+                DispatchQueue.main.async {
+                    result(
+                        FlutterError(
+                            code: "PERMISSION_DENIED",
+                            message: "Photo library read/write access denied",
+                            details: nil
+                        )
+                    )
+                }
+                return
+            }
+
+            guard let self else {
+                DispatchQueue.main.async { result(nil) }
+                return
+            }
+
+            let trimmedTitle = assetTitle.trimmingCharacters(in: .whitespacesAndNewlines)
+            let trimmedCategory = category?.trimmingCharacters(in: .whitespacesAndNewlines)
+            let normalizedExt = self.normalizedFileExtension(fileExtension)
+            let candidateFilenames = Set([
+                self.semanticFilename(
+                    title: trimmedTitle,
+                    category: trimmedCategory,
+                    fileExtension: normalizedExt
+                ),
+                self.semanticFilename(
+                    title: trimmedTitle,
+                    category: trimmedCategory,
+                    fileExtension: "mp4"
+                ),
+                self.semanticFilename(
+                    title: trimmedTitle,
+                    category: trimmedCategory,
+                    fileExtension: "mov"
+                ),
+            ])
+
+            let albums = self.fetchBreakdexAlbums()
+            var matchingAssets = self.findAssets(
+                in: albums,
+                matchingLocalIdentifier: assetLocalIdentifier
+            )
+            if matchingAssets.isEmpty {
+                matchingAssets = self.findAssets(
+                    in: albums,
+                    matchingFilenames: candidateFilenames
+                )
+            }
+
+            guard !matchingAssets.isEmpty else {
+                DispatchQueue.main.async { result(nil) }
+                return
+            }
+
+            PHPhotoLibrary.shared().performChanges({
+                PHAssetChangeRequest.deleteAssets(matchingAssets as NSFastEnumeration)
+            }) { success, error in
+                DispatchQueue.main.async {
+                    if success {
+                        result(nil)
+                    } else {
+                        result(
+                            FlutterError(
+                                code: "DELETE_FAILED",
+                                message: error?.localizedDescription ?? "Unknown error deleting album copies",
+                                details: nil
+                            )
+                        )
+                    }
+                }
+            }
+        }
+    }
+
+    private func findMissingManagedAssets(
+        assetLocalIdentifiers: [String],
+        result: @escaping FlutterResult
+    ) {
+        let normalizedIdentifiers = Array(
+            Set(
+                assetLocalIdentifiers
+                    .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
+                    .filter { !$0.isEmpty }
+            )
+        )
+        if normalizedIdentifiers.isEmpty {
+            DispatchQueue.main.async {
+                result([
+                    "accessStatus": self.authorizationStatusValue(
+                        PHPhotoLibrary.authorizationStatus(for: .readWrite)
+                    ),
+                    "missingAssetLocalIdentifiers": [],
+                ])
+            }
+            return
+        }
+
+        let status = PHPhotoLibrary.authorizationStatus(for: .readWrite)
+        guard status == .authorized || status == .limited else {
+            DispatchQueue.main.async {
+                result([
+                    "accessStatus": self.authorizationStatusValue(status),
+                    "missingAssetLocalIdentifiers": [],
+                ])
+            }
+            return
+        }
+
+        let fetchResult = PHAsset.fetchAssets(
+            withLocalIdentifiers: normalizedIdentifiers,
+            options: nil
+        )
+        var foundIdentifiers = Set<String>()
+        fetchResult.enumerateObjects { asset, _, _ in
+            foundIdentifiers.insert(asset.localIdentifier)
+        }
+        let missingIdentifiers = normalizedIdentifiers.filter {
+            !foundIdentifiers.contains($0)
+        }
+
+        DispatchQueue.main.async {
+            result([
+                "accessStatus": self.authorizationStatusValue(status),
+                "missingAssetLocalIdentifiers": missingIdentifiers,
+            ])
+        }
+    }
+
+    private func reconcileManagedAssets(
+        trackedAssets: [TrackedManagedAsset],
+        source: String,
+        result: @escaping FlutterResult
+    ) {
+        guard !trackedAssets.isEmpty else {
+            DispatchQueue.main.async {
+                result([
+                    "accessStatus": self.authorizationStatusValue(
+                        PHPhotoLibrary.authorizationStatus(for: .readWrite)
+                    ),
+                    "events": [],
+                ])
+            }
+            return
+        }
+
+        let status = PHPhotoLibrary.authorizationStatus(for: .readWrite)
+        guard status == .authorized || status == .limited else {
+            DispatchQueue.main.async {
+                result([
+                    "accessStatus": self.authorizationStatusValue(status),
+                    "events": [],
+                ])
+            }
+            return
+        }
+
+        let identifiers = trackedAssets.map(\.assetLocalIdentifier)
+        let fetchResult = PHAsset.fetchAssets(
+            withLocalIdentifiers: identifiers,
+            options: nil
+        )
+        var assetsById: [String: PHAsset] = [:]
+        fetchResult.enumerateObjects { asset, _, _ in
+            assetsById[asset.localIdentifier] = asset
+        }
+
+        var albumAssetIdCache: [String: Set<String>] = [:]
+        func albumAssetIds(named albumName: String) -> Set<String> {
+            if let cached = albumAssetIdCache[albumName] {
+                return cached
+            }
+
+            guard let album = fetchAlbum(named: albumName) else {
+                albumAssetIdCache[albumName] = []
+                return []
+            }
+
+            let albumAssets = PHAsset.fetchAssets(in: album, options: nil)
+            var ids = Set<String>()
+            albumAssets.enumerateObjects { asset, _, _ in
+                ids.insert(asset.localIdentifier)
+            }
+            albumAssetIdCache[albumName] = ids
+            return ids
+        }
+
+        var events: [[String: String]] = []
+        for trackedAsset in trackedAssets {
+            guard let asset = assetsById[trackedAsset.assetLocalIdentifier] else {
+                events.append([
+                    "type": "assetDeletedFromLibrary",
+                    "assetLocalIdentifier": trackedAsset.assetLocalIdentifier,
+                    "moveId": trackedAsset.moveId,
+                    "albumName": trackedAsset.albumName,
+                    "source": source,
+                ])
+                continue
+            }
+
+            guard status == .authorized else { continue }
+            let albumIds = albumAssetIds(named: trackedAsset.albumName)
+            if !albumIds.contains(asset.localIdentifier) {
+                events.append([
+                    "type": "assetRemovedFromManagedAlbum",
+                    "assetLocalIdentifier": trackedAsset.assetLocalIdentifier,
+                    "moveId": trackedAsset.moveId,
+                    "albumName": trackedAsset.albumName,
+                    "source": source,
+                ])
+            }
+        }
+
+        DispatchQueue.main.async {
+            result([
+                "accessStatus": self.authorizationStatusValue(status),
+                "events": events,
+            ])
+        }
+    }
+
+    private func restoreManagedAsset(
+        assetLocalIdentifier: String,
+        result: @escaping FlutterResult
+    ) {
+        let normalizedIdentifier = assetLocalIdentifier
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !normalizedIdentifier.isEmpty else {
+            DispatchQueue.main.async { result(nil) }
+            return
+        }
+
+        PHPhotoLibrary.requestAuthorization(for: .readWrite) { [weak self] status in
+            self?.startObservingPhotoLibraryIfAuthorized()
+            guard status == .authorized || status == .limited else {
+                DispatchQueue.main.async {
+                    result(
+                        FlutterError(
+                            code: "PERMISSION_DENIED",
+                            message: "Photo library read/write access denied",
+                            details: nil
+                        )
+                    )
+                }
+                return
+            }
+
+            let fetchResult = PHAsset.fetchAssets(
+                withLocalIdentifiers: [normalizedIdentifier],
+                options: nil
+            )
+            guard let asset = fetchResult.firstObject else {
+                DispatchQueue.main.async {
+                    result(
+                        FlutterError(
+                            code: "ASSET_NOT_FOUND",
+                            message: "Managed Photos asset not found",
+                            details: nil
+                        )
+                    )
+                }
+                return
+            }
+
+            let resources = PHAssetResource.assetResources(for: asset)
+            let resource = resources.first(where: { $0.type == .fullSizeVideo }) ??
+                resources.first(where: { $0.type == .video }) ??
+                resources.first
+            guard let resource else {
+                DispatchQueue.main.async {
+                    result(
+                        FlutterError(
+                            code: "RESOURCE_NOT_FOUND",
+                            message: "No video resource available for managed asset",
+                            details: nil
+                        )
+                    )
+                }
+                return
+            }
+
+            let originalFilename = resource.originalFilename.trimmingCharacters(
+                in: .whitespacesAndNewlines
+            )
+            let fileExtension = URL(fileURLWithPath: originalFilename)
+                .pathExtension
+                .trimmingCharacters(in: .whitespacesAndNewlines)
+            let normalizedExtension = fileExtension.isEmpty ? "mp4" : fileExtension
+
+            let documents = FileManager.default.urls(
+                for: .documentDirectory,
+                in: .userDomainMask
+            )[0]
+            let movesDir = documents.appendingPathComponent("Moves", isDirectory: true)
+
+            do {
+                try FileManager.default.createDirectory(
+                    at: movesDir,
+                    withIntermediateDirectories: true
+                )
+            } catch {
+                DispatchQueue.main.async {
+                    result(
+                        FlutterError(
+                            code: "RESTORE_FAILED",
+                            message: error.localizedDescription,
+                            details: nil
+                        )
+                    )
+                }
+                return
+            }
+
+            let destinationURL = movesDir
+                .appendingPathComponent(UUID().uuidString)
+                .appendingPathExtension(normalizedExtension)
+            let requestOptions = PHAssetResourceRequestOptions()
+            requestOptions.isNetworkAccessAllowed = true
+
+            PHAssetResourceManager.default().writeData(
+                for: resource,
+                toFile: destinationURL,
+                options: requestOptions
+            ) { error in
+                DispatchQueue.main.async {
+                    if let error {
+                        result(
+                            FlutterError(
+                                code: "RESTORE_FAILED",
+                                message: error.localizedDescription,
+                                details: nil
+                            )
+                        )
+                        return
+                    }
+
+                    result([
+                        "localPath": destinationURL.path,
+                        "originalFileName": originalFilename.isEmpty
+                            ? destinationURL.lastPathComponent
+                            : originalFilename,
+                    ])
                 }
             }
         }
@@ -383,6 +896,13 @@ final class VideoAlbumPlugin: NSObject, FlutterPlugin, NativeCapability {
         return "\(finalBase).\(ext)"
     }
 
+    private func normalizedFileExtension(_ fileExtension: String?) -> String {
+        guard let fileExtension else { return "mp4" }
+        let trimmed = fileExtension.trimmingCharacters(in: .whitespacesAndNewlines)
+        if trimmed.isEmpty { return "mp4" }
+        return trimmed.hasPrefix(".") ? String(trimmed.dropFirst()) : trimmed
+    }
+
     /// Fetch an existing user-created album by title, or nil if not found.
     private func fetchAlbum(named title: String) -> PHAssetCollection? {
         let options = PHFetchOptions()
@@ -392,6 +912,108 @@ final class VideoAlbumPlugin: NSObject, FlutterPlugin, NativeCapability {
             subtype: .any,
             options: options
         ).firstObject
+    }
+
+    private func fetchBreakdexAlbums() -> [PHAssetCollection] {
+        let options = PHFetchOptions()
+        options.predicate = NSPredicate(format: "title BEGINSWITH %@", "Breakdex ")
+        let fetchResult = PHAssetCollection.fetchAssetCollections(
+            with: .album,
+            subtype: .any,
+            options: options
+        )
+        var collections: [PHAssetCollection] = []
+        fetchResult.enumerateObjects { collection, _, _ in
+            collections.append(collection)
+        }
+        return collections
+    }
+
+    private func findAssets(
+        in albums: [PHAssetCollection],
+        matchingLocalIdentifier assetLocalIdentifier: String?
+    ) -> [PHAsset] {
+        guard let assetLocalIdentifier = assetLocalIdentifier?.trimmingCharacters(in: .whitespacesAndNewlines),
+              !assetLocalIdentifier.isEmpty else {
+            return []
+        }
+
+        let fetchResult = PHAsset.fetchAssets(
+            withLocalIdentifiers: [assetLocalIdentifier],
+            options: nil
+        )
+        guard let asset = fetchResult.firstObject else { return [] }
+
+        for album in albums {
+            let assets = PHAsset.fetchAssets(in: album, options: nil)
+            var found = false
+            assets.enumerateObjects { candidate, _, stop in
+                if candidate.localIdentifier == asset.localIdentifier {
+                    found = true
+                    stop.pointee = true
+                }
+            }
+            if found {
+                return [asset]
+            }
+        }
+
+        return []
+    }
+
+    private func findAssets(
+        in albums: [PHAssetCollection],
+        matchingFilenames candidateFilenames: Set<String>
+    ) -> [PHAsset] {
+        guard !candidateFilenames.isEmpty else { return [] }
+
+        var assetsById: [String: PHAsset] = [:]
+
+        for album in albums {
+            let fetchResult = PHAsset.fetchAssets(in: album, options: nil)
+            fetchResult.enumerateObjects { asset, _, _ in
+                let resources = PHAssetResource.assetResources(for: asset)
+                let matches = resources.contains { resource in
+                    candidateFilenames.contains(resource.originalFilename)
+                }
+                if matches {
+                    assetsById[asset.localIdentifier] = asset
+                }
+            }
+        }
+
+        return Array(assetsById.values)
+    }
+
+    private func authorizationStatusValue(_ status: PHAuthorizationStatus) -> String {
+        switch status {
+        case .notDetermined:
+            return "not_determined"
+        case .restricted:
+            return "restricted"
+        case .denied:
+            return "denied"
+        case .authorized:
+            return "authorized"
+        case .limited:
+            return "limited"
+        @unknown default:
+            return "unknown"
+        }
+    }
+
+    private func startObservingPhotoLibraryIfAuthorized() {
+        let status = PHPhotoLibrary.authorizationStatus(for: .readWrite)
+        guard status == .authorized || status == .limited else { return }
+        guard !observingPhotoLibrary else { return }
+        PHPhotoLibrary.shared().register(self)
+        observingPhotoLibrary = true
+    }
+
+    private func stopObservingPhotoLibrary() {
+        guard observingPhotoLibrary else { return }
+        PHPhotoLibrary.shared().unregisterChangeObserver(self)
+        observingPhotoLibrary = false
     }
 }
 

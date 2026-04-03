@@ -1,12 +1,28 @@
+import 'dart:io';
 import 'dart:math';
 
 import 'package:drift/drift.dart' show Value;
 import 'package:flutter/foundation.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_launch_arguments/flutter_launch_arguments.dart';
+import 'package:path/path.dart' as p;
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../database/database.dart';
 import '../models/learning_state.dart';
+import 'app_storage_paths.dart';
+
+class _FixtureVideoSeed {
+  const _FixtureVideoSeed({
+    required this.assetPath,
+    required this.fileName,
+  });
+
+  final String assetPath;
+  final String fileName;
+
+  String get relativePath => 'Moves/$fileName';
+}
 
 abstract class LaunchArgumentReader {
   Future<String?> getString(String key);
@@ -31,6 +47,20 @@ class AutomationFixtureService {
     : _launchArguments = launchArguments ?? FlutterLaunchArgumentReader();
 
   static const fixtureKey = 'breakdexFixture';
+  static const _reviewFixtureVideos = {
+    'fixture-move-new': _FixtureVideoSeed(
+      assetPath: 'assets/fixtures-blue-beat.mp4',
+      fileName: 'fixture-swipe-blue-beat.mp4',
+    ),
+    'fixture-move-learning': _FixtureVideoSeed(
+      assetPath: 'assets/fixtures-red-beat.mp4',
+      fileName: 'fixture-six-step-red-beat.mp4',
+    ),
+    'fixture-move-mastery': _FixtureVideoSeed(
+      assetPath: 'assets/fixtures-green-beat.mp4',
+      fileName: 'fixture-freeze-green-beat.mp4',
+    ),
+  };
 
   final LaunchArgumentReader _launchArguments;
 
@@ -70,8 +100,31 @@ class AutomationFixtureService {
     await db.delete(db.syncLog).go();
   }
 
+  Future<Map<String, _FixtureVideoSeed>> _prepareReviewFixtureVideos() async {
+    try {
+      final docs = await AppStoragePaths.documentsDirectory();
+      final movesDir = Directory(p.join(docs.path, 'Moves'));
+      await movesDir.create(recursive: true);
+
+      for (final entry in _reviewFixtureVideos.entries) {
+        final data = await rootBundle.load(entry.value.assetPath);
+        final bytes = data.buffer.asUint8List();
+        final file = File(p.join(movesDir.path, entry.value.fileName));
+        await file.writeAsBytes(bytes, flush: true);
+      }
+
+      return _reviewFixtureVideos;
+    } catch (error) {
+      debugPrint(
+        '[AutomationFixtureService] Skipping review fixture media seed: $error',
+      );
+      return const {};
+    }
+  }
+
   Future<void> _seedReviewFixture(AppDatabase db) async {
     final now = DateTime.now().toUtc();
+    final fixtureVideos = await _prepareReviewFixtureVideos();
 
     await db.transaction(() async {
       await _clearAllTables(db);
@@ -83,6 +136,10 @@ class AutomationFixtureService {
             name: 'Fixture Swipe',
             learningState: Value(LearningState.newState.dbValue),
             category: const Value('toprock'),
+            videoPath: Value(fixtureVideos['fixture-move-new']?.relativePath),
+            originalVideoName: Value(
+              fixtureVideos['fixture-move-new']?.fileName,
+            ),
             createdAt: Value(now.subtract(const Duration(days: 3))),
           ),
           MovesCompanion.insert(
@@ -90,6 +147,12 @@ class AutomationFixtureService {
             name: 'Fixture Six-Step',
             learningState: Value(LearningState.learning.dbValue),
             category: const Value('footwork'),
+            videoPath: Value(
+              fixtureVideos['fixture-move-learning']?.relativePath,
+            ),
+            originalVideoName: Value(
+              fixtureVideos['fixture-move-learning']?.fileName,
+            ),
             createdAt: Value(now.subtract(const Duration(days: 2))),
           ),
           MovesCompanion.insert(
@@ -97,6 +160,12 @@ class AutomationFixtureService {
             name: 'Fixture Freeze',
             learningState: Value(LearningState.mastery.dbValue),
             category: const Value('freeze'),
+            videoPath: Value(
+              fixtureVideos['fixture-move-mastery']?.relativePath,
+            ),
+            originalVideoName: Value(
+              fixtureVideos['fixture-move-mastery']?.fileName,
+            ),
             createdAt: Value(now.subtract(const Duration(days: 1))),
           ),
         ]);

@@ -12,6 +12,8 @@ import 'package:video_player/video_player.dart';
 import '../../core/design/colors.dart';
 import '../../core/design/spacing.dart';
 import '../../core/design/typography.dart';
+import '../../core/navigation/app_route_observer.dart';
+import '../../core/services/media_playback_coordinator.dart';
 import '../../core/services/native_video_export.dart';
 import '../../core/services/video_service.dart';
 import 'video_edit_geometry.dart';
@@ -28,7 +30,8 @@ class VideoEditorScreen extends StatefulWidget {
 
 enum _EditorVideoLoadState { loading, retrying, ready, missing, error }
 
-class _VideoEditorScreenState extends State<VideoEditorScreen> {
+class _VideoEditorScreenState extends State<VideoEditorScreen>
+    with RouteAware, WidgetsBindingObserver {
   double _trimStart = 0.0;
   double _trimEnd = 1.0;
 
@@ -61,6 +64,8 @@ class _VideoEditorScreenState extends State<VideoEditorScreen> {
   String? _loadErrorMessage;
   int _loadToken = 0;
   bool _isInternallySeeking = false;
+  final String _playbackId = UniqueKey().toString();
+  ModalRoute<dynamic>? _route;
 
   static const _speeds = [0.25, 0.5, 1.0, 1.5, 2.0];
   static const _speedLabels = ['0.25x', '0.5x', '1x', '1.5x', '2x'];
@@ -88,7 +93,27 @@ class _VideoEditorScreenState extends State<VideoEditorScreen> {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
+    MediaPlaybackCoordinator.shared.attach(
+      playbackId: _playbackId,
+      onPause: _pausePlayback,
+    );
     unawaited(_loadVideo());
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final nextRoute = ModalRoute.of(context);
+    if (_route != nextRoute) {
+      if (_route is ModalRoute<dynamic>) {
+        appRouteObserver.unsubscribe(this);
+      }
+      _route = nextRoute;
+      if (nextRoute is ModalRoute<dynamic>) {
+        appRouteObserver.subscribe(this, nextRoute);
+      }
+    }
   }
 
   @override
@@ -196,6 +221,7 @@ class _VideoEditorScreenState extends State<VideoEditorScreen> {
   Future<void> _disposeController() async {
     final controller = _controller;
     _controller = null;
+    MediaPlaybackCoordinator.shared.release(_playbackId);
     if (controller == null) return;
     controller.removeListener(_onVideoTick);
     await controller.dispose();
@@ -368,11 +394,7 @@ class _VideoEditorScreenState extends State<VideoEditorScreen> {
     final c = _controller;
     if (c == null || !c.value.isInitialized) return;
     if (c.value.isPlaying) {
-      await c.pause();
-      if (mounted) {
-        _isPlaying.value = false;
-        setState(() {}); // Rebuild to update play overlay
-      }
+      _pausePlayback();
       return;
     }
 
@@ -385,10 +407,25 @@ class _VideoEditorScreenState extends State<VideoEditorScreen> {
       await _seekToNormalized(clampedPosition);
     }
 
+    MediaPlaybackCoordinator.shared.claimPrimary(_playbackId);
     await c.play();
     if (mounted) {
       _isPlaying.value = true;
       setState(() {}); // Rebuild to update play overlay
+    }
+  }
+
+  void _pausePlayback() {
+    final controller = _controller;
+    MediaPlaybackCoordinator.shared.release(_playbackId);
+    if (controller != null && controller.value.isPlaying) {
+      unawaited(controller.pause());
+    }
+    if (_isPlaying.value) {
+      _isPlaying.value = false;
+    }
+    if (mounted) {
+      setState(() {});
     }
   }
 
@@ -450,6 +487,11 @@ class _VideoEditorScreenState extends State<VideoEditorScreen> {
   @override
   void dispose() {
     _loadToken++;
+    WidgetsBinding.instance.removeObserver(this);
+    if (_route is ModalRoute<dynamic>) {
+      appRouteObserver.unsubscribe(this);
+    }
+    MediaPlaybackCoordinator.shared.detach(_playbackId);
     _progressSub?.cancel();
     _exportHangTimer?.cancel();
     final controller = _controller;
@@ -462,6 +504,15 @@ class _VideoEditorScreenState extends State<VideoEditorScreen> {
     _isPlaying.dispose();
     _transformController.dispose();
     super.dispose();
+  }
+
+  @override
+  void didPushNext() => _pausePlayback();
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) return;
+    _pausePlayback();
   }
 
   @override
@@ -1256,7 +1307,7 @@ class _VideoEditorScreenState extends State<VideoEditorScreen> {
     });
 
     // Pause video during export
-    _controller?.pause();
+    _pausePlayback();
 
     // Listen to progress stream
     _progressSub = NativeVideoExport.progressStream.listen((progress) {
@@ -1355,7 +1406,7 @@ class _VideoEditorScreenState extends State<VideoEditorScreen> {
       // to ensure UI frames can clear before popping.
       await Future.microtask(() {});
 
-      HapticFeedback.heavyImpact();
+      unawaited(HapticFeedback.heavyImpact());
       if (mounted) context.pop(result);
     } catch (e) {
       debugPrint('Export failed: $e');
@@ -1371,7 +1422,7 @@ class _VideoEditorScreenState extends State<VideoEditorScreen> {
         ).showSnackBar(SnackBar(content: Text('Export failed: $e')));
       }
     } finally {
-      _progressSub?.cancel();
+      unawaited(_progressSub?.cancel());
       _progressSub = null;
       _exportHangTimer?.cancel();
       _exportHangTimer = null;
