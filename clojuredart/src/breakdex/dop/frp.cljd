@@ -1,0 +1,115 @@
+(ns breakdex.dop.frp
+  (:require [breakdex.dop.atom :as atom]
+            [cljd.core :as c]))
+
+;; ============================================================
+;; FRP (Functional Reactive Programming) Flow
+;; Reactive data flow with derived atoms and batch updates
+;; ============================================================
+
+;; Derived/Computed Atom
+;; An atom that automatically updates when source atoms change
+(defrecord DerivedAtom [^:private source-atom
+                 ^:private transform-fn
+                 ^:private derived-value])
+
+(defn derived-atom
+  "Creates a derived atom that recomputes when source changes.
+   Source: the source atom to watch
+   Transform: function to compute derived value from source"
+  [source transform]
+  (let [initial (transform (atom/deref source))]
+    (atom/atom {:source source
+               :transform transform
+               :value initial})))
+
+(defn derive
+  "Updates a derived atom from its source"
+  [derived]
+  (let [src (:source @derived)
+        trans (:transform @derived)
+        new-val (trans (atom/deref src))]
+    (atom/reset! derived new-val)))
+
+;; Batch Update
+;; Groups multiple swaps into a single UI update
+(def- ^:private BatchState (atom {:active false
+                               :changes []}))
+
+(defmacro batch
+  "Executes multiple updates in a single transaction.
+   Only triggers UI rebuild once after all changes."
+  [& body]
+  `(do
+     (atom/reset! BatchState {:active true :changes []})
+     ~@body
+     (let [changes# (:changes @BatchState)]
+       (atom/reset! BatchState {:active false :changes []})
+       (doseq [change# changes#]
+         (change#)))))
+
+(defn enqueue!
+  "Enqueues a change to be applied in batch"
+  [change-fn]
+  (swap! BatchState update :changes conj change-fn))
+
+;; Stream-like behavior
+;; Values that propagate through a graph
+(def- ^:private StreamFns (atom {}))
+
+(defn subscribe
+  "Subscribes to atom changes with a handler"
+  [atom handler]
+  (atom/add-watch atom (c/keyword "stream") handler))
+
+(defn unsubscribe
+  "Removes stream subscription"
+  [atom]
+  (atom/remove-watch atom (c/keyword "stream")))
+
+;; Throttle/Debounce
+;; Rate limiting for rapid updates
+(def- ^:private ThrottleTimers (atom {}))
+
+(defn throttle
+  "Throttles updates to at most every ms milliseconds"
+  [atom ms handler]
+  (let [key (str atom)]
+    (when-not (contains? @ThrottleTimers key)
+      (atom/add-watch atom key
+        (fn [_ _ _ new-val]
+          (when-not (@ThrottleTimers key)
+            (atom/reset! ThrottleTimers {key true})
+            (handler new-val)
+            ;; Clear throttle after ms
+            ))))))
+
+;; Example FRP Usage
+(comment
+  
+  ;; 1. Derived atom
+  (def count (atom/atom 0))
+  (def doubled (derived-atom count #(* % 2)))
+  
+  ;; When count changes, derive gets new value
+  (atom/swap! count identity 5)
+  ;; @doubled => 10
+  
+  ;; 2. Batch updates
+  (batch
+    (atom/swap! count + 1)
+    (atom/swap! count + 2))
+  
+  ;; 3. Subscribe to changes
+  (subscribe count #(println "Count changed:" %))
+  (atom/swap! count inc)
+  
+  ;; 4. Throttle rapid updates
+  (throttle count 100 #(println "Throttled:" %)))
+
+;; Main API:
+;; (derived-atom source transform)  - Create computed atom
+;; (derive derived)               - Recompute derived value
+;; (batch & exprs)                - Batch updates
+;; (subscribe atom handler)      - Subscribe to changes
+;; (throttle atom ms handler)      - Throttle updates

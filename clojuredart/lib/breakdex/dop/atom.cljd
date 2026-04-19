@@ -1,0 +1,227 @@
+(ns breakdex.dop.atom
+  (:require ["package:flutter/foundation.dart" :as f]
+            [cljd.core :as c]))
+
+;; ============================================================
+;; Data-Oriented Programming Atom Namespace
+;; Atom-based state management for ClojureDart with Flutter integration
+;; ============================================================
+
+;; ============================================================
+;; Atom Implementation
+;; Atoms are mutable state containers with watcher support
+;; ============================================================
+
+(def- ^:private WatcherFns (atom {}))
+
+(defn- get-watcher [atom key]
+  (get @WatcherFns key))
+
+(defn- set-watcher! [atom key f]
+  (swap! WatcherFns assoc key f))
+
+(defn- remove-watcher! [atom key]
+  (swap! WatcherFns dissoc key))
+
+(def- ^:private AtomVal (atom {}))
+
+(defn- get-atom-val [atom]
+  (@AtomVal atom))
+
+(defn- set-atom-val! [atom val]
+  (swap! AtomVal assoc atom val))
+
+;; Public atom constructor
+(defn atom
+  "Creates a new atom with initial value"
+  [init-val]
+  (let [a (c/JsProxy :new)]
+    (set-atom-val! a init-val)
+    a))
+
+;; ============================================================
+;; defatom Macro
+;; Convenience macro for defining atoms at namespace level
+;; ============================================================
+
+(defmacro defatom
+  "Defines an atom with an optional docstring"
+  ([name init-val]
+   `(def ~name (atom ~init-val)))
+  ([name init-val doc-string]
+   (c/doc doc-string)
+   `(def ~name (atom ~init-val))))
+
+;; ============================================================
+;; swap! Operation
+;; Atomically updates atom value using a function
+;; ============================================================
+
+(defn swap!
+  "Atomically swaps the value of atom using f.
+   Applies f to current value and args, then updates atom.
+   Returns the new value.
+   Watches are notified after the swap."
+  ([atom f]
+   (let [old-val (get-atom-val atom)
+         new-val (f old-val)]
+     (set-atom-val! atom new-val)
+     (doseq [[_ watch-fn] @WatcherFns]
+       (when watch-fn (watch-fn atom old-val new-val)))
+     new-val))
+  ([atom f arg]
+   (let [old-val (get-atom-val atom)
+         new-val (f old-val arg)]
+     (set-atom-val! atom new-val)
+     (doseq [[_ watch-fn] @WatcherFns]
+       (when watch-fn (watch-fn atom old-val new-val)))
+     new-val))
+  ([atom f arg & more]
+   (let [old-val (get-atom-val atom)
+         new-val (apply f old-val arg more)]
+     (set-atom-val! atom new-val)
+     (doseq [[_ watch-fn] @WatcherFns]
+       (when watch-fn (watch-fn atom old-val new-val)))
+     new-val)))
+
+;; ============================================================
+;; reset! Operation
+;; Directly sets atom value, bypassing update function
+;; ============================================================
+
+(defn reset!
+  "Sets atom to new-val without using an update function.
+   Returns the new value.
+   Watches are notified after the reset."
+  [atom new-val]
+  (let [old-val (get-atom-val atom)]
+    (set-atom-val! atom new-val)
+    (doseq [[_ watch-fn] @WatcherFns]
+      (when watch-fn (watch-fn atom old-val new-val)))
+    new-val))
+
+;; ============================================================
+;; deref / @ Reader
+;; Derference atom to get its value
+;; ============================================================
+
+(defprotocol IDeref)
+(extend-protocol IDeref
+  JsProxy
+  (deref [this]
+    (get-atom-val this)))
+
+(defn deref
+  "Returns the value inside atom"
+  [atom]
+  (get-atom-val atom))
+
+;; ============================================================
+;; Watcher System
+;; :ui key reserved for Flutter setState integration
+;; ============================================================
+
+(defn add-watch
+  "Adds a watcher to atom with given key.
+   Keys:
+   - :ui - Flutter UI watcher (calls setState on change)
+   - any custom key - user-defined watcher fn
+   
+   Watcher fn receives: [atom old-val new-val]"
+  ([atom key watch-fn]
+   (set-watcher! atom key watch-fn)))
+
+(defn remove-watch
+  "Removes watcher with given key from atom"
+  [atom key]
+  (remove-watcher! atom key))
+
+;; ============================================================
+;; Flutter UI Watcher Helper
+;; Creates a watcher that triggers Flutter rebuild
+;; ============================================================
+
+(defn make-ui-watcher
+  "Creates a :ui watcher function for Flutter setState.
+   When the watcher is triggered, calls setState to rebuild widgets."
+  [setState-fn]
+  (fn [atom old-val new-val]
+    (setState-fn)))
+
+;; ============================================================
+;; Example Flutter Integration Pattern
+;; ============================================================
+
+(comment
+
+  ;; 1. Create state atom
+  (def state (atom {:count 0 :name "Hello"}))
+
+  ;; 2. Define a Dart-style setState callback
+  ;; (This would be provided by your Flutter widget)
+  (def set-state-callback (ref nil))
+
+  (defn connect-ui-watcher!
+    "Connects atom to Flutter's setState"
+    [setState-fn]
+    (remove-watch state :ui)
+    (add-watch state :ui (make-ui-watcher setState-fn)))
+
+  ;; 3. Swap values - UI automatically rebuilds
+  (swap! state update :count inc)
+  (swap! state assoc :name "Updated")
+
+  ;; 4. Reset - UI automatically rebuilds  
+  (reset! state {:count 100 :name "Reset"})
+
+  ;; 5. Dereference to get current value
+  (:count @state)
+
+  ;; 6. Full Flutter Widget Example with setState
+  ;;
+  ;; (defn MyWidget []
+  ;;   (let [local-state (atom "clicked")]
+  ;;     (add-watch local-state :ui setState!)
+  ;;     (m/ElevatedButton
+  ;;      :onPressed #(swap! local-state str "!")
+  ;;      :child (m/Text @local-state))))
+  ;;
+  ;; Alternatively with a StateWidget:
+  ;; (m/StatefulBuilder
+  ;;  (fn [ctx setState!]
+  ;;    (add-watch my-atom :ui setState!)
+  ;;    (m/Text (:value @my-atom))))
+
+  )
+
+;; ============================================================
+;; Utility Functions
+;; ============================================================
+
+(defn atoms
+  "Returns a sequence of all atoms defined in current namespace"
+  []
+  (keys @AtomVal))
+
+(defn atom-value
+  "Gets the current value of atom"
+  [atom]
+  (get-atom-val atom))
+
+(defn bound-atom?
+  "Returns true if atom has been bound to a value"
+  [atom]
+  (contains? @AtomVal atom))
+
+;; ============================================================
+;; Export summary
+;; ============================================================
+;; Main API:
+;; (atom init-val)           - Create atom
+;; (defatom name init-val)   - Define atom at ns level  
+;; (swap! atom f & args)   - Atomic update
+;; (reset! atom val)       - Direct set
+;; (deref atom) or @atom  - Get value
+;; (add-watch atom key fn)   - Add watcher
+;; (remove-watch atom key)   - Remove watcher
+;; ============================================================

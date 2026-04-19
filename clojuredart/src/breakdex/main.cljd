@@ -1,0 +1,23 @@
+(ns breakdex.main
+  (:require ["package:flutter/material.dart" :as m]
+            [cljd.flutter :as f]))
+
+(defn main []
+  (f/run
+   (m/MaterialApp
+    .title "Breakdex - ClojureDart"
+    .home
+    (m/Scaffold
+     .appBar (m/AppBar .title (m/Text "Breakdex"))
+     .body
+     (m/Center
+      .child
+      (m/Column
+       .mainAxisAlignment (.center m/MainAxisAlignment)
+       .children
+       [(m/Text "Welcome to Breakdex!")
+        (m/Text "Built with ClojureDart + Hiccup")
+        (m/SizedBox .height 20)
+        (m/ElevatedButton
+         .onPressed #(println "Hello from ClojureDart!")
+         .child (m/Text "Click Me"))]))))))

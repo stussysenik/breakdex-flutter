@@ -1,0 +1,59 @@
+(ns breakdex.hiccup.flutter
+  (:require ["package:flutter/material.dart" :as m]
+            [cljd.flutter :as f]))
+
+;; Text widget
+(defn text [content]
+  (m/Text (str content)))
+
+;; Elevated button
+(defn elevated-button [opts label]
+  (m/ElevatedButton .onPressed (:onPressed opts)
+                   .child (m/Text (str label))))
+
+;; Column
+(defn column [opts children]
+  (m/Column .mainAxisAlignment (.start m/MainAxisAlignment)
+            .crossAxisAlignment (.center m/CrossAxisAlignment)
+            .children (vec children)))
+
+;; Row
+(defn row [opts children]
+  (m/Row .mainAxisAlignment (.start m/MainAxisAlignment)
+         .crossAxisAlignment (.center m/CrossAxisAlignment)
+         .children (vec children)))
+
+;; Scaffold
+(defn scaffold [opts body]
+  (m/Scaffold .body body))
+
+;; AppBar
+(defn appbar [opts title]
+  (m/AppBar .title (m/Text (str title))))
+
+;; Center
+(defn center [opts child]
+  (m/Center .child child))
+
+;; Card
+(defn card [opts child]
+  (m/Card .child child))
+
+(comment
+  ;; Usage with f/run
+  (f/run
+    (m/MaterialApp
+     .title "Breakdex"
+     .home
+     (m/Scaffold
+      .appBar (m/AppBar .title (m/Text "Breakdex"))
+      .body
+      (m/Center
+       .child
+       (m/Column
+        .mainAxisAlignment (.center m/MainAxisAlignment)
+        .children
+        [(m/Text "Hello from Hiccup!")
+         (m/ElevatedButton
+          .onPressed #(println "clicked")
+          .child (m/Text "Click Me"))])))))
