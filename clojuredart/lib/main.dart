@@ -1,1 +1,1 @@
-export "cljd-out/breakdex/main.dart" show main;
+export "cljd-out/breakdex/main.dart" show app, main;
