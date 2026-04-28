@@ -29,20 +29,20 @@ The primary user is an active breaker building a personal library under real fat
 ## Release Snapshot
 
 <!-- release:meta:start -->
-- Release tag: `v1.1.0`
-- Release version: `1.1.0`
-- Pubspec version: `1.1.0+3`
-- Released: `2026-04-03`
-- Metadata refreshed: `2026-04-03`
+- Release tag: `v1.3.0`
+- Release version: `1.3.0`
+- Pubspec version: `1.3.0+5`
+- Released: `2026-04-28`
+- Metadata refreshed: `2026-04-28`
 <!-- release:meta:end -->
 
 ## Automatic Provenance
 
 <!-- release:provenance:start -->
-- Source branch: `feature/flow-ui-ios-release`
-- Source revision: `b88baff`
-- Source commit: `b88baffdf8430a60d8ffe797f1f251d7d0d28e58`
-- Source describe: `v1.1.0-6-gb88baff`
+- Source branch: `main`
+- Source revision: `05c0ba3`
+- Source commit: `05c0ba33cd86d6f30a845e85bb8fef0e6b266359`
+- Source describe: `v1.2.0-11-g05c0ba3`
 - Generator: `scripts/update_release_metadata.cjs`
 - Inputs: `CHANGELOG.md`, `pubspec.yaml`, and local git metadata
 <!-- release:provenance:end -->
@@ -50,5 +50,9 @@ The primary user is an active breaker building a personal library under real fat
 ## Latest Tagged Notes
 
 <!-- release:notes:start -->
-- No tagged release notes found yet.
+- add clojuredart and openspec changes
+- land athlete ux, sync tooling, and research workbench
+- make progress graph view immediate
+- polish progress graph accessibility
+- progress parent-first redesign
 <!-- release:notes:end -->

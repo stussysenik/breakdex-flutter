@@ -1,3 +1,16 @@
+# [1.3.0](https://github.com/stussysenik/breakdex-flutter/compare/v1.2.0...v1.3.0) (2026-04-28)
+
+
+### Features
+
+* add clojuredart and openspec changes ([ec13c02](https://github.com/stussysenik/breakdex-flutter/commit/ec13c026edadcf63307d8410c0a0eb3ab40bc12e))
+* land athlete ux, sync tooling, and research workbench ([46c604c](https://github.com/stussysenik/breakdex-flutter/commit/46c604cd1efac9adfcb8caed09973d9953e195e4))
+* make progress graph view immediate ([881f52f](https://github.com/stussysenik/breakdex-flutter/commit/881f52f1bcb4c16847e1e1fee040290a48dbb065))
+* polish progress graph accessibility ([b88baff](https://github.com/stussysenik/breakdex-flutter/commit/b88baffdf8430a60d8ffe797f1f251d7d0d28e58))
+* progress parent-first redesign ([9840118](https://github.com/stussysenik/breakdex-flutter/commit/98401189f994464ef747c1d1989bedeb7bc64704))
+* refine flow graph and ios release tooling ([3ad6082](https://github.com/stussysenik/breakdex-flutter/commit/3ad6082ab5dfd52951eb6e29f3961896e3405b0f))
+* refine progress training flow ([18e6f44](https://github.com/stussysenik/breakdex-flutter/commit/18e6f440c50bcabd5a8c06dfe82125e9223d60f6))
+
 # [1.2.0](https://github.com/stussysenik/breakdex-flutter/compare/v1.1.0...v1.2.0) (2026-03-27)
 
 
