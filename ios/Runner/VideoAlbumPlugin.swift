@@ -579,6 +579,8 @@ final class VideoAlbumPlugin: NSObject, FlutterPlugin, FlutterStreamHandler, PHP
         let albums = fetchHistoricalManagedAlbums(matching: regexMatchers)
         var seenAssetIds = Set<String>()
         var assets: [[String: String]] = []
+        var videoAssetCount = 0
+        var skippedMissingFilenameCount = 0
 
         for album in albums {
             let albumTitle = album.localizedTitle?.trimmingCharacters(
@@ -589,10 +591,12 @@ final class VideoAlbumPlugin: NSObject, FlutterPlugin, FlutterStreamHandler, PHP
             let fetchResult = PHAsset.fetchAssets(in: album, options: nil)
             fetchResult.enumerateObjects { asset, _, _ in
                 guard asset.mediaType == .video else { return }
+                videoAssetCount += 1
                 guard seenAssetIds.insert(asset.localIdentifier).inserted else {
                     return
                 }
                 guard let filename = self.originalFilename(for: asset) else {
+                    skippedMissingFilenameCount += 1
                     return
                 }
                 assets.append([
@@ -607,6 +611,9 @@ final class VideoAlbumPlugin: NSObject, FlutterPlugin, FlutterStreamHandler, PHP
             result([
                 "accessStatus": self.authorizationStatusValue(status),
                 "assets": assets,
+                "matchingAlbumCount": albums.count,
+                "videoAssetCount": videoAssetCount,
+                "skippedMissingFilenameCount": skippedMissingFilenameCount,
             ])
         }
     }

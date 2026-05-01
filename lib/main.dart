@@ -15,6 +15,7 @@ import 'core/services/automation_fixture_service.dart';
 import 'core/services/database_recovery_service.dart';
 import 'core/services/video_path_resolver.dart';
 import 'core/services/fsrs_migration_service.dart';
+import 'core/services/managed_album_reconciliation_service.dart';
 import 'core/services/provenance_journal_service.dart';
 import 'core/services/settings_service.dart';
 import 'core/sync/asset_hash_service.dart';
@@ -407,7 +408,9 @@ class _StartupReliabilityToastGateState
 
     ref.listen(managedAlbumLifecycleReportProvider, (_, next) {
       final report = next.valueOrNull;
-      if (report == null || !report.hasStartupSignal) {
+      if (report == null ||
+          report.trigger != ManagedAlbumReconcileTrigger.startup ||
+          !report.hasStartupSignal) {
         return;
       }
 

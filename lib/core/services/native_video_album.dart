@@ -269,10 +269,16 @@ class RecoverableManagedAssetDiscoveryResult {
   const RecoverableManagedAssetDiscoveryResult({
     required this.accessStatus,
     required this.assets,
+    this.matchingAlbumCount = 0,
+    this.videoAssetCount = 0,
+    this.skippedMissingFilenameCount = 0,
   });
 
   final PhotoLibraryAccessStatus accessStatus;
   final List<RecoverableManagedAsset> assets;
+  final int matchingAlbumCount;
+  final int videoAssetCount;
+  final int skippedMissingFilenameCount;
 
   factory RecoverableManagedAssetDiscoveryResult.empty({
     PhotoLibraryAccessStatus accessStatus = PhotoLibraryAccessStatus.unknown,
@@ -280,6 +286,9 @@ class RecoverableManagedAssetDiscoveryResult {
     return RecoverableManagedAssetDiscoveryResult(
       accessStatus: accessStatus,
       assets: const [],
+      matchingAlbumCount: 0,
+      videoAssetCount: 0,
+      skippedMissingFilenameCount: 0,
     );
   }
 
@@ -301,6 +310,10 @@ class RecoverableManagedAssetDiscoveryResult {
         payload['accessStatus'] as String?,
       ),
       assets: assets,
+      matchingAlbumCount: (payload['matchingAlbumCount'] as num?)?.toInt() ?? 0,
+      videoAssetCount: (payload['videoAssetCount'] as num?)?.toInt() ?? 0,
+      skippedMissingFilenameCount:
+          (payload['skippedMissingFilenameCount'] as num?)?.toInt() ?? 0,
     );
   }
 }

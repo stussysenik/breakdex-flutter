@@ -15,8 +15,11 @@ import 'native_video_album.dart';
 import 'video_path_resolver.dart';
 import 'video_service.dart';
 
+enum ManagedAlbumReconcileTrigger { startup, resume, libraryChanged }
+
 class ManagedAlbumReconcileReport {
   const ManagedAlbumReconcileReport({
+    required this.trigger,
     required this.trackedMoves,
     required this.archivedMoves,
     required this.recoveredMoves,
@@ -25,9 +28,13 @@ class ManagedAlbumReconcileReport {
     required this.historicalAssetsUntracked,
     required this.historicalAssetsRecovered,
     required this.historicalRestoreFailures,
+    required this.historicalMatchingAlbums,
+    required this.historicalVideoAssetsSeen,
+    required this.historicalAssetsSkippedMissingFilename,
     required this.completedAt,
   });
 
+  final ManagedAlbumReconcileTrigger trigger;
   final int trackedMoves;
   final int archivedMoves;
   final int recoveredMoves;
@@ -36,6 +43,9 @@ class ManagedAlbumReconcileReport {
   final int historicalAssetsUntracked;
   final int historicalAssetsRecovered;
   final int historicalRestoreFailures;
+  final int historicalMatchingAlbums;
+  final int historicalVideoAssetsSeen;
+  final int historicalAssetsSkippedMissingFilename;
   final DateTime completedAt;
 
   int get historicalAssetsStillPending {
@@ -44,11 +54,17 @@ class ManagedAlbumReconcileReport {
   }
 
   bool get hasStartupSignal =>
-      accessStatus == PhotoLibraryAccessStatus.limited ||
+      trigger == ManagedAlbumReconcileTrigger.startup ||
+      accessStatus != PhotoLibraryAccessStatus.authorized ||
+      historicalMatchingAlbums > 0 ||
       historicalAssetsRecovered > 0 ||
       historicalAssetsStillPending > 0;
 
   String get snackBarMessage {
+    if (accessStatus == PhotoLibraryAccessStatus.denied ||
+        accessStatus == PhotoLibraryAccessStatus.restricted) {
+      return 'Photos access is off, so Breakdex cannot inspect historical albums yet.';
+    }
     if (accessStatus == PhotoLibraryAccessStatus.limited) {
       return 'Photos access is limited, so some historical Breakdex albums may stay hidden.';
     }
@@ -61,6 +77,17 @@ class ManagedAlbumReconcileReport {
     if (historicalAssetsStillPending > 0) {
       return 'Found $historicalAssetsUntracked historical album video${historicalAssetsUntracked == 1 ? '' : 's'}, but $historicalAssetsStillPending could not be linked yet.';
     }
+    if (historicalMatchingAlbums > 0 &&
+        historicalAssetsSkippedMissingFilename > 0 &&
+        historicalAssetsDiscovered == 0) {
+      return 'Found $historicalMatchingAlbums Breakdex album${historicalMatchingAlbums == 1 ? '' : 's'}, but iPhone did not expose readable video filenames yet.';
+    }
+    if (historicalMatchingAlbums > 0 && historicalAssetsDiscovered == 0) {
+      return 'Found $historicalMatchingAlbums Breakdex album${historicalMatchingAlbums == 1 ? '' : 's'}, but no recoverable videos were linked on startup.';
+    }
+    if (historicalMatchingAlbums == 0) {
+      return 'No Breakdex historical albums were found in Photos on startup.';
+    }
     return 'Checked historical Breakdex albums on startup.';
   }
 }
@@ -71,12 +98,18 @@ class _HistoricalRecoverySummary {
     required this.untrackedAssets,
     required this.recoveredAssets,
     required this.restoreFailures,
+    required this.matchingAlbums,
+    required this.videoAssetsSeen,
+    required this.skippedMissingFilenameAssets,
   });
 
   final int discoveredAssets;
   final int untrackedAssets;
   final int recoveredAssets;
   final int restoreFailures;
+  final int matchingAlbums;
+  final int videoAssetsSeen;
+  final int skippedMissingFilenameAssets;
 }
 
 class ManagedAlbumReconciliationService {
@@ -104,13 +137,16 @@ class ManagedAlbumReconciliationService {
   final VideoService _videoService;
   final DateTime Function() _now;
 
-  Future<ManagedAlbumReconcileReport> reconcileExternalDeletes() async {
+  Future<ManagedAlbumReconcileReport> reconcileExternalDeletes({
+    ManagedAlbumReconcileTrigger trigger = ManagedAlbumReconcileTrigger.startup,
+  }) async {
     final activeMoves = await _movesDao.getAll();
     final trackedMoves = activeMoves.where(_hasManagedAlbumAssetId).toList();
 
     final accessStatus = await _videoAlbum.requestReadAccess();
     if (!accessStatus.allowsReadAccess) {
       return ManagedAlbumReconcileReport(
+        trigger: trigger,
         trackedMoves: trackedMoves.length,
         archivedMoves: 0,
         recoveredMoves: 0,
@@ -119,6 +155,9 @@ class ManagedAlbumReconciliationService {
         historicalAssetsUntracked: 0,
         historicalAssetsRecovered: 0,
         historicalRestoreFailures: 0,
+        historicalMatchingAlbums: 0,
+        historicalVideoAssetsSeen: 0,
+        historicalAssetsSkippedMissingFilename: 0,
         completedAt: _now(),
       );
     }
@@ -180,6 +219,7 @@ class ManagedAlbumReconciliationService {
     recoveredCount += historicalRecovery.recoveredAssets;
 
     return ManagedAlbumReconcileReport(
+      trigger: trigger,
       trackedMoves: trackedMoves.length,
       archivedMoves: archivedCount,
       recoveredMoves: recoveredCount,
@@ -188,6 +228,10 @@ class ManagedAlbumReconciliationService {
       historicalAssetsUntracked: historicalRecovery.untrackedAssets,
       historicalAssetsRecovered: historicalRecovery.recoveredAssets,
       historicalRestoreFailures: historicalRecovery.restoreFailures,
+      historicalMatchingAlbums: historicalRecovery.matchingAlbums,
+      historicalVideoAssetsSeen: historicalRecovery.videoAssetsSeen,
+      historicalAssetsSkippedMissingFilename:
+          historicalRecovery.skippedMissingFilenameAssets,
       completedAt: _now(),
     );
   }
@@ -286,12 +330,27 @@ class ManagedAlbumReconciliationService {
     }
 
     final discovery = await _videoAlbum.discoverRecoverableManagedAssets();
-    if (!discovery.accessStatus.allowsReadAccess || discovery.assets.isEmpty) {
+    if (!discovery.accessStatus.allowsReadAccess) {
       return const _HistoricalRecoverySummary(
         discoveredAssets: 0,
         untrackedAssets: 0,
         recoveredAssets: 0,
         restoreFailures: 0,
+        matchingAlbums: 0,
+        videoAssetsSeen: 0,
+        skippedMissingFilenameAssets: 0,
+      );
+    }
+
+    if (discovery.assets.isEmpty) {
+      return _HistoricalRecoverySummary(
+        discoveredAssets: 0,
+        untrackedAssets: 0,
+        recoveredAssets: 0,
+        restoreFailures: 0,
+        matchingAlbums: discovery.matchingAlbumCount,
+        videoAssetsSeen: discovery.videoAssetCount,
+        skippedMissingFilenameAssets: discovery.skippedMissingFilenameCount,
       );
     }
 
@@ -388,6 +447,9 @@ class ManagedAlbumReconciliationService {
       untrackedAssets: untrackedAssets,
       recoveredAssets: recoveredCount,
       restoreFailures: restoreFailures,
+      matchingAlbums: discovery.matchingAlbumCount,
+      videoAssetsSeen: discovery.videoAssetCount,
+      skippedMissingFilenameAssets: discovery.skippedMissingFilenameCount,
     );
   }
 
@@ -711,15 +773,19 @@ class ManagedAlbumLifecycleController with WidgetsBindingObserver {
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state != AppLifecycleState.resumed) return;
-    unawaited(_ensureObservationAndSweep());
+    unawaited(
+      _ensureObservationAndSweep(trigger: ManagedAlbumReconcileTrigger.resume),
+    );
   }
 
-  Future<void> _ensureObservationAndSweep() async {
+  Future<void> _ensureObservationAndSweep({
+    ManagedAlbumReconcileTrigger trigger = ManagedAlbumReconcileTrigger.startup,
+  }) async {
     final sweep = _runningSweep;
     if (sweep != null) return sweep;
 
     final future = () async {
-      final report = await _service.reconcileExternalDeletes();
+      final report = await _service.reconcileExternalDeletes(trigger: trigger);
       _latestReport = report;
       if (!_reports.isClosed) {
         _reports.add(report);
@@ -727,7 +793,11 @@ class ManagedAlbumLifecycleController with WidgetsBindingObserver {
       if (report.accessStatus.allowsReadAccess && _photoChangesSub == null) {
         _photoChangesSub = _videoAlbum.libraryChangeStream.listen((event) {
           if (event['type'] != 'libraryChanged') return;
-          unawaited(_ensureObservationAndSweep());
+          unawaited(
+            _ensureObservationAndSweep(
+              trigger: ManagedAlbumReconcileTrigger.libraryChanged,
+            ),
+          );
         });
       } else if (!report.accessStatus.allowsReadAccess &&
           _photoChangesSub != null) {

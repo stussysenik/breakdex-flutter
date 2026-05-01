@@ -421,6 +421,36 @@ void main() {
       );
     });
 
+    test('reports when no historical albums were found on startup', () async {
+      final report = await service.reconcileExternalDeletes();
+
+      expect(report.hasStartupSignal, isTrue);
+      expect(
+        report.snackBarMessage,
+        'No Breakdex historical albums were found in Photos on startup.',
+      );
+    });
+
+    test('reports matching albums that expose no readable filenames', () async {
+      videoAlbum.discoveryResult = const RecoverableManagedAssetDiscoveryResult(
+        accessStatus: PhotoLibraryAccessStatus.authorized,
+        assets: [],
+        matchingAlbumCount: 2,
+        videoAssetCount: 3,
+        skippedMissingFilenameCount: 3,
+      );
+
+      final report = await service.reconcileExternalDeletes();
+
+      expect(report.historicalMatchingAlbums, 2);
+      expect(report.historicalVideoAssetsSeen, 3);
+      expect(report.historicalAssetsSkippedMissingFilename, 3);
+      expect(
+        report.snackBarMessage,
+        'Found 2 Breakdex albums, but iPhone did not expose readable video filenames yet.',
+      );
+    });
+
     test(
       'restoreArchivedMove recovers a missing local video without duplicating album copies',
       () async {
