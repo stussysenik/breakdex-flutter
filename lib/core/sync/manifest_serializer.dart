@@ -8,6 +8,7 @@ import '../database/daos/fsrs_cards_dao.dart';
 import '../database/daos/moves_dao.dart';
 import '../database/daos/reviews_dao.dart';
 import '../database/database.dart';
+import '../web/library_manifest.dart';
 
 /// Serializes the entire Breakdex library into a compact `manifest.json`
 /// suitable for cloud storage and consumption by the web viewer.
@@ -32,13 +33,13 @@ class ManifestSerializer {
     required DecksDao decksDao,
     required AppDatabase db,
     required SharedPreferences prefs,
-  })  : _movesDao = movesDao,
-        _combosDao = combosDao,
-        _fsrsCardsDao = fsrsCardsDao,
-        _reviewsDao = reviewsDao,
-        _decksDao = decksDao,
-        _db = db,
-        _prefs = prefs;
+  }) : _movesDao = movesDao,
+       _combosDao = combosDao,
+       _fsrsCardsDao = fsrsCardsDao,
+       _reviewsDao = reviewsDao,
+       _decksDao = decksDao,
+       _db = db,
+       _prefs = prefs;
 
   /// Serialize the full library to a compact JSON string.
   ///
@@ -51,6 +52,7 @@ class ManifestSerializer {
     final reviews = await _reviewsDao.getAllOrdered();
     final decks = await _decksDao.getAll();
     final deckMoves = await _db.select(_db.deckMoves).get();
+    final assets = await _db.select(_db.assetManifest).get();
 
     // Categories from SharedPreferences
     List<Map<String, dynamic>> categoriesJson = [];
@@ -62,66 +64,104 @@ class ManifestSerializer {
       } catch (_) {}
     }
 
-    final data = {
-      'version': 1,
-      'exportedAt': DateTime.now().toUtc().toIso8601String(),
-      'moves': moves
-          .map((m) => {
-                'id': m.id,
-                'name': m.name,
-                'category': m.category,
-                'contentHash': m.contentHash,
-                'createdAt': m.createdAt.toUtc().toIso8601String(),
-              })
+    final manifest = LibraryManifest(
+      exportedAt: DateTime.now(),
+      moves: moves
+          .map(
+            (move) => LibraryMove(
+              id: move.id,
+              name: move.name,
+              category: move.category,
+              contentHash: move.contentHash,
+              createdAt: move.createdAt,
+            ),
+          )
           .toList(),
-      'combos': combos
-          .map((c) => {
-                'id': c.id,
-                'name': c.name,
-              })
+      combos: combos
+          .map((combo) => LibraryCombo(id: combo.id, name: combo.name))
           .toList(),
-      'comboMoves': comboMoves
-          .map((cm) => {
-                'comboId': cm.comboId,
-                'moveId': cm.moveId,
-                'sequenceIndex': cm.sequenceIndex,
-              })
+      comboMoves: comboMoves
+          .map(
+            (comboMove) => LibraryComboMove(
+              comboId: comboMove.comboId,
+              moveId: comboMove.moveId,
+              sequenceIndex: comboMove.sequenceIndex,
+            ),
+          )
           .toList(),
-      'categories': categoriesJson,
-      'fsrsCards': fsrsCards
-          .map((fc) => {
-                'entityId': fc.entityId,
-                'entityType': fc.entityType,
-                'state': fc.fsrsState,
-                'stability': fc.stability,
-                'difficulty': fc.difficulty,
-                'due': fc.due.toUtc().toIso8601String(),
-              })
+      categories: categoriesJson
+          .map(
+            (category) => LibraryCategory(
+              name: category['name'] as String,
+              colorValue: category['colorValue'] as int,
+              isDefault: category['isDefault'] as bool? ?? false,
+            ),
+          )
           .toList(),
-      'decks': decks
-          .map((d) => {
-                'id': d.id,
-                'name': d.name,
-                'deckType': d.deckType,
-              })
+      fsrsCards: fsrsCards
+          .map(
+            (card) => LibraryFsrsCard(
+              entityId: card.entityId,
+              entityType: card.entityType,
+              state: card.fsrsState,
+              stability: card.stability,
+              difficulty: card.difficulty,
+              due: card.due,
+            ),
+          )
           .toList(),
-      'deckMoves': deckMoves
-          .map((dm) => {
-                'deckId': dm.deckId,
-                'moveId': dm.moveId,
-              })
+      decks: decks
+          .map(
+            (deck) => LibraryDeck(
+              id: deck.id,
+              name: deck.name,
+              deckType: deck.deckType,
+            ),
+          )
           .toList(),
-      'reviews': reviews
-          .map((r) => {
-                'id': r.id,
-                'entityId': r.entityIdSnapshot,
-                'entityType': r.entityType,
-                'rating': r.rating,
-                'createdAt': r.reviewedAt.toUtc().toIso8601String(),
-              })
+      deckMoves: deckMoves
+          .map(
+            (deckMove) => LibraryDeckMove(
+              deckId: deckMove.deckId,
+              moveId: deckMove.moveId,
+            ),
+          )
           .toList(),
-    };
+      reviews: reviews
+          .map(
+            (review) => LibraryReview(
+              id: review.id,
+              entityId:
+                  review.entityIdSnapshot ??
+                  review.moveId ??
+                  review.comboId ??
+                  review.id,
+              entityType:
+                  review.entityType ??
+                  (review.comboId != null ? 'combo' : 'move'),
+              rating: review.rating,
+              createdAt: review.reviewedAt,
+            ),
+          )
+          .toList(),
+      assets: assets
+          .map(
+            (asset) => LibraryAsset(
+              contentHash: asset.contentHash,
+              fileSizeBytes: asset.fileSizeBytes,
+              mimeType: asset.mimeType,
+              durationMs: asset.durationMs,
+              width: asset.width,
+              height: asset.height,
+              importedAt: asset.importedAt,
+              sourceType: asset.sourceType,
+              sourceName: asset.sourceName,
+              deletedAt: asset.deletedAt,
+            ),
+          )
+          .toList(),
+    );
 
-    return jsonEncode(data);
+    return jsonEncode(manifest.toJson());
   }
 }

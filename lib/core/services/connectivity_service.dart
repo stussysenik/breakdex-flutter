@@ -3,12 +3,7 @@ import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter/foundation.dart';
 
 /// Simplified connection type for sync policy decisions.
-enum ConnectionType {
-  wifi,
-  mobile,
-  ethernet,
-  none,
-}
+enum ConnectionType { wifi, mobile, ethernet, none }
 
 /// Monitors network connectivity and exposes a broadcast [onlineStream].
 ///
@@ -20,13 +15,21 @@ class ConnectivityService {
   late final StreamController<ConnectionType> _typeController;
   StreamSubscription<List<ConnectivityResult>>? _sub;
   ConnectionType _currentType = ConnectionType.none;
+  bool _online = false;
+  int _listenerCount = 0;
+  bool _disposed = false;
+  bool _hasEmittedOnline = false;
+  bool _hasEmittedType = false;
 
   ConnectivityService() {
     _controller = StreamController<bool>.broadcast(
-      onListen: _startListening,
-      onCancel: _stopListening,
+      onListen: _onListen,
+      onCancel: _onCancel,
     );
-    _typeController = StreamController<ConnectionType>.broadcast();
+    _typeController = StreamController<ConnectionType>.broadcast(
+      onListen: _onListen,
+      onCancel: _onCancel,
+    );
   }
 
   Stream<bool> get onlineStream => _controller.stream;
@@ -37,42 +40,43 @@ class ConnectivityService {
   /// Current connection type (last known value).
   ConnectionType get currentType => _currentType;
 
+  void _onListen() {
+    _listenerCount += 1;
+    if (_listenerCount == 1) {
+      _startListening();
+    }
+  }
+
+  void _onCancel() {
+    if (_listenerCount == 0) return;
+    _listenerCount -= 1;
+    if (_listenerCount == 0) {
+      _stopListening();
+    }
+  }
+
   void _startListening() {
+    if (_disposed || _sub != null) return;
+
     try {
       _sub = _connectivity.onConnectivityChanged.listen(
-        (results) {
-          _controller.add(_isOnline(results));
-          final type = _resolveType(results);
-          _currentType = type;
-          if (!_typeController.isClosed) _typeController.add(type);
-        },
+        _handleResults,
         onError: (Object e) {
           debugPrint('Connectivity stream error: $e');
-          if (!_controller.isClosed) _controller.add(false);
-          _currentType = ConnectionType.none;
-          if (!_typeController.isClosed) {
-            _typeController.add(ConnectionType.none);
-          }
+          _emitState(ConnectionType.none);
         },
       );
       // Emit current state immediately so StreamProvider exits AsyncLoading.
       // connectivity_plus only fires onConnectivityChanged on *changes*, not on
       // initial subscription — without this, the provider stays loading forever
       // if connectivity never changes (common in release mode).
-      checkNow().then((online) {
-        if (!_controller.isClosed) _controller.add(online);
-      });
       checkType().then((type) {
-        _currentType = type;
-        if (!_typeController.isClosed) _typeController.add(type);
+        if (_disposed) return;
+        _emitState(type);
       });
     } catch (e) {
       debugPrint('Connectivity listen failed: $e');
-      if (!_controller.isClosed) _controller.add(false);
-      _currentType = ConnectionType.none;
-      if (!_typeController.isClosed) {
-        _typeController.add(ConnectionType.none);
-      }
+      _emitState(ConnectionType.none);
     }
   }
 
@@ -81,11 +85,27 @@ class ConnectivityService {
     _sub = null;
   }
 
-  bool _isOnline(List<ConnectivityResult> results) {
-    return results.any((r) =>
-        r == ConnectivityResult.wifi ||
-        r == ConnectivityResult.mobile ||
-        r == ConnectivityResult.ethernet);
+  void _handleResults(List<ConnectivityResult> results) {
+    _emitState(_resolveType(results));
+  }
+
+  void _emitState(ConnectionType type) {
+    final isOnline = type != ConnectionType.none;
+    final typeChanged = _currentType != type;
+    final onlineChanged = _online != isOnline;
+    _currentType = type;
+    _online = isOnline;
+
+    if ((_hasEmittedOnline == false || onlineChanged) &&
+        !_controller.isClosed) {
+      _hasEmittedOnline = true;
+      _controller.add(isOnline);
+    }
+    if ((_hasEmittedType == false || typeChanged) &&
+        !_typeController.isClosed) {
+      _hasEmittedType = true;
+      _typeController.add(type);
+    }
   }
 
   ConnectionType _resolveType(List<ConnectivityResult> results) {
@@ -102,7 +122,9 @@ class ConnectivityService {
   Future<bool> checkNow() async {
     try {
       final results = await _connectivity.checkConnectivity();
-      return _isOnline(results);
+      final type = _resolveType(results);
+      _emitState(type);
+      return type != ConnectionType.none;
     } catch (e) {
       debugPrint('Connectivity check failed: $e');
       return false;
@@ -114,7 +136,7 @@ class ConnectivityService {
     try {
       final results = await _connectivity.checkConnectivity();
       final type = _resolveType(results);
-      _currentType = type;
+      _emitState(type);
       return type;
     } catch (e) {
       debugPrint('Connection type check failed: $e');
@@ -123,6 +145,7 @@ class ConnectivityService {
   }
 
   void dispose() {
+    _disposed = true;
     _stopListening();
     _controller.close();
     _typeController.close();

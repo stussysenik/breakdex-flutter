@@ -13,6 +13,14 @@ import '../services/video_path_resolver.dart';
 import 'asset_hash_service.dart';
 import 'cloud_provider.dart';
 
+abstract interface class LocalAssetRetriever {
+  Future<String?> ensureLocal(
+    String contentHash, {
+    TransferProgress? onProgress,
+    CancellationToken? cancel,
+  });
+}
+
 /// Downloads a video from cloud storage on demand when the local copy has been
 /// freed via [SpaceManager].
 ///
@@ -22,7 +30,7 @@ import 'cloud_provider.dart';
 /// 3. Download to local videos directory
 /// 4. Verify hash matches content hash
 /// 5. Update manifest.localPath and local copy record
-class OnDemandDownloader {
+class OnDemandDownloader implements LocalAssetRetriever {
   final AssetManifestDao _manifestDao;
   final AssetCopiesDao _copiesDao;
   final AssetHashService _hashService;
@@ -35,16 +43,17 @@ class OnDemandDownloader {
     required AssetHashService hashService,
     required List<CloudProvider> Function() getProviders,
     SyncDao? syncDao,
-  })  : _manifestDao = manifestDao,
-        _copiesDao = copiesDao,
-        _hashService = hashService,
-        _getProviders = getProviders,
-        _syncDao = syncDao;
+  }) : _manifestDao = manifestDao,
+       _copiesDao = copiesDao,
+       _hashService = hashService,
+       _getProviders = getProviders,
+       _syncDao = syncDao;
 
   /// Ensure a local copy exists for the given content hash.
   ///
   /// Returns the local file path, or null if download failed.
   /// Calls [onProgress] with (bytesDownloaded, totalBytes) during transfer.
+  @override
   Future<String?> ensureLocal(
     String contentHash, {
     TransferProgress? onProgress,
@@ -65,20 +74,22 @@ class OnDemandDownloader {
 
     // Find a verified remote copy
     final copies = await _copiesDao.getByHash(contentHash);
-    final remoteCopy = copies.where(
-      (c) => c.provider != 'local' && c.status == 'verified',
-    ).firstOrNull;
+    final remoteCopy = copies
+        .where((c) => c.provider != 'local' && c.status == 'verified')
+        .firstOrNull;
 
     if (remoteCopy == null) {
-      debugPrint('[OnDemandDownloader] No verified remote copy for $contentHash');
+      debugPrint(
+        '[OnDemandDownloader] No verified remote copy for $contentHash',
+      );
       return null;
     }
 
     // Find the matching provider
     final providers = _getProviders();
-    final provider = providers.where(
-      (p) => p.providerType == remoteCopy.provider,
-    ).firstOrNull;
+    final provider = providers
+        .where((p) => p.providerType == remoteCopy.provider)
+        .firstOrNull;
 
     if (provider == null) {
       debugPrint(
@@ -107,29 +118,35 @@ class OnDemandDownloader {
       // Verify hash integrity
       final verified = await _hashService.verifyHash(localPath, contentHash);
       if (!verified) {
-        debugPrint('[OnDemandDownloader] Hash mismatch! Deleting corrupt file.');
+        debugPrint(
+          '[OnDemandDownloader] Hash mismatch! Deleting corrupt file.',
+        );
         await File(localPath).delete();
         return null;
       }
 
       // Update manifest with new local path (relative for portability)
-      await _manifestDao.upsert(AssetManifestCompanion(
-        contentHash: Value(contentHash),
-        localPath: Value(VideoPathResolver.toRelative(localPath)),
-        localVerifiedAt: Value(DateTime.now()),
-      ));
+      await _manifestDao.upsert(
+        AssetManifestCompanion(
+          contentHash: Value(contentHash),
+          localPath: Value(VideoPathResolver.toRelative(localPath)),
+          localVerifiedAt: Value(DateTime.now()),
+        ),
+      );
 
       // Upsert local copy record
       final now = DateTime.now();
-      await _copiesDao.upsertCopy(AssetCopiesCompanion.insert(
-        id: '${contentHash}_local_redownload',
-        contentHash: contentHash,
-        provider: 'local',
-        status: const Value('verified'),
-        verifiedAt: Value(now),
-        createdAt: now,
-        updatedAt: now,
-      ));
+      await _copiesDao.upsertCopy(
+        AssetCopiesCompanion.insert(
+          id: '${contentHash}_local_redownload',
+          contentHash: contentHash,
+          provider: 'local',
+          status: const Value('verified'),
+          verifiedAt: Value(now),
+          createdAt: now,
+          updatedAt: now,
+        ),
+      );
 
       await _manifestDao.updateCopyCount(contentHash);
 

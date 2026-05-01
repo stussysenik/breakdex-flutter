@@ -1,7 +1,9 @@
 import 'dart:async';
+import 'dart:io';
 
 import 'package:drift/drift.dart';
 import 'package:flutter/foundation.dart';
+import 'package:path/path.dart' as p;
 import 'package:uuid/uuid.dart';
 
 import '../database/database.dart';
@@ -9,7 +11,9 @@ import '../database/daos/asset_copies_dao.dart';
 import '../database/daos/asset_manifest_dao.dart';
 import '../database/daos/sync_dao.dart';
 import '../database/daos/sync_operations_dao.dart';
+import '../services/app_storage_paths.dart';
 import '../services/connectivity_service.dart';
+import '../services/video_path_resolver.dart';
 import 'asset_hash_service.dart';
 import 'cloud_provider.dart';
 import 'network_policy.dart';
@@ -44,21 +48,20 @@ class SyncProgress {
     state: SyncEngineState.idle,
   );
 
-  double get fraction =>
-      totalAssets > 0 ? syncedAssets / totalAssets : 1.0;
+  double get fraction => totalAssets > 0 ? syncedAssets / totalAssets : 1.0;
 
   String get statusLabel => switch (state) {
-        SyncEngineState.idle => 'All synced',
-        SyncEngineState.hashing => 'Hashing files...',
-        SyncEngineState.uploading =>
-          '$pendingUploads video${pendingUploads == 1 ? '' : 's'} uploading',
-        SyncEngineState.downloading =>
-          '$pendingDownloads video${pendingDownloads == 1 ? '' : 's'} downloading',
-        SyncEngineState.verifying => 'Verifying copies...',
-        SyncEngineState.waitingForWifi => 'Waiting for WiFi',
-        SyncEngineState.error => 'Sync error',
-        SyncEngineState.paused => 'Sync paused',
-      };
+    SyncEngineState.idle => 'All synced',
+    SyncEngineState.hashing => 'Hashing files...',
+    SyncEngineState.uploading =>
+      '$pendingUploads video${pendingUploads == 1 ? '' : 's'} uploading',
+    SyncEngineState.downloading =>
+      '$pendingDownloads video${pendingDownloads == 1 ? '' : 's'} downloading',
+    SyncEngineState.verifying => 'Verifying copies...',
+    SyncEngineState.waitingForWifi => 'Waiting for WiFi',
+    SyncEngineState.error => 'Sync error',
+    SyncEngineState.paused => 'Sync paused',
+  };
 }
 
 /// State machine for the sync engine.
@@ -102,8 +105,7 @@ class AssetSyncEngine {
 
   static const _uuid = Uuid();
 
-  final _progressController =
-      StreamController<SyncProgress>.broadcast();
+  final _progressController = StreamController<SyncProgress>.broadcast();
   SyncEngineState _state = SyncEngineState.idle;
   bool _running = false;
 
@@ -116,14 +118,14 @@ class AssetSyncEngine {
     required SafetyGuard safetyGuard,
     required List<CloudProvider> providers,
     SyncDao? syncDao,
-  })  : _manifestDao = manifestDao,
-        _copiesDao = copiesDao,
-        _opsDao = opsDao,
-        _hashService = hashService,
-        _networkPolicy = networkPolicy,
-        _safetyGuard = safetyGuard,
-        _providers = providers,
-        _syncDao = syncDao;
+  }) : _manifestDao = manifestDao,
+       _copiesDao = copiesDao,
+       _opsDao = opsDao,
+       _hashService = hashService,
+       _networkPolicy = networkPolicy,
+       _safetyGuard = safetyGuard,
+       _providers = providers,
+       _syncDao = syncDao;
 
   /// Stream of sync progress updates.
   Stream<SyncProgress> get progressStream => _progressController.stream;
@@ -171,23 +173,25 @@ class AssetSyncEngine {
       final manifest = await _manifestDao.getByHash(contentHash);
       if (manifest == null) continue;
 
-      await _opsDao.insertOperation(SyncOperationsCompanion.insert(
-        id: _uuid.v4(),
-        contentHash: contentHash,
-        providerId: provider.providerType,
-        operationType: 'upload',
-        totalBytes: Value(manifest.fileSizeBytes),
-        createdAt: DateTime.now(),
-      ));
+      await _opsDao.insertOperation(
+        SyncOperationsCompanion.insert(
+          id: _uuid.v4(),
+          contentHash: contentHash,
+          providerId: provider.providerType,
+          operationType: 'upload',
+          totalBytes: Value(manifest.fileSizeBytes),
+          createdAt: DateTime.now(),
+        ),
+      );
     }
   }
 
   /// Queue a download for an asset from the first available provider.
   Future<void> queueDownload(String contentHash) async {
     final copies = await _copiesDao.getByHash(contentHash);
-    final remoteCopy = copies.where(
-      (c) => c.provider != 'local' && c.status == 'verified',
-    ).firstOrNull;
+    final remoteCopy = copies
+        .where((c) => c.provider != 'local' && c.status == 'verified')
+        .firstOrNull;
 
     if (remoteCopy == null) return;
 
@@ -198,13 +202,15 @@ class AssetSyncEngine {
     );
     if (alreadyExists) return;
 
-    await _opsDao.insertOperation(SyncOperationsCompanion.insert(
-      id: _uuid.v4(),
-      contentHash: contentHash,
-      providerId: remoteCopy.provider,
-      operationType: 'download',
-      createdAt: DateTime.now(),
-    ));
+    await _opsDao.insertOperation(
+      SyncOperationsCompanion.insert(
+        id: _uuid.v4(),
+        contentHash: contentHash,
+        providerId: remoteCopy.provider,
+        operationType: 'download',
+        createdAt: DateTime.now(),
+      ),
+    );
   }
 
   void pause() => _setState(SyncEngineState.paused);
@@ -248,8 +254,7 @@ class AssetSyncEngine {
   }
 
   Future<void> _processQueue(ConnectionType connectionType) async {
-    final maxConcurrent =
-        _networkPolicy.maxConcurrentUploads(connectionType);
+    final maxConcurrent = _networkPolicy.maxConcurrentUploads(connectionType);
     final queued = await _opsDao.getQueued(limit: maxConcurrent);
 
     for (final op in queued) {
@@ -310,31 +315,37 @@ class AssetSyncEngine {
 
     final remotePath = 'breakdex/${op.contentHash}';
     final token = CancellationToken();
+    final localPath = VideoPathResolver.toAbsolute(manifest!.localPath!);
+    var lastTransferred = 0;
 
     final result = await provider.upload(
-      localPath: manifest!.localPath!,
+      localPath: localPath,
       remotePath: remotePath,
       onProgress: (transferred, total) {
         _opsDao.updateProgress(op.id, transferred);
-        if (connectionType == ConnectionType.mobile) {
-          _networkPolicy.recordMobileUsage(transferred);
+        final delta = transferred - lastTransferred;
+        lastTransferred = transferred;
+        if (delta > 0 && connectionType == ConnectionType.mobile) {
+          _networkPolicy.recordMobileUsage(delta);
         }
       },
       cancel: token,
     );
 
     // Record the copy
-    await _copiesDao.upsertCopy(AssetCopiesCompanion.insert(
-      id: _uuid.v4(),
-      contentHash: op.contentHash,
-      provider: provider.providerType,
-      remotePath: Value(result.remotePath),
-      remoteEtag: Value(result.etag),
-      status: const Value('verified'),
-      verifiedAt: Value(DateTime.now()),
-      createdAt: DateTime.now(),
-      updatedAt: DateTime.now(),
-    ));
+    await _copiesDao.upsertCopy(
+      AssetCopiesCompanion.insert(
+        id: _uuid.v4(),
+        contentHash: op.contentHash,
+        provider: provider.providerType,
+        remotePath: Value(result.remotePath),
+        remoteEtag: Value(result.etag),
+        status: const Value('verified'),
+        verifiedAt: Value(DateTime.now()),
+        createdAt: DateTime.now(),
+        updatedAt: DateTime.now(),
+      ),
+    );
 
     await _manifestDao.updateCopyCount(op.contentHash);
     await _opsDao.markCompleted(op.id);
@@ -356,18 +367,20 @@ class AssetSyncEngine {
     }
 
     final manifest = await _manifestDao.getByHash(op.contentHash);
-    final localPath = manifest?.localPath ??
-        '/Documents/Moves/${op.contentHash}.mp4'; // Fallback path
+    final localPath = await _downloadPathFor(manifest, op.contentHash);
 
     final token = CancellationToken();
+    var lastTransferred = 0;
 
     await provider.download(
       remotePath: remoteCopy!.remotePath!,
       localPath: localPath,
       onProgress: (transferred, total) {
         _opsDao.updateProgress(op.id, transferred);
-        if (connectionType == ConnectionType.mobile) {
-          _networkPolicy.recordMobileUsage(transferred);
+        final delta = transferred - lastTransferred;
+        lastTransferred = transferred;
+        if (delta > 0 && connectionType == ConnectionType.mobile) {
+          _networkPolicy.recordMobileUsage(delta);
         }
       },
       cancel: token,
@@ -384,19 +397,34 @@ class AssetSyncEngine {
     }
 
     // Update manifest with local path
-    await _manifestDao.upsert(AssetManifestCompanion(
-      contentHash: Value(op.contentHash),
-      localPath: Value(localPath),
-      localVerifiedAt: Value(DateTime.now()),
-    ));
+    await _manifestDao.upsert(
+      AssetManifestCompanion(
+        contentHash: Value(op.contentHash),
+        localPath: Value(VideoPathResolver.toRelative(localPath)),
+        localVerifiedAt: Value(DateTime.now()),
+      ),
+    );
 
     await _opsDao.markCompleted(op.id);
   }
 
-  Future<void> _executeVerify(
-    SyncOperation op,
-    CloudProvider provider,
+  Future<String> _downloadPathFor(
+    AssetManifestData? manifest,
+    String contentHash,
   ) async {
+    if (manifest?.localPath case final localPath?) {
+      return VideoPathResolver.toAbsolute(localPath);
+    }
+
+    final dir = await AppStoragePaths.documentsDirectory();
+    final videosDir = Directory(p.join(dir.path, 'videos'));
+    if (!await videosDir.exists()) {
+      await videosDir.create(recursive: true);
+    }
+    return p.join(videosDir.path, '$contentHash.mp4');
+  }
+
+  Future<void> _executeVerify(SyncOperation op, CloudProvider provider) async {
     final copies = await _copiesDao.getByHash(op.contentHash);
     final remoteCopy = copies
         .where((c) => c.provider == provider.providerType)
@@ -417,10 +445,7 @@ class AssetSyncEngine {
       await _copiesDao.markVerified(remoteCopy.id);
       await _opsDao.markCompleted(op.id);
     } else {
-      await _copiesDao.markFailed(
-        remoteCopy.id,
-        'Remote verification failed',
-      );
+      await _copiesDao.markFailed(remoteCopy.id, 'Remote verification failed');
       await _opsDao.markFailed(op.id, 'Remote verification failed');
     }
   }
@@ -482,17 +507,13 @@ class AssetSyncEngine {
 
       // Compute backoff delay: 2^retryCount * 5 seconds, capped at 5 min
       final delaySecs = (1 << op.retryCount) * 5;
-      final backoff = Duration(
-        seconds: delaySecs.clamp(0, _maxBackoffSeconds),
-      );
+      final backoff = Duration(seconds: delaySecs.clamp(0, _maxBackoffSeconds));
 
       // Only retry if enough time has passed since the failure
       final failedAt = op.completedAt ?? op.createdAt;
       if (now.difference(failedAt) < backoff) continue;
 
-      debugPrint(
-        'Retrying op ${op.id} (attempt ${op.retryCount + 1})',
-      );
+      debugPrint('Retrying op ${op.id} (attempt ${op.retryCount + 1})');
       await _opsDao.requeueForRetry(op.id);
       await _executeOperation(op, connectionType);
     }
@@ -534,14 +555,16 @@ class AssetSyncEngine {
     try {
       final total = await _manifestDao.countLive();
       final underprotected = await _manifestDao.getUnderprotected();
-      _progressController.add(SyncProgress(
-        totalAssets: total,
-        syncedAssets: total - underprotected.length,
-        pendingUploads: underprotected.length,
-        pendingDownloads: 0,
-        activeTransfers: 0,
-        state: _state,
-      ));
+      _progressController.add(
+        SyncProgress(
+          totalAssets: total,
+          syncedAssets: total - underprotected.length,
+          pendingUploads: underprotected.length,
+          pendingDownloads: 0,
+          activeTransfers: 0,
+          state: _state,
+        ),
+      );
     } catch (_) {
       // Non-fatal — progress is informational
     }

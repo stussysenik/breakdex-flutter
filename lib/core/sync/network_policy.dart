@@ -18,6 +18,8 @@ enum TransferDecision {
   offline,
 }
 
+enum TransferIntent { backgroundSync, userInitiatedPlayback }
+
 /// Controls how the sync engine behaves on different network types.
 ///
 /// User preferences (persisted in SharedPreferences):
@@ -66,8 +68,9 @@ class NetworkPolicy {
   /// Determine if a transfer of [sizeBytes] is allowed right now.
   TransferDecision canTransfer(
     int sizeBytes,
-    ConnectionType connectionType,
-  ) {
+    ConnectionType connectionType, {
+    TransferIntent intent = TransferIntent.backgroundSync,
+  }) {
     switch (connectionType) {
       case ConnectionType.none:
         return TransferDecision.offline;
@@ -75,7 +78,11 @@ class NetworkPolicy {
       case ConnectionType.ethernet:
         return TransferDecision.allow;
       case ConnectionType.mobile:
-        if (!syncOnMobileData) return TransferDecision.waitForWifi;
+        final allowOnMobile = switch (intent) {
+          TransferIntent.backgroundSync => syncOnMobileData,
+          TransferIntent.userInitiatedPlayback => true,
+        };
+        if (!allowOnMobile) return TransferDecision.waitForWifi;
         final capBytes = mobileDataCapMb * 1024 * 1024;
         final used = _mobileUsedBytesThisMonth();
         if (used + sizeBytes > capBytes) {

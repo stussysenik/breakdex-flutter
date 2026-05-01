@@ -20,15 +20,17 @@ class ManifestSyncService {
   Timer? _debounceTimer;
   bool _uploading = false;
   bool _pendingWhileUploading = false;
+  final Map<String, DateTime> _providerCooldownUntil = {};
 
   /// Debounce duration — no upload fires until this much silence has passed.
   static const _debounceDuration = Duration(seconds: 5);
+  static const _providerUnavailableCooldown = Duration(seconds: 30);
 
   ManifestSyncService({
     required ManifestSerializer serializer,
     required List<CloudProvider> Function() getProviders,
-  })  : _serializer = serializer,
-        _getProviders = getProviders;
+  }) : _serializer = serializer,
+       _getProviders = getProviders;
 
   /// Call this whenever any metadata changes (move/combo/review/fsrs/deck).
   ///
@@ -47,43 +49,47 @@ class ManifestSyncService {
   }
 
   Future<void> _uploadManifest() async {
-    final providers = _getProviders();
-    if (providers.isEmpty) return;
-
     _uploading = true;
     try {
-      // Serialize the full library
+      final providers = await _availableProviders();
+      if (providers.isEmpty) return;
+
+      // Serialize the full library only when some provider can accept it.
       final json = await _serializer.serialize();
       debugPrint('[ManifestSync] Serialized manifest (${json.length} bytes)');
 
-      // Write to temp file
-      final tempFile = File(p.join(Directory.systemTemp.path, 'manifest.json'));
-      await tempFile.writeAsString(json);
-
-      // Upload to each enabled provider
-      for (final provider in providers) {
-        try {
-          final isAuth = await provider.isAuthenticated;
-          if (!isAuth) continue;
-
-          await provider.upload(
-            localPath: tempFile.path,
-            remotePath: 'breakdex/manifest.json',
-          );
-          debugPrint(
-            '[ManifestSync] Uploaded to ${provider.displayName}',
-          );
-        } catch (e) {
-          debugPrint(
-            '[ManifestSync] Upload to ${provider.displayName} failed: $e',
-          );
-        }
-      }
-
-      // Clean up temp file
+      final tempDir = await Directory.systemTemp.createTemp(
+        'breakdex_manifest_',
+      );
       try {
-        await tempFile.delete();
-      } catch (_) {}
+        final tempFile = File(p.join(tempDir.path, 'manifest.json'));
+        await tempFile.writeAsString(json);
+
+        // Upload to each enabled provider
+        for (final provider in providers) {
+          try {
+            await provider.upload(
+              localPath: tempFile.path,
+              remotePath: 'breakdex/manifest.json',
+            );
+            debugPrint('[ManifestSync] Uploaded to ${provider.displayName}');
+            _providerCooldownUntil.remove(provider.providerType);
+          } on CloudProviderUnavailableException catch (e) {
+            _providerCooldownUntil[provider.providerType] = DateTime.now().add(
+              _providerUnavailableCooldown,
+            );
+            debugPrint('[ManifestSync] ${e.provider} unavailable: ${e.reason}');
+          } catch (e) {
+            debugPrint(
+              '[ManifestSync] Upload to ${provider.displayName} failed: $e',
+            );
+          }
+        }
+      } finally {
+        try {
+          await tempDir.delete(recursive: true);
+        } catch (_) {}
+      }
     } catch (e) {
       debugPrint('[ManifestSync] Serialization failed: $e');
     } finally {
@@ -95,6 +101,36 @@ class ManifestSyncService {
         onMetadataChanged();
       }
     }
+  }
+
+  Future<List<CloudProvider>> _availableProviders() async {
+    final now = DateTime.now();
+    final available = <CloudProvider>[];
+
+    for (final provider in _getProviders()) {
+      final cooldownUntil = _providerCooldownUntil[provider.providerType];
+      if (cooldownUntil != null && cooldownUntil.isAfter(now)) {
+        continue;
+      }
+
+      try {
+        if (await provider.isAuthenticated) {
+          available.add(provider);
+          _providerCooldownUntil.remove(provider.providerType);
+        }
+      } on CloudProviderUnavailableException catch (e) {
+        _providerCooldownUntil[provider.providerType] = now.add(
+          _providerUnavailableCooldown,
+        );
+        debugPrint('[ManifestSync] ${e.provider} unavailable: ${e.reason}');
+      } catch (e) {
+        debugPrint(
+          '[ManifestSync] Auth check for ${provider.displayName} failed: $e',
+        );
+      }
+    }
+
+    return available;
   }
 
   void dispose() {

@@ -11,6 +11,7 @@ export interface Manifest {
   decks: ManifestDeck[]
   deckMoves: ManifestDeckMove[]
   reviews: ManifestReview[]
+  assets: ManifestAsset[]
 }
 
 export interface ManifestMove {
@@ -64,6 +65,19 @@ export interface ManifestReview {
   entityType: string
   rating: string
   createdAt: string
+}
+
+export interface ManifestAsset {
+  contentHash: string
+  fileSizeBytes: number
+  mimeType: string
+  durationMs: number | null
+  width: number | null
+  height: number | null
+  importedAt: string
+  sourceType: string
+  sourceName: string | null
+  deletedAt: string | null
 }
 
 /** FSRS state labels matching the Flutter convention. */

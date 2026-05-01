@@ -39,25 +39,39 @@ void main() {
         expect(result, TransferDecision.offline);
       });
 
-      test('returns waitForWifi on mobile when syncOnMobileData is false',
-          () {
+      test('returns waitForWifi on mobile when syncOnMobileData is false', () {
         // Default is false
         final result = policy.canTransfer(1024, ConnectionType.mobile);
 
         expect(result, TransferDecision.waitForWifi);
       });
 
-      test('allows on mobile when syncOnMobileData is true and under cap',
-          () async {
-        await policy.setSyncOnMobileData(true);
+      test(
+        'allows user-initiated playback on mobile even when background sync is WiFi-only',
+        () {
+          final result = policy.canTransfer(
+            1024,
+            ConnectionType.mobile,
+            intent: TransferIntent.userInitiatedPlayback,
+          );
 
-        final result = policy.canTransfer(
-          1 * 1024 * 1024, // 1 MB — well under 100 MB cap
-          ConnectionType.mobile,
-        );
+          expect(result, TransferDecision.allow);
+        },
+      );
 
-        expect(result, TransferDecision.allow);
-      });
+      test(
+        'allows on mobile when syncOnMobileData is true and under cap',
+        () async {
+          await policy.setSyncOnMobileData(true);
+
+          final result = policy.canTransfer(
+            1 * 1024 * 1024, // 1 MB — well under 100 MB cap
+            ConnectionType.mobile,
+          );
+
+          expect(result, TransferDecision.allow);
+        },
+      );
 
       test('returns dataCapExceeded when mobile usage exceeds cap', () async {
         await policy.setSyncOnMobileData(true);
@@ -75,8 +89,7 @@ void main() {
         expect(result, TransferDecision.dataCapExceeded);
       });
 
-      test('allows on mobile when usage plus transfer is within cap',
-          () async {
+      test('allows on mobile when usage plus transfer is within cap', () async {
         await policy.setSyncOnMobileData(true);
         await policy.setMobileDataCapMb(100); // 100 MB cap
 
@@ -94,24 +107,15 @@ void main() {
 
     group('chunkSizeBytes', () {
       test('returns 5 MB for WiFi', () {
-        expect(
-          policy.chunkSizeBytes(ConnectionType.wifi),
-          5 * 1024 * 1024,
-        );
+        expect(policy.chunkSizeBytes(ConnectionType.wifi), 5 * 1024 * 1024);
       });
 
       test('returns 1 MB for mobile', () {
-        expect(
-          policy.chunkSizeBytes(ConnectionType.mobile),
-          1 * 1024 * 1024,
-        );
+        expect(policy.chunkSizeBytes(ConnectionType.mobile), 1 * 1024 * 1024);
       });
 
       test('returns 5 MB for ethernet', () {
-        expect(
-          policy.chunkSizeBytes(ConnectionType.ethernet),
-          5 * 1024 * 1024,
-        );
+        expect(policy.chunkSizeBytes(ConnectionType.ethernet), 5 * 1024 * 1024);
       });
     });
 
@@ -121,10 +125,7 @@ void main() {
       });
 
       test('returns 256 KB/s for mobile', () {
-        expect(
-          policy.throttleBytesPerSec(ConnectionType.mobile),
-          256 * 1024,
-        );
+        expect(policy.throttleBytesPerSec(ConnectionType.mobile), 256 * 1024);
       });
     });
 
