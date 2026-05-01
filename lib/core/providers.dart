@@ -197,16 +197,36 @@ final managedAlbumReconciliationServiceProvider =
       );
     });
 
-final managedAlbumLifecycleProvider = Provider<void>((ref) {
-  final controller = ManagedAlbumLifecycleController(
-    service: ref.watch(managedAlbumReconciliationServiceProvider),
-    videoAlbum: ref.watch(nativeVideoAlbumProvider),
-  );
-  controller.start();
-  ref.onDispose(() {
-    unawaited(controller.dispose());
-  });
-});
+final managedAlbumLifecycleProvider = Provider<ManagedAlbumLifecycleController>(
+  (ref) {
+    final controller = ManagedAlbumLifecycleController(
+      service: ref.watch(managedAlbumReconciliationServiceProvider),
+      videoAlbum: ref.watch(nativeVideoAlbumProvider),
+    );
+    controller.start();
+    ref.onDispose(() {
+      unawaited(controller.dispose());
+    });
+    return controller;
+  },
+);
+
+final managedAlbumLifecycleReportProvider =
+    StreamProvider<ManagedAlbumReconcileReport>((ref) {
+      final controller = ref.watch(managedAlbumLifecycleProvider);
+      final latest = controller.latestReport;
+      if (latest == null) {
+        return controller.reports;
+      }
+      return Stream<ManagedAlbumReconcileReport>.multi((stream) {
+        stream.add(latest);
+        final sub = controller.reports.listen(
+          stream.add,
+          onError: stream.addError,
+        );
+        stream.onCancel = sub.cancel;
+      });
+    });
 
 final databaseRecoveryServiceProvider = Provider<DatabaseRecoveryService>((
   ref,

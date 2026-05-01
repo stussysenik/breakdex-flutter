@@ -19,6 +19,9 @@ import 'core/services/provenance_journal_service.dart';
 import 'core/services/settings_service.dart';
 import 'core/sync/asset_hash_service.dart';
 import 'core/sync/legacy_asset_migration.dart';
+import 'core/sync/video_reliability_runtime.dart';
+
+final _rootScaffoldMessengerKey = GlobalKey<ScaffoldMessengerState>();
 
 /// Create a timestamped backup of the database file before migrations run.
 /// This is a safety net — if a migration corrupts data, the user can recover
@@ -349,6 +352,7 @@ class BreakdexApp extends ConsumerWidget {
     return MaterialApp.router(
       title: 'Breakdex',
       debugShowCheckedModeBanner: false,
+      scaffoldMessengerKey: _rootScaffoldMessengerKey,
       theme: AppTheme.light(
         family: fontFamily,
         accent: accent,
@@ -363,6 +367,70 @@ class BreakdexApp extends ConsumerWidget {
       ),
       themeMode: themeSetting.themeMode,
       routerConfig: appRouter,
+      builder: (context, child) {
+        return _StartupReliabilityToastGate(child: child);
+      },
     );
+  }
+}
+
+class _StartupReliabilityToastGate extends ConsumerStatefulWidget {
+  const _StartupReliabilityToastGate({required this.child});
+
+  final Widget? child;
+
+  @override
+  ConsumerState<_StartupReliabilityToastGate> createState() =>
+      _StartupReliabilityToastGateState();
+}
+
+class _StartupReliabilityToastGateState
+    extends ConsumerState<_StartupReliabilityToastGate> {
+  int? _shownStartupReportEpoch;
+  int? _shownManagedAlbumReportEpoch;
+
+  @override
+  Widget build(BuildContext context) {
+    ref.listen(videoReliabilityReportProvider, (_, next) {
+      final report = next.valueOrNull;
+      if (report == null ||
+          report.trigger != VideoReliabilityTrigger.startup ||
+          !report.hasUserSignal) {
+        return;
+      }
+
+      final epoch = report.completedAt.millisecondsSinceEpoch;
+      if (_shownStartupReportEpoch == epoch) return;
+      _shownStartupReportEpoch = epoch;
+      _queueStartupSnackBar(report.snackBarMessage);
+    });
+
+    ref.listen(managedAlbumLifecycleReportProvider, (_, next) {
+      final report = next.valueOrNull;
+      if (report == null || !report.hasStartupSignal) {
+        return;
+      }
+
+      final epoch = report.completedAt.millisecondsSinceEpoch;
+      if (_shownManagedAlbumReportEpoch == epoch) return;
+      _shownManagedAlbumReportEpoch = epoch;
+      _queueStartupSnackBar(report.snackBarMessage);
+    });
+
+    return widget.child ?? const SizedBox.shrink();
+  }
+
+  void _queueStartupSnackBar(String message) {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final messenger = _rootScaffoldMessengerKey.currentState;
+      if (messenger == null) return;
+      messenger.showSnackBar(
+        SnackBar(
+          content: Text(message),
+          duration: const Duration(seconds: 4),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    });
   }
 }

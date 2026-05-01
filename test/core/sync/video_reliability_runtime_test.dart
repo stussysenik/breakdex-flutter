@@ -46,6 +46,46 @@ class _FakeRetriever implements LocalAssetRetriever {
 }
 
 void main() {
+  group('VideoReliabilityReport', () {
+    test('formats a startup toast for blocked media recovery', () {
+      final report = VideoReliabilityReport(
+        trigger: VideoReliabilityTrigger.startup,
+        scannedMoves: 4,
+        availableLocally: 1,
+        restoredLocally: 0,
+        waitingForConnection: 2,
+        waitingForWifi: 0,
+        waitingForBudget: 0,
+        failed: 0,
+        completedAt: DateTime.utc(2026, 5, 1, 8),
+      );
+
+      expect(
+        report.snackBarMessage,
+        '2 videos are waiting for a network connection.',
+      );
+    });
+
+    test('formats a startup toast for mixed recovery results', () {
+      final report = VideoReliabilityReport(
+        trigger: VideoReliabilityTrigger.startup,
+        scannedMoves: 4,
+        availableLocally: 0,
+        restoredLocally: 1,
+        waitingForConnection: 0,
+        waitingForWifi: 1,
+        waitingForBudget: 0,
+        failed: 0,
+        completedAt: DateTime.utc(2026, 5, 1, 8),
+      );
+
+      expect(
+        report.snackBarMessage,
+        'Restored 1 recent video. 1 video is waiting for WiFi.',
+      );
+    });
+  });
+
   late AppDatabase db;
   late SharedPreferences prefs;
   late NetworkPolicy policy;

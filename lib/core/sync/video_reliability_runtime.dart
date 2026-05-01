@@ -85,6 +85,36 @@ class VideoReliabilityReport {
     }
     return 'Breakdex verified $availableLocally recent video${availableLocally == 1 ? '' : 's'} that were already local.';
   }
+
+  String get snackBarMessage {
+    final parts = <String>[];
+    if (restoredLocally > 0) {
+      parts.add(
+        'Restored $restoredLocally recent video${restoredLocally == 1 ? '' : 's'}.',
+      );
+    }
+    if (failed > 0) {
+      parts.add(
+        "Couldn't restore $failed recent video${failed == 1 ? '' : 's'}.",
+      );
+    } else if (waitingForWifi > 0) {
+      parts.add(
+        '$waitingForWifi video${waitingForWifi == 1 ? ' is' : 's are'} waiting for WiFi.',
+      );
+    } else if (waitingForConnection > 0) {
+      parts.add(
+        '$waitingForConnection video${waitingForConnection == 1 ? ' is' : 's are'} waiting for a network connection.',
+      );
+    } else if (waitingForBudget > 0) {
+      parts.add(
+        '$waitingForBudget video${waitingForBudget == 1 ? ' is' : 's are'} paused by the mobile data budget.',
+      );
+    }
+    if (parts.isEmpty) {
+      return 'Checked recent videos on startup.';
+    }
+    return parts.join(' ');
+  }
 }
 
 /// Bounded launch/runtime sweep that repairs a small set of recent cloud-backed

@@ -25,6 +25,8 @@ class _FakeVideoAlbum extends NativeVideoAlbum {
         accessStatus: PhotoLibraryAccessStatus.authorized,
       );
   ManagedAssetRestoreResult? restoreResult;
+  Future<ManagedAssetRestoreResult?> Function(String assetLocalIdentifier)?
+  restoreHandler;
   ManagedAlbumCopy? saveResult;
   final saveCalls = <Map<String, String?>>[];
 
@@ -43,6 +45,10 @@ class _FakeVideoAlbum extends NativeVideoAlbum {
   Future<ManagedAssetRestoreResult?> restoreManagedAsset(
     String assetLocalIdentifier,
   ) async {
+    final handler = restoreHandler;
+    if (handler != null) {
+      return handler(assetLocalIdentifier);
+    }
     return restoreResult;
   }
 
@@ -213,6 +219,10 @@ void main() {
 
         expect(report.trackedMoves, 0);
         expect(report.recoveredMoves, 1);
+        expect(report.historicalAssetsDiscovered, 1);
+        expect(report.historicalAssetsUntracked, 1);
+        expect(report.historicalAssetsRecovered, 1);
+        expect(report.historicalAssetsStillPending, 0);
         expect(move.managedAlbumAssetId, 'legacy-asset-1');
         expect(move.managedAlbumFilename, 'Airflare - toprock.mov');
         expect(move.managedAlbumName, 'Bboying Practice');
@@ -251,6 +261,8 @@ void main() {
 
         expect(report.trackedMoves, 0);
         expect(report.recoveredMoves, 1);
+        expect(report.historicalAssetsDiscovered, 1);
+        expect(report.historicalAssetsRecovered, 1);
         expect(move.videoPath, 'Moves/legacy-halo.mov');
         expect(move.managedAlbumAssetId, 'legacy-asset-2');
         expect(move.managedAlbumName, 'Breaking Archive');
@@ -294,6 +306,9 @@ void main() {
         final moves = await db.movesDao.getAll();
 
         expect(report.recoveredMoves, 2);
+        expect(report.historicalAssetsDiscovered, 2);
+        expect(report.historicalAssetsUntracked, 2);
+        expect(report.historicalAssetsRecovered, 2);
         expect(move.managedAlbumAssetId, 'legacy-asset-best');
         expect(moves, hasLength(2));
       },
@@ -320,12 +335,90 @@ void main() {
 
       expect(report.trackedMoves, 0);
       expect(report.recoveredMoves, 1);
+      expect(report.historicalAssetsDiscovered, 1);
+      expect(report.historicalAssetsUntracked, 1);
+      expect(report.historicalAssetsRecovered, 1);
+      expect(
+        report.snackBarMessage,
+        'Recovered 1 historical album video from Photos.',
+      );
       expect(moves, hasLength(1));
       expect(moves.single.name, 'Windmill');
       expect(moves.single.category, 'Power');
       expect(moves.single.videoPath, 'Moves/windmill.mov');
       expect(moves.single.originalVideoName, 'Windmill - Power.mov');
       expect(moves.single.managedAlbumAssetId, 'legacy-asset-import');
+    });
+
+    test(
+      'reports partial historical recovery when some restores fail',
+      () async {
+        await db.movesDao.insertMove(
+          MovesCompanion.insert(
+            id: 'move-legacy-4',
+            name: 'Halo',
+            category: const Value('power'),
+            originalVideoName: const Value('legacy-halo.mov'),
+          ),
+        );
+        videoAlbum.discoveryResult =
+            const RecoverableManagedAssetDiscoveryResult(
+              accessStatus: PhotoLibraryAccessStatus.authorized,
+              assets: [
+                RecoverableManagedAsset(
+                  assetLocalIdentifier: 'legacy-asset-match',
+                  filename: 'legacy-halo.mov',
+                  albumName: 'Breakdex 04-03-2026',
+                ),
+                RecoverableManagedAsset(
+                  assetLocalIdentifier: 'legacy-asset-fail',
+                  filename: 'Windmill - Power.mov',
+                  albumName: 'Breakdex 04-03-2026',
+                ),
+              ],
+            );
+        videoAlbum.restoreHandler = (assetLocalIdentifier) async {
+          if (assetLocalIdentifier == 'legacy-asset-fail') {
+            throw StateError('iCloud download failed');
+          }
+          return const ManagedAssetRestoreResult(
+            localPath: '/tmp/breakdex-tests/Moves/legacy-halo.mov',
+            originalFileName: 'legacy-halo.mov',
+          );
+        };
+
+        final report = await service.reconcileExternalDeletes();
+        final moves = await db.movesDao.getAll();
+
+        expect(report.recoveredMoves, 1);
+        expect(report.historicalAssetsDiscovered, 2);
+        expect(report.historicalAssetsUntracked, 2);
+        expect(report.historicalAssetsRecovered, 1);
+        expect(report.historicalRestoreFailures, 1);
+        expect(report.historicalAssetsStillPending, 1);
+        expect(
+          report.snackBarMessage,
+          'Recovered 1 historical album video. 1 still need attention.',
+        );
+        expect(moves, hasLength(1));
+      },
+    );
+
+    test('reports limited Photos access for historical recovery', () async {
+      videoAlbum.accessStatus = PhotoLibraryAccessStatus.limited;
+      videoAlbum.discoveryResult = const RecoverableManagedAssetDiscoveryResult(
+        accessStatus: PhotoLibraryAccessStatus.limited,
+        assets: [],
+      );
+
+      final report = await service.reconcileExternalDeletes();
+
+      expect(report.accessStatus, PhotoLibraryAccessStatus.limited);
+      expect(report.hasStartupSignal, isTrue);
+      expect(
+        report.snackBarMessage,
+        'Photos access is limited, so some historical Breakdex albums may stay hidden.',
+      );
     });
 
     test(
