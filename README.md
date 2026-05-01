@@ -61,10 +61,11 @@ Most practice systems are good at one slice of the problem and weak at the rest.
 
 Additional project records:
 
-- [Vision](VISION.MD)
-- [Roadmap](ROADMAP.MD)
-- [Tech Stack](TECHSTACK.MD)
-- [Progress](PROGRESS.MD)
+- [PRD](docs/PRD.md)
+- [Vision](docs/VISION.MD)
+- [Roadmap](docs/ROADMAP.MD)
+- [Tech Stack](docs/TECHSTACK.MD)
+- [Progress](docs/PROGRESS.MD)
 - [Hyperdata Ledger](docs/hyperdata-ledger.md)
 - [Architecture Notes](docs/architecture.md)
 
@@ -145,6 +146,19 @@ flutter run --release -d <device-id>
 | Routing | GoRouter with deep linking |
 | Design | Inter font, tokenized color/spacing/type surfaces |
 | Native iOS | UIKit bridges for media/share workflows |
+
+## Architecture Direction
+
+Breakdex is shipping today as a local-first Flutter app, but the longer-term system direction is broader than the current client runtime.
+
+- Near-term client: `Flutter + Riverpod + Drift/SQLite + FSRS + thin Swift bridges`
+- State philosophy: reducer-style updates, data-oriented state, and selective FRP for streams rather than FRP everywhere
+- Collaboration philosophy: CRDTs only where concurrent shared editing actually requires them, not as the default for all product data
+- Future system spine: `Phoenix + Postgres + S3-compatible object storage`, with optional Gleam backend slices where strong typed BEAM modules help
+- Media vendor stance: keep metadata and asset ownership under Breakdex control; use Cloudinary only as an optional later delivery/transformation layer, not as the system of record
+- Web access requirement: the same user should be able to access their training data from a future web app through the same canonical backend
+
+The fuller contract for this direction lives in [docs/PRD.md](docs/PRD.md) and the matching OpenSpec change under `openspec/changes/add-beam-web-architecture-foundation/`.
 
 ## Testing
 
