@@ -29,6 +29,12 @@ class MovesDao extends DatabaseAccessor<AppDatabase> with _$MovesDaoMixin {
             ..orderBy([(t) => OrderingTerm.desc(t.createdAt)]))
           .get();
 
+  Future<List<Move>> getActiveByContentHash(String contentHash) =>
+      (select(moves)
+            ..where((t) => _isActive(t) & t.contentHash.equals(contentHash))
+            ..orderBy([(t) => OrderingTerm.desc(t.createdAt)]))
+          .get();
+
   Future<List<Move>> getAllIncludingArchived() =>
       (select(moves)..orderBy([(t) => OrderingTerm.desc(t.createdAt)])).get();
 

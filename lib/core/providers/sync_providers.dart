@@ -83,8 +83,9 @@ final assetSyncEngineProvider = Provider<asset_sync.AssetSyncEngine>((ref) {
 });
 
 /// Reactive stream of sync progress for UI display.
-final assetSyncProgressProvider =
-    StreamProvider<asset_sync.SyncProgress>((ref) {
+final assetSyncProgressProvider = StreamProvider<asset_sync.SyncProgress>((
+  ref,
+) {
   return ref.watch(assetSyncEngineProvider).progressStream;
 });
 
@@ -173,10 +174,22 @@ final manifestSyncTriggerProvider = Provider<void>((ref) {
   void onChange() => syncService.onMetadataChanged();
 
   // Subscribe to all reactive DAO streams that affect manifest content
-  final moveSub = ref.watch(movesDaoProvider).watchAll().listen((_) => onChange());
-  final comboSub = ref.watch(combosDaoProvider).watchAll().listen((_) => onChange());
-  final fsrsSub = ref.watch(fsrsCardsDaoProvider).watchAll().listen((_) => onChange());
-  final reviewSub = ref.watch(reviewsDaoProvider).watchAll().listen((_) => onChange());
+  final moveSub = ref
+      .watch(movesDaoProvider)
+      .watchAll()
+      .listen((_) => onChange());
+  final comboSub = ref
+      .watch(combosDaoProvider)
+      .watchAll()
+      .listen((_) => onChange());
+  final fsrsSub = ref
+      .watch(fsrsCardsDaoProvider)
+      .watchAll()
+      .listen((_) => onChange());
+  final reviewSub = ref
+      .watch(reviewsDaoProvider)
+      .watchAll()
+      .listen((_) => onChange());
 
   ref.onDispose(() {
     moveSub.cancel();
@@ -198,7 +211,10 @@ final iCloudAvailableProvider = FutureProvider<bool>((ref) async {
 
 /// Whether the sync onboarding card has been shown/dismissed.
 final syncOnboardingShownProvider = StateProvider<bool>((ref) {
-  return ref.watch(sharedPreferencesProvider).getBool('sync_onboarding_shown') ?? false;
+  return ref
+          .watch(sharedPreferencesProvider)
+          .getBool('sync_onboarding_shown') ??
+      false;
 });
 
 /// One-tap iCloud setup orchestrator.
@@ -233,13 +249,21 @@ final spaceManagerProvider = Provider<SpaceManager>((ref) {
 final syncConnectivityTriggerProvider = Provider<void>((ref) {
   final connectivityService = ref.watch(connectivityServiceProvider);
   ConnectionType? previousType;
+  var hasSeenInitialType = false;
 
   final sub = connectivityService.connectionTypeStream.listen((type) {
-    final wasOffline = previousType == ConnectionType.none || previousType == null;
+    if (!hasSeenInitialType) {
+      hasSeenInitialType = true;
+      previousType = type;
+      return;
+    }
+
+    final wasOffline = previousType == ConnectionType.none;
     final nowOnline = type != ConnectionType.none;
+    final changed = previousType != type;
     previousType = type;
 
-    if (wasOffline && nowOnline) {
+    if (changed && wasOffline && nowOnline) {
       debugPrint('[SyncConnectivity] Back online ($type) — triggering sync');
       try {
         ref.read(assetSyncEngineProvider).runSyncCycle(type);
@@ -247,6 +271,12 @@ final syncConnectivityTriggerProvider = Provider<void>((ref) {
         debugPrint('[SyncConnectivity] Sync trigger failed: $e');
       }
     }
+  });
+
+  Future<void>.microtask(() async {
+    if (hasSeenInitialType) return;
+    previousType = await connectivityService.checkType();
+    hasSeenInitialType = true;
   });
 
   ref.onDispose(() => sub.cancel());
@@ -287,8 +317,7 @@ final syncHealthProvider = Provider<SyncHealth>((ref) {
     asset_sync.SyncEngineState.uploading ||
     asset_sync.SyncEngineState.downloading ||
     asset_sync.SyncEngineState.hashing ||
-    asset_sync.SyncEngineState.verifying =>
-      SyncHealth.syncing,
+    asset_sync.SyncEngineState.verifying => SyncHealth.syncing,
     _ when progress.pendingUploads > 0 => SyncHealth.pendingUpload,
     _ => SyncHealth.allSynced,
   };
@@ -303,4 +332,68 @@ final onDemandDownloaderProvider = Provider<OnDemandDownloader>((ref) {
     getProviders: () => ref.read(cloudProvidersProvider).valueOrNull ?? [],
     syncDao: ref.watch(syncDaoProvider),
   );
+});
+
+/// Controller for user-initiated cloud video retrieval.
+final videoRetrievalControllerProvider = Provider<VideoRetrievalController>((
+  ref,
+) {
+  final controller = VideoRetrievalController(
+    retriever: ref.watch(onDemandDownloaderProvider),
+    manifestDao: ref.watch(assetManifestDaoProvider),
+    networkPolicy: ref.watch(networkPolicyProvider),
+    getConnectionType: () => ref.read(connectivityServiceProvider).checkType(),
+    connectionTypeStream: ref
+        .watch(connectivityServiceProvider)
+        .connectionTypeStream,
+    provenanceJournal: ref.watch(provenanceJournalServiceProvider),
+    syncDao: ref.watch(syncDaoProvider),
+  );
+  ref.onDispose(controller.dispose);
+  return controller;
+});
+
+final videoRetrievalStatusProvider =
+    StreamProvider.family<VideoRetrievalSnapshot, String>((ref, contentHash) {
+      return ref.watch(videoRetrievalControllerProvider).watch(contentHash);
+    });
+
+final videoReliabilityRuntimeProvider = Provider<VideoReliabilityRuntime>((
+  ref,
+) {
+  final runtime = VideoReliabilityRuntime(
+    movesDao: ref.watch(movesDaoProvider),
+    moveRepository: ref.watch(moveRepositoryProvider),
+    videoService: ref.watch(videoServiceProvider),
+    retrievalController: ref.watch(videoRetrievalControllerProvider),
+    connectionTypeStream: ref
+        .watch(connectivityServiceProvider)
+        .connectionTypeStream,
+  );
+  ref.onDispose(() {
+    unawaited(runtime.dispose());
+  });
+  return runtime;
+});
+
+final videoReliabilityLifecycleProvider = Provider<void>((ref) {
+  ref.watch(videoReliabilityRuntimeProvider).start();
+});
+
+final videoReliabilityReportProvider = StreamProvider<VideoReliabilityReport>((
+  ref,
+) {
+  final runtime = ref.watch(videoReliabilityRuntimeProvider);
+  final latest = runtime.latestReport;
+  if (latest == null) {
+    return runtime.reports;
+  }
+  return Stream<VideoReliabilityReport>.multi((controller) {
+    controller.add(latest);
+    final sub = runtime.reports.listen(
+      controller.add,
+      onError: controller.addError,
+    );
+    controller.onCancel = sub.cancel;
+  });
 });

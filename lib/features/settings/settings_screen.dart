@@ -5,7 +5,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:path_provider/path_provider.dart';
 import 'package:path/path.dart' as p;
 import '../../core/database/database.dart';
 import '../../core/design/colors.dart';
@@ -14,6 +13,7 @@ import '../../core/design/typography.dart';
 import '../../core/app_metadata.dart';
 import '../../core/models/learning_state.dart';
 import '../../core/providers.dart';
+import '../../core/services/app_storage_paths.dart';
 import '../../core/services/categories_service.dart';
 import '../../core/services/native_share_sheet.dart';
 import '../../core/services/video_path_resolver.dart';
@@ -376,6 +376,117 @@ class SettingsScreen extends ConsumerWidget {
             const SizedBox(height: AppSpacing.lg),
 
             _SettingsSection(
+              title: 'Diagnostics',
+              subtitle:
+                  'Developer-facing recovery signals for crashes, loading, and self-healing flows.',
+              child: _SettingsPanel(
+                title: 'Provenance',
+                action: TextButton(
+                  onPressed: () => ref.invalidate(provenanceReportProvider),
+                  child: const Text('Refresh'),
+                ),
+                child: Builder(
+                  builder: (tileContext) {
+                    final provenanceReport = ref.watch(
+                      provenanceReportProvider,
+                    );
+                    return provenanceReport.when(
+                      data: (report) => Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            report.headline,
+                            style: AppTypography.bodyMedium.copyWith(
+                              color: colorScheme.onSurface,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                          const SizedBox(height: AppSpacing.sm),
+                          SettingsListGroup(
+                            children: [
+                              SettingsListRow(
+                                title: 'Recent events scanned',
+                                subtitle:
+                                    '${report.totalEvents} journal entries from the local provenance ledger.',
+                              ),
+                              SettingsListRow(
+                                title: 'Crash signals',
+                                subtitle:
+                                    '${report.crashCount} recent Flutter/platform captures.',
+                              ),
+                              SettingsListRow(
+                                title: 'Retrieval failures',
+                                subtitle:
+                                    '${report.retrievalFailureCount} recent video loading failures.',
+                              ),
+                              SettingsListRow(
+                                title: 'DB recovery activity',
+                                subtitle:
+                                    '${report.databaseRecoveryCount} recent database recovery events.',
+                              ),
+                            ],
+                          ),
+                          if (report.recentCriticalEvents.isNotEmpty) ...[
+                            const SizedBox(height: AppSpacing.md),
+                            Text(
+                              'Latest critical signals',
+                              style: AppTypography.caption.copyWith(
+                                color: colorScheme.secondary,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                            const SizedBox(height: AppSpacing.xs),
+                            SettingsListGroup(
+                              children: report.recentCriticalEvents
+                                  .map(
+                                    (event) => SettingsListRow(
+                                      title: event.eventType,
+                                      subtitle: report.describeEvent(event),
+                                    ),
+                                  )
+                                  .toList(),
+                            ),
+                          ],
+                          const SizedBox(height: AppSpacing.md),
+                          _DataActionTileAsync(
+                            icon: Icons.bug_report_outlined,
+                            label: 'Export Provenance Log',
+                            onTap: (_) async {
+                              final origin = sharePositionOrigin(tileContext);
+                              final file = await ref
+                                  .read(provenanceJournalServiceProvider)
+                                  .journalFile();
+                              if (!await file.exists()) {
+                                await file.writeAsString('', flush: true);
+                              }
+                              await NativeShareSheet.shareFiles(
+                                filePaths: [file.path],
+                                sharePositionOrigin: origin,
+                              );
+                              return 'Shared provenance ledger for debugging';
+                            },
+                            showResultSnackBar: true,
+                          ),
+                        ],
+                      ),
+                      loading: () => const Padding(
+                        padding: EdgeInsets.symmetric(vertical: AppSpacing.md),
+                        child: Center(child: CircularProgressIndicator()),
+                      ),
+                      error: (error, _) => Text(
+                        'Diagnostics unavailable: $error',
+                        style: AppTypography.bodySmall.copyWith(
+                          color: AppColors.actionAgain,
+                        ),
+                      ),
+                    );
+                  },
+                ),
+              ),
+            ),
+            const SizedBox(height: AppSpacing.lg),
+
+            _SettingsSection(
               title: 'Data',
               subtitle: 'Backups, imports, and destructive actions.',
               child: _SettingsPanel(
@@ -413,11 +524,30 @@ class SettingsScreen extends ConsumerWidget {
                               db,
                               prefs,
                             );
-                        final dir = await getTemporaryDirectory();
-                        final file = File(
-                          p.join(dir.path, StatsExportService.exportFilename),
+                        final dir = await AppStoragePaths.documentsDirectory();
+                        final exportsDir = Directory(
+                          p.join(dir.path, 'Exports'),
                         );
-                        await file.writeAsString(result.json);
+                        if (!await exportsDir.exists()) {
+                          await exportsDir.create(recursive: true);
+                        }
+                        final file = File(
+                          p.join(
+                            exportsDir.path,
+                            StatsExportService.exportFilename,
+                          ),
+                        );
+                        await file.writeAsString(result.json, flush: true);
+                        final fileSize = await file.length();
+                        debugPrint(
+                          '[SettingsExport] Prepared backup at ${file.path}'
+                          ' ($fileSize bytes)',
+                        );
+                        if (fileSize == 0) {
+                          throw const FileSystemException(
+                            'Exported backup file is empty',
+                          );
+                        }
                         await NativeShareSheet.shareFiles(
                           filePaths: [file.path],
                           sharePositionOrigin: origin,

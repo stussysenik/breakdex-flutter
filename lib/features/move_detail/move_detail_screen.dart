@@ -15,6 +15,7 @@ import '../../core/design/spacing.dart';
 import '../../core/design/typography.dart';
 import '../../core/models/learning_state.dart';
 import '../../core/providers.dart';
+import '../../core/sync/video_retrieval_controller.dart';
 import '../../core/services/categories_service.dart';
 import '../../core/services/media_playback_coordinator.dart';
 import '../../core/services/native_share_sheet.dart';
@@ -1183,42 +1184,34 @@ class _CloudVideoPlaceholder extends ConsumerStatefulWidget {
 
 class _CloudVideoPlaceholderState
     extends ConsumerState<_CloudVideoPlaceholder> {
-  bool _downloading = false;
-  double _progress = 0;
-  String? _error;
-
-  Future<void> _download() async {
-    setState(() {
-      _downloading = true;
-      _progress = 0;
-      _error = null;
-    });
-
-    final downloader = ref.read(onDemandDownloaderProvider);
-    final localPath = await downloader.ensureLocal(
-      widget.move.contentHash!,
-      onProgress: (transferred, total) {
-        if (mounted && total > 0) {
-          setState(() => _progress = transferred / total);
-        }
-      },
-    );
-
-    if (!mounted) return;
-
-    if (localPath != null) {
-      widget.onDownloaded(localPath);
-    } else {
-      setState(() {
-        _downloading = false;
-        _error = 'Download failed. Check your connection.';
-      });
-    }
-  }
+  String? _reportedLocalPath;
 
   @override
   Widget build(BuildContext context) {
+    final contentHash = widget.move.contentHash!;
+    final retrievalAsync = ref.watch(videoRetrievalStatusProvider(contentHash));
+    final retrieval =
+        retrievalAsync.valueOrNull ??
+        ref.read(videoRetrievalControllerProvider).snapshotFor(contentHash);
+
+    ref.listen(videoRetrievalStatusProvider(contentHash), (_, next) {
+      final snapshot = next.valueOrNull;
+      final localPath = snapshot?.localPath;
+      if (snapshot?.state == VideoRetrievalState.available &&
+          localPath != null &&
+          localPath != _reportedLocalPath) {
+        _reportedLocalPath = localPath;
+        widget.onDownloaded(localPath);
+      }
+    });
+
     final colorScheme = Theme.of(context).colorScheme;
+    final isBusy =
+        retrieval.state == VideoRetrievalState.queued ||
+        retrieval.state == VideoRetrievalState.waitingForConnection ||
+        retrieval.state == VideoRetrievalState.waitingForWifi ||
+        retrieval.state == VideoRetrievalState.waitingForBudget ||
+        retrieval.state == VideoRetrievalState.downloading;
 
     return Container(
       height: 220,
@@ -1232,24 +1225,28 @@ class _CloudVideoPlaceholderState
         borderRadius: BorderRadius.circular(AppRadius.md),
         child: InkWell(
           borderRadius: BorderRadius.circular(AppRadius.md),
-          onTap: _downloading ? null : _download,
+          onTap: isBusy
+              ? null
+              : () => ref
+                    .read(videoRetrievalControllerProvider)
+                    .requestPlayback(contentHash),
           child: Center(
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                if (_downloading) ...[
+                if (isBusy) ...[
                   SizedBox(
                     width: 48,
                     height: 48,
                     child: CircularProgressIndicator(
-                      value: _progress > 0 ? _progress : null,
+                      value: retrieval.progress > 0 ? retrieval.progress : null,
                       strokeWidth: 3,
                       color: AppColors.accent,
                     ),
                   ),
                   const SizedBox(height: AppSpacing.md),
                   Text(
-                    'Downloading from cloud…',
+                    retrieval.message ?? 'Preparing retrieval…',
                     style: AppTypography.bodySmall.copyWith(
                       color: colorScheme.onSurface.withValues(alpha: 0.6),
                     ),
@@ -1274,10 +1271,11 @@ class _CloudVideoPlaceholderState
                       color: colorScheme.onSurface.withValues(alpha: 0.5),
                     ),
                   ),
-                  if (_error != null) ...[
+                  if (retrieval.message != null &&
+                      retrieval.state == VideoRetrievalState.failed) ...[
                     const SizedBox(height: AppSpacing.sm),
                     Text(
-                      _error!,
+                      retrieval.message!,
                       style: AppTypography.caption.copyWith(
                         color: Colors.red.withValues(alpha: 0.8),
                       ),

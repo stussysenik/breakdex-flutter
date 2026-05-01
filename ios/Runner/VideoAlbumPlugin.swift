@@ -167,6 +167,13 @@ final class VideoAlbumPlugin: NSObject, FlutterPlugin, FlutterStreamHandler, PHP
                 source: source,
                 result: result
             )
+        case "discoverRecoverableManagedAssets":
+            let args = call.arguments as? [String: Any]
+            let albumPatterns = args?["albumPatterns"] as? [String] ?? []
+            discoverRecoverableManagedAssets(
+                albumPatterns: albumPatterns,
+                result: result
+            )
         case "restoreManagedAsset":
             guard let args = call.arguments as? [String: Any],
                   let assetLocalIdentifier = args["assetLocalIdentifier"] as? String else {
@@ -553,6 +560,57 @@ final class VideoAlbumPlugin: NSObject, FlutterPlugin, FlutterStreamHandler, PHP
         }
     }
 
+    private func discoverRecoverableManagedAssets(
+        albumPatterns: [String],
+        result: @escaping FlutterResult
+    ) {
+        let regexMatchers = albumMatchers(albumPatterns)
+        let status = PHPhotoLibrary.authorizationStatus(for: .readWrite)
+        guard status == .authorized || status == .limited else {
+            DispatchQueue.main.async {
+                result([
+                    "accessStatus": self.authorizationStatusValue(status),
+                    "assets": [],
+                ])
+            }
+            return
+        }
+
+        let albums = fetchHistoricalManagedAlbums(matching: regexMatchers)
+        var seenAssetIds = Set<String>()
+        var assets: [[String: String]] = []
+
+        for album in albums {
+            let albumTitle = album.localizedTitle?.trimmingCharacters(
+                in: .whitespacesAndNewlines
+            ) ?? ""
+            guard !albumTitle.isEmpty else { continue }
+
+            let fetchResult = PHAsset.fetchAssets(in: album, options: nil)
+            fetchResult.enumerateObjects { asset, _, _ in
+                guard asset.mediaType == .video else { return }
+                guard seenAssetIds.insert(asset.localIdentifier).inserted else {
+                    return
+                }
+                guard let filename = self.originalFilename(for: asset) else {
+                    return
+                }
+                assets.append([
+                    "assetLocalIdentifier": asset.localIdentifier,
+                    "filename": filename,
+                    "albumName": albumTitle,
+                ])
+            }
+        }
+
+        DispatchQueue.main.async {
+            result([
+                "accessStatus": self.authorizationStatusValue(status),
+                "assets": assets,
+            ])
+        }
+    }
+
     private func reconcileManagedAssets(
         trackedAssets: [TrackedManagedAsset],
         source: String,
@@ -929,6 +987,48 @@ final class VideoAlbumPlugin: NSObject, FlutterPlugin, FlutterStreamHandler, PHP
         return collections
     }
 
+    private func fetchHistoricalManagedAlbums(
+        matching patterns: [NSRegularExpression]
+    ) -> [PHAssetCollection] {
+        guard !patterns.isEmpty else { return [] }
+
+        let fetchResult = PHAssetCollection.fetchAssetCollections(
+            with: .album,
+            subtype: .any,
+            options: nil
+        )
+        var seenAlbumIds = Set<String>()
+        var collections: [PHAssetCollection] = []
+        fetchResult.enumerateObjects { collection, _, _ in
+            guard seenAlbumIds.insert(collection.localIdentifier).inserted else {
+                return
+            }
+            guard let title = collection.localizedTitle?.trimmingCharacters(
+                in: .whitespacesAndNewlines
+            ), !title.isEmpty else {
+                return
+            }
+            let normalizedTitle = title.folding(
+                options: [.caseInsensitive, .diacriticInsensitive],
+                locale: .current
+            )
+            let titleRange = NSRange(
+                normalizedTitle.startIndex..<normalizedTitle.endIndex,
+                in: normalizedTitle
+            )
+            let matchesPattern = patterns.contains { pattern in
+                pattern.firstMatch(
+                    in: normalizedTitle,
+                    options: [],
+                    range: titleRange
+                ) != nil
+            }
+            guard matchesPattern else { return }
+            collections.append(collection)
+        }
+        return collections
+    }
+
     private func findAssets(
         in albums: [PHAssetCollection],
         matchingLocalIdentifier assetLocalIdentifier: String?
@@ -983,6 +1083,33 @@ final class VideoAlbumPlugin: NSObject, FlutterPlugin, FlutterStreamHandler, PHP
         }
 
         return Array(assetsById.values)
+    }
+
+    private func albumMatchers(_ albumPatterns: [String]) -> [NSRegularExpression] {
+        Array(
+            Set(
+                albumPatterns
+                    .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
+                    .filter { !$0.isEmpty }
+            )
+        ).compactMap { pattern in
+            try? NSRegularExpression(
+                pattern: pattern,
+                options: [.caseInsensitive]
+            )
+        }
+    }
+
+    private func originalFilename(for asset: PHAsset) -> String? {
+        let resources = PHAssetResource.assetResources(for: asset)
+        let resource = resources.first(where: { $0.type == .fullSizeVideo }) ??
+            resources.first(where: { $0.type == .video }) ??
+            resources.first
+        let filename = resource?.originalFilename.trimmingCharacters(
+            in: .whitespacesAndNewlines
+        )
+        guard let filename, !filename.isEmpty else { return nil }
+        return filename
     }
 
     private func authorizationStatusValue(_ status: PHAuthorizationStatus) -> String {
@@ -1073,6 +1200,24 @@ final class ShareSheetPlugin: NSObject, FlutterPlugin, NativeCapability {
                 return
             }
 
+            for path in paths {
+                let exists = FileManager.default.fileExists(atPath: path)
+                let size =
+                    (try? FileManager.default.attributesOfItem(atPath: path)[.size] as? NSNumber)?
+                    .int64Value ?? -1
+                print("[ShareSheetPlugin] shareFiles path=\(path) exists=\(exists) size=\(size)")
+                guard exists else {
+                    result(
+                        FlutterError(
+                            code: "FILE_NOT_FOUND",
+                            message: "Share file does not exist at path: \(path)",
+                            details: nil
+                        )
+                    )
+                    return
+                }
+            }
+
             let urls = paths.map(URL.init(fileURLWithPath:))
             presentShareSheet(
                 items: urls,
@@ -1107,6 +1252,10 @@ final class ShareSheetPlugin: NSObject, FlutterPlugin, NativeCapability {
             let activityController = UIActivityViewController(
                 activityItems: items,
                 applicationActivities: nil
+            )
+
+            print(
+                "[ShareSheetPlugin] Presenting share sheet with \(items.count) item(s) from \(type(of: controller))"
             )
 
             if let subject, !subject.isEmpty {

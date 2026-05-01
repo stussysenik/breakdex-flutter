@@ -1,4 +1,4 @@
-import 'dart:io';
+import 'dart:async';
 import 'dart:ui';
 
 import 'package:flutter/foundation.dart';
@@ -11,10 +11,11 @@ import 'core/database/database.dart';
 import 'core/design/theme.dart';
 import 'core/navigation/app_router.dart';
 import 'core/providers.dart';
-import 'core/services/app_storage_paths.dart';
 import 'core/services/automation_fixture_service.dart';
+import 'core/services/database_recovery_service.dart';
 import 'core/services/video_path_resolver.dart';
 import 'core/services/fsrs_migration_service.dart';
+import 'core/services/provenance_journal_service.dart';
 import 'core/services/settings_service.dart';
 import 'core/sync/asset_hash_service.dart';
 import 'core/sync/legacy_asset_migration.dart';
@@ -22,23 +23,43 @@ import 'core/sync/legacy_asset_migration.dart';
 /// Create a timestamped backup of the database file before migrations run.
 /// This is a safety net — if a migration corrupts data, the user can recover
 /// from the backup file in the documents directory.
-Future<void> _backupDatabaseIfNeeded(SharedPreferences prefs) async {
+Future<void> _backupDatabaseIfNeeded(
+  SharedPreferences prefs,
+  DatabaseRecoveryService recoveryService,
+  ProvenanceJournalService provenanceJournal,
+) async {
   final lastBackupSchema = prefs.getInt('last_backup_schema') ?? 0;
   const currentSchema = 14;
 
-  if (lastBackupSchema < currentSchema) {
-    try {
-      final dir = await AppStoragePaths.documentsDirectory();
-      final dbFile = File(p.join(dir.path, 'breakdex.db'));
-      if (await dbFile.exists()) {
-        final timestamp = DateTime.now().millisecondsSinceEpoch;
-        final backupPath = p.join(dir.path, 'breakdex_backup_$timestamp.db');
-        await dbFile.copy(backupPath);
-      }
+  try {
+    final createdBackup = await recoveryService.createRollingBackupIfDue(
+      force: lastBackupSchema < currentSchema,
+    );
+    await provenanceJournal.log(
+      scope: 'database_recovery',
+      eventType: createdBackup ? 'backup_created' : 'backup_skipped',
+      status: createdBackup ? 'created' : 'skipped',
+      entityType: 'database',
+      entityId: DatabaseRecoveryService.databaseFilename,
+      message: createdBackup
+          ? 'Rolling database backup created.'
+          : 'Rolling database backup not needed.',
+    );
+    if (lastBackupSchema < currentSchema) {
       await prefs.setInt('last_backup_schema', currentSchema);
-    } catch (_) {
-      // Backup failure is non-fatal — don't block app launch
     }
+  } catch (error) {
+    unawaited(
+      provenanceJournal.log(
+        scope: 'database_recovery',
+        eventType: 'backup_failed',
+        status: 'failed',
+        entityType: 'database',
+        entityId: DatabaseRecoveryService.databaseFilename,
+        message: 'Rolling database backup failed: $error',
+      ),
+    );
+    // Backup failure is non-fatal — don't block app launch
   }
 }
 
@@ -49,21 +70,91 @@ Future<void> _backupDatabaseIfNeeded(SharedPreferences prefs) async {
 /// **Note:** Migrations are intentionally NOT run here — they happen after
 /// the first frame via [_runMigrations] to avoid iOS Jetsam kills during
 /// the critical launch window.
-Future<AppDatabase> _openDatabaseSafely() async {
-  try {
+Future<AppDatabase> _openDatabaseSafely(
+  DatabaseRecoveryService recoveryService,
+  ProvenanceJournalService provenanceJournal,
+) async {
+  Future<AppDatabase> openAndSmokeTest() async {
     final db = AppDatabase();
-    // Smoke-test: lightweight count query verifies the DB is readable
-    // without loading any rows into memory.
-    await db.movesDao.count();
+    try {
+      await db.movesDao.count();
+      return db;
+    } catch (_) {
+      await db.close();
+      rethrow;
+    }
+  }
+
+  try {
+    final db = await openAndSmokeTest();
+    await provenanceJournal.log(
+      scope: 'database_recovery',
+      eventType: 'database_opened',
+      status: 'ready',
+      entityType: 'database',
+      entityId: DatabaseRecoveryService.databaseFilename,
+      message: 'Primary database opened successfully.',
+    );
     return db;
   } catch (e) {
-    debugPrint('DB init failed ($e) — creating fresh database');
-    // Attempt to delete the corrupted file so the next open succeeds
+    debugPrint('DB init failed ($e) — attempting backup recovery');
+    await provenanceJournal.log(
+      scope: 'database_recovery',
+      eventType: 'database_open_failed',
+      status: 'failed',
+      entityType: 'database',
+      entityId: DatabaseRecoveryService.databaseFilename,
+      message: 'Primary database open failed: $e',
+    );
     try {
-      final dir = await AppStoragePaths.documentsDirectory();
-      final dbFile = File(p.join(dir.path, 'breakdex.db'));
-      if (await dbFile.exists()) await dbFile.delete();
+      await recoveryService.stashPrimaryAsCorrupt();
+      final backups = await recoveryService.listBackupFilesNewestFirst();
+      for (final backup in backups) {
+        try {
+          await provenanceJournal.log(
+            scope: 'database_recovery',
+            eventType: 'backup_restore_attempted',
+            status: 'attempting',
+            entityType: 'database_backup',
+            entityId: p.basename(backup.path),
+            message: 'Attempting database restore from backup.',
+          );
+          await recoveryService.replacePrimaryWithBackup(backup);
+          final db = await openAndSmokeTest();
+          await provenanceJournal.log(
+            scope: 'database_recovery',
+            eventType: 'backup_restored',
+            status: 'restored',
+            entityType: 'database_backup',
+            entityId: p.basename(backup.path),
+            message: 'Database restored from backup successfully.',
+          );
+          return db;
+        } catch (backupError) {
+          debugPrint(
+            'Backup restore failed for ${p.basename(backup.path)}: $backupError',
+          );
+          await provenanceJournal.log(
+            scope: 'database_recovery',
+            eventType: 'backup_restore_failed',
+            status: 'failed',
+            entityType: 'database_backup',
+            entityId: p.basename(backup.path),
+            message: 'Database restore failed: $backupError',
+          );
+          await recoveryService.deletePrimaryDatabase();
+        }
+      }
     } catch (_) {}
+    debugPrint('No readable backup found — creating fresh database');
+    await provenanceJournal.log(
+      scope: 'database_recovery',
+      eventType: 'fresh_database_created',
+      status: 'created',
+      entityType: 'database',
+      entityId: DatabaseRecoveryService.databaseFilename,
+      message: 'No readable backup remained. Created a fresh database.',
+    );
     return AppDatabase();
   }
 }
@@ -98,32 +189,70 @@ Future<void> _runMigrations(AppDatabase db, SharedPreferences prefs) async {
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  final provenanceJournal = ProvenanceJournalService();
 
   // --- Global error handlers (catch crashes that would kill release builds) ---
   FlutterError.onError = (details) {
     FlutterError.presentError(details);
     debugPrint('FlutterError: ${details.exceptionAsString()}');
+    unawaited(
+      provenanceJournal.log(
+        scope: 'crash',
+        eventType: 'flutter_error',
+        status: 'captured',
+        message: details.exceptionAsString(),
+      ),
+    );
     if (!kReleaseMode && details.stack != null) {
       debugPrintStack(stackTrace: details.stack);
     }
   };
   PlatformDispatcher.instance.onError = (error, stack) {
     debugPrint('Uncaught platform error: $error\n$stack');
+    unawaited(
+      provenanceJournal.log(
+        scope: 'crash',
+        eventType: 'platform_error',
+        status: 'captured',
+        message: '$error',
+      ),
+    );
     return true; // Prevent crash — error is logged but app stays alive
   };
 
   final prefs = await SharedPreferences.getInstance();
+  final recoveryService = DatabaseRecoveryService();
+  await provenanceJournal.log(
+    scope: 'startup',
+    eventType: 'app_boot',
+    status: 'started',
+    message: 'Application boot sequence started.',
+  );
+  final restoredPrimary = await recoveryService
+      .restoreLatestBackupIfPrimaryUnavailable();
+  await provenanceJournal.log(
+    scope: 'database_recovery',
+    eventType: restoredPrimary
+        ? 'missing_primary_restored'
+        : 'primary_present_or_no_backup',
+    status: restoredPrimary ? 'restored' : 'skipped',
+    entityType: 'database',
+    entityId: DatabaseRecoveryService.databaseFilename,
+    message: restoredPrimary
+        ? 'Primary database was missing and restored from backup.'
+        : 'Primary database already existed or no backup was available.',
+  );
 
   // Cache the current documents directory path so VideoPathResolver can
   // convert between relative (DB) and absolute (file system) paths.
   await VideoPathResolver.initialize();
 
   // Backup database before migration (safety net for schema changes)
-  await _backupDatabaseIfNeeded(prefs);
+  await _backupDatabaseIfNeeded(prefs, recoveryService, provenanceJournal);
 
   // Open DB with crash recovery — prevents infinite crash loop on device.
   // Migrations are deferred to after the first frame (see addPostFrameCallback below).
-  final db = await _openDatabaseSafely();
+  final db = await _openDatabaseSafely(recoveryService, provenanceJournal);
   await AutomationFixtureService().seedIfRequested(db, prefs: prefs);
 
   // Global error widget for production resilience
@@ -146,6 +275,8 @@ void main() async {
       overrides: [
         sharedPreferencesProvider.overrideWithValue(prefs),
         databaseProvider.overrideWithValue(db),
+        databaseRecoveryServiceProvider.overrideWithValue(recoveryService),
+        provenanceJournalServiceProvider.overrideWithValue(provenanceJournal),
       ],
       child: const BreakdexApp(),
     ),
@@ -202,6 +333,12 @@ class BreakdexApp extends ConsumerWidget {
 
     // Reconcile managed Photos album copies with move archive state.
     ref.watch(managedAlbumLifecycleProvider);
+
+    // Launch/runtime self-healing for recent cloud-backed videos.
+    ref.watch(videoReliabilityLifecycleProvider);
+
+    // Keep a rolling local DB backup so a regenerated sandbox can self-heal.
+    ref.watch(automaticDatabaseBackupLifecycleProvider);
 
     final themeSetting = ref.watch(themeSettingProvider);
     final viewingMode = ref.watch(viewingModeProvider);

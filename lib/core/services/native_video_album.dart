@@ -233,6 +233,78 @@ class ManagedAssetRestoreResult {
   }
 }
 
+class RecoverableManagedAsset {
+  const RecoverableManagedAsset({
+    required this.assetLocalIdentifier,
+    required this.filename,
+    required this.albumName,
+  });
+
+  final String assetLocalIdentifier;
+  final String filename;
+  final String albumName;
+
+  static RecoverableManagedAsset? fromMap(Map<dynamic, dynamic>? payload) {
+    if (payload == null) return null;
+    final assetLocalIdentifier = payload['assetLocalIdentifier'] as String?;
+    final filename = payload['filename'] as String?;
+    final albumName = payload['albumName'] as String?;
+    if (assetLocalIdentifier == null ||
+        assetLocalIdentifier.trim().isEmpty ||
+        filename == null ||
+        filename.trim().isEmpty ||
+        albumName == null ||
+        albumName.trim().isEmpty) {
+      return null;
+    }
+    return RecoverableManagedAsset(
+      assetLocalIdentifier: assetLocalIdentifier.trim(),
+      filename: filename.trim(),
+      albumName: albumName.trim(),
+    );
+  }
+}
+
+class RecoverableManagedAssetDiscoveryResult {
+  const RecoverableManagedAssetDiscoveryResult({
+    required this.accessStatus,
+    required this.assets,
+  });
+
+  final PhotoLibraryAccessStatus accessStatus;
+  final List<RecoverableManagedAsset> assets;
+
+  factory RecoverableManagedAssetDiscoveryResult.empty({
+    PhotoLibraryAccessStatus accessStatus = PhotoLibraryAccessStatus.unknown,
+  }) {
+    return RecoverableManagedAssetDiscoveryResult(
+      accessStatus: accessStatus,
+      assets: const [],
+    );
+  }
+
+  static RecoverableManagedAssetDiscoveryResult fromMap(
+    Map<dynamic, dynamic>? payload,
+  ) {
+    if (payload == null) {
+      return RecoverableManagedAssetDiscoveryResult.empty();
+    }
+    final assets =
+        (payload['assets'] as List?)
+            ?.whereType<Map<dynamic, dynamic>>()
+            .map(RecoverableManagedAsset.fromMap)
+            .whereType<RecoverableManagedAsset>()
+            .toList() ??
+        const <RecoverableManagedAsset>[];
+    return RecoverableManagedAssetDiscoveryResult(
+      accessStatus: PhotoLibraryAccessStatus.fromPlatformValue(
+        payload['accessStatus'] as String?,
+      ),
+      assets: assets,
+    );
+  }
+}
+
 /// Dart bridge to the native `VideoAlbumPlugin` — saves exported video
 /// clips into a dated Photos album (e.g. "Breakdex 03-07-2026").
 ///
@@ -240,6 +312,13 @@ class ManagedAssetRestoreResult {
 /// so the user is only prompted once and we never read their existing library.
 class NativeVideoAlbum extends NativeBridge {
   NativeVideoAlbum() : super('video_album');
+
+  static const List<String> historicalAlbumPatterns = <String>[
+    r'\bbreak(?:[\s\-_]*dex|ing|in)\b',
+    r'\bb[\s\-_]*boy(?:ing)?\b',
+    r'\bb[\s\-_]*girl(?:ing)?\b',
+    r'\bbreak[\s\-_]*dance(?:ing)?\b',
+  ];
 
   Stream<Map<String, dynamic>> get libraryChangeStream => eventStream;
 
@@ -408,5 +487,25 @@ class NativeVideoAlbum extends NativeBridge {
       {'assetLocalIdentifier': normalized},
     );
     return ManagedAssetRestoreResult.fromMap(payload);
+  }
+
+  Future<RecoverableManagedAssetDiscoveryResult>
+  discoverRecoverableManagedAssets({
+    List<String> albumPatterns = historicalAlbumPatterns,
+  }) async {
+    final normalizedPatterns = albumPatterns
+        .map((value) => value.trim())
+        .where((value) => value.isNotEmpty)
+        .toSet()
+        .toList();
+    if (normalizedPatterns.isEmpty) {
+      return RecoverableManagedAssetDiscoveryResult.empty();
+    }
+
+    final payload = await method.invokeMapMethod<String, dynamic>(
+      'discoverRecoverableManagedAssets',
+      {'albumPatterns': normalizedPatterns},
+    );
+    return RecoverableManagedAssetDiscoveryResult.fromMap(payload);
   }
 }

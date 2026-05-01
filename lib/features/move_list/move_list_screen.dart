@@ -1,13 +1,10 @@
 import 'dart:async';
 import 'dart:io';
-import 'dart:ui';
-import 'package:drift/drift.dart' hide Column;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:uuid/uuid.dart';
 
 import '../../core/database/database.dart';
 import '../../core/database/daos/combos_dao.dart';
@@ -16,16 +13,15 @@ import '../../core/design/spacing.dart';
 import '../../core/design/theme.dart';
 import '../../core/design/typography.dart';
 import '../../core/models/learning_state.dart';
+import '../../core/models/move_creation.dart';
 import '../../core/models/reviewable_item.dart'
     show MoveVideoPath, ComboVideoPath;
 import '../../core/providers.dart';
 import '../../core/services/categories_service.dart';
-import '../../core/services/native_video_album.dart';
 import '../../core/services/settings_service.dart';
+import '../../core/services/media_playback_coordinator.dart';
 import '../../core/services/thumbnail_load_coordinator.dart';
 import '../../core/services/video_service.dart';
-import '../../core/services/media_playback_coordinator.dart';
-import '../../core/services/video_path_resolver.dart';
 import '../../core/services/view_names_service.dart';
 import '../../shared/widgets/celebration_overlay.dart';
 import '../../shared/widgets/pressable.dart';
@@ -50,6 +46,9 @@ final _arsenalSegmentProvider = StateProvider<ArsenalSegment>(
 );
 
 final _searchQueryProvider = StateProvider<String>((ref) => '');
+final _dismissedReliabilityReportEpochProvider = StateProvider<int?>(
+  (ref) => null,
+);
 
 final _combosStreamProvider = StreamProvider<List<(Combo, int)>>((ref) {
   return ref.watch(comboRepositoryProvider).watchAllWithMoveCounts();
@@ -86,7 +85,6 @@ final _movesStreamProvider = StreamProvider<List<Move>>((ref) {
 class MoveListScreen extends ConsumerWidget {
   MoveListScreen({super.key});
 
-  final NativeVideoAlbum _videoAlbum = NativeVideoAlbum();
   final ThumbnailLoadCoordinator _thumbnailCoordinator =
       ThumbnailLoadCoordinator();
 
@@ -173,6 +171,7 @@ class MoveListScreen extends ConsumerWidget {
 
               // iCloud onboarding — shown once on first launch
               const SliverToBoxAdapter(child: SyncOnboardingCard()),
+              const SliverToBoxAdapter(child: _StartupVideoReliabilityBanner()),
 
               // Content — sliver-based for compositor-friendly scrolling
               segment == ArsenalSegment.moves
@@ -272,7 +271,7 @@ class MoveListScreen extends ConsumerWidget {
                   button: true,
                   child: FloatingActionButton(
                     onPressed: switch (segment) {
-                      ArsenalSegment.moves => () => _startVideoFirstFlow(
+                      ArsenalSegment.moves => () => _startMoveCreationFlow(
                         context,
                         ref,
                       ),
@@ -303,58 +302,53 @@ class MoveListScreen extends ConsumerWidget {
     );
   }
 
-  /// Video-first creation flow:
-  /// FAB → VideoPickerSheet → optional editor → _VideoNamingSheet → save.
-  /// If user taps "Skip", falls through to a simplified name-only sheet.
-  Future<void> _startVideoFirstFlow(BuildContext context, WidgetRef ref) async {
-    // 1. Open video picker immediately
-    MediaPlaybackCoordinator.shared.pauseAll();
-    final pickerResult = await VideoPickerSheet.show(context);
-    if (!context.mounted) return;
-
-    // User cancelled picker entirely
-    if (pickerResult == null) return;
-
-    // 2. Optional video editor
-    String videoPath = pickerResult.localPath;
-    MediaPlaybackCoordinator.shared.pauseAll();
-    final editedPath = await context.push<String>(
-      '/video-editor',
-      extra: {'videoPath': videoPath},
+  Future<void> _startMoveCreationFlow(
+    BuildContext context,
+    WidgetRef ref,
+  ) async {
+    final draft = await showModalBottomSheet<({String name, String category})>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) => const _MoveMetadataSheet(),
     );
-    if (!context.mounted) return;
-    if (editedPath == null) return; // Cancel → back to arsenal, done
-    if (editedPath != videoPath) {
-      await ref.read(videoServiceProvider).replaceVideo(videoPath);
+    if (draft == null || !context.mounted) return;
+
+    final videoIntent = await showModalBottomSheet<_MoveVideoIntent>(
+      context: context,
+      backgroundColor: Theme.of(context).colorScheme.surface,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(AppRadius.lg)),
+      ),
+      builder: (_) =>
+          _MoveVideoPromptSheet(name: draft.name, category: draft.category),
+    );
+    if (videoIntent == null || !context.mounted) return;
+
+    ({String localPath, String? originalVideoName})? videoAttachment;
+    if (videoIntent == _MoveVideoIntent.addNow) {
+      videoAttachment = await _captureVideoAttachment(context, ref);
+      if (!context.mounted) return;
+      if (videoAttachment == null) {
+        final saveWithoutVideo = await _confirmCreateWithoutVideo(context);
+        if (!context.mounted || !saveWithoutVideo) return;
+      }
     }
-    videoPath = editedPath;
-
-    // 3. Generate thumbnail for naming sheet background
-    final thumbPath = await VideoService().generateThumbnail(videoPath);
-
-    if (!context.mounted) return;
-
-    // 4. Show naming sheet with video thumbnail background
-    final result =
-        await showModalBottomSheet<({String name, String? category})>(
-          context: context,
-          isScrollControlled: true,
-          backgroundColor: Colors.transparent,
-          builder: (_) =>
-              _VideoNamingSheet(videoPath: videoPath, thumbnailPath: thumbPath),
-        );
-
-    if (result == null || result.name.isEmpty || !context.mounted) return;
 
     try {
-      await _createMove(
-        ref,
-        result.name,
-        result.category,
-        videoPath,
-        pickerResult.originalFileName,
-      );
+      final result = await ref
+          .read(moveCreationServiceProvider)
+          .createMove(
+            CreateMoveRequest(
+              name: draft.name,
+              category: draft.category,
+              localVideoPath: videoAttachment?.localPath,
+              originalVideoName: videoAttachment?.originalVideoName,
+            ),
+          );
+      if (!context.mounted) return;
       unawaited(HapticFeedback.mediumImpact());
+      CelebrationOverlay.show(context, title: result.name);
     } catch (error) {
       if (!context.mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -369,92 +363,160 @@ class MoveListScreen extends ConsumerWidget {
     }
   }
 
-  Future<void> _createMove(
-    WidgetRef ref,
-    String name,
-    String? category,
-    String? videoPath,
-    String? originalVideoName,
-  ) async {
-    final safeCategory = category ?? 'default';
-    final normalizedName = ref
-        .read(reviewableNamingServiceProvider)
-        .normalize(name);
-    final isTaken = await ref
-        .read(reviewableNamingServiceProvider)
-        .isNameTaken(normalizedName);
-    if (isTaken) {
-      throw StateError('duplicate_card_name');
+  Future<({String localPath, String? originalVideoName})?>
+  _captureVideoAttachment(BuildContext context, WidgetRef ref) async {
+    MediaPlaybackCoordinator.shared.pauseAll();
+    final pickerResult = await VideoPickerSheet.show(context);
+    if (!context.mounted || pickerResult == null) return null;
+
+    var videoPath = pickerResult.localPath;
+    MediaPlaybackCoordinator.shared.pauseAll();
+    final editedPath = await context.push<String>(
+      '/video-editor',
+      extra: {'videoPath': videoPath},
+    );
+    if (!context.mounted || editedPath == null) return null;
+
+    if (editedPath != videoPath) {
+      await ref.read(videoServiceProvider).replaceVideo(videoPath);
+      videoPath = editedPath;
     }
 
-    final storedVideoPath = videoPath == null
-        ? null
-        : VideoPathResolver.toRelative(videoPath);
-    final moveId = const Uuid().v4();
-    await ref
-        .read(moveRepositoryProvider)
-        .insert(
-          MovesCompanion.insert(
-            id: moveId,
-            name: normalizedName,
-            category: Value(safeCategory),
-            videoPath: Value(storedVideoPath),
-            originalVideoName: Value(originalVideoName),
+    return (
+      localPath: videoPath,
+      originalVideoName: pickerResult.originalFileName,
+    );
+  }
+
+  Future<bool> _confirmCreateWithoutVideo(BuildContext context) async {
+    final result = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Create Without Video?'),
+        content: const Text(
+          'No video was attached. You can still create the move now and add or trim a video later from the move detail screen.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, false),
+            child: const Text('Keep Editing'),
           ),
-        );
-    if (videoPath != null) {
-      try {
-        final managedCopy = await _videoAlbum.saveToAlbum(
-          videoPath: videoPath,
-          albumName: NativeVideoAlbum.defaultAlbumName(),
-          assetTitle: normalizedName,
-          category: safeCategory,
-        );
-        if (managedCopy != null) {
-          await ref
-              .read(moveRepositoryProvider)
-              .update(
-                MovesCompanion(
-                  id: Value(moveId),
-                  managedAlbumAssetId: Value(managedCopy.assetLocalIdentifier),
-                  managedAlbumFilename: Value(managedCopy.filename),
-                  managedAlbumName: Value(managedCopy.albumName),
-                ),
-              );
-        }
-      } catch (error) {
-        debugPrint('Album save failed (non-fatal): $error');
-      }
-
-      // Sync hook: hash → manifest → queue upload (non-fatal, fire-and-forget)
-      unawaited(
-        ref
-            .read(videoImportSyncHookProvider)
-            .onVideoImported(localPath: videoPath, moveId: moveId)
-            .catchError(
-              (error) => debugPrint('Sync hook failed (non-fatal): $error'),
-            ),
-      );
-    }
+          FilledButton(
+            onPressed: () => Navigator.pop(dialogContext, true),
+            child: const Text('Create Move'),
+          ),
+        ],
+      ),
+    );
+    return result ?? false;
   }
 }
 
-// -- Video Naming Sheet (video-first flow) -----------------------------------
-
-/// Frosted-glass naming sheet shown after video pick/record.
-/// Background: video thumbnail with dark gradient scrim.
-/// Foreground: autofocused name field + category row + save button.
-class _VideoNamingSheet extends ConsumerStatefulWidget {
-  const _VideoNamingSheet({required this.videoPath, this.thumbnailPath});
-
-  final String videoPath;
-  final String? thumbnailPath;
+class _StartupVideoReliabilityBanner extends ConsumerWidget {
+  const _StartupVideoReliabilityBanner();
 
   @override
-  ConsumerState<_VideoNamingSheet> createState() => _VideoNamingSheetState();
+  Widget build(BuildContext context, WidgetRef ref) {
+    final report = ref.watch(videoReliabilityReportProvider).valueOrNull;
+    if (report == null || !report.hasUserSignal) {
+      return const SizedBox.shrink();
+    }
+
+    final reportEpoch = report.completedAt.millisecondsSinceEpoch;
+    final dismissedEpoch = ref.watch(_dismissedReliabilityReportEpochProvider);
+    if (dismissedEpoch == reportEpoch) {
+      return const SizedBox.shrink();
+    }
+
+    final colorScheme = Theme.of(context).colorScheme;
+    final hasRecovery = report.restoredLocally > 0;
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(
+        AppSpacing.screenEdge,
+        0,
+        AppSpacing.screenEdge,
+        AppSpacing.md,
+      ),
+      child: Container(
+        decoration: BoxDecoration(
+          color: hasRecovery
+              ? AppColors.accent.withValues(alpha: 0.12)
+              : colorScheme.surfaceContainerHighest,
+          borderRadius: BorderRadius.circular(AppRadius.md),
+          border: Border.all(
+            color: hasRecovery
+                ? AppColors.accent.withValues(alpha: 0.25)
+                : colorScheme.outline.withValues(alpha: 0.15),
+          ),
+        ),
+        child: Padding(
+          padding: const EdgeInsets.all(AppSpacing.md),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Icon(
+                hasRecovery ? Icons.download_done_rounded : Icons.cloud_sync,
+                color: hasRecovery
+                    ? AppColors.accent
+                    : colorScheme.onSurfaceVariant,
+              ),
+              const SizedBox(width: AppSpacing.sm),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      report.title,
+                      style: AppTypography.bodyMedium.copyWith(
+                        color: colorScheme.onSurface,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      report.detail,
+                      style: AppTypography.bodySmall.copyWith(
+                        color: colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: AppSpacing.xs),
+              IconButton(
+                visualDensity: VisualDensity.compact,
+                iconSize: 18,
+                splashRadius: 18,
+                onPressed: () {
+                  ref
+                          .read(
+                            _dismissedReliabilityReportEpochProvider.notifier,
+                          )
+                          .state =
+                      reportEpoch;
+                },
+                icon: Icon(Icons.close, color: colorScheme.onSurfaceVariant),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
 }
 
-class _VideoNamingSheetState extends ConsumerState<_VideoNamingSheet> {
+enum _MoveVideoIntent { addNow, skipForNow }
+
+// -- Move Metadata Sheet -----------------------------------------------------
+
+class _MoveMetadataSheet extends ConsumerStatefulWidget {
+  const _MoveMetadataSheet();
+
+  @override
+  ConsumerState<_MoveMetadataSheet> createState() => _MoveMetadataSheetState();
+}
+
+class _MoveMetadataSheetState extends ConsumerState<_MoveMetadataSheet> {
   final _nameController = TextEditingController();
   String? _selectedCategory;
   String? _errorText;
@@ -518,190 +580,139 @@ class _VideoNamingSheetState extends ConsumerState<_VideoNamingSheet> {
       });
     }
 
-    return Stack(
-      children: [
-        // Thumbnail background
-        if (widget.thumbnailPath != null)
-          Positioned.fill(
-            child: Image.file(
-              File(widget.thumbnailPath!),
-              fit: BoxFit.cover,
-              errorBuilder: (_, _, _) => const SizedBox.shrink(),
-            ),
-          ),
-        // Dark gradient scrim
-        Positioned.fill(
-          child: Container(
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
-                colors: [
-                  Colors.black.withValues(alpha: 0.3),
-                  Colors.black.withValues(alpha: 0.85),
-                ],
-              ),
-            ),
-          ),
+    return SafeArea(
+      child: Padding(
+        padding: EdgeInsets.fromLTRB(
+          AppSpacing.screenEdge,
+          AppSpacing.xl,
+          AppSpacing.screenEdge,
+          MediaQuery.of(context).viewInsets.bottom + AppSpacing.lg,
         ),
-        // Frosted glass content panel
-        SafeArea(
-          child: Padding(
-            padding: EdgeInsets.fromLTRB(
-              AppSpacing.screenEdge,
-              AppSpacing.xl,
-              AppSpacing.screenEdge,
-              MediaQuery.of(context).viewInsets.bottom + AppSpacing.lg,
-            ),
-            child:
-                Column(
+        child:
+            ClipRRect(
+                  borderRadius: BorderRadius.circular(AppRadius.md),
+                  child: Container(
+                    padding: const EdgeInsets.all(AppSpacing.md),
+                    decoration: BoxDecoration(
+                      color: colorScheme.surface,
+                      borderRadius: BorderRadius.circular(AppRadius.md),
+                    ),
+                    child: Column(
                       mainAxisSize: MainAxisSize.min,
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        // Drag handle
                         Center(
                           child: Container(
                             width: 36,
                             height: 4,
                             decoration: BoxDecoration(
-                              color: Colors.white.withValues(alpha: 0.3),
+                              color: colorScheme.outline.withValues(alpha: 0.5),
                               borderRadius: BorderRadius.circular(2),
                             ),
                           ),
                         ),
                         const SizedBox(height: AppSpacing.lg),
-                        ClipRRect(
-                          borderRadius: BorderRadius.circular(AppRadius.md),
-                          child: BackdropFilter(
-                            filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
-                            child: Container(
-                              padding: const EdgeInsets.all(AppSpacing.md),
-                              decoration: BoxDecoration(
-                                color: colorScheme.surface.withValues(
-                                  alpha: 0.7,
-                                ),
-                                borderRadius: BorderRadius.circular(
-                                  AppRadius.md,
-                                ),
-                                border: Border.all(
-                                  color: Colors.white.withValues(alpha: 0.1),
+                        Text(
+                          'Add Move',
+                          style: AppTypography.titleMedium.copyWith(
+                            color: colorScheme.onSurface,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          'Set the name and category here. Notes stay in the move detail view so creation stays focused.',
+                          style: AppTypography.bodySmall.copyWith(
+                            color: colorScheme.secondary,
+                          ),
+                        ),
+                        const SizedBox(height: AppSpacing.md),
+                        Semantics(
+                          label: 'Move name',
+                          textField: true,
+                          child: TextField(
+                            controller: _nameController,
+                            autofocus: true,
+                            decoration: InputDecoration(
+                              hintText: 'Move name',
+                              errorText: _errorText,
+                            ),
+                            textInputAction: TextInputAction.done,
+                            onSubmitted: (_) => _submit(selectedCategory),
+                          ),
+                        ),
+                        const SizedBox(height: AppSpacing.md),
+                        Text(
+                          'Category',
+                          style: AppTypography.caption.copyWith(
+                            color: colorScheme.secondary,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          'Required so the move keeps its meaning across review, stats, flow, and the gallery.',
+                          style: AppTypography.caption.copyWith(
+                            color: colorScheme.secondary,
+                          ),
+                        ),
+                        const SizedBox(height: AppSpacing.sm),
+                        Wrap(
+                          spacing: AppSpacing.sm,
+                          runSpacing: AppSpacing.sm,
+                          children: [
+                            for (final cat in categories)
+                              _buildCategoryChip(
+                                context,
+                                label: cat.name,
+                                color: cat.color,
+                                selected: selectedCategory == cat.name,
+                                onTap: () => setState(
+                                  () => _selectedCategory = cat.name,
                                 ),
                               ),
-                              child: Column(
-                                mainAxisSize: MainAxisSize.min,
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    'Name this move',
-                                    style: AppTypography.titleMedium.copyWith(
-                                      color: colorScheme.onSurface,
-                                    ),
+                          ],
+                        ),
+                        const SizedBox(height: AppSpacing.lg),
+                        Semantics(
+                          label: 'Continue to video options',
+                          button: true,
+                          enabled: !_nameEmpty && selectedCategory != null,
+                          child: SizedBox(
+                            width: double.infinity,
+                            height: 50,
+                            child: ElevatedButton(
+                              onPressed: _nameEmpty || selectedCategory == null
+                                  ? null
+                                  : () => _submit(selectedCategory),
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: colorScheme.primary,
+                                foregroundColor: Colors.white,
+                                disabledBackgroundColor: colorScheme.primary
+                                    .withValues(alpha: 0.3),
+                                disabledForegroundColor: Colors.white
+                                    .withValues(alpha: 0.5),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(
+                                    AppRadius.lg,
                                   ),
-                                  const SizedBox(height: AppSpacing.md),
-                                  Semantics(
-                                    label: 'Move name',
-                                    textField: true,
-                                    child: TextField(
-                                      controller: _nameController,
-                                      autofocus: true,
-                                      decoration: InputDecoration(
-                                        hintText: 'Move name',
-                                        errorText: _errorText,
-                                      ),
-                                      textInputAction: TextInputAction.done,
-                                      onSubmitted: (_) =>
-                                          _submit(selectedCategory),
-                                    ),
-                                  ),
-                                  const SizedBox(height: AppSpacing.md),
-                                  // Category chips
-                                  Text(
-                                    'Category',
-                                    style: AppTypography.caption.copyWith(
-                                      color: colorScheme.secondary,
-                                      fontWeight: FontWeight.w600,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 4),
-                                  Text(
-                                    'Required so the move keeps its meaning across review, stats, and gallery.',
-                                    style: AppTypography.caption.copyWith(
-                                      color: colorScheme.secondary,
-                                    ),
-                                  ),
-                                  const SizedBox(height: AppSpacing.sm),
-                                  Wrap(
-                                    spacing: AppSpacing.sm,
-                                    runSpacing: AppSpacing.sm,
-                                    children: [
-                                      for (final cat in categories)
-                                        _buildCategoryChip(
-                                          context,
-                                          label: cat.name,
-                                          color: cat.color,
-                                          selected:
-                                              selectedCategory == cat.name,
-                                          onTap: () => setState(
-                                            () => _selectedCategory = cat.name,
-                                          ),
-                                        ),
-                                    ],
-                                  ),
-                                  const SizedBox(height: AppSpacing.lg),
-                                  // Full-width save button
-                                  Semantics(
-                                    label: 'Save move',
-                                    button: true,
-                                    enabled:
-                                        !_nameEmpty && selectedCategory != null,
-                                    child: SizedBox(
-                                      width: double.infinity,
-                                      height: 50,
-                                      child: ElevatedButton(
-                                        onPressed:
-                                            _nameEmpty ||
-                                                selectedCategory == null
-                                            ? null
-                                            : () => _submit(selectedCategory),
-                                        style: ElevatedButton.styleFrom(
-                                          backgroundColor: Theme.of(
-                                            context,
-                                          ).colorScheme.primary,
-                                          foregroundColor: Colors.white,
-                                          disabledBackgroundColor:
-                                              Theme.of(context)
-                                                  .colorScheme
-                                                  .primary
-                                                  .withValues(alpha: 0.3),
-                                          disabledForegroundColor: Colors.white
-                                              .withValues(alpha: 0.5),
-                                          shape: RoundedRectangleBorder(
-                                            borderRadius: BorderRadius.circular(
-                                              AppRadius.lg,
-                                            ),
-                                          ),
-                                        ),
-                                        child: const Text('Save'),
-                                      ),
-                                    ),
-                                  ),
-                                ],
+                                ),
                               ),
+                              child: const Text('Continue'),
                             ),
                           ),
                         ),
                       ],
-                    )
-                    .animate()
-                    .fadeIn(duration: AppMotion.moderate02)
-                    .slideY(
-                      begin: 0.05,
-                      duration: AppMotion.moderate02,
-                      curve: AppMotion.entrance,
                     ),
-          ),
-        ),
-      ],
+                  ),
+                )
+                .animate()
+                .fadeIn(duration: AppMotion.moderate02)
+                .slideY(
+                  begin: 0.05,
+                  duration: AppMotion.moderate02,
+                  curve: AppMotion.entrance,
+                ),
+      ),
     );
   }
 
@@ -742,6 +753,62 @@ class _VideoNamingSheetState extends ConsumerState<_VideoNamingSheet> {
               label,
               style: AppTypography.caption.copyWith(
                 color: selected ? Colors.white : colorScheme.onSurface,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _MoveVideoPromptSheet extends StatelessWidget {
+  const _MoveVideoPromptSheet({required this.name, required this.category});
+
+  final String name;
+  final String category;
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+
+    return SafeArea(
+      child: Padding(
+        padding: const EdgeInsets.all(AppSpacing.screenEdge),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Add Video Now?',
+              style: AppTypography.titleMedium.copyWith(
+                color: colorScheme.onSurface,
+              ),
+            ),
+            const SizedBox(height: AppSpacing.sm),
+            Text(
+              '“$name” is ready in $category. You can attach a video now using the Apple picker flow, then trim or replace it later from the move detail screen.',
+              style: AppTypography.bodySmall.copyWith(
+                color: colorScheme.secondary,
+              ),
+            ),
+            const SizedBox(height: AppSpacing.lg),
+            SizedBox(
+              width: double.infinity,
+              child: FilledButton.icon(
+                onPressed: () =>
+                    Navigator.pop(context, _MoveVideoIntent.addNow),
+                icon: const Icon(Icons.video_call),
+                label: const Text('Add Video'),
+              ),
+            ),
+            const SizedBox(height: AppSpacing.sm),
+            SizedBox(
+              width: double.infinity,
+              child: OutlinedButton(
+                onPressed: () =>
+                    Navigator.pop(context, _MoveVideoIntent.skipForNow),
+                child: const Text('Skip For Now'),
               ),
             ),
           ],

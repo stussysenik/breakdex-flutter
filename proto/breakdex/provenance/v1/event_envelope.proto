@@ -1,0 +1,212 @@
+syntax = "proto3";
+
+package breakdex.provenance.v1;
+
+import "google/protobuf/timestamp.proto";
+
+// Breaking schema changes require a new package version (for example, v2).
+// Within v1, add fields and enum values only. Do not reuse field numbers.
+message ProvenanceEnvelope {
+  SchemaVersion schema_version = 1;
+  string event_id = 2;
+  string session_id = 3;
+  string install_id = 4;
+  RuntimeContext runtime = 5;
+  google.protobuf.Timestamp recorded_at = 6;
+  ProvenanceEvent event = 7;
+}
+
+message SchemaVersion {
+  uint32 major = 1;
+  uint32 minor = 2;
+}
+
+message RuntimeContext {
+  string app_version = 1;
+  string build_number = 2;
+  ClientPlatform platform = 3;
+  optional string os_version = 4;
+  optional string device_model = 5;
+  optional string locale = 6;
+}
+
+message ProvenanceEvent {
+  Scope scope = 1;
+  EventType event_type = 2;
+  Status status = 3;
+  EntityType entity_type = 4;
+  optional string entity_id = 5;
+  optional string content_hash = 6;
+  optional string move_id = 7;
+  ConnectionType connection_type = 8;
+  optional string local_path = 9;
+  optional string message = 10;
+
+  oneof detail {
+    DatabaseRecoveryDetails database_recovery = 11;
+    VideoRetrievalDetails video_retrieval = 12;
+    CrashCaptureDetails crash_capture = 13;
+    HistoricalAssetRecoveryDetails historical_asset_recovery = 14;
+  }
+}
+
+enum Scope {
+  SCOPE_UNSPECIFIED = 0;
+  SCOPE_STARTUP = 1;
+  SCOPE_DATABASE_RECOVERY = 2;
+  SCOPE_VIDEO_RETRIEVAL = 3;
+  SCOPE_CRASH = 4;
+  SCOPE_HISTORICAL_ASSET_RECOVERY = 5;
+}
+
+enum EventType {
+  EVENT_TYPE_UNSPECIFIED = 0;
+  EVENT_TYPE_APP_BOOT = 1;
+  EVENT_TYPE_BACKUP_CREATED = 2;
+  EVENT_TYPE_BACKUP_SKIPPED = 3;
+  EVENT_TYPE_BACKUP_FAILED = 4;
+  EVENT_TYPE_DATABASE_OPENED = 5;
+  EVENT_TYPE_DATABASE_OPEN_FAILED = 6;
+  EVENT_TYPE_BACKUP_RESTORE_ATTEMPTED = 7;
+  EVENT_TYPE_BACKUP_RESTORED = 8;
+  EVENT_TYPE_BACKUP_RESTORE_FAILED = 9;
+  EVENT_TYPE_FRESH_DATABASE_CREATED = 10;
+  EVENT_TYPE_MISSING_PRIMARY_RESTORED = 11;
+  EVENT_TYPE_PRIMARY_PRESENT_OR_NO_BACKUP = 12;
+  EVENT_TYPE_REQUEST_QUEUED = 13;
+  EVENT_TYPE_MANIFEST_MISSING = 14;
+  EVENT_TYPE_BLOCKED_OFFLINE = 15;
+  EVENT_TYPE_BLOCKED_WIFI = 16;
+  EVENT_TYPE_BLOCKED_BUDGET = 17;
+  EVENT_TYPE_DOWNLOAD_STARTED = 18;
+  EVENT_TYPE_DOWNLOAD_FAILED = 19;
+  EVENT_TYPE_DOWNLOAD_RESTORED = 20;
+  EVENT_TYPE_FLUTTER_ERROR = 21;
+  EVENT_TYPE_PLATFORM_ERROR = 22;
+  EVENT_TYPE_HISTORICAL_ASSET_DISCOVERED = 23;
+  EVENT_TYPE_HISTORICAL_ASSET_LINKED = 24;
+  EVENT_TYPE_HISTORICAL_RESTORE_ATTEMPTED = 25;
+  EVENT_TYPE_HISTORICAL_RESTORE_FAILED = 26;
+  EVENT_TYPE_HISTORICAL_RESTORE_COMPLETED = 27;
+}
+
+enum Status {
+  STATUS_UNSPECIFIED = 0;
+  STATUS_STARTED = 1;
+  STATUS_SKIPPED = 2;
+  STATUS_CREATED = 3;
+  STATUS_READY = 4;
+  STATUS_ATTEMPTING = 5;
+  STATUS_RESTORED = 6;
+  STATUS_QUEUED = 7;
+  STATUS_DOWNLOADING = 8;
+  STATUS_AVAILABLE = 9;
+  STATUS_WAITING_FOR_CONNECTION = 10;
+  STATUS_WAITING_FOR_WIFI = 11;
+  STATUS_WAITING_FOR_BUDGET = 12;
+  STATUS_CAPTURED = 13;
+  STATUS_FAILED = 14;
+}
+
+enum EntityType {
+  ENTITY_TYPE_UNSPECIFIED = 0;
+  ENTITY_TYPE_DATABASE = 1;
+  ENTITY_TYPE_DATABASE_BACKUP = 2;
+  ENTITY_TYPE_ASSET_MANIFEST = 3;
+  ENTITY_TYPE_MOVE = 4;
+  ENTITY_TYPE_COMBO = 5;
+  ENTITY_TYPE_PHOTOS_ASSET = 6;
+  ENTITY_TYPE_PHOTOS_ALBUM = 7;
+}
+
+enum ConnectionType {
+  CONNECTION_TYPE_UNSPECIFIED = 0;
+  CONNECTION_TYPE_UNKNOWN = 1;
+  CONNECTION_TYPE_NONE = 2;
+  CONNECTION_TYPE_WIFI = 3;
+  CONNECTION_TYPE_MOBILE = 4;
+  CONNECTION_TYPE_ETHERNET = 5;
+  CONNECTION_TYPE_BLUETOOTH = 6;
+  CONNECTION_TYPE_VPN = 7;
+  CONNECTION_TYPE_OTHER = 8;
+}
+
+enum ClientPlatform {
+  CLIENT_PLATFORM_UNSPECIFIED = 0;
+  CLIENT_PLATFORM_IOS = 1;
+  CLIENT_PLATFORM_ANDROID = 2;
+  CLIENT_PLATFORM_MACOS = 3;
+  CLIENT_PLATFORM_WINDOWS = 4;
+  CLIENT_PLATFORM_LINUX = 5;
+  CLIENT_PLATFORM_WEB = 6;
+}
+
+message DatabaseRecoveryDetails {
+  DatabaseRecoveryOperation operation = 1;
+  optional string database_filename = 2;
+  optional string backup_filename = 3;
+  uint32 backup_candidate_index = 4;
+  bool primary_missing = 5;
+}
+
+enum DatabaseRecoveryOperation {
+  DATABASE_RECOVERY_OPERATION_UNSPECIFIED = 0;
+  DATABASE_RECOVERY_OPERATION_CREATE_BACKUP = 1;
+  DATABASE_RECOVERY_OPERATION_OPEN_PRIMARY = 2;
+  DATABASE_RECOVERY_OPERATION_RESTORE_BACKUP = 3;
+  DATABASE_RECOVERY_OPERATION_CREATE_FRESH_DATABASE = 4;
+  DATABASE_RECOVERY_OPERATION_RESTORE_MISSING_PRIMARY = 5;
+}
+
+message VideoRetrievalDetails {
+  VideoRetrievalOperation operation = 1;
+  VideoBlockReason block_reason = 2;
+  bool user_initiated = 3;
+  uint64 transferred_bytes = 4;
+  uint64 total_bytes = 5;
+}
+
+enum VideoRetrievalOperation {
+  VIDEO_RETRIEVAL_OPERATION_UNSPECIFIED = 0;
+  VIDEO_RETRIEVAL_OPERATION_REQUEST_PLAYBACK = 1;
+  VIDEO_RETRIEVAL_OPERATION_CHECK_MANIFEST = 2;
+  VIDEO_RETRIEVAL_OPERATION_WAIT = 3;
+  VIDEO_RETRIEVAL_OPERATION_DOWNLOAD = 4;
+  VIDEO_RETRIEVAL_OPERATION_MARK_AVAILABLE = 5;
+}
+
+enum VideoBlockReason {
+  VIDEO_BLOCK_REASON_UNSPECIFIED = 0;
+  VIDEO_BLOCK_REASON_OFFLINE = 1;
+  VIDEO_BLOCK_REASON_WAIT_FOR_WIFI = 2;
+  VIDEO_BLOCK_REASON_BUDGET_EXCEEDED = 3;
+}
+
+message CrashCaptureDetails {
+  CrashRuntime runtime = 1;
+  bool fatal = 2;
+  optional string exception_type = 3;
+  optional string stack_digest = 4;
+}
+
+enum CrashRuntime {
+  CRASH_RUNTIME_UNSPECIFIED = 0;
+  CRASH_RUNTIME_FLUTTER = 1;
+  CRASH_RUNTIME_PLATFORM = 2;
+}
+
+message HistoricalAssetRecoveryDetails {
+  HistoricalAssetOperation operation = 1;
+  optional string album_name = 2;
+  optional string asset_identifier = 3;
+  optional string original_filename = 4;
+  bool database_was_empty = 5;
+}
+
+enum HistoricalAssetOperation {
+  HISTORICAL_ASSET_OPERATION_UNSPECIFIED = 0;
+  HISTORICAL_ASSET_OPERATION_DISCOVER_ALBUM = 1;
+  HISTORICAL_ASSET_OPERATION_LINK_ASSET = 2;
+  HISTORICAL_ASSET_OPERATION_RESTORE_LOCAL_COPY = 3;
+  HISTORICAL_ASSET_OPERATION_BOOTSTRAP_MOVE = 4;
+}

@@ -19,14 +19,17 @@ import 'design/colors.dart';
 import 'design/typography.dart';
 import 'models/learning_state.dart';
 import 'models/learning_state_colors.dart';
+import 'models/provenance_report.dart';
 import 'models/review_card_display_settings.dart';
 import 'models/reviewable_item.dart';
 import 'services/auth_service.dart';
 import 'services/settings_service.dart';
 import 'services/video_service.dart';
 import 'services/media_cleanup_service.dart';
+import 'services/database_recovery_service.dart';
 import 'services/managed_album_reconciliation_service.dart';
 import 'services/media_playback_coordinator.dart';
+import 'services/move_creation_service.dart';
 import 'services/sync_service.dart';
 import 'services/connectivity_service.dart';
 import 'services/fsrs_service.dart';
@@ -34,6 +37,8 @@ import 'services/manual_review_state_service.dart';
 import 'services/deck_service.dart';
 import 'services/reviewable_naming_service.dart';
 import 'services/native_video_album.dart';
+import 'services/provenance_journal_service.dart';
+import 'services/provenance_report_service.dart';
 import 'services/scene_3d.dart';
 import 'services/vision_ml.dart';
 import 'models/sync_progress.dart';
@@ -57,6 +62,8 @@ import 'sync/manifest_serializer.dart';
 import 'sync/manifest_sync_service.dart';
 import 'sync/on_demand_downloader.dart';
 import 'sync/space_manager.dart';
+import 'sync/video_reliability_runtime.dart';
+import 'sync/video_retrieval_controller.dart';
 import 'sync/video_import_sync_hook.dart';
 
 part 'providers/sync_providers.dart';
@@ -183,6 +190,7 @@ final managedAlbumReconciliationServiceProvider =
       return ManagedAlbumReconciliationService(
         movesDao: ref.watch(movesDaoProvider),
         moveRepository: ref.watch(moveRepositoryProvider),
+        moveCreationService: ref.watch(moveCreationServiceProvider),
         mediaCleanupService: ref.watch(mediaCleanupServiceProvider),
         videoAlbum: ref.watch(nativeVideoAlbumProvider),
         videoService: ref.watch(videoServiceProvider),
@@ -200,12 +208,57 @@ final managedAlbumLifecycleProvider = Provider<void>((ref) {
   });
 });
 
+final databaseRecoveryServiceProvider = Provider<DatabaseRecoveryService>((
+  ref,
+) {
+  return DatabaseRecoveryService();
+});
+
+final automaticDatabaseBackupLifecycleProvider = Provider<void>((ref) {
+  final controller = AutomaticDatabaseBackupController(
+    service: ref.watch(databaseRecoveryServiceProvider),
+  );
+  controller.start();
+  ref.onDispose(() {
+    unawaited(controller.dispose());
+  });
+});
+
+final provenanceJournalServiceProvider = Provider<ProvenanceJournalService>((
+  ref,
+) {
+  return ProvenanceJournalService();
+});
+
+final provenanceReportServiceProvider = Provider<ProvenanceReportService>((
+  ref,
+) {
+  return ProvenanceReportService(ref.watch(provenanceJournalServiceProvider));
+});
+
+final provenanceReportProvider = FutureProvider<ProvenanceReport>((ref) {
+  return ref.watch(provenanceReportServiceProvider).loadReport();
+});
+
 final reviewableNamingServiceProvider = Provider<ReviewableNamingService>((
   ref,
 ) {
   return ReviewableNamingService(
     movesDao: ref.watch(movesDaoProvider),
     combosDao: ref.watch(combosDaoProvider),
+  );
+});
+
+final moveCreationServiceProvider = Provider<MoveCreationService>((ref) {
+  return MoveCreationService(
+    moveRepository: ref.watch(moveRepositoryProvider),
+    namingService: ref.watch(reviewableNamingServiceProvider),
+    videoAlbum: ref.watch(nativeVideoAlbumProvider),
+    onVideoImported: ({required localPath, required moveId}) {
+      return ref
+          .read(videoImportSyncHookProvider)
+          .onVideoImported(localPath: localPath, moveId: moveId);
+    },
   );
 });
 

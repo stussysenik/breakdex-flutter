@@ -71,6 +71,18 @@ void main() {
               ],
             };
           }
+          if (call.method == 'discoverRecoverableManagedAssets') {
+            return <String, dynamic>{
+              'accessStatus': 'authorized',
+              'assets': [
+                <String, dynamic>{
+                  'assetLocalIdentifier': 'asset-legacy',
+                  'filename': 'Halo - Power.mov',
+                  'albumName': 'Bboying Practice',
+                },
+              ],
+            };
+          }
           if (call.method == 'restoreManagedAsset') {
             return <String, dynamic>{
               'localPath': '/tmp/recovered.mov',
@@ -293,5 +305,32 @@ void main() {
       expect(restored?.localPath, '/tmp/recovered.mov');
       expect(restored?.originalFileName, 'Recovered.mov');
     });
+
+    test(
+      'video album passes regex filters for historical recovery scans',
+      () async {
+        final service = NativeVideoAlbum();
+
+        final result = await service.discoverRecoverableManagedAssets(
+          albumPatterns: [
+            ' ${NativeVideoAlbum.historicalAlbumPatterns.first} ',
+            '',
+            r'\bb[\s\-_]*boy(?:ing)?\b ',
+          ],
+        );
+
+        final args = Map<String, dynamic>.from(
+          albumCalls.single.arguments as Map,
+        );
+        expect(args['albumPatterns'], [
+          NativeVideoAlbum.historicalAlbumPatterns.first,
+          r'\bb[\s\-_]*boy(?:ing)?\b',
+        ]);
+        expect(result.accessStatus, PhotoLibraryAccessStatus.authorized);
+        expect(result.assets, hasLength(1));
+        expect(result.assets.single.assetLocalIdentifier, 'asset-legacy');
+        expect(result.assets.single.albumName, 'Bboying Practice');
+      },
+    );
   });
 }
