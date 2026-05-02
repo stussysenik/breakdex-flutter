@@ -201,11 +201,9 @@ abstract final class VideoPathHealer {
         if (manifest.localPath != null &&
             !VideoPathResolver.isRelative(manifest.localPath!)) {
           final relative = VideoPathResolver.toRelative(manifest.localPath!);
-          await db.assetManifestDao.upsert(
-            AssetManifestCompanion(
-              contentHash: Value(manifest.contentHash),
-              localPath: Value(relative),
-            ),
+          await db.assetManifestDao.updateLocalState(
+            manifest.contentHash,
+            localPath: Value(relative),
           );
           healed++;
         }

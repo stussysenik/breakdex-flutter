@@ -126,12 +126,10 @@ class OnDemandDownloader implements LocalAssetRetriever {
       }
 
       // Update manifest with new local path (relative for portability)
-      await _manifestDao.upsert(
-        AssetManifestCompanion(
-          contentHash: Value(contentHash),
-          localPath: Value(VideoPathResolver.toRelative(localPath)),
-          localVerifiedAt: Value(DateTime.now()),
-        ),
+      await _manifestDao.updateLocalState(
+        contentHash,
+        localPath: Value(VideoPathResolver.toRelative(localPath)),
+        localVerifiedAt: Value(DateTime.now()),
       );
 
       // Upsert local copy record

@@ -43,9 +43,9 @@ class SpaceManager {
     required AssetManifestDao manifestDao,
     required AssetCopiesDao copiesDao,
     required SafetyGuard safetyGuard,
-  })  : _manifestDao = manifestDao,
-        _copiesDao = copiesDao,
-        _safetyGuard = safetyGuard;
+  }) : _manifestDao = manifestDao,
+       _copiesDao = copiesDao,
+       _safetyGuard = safetyGuard;
 
   /// Analyze which assets can have their local copies safely deleted.
   ///
@@ -122,20 +122,22 @@ class SpaceManager {
         }
 
         // Clear localPath in manifest
-        await _manifestDao.upsert(AssetManifestCompanion(
-          contentHash: Value(hash),
+        await _manifestDao.updateLocalState(
+          hash,
           localPath: const Value(null),
           localVerifiedAt: const Value(null),
-        ));
+        );
 
         // Mark local copy as deleted
         final localCopy = await _copiesDao.getLocalCopy(hash);
         if (localCopy != null) {
-          await _copiesDao.updateCopy(AssetCopiesCompanion(
-            id: Value(localCopy.id),
-            status: const Value('deleted'),
-            updatedAt: Value(DateTime.now()),
-          ));
+          await _copiesDao.updateCopy(
+            AssetCopiesCompanion(
+              id: Value(localCopy.id),
+              status: const Value('deleted'),
+              updatedAt: Value(DateTime.now()),
+            ),
+          );
         }
 
         // Update copy count

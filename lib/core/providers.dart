@@ -194,6 +194,7 @@ final managedAlbumReconciliationServiceProvider =
         mediaCleanupService: ref.watch(mediaCleanupServiceProvider),
         videoAlbum: ref.watch(nativeVideoAlbumProvider),
         videoService: ref.watch(videoServiceProvider),
+        provenanceJournal: ref.watch(provenanceJournalServiceProvider),
       );
     });
 

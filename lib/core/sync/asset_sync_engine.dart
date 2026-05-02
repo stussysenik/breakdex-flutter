@@ -397,12 +397,10 @@ class AssetSyncEngine {
     }
 
     // Update manifest with local path
-    await _manifestDao.upsert(
-      AssetManifestCompanion(
-        contentHash: Value(op.contentHash),
-        localPath: Value(VideoPathResolver.toRelative(localPath)),
-        localVerifiedAt: Value(DateTime.now()),
-      ),
+    await _manifestDao.updateLocalState(
+      op.contentHash,
+      localPath: Value(VideoPathResolver.toRelative(localPath)),
+      localVerifiedAt: Value(DateTime.now()),
     );
 
     await _opsDao.markCompleted(op.id);

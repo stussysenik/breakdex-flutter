@@ -14,6 +14,7 @@ import 'move_creation_service.dart';
 import 'native_video_album.dart';
 import 'video_path_resolver.dart';
 import 'video_service.dart';
+import 'provenance_journal_service.dart';
 
 enum ManagedAlbumReconcileTrigger { startup, resume, libraryChanged }
 
@@ -120,6 +121,7 @@ class ManagedAlbumReconciliationService {
     required MediaCleanupService mediaCleanupService,
     required NativeVideoAlbum videoAlbum,
     required VideoService videoService,
+    ProvenanceJournalService? provenanceJournal,
     DateTime Function()? now,
   }) : _movesDao = movesDao,
        _moveRepository = moveRepository,
@@ -127,6 +129,7 @@ class ManagedAlbumReconciliationService {
        _mediaCleanupService = mediaCleanupService,
        _videoAlbum = videoAlbum,
        _videoService = videoService,
+       _provenanceJournal = provenanceJournal,
        _now = now ?? DateTime.now;
 
   final MovesDao _movesDao;
@@ -135,6 +138,7 @@ class ManagedAlbumReconciliationService {
   final MediaCleanupService _mediaCleanupService;
   final NativeVideoAlbum _videoAlbum;
   final VideoService _videoService;
+  final ProvenanceJournalService? _provenanceJournal;
   final DateTime Function() _now;
 
   Future<ManagedAlbumReconcileReport> reconcileExternalDeletes({
@@ -145,7 +149,7 @@ class ManagedAlbumReconciliationService {
 
     final accessStatus = await _videoAlbum.requestReadAccess();
     if (!accessStatus.allowsReadAccess) {
-      return ManagedAlbumReconcileReport(
+      final report = ManagedAlbumReconcileReport(
         trigger: trigger,
         trackedMoves: trackedMoves.length,
         archivedMoves: 0,
@@ -160,6 +164,8 @@ class ManagedAlbumReconciliationService {
         historicalAssetsSkippedMissingFilename: 0,
         completedAt: _now(),
       );
+      await _recordReconcileReport(report);
+      return report;
     }
 
     final trackedReferences = trackedMoves
@@ -218,7 +224,7 @@ class ManagedAlbumReconciliationService {
     );
     recoveredCount += historicalRecovery.recoveredAssets;
 
-    return ManagedAlbumReconcileReport(
+    final report = ManagedAlbumReconcileReport(
       trigger: trigger,
       trackedMoves: trackedMoves.length,
       archivedMoves: archivedCount,
@@ -233,6 +239,37 @@ class ManagedAlbumReconciliationService {
       historicalAssetsSkippedMissingFilename:
           historicalRecovery.skippedMissingFilenameAssets,
       completedAt: _now(),
+    );
+    await _recordReconcileReport(report);
+    return report;
+  }
+
+  Future<void> _recordReconcileReport(
+    ManagedAlbumReconcileReport report,
+  ) async {
+    final message =
+        'trigger=${report.trigger.name} '
+        'tracked=${report.trackedMoves} '
+        'archived=${report.archivedMoves} '
+        'recovered=${report.recoveredMoves} '
+        'albums=${report.historicalMatchingAlbums} '
+        'videos=${report.historicalVideoAssetsSeen} '
+        'discoverable=${report.historicalAssetsDiscovered} '
+        'untracked=${report.historicalAssetsUntracked} '
+        'restored=${report.historicalAssetsRecovered} '
+        'restoreFailures=${report.historicalRestoreFailures} '
+        'missingFilename=${report.historicalAssetsSkippedMissingFilename} '
+        'access=${report.accessStatus.name}';
+    debugPrint('[ManagedAlbumRecovery] $message');
+    final journal = _provenanceJournal;
+    if (journal == null) return;
+    await journal.log(
+      scope: 'managed_album_recovery',
+      eventType: 'reconcile_sweep_completed',
+      status: report.accessStatus.name,
+      entityType: 'photos_library',
+      entityId: report.trigger.name,
+      message: message,
     );
   }
 
