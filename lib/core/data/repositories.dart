@@ -46,3 +46,21 @@ abstract class ReviewRepository {
   Future<List<MapEntry<String, int>>> topReviewedMoves(int limit);
   Future<int> currentStreak();
 }
+
+/// Abstract interface for set data access.
+abstract class SetRepository {
+  Stream<List<BreakdexSet>> watchAll();
+  Stream<BreakdexSet> watchById(String id);
+  Future<List<BreakdexSet>> getAll();
+  Future<BreakdexSet> getById(String id);
+  Future<void> insert(SetsCompanion set);
+  Future<void> update(SetsCompanion set);
+  Future<void> delete(String id);
+
+  Future<void> addItem(SetItemsCompanion item);
+  Future<void> removeItem(String id);
+  Future<void> reorderItem(String itemId, int newPosition);
+  Stream<List<SetItem>> watchItems(String setId);
+  Future<bool> validateNoCycle(String setId, String childSetId);
+  Future<int> depth(String setId);
+}

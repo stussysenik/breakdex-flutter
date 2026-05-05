@@ -2,6 +2,7 @@ import '../database/database.dart';
 import '../database/daos/moves_dao.dart';
 import '../database/daos/combos_dao.dart';
 import '../database/daos/reviews_dao.dart';
+import '../database/daos/sets_dao.dart';
 import 'repositories.dart';
 
 class DriftMoveRepository implements MoveRepository {
@@ -123,4 +124,50 @@ class DriftReviewRepository implements ReviewRepository {
 
   @override
   Future<int> currentStreak() => _dao.currentStreak();
+}
+
+class DriftSetRepository implements SetRepository {
+  final SetsDao _dao;
+  DriftSetRepository(this._dao);
+
+  @override
+  Stream<List<BreakdexSet>> watchAll() => _dao.watchAll();
+
+  @override
+  Stream<BreakdexSet> watchById(String id) => _dao.watchById(id);
+
+  @override
+  Future<List<BreakdexSet>> getAll() => _dao.getAll();
+
+  @override
+  Future<BreakdexSet> getById(String id) => _dao.getById(id);
+
+  @override
+  Future<void> insert(SetsCompanion set) => _dao.createSet(set);
+
+  @override
+  Future<void> update(SetsCompanion set) => _dao.updateSet(set);
+
+  @override
+  Future<void> delete(String id) => _dao.deleteSet(id);
+
+  @override
+  Future<void> addItem(SetItemsCompanion item) => _dao.addSetItem(item);
+
+  @override
+  Future<void> removeItem(String id) => _dao.removeSetItem(id);
+
+  @override
+  Future<void> reorderItem(String itemId, int newPosition) =>
+      _dao.reorderSetItem(itemId, newPosition);
+
+  @override
+  Stream<List<SetItem>> watchItems(String setId) => _dao.watchSetItems(setId);
+
+  @override
+  Future<bool> validateNoCycle(String setId, String childSetId) =>
+      _dao.validateNoCycle(setId, childSetId);
+
+  @override
+  Future<int> depth(String setId) => _dao.depth(setId);
 }

@@ -620,20 +620,10 @@ class ManagedAlbumReconciliationService {
 
   int _historicalAlbumSignalScore(String albumKey) {
     if (albumKey.isEmpty) return 0;
-    var score = 0;
-    if (albumKey.contains('breakdex') || albumKey.contains('break dex')) {
-      score += 30;
+    if (NativeVideoAlbum.breakdexAlbumPattern.hasMatch(albumKey)) {
+      return 30;
     }
-    if (albumKey.contains('breaking') || albumKey.contains('breakin')) {
-      score += 20;
-    }
-    if (albumKey.contains('bboy') ||
-        albumKey.contains('b boy') ||
-        albumKey.contains('bgirl') ||
-        albumKey.contains('b girl')) {
-      score += 20;
-    }
-    return score;
+    return 0;
   }
 
   ({String name, String category}) _draftRecoveredMove(

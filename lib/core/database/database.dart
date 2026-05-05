@@ -24,6 +24,9 @@ import 'tables/lab_entries.dart';
 import 'tables/achievements.dart';
 import 'tables/aura_links.dart';
 import 'tables/aura_presets.dart';
+import 'tables/sets.dart';
+import 'tables/set_items.dart';
+import 'tables/provenance_events.dart';
 import 'daos/moves_dao.dart';
 import 'daos/combos_dao.dart';
 import 'daos/reviews_dao.dart';
@@ -64,6 +67,9 @@ part 'database.g.dart';
     Achievements,
     AuraLinks,
     AuraPresets,
+    Sets,
+    SetItems,
+    ProvenanceEvents,
   ],
   daos: [
     MovesDao,
@@ -89,7 +95,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.forTesting(super.e);
 
   @override
-  int get schemaVersion => 14;
+  int get schemaVersion => 15;
 
   Future<void> _installIntegrityTriggers() async {
     await customStatement('''
@@ -208,7 +214,67 @@ class AppDatabase extends _$AppDatabase {
         END;
       END;
     ''');
-  }
+
+    await customStatement('''
+      CREATE TRIGGER IF NOT EXISTS sets_name_unique_insert
+      BEFORE INSERT ON sets
+      FOR EACH ROW
+      BEGIN
+        SELECT CASE
+          WHEN EXISTS (
+            SELECT 1
+            FROM sets
+            WHERE lower(trim(name)) = lower(trim(NEW.name))
+          ) OR EXISTS (
+            SELECT 1
+            FROM moves
+            WHERE lower(trim(name)) = lower(trim(NEW.name))
+          ) OR EXISTS (
+            SELECT 1
+            FROM combos
+            WHERE lower(trim(name)) = lower(trim(NEW.name))
+          )
+          THEN RAISE(ABORT, 'duplicate_card_name')
+        END;
+      END;
+    ''');
+
+        await customStatement('''
+          CREATE TRIGGER IF NOT EXISTS sets_name_unique_update
+          BEFORE UPDATE OF name ON sets
+          FOR EACH ROW
+          BEGIN
+            SELECT CASE
+              WHEN EXISTS (
+                SELECT 1
+                FROM sets
+                WHERE id != OLD.id
+                  AND lower(trim(name)) = lower(trim(NEW.name))
+              ) OR EXISTS (
+                SELECT 1
+                FROM moves
+                WHERE lower(trim(name)) = lower(trim(NEW.name))
+              ) OR EXISTS (
+                SELECT 1
+                FROM combos
+                WHERE lower(trim(name)) = lower(trim(NEW.name))
+              )
+              THEN RAISE(ABORT, 'duplicate_card_name')
+            END;
+          END;
+        ''');
+
+        // v15 indexes — idempotent on both fresh create and upgrade
+        await customStatement('''
+          CREATE UNIQUE INDEX IF NOT EXISTS idx_set_items_unique
+          ON set_items(set_id, item_type, item_id)
+        ''');
+
+        await customStatement('''
+          CREATE INDEX IF NOT EXISTS idx_provenance_entity
+          ON provenance_events(entity_type, entity_id, timestamp)
+        ''');
+      }
 
   Future<void> _backfillReviewSnapshots() async {
     await customStatement('''
@@ -435,6 +501,13 @@ class AppDatabase extends _$AppDatabase {
       if (from < 14) {
         await m.addColumn(moves, moves.archivedAt);
         await m.addColumn(moves, moves.archiveReason);
+      }
+
+      if (from < 15) {
+        // --- Schema v15: Sets, provenance events, cloud abstraction foundation ---
+        await m.createTable(sets);
+        await m.createTable(setItems);
+        await m.createTable(provenanceEvents);
       }
 
       await _backfillReviewSnapshots();

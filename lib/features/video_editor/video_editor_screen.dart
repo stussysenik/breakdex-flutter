@@ -16,6 +16,7 @@ import '../../core/navigation/app_route_observer.dart';
 import '../../core/services/media_playback_coordinator.dart';
 import '../../core/services/native_video_export.dart';
 import '../../core/services/video_service.dart';
+import '../../core/utils/pid_controller.dart';
 import 'video_edit_geometry.dart';
 import 'trim_timeline_math.dart';
 
@@ -51,6 +52,8 @@ class _VideoEditorScreenState extends State<VideoEditorScreen>
   final VideoService _videoService = VideoService();
   final TransformationController _transformController =
       TransformationController();
+  final PidController _pidController = PidController();
+  final Stopwatch _scaleStopwatch = Stopwatch();
   bool _exporting = false;
   ExportProgress? _exportProgress;
   StreamSubscription<ExportProgress>? _progressSub;
@@ -98,6 +101,7 @@ class _VideoEditorScreenState extends State<VideoEditorScreen>
       playbackId: _playbackId,
       onPause: _pausePlayback,
     );
+    _scaleStopwatch.start();
     unawaited(_loadVideo());
   }
 
@@ -1136,9 +1140,27 @@ class _VideoEditorScreenState extends State<VideoEditorScreen>
                           maxScale: viewport.maxScale,
                           boundaryMargin: EdgeInsets.zero,
                           constrained: false,
-                          onInteractionUpdate: (_) =>
-                              _applyClampedPreviewTransform(viewport),
+                          onInteractionUpdate: (details) {
+                            final dt =
+                                _scaleStopwatch.elapsedMilliseconds / 1000.0;
+                            _scaleStopwatch.reset();
+                            final currentScale = _transformController
+                                .value
+                                .getMaxScaleOnAxis();
+                            final filtered =
+                                _pidController.update(
+                                  details.scale,
+                                  currentScale,
+                                  dt > 0 ? dt : 0.016,
+                                );
+                            final corrected =
+                                currentScale + (filtered - currentScale) * 0.5;
+                            _transformController.value =
+                                Matrix4.identity()..scale(corrected);
+                            _applyClampedPreviewTransform(viewport);
+                          },
                           onInteractionEnd: (_) {
+                            _pidController.reset();
                             _applyClampedPreviewTransform(viewport);
                             setState(() {});
                           },
@@ -1888,8 +1910,8 @@ class _TrimTimelineState extends State<_TrimTimeline> {
                 thumbnail:
                     _startHandleThumb ?? _closestThumbnail(displayedTrimStart),
                 color: colorScheme.primary,
-                borderRadius: const BorderRadius.horizontal(
-                  left: Radius.circular(6),
+                borderRadius: BorderRadius.horizontal(
+                  left: Radius.circular(AppRadius.xs),
                 ),
               ),
             ),
@@ -1909,9 +1931,9 @@ class _TrimTimelineState extends State<_TrimTimeline> {
                 decoration: BoxDecoration(
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.4),
-                      blurRadius: 6,
-                      offset: const Offset(0, 2),
+                      color: Colors.black.withValues(alpha: 0.25),
+                      blurRadius: 4,
+                      offset: const Offset(0, 1),
                     ),
                   ],
                 ),
@@ -1920,8 +1942,8 @@ class _TrimTimelineState extends State<_TrimTimeline> {
                       _startHandleThumb ??
                       _closestThumbnail(displayedTrimStart),
                   color: colorScheme.primary,
-                  borderRadius: const BorderRadius.horizontal(
-                    left: Radius.circular(6),
+                  borderRadius: BorderRadius.horizontal(
+                    left: Radius.circular(AppRadius.xs),
                   ),
                 ),
               ),
@@ -1948,8 +1970,8 @@ class _TrimTimelineState extends State<_TrimTimeline> {
                 thumbnail:
                     _endHandleThumb ?? _closestThumbnail(displayedTrimEnd),
                 color: colorScheme.primary,
-                borderRadius: const BorderRadius.horizontal(
-                  right: Radius.circular(6),
+                borderRadius: BorderRadius.horizontal(
+                  right: Radius.circular(AppRadius.xs),
                 ),
               ),
             ),
@@ -1969,9 +1991,9 @@ class _TrimTimelineState extends State<_TrimTimeline> {
                 decoration: BoxDecoration(
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.4),
-                      blurRadius: 6,
-                      offset: const Offset(0, 2),
+                      color: Colors.black.withValues(alpha: 0.25),
+                      blurRadius: 4,
+                      offset: const Offset(0, 1),
                     ),
                   ],
                 ),
@@ -1979,8 +2001,8 @@ class _TrimTimelineState extends State<_TrimTimeline> {
                   thumbnail:
                       _endHandleThumb ?? _closestThumbnail(displayedTrimEnd),
                   color: colorScheme.primary,
-                  borderRadius: const BorderRadius.horizontal(
-                    right: Radius.circular(6),
+                  borderRadius: BorderRadius.horizontal(
+                    right: Radius.circular(AppRadius.xs),
                   ),
                 ),
               ),
@@ -2175,8 +2197,9 @@ class _TrimTimelineState extends State<_TrimTimeline> {
                           child: Container(
                             decoration: const BoxDecoration(
                               color: Colors.black54,
+                            ).copyWith(
                               borderRadius: BorderRadius.horizontal(
-                                left: Radius.circular(6),
+                                left: Radius.circular(AppRadius.xs),
                               ),
                             ),
                           ),
@@ -2191,8 +2214,9 @@ class _TrimTimelineState extends State<_TrimTimeline> {
                           child: Container(
                             decoration: const BoxDecoration(
                               color: Colors.black54,
+                            ).copyWith(
                               borderRadius: BorderRadius.horizontal(
-                                right: Radius.circular(6),
+                                right: Radius.circular(AppRadius.xs),
                               ),
                             ),
                           ),
@@ -2324,7 +2348,7 @@ class _TrimTimelineState extends State<_TrimTimeline> {
                 clipBehavior: Clip.antiAlias,
                 decoration: BoxDecoration(
                   color: AppColors.darkFill,
-                  borderRadius: BorderRadius.circular(6),
+                  borderRadius: BorderRadius.circular(AppRadius.xs),
                   border: Border.all(color: colorScheme.primary, width: 2),
                 ),
                 child: Stack(

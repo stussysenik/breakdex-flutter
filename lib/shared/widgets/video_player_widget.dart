@@ -13,6 +13,7 @@ import '../../core/providers.dart';
 import '../../core/services/media_playback_coordinator.dart';
 import '../../core/services/video_path_resolver.dart';
 import '../../core/services/video_service.dart';
+import '../../core/utils/loading_state_machine.dart';
 
 /// Skip amount for forward/backward navigation.
 /// 5 seconds suits short breakdancing clips (typically 5–30s).
@@ -1048,16 +1049,27 @@ class RobustVideoPlayer extends ConsumerStatefulWidget {
   ConsumerState<RobustVideoPlayer> createState() => _RobustVideoPlayerState();
 }
 
-enum _PlayerState { checking, retrying, ready, missing, error }
-
 class _RobustVideoPlayerState extends ConsumerState<RobustVideoPlayer> {
-  _PlayerState _state = _PlayerState.checking;
+  final _loadingController = LoadingStateController<void>();
+  LoadingStateMachine<void> _loadingState = const Idle();
+  StreamSubscription<LoadingStateMachine<void>>? _stateSub;
   final _videoService = VideoService();
+  String? _resolvedPath;
 
   @override
   void initState() {
     super.initState();
+    _stateSub = _loadingController.stream.listen((state) {
+      if (mounted) setState(() => _loadingState = state);
+    });
     _checkFile();
+  }
+
+  @override
+  void dispose() {
+    _stateSub?.cancel();
+    _loadingController.dispose();
+    super.dispose();
   }
 
   @override
@@ -1068,42 +1080,39 @@ class _RobustVideoPlayerState extends ConsumerState<RobustVideoPlayer> {
     }
   }
 
-  /// Check or retry video file availability. [isRetry] controls the loading state label.
-  ///
-  /// Self-healing: when the file at [widget.videoPath] is missing, falls back
-  /// to [VideoPathResolver.resolve] which scans known directories for a file
-  /// with the same basename. This silently recovers from stale absolute paths
-  /// left over from iOS container UUID changes.
-  String? _resolvedPath;
-
   Future<void> _checkFile({bool isRetry = false}) async {
-    setState(
-      () => _state = isRetry ? _PlayerState.retrying : _PlayerState.checking,
+    _loadingController.send(
+      isRetry ? LoadingEvent.retry : LoadingEvent.start,
     );
     _resolvedPath = null;
+
     final status = await _videoService.checkVideoFileWithRetry(
       widget.videoPath,
     );
     if (!mounted) return;
 
     if (status == VideoFileStatus.missing) {
-      // Self-healing fallback: scan disk for the file at an alternate location
       final found = await VideoPathResolver.resolve(widget.videoPath);
       if (!mounted) return;
       if (found != null) {
         _resolvedPath = found;
-        setState(() => _state = _PlayerState.ready);
+        _loadingController.send(LoadingEvent.complete(null));
         return;
       }
     }
 
-    setState(() {
-      _state = switch (status) {
-        VideoFileStatus.ready => _PlayerState.ready,
-        VideoFileStatus.missing => _PlayerState.missing,
-        VideoFileStatus.error => _PlayerState.error,
-      };
-    });
+    switch (status) {
+      case VideoFileStatus.ready:
+        _loadingController.send(LoadingEvent.complete(null));
+      case VideoFileStatus.missing:
+        _loadingController.send(
+          LoadingEvent.fail('Video not found', retryable: false),
+        );
+      case VideoFileStatus.error:
+        _loadingController.send(
+          LoadingEvent.fail('Something went wrong', retryable: true),
+        );
+    }
   }
 
   @override
@@ -1111,15 +1120,11 @@ class _RobustVideoPlayerState extends ConsumerState<RobustVideoPlayer> {
     final colorScheme = Theme.of(context).colorScheme;
     final silentPracticeMode = ref.watch(silentPracticePlaybackProvider);
 
-    return switch (_state) {
-      _PlayerState.checking => _buildShimmer(),
-      _PlayerState.retrying => _buildStatusCard(
-        icon: Icons.refresh,
-        message: 'Retrying...',
-        showSpinner: true,
-        colorScheme: colorScheme,
-      ),
-      _PlayerState.ready => VideoPlayerWidget(
+    return _loadingState.map(
+      idle: (_) => const SizedBox.shrink(),
+      loading: (_) => _buildShimmer(),
+      downloading: (_) => _buildShimmer(),
+      ready: (_) => VideoPlayerWidget(
         videoPath: _resolvedPath ?? widget.videoPath,
         height: widget.height,
         borderRadius: widget.borderRadius,
@@ -1133,22 +1138,37 @@ class _RobustVideoPlayerState extends ConsumerState<RobustVideoPlayer> {
         playbackSpeed: widget.playbackSpeed,
         onPlayStateChanged: widget.onPlayStateChanged,
       ).animate().fadeIn(duration: 300.ms),
-      _PlayerState.missing => _buildStatusCard(
+      timeout: (t) => _buildStatusCard(
         icon: Icons.cloud_off,
-        message: 'Video not found',
-        actionLabel: widget.onRepick != null ? 'Re-pick Video' : null,
-        onAction: widget.onRepick,
-        colorScheme: colorScheme,
-        showGhost: true,
-      ),
-      _PlayerState.error => _buildStatusCard(
-        icon: Icons.error_outline,
-        message: 'Something went wrong',
+        message: 'Connection timed out',
         actionLabel: 'Tap to retry',
         onAction: () => _checkFile(isRetry: true),
         colorScheme: colorScheme,
       ),
-    };
+      error: (e) => e.message == 'Video not found'
+          ? _buildStatusCard(
+              icon: Icons.cloud_off,
+              message: 'Video not found',
+              actionLabel: widget.onRepick != null ? 'Re-pick Video' : null,
+              onAction: widget.onRepick,
+              colorScheme: colorScheme,
+              showGhost: true,
+            )
+          : _buildStatusCard(
+              icon: Icons.error_outline,
+              message: e.message,
+              actionLabel: e.retryable ? 'Tap to retry' : null,
+              onAction:
+                  e.retryable ? () => _checkFile(isRetry: true) : null,
+              colorScheme: colorScheme,
+            ),
+      retrying: (_) => _buildStatusCard(
+        icon: Icons.refresh,
+        message: 'Retrying...',
+        showSpinner: true,
+        colorScheme: colorScheme,
+      ),
+    );
   }
 
   Widget _buildShimmer() {
@@ -1182,7 +1202,6 @@ class _RobustVideoPlayerState extends ConsumerState<RobustVideoPlayer> {
         child: Stack(
           fit: StackFit.expand,
           children: [
-            // Ghost thumbnail background at 0.15 opacity
             if (showGhost && widget.ghostThumbnailPath != null)
               Opacity(
                 opacity: 0.15,

@@ -576,7 +576,17 @@ final class VideoAlbumPlugin: NSObject, FlutterPlugin, FlutterStreamHandler, PHP
             return
         }
 
-        let albums = fetchHistoricalManagedAlbums(matching: regexMatchers)
+        // Combine NSPredicate fast-path albums + regex-based full-enumeration albums
+        let predicateAlbums = fetchBreakdexAlbums()
+        let regexAlbums = fetchHistoricalManagedAlbums(matching: regexMatchers)
+        var seenAlbumIds = Set<String>()
+        var albums: [PHAssetCollection] = []
+        for album in predicateAlbums + regexAlbums {
+            if seenAlbumIds.insert(album.localIdentifier).inserted {
+                albums.append(album)
+            }
+        }
+
         var seenAssetIds = Set<String>()
         var assets: [[String: String]] = []
         var videoAssetCount = 0
@@ -979,18 +989,50 @@ final class VideoAlbumPlugin: NSObject, FlutterPlugin, FlutterStreamHandler, PHP
         ).firstObject
     }
 
+    private static let breakdexAlbumPatterns: [String] = [
+        "breakdex", "break dex", "break dex", "breaking",
+        "breakin", "bboy", "bgirl", "breakdance", "break dance",
+    ]
+
     private func fetchBreakdexAlbums() -> [PHAssetCollection] {
-        let options = PHFetchOptions()
-        options.predicate = NSPredicate(format: "title BEGINSWITH %@", "Breakdex ")
-        let fetchResult = PHAssetCollection.fetchAssetCollections(
+        var seenIds = Set<String>()
+        var collections: [PHAssetCollection] = []
+
+        // Fast path: NSPredicate case-insensitive contains search
+        for pattern in Self.breakdexAlbumPatterns {
+            let options = PHFetchOptions()
+            options.predicate = NSPredicate(format: "title CONTAINS[c] %@", pattern)
+            let result = PHAssetCollection.fetchAssetCollections(
+                with: .album,
+                subtype: .any,
+                options: options
+            )
+            result.enumerateObjects { collection, _, _ in
+                if seenIds.insert(collection.localIdentifier).inserted {
+                    collections.append(collection)
+                }
+            }
+        }
+
+        // Full-enumeration fallback: scan all user albums
+        let allAlbums = PHAssetCollection.fetchAssetCollections(
             with: .album,
             subtype: .any,
-            options: options
+            options: nil
         )
-        var collections: [PHAssetCollection] = []
-        fetchResult.enumerateObjects { collection, _, _ in
-            collections.append(collection)
+        allAlbums.enumerateObjects { collection, _, _ in
+            guard seenIds.insert(collection.localIdentifier).inserted else { return }
+            guard let title = collection.localizedTitle?.trimmingCharacters(
+                in: .whitespacesAndNewlines
+            ), !title.isEmpty else { return }
+            let matches = Self.breakdexAlbumPatterns.contains { pattern in
+                title.range(of: pattern, options: [.caseInsensitive, .diacriticInsensitive]) != nil
+            }
+            if matches {
+                collections.append(collection)
+            }
         }
+
         return collections
     }
 

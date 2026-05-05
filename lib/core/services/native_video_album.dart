@@ -326,11 +326,14 @@ class RecoverableManagedAssetDiscoveryResult {
 class NativeVideoAlbum extends NativeBridge {
   NativeVideoAlbum() : super('video_album');
 
+  static final RegExp breakdexAlbumPattern = RegExp(
+    r'(break[\s\-_]*dex|break[\s\-_]*ing|break[\s\-_]*in|b[\s\-_]*boy|b[\s\-_]*girl|break[\s\-_]*dance)',
+    caseSensitive: false,
+  );
+
   static const List<String> historicalAlbumPatterns = <String>[
-    r'\bbreak(?:[\s\-_]*dex|ing|in)\b',
-    r'\bb[\s\-_]*boy(?:ing)?\b',
-    r'\bb[\s\-_]*girl(?:ing)?\b',
-    r'\bbreak[\s\-_]*dance(?:ing)?\b',
+    r'break[\s\-_]*(dex|ing|in|dance)',
+    r'b[\s\-_]*(boy|girl)',
   ];
 
   Stream<Map<String, dynamic>> get libraryChangeStream => eventStream;

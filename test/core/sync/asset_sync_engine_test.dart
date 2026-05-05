@@ -1,0 +1,365 @@
+import 'dart:io';
+
+import 'package:breakdex/core/database/database.dart';
+import 'package:breakdex/core/services/connectivity_service.dart';
+import 'package:breakdex/core/services/video_path_resolver.dart';
+import 'package:breakdex/core/sync/asset_hash_service.dart';
+import 'package:breakdex/core/sync/asset_sync_engine.dart';
+import 'package:breakdex/core/sync/cloud_provider.dart';
+import 'package:breakdex/core/sync/network_policy.dart';
+import 'package:breakdex/core/sync/safety_guard.dart';
+import 'package:drift/drift.dart' hide isNull, isNotNull;
+import 'package:flutter_test/flutter_test.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+
+import '../../helpers/test_database.dart';
+
+class _TrackedFakeProvider implements CloudProvider {
+  final List<String> uploadedLocalPaths = [];
+  final List<String> downloadedRemotePaths = [];
+  final List<String> deletedRemotePaths = [];
+  final List<String> verifiedRemotePaths = [];
+  bool shouldThrowOnUpload = false;
+  bool shouldThrowOnDownload = false;
+
+  final String _providerType;
+  _TrackedFakeProvider({String providerType = 'icloud'})
+    : _providerType = providerType;
+
+  @override
+  String get providerType => _providerType;
+
+  @override
+  String get displayName => 'Fake $_providerType';
+
+  @override
+  Set<CloudProviderCapability> get capabilities => {
+    CloudProviderCapability.serverSideHash,
+  };
+
+  @override
+  Future<bool> authenticate() async => true;
+
+  @override
+  Future<void> deauthenticate() async {}
+
+  @override
+  Future<bool> get isAuthenticated async => true;
+
+  @override
+  Future<RemoteAsset> upload({
+    required String localPath,
+    required String remotePath,
+    TransferProgress? onProgress,
+    CancellationToken? cancel,
+  }) async {
+    if (shouldThrowOnUpload) throw Exception('Upload failed');
+    uploadedLocalPaths.add(localPath);
+    return RemoteAsset(remotePath: remotePath, sizeBytes: 1024);
+  }
+
+  @override
+  Future<void> download({
+    required String remotePath,
+    required String localPath,
+    TransferProgress? onProgress,
+    CancellationToken? cancel,
+  }) async {
+    if (shouldThrowOnDownload) throw Exception('Download failed');
+    downloadedRemotePaths.add(remotePath);
+  }
+
+  @override
+  Future<bool> verify({
+    required String remotePath,
+    String? expectedHash,
+    int? expectedSize,
+  }) async {
+    verifiedRemotePaths.add(remotePath);
+    return true;
+  }
+
+  @override
+  Future<List<RemoteAsset>> list({required String directory}) async => [];
+
+  @override
+  Future<void> delete({required String remotePath}) async {
+    deletedRemotePaths.add(remotePath);
+  }
+
+  @override
+  Future<({int totalBytes, int usedBytes})?> quota() async => null;
+}
+
+Future<void> _seedManifest(
+  AppDatabase db, {
+  required String hash,
+  String? localPath,
+  DateTime? deletedAt,
+}) async {
+  await db.assetManifestDao.upsert(AssetManifestCompanion(
+    contentHash: Value(hash),
+    fileSizeBytes: const Value(1024),
+    sourceType: const Value('camera'),
+    importedAt: Value(DateTime.now()),
+    localPath: Value(localPath),
+    deletedAt: Value(deletedAt),
+  ));
+}
+
+Future<void> _seedCopy(
+  AppDatabase db, {
+  required String id,
+  required String hash,
+  required String provider,
+  String? remotePath,
+  String status = 'verified',
+}) async {
+  await db.assetCopiesDao.insertCopy(AssetCopiesCompanion(
+    id: Value(id),
+    contentHash: Value(hash),
+    provider: Value(provider),
+    remotePath: Value(remotePath),
+    status: Value(status),
+    createdAt: Value(DateTime.now()),
+    updatedAt: Value(DateTime.now()),
+  ));
+}
+
+Future<void> _seedOperation(
+  AppDatabase db, {
+  required String id,
+  required String hash,
+  required String operationType,
+  String providerId = 'icloud',
+  String status = 'queued',
+  int priority = 1,
+}) async {
+  await db.syncOperationsDao.insertOperation(
+    SyncOperationsCompanion(
+      id: Value(id),
+      contentHash: Value(hash),
+      providerId: Value(providerId),
+      operationType: Value(operationType),
+      status: Value(status),
+      priority: Value(priority),
+      createdAt: Value(DateTime.now()),
+    ),
+  );
+}
+
+void main() {
+  TestWidgetsFlutterBinding.ensureInitialized();
+
+  late AppDatabase db;
+  late Directory tempDir;
+  late AssetSyncEngine engine;
+  late _TrackedFakeProvider fakeProvider;
+
+  setUp(() async {
+    SharedPreferences.setMockInitialValues({});
+    tempDir = Directory.systemTemp.createTempSync('breakdex_sync_test_');
+    VideoPathResolver.docsPathOverride = tempDir.path;
+
+    db = createTestDatabase();
+    final prefs = await SharedPreferences.getInstance();
+
+    fakeProvider = _TrackedFakeProvider();
+
+    engine = AssetSyncEngine(
+      manifestDao: db.assetManifestDao,
+      copiesDao: db.assetCopiesDao,
+      opsDao: db.syncOperationsDao,
+      hashService: AssetHashService(),
+      networkPolicy: NetworkPolicy(prefs),
+      safetyGuard: SafetyGuard(db.assetManifestDao, db.assetCopiesDao),
+      providers: [fakeProvider],
+    );
+  });
+
+  tearDown(() async {
+    engine.dispose();
+    await db.close();
+    try {
+      tempDir.deleteSync(recursive: true);
+    } catch (_) {}
+  });
+
+  group('operation routing', () {
+    test('routes upload op to provider', () async {
+      // Create a real temp file the engine can read
+      final testFile = File('${tempDir.path}/test_upload.mp4');
+      await testFile.writeAsBytes(List.filled(64, 0));
+      final relativePath = 'test_upload.mp4';
+
+      await _seedManifest(db, hash: 'abc123', localPath: relativePath);
+      await _seedOperation(
+        db,
+        id: 'op-1',
+        hash: 'abc123',
+        operationType: 'upload',
+      );
+
+      await engine.runSyncCycle(ConnectionType.wifi);
+
+      expect(fakeProvider.uploadedLocalPaths.isNotEmpty, isTrue);
+    });
+
+    test('ignores operation when provider is missing', () async {
+      await _seedOperation(
+        db,
+        id: 'op-2',
+        hash: 'abc999',
+        operationType: 'upload',
+        providerId: 'gdrive',
+      );
+
+      await engine.runSyncCycle(ConnectionType.wifi);
+
+      expect(fakeProvider.uploadedLocalPaths, isEmpty);
+    });
+
+    test('routes download op to provider', () async {
+      await _seedManifest(db, hash: 'def456', localPath: 'video.mp4');
+      await _seedCopy(
+        db,
+        id: 'copy-3',
+        hash: 'def456',
+        provider: 'icloud',
+        remotePath: '/cloud/video.mp4',
+      );
+      await _seedOperation(
+        db,
+        id: 'op-3',
+        hash: 'def456',
+        operationType: 'download',
+      );
+
+      await engine.runSyncCycle(ConnectionType.wifi);
+
+      if (fakeProvider.downloadedRemotePaths.isEmpty) {
+        final ops = await db.syncOperationsDao.getRetryable();
+        final failedOp = ops.where((o) => o.id == 'op-3').firstOrNull;
+        if (failedOp != null) {
+          fail('Download op failed: ${failedOp.errorMessage}');
+        }
+      }
+      expect(fakeProvider.downloadedRemotePaths, contains('/cloud/video.mp4'));
+    });
+
+    test('routes verify op to provider', () async {
+      await _seedManifest(db, hash: 'ghi789');
+      await _seedCopy(
+        db,
+        id: 'copy-4',
+        hash: 'ghi789',
+        provider: 'icloud',
+        remotePath: '/cloud/asset.bin',
+      );
+      await _seedOperation(
+        db,
+        id: 'op-4',
+        hash: 'ghi789',
+        operationType: 'verify',
+      );
+
+      await engine.runSyncCycle(ConnectionType.wifi);
+
+      expect(fakeProvider.verifiedRemotePaths, contains('/cloud/asset.bin'));
+    });
+
+    test('routes delete_remote op to provider', () async {
+      await _seedManifest(
+        db,
+        hash: 'jkl012',
+        deletedAt: DateTime.now(),
+      );
+      await _seedCopy(
+        db,
+        id: 'copy-5',
+        hash: 'jkl012',
+        provider: 'icloud',
+        remotePath: '/cloud/stale.mp4',
+      );
+      await _seedOperation(
+        db,
+        id: 'op-5',
+        hash: 'jkl012',
+        operationType: 'delete_remote',
+      );
+
+      await engine.runSyncCycle(ConnectionType.wifi);
+
+      expect(fakeProvider.deletedRemotePaths, contains('/cloud/stale.mp4'));
+    });
+
+    test('marks operation failed when provider throws', () async {
+      fakeProvider.shouldThrowOnUpload = true;
+      final testFile = File('${tempDir.path}/test_fail.mp4');
+      await testFile.writeAsBytes(List.filled(64, 0));
+
+      await _seedManifest(db, hash: 'fail01', localPath: 'test_fail.mp4');
+      await _seedOperation(
+        db,
+        id: 'op-fail',
+        hash: 'fail01',
+        operationType: 'upload',
+      );
+
+      await engine.runSyncCycle(ConnectionType.wifi);
+
+      final ops = await db.syncOperationsDao.getQueued();
+      expect(ops.any((o) => o.id == 'op-fail'), isFalse);
+    });
+  });
+
+  group('provider registry', () {
+    test('routes to correct provider by providerType', () async {
+      final testFile = File('${tempDir.path}/test_multi.mp4');
+      await testFile.writeAsBytes(List.filled(64, 0));
+
+      final s3Fake = _TrackedFakeProvider(providerType: 's3');
+      final engine2 = AssetSyncEngine(
+        manifestDao: db.assetManifestDao,
+        copiesDao: db.assetCopiesDao,
+        opsDao: db.syncOperationsDao,
+        hashService: AssetHashService(),
+        networkPolicy: NetworkPolicy(await SharedPreferences.getInstance()),
+        safetyGuard: SafetyGuard(db.assetManifestDao, db.assetCopiesDao),
+        providers: [fakeProvider, s3Fake],
+      );
+      addTearDown(() => engine2.dispose());
+
+      await _seedManifest(db, hash: 'multi1', localPath: 'test_multi.mp4');
+      await _seedOperation(
+        db,
+        id: 'op-icloud',
+        hash: 'multi1',
+        operationType: 'upload',
+        providerId: 'icloud',
+      );
+      await _seedOperation(
+        db,
+        id: 'op-s3',
+        hash: 'multi1',
+        operationType: 'upload',
+        providerId: 's3',
+      );
+
+      await engine2.runSyncCycle(ConnectionType.wifi);
+
+      expect(fakeProvider.uploadedLocalPaths.isNotEmpty, isTrue);
+      expect(s3Fake.uploadedLocalPaths.isNotEmpty, isTrue);
+    });
+  });
+
+  group('state management', () {
+    test('pause and resume', () async {
+      engine.pause();
+      expect(engine.state, SyncEngineState.paused);
+
+      engine.resume(ConnectionType.wifi);
+      expect(engine.state, SyncEngineState.idle);
+    });
+  });
+}

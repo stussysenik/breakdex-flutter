@@ -202,7 +202,6 @@ class _GridCardShell extends StatelessWidget {
         clipBehavior: Clip.antiAlias,
         decoration: AppSurfaces.panel(
           context,
-          raised: true,
           radius: AppRadius.md,
         ),
         child: Stack(

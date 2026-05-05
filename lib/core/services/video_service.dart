@@ -11,6 +11,7 @@ import 'package:uuid/uuid.dart';
 import 'package:video_player/video_player.dart';
 import 'package:video_thumbnail/video_thumbnail.dart';
 
+import '../utils/loading_state_machine.dart';
 import 'native_video_preview.dart';
 import 'video_path_resolver.dart';
 
@@ -217,6 +218,48 @@ class VideoService {
       status = await checkVideoFile(path);
     }
     return status;
+  }
+
+  /// Stateful wrapper around [checkVideoFileWithRetry] that drives a
+  /// [LoadingStateController] through its lifecycle: start → resolve →
+  /// complete/fail. Callers can listen to [LoadingStateController.stream]
+  /// for reactive UI updates without managing state transitions manually.
+  LoadingStateController<void> checkVideoFileWithState(
+    String path, {
+    int maxRetries = 2,
+  }) {
+    final controller = LoadingStateController<void>(
+      maxAttempts: maxRetries,
+    );
+    unawaited(_runFileCheck(path, controller, maxRetries));
+    return controller;
+  }
+
+  Future<void> _runFileCheck(
+    String path,
+    LoadingStateController<void> controller,
+    int maxRetries,
+  ) async {
+    controller.send(LoadingEvent.start);
+    var status = await checkVideoFile(path);
+    for (int i = 0;
+        i < maxRetries && status == VideoFileStatus.error;
+        i++) {
+      await Future.delayed(Duration(seconds: 1 << i));
+      status = await checkVideoFile(path);
+    }
+    switch (status) {
+      case VideoFileStatus.ready:
+        controller.send(LoadingEvent.complete(null));
+      case VideoFileStatus.missing:
+        controller.send(
+          LoadingEvent.fail('Video not found', retryable: false),
+        );
+      case VideoFileStatus.error:
+        controller.send(
+          LoadingEvent.fail('Unable to access video file', retryable: true),
+        );
+    }
   }
 
   /// Validate that a saved video can actually be opened by the player.

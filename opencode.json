@@ -1,0 +1,5 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+  "model": "ollama/qwen3.6:35b",
+  "instructions": [".opencode/AGENTS.md"]
+}

@@ -12,6 +12,8 @@ import 'database/daos/sync_dao.dart';
 import 'database/daos/fsrs_cards_dao.dart';
 import 'database/daos/decks_dao.dart';
 import 'database/daos/sync_providers_dao.dart';
+import 'database/daos/sets_dao.dart';
+import 'database/daos/provenance_events_dao.dart';
 import 'data/repositories.dart';
 import 'data/drift_repositories.dart';
 import 'data/sync_aware_repositories.dart';
@@ -39,6 +41,7 @@ import 'services/reviewable_naming_service.dart';
 import 'services/native_video_album.dart';
 import 'services/provenance_journal_service.dart';
 import 'services/provenance_report_service.dart';
+import 'services/provenance_service.dart';
 import 'services/scene_3d.dart';
 import 'services/vision_ml.dart';
 import 'models/sync_progress.dart';
@@ -118,6 +121,10 @@ final decksDaoProvider = Provider<DecksDao>((ref) {
   return ref.watch(databaseProvider).decksDao;
 });
 
+final setsDaoProvider = Provider<SetsDao>((ref) {
+  return SetsDao(ref.watch(databaseProvider));
+});
+
 final syncProvidersDaoProvider = Provider<SyncProvidersDao>((ref) {
   return ref.watch(databaseProvider).syncProvidersDao;
 });
@@ -149,19 +156,29 @@ final isLoggedInProvider = Provider<bool>((ref) {
 final moveRepositoryProvider = Provider<MoveRepository>((ref) {
   final inner = DriftMoveRepository(ref.watch(movesDaoProvider));
   if (!ref.watch(isLoggedInProvider)) return inner;
-  return SyncAwareMoveRepository(inner, ref.watch(syncDaoProvider));
+  return SyncAwareMoveRepository(inner, ref.watch(syncDaoProvider),
+      provenance: ref.watch(provenanceServiceProvider));
 });
 
 final comboRepositoryProvider = Provider<ComboRepository>((ref) {
   final inner = DriftComboRepository(ref.watch(combosDaoProvider));
   if (!ref.watch(isLoggedInProvider)) return inner;
-  return SyncAwareComboRepository(inner, ref.watch(syncDaoProvider));
+  return SyncAwareComboRepository(inner, ref.watch(syncDaoProvider),
+      provenance: ref.watch(provenanceServiceProvider));
 });
 
 final reviewRepositoryProvider = Provider<ReviewRepository>((ref) {
   final inner = DriftReviewRepository(ref.watch(reviewsDaoProvider));
   if (!ref.watch(isLoggedInProvider)) return inner;
-  return SyncAwareReviewRepository(inner, ref.watch(syncDaoProvider));
+  return SyncAwareReviewRepository(inner, ref.watch(syncDaoProvider),
+      provenance: ref.watch(provenanceServiceProvider));
+});
+
+final setRepositoryProvider = Provider<SetRepository>((ref) {
+  final inner = DriftSetRepository(ref.watch(setsDaoProvider));
+  if (!ref.watch(isLoggedInProvider)) return inner;
+  return SyncAwareSetRepository(inner, ref.watch(syncDaoProvider),
+      provenance: ref.watch(provenanceServiceProvider));
 });
 
 final videoServiceProvider = Provider<VideoService>((ref) {
@@ -249,6 +266,14 @@ final provenanceJournalServiceProvider = Provider<ProvenanceJournalService>((
   ref,
 ) {
   return ProvenanceJournalService();
+});
+
+final provenanceDaoProvider = Provider<ProvenanceEventsDao>((ref) {
+  return ProvenanceEventsDao(ref.watch(databaseProvider));
+});
+
+final provenanceServiceProvider = Provider<ProvenanceService>((ref) {
+  return ProvenanceService(ref.watch(provenanceDaoProvider));
 });
 
 final provenanceReportServiceProvider = Provider<ProvenanceReportService>((
