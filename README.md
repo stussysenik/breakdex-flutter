@@ -14,11 +14,48 @@
 
 ---
 
-## About
+## Quick Start
 
-![Demo](demo.gif)
+### Prerequisites
 
-Breakdex is a Flutter app for deliberate breaking practice. It combines a move library, combo builder, flow graph, lab system, and FSRS spaced-repetition review into one pocket tool.
+| Platform | Requirements |
+|----------|-------------|
+| All | [Flutter SDK](https://docs.flutter.dev/get-started/install) >= 3.x |
+| iOS | Xcode 16+, CocoaPods, [FlowDeck CLI](https://flowdeck.studio) |
+| Android | Android SDK, device or emulator |
+
+### Install
+
+```bash
+flutter pub get
+```
+
+### Run
+
+```bash
+# Debug mode (hot reload)
+flutter run
+
+# Release mode on connected device
+flutter run --release -d <device-id>
+```
+
+### iOS Platform via FlowDeck
+
+FlowDeck manages the native `ios/Runner.xcworkspace` for simulator/device builds and visual verification:
+
+```bash
+flowdeck config get --json                  # Check saved workspace config
+flowdeck run                                # Build + run on iPhone 16 Pro simulator
+flowdeck run --log                          # Build + run with live log streaming
+flowdeck test                               # Run iOS native RunnerTests
+flowdeck build -C Release                   # Build for release configuration
+flowdeck simulator list --json              # List available simulators
+flowdeck ui simulator session start \
+  -S "iPhone 16 Pro" --json                 # Visual verification via screenshots + accessibility tree
+```
+
+---
 
 ## Features
 
@@ -46,6 +83,8 @@ Head-to-head practice mode for comparing moves and combos side by side.
 ### Settings
 Theme, font, categories, sync, and export control. Native iOS share sheet via UIKit bridge.
 
+---
+
 ## Screenshots
 
 <table>
@@ -71,10 +110,12 @@ Theme, font, categories, sync, and export control. Native iOS share sheet via UI
   </tr>
 </table>
 
+---
+
 ## Architecture
 
 | Layer | Technology |
-| --- | --- |
+|-------|-----------|
 | Framework | Flutter (Dart `^3.11.1`) |
 | Storage | Drift (SQLite) with versioned migrations |
 | State | Riverpod providers with stream-based reactivity |
@@ -85,39 +126,56 @@ Theme, font, categories, sync, and export control. Native iOS share sheet via UI
 | Design | Inter font, tokenized color/spacing/type surfaces |
 | Native | iOS UIKit bridges for media/share/video |
 
-## Getting Started
+---
+
+## Development
+
+### Static Analysis
 
 ```bash
-flutter pub get
-flutter run
+flutter analyze
 ```
 
-For release mode on a connected device:
+### Testing
 
 ```bash
-flutter run --release -d <device-id>
+flutter test                              # Unit & widget tests
+flutter test integration_test/            # Integration tests
+maestro test .maestro/                    # E2E tests
+maestro test --tags=stress .maestro/      # Stress tests
 ```
 
-## Testing
-
-End-to-end tests use [Maestro](https://maestro.mobile.dev):
+### Building for Release
 
 ```bash
-maestro test .maestro/
-maestro test --tags=stress .maestro/
+# Android APK
+flutter build apk --release
+
+# Android App Bundle (Play Store)
+flutter build appbundle --release
+
+# iOS (macOS + Xcode required)
+flutter build ios --release
+
+# Web
+flutter build web --release
 ```
 
-Unit and widget tests:
+### FlowDeck iOS Workflow
+
+For iOS platform development, FlowDeck wraps the native Runner workspace:
 
 ```bash
-flutter test
+flowdeck build                             # Validate iOS build compiles
+flowdeck test                              # Run iOS native tests
+flowdeck build -C Release                  # Release configuration build
+flowdeck run --log                         # Launch with live log streaming
+flowdeck logs <app-id>                     # Attach to running app logs
+flowdeck ui simulator session start \
+  -S "iPhone 16 Pro" --json                # Continuous screenshot + accessibility tree capture
 ```
 
-Integration tests:
-
-```bash
-flutter test integration_test/
-```
+---
 
 ## Release
 
@@ -130,6 +188,8 @@ npm run release:dry-run
 ```
 
 Commit prefixes: `feat:` (minor), `fix:` / `perf:` (patch), `BREAKING CHANGE:` (major).
+
+---
 
 ## License
 
