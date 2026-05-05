@@ -1,7 +1,7 @@
 <h1 align="center">Breakdex</h1>
 
 <p align="center">
-  <em>A pocket video database for dance moves, combos, transition mapping, and spaced-repetition review.</em>
+  <em>A pocket video database for dance moves — capture, connect, review, and track.</em>
 </p>
 
 <p align="center">
@@ -18,85 +18,33 @@
 
 ![Demo](demo.gif)
 
-Breakdex combines a move library, combo builder, flow graph, video tooling, deck-based practice, and review analytics into a single Flutter app. It uses FSRS spaced repetition to schedule reviews so you train the moves that are most at risk of decaying.
-
-## Purpose
-
-The product goal is simple: make long-term breaking practice more deliberate. Breakdex is meant to help you collect moves cleanly, understand how they connect, rehearse them on time, and read back the results without scattering your workflow across notes, chat, and camera roll.
-
-## Why It Exists
-
-Most practice systems are good at one slice of the problem and weak at the rest. A move list without scheduling does not protect memory. A flashcard system without video does not match the medium. A graph without analytics is just decoration. Breakdex exists to join those layers into one loop.
-
-## Release Snapshot
-
-<!-- release:meta:start -->
-- Release tag: `v1.3.0`
-- Release version: `1.3.0`
-- Pubspec version: `1.3.0+5`
-- Released: `2026-04-28`
-- Metadata refreshed: `2026-04-28`
-<!-- release:meta:end -->
-
-## Automatic Provenance
-
-<!-- release:provenance:start -->
-- Source branch: `main`
-- Source revision: `05c0ba3`
-- Source commit: `05c0ba33cd86d6f30a845e85bb8fef0e6b266359`
-- Source describe: `v1.2.0-11-g05c0ba3`
-- Generator: `scripts/update_release_metadata.cjs`
-- Inputs: `CHANGELOG.md`, `pubspec.yaml`, and local git metadata
-<!-- release:provenance:end -->
-
-### Latest Tagged Notes
-
-<!-- release:notes:start -->
-- add clojuredart and openspec changes
-- land athlete ux, sync tooling, and research workbench
-- make progress graph view immediate
-- polish progress graph accessibility
-- progress parent-first redesign
-<!-- release:notes:end -->
-
-Additional project records:
-
-- [PRD](docs/PRD.md)
-- [Vision](docs/VISION.MD)
-- [Roadmap](docs/ROADMAP.MD)
-- [Tech Stack](docs/TECHSTACK.MD)
-- [Progress](docs/PROGRESS.MD)
-- [Hyperdata Ledger](docs/hyperdata-ledger.md)
-- [Architecture Notes](docs/architecture.md)
-
-## How It Works
-
-1. Capture moves and combos with a video-first flow.
-2. Link moves through the Flow graph so compatibility becomes visible.
-3. Review through FSRS-driven sessions to keep retention moving forward.
-4. Use stats and graph context to decide what deserves the next sprint.
+Breakdex is a Flutter app for deliberate breaking practice. It combines a move library, combo builder, flow graph, lab system, and FSRS spaced-repetition review into one pocket tool.
 
 ## Features
 
 ### Arsenal
-
-Store atomic moves and combo sequences with category semantics, searchable in list and gallery views. Creation stays video-first: pick or record, trim, name, and save.
+Store moves and combos with category semantics. Video-first creation: pick or record, trim, name, save. Browse by list or gallery, search, filter by category.
 
 ### Review
-
-Run state-based and deck-based sessions with four response grades: Again, Hard, Good, and Easy. Ratings feed the FSRS scheduler so review timing stays grounded in actual recall.
+FSRS 2.0 spaced-repetition sessions with four response grades. Deck-based and state-based review modes. Ratings feed the scheduler so timing stays grounded in actual recall.
 
 ### Flow
+Move-to-move transition graph. Whole-network mapping, single-move focus mode, clustered category inspection, multi-select set creation, and a persistent inspector for connection counts.
 
-Map move-to-move transitions as a graph. The Flow tab supports whole-network mapping, single-move focus mode, clustered category inspection, multi-select set creation, and a persistent inspector for direct connection counts.
+### Lab
+Project-based training organization. Track sets, milestones, and daily practice with quicklog. An aura system surfaces momentum and consistency.
 
 ### Stats
+Card counts by learning state, response quality distribution, timeline history, and retention curves. Calendar and heat-map planning surfaces.
 
-Track card counts by learning state, response quality distribution, timeline history, and retention curves. The app is moving toward a broader analytics layer that can support calendar and heat-map style planning surfaces.
+### Sync
+Supabase-powered cloud backup with connectivity-aware sync. Asset manifest tracking, integrity verification, and offline-first operation.
+
+### Battle
+Head-to-head practice mode for comparing moves and combos side by side.
 
 ### Settings
-
-Control theme, font, custom colors, categories, sync, and export behavior from a single place. iOS export/share now uses a native UIKit bridge.
+Theme, font, categories, sync, and export control. Native iOS share sheet via UIKit bridge.
 
 ## Screenshots
 
@@ -123,6 +71,20 @@ Control theme, font, custom colors, categories, sync, and export behavior from a
   </tr>
 </table>
 
+## Architecture
+
+| Layer | Technology |
+| --- | --- |
+| Framework | Flutter (Dart `^3.11.1`) |
+| Storage | Drift (SQLite) with versioned migrations |
+| State | Riverpod providers with stream-based reactivity |
+| Scheduling | FSRS 2.0 spaced-repetition algorithm |
+| Routing | GoRouter with deep linking |
+| Auth | Google Sign-In via Supabase |
+| Sync | Supabase cloud with offline-aware sync engine |
+| Design | Inter font, tokenized color/spacing/type surfaces |
+| Native | iOS UIKit bridges for media/share/video |
+
 ## Getting Started
 
 ```bash
@@ -136,65 +98,30 @@ For release mode on a connected device:
 flutter run --release -d <device-id>
 ```
 
-## Architecture
-
-| Layer | Technology |
-| --- | --- |
-| Storage | Drift (SQLite) with versioned migrations |
-| State | Riverpod providers with stream-based reactivity |
-| Scheduling | FSRS 2.0 spaced-repetition algorithm |
-| Routing | GoRouter with deep linking |
-| Design | Inter font, tokenized color/spacing/type surfaces |
-| Native iOS | UIKit bridges for media/share workflows |
-
-## Architecture Direction
-
-Breakdex is shipping today as a local-first Flutter app, but the longer-term system direction is broader than the current client runtime.
-
-- Near-term client: `Flutter + Riverpod + Drift/SQLite + FSRS + thin Swift bridges`
-- State philosophy: reducer-style updates, data-oriented state, and selective FRP for streams rather than FRP everywhere
-- Collaboration philosophy: CRDTs only where concurrent shared editing actually requires them, not as the default for all product data
-- Future system spine: `Phoenix + Postgres + S3-compatible object storage`, with optional Gleam backend slices where strong typed BEAM modules help
-- Media vendor stance: keep metadata and asset ownership under Breakdex control; use Cloudinary only as an optional later delivery/transformation layer, not as the system of record
-- Web access requirement: the same user should be able to access their training data from a future web app through the same canonical backend
-
-The fuller contract for this direction lives in [docs/PRD.md](docs/PRD.md) and the matching OpenSpec change under `openspec/changes/add-beam-web-architecture-foundation/`.
-
 ## Testing
 
-End-to-end tests use [Maestro](https://maestro.mobile.dev) with tag-based groups:
+End-to-end tests use [Maestro](https://maestro.mobile.dev):
 
 ```bash
 maestro test .maestro/
 maestro test --tags=stress .maestro/
-maestro test .maestro/stress-flow-graph.yaml
 ```
 
-Run targeted Flutter tests with:
+Unit and widget tests:
 
 ```bash
 flutter test
 ```
 
-INP latency measurement:
+Integration tests:
 
 ```bash
-bash scripts/inp-measure.sh
+flutter test integration_test/
 ```
 
 ## Release
 
-This project uses [semantic-release](https://github.com/semantic-release/semantic-release) with git tags in the `v${version}` format. Conventional commits pushed to `main` drive the pipeline.
-
-Release automation now does all of the following in one path:
-
-1. Analyze commits since the previous tag.
-2. Generate release notes and update `CHANGELOG.md`.
-3. Update `pubspec.yaml` via `semantic-release-pub`.
-4. Refresh release metadata and provenance blocks in `README.md`, `VISION.MD`, `ROADMAP.MD`, `TECHSTACK.MD`, `PROGRESS.MD`, and `docs/hyperdata-ledger.md`.
-5. Commit the generated release artifacts and publish the GitHub release.
-
-Useful commands:
+Conventional commits pushed to `main` drive [semantic-release](https://github.com/semantic-release/semantic-release) with git tags in `v${version}` format.
 
 ```bash
 npm ci
@@ -202,7 +129,7 @@ npm run release:sync-docs
 npm run release:dry-run
 ```
 
-Commit prefixes: `feat:` for minor releases, `fix:` and `perf:` for patch releases, and `BREAKING CHANGE:` for major releases.
+Commit prefixes: `feat:` (minor), `fix:` / `perf:` (patch), `BREAKING CHANGE:` (major).
 
 ## License
 

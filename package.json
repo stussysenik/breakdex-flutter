@@ -12,15 +12,7 @@
   "scripts": {
     "prepare": "husky",
     "release:dry-run": "semantic-release --dry-run",
-    "release:sync-docs": "node scripts/update_release_metadata.cjs",
-    "science:python:sync": "cd scientific/python && uv sync",
-    "science:python:test": "cd scientific/python && uv run pytest",
-    "science:python:smoke": "cd scientific/python && uv run breakdex-science smoke-ai",
-    "science:python:validate": "cd scientific/python && uv run breakdex-science validate-export ../fixtures/sample_export.json",
-    "science:julia:instantiate": "julia --project=scientific/julia -e 'using Pkg; Pkg.instantiate()'",
-    "science:julia:validate": "julia --project=scientific/julia scientific/julia/scripts/validate_export.jl scientific/fixtures/sample_export.json",
-    "science:lisp:smoke": "sbcl --script scientific/lisp/smoke.lisp",
-    "science:doctor": "bash scripts/science_doctor.sh"
+    "release:sync-docs": "node scripts/update_release_metadata.cjs"
   },
   "repository": {
     "type": "git",
