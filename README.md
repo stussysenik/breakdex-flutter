@@ -112,7 +112,57 @@ Theme, font, categories, sync, and export control. Native iOS share sheet via UI
 
 ---
 
-## Architecture
+## Video Storage & Cloud Backup
+
+### Your videos are always copies — originals are never touched
+
+Every video you import (from Photos, Files, or Camera) is **copied** into Breakdex's own sandboxed storage at `Documents/Moves/<uuid>.mp4`. The app stores only a **relative path** in its database — never a reference to the original file. After import, your original file in Photos or Files is completely independent and can be safely deleted, moved, or renamed.
+
+### Where do the copies live?
+
+```
+/var/mobile/Containers/Data/Application/<UUID>/Documents/
+  ├── Moves/                    # Imported videos (UUID-named copies)
+  │   └── .thumbs/              # Generated thumbnail cache
+  ├── videos/                   # Cloud-downloaded videos (on demand)
+  ├── Exports/                  # Manual backup exports
+  └── breakdex.db               # SQLite database
+```
+
+**This directory is NOT accessible via the iOS Files app or iTunes.** Videos only leave the sandbox through the export paths below.
+
+### What happens when I delete a move?
+
+- **Inside the app**: Only the sandbox copy is deleted. The video thumbnail is cleaned up. If the move had a managed Photos album copy, that is also removed.
+- **Your original source file**: Completely untouched. The app never references it after import.
+- **Renaming a move**: Only changes the display name in the database. The underlying video file is unaffected.
+
+### Cloud backup (iCloud / Google Drive)
+
+| Aspect | Detail |
+|--------|--------|
+| **Default state** | OFF — no cloud sync unless you manually enable it |
+| **iCloud** | Opt-in via Settings > Video Backup > "Tap to enable". Uses your Apple iCloud storage. Uploads to `iCloud Drive/Breakdex/<contentHash>`. |
+| **iCloud transparency** | Files are NOT visible in the iOS Files app — the iCloud container lacks `NSUbiquitousContainerDocumentsScope`. Backup is app-internal (restore-only). There is no way to browse or verify backed-up files manually. |
+| **Google Drive** | Currently disabled by feature flag (`kGDriveEnabled = false`) |
+| **What gets backed up** | Video files only (not the database). Each video is content-addressed by SHA-256 hash — duplicates are deduplicated automatically. |
+| **Safety guard** | Videos are only deleted from local storage when at least **2 verified copies** exist (1 local + 1 cloud). A circuit breaker blocks bulk operations affecting >25% of the library. |
+| **On-demand download** | If a video was freed by the Space Manager, tapping it in the app triggers automatic cloud re-download. |
+| **Manifest sync** | A `manifest.json` of the full library is uploaded to each enabled cloud provider, debounced at 5-second intervals. |
+
+**With iCloud connected**, videos you import are automatically uploaded to iCloud in the background. If you ever reinstall the app or switch devices, enable iCloud again and the sync engine will re-download your library.
+
+**Known gap:** Cloud backup operates on a "trust me" model — users cannot independently verify which files have synced. Making the iCloud container browseable via iOS Files app (adding `NSUbiquitousContainerDocumentsScope`) is a desired improvement.
+
+### How to get your videos OUT of the app
+
+1. **Export to Photos** — per-move: tap the share/export button on any move detail screen. Creates an independent copy in a "Breakdex MM-DD-YYYY" album in your Photos library.
+2. **Share sheet** — per-move: native iOS share sheet (AirDrop, Messages, etc.)
+3. **Export Full Backup** — Settings > Data > "Export Full Backup". Exports JSON metadata (no video files included — videos must be individually exported or backed up via iCloud).
+
+**Known gap:** No batch "export all to Photos" exists. Currently one-at-a-time only.
+
+### Architecture
 
 | Layer | Technology |
 |-------|-----------|
