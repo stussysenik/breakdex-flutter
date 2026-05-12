@@ -74,30 +74,31 @@ class BottomNavShell extends ConsumerWidget {
                   ),
                   label: 'Drill',
                 ),
-                BottomNavigationBarItem(
-                  icon: Semantics(
-                    identifier: 'progress-tab',
-                    label: 'Progress, work in progress',
-                    child: const WipTabIcon(icon: Icons.insights_rounded),
-                  ),
-                  label: 'Progress',
-                ),
-                BottomNavigationBarItem(
-                  icon: Semantics(
-                    identifier: 'lab-tab',
-                    label: 'Lab, work in progress',
-                    child: const WipTabIcon(icon: Icons.science_outlined),
-                  ),
-                  label: 'Lab',
-                ),
-                BottomNavigationBarItem(
-                  icon: Semantics(
-                    identifier: 'flow-tab',
-                    label: 'Flow, work in progress',
-                    child: const WipTabIcon(icon: Icons.auto_awesome_outlined),
-                  ),
-                  label: 'Flow',
-                ),
+                // ARCHIVED: Progress, Lab, Flow tabs — restore when ready
+                // BottomNavigationBarItem(
+                //   icon: Semantics(
+                //     identifier: 'progress-tab',
+                //     label: 'Progress, work in progress',
+                //     child: const WipTabIcon(icon: Icons.insights_rounded),
+                //   ),
+                //   label: 'Progress',
+                // ),
+                // BottomNavigationBarItem(
+                //   icon: Semantics(
+                //     identifier: 'lab-tab',
+                //     label: 'Lab, work in progress',
+                //     child: const WipTabIcon(icon: Icons.science_outlined),
+                //   ),
+                //   label: 'Lab',
+                // ),
+                // BottomNavigationBarItem(
+                //   icon: Semantics(
+                //     identifier: 'flow-tab',
+                //     label: 'Flow, work in progress',
+                //     child: const WipTabIcon(icon: Icons.auto_awesome_outlined),
+                //   ),
+                //   label: 'Flow',
+                // ),
               ],
             ),
           ),

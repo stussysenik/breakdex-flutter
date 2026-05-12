@@ -11,6 +11,7 @@ import '../../features/lab/lab_screen.dart';
 import '../../features/lab/lab_detail_screen.dart';
 import '../../features/settings/settings_screen.dart';
 import '../../features/settings/recently_deleted_screen.dart';
+import '../../features/settings/canonical_trash_screen.dart';
 import '../../features/flow/flow_screen.dart';
 import '../../features/stats/stats_screen.dart';
 import '../../features/battle/battle_screen.dart';
@@ -64,47 +65,45 @@ final appRouter = GoRouter(
             ),
           ],
         ),
-        // Progress
-        StatefulShellBranch(
-          routes: [
-            GoRoute(
-              path: '/progress',
-              builder: (context, state) => const StatsScreen(),
-            ),
-          ],
-        ),
-        // Lab
-        StatefulShellBranch(
-          routes: [
-            GoRoute(
-              path: '/lab',
-              builder: (context, state) => const LabScreen(),
-              routes: [
-                GoRoute(
-                  path: ':id',
-                  builder: (context, state) =>
-                      LabDetailScreen(labId: state.pathParameters['id']!),
-                ),
-              ],
-            ),
-          ],
-        ),
-        // Flow (move transition map)
-        StatefulShellBranch(
-          routes: [
-            GoRoute(
-              path: '/flow',
-              builder: (context, state) => const FlowScreen(),
-              routes: [
-                GoRoute(
-                  path: 'move/:id',
-                  builder: (context, state) =>
-                      MoveDetailScreen(moveId: state.pathParameters['id']!),
-                ),
-              ],
-            ),
-          ],
-        ),
+        // ARCHIVED: Progress, Lab, Flow tabs — restore when ready
+        // StatefulShellBranch(
+        //   routes: [
+        //     GoRoute(
+        //       path: '/progress',
+        //       builder: (context, state) => const StatsScreen(),
+        //     ),
+        //   ],
+        // ),
+        // StatefulShellBranch(
+        //   routes: [
+        //     GoRoute(
+        //       path: '/lab',
+        //       builder: (context, state) => const LabScreen(),
+        //       routes: [
+        //         GoRoute(
+        //           path: ':id',
+        //           builder: (context, state) =>
+        //               LabDetailScreen(labId: state.pathParameters['id']!),
+        //         ),
+        //       ],
+        //     ),
+        //   ],
+        // ),
+        // StatefulShellBranch(
+        //   routes: [
+        //     GoRoute(
+        //       path: '/flow',
+        //       builder: (context, state) => const FlowScreen(),
+        //       routes: [
+        //         GoRoute(
+        //           path: 'move/:id',
+        //           builder: (context, state) =>
+        //               MoveDetailScreen(moveId: state.pathParameters['id']!),
+        //         ),
+        //       ],
+        //     ),
+        //   ],
+        // ),
       ],
     ),
     // Modal routes (no bottom nav)
@@ -174,6 +173,11 @@ final appRouter = GoRouter(
       path: '/settings/recently-deleted',
       parentNavigatorKey: _rootNavigatorKey,
       builder: (context, state) => const RecentlyDeletedScreen(),
+    ),
+    GoRoute(
+      path: '/settings/canonical-trash',
+      parentNavigatorKey: _rootNavigatorKey,
+      builder: (context, state) => const CanonicalTrashScreen(),
     ),
     GoRoute(
       path: '/settings/sync-help',
