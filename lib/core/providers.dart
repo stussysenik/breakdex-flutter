@@ -28,6 +28,9 @@ import 'services/auth_service.dart';
 import 'services/settings_service.dart';
 import 'services/video_service.dart';
 import 'services/media_cleanup_service.dart';
+import 'services/canonical_folder_service.dart';
+import 'services/canonical_import_gate.dart';
+import 'services/canonical_reconcile_service.dart';
 import 'services/database_recovery_service.dart';
 import 'services/managed_album_reconciliation_service.dart';
 import 'services/media_playback_coordinator.dart';
@@ -74,6 +77,7 @@ part 'providers/theme_providers.dart';
 part 'providers/review_card_display_providers.dart';
 part 'providers/learning_state_label_providers.dart';
 part 'providers/video_playback_preferences_providers.dart';
+part 'providers/canonical_storage_providers.dart';
 
 final databaseProvider = Provider<AppDatabase>((ref) {
   final db = AppDatabase();
