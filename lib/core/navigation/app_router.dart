@@ -2,21 +2,20 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
 import 'app_route_observer.dart';
-import '../../features/move_list/move_list_screen.dart';
 import '../../features/move_detail/move_detail_screen.dart';
 import '../../features/flashcard_review/flashcard_review_screen.dart';
 import '../../features/create_combo/create_combo_screen.dart';
 import '../../features/combo_detail/combo_detail_screen.dart';
-import '../../features/lab/lab_screen.dart';
-import '../../features/lab/lab_detail_screen.dart';
 import '../../features/settings/settings_screen.dart';
 import '../../features/settings/recently_deleted_screen.dart';
 import '../../features/settings/canonical_trash_screen.dart';
-import '../../features/flow/flow_screen.dart';
-import '../../features/stats/stats_screen.dart';
 import '../../features/battle/battle_screen.dart';
 import '../../features/video_editor/video_editor_screen.dart';
 import '../../features/move_analysis/move_analysis_screen.dart';
+import '../../features/breakdex/breakdex_screen.dart';
+import '../../features/move_category/move_category_screen.dart';
+import '../../features/combo_list/combo_list_screen.dart';
+import '../../features/add/add_screen.dart';
 import '../../features/auth/auth_screen.dart';
 import '../../features/settings/free_space_screen.dart';
 import '../../features/settings/sync_providers_screen.dart';
@@ -28,20 +27,37 @@ final _rootNavigatorKey = GlobalKey<NavigatorState>();
 
 final appRouter = GoRouter(
   navigatorKey: _rootNavigatorKey,
-  initialLocation: '/moves',
+  initialLocation: '/breakdex',
   observers: [appRouteObserver],
   routes: [
     StatefulShellRoute.indexedStack(
       builder: (context, state, navigationShell) =>
           BottomNavShell(navigationShell: navigationShell),
       branches: [
-        // Moves (Move List)
+        // Breakdex — moves library home
         StatefulShellBranch(
           routes: [
             GoRoute(
-              path: '/moves',
-              builder: (context, state) => MoveListScreen(),
+              path: '/breakdex',
+              builder: (context, state) => const BreakdexScreen(),
               routes: [
+                GoRoute(
+                  path: 'moves',
+                  builder: (context, state) => const MoveCategoryScreen(),
+                  routes: [
+                    GoRoute(
+                      path: ':category',
+                      builder: (context, state) =>
+                          MoveCategoryDetailScreen(
+                            categoryName: state.pathParameters['category']!,
+                          ),
+                    ),
+                  ],
+                ),
+                GoRoute(
+                  path: 'combos',
+                  builder: (context, state) => const ComboListScreen(),
+                ),
                 GoRoute(
                   path: 'move/:id',
                   builder: (context, state) =>
@@ -56,7 +72,13 @@ final appRouter = GoRouter(
             ),
           ],
         ),
-        // Drill
+        // Add — create moves
+        StatefulShellBranch(
+          routes: [
+            GoRoute(path: '/add', builder: (context, state) => const AddScreen()),
+          ],
+        ),
+        // Drill — flashcard review
         StatefulShellBranch(
           routes: [
             GoRoute(
@@ -65,48 +87,18 @@ final appRouter = GoRouter(
             ),
           ],
         ),
-        // ARCHIVED: Progress, Lab, Flow tabs — restore when ready
-        // StatefulShellBranch(
-        //   routes: [
-        //     GoRoute(
-        //       path: '/progress',
-        //       builder: (context, state) => const StatsScreen(),
-        //     ),
-        //   ],
-        // ),
-        // StatefulShellBranch(
-        //   routes: [
-        //     GoRoute(
-        //       path: '/lab',
-        //       builder: (context, state) => const LabScreen(),
-        //       routes: [
-        //         GoRoute(
-        //           path: ':id',
-        //           builder: (context, state) =>
-        //               LabDetailScreen(labId: state.pathParameters['id']!),
-        //         ),
-        //       ],
-        //     ),
-        //   ],
-        // ),
-        // StatefulShellBranch(
-        //   routes: [
-        //     GoRoute(
-        //       path: '/flow',
-        //       builder: (context, state) => const FlowScreen(),
-        //       routes: [
-        //         GoRoute(
-        //           path: 'move/:id',
-        //           builder: (context, state) =>
-        //               MoveDetailScreen(moveId: state.pathParameters['id']!),
-        //         ),
-        //       ],
-        //     ),
-        //   ],
-        // ),
+        // Settings — global app settings
+        StatefulShellBranch(
+          routes: [
+            GoRoute(
+              path: '/settings',
+              builder: (context, state) => const SettingsScreen.tab(),
+            ),
+          ],
+        ),
       ],
     ),
-    // Modal routes (no bottom nav)
+    // Modal routes (no bottom nav) — full-page screens pushed over shell
     GoRoute(
       path: '/create-combo',
       parentNavigatorKey: _rootNavigatorKey,
@@ -150,37 +142,37 @@ final appRouter = GoRouter(
       builder: (context, state) => const AuthScreen(),
     ),
     GoRoute(
-      path: '/settings',
+      path: '/settings-panel',
       parentNavigatorKey: _rootNavigatorKey,
       builder: (context, state) => const SettingsScreen(),
     ),
     GoRoute(
-      path: '/settings/sync-providers',
+      path: '/settings-panel/sync-providers',
       parentNavigatorKey: _rootNavigatorKey,
       builder: (context, state) => const SyncProvidersScreen(),
     ),
     GoRoute(
-      path: '/settings/sync-status',
+      path: '/settings-panel/sync-status',
       parentNavigatorKey: _rootNavigatorKey,
       builder: (context, state) => const SyncStatusScreen(),
     ),
     GoRoute(
-      path: '/settings/free-space',
+      path: '/settings-panel/free-space',
       parentNavigatorKey: _rootNavigatorKey,
       builder: (context, state) => const FreeSpaceScreen(),
     ),
     GoRoute(
-      path: '/settings/recently-deleted',
+      path: '/settings-panel/recently-deleted',
       parentNavigatorKey: _rootNavigatorKey,
       builder: (context, state) => const RecentlyDeletedScreen(),
     ),
     GoRoute(
-      path: '/settings/canonical-trash',
+      path: '/settings-panel/canonical-trash',
       parentNavigatorKey: _rootNavigatorKey,
       builder: (context, state) => const CanonicalTrashScreen(),
     ),
     GoRoute(
-      path: '/settings/sync-help',
+      path: '/settings-panel/sync-help',
       parentNavigatorKey: _rootNavigatorKey,
       builder: (context, state) => const AssetSyncHelpScreen(),
     ),

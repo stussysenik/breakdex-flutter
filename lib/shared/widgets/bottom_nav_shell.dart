@@ -8,7 +8,6 @@ import '../../core/providers.dart';
 import '../../core/design/theme.dart';
 import '../../core/services/media_playback_coordinator.dart';
 import 'sync_progress_bar.dart';
-import 'wip_badge.dart';
 
 class BottomNavShell extends ConsumerWidget {
   const BottomNavShell({super.key, required this.navigationShell});
@@ -62,10 +61,17 @@ class BottomNavShell extends ConsumerWidget {
               items: [
                 BottomNavigationBarItem(
                   icon: Semantics(
-                    identifier: 'moves-tab',
+                    identifier: 'breakdex-tab',
                     child: const Icon(Icons.grid_view_rounded),
                   ),
-                  label: 'Moves',
+                  label: 'Breakdex',
+                ),
+                BottomNavigationBarItem(
+                  icon: Semantics(
+                    identifier: 'add-tab',
+                    child: const Icon(Icons.add_circle_outline),
+                  ),
+                  label: 'Add',
                 ),
                 BottomNavigationBarItem(
                   icon: Semantics(
@@ -73,6 +79,13 @@ class BottomNavShell extends ConsumerWidget {
                     child: const Icon(Icons.style_outlined),
                   ),
                   label: 'Drill',
+                ),
+                BottomNavigationBarItem(
+                  icon: Semantics(
+                    identifier: 'settings-tab',
+                    child: const Icon(Icons.settings_outlined),
+                  ),
+                  label: 'Settings',
                 ),
                 // ARCHIVED: Progress, Lab, Flow tabs — restore when ready
                 // BottomNavigationBarItem(

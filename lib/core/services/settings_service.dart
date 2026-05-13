@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../models/app_mode.dart';
+
 enum ThemeSetting { system, dark, light }
 
 enum ViewingMode { standard, monoOutline }
@@ -78,4 +80,24 @@ extension ViewingModeX on ViewingMode {
     ViewingMode.standard => 'Blue',
     ViewingMode.monoOutline => 'Marker',
   };
+}
+
+final appModeProvider = NotifierProvider<AppModeNotifier, AppMode>(
+  AppModeNotifier.new,
+);
+
+class AppModeNotifier extends Notifier<AppMode> {
+  static const _key = 'app_mode';
+
+  @override
+  AppMode build() {
+    final prefs = ref.watch(sharedPreferencesProvider);
+    return AppMode.fromString(prefs.getString(_key));
+  }
+
+  Future<void> set(AppMode mode) async {
+    final prefs = ref.read(sharedPreferencesProvider);
+    await prefs.setString(_key, mode.name);
+    state = mode;
+  }
 }

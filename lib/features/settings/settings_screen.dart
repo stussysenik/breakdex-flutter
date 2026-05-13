@@ -11,6 +11,7 @@ import '../../core/design/colors.dart';
 import '../../core/design/spacing.dart';
 import '../../core/design/typography.dart';
 import '../../core/app_metadata.dart';
+import '../../core/models/app_mode.dart';
 import '../../core/models/learning_state.dart';
 import '../../core/providers.dart';
 import '../../core/services/app_storage_paths.dart';
@@ -39,7 +40,11 @@ final _settingsMovesProvider = StreamProvider<List<Move>>((ref) {
 enum ReviewSettingsResetAction { cardPlayback, states, all }
 
 class SettingsScreen extends ConsumerWidget {
-  const SettingsScreen({super.key});
+  const SettingsScreen({super.key, this.isTab = false});
+
+  const SettingsScreen.tab({super.key}) : isTab = true;
+
+  final bool isTab;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -52,6 +57,7 @@ class SettingsScreen extends ConsumerWidget {
     final archivedMoveCount =
         ref.watch(archivedMovesCountProvider).valueOrNull ?? 0;
     final colorScheme = Theme.of(context).colorScheme;
+    final appMode = ref.watch(appModeProvider);
     final categoryUsage = <String, int>{};
     for (final move in moves) {
       categoryUsage[move.category] = (categoryUsage[move.category] ?? 0) + 1;
@@ -62,34 +68,35 @@ class SettingsScreen extends ConsumerWidget {
         child: ListView(
           padding: const EdgeInsets.all(AppSpacing.screenEdge),
           children: [
-            Semantics(
-              identifier: 'settings-back',
-              label: 'Back',
-              button: true,
-              child: GestureDetector(
-                behavior: HitTestBehavior.opaque,
-                onTap: () => context.pop(),
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(vertical: AppSpacing.xs),
-                  child: Row(
-                    children: [
-                      Icon(
-                        Icons.chevron_left,
-                        color: colorScheme.secondary,
-                        size: 20,
-                      ),
-                      Text(
-                        'Back',
-                        style: AppTypography.bodyMedium.copyWith(
+            if (!isTab)
+              Semantics(
+                identifier: 'settings-back',
+                label: 'Back',
+                button: true,
+                child: GestureDetector(
+                  behavior: HitTestBehavior.opaque,
+                  onTap: () => context.pop(),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(vertical: AppSpacing.xs),
+                    child: Row(
+                      children: [
+                        Icon(
+                          Icons.chevron_left,
                           color: colorScheme.secondary,
+                          size: 20,
                         ),
-                      ),
-                    ],
+                        Text(
+                          'Back',
+                          style: AppTypography.bodyMedium.copyWith(
+                            color: colorScheme.secondary,
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               ),
-            ),
-            const SizedBox(height: AppSpacing.lg),
+            if (!isTab) const SizedBox(height: AppSpacing.lg),
             Semantics(
               header: true,
               child: Text(
@@ -126,6 +133,19 @@ class SettingsScreen extends ConsumerWidget {
                             onChanged: (mode) => ref
                                 .read(viewingModeProvider.notifier)
                                 .set(mode),
+                          ),
+                        ),
+                      ),
+                      SizedBox(
+                        width: panelWidth,
+                        child: _SettingsPanel(
+                          title: 'Review Mode',
+                          child: _SegmentedPicker<AppMode>(
+                            values: AppMode.values,
+                            selected: appMode,
+                            labelOf: (m) => m.displayName,
+                            onChanged: (m) =>
+                                ref.read(appModeProvider.notifier).set(m),
                           ),
                         ),
                       ),
@@ -571,7 +591,7 @@ class SettingsScreen extends ConsumerWidget {
                       label: archivedMoveCount == 0
                           ? 'Recently Deleted'
                           : 'Recently Deleted ($archivedMoveCount)',
-                      onTap: () => context.push('/settings/recently-deleted'),
+                      onTap: () => context.push('/settings-panel/recently-deleted'),
                     ),
                     const SizedBox(height: AppSpacing.sm),
                     ActionTile(

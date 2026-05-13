@@ -24,7 +24,7 @@ class SettingsGearButton extends ConsumerWidget {
       label: 'Settings',
       button: true,
       child: GestureDetector(
-        onTap: () => context.push('/settings'),
+        onTap: () => context.push('/settings-panel'),
         child: Container(
           width: 36,
           height: 36,

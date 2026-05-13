@@ -108,19 +108,19 @@ class CloudSyncSection extends ConsumerWidget {
         ActionTile(
           icon: Icons.sync,
           label: 'Sync Status',
-          onTap: () => context.push('/settings/sync-status'),
+          onTap: () => context.push('/settings-panel/sync-status'),
         ),
         const SizedBox(height: AppSpacing.sm),
         ActionTile(
           icon: Icons.cleaning_services_outlined,
           label: 'Free Up Space',
-          onTap: () => context.push('/settings/free-space'),
+          onTap: () => context.push('/settings-panel/free-space'),
         ),
         const SizedBox(height: AppSpacing.sm),
         ActionTile(
           icon: Icons.help_outline,
           label: 'How Backup Works',
-          onTap: () => context.push('/settings/sync-help'),
+          onTap: () => context.push('/settings-panel/sync-help'),
         ),
       ],
     );
