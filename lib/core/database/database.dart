@@ -95,7 +95,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.forTesting(super.e);
 
   @override
-  int get schemaVersion => 15;
+  int get schemaVersion => 16;
 
   Future<void> _installIntegrityTriggers() async {
     await customStatement('''
@@ -508,6 +508,10 @@ class AppDatabase extends _$AppDatabase {
         await m.createTable(sets);
         await m.createTable(setItems);
         await m.createTable(provenanceEvents);
+      }
+
+      if (from < 16) {
+        await m.addColumn(moves, moves.imagePaths);
       }
 
       await _backfillReviewSnapshots();

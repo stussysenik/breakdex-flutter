@@ -27,6 +27,7 @@ import '../../shared/widgets/video_player_widget.dart' show RobustVideoPlayer;
 import '../../shared/widgets/action_tile.dart';
 import '../../shared/widgets/color_setting_tile.dart';
 import '../../shared/widgets/notes_section.dart';
+import '../../shared/widgets/move_photos_section.dart';
 import '../flashcard_review/widgets/state_picker_sheet.dart';
 import '../lab/widgets/move_aura_section.dart';
 import '../../shared/widgets/video_picker_sheet.dart';
@@ -161,6 +162,13 @@ class MoveDetailScreen extends ConsumerWidget {
                     color: colorScheme.secondary,
                   ),
                 ),
+                const SizedBox(height: AppSpacing.md),
+
+                ActionTile(
+                  icon: Icons.text_fields,
+                  label: 'Rename',
+                  onTap: () => _rename(context, ref, move),
+                ),
                 const SizedBox(height: AppSpacing.lg),
 
                 // Created date
@@ -197,6 +205,22 @@ class MoveDetailScreen extends ConsumerWidget {
                           MovesCompanion(
                             id: Value(move.id),
                             notes: Value(text.isEmpty ? null : text),
+                          ),
+                        );
+                  },
+                ),
+                const SizedBox(height: AppSpacing.lg),
+
+                // Photos
+                MovePhotosSection(
+                  imagePaths: move.imagePaths,
+                  onChanged: (json) {
+                    ref
+                        .read(moveRepositoryProvider)
+                        .update(
+                          MovesCompanion(
+                            id: Value(move.id),
+                            imagePaths: Value(json),
                           ),
                         );
                   },
@@ -261,12 +285,6 @@ class MoveDetailScreen extends ConsumerWidget {
                     label: 'Add Video',
                     onTap: () => _addOrReplaceVideo(context, ref, move),
                   ),
-                const SizedBox(height: AppSpacing.sm),
-                ActionTile(
-                  icon: Icons.text_fields,
-                  label: 'Rename',
-                  onTap: () => _rename(context, ref, move),
-                ),
                 const SizedBox(height: AppSpacing.sm),
                 ActionTile(
                   icon: Icons.delete_forever,

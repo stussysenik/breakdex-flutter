@@ -138,6 +138,17 @@ class $MovesTable extends Moves with TableInfo<$MovesTable, Move> {
     type: DriftSqlType.string,
     requiredDuringInsert: false,
   );
+  static const VerificationMeta _imagePathsMeta = const VerificationMeta(
+    'imagePaths',
+  );
+  @override
+  late final GeneratedColumn<String> imagePaths = GeneratedColumn<String>(
+    'image_paths',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
   static const VerificationMeta _contentHashMeta = const VerificationMeta(
     'contentHash',
   );
@@ -175,6 +186,7 @@ class $MovesTable extends Moves with TableInfo<$MovesTable, Move> {
     archivedAt,
     archiveReason,
     notes,
+    imagePaths,
     contentHash,
     createdAt,
   ];
@@ -281,6 +293,12 @@ class $MovesTable extends Moves with TableInfo<$MovesTable, Move> {
         notes.isAcceptableOrUnknown(data['notes']!, _notesMeta),
       );
     }
+    if (data.containsKey('image_paths')) {
+      context.handle(
+        _imagePathsMeta,
+        imagePaths.isAcceptableOrUnknown(data['image_paths']!, _imagePathsMeta),
+      );
+    }
     if (data.containsKey('content_hash')) {
       context.handle(
         _contentHashMeta,
@@ -353,6 +371,10 @@ class $MovesTable extends Moves with TableInfo<$MovesTable, Move> {
         DriftSqlType.string,
         data['${effectivePrefix}notes'],
       ),
+      imagePaths: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}image_paths'],
+      ),
       contentHash: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
         data['${effectivePrefix}content_hash'],
@@ -383,6 +405,7 @@ class Move extends DataClass implements Insertable<Move> {
   final DateTime? archivedAt;
   final String? archiveReason;
   final String? notes;
+  final String? imagePaths;
   final String? contentHash;
   final DateTime createdAt;
   const Move({
@@ -398,6 +421,7 @@ class Move extends DataClass implements Insertable<Move> {
     this.archivedAt,
     this.archiveReason,
     this.notes,
+    this.imagePaths,
     this.contentHash,
     required this.createdAt,
   });
@@ -431,6 +455,9 @@ class Move extends DataClass implements Insertable<Move> {
     }
     if (!nullToAbsent || notes != null) {
       map['notes'] = Variable<String>(notes);
+    }
+    if (!nullToAbsent || imagePaths != null) {
+      map['image_paths'] = Variable<String>(imagePaths);
     }
     if (!nullToAbsent || contentHash != null) {
       map['content_hash'] = Variable<String>(contentHash);
@@ -469,6 +496,9 @@ class Move extends DataClass implements Insertable<Move> {
       notes: notes == null && nullToAbsent
           ? const Value.absent()
           : Value(notes),
+      imagePaths: imagePaths == null && nullToAbsent
+          ? const Value.absent()
+          : Value(imagePaths),
       contentHash: contentHash == null && nullToAbsent
           ? const Value.absent()
           : Value(contentHash),
@@ -500,6 +530,7 @@ class Move extends DataClass implements Insertable<Move> {
       archivedAt: serializer.fromJson<DateTime?>(json['archivedAt']),
       archiveReason: serializer.fromJson<String?>(json['archiveReason']),
       notes: serializer.fromJson<String?>(json['notes']),
+      imagePaths: serializer.fromJson<String?>(json['imagePaths']),
       contentHash: serializer.fromJson<String?>(json['contentHash']),
       createdAt: serializer.fromJson<DateTime>(json['createdAt']),
     );
@@ -520,6 +551,7 @@ class Move extends DataClass implements Insertable<Move> {
       'archivedAt': serializer.toJson<DateTime?>(archivedAt),
       'archiveReason': serializer.toJson<String?>(archiveReason),
       'notes': serializer.toJson<String?>(notes),
+      'imagePaths': serializer.toJson<String?>(imagePaths),
       'contentHash': serializer.toJson<String?>(contentHash),
       'createdAt': serializer.toJson<DateTime>(createdAt),
     };
@@ -538,6 +570,7 @@ class Move extends DataClass implements Insertable<Move> {
     Value<DateTime?> archivedAt = const Value.absent(),
     Value<String?> archiveReason = const Value.absent(),
     Value<String?> notes = const Value.absent(),
+    Value<String?> imagePaths = const Value.absent(),
     Value<String?> contentHash = const Value.absent(),
     DateTime? createdAt,
   }) => Move(
@@ -563,6 +596,7 @@ class Move extends DataClass implements Insertable<Move> {
         ? archiveReason.value
         : this.archiveReason,
     notes: notes.present ? notes.value : this.notes,
+    imagePaths: imagePaths.present ? imagePaths.value : this.imagePaths,
     contentHash: contentHash.present ? contentHash.value : this.contentHash,
     createdAt: createdAt ?? this.createdAt,
   );
@@ -594,6 +628,9 @@ class Move extends DataClass implements Insertable<Move> {
           ? data.archiveReason.value
           : this.archiveReason,
       notes: data.notes.present ? data.notes.value : this.notes,
+      imagePaths: data.imagePaths.present
+          ? data.imagePaths.value
+          : this.imagePaths,
       contentHash: data.contentHash.present
           ? data.contentHash.value
           : this.contentHash,
@@ -616,6 +653,7 @@ class Move extends DataClass implements Insertable<Move> {
           ..write('archivedAt: $archivedAt, ')
           ..write('archiveReason: $archiveReason, ')
           ..write('notes: $notes, ')
+          ..write('imagePaths: $imagePaths, ')
           ..write('contentHash: $contentHash, ')
           ..write('createdAt: $createdAt')
           ..write(')'))
@@ -636,6 +674,7 @@ class Move extends DataClass implements Insertable<Move> {
     archivedAt,
     archiveReason,
     notes,
+    imagePaths,
     contentHash,
     createdAt,
   );
@@ -655,6 +694,7 @@ class Move extends DataClass implements Insertable<Move> {
           other.archivedAt == this.archivedAt &&
           other.archiveReason == this.archiveReason &&
           other.notes == this.notes &&
+          other.imagePaths == this.imagePaths &&
           other.contentHash == this.contentHash &&
           other.createdAt == this.createdAt);
 }
@@ -672,6 +712,7 @@ class MovesCompanion extends UpdateCompanion<Move> {
   final Value<DateTime?> archivedAt;
   final Value<String?> archiveReason;
   final Value<String?> notes;
+  final Value<String?> imagePaths;
   final Value<String?> contentHash;
   final Value<DateTime> createdAt;
   final Value<int> rowid;
@@ -688,6 +729,7 @@ class MovesCompanion extends UpdateCompanion<Move> {
     this.archivedAt = const Value.absent(),
     this.archiveReason = const Value.absent(),
     this.notes = const Value.absent(),
+    this.imagePaths = const Value.absent(),
     this.contentHash = const Value.absent(),
     this.createdAt = const Value.absent(),
     this.rowid = const Value.absent(),
@@ -705,6 +747,7 @@ class MovesCompanion extends UpdateCompanion<Move> {
     this.archivedAt = const Value.absent(),
     this.archiveReason = const Value.absent(),
     this.notes = const Value.absent(),
+    this.imagePaths = const Value.absent(),
     this.contentHash = const Value.absent(),
     this.createdAt = const Value.absent(),
     this.rowid = const Value.absent(),
@@ -723,6 +766,7 @@ class MovesCompanion extends UpdateCompanion<Move> {
     Expression<DateTime>? archivedAt,
     Expression<String>? archiveReason,
     Expression<String>? notes,
+    Expression<String>? imagePaths,
     Expression<String>? contentHash,
     Expression<DateTime>? createdAt,
     Expression<int>? rowid,
@@ -742,6 +786,7 @@ class MovesCompanion extends UpdateCompanion<Move> {
       if (archivedAt != null) 'archived_at': archivedAt,
       if (archiveReason != null) 'archive_reason': archiveReason,
       if (notes != null) 'notes': notes,
+      if (imagePaths != null) 'image_paths': imagePaths,
       if (contentHash != null) 'content_hash': contentHash,
       if (createdAt != null) 'created_at': createdAt,
       if (rowid != null) 'rowid': rowid,
@@ -761,6 +806,7 @@ class MovesCompanion extends UpdateCompanion<Move> {
     Value<DateTime?>? archivedAt,
     Value<String?>? archiveReason,
     Value<String?>? notes,
+    Value<String?>? imagePaths,
     Value<String?>? contentHash,
     Value<DateTime>? createdAt,
     Value<int>? rowid,
@@ -778,6 +824,7 @@ class MovesCompanion extends UpdateCompanion<Move> {
       archivedAt: archivedAt ?? this.archivedAt,
       archiveReason: archiveReason ?? this.archiveReason,
       notes: notes ?? this.notes,
+      imagePaths: imagePaths ?? this.imagePaths,
       contentHash: contentHash ?? this.contentHash,
       createdAt: createdAt ?? this.createdAt,
       rowid: rowid ?? this.rowid,
@@ -827,6 +874,9 @@ class MovesCompanion extends UpdateCompanion<Move> {
     if (notes.present) {
       map['notes'] = Variable<String>(notes.value);
     }
+    if (imagePaths.present) {
+      map['image_paths'] = Variable<String>(imagePaths.value);
+    }
     if (contentHash.present) {
       map['content_hash'] = Variable<String>(contentHash.value);
     }
@@ -854,6 +904,7 @@ class MovesCompanion extends UpdateCompanion<Move> {
           ..write('archivedAt: $archivedAt, ')
           ..write('archiveReason: $archiveReason, ')
           ..write('notes: $notes, ')
+          ..write('imagePaths: $imagePaths, ')
           ..write('contentHash: $contentHash, ')
           ..write('createdAt: $createdAt, ')
           ..write('rowid: $rowid')
@@ -11621,6 +11672,7 @@ typedef $$MovesTableCreateCompanionBuilder =
       Value<DateTime?> archivedAt,
       Value<String?> archiveReason,
       Value<String?> notes,
+      Value<String?> imagePaths,
       Value<String?> contentHash,
       Value<DateTime> createdAt,
       Value<int> rowid,
@@ -11639,6 +11691,7 @@ typedef $$MovesTableUpdateCompanionBuilder =
       Value<DateTime?> archivedAt,
       Value<String?> archiveReason,
       Value<String?> notes,
+      Value<String?> imagePaths,
       Value<String?> contentHash,
       Value<DateTime> createdAt,
       Value<int> rowid,
@@ -11842,6 +11895,11 @@ class $$MovesTableFilterComposer extends Composer<_$AppDatabase, $MovesTable> {
 
   ColumnFilters<String> get notes => $composableBuilder(
     column: $table.notes,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get imagePaths => $composableBuilder(
+    column: $table.imagePaths,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -12100,6 +12158,11 @@ class $$MovesTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<String> get imagePaths => $composableBuilder(
+    column: $table.imagePaths,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<String> get contentHash => $composableBuilder(
     column: $table.contentHash,
     builder: (column) => ColumnOrderings(column),
@@ -12169,6 +12232,11 @@ class $$MovesTableAnnotationComposer
 
   GeneratedColumn<String> get notes =>
       $composableBuilder(column: $table.notes, builder: (column) => column);
+
+  GeneratedColumn<String> get imagePaths => $composableBuilder(
+    column: $table.imagePaths,
+    builder: (column) => column,
+  );
 
   GeneratedColumn<String> get contentHash => $composableBuilder(
     column: $table.contentHash,
@@ -12402,6 +12470,7 @@ class $$MovesTableTableManager
                 Value<DateTime?> archivedAt = const Value.absent(),
                 Value<String?> archiveReason = const Value.absent(),
                 Value<String?> notes = const Value.absent(),
+                Value<String?> imagePaths = const Value.absent(),
                 Value<String?> contentHash = const Value.absent(),
                 Value<DateTime> createdAt = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
@@ -12418,6 +12487,7 @@ class $$MovesTableTableManager
                 archivedAt: archivedAt,
                 archiveReason: archiveReason,
                 notes: notes,
+                imagePaths: imagePaths,
                 contentHash: contentHash,
                 createdAt: createdAt,
                 rowid: rowid,
@@ -12436,6 +12506,7 @@ class $$MovesTableTableManager
                 Value<DateTime?> archivedAt = const Value.absent(),
                 Value<String?> archiveReason = const Value.absent(),
                 Value<String?> notes = const Value.absent(),
+                Value<String?> imagePaths = const Value.absent(),
                 Value<String?> contentHash = const Value.absent(),
                 Value<DateTime> createdAt = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
@@ -12452,6 +12523,7 @@ class $$MovesTableTableManager
                 archivedAt: archivedAt,
                 archiveReason: archiveReason,
                 notes: notes,
+                imagePaths: imagePaths,
                 contentHash: contentHash,
                 createdAt: createdAt,
                 rowid: rowid,

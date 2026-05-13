@@ -184,13 +184,6 @@ class _VideoPickerSheetState extends State<VideoPickerSheet> {
                 ],
                 const SizedBox(height: AppSpacing.lg),
                 _SourceTile(
-                  icon: Icons.videocam,
-                  label: 'Camera',
-                  subtitle: 'Record a new video',
-                  onTap: _loading ? null : _recordVideo,
-                ),
-                const SizedBox(height: AppSpacing.sm),
-                _SourceTile(
                   icon: Icons.photo_library,
                   label: 'Photo Library',
                   subtitle: 'Includes iCloud Photos',
@@ -202,6 +195,13 @@ class _VideoPickerSheetState extends State<VideoPickerSheet> {
                   label: 'Files',
                   subtitle: 'iCloud Drive, Dropbox, local files',
                   onTap: _loading ? null : _pickFromFiles,
+                ),
+                const SizedBox(height: AppSpacing.sm),
+                _SourceTile(
+                  icon: Icons.videocam,
+                  label: 'Camera',
+                  subtitle: 'Record a new video',
+                  onTap: _loading ? null : _recordVideo,
                 ),
                 const SizedBox(height: AppSpacing.md),
               ],

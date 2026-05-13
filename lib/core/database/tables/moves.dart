@@ -13,6 +13,7 @@ class Moves extends Table {
   DateTimeColumn get archivedAt => dateTime().nullable()();
   TextColumn get archiveReason => text().nullable()();
   TextColumn get notes => text().nullable()();
+  TextColumn get imagePaths => text().nullable()();
   TextColumn get contentHash => text().nullable()();
   DateTimeColumn get createdAt => dateTime().withDefault(currentDateAndTime)();
 
