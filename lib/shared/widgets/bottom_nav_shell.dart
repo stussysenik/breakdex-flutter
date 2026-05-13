@@ -82,6 +82,13 @@ class BottomNavShell extends ConsumerWidget {
                 ),
                 BottomNavigationBarItem(
                   icon: Semantics(
+                    identifier: 'party-tab',
+                    child: const Icon(Icons.celebration_outlined),
+                  ),
+                  label: 'Party',
+                ),
+                BottomNavigationBarItem(
+                  icon: Semantics(
                     identifier: 'settings-tab',
                     child: const Icon(Icons.settings_outlined),
                   ),

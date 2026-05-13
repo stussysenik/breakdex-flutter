@@ -4,8 +4,6 @@ import 'package:go_router/go_router.dart';
 
 import '../../core/design/spacing.dart';
 import '../../core/design/typography.dart';
-import '../../core/models/app_mode.dart';
-import '../../core/services/settings_service.dart';
 import '../../shared/widgets/settings_gear_button.dart';
 
 class BreakdexScreen extends ConsumerWidget {
@@ -13,7 +11,6 @@ class BreakdexScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final appMode = ref.watch(appModeProvider);
     final colorScheme = Theme.of(context).colorScheme;
     final textColor = colorScheme.onSurface;
 
@@ -28,9 +25,7 @@ class BreakdexScreen extends ConsumerWidget {
           children: [
             _HeroNavTile(
               label: 'Moves',
-              subtitle: appMode == AppMode.party
-                  ? 'Shake to browse'
-                  : 'Browse by category',
+              subtitle: 'Browse by category',
               onTap: () => context.go('/breakdex/moves'),
               color: textColor,
             ),

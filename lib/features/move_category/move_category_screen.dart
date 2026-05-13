@@ -9,6 +9,7 @@ import '../../core/providers.dart';
 import '../../core/services/categories_service.dart';
 import '../../shared/widgets/pressable.dart';
 import '../../shared/widgets/state_pill.dart';
+import '../../shared/widgets/settings_gear_button.dart';
 import '../../core/models/learning_state.dart';
 
 class MoveCategoryScreen extends ConsumerWidget {
@@ -54,6 +55,7 @@ class MoveCategoryScreen extends ConsumerWidget {
           ),
         ),
         title: const Text('Moves'),
+        actions: const [SettingsGearButton(), SizedBox(width: AppSpacing.sm)],
       ),
       body: ListView(
         padding: const EdgeInsets.all(AppSpacing.screenEdge),

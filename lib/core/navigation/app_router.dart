@@ -16,6 +16,7 @@ import '../../features/breakdex/breakdex_screen.dart';
 import '../../features/move_category/move_category_screen.dart';
 import '../../features/combo_list/combo_list_screen.dart';
 import '../../features/add/add_screen.dart';
+import '../../features/party/party_screen.dart';
 import '../../features/auth/auth_screen.dart';
 import '../../features/settings/free_space_screen.dart';
 import '../../features/settings/sync_providers_screen.dart';
@@ -84,6 +85,15 @@ final appRouter = GoRouter(
             GoRoute(
               path: '/drill',
               builder: (context, state) => const FlashcardReviewScreen(),
+            ),
+          ],
+        ),
+        // Party — shake to discover random moves
+        StatefulShellBranch(
+          routes: [
+            GoRoute(
+              path: '/party',
+              builder: (context, state) => const PartyScreen(),
             ),
           ],
         ),
