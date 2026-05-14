@@ -104,11 +104,15 @@ class PidController {
 }
 ```
 
-**Tuning** (for cinematic, intentional zoom):
-- `Kp = 0.4` — moderate proportional response, not twitchy
-- `Ki = 0.05` — slow integral accumulation for sustained gestures
-- `Kd = 0.3` — strong derivative damping resists sudden jerks
+**Tuning** (for cinematic, intentional zoom, senior-friendly):
+- `Kp = 0.2` — gentle proportional tracking (reaches 63% of target in ~5 frames at 60fps)
+- `Ki = 0.03` — slow integral accumulation for sustained pinch holds
+- `Kd = 0.003` — light derivative damping to smooth sudden finger movements without introducing perceptible lag
 - `dt` clocked via `Stopwatch` elapsed since last gesture update
+- Dead zone at 0.008 absolute scale delta to filter micro-twitches (critical for seniors and users with motor impairments)
+- Rate limit at ±0.06 scale delta per frame to prevent jarring jumps
+- Zoom-in-only clamping: target never goes below current scale
+- Edge containment via `clampTransform` ensures video content always fills the viewport edge-to-edge
 
 **Rationale**: PID is the standard industrial control algorithm for this exact problem — tracking a setpoint while rejecting noise. The derivative term naturally dampens micro-twitches. The integral term ensures a user holding a steady zoom doesn't drift back.
 
@@ -189,7 +193,7 @@ Existing sync engine (`AssetSyncEngine`) accepts `CloudStorageProvider` via cons
 | Risk | Mitigation |
 |------|-----------|
 | Album regex too broad — picks up unrelated albums like "Breakfast Club" | Use word boundary `\b` anchors; the `break` prefix must be followed by `dex/ing/in/dance` patterns, or standalone `bboy/bgirl` |
-| PID controller oscillation if mistuned | Start with conservative gains (Kp=0.4, Ki=0.05, Kd=0.3). Add anti-windup clamping on integral term. Expose tuning constants as named parameters for easy adjustment |
+| PID controller oscillation if mistuned | Start with conservative gains (Kp=0.2, Ki=0.03, Kd=0.003). Low Kd avoids derivative-dominance at 60fps. Integral anti-windup clamping. Dead zone eliminates micro-twitch response. Rate limiting prevents single-frame jumps. Expose tuning constants as named parameters for easy adjustment |
 | Set nesting depth — infinite recursion if a set contains itself | Validate at insertion time: walk parent chain, reject cycles. Enforce a practical max depth of 5 |
 | Provenance table growth — unbounded append | Partition by month in future; for now, a single table with index is fine for <100K events |
 | Cloud abstraction leaks — some providers need auth tokens, others use system accounts | Provider interface includes `initialize(Map<String, dynamic> config)` factory. Auth is provider-specific but abstracted behind the interface |

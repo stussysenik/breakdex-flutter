@@ -1,8 +1,11 @@
 class PidController {
-  PidController({double kp = 0.4, double ki = 0.05, double kd = 0.3})
-    : _kp = kp,
-      _ki = ki,
-      _kd = kd;
+  PidController({
+    double kp = 0.2,
+    double ki = 0.03,
+    double kd = 0.003,
+  }) : _kp = kp,
+       _ki = ki,
+       _kd = kd;
 
   final double _kp;
   final double _ki;

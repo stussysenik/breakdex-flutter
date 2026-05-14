@@ -58,10 +58,10 @@ void main() {
       pid.update(2.0, 1.0, 0.016); // more accumulation
       pid.reset();
 
-      // After reset, behaves like fresh controller with defaults: Kp=0.4, Ki=0.05, Kd=0.3
+      // After reset, behaves like fresh controller with defaults: Kp=0.2, Ki=0.03, Kd=0.003
       final output = pid.update(1.5, 1.0, 0.016);
-      // P: 0.4*0.5=0.2, D: 0.3*(0.5/0.016)=9.375, I: 0.05*0.5*0.016=0.0004
-      expect(output, closeTo(9.5754, 0.01));
+      // P: 0.2*0.5=0.1, D: 0.003*(0.5/0.016)=0.09375, I: 0.03*0.5*0.016=0.00024
+      expect(output, closeTo(0.194, 0.01));
     });
 
     test('consistent behavior at 30fps vs 60fps dt', () {
@@ -92,8 +92,8 @@ void main() {
     test('default tuning constants match spec', () {
       final pid = PidController();
       final output = pid.update(1.5, 1.0, 0.016);
-      // P: 0.4*0.5=0.2, D: 0.3*(0.5/0.016)=9.375, I: 0.05*0.5*0.016=0.0004
-      expect(output, closeTo(9.575, 0.01));
+      // P: 0.2*0.5=0.1, D: 0.003*(0.5/0.016)=0.09375, I: 0.03*0.5*0.016=0.00024
+      expect(output, closeTo(0.194, 0.01));
       pid.reset();
     });
 

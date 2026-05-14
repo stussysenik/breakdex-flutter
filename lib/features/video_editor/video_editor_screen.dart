@@ -53,6 +53,7 @@ class _VideoEditorScreenState extends State<VideoEditorScreen>
   final TransformationController _transformController =
       TransformationController();
   final PidController _pidController = PidController();
+  double _gestureBaseScale = 1.0;
   final Stopwatch _scaleStopwatch = Stopwatch();
   bool _exporting = false;
   ExportProgress? _exportProgress;
@@ -1140,6 +1141,10 @@ class _VideoEditorScreenState extends State<VideoEditorScreen>
                           maxScale: viewport.maxScale,
                           boundaryMargin: EdgeInsets.zero,
                           constrained: false,
+                          onInteractionStart: (_) {
+                            _gestureBaseScale = _transformController.value
+                                .getMaxScaleOnAxis();
+                          },
                           onInteractionUpdate: (details) {
                             final dt =
                                 _scaleStopwatch.elapsedMilliseconds / 1000.0;
@@ -1147,16 +1152,34 @@ class _VideoEditorScreenState extends State<VideoEditorScreen>
                             final currentScale = _transformController
                                 .value
                                 .getMaxScaleOnAxis();
-                            final filtered =
-                                _pidController.update(
-                                  details.scale,
-                                  currentScale,
-                                  dt > 0 ? dt : 0.016,
-                                );
-                            final corrected =
-                                currentScale + (filtered - currentScale) * 0.5;
+
+                            // Map gesture-relative scale to absolute viewport scale
+                            final rawTarget = (_gestureBaseScale *
+                                    details.scale)
+                                .clamp(viewport.minScale, viewport.maxScale);
+
+                            // Zoom-in-only: never retreat below current scale
+                            final target =
+                                rawTarget.clamp(currentScale, viewport.maxScale);
+
+                            // Dead zone: ignore micro-twitches (senior-friendly)
+                            if ((target - currentScale).abs() < 0.008) return;
+
+                            // PID computes a correction delta (not absolute scale)
+                            final delta = _pidController.update(
+                              target,
+                              currentScale,
+                              dt > 0 ? dt : 0.016,
+                            );
+
+                            // Rate limit: prevent jarring jumps, allow tiny back-off
+                            final clampedDelta = delta.clamp(-0.004, 0.06);
+
+                            final newScale = (currentScale + clampedDelta)
+                                .clamp(viewport.minScale, viewport.maxScale);
+
                             _transformController.value =
-                                Matrix4.identity()..scale(corrected);
+                                Matrix4.identity()..scale(newScale);
                             _applyClampedPreviewTransform(viewport);
                           },
                           onInteractionEnd: (_) {
