@@ -16,6 +16,10 @@ class BottomNavShell extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    // Sync tab index so screens can react to visibility
+    ref.read(currentTabIndexProvider.notifier).state =
+        navigationShell.currentIndex;
+
     // Watch sync trigger to keep auto-sync alive
     ref.watch(syncTriggerProvider);
 

@@ -7,14 +7,17 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:sensors_plus/sensors_plus.dart';
 
 import '../../core/database/database.dart';
+import '../../core/design/colors.dart';
 import '../../core/design/spacing.dart';
 import '../../core/design/typography.dart';
 import '../../core/models/learning_state.dart';
+import '../../core/models/reviewable_item.dart' show MoveVideoPath;
 import '../../core/providers.dart';
 import '../../shared/widgets/settings_gear_button.dart';
 import '../../shared/widgets/state_pill.dart';
+import '../../shared/widgets/video_player_widget.dart' show RobustVideoPlayer;
 
-enum _PartyPhase { idle, revealing, revealed }
+enum _PartyPhase { idle, cycling, revealing, revealed }
 
 class PartyScreen extends ConsumerStatefulWidget {
   const PartyScreen({super.key});
@@ -37,6 +40,14 @@ class _PartyScreenState extends ConsumerState<PartyScreen>
   _PartyPhase _phase = _PartyPhase.idle;
   bool _shakeLocked = false;
   Timer? _lockoutTimer;
+  Timer? _cyclingTimer;
+  Move? _finalMove;
+  DateTime? _cycleStartTime;
+  DateTime? _lastFlip;
+
+  static const _cycleTotalDuration = Duration(milliseconds: 5500);
+  static const _cycleFlipBaseMs = 60;
+  static const _cycleFlipMaxMs = 260;
 
   late final AnimationController _revealController;
   late final Animation<double> _revealScaleY;
@@ -53,13 +64,13 @@ class _PartyScreenState extends ConsumerState<PartyScreen>
       parent: _revealController,
       curve: Curves.easeOutBack,
     );
-    _startShakeListener();
   }
 
   @override
   void dispose() {
     _stopShakeListener();
     _lockoutTimer?.cancel();
+    _cyclingTimer?.cancel();
     _revealController.dispose();
     super.dispose();
   }
@@ -88,16 +99,65 @@ class _PartyScreenState extends ConsumerState<PartyScreen>
   }
 
   void _onShakeDetected() {
-    if (_allMoves.isEmpty) return;
+    if (_allMoves.isEmpty || _shakeLocked) return;
     _shakeLocked = true;
+    _cancelCycling();
+
     HapticFeedback.heavyImpact();
     Future.delayed(const Duration(milliseconds: 80), () {
       HapticFeedback.heavyImpact();
     });
 
     final index = _random.nextInt(_allMoves.length);
+    _finalMove = _allMoves[index];
+    final now = DateTime.now();
+    _cycleStartTime = now;
+    _lastFlip = now;
+
     setState(() {
-      _currentMove = _allMoves[index];
+      _currentMove = _allMoves[_random.nextInt(_allMoves.length)];
+      _phase = _PartyPhase.cycling;
+    });
+
+    _cyclingTimer = Timer.periodic(
+      const Duration(milliseconds: _cycleFlipBaseMs),
+      _onCycleTick,
+    );
+  }
+
+  void _onCycleTick(Timer timer) {
+    if (!mounted || _cycleStartTime == null || _finalMove == null) {
+      timer.cancel();
+      return;
+    }
+
+    final now = DateTime.now();
+    final elapsed = now.difference(_cycleStartTime!);
+    if (elapsed >= _cycleTotalDuration) {
+      timer.cancel();
+      _finishCycling();
+      return;
+    }
+
+    // Decelerating flip interval: starts fast, slows down over time
+    final progress = elapsed.inMilliseconds / _cycleTotalDuration.inMilliseconds;
+    final intervalMs = _cycleFlipBaseMs +
+        ((_cycleFlipMaxMs - _cycleFlipBaseMs) * progress * progress).round();
+
+    final sinceLastFlip = now.difference(_lastFlip!);
+    if (sinceLastFlip.inMilliseconds >= intervalMs) {
+      _lastFlip = now;
+      setState(() {
+        _currentMove = _allMoves[_random.nextInt(_allMoves.length)];
+      });
+    }
+  }
+
+  void _finishCycling() {
+    if (_finalMove == null) return;
+
+    setState(() {
+      _currentMove = _finalMove;
       _phase = _PartyPhase.revealing;
     });
 
@@ -112,8 +172,22 @@ class _PartyScreenState extends ConsumerState<PartyScreen>
     });
   }
 
+  void _cancelCycling() {
+    _cyclingTimer?.cancel();
+    _cyclingTimer = null;
+  }
+
   @override
   Widget build(BuildContext context) {
+    final tabIndex = ref.watch(currentTabIndexProvider);
+
+    if (tabIndex == 3) {
+      _startShakeListener();
+    } else {
+      _stopShakeListener();
+      _cancelCycling();
+    }
+
     final movesAsync = ref.watch(_partyMovesProvider);
     final colorScheme = Theme.of(context).colorScheme;
 
@@ -215,6 +289,10 @@ class _PartyScreenState extends ConsumerState<PartyScreen>
       return _buildIdlePrompt(colorScheme);
     }
 
+    if (_phase == _PartyPhase.cycling) {
+      return _buildCyclingDisplay(colorScheme);
+    }
+
     if (_currentMove == null) return _buildIdlePrompt(colorScheme);
 
     return Center(
@@ -234,6 +312,60 @@ class _PartyScreenState extends ConsumerState<PartyScreen>
             child: _buildMoveCard(colorScheme, _currentMove!),
           ),
         ),
+      ),
+    );
+  }
+
+  Widget _buildCyclingDisplay(ColorScheme colorScheme) {
+    if (_currentMove == null) return const SizedBox.shrink();
+
+    final elapsed = _cycleStartTime != null
+        ? DateTime.now().difference(_cycleStartTime!)
+        : Duration.zero;
+    final progress = (elapsed.inMilliseconds /
+            _cycleTotalDuration.inMilliseconds)
+        .clamp(0.0, 1.0);
+
+    return Center(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          // Progress bar — fills up over the 5.5s cycle
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 48),
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(2),
+              child: LinearProgressIndicator(
+                value: progress,
+                minHeight: 3,
+                backgroundColor: colorScheme.surfaceContainerHighest,
+                color: colorScheme.primary,
+              ),
+            ),
+          ),
+          const SizedBox(height: AppSpacing.xl),
+          // Rapidly cycling move name
+          AnimatedSwitcher(
+            duration: const Duration(milliseconds: 60),
+            child: Text(
+              _currentMove!.name,
+              key: ValueKey(_currentMove!.id),
+              style: AppTypography.titleLarge.copyWith(
+                color: colorScheme.onSurface,
+                fontSize: 28,
+                fontWeight: FontWeight.w700,
+              ),
+              textAlign: TextAlign.center,
+            ),
+          ),
+          const SizedBox(height: AppSpacing.xl),
+          Text(
+            'Shuffling...',
+            style: AppTypography.bodySmall.copyWith(
+              color: colorScheme.secondary,
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -328,26 +460,38 @@ class _PartyScreenState extends ConsumerState<PartyScreen>
           ],
         ),
         const SizedBox(height: AppSpacing.lg),
-        Container(
-          width: double.infinity,
-          height: 220,
-          decoration: BoxDecoration(
-            color: colorScheme.surfaceContainerHighest,
+        if (move.videoPath != null)
+          ClipRRect(
             borderRadius: BorderRadius.circular(AppRadius.md),
-            border: Border.all(
-              color: colorScheme.outline.withValues(alpha: 0.15),
+            child: RobustVideoPlayer(
+              videoPath: move.resolvedVideoPath!,
+              autoPlay: true,
+              looping: true,
+              muted: true,
+              height: 220,
+            ),
+          )
+        else
+          Container(
+            width: double.infinity,
+            height: 220,
+            decoration: BoxDecoration(
+              color: colorScheme.surfaceContainerHighest,
+              borderRadius: BorderRadius.circular(AppRadius.md),
+              border: Border.all(
+                color: colorScheme.outline.withValues(alpha: 0.15),
+              ),
+            ),
+            child: Center(
+              child: Icon(
+                Icons.auto_awesome_outlined,
+                size: 48,
+                color: colorScheme.primary.withValues(alpha: 0.35),
+              ),
             ),
           ),
-          child: Center(
-            child: Icon(
-              move.videoPath != null
-                  ? Icons.play_circle_outline
-                  : Icons.auto_awesome_outlined,
-              size: 48,
-              color: colorScheme.primary.withValues(alpha: 0.35),
-            ),
-          ),
-        ),
+        const SizedBox(height: AppSpacing.sm),
+        _MoveReviewStats(moveId: move.id),
         if (move.notes != null && move.notes!.isNotEmpty) ...[
           const SizedBox(height: AppSpacing.md),
           Text(
@@ -367,12 +511,20 @@ class _PartyScreenState extends ConsumerState<PartyScreen>
   }
 
   Widget _buildBottomHint(ColorScheme colorScheme) {
-    final icon = Icons.vibration;
-    final text = _shakeLocked
-        ? 'Move locked — wait to shake again'
-        : _phase == _PartyPhase.idle
-            ? 'Shake to discover a random move'
-            : 'Shake again for another move';
+    final icon = _phase == _PartyPhase.cycling
+        ? Icons.casino_outlined
+        : Icons.vibration;
+
+    String text;
+    if (_shakeLocked && _phase != _PartyPhase.cycling) {
+      text = 'Move locked — wait to shake again';
+    } else if (_phase == _PartyPhase.idle) {
+      text = 'Shake to discover a random move';
+    } else if (_phase == _PartyPhase.cycling) {
+      text = 'Discovering your move...';
+    } else {
+      text = 'Shake again for another move';
+    }
 
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,
@@ -409,25 +561,120 @@ class _PhaseIndicator extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    if (phase == _PartyPhase.revealed) {
-      return Text(
-        'Shake again for another move',
-        style: AppTypography.caption.copyWith(
-          color: colorScheme.secondary.withValues(alpha: 0.5),
-        ),
-      );
+    switch (phase) {
+      case _PartyPhase.revealed:
+        return Text(
+          'Shake again for another move',
+          style: AppTypography.caption.copyWith(
+            color: colorScheme.secondary.withValues(alpha: 0.5),
+          ),
+        );
+      case _PartyPhase.revealing:
+        return SizedBox(
+          width: 16,
+          height: 16,
+          child: CircularProgressIndicator(
+            strokeWidth: 2,
+            color: colorScheme.primary.withValues(alpha: 0.5),
+          ),
+        );
+      case _PartyPhase.cycling:
+        return Text(
+          'Almost there...',
+          style: AppTypography.caption.copyWith(
+            color: colorScheme.primary.withValues(alpha: 0.6),
+          ),
+        );
+      case _PartyPhase.idle:
+        return const SizedBox.shrink();
     }
-    if (phase == _PartyPhase.revealing) {
-      return SizedBox(
-        width: 16,
-        height: 16,
-        child: CircularProgressIndicator(
-          strokeWidth: 2,
-          color: colorScheme.primary.withValues(alpha: 0.5),
+  }
+}
+
+final _moveFsrsCardProvider = StreamProvider.family<FsrsCard?, String>((ref, moveId) {
+  return ref.watch(fsrsCardsDaoProvider).watchAll().map(
+    (cards) => cards.cast<FsrsCard?>().firstWhere(
+      (c) => c!.entityId == moveId && c.entityType == 'move',
+      orElse: () => null,
+    ),
+  );
+});
+
+class _MoveReviewStats extends ConsumerWidget {
+  const _MoveReviewStats({required this.moveId});
+  final String moveId;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final cardAsync = ref.watch(_moveFsrsCardProvider(moveId));
+
+    return cardAsync.when(
+      loading: () => const SizedBox(height: 28),
+      error: (_, _) => const SizedBox.shrink(),
+      data: (card) {
+        if (card == null) return const SizedBox.shrink();
+        final hasReviews = card.reps > 0 || card.lapses > 0;
+        if (!hasReviews) return const SizedBox.shrink();
+
+        return Column(
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Icon(
+                  Icons.favorite,
+                  size: 14,
+                  color: AppColors.accent,
+                ),
+                const SizedBox(width: 4),
+                Text(
+                  '${card.reps}',
+                  style: AppTypography.caption.copyWith(
+                    color: AppColors.accent,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                const SizedBox(width: AppSpacing.md),
+                _StatChip(
+                  label: '${card.stability.toStringAsFixed(1)}d',
+                  icon: Icons.trending_up,
+                ),
+                const SizedBox(width: AppSpacing.sm),
+                _StatChip(
+                  label: '${(card.difficulty * 10).round()}%',
+                  icon: Icons.fitness_center,
+                ),
+              ],
+            ),
+          ],
+        );
+      },
+    );
+  }
+}
+
+class _StatChip extends StatelessWidget {
+  const _StatChip({required this.label, required this.icon});
+  final String label;
+  final IconData icon;
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Icon(icon, size: 12, color: colorScheme.secondary),
+        const SizedBox(width: 3),
+        Text(
+          label,
+          style: AppTypography.caption.copyWith(
+            color: colorScheme.secondary,
+            fontWeight: FontWeight.w600,
+          ),
         ),
-      );
-    }
-    return const SizedBox.shrink();
+      ],
+    );
   }
 }
 

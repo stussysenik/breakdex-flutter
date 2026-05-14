@@ -1,0 +1,43 @@
+# Flow: Party tab — shake to discover random moves
+# Seeds 10 fixture moves, navigates to Party tab, triggers shake,
+# and verifies the 6-second slot-machine cycling + reveal.
+#
+# Prerequisites: None (uses seeded party fixture)
+# Tags: party, smoke
+
+appId: com.breakdex.breakdex
+name: Party Shake to Discover
+tags:
+  - party
+  - smoke
+
+---
+
+- launchApp:
+    arguments:
+      maestro: true
+      breakdexFixture: party
+
+# Navigate to Party tab (index 3)
+- tapOn:
+    id: "party-tab"
+
+# Verify idle state
+- assertVisible: "Party"
+- assertVisible: "Shake to discover"
+- assertVisible: "10 moves ready"
+
+# Trigger shake via Maestro (iOS only — generates accelerometer events)
+- shake
+
+# Verify cycling phase — progress bar and move cycling
+- assertVisible: "Shuffling..."
+- takeScreenshot: party-screenshots/party-cycling
+
+# Wait for the full 6-second cycle + 500ms reveal to complete
+- extendedWaitUntil:
+    visible: "Shake again for another move"
+    timeout: 12000
+
+# Verify final state — a move name should be visible (any of the 10)
+- takeScreenshot: party-screenshots/party-revealed

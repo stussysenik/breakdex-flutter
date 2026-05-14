@@ -426,3 +426,8 @@ final visionMLProvider = Provider<VisionML>((_) => VisionML());
 
 /// Metal-backed SceneKit 3D rendering for skeleton visualization.
 final scene3DProvider = Provider<Scene3D>((_) => Scene3D());
+
+// ---------------------------------------------------------------------------
+// Tab visibility — tracks which bottom-nav tab is active
+// ---------------------------------------------------------------------------
+final currentTabIndexProvider = StateProvider<int>((_) => 0);

@@ -80,6 +80,8 @@ class AutomationFixtureService {
             : await _seedStressFixture(db);
         await prefs?.setString('review_mode', 'review');
         await prefs?.setString('review_session_source', 'stateBased');
+      case 'party':
+        await _seedPartyFixture(db);
       default:
         debugPrint('Ignoring unknown automation fixture: $fixture');
     }
@@ -631,5 +633,89 @@ class AutomationFixtureService {
     }
 
     return links;
+  }
+
+  /// Party fixture: 10 moves across categories for shake-to-discover testing.
+  static Future<void> _seedPartyFixture(AppDatabase db) async {
+    final now = DateTime.now().toUtc();
+
+    await db.transaction(() async {
+      await _clearAllTables(db);
+
+      await db.batch((batch) {
+        batch.insertAll(db.moves, [
+          MovesCompanion.insert(
+            id: 'party-move-01',
+            name: 'Windmill',
+            learningState: Value(LearningState.newState.dbValue),
+            category: const Value('power'),
+            createdAt: Value(now),
+          ),
+          MovesCompanion.insert(
+            id: 'party-move-02',
+            name: 'Headspin',
+            learningState: Value(LearningState.learning.dbValue),
+            category: const Value('power'),
+            createdAt: Value(now),
+          ),
+          MovesCompanion.insert(
+            id: 'party-move-03',
+            name: 'Flare',
+            learningState: Value(LearningState.mastery.dbValue),
+            category: const Value('power'),
+            createdAt: Value(now),
+          ),
+          MovesCompanion.insert(
+            id: 'party-move-04',
+            name: 'Six Step',
+            learningState: Value(LearningState.newState.dbValue),
+            category: const Value('footwork'),
+            createdAt: Value(now),
+          ),
+          MovesCompanion.insert(
+            id: 'party-move-05',
+            name: 'CCs',
+            learningState: Value(LearningState.learning.dbValue),
+            category: const Value('footwork'),
+            createdAt: Value(now),
+          ),
+          MovesCompanion.insert(
+            id: 'party-move-06',
+            name: 'Baby Freeze',
+            learningState: Value(LearningState.mastery.dbValue),
+            category: const Value('freeze'),
+            createdAt: Value(now),
+          ),
+          MovesCompanion.insert(
+            id: 'party-move-07',
+            name: 'Air Chair',
+            learningState: Value(LearningState.learning.dbValue),
+            category: const Value('freeze'),
+            createdAt: Value(now),
+          ),
+          MovesCompanion.insert(
+            id: 'party-move-08',
+            name: 'Indian Step',
+            learningState: Value(LearningState.newState.dbValue),
+            category: const Value('toprock'),
+            createdAt: Value(now),
+          ),
+          MovesCompanion.insert(
+            id: 'party-move-09',
+            name: 'Salsa Rock',
+            learningState: Value(LearningState.learning.dbValue),
+            category: const Value('toprock'),
+            createdAt: Value(now),
+          ),
+          MovesCompanion.insert(
+            id: 'party-move-10',
+            name: 'Elbow Airflare',
+            learningState: Value(LearningState.mastery.dbValue),
+            category: const Value('power'),
+            createdAt: Value(now),
+          ),
+        ]);
+      });
+    });
   }
 }
