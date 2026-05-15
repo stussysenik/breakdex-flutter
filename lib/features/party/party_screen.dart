@@ -4,6 +4,7 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:sensors_plus/sensors_plus.dart';
 
 import '../../core/database/database.dart';
@@ -76,7 +77,7 @@ class _PartyScreenState extends ConsumerState<PartyScreen>
   }
 
   void _startShakeListener() {
-    _shakeSubscription?.cancel();
+    if (_shakeSubscription != null) return;
     _shakeSubscription = accelerometerEventStream(
       samplingPeriod: const Duration(milliseconds: 50),
     ).listen((event) {
@@ -99,7 +100,7 @@ class _PartyScreenState extends ConsumerState<PartyScreen>
   }
 
   void _onShakeDetected() {
-    if (_allMoves.isEmpty || _shakeLocked) return;
+    if (_allMoves.isEmpty || _shakeLocked || _phase == _PartyPhase.cycling) return;
     _shakeLocked = true;
     _cancelCycling();
 
@@ -177,6 +178,8 @@ class _PartyScreenState extends ConsumerState<PartyScreen>
   void _cancelCycling() {
     _cyclingTimer?.cancel();
     _cyclingTimer = null;
+    _shakeLocked = false;
+    _phase = _PartyPhase.idle;
   }
 
   @override
@@ -419,14 +422,17 @@ class _PartyScreenState extends ConsumerState<PartyScreen>
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        Text(
-          move.name,
-          style: AppTypography.titleLarge.copyWith(
-            color: colorScheme.onSurface,
-            fontSize: 28,
-            fontWeight: FontWeight.w700,
+        GestureDetector(
+          onTap: () => context.push('/breakdex/move/${move.id}'),
+          child: Text(
+            move.name,
+            style: AppTypography.titleLarge.copyWith(
+              color: colorScheme.onSurface,
+              fontSize: 28,
+              fontWeight: FontWeight.w700,
+            ),
+            textAlign: TextAlign.center,
           ),
-          textAlign: TextAlign.center,
         ),
         const SizedBox(height: AppSpacing.sm),
         Row(

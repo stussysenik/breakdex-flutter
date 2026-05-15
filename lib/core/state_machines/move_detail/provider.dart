@@ -49,7 +49,7 @@ class MoveDetailNotifier extends Notifier<MoveDetailState> {
   /// Initialize the machine with the given move data.
   void init(Move move) {
     _machine = MoveDetailMachine(Idle(move));
-    ref.notifyListeners();
+    state = _machine!.state;
   }
 
   /// Dispatch an event to the machine. Side effects execute automatically.
@@ -61,7 +61,7 @@ class MoveDetailNotifier extends Notifier<MoveDetailState> {
 
     _m.send(event);
     _executeEntryActions(_m.state);
-    ref.notifyListeners();
+    state = _m.state;
   }
 
   void _executeEntryActions(MoveDetailState state) {

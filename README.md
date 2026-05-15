@@ -112,6 +112,31 @@ Theme, font, categories, sync, and export control. Native iOS share sheet via UI
 
 ---
 
+## Data Model & Naming
+
+### The database is the source of truth — folders are just storage
+
+Every move and combo lives in a SQLite database (Drift ORM). The folder structure on disk is purely for file storage and does **not** drive the app's behavior. This means:
+
+- **Renaming a move** only updates the `name` column in the database. The video file, its path, and its folder stay exactly as they were. Rename freely — nothing on disk changes.
+- **Deleting a move** removes the database row and the sandboxed video copy. Your original source file (Photos, Files, Camera roll) is never touched.
+- **Video files are named by UUID** (e.g. `Documents/Moves/a1b2c3d4-e5f6-7890-abcd-ef1234567890.mp4`), not by the move name. The `videoPath` column stores a relative reference (`Moves/uuid.mp4`) that the app resolves at runtime.
+- **Self-healing paths**: if iOS changes the app's container UUID (common on reinstall/update), `VideoPathResolver` recomputes the absolute path. If the file is still missing, it scans `Documents/Moves/` and `Documents/videos/` by filename as a last-resort fallback.
+- **Content-addressable backup**: `CanonicalFolderService` maintains a content-addressed copy in `Documents/.breakdex-master/videos/` keyed by SHA-256 hash — immune to renames, moves, or UUID changes.
+
+### Resolution chain (when the app needs to play a video)
+
+```
+Move row in DB
+  └─ videoPath = "Moves/uuid.mp4" (relative)
+       └─ VideoPathResolver.toAbsolute()
+            └─ /current-container/Documents/Moves/uuid.mp4
+                 ├─ File exists? → play it
+                 └─ File missing? → resolve() scans disk by filename
+```
+
+---
+
 ## Video Storage & Cloud Backup
 
 ### Your videos are always copies — originals are never touched
@@ -135,7 +160,6 @@ Every video you import (from Photos, Files, or Camera) is **copied** into Breakd
 
 - **Inside the app**: Only the sandbox copy is deleted. The video thumbnail is cleaned up. If the move had a managed Photos album copy, that is also removed.
 - **Your original source file**: Completely untouched. The app never references it after import.
-- **Renaming a move**: Only changes the display name in the database. The underlying video file is unaffected.
 
 ### Cloud backup (iCloud / Google Drive)
 

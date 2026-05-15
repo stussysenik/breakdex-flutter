@@ -40,6 +40,7 @@ class ReviewCard extends ConsumerStatefulWidget {
     this.onRepick,
     this.combo,
     this.onEnd,
+    this.onTitleTap,
     this.loopEnabled = true,
     this.onLoopToggle,
     this.playbackSpeed = 1.0,
@@ -66,6 +67,9 @@ class ReviewCard extends ConsumerStatefulWidget {
 
   /// Callback to end the review session (shown as top-right button).
   final VoidCallback? onEnd;
+
+  /// Called when the learner taps the move/combo name to navigate to detail.
+  final VoidCallback? onTitleTap;
 
   // ── Playback control props ──────────────────────────────────────────────
 
@@ -288,6 +292,7 @@ class _ReviewCardState extends ConsumerState<ReviewCard> {
           canEditState: widget.canEditState,
           showMetadata: widget.showMetadataPanel,
           onStatePillTap: widget.onStatePillTap,
+          onTitleTap: widget.onTitleTap,
           comboMoves: comboMoves,
           activeComboStepIndex: activeComboStepIndex,
           onStepSelected: isCombo

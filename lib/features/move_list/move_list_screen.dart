@@ -44,7 +44,26 @@ final _arsenalSegmentProvider = StateProvider<ArsenalSegment>(
   (_) => ArsenalSegment.moves,
 );
 
-final _searchQueryProvider = StateProvider<String>((ref) => '');
+final _searchQueryProvider = NotifierProvider<_SearchQueryNotifier, String>(
+  _SearchQueryNotifier.new,
+);
+
+class _SearchQueryNotifier extends Notifier<String> {
+  Timer? _debounce;
+
+  @override
+  String build() {
+    ref.onDispose(() => _debounce?.cancel());
+    return '';
+  }
+
+  void onChanged(String value) {
+    _debounce?.cancel();
+    _debounce = Timer(const Duration(milliseconds: 300), () {
+      state = value;
+    });
+  }
+}
 final _dismissedReliabilityReportEpochProvider = StateProvider<int?>(
   (ref) => null,
 );
@@ -137,7 +156,7 @@ class MoveListScreen extends ConsumerWidget {
                         textField: true,
                         child: TextField(
                           onChanged: (v) =>
-                              ref.read(_searchQueryProvider.notifier).state = v,
+                              ref.read(_searchQueryProvider.notifier).onChanged(v),
                           decoration: InputDecoration(
                             hintText: segment == ArsenalSegment.moves
                                 ? 'Search moves...'

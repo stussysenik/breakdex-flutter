@@ -8,6 +8,7 @@ import 'package:go_router/go_router.dart';
 import '../../core/design/spacing.dart';
 import '../../core/design/theme.dart';
 import '../../core/design/typography.dart';
+import '../../core/models/learning_state.dart';
 import '../../core/models/move_creation.dart';
 import '../../core/providers.dart';
 import '../../core/services/categories_service.dart';
@@ -63,6 +64,7 @@ class AddScreen extends ConsumerWidget {
           category: metadata.category,
           localVideoPath: pickResult.localPath,
           count: metadata.count,
+          learningState: metadata.learningState.name,
         ),
       );
 
@@ -156,10 +158,12 @@ class _MetadataResult {
   final String name;
   final String category;
   final int count;
+  final LearningState learningState;
   const _MetadataResult({
     required this.name,
     required this.category,
     required this.count,
+    required this.learningState,
   });
 }
 
@@ -174,6 +178,7 @@ class _ClipMetadataFormState extends ConsumerState<_ClipMetadataForm> {
   String? _errorText;
   bool _nameEmpty = true;
   int _count = 4;
+  LearningState _selectedState = LearningState.newState;
 
   @override
   void initState() {
@@ -213,6 +218,7 @@ class _ClipMetadataFormState extends ConsumerState<_ClipMetadataForm> {
         name: normalized,
         category: _selectedCategory!,
         count: _count,
+        learningState: _selectedState,
       ),
     );
   }
@@ -311,6 +317,46 @@ class _ClipMetadataFormState extends ConsumerState<_ClipMetadataForm> {
                     ),
                   ),
               ],
+            ),
+            const SizedBox(height: AppSpacing.lg),
+            Text('Learning State', style: AppTypography.caption.copyWith(color: colorScheme.secondary, fontWeight: FontWeight.w600)),
+            const SizedBox(height: AppSpacing.sm),
+            Row(
+              children: LearningState.values.map((state) {
+                final selected = _selectedState == state;
+                return Padding(
+                  padding: const EdgeInsets.only(right: AppSpacing.sm),
+                  child: GestureDetector(
+                    onTap: () {
+                      HapticFeedback.selectionClick();
+                      setState(() => _selectedState = state);
+                    },
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                      decoration: BoxDecoration(
+                        color: selected ? colorScheme.primary : colorScheme.surfaceContainerHighest,
+                        borderRadius: BorderRadius.circular(AppRadius.sm),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Container(
+                            width: 8, height: 8,
+                            decoration: BoxDecoration(
+                              color: selected ? Colors.white : state.color,
+                              shape: BoxShape.circle,
+                            ),
+                          ),
+                          const SizedBox(width: 6),
+                          Text(state.displayText, style: AppTypography.caption.copyWith(
+                            color: selected ? Colors.white : colorScheme.onSurface,
+                          )),
+                        ],
+                      ),
+                    ),
+                  ),
+                );
+              }).toList(),
             ),
             const SizedBox(height: AppSpacing.lg),
             Text('Counts', style: AppTypography.caption.copyWith(color: colorScheme.secondary, fontWeight: FontWeight.w600)),

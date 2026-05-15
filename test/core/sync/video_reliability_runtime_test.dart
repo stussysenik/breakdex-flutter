@@ -81,8 +81,24 @@ void main() {
 
       expect(
         report.snackBarMessage,
-        'Restored 1 recent video. 1 video is waiting for WiFi.',
+        '1 video is waiting for WiFi.',
       );
+    });
+
+    test('hasUserSignal is false when only restoredLocally > 0', () {
+      final report = VideoReliabilityReport(
+        trigger: VideoReliabilityTrigger.startup,
+        scannedMoves: 4,
+        availableLocally: 0,
+        restoredLocally: 3,
+        waitingForConnection: 0,
+        waitingForWifi: 0,
+        waitingForBudget: 0,
+        failed: 0,
+        completedAt: DateTime.utc(2026, 5, 1, 8),
+      );
+
+      expect(report.hasUserSignal, false);
     });
   });
 

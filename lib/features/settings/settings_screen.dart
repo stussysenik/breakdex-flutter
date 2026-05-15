@@ -251,17 +251,19 @@ class SettingsScreen extends ConsumerWidget {
                 child: SettingsListGroup(
                   children: [
                     for (final cat in categories)
-                      _CategoryRow(
-                        name: cat.name,
-                        color: cat.color,
-                        isDefault: cat.isDefault,
-                        usageCount: categoryUsage[cat.name] ?? 0,
-                        onTap: () => _showCategoryActionsSheet(
-                          context,
-                          ref,
-                          cat,
-                          usageCount: categoryUsage[cat.name] ?? 0,
-                        ),
+                          _CategoryRow(
+                            name: cat.name,
+                            color: cat.color,
+                            isDefault: cat.isDefault,
+                            usageCount: categoryUsage[cat.name] ?? 0,
+                            onTap: () =>
+                                context.push('/breakdex/moves/${Uri.encodeComponent(cat.name)}'),
+                            onLongPress: () => _showCategoryActionsSheet(
+                              context,
+                              ref,
+                              cat,
+                              usageCount: categoryUsage[cat.name] ?? 0,
+                            ),
                       ),
                   ],
                 ),
@@ -1234,6 +1236,7 @@ class _CategoryRow extends StatelessWidget {
     required this.isDefault,
     required this.usageCount,
     required this.onTap,
+    this.onLongPress,
   });
 
   final String name;
@@ -1241,6 +1244,7 @@ class _CategoryRow extends StatelessWidget {
   final bool isDefault;
   final int usageCount;
   final VoidCallback onTap;
+  final VoidCallback? onLongPress;
 
   @override
   Widget build(BuildContext context) {
@@ -1252,6 +1256,7 @@ class _CategoryRow extends StatelessWidget {
 
     return SettingsListRow(
       onTap: onTap,
+      onLongPress: onLongPress,
       leading: Container(
         width: 10,
         height: 10,

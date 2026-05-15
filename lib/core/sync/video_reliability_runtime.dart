@@ -47,7 +47,6 @@ class VideoReliabilityReport {
   final DateTime completedAt;
 
   bool get hasUserSignal =>
-      restoredLocally > 0 ||
       waitingForConnection > 0 ||
       waitingForWifi > 0 ||
       waitingForBudget > 0 ||
@@ -88,11 +87,6 @@ class VideoReliabilityReport {
 
   String get snackBarMessage {
     final parts = <String>[];
-    if (restoredLocally > 0) {
-      parts.add(
-        'Restored $restoredLocally recent video${restoredLocally == 1 ? '' : 's'}.',
-      );
-    }
     if (failed > 0) {
       parts.add(
         "Couldn't restore $failed recent video${failed == 1 ? '' : 's'}.",

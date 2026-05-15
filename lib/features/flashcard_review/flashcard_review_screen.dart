@@ -403,6 +403,18 @@ class _FlashcardReviewScreenState extends ConsumerState<FlashcardReviewScreen>
                       currentIndex: _currentIndex,
                       totalItems: _items.length,
                       onEnd: _confirmEndSession,
+                      onTitleTap: () {
+                        final target = _items[_currentIndex];
+                        if (target.isMove) {
+                          context.push(
+                            '/breakdex/move/${target.entityId}',
+                          );
+                        } else {
+                          context.push(
+                            '/breakdex/combo/${target.entityId}',
+                          );
+                        }
+                      },
                       onStatePillTap: () {
                         if (item.isMove && item.move != null) {
                           _showStatePicker(item.move!, _currentIndex);

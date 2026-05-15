@@ -33,6 +33,7 @@ class InstrumentPanel extends StatelessWidget {
     this.canEditState = true,
     this.showMetadata = true,
     this.onStatePillTap,
+    this.onTitleTap,
     // Combo props
     this.comboMoves = const [],
     this.activeComboStepIndex = 0,
@@ -67,6 +68,10 @@ class InstrumentPanel extends StatelessWidget {
   /// Called when the learner taps the [StatePill] to manually override
   /// the learning state.
   final VoidCallback? onStatePillTap;
+
+  /// Called when the learner taps the move/combo name title to navigate
+  /// to the detail screen.
+  final VoidCallback? onTitleTap;
 
   // ── Combo-specific props ──────────────────────────────────────────────
 
@@ -155,15 +160,18 @@ class InstrumentPanel extends StatelessWidget {
                 children: [
                   if (showTitle)
                     Expanded(
-                      child: Text(
-                        title,
-                        style: AppTypography.titleSmall.copyWith(
-                          color: colorScheme.onSurface,
-                          fontWeight: FontWeight.w700,
-                          fontSize: 18,
+                      child: GestureDetector(
+                        onTap: onTitleTap,
+                        child: Text(
+                          title,
+                          style: AppTypography.titleSmall.copyWith(
+                            color: colorScheme.onSurface,
+                            fontWeight: FontWeight.w700,
+                            fontSize: 18,
+                          ),
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
                         ),
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
                       ),
                     )
                   else

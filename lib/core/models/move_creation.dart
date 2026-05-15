@@ -5,6 +5,7 @@ class CreateMoveRequest {
     this.localVideoPath,
     this.originalVideoName,
     this.count = 4,
+    this.learningState = 'NEW',
   });
 
   final String name;
@@ -12,6 +13,7 @@ class CreateMoveRequest {
   final String? localVideoPath;
   final String? originalVideoName;
   final int count;
+  final String learningState;
 }
 
 class CreateMoveResult {

@@ -62,6 +62,7 @@ class MoveCreationService {
         videoPath: Value(storedVideoPath),
         originalVideoName: Value(request.originalVideoName),
         count: Value(request.count),
+        learningState: Value(request.learningState),
       ),
     );
 
