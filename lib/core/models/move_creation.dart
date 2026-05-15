@@ -4,12 +4,14 @@ class CreateMoveRequest {
     required this.category,
     this.localVideoPath,
     this.originalVideoName,
+    this.count = 4,
   });
 
   final String name;
   final String category;
   final String? localVideoPath;
   final String? originalVideoName;
+  final int count;
 }
 
 class CreateMoveResult {

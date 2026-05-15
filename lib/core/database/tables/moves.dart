@@ -15,6 +15,7 @@ class Moves extends Table {
   TextColumn get notes => text().nullable()();
   TextColumn get imagePaths => text().nullable()();
   TextColumn get contentHash => text().nullable()();
+  IntColumn get count => integer().withDefault(const Constant(4))();
   DateTimeColumn get createdAt => dateTime().withDefault(currentDateAndTime)();
 
   @override

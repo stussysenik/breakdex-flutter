@@ -121,6 +121,7 @@ class ReviewableItemWithCard {
         category: 'default',
         videoPath: null,
         originalVideoName: null,
+        count: 4,
         createdAt: DateTime.now(),
       ));
     }

@@ -160,6 +160,16 @@ class $MovesTable extends Moves with TableInfo<$MovesTable, Move> {
     type: DriftSqlType.string,
     requiredDuringInsert: false,
   );
+  static const VerificationMeta _countMeta = const VerificationMeta('count');
+  @override
+  late final GeneratedColumn<int> count = GeneratedColumn<int>(
+    'count',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(4),
+  );
   static const VerificationMeta _createdAtMeta = const VerificationMeta(
     'createdAt',
   );
@@ -188,6 +198,7 @@ class $MovesTable extends Moves with TableInfo<$MovesTable, Move> {
     notes,
     imagePaths,
     contentHash,
+    count,
     createdAt,
   ];
   @override
@@ -308,6 +319,12 @@ class $MovesTable extends Moves with TableInfo<$MovesTable, Move> {
         ),
       );
     }
+    if (data.containsKey('count')) {
+      context.handle(
+        _countMeta,
+        count.isAcceptableOrUnknown(data['count']!, _countMeta),
+      );
+    }
     if (data.containsKey('created_at')) {
       context.handle(
         _createdAtMeta,
@@ -379,6 +396,10 @@ class $MovesTable extends Moves with TableInfo<$MovesTable, Move> {
         DriftSqlType.string,
         data['${effectivePrefix}content_hash'],
       ),
+      count: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}count'],
+      )!,
       createdAt: attachedDatabase.typeMapping.read(
         DriftSqlType.dateTime,
         data['${effectivePrefix}created_at'],
@@ -407,6 +428,7 @@ class Move extends DataClass implements Insertable<Move> {
   final String? notes;
   final String? imagePaths;
   final String? contentHash;
+  final int count;
   final DateTime createdAt;
   const Move({
     required this.id,
@@ -423,6 +445,7 @@ class Move extends DataClass implements Insertable<Move> {
     this.notes,
     this.imagePaths,
     this.contentHash,
+    required this.count,
     required this.createdAt,
   });
   @override
@@ -462,6 +485,7 @@ class Move extends DataClass implements Insertable<Move> {
     if (!nullToAbsent || contentHash != null) {
       map['content_hash'] = Variable<String>(contentHash);
     }
+    map['count'] = Variable<int>(count);
     map['created_at'] = Variable<DateTime>(createdAt);
     return map;
   }
@@ -502,6 +526,7 @@ class Move extends DataClass implements Insertable<Move> {
       contentHash: contentHash == null && nullToAbsent
           ? const Value.absent()
           : Value(contentHash),
+      count: Value(count),
       createdAt: Value(createdAt),
     );
   }
@@ -532,6 +557,7 @@ class Move extends DataClass implements Insertable<Move> {
       notes: serializer.fromJson<String?>(json['notes']),
       imagePaths: serializer.fromJson<String?>(json['imagePaths']),
       contentHash: serializer.fromJson<String?>(json['contentHash']),
+      count: serializer.fromJson<int>(json['count']),
       createdAt: serializer.fromJson<DateTime>(json['createdAt']),
     );
   }
@@ -553,6 +579,7 @@ class Move extends DataClass implements Insertable<Move> {
       'notes': serializer.toJson<String?>(notes),
       'imagePaths': serializer.toJson<String?>(imagePaths),
       'contentHash': serializer.toJson<String?>(contentHash),
+      'count': serializer.toJson<int>(count),
       'createdAt': serializer.toJson<DateTime>(createdAt),
     };
   }
@@ -572,6 +599,7 @@ class Move extends DataClass implements Insertable<Move> {
     Value<String?> notes = const Value.absent(),
     Value<String?> imagePaths = const Value.absent(),
     Value<String?> contentHash = const Value.absent(),
+    int? count,
     DateTime? createdAt,
   }) => Move(
     id: id ?? this.id,
@@ -598,6 +626,7 @@ class Move extends DataClass implements Insertable<Move> {
     notes: notes.present ? notes.value : this.notes,
     imagePaths: imagePaths.present ? imagePaths.value : this.imagePaths,
     contentHash: contentHash.present ? contentHash.value : this.contentHash,
+    count: count ?? this.count,
     createdAt: createdAt ?? this.createdAt,
   );
   Move copyWithCompanion(MovesCompanion data) {
@@ -634,6 +663,7 @@ class Move extends DataClass implements Insertable<Move> {
       contentHash: data.contentHash.present
           ? data.contentHash.value
           : this.contentHash,
+      count: data.count.present ? data.count.value : this.count,
       createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
     );
   }
@@ -655,6 +685,7 @@ class Move extends DataClass implements Insertable<Move> {
           ..write('notes: $notes, ')
           ..write('imagePaths: $imagePaths, ')
           ..write('contentHash: $contentHash, ')
+          ..write('count: $count, ')
           ..write('createdAt: $createdAt')
           ..write(')'))
         .toString();
@@ -676,6 +707,7 @@ class Move extends DataClass implements Insertable<Move> {
     notes,
     imagePaths,
     contentHash,
+    count,
     createdAt,
   );
   @override
@@ -696,6 +728,7 @@ class Move extends DataClass implements Insertable<Move> {
           other.notes == this.notes &&
           other.imagePaths == this.imagePaths &&
           other.contentHash == this.contentHash &&
+          other.count == this.count &&
           other.createdAt == this.createdAt);
 }
 
@@ -714,6 +747,7 @@ class MovesCompanion extends UpdateCompanion<Move> {
   final Value<String?> notes;
   final Value<String?> imagePaths;
   final Value<String?> contentHash;
+  final Value<int> count;
   final Value<DateTime> createdAt;
   final Value<int> rowid;
   const MovesCompanion({
@@ -731,6 +765,7 @@ class MovesCompanion extends UpdateCompanion<Move> {
     this.notes = const Value.absent(),
     this.imagePaths = const Value.absent(),
     this.contentHash = const Value.absent(),
+    this.count = const Value.absent(),
     this.createdAt = const Value.absent(),
     this.rowid = const Value.absent(),
   });
@@ -749,6 +784,7 @@ class MovesCompanion extends UpdateCompanion<Move> {
     this.notes = const Value.absent(),
     this.imagePaths = const Value.absent(),
     this.contentHash = const Value.absent(),
+    this.count = const Value.absent(),
     this.createdAt = const Value.absent(),
     this.rowid = const Value.absent(),
   }) : id = Value(id),
@@ -768,6 +804,7 @@ class MovesCompanion extends UpdateCompanion<Move> {
     Expression<String>? notes,
     Expression<String>? imagePaths,
     Expression<String>? contentHash,
+    Expression<int>? count,
     Expression<DateTime>? createdAt,
     Expression<int>? rowid,
   }) {
@@ -788,6 +825,7 @@ class MovesCompanion extends UpdateCompanion<Move> {
       if (notes != null) 'notes': notes,
       if (imagePaths != null) 'image_paths': imagePaths,
       if (contentHash != null) 'content_hash': contentHash,
+      if (count != null) 'count': count,
       if (createdAt != null) 'created_at': createdAt,
       if (rowid != null) 'rowid': rowid,
     });
@@ -808,6 +846,7 @@ class MovesCompanion extends UpdateCompanion<Move> {
     Value<String?>? notes,
     Value<String?>? imagePaths,
     Value<String?>? contentHash,
+    Value<int>? count,
     Value<DateTime>? createdAt,
     Value<int>? rowid,
   }) {
@@ -826,6 +865,7 @@ class MovesCompanion extends UpdateCompanion<Move> {
       notes: notes ?? this.notes,
       imagePaths: imagePaths ?? this.imagePaths,
       contentHash: contentHash ?? this.contentHash,
+      count: count ?? this.count,
       createdAt: createdAt ?? this.createdAt,
       rowid: rowid ?? this.rowid,
     );
@@ -880,6 +920,9 @@ class MovesCompanion extends UpdateCompanion<Move> {
     if (contentHash.present) {
       map['content_hash'] = Variable<String>(contentHash.value);
     }
+    if (count.present) {
+      map['count'] = Variable<int>(count.value);
+    }
     if (createdAt.present) {
       map['created_at'] = Variable<DateTime>(createdAt.value);
     }
@@ -906,6 +949,7 @@ class MovesCompanion extends UpdateCompanion<Move> {
           ..write('notes: $notes, ')
           ..write('imagePaths: $imagePaths, ')
           ..write('contentHash: $contentHash, ')
+          ..write('count: $count, ')
           ..write('createdAt: $createdAt, ')
           ..write('rowid: $rowid')
           ..write(')'))
@@ -11480,6 +11524,313 @@ class ProvenanceEventsCompanion extends UpdateCompanion<ProvenanceEvent> {
   }
 }
 
+class $MoveNoteEntriesTable extends MoveNoteEntries
+    with TableInfo<$MoveNoteEntriesTable, MoveNoteEntry> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $MoveNoteEntriesTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+    'id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _moveIdMeta = const VerificationMeta('moveId');
+  @override
+  late final GeneratedColumn<String> moveId = GeneratedColumn<String>(
+    'move_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES moves (id) ON DELETE CASCADE',
+    ),
+  );
+  static const VerificationMeta _bodyMeta = const VerificationMeta('body');
+  @override
+  late final GeneratedColumn<String> body = GeneratedColumn<String>(
+    'body',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _createdAtMeta = const VerificationMeta(
+    'createdAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> createdAt = GeneratedColumn<DateTime>(
+    'created_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+    defaultValue: currentDateAndTime,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [id, moveId, body, createdAt];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'move_note_entries';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<MoveNoteEntry> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    } else if (isInserting) {
+      context.missing(_idMeta);
+    }
+    if (data.containsKey('move_id')) {
+      context.handle(
+        _moveIdMeta,
+        moveId.isAcceptableOrUnknown(data['move_id']!, _moveIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_moveIdMeta);
+    }
+    if (data.containsKey('body')) {
+      context.handle(
+        _bodyMeta,
+        body.isAcceptableOrUnknown(data['body']!, _bodyMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_bodyMeta);
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(
+        _createdAtMeta,
+        createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  MoveNoteEntry map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return MoveNoteEntry(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}id'],
+      )!,
+      moveId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}move_id'],
+      )!,
+      body: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}body'],
+      )!,
+      createdAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}created_at'],
+      )!,
+    );
+  }
+
+  @override
+  $MoveNoteEntriesTable createAlias(String alias) {
+    return $MoveNoteEntriesTable(attachedDatabase, alias);
+  }
+}
+
+class MoveNoteEntry extends DataClass implements Insertable<MoveNoteEntry> {
+  final String id;
+  final String moveId;
+  final String body;
+  final DateTime createdAt;
+  const MoveNoteEntry({
+    required this.id,
+    required this.moveId,
+    required this.body,
+    required this.createdAt,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    map['move_id'] = Variable<String>(moveId);
+    map['body'] = Variable<String>(body);
+    map['created_at'] = Variable<DateTime>(createdAt);
+    return map;
+  }
+
+  MoveNoteEntriesCompanion toCompanion(bool nullToAbsent) {
+    return MoveNoteEntriesCompanion(
+      id: Value(id),
+      moveId: Value(moveId),
+      body: Value(body),
+      createdAt: Value(createdAt),
+    );
+  }
+
+  factory MoveNoteEntry.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return MoveNoteEntry(
+      id: serializer.fromJson<String>(json['id']),
+      moveId: serializer.fromJson<String>(json['moveId']),
+      body: serializer.fromJson<String>(json['body']),
+      createdAt: serializer.fromJson<DateTime>(json['createdAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'moveId': serializer.toJson<String>(moveId),
+      'body': serializer.toJson<String>(body),
+      'createdAt': serializer.toJson<DateTime>(createdAt),
+    };
+  }
+
+  MoveNoteEntry copyWith({
+    String? id,
+    String? moveId,
+    String? body,
+    DateTime? createdAt,
+  }) => MoveNoteEntry(
+    id: id ?? this.id,
+    moveId: moveId ?? this.moveId,
+    body: body ?? this.body,
+    createdAt: createdAt ?? this.createdAt,
+  );
+  MoveNoteEntry copyWithCompanion(MoveNoteEntriesCompanion data) {
+    return MoveNoteEntry(
+      id: data.id.present ? data.id.value : this.id,
+      moveId: data.moveId.present ? data.moveId.value : this.moveId,
+      body: data.body.present ? data.body.value : this.body,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('MoveNoteEntry(')
+          ..write('id: $id, ')
+          ..write('moveId: $moveId, ')
+          ..write('body: $body, ')
+          ..write('createdAt: $createdAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(id, moveId, body, createdAt);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is MoveNoteEntry &&
+          other.id == this.id &&
+          other.moveId == this.moveId &&
+          other.body == this.body &&
+          other.createdAt == this.createdAt);
+}
+
+class MoveNoteEntriesCompanion extends UpdateCompanion<MoveNoteEntry> {
+  final Value<String> id;
+  final Value<String> moveId;
+  final Value<String> body;
+  final Value<DateTime> createdAt;
+  final Value<int> rowid;
+  const MoveNoteEntriesCompanion({
+    this.id = const Value.absent(),
+    this.moveId = const Value.absent(),
+    this.body = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  MoveNoteEntriesCompanion.insert({
+    required String id,
+    required String moveId,
+    required String body,
+    this.createdAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  }) : id = Value(id),
+       moveId = Value(moveId),
+       body = Value(body);
+  static Insertable<MoveNoteEntry> custom({
+    Expression<String>? id,
+    Expression<String>? moveId,
+    Expression<String>? body,
+    Expression<DateTime>? createdAt,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (moveId != null) 'move_id': moveId,
+      if (body != null) 'body': body,
+      if (createdAt != null) 'created_at': createdAt,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  MoveNoteEntriesCompanion copyWith({
+    Value<String>? id,
+    Value<String>? moveId,
+    Value<String>? body,
+    Value<DateTime>? createdAt,
+    Value<int>? rowid,
+  }) {
+    return MoveNoteEntriesCompanion(
+      id: id ?? this.id,
+      moveId: moveId ?? this.moveId,
+      body: body ?? this.body,
+      createdAt: createdAt ?? this.createdAt,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (moveId.present) {
+      map['move_id'] = Variable<String>(moveId.value);
+    }
+    if (body.present) {
+      map['body'] = Variable<String>(body.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<DateTime>(createdAt.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('MoveNoteEntriesCompanion(')
+          ..write('id: $id, ')
+          ..write('moveId: $moveId, ')
+          ..write('body: $body, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$AppDatabase extends GeneratedDatabase {
   _$AppDatabase(QueryExecutor e) : super(e);
   $AppDatabaseManager get managers => $AppDatabaseManager(this);
@@ -11506,6 +11857,9 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   late final $SetsTable sets = $SetsTable(this);
   late final $SetItemsTable setItems = $SetItemsTable(this);
   late final $ProvenanceEventsTable provenanceEvents = $ProvenanceEventsTable(
+    this,
+  );
+  late final $MoveNoteEntriesTable moveNoteEntries = $MoveNoteEntriesTable(
     this,
   );
   late final MovesDao movesDao = MovesDao(this as AppDatabase);
@@ -11561,6 +11915,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     sets,
     setItems,
     provenanceEvents,
+    moveNoteEntries,
   ];
   @override
   StreamQueryUpdateRules get streamUpdateRules => const StreamQueryUpdateRules([
@@ -11655,6 +12010,13 @@ abstract class _$AppDatabase extends GeneratedDatabase {
       ),
       result: [TableUpdate('aura_links', kind: UpdateKind.delete)],
     ),
+    WritePropagation(
+      on: TableUpdateQuery.onTableName(
+        'moves',
+        limitUpdateKind: UpdateKind.delete,
+      ),
+      result: [TableUpdate('move_note_entries', kind: UpdateKind.delete)],
+    ),
   ]);
 }
 
@@ -11674,6 +12036,7 @@ typedef $$MovesTableCreateCompanionBuilder =
       Value<String?> notes,
       Value<String?> imagePaths,
       Value<String?> contentHash,
+      Value<int> count,
       Value<DateTime> createdAt,
       Value<int> rowid,
     });
@@ -11693,6 +12056,7 @@ typedef $$MovesTableUpdateCompanionBuilder =
       Value<String?> notes,
       Value<String?> imagePaths,
       Value<String?> contentHash,
+      Value<int> count,
       Value<DateTime> createdAt,
       Value<int> rowid,
     });
@@ -11828,6 +12192,26 @@ final class $$MovesTableReferences
       manager.$state.copyWith(prefetchedData: cache),
     );
   }
+
+  static MultiTypedResultKey<$MoveNoteEntriesTable, List<MoveNoteEntry>>
+  _moveNoteEntriesRefsTable(_$AppDatabase db) => MultiTypedResultKey.fromTable(
+    db.moveNoteEntries,
+    aliasName: $_aliasNameGenerator(db.moves.id, db.moveNoteEntries.moveId),
+  );
+
+  $$MoveNoteEntriesTableProcessedTableManager get moveNoteEntriesRefs {
+    final manager = $$MoveNoteEntriesTableTableManager(
+      $_db,
+      $_db.moveNoteEntries,
+    ).filter((f) => f.moveId.id.sqlEquals($_itemColumn<String>('id')!));
+
+    final cache = $_typedResult.readTableOrNull(
+      _moveNoteEntriesRefsTable($_db),
+    );
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
 }
 
 class $$MovesTableFilterComposer extends Composer<_$AppDatabase, $MovesTable> {
@@ -11905,6 +12289,11 @@ class $$MovesTableFilterComposer extends Composer<_$AppDatabase, $MovesTable> {
 
   ColumnFilters<String> get contentHash => $composableBuilder(
     column: $table.contentHash,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get count => $composableBuilder(
+    column: $table.count,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -12087,6 +12476,31 @@ class $$MovesTableFilterComposer extends Composer<_$AppDatabase, $MovesTable> {
     );
     return f(composer);
   }
+
+  Expression<bool> moveNoteEntriesRefs(
+    Expression<bool> Function($$MoveNoteEntriesTableFilterComposer f) f,
+  ) {
+    final $$MoveNoteEntriesTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.moveNoteEntries,
+      getReferencedColumn: (t) => t.moveId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$MoveNoteEntriesTableFilterComposer(
+            $db: $db,
+            $table: $db.moveNoteEntries,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
 }
 
 class $$MovesTableOrderingComposer
@@ -12168,6 +12582,11 @@ class $$MovesTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<int> get count => $composableBuilder(
+    column: $table.count,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<DateTime> get createdAt => $composableBuilder(
     column: $table.createdAt,
     builder: (column) => ColumnOrderings(column),
@@ -12242,6 +12661,9 @@ class $$MovesTableAnnotationComposer
     column: $table.contentHash,
     builder: (column) => column,
   );
+
+  GeneratedColumn<int> get count =>
+      $composableBuilder(column: $table.count, builder: (column) => column);
 
   GeneratedColumn<DateTime> get createdAt =>
       $composableBuilder(column: $table.createdAt, builder: (column) => column);
@@ -12420,6 +12842,31 @@ class $$MovesTableAnnotationComposer
     );
     return f(composer);
   }
+
+  Expression<T> moveNoteEntriesRefs<T extends Object>(
+    Expression<T> Function($$MoveNoteEntriesTableAnnotationComposer a) f,
+  ) {
+    final $$MoveNoteEntriesTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.moveNoteEntries,
+      getReferencedColumn: (t) => t.moveId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$MoveNoteEntriesTableAnnotationComposer(
+            $db: $db,
+            $table: $db.moveNoteEntries,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
 }
 
 class $$MovesTableTableManager
@@ -12443,6 +12890,7 @@ class $$MovesTableTableManager
             bool achievementsRefs,
             bool auraLinksFromRefs,
             bool auraLinksToRefs,
+            bool moveNoteEntriesRefs,
           })
         > {
   $$MovesTableTableManager(_$AppDatabase db, $MovesTable table)
@@ -12472,6 +12920,7 @@ class $$MovesTableTableManager
                 Value<String?> notes = const Value.absent(),
                 Value<String?> imagePaths = const Value.absent(),
                 Value<String?> contentHash = const Value.absent(),
+                Value<int> count = const Value.absent(),
                 Value<DateTime> createdAt = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => MovesCompanion(
@@ -12489,6 +12938,7 @@ class $$MovesTableTableManager
                 notes: notes,
                 imagePaths: imagePaths,
                 contentHash: contentHash,
+                count: count,
                 createdAt: createdAt,
                 rowid: rowid,
               ),
@@ -12508,6 +12958,7 @@ class $$MovesTableTableManager
                 Value<String?> notes = const Value.absent(),
                 Value<String?> imagePaths = const Value.absent(),
                 Value<String?> contentHash = const Value.absent(),
+                Value<int> count = const Value.absent(),
                 Value<DateTime> createdAt = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => MovesCompanion.insert(
@@ -12525,6 +12976,7 @@ class $$MovesTableTableManager
                 notes: notes,
                 imagePaths: imagePaths,
                 contentHash: contentHash,
+                count: count,
                 createdAt: createdAt,
                 rowid: rowid,
               ),
@@ -12543,6 +12995,7 @@ class $$MovesTableTableManager
                 achievementsRefs = false,
                 auraLinksFromRefs = false,
                 auraLinksToRefs = false,
+                moveNoteEntriesRefs = false,
               }) {
                 return PrefetchHooks(
                   db: db,
@@ -12554,6 +13007,7 @@ class $$MovesTableTableManager
                     if (achievementsRefs) db.achievements,
                     if (auraLinksFromRefs) db.auraLinks,
                     if (auraLinksToRefs) db.auraLinks,
+                    if (moveNoteEntriesRefs) db.moveNoteEntries,
                   ],
                   addJoins: null,
                   getPrefetchedDataCallback: (items) async {
@@ -12677,6 +13131,27 @@ class $$MovesTableTableManager
                               ),
                           typedResults: items,
                         ),
+                      if (moveNoteEntriesRefs)
+                        await $_getPrefetchedData<
+                          Move,
+                          $MovesTable,
+                          MoveNoteEntry
+                        >(
+                          currentTable: table,
+                          referencedTable: $$MovesTableReferences
+                              ._moveNoteEntriesRefsTable(db),
+                          managerFromTypedResult: (p0) =>
+                              $$MovesTableReferences(
+                                db,
+                                table,
+                                p0,
+                              ).moveNoteEntriesRefs,
+                          referencedItemsForCurrentItem:
+                              (item, referencedItems) => referencedItems.where(
+                                (e) => e.moveId == item.id,
+                              ),
+                          typedResults: items,
+                        ),
                     ];
                   },
                 );
@@ -12705,6 +13180,7 @@ typedef $$MovesTableProcessedTableManager =
         bool achievementsRefs,
         bool auraLinksFromRefs,
         bool auraLinksToRefs,
+        bool moveNoteEntriesRefs,
       })
     >;
 typedef $$CombosTableCreateCompanionBuilder =
@@ -20471,6 +20947,314 @@ typedef $$ProvenanceEventsTableProcessedTableManager =
       ProvenanceEvent,
       PrefetchHooks Function()
     >;
+typedef $$MoveNoteEntriesTableCreateCompanionBuilder =
+    MoveNoteEntriesCompanion Function({
+      required String id,
+      required String moveId,
+      required String body,
+      Value<DateTime> createdAt,
+      Value<int> rowid,
+    });
+typedef $$MoveNoteEntriesTableUpdateCompanionBuilder =
+    MoveNoteEntriesCompanion Function({
+      Value<String> id,
+      Value<String> moveId,
+      Value<String> body,
+      Value<DateTime> createdAt,
+      Value<int> rowid,
+    });
+
+final class $$MoveNoteEntriesTableReferences
+    extends
+        BaseReferences<_$AppDatabase, $MoveNoteEntriesTable, MoveNoteEntry> {
+  $$MoveNoteEntriesTableReferences(
+    super.$_db,
+    super.$_table,
+    super.$_typedResult,
+  );
+
+  static $MovesTable _moveIdTable(_$AppDatabase db) => db.moves.createAlias(
+    $_aliasNameGenerator(db.moveNoteEntries.moveId, db.moves.id),
+  );
+
+  $$MovesTableProcessedTableManager get moveId {
+    final $_column = $_itemColumn<String>('move_id')!;
+
+    final manager = $$MovesTableTableManager(
+      $_db,
+      $_db.moves,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_moveIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+}
+
+class $$MoveNoteEntriesTableFilterComposer
+    extends Composer<_$AppDatabase, $MoveNoteEntriesTable> {
+  $$MoveNoteEntriesTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get body => $composableBuilder(
+    column: $table.body,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  $$MovesTableFilterComposer get moveId {
+    final $$MovesTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.moveId,
+      referencedTable: $db.moves,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$MovesTableFilterComposer(
+            $db: $db,
+            $table: $db.moves,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$MoveNoteEntriesTableOrderingComposer
+    extends Composer<_$AppDatabase, $MoveNoteEntriesTable> {
+  $$MoveNoteEntriesTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get body => $composableBuilder(
+    column: $table.body,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  $$MovesTableOrderingComposer get moveId {
+    final $$MovesTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.moveId,
+      referencedTable: $db.moves,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$MovesTableOrderingComposer(
+            $db: $db,
+            $table: $db.moves,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$MoveNoteEntriesTableAnnotationComposer
+    extends Composer<_$AppDatabase, $MoveNoteEntriesTable> {
+  $$MoveNoteEntriesTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get body =>
+      $composableBuilder(column: $table.body, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get createdAt =>
+      $composableBuilder(column: $table.createdAt, builder: (column) => column);
+
+  $$MovesTableAnnotationComposer get moveId {
+    final $$MovesTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.moveId,
+      referencedTable: $db.moves,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$MovesTableAnnotationComposer(
+            $db: $db,
+            $table: $db.moves,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$MoveNoteEntriesTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $MoveNoteEntriesTable,
+          MoveNoteEntry,
+          $$MoveNoteEntriesTableFilterComposer,
+          $$MoveNoteEntriesTableOrderingComposer,
+          $$MoveNoteEntriesTableAnnotationComposer,
+          $$MoveNoteEntriesTableCreateCompanionBuilder,
+          $$MoveNoteEntriesTableUpdateCompanionBuilder,
+          (MoveNoteEntry, $$MoveNoteEntriesTableReferences),
+          MoveNoteEntry,
+          PrefetchHooks Function({bool moveId})
+        > {
+  $$MoveNoteEntriesTableTableManager(
+    _$AppDatabase db,
+    $MoveNoteEntriesTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$MoveNoteEntriesTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$MoveNoteEntriesTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$MoveNoteEntriesTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<String> id = const Value.absent(),
+                Value<String> moveId = const Value.absent(),
+                Value<String> body = const Value.absent(),
+                Value<DateTime> createdAt = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => MoveNoteEntriesCompanion(
+                id: id,
+                moveId: moveId,
+                body: body,
+                createdAt: createdAt,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String id,
+                required String moveId,
+                required String body,
+                Value<DateTime> createdAt = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => MoveNoteEntriesCompanion.insert(
+                id: id,
+                moveId: moveId,
+                body: body,
+                createdAt: createdAt,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map(
+                (e) => (
+                  e.readTable(table),
+                  $$MoveNoteEntriesTableReferences(db, table, e),
+                ),
+              )
+              .toList(),
+          prefetchHooksCallback: ({moveId = false}) {
+            return PrefetchHooks(
+              db: db,
+              explicitlyWatchedTables: [],
+              addJoins:
+                  <
+                    T extends TableManagerState<
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic
+                    >
+                  >(state) {
+                    if (moveId) {
+                      state =
+                          state.withJoin(
+                                currentTable: table,
+                                currentColumn: table.moveId,
+                                referencedTable:
+                                    $$MoveNoteEntriesTableReferences
+                                        ._moveIdTable(db),
+                                referencedColumn:
+                                    $$MoveNoteEntriesTableReferences
+                                        ._moveIdTable(db)
+                                        .id,
+                              )
+                              as T;
+                    }
+
+                    return state;
+                  },
+              getPrefetchedDataCallback: (items) async {
+                return [];
+              },
+            );
+          },
+        ),
+      );
+}
+
+typedef $$MoveNoteEntriesTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $MoveNoteEntriesTable,
+      MoveNoteEntry,
+      $$MoveNoteEntriesTableFilterComposer,
+      $$MoveNoteEntriesTableOrderingComposer,
+      $$MoveNoteEntriesTableAnnotationComposer,
+      $$MoveNoteEntriesTableCreateCompanionBuilder,
+      $$MoveNoteEntriesTableUpdateCompanionBuilder,
+      (MoveNoteEntry, $$MoveNoteEntriesTableReferences),
+      MoveNoteEntry,
+      PrefetchHooks Function({bool moveId})
+    >;
 
 class $AppDatabaseManager {
   final _$AppDatabase _db;
@@ -20519,4 +21303,6 @@ class $AppDatabaseManager {
       $$SetItemsTableTableManager(_db, _db.setItems);
   $$ProvenanceEventsTableTableManager get provenanceEvents =>
       $$ProvenanceEventsTableTableManager(_db, _db.provenanceEvents);
+  $$MoveNoteEntriesTableTableManager get moveNoteEntries =>
+      $$MoveNoteEntriesTableTableManager(_db, _db.moveNoteEntries);
 }

@@ -14,6 +14,7 @@ import 'database/daos/decks_dao.dart';
 import 'database/daos/sync_providers_dao.dart';
 import 'database/daos/sets_dao.dart';
 import 'database/daos/provenance_events_dao.dart';
+import 'database/daos/move_note_entries_dao.dart';
 import 'data/repositories.dart';
 import 'data/drift_repositories.dart';
 import 'data/sync_aware_repositories.dart';
@@ -274,6 +275,10 @@ final provenanceJournalServiceProvider = Provider<ProvenanceJournalService>((
 
 final provenanceDaoProvider = Provider<ProvenanceEventsDao>((ref) {
   return ProvenanceEventsDao(ref.watch(databaseProvider));
+});
+
+final moveNoteEntriesDaoProvider = Provider<MoveNoteEntriesDao>((ref) {
+  return MoveNoteEntriesDao(ref.watch(databaseProvider));
 });
 
 final provenanceServiceProvider = Provider<ProvenanceService>((ref) {

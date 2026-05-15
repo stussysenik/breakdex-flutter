@@ -7,14 +7,17 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:path/path.dart' as p;
+import 'package:uuid/uuid.dart';
 
 import '../../core/database/database.dart';
 import '../../core/design/colors.dart';
 import '../../core/models/reviewable_item.dart' show MoveVideoPath;
 import '../../core/design/spacing.dart';
+import '../../core/design/theme.dart';
 import '../../core/design/typography.dart';
 import '../../core/models/learning_state.dart';
 import '../../core/providers.dart';
+import '../../core/database/daos/move_note_entries_dao.dart';
 import '../../core/sync/video_retrieval_controller.dart';
 import '../../core/services/categories_service.dart';
 import '../../core/services/media_playback_coordinator.dart';
@@ -153,6 +156,10 @@ class MoveDetailScreen extends ConsumerWidget {
                       category: move.category,
                       onTap: () => _changeCategory(context, ref, move),
                     ),
+                    _CountBadge(
+                      count: move.count,
+                      onTap: () => _changeCount(context, ref, move),
+                    ),
                   ],
                 ),
                 const SizedBox(height: AppSpacing.xs),
@@ -229,6 +236,9 @@ class MoveDetailScreen extends ConsumerWidget {
 
                 // Bboy Aura — move transition affinities
                 MoveAuraSection(moveId: move.id),
+                const SizedBox(height: AppSpacing.lg),
+
+                _MoveLogSection(moveId: move.id),
                 const SizedBox(height: AppSpacing.md),
 
                 Divider(color: colorScheme.outline),
@@ -684,6 +694,24 @@ class MoveDetailScreen extends ConsumerWidget {
         nextCategory: newCategory,
       );
     }
+  }
+
+  Future<void> _changeCount(
+    BuildContext context,
+    WidgetRef ref,
+    Move move,
+  ) async {
+    final result = await showDialog<int>(
+      context: context,
+      builder: (ctx) => _CountEditor(count: move.count),
+    );
+    if (result == null || result == move.count) return;
+
+    await ref
+        .read(moveRepositoryProvider)
+        .update(
+          MovesCompanion(id: Value(move.id), count: Value(result)),
+        );
   }
 
   Future<String?> _showAddCategoryDialog(BuildContext context, WidgetRef ref) {
@@ -1308,3 +1336,260 @@ class _CloudVideoPlaceholderState
     );
   }
 }
+
+class _CountBadge extends ConsumerWidget {
+  const _CountBadge({required this.count, this.onTap});
+
+  final int count;
+  final VoidCallback? onTap;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final colorScheme = Theme.of(context).colorScheme;
+
+    final badge = Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      decoration: BoxDecoration(
+        color: colorScheme.surfaceContainerHighest,
+        borderRadius: BorderRadius.circular(AppRadius.md),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(Icons.music_note_rounded, size: 14, color: colorScheme.primary.withValues(alpha: 0.7)),
+          const SizedBox(width: 4),
+          Text(
+            '$count',
+            style: AppTypography.caption.copyWith(
+              color: colorScheme.onSurface,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          Text(
+            ' counts',
+            style: AppTypography.caption.copyWith(
+              color: colorScheme.secondary,
+              fontWeight: FontWeight.w400,
+            ),
+          ),
+          if (onTap != null) ...[
+            const SizedBox(width: 4),
+            Icon(Icons.expand_more, size: 14, color: colorScheme.secondary),
+          ],
+        ],
+      ),
+    );
+
+    if (onTap == null) return badge;
+
+    return Semantics(
+      button: true,
+      label: 'Change count from $count',
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(AppRadius.md),
+          child: badge,
+        ),
+      ),
+    );
+  }
+}
+
+class _CountEditor extends StatefulWidget {
+  const _CountEditor({required this.count});
+
+  final int count;
+
+  @override
+  State<_CountEditor> createState() => _CountEditorState();
+}
+
+class _CountEditorState extends State<_CountEditor> {
+  late int _count;
+
+  @override
+  void initState() {
+    super.initState();
+    _count = widget.count;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+
+    return AlertDialog(
+      title: Text('Move Count', style: AppTypography.titleSmall.copyWith(color: colorScheme.onSurface)),
+      content: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          IconButton.filled(
+            onPressed: _count > 1 ? () => setState(() => _count--) : null,
+            icon: const Icon(Icons.remove_rounded),
+            style: IconButton.styleFrom(
+              backgroundColor: colorScheme.surfaceContainerHighest,
+              foregroundColor: colorScheme.primary,
+            ),
+          ),
+          const SizedBox(width: AppSpacing.lg),
+          Text(
+            '$_count',
+            style: AppTypography.titleLarge.copyWith(
+              color: colorScheme.onSurface,
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+          const SizedBox(width: AppSpacing.sm),
+          Text('counts', style: AppTypography.bodySmall.copyWith(color: colorScheme.secondary)),
+          const SizedBox(width: AppSpacing.lg),
+          IconButton.filled(
+            onPressed: _count < 16 ? () => setState(() => _count++) : null,
+            icon: const Icon(Icons.add_rounded),
+            style: IconButton.styleFrom(
+              backgroundColor: colorScheme.surfaceContainerHighest,
+              foregroundColor: colorScheme.primary,
+            ),
+          ),
+        ],
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: Text('Cancel', style: TextStyle(color: colorScheme.secondary)),
+        ),
+        TextButton(
+          onPressed: () => Navigator.pop(context, _count),
+          child: const Text('Save'),
+        ),
+      ],
+    );
+  }
+}
+
+class _MoveLogSection extends ConsumerWidget {
+  const _MoveLogSection({required this.moveId});
+
+  final String moveId;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final entriesAsync = ref.watch(_moveLogEntriesProvider(moveId));
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text('LOG', style: AppTypography.sectionHeader.copyWith(color: colorScheme.secondary)),
+        const SizedBox(height: AppSpacing.sm),
+        entriesAsync.when(
+          data: (entries) {
+            if (entries.isEmpty) {
+              return GestureDetector(
+                onTap: () => _addLogEntry(context, ref),
+                child: Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.symmetric(vertical: AppSpacing.md, horizontal: AppSpacing.sm),
+                  decoration: BoxDecoration(
+                    border: Border.all(color: colorScheme.outline.withValues(alpha: 0.15)),
+                    borderRadius: BorderRadius.circular(AppRadius.sm),
+                  ),
+                  child: Text(
+                    'Add log entry...',
+                    style: AppTypography.bodySmall.copyWith(
+                      color: colorScheme.secondary.withValues(alpha: 0.5),
+                      fontStyle: FontStyle.italic,
+                    ),
+                  ),
+                ),
+              );
+            }
+            return Column(
+              children: [
+                for (final entry in entries)
+                  Container(
+                    margin: const EdgeInsets.only(bottom: AppSpacing.sm),
+                    padding: const EdgeInsets.all(AppSpacing.md),
+                    decoration: AppSurfaces.panel(context, radius: AppRadius.sm),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Container(
+                          width: 6, height: 6,
+                          margin: const EdgeInsets.only(top: 7),
+                          decoration: BoxDecoration(
+                            color: colorScheme.primary.withValues(alpha: 0.6),
+                            shape: BoxShape.circle,
+                          ),
+                        ),
+                        const SizedBox(width: AppSpacing.sm),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                DateFormat('MMM d, HH:mm').format(entry.createdAt),
+                                style: AppTypography.caption.copyWith(color: colorScheme.secondary, fontSize: 10),
+                              ),
+                              const SizedBox(height: 2),
+                              Text(entry.body, style: AppTypography.bodySmall.copyWith(color: colorScheme.onSurface)),
+                            ],
+                          ),
+                        ),
+                        GestureDetector(
+                          onTap: () => _deleteLogEntry(ref, entry.id),
+                          child: Icon(Icons.close, size: 14, color: colorScheme.secondary.withValues(alpha: 0.4)),
+                        ),
+                      ],
+                    ),
+                  ),
+                SizedBox(
+                  width: double.infinity,
+                  child: TextButton.icon(
+                    onPressed: () => _addLogEntry(context, ref),
+                    icon: Icon(Icons.add_rounded, size: 16, color: colorScheme.secondary),
+                    label: Text('Add entry', style: AppTypography.caption.copyWith(color: colorScheme.secondary)),
+                  ),
+                ),
+              ],
+            );
+          },
+          loading: () => const SizedBox(height: 40, child: Center(child: CircularProgressIndicator(strokeWidth: 2))),
+          error: (_, __) => const SizedBox.shrink(),
+        ),
+      ],
+    );
+  }
+
+  Future<void> _addLogEntry(BuildContext context, WidgetRef ref) async {
+    final controller = TextEditingController();
+    final result = await showDialog<String>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Log Entry'),
+        content: TextField(
+          controller: controller, autofocus: true, maxLines: 3,
+          decoration: const InputDecoration(hintText: 'What did you work on?'),
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
+          TextButton(onPressed: () => Navigator.pop(ctx, controller.text.trim()), child: const Text('Add')),
+        ],
+      ),
+    );
+    if (result == null || result.isEmpty) return;
+    final dao = ref.read(moveNoteEntriesDaoProvider);
+    await dao.addEntry(id: const Uuid().v4(), moveId: moveId, body: result);
+    ref.invalidate(_moveLogEntriesProvider(moveId));
+  }
+
+  Future<void> _deleteLogEntry(WidgetRef ref, String entryId) async {
+    final dao = ref.read(moveNoteEntriesDaoProvider);
+    await dao.deleteEntry(entryId);
+    ref.invalidate(_moveLogEntriesProvider(moveId));
+  }
+}
+
+final _moveLogEntriesProvider = FutureProvider.family<List<MoveNoteEntry>, String>((ref, moveId) {
+  return ref.watch(moveNoteEntriesDaoProvider).getByMoveId(moveId);
+});

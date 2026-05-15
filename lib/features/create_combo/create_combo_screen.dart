@@ -32,6 +32,7 @@ class _CreateComboScreenState extends ConsumerState<CreateComboScreen> {
   int _activeIndex = 0;
   String? _comboName;
   bool _isLoadingExisting = false;
+  bool _showBeatGrid = true;
 
   Set<String> get _selectedMoveIds =>
       _selectedMoves.map((move) => move.id).toSet();
@@ -40,6 +41,12 @@ class _CreateComboScreenState extends ConsumerState<CreateComboScreen> {
       .cast<Move?>()
       .firstWhere((move) => move?.videoPath != null, orElse: () => null)
       ?.videoPath;
+
+  static const _bpm = 100;
+  static double _countsToSeconds(int counts) => counts * (60 / _bpm);
+
+  int get _totalCounts =>
+      _selectedMoves.fold(0, (sum, m) => sum + m.count);
 
   @override
   void initState() {
@@ -92,6 +99,18 @@ class _CreateComboScreenState extends ConsumerState<CreateComboScreen> {
                     )
                   else
                     const VideoPlaceholder(),
+                  const SizedBox(height: AppSpacing.lg),
+
+                  // -- Beat Grid Toggle --
+                  _buildToggleRow(context),
+                  if (_showBeatGrid && _selectedMoves.isNotEmpty) ...[
+                    const SizedBox(height: AppSpacing.md),
+                    _buildBeatGrid(context),
+                  ],
+                  if (_selectedMoves.isNotEmpty) ...[
+                    const SizedBox(height: AppSpacing.md),
+                    _buildSummaryBar(context),
+                  ],
                   const SizedBox(height: AppSpacing.lg),
 
                   Text(
@@ -209,18 +228,39 @@ class _CreateComboScreenState extends ConsumerState<CreateComboScreen> {
                                 fontWeight: FontWeight.w600,
                               ),
                             ),
-                            subtitle: move.category == 'default'
-                                ? null
-                                : Text(
-                                    move.category.toUpperCase(),
-                                    style: AppTypography.caption.copyWith(
-                                      color: colorScheme.secondary,
-                                      letterSpacing: 1,
-                                    ),
-                                  ),
+                            subtitle: Text(
+                              '${move.count} counts${move.category != 'default' ? ' · ${move.category.toUpperCase()}' : ''}',
+                              style: AppTypography.caption.copyWith(
+                                color: colorScheme.secondary,
+                              ),
+                            ),
                             trailing: Row(
                               mainAxisSize: MainAxisSize.min,
                               children: [
+                                _CountControl(
+                                  icon: Icons.remove_rounded,
+                                  enabled: move.count > 1,
+                                  onTap: () => _adjustMoveCount(index, -1),
+                                ),
+                                const SizedBox(width: 2),
+                                SizedBox(
+                                  width: 24,
+                                  child: Text(
+                                    '${move.count}',
+                                    style: AppTypography.caption.copyWith(
+                                      color: colorScheme.onSurface,
+                                      fontWeight: FontWeight.w700,
+                                    ),
+                                    textAlign: TextAlign.center,
+                                  ),
+                                ),
+                                const SizedBox(width: 2),
+                                _CountControl(
+                                  icon: Icons.add_rounded,
+                                  enabled: move.count < 16,
+                                  onTap: () => _adjustMoveCount(index, 1),
+                                ),
+                                const SizedBox(width: AppSpacing.sm),
                                 IconButton(
                                   tooltip: 'Remove move',
                                   onPressed: () => _removeMoveAt(index),
@@ -261,6 +301,268 @@ class _CreateComboScreenState extends ConsumerState<CreateComboScreen> {
               ),
       ),
     );
+  }
+
+  Widget _buildToggleRow(BuildContext context) {
+    return GestureDetector(
+      onTap: () => setState(() => _showBeatGrid = !_showBeatGrid),
+      child: Container(
+        decoration: AppSurfaces.panel(context, radius: AppRadius.sm),
+        padding: const EdgeInsets.symmetric(
+          horizontal: AppSpacing.md,
+          vertical: 12,
+        ),
+        child: Row(
+          children: [
+            Expanded(
+              child: Text(
+                'Beat Grid Overlay',
+                style: AppTypography.bodySmall.copyWith(
+                  color: Theme.of(context).colorScheme.secondary,
+                ),
+              ),
+            ),
+            Container(
+              width: 44, height: 26,
+              decoration: BoxDecoration(
+                color: _showBeatGrid
+                    ? Theme.of(context).colorScheme.primary
+                    : Theme.of(context).colorScheme.outline,
+                borderRadius: BorderRadius.circular(13),
+              ),
+              alignment: _showBeatGrid ? Alignment.centerRight : Alignment.centerLeft,
+              padding: const EdgeInsets.symmetric(horizontal: 2),
+              child: Container(
+                width: 22, height: 22,
+                decoration: const BoxDecoration(
+                  color: Colors.white,
+                  shape: BoxShape.circle,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildBeatGrid(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final total = _totalCounts;
+    if (total == 0) return const SizedBox.shrink();
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'BEAT GRID',
+          style: AppTypography.sectionHeader.copyWith(
+            color: colorScheme.secondary,
+          ),
+        ),
+        const SizedBox(height: AppSpacing.sm),
+        Container(
+          decoration: AppSurfaces.panel(context, radius: AppRadius.md),
+          padding: const EdgeInsets.all(AppSpacing.md),
+          child: Column(
+            children: [
+              SizedBox(
+                height: 52,
+                child: Row(
+                  children: [
+                    for (int i = 0; i < _selectedMoves.length; i++)
+                      _buildGridBlock(context, i, total),
+                  ],
+                ),
+              ),
+              _buildCountAxis(total),
+              const SizedBox(height: AppSpacing.sm),
+              _buildTimeline(total),
+              const SizedBox(height: AppSpacing.xs),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    _formatTime(0),
+                    style: AppTypography.caption.copyWith(
+                      color: colorScheme.secondary,
+                      fontSize: 11,
+                    ),
+                  ),
+                  Text(
+                    _formatTime(_countsToSeconds(total)),
+                    style: AppTypography.caption.copyWith(
+                      color: colorScheme.secondary,
+                      fontSize: 11,
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildGridBlock(BuildContext context, int index, int total) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final move = _selectedMoves[index];
+    final isActive = index == _activeIndex;
+    final colors = [
+      const Color(0xFFE45D7A),
+      const Color(0xFF2F6BFF),
+      const Color(0xFF1F8A70),
+      const Color(0xFFB7791F),
+    ];
+    final color = colors[index % colors.length];
+
+    return Expanded(
+      flex: move.count,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 1.5),
+        child: GestureDetector(
+          onTap: () => setState(() => _activeIndex = index),
+          child: Container(
+            decoration: BoxDecoration(
+              color: isActive ? color : color.withValues(alpha: 0.42),
+              borderRadius: BorderRadius.circular(6),
+              boxShadow: isActive
+                  ? [BoxShadow(color: color.withValues(alpha: 0.4), blurRadius: 8)]
+                  : null,
+            ),
+            alignment: Alignment.center,
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Text(
+                  move.name,
+                  style: AppTypography.caption.copyWith(
+                    color: isActive ? Colors.white : color.withValues(alpha: 0.7),
+                    fontWeight: FontWeight.w700,
+                    fontSize: 10,
+                  ),
+                  textAlign: TextAlign.center,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildCountAxis(int total) {
+    return Padding(
+      padding: const EdgeInsets.only(top: 2, left: 2, right: 2),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          for (int i = 1; i <= total && i <= 16; i++)
+            Text(
+              '$i',
+              style: AppTypography.caption.copyWith(
+                color: Theme.of(context).colorScheme.secondary,
+                fontSize: 9,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          if (total > 16)
+            Text(
+              '...$total',
+              style: AppTypography.caption.copyWith(
+                color: Theme.of(context).colorScheme.secondary,
+                fontSize: 9,
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildTimeline(int total) {
+    final colorScheme = Theme.of(context).colorScheme;
+    int before = 0;
+    for (int i = 0; i < _activeIndex; i++) {
+      before += _selectedMoves[i].count;
+    }
+    final midpoint = before + _selectedMoves[_activeIndex].count / 2;
+    final pct = total > 0 ? midpoint / total : 0.0;
+
+    return SizedBox(
+      height: 4,
+      child: Stack(
+        children: [
+          Container(
+            decoration: BoxDecoration(
+              color: colorScheme.outline.withValues(alpha: 0.3),
+              borderRadius: BorderRadius.circular(2),
+            ),
+          ),
+          FractionallySizedBox(
+            widthFactor: pct,
+            child: Container(
+              decoration: BoxDecoration(
+                color: colorScheme.primary,
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSummaryBar(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final totalSecs = _countsToSeconds(_totalCounts);
+
+    return Container(
+      decoration: AppSurfaces.panel(context, radius: AppRadius.md),
+      padding: const EdgeInsets.all(AppSpacing.md),
+      child: Row(
+        children: [
+          _summaryItem(context, _selectedMoves.length.toString(), 'MOVES', colorScheme.primary),
+          _summaryItem(context, _totalCounts.toString(), 'COUNTS', const Color(0xFF2F6BFF)),
+          _summaryItem(context, _formatTime(totalSecs), '@ $_bpm BPM', const Color(0xFF1F8A70)),
+        ],
+      ),
+    );
+  }
+
+  Widget _summaryItem(
+    BuildContext context, String value, String label, Color color,
+  ) {
+    return Expanded(
+      child: Column(
+        children: [
+          Text(
+            value,
+            style: AppTypography.titleSmall.copyWith(
+              color: color,
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+          const SizedBox(height: 2),
+          Text(
+            label,
+            style: AppTypography.caption.copyWith(
+              color: Theme.of(context).colorScheme.secondary,
+              fontSize: 10,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  String _formatTime(double seconds) {
+    final m = (seconds / 60).floor();
+    final s = (seconds % 60).round();
+    return '$m:${s.toString().padLeft(2, '0')}';
   }
 
   Future<void> _loadExistingCombo() async {
@@ -384,6 +686,15 @@ class _CreateComboScreenState extends ConsumerState<CreateComboScreen> {
     });
   }
 
+  void _adjustMoveCount(int index, int delta) {
+    HapticFeedback.selectionClick();
+    setState(() {
+      final move = _selectedMoves[index];
+      final newCount = (move.count + delta).clamp(1, 16);
+      _selectedMoves[index] = move.copyWith(count: newCount);
+    });
+  }
+
   Future<void> _showMovePicker() async {
     final moves = await ref.read(moveRepositoryProvider).getAll();
     final selectedIds = _selectedMoveIds;
@@ -423,9 +734,16 @@ class _CreateComboScreenState extends ConsumerState<CreateComboScreen> {
               for (final move in moves)
                 ListTile(
                   title: Text(move.name),
-                  subtitle: selectedIds.contains(move.id)
-                      ? const Text('Already in this combo')
-                      : null,
+                  subtitle: Text(
+                    selectedIds.contains(move.id)
+                        ? 'Already in this combo'
+                        : '${move.count} counts${move.category != 'default' ? ' · ${move.category.toUpperCase()}' : ''}',
+                    style: TextStyle(
+                      color: selectedIds.contains(move.id)
+                          ? Theme.of(context).colorScheme.secondary
+                          : null,
+                    ),
+                  ),
                   trailing: Icon(
                     selectedIds.contains(move.id)
                         ? Icons.check_circle
@@ -661,5 +979,47 @@ class _CreateComboScreenState extends ConsumerState<CreateComboScreen> {
       }
       return false;
     }
+  }
+}
+
+class _CountControl extends StatelessWidget {
+  const _CountControl({
+    required this.icon,
+    required this.enabled,
+    required this.onTap,
+  });
+
+  final IconData icon;
+  final bool enabled;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+
+    return GestureDetector(
+      onTap: enabled ? onTap : null,
+      child: Container(
+        width: 24, height: 24,
+        decoration: BoxDecoration(
+          color: enabled
+              ? colorScheme.surfaceContainerHighest
+              : colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
+          borderRadius: BorderRadius.circular(6),
+          border: Border.all(
+            color: enabled
+                ? colorScheme.outline.withValues(alpha: 0.3)
+                : colorScheme.outline.withValues(alpha: 0.1),
+          ),
+        ),
+        child: Icon(
+          icon,
+          size: 14,
+          color: enabled
+              ? colorScheme.primary
+              : colorScheme.outline.withValues(alpha: 0.2),
+        ),
+      ),
+    );
   }
 }

@@ -3,14 +3,14 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../core/design/spacing.dart';
+import '../../core/design/theme.dart';
 import '../../core/design/typography.dart';
-import '../../core/models/app_mode.dart';
 import '../../core/models/move_creation.dart';
 import '../../core/providers.dart';
 import '../../core/services/categories_service.dart';
-import '../../core/services/settings_service.dart';
 import '../../shared/widgets/video_picker_sheet.dart';
 
 class AddScreen extends ConsumerWidget {
@@ -18,50 +18,29 @@ class AddScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final appMode = ref.watch(appModeProvider);
-    final colorScheme = Theme.of(context).colorScheme;
-    final isParty = appMode == AppMode.party;
-
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Add Move'),
+        title: const Text('Add'),
       ),
       body: Center(
         child: Padding(
-          padding: const EdgeInsets.all(AppSpacing.xl),
+          padding: const EdgeInsets.all(AppSpacing.screenEdge),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(
-                Icons.video_call_rounded,
-                size: isParty ? 64 : 56,
-                color: colorScheme.primary.withValues(alpha: 0.7),
+              _ChoiceCard(
+                icon: Icons.video_call_rounded,
+                title: 'Create Move',
+                subtitle: 'Import a video clip, set its count, and add it to your library',
+                onTap: () => _startClipFlow(context, ref),
               ),
-              const SizedBox(height: AppSpacing.lg),
-              SizedBox(
-                height: 56,
-                child: FilledButton.icon(
-                  onPressed: () => _startClipFlow(context, ref),
-                  icon: const Icon(Icons.add_rounded),
-                  label: const Text('Select a Clip'),
-                  style: FilledButton.styleFrom(
-                    minimumSize: const Size(220, 56),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(AppRadius.lg),
-                    ),
-                  ),
-                ),
+              const SizedBox(height: AppSpacing.md),
+              _ChoiceCard(
+                icon: Icons.linear_scale_rounded,
+                title: 'Create Combo',
+                subtitle: 'Build a sequence of moves with a visual beat grid to see your composition',
+                onTap: () => context.push<String>('/create-combo'),
               ),
-              if (!isParty) ...[
-                const SizedBox(height: AppSpacing.lg),
-                Text(
-                  'Import a video clip to create a new move',
-                  style: AppTypography.bodySmall.copyWith(
-                    color: colorScheme.secondary,
-                  ),
-                  textAlign: TextAlign.center,
-                ),
-              ],
             ],
           ),
         ),
@@ -83,6 +62,7 @@ class AddScreen extends ConsumerWidget {
           name: metadata.name,
           category: metadata.category,
           localVideoPath: pickResult.localPath,
+          count: metadata.count,
         ),
       );
 
@@ -116,10 +96,71 @@ class AddScreen extends ConsumerWidget {
   }
 }
 
+class _ChoiceCard extends StatelessWidget {
+  const _ChoiceCard({
+    required this.icon,
+    required this.title,
+    required this.subtitle,
+    required this.onTap,
+  });
+
+  final IconData icon;
+  final String title;
+  final String subtitle;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        width: double.infinity,
+        decoration: AppSurfaces.panel(
+          context,
+          raised: true,
+          radius: AppRadius.md,
+        ),
+        padding: const EdgeInsets.all(AppSpacing.lg),
+        child: Column(
+          children: [
+            Icon(
+              icon,
+              size: 48,
+              color: colorScheme.primary.withValues(alpha: 0.7),
+            ),
+            const SizedBox(height: AppSpacing.md),
+            Text(
+              title,
+              style: AppTypography.titleMedium.copyWith(
+                color: colorScheme.onSurface,
+              ),
+            ),
+            const SizedBox(height: AppSpacing.xs),
+            Text(
+              subtitle,
+              style: AppTypography.bodySmall.copyWith(
+                color: colorScheme.secondary,
+              ),
+              textAlign: TextAlign.center,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
 class _MetadataResult {
   final String name;
   final String category;
-  const _MetadataResult({required this.name, required this.category});
+  final int count;
+  const _MetadataResult({
+    required this.name,
+    required this.category,
+    required this.count,
+  });
 }
 
 class _ClipMetadataForm extends ConsumerStatefulWidget {
@@ -132,6 +173,7 @@ class _ClipMetadataFormState extends ConsumerState<_ClipMetadataForm> {
   String? _selectedCategory;
   String? _errorText;
   bool _nameEmpty = true;
+  int _count = 4;
 
   @override
   void initState() {
@@ -167,7 +209,11 @@ class _ClipMetadataFormState extends ConsumerState<_ClipMetadataForm> {
     unawaited(HapticFeedback.mediumImpact());
     Navigator.pop(
       context,
-      _MetadataResult(name: normalized, category: _selectedCategory!),
+      _MetadataResult(
+        name: normalized,
+        category: _selectedCategory!,
+        count: _count,
+      ),
     );
   }
 
@@ -227,7 +273,7 @@ class _ClipMetadataFormState extends ConsumerState<_ClipMetadataForm> {
               textInputAction: TextInputAction.done,
               onSubmitted: (_) => _submit(),
             ),
-            const SizedBox(height: AppSpacing.md),
+            const SizedBox(height: AppSpacing.lg),
             Text('Category', style: AppTypography.caption.copyWith(color: colorScheme.secondary, fontWeight: FontWeight.w600)),
             const SizedBox(height: AppSpacing.sm),
             Wrap(
@@ -267,6 +313,45 @@ class _ClipMetadataFormState extends ConsumerState<_ClipMetadataForm> {
               ],
             ),
             const SizedBox(height: AppSpacing.lg),
+            Text('Counts', style: AppTypography.caption.copyWith(color: colorScheme.secondary, fontWeight: FontWeight.w600)),
+            const SizedBox(height: AppSpacing.sm),
+            Row(
+              children: [
+                _CountButton(
+                  icon: Icons.remove_rounded,
+                  onTap: _count > 1 ? () => setState(() => _count--) : null,
+                ),
+                const SizedBox(width: AppSpacing.md),
+                Container(
+                  width: 48, height: 48,
+                  decoration: BoxDecoration(
+                    color: colorScheme.surfaceContainerHighest,
+                    borderRadius: BorderRadius.circular(AppRadius.sm),
+                  ),
+                  alignment: Alignment.center,
+                  child: Text(
+                    '$_count',
+                    style: AppTypography.titleSmall.copyWith(
+                      color: colorScheme.onSurface,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ),
+                const SizedBox(width: AppSpacing.md),
+                _CountButton(
+                  icon: Icons.add_rounded,
+                  onTap: _count < 16 ? () => setState(() => _count++) : null,
+                ),
+                const SizedBox(width: AppSpacing.md),
+                Text(
+                  '${_count} beats',
+                  style: AppTypography.bodySmall.copyWith(
+                    color: colorScheme.secondary,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: AppSpacing.lg),
             SizedBox(
               width: double.infinity,
               height: 50,
@@ -284,6 +369,34 @@ class _ClipMetadataFormState extends ConsumerState<_ClipMetadataForm> {
             ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+class _CountButton extends StatelessWidget {
+  const _CountButton({required this.icon, this.onTap});
+
+  final IconData icon;
+  final VoidCallback? onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final enabled = onTap != null;
+
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        width: 40, height: 40,
+        decoration: BoxDecoration(
+          color: enabled ? colorScheme.surfaceContainerHighest : colorScheme.surfaceContainerHighest.withValues(alpha: 0.4),
+          borderRadius: BorderRadius.circular(AppRadius.sm),
+          border: Border.all(
+            color: enabled ? colorScheme.outline.withValues(alpha: 0.4) : colorScheme.outline.withValues(alpha: 0.15),
+          ),
+        ),
+        child: Icon(icon, size: 20, color: enabled ? colorScheme.primary : colorScheme.outline.withValues(alpha: 0.3)),
       ),
     );
   }

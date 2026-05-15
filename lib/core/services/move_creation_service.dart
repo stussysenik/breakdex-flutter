@@ -61,6 +61,7 @@ class MoveCreationService {
         category: Value(normalizedCategory),
         videoPath: Value(storedVideoPath),
         originalVideoName: Value(request.originalVideoName),
+        count: Value(request.count),
       ),
     );
 

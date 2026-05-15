@@ -27,6 +27,7 @@ import 'tables/aura_presets.dart';
 import 'tables/sets.dart';
 import 'tables/set_items.dart';
 import 'tables/provenance_events.dart';
+import 'tables/move_note_entries.dart';
 import 'daos/moves_dao.dart';
 import 'daos/combos_dao.dart';
 import 'daos/reviews_dao.dart';
@@ -70,6 +71,7 @@ part 'database.g.dart';
     Sets,
     SetItems,
     ProvenanceEvents,
+    MoveNoteEntries,
   ],
   daos: [
     MovesDao,
@@ -95,7 +97,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.forTesting(super.e);
 
   @override
-  int get schemaVersion => 16;
+  int get schemaVersion => 18;
 
   Future<void> _installIntegrityTriggers() async {
     await customStatement('''
@@ -512,6 +514,14 @@ class AppDatabase extends _$AppDatabase {
 
       if (from < 16) {
         await m.addColumn(moves, moves.imagePaths);
+      }
+
+      if (from < 17) {
+        await m.addColumn(moves, moves.count);
+      }
+
+      if (from < 18) {
+        await m.createTable(moveNoteEntries);
       }
 
       await _backfillReviewSnapshots();
