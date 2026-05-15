@@ -17,7 +17,6 @@ import '../../core/design/theme.dart';
 import '../../core/design/typography.dart';
 import '../../core/models/learning_state.dart';
 import '../../core/providers.dart';
-import '../../core/database/daos/move_note_entries_dao.dart';
 import '../../core/sync/video_retrieval_controller.dart';
 import '../../core/services/categories_service.dart';
 import '../../core/services/media_playback_coordinator.dart';
@@ -25,6 +24,9 @@ import '../../core/services/native_share_sheet.dart';
 import '../../core/services/video_path_resolver.dart';
 import '../../core/services/native_video_album.dart';
 import '../../core/utils/share_sheet.dart';
+import '../../core/state_machines/move_detail/state.dart';
+import '../../core/state_machines/move_detail/event.dart';
+import '../../core/state_machines/move_detail/provider.dart';
 import '../../shared/widgets/state_pill.dart';
 import '../../shared/widgets/video_player_widget.dart' show RobustVideoPlayer;
 import '../../shared/widgets/action_tile.dart';
@@ -35,27 +37,75 @@ import '../flashcard_review/widgets/state_picker_sheet.dart';
 import '../lab/widgets/move_aura_section.dart';
 import '../../shared/widgets/video_picker_sheet.dart';
 
-class MoveDetailScreen extends ConsumerWidget {
+class MoveDetailScreen extends ConsumerStatefulWidget {
   MoveDetailScreen({super.key, required this.moveId});
 
   final String moveId;
   final NativeVideoAlbum _videoAlbum = NativeVideoAlbum();
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final moveStream = ref.watch(moveRepositoryProvider).watchById(moveId);
+  ConsumerState<MoveDetailScreen> createState() => _MoveDetailScreenState();
+}
+
+class _MoveDetailScreenState extends ConsumerState<MoveDetailScreen> {
+  StreamSubscription<Move>? _streamSub;
+  bool _machineInitialized = false;
+
+  @override
+  void dispose() {
+    _streamSub?.cancel();
+    super.dispose();
+  }
+
+  void _initMachine(Move move) {
+    if (_machineInitialized) return;
+    _machineInitialized = true;
+    ref.read(moveDetailProvider.notifier).init(move);
+
+    _streamSub?.cancel();
+    _streamSub = ref
+        .read(moveRepositoryProvider)
+        .watchById(widget.moveId)
+        .listen((move) {
+      if (!mounted) return;
+      ref.read(moveDetailProvider.notifier).send(StreamUpdate(move));
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final machineState = ref.watch(moveDetailProvider);
+    final moveStream = ref.watch(moveRepositoryProvider).watchById(widget.moveId);
     final colorScheme = Theme.of(context).colorScheme;
+
+    // Listen for Gone state (navigation)
+    ref.listen(moveDetailProvider, (_, next) {
+      if (next is Gone && context.mounted) {
+        context.pop();
+      }
+    });
 
     return Scaffold(
       body: SafeArea(
-        child: StreamBuilder<Move>(
-          stream: moveStream,
-          builder: (context, snapshot) {
-            if (!snapshot.hasData) {
-              return const Center(child: CircularProgressIndicator());
-            }
-            final move = snapshot.data!;
-            final state = LearningState.fromString(move.learningState);
+        child: Stack(
+          children: [
+            StreamBuilder<Move>(
+              stream: moveStream,
+              builder: (context, snapshot) {
+                if (!snapshot.hasData) {
+                  return const Center(child: CircularProgressIndicator());
+                }
+                final move = snapshot.data!;
+
+                // Initialize machine on first move data
+                _initMachine(move);
+
+                // Use machine move data (snapshot in Idle, live elsewhere)
+                final displayMove = machineState is Idle
+                    ? (machineState.move.id == move.id ? machineState.move : move)
+                    : move;
+
+                final state = LearningState.fromString(displayMove.learningState);
 
             return ListView(
               padding: const EdgeInsets.all(AppSpacing.screenEdge),
@@ -174,7 +224,7 @@ class MoveDetailScreen extends ConsumerWidget {
                 ActionTile(
                   icon: Icons.text_fields,
                   label: 'Rename',
-                  onTap: () => _rename(context, ref, move),
+                  onTap: () => ref.read(moveDetailProvider.notifier).send(const TapRename()),
                 ),
                 const SizedBox(height: AppSpacing.lg),
 
@@ -300,14 +350,69 @@ class MoveDetailScreen extends ConsumerWidget {
                   icon: Icons.delete_forever,
                   label: 'Delete Move',
                   destructive: true,
-                  onTap: () => _deleteMove(context, ref, move),
+                  onTap: () => ref.read(moveDetailProvider.notifier).send(const TapDelete()),
                 ),
               ],
             );
           },
         ),
-      ),
+        // ── Machine-governed inline overlays ──
+        ..._buildOverlays(machineState, colorScheme),
+      ],
+    ),
+    ),
     );
+  }
+
+  List<Widget> _buildOverlays(MoveDetailState state, ColorScheme cs) {
+    final overlays = <Widget>[];
+
+    if (state is Renaming) {
+      overlays.add(_RenameOverlay(
+        draftName: state.draftName,
+        onDraftChanged: (n) => ref
+            .read(moveDetailProvider.notifier)
+            .send(UpdateDraft(n)),
+        onCancel: () =>
+            ref.read(moveDetailProvider.notifier).send(const Cancel()),
+        onSave: (n) => ref
+            .read(moveDetailProvider.notifier)
+            .send(SaveName(n)),
+        isConflict: false,
+      ));
+    }
+
+    if (state is NameConflict) {
+      overlays.add(_RenameOverlay(
+        draftName: state.conflictingName,
+        onDraftChanged: (n) => ref
+            .read(moveDetailProvider.notifier)
+            .send(UpdateDraft(n)),
+        onCancel: () =>
+            ref.read(moveDetailProvider.notifier).send(const Cancel()),
+        onSave: (n) => ref
+            .read(moveDetailProvider.notifier)
+            .send(SaveName(n)),
+        isConflict: true,
+        conflictName: state.conflictingName,
+      ));
+    }
+
+    if (state is ConfirmingDelete) {
+      overlays.add(_DeleteConfirmOverlay(
+        moveName: state.move.name,
+        onCancel: () =>
+            ref.read(moveDetailProvider.notifier).send(const Cancel()),
+        onConfirm: () =>
+            ref.read(moveDetailProvider.notifier).send(const Confirm()),
+      ));
+    }
+
+    if (state is Deleting) {
+      overlays.add(const _SavingOverlay(message: 'Deleting...'));
+    }
+
+    return overlays;
   }
 
   /// Derives the cached thumbnail path from a video path.
@@ -827,7 +932,7 @@ class MoveDetailScreen extends ConsumerWidget {
     required String category,
   }) async {
     try {
-      return await _videoAlbum.saveToAlbum(
+      return await widget._videoAlbum.saveToAlbum(
         videoPath: videoPath,
         albumName: NativeVideoAlbum.defaultAlbumName(),
         assetTitle: title,
@@ -872,7 +977,7 @@ class MoveDetailScreen extends ConsumerWidget {
     required String nextCategory,
   }) async {
     try {
-      await _videoAlbum.deleteManagedCopies(
+      await widget._videoAlbum.deleteManagedCopies(
         assetTitle: previousTitle,
         category: previousCategory,
         fileExtension: p.extension(videoPath),
@@ -1587,6 +1692,186 @@ class _MoveLogSection extends ConsumerWidget {
     final dao = ref.read(moveNoteEntriesDaoProvider);
     await dao.deleteEntry(entryId);
     ref.invalidate(_moveLogEntriesProvider(moveId));
+  }
+}
+
+// ── Overlay widgets ──
+
+class _RenameOverlay extends StatelessWidget {
+  const _RenameOverlay({
+    required this.draftName,
+    required this.onDraftChanged,
+    required this.onCancel,
+    required this.onSave,
+    this.isConflict = false,
+    this.conflictName,
+  });
+
+  final String draftName;
+  final ValueChanged<String> onDraftChanged;
+  final VoidCallback onCancel;
+  final ValueChanged<String> onSave;
+  final bool isConflict;
+  final String? conflictName;
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    final controller = TextEditingController(text: draftName);
+    final isEmpty = draftName.trim().isEmpty;
+
+    return Container(
+      color: Colors.black54,
+      child: Center(
+        child: Container(
+          width: 320,
+          margin: const EdgeInsets.all(AppSpacing.lg),
+          padding: const EdgeInsets.all(AppSpacing.lg),
+          decoration: BoxDecoration(
+            color: cs.surface,
+            borderRadius: BorderRadius.circular(AppRadius.lg),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('Rename Move',
+                  style: AppTypography.titleSmall
+                      .copyWith(color: cs.onSurface)),
+              const SizedBox(height: AppSpacing.md),
+              TextField(
+                controller: controller,
+                autofocus: true,
+                decoration: InputDecoration(
+                  hintText: 'Move name',
+                  errorText: isConflict
+                      ? '"$conflictName" already exists.'
+                      : null,
+                ),
+                onChanged: onDraftChanged,
+              ),
+              const SizedBox(height: AppSpacing.md),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  TextButton(
+                    onPressed: onCancel,
+                    child: Text('Cancel',
+                        style: TextStyle(color: cs.secondary)),
+                  ),
+                  const SizedBox(width: AppSpacing.sm),
+                  FilledButton(
+                    onPressed: isEmpty
+                        ? null
+                        : () => onSave(controller.text),
+                    child: const Text('Save'),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _DeleteConfirmOverlay extends StatelessWidget {
+  const _DeleteConfirmOverlay({
+    required this.moveName,
+    required this.onCancel,
+    required this.onConfirm,
+  });
+
+  final String moveName;
+  final VoidCallback onCancel;
+  final VoidCallback onConfirm;
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+
+    return Container(
+      color: Colors.black54,
+      child: Center(
+        child: Container(
+          width: 320,
+          margin: const EdgeInsets.all(AppSpacing.lg),
+          padding: const EdgeInsets.all(AppSpacing.lg),
+          decoration: BoxDecoration(
+            color: cs.surface,
+            borderRadius: BorderRadius.circular(AppRadius.lg),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('Delete Move?',
+                  style: AppTypography.titleSmall
+                      .copyWith(color: cs.onSurface)),
+              const SizedBox(height: AppSpacing.sm),
+              Text(
+                'Permanently delete "$moveName" and all associated reviews, achievements, log entries, and aura links.',
+                style: AppTypography.bodySmall
+                    .copyWith(color: cs.onSurface.withValues(alpha: 0.7)),
+              ),
+              const SizedBox(height: AppSpacing.md),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  TextButton(
+                    onPressed: onCancel,
+                    child: Text('Cancel',
+                        style: TextStyle(color: cs.secondary)),
+                  ),
+                  const SizedBox(width: AppSpacing.sm),
+                  FilledButton(
+                    onPressed: onConfirm,
+                    style: FilledButton.styleFrom(
+                      backgroundColor: AppColors.actionAgain,
+                    ),
+                    child: const Text('Delete'),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _SavingOverlay extends StatelessWidget {
+  const _SavingOverlay({this.message = 'Saving...'});
+
+  final String message;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      color: Colors.black38,
+      child: Center(
+        child: Container(
+          padding: const EdgeInsets.all(AppSpacing.xl),
+          decoration: BoxDecoration(
+            color: Theme.of(context).colorScheme.surface,
+            borderRadius: BorderRadius.circular(AppRadius.lg),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const CircularProgressIndicator(strokeWidth: 2),
+              const SizedBox(height: AppSpacing.md),
+              Text(message,
+                  style: AppTypography.bodySmall.copyWith(
+                    color: Theme.of(context).colorScheme.onSurface,
+                  )),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 }
 
