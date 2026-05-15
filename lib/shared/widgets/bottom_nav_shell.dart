@@ -7,6 +7,8 @@ import 'package:go_router/go_router.dart';
 import '../../core/providers.dart';
 import '../../core/design/theme.dart';
 import '../../core/services/media_playback_coordinator.dart';
+import '../../core/models/app_mode.dart';
+import '../../core/services/settings_service.dart';
 import 'sync_progress_bar.dart';
 
 class BottomNavShell extends ConsumerWidget {
@@ -79,17 +81,19 @@ class BottomNavShell extends ConsumerWidget {
                 ),
                 BottomNavigationBarItem(
                   icon: Semantics(
-                    identifier: 'drill-tab',
-                    child: const Icon(Icons.style_outlined),
+                    identifier: 'review-tab',
+                    child: Consumer(
+                      builder: (context, ref, _) {
+                        final appMode = ref.watch(appModeProvider);
+                        return Icon(
+                          appMode == AppMode.anki
+                              ? Icons.style_outlined
+                              : Icons.celebration_outlined,
+                        );
+                      },
+                    ),
                   ),
-                  label: 'Drill',
-                ),
-                BottomNavigationBarItem(
-                  icon: Semantics(
-                    identifier: 'party-tab',
-                    child: const Icon(Icons.celebration_outlined),
-                  ),
-                  label: 'Party',
+                  label: 'Review',
                 ),
                 BottomNavigationBarItem(
                   icon: Semantics(

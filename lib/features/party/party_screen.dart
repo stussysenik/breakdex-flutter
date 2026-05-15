@@ -13,7 +13,7 @@ import '../../core/design/typography.dart';
 import '../../core/models/learning_state.dart';
 import '../../core/models/reviewable_item.dart' show MoveVideoPath;
 import '../../core/providers.dart';
-import '../../shared/widgets/settings_gear_button.dart';
+import '../../core/services/settings_service.dart';
 import '../../shared/widgets/state_pill.dart';
 import '../../shared/widgets/video_player_widget.dart' show RobustVideoPlayer;
 
@@ -33,7 +33,7 @@ class _PartyScreenState extends ConsumerState<PartyScreen>
 
   StreamSubscription<AccelerometerEvent>? _shakeSubscription;
   DateTime _lastShakeTime = DateTime(2000);
-  static const _shakeThreshold = 20.0;
+  static const _shakeThreshold = 18.0;
   static const _shakeCooldown = Duration(milliseconds: 1000);
   static const _revealLockout = Duration(seconds: 3);
 
@@ -44,8 +44,8 @@ class _PartyScreenState extends ConsumerState<PartyScreen>
   Move? _finalMove;
   DateTime? _cycleStartTime;
   DateTime? _lastFlip;
+  int _cycleDurationMs = 5500;
 
-  static const _cycleTotalDuration = Duration(milliseconds: 5500);
   static const _cycleFlipBaseMs = 60;
   static const _cycleFlipMaxMs = 260;
 
@@ -103,6 +103,8 @@ class _PartyScreenState extends ConsumerState<PartyScreen>
     _shakeLocked = true;
     _cancelCycling();
 
+    _cycleDurationMs = ref.read(partyCycleDurationMsProvider);
+
     HapticFeedback.heavyImpact();
     Future.delayed(const Duration(milliseconds: 80), () {
       HapticFeedback.heavyImpact();
@@ -133,14 +135,14 @@ class _PartyScreenState extends ConsumerState<PartyScreen>
 
     final now = DateTime.now();
     final elapsed = now.difference(_cycleStartTime!);
-    if (elapsed >= _cycleTotalDuration) {
+    if (elapsed.inMilliseconds >= _cycleDurationMs) {
       timer.cancel();
       _finishCycling();
       return;
     }
 
     // Decelerating flip interval: starts fast, slows down over time
-    final progress = elapsed.inMilliseconds / _cycleTotalDuration.inMilliseconds;
+    final progress = elapsed.inMilliseconds / _cycleDurationMs;
     final intervalMs = _cycleFlipBaseMs +
         ((_cycleFlipMaxMs - _cycleFlipBaseMs) * progress * progress).round();
 
@@ -181,7 +183,7 @@ class _PartyScreenState extends ConsumerState<PartyScreen>
   Widget build(BuildContext context) {
     final tabIndex = ref.watch(currentTabIndexProvider);
 
-    if (tabIndex == 3) {
+    if (tabIndex == 2) {
       _startShakeListener();
     } else {
       _stopShakeListener();
@@ -256,17 +258,11 @@ class _PartyScreenState extends ConsumerState<PartyScreen>
             AppSpacing.screenEdge,
             0,
           ),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                'Party',
-                style: AppTypography.titleLarge.copyWith(
-                  color: colorScheme.onSurface,
-                ),
-              ),
-              const SettingsGearButton(),
-            ],
+          child: Text(
+            'Party',
+            style: AppTypography.titleLarge.copyWith(
+              color: colorScheme.onSurface,
+            ),
           ),
         ),
         const SizedBox(height: AppSpacing.sm),
@@ -322,8 +318,7 @@ class _PartyScreenState extends ConsumerState<PartyScreen>
     final elapsed = _cycleStartTime != null
         ? DateTime.now().difference(_cycleStartTime!)
         : Duration.zero;
-    final progress = (elapsed.inMilliseconds /
-            _cycleTotalDuration.inMilliseconds)
+    final progress = (elapsed.inMilliseconds / _cycleDurationMs)
         .clamp(0.0, 1.0);
 
     return Center(

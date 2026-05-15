@@ -12,7 +12,6 @@ import '../../core/providers.dart';
 import '../../core/services/categories_service.dart';
 import '../../core/services/settings_service.dart';
 import '../../shared/widgets/video_picker_sheet.dart';
-import '../../shared/widgets/settings_gear_button.dart';
 
 class AddScreen extends ConsumerWidget {
   const AddScreen({super.key});
@@ -26,7 +25,6 @@ class AddScreen extends ConsumerWidget {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Add Move'),
-        actions: const [SettingsGearButton(), SizedBox(width: AppSpacing.sm)],
       ),
       body: Center(
         child: Padding(

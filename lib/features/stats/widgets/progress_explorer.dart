@@ -11,7 +11,6 @@ import '../../../core/services/native_share_sheet.dart';
 import '../../../core/services/stats_export_service.dart';
 import '../../../core/utils/share_sheet.dart';
 import '../../../shared/widgets/app_segmented_control.dart';
-import '../../../shared/widgets/settings_gear_button.dart';
 import '../../../shared/widgets/wip_badge.dart';
 import '../providers/stats_providers.dart';
 import 'heat_map_grid.dart';
@@ -303,8 +302,6 @@ class _ProgressHeader extends StatelessWidget {
         Row(
           children: [
             _ShareButton(stats: stats),
-            const SizedBox(width: AppSpacing.sm),
-            const SettingsGearButton(),
           ],
         ),
       ],

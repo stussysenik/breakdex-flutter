@@ -9,7 +9,6 @@ import '../../core/design/theme.dart';
 import '../../core/design/typography.dart';
 import '../../core/services/categories_service.dart';
 import '../../shared/widgets/app_segmented_control.dart';
-import '../../shared/widgets/settings_gear_button.dart';
 import '../../shared/widgets/wip_badge.dart';
 import 'providers/flow_graph_providers.dart';
 import 'widgets/flow_coach_marks.dart';
@@ -78,8 +77,6 @@ class FlowScreen extends ConsumerWidget {
                         ],
                       ),
                     ),
-                    const SizedBox(width: AppSpacing.md),
-                    const SettingsGearButton(),
                   ],
                 ),
               ),

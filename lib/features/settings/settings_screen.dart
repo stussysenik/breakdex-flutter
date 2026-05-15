@@ -272,10 +272,12 @@ class SettingsScreen extends ConsumerWidget {
             _SettingsSection(
               title: 'Review',
               subtitle:
-                  'Quiet playback, first-look card details, and review states.',
-              child: _SettingsPanel(
-                title: 'Cards & States',
-                action: PopupMenuButton<ReviewSettingsResetAction>(
+                  'Quiet playback, first-look card details, review states, and party controls.',
+              child: Column(
+                children: [
+                  _SettingsPanel(
+                    title: 'Cards & States',
+                    action: PopupMenuButton<ReviewSettingsResetAction>(
                   tooltip: 'Reset review settings',
                   onSelected: (action) async {
                     await HapticFeedback.mediumImpact();
@@ -357,11 +359,18 @@ class SettingsScreen extends ConsumerWidget {
                   ],
                 ),
               ),
-            ),
-            const SizedBox(height: AppSpacing.lg),
+              const SizedBox(height: AppSpacing.md),
+              _SettingsPanel(
+                title: 'Party',
+                child: _PartyCycleDurationSlider(),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: AppSpacing.lg),
 
-            _SettingsSection(
-              title: 'Colors',
+        _SettingsSection(
+          title: 'Colors',
               subtitle: 'Accent and grading colors.',
               child: Column(
                 children: [
@@ -1422,6 +1431,77 @@ class _DataActionTileAsyncState extends State<_DataActionTileAsync> {
           ],
         ),
       ),
+    );
+  }
+}
+
+class _PartyCycleDurationSlider extends ConsumerWidget {
+  static const _minMs = 1000;
+  static const _maxMs = 15000;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final durationMs = ref.watch(partyCycleDurationMsProvider);
+    final colorScheme = Theme.of(context).colorScheme;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Shake cycle duration',
+          style: AppTypography.caption.copyWith(
+            color: colorScheme.secondary,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+        const SizedBox(height: AppSpacing.xs),
+        Row(
+          children: [
+            Expanded(
+              child: Slider(
+                value: durationMs.toDouble(),
+                min: _minMs.toDouble(),
+                max: _maxMs.toDouble(),
+                divisions: (_maxMs - _minMs) ~/ 100,
+                activeColor: colorScheme.primary,
+                onChanged: (value) {
+                  ref
+                      .read(partyCycleDurationMsProvider.notifier)
+                      .set(value.round());
+                },
+              ),
+            ),
+            SizedBox(
+              width: 64,
+              child: Text(
+                '${(durationMs / 1000).toStringAsFixed(1)}s',
+                style: AppTypography.bodySmall.copyWith(
+                  color: colorScheme.onSurface,
+                  fontWeight: FontWeight.w600,
+                ),
+                textAlign: TextAlign.right,
+              ),
+            ),
+          ],
+        ),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(
+              '${(_minMs / 1000).toStringAsFixed(1)}s',
+              style: AppTypography.caption.copyWith(
+                color: colorScheme.secondary,
+              ),
+            ),
+            Text(
+              '${(_maxMs / 1000).toStringAsFixed(1)}s',
+              style: AppTypography.caption.copyWith(
+                color: colorScheme.secondary,
+              ),
+            ),
+          ],
+        ),
+      ],
     );
   }
 }

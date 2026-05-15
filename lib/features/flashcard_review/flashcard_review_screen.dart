@@ -29,7 +29,6 @@ import 'widgets/mastery_prescreen.dart';
 import 'widgets/review_card.dart';
 import 'widgets/state_picker_sheet.dart';
 import '../../shared/widgets/app_segmented_control.dart';
-import '../../shared/widgets/settings_gear_button.dart';
 import '../../shared/widgets/celebration_overlay.dart';
 import '../../shared/widgets/video_picker_sheet.dart';
 import '../lab/providers/achievement_providers.dart';
@@ -262,23 +261,16 @@ class _FlashcardReviewScreenState extends ConsumerState<FlashcardReviewScreen>
           children: [
             const SizedBox(height: AppSpacing.md),
 
-            // Title (no End button — it's in the card overlay now)
+            // Title
             Padding(
               padding: const EdgeInsets.symmetric(
                 horizontal: AppSpacing.screenEdge,
               ),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: Text(
-                      'Drill',
-                      style: AppTypography.titleLarge.copyWith(
-                        color: colorScheme.onSurface,
-                      ),
-                    ),
-                  ),
-                  const SettingsGearButton(),
-                ],
+              child: Text(
+                'Drill',
+                style: AppTypography.titleLarge.copyWith(
+                  color: colorScheme.onSurface,
+                ),
               ),
             ),
 

@@ -8,6 +8,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:breakdex/core/database/database.dart';
 import 'package:breakdex/core/providers.dart';
+import 'package:breakdex/core/services/settings_service.dart';
 import 'package:breakdex/features/party/party_screen.dart';
 
 import '../../helpers/test_database.dart';
@@ -15,6 +16,7 @@ import '../../helpers/test_data.dart';
 
 void main() {
   late AppDatabase db;
+  late SharedPreferences prefs;
 
   setUpAll(() {
     TestWidgetsFlutterBinding.ensureInitialized();
@@ -30,15 +32,17 @@ void main() {
 
   setUp(() async {
     SharedPreferences.setMockInitialValues({});
+    prefs = await SharedPreferences.getInstance();
     db = createTestDatabase();
   });
 
-  // Provide tab index=3 so the shake listener starts (party tab active).
+  // Provide tab index=2 so the shake listener starts (review tab active).
   Widget buildPartyScreenActive() {
     return ProviderScope(
       overrides: [
         databaseProvider.overrideWithValue(db),
-        currentTabIndexProvider.overrideWith((_) => 3),
+        sharedPreferencesProvider.overrideWithValue(prefs),
+        currentTabIndexProvider.overrideWith((_) => 2),
       ],
       child: const MaterialApp(home: PartyScreen()),
     );
@@ -94,17 +98,6 @@ void main() {
     await cleanupWidget(tester);
   });
 
-  testWidgets('settings gear button is present', (tester) async {
-    await seedMove(db, id: 'move-1', name: 'Windmill', category: 'power');
-
-    await tester.pumpWidget(buildPartyScreenActive());
-    await tester.pump(const Duration(milliseconds: 500));
-
-    expect(find.byIcon(Icons.settings_outlined), findsOneWidget);
-
-    await cleanupWidget(tester);
-  });
-
   testWidgets('single move shows singular label', (tester) async {
     await seedMove(db, id: 'move-1', name: 'Windmill', category: 'power');
 
@@ -125,6 +118,7 @@ void main() {
       ProviderScope(
         overrides: [
           databaseProvider.overrideWithValue(db),
+          sharedPreferencesProvider.overrideWithValue(prefs),
           currentTabIndexProvider.overrideWith((_) => 0),
         ],
         child: const MaterialApp(home: PartyScreen()),

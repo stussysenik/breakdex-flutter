@@ -26,7 +26,6 @@ import '../../core/services/view_names_service.dart';
 import '../../shared/widgets/celebration_overlay.dart';
 import '../../shared/widgets/pressable.dart';
 import '../../shared/widgets/state_pill.dart';
-import '../../shared/widgets/settings_gear_button.dart';
 import '../../shared/widgets/video_picker_sheet.dart';
 import '../sync_onboarding/sync_onboarding_card.dart';
 
@@ -111,7 +110,7 @@ class MoveListScreen extends ConsumerWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // Title + gear
+                    // Title
                     Padding(
                       padding: const EdgeInsets.fromLTRB(
                         AppSpacing.screenEdge,
@@ -119,17 +118,11 @@ class MoveListScreen extends ConsumerWidget {
                         AppSpacing.screenEdge,
                         0,
                       ),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Text(
-                            title,
-                            style: AppTypography.titleLarge.copyWith(
-                              color: colorScheme.onSurface,
-                            ),
-                          ),
-                          const SettingsGearButton(),
-                        ],
+                      child: Text(
+                        title,
+                        style: AppTypography.titleLarge.copyWith(
+                          color: colorScheme.onSurface,
+                        ),
                       ),
                     ),
                     const SizedBox(height: AppSpacing.md),

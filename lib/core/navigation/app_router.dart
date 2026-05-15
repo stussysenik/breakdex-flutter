@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import 'app_route_observer.dart';
@@ -23,6 +24,8 @@ import '../../features/settings/sync_providers_screen.dart';
 import '../../features/settings/sync_status_screen.dart';
 import '../../features/settings/help/asset_sync_help_screen.dart';
 import '../../shared/widgets/bottom_nav_shell.dart';
+import '../../core/models/app_mode.dart';
+import '../../core/services/settings_service.dart';
 
 final _rootNavigatorKey = GlobalKey<NavigatorState>();
 
@@ -79,21 +82,12 @@ final appRouter = GoRouter(
             GoRoute(path: '/add', builder: (context, state) => const AddScreen()),
           ],
         ),
-        // Drill — flashcard review
+        // Review — flashcard drill or party shake, controlled via AppMode
         StatefulShellBranch(
           routes: [
             GoRoute(
-              path: '/drill',
-              builder: (context, state) => const FlashcardReviewScreen(),
-            ),
-          ],
-        ),
-        // Party — shake to discover random moves
-        StatefulShellBranch(
-          routes: [
-            GoRoute(
-              path: '/party',
-              builder: (context, state) => const PartyScreen(),
+              path: '/review',
+              builder: (context, state) => const _ReviewRouter(),
             ),
           ],
         ),
@@ -188,3 +182,16 @@ final appRouter = GoRouter(
     ),
   ],
 );
+
+class _ReviewRouter extends ConsumerWidget {
+  const _ReviewRouter();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final appMode = ref.watch(appModeProvider);
+    return switch (appMode) {
+      AppMode.anki => const FlashcardReviewScreen(),
+      AppMode.party => const PartyScreen(),
+    };
+  }
+}

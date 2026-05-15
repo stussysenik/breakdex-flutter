@@ -101,3 +101,25 @@ class AppModeNotifier extends Notifier<AppMode> {
     state = mode;
   }
 }
+
+final partyCycleDurationMsProvider =
+    NotifierProvider<PartyCycleDurationMsNotifier, int>(
+      PartyCycleDurationMsNotifier.new,
+    );
+
+class PartyCycleDurationMsNotifier extends Notifier<int> {
+  static const _key = 'party_cycle_duration_ms';
+  static const _defaultMs = 5500;
+
+  @override
+  int build() {
+    final prefs = ref.watch(sharedPreferencesProvider);
+    return prefs.getInt(_key) ?? _defaultMs;
+  }
+
+  Future<void> set(int ms) async {
+    final prefs = ref.read(sharedPreferencesProvider);
+    await prefs.setInt(_key, ms);
+    state = ms;
+  }
+}

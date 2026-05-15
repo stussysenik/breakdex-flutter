@@ -4,7 +4,6 @@ import 'package:go_router/go_router.dart';
 
 import '../../core/design/spacing.dart';
 import '../../core/design/typography.dart';
-import '../../shared/widgets/settings_gear_button.dart';
 
 class BreakdexScreen extends ConsumerWidget {
   const BreakdexScreen({super.key});
@@ -17,7 +16,6 @@ class BreakdexScreen extends ConsumerWidget {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Breakdex'),
-        actions: const [SettingsGearButton(), SizedBox(width: AppSpacing.sm)],
       ),
       body: Center(
         child: Column(

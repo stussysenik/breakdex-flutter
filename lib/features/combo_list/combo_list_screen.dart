@@ -10,7 +10,6 @@ import '../../core/design/spacing.dart';
 import '../../core/design/typography.dart';
 import '../../core/providers.dart';
 import '../../shared/widgets/pressable.dart';
-import '../../shared/widgets/settings_gear_button.dart';
 
 class ComboListScreen extends ConsumerWidget {
   const ComboListScreen({super.key});
@@ -43,7 +42,6 @@ class ComboListScreen extends ConsumerWidget {
           ),
         ),
         title: const Text('Combos'),
-        actions: const [SettingsGearButton(), SizedBox(width: AppSpacing.sm)],
       ),
       body: combosAsync.when(
         loading: () => const Center(child: CircularProgressIndicator()),
