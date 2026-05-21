@@ -429,78 +429,86 @@ final class VideoAlbumPlugin: NSObject, FlutterPlugin, FlutterStreamHandler, PHP
         assetLocalIdentifier: String?,
         result: @escaping FlutterResult
     ) {
-        PHPhotoLibrary.requestAuthorization(for: .readWrite) { [weak self] status in
-            guard status == .authorized || status == .limited else {
-                DispatchQueue.main.async {
+        let status = PHPhotoLibrary.authorizationStatus(for: .readWrite)
+        guard status == .authorized || status == .limited else {
+            result(
+                FlutterError(
+                    code: "PERMISSION_DENIED",
+                    message: "Photo library read/write access denied",
+                    details: nil
+                )
+            )
+            return
+        }
+
+        self.deleteManagedCopiesAuthorized(
+            assetTitle: assetTitle,
+            category: category,
+            fileExtension: fileExtension,
+            assetLocalIdentifier: assetLocalIdentifier,
+            result: result
+        )
+    }
+
+    private func deleteManagedCopiesAuthorized(
+        assetTitle: String,
+        category: String?,
+        fileExtension: String?,
+        assetLocalIdentifier: String?,
+        result: @escaping FlutterResult
+    ) {
+        let trimmedTitle = assetTitle.trimmingCharacters(in: .whitespacesAndNewlines)
+        let trimmedCategory = category?.trimmingCharacters(in: .whitespacesAndNewlines)
+        let normalizedExt = self.normalizedFileExtension(fileExtension)
+        let candidateFilenames = Set([
+            self.semanticFilename(
+                title: trimmedTitle,
+                category: trimmedCategory,
+                fileExtension: normalizedExt
+            ),
+            self.semanticFilename(
+                title: trimmedTitle,
+                category: trimmedCategory,
+                fileExtension: "mp4"
+            ),
+            self.semanticFilename(
+                title: trimmedTitle,
+                category: trimmedCategory,
+                fileExtension: "mov"
+            ),
+        ])
+
+        let albums = self.fetchBreakdexAlbums()
+        var matchingAssets = self.findAssets(
+            in: albums,
+            matchingLocalIdentifier: assetLocalIdentifier
+        )
+        if matchingAssets.isEmpty {
+            matchingAssets = self.findAssets(
+                in: albums,
+                matchingFilenames: candidateFilenames
+            )
+        }
+
+        guard !matchingAssets.isEmpty else {
+            DispatchQueue.main.async { result(nil) }
+            return
+        }
+
+        PHPhotoLibrary.shared().performChanges({
+            PHAssetChangeRequest.deleteAssets(matchingAssets as NSFastEnumeration)
+        }) { success, error in
+            DispatchQueue.main.async {
+                if success {
+                    result(nil)
+                } else {
                     result(
                         FlutterError(
-                            code: "PERMISSION_DENIED",
-                            message: "Photo library read/write access denied",
+                            code: "DELETE_FAILED",
+                            message: error?.localizedDescription ?? "Unknown error deleting album copies",
                             details: nil
                         )
                     )
-                }
-                return
-            }
-
-            guard let self else {
-                DispatchQueue.main.async { result(nil) }
-                return
-            }
-
-            let trimmedTitle = assetTitle.trimmingCharacters(in: .whitespacesAndNewlines)
-            let trimmedCategory = category?.trimmingCharacters(in: .whitespacesAndNewlines)
-            let normalizedExt = self.normalizedFileExtension(fileExtension)
-            let candidateFilenames = Set([
-                self.semanticFilename(
-                    title: trimmedTitle,
-                    category: trimmedCategory,
-                    fileExtension: normalizedExt
-                ),
-                self.semanticFilename(
-                    title: trimmedTitle,
-                    category: trimmedCategory,
-                    fileExtension: "mp4"
-                ),
-                self.semanticFilename(
-                    title: trimmedTitle,
-                    category: trimmedCategory,
-                    fileExtension: "mov"
-                ),
-            ])
-
-            let albums = self.fetchBreakdexAlbums()
-            var matchingAssets = self.findAssets(
-                in: albums,
-                matchingLocalIdentifier: assetLocalIdentifier
-            )
-            if matchingAssets.isEmpty {
-                matchingAssets = self.findAssets(
-                    in: albums,
-                    matchingFilenames: candidateFilenames
-                )
-            }
-
-            guard !matchingAssets.isEmpty else {
-                DispatchQueue.main.async { result(nil) }
-                return
-            }
-
-            PHPhotoLibrary.shared().performChanges({
-                PHAssetChangeRequest.deleteAssets(matchingAssets as NSFastEnumeration)
-            }) { success, error in
-                DispatchQueue.main.async {
-                    if success {
-                        result(nil)
-                    } else {
-                        result(
-                            FlutterError(
-                                code: "DELETE_FAILED",
-                                message: error?.localizedDescription ?? "Unknown error deleting album copies",
-                                details: nil
-                            )
-                        )
-                    }
                 }
             }
         }

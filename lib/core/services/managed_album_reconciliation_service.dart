@@ -55,7 +55,6 @@ class ManagedAlbumReconcileReport {
   }
 
   bool get hasStartupSignal =>
-      trigger == ManagedAlbumReconcileTrigger.startup ||
       accessStatus != PhotoLibraryAccessStatus.authorized ||
       historicalMatchingAlbums > 0 ||
       historicalAssetsRecovered > 0 ||
