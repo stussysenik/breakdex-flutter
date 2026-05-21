@@ -141,6 +141,12 @@ class _VideoEditorScreenState extends State<VideoEditorScreen>
       _controller != null &&
       _controller!.value.isInitialized;
 
+  bool get _hasEdits =>
+      _trimStart != 0.0 ||
+      _trimEnd != 1.0 ||
+      _rotation != 0 ||
+      _selectedAspectIndex != 0;
+
   Future<void> _loadVideo({bool isRetry = false}) async {
     final loadToken = ++_loadToken;
     await _disposeController();
@@ -540,7 +546,7 @@ class _VideoEditorScreenState extends State<VideoEditorScreen>
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       Semantics(
-                        label: _exporting ? 'Cancel export' : 'Cancel',
+                        label: _exporting ? 'Cancel export' : 'Discard',
                         button: true,
                         child: GestureDetector(
                           onTap: _exporting
@@ -550,9 +556,9 @@ class _VideoEditorScreenState extends State<VideoEditorScreen>
                                     setState(() => _exporting = false);
                                   }
                                 }
-                              : () => context.pop(),
+                              : () => _handleDiscard(context),
                           child: Text(
-                            _exporting ? 'Cancel Export' : 'Cancel',
+                            _exporting ? 'Cancel Export' : 'Discard',
                             style: AppTypography.bodyMedium.copyWith(
                               color: _exporting
                                   ? AppColors.actionAgain
@@ -562,7 +568,7 @@ class _VideoEditorScreenState extends State<VideoEditorScreen>
                         ),
                       ),
                       Semantics(
-                        label: 'Export video',
+                        label: 'Save video',
                         button: true,
                         enabled: !_exporting && _isEditorReady,
                         child: GestureDetector(
@@ -579,7 +585,7 @@ class _VideoEditorScreenState extends State<VideoEditorScreen>
                               borderRadius: BorderRadius.circular(AppRadius.sm),
                             ),
                             child: Text(
-                              'Export',
+                              'Save',
                               style: AppTypography.bodyMedium.copyWith(
                                 color: _exporting || !_isEditorReady
                                     ? colorScheme.secondary
@@ -1340,6 +1346,35 @@ class _VideoEditorScreenState extends State<VideoEditorScreen>
       '0',
     );
     return '$minutes:$seconds.$millis';
+  }
+
+  Future<void> _handleDiscard(BuildContext context) async {
+    if (_hasEdits) {
+      final confirmed = await showDialog<bool>(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          title: const Text('Discard edits?'),
+          content: const Text(
+            'You have unsaved changes to this video.',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: const Text('Keep Editing'),
+            ),
+            TextButton(
+              onPressed: () => Navigator.pop(ctx, true),
+              child: const Text(
+                'Discard',
+                style: TextStyle(color: AppColors.actionAgain),
+              ),
+            ),
+          ],
+        ),
+      );
+      if (confirmed != true || !mounted) return;
+    }
+    if (mounted) context.pop();
   }
 
   Future<void> _export() async {

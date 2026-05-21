@@ -50,6 +50,31 @@ class _ComboRow extends ConsumerWidget {
         unawaited(HapticFeedback.heavyImpact());
         unawaited(_deleteCombo(ref));
       },
+      confirmDismiss: (_) async {
+        final confirmed = await showDialog<bool>(
+          context: context,
+          builder: (ctx) => AlertDialog(
+            title: Text('Delete ${combo.name}?'),
+            content: const Text(
+              'This permanently deletes the combo. Individual moves are not affected.',
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(ctx, false),
+                child: const Text('Cancel'),
+              ),
+              TextButton(
+                onPressed: () => Navigator.pop(ctx, true),
+                child: const Text(
+                  'Delete',
+                  style: TextStyle(color: AppColors.actionAgain),
+                ),
+              ),
+            ],
+          ),
+        );
+        return confirmed ?? false;
+      },
       child: Semantics(
         identifier: 'combo-row-${combo.id}',
         label: '${combo.name}, $moveCount moves',

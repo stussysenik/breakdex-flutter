@@ -307,6 +307,24 @@ class SettingsScreen extends ConsumerWidget {
                     action: PopupMenuButton<ReviewSettingsResetAction>(
                   tooltip: 'Reset review settings',
                   onSelected: (action) async {
+                    final confirmed = await showDialog<bool>(
+                      context: context,
+                      builder: (ctx) => AlertDialog(
+                        title: const Text('Reset review settings?'),
+                        content: Text(_resetActionDescription(action)),
+                        actions: [
+                          TextButton(
+                            onPressed: () => Navigator.pop(ctx, false),
+                            child: const Text('Cancel'),
+                          ),
+                          TextButton(
+                            onPressed: () => Navigator.pop(ctx, true),
+                            child: const Text('Reset'),
+                          ),
+                        ],
+                      ),
+                    );
+                    if (confirmed != true) return;
                     await HapticFeedback.mediumImpact();
                     switch (action) {
                       case ReviewSettingsResetAction.cardPlayback:
@@ -512,7 +530,18 @@ class SettingsScreen extends ConsumerWidget {
     );
   }
 
-  void _showClearDataDialog(BuildContext context, WidgetRef ref) {
+  String _resetActionDescription(ReviewSettingsResetAction action) {
+  return switch (action) {
+    ReviewSettingsResetAction.cardPlayback =>
+      'Reset card display and playback settings to defaults.',
+    ReviewSettingsResetAction.states =>
+      'Reset learning state names and colors to defaults.',
+    ReviewSettingsResetAction.all =>
+      'Reset all card, playback, and state settings to defaults.',
+  };
+}
+
+void _showClearDataDialog(BuildContext context, WidgetRef ref) {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(

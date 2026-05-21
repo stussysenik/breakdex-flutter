@@ -345,7 +345,9 @@ class _MoveDetailScreenState extends ConsumerState<MoveDetailScreen> {
                     label: 'Add Video',
                     onTap: () => _addOrReplaceVideo(context, ref, move),
                   ),
-                const SizedBox(height: AppSpacing.sm),
+                const SizedBox(height: AppSpacing.lg),
+                const Divider(height: 1),
+                const SizedBox(height: AppSpacing.md),
                 ActionTile(
                   icon: Icons.delete_forever,
                   label: 'Delete Move',

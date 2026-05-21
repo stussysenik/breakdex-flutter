@@ -27,6 +27,31 @@ class _MoveRow extends ConsumerWidget {
           unawaited(HapticFeedback.heavyImpact());
           unawaited(_deleteMove(ref));
         },
+        confirmDismiss: (_) async {
+          final confirmed = await showDialog<bool>(
+            context: context,
+            builder: (ctx) => AlertDialog(
+              title: Text('Delete ${move.name}?'),
+              content: const Text(
+                'This moves it to Recently Deleted for 30 days.',
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(ctx, false),
+                  child: const Text('Cancel'),
+                ),
+                TextButton(
+                  onPressed: () => Navigator.pop(ctx, true),
+                  child: const Text(
+                    'Delete',
+                    style: TextStyle(color: AppColors.actionAgain),
+                  ),
+                ),
+              ],
+            ),
+          );
+          return confirmed ?? false;
+        },
         child: Semantics(
           identifier: 'move-row-${move.id}',
           label: '${move.name}, $stateLabel',

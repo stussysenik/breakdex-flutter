@@ -20,10 +20,7 @@ class BattleScreen extends ConsumerWidget {
       appBar: AppBar(
         leading: IconButton(
           icon: const Icon(Icons.close),
-          onPressed: () {
-            ref.read(battleProvider.notifier).reset();
-            Navigator.of(context).pop();
-          },
+          onPressed: () => _handleClose(context, ref, state),
         ),
         title: state.phase == BattlePhase.active
             ? Text('Score: ${state.score}')
@@ -51,6 +48,38 @@ class BattleScreen extends ConsumerWidget {
         },
       ),
     );
+  }
+}
+
+Future<void> _handleClose(BuildContext context, WidgetRef ref, BattleState state) async {
+  if (state.phase == BattlePhase.active) {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Forfeit battle?'),
+        content: const Text(
+          'Your current score will be lost.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Continue'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text(
+              'Forfeit',
+              style: TextStyle(color: AppColors.actionAgain),
+            ),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true) return;
+  }
+  if (context.mounted) {
+    ref.read(battleProvider.notifier).reset();
+    Navigator.of(context).pop();
   }
 }
 

@@ -515,7 +515,11 @@ class _FlashcardReviewScreenState extends ConsumerState<FlashcardReviewScreen>
               ),
             ),
             const SizedBox(height: AppSpacing.lg),
-            TextButton(onPressed: _endSession, child: const Text('Back')),
+            OutlinedButton.icon(
+              onPressed: _confirmEndSession,
+              icon: const Icon(Icons.arrow_back_rounded, size: 18),
+              label: const Text('Back'),
+            ),
           ],
         ),
       );
