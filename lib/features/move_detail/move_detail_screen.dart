@@ -839,7 +839,11 @@ class _MoveDetailScreenState extends ConsumerState<MoveDetailScreen> {
                     hintText: 'Category name',
                     errorText: errorText,
                   ),
-                  onChanged: (_) => setDialogState(() => errorText = null),
+              onChanged: (_) {
+                if (errorText != null) {
+                  setDialogState(() => errorText = null);
+                }
+              },
                 ),
                 const SizedBox(height: AppSpacing.md),
                 ColorSettingTile(
@@ -1697,7 +1701,7 @@ class _MoveLogSection extends ConsumerWidget {
 
 // ── Overlay widgets ──
 
-class _RenameOverlay extends StatelessWidget {
+class _RenameOverlay extends StatefulWidget {
   const _RenameOverlay({
     required this.draftName,
     required this.onDraftChanged,
@@ -1715,10 +1719,37 @@ class _RenameOverlay extends StatelessWidget {
   final String? conflictName;
 
   @override
+  State<_RenameOverlay> createState() => _RenameOverlayState();
+}
+
+class _RenameOverlayState extends State<_RenameOverlay> {
+  late final TextEditingController _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = TextEditingController(text: widget.draftName);
+  }
+
+  @override
+  void didUpdateWidget(covariant _RenameOverlay oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.draftName != oldWidget.draftName &&
+        widget.draftName != _controller.text) {
+      _controller.text = widget.draftName;
+    }
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
-    final controller = TextEditingController(text: draftName);
-    final isEmpty = draftName.trim().isEmpty;
+    final isEmpty = _controller.text.trim().isEmpty;
 
     return Container(
       color: Colors.black54,
@@ -1740,22 +1771,22 @@ class _RenameOverlay extends StatelessWidget {
                       .copyWith(color: cs.onSurface)),
               const SizedBox(height: AppSpacing.md),
               TextField(
-                controller: controller,
+                controller: _controller,
                 autofocus: true,
                 decoration: InputDecoration(
                   hintText: 'Move name',
-                  errorText: isConflict
-                      ? '"$conflictName" already exists.'
+                  errorText: widget.isConflict
+                      ? '"${widget.conflictName}" already exists.'
                       : null,
                 ),
-                onChanged: onDraftChanged,
+                onChanged: widget.onDraftChanged,
               ),
               const SizedBox(height: AppSpacing.md),
               Row(
                 mainAxisAlignment: MainAxisAlignment.end,
                 children: [
                   TextButton(
-                    onPressed: onCancel,
+                    onPressed: widget.onCancel,
                     child: Text('Cancel',
                         style: TextStyle(color: cs.secondary)),
                   ),
@@ -1763,7 +1794,7 @@ class _RenameOverlay extends StatelessWidget {
                   FilledButton(
                     onPressed: isEmpty
                         ? null
-                        : () => onSave(controller.text),
+                        : () => widget.onSave(_controller.text),
                     child: const Text('Save'),
                   ),
                 ],
