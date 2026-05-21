@@ -648,6 +648,16 @@ class _MoveDetailScreenState extends ConsumerState<MoveDetailScreen> {
           .read(moveRepositoryProvider)
           .update(MovesCompanion(id: Value(move.id), name: Value(newName)));
       if (move.videoPath != null && context.mounted) {
+        final semantic = await VideoPathResolver.moveToSemanticPath(
+          currentRelativePath: move.videoPath!,
+          category: move.category,
+          moveName: newName,
+        );
+        if (semantic != move.videoPath) {
+          await ref.read(moveRepositoryProvider).update(
+            MovesCompanion(id: Value(move.id), videoPath: Value(semantic)),
+          );
+        }
         await _syncManagedAlbumCopy(
           context,
           ref: ref,
@@ -787,6 +797,16 @@ class _MoveDetailScreenState extends ConsumerState<MoveDetailScreen> {
           MovesCompanion(id: Value(move.id), category: Value(newCategory)),
         );
     if (move.videoPath != null && context.mounted) {
+      final semantic = await VideoPathResolver.moveToSemanticPath(
+        currentRelativePath: move.videoPath!,
+        category: newCategory,
+        moveName: move.name,
+      );
+      if (semantic != move.videoPath) {
+        await ref.read(moveRepositoryProvider).update(
+          MovesCompanion(id: Value(move.id), videoPath: Value(semantic)),
+        );
+      }
       await _syncManagedAlbumCopy(
         context,
         ref: ref,

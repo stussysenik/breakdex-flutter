@@ -8,6 +8,13 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../database/database.dart';
 import 'app_storage_paths.dart';
 
+String _sanitizeFilename(String name) {
+  return name
+      .replaceAll('/', '-')
+      .replaceAll(':', '-')
+      .trim();
+}
+
 /// Resolves video paths between relative (DB) and absolute (file system) forms.
 ///
 /// iOS changes the container UUID on every reinstall/update, which breaks
@@ -150,6 +157,59 @@ abstract final class VideoPathResolver {
     }
 
     return null;
+  }
+
+  /// Return a semantic relative path for video storage:
+  /// `Moves/{category}/{moveName}/video.{ext}`.
+  ///
+  /// Category and move name are sanitized for safe filesystem usage.
+  static String semanticVideoPath(
+    String category,
+    String moveName,
+    String extension,
+  ) {
+    final safeCategory = _sanitizeFilename(category);
+    final safeName = _sanitizeFilename(moveName);
+    final ext = extension.startsWith('.') ? extension.substring(1) : extension;
+    return p.join('Moves', safeCategory, safeName, 'video.$ext');
+  }
+
+  /// Move the file at [currentRelativePath] to a semantic path based on
+  /// [category] and [moveName]. Returns the new relative path.
+  ///
+  /// If the source file cannot be found, returns [currentRelativePath] as-is.
+  /// Creates intermediate directories as needed.
+  static Future<String> moveToSemanticPath({
+    required String currentRelativePath,
+    required String category,
+    required String moveName,
+  }) async {
+    final sourceAbs = toAbsolute(currentRelativePath);
+    final sourceFile = File(sourceAbs);
+
+    if (!await sourceFile.exists()) return currentRelativePath;
+
+    final ext = p.extension(currentRelativePath).isNotEmpty
+        ? p.extension(currentRelativePath)
+        : '.mp4';
+    final newRelative = semanticVideoPath(category, moveName, ext);
+    final newAbs = toAbsolute(newRelative);
+
+    // Already at the correct path
+    if (sourceAbs == newAbs) return currentRelativePath;
+
+    final newDir = Directory(p.dirname(newAbs));
+    if (!await newDir.exists()) {
+      await newDir.create(recursive: true);
+    }
+
+    try {
+      await sourceFile.rename(newAbs);
+      return toRelative(newAbs);
+    } catch (e) {
+      debugPrint('[VideoPathResolver] Failed to move file to semantic path: $e');
+      return currentRelativePath;
+    }
   }
 }
 

@@ -66,6 +66,21 @@ class MoveCreationService {
       ),
     );
 
+    // Move video to semantic path: Moves/{category}/{name}/video.{ext}
+    String? finalVideoPath = storedVideoPath;
+    if (storedVideoPath != null) {
+      finalVideoPath = await VideoPathResolver.moveToSemanticPath(
+        currentRelativePath: storedVideoPath,
+        category: normalizedCategory,
+        moveName: normalizedName,
+      );
+      if (finalVideoPath != storedVideoPath) {
+        await _moveRepository.update(
+          MovesCompanion(id: Value(moveId), videoPath: Value(finalVideoPath)),
+        );
+      }
+    }
+
     await _storeManagedAlbumCopyIfPresent(
       moveId: moveId,
       title: normalizedName,
