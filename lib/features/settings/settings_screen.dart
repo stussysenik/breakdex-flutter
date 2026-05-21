@@ -20,7 +20,6 @@ import '../../core/services/native_share_sheet.dart';
 import '../../core/services/video_path_resolver.dart';
 import '../../core/services/settings_service.dart';
 import '../../core/utils/share_sheet.dart';
-import 'widgets/cloud_sync_section.dart';
 import 'widgets/accent_color_section.dart';
 import 'widgets/rating_colors_section.dart';
 import 'widgets/review_card_display_section.dart';
@@ -111,7 +110,7 @@ class SettingsScreen extends ConsumerWidget {
             _SettingsSection(
               title: 'Appearance',
               subtitle:
-                  'Standardized controls for theme, typography, and naming.',
+                  'Theme, typography, colors, and labeling.',
               child: LayoutBuilder(
                 builder: (context, constraints) {
                   final isTwoColumn = constraints.maxWidth >= 640;
@@ -227,6 +226,34 @@ class SettingsScreen extends ConsumerWidget {
                           );
                         },
                       ),
+                      SizedBox(
+                        width: panelWidth,
+                        child: _SettingsPanel(
+                          title: 'Accent Color',
+                          action: TextButton(
+                            onPressed: () async {
+                              await HapticFeedback.mediumImpact();
+                              await ref.read(accentColorProvider.notifier).reset();
+                            },
+                            child: const Text('Reset'),
+                          ),
+                          child: const AccentColorSection(),
+                        ),
+                      ),
+                      SizedBox(
+                        width: panelWidth,
+                        child: _SettingsPanel(
+                          title: 'Rating Colors',
+                          action: TextButton(
+                            onPressed: () async {
+                              await HapticFeedback.mediumImpact();
+                              await ref.read(ratingColorsProvider.notifier).resetAll();
+                            },
+                            child: const Text('Reset'),
+                          ),
+                          child: const RatingColorsSection(),
+                        ),
+                      ),
                     ],
                   );
                 },
@@ -234,41 +261,39 @@ class SettingsScreen extends ConsumerWidget {
             ),
             const SizedBox(height: AppSpacing.lg),
 
-            // Cloud Sync — no auth dependency, iCloud uses device Apple ID
-            const CloudSyncSection(),
-            const SizedBox(height: AppSpacing.lg),
-
             _SettingsSection(
-              title: 'Categories',
-              subtitle: 'Used across review, decks, stats, and albums.',
-              child: _SettingsPanel(
-                title: 'Move Semantics',
-                action: TextButton.icon(
-                  onPressed: () => _showAddCategoryDialog(context, ref),
-                  icon: const Icon(Icons.add, size: 16),
-                  label: const Text('Add'),
-                ),
-                child: SettingsListGroup(
-                  children: [
-                    for (final cat in categories)
-                          _CategoryRow(
-                            name: cat.name,
-                            color: cat.color,
-                            isDefault: cat.isDefault,
+              title: 'Library',
+              subtitle: 'Categories and photo library access.',
+            child: Column(
+              children: [
+            _SettingsPanel(
+              title: 'Move Categories',
+              action: TextButton.icon(
+                onPressed: () => _showAddCategoryDialog(context, ref),
+                icon: const Icon(Icons.add, size: 16),
+                label: const Text('Add'),
+              ),
+              child: SettingsListGroup(
+                children: [
+                  for (final cat in categories)
+                        _CategoryRow(
+                          name: cat.name,
+                          color: cat.color,
+                          isDefault: cat.isDefault,
+                          usageCount: categoryUsage[cat.name] ?? 0,
+                          onTap: () =>
+                              context.push('/breakdex/moves/${Uri.encodeComponent(cat.name)}'),
+                          onLongPress: () => _showCategoryActionsSheet(
+                            context,
+                            ref,
+                            cat,
                             usageCount: categoryUsage[cat.name] ?? 0,
-                            onTap: () =>
-                                context.push('/breakdex/moves/${Uri.encodeComponent(cat.name)}'),
-                            onLongPress: () => _showCategoryActionsSheet(
-                              context,
-                              ref,
-                              cat,
-                              usageCount: categoryUsage[cat.name] ?? 0,
-                            ),
-                      ),
-                  ],
-                ),
+                          ),
+                    ),
+                ],
               ),
             ),
+            ],),),
             const SizedBox(height: AppSpacing.lg),
 
             _SettingsSection(
@@ -369,152 +394,6 @@ class SettingsScreen extends ConsumerWidget {
             ],
           ),
         ),
-        const SizedBox(height: AppSpacing.lg),
-
-        _SettingsSection(
-          title: 'Colors',
-              subtitle: 'Accent and grading colors.',
-              child: Column(
-                children: [
-                  _SettingsPanel(
-                    title: 'Accent',
-                    action: TextButton(
-                      onPressed: () async {
-                        await HapticFeedback.mediumImpact();
-                        await ref.read(accentColorProvider.notifier).reset();
-                      },
-                      child: const Text('Reset'),
-                    ),
-                    child: const AccentColorSection(),
-                  ),
-                  const SizedBox(height: AppSpacing.md),
-                  _SettingsPanel(
-                    title: 'Ratings',
-                    action: TextButton(
-                      onPressed: () async {
-                        await HapticFeedback.mediumImpact();
-                        await ref
-                            .read(ratingColorsProvider.notifier)
-                            .resetAll();
-                      },
-                      child: const Text('Reset'),
-                    ),
-                    child: const RatingColorsSection(),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: AppSpacing.lg),
-
-            _SettingsSection(
-              title: 'Diagnostics',
-              subtitle:
-                  'Developer-facing recovery signals for crashes, loading, and self-healing flows.',
-              child: _SettingsPanel(
-                title: 'Provenance',
-                action: TextButton(
-                  onPressed: () => ref.invalidate(provenanceReportProvider),
-                  child: const Text('Refresh'),
-                ),
-                child: Builder(
-                  builder: (tileContext) {
-                    final provenanceReport = ref.watch(
-                      provenanceReportProvider,
-                    );
-                    return provenanceReport.when(
-                      data: (report) => Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            report.headline,
-                            style: AppTypography.bodyMedium.copyWith(
-                              color: colorScheme.onSurface,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                          const SizedBox(height: AppSpacing.sm),
-                          SettingsListGroup(
-                            children: [
-                              SettingsListRow(
-                                title: 'Recent events scanned',
-                                subtitle:
-                                    '${report.totalEvents} journal entries from the local provenance ledger.',
-                              ),
-                              SettingsListRow(
-                                title: 'Crash signals',
-                                subtitle:
-                                    '${report.crashCount} recent Flutter/platform captures.',
-                              ),
-                              SettingsListRow(
-                                title: 'Retrieval failures',
-                                subtitle:
-                                    '${report.retrievalFailureCount} recent video loading failures.',
-                              ),
-                              SettingsListRow(
-                                title: 'DB recovery activity',
-                                subtitle:
-                                    '${report.databaseRecoveryCount} recent database recovery events.',
-                              ),
-                            ],
-                          ),
-                          if (report.recentCriticalEvents.isNotEmpty) ...[
-                            const SizedBox(height: AppSpacing.md),
-                            Text(
-                              'Latest critical signals',
-                              style: AppTypography.caption.copyWith(
-                                color: colorScheme.secondary,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                            const SizedBox(height: AppSpacing.xs),
-                            SettingsListGroup(
-                              children: report.recentCriticalEvents
-                                  .map(
-                                    (event) => SettingsListRow(
-                                      title: event.eventType,
-                                      subtitle: report.describeEvent(event),
-                                    ),
-                                  )
-                                  .toList(),
-                            ),
-                          ],
-                          const SizedBox(height: AppSpacing.md),
-                          _DataActionTileAsync(
-                            icon: Icons.bug_report_outlined,
-                            label: 'Export Provenance Log',
-                            onTap: (_) async {
-                              final origin = sharePositionOrigin(tileContext);
-                              final file = await ref
-                                  .read(provenanceJournalServiceProvider)
-                                  .journalFile();
-                              if (!await file.exists()) {
-                                await file.writeAsString('', flush: true);
-                              }
-                              await NativeShareSheet.shareFiles(
-                                filePaths: [file.path],
-                                sharePositionOrigin: origin,
-                              );
-                              return 'Shared provenance ledger for debugging';
-                            },
-                            showResultSnackBar: true,
-                          ),
-                        ],
-                      ),
-                      loading: () => const Padding(
-                        padding: EdgeInsets.symmetric(vertical: AppSpacing.md),
-                        child: Center(child: CircularProgressIndicator()),
-                      ),
-                      error: (error, _) => Text(
-                        'Diagnostics unavailable: $error',
-                        style: AppTypography.bodySmall.copyWith(
-                          color: AppColors.actionAgain,
-                        ),
-                      ),
-                    );
-                  },
-                ),
-              ),
-            ),
             const SizedBox(height: AppSpacing.lg),
 
             _SettingsSection(
