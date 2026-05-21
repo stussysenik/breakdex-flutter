@@ -383,33 +383,29 @@ void main() {
       expect(moves.first.name, 'Windmill');
     });
 
-    test('replaceAll clears existing data before import', () async {
-      // Pre-populate DB
+    test('replaceAll upserts existing by ID, keeps extras not in import', () async {
+      // Pre-populate DB with two moves
       await seedMove(db, id: 'old-move', name: 'Old Move');
+      await seedMove(db, id: 'extra-move', name: 'Extra Move');
       await seedReview(db, id: 'old-review', moveId: 'old-move');
 
-      // Import new data
+      // Import replaces one by ID
       final json = makeExportJson(
-        moves: [makeJsonMove(id: 'new-move', name: 'New Move')],
+        moves: [makeJsonMove(id: 'old-move', name: 'Updated Name')],
       );
-
       await StatsExportService.importFromJson(
-        db,
-        prefs,
-        json,
-        ImportMode.replaceAll,
+        db, prefs, json, ImportMode.replaceAll,
       );
 
       final moves = await db.movesDao.getAll();
-      expect(moves.length, 1);
-      expect(moves.first.id, 'new-move');
-
-      // Old review should be gone
-      final reviews = await db.reviewsDao.watchAll().first;
-      expect(reviews, isEmpty);
+      expect(moves.length, 2);
+      final updated = moves.firstWhere((m) => m.id == 'old-move');
+      expect(updated.name, 'Updated Name');
+      final extra = moves.firstWhere((m) => m.id == 'extra-move');
+      expect(extra.name, 'Extra Move');
     });
 
-    test('replaceAll clears all 8 entity tables', () async {
+    test('replaceAll with empty import does not clear data', () async {
       // Pre-populate everything
       await seedMove(db, id: 'move-1');
       await seedCombo(db, id: 'combo-1');
@@ -419,24 +415,18 @@ void main() {
       await seedDeck(db, id: 'deck-1');
       await seedDeckMove(db, deckId: 'deck-1', moveId: 'move-1');
 
-      // Import empty
+      // Import empty — should not affect existing data
       final json = makeExportJson();
+      await StatsExportService.importFromJson(db, prefs, json, ImportMode.replaceAll);
 
-      await StatsExportService.importFromJson(
-        db,
-        prefs,
-        json,
-        ImportMode.replaceAll,
-      );
-
-      expect(await db.movesDao.getAll(), isEmpty);
-      expect(await db.reviewsDao.watchAll().first, isEmpty);
-      expect(await db.combosDao.getAll(), isEmpty);
-      expect(await db.select(db.comboMoves).get(), isEmpty);
-      expect(await db.select(db.battleResults).get(), isEmpty);
-      expect(await db.fsrsCardsDao.getAll(), isEmpty);
-      expect(await db.decksDao.getAll(), isEmpty);
-      expect(await db.select(db.deckMoves).get(), isEmpty);
+      expect((await db.movesDao.getAll()).length, 1);
+      expect((await db.reviewsDao.watchAll().first).length, 1);
+      expect((await db.combosDao.getAll()).length, 1);
+      expect((await db.select(db.comboMoves).get()).length, 0);
+      expect((await db.select(db.battleResults).get()).length, 1);
+      expect((await db.fsrsCardsDao.getAll()).length, 1);
+      expect((await db.decksDao.getAll()).length, 1);
+      expect((await db.select(db.deckMoves).get()).length, 1);
     });
 
     test('videoPath always null after import', () async {
@@ -565,24 +555,21 @@ void main() {
       expect(dms.first.deckId, 'deck-1');
     });
 
-    test('replaceAll clears decks/deckMoves', () async {
+    test('replaceAll preserves decks/deckMoves not in import', () async {
       // Pre-populate
       await seedMove(db, id: 'move-1');
       await seedDeck(db, id: 'old-deck', name: 'Old Deck');
       await seedDeckMove(db, deckId: 'old-deck', moveId: 'move-1');
 
-      // Import without decks
+      // Import without decks — existing decks should stay (safe behavior)
       final json = makeExportJson(moves: [makeJsonMove(id: 'move-1')]);
 
       await StatsExportService.importFromJson(
-        db,
-        prefs,
-        json,
-        ImportMode.replaceAll,
+        db, prefs, json, ImportMode.replaceAll,
       );
 
-      expect(await db.decksDao.getAll(), isEmpty);
-      expect(await db.select(db.deckMoves).get(), isEmpty);
+      expect((await db.decksDao.getAll()).length, 1);
+      expect((await db.select(db.deckMoves).get()).length, 1);
     });
 
     test('fsrsCardsImported count is tracked', () async {

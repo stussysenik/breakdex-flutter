@@ -365,28 +365,45 @@ ${topMoves.isNotEmpty ? 'Most Practiced:\n$topMoves' : 'No moves practiced yet.'
     final missingVideos = <String>[];
 
     await db.transaction(() async {
-      if (mode == ImportMode.replaceAll) {
-        await db.delete(db.deckMoves).go();
-        await db.delete(db.decks).go();
-        await db.delete(db.fsrsCards).go();
-        await db.delete(db.reviews).go();
-        await db.delete(db.comboMoves).go();
-        await db.delete(db.combos).go();
-        await db.delete(db.battleResults).go();
-        await db.delete(db.moves).go();
-      }
-
-      // Import moves
-      final existingMoveIds = mode == ImportMode.merge
-          ? (await db.movesDao.getAllIncludingArchived())
-                .map((m) => m.id)
-                .toSet()
-          : <String>{};
+      // Import moves — replaceAll overwrites existing by ID instead of bulk-deleting
+      final existingMoveIds = (await db.movesDao.getAllIncludingArchived())
+            .map((m) => m.id)
+            .toSet();
 
       for (final m in movesJson) {
         final map = m as Map<String, dynamic>;
         final id = map['id'] as String;
         if (mode == ImportMode.merge && existingMoveIds.contains(id)) continue;
+        if (mode == ImportMode.replaceAll && existingMoveIds.contains(id)) {
+          await db.update(db.moves).replace(
+            MovesCompanion.insert(
+              id: id,
+              name: map['name'] as String,
+              learningState: Value(map['learningState'] as String? ?? 'NEW'),
+              category: Value(map['category'] as String? ?? 'default'),
+              videoPath: const Value(null),
+              originalVideoName: Value(map['originalVideoName'] as String?),
+              archivedAt: Value(
+                map['archivedAt'] != null
+                    ? DateTime.parse(map['archivedAt'] as String)
+                    : null,
+              ),
+              archiveReason: Value(map['archiveReason'] as String?),
+              notes: Value(map['notes'] as String?),
+              createdAt: Value(
+                map['createdAt'] != null
+                    ? DateTime.parse(map['createdAt'] as String)
+                    : DateTime.now(),
+              ),
+            ),
+          );
+          movesImported++;
+          final hasVideo =
+              map['videoFilename'] != null ||
+              (version == 1 && map['videoPath'] != null);
+          if (hasVideo) missingVideos.add(map['name'] as String);
+          continue;
+        }
 
         final hasVideo =
             map['videoFilename'] != null ||

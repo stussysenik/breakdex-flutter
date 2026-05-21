@@ -544,49 +544,107 @@ class SettingsScreen extends ConsumerWidget {
 void _showClearDataDialog(BuildContext context, WidgetRef ref) {
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Clear All Data?'),
-        content: const Text(
-          'This will permanently delete all moves, reviews, combos, and battle results. This cannot be undone.',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
-          ),
-          TextButton(
-            onPressed: () async {
-              Navigator.pop(context);
-              await HapticFeedback.mediumImpact();
-              final db = ref.read(databaseProvider);
-              final videoService = ref.read(videoServiceProvider);
-              // Delete video files before clearing DB
-              final moves = await db.movesDao.getAllIncludingArchived();
-              for (final move in moves) {
-                if (move.videoPath != null) {
-                  await videoService.deleteVideo(
-                    VideoPathResolver.toAbsolute(move.videoPath!),
-                  );
-                }
-              }
-              // Delete all rows from every table
-              await db.delete(db.fsrsCards).go();
-              await db.delete(db.reviews).go();
-              await db.delete(db.comboMoves).go();
-              await db.delete(db.combos).go();
-              await db.delete(db.battleResults).go();
-              await db.delete(db.moves).go();
-              // Invalidate stats so UI refreshes
-              ref.invalidate(statsBundleProvider);
-            },
-            child: const Text(
-              'Clear Everything',
-              style: TextStyle(color: AppColors.actionAgain),
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setDialogState) {
+          final controller = TextEditingController();
+          var canConfirm = false;
+          return AlertDialog(
+            title: const Text('Clear All Data?'),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'This permanently deletes all moves, reviews, combos, and battle results. A backup will be created automatically before clearing.',
+                ),
+                const SizedBox(height: AppSpacing.lg),
+                Text(
+                  'Type DELETE to confirm:',
+                  style: AppTypography.caption.copyWith(
+                    color: Theme.of(context).colorScheme.secondary,
+                  ),
+                ),
+                const SizedBox(height: AppSpacing.sm),
+                TextField(
+                  controller: controller,
+                  autofocus: true,
+                  decoration: const InputDecoration(
+                    hintText: 'DELETE',
+                    border: OutlineInputBorder(),
+                  ),
+                  onChanged: (value) {
+                    setDialogState(() {
+                      canConfirm = value.trim() == 'DELETE';
+                    });
+                  },
+                ),
+              ],
             ),
-          ),
-        ],
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(ctx),
+                child: const Text('Cancel'),
+              ),
+              TextButton(
+                onPressed: canConfirm
+                    ? () => Navigator.pop(ctx, true)
+                    : null,
+                child: const Text(
+                  'Clear Everything',
+                  style: TextStyle(color: AppColors.actionAgain),
+                ),
+              ),
+            ],
+          );
+        },
       ),
-    );
+    ).then((confirmed) async {
+      if (confirmed != true) return;
+      await HapticFeedback.mediumImpact();
+
+      // Auto-export a backup before clearing
+      final db = ref.read(databaseProvider);
+      final prefs = ref.read(sharedPreferencesProvider);
+      try {
+        final backup = await StatsExportService.generateJsonExport(db, prefs);
+        final dir = await AppStoragePaths.documentsDirectory();
+        final exportsDir = Directory(p.join(dir.path, 'Exports'));
+        if (!await exportsDir.exists()) {
+          await exportsDir.create(recursive: true);
+        }
+        final backupFile = File(
+          p.join(exportsDir.path, 'breakdex_preclear_${DateTime.now().millisecondsSinceEpoch}.json'),
+        );
+        await backupFile.writeAsString(backup.json, flush: true);
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Pre-clear backup saved to ${backupFile.path.split('/').last}')),
+          );
+        }
+      } catch (e) {
+        debugPrint('Pre-clear backup failed: $e');
+      }
+
+      final videoService = ref.read(videoServiceProvider);
+      // Delete video files before clearing DB
+      final moves = await db.movesDao.getAllIncludingArchived();
+      for (final move in moves) {
+        if (move.videoPath != null) {
+          await videoService.deleteVideo(
+            VideoPathResolver.toAbsolute(move.videoPath!),
+          );
+        }
+      }
+      // Delete all rows from every table
+      await db.delete(db.fsrsCards).go();
+      await db.delete(db.reviews).go();
+      await db.delete(db.comboMoves).go();
+      await db.delete(db.combos).go();
+      await db.delete(db.battleResults).go();
+      await db.delete(db.moves).go();
+      // Invalidate stats so UI refreshes
+      ref.invalidate(statsBundleProvider);
+    });
   }
 
   Future<void> _showImportFlow(BuildContext context, WidgetRef ref) async {
@@ -631,11 +689,11 @@ void _showClearDataDialog(BuildContext context, WidgetRef ref) {
             const SizedBox(height: AppSpacing.sm),
             TextButton(
               onPressed: () => Navigator.pop(ctx, ImportMode.replaceAll),
-              child: const Text('Replace All (clear existing data first)'),
+              child: const Text('Replace All (overwrite existing, keep extras)'),
             ),
             TextButton(
               onPressed: () => Navigator.pop(ctx, ImportMode.merge),
-              child: const Text('Merge (skip duplicates)'),
+              child: const Text('Merge (skip duplicates, keep everything)'),
             ),
           ],
         ),

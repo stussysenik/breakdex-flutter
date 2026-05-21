@@ -421,14 +421,10 @@ void main() {
       );
     });
 
-    test('reports when no historical albums were found on startup', () async {
+    test('no startup signal when nothing discovered and access is authorized', () async {
       final report = await service.reconcileExternalDeletes();
 
-      expect(report.hasStartupSignal, isTrue);
-      expect(
-        report.snackBarMessage,
-        'No Breakdex historical albums were found in Photos on startup.',
-      );
+      expect(report.hasStartupSignal, isFalse);
     });
 
     test('reports matching albums that expose no readable filenames', () async {
