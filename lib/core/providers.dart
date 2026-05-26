@@ -15,6 +15,7 @@ import 'database/daos/sync_providers_dao.dart';
 import 'database/daos/sets_dao.dart';
 import 'database/daos/provenance_events_dao.dart';
 import 'database/daos/move_note_entries_dao.dart';
+import 'database/daos/combo_note_entries_dao.dart';
 import 'data/repositories.dart';
 import 'data/drift_repositories.dart';
 import 'data/sync_aware_repositories.dart';
@@ -72,6 +73,9 @@ import 'sync/space_manager.dart';
 import 'sync/video_reliability_runtime.dart';
 import 'sync/video_retrieval_controller.dart';
 import 'sync/video_import_sync_hook.dart';
+import 'services/storage_orchestrator.dart';
+import 'services/blackbox_service.dart';
+import 'state_machines/move_creation/machine.dart';
 
 part 'providers/sync_providers.dart';
 part 'providers/theme_providers.dart';
@@ -79,6 +83,19 @@ part 'providers/review_card_display_providers.dart';
 part 'providers/learning_state_label_providers.dart';
 part 'providers/video_playback_preferences_providers.dart';
 part 'providers/canonical_storage_providers.dart';
+
+final blackboxServiceProvider = Provider<BlackboxService>((ref) {
+  return BlackboxService();
+});
+
+final storageOrchestratorProvider = Provider<StorageOrchestrator>((ref) {
+  return StorageOrchestrator(
+    db: ref.watch(databaseProvider),
+    movesDao: ref.watch(movesDaoProvider),
+    provenance: ref.watch(provenanceServiceProvider),
+    blackbox: ref.watch(blackboxServiceProvider),
+  );
+});
 
 final databaseProvider = Provider<AppDatabase>((ref) {
   final db = AppDatabase();
@@ -207,12 +224,16 @@ final nativeVideoAlbumProvider = Provider<NativeVideoAlbum>((ref) {
   return NativeVideoAlbum();
 });
 
+final photoLibraryAccessStatusProvider =
+    FutureProvider<PhotoLibraryAccessStatus>((ref) {
+      return ref.watch(nativeVideoAlbumProvider).requestReadAccess();
+    });
+
 final managedAlbumReconciliationServiceProvider =
     Provider<ManagedAlbumReconciliationService>((ref) {
       return ManagedAlbumReconciliationService(
         movesDao: ref.watch(movesDaoProvider),
         moveRepository: ref.watch(moveRepositoryProvider),
-        moveCreationService: ref.watch(moveCreationServiceProvider),
         mediaCleanupService: ref.watch(mediaCleanupServiceProvider),
         videoAlbum: ref.watch(nativeVideoAlbumProvider),
         videoService: ref.watch(videoServiceProvider),
@@ -278,7 +299,11 @@ final provenanceDaoProvider = Provider<ProvenanceEventsDao>((ref) {
 });
 
 final moveNoteEntriesDaoProvider = Provider<MoveNoteEntriesDao>((ref) {
-  return MoveNoteEntriesDao(ref.watch(databaseProvider));
+  return ref.watch(databaseProvider).moveNoteEntriesDao;
+});
+
+final comboNoteEntriesDaoProvider = Provider<ComboNoteEntriesDao>((ref) {
+  return ref.watch(databaseProvider).comboNoteEntriesDao;
 });
 
 final provenanceServiceProvider = Provider<ProvenanceService>((ref) {
@@ -304,15 +329,21 @@ final reviewableNamingServiceProvider = Provider<ReviewableNamingService>((
   );
 });
 
+final moveCreationMachineProvider = Provider<MoveCreationMachine>((ref) {
+  return MoveCreationMachine();
+});
+
 final moveCreationServiceProvider = Provider<MoveCreationService>((ref) {
   return MoveCreationService(
     moveRepository: ref.watch(moveRepositoryProvider),
     namingService: ref.watch(reviewableNamingServiceProvider),
     videoAlbum: ref.watch(nativeVideoAlbumProvider),
-    onVideoImported: ({required localPath, required moveId}) {
+    hashService: ref.watch(assetHashServiceProvider),
+    blackbox: ref.watch(blackboxServiceProvider),
+    onVideoImported: ({required localPath, required moveId, precomputedHash}) {
       return ref
           .read(videoImportSyncHookProvider)
-          .onVideoImported(localPath: localPath, moveId: moveId);
+          .onVideoImported(localPath: localPath, moveId: moveId, precomputedHash: precomputedHash);
     },
   );
 });

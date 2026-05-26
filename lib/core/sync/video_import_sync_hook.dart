@@ -50,6 +50,7 @@ class VideoImportSyncHook {
   Future<void> onVideoImported({
     required String localPath,
     required String moveId,
+    String? precomputedHash,
   }) async {
     try {
       final file = File(localPath);
@@ -58,10 +59,12 @@ class VideoImportSyncHook {
         return;
       }
 
-      // Step 1: Compute SHA-256 hash in background isolate
-      debugPrint('[VideoImportSyncHook] Hashing $localPath…');
-      final contentHash = await _hashService.computeHash(localPath);
-      debugPrint('[VideoImportSyncHook] Hash: $contentHash');
+      // Step 1: Get SHA-256 hash (use precomputed if available)
+      final contentHash = precomputedHash ?? await _hashService.computeHash(localPath);
+      if (precomputedHash == null) {
+        debugPrint('[VideoImportSyncHook] Hashing $localPath…');
+        debugPrint('[VideoImportSyncHook] Hash: $contentHash');
+      }
 
       // Step 2: Get file metadata
       final stat = await file.stat();

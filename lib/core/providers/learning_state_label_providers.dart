@@ -2,8 +2,8 @@ part of '../providers.dart';
 
 const defaultLearningStateLabels = <LearningState, String>{
   LearningState.newState: 'New',
-  LearningState.learning: 'Learning',
-  LearningState.mastery: 'Mastery',
+  LearningState.learning: 'Practicing',
+  LearningState.mastery: 'Strong',
 };
 
 String resolveLearningStateLabel(

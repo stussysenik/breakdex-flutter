@@ -118,19 +118,19 @@ Theme, font, categories, sync, and export control. Native iOS share sheet via UI
 
 Every move and combo lives in a SQLite database (Drift ORM). The folder structure on disk is purely for file storage and does **not** drive the app's behavior. This means:
 
-- **Renaming a move** only updates the `name` column in the database. The video file, its path, and its folder stay exactly as they were. Rename freely — nothing on disk changes.
+- **Renaming a move** updates the database and **atomically moves the video file** to its new semantic path.
 - **Deleting a move** removes the database row and the sandboxed video copy. Your original source file (Photos, Files, Camera roll) is never touched.
-- **Video files are named by UUID** (e.g. `Documents/Moves/a1b2c3d4-e5f6-7890-abcd-ef1234567890.mp4`), not by the move name. The `videoPath` column stores a relative reference (`Moves/uuid.mp4`) that the app resolves at runtime.
+- **Semantic Storage**: Video files are stored at `Documents/Moves/{category}/{moveName}/video.mp4` (e.g. `Documents/Moves/Power/Windmill/video.mp4`). This makes the library browsable via the file system.
 - **Self-healing paths**: if iOS changes the app's container UUID (common on reinstall/update), `VideoPathResolver` recomputes the absolute path. If the file is still missing, it scans `Documents/Moves/` and `Documents/videos/` by filename as a last-resort fallback.
-- **Content-addressable backup**: `CanonicalFolderService` maintains a content-addressed copy in `Documents/.breakdex-master/videos/` keyed by SHA-256 hash — immune to renames, moves, or UUID changes.
+- **Content-addressable backup**: `CanonicalFolderService` maintains a content-addressed copy in `Documents/.breakdex-master/videos/ab/cd/hash.mp4` nested by hash — immune to renames, moves, or UUID changes.
 
 ### Resolution chain (when the app needs to play a video)
 
 ```
 Move row in DB
-  └─ videoPath = "Moves/uuid.mp4" (relative)
+  └─ videoPath = "Moves/Category/Name/video.mp4" (relative)
        └─ VideoPathResolver.toAbsolute()
-            └─ /current-container/Documents/Moves/uuid.mp4
+            └─ /current-container/Documents/Moves/Category/Name/video.mp4
                  ├─ File exists? → play it
                  └─ File missing? → resolve() scans disk by filename
 ```
@@ -147,8 +147,11 @@ Every video you import (from Photos, Files, or Camera) is **copied** into Breakd
 
 ```
 /var/mobile/Containers/Data/Application/<UUID>/Documents/
-  ├── Moves/                    # Imported videos (UUID-named copies)
-  │   └── .thumbs/              # Generated thumbnail cache
+  ├── Moves/                    # Imported videos (Semantic storage)
+  │   └── Power/
+  │       └── Windmill/
+  │           ├── video.mp4
+  │           └── .thumbs/      # Local thumbnail cache
   ├── videos/                   # Cloud-downloaded videos (on demand)
   ├── Exports/                  # Manual backup exports
   └── breakdex.db               # SQLite database

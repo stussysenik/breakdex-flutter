@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'settings_service.dart';
 import '../database/daos/moves_dao.dart';
 import '../design/colors.dart';
+import '../providers.dart';
 
 class Category {
   final String name;
@@ -88,18 +89,14 @@ class CategoriesNotifier extends Notifier<List<Category>> {
 
   /// Rename a category and batch-update all moves that reference it.
   ///
-  /// This is a two-step operation:
-  /// 1. Update the category entry in SharedPreferences
-  /// 2. Batch-update all moves with the old name to the new name in SQLite
-  ///
-  /// The [movesDao] is passed explicitly so this notifier doesn't need a
-  /// direct database dependency — keeps the SharedPreferences ↔ SQLite
-  /// boundary clean.
+  /// This is an orchestrated operation that:
+  /// 1. Updates the category entry in SharedPreferences
+  /// 2. Batch-updates all moves in SQLite
+  /// 3. Moves physical video folders to the new semantic location
   Future<void> renameCategory(
     String oldName,
     String newName,
     Color color,
-    MovesDao movesDao,
   ) async {
     final updated = state.map((c) {
       if (c.name == oldName) {
@@ -114,9 +111,10 @@ class CategoriesNotifier extends Notifier<List<Category>> {
     state = updated;
     await _persist(updated);
 
-    // Batch-update moves in the database
+    // Sync DB and Filesystem via the Orchestrator
     if (oldName != newName) {
-      await movesDao.updateCategory(oldName, newName);
+      final orchestrator = ref.read(storageOrchestratorProvider);
+      await orchestrator.renameCategory(oldName, newName);
     }
   }
 

@@ -63,16 +63,18 @@ class CanonicalFolderService {
 
   Future<String> canonicalPathForHash(String hash) async {
     final videos = await videosDir;
-    final prefix = hash.substring(0, 8);
-    final suffix = hash.substring(hash.length - 8);
-    return p.join(videos.path, '$prefix$suffix.mp4');
+    // Nest by first 2 chars, then next 2 chars to avoid flat directory scaling issues.
+    // e.g. videos/ab/cd/abcdef1234...mp4
+    final p1 = hash.substring(0, 2);
+    final p2 = hash.substring(2, 4);
+    return p.join(videos.path, p1, p2, '$hash.mp4');
   }
 
   Future<List<File>> listVideoFiles() async {
     final videos = await videosDir;
     if (!await videos.exists()) return [];
     final files = <File>[];
-    await for (final entity in videos.list()) {
+    await for (final entity in videos.list(recursive: true)) {
       if (entity is File && entity.path.endsWith('.mp4')) {
         files.add(entity);
       }
@@ -90,6 +92,7 @@ class CanonicalFolderService {
       } catch (_) {}
       return targetPath;
     }
+    await targetFile.parent.create(recursive: true);
     await File(sourcePath).rename(targetPath);
     return targetPath;
   }
@@ -99,6 +102,7 @@ class CanonicalFolderService {
     final targetPath = await canonicalPathForHash(hash);
     final targetFile = File(targetPath);
     if (await targetFile.exists()) return targetPath;
+    await targetFile.parent.create(recursive: true);
     await File(sourcePath).copy(targetPath);
     return targetPath;
   }
@@ -149,7 +153,7 @@ class CanonicalFolderService {
     final entries = <String, LedgerEntry>{};
     final now = DateTime.now();
     if (await videos.exists()) {
-      await for (final entity in videos.list()) {
+      await for (final entity in videos.list(recursive: true)) {
         if (entity is! File || !entity.path.endsWith('.mp4')) continue;
         try {
           final stat = await entity.stat();
@@ -173,7 +177,7 @@ class CanonicalFolderService {
     final videos = await videosDir;
     if (!await videos.exists()) return results;
     final ledger = await readLedger();
-    await for (final entity in videos.list()) {
+    await for (final entity in videos.list(recursive: true)) {
       if (entity is! File || !entity.path.endsWith('.mp4')) continue;
       final fileName = p.basename(entity.path);
       try {

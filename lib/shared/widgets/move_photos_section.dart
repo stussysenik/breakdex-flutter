@@ -8,7 +8,6 @@ import 'package:image_picker/image_picker.dart';
 import 'package:path/path.dart' as p;
 import 'package:uuid/uuid.dart';
 
-import '../../core/design/colors.dart';
 import '../../core/design/spacing.dart';
 import '../../core/design/typography.dart';
 import '../../core/services/app_storage_paths.dart';
@@ -155,25 +154,6 @@ class _MovePhotosSectionState extends State<MovePhotosSection> {
   }
 
   Future<void> _deletePhoto(String filename) async {
-    final confirm = await showDialog<bool>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Delete Photo?'),
-        content: const Text('This will permanently delete the photo.'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('Cancel'),
-          ),
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('Delete', style: TextStyle(color: AppColors.actionAgain)),
-          ),
-        ],
-      ),
-    );
-    if (confirm != true) return;
-
     final dir = await _photoDirectory();
     final file = File(p.join(dir, filename));
     if (await file.exists()) {

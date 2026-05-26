@@ -204,8 +204,9 @@ class _AuraPill extends ConsumerWidget {
             unawaited(HapticFeedback.selectionClick());
             context.push('/moves/move/$connectedMoveId');
           },
+          onLongPress: () => _confirmDelete(context, ref, moveName),
           child: Semantics(
-            label: '$moveName (${affinity.label})',
+            label: '$moveName (${affinity.label}). Long press to delete.',
             button: true,
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
@@ -251,6 +252,29 @@ class _AuraPill extends ConsumerWidget {
         );
       },
     );
+  }
+
+  Future<void> _confirmDelete(BuildContext context, WidgetRef ref, String moveName) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text('Delete Connection?'),
+        content: Text('Remove connection to "$moveName"?'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('CANCEL')),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('DELETE', style: TextStyle(color: Colors.red)),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true) {
+      final dao = ref.read(auraDaoProvider);
+      await dao.deleteLink(link.fromMoveId, link.toMoveId);
+      unawaited(HapticFeedback.mediumImpact());
+    }
   }
 }
 
@@ -564,11 +588,12 @@ class _QuickMoveRow extends StatelessWidget {
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: Text(
-                      affinity.label[0], // N / P / S
+                      affinity.label.toUpperCase(),
                       style: AppTypography.caption.copyWith(
                         color: affinity.color(context),
                         fontWeight: FontWeight.w700,
-                        fontSize: 11,
+                        fontSize: 9,
+                        letterSpacing: 0.5,
                       ),
                     ),
                   ),

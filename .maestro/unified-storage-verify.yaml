@@ -1,0 +1,51 @@
+appId: com.breakdex.breakdex
+name: Unified Storage Verify
+tags:
+  - storage
+
+---
+
+- launchApp:
+    arguments:
+      maestro: true
+      breakdexFixture: review
+- waitForAnimationToEnd
+
+# Go to Moves hub
+- tapOn:
+    id: "moves-tile"
+
+# Navigate to Settings
+- tapOn:
+    id: "settings-tab"
+- waitForAnimationToEnd
+
+- scrollUntilVisible:
+    element: "Library"
+    direction: DOWN
+
+# Rename Toprock to Renamed Category
+- scrollUntilVisible:
+    element: "Toprock"
+    direction: DOWN
+- tapOn: "Toprock"
+- eraseText: 50
+- inputText: "Renamed Category"
+- tapOn: "Save"
+
+# Verify renamed category exists in settings
+- assertVisible: "Renamed Category"
+
+# Back to Arsenal
+- back
+
+# Search for Fixture Swipe (which was in Toprock)
+- tapOn: "Search moves..."
+- inputText: "Fixture Swipe"
+- tapOn: "Fixture Swipe"
+
+# Verify details show the new category
+- assertVisible: "Renamed Category"
+
+# Verify video is still playable (implied by Detail screen loading without error)
+- takeScreenshot: "storage-verify-detail"

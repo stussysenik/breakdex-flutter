@@ -88,6 +88,8 @@ final class VideoAlbumPlugin: NSObject, FlutterPlugin, FlutterStreamHandler, PHP
         switch call.method {
         case "requestReadAccess":
             requestReadAccess(result: result)
+        case "openSettings":
+            openSettings(result: result)
         case "saveToAlbum":
             guard let args = call.arguments as? [String: Any],
                   let videoPath = args["videoPath"] as? String,
@@ -213,6 +215,20 @@ final class VideoAlbumPlugin: NSObject, FlutterPlugin, FlutterStreamHandler, PHP
             DispatchQueue.main.async {
                 result(self?.authorizationStatusValue(status) ?? "unknown")
             }
+        }
+    }
+
+    private func openSettings(result: @escaping FlutterResult) {
+        guard let url = URL(string: UIApplication.openSettingsURLString) else {
+            result(FlutterError(code: "NO_URL", message: "Cannot open settings", details: nil))
+            return
+        }
+        guard UIApplication.shared.canOpenURL(url) else {
+            result(FlutterError(code: "CANT_OPEN", message: "Cannot open settings URL", details: nil))
+            return
+        }
+        UIApplication.shared.open(url, options: [:]) { success in
+            result(success)
         }
     }
 

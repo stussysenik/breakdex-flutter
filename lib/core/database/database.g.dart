@@ -11831,6 +11831,315 @@ class MoveNoteEntriesCompanion extends UpdateCompanion<MoveNoteEntry> {
   }
 }
 
+class $ComboNoteEntriesTable extends ComboNoteEntries
+    with TableInfo<$ComboNoteEntriesTable, ComboNoteEntry> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $ComboNoteEntriesTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+    'id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _comboIdMeta = const VerificationMeta(
+    'comboId',
+  );
+  @override
+  late final GeneratedColumn<String> comboId = GeneratedColumn<String>(
+    'combo_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES combos (id) ON DELETE CASCADE',
+    ),
+  );
+  static const VerificationMeta _bodyMeta = const VerificationMeta('body');
+  @override
+  late final GeneratedColumn<String> body = GeneratedColumn<String>(
+    'body',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _createdAtMeta = const VerificationMeta(
+    'createdAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> createdAt = GeneratedColumn<DateTime>(
+    'created_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+    defaultValue: currentDateAndTime,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [id, comboId, body, createdAt];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'combo_note_entries';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<ComboNoteEntry> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    } else if (isInserting) {
+      context.missing(_idMeta);
+    }
+    if (data.containsKey('combo_id')) {
+      context.handle(
+        _comboIdMeta,
+        comboId.isAcceptableOrUnknown(data['combo_id']!, _comboIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_comboIdMeta);
+    }
+    if (data.containsKey('body')) {
+      context.handle(
+        _bodyMeta,
+        body.isAcceptableOrUnknown(data['body']!, _bodyMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_bodyMeta);
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(
+        _createdAtMeta,
+        createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  ComboNoteEntry map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return ComboNoteEntry(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}id'],
+      )!,
+      comboId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}combo_id'],
+      )!,
+      body: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}body'],
+      )!,
+      createdAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}created_at'],
+      )!,
+    );
+  }
+
+  @override
+  $ComboNoteEntriesTable createAlias(String alias) {
+    return $ComboNoteEntriesTable(attachedDatabase, alias);
+  }
+}
+
+class ComboNoteEntry extends DataClass implements Insertable<ComboNoteEntry> {
+  final String id;
+  final String comboId;
+  final String body;
+  final DateTime createdAt;
+  const ComboNoteEntry({
+    required this.id,
+    required this.comboId,
+    required this.body,
+    required this.createdAt,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    map['combo_id'] = Variable<String>(comboId);
+    map['body'] = Variable<String>(body);
+    map['created_at'] = Variable<DateTime>(createdAt);
+    return map;
+  }
+
+  ComboNoteEntriesCompanion toCompanion(bool nullToAbsent) {
+    return ComboNoteEntriesCompanion(
+      id: Value(id),
+      comboId: Value(comboId),
+      body: Value(body),
+      createdAt: Value(createdAt),
+    );
+  }
+
+  factory ComboNoteEntry.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return ComboNoteEntry(
+      id: serializer.fromJson<String>(json['id']),
+      comboId: serializer.fromJson<String>(json['comboId']),
+      body: serializer.fromJson<String>(json['body']),
+      createdAt: serializer.fromJson<DateTime>(json['createdAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'comboId': serializer.toJson<String>(comboId),
+      'body': serializer.toJson<String>(body),
+      'createdAt': serializer.toJson<DateTime>(createdAt),
+    };
+  }
+
+  ComboNoteEntry copyWith({
+    String? id,
+    String? comboId,
+    String? body,
+    DateTime? createdAt,
+  }) => ComboNoteEntry(
+    id: id ?? this.id,
+    comboId: comboId ?? this.comboId,
+    body: body ?? this.body,
+    createdAt: createdAt ?? this.createdAt,
+  );
+  ComboNoteEntry copyWithCompanion(ComboNoteEntriesCompanion data) {
+    return ComboNoteEntry(
+      id: data.id.present ? data.id.value : this.id,
+      comboId: data.comboId.present ? data.comboId.value : this.comboId,
+      body: data.body.present ? data.body.value : this.body,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('ComboNoteEntry(')
+          ..write('id: $id, ')
+          ..write('comboId: $comboId, ')
+          ..write('body: $body, ')
+          ..write('createdAt: $createdAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(id, comboId, body, createdAt);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is ComboNoteEntry &&
+          other.id == this.id &&
+          other.comboId == this.comboId &&
+          other.body == this.body &&
+          other.createdAt == this.createdAt);
+}
+
+class ComboNoteEntriesCompanion extends UpdateCompanion<ComboNoteEntry> {
+  final Value<String> id;
+  final Value<String> comboId;
+  final Value<String> body;
+  final Value<DateTime> createdAt;
+  final Value<int> rowid;
+  const ComboNoteEntriesCompanion({
+    this.id = const Value.absent(),
+    this.comboId = const Value.absent(),
+    this.body = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  ComboNoteEntriesCompanion.insert({
+    required String id,
+    required String comboId,
+    required String body,
+    this.createdAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  }) : id = Value(id),
+       comboId = Value(comboId),
+       body = Value(body);
+  static Insertable<ComboNoteEntry> custom({
+    Expression<String>? id,
+    Expression<String>? comboId,
+    Expression<String>? body,
+    Expression<DateTime>? createdAt,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (comboId != null) 'combo_id': comboId,
+      if (body != null) 'body': body,
+      if (createdAt != null) 'created_at': createdAt,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  ComboNoteEntriesCompanion copyWith({
+    Value<String>? id,
+    Value<String>? comboId,
+    Value<String>? body,
+    Value<DateTime>? createdAt,
+    Value<int>? rowid,
+  }) {
+    return ComboNoteEntriesCompanion(
+      id: id ?? this.id,
+      comboId: comboId ?? this.comboId,
+      body: body ?? this.body,
+      createdAt: createdAt ?? this.createdAt,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (comboId.present) {
+      map['combo_id'] = Variable<String>(comboId.value);
+    }
+    if (body.present) {
+      map['body'] = Variable<String>(body.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<DateTime>(createdAt.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('ComboNoteEntriesCompanion(')
+          ..write('id: $id, ')
+          ..write('comboId: $comboId, ')
+          ..write('body: $body, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$AppDatabase extends GeneratedDatabase {
   _$AppDatabase(QueryExecutor e) : super(e);
   $AppDatabaseManager get managers => $AppDatabaseManager(this);
@@ -11862,6 +12171,9 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   late final $MoveNoteEntriesTable moveNoteEntries = $MoveNoteEntriesTable(
     this,
   );
+  late final $ComboNoteEntriesTable comboNoteEntries = $ComboNoteEntriesTable(
+    this,
+  );
   late final MovesDao movesDao = MovesDao(this as AppDatabase);
   late final CombosDao combosDao = CombosDao(this as AppDatabase);
   late final ReviewsDao reviewsDao = ReviewsDao(this as AppDatabase);
@@ -11887,6 +12199,12 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     this as AppDatabase,
   );
   late final AuraDao auraDao = AuraDao(this as AppDatabase);
+  late final MoveNoteEntriesDao moveNoteEntriesDao = MoveNoteEntriesDao(
+    this as AppDatabase,
+  );
+  late final ComboNoteEntriesDao comboNoteEntriesDao = ComboNoteEntriesDao(
+    this as AppDatabase,
+  );
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
@@ -11916,6 +12234,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     setItems,
     provenanceEvents,
     moveNoteEntries,
+    comboNoteEntries,
   ];
   @override
   StreamQueryUpdateRules get streamUpdateRules => const StreamQueryUpdateRules([
@@ -12016,6 +12335,13 @@ abstract class _$AppDatabase extends GeneratedDatabase {
         limitUpdateKind: UpdateKind.delete,
       ),
       result: [TableUpdate('move_note_entries', kind: UpdateKind.delete)],
+    ),
+    WritePropagation(
+      on: TableUpdateQuery.onTableName(
+        'combos',
+        limitUpdateKind: UpdateKind.delete,
+      ),
+      result: [TableUpdate('combo_note_entries', kind: UpdateKind.delete)],
     ),
   ]);
 }
@@ -13242,6 +13568,26 @@ final class $$CombosTableReferences
       manager.$state.copyWith(prefetchedData: cache),
     );
   }
+
+  static MultiTypedResultKey<$ComboNoteEntriesTable, List<ComboNoteEntry>>
+  _comboNoteEntriesRefsTable(_$AppDatabase db) => MultiTypedResultKey.fromTable(
+    db.comboNoteEntries,
+    aliasName: $_aliasNameGenerator(db.combos.id, db.comboNoteEntries.comboId),
+  );
+
+  $$ComboNoteEntriesTableProcessedTableManager get comboNoteEntriesRefs {
+    final manager = $$ComboNoteEntriesTableTableManager(
+      $_db,
+      $_db.comboNoteEntries,
+    ).filter((f) => f.comboId.id.sqlEquals($_itemColumn<String>('id')!));
+
+    final cache = $_typedResult.readTableOrNull(
+      _comboNoteEntriesRefsTable($_db),
+    );
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
 }
 
 class $$CombosTableFilterComposer
@@ -13319,6 +13665,31 @@ class $$CombosTableFilterComposer
           }) => $$ReviewsTableFilterComposer(
             $db: $db,
             $table: $db.reviews,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+
+  Expression<bool> comboNoteEntriesRefs(
+    Expression<bool> Function($$ComboNoteEntriesTableFilterComposer f) f,
+  ) {
+    final $$ComboNoteEntriesTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.comboNoteEntries,
+      getReferencedColumn: (t) => t.comboId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$ComboNoteEntriesTableFilterComposer(
+            $db: $db,
+            $table: $db.comboNoteEntries,
             $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
             joinBuilder: joinBuilder,
             $removeJoinBuilderFromRootComposer:
@@ -13441,6 +13812,31 @@ class $$CombosTableAnnotationComposer
     );
     return f(composer);
   }
+
+  Expression<T> comboNoteEntriesRefs<T extends Object>(
+    Expression<T> Function($$ComboNoteEntriesTableAnnotationComposer a) f,
+  ) {
+    final $$ComboNoteEntriesTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.comboNoteEntries,
+      getReferencedColumn: (t) => t.comboId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$ComboNoteEntriesTableAnnotationComposer(
+            $db: $db,
+            $table: $db.comboNoteEntries,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
 }
 
 class $$CombosTableTableManager
@@ -13456,7 +13852,11 @@ class $$CombosTableTableManager
           $$CombosTableUpdateCompanionBuilder,
           (Combo, $$CombosTableReferences),
           Combo,
-          PrefetchHooks Function({bool comboMovesRefs, bool reviewsRefs})
+          PrefetchHooks Function({
+            bool comboMovesRefs,
+            bool reviewsRefs,
+            bool comboNoteEntriesRefs,
+          })
         > {
   $$CombosTableTableManager(_$AppDatabase db, $CombosTable table)
     : super(
@@ -13508,12 +13908,17 @@ class $$CombosTableTableManager
               )
               .toList(),
           prefetchHooksCallback:
-              ({comboMovesRefs = false, reviewsRefs = false}) {
+              ({
+                comboMovesRefs = false,
+                reviewsRefs = false,
+                comboNoteEntriesRefs = false,
+              }) {
                 return PrefetchHooks(
                   db: db,
                   explicitlyWatchedTables: [
                     if (comboMovesRefs) db.comboMoves,
                     if (reviewsRefs) db.reviews,
+                    if (comboNoteEntriesRefs) db.comboNoteEntries,
                   ],
                   addJoins: null,
                   getPrefetchedDataCallback: (items) async {
@@ -13556,6 +13961,27 @@ class $$CombosTableTableManager
                               ),
                           typedResults: items,
                         ),
+                      if (comboNoteEntriesRefs)
+                        await $_getPrefetchedData<
+                          Combo,
+                          $CombosTable,
+                          ComboNoteEntry
+                        >(
+                          currentTable: table,
+                          referencedTable: $$CombosTableReferences
+                              ._comboNoteEntriesRefsTable(db),
+                          managerFromTypedResult: (p0) =>
+                              $$CombosTableReferences(
+                                db,
+                                table,
+                                p0,
+                              ).comboNoteEntriesRefs,
+                          referencedItemsForCurrentItem:
+                              (item, referencedItems) => referencedItems.where(
+                                (e) => e.comboId == item.id,
+                              ),
+                          typedResults: items,
+                        ),
                     ];
                   },
                 );
@@ -13576,7 +14002,11 @@ typedef $$CombosTableProcessedTableManager =
       $$CombosTableUpdateCompanionBuilder,
       (Combo, $$CombosTableReferences),
       Combo,
-      PrefetchHooks Function({bool comboMovesRefs, bool reviewsRefs})
+      PrefetchHooks Function({
+        bool comboMovesRefs,
+        bool reviewsRefs,
+        bool comboNoteEntriesRefs,
+      })
     >;
 typedef $$ComboMovesTableCreateCompanionBuilder =
     ComboMovesCompanion Function({
@@ -21255,6 +21685,314 @@ typedef $$MoveNoteEntriesTableProcessedTableManager =
       MoveNoteEntry,
       PrefetchHooks Function({bool moveId})
     >;
+typedef $$ComboNoteEntriesTableCreateCompanionBuilder =
+    ComboNoteEntriesCompanion Function({
+      required String id,
+      required String comboId,
+      required String body,
+      Value<DateTime> createdAt,
+      Value<int> rowid,
+    });
+typedef $$ComboNoteEntriesTableUpdateCompanionBuilder =
+    ComboNoteEntriesCompanion Function({
+      Value<String> id,
+      Value<String> comboId,
+      Value<String> body,
+      Value<DateTime> createdAt,
+      Value<int> rowid,
+    });
+
+final class $$ComboNoteEntriesTableReferences
+    extends
+        BaseReferences<_$AppDatabase, $ComboNoteEntriesTable, ComboNoteEntry> {
+  $$ComboNoteEntriesTableReferences(
+    super.$_db,
+    super.$_table,
+    super.$_typedResult,
+  );
+
+  static $CombosTable _comboIdTable(_$AppDatabase db) => db.combos.createAlias(
+    $_aliasNameGenerator(db.comboNoteEntries.comboId, db.combos.id),
+  );
+
+  $$CombosTableProcessedTableManager get comboId {
+    final $_column = $_itemColumn<String>('combo_id')!;
+
+    final manager = $$CombosTableTableManager(
+      $_db,
+      $_db.combos,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_comboIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+}
+
+class $$ComboNoteEntriesTableFilterComposer
+    extends Composer<_$AppDatabase, $ComboNoteEntriesTable> {
+  $$ComboNoteEntriesTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get body => $composableBuilder(
+    column: $table.body,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  $$CombosTableFilterComposer get comboId {
+    final $$CombosTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.comboId,
+      referencedTable: $db.combos,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$CombosTableFilterComposer(
+            $db: $db,
+            $table: $db.combos,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$ComboNoteEntriesTableOrderingComposer
+    extends Composer<_$AppDatabase, $ComboNoteEntriesTable> {
+  $$ComboNoteEntriesTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get body => $composableBuilder(
+    column: $table.body,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  $$CombosTableOrderingComposer get comboId {
+    final $$CombosTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.comboId,
+      referencedTable: $db.combos,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$CombosTableOrderingComposer(
+            $db: $db,
+            $table: $db.combos,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$ComboNoteEntriesTableAnnotationComposer
+    extends Composer<_$AppDatabase, $ComboNoteEntriesTable> {
+  $$ComboNoteEntriesTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get body =>
+      $composableBuilder(column: $table.body, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get createdAt =>
+      $composableBuilder(column: $table.createdAt, builder: (column) => column);
+
+  $$CombosTableAnnotationComposer get comboId {
+    final $$CombosTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.comboId,
+      referencedTable: $db.combos,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$CombosTableAnnotationComposer(
+            $db: $db,
+            $table: $db.combos,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$ComboNoteEntriesTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $ComboNoteEntriesTable,
+          ComboNoteEntry,
+          $$ComboNoteEntriesTableFilterComposer,
+          $$ComboNoteEntriesTableOrderingComposer,
+          $$ComboNoteEntriesTableAnnotationComposer,
+          $$ComboNoteEntriesTableCreateCompanionBuilder,
+          $$ComboNoteEntriesTableUpdateCompanionBuilder,
+          (ComboNoteEntry, $$ComboNoteEntriesTableReferences),
+          ComboNoteEntry,
+          PrefetchHooks Function({bool comboId})
+        > {
+  $$ComboNoteEntriesTableTableManager(
+    _$AppDatabase db,
+    $ComboNoteEntriesTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$ComboNoteEntriesTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$ComboNoteEntriesTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$ComboNoteEntriesTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<String> id = const Value.absent(),
+                Value<String> comboId = const Value.absent(),
+                Value<String> body = const Value.absent(),
+                Value<DateTime> createdAt = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => ComboNoteEntriesCompanion(
+                id: id,
+                comboId: comboId,
+                body: body,
+                createdAt: createdAt,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String id,
+                required String comboId,
+                required String body,
+                Value<DateTime> createdAt = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => ComboNoteEntriesCompanion.insert(
+                id: id,
+                comboId: comboId,
+                body: body,
+                createdAt: createdAt,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map(
+                (e) => (
+                  e.readTable(table),
+                  $$ComboNoteEntriesTableReferences(db, table, e),
+                ),
+              )
+              .toList(),
+          prefetchHooksCallback: ({comboId = false}) {
+            return PrefetchHooks(
+              db: db,
+              explicitlyWatchedTables: [],
+              addJoins:
+                  <
+                    T extends TableManagerState<
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic
+                    >
+                  >(state) {
+                    if (comboId) {
+                      state =
+                          state.withJoin(
+                                currentTable: table,
+                                currentColumn: table.comboId,
+                                referencedTable:
+                                    $$ComboNoteEntriesTableReferences
+                                        ._comboIdTable(db),
+                                referencedColumn:
+                                    $$ComboNoteEntriesTableReferences
+                                        ._comboIdTable(db)
+                                        .id,
+                              )
+                              as T;
+                    }
+
+                    return state;
+                  },
+              getPrefetchedDataCallback: (items) async {
+                return [];
+              },
+            );
+          },
+        ),
+      );
+}
+
+typedef $$ComboNoteEntriesTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $ComboNoteEntriesTable,
+      ComboNoteEntry,
+      $$ComboNoteEntriesTableFilterComposer,
+      $$ComboNoteEntriesTableOrderingComposer,
+      $$ComboNoteEntriesTableAnnotationComposer,
+      $$ComboNoteEntriesTableCreateCompanionBuilder,
+      $$ComboNoteEntriesTableUpdateCompanionBuilder,
+      (ComboNoteEntry, $$ComboNoteEntriesTableReferences),
+      ComboNoteEntry,
+      PrefetchHooks Function({bool comboId})
+    >;
 
 class $AppDatabaseManager {
   final _$AppDatabase _db;
@@ -21305,4 +22043,6 @@ class $AppDatabaseManager {
       $$ProvenanceEventsTableTableManager(_db, _db.provenanceEvents);
   $$MoveNoteEntriesTableTableManager get moveNoteEntries =>
       $$MoveNoteEntriesTableTableManager(_db, _db.moveNoteEntries);
+  $$ComboNoteEntriesTableTableManager get comboNoteEntries =>
+      $$ComboNoteEntriesTableTableManager(_db, _db.comboNoteEntries);
 }

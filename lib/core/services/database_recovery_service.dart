@@ -35,8 +35,17 @@ class DatabaseRecoveryService {
     return _restoreMostRecentBackup();
   }
 
+  Future<Directory> _backupsDirectory() async {
+    final docs = await _documentsDirectory();
+    final dir = Directory(p.join(docs.path, '.backups'));
+    if (!await dir.exists()) {
+      await dir.create(recursive: true);
+    }
+    return dir;
+  }
+
   Future<List<File>> listBackupFilesNewestFirst() async {
-    final directory = await _documentsDirectory();
+    final directory = await _backupsDirectory();
     if (!await directory.exists()) return const [];
 
     final backupFiles = <File>[];
@@ -67,6 +76,13 @@ class DatabaseRecoveryService {
     await backupFile.copy(primary.path);
   }
 
+  Future<void> deletePrimaryDatabase() async {
+    final primary = await primaryDatabaseFile();
+    if (await primary.exists()) {
+      await primary.delete();
+    }
+  }
+
   Future<void> stashPrimaryAsCorrupt() async {
     final primary = await primaryDatabaseFile();
     if (!await primary.exists()) return;
@@ -76,7 +92,7 @@ class DatabaseRecoveryService {
       return;
     }
 
-    final directory = await _documentsDirectory();
+    final directory = await _backupsDirectory();
     final corruptFile = File(
       p.join(
         directory.path,
@@ -84,13 +100,6 @@ class DatabaseRecoveryService {
       ),
     );
     await primary.rename(corruptFile.path);
-  }
-
-  Future<void> deletePrimaryDatabase() async {
-    final primary = await primaryDatabaseFile();
-    if (await primary.exists()) {
-      await primary.delete();
-    }
   }
 
   Future<bool> createRollingBackupIfDue({bool force = false}) async {
@@ -111,7 +120,7 @@ class DatabaseRecoveryService {
       }
     }
 
-    final directory = await _documentsDirectory();
+    final directory = await _backupsDirectory();
     final backupFile = File(
       p.join(
         directory.path,

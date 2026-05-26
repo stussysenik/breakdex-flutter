@@ -1,13 +1,13 @@
 import 'dart:async';
-import 'dart:math';
 
 import 'package:drift/drift.dart' hide Column;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:sensors_plus/sensors_plus.dart';
 import 'package:uuid/uuid.dart';
+
+import '../../core/services/swing_detector.dart';
 
 import '../../core/database/database.dart';
 import '../../core/design/colors.dart';
@@ -71,11 +71,8 @@ class _FlashcardReviewScreenState extends ConsumerState<FlashcardReviewScreen>
   // Signals "alive" state, draws attention to the card, invites interaction.
   late final AnimationController _breathController;
 
-  // Shake-to-skip: accelerometer subscription + debounce
-  StreamSubscription<AccelerometerEvent>? _shakeSubscription;
-  DateTime _lastShakeTime = DateTime(2000);
-  static const _shakeThreshold = 17.0;
-  static const _shakeCooldown = Duration(milliseconds: 800);
+  // Shake-to-skip: Swing detection logic
+  late final SwingDetector _swingDetector;
   ModalRoute<dynamic>? _route;
   bool _tickerModeEnabled = true;
 
@@ -83,6 +80,10 @@ class _FlashcardReviewScreenState extends ConsumerState<FlashcardReviewScreen>
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
+    _swingDetector = SwingDetector(
+      threshold: 20.0, // Specific for review skip
+      onSwing: _onShakeToSkip,
+    );
     _breathController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 2400),
@@ -683,22 +684,16 @@ class _FlashcardReviewScreenState extends ConsumerState<FlashcardReviewScreen>
   }
 
   void _startShakeListener() {
-    _shakeSubscription?.cancel();
-    _shakeSubscription =
-        accelerometerEventStream(
-          samplingPeriod: const Duration(milliseconds: 50),
-        ).listen((event) {
-          final magnitude = sqrt(
-            event.x * event.x + event.y * event.y + event.z * event.z,
-          );
-          final now = DateTime.now();
-          if (magnitude > _shakeThreshold &&
-              now.difference(_lastShakeTime) > _shakeCooldown) {
-            _lastShakeTime = now;
-            HapticFeedback.heavyImpact();
-            _skip();
-          }
-        });
+    _swingDetector.start();
+  }
+
+  void _onShakeToSkip() {
+    if (_isProcessingRating || _completed || _animatingExit) return;
+    _skip();
+  }
+
+  void _stopShakeListener() {
+    _swingDetector.stop();
   }
 
   void _queueOrApplySessionItems(List<ReviewSessionItem> nextItems) {
@@ -741,11 +736,6 @@ class _FlashcardReviewScreenState extends ConsumerState<FlashcardReviewScreen>
     _applySessionItems(pending);
   }
 
-  void _stopShakeListener() {
-    _shakeSubscription?.cancel();
-    _shakeSubscription = null;
-  }
-
   Future<void> _repickVideo(Move move, int index) async {
     final result = await VideoPickerSheet.show(
       context,
@@ -764,6 +754,7 @@ class _FlashcardReviewScreenState extends ConsumerState<FlashcardReviewScreen>
           contentHash: move.contentHash,
           managedAlbumAssetId: move.managedAlbumAssetId,
           excludingMoveId: move.id,
+          skipPhotosCleanup: true,
         );
     await ref
         .read(moveRepositoryProvider)

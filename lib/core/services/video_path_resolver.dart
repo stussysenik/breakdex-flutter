@@ -163,15 +163,43 @@ abstract final class VideoPathResolver {
   /// `Moves/{category}/{moveName}/video.{ext}`.
   ///
   /// Category and move name are sanitized for safe filesystem usage.
+  /// If the category is not recognized as a primary category, it defaults to 'Default'.
   static String semanticVideoPath(
     String category,
     String moveName,
     String extension,
   ) {
-    final safeCategory = _sanitizeFilename(category);
-    final safeName = _sanitizeFilename(moveName);
+    // Standardize category naming for storage
+    final safeCategory = _getSafeCategory(category);
+    
+    // Standardize move naming to prevent "Windmill" vs "windmill" folder duplicates
+    final sanitizedName = _sanitizeFilename(moveName.trim());
+    final safeName = sanitizedName.length > 1 
+      ? sanitizedName[0].toUpperCase() + sanitizedName.substring(1).toLowerCase()
+      : sanitizedName.toUpperCase();
+
     final ext = extension.startsWith('.') ? extension.substring(1) : extension;
     return p.join('Moves', safeCategory, safeName, 'video.$ext');
+  }
+
+  static String _getSafeCategory(String category) {
+    final trimmed = category.trim();
+    if (trimmed.isEmpty) return 'Default';
+
+    final lower = trimmed.toLowerCase();
+    
+    // Catch all variations of "default" and force canonical 'Default'
+    if (lower == 'default' ||
+        lower == 'none' ||
+        lower == 'uncategorized' ||
+        lower == 'general') {
+      return 'Default';
+    }
+
+    // Force Title Case for all categories to prevent "Footwork" vs "footwork" folders
+    final sanitized = _sanitizeFilename(trimmed);
+    if (sanitized.length <= 1) return sanitized.toUpperCase();
+    return sanitized[0].toUpperCase() + sanitized.substring(1).toLowerCase();
   }
 
   /// Move the file at [currentRelativePath] to a semantic path based on
@@ -214,70 +242,237 @@ abstract final class VideoPathResolver {
 }
 
 /// One-time batch migration that converts stored absolute video paths to
-/// relative form. Gated by SharedPreferences so it only runs once.
+/// relative form and ensures all files follow the semantic naming structure.
 ///
-/// No Drift schema migration needed — column types stay the same, only the
-/// stored string values change from `/var/mobile/.../Documents/Moves/uuid.mp4`
-/// to `Moves/uuid.mp4`.
+/// Gated by SharedPreferences so it only runs once.
 abstract final class VideoPathHealer {
-  static const _prefsKey = 'video_paths_healed_v1';
+  static const _prefsKey = 'video_paths_healed_v3';
 
-  /// Convert all absolute video paths in the database to relative form.
-  /// Idempotent — skips if already healed (SharedPreferences gate).
+  /// Proactive healing of both the database records and physical filesystem.
+  ///
+  /// This is the "Truth Guard" of the application. It runs after the first frame
+  /// to ensure the Files app and SQLite always remain in sync.
   static Future<void> healAll(AppDatabase db, SharedPreferences prefs) async {
-    if (prefs.getBool(_prefsKey) == true) return;
+    // 1. Filesystem Purity (Run every boot - lightweight)
+    // Ensures root backups and orphaned UUID videos are always organized.
+    await _autoCleanFileSystem(db);
 
-    var healed = 0;
+    // 2. Database Record Healing (Version gated - heavy)
+    // Ensures all stored paths follow the latest semantic structure.
+    if (prefs.getBool(_prefsKey) != true) {
+      try {
+        await _healDatabasePaths(db);
+        await prefs.setBool(_prefsKey, true);
+      } catch (e) {
+        debugPrint('[VideoPathHealer] DB healing failed: $e');
+      }
+    }
+  }
 
+  /// Automatically cleans up the root directory and Move folder orphans.
+  /// This is the primary mechanism for enforcing a clean Files app view.
+  static Future<void> _autoCleanFileSystem(AppDatabase db) async {
+    await _cleanupRootBackups();
+    await _cleanupMovesOrphans(db);
+    await _mergeDuplicateFolders();
+  }
+
+  /// Proactively find and merge folders that differ only by casing.
+  /// (e.g., merge 'default' -> 'Default')
+  static Future<void> _mergeDuplicateFolders() async {
     try {
-      // Heal moves.videoPath
-      final moves = await db.movesDao.getAllIncludingArchived();
-      for (final move in moves) {
-        if (move.videoPath != null &&
-            !VideoPathResolver.isRelative(move.videoPath!)) {
-          final relative = VideoPathResolver.toRelative(move.videoPath!);
-          await db.movesDao.updateMove(
-            MovesCompanion(id: Value(move.id), videoPath: Value(relative)),
-          );
-          healed++;
-        }
-      }
+      final rootMoves = p.join(VideoPathResolver.toAbsolute(''), 'Moves');
+      final directory = Directory(rootMoves);
+      if (!await directory.exists()) return;
 
-      // Heal combos.activeVideoPath
-      final combos = await db.combosDao.getAll();
-      for (final combo in combos) {
-        if (combo.activeVideoPath != null &&
-            !VideoPathResolver.isRelative(combo.activeVideoPath!)) {
-          final relative = VideoPathResolver.toRelative(combo.activeVideoPath!);
-          await (db.update(db.combos)..where((t) => t.id.equals(combo.id)))
-              .write(CombosCompanion(activeVideoPath: Value(relative)));
-          healed++;
+      final Map<String, String> seenLower = {};
+      
+      await for (final entity in directory.list()) {
+        if (entity is! Directory) continue;
+        final name = p.basename(entity.path);
+        final lower = name.toLowerCase();
+        
+        // Determine the canonical name for this category
+        String canonical;
+        if (lower == 'default' || lower == 'none' || lower == 'uncategorized' || lower == 'general') {
+          canonical = 'Default';
+        } else {
+          canonical = name.length > 1 
+            ? name[0].toUpperCase() + name.substring(1).toLowerCase()
+            : name.toUpperCase();
         }
-      }
 
-      // Heal asset_manifest.localPath
-      final manifests = await db.assetManifestDao.getAll();
-      for (final manifest in manifests) {
-        if (manifest.localPath != null &&
-            !VideoPathResolver.isRelative(manifest.localPath!)) {
-          final relative = VideoPathResolver.toRelative(manifest.localPath!);
-          await db.assetManifestDao.updateLocalState(
-            manifest.contentHash,
-            localPath: Value(relative),
-          );
-          healed++;
+        if (seenLower.containsKey(lower)) {
+          // If we've seen this name (case-insensitive) before, merge into the first one or canonical
+          final target = seenLower[lower]!;
+          if (name != target) {
+            debugPrint('[VideoPathHealer] Boot merge: $name -> $target');
+            await _mergeDirectories(entity, Directory(p.join(rootMoves, target)));
+          }
+        } else {
+          // If the folder name itself isn't canonical, rename it
+          if (name != canonical) {
+            debugPrint('[VideoPathHealer] Boot normalize: $name -> $canonical');
+            await _mergeDirectories(entity, Directory(p.join(rootMoves, canonical)));
+            seenLower[lower] = canonical;
+          } else {
+            seenLower[lower] = name;
+          }
         }
-      }
-
-      await prefs.setBool(_prefsKey, true);
-      if (healed > 0) {
-        debugPrint(
-          '[VideoPathHealer] Healed $healed absolute paths → relative',
-        );
       }
     } catch (e) {
-      debugPrint('[VideoPathHealer] Healing failed: $e');
-      // Non-fatal — paths still work via toAbsolute() at read time
+      debugPrint('[VideoPathHealer] Boot merge failed: $e');
+    }
+  }
+
+  static Future<void> _mergeDirectories(Directory source, Directory target) async {
+    if (!await target.exists()) await target.create(recursive: true);
+    await for (final entity in source.list()) {
+      final name = p.basename(entity.path);
+      final destPath = p.join(target.path, name);
+      if (entity is File) {
+        if (await File(destPath).exists()) {
+          await entity.delete();
+        } else {
+          await entity.rename(destPath);
+        }
+      } else if (entity is Directory) {
+        await _mergeDirectories(entity, Directory(destPath));
+      }
+    }
+    try {
+      await source.delete();
+    } catch (_) {}
+  }
+
+  static Future<void> _cleanupRootBackups() async {
+    try {
+      final rootPath = VideoPathResolver.toAbsolute('');
+      final rootDir = Directory(rootPath);
+      final backupsDir = Directory(p.join(rootPath, '.backups'));
+      if (!await backupsDir.exists()) {
+        await backupsDir.create(recursive: true);
+      }
+
+      await for (final entity in rootDir.list()) {
+        if (entity is! File) continue;
+        final name = p.basename(entity.path);
+        
+        // Root backups belong in .backups/
+        if ((name.startsWith('breakdex_backup_') && name.endsWith('.db')) ||
+            name == 'breakdex_provenance') {
+          final targetPath = p.join(backupsDir.path, name);
+          if (await File(targetPath).exists()) {
+            await entity.delete();
+          } else {
+            await entity.rename(targetPath);
+          }
+        }
+      }
+    } catch (e) {
+      debugPrint('[VideoPathHealer] Root cleanup failed: $e');
+    }
+  }
+
+  static Future<void> _cleanupMovesOrphans(AppDatabase db) async {
+    try {
+      final movesPath = p.join(VideoPathResolver.toAbsolute(''), 'Moves');
+      final movesDir = Directory(movesPath);
+      if (!await movesDir.exists()) return;
+
+      final archiveDir = Directory(p.join(movesPath, 'Archive'));
+      if (!await archiveDir.exists()) {
+        await archiveDir.create(recursive: true);
+      }
+
+      // Proactive cross-reference: everything on disk must have a home in DB
+      final allMoves = await db.movesDao.getAllIncludingArchived();
+      final validPaths = allMoves
+          .map((m) => m.videoPath)
+          .whereType<String>()
+          .map((p) => VideoPathResolver.toAbsolute(p))
+          .toSet();
+
+      await for (final entity in movesDir.list()) {
+        if (entity is! File) continue;
+        final absPath = entity.path;
+        final name = p.basename(absPath);
+
+        // If it's a flat file in Moves/ that we don't recognize -> Archive
+        if (validPaths.contains(absPath)) continue;
+        if (name.startsWith('.') || name.endsWith('.jpg') || name.endsWith('.png')) continue;
+
+        final targetPath = p.join(archiveDir.path, name);
+        if (await File(targetPath).exists()) {
+          await entity.delete();
+        } else {
+          await entity.rename(targetPath);
+        }
+      }
+    } catch (e) {
+      debugPrint('[VideoPathHealer] Orphan cleanup failed: $e');
+    }
+  }
+
+  static Future<void> _healDatabasePaths(AppDatabase db) async {
+    var healed = 0;
+    var migrated = 0;
+
+    // Heal moves.videoPath
+    final moves = await db.movesDao.getAllIncludingArchived();
+    for (final move in moves) {
+      String? currentPath = move.videoPath;
+      if (currentPath == null) continue;
+
+      if (!VideoPathResolver.isRelative(currentPath)) {
+        currentPath = VideoPathResolver.toRelative(currentPath);
+        await db.movesDao.updateMove(
+          MovesCompanion(id: Value(move.id), videoPath: Value(currentPath)),
+        );
+        healed++;
+      }
+
+      final semanticRelative = await VideoPathResolver.moveToSemanticPath(
+        currentRelativePath: currentPath,
+        category: move.category,
+        moveName: move.name,
+      );
+
+      if (semanticRelative != currentPath) {
+        await db.movesDao.updateMove(
+          MovesCompanion(id: Value(move.id), videoPath: Value(semanticRelative)),
+        );
+        migrated++;
+      }
+    }
+
+    // Heal combos and asset manifest
+    final combos = await db.combosDao.getAll();
+    for (final combo in combos) {
+      if (combo.activeVideoPath != null &&
+          !VideoPathResolver.isRelative(combo.activeVideoPath!)) {
+        final relative = VideoPathResolver.toRelative(combo.activeVideoPath!);
+        await (db.update(db.combos)..where((t) => t.id.equals(combo.id)))
+            .write(CombosCompanion(activeVideoPath: Value(relative)));
+        healed++;
+      }
+    }
+
+    final manifests = await db.assetManifestDao.getAll();
+    for (final manifest in manifests) {
+      if (manifest.localPath != null &&
+          !VideoPathResolver.isRelative(manifest.localPath!)) {
+        final relative = VideoPathResolver.toRelative(manifest.localPath!);
+        await db.assetManifestDao.updateLocalState(
+          manifest.contentHash,
+          localPath: Value(relative),
+        );
+        healed++;
+      }
+    }
+
+    if (healed > 0 || migrated > 0) {
+      debugPrint('[VideoPathHealer] Completed record healing.');
     }
   }
 }

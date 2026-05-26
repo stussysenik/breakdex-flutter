@@ -146,6 +146,11 @@ final class SavingNotes extends MoveDetailState {
   const SavingNotes(super.move, {required this.draftText});
 }
 
+final class SavingPhotos extends MoveDetailState {
+  final String? json;
+  const SavingPhotos(super.move, {required this.json});
+}
+
 // ── Error ──
 
 final class ErrorState extends MoveDetailState {

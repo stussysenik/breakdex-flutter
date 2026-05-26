@@ -27,31 +27,7 @@ class _MoveRow extends ConsumerWidget {
           unawaited(HapticFeedback.heavyImpact());
           unawaited(_deleteMove(ref));
         },
-        confirmDismiss: (_) async {
-          final confirmed = await showDialog<bool>(
-            context: context,
-            builder: (ctx) => AlertDialog(
-              title: Text('Delete ${move.name}?'),
-              content: const Text(
-                'This moves it to Recently Deleted for 30 days.',
-              ),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.pop(ctx, false),
-                  child: const Text('Cancel'),
-                ),
-                TextButton(
-                  onPressed: () => Navigator.pop(ctx, true),
-                  child: const Text(
-                    'Delete',
-                    style: TextStyle(color: AppColors.actionAgain),
-                  ),
-                ),
-              ],
-            ),
-          );
-          return confirmed ?? false;
-        },
+        confirmDismiss: (_) async => true,
         child: Semantics(
           identifier: 'move-row-${move.id}',
           label: '${move.name}, $stateLabel',
@@ -148,8 +124,11 @@ class _MoveRow extends ConsumerWidget {
   }
 
   Future<void> _deleteMove(WidgetRef ref) async {
-    await ref.read(mediaCleanupServiceProvider).cleanupMoveMedia(move);
-    await ref.read(moveRepositoryProvider).delete(move.id);
+    final orchestrator = ref.read(storageOrchestratorProvider);
+    await orchestrator.deleteMove(
+      move,
+      cleanupMedia: (m) => ref.read(mediaCleanupServiceProvider).cleanupMoveMedia(m),
+    );
   }
 }
 

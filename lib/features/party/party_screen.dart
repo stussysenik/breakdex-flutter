@@ -18,6 +18,8 @@ import '../../core/services/settings_service.dart';
 import '../../shared/widgets/state_pill.dart';
 import '../../shared/widgets/video_player_widget.dart' show RobustVideoPlayer;
 
+import '../../core/services/swing_detector.dart';
+
 enum _PartyPhase { idle, cycling, revealing, revealed }
 
 class PartyScreen extends ConsumerStatefulWidget {
@@ -32,10 +34,7 @@ class _PartyScreenState extends ConsumerState<PartyScreen>
   List<Move> _allMoves = [];
   Move? _currentMove;
 
-  StreamSubscription<AccelerometerEvent>? _shakeSubscription;
-  DateTime _lastShakeTime = DateTime(2000);
-  static const _shakeThreshold = 18.0;
-  static const _shakeCooldown = Duration(milliseconds: 1000);
+  late final SwingDetector _swingDetector;
   static const _revealLockout = Duration(seconds: 3);
 
   _PartyPhase _phase = _PartyPhase.idle;
@@ -57,6 +56,9 @@ class _PartyScreenState extends ConsumerState<PartyScreen>
   @override
   void initState() {
     super.initState();
+    _swingDetector = SwingDetector(
+      onSwing: _onShakeDetected,
+    );
     _revealController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 500),
@@ -77,26 +79,11 @@ class _PartyScreenState extends ConsumerState<PartyScreen>
   }
 
   void _startShakeListener() {
-    if (_shakeSubscription != null) return;
-    _shakeSubscription = accelerometerEventStream(
-      samplingPeriod: const Duration(milliseconds: 50),
-    ).listen((event) {
-      final magnitude = sqrt(
-        event.x * event.x + event.y * event.y + event.z * event.z,
-      );
-      final now = DateTime.now();
-      if (_shakeLocked) return;
-      if (magnitude > _shakeThreshold &&
-          now.difference(_lastShakeTime) > _shakeCooldown) {
-        _lastShakeTime = now;
-        _onShakeDetected();
-      }
-    });
+    _swingDetector.start();
   }
 
   void _stopShakeListener() {
-    _shakeSubscription?.cancel();
-    _shakeSubscription = null;
+    _swingDetector.stop();
   }
 
   void _onShakeDetected() {

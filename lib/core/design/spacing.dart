@@ -17,6 +17,7 @@ abstract final class AppRadius {
   static const double md = 16;
   static const double lg = 22;
   static const double xl = 30;
+  static const double pill = 500;
 }
 
 /// IBM Carbon–inspired motion scale for consistent, purposeful animation.

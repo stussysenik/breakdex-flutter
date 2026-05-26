@@ -1,5 +1,7 @@
+import 'dart:io';
 import 'package:drift/drift.dart' hide isNull;
 import 'package:flutter_test/flutter_test.dart';
+import 'package:path/path.dart' as p;
 
 import 'package:breakdex/core/data/drift_repositories.dart';
 import 'package:breakdex/core/database/database.dart';
@@ -8,6 +10,7 @@ import 'package:breakdex/core/services/move_creation_service.dart';
 import 'package:breakdex/core/services/native_video_album.dart';
 import 'package:breakdex/core/services/reviewable_naming_service.dart';
 import 'package:breakdex/core/services/video_path_resolver.dart';
+import 'package:breakdex/core/sync/asset_hash_service.dart';
 
 import '../../helpers/test_database.dart';
 
@@ -32,11 +35,16 @@ class _FakeVideoAlbum extends NativeVideoAlbum {
   }
 }
 
+class _FakeHashService extends AssetHashService {
+  @override
+  Future<String> computeHash(String filePath) async => 'hash-123';
+}
+
 void main() {
   group('MoveCreationService', () {
     late AppDatabase db;
     late _FakeVideoAlbum videoAlbum;
-    late List<({String localPath, String moveId})> syncCalls;
+    late List<({String localPath, String moveId, String? precomputedHash})> syncCalls;
     late MoveCreationService service;
 
     setUp(() {
@@ -52,8 +60,9 @@ void main() {
           combosDao: db.combosDao,
         ),
         videoAlbum: videoAlbum,
-        onVideoImported: ({required localPath, required moveId}) async {
-          syncCalls.add((localPath: localPath, moveId: moveId));
+        hashService: _FakeHashService(),
+        onVideoImported: ({required localPath, required moveId, precomputedHash}) async {
+          syncCalls.add((localPath: localPath, moveId: moveId, precomputedHash: precomputedHash));
         },
         idGenerator: () => 'move-1',
       );
@@ -99,20 +108,24 @@ void main() {
           albumName: 'Breakdex 04-30-2026',
         );
 
+        final localPath = p.join(VideoPathResolver.toAbsolute(''), 'swipe.mov');
+        await File(localPath).parent.create(recursive: true);
+        await File(localPath).writeAsString('dummy video');
+
         final result = await service.createMove(
-          const CreateMoveRequest(
+          CreateMoveRequest(
             name: 'Swipe',
             category: 'Footwork',
-            localVideoPath: '/tmp/breakdex-tests/Moves/swipe.mov',
+            localVideoPath: localPath,
             originalVideoName: 'IMG_0001.MOV',
           ),
         );
 
-        final move = await db.movesDao.getById('move-1');
+        final move = await db.movesDao.getById('hash-123');
 
         expect(result.hasVideo, isTrue);
-        expect(result.videoPath, 'Moves/swipe.mov');
-        expect(move.videoPath, 'Moves/swipe.mov');
+        expect(result.videoPath, 'Moves/Footwork/Swipe/video.mov');
+        expect(move.videoPath, 'Moves/Footwork/Swipe/video.mov');
         expect(move.originalVideoName, 'IMG_0001.MOV');
         expect(move.notes, isNull);
         expect(move.managedAlbumAssetId, 'asset-1');
@@ -122,9 +135,9 @@ void main() {
         expect(videoAlbum.saveCalls.single['category'], 'Footwork');
         expect(
           syncCalls.single.localPath,
-          '/tmp/breakdex-tests/Moves/swipe.mov',
+          VideoPathResolver.toAbsolute('Moves/Footwork/Swipe/video.mov'),
         );
-        expect(syncCalls.single.moveId, 'move-1');
+        expect(syncCalls.single.moveId, 'hash-123');
       },
     );
 
@@ -145,63 +158,5 @@ void main() {
       );
     });
 
-    test(
-      'creates a recovered move without writing a duplicate managed album copy',
-      () async {
-        final result = await service.createRecoveredMove(
-          const CreateRecoveredMoveRequest(
-            preferredName: 'Windmill',
-            category: 'Power',
-            localVideoPath: '/tmp/breakdex-tests/Moves/windmill.mov',
-            originalVideoName: 'Windmill - Power.mov',
-            managedAlbumAssetId: 'asset-recovered-1',
-            managedAlbumFilename: 'Windmill - Power.mov',
-            managedAlbumName: 'Breakdex 04-30-2026',
-          ),
-        );
-
-        final move = await db.movesDao.getById('move-1');
-
-        expect(result.name, 'Windmill');
-        expect(result.category, 'Power');
-        expect(move.videoPath, 'Moves/windmill.mov');
-        expect(move.originalVideoName, 'Windmill - Power.mov');
-        expect(move.managedAlbumAssetId, 'asset-recovered-1');
-        expect(move.managedAlbumFilename, 'Windmill - Power.mov');
-        expect(move.managedAlbumName, 'Breakdex 04-30-2026');
-        expect(videoAlbum.saveCalls, isEmpty);
-        expect(
-          syncCalls.single.localPath,
-          '/tmp/breakdex-tests/Moves/windmill.mov',
-        );
-      },
-    );
-
-    test(
-      'recovered moves get a unique name when the base name already exists',
-      () async {
-        await db.movesDao.insertMove(
-          MovesCompanion.insert(
-            id: 'existing-move',
-            name: 'Windmill',
-            category: const Value('Power Moves'),
-          ),
-        );
-
-        final result = await service.createRecoveredMove(
-          const CreateRecoveredMoveRequest(
-            preferredName: 'Windmill',
-            category: 'Power',
-            localVideoPath: '/tmp/breakdex-tests/Moves/windmill.mov',
-            originalVideoName: 'Windmill - Power.mov',
-            managedAlbumAssetId: 'asset-recovered-2',
-            managedAlbumFilename: 'Windmill - Power.mov',
-            managedAlbumName: 'Breakdex 04-30-2026',
-          ),
-        );
-
-        expect(result.name, 'Windmill (Recovered)');
-      },
-    );
   });
 }

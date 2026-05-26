@@ -28,6 +28,7 @@ import 'tables/sets.dart';
 import 'tables/set_items.dart';
 import 'tables/provenance_events.dart';
 import 'tables/move_note_entries.dart';
+import 'tables/combo_note_entries.dart';
 import 'daos/moves_dao.dart';
 import 'daos/combos_dao.dart';
 import 'daos/reviews_dao.dart';
@@ -43,6 +44,8 @@ import 'daos/milestones_dao.dart';
 import 'daos/lab_entries_dao.dart';
 import 'daos/achievements_dao.dart';
 import 'daos/aura_dao.dart';
+import 'daos/move_note_entries_dao.dart';
+import 'daos/combo_note_entries_dao.dart';
 
 part 'database.g.dart';
 
@@ -72,6 +75,7 @@ part 'database.g.dart';
     SetItems,
     ProvenanceEvents,
     MoveNoteEntries,
+    ComboNoteEntries,
   ],
   daos: [
     MovesDao,
@@ -89,6 +93,8 @@ part 'database.g.dart';
     LabEntriesDao,
     AchievementsDao,
     AuraDao,
+    MoveNoteEntriesDao,
+    ComboNoteEntriesDao,
   ],
 )
 class AppDatabase extends _$AppDatabase {
@@ -97,7 +103,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.forTesting(super.e);
 
   @override
-  int get schemaVersion => 18;
+  int get schemaVersion => 19;
 
   Future<void> _installIntegrityTriggers() async {
     await customStatement('''
@@ -522,6 +528,10 @@ class AppDatabase extends _$AppDatabase {
 
       if (from < 18) {
         await m.createTable(moveNoteEntries);
+      }
+
+      if (from < 19) {
+        await m.createTable(comboNoteEntries);
       }
 
       await _backfillReviewSnapshots();

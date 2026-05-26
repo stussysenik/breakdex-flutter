@@ -3,8 +3,8 @@ import '../design/colors.dart';
 
 enum LearningState {
   newState('NEW', 'New', AppColors.stateNew),
-  learning('LEARNING', 'Learning', AppColors.stateLearning),
-  mastery('MASTERY', 'Mastery', AppColors.stateMastery);
+  learning('LEARNING', 'Practicing', AppColors.stateLearning),
+  mastery('MASTERY', 'Strong', AppColors.stateMastery);
 
   const LearningState(this.dbValue, this.displayText, this.color);
 
@@ -18,6 +18,8 @@ enum LearningState {
         'MASTERY' => LearningState.mastery,
         _ => LearningState.newState,
       };
+
+  static LearningState fromName(String value) => fromString(value);
 
   LearningState applyRating(ReviewRating rating) => switch (rating) {
         ReviewRating.again => LearningState.newState,

@@ -6,9 +6,7 @@ import 'package:breakdex/core/database/database.dart';
 import 'package:breakdex/core/models/move_archive_reason.dart';
 import 'package:breakdex/core/services/managed_album_reconciliation_service.dart';
 import 'package:breakdex/core/services/media_cleanup_service.dart';
-import 'package:breakdex/core/services/move_creation_service.dart';
 import 'package:breakdex/core/services/native_video_album.dart';
-import 'package:breakdex/core/services/reviewable_naming_service.dart';
 import 'package:breakdex/core/services/video_path_resolver.dart';
 import 'package:breakdex/core/services/video_service.dart';
 
@@ -18,10 +16,6 @@ class _FakeVideoAlbum extends NativeVideoAlbum {
   PhotoLibraryAccessStatus accessStatus = PhotoLibraryAccessStatus.authorized;
   ManagedAssetReconcileResult reconcileResult =
       ManagedAssetReconcileResult.empty(
-        accessStatus: PhotoLibraryAccessStatus.authorized,
-      );
-  RecoverableManagedAssetDiscoveryResult discoveryResult =
-      RecoverableManagedAssetDiscoveryResult.empty(
         accessStatus: PhotoLibraryAccessStatus.authorized,
       );
   ManagedAssetRestoreResult? restoreResult;
@@ -50,14 +44,6 @@ class _FakeVideoAlbum extends NativeVideoAlbum {
       return handler(assetLocalIdentifier);
     }
     return restoreResult;
-  }
-
-  @override
-  Future<RecoverableManagedAssetDiscoveryResult>
-  discoverRecoverableManagedAssets({
-    List<String> albumPatterns = NativeVideoAlbum.historicalAlbumPatterns,
-  }) async {
-    return discoveryResult;
   }
 
   @override
@@ -101,19 +87,9 @@ void main() {
       videoAlbum = _FakeVideoAlbum();
       videoService = _FakeVideoService();
       VideoPathResolver.docsPathOverride = '/tmp/breakdex-tests';
-      final moveCreationService = MoveCreationService(
-        moveRepository: DriftMoveRepository(db.movesDao),
-        namingService: ReviewableNamingService(
-          movesDao: db.movesDao,
-          combosDao: db.combosDao,
-        ),
-        videoAlbum: videoAlbum,
-        onVideoImported: ({required localPath, required moveId}) async {},
-      );
       service = ManagedAlbumReconciliationService(
         movesDao: db.movesDao,
         moveRepository: DriftMoveRepository(db.movesDao),
-        moveCreationService: moveCreationService,
         mediaCleanupService: MediaCleanupService(
           db: db,
           videoService: videoService,
@@ -164,7 +140,7 @@ void main() {
       expect(move.managedAlbumName, isNull);
     });
 
-    test('re-recovers a missing local video from Photos/iCloud', () async {
+    test('restores a missing local video from Photos/iCloud', () async {
       await db.movesDao.insertMove(
         MovesCompanion.insert(
           id: 'move-2',
@@ -176,8 +152,8 @@ void main() {
         ),
       );
       videoAlbum.restoreResult = const ManagedAssetRestoreResult(
-        localPath: '/tmp/breakdex-tests/Moves/recovered.mov',
-        originalFileName: 'Recovered.mov',
+        localPath: '/tmp/breakdex-tests/Moves/restored.mov',
+        originalFileName: 'Restored.mov',
       );
 
       final report = await service.reconcileExternalDeletes();
@@ -185,266 +161,23 @@ void main() {
 
       expect(report.recoveredMoves, 1);
       expect(move.archivedAt, isNull);
-      expect(move.videoPath, 'Moves/recovered.mov');
-      expect(move.originalVideoName, 'Recovered.mov');
+      expect(move.videoPath, 'Moves/restored.mov');
+      expect(move.originalVideoName, 'Restored.mov');
     });
 
-    test(
-      'relinks a historical album copy by semantic filename when the DB lost managed metadata',
-      () async {
-        await db.movesDao.insertMove(
-          MovesCompanion.insert(
-            id: 'move-legacy-1',
-            name: 'Airflare',
-            category: const Value('toprock'),
-            videoPath: const Value('Moves/airflare.mp4'),
-          ),
-        );
-        videoService.statusByPath['/tmp/breakdex-tests/Moves/airflare.mp4'] =
-            VideoFileStatus.ready;
-        videoAlbum.discoveryResult =
-            const RecoverableManagedAssetDiscoveryResult(
-              accessStatus: PhotoLibraryAccessStatus.authorized,
-              assets: [
-                RecoverableManagedAsset(
-                  assetLocalIdentifier: 'legacy-asset-1',
-                  filename: 'Airflare - toprock.mov',
-                  albumName: 'Bboying Practice',
-                ),
-              ],
-            );
-
-        final report = await service.reconcileExternalDeletes();
-        final move = await db.movesDao.getById('move-legacy-1');
-
-        expect(report.trackedMoves, 0);
-        expect(report.recoveredMoves, 1);
-        expect(report.historicalAssetsDiscovered, 1);
-        expect(report.historicalAssetsUntracked, 1);
-        expect(report.historicalAssetsRecovered, 1);
-        expect(report.historicalAssetsStillPending, 0);
-        expect(move.managedAlbumAssetId, 'legacy-asset-1');
-        expect(move.managedAlbumFilename, 'Airflare - toprock.mov');
-        expect(move.managedAlbumName, 'Bboying Practice');
-      },
-    );
-
-    test(
-      'restores a historical album copy when only semantic/original filename matching remains',
-      () async {
-        await db.movesDao.insertMove(
-          MovesCompanion.insert(
-            id: 'move-legacy-2',
-            name: 'Halo',
-            category: const Value('power'),
-            originalVideoName: const Value('legacy-halo.mov'),
-          ),
-        );
-        videoAlbum.discoveryResult =
-            const RecoverableManagedAssetDiscoveryResult(
-              accessStatus: PhotoLibraryAccessStatus.authorized,
-              assets: [
-                RecoverableManagedAsset(
-                  assetLocalIdentifier: 'legacy-asset-2',
-                  filename: 'legacy-halo.mov',
-                  albumName: 'Breaking Archive',
-                ),
-              ],
-            );
-        videoAlbum.restoreResult = const ManagedAssetRestoreResult(
-          localPath: '/tmp/breakdex-tests/Moves/legacy-halo.mov',
-          originalFileName: 'legacy-halo.mov',
-        );
-
-        final report = await service.reconcileExternalDeletes();
-        final move = await db.movesDao.getById('move-legacy-2');
-
-        expect(report.trackedMoves, 0);
-        expect(report.recoveredMoves, 1);
-        expect(report.historicalAssetsDiscovered, 1);
-        expect(report.historicalAssetsRecovered, 1);
-        expect(move.videoPath, 'Moves/legacy-halo.mov');
-        expect(move.managedAlbumAssetId, 'legacy-asset-2');
-        expect(move.managedAlbumName, 'Breaking Archive');
-      },
-    );
-
-    test(
-      'prefers the strongest filename match when broad album discovery returns multiple videos',
-      () async {
-        await db.movesDao.insertMove(
-          MovesCompanion.insert(
-            id: 'move-legacy-3',
-            name: 'Halo',
-            category: const Value('power'),
-            originalVideoName: const Value('legacy-halo.mov'),
-          ),
-        );
-        videoAlbum.discoveryResult =
-            const RecoverableManagedAssetDiscoveryResult(
-              accessStatus: PhotoLibraryAccessStatus.authorized,
-              assets: [
-                RecoverableManagedAsset(
-                  assetLocalIdentifier: 'legacy-asset-noise',
-                  filename: 'Footwork - drill.mov',
-                  albumName: 'Break Dex Sessions',
-                ),
-                RecoverableManagedAsset(
-                  assetLocalIdentifier: 'legacy-asset-best',
-                  filename: 'legacy-halo.mov',
-                  albumName: 'Break Dex Sessions',
-                ),
-              ],
-            );
-        videoAlbum.restoreResult = const ManagedAssetRestoreResult(
-          localPath: '/tmp/breakdex-tests/Moves/legacy-halo.mov',
-          originalFileName: 'legacy-halo.mov',
-        );
-
-        final report = await service.reconcileExternalDeletes();
-        final move = await db.movesDao.getById('move-legacy-3');
-        final moves = await db.movesDao.getAll();
-
-        expect(report.recoveredMoves, 2);
-        expect(report.historicalAssetsDiscovered, 2);
-        expect(report.historicalAssetsUntracked, 2);
-        expect(report.historicalAssetsRecovered, 2);
-        expect(move.managedAlbumAssetId, 'legacy-asset-best');
-        expect(moves, hasLength(2));
-      },
-    );
-
-    test('imports an unmatched historical asset as a new move row', () async {
-      videoAlbum.discoveryResult = const RecoverableManagedAssetDiscoveryResult(
-        accessStatus: PhotoLibraryAccessStatus.authorized,
-        assets: [
-          RecoverableManagedAsset(
-            assetLocalIdentifier: 'legacy-asset-import',
-            filename: 'Windmill - Power.mov',
-            albumName: 'Breakdex 04-03-2026',
-          ),
-        ],
-      );
-      videoAlbum.restoreResult = const ManagedAssetRestoreResult(
-        localPath: '/tmp/breakdex-tests/Moves/windmill.mov',
-        originalFileName: 'Windmill - Power.mov',
-      );
-
-      final report = await service.reconcileExternalDeletes();
-      final moves = await db.movesDao.getAll();
-
-      expect(report.trackedMoves, 0);
-      expect(report.recoveredMoves, 1);
-      expect(report.historicalAssetsDiscovered, 1);
-      expect(report.historicalAssetsUntracked, 1);
-      expect(report.historicalAssetsRecovered, 1);
-      expect(
-        report.snackBarMessage,
-        'Recovered 1 historical album video from Photos.',
-      );
-      expect(moves, hasLength(1));
-      expect(moves.single.name, 'Windmill');
-      expect(moves.single.category, 'Power');
-      expect(moves.single.videoPath, 'Moves/windmill.mov');
-      expect(moves.single.originalVideoName, 'Windmill - Power.mov');
-      expect(moves.single.managedAlbumAssetId, 'legacy-asset-import');
-    });
-
-    test(
-      'reports partial historical recovery when some restores fail',
-      () async {
-        await db.movesDao.insertMove(
-          MovesCompanion.insert(
-            id: 'move-legacy-4',
-            name: 'Halo',
-            category: const Value('power'),
-            originalVideoName: const Value('legacy-halo.mov'),
-          ),
-        );
-        videoAlbum.discoveryResult =
-            const RecoverableManagedAssetDiscoveryResult(
-              accessStatus: PhotoLibraryAccessStatus.authorized,
-              assets: [
-                RecoverableManagedAsset(
-                  assetLocalIdentifier: 'legacy-asset-match',
-                  filename: 'legacy-halo.mov',
-                  albumName: 'Breakdex 04-03-2026',
-                ),
-                RecoverableManagedAsset(
-                  assetLocalIdentifier: 'legacy-asset-fail',
-                  filename: 'Windmill - Power.mov',
-                  albumName: 'Breakdex 04-03-2026',
-                ),
-              ],
-            );
-        videoAlbum.restoreHandler = (assetLocalIdentifier) async {
-          if (assetLocalIdentifier == 'legacy-asset-fail') {
-            throw StateError('iCloud download failed');
-          }
-          return const ManagedAssetRestoreResult(
-            localPath: '/tmp/breakdex-tests/Moves/legacy-halo.mov',
-            originalFileName: 'legacy-halo.mov',
-          );
-        };
-
-        final report = await service.reconcileExternalDeletes();
-        final moves = await db.movesDao.getAll();
-
-        expect(report.recoveredMoves, 1);
-        expect(report.historicalAssetsDiscovered, 2);
-        expect(report.historicalAssetsUntracked, 2);
-        expect(report.historicalAssetsRecovered, 1);
-        expect(report.historicalRestoreFailures, 1);
-        expect(report.historicalAssetsStillPending, 1);
-        expect(
-          report.snackBarMessage,
-          'Recovered 1 historical album video. 1 still need attention.',
-        );
-        expect(moves, hasLength(1));
-      },
-    );
-
-    test('reports limited Photos access for historical recovery', () async {
-      videoAlbum.accessStatus = PhotoLibraryAccessStatus.limited;
-      videoAlbum.discoveryResult = const RecoverableManagedAssetDiscoveryResult(
-        accessStatus: PhotoLibraryAccessStatus.limited,
-        assets: [],
-      );
-
-      final report = await service.reconcileExternalDeletes();
-
-      expect(report.accessStatus, PhotoLibraryAccessStatus.limited);
-      expect(report.hasStartupSignal, isTrue);
-      expect(
-        report.snackBarMessage,
-        'Photos access is limited, so some historical Breakdex albums may stay hidden.',
-      );
-    });
-
-    test('no startup signal when nothing discovered and access is authorized', () async {
+    test('no startup signal when access is authorized and nothing to report', () async {
       final report = await service.reconcileExternalDeletes();
 
       expect(report.hasStartupSignal, isFalse);
     });
 
-    test('reports matching albums that expose no readable filenames', () async {
-      videoAlbum.discoveryResult = const RecoverableManagedAssetDiscoveryResult(
-        accessStatus: PhotoLibraryAccessStatus.authorized,
-        assets: [],
-        matchingAlbumCount: 2,
-        videoAssetCount: 3,
-        skippedMissingFilenameCount: 3,
-      );
+    test('reports denied Photos access', () async {
+      videoAlbum.accessStatus = PhotoLibraryAccessStatus.denied;
 
       final report = await service.reconcileExternalDeletes();
 
-      expect(report.historicalMatchingAlbums, 2);
-      expect(report.historicalVideoAssetsSeen, 3);
-      expect(report.historicalAssetsSkippedMissingFilename, 3);
-      expect(
-        report.snackBarMessage,
-        'Found 2 Breakdex albums, but iPhone did not expose readable video filenames yet.',
-      );
+      expect(report.accessStatus, PhotoLibraryAccessStatus.denied);
+      expect(report.hasStartupSignal, isTrue);
     });
 
     test(

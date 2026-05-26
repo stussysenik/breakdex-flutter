@@ -24,15 +24,18 @@ void main() {
         final service = DatabaseRecoveryService(
           documentsDirectory: () async => tempDir,
         );
+        final backupsDir = Directory(p.join(tempDir.path, '.backups'));
+        await backupsDir.create(recursive: true);
+        
         final olderBackup = File(
           p.join(
-            tempDir.path,
+            backupsDir.path,
             '${DatabaseRecoveryService.backupFilenamePrefix}1000${DatabaseRecoveryService.databaseFilenameSuffix}',
           ),
         );
         final newerBackup = File(
           p.join(
-            tempDir.path,
+            backupsDir.path,
             '${DatabaseRecoveryService.backupFilenamePrefix}2000${DatabaseRecoveryService.databaseFilenameSuffix}',
           ),
         );
@@ -72,6 +75,10 @@ void main() {
         final backups = await service.listBackupFilesNewestFirst();
         expect(backups, hasLength(DatabaseRecoveryService.maxBackupFiles));
         expect(await backups.first.readAsString(), 'primary-db');
+        
+        // Verify they are in the .backups folder
+        final backupsDir = Directory(p.join(tempDir.path, '.backups'));
+        expect(await backupsDir.exists(), isTrue);
       },
     );
 
@@ -87,7 +94,8 @@ void main() {
 
         await service.stashPrimaryAsCorrupt();
 
-        final corruptFiles = await tempDir
+        final backupsDir = Directory(p.join(tempDir.path, '.backups'));
+        final corruptFiles = await backupsDir
             .list()
             .where((entity) => entity is File)
             .cast<File>()

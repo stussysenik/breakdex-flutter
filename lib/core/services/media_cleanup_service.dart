@@ -53,6 +53,7 @@ class MediaCleanupService {
     String? managedAlbumAssetId,
     String? excludingMoveId,
     String? excludingComboId,
+    bool skipPhotosCleanup = false,
   }) {
     return _cleanupAsset(
       storedVideoPath: storedVideoPath,
@@ -63,6 +64,7 @@ class MediaCleanupService {
       category: category,
       excludingMoveId: excludingMoveId,
       excludingComboId: excludingComboId,
+      skipPhotosCleanup: skipPhotosCleanup,
     );
   }
 
@@ -75,6 +77,7 @@ class MediaCleanupService {
     String? managedAlbumAssetId,
     String? excludingMoveId,
     String? excludingComboId,
+    bool skipPhotosCleanup = false,
   }) async {
     final pathStillReferenced = await _isPathStillReferenced(
       storedVideoPath: storedVideoPath,
@@ -97,15 +100,17 @@ class MediaCleanupService {
         debugPrint('Local video cleanup failed for $title: $error');
       }
 
-      try {
-        await _videoAlbum.deleteManagedCopies(
-          assetTitle: title,
-          category: category,
-          fileExtension: p.extension(pathForCleanup),
-          assetLocalIdentifier: managedAlbumAssetId,
-        );
-      } catch (error) {
-        debugPrint('Album cleanup failed for $title: $error');
+      if (!skipPhotosCleanup) {
+        try {
+          await _videoAlbum.deleteManagedCopies(
+            assetTitle: title,
+            category: category,
+            fileExtension: p.extension(pathForCleanup),
+            assetLocalIdentifier: managedAlbumAssetId,
+          );
+        } catch (error) {
+          debugPrint('Album cleanup failed for $title: $error');
+        }
       }
     }
 

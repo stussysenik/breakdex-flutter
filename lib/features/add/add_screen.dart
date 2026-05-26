@@ -11,6 +11,8 @@ import '../../core/design/typography.dart';
 import '../../core/models/learning_state.dart';
 import '../../core/models/move_creation.dart';
 import '../../core/providers.dart';
+import '../../core/state_machines/move_creation/machine.dart';
+import '../../core/state_machines/move_creation/provider.dart';
 import '../../core/services/categories_service.dart';
 import '../../shared/widgets/video_picker_sheet.dart';
 
@@ -56,30 +58,29 @@ class AddScreen extends ConsumerWidget {
     final metadata = await _showMetadataSheet(context, ref);
     if (metadata == null || !context.mounted) return;
 
-    try {
-      final creationService = ref.read(moveCreationServiceProvider);
-      final result = await creationService.createMove(
-        CreateMoveRequest(
-          name: metadata.name,
-          category: metadata.category,
-          localVideoPath: pickResult.localPath,
-          count: metadata.count,
-          learningState: metadata.learningState.name,
-        ),
-      );
+    final notifier = ref.read(moveCreationStateProvider.notifier);
+    notifier.start(
+      CreateMoveRequest(
+        name: metadata.name,
+        category: metadata.category,
+        localVideoPath: pickResult.localPath,
+        count: metadata.count,
+        learningState: metadata.learningState.name,
+      ),
+    );
 
-      if (context.mounted) {
+    // Listen for completion to show snackbar
+    ref.listenManual(moveCreationStateProvider, (previous, next) {
+      if (next is Success && context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Created "${result.name}"')),
+          SnackBar(content: Text('Created "${next.result.name}"')),
+        );
+      } else if (next is Error && context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed: ${next.message}')),
         );
       }
-    } catch (e) {
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed: $e')),
-        );
-      }
-    }
+    });
   }
 
   Future<_MetadataResult?> _showMetadataSheet(
@@ -119,33 +120,55 @@ class _ChoiceCard extends StatelessWidget {
       onTap: onTap,
       child: Container(
         width: double.infinity,
-        decoration: AppSurfaces.panel(
-          context,
-          raised: true,
-          radius: AppRadius.md,
+        padding: const EdgeInsets.symmetric(vertical: AppSpacing.lg),
+        decoration: BoxDecoration(
+          border: Border(
+            bottom: BorderSide(
+              color: colorScheme.outline.withValues(alpha: 0.1),
+              width: 1,
+            ),
+          ),
         ),
-        padding: const EdgeInsets.all(AppSpacing.lg),
-        child: Column(
+        child: Row(
           children: [
+            Container(
+              width: 48,
+              height: 48,
+              decoration: BoxDecoration(
+                color: colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
+                borderRadius: BorderRadius.circular(AppRadius.sm),
+              ),
+              child: Icon(
+                icon,
+                size: 24,
+                color: colorScheme.primary,
+              ),
+            ),
+            const SizedBox(width: AppSpacing.lg),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: AppTypography.titleMedium.copyWith(
+                      color: colorScheme.onSurface,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    subtitle,
+                    style: AppTypography.bodySmall.copyWith(
+                      color: colorScheme.secondary,
+                    ),
+                  ),
+                ],
+              ),
+            ),
             Icon(
-              icon,
-              size: 48,
-              color: colorScheme.primary.withValues(alpha: 0.7),
-            ),
-            const SizedBox(height: AppSpacing.md),
-            Text(
-              title,
-              style: AppTypography.titleMedium.copyWith(
-                color: colorScheme.onSurface,
-              ),
-            ),
-            const SizedBox(height: AppSpacing.xs),
-            Text(
-              subtitle,
-              style: AppTypography.bodySmall.copyWith(
-                color: colorScheme.secondary,
-              ),
-              textAlign: TextAlign.center,
+              Icons.chevron_right_rounded,
+              color: colorScheme.outline,
             ),
           ],
         ),
@@ -267,20 +290,25 @@ class _ClipMetadataFormState extends ConsumerState<_ClipMetadataForm> {
               ),
             ),
             const SizedBox(height: AppSpacing.lg),
-            Text('Name Your Move', style: AppTypography.titleMedium.copyWith(color: colorScheme.onSurface)),
-            const SizedBox(height: AppSpacing.md),
+            Text('NAME', style: AppTypography.labelLarge.copyWith(color: colorScheme.secondary, letterSpacing: 1.5)),
             TextField(
               controller: _nameController,
               autofocus: true,
+              style: AppTypography.titleLarge,
               decoration: InputDecoration(
-                hintText: 'Move name',
+                hintText: 'e.g. Windmill',
                 errorText: _errorText,
+                filled: false,
+                border: InputBorder.none,
+                enabledBorder: InputBorder.none,
+                focusedBorder: InputBorder.none,
+                contentPadding: EdgeInsets.zero,
               ),
               textInputAction: TextInputAction.done,
               onSubmitted: (_) => _submit(),
             ),
             const SizedBox(height: AppSpacing.lg),
-            Text('Category', style: AppTypography.caption.copyWith(color: colorScheme.secondary, fontWeight: FontWeight.w600)),
+            Text('CATEGORY', style: AppTypography.labelLarge.copyWith(color: colorScheme.secondary, letterSpacing: 1.5)),
             const SizedBox(height: AppSpacing.sm),
             Wrap(
               spacing: AppSpacing.sm,
@@ -293,33 +321,24 @@ class _ClipMetadataFormState extends ConsumerState<_ClipMetadataForm> {
                       setState(() => _selectedCategory = cat.name);
                     },
                     child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                       decoration: BoxDecoration(
-                        color: _selectedCategory == cat.name ? colorScheme.primary : colorScheme.surfaceContainerHighest,
-                        borderRadius: BorderRadius.circular(AppRadius.sm),
+                        color: _selectedCategory == cat.name ? colorScheme.primary : colorScheme.surface,
+                        borderRadius: BorderRadius.circular(AppRadius.pill),
+                        border: Border.all(
+                          color: _selectedCategory == cat.name ? colorScheme.primary : colorScheme.outline.withValues(alpha: 0.2),
+                        ),
                       ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Container(
-                            width: 8, height: 8,
-                            decoration: BoxDecoration(
-                              color: _selectedCategory == cat.name ? Colors.white : cat.color,
-                              shape: BoxShape.circle,
-                            ),
-                          ),
-                          const SizedBox(width: 6),
-                          Text(cat.name, style: AppTypography.caption.copyWith(
-                            color: _selectedCategory == cat.name ? Colors.white : colorScheme.onSurface,
-                          )),
-                        ],
-                      ),
+                      child: Text(cat.name, style: AppTypography.caption.copyWith(
+                        color: _selectedCategory == cat.name ? colorScheme.onPrimary : colorScheme.onSurface,
+                        fontWeight: FontWeight.w600,
+                      )),
                     ),
                   ),
               ],
             ),
             const SizedBox(height: AppSpacing.lg),
-            Text('Learning State', style: AppTypography.caption.copyWith(color: colorScheme.secondary, fontWeight: FontWeight.w600)),
+            Text('KNOWLEDGE STATE', style: AppTypography.labelLarge.copyWith(color: colorScheme.secondary, letterSpacing: 1.5)),
             const SizedBox(height: AppSpacing.sm),
             Row(
               children: LearningState.values.map((state) {
@@ -332,34 +351,25 @@ class _ClipMetadataFormState extends ConsumerState<_ClipMetadataForm> {
                       setState(() => _selectedState = state);
                     },
                     child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                       decoration: BoxDecoration(
-                        color: selected ? colorScheme.primary : colorScheme.surfaceContainerHighest,
-                        borderRadius: BorderRadius.circular(AppRadius.sm),
+                        color: selected ? colorScheme.primary : colorScheme.surface,
+                        borderRadius: BorderRadius.circular(AppRadius.pill),
+                        border: Border.all(
+                          color: selected ? colorScheme.primary : colorScheme.outline.withValues(alpha: 0.2),
+                        ),
                       ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Container(
-                            width: 8, height: 8,
-                            decoration: BoxDecoration(
-                              color: selected ? Colors.white : state.color,
-                              shape: BoxShape.circle,
-                            ),
-                          ),
-                          const SizedBox(width: 6),
-                          Text(state.displayText, style: AppTypography.caption.copyWith(
-                            color: selected ? Colors.white : colorScheme.onSurface,
-                          )),
-                        ],
-                      ),
+                      child: Text(state.displayText, style: AppTypography.caption.copyWith(
+                        color: selected ? colorScheme.onPrimary : colorScheme.onSurface,
+                        fontWeight: FontWeight.w600,
+                      )),
                     ),
                   ),
                 );
               }).toList(),
             ),
             const SizedBox(height: AppSpacing.lg),
-            Text('Counts', style: AppTypography.caption.copyWith(color: colorScheme.secondary, fontWeight: FontWeight.w600)),
+            Text('BEATS', style: AppTypography.labelLarge.copyWith(color: colorScheme.secondary, letterSpacing: 1.5)),
             const SizedBox(height: AppSpacing.sm),
             Row(
               children: [
@@ -367,50 +377,35 @@ class _ClipMetadataFormState extends ConsumerState<_ClipMetadataForm> {
                   icon: Icons.remove_rounded,
                   onTap: _count > 1 ? () => setState(() => _count--) : null,
                 ),
-                const SizedBox(width: AppSpacing.md),
-                Container(
-                  width: 48, height: 48,
-                  decoration: BoxDecoration(
-                    color: colorScheme.surfaceContainerHighest,
-                    borderRadius: BorderRadius.circular(AppRadius.sm),
-                  ),
-                  alignment: Alignment.center,
-                  child: Text(
-                    '$_count',
-                    style: AppTypography.titleSmall.copyWith(
-                      color: colorScheme.onSurface,
-                      fontWeight: FontWeight.w700,
-                    ),
+                const SizedBox(width: AppSpacing.lg),
+                Text(
+                  '$_count',
+                  style: AppTypography.titleLarge.copyWith(
+                    color: colorScheme.onSurface,
+                    fontWeight: FontWeight.w700,
                   ),
                 ),
-                const SizedBox(width: AppSpacing.md),
+                const SizedBox(width: AppSpacing.lg),
                 _CountButton(
                   icon: Icons.add_rounded,
                   onTap: _count < 16 ? () => setState(() => _count++) : null,
                 ),
-                const SizedBox(width: AppSpacing.md),
-                Text(
-                  '${_count} beats',
-                  style: AppTypography.bodySmall.copyWith(
-                    color: colorScheme.secondary,
-                  ),
-                ),
               ],
             ),
-            const SizedBox(height: AppSpacing.lg),
+            const SizedBox(height: AppSpacing.xl),
             SizedBox(
               width: double.infinity,
-              height: 50,
+              height: 56,
               child: ElevatedButton(
                 onPressed: _nameEmpty || selectedCategory == null ? null : _submit,
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: colorScheme.primary,
-                  foregroundColor: Colors.white,
-                  disabledBackgroundColor: colorScheme.primary.withValues(alpha: 0.3),
-                  disabledForegroundColor: Colors.white.withValues(alpha: 0.5),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppRadius.lg)),
+                  backgroundColor: colorScheme.onSurface,
+                  foregroundColor: colorScheme.surface,
+                  disabledBackgroundColor: colorScheme.onSurface.withValues(alpha: 0.1),
+                  disabledForegroundColor: colorScheme.onSurface.withValues(alpha: 0.3),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppRadius.sm)),
                 ),
-                child: const Text('Create Move'),
+                child: const Text('SAVE MOVE'),
               ),
             ),
           ],

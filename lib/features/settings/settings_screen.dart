@@ -19,6 +19,7 @@ import '../../core/services/categories_service.dart';
 import '../../core/services/native_share_sheet.dart';
 import '../../core/services/video_path_resolver.dart';
 import '../../core/services/settings_service.dart';
+import '../../core/services/native_video_album.dart';
 import '../../core/utils/share_sheet.dart';
 import 'widgets/accent_color_section.dart';
 import 'widgets/rating_colors_section.dart';
@@ -293,6 +294,8 @@ class SettingsScreen extends ConsumerWidget {
                 ],
               ),
             ),
+            const SizedBox(height: AppSpacing.md),
+            _PhotosAccessTile(),
             ],),),
             const SizedBox(height: AppSpacing.lg),
 
@@ -307,24 +310,6 @@ class SettingsScreen extends ConsumerWidget {
                     action: PopupMenuButton<ReviewSettingsResetAction>(
                   tooltip: 'Reset review settings',
                   onSelected: (action) async {
-                    final confirmed = await showDialog<bool>(
-                      context: context,
-                      builder: (ctx) => AlertDialog(
-                        title: const Text('Reset review settings?'),
-                        content: Text(_resetActionDescription(action)),
-                        actions: [
-                          TextButton(
-                            onPressed: () => Navigator.pop(ctx, false),
-                            child: const Text('Cancel'),
-                          ),
-                          TextButton(
-                            onPressed: () => Navigator.pop(ctx, true),
-                            child: const Text('Reset'),
-                          ),
-                        ],
-                      ),
-                    );
-                    if (confirmed != true) return;
                     await HapticFeedback.mediumImpact();
                     switch (action) {
                       case ReviewSettingsResetAction.cardPlayback:
@@ -530,18 +515,7 @@ class SettingsScreen extends ConsumerWidget {
     );
   }
 
-  String _resetActionDescription(ReviewSettingsResetAction action) {
-  return switch (action) {
-    ReviewSettingsResetAction.cardPlayback =>
-      'Reset card display and playback settings to defaults.',
-    ReviewSettingsResetAction.states =>
-      'Reset learning state names and colors to defaults.',
-    ReviewSettingsResetAction.all =>
-      'Reset all card, playback, and state settings to defaults.',
-  };
-}
-
-void _showClearDataDialog(BuildContext context, WidgetRef ref) {
+  void _showClearDataDialog(BuildContext context, WidgetRef ref) {
     showDialog(
       context: context,
       builder: (ctx) => StatefulBuilder(
@@ -897,14 +871,12 @@ void _showClearDataDialog(BuildContext context, WidgetRef ref) {
                     return;
                   }
 
-                  final movesDao = ref.read(databaseProvider).movesDao;
                   ref
                       .read(categoriesProvider.notifier)
                       .renameCategory(
                         cat.name,
                         newName,
                         selectedColor,
-                        movesDao,
                       );
                   HapticFeedback.mediumImpact();
                   Navigator.pop(context);
@@ -1097,29 +1069,7 @@ void _showClearDataDialog(BuildContext context, WidgetRef ref) {
       return false;
     }
 
-    return await showDialog<bool>(
-          context: context,
-          builder: (ctx) => AlertDialog(
-            title: Text('Delete "${category.name}"?'),
-            content: const Text(
-              'This removes the category label from settings. Existing moves must be reassigned first.',
-            ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(ctx, false),
-                child: const Text('Cancel'),
-              ),
-              TextButton(
-                onPressed: () => Navigator.pop(ctx, true),
-                child: const Text(
-                  'Delete',
-                  style: TextStyle(color: AppColors.actionAgain),
-                ),
-              ),
-            ],
-          ),
-        ) ??
-        false;
+    return true;
   }
 }
 
@@ -1403,6 +1353,106 @@ class _DataActionTileAsyncState extends State<_DataActionTileAsync> {
         ),
       ),
     );
+  }
+}
+
+class _PhotosAccessTile extends ConsumerWidget {
+  const _PhotosAccessTile();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final status = ref.watch(photoLibraryAccessStatusProvider);
+    final colorScheme = Theme.of(context).colorScheme;
+
+    return _SettingsPanel(
+      title: 'Photo Library',
+      child: status.when(
+        data: (access) => SettingsListGroup(
+          children: [
+            SettingsListRow(
+              title: _statusDisplayName(access),
+              subtitle: _statusDescription(access),
+              leading: Icon(
+                _statusIcon(access),
+                size: 20,
+                color: access == PhotoLibraryAccessStatus.authorized
+                    ? AppColors.actionGood
+                    : colorScheme.secondary,
+              ),
+              onTap: access == PhotoLibraryAccessStatus.denied ||
+                      access == PhotoLibraryAccessStatus.restricted
+                  ? () => NativeVideoAlbum().openSettings()
+                  : access == PhotoLibraryAccessStatus.notDetermined
+                      ? () => ref.invalidate(photoLibraryAccessStatusProvider)
+                      : null,
+              trailing: access == PhotoLibraryAccessStatus.denied ||
+                      access == PhotoLibraryAccessStatus.restricted
+                  ? Icon(
+                      Icons.open_in_new,
+                      size: 16,
+                      color: colorScheme.secondary,
+                    )
+                  : null,
+            ),
+          ],
+        ),
+        loading: () => const SettingsListGroup(
+          children: [
+            SettingsListRow(
+              title: 'Photo Library',
+              subtitle: 'Checking access…',
+              leading: SizedBox(
+                width: 20,
+                height: 20,
+                child: CircularProgressIndicator(strokeWidth: 2),
+              ),
+            ),
+          ],
+        ),
+        error: (_, __) => const SettingsListGroup(
+          children: [
+            SettingsListRow(
+              title: 'Photo Library',
+              subtitle: 'Unable to check access',
+              leading: Icon(Icons.error_outline, size: 20),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  static String _statusDisplayName(PhotoLibraryAccessStatus status) {
+    return switch (status) {
+      PhotoLibraryAccessStatus.notDetermined => 'Not Determined',
+      PhotoLibraryAccessStatus.restricted => 'Restricted',
+      PhotoLibraryAccessStatus.denied => 'Denied',
+      PhotoLibraryAccessStatus.authorized => 'Full Access',
+      PhotoLibraryAccessStatus.limited => 'Limited Access',
+      PhotoLibraryAccessStatus.unknown => 'Unknown',
+    };
+  }
+
+  static String _statusDescription(PhotoLibraryAccessStatus status) {
+    return switch (status) {
+      PhotoLibraryAccessStatus.notDetermined => 'Tap to request access',
+      PhotoLibraryAccessStatus.restricted => 'Tap to open Settings',
+      PhotoLibraryAccessStatus.denied => 'Tap to open Settings',
+      PhotoLibraryAccessStatus.authorized => 'All photos available',
+      PhotoLibraryAccessStatus.limited => 'Some photos may be unavailable',
+      PhotoLibraryAccessStatus.unknown => 'Could not determine access',
+    };
+  }
+
+  static IconData _statusIcon(PhotoLibraryAccessStatus status) {
+    return switch (status) {
+      PhotoLibraryAccessStatus.notDetermined => Icons.help_outline,
+      PhotoLibraryAccessStatus.restricted => Icons.lock_outline,
+      PhotoLibraryAccessStatus.denied => Icons.block,
+      PhotoLibraryAccessStatus.authorized => Icons.check_circle_outline,
+      PhotoLibraryAccessStatus.limited => Icons.photo_library_outlined,
+      PhotoLibraryAccessStatus.unknown => Icons.error_outline,
+    };
   }
 }
 

@@ -447,6 +447,10 @@ class NativeVideoAlbum extends NativeBridge {
     return PhotoLibraryAccessStatus.fromPlatformValue(payload);
   }
 
+  Future<void> openSettings() async {
+    await method.invokeMethod<void>('openSettings');
+  }
+
   Future<ManagedAssetLookupResult> findMissingManagedAssets(
     List<String> assetLocalIdentifiers,
   ) async {

@@ -32,22 +32,4 @@ class CreateMoveResult {
   bool get hasVideo => videoPath != null;
 }
 
-class CreateRecoveredMoveRequest {
-  const CreateRecoveredMoveRequest({
-    required this.preferredName,
-    required this.category,
-    required this.localVideoPath,
-    required this.originalVideoName,
-    required this.managedAlbumAssetId,
-    required this.managedAlbumFilename,
-    required this.managedAlbumName,
-  });
 
-  final String preferredName;
-  final String category;
-  final String localVideoPath;
-  final String originalVideoName;
-  final String managedAlbumAssetId;
-  final String managedAlbumFilename;
-  final String managedAlbumName;
-}

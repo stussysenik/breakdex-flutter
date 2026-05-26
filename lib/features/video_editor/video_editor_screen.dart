@@ -20,18 +20,24 @@ import '../../core/utils/pid_controller.dart';
 import 'video_edit_geometry.dart';
 import 'trim_timeline_math.dart';
 
-class VideoEditorScreen extends StatefulWidget {
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../core/providers.dart';
+import '../../core/sync/asset_hash_service.dart';
+import '../../core/services/video_path_resolver.dart';
+import '../../core/services/storage_orchestrator.dart';
+
+class VideoEditorScreen extends ConsumerStatefulWidget {
   const VideoEditorScreen({super.key, required this.videoPath});
 
   final String videoPath;
 
   @override
-  State<VideoEditorScreen> createState() => _VideoEditorScreenState();
+  ConsumerState<VideoEditorScreen> createState() => _VideoEditorScreenState();
 }
 
 enum _EditorVideoLoadState { loading, retrying, ready, missing, error }
 
-class _VideoEditorScreenState extends State<VideoEditorScreen>
+class _VideoEditorScreenState extends ConsumerState<VideoEditorScreen>
     with RouteAware, WidgetsBindingObserver {
   double _trimStart = 0.0;
   double _trimEnd = 1.0;
@@ -1402,17 +1408,12 @@ class _VideoEditorScreenState extends State<VideoEditorScreen>
       if (mounted && _exporting) setState(() {});
     });
 
-    String? outputPath;
+    String? tempPath;
     try {
       final fallbackPreviewWidth =
           MediaQuery.of(context).size.width - AppSpacing.screenEdge * 2;
-      final docs = await getApplicationDocumentsDirectory();
-      final movesDir = Directory(p.join(docs.path, 'Moves'));
-      if (!await movesDir.exists()) {
-        await movesDir.create(recursive: true);
-      }
-
-      outputPath = p.join(movesDir.path, '${const Uuid().v4()}.mp4');
+      final tempDir = await getTemporaryDirectory();
+      tempPath = p.join(tempDir.path, 'export_${const Uuid().v4()}.mp4');
 
       final trimStartMs = (_trimStart * _videoDuration.inMilliseconds).round();
       final trimEndMs = (_trimEnd * _videoDuration.inMilliseconds).round();
@@ -1435,10 +1436,8 @@ class _VideoEditorScreenState extends State<VideoEditorScreen>
         final cropRect = viewport.normalizedCropRect(
           _transformController.value,
         );
-        final normWidth = cropRect.width;
-        final normHeight = cropRect.height;
 
-        if (normWidth < 0.01 || normHeight < 0.01) {
+        if (cropRect.width < 0.01 || cropRect.height < 0.01) {
           if (mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
               const SnackBar(
@@ -1458,12 +1457,10 @@ class _VideoEditorScreenState extends State<VideoEditorScreen>
         finalCrop = cropRect;
       }
 
-      // 120-second safety timeout — if the native AVFoundation export
-      // hangs (e.g. GPU stall, corrupt asset), the overlay won't stay
-      // forever.  The user sees an error and can retry.
-      final result = await NativeVideoExport.export(
+      // 1. Native Export to temp
+      final resultPath = await NativeVideoExport.export(
         inputPath: widget.videoPath,
-        outputPath: outputPath,
+        outputPath: tempPath,
         trimStartMs: trimStartMs,
         trimEndMs: trimEndMs,
         speed: speed,
@@ -1472,29 +1469,44 @@ class _VideoEditorScreenState extends State<VideoEditorScreen>
         cropRect: finalCrop,
       ).timeout(const Duration(seconds: 120));
 
-      // The native export returns the path only after AVAssetExportSession
-      // completes, so the file is guaranteed to exist on disk.
-      final exported = File(result);
+      final exported = File(resultPath);
       if (!await exported.exists() || await exported.length() == 0) {
         throw Exception('Export completed but output file is missing or empty');
       }
 
-      // Fire-and-forget — don't block the UI waiting for a thumbnail.
-      unawaited(_videoService.generateThumbnail(result));
+      // 2. Compute Hash (The new "Truth")
+      final hashService = ref.read(assetHashServiceProvider);
+      final hash = await hashService.computeHash(resultPath);
 
-      // Detach from the main isolate briefly using Future.microtask
-      // to ensure UI frames can clear before popping.
+      // 3. Determine final internal semantic path
+      // Note: We don't have category/name here easily, but we can return the hash 
+      // and temp path, and let the caller (MoveDetail) handle the "Final Upgrade".
+      // Or we can just use a standard 'Edits' folder.
+      final docs = await getApplicationDocumentsDirectory();
+      final finalPath = p.join(docs.path, 'Moves', 'Edits', '$hash.mp4');
+      final finalFile = File(finalPath);
+      if (!await finalFile.parent.exists()) {
+        await finalFile.parent.create(recursive: true);
+      }
+      
+      if (await finalFile.exists()) {
+        await finalFile.delete();
+      }
+      await exported.rename(finalPath);
+
+      // 4. Return the new relative path
+      final relativePath = VideoPathResolver.toRelative(finalPath);
+
+      unawaited(_videoService.generateThumbnail(finalPath));
       await Future.microtask(() {});
 
       unawaited(HapticFeedback.heavyImpact());
-      if (mounted) context.pop(result);
+      if (mounted) context.pop(relativePath);
     } catch (e) {
       debugPrint('Export failed: $e');
-      if (outputPath != null) {
-        final outputFile = File(outputPath);
-        if (await outputFile.exists()) {
-          await outputFile.delete();
-        }
+      if (tempPath != null) {
+        final f = File(tempPath);
+        if (await f.exists()) await f.delete();
       }
       if (mounted) {
         ScaffoldMessenger.of(

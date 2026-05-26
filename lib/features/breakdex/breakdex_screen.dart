@@ -21,18 +21,24 @@ class BreakdexScreen extends ConsumerWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            _HeroNavTile(
-              label: 'Moves',
-              subtitle: 'Browse by category',
-              onTap: () => context.go('/breakdex/moves'),
-              color: textColor,
+            Semantics(
+              identifier: 'moves-tile',
+              child: _HeroNavTile(
+                label: 'Moves',
+                subtitle: 'Browse by category',
+                onTap: () => context.go('/breakdex/moves'),
+                color: textColor,
+              ),
             ),
             const SizedBox(height: AppSpacing.xxl),
-            _HeroNavTile(
-              label: 'Combos',
-              subtitle: 'Build sequences',
-              onTap: () => context.go('/breakdex/combos'),
-              color: textColor,
+            Semantics(
+              identifier: 'combos-tile',
+              child: _HeroNavTile(
+                label: 'Combos',
+                subtitle: 'Build sequences',
+                onTap: () => context.go('/breakdex/combos'),
+                color: textColor,
+              ),
             ),
           ],
         ),

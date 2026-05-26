@@ -1,3 +1,5 @@
+import 'package:path/path.dart' as p;
+
 import '../machine.dart';
 import 'state.dart';
 import 'event.dart';
@@ -20,12 +22,17 @@ final class MoveDetailMachine extends Machine<MoveDetailState, MoveDetailEvent> 
       (Idle(), TapChangeCategory()) => ChangingCategory(s.move),
       (Idle(), TapChangeCount()) => ChangingCount(s.move),
       (Idle(), TapAddVideo()) => PickingVideo(s.move),
+      (Idle(), VideoEdited(newPath: final path)) => SavingVideo(
+        s.move,
+        localPath: path,
+        originalFileName: p.basename(path),
+      ),
       (Idle(), TapRemoveVideo()) => ConfirmingRemoveVideo(s.move),
       (Idle(), TapAddLog()) => AddingLog(s.move),
       (Idle(), TapDeleteLog(entryId: final entryId)) =>
         ConfirmingDeleteLog(s.move, entryId: entryId),
 
-      // ── Idle → Destructive ──
+      // ── Idle → Destructive (requires confirm) ──
       (Idle(), TapDelete()) => ConfirmingDelete(s.move),
 
       // ── Idle → Inline edit ──
@@ -119,6 +126,11 @@ final class MoveDetailMachine extends Machine<MoveDetailState, MoveDetailEvent> 
       (NotesDirty(), SaveFailed()) => Idle(s.move),
       (SavingNotes(), SaveSucceeded(move: final m)) => Idle(m),
       (SavingNotes(), SaveFailed()) => Idle(s.move),
+
+      // ── Photos inline ──
+      (Idle(), UpdatePhotos(json: final j)) => SavingPhotos(s.move, json: j),
+      (SavingPhotos(), SaveSucceeded(move: final m)) => Idle(m),
+      (SavingPhotos(), SaveFailed()) => Idle(s.move),
 
       // ── Error recovery ──
       (ErrorState(), Cancel()) => Idle(s.move),

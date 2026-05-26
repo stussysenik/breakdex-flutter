@@ -31,21 +31,4 @@ class ReviewableNamingService {
     return _combosDao.nameExists(normalized, excludingId: excludingComboId);
   }
 
-  Future<String> nextAvailableName(
-    String value, {
-    String fallback = 'Recovered Clip',
-  }) async {
-    final normalized = normalize(value);
-    final base = normalized.isEmpty ? normalize(fallback) : normalized;
-    if (!await isNameTaken(base)) return base;
-
-    var index = 1;
-    while (true) {
-      final candidate = normalize(
-        index == 1 ? '$base (Recovered)' : '$base (Recovered $index)',
-      );
-      if (!await isNameTaken(candidate)) return candidate;
-      index++;
-    }
-  }
 }

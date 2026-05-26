@@ -99,6 +99,11 @@ abstract final class AppTypography {
     fontWeight: FontWeight.w400,
     height: 24 / _bodyMediumSize,
   );
+  static TextStyle get bodyLarge => _base(
+    fontSize: _bodyMediumSize,
+    fontWeight: FontWeight.w400,
+    height: 24 / _bodyMediumSize,
+  );
   static TextStyle get bodySmall => _base(
     fontSize: _bodySmallSize,
     fontWeight: FontWeight.w400,
@@ -110,6 +115,12 @@ abstract final class AppTypography {
     height: 16 / _captionSize,
   );
   static TextStyle get sectionHeader => _base(
+    fontSize: _captionSize,
+    fontWeight: FontWeight.w700,
+    letterSpacing: 1.2,
+    height: 16 / _captionSize,
+  );
+  static TextStyle get labelLarge => _base(
     fontSize: _captionSize,
     fontWeight: FontWeight.w700,
     letterSpacing: 1.2,

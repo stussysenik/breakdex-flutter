@@ -89,6 +89,10 @@ final class VideoPicked extends MoveDetailEvent {
 final class VideoPickCancelled extends MoveDetailEvent {
   const VideoPickCancelled();
 }
+final class VideoEdited extends MoveDetailEvent {
+  final String newPath;
+  const VideoEdited(this.newPath);
+}
 
 // ── Async operation results ──
 
@@ -130,4 +134,8 @@ final class StreamUpdate extends MoveDetailEvent {
 final class UpdateNotes extends MoveDetailEvent {
   final String text;
   const UpdateNotes(this.text);
+}
+final class UpdatePhotos extends MoveDetailEvent {
+  final String? json;
+  const UpdatePhotos(this.json);
 }
