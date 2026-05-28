@@ -246,17 +246,37 @@ class VideoExportPlugin: NSObject, FlutterPlugin, FlutterStreamHandler, NativeCa
             }
 
             guard let naturalSize = try? await videoTrack.load(.naturalSize),
-                  let preferredTransform = try? await videoTrack.load(.preferredTransform) else {
+                  let preferredTransform = try? await videoTrack.load(.preferredTransform),
+                  let trackRange = try? await videoTrack.load(.timeRange) else {
                 DispatchQueue.main.async {
                     result(FlutterError(code: "LOAD_ERR", message: "Cannot load track properties", details: nil))
                 }
                 return
             }
 
-            let startTime = CMTime(value: Int64(trimStartMs), timescale: 1000)
-            let endTime = CMTime(value: Int64(trimEndMs), timescale: 1000)
-            let timeRange = CMTimeRange(start: startTime, end: endTime)
-            let trimmedDuration = CMTimeSubtract(endTime, startTime)
+            let requestedStartTime = CMTime(value: Int64(trimStartMs), timescale: 1000)
+            let requestedEndTime = CMTime(value: Int64(trimEndMs), timescale: 1000)
+
+            // Clamp to exact track bounds to prevent insertTimeRange from throwing
+            var safeStartTime = requestedStartTime
+            if CMTimeCompare(safeStartTime, trackRange.start) < 0 {
+                safeStartTime = trackRange.start
+            }
+            let trackEnd = CMTimeAdd(trackRange.start, trackRange.duration)
+            if CMTimeCompare(safeStartTime, trackEnd) > 0 {
+                safeStartTime = trackEnd
+            }
+
+            var safeEndTime = requestedEndTime
+            if CMTimeCompare(safeEndTime, trackEnd) > 0 {
+                safeEndTime = trackEnd
+            }
+            if CMTimeCompare(safeEndTime, safeStartTime) < 0 {
+                safeEndTime = safeStartTime
+            }
+
+            let timeRange = CMTimeRange(start: safeStartTime, end: safeEndTime)
+            let trimmedDuration = CMTimeSubtract(safeEndTime, safeStartTime)
 
             let composition = AVMutableComposition()
 

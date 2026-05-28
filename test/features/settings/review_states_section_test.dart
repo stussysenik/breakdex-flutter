@@ -49,7 +49,7 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('In Rotation'), findsOneWidget);
-      expect(find.text('Default: Learning'), findsOneWidget);
+      expect(find.text('Default: Practicing'), findsOneWidget);
       expect(find.text('#FF4A8F6A'), findsOneWidget);
 
       await tester.tap(find.text('In Rotation'));

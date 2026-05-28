@@ -17,6 +17,7 @@ import '../../core/services/media_playback_coordinator.dart';
 import '../../core/services/native_video_export.dart';
 import '../../core/services/video_service.dart';
 import '../../core/utils/pid_controller.dart';
+import '../../core/utils/filesystem_utils.dart';
 import 'video_edit_geometry.dart';
 import 'trim_timeline_math.dart';
 
@@ -1485,23 +1486,17 @@ class _VideoEditorScreenState extends ConsumerState<VideoEditorScreen>
       final docs = await getApplicationDocumentsDirectory();
       final finalPath = p.join(docs.path, 'Moves', 'Edits', '$hash.mp4');
       final finalFile = File(finalPath);
-      if (!await finalFile.parent.exists()) {
-        await finalFile.parent.create(recursive: true);
-      }
-      
       if (await finalFile.exists()) {
         await finalFile.delete();
       }
-      await exported.rename(finalPath);
+      await FileSystemUtils.safeMove(exported.path, finalPath);
 
-      // 4. Return the new relative path
-      final relativePath = VideoPathResolver.toRelative(finalPath);
-
+      // 4. Return the new absolute path
       unawaited(_videoService.generateThumbnail(finalPath));
       await Future.microtask(() {});
 
       unawaited(HapticFeedback.heavyImpact());
-      if (mounted) context.pop(relativePath);
+      if (mounted) context.pop(finalPath);
     } catch (e) {
       debugPrint('Export failed: $e');
       if (tempPath != null) {

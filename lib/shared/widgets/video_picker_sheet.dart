@@ -105,8 +105,14 @@ class _VideoPickerSheetState extends State<VideoPickerSheet> {
     try {
       // Do not timeout the picker interaction itself; users may need
       // more than 30s to browse iCloud/Photos and pick a file.
-      final result = await _videoService.pickFromPhotos(onStatus: _onStatus);
-      if (mounted) Navigator.pop(context, result);
+      final resultEither = await _videoService.pickFromPhotos(onStatus: _onStatus).run();
+      if (!mounted) return;
+      resultEither.match(
+        (failure) => _showError(_describeError(Exception(failure.message))),
+        (result) {
+          if (result != null) Navigator.pop(context, result);
+        },
+      );
     } catch (e) {
       if (mounted) _showError(_describeError(e));
     }
@@ -123,8 +129,14 @@ class _VideoPickerSheetState extends State<VideoPickerSheet> {
     try {
       // Do not timeout the picker interaction itself; users may need
       // more than 30s to browse iCloud Drive and pick a file.
-      final result = await _videoService.pickFromFiles(onStatus: _onStatus);
-      if (mounted) Navigator.pop(context, result);
+      final resultEither = await _videoService.pickFromFiles(onStatus: _onStatus).run();
+      if (!mounted) return;
+      resultEither.match(
+        (failure) => _showError(_describeError(Exception(failure.message))),
+        (result) {
+          if (result != null) Navigator.pop(context, result);
+        },
+      );
     } catch (e) {
       if (mounted) _showError(_describeError(e));
     }
@@ -137,8 +149,14 @@ class _VideoPickerSheetState extends State<VideoPickerSheet> {
       _statusText = 'Opening camera...';
     });
     try {
-      final result = await _videoService.recordVideo(onStatus: _onStatus);
-      if (mounted) Navigator.pop(context, result);
+      final resultEither = await _videoService.recordVideo(onStatus: _onStatus).run();
+      if (!mounted) return;
+      resultEither.match(
+        (failure) => _showError(_describeError(Exception(failure.message))),
+        (result) {
+          if (result != null) Navigator.pop(context, result);
+        },
+      );
     } catch (e) {
       if (mounted) _showError(_describeError(e));
     }

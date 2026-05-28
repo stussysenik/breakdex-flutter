@@ -57,6 +57,10 @@
 	<string>Breakdex needs microphone access to record audio with training videos.</string>
 	<key>UISupportsDocumentBrowser</key>
 	<true/>
+	<key>UIFileSharingEnabled</key>
+	<true/>
+	<key>LSSupportsOpeningDocumentsInPlace</key>
+	<true/>
 	<key>CFBundleDocumentTypes</key>
 	<array>
 		<dict>

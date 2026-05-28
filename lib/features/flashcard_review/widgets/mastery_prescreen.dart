@@ -66,14 +66,27 @@ class MasteryPrescreen extends ConsumerWidget {
   }
 }
 
+final _allMovesStreamProvider = StreamProvider<List<Move>>((ref) {
+  return ref.watch(moveRepositoryProvider).watchAll();
+});
+
+final _allCombosStreamProvider = StreamProvider<List<(Combo, int)>>((ref) {
+  return ref.watch(comboRepositoryProvider).watchAllWithMoveCounts();
+});
+
 class _StateModeSection extends ConsumerWidget {
   const _StateModeSection();
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final countsAsync = ref.watch(reviewStateMatrixProvider);
+    final selectedKind = ref.watch(reviewEntityKindProvider);
+    final isMoves = selectedKind == ReviewEntityKind.moves;
+    
+    final asyncValue = isMoves
+        ? ref.watch(_allMovesStreamProvider)
+        : ref.watch(_allCombosStreamProvider);
 
-    return countsAsync.when(
+    return asyncValue.when(
       loading: () => const Padding(
         padding: EdgeInsets.symmetric(vertical: AppSpacing.xl),
         child: Center(child: CircularProgressIndicator()),
@@ -82,12 +95,25 @@ class _StateModeSection extends ConsumerWidget {
         padding: const EdgeInsets.symmetric(vertical: AppSpacing.xl),
         child: Center(child: Text('Error: $e')),
       ),
-      data: (matrix) {
-        final selectedKind = ref.watch(reviewEntityKindProvider);
+      data: (items) {
         final stateLabels = ref.watch(learningStateLabelsProvider);
-        final isMoves = selectedKind == ReviewEntityKind.moves;
         final title = isMoves ? 'Moves' : 'Combos';
-        final counts = isMoves ? matrix.moveCounts : matrix.comboCounts;
+        
+        final counts = <LearningState, int>{
+          for (final state in LearningState.values) state: 0,
+        };
+        
+        if (isMoves) {
+          for (final move in items as List<Move>) {
+            final state = LearningState.fromString(move.learningState);
+            counts[state] = counts[state]! + 1;
+          }
+        } else {
+          for (final comboPair in items as List<(Combo, int)>) {
+            final combo = comboPair.$1;
+            counts[LearningState.newState] = counts[LearningState.newState]! + 1;
+          }
+        }
 
         return Column(
           mainAxisSize: MainAxisSize.min,
@@ -249,23 +275,23 @@ class _ReviewEntityPrescreenPanel extends StatelessWidget {
                   ],
                 ],
               ),
-              if (total > 0) SizedBox(height: sectionGap),
-              if (total > 0)
-                Center(
-                  child: Semantics(
-                    identifier: 'review-total-summary',
-                    label: '$countSequence = $total',
-                    child: Text(
-                      '$countSequence = $total',
-                      textAlign: TextAlign.center,
-                      style: AppTypography.bodySmall.copyWith(
-                        color: colorScheme.secondary,
-                        fontWeight: FontWeight.w700,
-                        letterSpacing: 0.2,
-                      ),
-                    ),
-                  ),
-                ),
+              // if (total > 0) SizedBox(height: sectionGap),
+              // if (total > 0)
+              //   Center(
+              //     child: Semantics(
+              //       identifier: 'review-total-summary',
+              //       label: '$countSequence = $total',
+              //       child: Text(
+              //         '$countSequence = $total',
+              //         textAlign: TextAlign.center,
+              //         style: AppTypography.bodySmall.copyWith(
+              //           color: colorScheme.secondary,
+              //           fontWeight: FontWeight.w700,
+              //           letterSpacing: 0.2,
+              //         ),
+              //       ),
+              //     ),
+              //   ),
               if (total > 0) SizedBox(height: rowGap),
               SizedBox(
                 width: double.infinity,

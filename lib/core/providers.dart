@@ -63,6 +63,7 @@ import 'sync/integrity_verifier.dart';
 import 'sync/legacy_asset_migration.dart';
 import 'sync/network_policy.dart';
 import 'sync/providers/gdrive_provider.dart';
+import 'sync/providers/firebase_storage_provider.dart';
 import 'sync/providers/icloud_provider.dart';
 import 'sync/safety_guard.dart';
 import 'sync/tombstone_cleaner.dart';
@@ -76,6 +77,8 @@ import 'sync/video_import_sync_hook.dart';
 import 'services/storage_orchestrator.dart';
 import 'services/blackbox_service.dart';
 import 'state_machines/move_creation/machine.dart';
+import 'state_machines/sync/sync_bloc.dart';
+
 
 part 'providers/sync_providers.dart';
 part 'providers/theme_providers.dart';
@@ -332,19 +335,18 @@ final reviewableNamingServiceProvider = Provider<ReviewableNamingService>((
 final moveCreationMachineProvider = Provider<MoveCreationMachine>((ref) {
   return MoveCreationMachine();
 });
-
 final moveCreationServiceProvider = Provider<MoveCreationService>((ref) {
   return MoveCreationService(
     moveRepository: ref.watch(moveRepositoryProvider),
     namingService: ref.watch(reviewableNamingServiceProvider),
-    videoAlbum: ref.watch(nativeVideoAlbumProvider),
     hashService: ref.watch(assetHashServiceProvider),
     blackbox: ref.watch(blackboxServiceProvider),
-    onVideoImported: ({required localPath, required moveId, precomputedHash}) {
-      return ref
-          .read(videoImportSyncHookProvider)
-          .onVideoImported(localPath: localPath, moveId: moveId, precomputedHash: precomputedHash);
-    },
+    onVideoImported: ({required localPath, required moveId, precomputedHash}) =>
+        ref.read(videoImportSyncHookProvider).onVideoImported(
+              localPath: localPath,
+              moveId: moveId,
+              precomputedHash: precomputedHash,
+            ),
   );
 });
 
@@ -358,9 +360,14 @@ final syncServiceProvider = Provider<SyncService>((ref) {
   );
 });
 
-final syncProgressProvider = StreamProvider<SyncProgress>((ref) {
-  return ref.watch(syncServiceProvider).progressStream;
+final syncBlocProvider = Provider<SyncBloc>((ref) {
+  return SyncBloc(ref.watch(syncServiceProvider));
 });
+final syncStateProvider = StreamProvider<SyncState>((ref) {
+  final bloc = ref.watch(syncBlocProvider);
+  return bloc.stream;
+});
+
 
 final pendingChangesCountProvider = StreamProvider<int>((ref) {
   return ref.watch(syncDaoProvider).watchPendingCount();
@@ -408,7 +415,7 @@ final syncTriggerProvider = Provider<void>((ref) {
 
   if (isOnline && autoSync && isLoggedIn && pendingCount > 0) {
     try {
-      ref.read(syncServiceProvider).sync();
+      ref.read(syncBlocProvider).add(const SyncEvent.startSync());
     } catch (_) {
       // Sync failure is non-fatal — will retry on next connectivity change
     }

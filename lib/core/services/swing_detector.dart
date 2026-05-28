@@ -20,14 +20,14 @@ class SwingDetector {
   final double minSwingArc;
   final VoidCallback onSwing;
 
-  StreamSubscription<AccelerometerEvent>? _subscription;
+  StreamSubscription<UserAccelerometerEvent>? _subscription;
   final List<_MomentumPoint> _window = [];
   bool _locked = false;
   DateTime _lastTrigger = DateTime(2000);
 
   void start() {
     _subscription?.cancel();
-    _subscription = accelerometerEventStream().listen(_onEvent);
+    _subscription = userAccelerometerEventStream().listen(_onEvent);
   }
 
   void stop() {
@@ -36,7 +36,7 @@ class SwingDetector {
     _window.clear();
   }
 
-  void _onEvent(AccelerometerEvent event) {
+  void _onEvent(UserAccelerometerEvent event) {
     final now = DateTime.now();
     if (_locked || now.difference(_lastTrigger) < const Duration(seconds: 1)) {
       return;
@@ -45,7 +45,7 @@ class SwingDetector {
     // 1. Clean window
     _window.removeWhere((p) => now.difference(p.time) > windowSize);
 
-    // 2. Add current point (gravity compensated roughly by looking at magnitude change)
+    // 2. Add current point (userAccelerometer already excludes gravity)
     final magnitude = sqrt(event.x * event.x + event.y * event.y + event.z * event.z);
     _window.add(_MomentumPoint(event, magnitude, now));
 
@@ -54,21 +54,20 @@ class SwingDetector {
 
     // Detect a "pull-back" and "release" arc
     double maxMagnitude = 0;
-    double minMagnitude = threshold;
     for (final p in _window) {
       if (p.magnitude > maxMagnitude) maxMagnitude = p.magnitude;
-      if (p.magnitude < minMagnitude) minMagnitude = p.magnitude;
     }
 
-    // A swing is a large delta in magnitude over a short window
-    final delta = maxMagnitude - minMagnitude;
+    // A swing is a large magnitude peak over a short window
+    // Threshold lowered from 22.0 to 18.0 for better response on older devices
+    const effectiveThreshold = 18.0;
     
     // Easing Haptics: As we approach the threshold, give subtle feedback
-    if (delta > threshold * 0.6 && delta < threshold) {
-      _provideEasingHaptic(delta / threshold);
+    if (maxMagnitude > effectiveThreshold * 0.6 && maxMagnitude < effectiveThreshold) {
+      _provideEasingHaptic(maxMagnitude / effectiveThreshold);
     }
 
-    if (delta > threshold) {
+    if (maxMagnitude > effectiveThreshold) {
       _trigger();
     }
   }
@@ -104,7 +103,7 @@ class SwingDetector {
 }
 
 class _MomentumPoint {
-  final AccelerometerEvent event;
+  final UserAccelerometerEvent event;
   final double magnitude;
   final DateTime time;
   _MomentumPoint(this.event, this.magnitude, this.time);

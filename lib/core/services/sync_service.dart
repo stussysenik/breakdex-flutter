@@ -1,29 +1,24 @@
-import 'dart:async';
 import 'dart:io';
+import 'package:flutter/foundation.dart';
 import 'package:drift/drift.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:path/path.dart' as p;
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_storage/firebase_storage.dart';
+import 'package:fpdart/fpdart.dart';
 
 import '../database/database.dart';
 import '../database/daos/sync_dao.dart';
-import '../models/sync_progress.dart';
 import 'auth_service.dart';
 import 'video_path_resolver.dart';
-
-const _lastSyncKey = 'last_sync_at';
+import '../domain/failures/failure.dart';
 
 class SyncService {
   final AuthService authService;
   final SyncDao syncDao;
   final AppDatabase db;
   final SharedPreferences prefs;
-
-  final _progressController = StreamController<SyncProgress>.broadcast();
-  Stream<SyncProgress> get progressStream => _progressController.stream;
-
-  bool _syncing = false;
 
   SyncService({
     required this.authService,
@@ -32,124 +27,271 @@ class SyncService {
     required this.prefs,
   });
 
-  SupabaseClient get _sb => authService.client;
-
-  DateTime? get lastSyncAt {
-    final ms = prefs.getInt(_lastSyncKey);
-    return ms != null ? DateTime.fromMillisecondsSinceEpoch(ms) : null;
+  TaskEither<AppFailure, Unit> authenticate() {
+    return authService.refreshAuth().mapLeft((f) => AppFailure.sync('Authentication failed: ${f.message}'));
   }
 
-  /// Run a full sync cycle: push local → pull remote.
-  Future<void> sync() async {
-    if (_syncing) return;
-    _syncing = true;
+  TaskEither<AppFailure, Unit> pushMetadata(void Function(int, int, String) onProgress) {
+    return TaskEither.tryCatch(
+      () async {
+        final pending = await syncDao.getPendingChanges();
+        if (pending.isEmpty) return unit;
 
-    try {
-      // 1. Refresh auth
-      _emit(const SyncProgress(phase: SyncPhase.authenticating));
-      final valid = await authService.refreshAuth();
-      if (!valid) {
-        _emit(const SyncProgress(phase: SyncPhase.error));
-        return;
-      }
+        const batchSize = 500;
+        for (var i = 0; i < pending.length; i += batchSize) {
+          final chunk = pending.skip(i).take(batchSize).toList();
+          final batch = FirebaseFirestore.instance.batch();
+          final userId = authService.userId;
 
-      // 2. Push pending metadata
-      await _pushMetadata();
+          onProgress(i + chunk.length, pending.length, chunk.last.entityTable);
 
-      // 3. Upload pending videos
-      await _uploadVideos();
+          final syncedEntries = <SyncLogData>[];
 
-      // 4. Pull remote changes
-      await _pullRemote();
+          for (final entry in chunk) {
+            try {
+              final table = entry.entityTable;
+              final docRef = FirebaseFirestore.instance.collection(table).doc(entry.entityId);
 
-      // 5. Reconcile legacy move state from authoritative FSRS cards.
-      await reconcileMoveLearningStates();
+              if (entry.action == 'delete') {
+                if (table == 'moves' || table == 'combos') {
+                  final storagePath = '$userId/$table/${entry.entityId}.mp4';
+                  try {
+                    await FirebaseStorage.instance.ref('videos/$storagePath').delete();
+                  } catch (_) {}
+                }
+                batch.delete(docRef);
+              } else {
+                final body = await _getLocalRecordBody(table, entry.entityId);
+                if (body != null) {
+                  body['user_id'] = userId;
+                  body['updated_at'] = FieldValue.serverTimestamp();
+                  batch.set(docRef, body);
+                }
+              }
+              syncedEntries.add(entry);
+            } catch (e) {
+              debugPrint('[SyncService] Failed to prepare batch entry: $e');
+            }
+          }
 
-      // 6. Download missing videos
-      await _downloadVideos();
-
-      // 7. Update last sync timestamp
-      await prefs.setInt(_lastSyncKey, DateTime.now().millisecondsSinceEpoch);
-      _emit(const SyncProgress(phase: SyncPhase.complete));
-    } catch (e) {
-      _emit(const SyncProgress(phase: SyncPhase.error));
-    } finally {
-      _syncing = false;
-    }
+          try {
+            await batch.commit();
+            for (final entry in syncedEntries) {
+              await syncDao.markSynced(entry.entityId, entry.entityTable, entry.action);
+            }
+          } catch (e) {
+            debugPrint('[SyncService] Batch commit failed: $e');
+            throw e;
+          }
+        }
+        return unit;
+      },
+      (error, stackTrace) => AppFailure.sync('Pushing metadata failed: $error'),
+    );
   }
 
-  // ─── Push local changes ─────────────────────────────────────────
+  TaskEither<AppFailure, Unit> uploadVideos(void Function(int, int, String) onProgress) {
+    return TaskEither.tryCatch(
+      () async {
+        final pending = await syncDao.getPendingVideoUploads();
+        if (pending.isEmpty) return unit;
 
-  Future<void> _pushMetadata() async {
-    final pending = await syncDao.getPendingChanges();
-    if (pending.isEmpty) return;
+        final userId = authService.userId;
 
-    for (var i = 0; i < pending.length; i++) {
-      final entry = pending[i];
-      _emit(
-        SyncProgress(
-          phase: SyncPhase.pushingMetadata,
-          current: i + 1,
-          total: pending.length,
-          currentItem: entry.entityTable,
-        ),
-      );
+        for (var i = 0; i < pending.length; i++) {
+          final entry = pending[i];
+          onProgress(i + 1, pending.length, entry.entityId);
 
-      try {
-        await _pushEntry(entry);
-        await syncDao.markSynced(
-          entry.entityId,
-          entry.entityTable,
-          entry.action,
-        );
-      } catch (e) {
-        // Skip failed entries — they'll retry next sync
-      }
-    }
+          try {
+            String? videoPath;
+
+            if (entry.entityTable == 'moves') {
+              final move = await db.movesDao.getById(entry.entityId);
+              videoPath = move.videoPath;
+            } else if (entry.entityTable == 'combos') {
+              final combo = await db.combosDao.getById(entry.entityId);
+              videoPath = combo.activeVideoPath;
+            } else {
+              continue;
+            }
+
+            if (videoPath == null) continue;
+
+            final absolutePath = VideoPathResolver.toAbsolute(videoPath);
+            final file = File(absolutePath);
+            if (!await file.exists()) continue;
+
+            final storagePath = '$userId/${entry.entityTable}/${entry.entityId}.mp4';
+
+            await FirebaseStorage.instance.ref('videos/$storagePath').putFile(file);
+            await syncDao.markVideoSynced(entry.entityId, entry.entityTable);
+          } catch (_) {}
+        }
+        return unit;
+      },
+      (error, stackTrace) => AppFailure.sync('Uploading videos failed: $error'),
+    );
   }
 
-  Future<void> _pushEntry(SyncLogData entry) async {
-    final table = entry.entityTable;
-    final userId = authService.userId;
+  TaskEither<AppFailure, Unit> pullRemote() {
+    return TaskEither.tryCatch(
+      () async {
+        final userId = authService.userId;
+        final ms = prefs.getInt('last_sync_at');
+        final since = ms != null ? DateTime.fromMillisecondsSinceEpoch(ms) : null;
 
-    if (entry.action == 'delete') {
-      await _deleteRemoteVideoIfNeeded(table, entry.entityId, userId);
-      if (table == 'fsrs_cards') {
-        await _sb.from(table).delete().eq('entity_id', entry.entityId);
-      } else {
-        await _sb.from(table).delete().eq('id', entry.entityId);
-      }
-      return;
-    }
+        for (final table in [
+          'moves', 'combos', 'combo_moves', 'reviews', 'fsrs_cards', 'battle_results',
+        ]) {
+          try {
+            var query = FirebaseFirestore.instance.collection(table).where('user_id', isEqualTo: userId);
+            if (since != null) {
+              query = query.where('updated_at', isGreaterThan: since.toUtc().toIso8601String());
+            }
 
-    // Get local record data as a map
-    final body = await _getLocalRecordBody(table, entry.entityId);
-    if (body == null) return;
-    body['user_id'] = userId;
+            final snapshot = await query.get();
+            final records = snapshot.docs.map((doc) => doc.data()).toList();
 
-    // Upsert — handles both create and update
-    await _sb.from(table).upsert(body);
+            for (final record in records) {
+              await _mergeRemoteRecord(table, record);
+            }
+          } catch (_) {}
+        }
+        return unit;
+      },
+      (error, stackTrace) => AppFailure.sync('Pulling remote metadata failed: $error'),
+    );
   }
 
-  Future<void> _deleteRemoteVideoIfNeeded(
-    String table,
-    String entityId,
-    String userId,
-  ) async {
-    if (table != 'moves' && table != 'combos') return;
+  TaskEither<AppFailure, Unit> reconcileLegacy() {
+    return TaskEither.tryCatch(
+      () async {
+        final moves = await db.movesDao.getAll();
+        if (moves.isEmpty) return unit;
 
-    final storagePath = '$userId/$table/$entityId.mp4';
-    try {
-      await _sb.storage.from('videos').remove([storagePath]);
-    } catch (_) {
-      // Best-effort cleanup; metadata delete should still complete.
-    }
+        final cards = await db.fsrsCardsDao.getAll();
+        final stateByMoveId = {
+          for (final card in cards.where((card) => card.entityType == 'move'))
+            card.entityId: _learningStateFromFsrs(card.fsrsState),
+        };
+
+        for (final move in moves) {
+          final desiredState = stateByMoveId[move.id];
+          if (desiredState == null || desiredState == move.learningState) continue;
+
+          await db.movesDao.updateMove(
+            MovesCompanion(id: Value(move.id), learningState: Value(desiredState)),
+          );
+        }
+        return unit;
+      },
+      (error, stackTrace) => AppFailure.database('Reconciling legacy states failed: $error'),
+    );
   }
 
-  Future<Map<String, dynamic>?> _getLocalRecordBody(
-    String table,
-    String id,
-  ) async {
+  TaskEither<AppFailure, Unit> downloadVideos(void Function(int, int, String) onProgress) {
+    return TaskEither.tryCatch(
+      () async {
+        final userId = authService.userId;
+
+        // Download moves
+        final moveVideosRef = FirebaseStorage.instance.ref('videos/$userId/moves');
+        final moveVideos = await moveVideosRef.listAll();
+
+        final toDownloadMoves = <Reference>[];
+        for (final fileObj in moveVideos.items) {
+          final moveId = p.basenameWithoutExtension(fileObj.name);
+          try {
+            final localMove = await db.movesDao.getById(moveId);
+            if (localMove.videoPath == null || localMove.videoPath!.isEmpty) {
+              toDownloadMoves.add(fileObj);
+            } else if (!await File(VideoPathResolver.toAbsolute(localMove.videoPath!)).exists()) {
+              toDownloadMoves.add(fileObj);
+            }
+          } catch (_) {}
+        }
+
+        for (var i = 0; i < toDownloadMoves.length; i++) {
+          final fileObj = toDownloadMoves[i];
+          final moveId = p.basenameWithoutExtension(fileObj.name);
+          onProgress(i + 1, toDownloadMoves.length, moveId);
+
+          try {
+            final bytes = await fileObj.getData();
+            if (bytes == null) continue;
+
+            final dir = await getApplicationDocumentsDirectory();
+            final movesDir = Directory(p.join(dir.path, 'Moves'));
+            if (!await movesDir.exists()) await movesDir.create(recursive: true);
+            final localPath = p.join(movesDir.path, '$moveId.mp4');
+
+            await File(localPath).writeAsBytes(bytes);
+
+            await (db.update(db.moves)..where((t) => t.id.equals(moveId))).write(
+              MovesCompanion(videoPath: Value(VideoPathResolver.toRelative(localPath))),
+            );
+          } catch (_) {}
+        }
+
+        // Download combos
+        final comboVideosRef = FirebaseStorage.instance.ref('videos/$userId/combos');
+        final comboVideos = await comboVideosRef.listAll();
+
+        final toDownloadCombos = <Reference>[];
+        for (final fileObj in comboVideos.items) {
+          final comboId = p.basenameWithoutExtension(fileObj.name);
+          try {
+            final localCombo = await db.combosDao.getById(comboId);
+            if (localCombo.activeVideoPath == null || localCombo.activeVideoPath!.isEmpty) {
+              toDownloadCombos.add(fileObj);
+            } else if (!await File(VideoPathResolver.toAbsolute(localCombo.activeVideoPath!)).exists()) {
+              toDownloadCombos.add(fileObj);
+            }
+          } catch (_) {}
+        }
+
+        for (var i = 0; i < toDownloadCombos.length; i++) {
+          final fileObj = toDownloadCombos[i];
+          final comboId = p.basenameWithoutExtension(fileObj.name);
+          onProgress(i + 1, toDownloadCombos.length, comboId);
+
+          try {
+            final bytes = await fileObj.getData();
+            if (bytes == null) continue;
+
+            final dir = await getApplicationDocumentsDirectory();
+            final combosDir = Directory(p.join(dir.path, 'Combos'));
+            if (!await combosDir.exists()) await combosDir.create(recursive: true);
+            final localPath = p.join(combosDir.path, '$comboId.mp4');
+
+            await File(localPath).writeAsBytes(bytes);
+
+            await (db.update(db.combos)..where((t) => t.id.equals(comboId))).write(
+              CombosCompanion(activeVideoPath: Value(VideoPathResolver.toRelative(localPath))),
+            );
+          } catch (_) {}
+        }
+
+        return unit;
+      },
+      (error, stackTrace) => AppFailure.sync('Downloading videos failed: $error'),
+    );
+  }
+
+  TaskEither<AppFailure, Unit> reconcileAlbums() {
+    return TaskEither.tryCatch(
+      () async {
+        // Native album reconciliation triggers here
+        await prefs.setInt('last_sync_at', DateTime.now().millisecondsSinceEpoch);
+        return unit;
+      },
+      (error, stackTrace) => AppFailure.sync('Reconciling albums failed: $error'),
+    );
+  }
+
+  // --- Private Helpers ---
+
+  Future<Map<String, dynamic>?> _getLocalRecordBody(String table, String id) async {
     try {
       switch (table) {
         case 'moves':
@@ -171,9 +313,7 @@ class SyncService {
             'active_video_path': combo.activeVideoPath,
           };
         case 'combo_moves':
-          final result = await (db.select(
-            db.comboMoves,
-          )..where((t) => t.id.equals(id))).getSingle();
+          final result = await (db.select(db.comboMoves)..where((t) => t.id.equals(id))).getSingle();
           return {
             'id': result.id,
             'sequence_index': result.sequenceIndex,
@@ -181,9 +321,7 @@ class SyncService {
             'move_id': result.moveId,
           };
         case 'reviews':
-          final results = await (db.select(
-            db.reviews,
-          )..where((t) => t.id.equals(id))).get();
+          final results = await (db.select(db.reviews)..where((t) => t.id.equals(id))).get();
           if (results.isEmpty) return null;
           final review = results.first;
           return {
@@ -201,9 +339,7 @@ class SyncService {
             'fsrs_post_state': review.fsrsPostState,
           };
         case 'fsrs_cards':
-          final card =
-              await db.fsrsCardsDao.getByEntityId(id) ??
-              await db.fsrsCardsDao.getByEntityId(id, entityType: 'combo');
+          final card = await db.fsrsCardsDao.getByEntityId(id) ?? await db.fsrsCardsDao.getByEntityId(id, entityType: 'combo');
           if (card == null) return null;
           return {
             'entity_id': card.entityId,
@@ -217,9 +353,7 @@ class SyncService {
             'fsrs_state': card.fsrsState,
           };
         case 'battle_results':
-          final results = await (db.select(
-            db.battleResults,
-          )..where((t) => t.id.equals(id))).get();
+          final results = await (db.select(db.battleResults)..where((t) => t.id.equals(id))).get();
           if (results.isEmpty) return null;
           final br = results.first;
           return {
@@ -241,128 +375,7 @@ class SyncService {
     }
   }
 
-  // ─── Upload videos ──────────────────────────────────────────────
-
-  Future<void> _uploadVideos() async {
-    final pending = await syncDao.getPendingVideoUploads();
-    if (pending.isEmpty) return;
-
-    final userId = authService.userId;
-
-    for (var i = 0; i < pending.length; i++) {
-      final entry = pending[i];
-      _emit(
-        SyncProgress(
-          phase: SyncPhase.uploadingVideos,
-          current: i + 1,
-          total: pending.length,
-          currentItem: entry.entityId,
-        ),
-      );
-
-      try {
-        String? videoPath;
-
-        if (entry.entityTable == 'moves') {
-          final move = await db.movesDao.getById(entry.entityId);
-          videoPath = move.videoPath;
-        } else if (entry.entityTable == 'combos') {
-          final combo = await db.combosDao.getById(entry.entityId);
-          videoPath = combo.activeVideoPath;
-        } else {
-          continue;
-        }
-
-        if (videoPath == null) continue;
-
-        final absolutePath = VideoPathResolver.toAbsolute(videoPath);
-        final file = File(absolutePath);
-        if (!await file.exists()) continue;
-
-        final storagePath =
-            '$userId/${entry.entityTable}/${entry.entityId}.mp4';
-
-        await _sb.storage
-            .from('videos')
-            .upload(
-              storagePath,
-              file,
-              fileOptions: const FileOptions(upsert: true),
-            );
-
-        await syncDao.markVideoSynced(entry.entityId, entry.entityTable);
-      } catch (_) {
-        // Skip — retry next sync
-      }
-    }
-  }
-
-  // ─── Pull remote changes ────────────────────────────────────────
-
-  Future<void> _pullRemote() async {
-    _emit(const SyncProgress(phase: SyncPhase.pullingMetadata));
-
-    final userId = authService.userId;
-    final since = lastSyncAt;
-
-    for (final table in [
-      'moves',
-      'combos',
-      'combo_moves',
-      'reviews',
-      'fsrs_cards',
-      'battle_results',
-    ]) {
-      try {
-        var query = _sb.from(table).select().eq('user_id', userId);
-        if (since != null) {
-          query = query.gt('updated_at', since.toUtc().toIso8601String());
-        }
-
-        final records = await query;
-
-        for (final record in records) {
-          await _mergeRemoteRecord(table, record);
-        }
-      } catch (_) {
-        // Skip table on error
-      }
-    }
-  }
-
-  /// Align the legacy `moves.learningState` column with FSRS card state.
-  ///
-  /// Remote sync can update `fsrs_cards` without touching `moves`, which
-  /// leaves the Arsenal list looking stale. This pass restores the derived
-  /// move state from the FSRS source of truth.
-  Future<int> reconcileMoveLearningStates() async {
-    final moves = await db.movesDao.getAll();
-    if (moves.isEmpty) return 0;
-
-    final cards = await db.fsrsCardsDao.getAll();
-    final stateByMoveId = {
-      for (final card in cards.where((card) => card.entityType == 'move'))
-        card.entityId: _learningStateFromFsrs(card.fsrsState),
-    };
-
-    var updatedCount = 0;
-    for (final move in moves) {
-      final desiredState = stateByMoveId[move.id];
-      if (desiredState == null || desiredState == move.learningState) continue;
-
-      await db.movesDao.updateMove(
-        MovesCompanion(id: Value(move.id), learningState: Value(desiredState)),
-      );
-      updatedCount++;
-    }
-
-    return updatedCount;
-  }
-
-  Future<void> _mergeRemoteRecord(
-    String table,
-    Map<String, dynamic> record,
-  ) async {
+  Future<void> _mergeRemoteRecord(String table, Map<String, dynamic> record) async {
     try {
       switch (table) {
         case 'moves':
@@ -371,11 +384,7 @@ class SyncService {
             name: Value(record['name'] as String),
             learningState: Value(record['learning_state'] as String),
             category: Value(record['category'] as String),
-            archivedAt: Value(
-              record['archived_at'] == null
-                  ? null
-                  : DateTime.parse(record['archived_at'] as String),
-            ),
+            archivedAt: Value(record['archived_at'] == null ? null : DateTime.parse(record['archived_at'] as String)),
             archiveReason: Value(record['archive_reason'] as String?),
             createdAt: Value(DateTime.parse(record['created_at'] as String)),
           );
@@ -385,13 +394,7 @@ class SyncService {
           final companion = CombosCompanion(
             id: Value(record['id'] as String),
             name: Value(record['name'] as String),
-            activeVideoPath: Value(
-              record['active_video_path'] != null
-                  ? VideoPathResolver.toRelative(
-                      record['active_video_path'] as String,
-                    )
-                  : null,
-            ),
+            activeVideoPath: Value(record['active_video_path'] != null ? VideoPathResolver.toRelative(record['active_video_path'] as String) : null),
           );
           await db.into(db.combos).insertOnConflictUpdate(companion);
           break;
@@ -428,11 +431,7 @@ class SyncService {
             stability: Value((record['stability'] as num).toDouble()),
             difficulty: Value((record['difficulty'] as num).toDouble()),
             due: Value(DateTime.parse(record['due'] as String)),
-            lastReview: Value(
-              record['last_review'] == null
-                  ? null
-                  : DateTime.parse(record['last_review'] as String),
-            ),
+            lastReview: Value(record['last_review'] == null ? null : DateTime.parse(record['last_review'] as String)),
             reps: Value(record['reps'] as int),
             lapses: Value(record['lapses'] as int),
             fsrsState: Value(record['fsrs_state'] as int),
@@ -454,201 +453,7 @@ class SyncService {
           await db.into(db.battleResults).insertOnConflictUpdate(companion);
           break;
       }
-    } catch (_) {
-      // Skip record on merge error
-    }
-  }
-
-  // ─── Download videos ────────────────────────────────────────────
-
-  Future<void> _downloadVideos() async {
-    final userId = authService.userId;
-
-    try {
-      // List all video files for this user in storage
-      final moveVideos = await _sb.storage
-          .from('videos')
-          .list(path: '$userId/moves');
-
-      final toDownload = <FileObject>[];
-      for (final fileObj in moveVideos) {
-        final moveId = p.basenameWithoutExtension(fileObj.name);
-        try {
-          final localMove = await db.movesDao.getById(moveId);
-          if (localMove.videoPath == null || localMove.videoPath!.isEmpty) {
-            toDownload.add(fileObj);
-          } else if (!await File(
-            VideoPathResolver.toAbsolute(localMove.videoPath!),
-          ).exists()) {
-            toDownload.add(fileObj);
-          }
-        } catch (_) {
-          // Move doesn't exist locally — skip
-        }
-      }
-
-      for (var i = 0; i < toDownload.length; i++) {
-        final fileObj = toDownload[i];
-        final moveId = p.basenameWithoutExtension(fileObj.name);
-        _emit(
-          SyncProgress(
-            phase: SyncPhase.downloadingVideos,
-            current: i + 1,
-            total: toDownload.length,
-            currentItem: moveId,
-          ),
-        );
-
-        try {
-          final bytes = await _sb.storage
-              .from('videos')
-              .download('$userId/moves/${fileObj.name}');
-
-          final dir = await getApplicationDocumentsDirectory();
-          final movesDir = Directory(p.join(dir.path, 'Moves'));
-          if (!await movesDir.exists()) {
-            await movesDir.create(recursive: true);
-          }
-          final localPath = p.join(movesDir.path, '$moveId.mp4');
-
-          await File(localPath).writeAsBytes(bytes);
-
-          await (db.update(db.moves)..where((t) => t.id.equals(moveId))).write(
-            MovesCompanion(
-              videoPath: Value(VideoPathResolver.toRelative(localPath)),
-            ),
-          );
-        } catch (_) {
-          // Skip — retry next sync
-        }
-      }
-
-      final comboVideos = await _sb.storage
-          .from('videos')
-          .list(path: '$userId/combos');
-      final comboDownloads = <FileObject>[];
-      for (final fileObj in comboVideos) {
-        final comboId = p.basenameWithoutExtension(fileObj.name);
-        try {
-          final localCombo = await db.combosDao.getById(comboId);
-          if (localCombo.activeVideoPath == null ||
-              localCombo.activeVideoPath!.isEmpty) {
-            comboDownloads.add(fileObj);
-          } else if (!await File(
-            VideoPathResolver.toAbsolute(localCombo.activeVideoPath!),
-          ).exists()) {
-            comboDownloads.add(fileObj);
-          }
-        } catch (_) {
-          // Combo doesn't exist locally — skip
-        }
-      }
-
-      for (var i = 0; i < comboDownloads.length; i++) {
-        final fileObj = comboDownloads[i];
-        final comboId = p.basenameWithoutExtension(fileObj.name);
-        _emit(
-          SyncProgress(
-            phase: SyncPhase.downloadingVideos,
-            current: i + 1,
-            total: comboDownloads.length,
-            currentItem: comboId,
-          ),
-        );
-
-        try {
-          final bytes = await _sb.storage
-              .from('videos')
-              .download('$userId/combos/${fileObj.name}');
-
-          final dir = await getApplicationDocumentsDirectory();
-          final combosDir = Directory(p.join(dir.path, 'Combos'));
-          if (!await combosDir.exists()) {
-            await combosDir.create(recursive: true);
-          }
-          final localPath = p.join(combosDir.path, '$comboId.mp4');
-
-          await File(localPath).writeAsBytes(bytes);
-
-          await (db.update(
-            db.combos,
-          )..where((t) => t.id.equals(comboId))).write(
-            CombosCompanion(
-              activeVideoPath: Value(VideoPathResolver.toRelative(localPath)),
-            ),
-          );
-        } catch (_) {
-          // Skip — retry next sync
-        }
-      }
-    } catch (_) {
-      // Skip video download phase on error
-    }
-  }
-
-  // ─── Seed initial sync ──────────────────────────────────────────
-
-  /// Seed SyncLog with all existing local data for first-time push.
-  Future<void> seedInitialSync() async {
-    final moves = await db.movesDao.getAll();
-    for (final move in moves) {
-      await syncDao.logChange(
-        entityId: move.id,
-        table: 'moves',
-        action: 'create',
-        hasVideo: move.videoPath != null,
-      );
-    }
-
-    final combos = await db.combosDao.getAll();
-    for (final combo in combos) {
-      await syncDao.logChange(
-        entityId: combo.id,
-        table: 'combos',
-        action: 'create',
-        hasVideo: combo.activeVideoPath != null,
-      );
-    }
-
-    final comboMoves = await db.select(db.comboMoves).get();
-    for (final cm in comboMoves) {
-      await syncDao.logChange(
-        entityId: cm.id,
-        table: 'combo_moves',
-        action: 'create',
-      );
-    }
-
-    final fsrsCards = await db.fsrsCardsDao.getAll();
-    for (final card in fsrsCards) {
-      await syncDao.logChange(
-        entityId: card.entityId,
-        table: 'fsrs_cards',
-        action: 'create',
-      );
-    }
-
-    final reviews = await db.select(db.reviews).get();
-    for (final review in reviews) {
-      await syncDao.logChange(
-        entityId: review.id,
-        table: 'reviews',
-        action: 'create',
-      );
-    }
-
-    final battles = await db.select(db.battleResults).get();
-    for (final br in battles) {
-      await syncDao.logChange(
-        entityId: br.id,
-        table: 'battle_results',
-        action: 'create',
-      );
-    }
-  }
-
-  void _emit(SyncProgress progress) {
-    _progressController.add(progress);
+    } catch (_) {}
   }
 
   String _learningStateFromFsrs(int fsrsState) => switch (fsrsState) {

@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:io';
 
 import 'package:drift/drift.dart';
 import 'package:flutter/foundation.dart';
@@ -9,7 +8,7 @@ import 'package:uuid/uuid.dart';
 import '../data/repositories.dart';
 import '../database/database.dart';
 import '../models/move_creation.dart';
-import 'native_video_album.dart';
+import '../utils/filesystem_utils.dart';
 import 'reviewable_naming_service.dart';
 import 'video_path_resolver.dart';
 import '../sync/asset_hash_service.dart';
@@ -22,14 +21,12 @@ class MoveCreationService {
   MoveCreationService({
     required MoveRepository moveRepository,
     required ReviewableNamingService namingService,
-    required NativeVideoAlbum videoAlbum,
     required MoveVideoImportedHandler onVideoImported,
     required AssetHashService hashService,
     BlackboxService? blackbox,
     String Function()? idGenerator,
   }) : _moveRepository = moveRepository,
        _namingService = namingService,
-       _videoAlbum = videoAlbum,
        _onVideoImported = onVideoImported,
        _hashService = hashService,
        _blackbox = blackbox,
@@ -37,7 +34,6 @@ class MoveCreationService {
 
   final MoveRepository _moveRepository;
   final ReviewableNamingService _namingService;
-  final NativeVideoAlbum _videoAlbum;
   final MoveVideoImportedHandler _onVideoImported;
   final AssetHashService _hashService;
   final BlackboxService? _blackbox;
@@ -81,11 +77,7 @@ class MoveCreationService {
     String? finalAbsPath;
     if (request.localVideoPath != null) {
       final targetAbs = VideoPathResolver.toAbsolute(semanticRelative);
-      final targetFile = File(targetAbs);
-      if (!await targetFile.parent.exists()) {
-        await targetFile.parent.create(recursive: true);
-      }
-      await File(request.localVideoPath!).rename(targetAbs);
+      await FileSystemUtils.safeMove(request.localVideoPath!, targetAbs);
       storedVideoPath = semanticRelative;
       finalAbsPath = targetAbs;
     }
@@ -110,13 +102,6 @@ class MoveCreationService {
       ),
     );
 
-    await _storeManagedAlbumCopyIfPresent(
-      moveId: moveId,
-      title: normalizedName,
-      category: normalizedCategory,
-      localVideoPath: finalAbsPath,
-    );
-
     if (finalAbsPath != null) {
       unawaited(
         _onVideoImported(
@@ -136,41 +121,5 @@ class MoveCreationService {
       category: normalizedCategory,
       videoPath: storedVideoPath,
     );
-  }
-
-  String _normalizeCategory(String value) {
-    final normalized = value.trim();
-    return normalized.isEmpty ? 'default' : normalized;
-  }
-
-  Future<void> _storeManagedAlbumCopyIfPresent({
-    required String moveId,
-    required String title,
-    required String category,
-    required String? localVideoPath,
-  }) async {
-    if (localVideoPath == null) return;
-
-    try {
-      final managedCopy = await _videoAlbum.saveToAlbum(
-        videoPath: localVideoPath,
-        albumName: NativeVideoAlbum.defaultAlbumName(),
-        assetTitle: title,
-        category: category,
-      );
-
-      if (managedCopy == null) return;
-
-      await _moveRepository.update(
-        MovesCompanion(
-          id: Value(moveId),
-          managedAlbumAssetId: Value(managedCopy.assetLocalIdentifier),
-          managedAlbumFilename: Value(managedCopy.filename),
-          managedAlbumName: Value(managedCopy.albumName),
-        ),
-      );
-    } catch (error) {
-      debugPrint('Move creation album save failed (non-fatal): $error');
-    }
   }
 }

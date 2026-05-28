@@ -51,16 +51,19 @@ void main() {
   /// Sends an accelerometer event through the platform channel directly.
   Future<void> sendShake(WidgetTester tester) async {
     final codec = const StandardMethodCodec();
-    final data = codec.encodeSuccessEnvelope([
-      25.0, 0.0, 0.0,
-      DateTime.now().microsecondsSinceEpoch.toDouble(),
-    ]);
-    await tester.binding.defaultBinaryMessenger.handlePlatformMessage(
-      'dev.fluttercommunity.plus/sensors/accelerometer',
-      data,
-      (ByteData? reply) {},
-    );
-    await tester.pump(const Duration(milliseconds: 50));
+    final now = DateTime.now().microsecondsSinceEpoch;
+    for (int i = 0; i < 5; i++) {
+      final data = codec.encodeSuccessEnvelope([
+        25.0, 0.0, 0.0,
+        (now + (i * 100000)).toDouble(), // Add 100ms per event
+      ]);
+      await tester.binding.defaultBinaryMessenger.handlePlatformMessage(
+        'dev.fluttercommunity.plus/sensors/user_accel',
+        data,
+        (ByteData? reply) {},
+      );
+    }
+    await tester.pump(const Duration(milliseconds: 550));
   }
 
   Future<void> cleanupWidget(WidgetTester tester) async {

@@ -6,6 +6,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:path/path.dart' as p;
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'firebase_options.dart';
 
 import 'core/database/database.dart';
 import 'core/design/theme.dart';
@@ -193,6 +195,9 @@ Future<void> _runMigrations(AppDatabase db, SharedPreferences prefs) async {
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  await Firebase.initializeApp(
+    options: DefaultFirebaseOptions.currentPlatform,
+  );
   final provenanceJournal = ProvenanceJournalService();
 
   // --- Global error handlers (catch crashes that would kill release builds) ---

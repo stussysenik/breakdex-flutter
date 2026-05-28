@@ -4,6 +4,7 @@ import 'package:drift/drift.dart' show Value;
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:path/path.dart' as p;
 import 'package:uuid/uuid.dart';
 
 import '../../database/database.dart';
@@ -115,35 +116,6 @@ class MoveDetailNotifier extends Notifier<MoveDetailState> {
       final orchestrator = ref.read(storageOrchestratorProvider);
       var updatedMove = await orchestrator.updateMoveName(move, newName);
 
-      // "Magic" Photos Sync: Add to album with new name
-      if (updatedMove.videoPath != null) {
-        try {
-          final album = ref.read(nativeVideoAlbumProvider);
-          final copy = await album.saveToAlbum(
-            videoPath: updatedMove.resolvedVideoPath!,
-            albumName: NativeVideoAlbum.defaultAlbumName(),
-            assetTitle: newName,
-            category: updatedMove.category,
-          );
-          if (copy != null) {
-            final companion = MovesCompanion(
-              id: Value(move.id),
-              managedAlbumAssetId: Value(copy.assetLocalIdentifier),
-              managedAlbumFilename: Value(copy.filename),
-              managedAlbumName: Value(copy.albumName),
-            );
-            await ref.read(moveRepositoryProvider).update(companion);
-            updatedMove = updatedMove.copyWith(
-              managedAlbumAssetId: Value(copy.assetLocalIdentifier),
-              managedAlbumFilename: Value(copy.filename),
-              managedAlbumName: Value(copy.albumName),
-            );
-          }
-        } catch (e) {
-          debugPrint('[MoveDetailNotifier] Photos sync failed (non-fatal): $e');
-        }
-      }
-
       send(SaveSucceeded(updatedMove));
     } catch (e) {
       send(SaveFailed('$e'));
@@ -166,35 +138,6 @@ class MoveDetailNotifier extends Notifier<MoveDetailState> {
     try {
       final orchestrator = ref.read(storageOrchestratorProvider);
       var updatedMove = await orchestrator.updateMoveCategory(move, newCategory);
-
-      // "Magic" Photos Sync: Add to album with new category
-      if (updatedMove.videoPath != null) {
-        try {
-          final album = ref.read(nativeVideoAlbumProvider);
-          final copy = await album.saveToAlbum(
-            videoPath: updatedMove.resolvedVideoPath!,
-            albumName: NativeVideoAlbum.defaultAlbumName(),
-            assetTitle: move.name,
-            category: newCategory,
-          );
-          if (copy != null) {
-            final companion = MovesCompanion(
-              id: Value(move.id),
-              managedAlbumAssetId: Value(copy.assetLocalIdentifier),
-              managedAlbumFilename: Value(copy.filename),
-              managedAlbumName: Value(copy.albumName),
-            );
-            await ref.read(moveRepositoryProvider).update(companion);
-            updatedMove = updatedMove.copyWith(
-              managedAlbumAssetId: Value(copy.assetLocalIdentifier),
-              managedAlbumFilename: Value(copy.filename),
-              managedAlbumName: Value(copy.albumName),
-            );
-          }
-        } catch (e) {
-          debugPrint('[MoveDetailNotifier] Photos sync failed (non-fatal): $e');
-        }
-      }
 
       send(SaveSucceeded(updatedMove));
     } catch (e) {
@@ -231,7 +174,8 @@ class MoveDetailNotifier extends Notifier<MoveDetailState> {
             skipPhotosCleanup: true,
           );
 
-      // 2. "Magic" Disk Move: move to semantic path
+      // 2. Resolve final semantic path
+      // ALWAYS move to the strict semantic path to prevent videos lingering in Edits/
       final semanticRelative = await VideoPathResolver.moveToSemanticPath(
         currentRelativePath: VideoPathResolver.toRelative(localPath),
         category: move.category,
@@ -263,34 +207,6 @@ class MoveDetailNotifier extends Notifier<MoveDetailState> {
         managedAlbumName: const Value(null),
         contentHash: Value(contentHash),
       );
-
-      // 4. "Magic" Photos Sync: Add to album (don't delete old to avoid prompt)
-      try {
-        final album = ref.read(nativeVideoAlbumProvider);
-        final copy = await album.saveToAlbum(
-          videoPath: updatedMove.resolvedVideoPath!,
-          albumName: NativeVideoAlbum.defaultAlbumName(),
-          assetTitle: move.name,
-          category: move.category,
-        );
-        if (copy != null) {
-          await ref.read(moveRepositoryProvider).update(
-                MovesCompanion(
-                  id: Value(move.id),
-                  managedAlbumAssetId: Value(copy.assetLocalIdentifier),
-                  managedAlbumFilename: Value(copy.filename),
-                  managedAlbumName: Value(copy.albumName),
-                ),
-              );
-          updatedMove = updatedMove.copyWith(
-            managedAlbumAssetId: Value(copy.assetLocalIdentifier),
-            managedAlbumFilename: Value(copy.filename),
-            managedAlbumName: Value(copy.albumName),
-          );
-        }
-      } catch (e) {
-        debugPrint('[MoveDetailNotifier] Photos sync failed (non-fatal): $e');
-      }
 
       // 5. Fire sync hook (manifest, copies, upload) with precomputed hash
       unawaited(ref.read(videoImportSyncHookProvider).onVideoImported(

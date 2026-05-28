@@ -4,6 +4,7 @@ import 'package:path/path.dart' as p;
 import 'package:drift/drift.dart';
 import '../database/database.dart';
 import '../database/daos/moves_dao.dart';
+import '../utils/filesystem_utils.dart';
 import 'video_path_resolver.dart';
 import 'provenance_service.dart';
 
@@ -89,7 +90,7 @@ class StorageOrchestrator {
   /// (e.g., if 'default' exists alongside 'Default', merge into 'Default')
   Future<void> _enforceCanonicalCasing(String category) async {
     try {
-      final canonicalName = _getCanonicalCategoryName(category);
+      final canonicalName = VideoPathResolver.getSafeCategory(category);
       final rootMoves = p.join(VideoPathResolver.toAbsolute(''), 'Moves');
       final directory = Directory(rootMoves);
       if (!await directory.exists()) return;
@@ -110,33 +111,28 @@ class StorageOrchestrator {
     }
   }
 
-  String _getCanonicalCategoryName(String category) {
-    final trimmed = category.trim();
-    if (trimmed.isEmpty) return 'Default';
-    final lower = trimmed.toLowerCase();
-    if (lower == 'default' || lower == 'none' || lower == 'uncategorized' || lower == 'general') {
-      return 'Default';
-    }
-    if (trimmed.length <= 1) return trimmed.toUpperCase();
-    return trimmed[0].toUpperCase() + trimmed.substring(1).toLowerCase();
-  }
-
   Future<void> _mergeDirectories(Directory source, Directory target) async {
     if (!await target.exists()) await target.create(recursive: true);
     await for (final entity in source.list()) {
       final name = p.basename(entity.path);
       final destPath = p.join(target.path, name);
       if (entity is File) {
+        // Collision strategy: If target exists, keep source but suffix it to avoid data loss
+        String finalDest = destPath;
         if (await File(destPath).exists()) {
-          await entity.delete();
-        } else {
-          await entity.rename(destPath);
+          final ext = p.extension(destPath);
+          final base = p.basenameWithoutExtension(destPath);
+          final timestamp = DateTime.now().millisecondsSinceEpoch;
+          finalDest = p.join(target.path, '${base}_merged_$timestamp$ext');
         }
+        await FileSystemUtils.safeMove(entity.path, finalDest);
       } else if (entity is Directory) {
         await _mergeDirectories(entity, Directory(destPath));
       }
     }
-    await source.delete();
+    try {
+      await source.delete();
+    } catch (_) {}
   }
 
   /// Update a move's category and physically move its video file.

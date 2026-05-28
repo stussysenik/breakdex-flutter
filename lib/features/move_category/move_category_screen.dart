@@ -28,9 +28,16 @@ class MoveCategoryScreen extends ConsumerWidget {
 
     final moves = movesAsync.valueOrNull ?? const <Move>[];
 
+    final categoryNames = categories.map((c) => c.name).toSet();
     final categoryCounts = <String, int>{};
+    int uncategorizedCount = 0;
+
     for (final move in moves) {
-      categoryCounts[move.category] = (categoryCounts[move.category] ?? 0) + 1;
+      if (categoryNames.contains(move.category)) {
+        categoryCounts[move.category] = (categoryCounts[move.category] ?? 0) + 1;
+      } else {
+        uncategorizedCount++;
+      }
     }
 
     return Scaffold(
@@ -75,8 +82,12 @@ class MoveCategoryScreen extends ConsumerWidget {
           Semantics(header: true, child: Text('Uncategorized', style: AppTypography.titleSmall.copyWith(color: colorScheme.onSurface, fontWeight: FontWeight.w700))),
           const SizedBox(height: AppSpacing.sm),
           _CategoryTile(
-            category: const Category(name: 'Uncategorized', colorValue: 0xFF9E9E9E, isDefault: true),
-            count: (categoryCounts['default'] ?? 0) + (categoryCounts['Uncategorized'] ?? 0),
+            category: Category(
+              name: 'Uncategorized',
+              colorValue: colorScheme.secondary.toARGB32(),
+              isDefault: true,
+            ),
+            count: uncategorizedCount,
             onTap: () => context.push('/breakdex/moves/uncategorized'),
           ),
         ],
@@ -174,11 +185,13 @@ class MoveCategoryDetailScreen extends ConsumerWidget {
     final colorScheme = Theme.of(context).colorScheme;
 
     final allMoves = movesAsync.valueOrNull ?? const <Move>[];
+    final categories = ref.watch(categoriesProvider);
+    final categoryNames = categories.map((c) => c.name).toSet();
+
     final filtered = categoryName == 'uncategorized'
         ? allMoves
             .where(
-              (m) =>
-                  m.category == 'default' || m.category == 'Uncategorized',
+              (m) => !categoryNames.contains(m.category),
             )
             .toList()
         : allMoves.where((m) => m.category == categoryName).toList();
@@ -212,7 +225,7 @@ class MoveCategoryDetailScreen extends ConsumerWidget {
             ),
           ),
         ),
-        title: Text(categoryName),
+        title: Text(categoryName == 'uncategorized' ? 'Uncategorized' : categoryName),
       ),
       body: filtered.isEmpty
           ? Center(
@@ -226,7 +239,7 @@ class MoveCategoryDetailScreen extends ConsumerWidget {
                   ),
                   const SizedBox(height: AppSpacing.md),
                   Text(
-                    'No moves in $categoryName',
+                    'No moves in ${categoryName == 'uncategorized' ? 'Uncategorized' : categoryName}',
                     style: AppTypography.bodyMedium.copyWith(
                       color: colorScheme.secondary,
                     ),

@@ -81,11 +81,11 @@ void main() {
 
       expect(
         report.snackBarMessage,
-        '1 video is waiting for WiFi.',
+        'Restored 1 video from cloud backup. 1 video is waiting for WiFi.',
       );
     });
 
-    test('hasUserSignal is false when only restoredLocally > 0', () {
+    test('hasUserSignal is true when only restoredLocally > 0', () {
       final report = VideoReliabilityReport(
         trigger: VideoReliabilityTrigger.startup,
         scannedMoves: 4,
@@ -98,7 +98,7 @@ void main() {
         completedAt: DateTime.utc(2026, 5, 1, 8),
       );
 
-      expect(report.hasUserSignal, false);
+      expect(report.hasUserSignal, true);
     });
   });
 

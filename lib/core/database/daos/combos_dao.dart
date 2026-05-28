@@ -90,11 +90,23 @@ class CombosDao extends DatabaseAccessor<AppDatabase> with _$CombosDaoMixin {
       ..addColumns([countExpr])
       ..groupBy([combos.id]);
 
-    return query.watch().map((rows) => rows
-        .map((row) => (
-              row.readTable(combos),
-              row.read(countExpr) ?? 0,
-            ))
-        .toList());
+    return query.watch().map((rows) {
+      final list = rows
+          .map((row) => (
+                row.readTable(combos),
+                row.read(countExpr) ?? 0,
+              ))
+          .toList();
+      
+      list.sort((a, b) {
+        // Size up (ascending by count)
+        final sizeCmp = a.$2.compareTo(b.$2);
+        if (sizeCmp != 0) return sizeCmp;
+        // Fallback to name
+        return a.$1.name.compareTo(b.$1.name);
+      });
+      
+      return list;
+    });
   }
 }

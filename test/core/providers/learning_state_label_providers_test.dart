@@ -54,7 +54,7 @@ void main() {
       await notifier.reset();
 
       labels = container.read(learningStateLabelsProvider);
-      expect(labels[LearningState.learning], 'Learning');
+      expect(labels[LearningState.learning], 'Practicing');
       expect(prefs.getString('learning_state_labels'), isNull);
     });
   });

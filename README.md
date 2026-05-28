@@ -189,19 +189,25 @@ Every video you import (from Photos, Files, or Camera) is **copied** into Breakd
 
 **Known gap:** No batch "export all to Photos" exists. Currently one-at-a-time only.
 
-### Architecture
+### Architecture & The Progression of Ideas
 
-| Layer | Technology |
-|-------|-----------|
-| Framework | Flutter (Dart `^3.11.1`) |
-| Storage | Drift (SQLite) with versioned migrations |
-| State | Riverpod providers with stream-based reactivity |
-| Scheduling | FSRS 2.0 spaced-repetition algorithm |
-| Routing | GoRouter with deep linking |
-| Auth | Google Sign-In via Supabase |
-| Sync | Supabase cloud with offline-aware sync engine |
-| Design | Inter font, tokenized color/spacing/type surfaces |
-| Native | iOS UIKit bridges for media/share/video |
+As Breakdex grew in complexity (spanning local SQLite storage, native iOS Swift bridging, FSRS spaced-repetition, and cloud backup orchestration), we hit the limits of standard Flutter patterns. Implicit `try/catch` exceptions were leading to unpredictable edge cases, and our background tasks were becoming difficult to trace. 
+
+To solve this and guarantee mathematical safety, we evolved our tooling. We drew heavy inspiration from the bleeding-edge modern web ecosystem (specifically the rigorous typings of **TypeScript, Effect.ts, and XState**) and mapped those concepts natively to Dart. 
+
+The application now strictly adheres to **CLEAN Architecture** principles powered by a functional, state-machine driven stack:
+
+| Paradigm | Technology | Purpose |
+|-------|-----------|---------|
+| **Domain** | `freezed` (Algebraic Data Types) | Defines pure entities and strict `Failure` hierarchies. No side-effects exist here. |
+| **Application** | `flutter_bloc` + `bloc_state_machine` | Replicates **XState**. We use strict Finite State Machines (FSMs) to orchestrate business logic. Impossible states are made impossible. |
+| **Infrastructure** | `fpdart` (`TaskEither`) | Replicates **Effect.ts**. Wraps all Firebase, Drift, and Native calls into pure `TaskEither`s. Errors are explicitly declared in the return type, forcing the caller to handle them via `.match()`. |
+| **Presentation** | `mix` + `riverpod` | "Dumb" UI layer. Applies **CVA (Class Variance Authority)** style variant styling via `mix` and merely renders current FSM states. |
+| **Storage** | Drift (SQLite) | Versioned local-first data layer. |
+| **Sync** | Supabase | Cloud backup with connectivity-aware sync engine. |
+| **Scheduling** | FSRS 2.0 | Spaced-repetition algorithm. |
+
+This progression from imperative code to functional purity means that our tests run with 100% confidence, and our core algorithms (like syncing and file orchestration) are structurally immune to unhandled crashes.
 
 ---
 

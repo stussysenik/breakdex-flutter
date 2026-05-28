@@ -1,0 +1,1 @@
+{"flutter":{"platforms":{"ios":{"default":{"projectId":"breakdex-flutter","appId":"1:499240019967:ios:39a2fb54c2d07b2704e9ca","uploadDebugSymbols":false,"fileOutput":"ios/Runner/GoogleService-Info.plist"}},"dart":{"lib/firebase_options.dart":{"projectId":"breakdex-flutter","configurations":{"ios":"1:499240019967:ios:39a2fb54c2d07b2704e9ca"}}}}}}

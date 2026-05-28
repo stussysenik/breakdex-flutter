@@ -10,7 +10,9 @@ import 'package:path/path.dart' as p;
 import 'package:uuid/uuid.dart';
 import 'package:video_player/video_player.dart';
 import 'package:video_thumbnail/video_thumbnail.dart';
+import 'package:fpdart/fpdart.dart';
 
+import '../domain/failures/failure.dart';
 import '../utils/loading_state_machine.dart';
 import 'native_video_preview.dart';
 import 'video_path_resolver.dart';
@@ -75,86 +77,101 @@ class VideoService {
   }
 
   /// Pick from photo library (includes iCloud Photos)
-  Future<VideoPickResult?> pickFromPhotos({StatusCallback? onStatus}) async {
-    if (Platform.isIOS) {
-      return _nativePickWithThumb(
-        'pickFromPhotos',
-        'Opening native iOS photo picker...',
-        onStatus: onStatus,
-      );
-    }
+  TaskEither<AppFailure, VideoPickResult?> pickFromPhotos({StatusCallback? onStatus}) {
+    return TaskEither.tryCatch(
+      () async {
+        if (Platform.isIOS) {
+          return _nativePickWithThumb(
+            'pickFromPhotos',
+            'Opening native iOS photo picker...',
+            onStatus: onStatus,
+          );
+        }
 
-    onStatus?.call('Opening photo library...');
-    final file = await _picker.pickVideo(source: ImageSource.gallery);
-    if (file == null) return null;
+        onStatus?.call('Opening photo library...');
+        final file = await _picker.pickVideo(source: ImageSource.gallery);
+        if (file == null) return null;
 
-    final originalName = file.name;
-    onStatus?.call('Preparing selected video...');
-    final localPath = await _saveToDocumentsWithRetry(
-      File(file.path),
-      onStatus: onStatus,
-    );
-    onStatus?.call('Generating thumbnail...');
-    final thumb = await generateThumbnail(localPath);
-    return VideoPickResult(
-      localPath: localPath,
-      thumbnailPath: thumb,
-      originalFileName: originalName,
+        final originalName = file.name;
+        onStatus?.call('Preparing selected video...');
+        final localPath = await _saveToDocumentsWithRetry(
+          File(file.path),
+          onStatus: onStatus,
+        );
+        onStatus?.call('Generating thumbnail...');
+        final thumb = await generateThumbnail(localPath);
+        return VideoPickResult(
+          localPath: localPath,
+          thumbnailPath: thumb,
+          originalFileName: originalName,
+        );
+      },
+      (error, stackTrace) => AppFailure.fileSystem('Failed to pick from photos: $error'),
     );
   }
 
   /// Pick from Files app (iCloud Drive, Dropbox, local files)
-  Future<VideoPickResult?> pickFromFiles({StatusCallback? onStatus}) async {
-    if (Platform.isIOS) {
-      return _nativePickWithThumb(
-        'pickFromFiles',
-        'Opening native iOS files picker...',
-        onStatus: onStatus,
-      );
-    }
+  TaskEither<AppFailure, VideoPickResult?> pickFromFiles({StatusCallback? onStatus}) {
+    return TaskEither.tryCatch(
+      () async {
+        if (Platform.isIOS) {
+          return _nativePickWithThumb(
+            'pickFromFiles',
+            'Opening native iOS files picker...',
+            onStatus: onStatus,
+          );
+        }
 
-    onStatus?.call('Opening Files...');
-    final result = await FilePicker.platform.pickFiles(
-      type: FileType.video,
-      allowMultiple: false,
-    );
-    if (result == null || result.files.isEmpty) return null;
+        onStatus?.call('Opening Files...');
+        final result = await FilePicker.platform.pickFiles(
+          type: FileType.video,
+          allowMultiple: false,
+        );
+        if (result == null || result.files.isEmpty) return null;
 
-    final filePath = result.files.single.path;
-    if (filePath == null) return null;
+        final filePath = result.files.single.path;
+        if (filePath == null) return null;
 
-    final originalName = result.files.single.name;
-    onStatus?.call('Preparing file from iCloud/Files...');
-    final localPath = await _saveToDocumentsWithRetry(
-      File(filePath),
-      onStatus: onStatus,
-    );
-    onStatus?.call('Generating thumbnail...');
-    final thumb = await generateThumbnail(localPath);
-    return VideoPickResult(
-      localPath: localPath,
-      thumbnailPath: thumb,
-      originalFileName: originalName,
+        final originalName = result.files.single.name;
+        onStatus?.call('Preparing file from iCloud/Files...');
+        final localPath = await _saveToDocumentsWithRetry(
+          File(filePath),
+          onStatus: onStatus,
+        );
+        onStatus?.call('Generating thumbnail...');
+        final thumb = await generateThumbnail(localPath);
+        return VideoPickResult(
+          localPath: localPath,
+          thumbnailPath: thumb,
+          originalFileName: originalName,
+        );
+      },
+      (error, stackTrace) => AppFailure.fileSystem('Failed to pick from files: $error'),
     );
   }
 
   /// Record from camera
-  Future<VideoPickResult?> recordVideo({StatusCallback? onStatus}) async {
-    onStatus?.call('Opening camera...');
-    final file = await _picker.pickVideo(source: ImageSource.camera);
-    if (file == null) return null;
+  TaskEither<AppFailure, VideoPickResult?> recordVideo({StatusCallback? onStatus}) {
+    return TaskEither.tryCatch(
+      () async {
+        onStatus?.call('Opening camera...');
+        final file = await _picker.pickVideo(source: ImageSource.camera);
+        if (file == null) return null;
 
-    onStatus?.call('Saving video...');
-    final localPath = await _saveToDocumentsWithRetry(
-      File(file.path),
-      onStatus: onStatus,
-    );
-    onStatus?.call('Generating thumbnail...');
-    final thumb = await generateThumbnail(localPath);
-    return VideoPickResult(
-      localPath: localPath,
-      thumbnailPath: thumb,
-      originalFileName: 'Camera Recording',
+        onStatus?.call('Saving video...');
+        final localPath = await _saveToDocumentsWithRetry(
+          File(file.path),
+          onStatus: onStatus,
+        );
+        onStatus?.call('Generating thumbnail...');
+        final thumb = await generateThumbnail(localPath);
+        return VideoPickResult(
+          localPath: localPath,
+          thumbnailPath: thumb,
+          originalFileName: 'Camera Recording',
+        );
+      },
+      (error, stackTrace) => AppFailure.fileSystem('Failed to record video: $error'),
     );
   }
 

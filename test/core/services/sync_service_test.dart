@@ -187,10 +187,10 @@ void main() {
         fsrsState: 2,
       );
 
-      final updated = await syncService.reconcileMoveLearningStates();
+      final updated = await syncService.reconcileLegacy().run();
       final move = await db.movesDao.getById('sync-state-1');
 
-      expect(updated, 1);
+      expect(updated.isRight(), isTrue);
       expect(move.learningState, 'MASTERY');
     });
   });

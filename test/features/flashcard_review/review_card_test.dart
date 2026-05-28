@@ -59,7 +59,7 @@ void main() {
       expect(find.byType(VideoPlaceholder), findsOneWidget);
       expect(find.text('1 of 3'), findsOneWidget);
       expect(find.text('Fixture Swipe'), findsOneWidget);
-      expect(find.text('Learning'), findsOneWidget);
+      expect(find.text('Practicing'), findsOneWidget);
       expect(find.text('FOOTWORK'), findsOneWidget);
       expect(find.text('1x'), findsOneWidget);
     });
@@ -76,7 +76,7 @@ void main() {
       expect(find.byType(VideoPlaceholder), findsOneWidget);
       expect(find.text('1 of 3'), findsOneWidget);
       expect(find.text('Fixture Swipe'), findsNothing);
-      expect(find.text('Learning'), findsNothing);
+      expect(find.text('Practicing'), findsNothing);
       expect(find.text('FOOTWORK'), findsNothing);
       expect(find.text('1x'), findsNothing);
     });
@@ -97,7 +97,7 @@ void main() {
 
       expect(find.byType(VideoPlaceholder), findsOneWidget);
       expect(find.text('Fixture Swipe'), findsNothing);
-      expect(find.text('Learning'), findsOneWidget);
+      expect(find.text('Practicing'), findsOneWidget);
       expect(find.text('FOOTWORK'), findsNothing);
       expect(find.text('1x'), findsNothing);
     });
@@ -116,7 +116,7 @@ void main() {
       );
 
       expect(find.text('In Rotation'), findsOneWidget);
-      expect(find.text('Learning'), findsNothing);
+      expect(find.text('Practicing'), findsNothing);
     });
   });
 }

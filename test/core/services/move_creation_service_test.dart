@@ -59,7 +59,6 @@ void main() {
           movesDao: db.movesDao,
           combosDao: db.combosDao,
         ),
-        videoAlbum: videoAlbum,
         hashService: _FakeHashService(),
         onVideoImported: ({required localPath, required moveId, precomputedHash}) async {
           syncCalls.add((localPath: localPath, moveId: moveId, precomputedHash: precomputedHash));
@@ -128,11 +127,9 @@ void main() {
         expect(move.videoPath, 'Moves/Footwork/Swipe/video.mov');
         expect(move.originalVideoName, 'IMG_0001.MOV');
         expect(move.notes, isNull);
-        expect(move.managedAlbumAssetId, 'asset-1');
-        expect(move.managedAlbumFilename, 'Swipe-footwork.mov');
-        expect(move.managedAlbumName, 'Breakdex 04-30-2026');
-        expect(videoAlbum.saveCalls.single['assetTitle'], 'Swipe');
-        expect(videoAlbum.saveCalls.single['category'], 'Footwork');
+        expect(move.managedAlbumAssetId, isNull);
+        expect(move.managedAlbumFilename, isNull);
+        expect(move.managedAlbumName, isNull);
         expect(
           syncCalls.single.localPath,
           VideoPathResolver.toAbsolute('Moves/Footwork/Swipe/video.mov'),

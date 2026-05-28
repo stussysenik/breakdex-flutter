@@ -1,9 +1,9 @@
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_core/firebase_core.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:fpdart/fpdart.dart';
 
-/// Keys for user-configured Supabase credentials in Settings.
-const _supabaseUrlKey = 'supabase_url';
-const _supabaseAnonKeyKey = 'supabase_anon_key';
+import '../domain/failures/failure.dart';
 
 class AuthService {
   final SharedPreferences _prefs;
@@ -11,99 +11,76 @@ class AuthService {
 
   AuthService(this._prefs);
 
-  // ─── Safe getters (return defaults when Supabase is not initialized) ──
-
   bool get isLoggedIn {
     if (!_initialized) return false;
-    try {
-      return Supabase.instance.client.auth.currentSession != null;
-    } catch (_) {
-      return false;
-    }
+    return FirebaseAuth.instance.currentUser != null;
   }
 
   String get userId {
     if (!_initialized) return '';
-    try {
-      return Supabase.instance.client.auth.currentUser?.id ?? '';
-    } catch (_) {
-      return '';
-    }
+    return FirebaseAuth.instance.currentUser?.uid ?? '';
   }
 
   String get userEmail {
     if (!_initialized) return '';
-    try {
-      return Supabase.instance.client.auth.currentUser?.email ?? '';
-    } catch (_) {
-      return '';
-    }
+    return FirebaseAuth.instance.currentUser?.email ?? '';
   }
 
-  /// Exposes the Supabase client for SyncService to use.
-  /// Throws if not initialized — callers must check [isLoggedIn] first.
-  SupabaseClient get client => Supabase.instance.client;
-
-  // ─── Lazy initialization ──────────────────────────────────────────
-
-  /// Initializes Supabase on demand. Reads credentials from SharedPreferences
-  /// (user-configured) or falls back to compile-time env vars.
-  /// Returns true if initialization succeeded.
-  Future<bool> _ensureInitialized() async {
-    if (_initialized) return true;
-
-    final url = _prefs.getString(_supabaseUrlKey) ??
-        const String.fromEnvironment('SUPABASE_URL');
-    final anonKey = _prefs.getString(_supabaseAnonKeyKey) ??
-        const String.fromEnvironment('SUPABASE_ANON_KEY');
-
-    if (url.isEmpty || anonKey.isEmpty) return false;
-
-    try {
-      await Supabase.initialize(url: url, anonKey: anonKey);
-      _initialized = true;
-      return true;
-    } catch (_) {
-      return false;
-    }
+  TaskEither<AppFailure, Unit> _ensureInitialized() {
+    return TaskEither.tryCatch(
+      () async {
+        if (_initialized) return unit;
+        if (Firebase.apps.isEmpty) {
+          await Firebase.initializeApp();
+        }
+        _initialized = true;
+        return unit;
+      },
+      (error, stackTrace) => AppFailure.unexpected('Firebase not initialized: $error'),
+    );
   }
 
-  // ─── Auth actions (trigger lazy init) ─────────────────────────────
-
-  Future<void> login(String email, String password) async {
-    final ok = await _ensureInitialized();
-    if (!ok) throw Exception('Supabase not configured');
-    await Supabase.instance.client.auth
-        .signInWithPassword(email: email, password: password);
+  TaskEither<AppFailure, Unit> login(String email, String password) {
+    return _ensureInitialized().flatMap((_) => TaskEither.tryCatch(
+      () async {
+        await FirebaseAuth.instance.signInWithEmailAndPassword(email: email, password: password);
+        return unit;
+      },
+      (error, stackTrace) => AppFailure.network('Login failed: $error'),
+    ));
   }
 
-  Future<void> register(String email, String password) async {
-    final ok = await _ensureInitialized();
-    if (!ok) throw Exception('Supabase not configured');
-    await Supabase.instance.client.auth
-        .signUp(email: email, password: password);
+  TaskEither<AppFailure, Unit> register(String email, String password) {
+    return _ensureInitialized().flatMap((_) => TaskEither.tryCatch(
+      () async {
+        await FirebaseAuth.instance.createUserWithEmailAndPassword(email: email, password: password);
+        return unit;
+      },
+      (error, stackTrace) => AppFailure.network('Registration failed: $error'),
+    ));
   }
 
-  Future<void> logout() async {
-    if (!_initialized) return;
-    try {
-      await Supabase.instance.client.auth.signOut();
-    } catch (_) {
-      // Ignore — already logged out or never initialized
-    }
+  TaskEither<AppFailure, Unit> logout() {
+    return TaskEither.tryCatch(
+      () async {
+        if (!_initialized) return unit;
+        await FirebaseAuth.instance.signOut();
+        return unit;
+      },
+      (error, stackTrace) => AppFailure.unexpected('Logout failed: $error'),
+    );
   }
 
-  Future<bool> refreshAuth() async {
-    if (!_initialized) return false;
-    try {
-      final session = Supabase.instance.client.auth.currentSession;
-      if (session == null) return false;
-      if (session.isExpired) {
-        await Supabase.instance.client.auth.refreshSession();
-      }
-      return Supabase.instance.client.auth.currentSession != null;
-    } catch (_) {
-      return false;
-    }
+  TaskEither<AppFailure, Unit> refreshAuth() {
+    return TaskEither.tryCatch(
+      () async {
+        if (!_initialized) throw Exception('Not initialized');
+        final user = FirebaseAuth.instance.currentUser;
+        if (user == null) throw Exception('No user');
+        await user.getIdToken(true);
+        return unit;
+      },
+      (error, stackTrace) => AppFailure.network('Auth refresh failed: $error'),
+    );
   }
 }

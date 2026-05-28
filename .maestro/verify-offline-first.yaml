@@ -1,0 +1,16 @@
+appId: com.breakdex.app
+---
+- clearState
+- openApp
+- tapOn: "Arsenal"
+- tapOn: "Add"
+- tapOn: "Create Move"
+- tapOn: "Gallery"
+- tapOn: "fixtures-blue-beat.mp4" # Placeholder from assets
+- inputText: "Windmill"
+- tapOn: "Power Moves"
+- tapOn: "SAVE MOVE"
+- assertVisible: "Windmill"
+- assertVisible: "Power Moves"
+- tapOn: "Settings"
+- assertVisible: "All synced" # Or pending if offline

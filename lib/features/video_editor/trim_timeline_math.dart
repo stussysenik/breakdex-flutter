@@ -16,7 +16,7 @@ double snapNormalizedToDuration(
   int quantumMs = 1,
 }) {
   final clamped = normalized.clamp(0.0, 1.0).toDouble();
-  if (durationMs <= 0 || quantumMs <= 1) {
+  if (durationMs <= 0 || quantumMs < 1) {
     return clamped;
   }
 

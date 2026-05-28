@@ -20,6 +20,7 @@
 		97C146FE1CF9000F007C117D /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 97C146FD1CF9000F007C117D /* Assets.xcassets */; };
 		97C147011CF9000F007C117D /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 97C146FF1CF9000F007C117D /* LaunchScreen.storyboard */; };
 		AA0000011234567800000001 /* VideoExportPlugin.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000001234567800000001 /* VideoExportPlugin.swift */; };
+		B62B56DC39DD9567A1CCC44F /* GoogleService-Info.plist in Resources */ = {isa = PBXBuildFile; fileRef = BE523F468CE8AA1ADEBA70A4 /* GoogleService-Info.plist */; };
 		CC0000020000000100000001 /* CapabilityRegistry.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC0000010000000100000001 /* CapabilityRegistry.swift */; };
 		CC0000020000000100000002 /* NativeCapability.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC0000010000000100000002 /* NativeCapability.swift */; };
 		CC0000020000000100000003 /* VisionMLPlugin.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC0000010000000100000003 /* VisionMLPlugin.swift */; };
@@ -83,6 +84,7 @@
 		AA0000001234567800000001 /* VideoExportPlugin.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VideoExportPlugin.swift; sourceTree = "<group>"; };
 		AF94D9764DE5B8791CE776D4 /* Pods-RunnerTests.profile.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-RunnerTests.profile.xcconfig"; path = "Target Support Files/Pods-RunnerTests/Pods-RunnerTests.profile.xcconfig"; sourceTree = "<group>"; };
 		B9C120C05EAF4F2180E99EE4 /* Pods-RunnerTests.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-RunnerTests.debug.xcconfig"; path = "Target Support Files/Pods-RunnerTests/Pods-RunnerTests.debug.xcconfig"; sourceTree = "<group>"; };
+		BE523F468CE8AA1ADEBA70A4 /* GoogleService-Info.plist */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.plist.xml; name = "GoogleService-Info.plist"; path = "Runner/GoogleService-Info.plist"; sourceTree = "<group>"; };
 		C9BDFBFC543230F46D560C47 /* Pods-RunnerTests.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-RunnerTests.release.xcconfig"; path = "Target Support Files/Pods-RunnerTests/Pods-RunnerTests.release.xcconfig"; sourceTree = "<group>"; };
 		CC0000010000000100000001 /* CapabilityRegistry.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CapabilityRegistry.swift; sourceTree = "<group>"; };
 		CC0000010000000100000002 /* NativeCapability.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NativeCapability.swift; sourceTree = "<group>"; };
@@ -167,6 +169,7 @@
 				331C8082294A63A400263BE5 /* RunnerTests */,
 				1DE2BB96C6572A6FBD98F05D /* Pods */,
 				9682DA90CEC0964D83088AC1 /* Frameworks */,
+				BE523F468CE8AA1ADEBA70A4 /* GoogleService-Info.plist */,
 			);
 			sourceTree = "<group>";
 		};
@@ -320,6 +323,7 @@
 				97C146FC1CF9000F007C117D /* Main.storyboard in Resources */,
 				CC0000020000000100000007 /* Models in Resources */,
 				CC0000020000000100000008 /* skeleton.usdz in Resources */,
+				B62B56DC39DD9567A1CCC44F /* GoogleService-Info.plist in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

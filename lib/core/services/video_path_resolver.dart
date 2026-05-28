@@ -6,6 +6,7 @@ import 'package:path/path.dart' as p;
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../database/database.dart';
+import '../utils/filesystem_utils.dart';
 import 'app_storage_paths.dart';
 
 String _sanitizeFilename(String name) {
@@ -170,7 +171,7 @@ abstract final class VideoPathResolver {
     String extension,
   ) {
     // Standardize category naming for storage
-    final safeCategory = _getSafeCategory(category);
+    final safeCategory = getSafeCategory(category);
     
     // Standardize move naming to prevent "Windmill" vs "windmill" folder duplicates
     final sanitizedName = _sanitizeFilename(moveName.trim());
@@ -182,7 +183,7 @@ abstract final class VideoPathResolver {
     return p.join('Moves', safeCategory, safeName, 'video.$ext');
   }
 
-  static String _getSafeCategory(String category) {
+  static String getSafeCategory(String category) {
     final trimmed = category.trim();
     if (trimmed.isEmpty) return 'Default';
 
@@ -232,7 +233,7 @@ abstract final class VideoPathResolver {
     }
 
     try {
-      await sourceFile.rename(newAbs);
+      await FileSystemUtils.safeMove(sourceAbs, newAbs);
       return toRelative(newAbs);
     } catch (e) {
       debugPrint('[VideoPathResolver] Failed to move file to semantic path: $e');
@@ -331,11 +332,15 @@ abstract final class VideoPathHealer {
       final name = p.basename(entity.path);
       final destPath = p.join(target.path, name);
       if (entity is File) {
+        // Collision strategy: If target exists, keep source but suffix it to avoid data loss
+        String finalDest = destPath;
         if (await File(destPath).exists()) {
-          await entity.delete();
-        } else {
-          await entity.rename(destPath);
+          final ext = p.extension(destPath);
+          final base = p.basenameWithoutExtension(destPath);
+          final timestamp = DateTime.now().millisecondsSinceEpoch;
+          finalDest = p.join(target.path, '${base}_healed_$timestamp$ext');
         }
+        await FileSystemUtils.safeMove(entity.path, finalDest);
       } else if (entity is Directory) {
         await _mergeDirectories(entity, Directory(destPath));
       }
@@ -363,9 +368,12 @@ abstract final class VideoPathHealer {
             name == 'breakdex_provenance') {
           final targetPath = p.join(backupsDir.path, name);
           if (await File(targetPath).exists()) {
-            await entity.delete();
+            // Suffix the old backup if it collides (highly unlikely but safe)
+            final timestamp = DateTime.now().millisecondsSinceEpoch;
+            final targetPathWithTs = p.join(backupsDir.path, '${p.basenameWithoutExtension(name)}_$timestamp${p.extension(name)}');
+            await FileSystemUtils.safeMove(entity.path, targetPathWithTs);
           } else {
-            await entity.rename(targetPath);
+            await FileSystemUtils.safeMove(entity.path, targetPath);
           }
         }
       }
@@ -404,9 +412,12 @@ abstract final class VideoPathHealer {
 
         final targetPath = p.join(archiveDir.path, name);
         if (await File(targetPath).exists()) {
-          await entity.delete();
+          // Suffix orphan if it collides in Archive
+          final timestamp = DateTime.now().millisecondsSinceEpoch;
+          final targetPathWithTs = p.join(archiveDir.path, '${p.basenameWithoutExtension(name)}_orphan_$timestamp${p.extension(name)}');
+          await FileSystemUtils.safeMove(entity.path, targetPathWithTs);
         } else {
-          await entity.rename(targetPath);
+          await FileSystemUtils.safeMove(entity.path, targetPath);
         }
       }
     } catch (e) {

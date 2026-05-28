@@ -38,7 +38,7 @@ void main() {
                             'Very Long Move Name That Should Still Stay Readable',
                         reviewCount: 14,
                         category: 'Power Moves',
-                        fsrsStateLabel: LearningState.learning.displayText,
+                        fsrsStateLabel: 'learning',
                         lastReviewed: DateTime(2026, 4, 3),
                       ),
                     ],
