@@ -213,14 +213,25 @@ final reviewStateMatrixProvider = FutureProvider<ReviewStateMatrix>((
   return ReviewStateMatrix(moveCounts: moveCounts, comboCounts: comboCounts);
 });
 
+final reactiveMovesProvider = StreamProvider<List<Move>>((ref) {
+  return ref.watch(moveRepositoryProvider).watchAll();
+});
+
+final reactiveCombosProvider = StreamProvider<List<Combo>>((ref) {
+  return ref.watch(comboRepositoryProvider).watchAll();
+});
+
 /// State-based sessions are due-only. Deck sessions still honor the deck
 /// definition, and targeted sessions bypass due filtering so the user can
 /// review that specific move immediately.
 final filteredReviewSessionItemsProvider =
     FutureProvider<List<ReviewSessionItem>>((ref) async {
       ref.watch(fsrsCardsRefreshProvider);
-      ref.watch(moveStateCountsProvider);
-      ref.watch(comboRefreshProvider);
+      
+      // Watch reactive streams to strictly rebuild on any entity change (data relationship)
+      final movesAsync = ref.watch(reactiveMovesProvider);
+      final combosAsync = ref.watch(reactiveCombosProvider);
+      
       final seed = ref.watch(_sessionSeedProvider);
       final source = ref.watch(reviewSessionSourceProvider);
       final stateFilter = ref.watch(reviewStateFilterProvider);
@@ -228,15 +239,13 @@ final filteredReviewSessionItemsProvider =
       final selectedDeck = ref.watch(selectedDeckProvider);
       final targetMoveIds = ref.watch(reviewSessionTargetMoveIdsProvider);
       final entityKind = ref.watch(reviewEntityKindProvider);
+      
       final db = ref.watch(databaseProvider);
-      final results = await Future.wait([
-        db.movesDao.getAll(),
-        db.combosDao.getAll(),
-        db.fsrsCardsDao.getAll(),
-      ]);
-      final moves = results[0] as List<Move>;
-      final combos = results[1] as List<Combo>;
-      final cards = results[2] as List<FsrsCard>;
+      
+      // Fallback to static fetch for the very first frame if streams are still loading
+      final moves = movesAsync.value ?? await db.movesDao.getAll();
+      final combos = combosAsync.value ?? await db.combosDao.getAll();
+      final cards = await db.fsrsCardsDao.getAll();
       final cardMap = {
         for (final card in cards)
           _entityKey(card.entityType, card.entityId): card,

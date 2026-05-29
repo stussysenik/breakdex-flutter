@@ -48,6 +48,7 @@ class StatePickerOverlay extends StatelessWidget {
               StatePickerSheet(
                 currentState: currentState,
                 moveName: moveName,
+                onSelected: onSave,
               ),
               Padding(
                 padding: const EdgeInsets.fromLTRB(

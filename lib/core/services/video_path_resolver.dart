@@ -79,6 +79,14 @@ abstract final class VideoPathResolver {
       return path.substring(markerIndex + marker.length);
     }
 
+    // New fallback: If it's already an absolute path under a 'Moves' folder
+    // but we can't find /Documents/, try to find the 'Moves/' marker itself.
+    final movesMarker = p.separator + 'Moves' + p.separator;
+    final movesIndex = path.indexOf(movesMarker);
+    if (movesIndex >= 0) {
+      return path.substring(movesIndex + 1); // "Moves/..."
+    }
+
     // Fallback: use Moves/{basename} as a safe relative path
     return 'Moves/${p.basename(path)}';
   }
@@ -180,7 +188,7 @@ abstract final class VideoPathResolver {
       : sanitizedName.toUpperCase();
 
     final ext = extension.startsWith('.') ? extension.substring(1) : extension;
-    return p.join('Moves', safeCategory, safeName, 'video.$ext');
+    return p.join('Moves', safeCategory, safeName, 'video.${ext.toLowerCase()}');
   }
 
   static String getSafeCategory(String category) {

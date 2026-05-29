@@ -14,10 +14,12 @@ class StatePickerSheet extends ConsumerWidget {
     super.key,
     required this.currentState,
     required this.moveName,
+    this.onSelected,
   });
 
   final LearningState currentState;
   final String moveName;
+  final ValueChanged<LearningState>? onSelected;
 
   static Future<LearningState?> show(
     BuildContext context, {
@@ -80,7 +82,11 @@ class StatePickerSheet extends ConsumerWidget {
                 isCurrent: state == currentState,
                 onTap: () {
                   HapticFeedback.mediumImpact();
-                  Navigator.pop(context, state);
+                  if (onSelected != null) {
+                    onSelected!(state);
+                  } else {
+                    Navigator.pop(context, state);
+                  }
                 },
               ),
               if (state != LearningState.values.last)

@@ -7,6 +7,7 @@ import 'package:uuid/uuid.dart';
 
 import '../data/repositories.dart';
 import '../database/database.dart';
+import '../database/daos/fsrs_cards_dao.dart';
 import '../models/move_creation.dart';
 import '../utils/filesystem_utils.dart';
 import 'reviewable_naming_service.dart';
@@ -23,12 +24,14 @@ class MoveCreationService {
     required ReviewableNamingService namingService,
     required MoveVideoImportedHandler onVideoImported,
     required AssetHashService hashService,
+    required FsrsCardsDao fsrsCardsDao,
     BlackboxService? blackbox,
     String Function()? idGenerator,
   }) : _moveRepository = moveRepository,
        _namingService = namingService,
        _onVideoImported = onVideoImported,
        _hashService = hashService,
+       _fsrsCardsDao = fsrsCardsDao,
        _blackbox = blackbox,
        _idGenerator = idGenerator ?? (() => const Uuid().v4());
 
@@ -36,6 +39,7 @@ class MoveCreationService {
   final ReviewableNamingService _namingService;
   final MoveVideoImportedHandler _onVideoImported;
   final AssetHashService _hashService;
+  final FsrsCardsDao _fsrsCardsDao;
   final BlackboxService? _blackbox;
   final String Function() _idGenerator;
 
@@ -100,6 +104,10 @@ class MoveCreationService {
         count: Value(request.count),
         learningState: Value(request.learningState),
       ),
+    );
+
+    unawaited(
+      _fsrsCardsDao.ensureCard(moveId, entityType: 'move'),
     );
 
     if (finalAbsPath != null) {

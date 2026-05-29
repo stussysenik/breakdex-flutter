@@ -36,6 +36,7 @@ class ReviewCard extends ConsumerStatefulWidget {
     this.category,
     this.videoPath,
     this.originalVideoName,
+    this.contentHash,
     this.canEditState = true,
     this.onRepick,
     this.combo,
@@ -54,6 +55,7 @@ class ReviewCard extends ConsumerStatefulWidget {
   final String? category;
   final String? videoPath;
   final String? originalVideoName;
+  final String? contentHash;
   final bool canEditState;
   final VoidCallback onStatePillTap;
   final VoidCallback? onRepick;
@@ -198,8 +200,8 @@ class _ReviewCardState extends ConsumerState<ReviewCard> {
                       return RobustVideoPlayer(
                         key: ValueKey(
                           isCombo
-                              ? '${widget.combo!.id}:$activeComboStepIndex:$videoPath'
-                              : videoPath,
+                              ? '${widget.combo!.id}:$activeComboStepIndex:$videoPath:${activeStep?.contentHash}'
+                              : '$videoPath:${widget.contentHash}',
                         ),
                         videoPath: videoPath,
                         height: constraints.maxHeight,

@@ -41,6 +41,8 @@ void main() {
             }),
           ),
           comboRefreshProvider.overrideWith((ref) => Stream.value(0)),
+          // Added these to fix timeouts in tests
+          reviewEntityKindProvider.overrideWith((ref) => ReviewEntityKind.moves),
         ],
       );
     });
@@ -57,6 +59,8 @@ void main() {
       await container.read(fsrsCardsRefreshProvider.future);
       await container.read(moveStateCountsProvider.future);
       await container.read(comboRefreshProvider.future);
+      await container.read(reactiveMovesProvider.future);
+      await container.read(reactiveCombosProvider.future);
     }
 
     test(

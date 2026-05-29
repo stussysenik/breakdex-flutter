@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:path/path.dart' as p;
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -170,7 +171,7 @@ class _ComboDetailScreenState extends ConsumerState<ComboDetailScreen> {
 
                     if (currentMove != null && currentMove.videoPath != null)
                       RobustVideoPlayer(
-                        key: ValueKey('${currentMove.id}:$safeIndex'),
+                        key: ValueKey('${currentMove.id}:$safeIndex:${currentMove.contentHash}'),
                         videoPath: currentMove.resolvedVideoPath!,
                         autoPlay: true,
                         onEdit: () => _editVideo(currentMove),
@@ -270,34 +271,52 @@ class _ComboDetailScreenState extends ConsumerState<ComboDetailScreen> {
       extra: {'videoPath': resolvedPath},
     );
     if (editedPath != null && mounted) {
+      // 1. Resolve final semantic path
+      final semanticRelative = await VideoPathResolver.moveToSemanticPath(
+        currentRelativePath: VideoPathResolver.toRelative(editedPath),
+        category: move.category,
+        moveName: move.name,
+      );
+
+      // 2. Compute SHA-256 hash
+      final resolvedAbs = VideoPathResolver.toAbsolute(semanticRelative);
+      final contentHash =
+          await ref.read(assetHashServiceProvider).computeHash(resolvedAbs);
+
+      // 3. Cleanup old assets
+      final pathChanged = move.resolvedVideoPath != resolvedAbs;
       await ref.read(mediaCleanupServiceProvider).cleanupDetachedAsset(
             title: move.name,
             category: move.category,
-            storedVideoPath: move.videoPath,
-            resolvedVideoPath: move.resolvedVideoPath,
+            storedVideoPath: pathChanged ? move.videoPath : null,
+            resolvedVideoPath: pathChanged ? move.resolvedVideoPath : null,
             contentHash: move.contentHash,
             managedAlbumAssetId: move.managedAlbumAssetId,
             excludingMoveId: move.id,
             skipPhotosCleanup: true,
           );
+
+      // 4. Update DB
       await ref.read(moveRepositoryProvider).update(
             MovesCompanion(
               id: Value(move.id),
-              videoPath: Value(VideoPathResolver.toRelative(editedPath)),
+              videoPath: Value(semanticRelative),
+              originalVideoName: Value(p.basename(editedPath)),
               managedAlbumAssetId: const Value(null),
               managedAlbumFilename: const Value(null),
               managedAlbumName: const Value(null),
-              contentHash: const Value(null),
+              contentHash: Value(contentHash),
             ),
           );
+
       unawaited(
         ref
             .read(videoImportSyncHookProvider)
-            .onVideoImported(localPath: editedPath, moveId: move.id),
+            .onVideoImported(localPath: resolvedAbs, moveId: move.id),
       );
       try {
         final managedCopy = await _videoAlbum.saveToAlbum(
-          videoPath: editedPath,
+          videoPath: resolvedAbs,
           albumName: NativeVideoAlbum.defaultAlbumName(),
           assetTitle: move.name,
           category: move.category,

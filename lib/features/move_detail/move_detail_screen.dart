@@ -102,7 +102,7 @@ class _MoveDetailScreenState extends ConsumerState<MoveDetailScreen> {
                         AspectRatio(
                           aspectRatio: 16 / 9,
                           child: RobustVideoPlayer(
-                            key: ValueKey('detail-video-${move.id}-${move.videoPath}'),
+                            key: ValueKey('detail-video-${move.id}-${move.videoPath}-${move.contentHash}'),
                             videoPath: move.resolvedVideoPath!,
                             originalVideoName: move.originalVideoName,
                           ),

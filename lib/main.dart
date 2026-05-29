@@ -270,10 +270,12 @@ void main() async {
     child: Center(
       child: Padding(
         padding: const EdgeInsets.all(16),
-        child: Text(
-          'Something went wrong',
-          style: TextStyle(color: Colors.grey[400], fontSize: 14),
-          textAlign: TextAlign.center,
+        child: SingleChildScrollView(
+          child: Text(
+            details.exceptionAsString(),
+            style: TextStyle(color: Colors.red[400], fontSize: 14),
+            textAlign: TextAlign.center,
+          ),
         ),
       ),
     ),

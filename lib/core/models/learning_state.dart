@@ -12,7 +12,7 @@ enum LearningState {
   final String displayText;
   final Color color;
 
-  static LearningState fromString(String value) => switch (value) {
+  static LearningState fromString(String value) => switch (value.toUpperCase()) {
         'NEW' => LearningState.newState,
         'LEARNING' => LearningState.learning,
         'MASTERY' => LearningState.mastery,

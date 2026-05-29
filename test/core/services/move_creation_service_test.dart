@@ -60,6 +60,7 @@ void main() {
           combosDao: db.combosDao,
         ),
         hashService: _FakeHashService(),
+        fsrsCardsDao: db.fsrsCardsDao,
         onVideoImported: ({required localPath, required moveId, precomputedHash}) async {
           syncCalls.add((localPath: localPath, moveId: moveId, precomputedHash: precomputedHash));
         },
@@ -95,6 +96,11 @@ void main() {
         expect(move.notes, isNull);
         expect(videoAlbum.saveCalls, isEmpty);
         expect(syncCalls, isEmpty);
+
+        final fsrsCard = await db.fsrsCardsDao.getByEntityId('move-1');
+        expect(fsrsCard, isNot(isNull));
+        expect(fsrsCard!.fsrsState, 0);
+        expect(fsrsCard.entityType, 'move');
       },
     );
 
@@ -135,6 +141,11 @@ void main() {
           VideoPathResolver.toAbsolute('Moves/Footwork/Swipe/video.mov'),
         );
         expect(syncCalls.single.moveId, 'hash-123');
+
+        final fsrsCard = await db.fsrsCardsDao.getByEntityId('hash-123');
+        expect(fsrsCard, isNot(isNull));
+        expect(fsrsCard!.fsrsState, 0);
+        expect(fsrsCard.entityType, 'move');
       },
     );
 

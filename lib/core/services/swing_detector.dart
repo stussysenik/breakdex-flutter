@@ -9,15 +9,13 @@ import 'package:sensors_plus/sensors_plus.dart';
 /// making it resilient to accidental pickups or table vibrations.
 class SwingDetector {
   SwingDetector({
-    this.threshold = 22.0, // Higher than simple shake
+    this.threshold = 22.0,
     this.windowSize = const Duration(milliseconds: 600),
-    this.minSwingArc = 12.0,
     required this.onSwing,
   });
 
   final double threshold;
   final Duration windowSize;
-  final double minSwingArc;
   final VoidCallback onSwing;
 
   StreamSubscription<UserAccelerometerEvent>? _subscription;
@@ -27,13 +25,17 @@ class SwingDetector {
 
   void start() {
     _subscription?.cancel();
-    _subscription = userAccelerometerEventStream().listen(_onEvent);
+    _subscription = userAccelerometerEventStream(
+      samplingPeriod: SensorInterval.uiInterval,
+    ).listen(_onEvent);
   }
 
   void stop() {
     _subscription?.cancel();
     _subscription = null;
     _window.clear();
+    _locked = false;
+    _lastTrigger = DateTime(2000);
   }
 
   void _onEvent(UserAccelerometerEvent event) {
@@ -47,22 +49,18 @@ class SwingDetector {
 
     // 2. Add current point (userAccelerometer already excludes gravity)
     final magnitude = sqrt(event.x * event.x + event.y * event.y + event.z * event.z);
+    print('[SwingDetector] Event magnitude: ${magnitude.toStringAsFixed(2)} (threshold: $threshold), window length: ${_window.length}');
     _window.add(_MomentumPoint(event, magnitude, now));
 
     // 3. Analyze for "Swing"
     if (_window.length < 5) return;
 
-    // Detect a "pull-back" and "release" arc
     double maxMagnitude = 0;
     for (final p in _window) {
       if (p.magnitude > maxMagnitude) maxMagnitude = p.magnitude;
     }
 
-    // A swing is a large magnitude peak over a short window
-    // Threshold lowered from 22.0 to 18.0 for better response on older devices
-    const effectiveThreshold = 18.0;
-    
-    // Easing Haptics: As we approach the threshold, give subtle feedback
+    final effectiveThreshold = threshold;
     if (maxMagnitude > effectiveThreshold * 0.6 && maxMagnitude < effectiveThreshold) {
       _provideEasingHaptic(maxMagnitude / effectiveThreshold);
     }

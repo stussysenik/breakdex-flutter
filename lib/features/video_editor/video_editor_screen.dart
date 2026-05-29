@@ -52,6 +52,8 @@ class _VideoEditorScreenState extends ConsumerState<VideoEditorScreen>
   int _selectedSpeedIndex = 2; // 1x default
   int _rotation = 0; // 0, 90, 180, 270
   int _selectedAspectIndex = 0; // Original
+  double? _customAspectRatio;
+  static const _customAspectIndex = 6;
   bool _matrixInitialized = false;
   Size? _previewViewportSize;
   double? _previewAvailableWidth;
@@ -91,15 +93,22 @@ class _VideoEditorScreenState extends ConsumerState<VideoEditorScreen>
     '16:9',
     '1:1',
     '4:5',
+    'Custom...',
   ];
   static const _aspectRatios = <double?>[
-    null, // Original
-    null, // Free Form (uses dynamic bounding rect)
+    null,
+    null,
     9 / 16,
     16 / 9,
     1.0,
     4 / 5,
+    null,
   ];
+
+  double? get _effectiveTargetAspect {
+    if (_selectedAspectIndex == _customAspectIndex) return _customAspectRatio;
+    return _aspectRatios[_selectedAspectIndex];
+  }
 
   @override
   void initState() {
@@ -862,6 +871,10 @@ class _VideoEditorScreenState extends ConsumerState<VideoEditorScreen>
                                 items: _aspectLabels,
                                 selectedIndex: _selectedAspectIndex,
                                 onSelected: (i) {
+                                  if (i == _customAspectIndex) {
+                                    _showCustomAspectDialog();
+                                    return;
+                                  }
                                   setState(() {
                                     _selectedAspectIndex = i;
                                     _matrixInitialized = false;
@@ -989,29 +1002,34 @@ class _VideoEditorScreenState extends ConsumerState<VideoEditorScreen>
             ),
           ),
           const SizedBox(height: AppSpacing.md),
-          Row(
-            children: List.generate(items.length, (i) {
-              final isSelected = i == selectedIndex;
-              return Expanded(
-                child: Semantics(
-                  label: '$label ${items[i]}',
-                  button: true,
-                  selected: isSelected,
-                  child: GestureDetector(
-                    onTap: () {
-                      HapticFeedback.selectionClick();
-                      onSelected(i);
-                    },
-                    child: Container(
-                      margin: EdgeInsets.only(left: i > 0 ? AppSpacing.sm : 0),
-                      padding: const EdgeInsets.symmetric(vertical: 10),
-                      decoration: BoxDecoration(
-                        color: isSelected
-                            ? colorScheme.primary
-                            : colorScheme.surfaceContainerHighest,
-                        borderRadius: BorderRadius.circular(AppRadius.sm),
-                      ),
-                      child: Center(
+          SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            clipBehavior: Clip.none,
+            child: Row(
+              children: List.generate(items.length, (i) {
+                final isSelected = i == selectedIndex;
+                return Padding(
+                  padding: EdgeInsets.only(left: i > 0 ? AppSpacing.sm : 0),
+                  child: Semantics(
+                    label: '$label ${items[i]}',
+                    button: true,
+                    selected: isSelected,
+                    child: GestureDetector(
+                      onTap: () {
+                        HapticFeedback.selectionClick();
+                        onSelected(i);
+                      },
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: AppSpacing.md,
+                          vertical: 10,
+                        ),
+                        decoration: BoxDecoration(
+                          color: isSelected
+                              ? colorScheme.primary
+                              : colorScheme.surfaceContainerHighest,
+                          borderRadius: BorderRadius.circular(AppRadius.sm),
+                        ),
                         child: Text(
                           items[i],
                           style: AppTypography.caption.copyWith(
@@ -1026,9 +1044,9 @@ class _VideoEditorScreenState extends ConsumerState<VideoEditorScreen>
                       ),
                     ),
                   ),
-                ),
-              );
-            }),
+                );
+              }),
+            ),
           ),
         ],
       ),
@@ -1078,7 +1096,7 @@ class _VideoEditorScreenState extends ConsumerState<VideoEditorScreen>
       child: Icon(Icons.play_circle_filled, color: Colors.white70, size: 64),
     );
 
-    final targetAspect = _aspectRatios[_selectedAspectIndex];
+    final targetAspect = _effectiveTargetAspect;
     final isFreeForm = _aspectLabels[_selectedAspectIndex] == 'Free Form';
     final isCropMode = targetAspect != null || isFreeForm;
     final videoSize = _controller!.value.size;
@@ -1384,6 +1402,108 @@ class _VideoEditorScreenState extends ConsumerState<VideoEditorScreen>
     if (mounted) context.pop();
   }
 
+  void _showCustomAspectDialog() {
+    final wController = TextEditingController();
+    final hController = TextEditingController();
+    if (_customAspectRatio != null) {
+      wController.text = '16';
+      hController.text = (16.0 / _customAspectRatio!).round().toString();
+    }
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(AppRadius.lg)),
+      ),
+      builder: (ctx) {
+        final colorScheme = Theme.of(ctx).colorScheme;
+        return Padding(
+          padding: EdgeInsets.only(bottom: MediaQuery.of(ctx).viewInsets.bottom),
+          child: Padding(
+            padding: const EdgeInsets.all(AppSpacing.screenEdge),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Center(
+                  child: Container(
+                    width: 32,
+                    height: 4,
+                    decoration: BoxDecoration(
+                      color: colorScheme.onSurface.withValues(alpha: 0.2),
+                      borderRadius: BorderRadius.circular(2),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: AppSpacing.md),
+                Text(
+                  'Custom Aspect Ratio',
+                  style: AppTypography.titleMedium.copyWith(color: colorScheme.onSurface),
+                ),
+                const SizedBox(height: AppSpacing.sm),
+                Text(
+                  'Enter width and height to set a custom crop ratio.',
+                  style: AppTypography.bodySmall.copyWith(color: colorScheme.secondary),
+                ),
+                const SizedBox(height: AppSpacing.lg),
+                Row(
+                  children: [
+                    Expanded(
+                      child: TextField(
+                        controller: wController,
+                        keyboardType: TextInputType.number,
+                        decoration: const InputDecoration(
+                          labelText: 'Width',
+                          border: OutlineInputBorder(),
+                        ),
+                      ),
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
+                      child: Text(':', style: AppTypography.titleMedium.copyWith(color: colorScheme.onSurface)),
+                    ),
+                    Expanded(
+                      child: TextField(
+                        controller: hController,
+                        keyboardType: TextInputType.number,
+                        decoration: const InputDecoration(
+                          labelText: 'Height',
+                          border: OutlineInputBorder(),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: AppSpacing.lg),
+                SizedBox(
+                  width: double.infinity,
+                  child: FilledButton(
+                    onPressed: () {
+                      final w = double.tryParse(wController.text);
+                      final h = double.tryParse(hController.text);
+                      if (w != null && h != null && w > 0 && h > 0) {
+                        Navigator.pop(ctx);
+                        setState(() {
+                          _customAspectRatio = w / h;
+                          _selectedAspectIndex = _customAspectIndex;
+                          _matrixInitialized = false;
+                          _previewViewportSize = null;
+                        });
+                      }
+                    },
+                    child: const Text('Apply'),
+                  ),
+                ),
+                const SizedBox(height: AppSpacing.sm),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
   Future<void> _export() async {
     if (!_isEditorReady) return;
 
@@ -1421,12 +1541,12 @@ class _VideoEditorScreenState extends ConsumerState<VideoEditorScreen>
       final speed = _speeds[_selectedSpeedIndex];
       final normalizedRotation = ((_rotation % 360) + 360) % 360;
       final isCropMode =
-          _aspectRatios[_selectedAspectIndex] != null ||
+          _effectiveTargetAspect != null ||
           _aspectLabels[_selectedAspectIndex] == 'Free Form';
 
       Rect? finalCrop;
       if (isCropMode) {
-        final targetAspect = _aspectRatios[_selectedAspectIndex];
+        final targetAspect = _effectiveTargetAspect;
         final previewMaxWidth = _previewAvailableWidth ?? fallbackPreviewWidth;
         final viewport = computeVideoEditViewport(
           videoSize: _controller!.value.size,
@@ -1470,6 +1590,15 @@ class _VideoEditorScreenState extends ConsumerState<VideoEditorScreen>
         cropRect: finalCrop,
       ).timeout(const Duration(seconds: 120));
 
+      // Stop progress stream & show finalizing phase
+      unawaited(_progressSub?.cancel());
+      _progressSub = null;
+      if (mounted) {
+        setState(() {
+          _exportProgress = const ExportProgress(phase: 'finalizing', progress: 1.0);
+        });
+      }
+
       final exported = File(resultPath);
       if (!await exported.exists() || await exported.length() == 0) {
         throw Exception('Export completed but output file is missing or empty');
@@ -1480,9 +1609,6 @@ class _VideoEditorScreenState extends ConsumerState<VideoEditorScreen>
       final hash = await hashService.computeHash(resultPath);
 
       // 3. Determine final internal semantic path
-      // Note: We don't have category/name here easily, but we can return the hash 
-      // and temp path, and let the caller (MoveDetail) handle the "Final Upgrade".
-      // Or we can just use a standard 'Edits' folder.
       final docs = await getApplicationDocumentsDirectory();
       final finalPath = p.join(docs.path, 'Moves', 'Edits', '$hash.mp4');
       final finalFile = File(finalPath);
@@ -2159,18 +2285,21 @@ class _TrimTimelineState extends State<_TrimTimeline> {
               // ── Timecode row (always visible, above strip) ──
               SizedBox(
                 height: 20,
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                child: Stack(
+                  alignment: Alignment.center,
                   children: [
                     // Trim start time — accent when dragging start handle
-                    Text(
-                      startTime,
-                      style: AppTypography.caption.copyWith(
-                        color: _activeHandle == 'start'
-                            ? colorScheme.primary
-                            : Colors.white54,
-                        fontSize: 11,
-                        fontFeatures: [const FontFeature.tabularFigures()],
+                    Align(
+                      alignment: Alignment.centerLeft,
+                      child: Text(
+                        startTime,
+                        style: AppTypography.caption.copyWith(
+                          color: _activeHandle == 'start'
+                              ? colorScheme.primary
+                              : Colors.white54,
+                          fontSize: 11,
+                          fontFeatures: [const FontFeature.tabularFigures()],
+                        ),
                       ),
                     ),
                     // Current playhead time — updates per frame via
@@ -2195,14 +2324,17 @@ class _TrimTimelineState extends State<_TrimTimeline> {
                       },
                     ),
                     // Trim end time — accent when dragging end handle
-                    Text(
-                      endTime,
-                      style: AppTypography.caption.copyWith(
-                        color: _activeHandle == 'end'
-                            ? colorScheme.primary
-                            : Colors.white54,
-                        fontSize: 11,
-                        fontFeatures: [const FontFeature.tabularFigures()],
+                    Align(
+                      alignment: Alignment.centerRight,
+                      child: Text(
+                        endTime,
+                        style: AppTypography.caption.copyWith(
+                          color: _activeHandle == 'end'
+                              ? colorScheme.primary
+                              : Colors.white54,
+                          fontSize: 11,
+                          fontFeatures: [const FontFeature.tabularFigures()],
+                        ),
                       ),
                     ),
                   ],

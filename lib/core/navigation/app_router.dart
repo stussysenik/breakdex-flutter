@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 
 import 'app_route_observer.dart';
 import '../../features/move_detail/move_detail_screen.dart';
@@ -18,6 +19,7 @@ import '../../features/move_category/move_category_screen.dart';
 import '../../features/combo_list/combo_list_screen.dart';
 import '../../features/add/add_screen.dart';
 import '../../features/party/party_screen.dart';
+import '../../features/party/bloc/party_bloc.dart';
 import '../../features/auth/auth_screen.dart';
 import '../../features/settings/free_space_screen.dart';
 import '../../features/settings/sync_providers_screen.dart';
@@ -33,6 +35,13 @@ final appRouter = GoRouter(
   navigatorKey: _rootNavigatorKey,
   initialLocation: '/breakdex',
   observers: [appRouteObserver],
+  errorBuilder: (context, state) => const _RedirectToHome(),
+  redirect: (context, state) {
+    if (state.matchedLocation == '/') {
+      return '/breakdex';
+    }
+    return null;
+  },
   routes: [
     StatefulShellRoute.indexedStack(
       builder: (context, state, navigationShell) =>
@@ -180,8 +189,52 @@ final appRouter = GoRouter(
       parentNavigatorKey: _rootNavigatorKey,
       builder: (context, state) => const AssetSyncHelpScreen(),
     ),
+    GoRoute(
+      path: '/moves',
+      redirect: (context, state) => '/breakdex/moves',
+    ),
+    GoRoute(
+      path: '/moves/move/:id',
+      redirect: (context, state) => '/breakdex/move/${state.pathParameters['id']}',
+    ),
+    GoRoute(
+      path: '/moves/combo/:id',
+      redirect: (context, state) => '/breakdex/combo/${state.pathParameters['id']}',
+    ),
+    GoRoute(
+      path: '/arsenal',
+      redirect: (context, state) => '/breakdex',
+    ),
   ],
 );
+
+class _RedirectToHome extends StatefulWidget {
+  const _RedirectToHome();
+
+  @override
+  State<_RedirectToHome> createState() => _RedirectToHomeState();
+}
+
+class _RedirectToHomeState extends State<_RedirectToHome> {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        context.go('/breakdex');
+      }
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return const Scaffold(
+      body: Center(
+        child: CircularProgressIndicator(),
+      ),
+    );
+  }
+}
 
 class _ReviewRouter extends ConsumerWidget {
   const _ReviewRouter();
@@ -191,7 +244,10 @@ class _ReviewRouter extends ConsumerWidget {
     final appMode = ref.watch(appModeProvider);
     return switch (appMode) {
       AppMode.anki => const FlashcardReviewScreen(),
-      AppMode.party => const PartyScreen(),
+      AppMode.party => BlocProvider(
+          create: (context) => PartyBloc(),
+          child: const PartyScreen(),
+        ),
     };
   }
 }

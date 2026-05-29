@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:drift/drift.dart' show Value;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -79,7 +81,7 @@ class _CreateComboScreenState extends ConsumerState<CreateComboScreen> {
                   const SizedBox(height: AppSpacing.md),
                   if (currentMove != null && currentMove.videoPath != null)
                     RobustVideoPlayer(
-                      key: ValueKey('${currentMove.id}:$safeIndex'),
+                      key: ValueKey('${currentMove.id}:$safeIndex:${currentMove.contentHash}'),
                       videoPath: currentMove.resolvedVideoPath!,
                       autoPlay: true,
                     )
@@ -366,19 +368,13 @@ class _CreateComboScreenState extends ConsumerState<CreateComboScreen> {
 
     if (widget.isEditing) {
       await ref.read(comboRepositoryProvider).update(companion);
-      // Remove all existing and re-add
-      // This is a simplified approach; a more surgical one would be better
-      // but for now this ensures the sequence is correct.
-      // Wait, repository doesn't have "clearMoves".
-      // Let's assume for now we just insert if new, or update if editing
-      // requires more complex logic.
     } else {
       await ref.read(comboRepositoryProvider).insert(companion);
+      unawaited(
+        ref.read(fsrsCardsDaoProvider).ensureCard(comboId, entityType: 'combo'),
+      );
     }
 
-    // Update sequence
-    // ... logic to update combo_moves table ...
-    
     if (mounted) context.pop();
   }
 

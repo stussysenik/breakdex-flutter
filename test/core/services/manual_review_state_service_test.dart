@@ -2,7 +2,6 @@ import 'package:breakdex/core/data/drift_repositories.dart';
 import 'package:breakdex/core/data/sync_aware_repositories.dart';
 import 'package:breakdex/core/database/database.dart';
 import 'package:breakdex/core/models/learning_state.dart';
-import 'package:breakdex/core/services/fsrs_service.dart';
 import 'package:breakdex/core/services/manual_review_state_service.dart';
 import 'package:drift/drift.dart' show Value;
 import 'package:flutter_test/flutter_test.dart';
@@ -22,7 +21,6 @@ void main() {
         db.syncDao,
       ),
       fsrsCardsDao: db.fsrsCardsDao,
-      fsrsService: FsrsService(db.fsrsCardsDao),
       syncDao: db.syncDao,
     );
   });

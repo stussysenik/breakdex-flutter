@@ -128,7 +128,7 @@ class MoveDetailNotifier extends Notifier<MoveDetailState> {
         move,
         newState,
       );
-      send(SaveSucceeded(move.copyWith(learningState: newState.name)));
+      send(SaveSucceeded(move.copyWith(learningState: newState.dbValue)));
     } catch (e) {
       send(SaveFailed('$e'));
     }
@@ -162,19 +162,7 @@ class MoveDetailNotifier extends Notifier<MoveDetailState> {
     String originalFileName,
   ) async {
     try {
-      // 1. Cleanup old assets (detach but keep if others use it)
-      await ref.read(mediaCleanupServiceProvider).cleanupDetachedAsset(
-            title: move.name,
-            category: move.category,
-            storedVideoPath: move.videoPath,
-            resolvedVideoPath: move.resolvedVideoPath,
-            contentHash: move.contentHash,
-            managedAlbumAssetId: move.managedAlbumAssetId,
-            excludingMoveId: move.id,
-            skipPhotosCleanup: true,
-          );
-
-      // 2. Resolve final semantic path
+      // 1. Resolve final semantic path
       // ALWAYS move to the strict semantic path to prevent videos lingering in Edits/
       final semanticRelative = await VideoPathResolver.moveToSemanticPath(
         currentRelativePath: VideoPathResolver.toRelative(localPath),
@@ -182,9 +170,24 @@ class MoveDetailNotifier extends Notifier<MoveDetailState> {
         moveName: move.name,
       );
 
-      // 3. Compute SHA-256 hash (the content truth)
+      // 2. Compute SHA-256 hash (the content truth)
       final resolvedAbs = VideoPathResolver.toAbsolute(semanticRelative);
       final contentHash = await ref.read(assetHashServiceProvider).computeHash(resolvedAbs);
+
+      // 3. Cleanup old assets ONLY AFTER successful move/hash
+      // This ensures if moveToSemanticPath or computeHash fail, we don't delete the old file prematurely.
+      // Only delete physical file if the path has actually changed.
+      final pathChanged = move.resolvedVideoPath != resolvedAbs;
+      await ref.read(mediaCleanupServiceProvider).cleanupDetachedAsset(
+            title: move.name,
+            category: move.category,
+            storedVideoPath: pathChanged ? move.videoPath : null,
+            resolvedVideoPath: pathChanged ? move.resolvedVideoPath : null,
+            contentHash: move.contentHash,
+            managedAlbumAssetId: move.managedAlbumAssetId,
+            excludingMoveId: move.id,
+            skipPhotosCleanup: true,
+          );
 
       // 4. Update DB with final path and content hash
       await ref.read(moveRepositoryProvider).update(

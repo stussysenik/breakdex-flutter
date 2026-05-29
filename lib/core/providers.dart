@@ -137,7 +137,6 @@ final manualReviewStateServiceProvider = Provider<ManualReviewStateService>((
   return ManualReviewStateService(
     moveRepository: ref.watch(moveRepositoryProvider),
     fsrsCardsDao: ref.watch(fsrsCardsDaoProvider),
-    fsrsService: ref.watch(fsrsServiceProvider),
     syncDao: ref.watch(syncDaoProvider),
   );
 });
@@ -340,6 +339,7 @@ final moveCreationServiceProvider = Provider<MoveCreationService>((ref) {
     moveRepository: ref.watch(moveRepositoryProvider),
     namingService: ref.watch(reviewableNamingServiceProvider),
     hashService: ref.watch(assetHashServiceProvider),
+    fsrsCardsDao: ref.watch(fsrsCardsDaoProvider),
     blackbox: ref.watch(blackboxServiceProvider),
     onVideoImported: ({required localPath, required moveId, precomputedHash}) =>
         ref.read(videoImportSyncHookProvider).onVideoImported(

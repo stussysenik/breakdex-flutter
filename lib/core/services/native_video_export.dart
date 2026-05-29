@@ -40,6 +40,8 @@ class ExportProgress {
         return 'Encoding ${(progress * 100).round()}%';
       case 'encoding_stalled':
         return 'Encoding (slow device)...';
+      case 'finalizing':
+        return 'Finalizing...';
       case 'done':
         return 'Done';
       default:
