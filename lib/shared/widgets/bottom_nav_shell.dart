@@ -37,6 +37,10 @@ class BottomNavShell extends ConsumerWidget {
       extendBody: true,
       body: ShakeDetector(
         onShake: () {
+          if (navigationShell.currentIndex == 2) {
+            DiagnosticsLog.debug('BottomNavShell', 'shake ignored — already on review tab');
+            return;
+          }
           DiagnosticsLog.info('BottomNavShell', 'shake triggered — navigating to review');
           navigationShell.goBranch(2);
         },

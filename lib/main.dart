@@ -16,6 +16,7 @@ import 'core/providers.dart';
 import 'core/services/automation_fixture_service.dart';
 import 'core/services/database_recovery_service.dart';
 import 'core/services/video_path_resolver.dart';
+import 'core/services/canonical_folder_service.dart';
 import 'core/services/video_storage_gate.dart';
 import 'core/services/fsrs_migration_service.dart';
 import 'core/services/managed_album_reconciliation_service.dart';
@@ -332,6 +333,22 @@ void main() async {
       await VideoPathHealer.healAll(db, prefs);
     } catch (e) {
       debugPrint('Video path healing failed: $e');
+    }
+
+    // Prune empty directories in canonical storage (cleanup from old nested hash layout).
+    try {
+      final canonicalFolder = CanonicalFolderService();
+      await canonicalFolder.ensureInitialized();
+      final removed = await canonicalFolder.pruneEmptyDirectories();
+      DiagnosticsLog.info('Boot', 'canonical folder prune done — removed $removed empty dir(s)');
+      final orphans = await canonicalFolder.scanOrphans();
+      final diskOrphans = orphans.where((o) => o.isOrphan).length;
+      final ledger = await canonicalFolder.readLedger();
+      DiagnosticsLog.info('Boot',
+          'canonical folder ledger — ${orphans.length} files on disk, '
+          '${ledger.entries.length} in ledger, $diskOrphans disk orphan(s)');
+    } catch (e) {
+      debugPrint('Canonical folder init failed: $e');
     }
 
     // Migrate existing videos into the content-addressable manifest.

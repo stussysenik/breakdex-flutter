@@ -191,6 +191,38 @@ class CanonicalFolderService {
     return results;
   }
 
+  Future<int> pruneEmptyDirectories() async {
+    var removed = 0;
+    try {
+      final videos = await videosDir;
+      if (!await videos.exists()) return 0;
+      removed = await _pruneEmptyRecursive(videos);
+      if (removed > 0) {
+        debugPrint('[CanonicalFolderService] Pruned $removed empty dir(s) in videos/');
+      }
+    } catch (e) {
+      debugPrint('[CanonicalFolderService] Prune empty dirs failed: $e');
+    }
+    return removed;
+  }
+
+  Future<int> _pruneEmptyRecursive(Directory dir) async {
+    var removed = 0;
+    try {
+      await for (final entity in dir.list()) {
+        if (entity is Directory) {
+          removed += await _pruneEmptyRecursive(entity);
+        }
+      }
+      final entries = await dir.list().toList();
+      if (entries.isEmpty) {
+        await dir.delete();
+        removed++;
+      }
+    } catch (_) {}
+    return removed;
+  }
+
   void clearCache() {
     _cachedLedger = null;
   }

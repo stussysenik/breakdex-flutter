@@ -464,6 +464,8 @@ class _PartyScreenState extends ConsumerState<PartyScreen>
         Expanded(
           child: BlocBuilder<ComboPartyBloc, ComboPartyState>(
             builder: (context, state) {
+              DiagnosticsLog.debug('Party',
+                  'ComboBlocBuilder state=${state.runtimeType}');
               return switch (state) {
                 ComboIdle() => _buildIdlePrompt(
                     colorScheme,
@@ -635,6 +637,10 @@ class _PartyScreenState extends ConsumerState<PartyScreen>
     ColorScheme colorScheme,
     ComboPartyDisplay combo,
   ) {
+    DiagnosticsLog.info('Party',
+        '_buildComboRevealedCard combo=${combo.name} videoPath=${combo.videoPath} '
+        'moveNames=${combo.moveNames.join(",")} '
+        'revealScaleY=${_revealScaleY.value.toStringAsFixed(2)}');
     return _buildRevealedCardWrapper(
       colorScheme,
       child: _buildComboCard(colorScheme, combo),
@@ -645,6 +651,9 @@ class _PartyScreenState extends ConsumerState<PartyScreen>
     ColorScheme colorScheme, {
     required Widget child,
   }) {
+    DiagnosticsLog.debug('Party',
+        '_buildRevealedCardWrapper scaleY=${_revealScaleY.value.toStringAsFixed(2)} '
+        'controllerStatus=${_revealController.status.name}');
     return Center(
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: AppSpacing.screenEdge),
