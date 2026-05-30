@@ -16,6 +16,7 @@ import 'core/providers.dart';
 import 'core/services/automation_fixture_service.dart';
 import 'core/services/database_recovery_service.dart';
 import 'core/services/video_path_resolver.dart';
+import 'core/services/video_storage_gate.dart';
 import 'core/services/fsrs_migration_service.dart';
 import 'core/services/managed_album_reconciliation_service.dart';
 import 'core/services/provenance_journal_service.dart';
@@ -23,6 +24,7 @@ import 'core/services/settings_service.dart';
 import 'core/sync/asset_hash_service.dart';
 import 'core/sync/legacy_asset_migration.dart';
 import 'core/sync/video_reliability_runtime.dart';
+import 'core/utils/diagnostics.dart';
 
 final _rootScaffoldMessengerKey = GlobalKey<ScaffoldMessengerState>();
 
@@ -35,7 +37,7 @@ Future<void> _backupDatabaseIfNeeded(
   ProvenanceJournalService provenanceJournal,
 ) async {
   final lastBackupSchema = prefs.getInt('last_backup_schema') ?? 0;
-  const currentSchema = 14;
+  const currentSchema = 19;
 
   try {
     final createdBackup = await recoveryService.createRollingBackupIfDue(
@@ -195,6 +197,13 @@ Future<void> _runMigrations(AppDatabase db, SharedPreferences prefs) async {
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  DiagnosticsLog.configure(
+    threshold: kDebugMode ? LogLevel.trace : LogLevel.info,
+  );
+  DiagnosticsLog.setSubsystemThreshold('SwingDetector', LogLevel.warn);
+  DiagnosticsLog.info('Boot', 'Breakdex startup — diagnostics online');
+
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
@@ -256,6 +265,10 @@ void main() async {
   // convert between relative (DB) and absolute (file system) paths.
   await VideoPathResolver.initialize();
 
+  // Initialize the storage gate so video write operations are validated
+  // against the designated storage directories.
+  await VideoStorageGate.initialize();
+
   // Backup database before migration (safety net for schema changes)
   await _backupDatabaseIfNeeded(prefs, recoveryService, provenanceJournal);
 
@@ -293,21 +306,31 @@ void main() async {
     ),
   );
 
-  // Run FSRS migrations after the first frame renders — keeps the launch
-  // window lightweight so iOS doesn't Jetsam-kill us for memory/CPU pressure.
+  // Run deferred startup work after the first frame renders — keeps the
+  // launch window lightweight so iOS doesn't Jetsam-kill us.
   WidgetsBinding.instance.addPostFrameCallback((_) async {
-    await _runMigrations(db, prefs);
+    // Delay 2 seconds to let Flutter finish painting the initial route
+    // before heavy I/O competes with the raster thread.
+    await Future<void>.delayed(const Duration(seconds: 2));
 
-    // Convert any legacy absolute video paths to relative form.
-    // Idempotent — runs once, gated by SharedPreferences.
+    // Run FSRS migrations (idempotent, gated by prefs)
+    try {
+      await _runMigrations(db, prefs);
+    } catch (e) {
+      debugPrint('FSRS migration failed: $e');
+    }
+
+    // Convert legacy absolute video paths and clean up filesystem.
+    // Auto-cleanup is gated to once per 24h; DB healing is version-gated.
     try {
       await VideoPathHealer.healAll(db, prefs);
     } catch (e) {
       debugPrint('Video path healing failed: $e');
     }
 
-    // Migrate existing videos (pre-sync) into the content-addressable manifest.
+    // Migrate existing videos into the content-addressable manifest.
     // Idempotent — skips moves that already have a contentHash.
+    // Runs one move at a time to avoid I/O saturation.
     try {
       final migration = LegacyAssetMigration(
         movesDao: db.movesDao,

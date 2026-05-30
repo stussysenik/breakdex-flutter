@@ -176,7 +176,9 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget>
     if (_tickerModeEnabled != tickerModeEnabled) {
       _tickerModeEnabled = tickerModeEnabled;
       if (!tickerModeEnabled) {
-        _pausePlayback();
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted) _pausePlayback();
+        });
       }
     }
   }

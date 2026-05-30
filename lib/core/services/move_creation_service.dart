@@ -74,6 +74,7 @@ class MoveCreationService {
       normalizedCategory,
       normalizedName,
       ext,
+      contentHash: contentHash ?? moveId,
     );
 
     // If we have a local path, move it to semantic path IMMEDIATELY

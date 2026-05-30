@@ -169,24 +169,45 @@ abstract final class VideoPathResolver {
   }
 
   /// Return a semantic relative path for video storage:
-  /// `Moves/{category}/{moveName}/video.{ext}`.
+  /// `Moves/{category}/{moveName}/{contentHash}.{ext}`.
+  ///
+  /// Uses content hash as the filename so different edits always produce
+  /// different paths, forcing Flutter widget keys to evict cached video
+  /// players and preventing stale video display.
   ///
   /// Category and move name are sanitized for safe filesystem usage.
   /// If the category is not recognized as a primary category, it defaults to 'Default'.
   static String semanticVideoPath(
     String category,
     String moveName,
+    String extension, {
+    required String contentHash,
+  }) {
+    final safeCategory = getSafeCategory(category);
+
+    final sanitizedName = _sanitizeFilename(moveName.trim());
+    final safeName = sanitizedName.length > 1
+        ? sanitizedName[0].toUpperCase() + sanitizedName.substring(1).toLowerCase()
+        : sanitizedName.toUpperCase();
+
+    final ext = extension.startsWith('.') ? extension.substring(1) : extension;
+    return p.join('Moves', safeCategory, safeName, '$contentHash.${ext.toLowerCase()}');
+  }
+
+  /// Return a semantic relative path for video storage:
+  /// `Moves/{category}/{moveName}/video.{ext}` (backward-compatible stub
+  /// for callers that don't have a content hash yet).
+  @Deprecated('Use the contentHash variant instead')
+  static String semanticVideoPathLegacy(
+    String category,
+    String moveName,
     String extension,
   ) {
-    // Standardize category naming for storage
     final safeCategory = getSafeCategory(category);
-    
-    // Standardize move naming to prevent "Windmill" vs "windmill" folder duplicates
     final sanitizedName = _sanitizeFilename(moveName.trim());
-    final safeName = sanitizedName.length > 1 
-      ? sanitizedName[0].toUpperCase() + sanitizedName.substring(1).toLowerCase()
-      : sanitizedName.toUpperCase();
-
+    final safeName = sanitizedName.length > 1
+        ? sanitizedName[0].toUpperCase() + sanitizedName.substring(1).toLowerCase()
+        : sanitizedName.toUpperCase();
     final ext = extension.startsWith('.') ? extension.substring(1) : extension;
     return p.join('Moves', safeCategory, safeName, 'video.${ext.toLowerCase()}');
   }
@@ -212,14 +233,18 @@ abstract final class VideoPathResolver {
   }
 
   /// Move the file at [currentRelativePath] to a semantic path based on
-  /// [category] and [moveName]. Returns the new relative path.
+  /// [category], [moveName], and [contentHash]. Returns the new relative path.
   ///
   /// If the source file cannot be found, returns [currentRelativePath] as-is.
   /// Creates intermediate directories as needed.
+  ///
+  /// When [contentHash] is provided, the target filename is `{hash}.mp4`.
+  /// When null (backward compat), falls back to `video.mp4`.
   static Future<String> moveToSemanticPath({
     required String currentRelativePath,
     required String category,
     required String moveName,
+    String? contentHash,
   }) async {
     final sourceAbs = toAbsolute(currentRelativePath);
     final sourceFile = File(sourceAbs);
@@ -229,15 +254,25 @@ abstract final class VideoPathResolver {
     final ext = p.extension(currentRelativePath).isNotEmpty
         ? p.extension(currentRelativePath)
         : '.mp4';
-    final newRelative = semanticVideoPath(category, moveName, ext);
+    final newRelative = contentHash != null
+        ? semanticVideoPath(category, moveName, ext, contentHash: contentHash)
+        : semanticVideoPathLegacy(category, moveName, ext);
     final newAbs = toAbsolute(newRelative);
 
-    // Already at the correct path
     if (sourceAbs == newAbs) return currentRelativePath;
 
     final newDir = Directory(p.dirname(newAbs));
     if (!await newDir.exists()) {
       await newDir.create(recursive: true);
+    }
+
+    // Clean up any old legacy `video.mp4` in the same directory to avoid
+    // having both the old and new files.
+    if (contentHash != null) {
+      final legacyFile = File(p.join(p.dirname(newAbs), 'video.mp4'));
+      try {
+        if (await legacyFile.exists()) await legacyFile.delete();
+      } catch (_) {}
     }
 
     try {
@@ -256,18 +291,27 @@ abstract final class VideoPathResolver {
 /// Gated by SharedPreferences so it only runs once.
 abstract final class VideoPathHealer {
   static const _prefsKey = 'video_paths_healed_v3';
+  static const _cleanupRunAtKey = 'video_paths_cleanup_run_at';
 
   /// Proactive healing of both the database records and physical filesystem.
   ///
-  /// This is the "Truth Guard" of the application. It runs after the first frame
-  /// to ensure the Files app and SQLite always remain in sync.
+  /// Filesystem cleanup is deferred to run at most once every 24 hours to avoid
+  /// blocking app startup with expensive directory scans on every boot.
   static Future<void> healAll(AppDatabase db, SharedPreferences prefs) async {
-    // 1. Filesystem Purity (Run every boot - lightweight)
-    // Ensures root backups and orphaned UUID videos are always organized.
-    await _autoCleanFileSystem(db);
+    final now = DateTime.now().millisecondsSinceEpoch;
+    final lastCleanup = prefs.getInt(_cleanupRunAtKey) ?? 0;
+    final hoursSinceCleanup =
+        (now - lastCleanup) / (1000 * 60 * 60);
 
-    // 2. Database Record Healing (Version gated - heavy)
-    // Ensures all stored paths follow the latest semantic structure.
+    if (hoursSinceCleanup >= 24 || lastCleanup == 0) {
+      try {
+        await _autoCleanFileSystem(db);
+        await prefs.setInt(_cleanupRunAtKey, now);
+      } catch (e) {
+        debugPrint('[VideoPathHealer] Cleanup failed: $e');
+      }
+    }
+
     if (prefs.getBool(_prefsKey) != true) {
       try {
         await _healDatabasePaths(db);
@@ -284,6 +328,7 @@ abstract final class VideoPathHealer {
     await _cleanupRootBackups();
     await _cleanupMovesOrphans(db);
     await _mergeDuplicateFolders();
+    await _pruneEmptyMovesDirectories();
   }
 
   /// Proactively find and merge folders that differ only by casing.
@@ -356,6 +401,41 @@ abstract final class VideoPathHealer {
     try {
       await source.delete();
     } catch (_) {}
+  }
+
+  /// Recursively walk the Moves/ directory tree and delete any empty
+  /// subdirectories. Runs after orphan cleanup and folder merging to ensure
+  /// no ghost directories accumulate.
+  static Future<void> _pruneEmptyMovesDirectories() async {
+    try {
+      final movesPath = p.join(VideoPathResolver.toAbsolute(''), 'Moves');
+      final movesDir = Directory(movesPath);
+      if (!await movesDir.exists()) return;
+
+      final removed = await _pruneEmptyRecursive(movesDir);
+      if (removed > 0) {
+        debugPrint('[VideoPathHealer] Pruned $removed empty dir(s) in Moves/');
+      }
+    } catch (e) {
+      debugPrint('[VideoPathHealer] Prune empty dirs failed: $e');
+    }
+  }
+
+  static Future<int> _pruneEmptyRecursive(Directory dir) async {
+    var removed = 0;
+    try {
+      await for (final entity in dir.list()) {
+        if (entity is Directory) {
+          removed += await _pruneEmptyRecursive(entity);
+        }
+      }
+      final entries = await dir.list().toList();
+      if (entries.isEmpty) {
+        await dir.delete();
+        removed++;
+      }
+    } catch (_) {}
+    return removed;
   }
 
   static Future<void> _cleanupRootBackups() async {
@@ -455,6 +535,7 @@ abstract final class VideoPathHealer {
         currentRelativePath: currentPath,
         category: move.category,
         moveName: move.name,
+        contentHash: move.contentHash,
       );
 
       if (semanticRelative != currentPath) {

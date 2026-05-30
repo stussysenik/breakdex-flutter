@@ -1,19 +1,22 @@
+import 'dart:math';
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
-import 'dart:math';
+
 import '../../../core/database/database.dart';
+import '../../../core/utils/diagnostics.dart';
 
 part 'party_bloc.freezed.dart';
 
 @freezed
-class PartyEvent with _$PartyEvent {
+abstract class PartyEvent with _$PartyEvent {
   const factory PartyEvent.shake(List<Move> allMoves, int durationMs) = _Shake;
   const factory PartyEvent.tick(DateTime now) = _Tick;
 }
 
 @freezed
-class PartyState with _$PartyState {
+abstract class PartyState with _$PartyState {
   const factory PartyState.idle() = _Idle;
   const factory PartyState.cycling({
     required List<Move> allMoves,
@@ -31,6 +34,7 @@ class PartyBloc extends Bloc<PartyEvent, PartyState> {
   final Random _random = Random();
   static const _cycleFlipBaseMs = 60;
   static const _cycleFlipMaxMs = 260;
+  static const _subsystem = 'Party(Move)';
 
   PartyBloc() : super(const PartyState.idle()) {
     on<_Shake>(_onShake);
@@ -38,13 +42,19 @@ class PartyBloc extends Bloc<PartyEvent, PartyState> {
   }
 
   void _onShake(_Shake event, Emitter<PartyState> emit) {
-    print('[PartyBloc] _onShake called. State: $state. Moves count: ${event.allMoves.length}');
+    DiagnosticsLog.info(
+      _subsystem,
+      'shake received; state=${state.runtimeType} moves=${event.allMoves.length}',
+    );
     if (event.allMoves.isEmpty) {
-      print('[PartyBloc] _onShake ignored: Moves list is empty');
+      DiagnosticsLog.warn(_subsystem, 'shake ignored: moves list is empty');
       return;
     }
     if (state is! _Idle && state is! _Revealed) {
-      print('[PartyBloc] _onShake ignored: State is not Idle or Revealed');
+      DiagnosticsLog.debug(
+        _subsystem,
+        'shake ignored: state is ${state.runtimeType}',
+      );
       return;
     }
 
@@ -52,7 +62,10 @@ class PartyBloc extends Bloc<PartyEvent, PartyState> {
     final currentMove = event.allMoves[_random.nextInt(event.allMoves.length)];
     final now = DateTime.now();
 
-    print('[PartyBloc] Emitting cycling state. currentMove: ${currentMove.name}, finalMove: ${finalMove.name}');
+    DiagnosticsLog.info(
+      _subsystem,
+      'cycling → "${finalMove.name}"',
+    );
     emit(PartyState.cycling(
       allMoves: event.allMoves,
       currentMove: currentMove,
@@ -66,18 +79,21 @@ class PartyBloc extends Bloc<PartyEvent, PartyState> {
   void _onTick(_Tick event, Emitter<PartyState> emit) {
     final currentState = state;
     if (currentState is _Revealing) {
-      print('[PartyBloc] _onTick: currentState is _Revealing. Emitting revealed with ${currentState.move.name}');
+      DiagnosticsLog.info(
+        _subsystem,
+        'revealing → revealed "${currentState.move.name}"',
+      );
       emit(PartyState.revealed(move: currentState.move));
       return;
     }
-    if (currentState is! _Cycling) {
-      // Don't spam print for every tick when idle, but print once if we get ticks while idle
-      return;
-    }
+    if (currentState is! _Cycling) return;
 
     final elapsed = event.now.difference(currentState.startTime);
     if (elapsed.inMilliseconds >= currentState.durationMs) {
-      print('[PartyBloc] _onTick: Cycling duration elapsed (${elapsed.inMilliseconds} >= ${currentState.durationMs} ms). Emitting revealing with finalMove: ${currentState.finalMove.name}');
+      DiagnosticsLog.info(
+        _subsystem,
+        'cycle expired (${elapsed.inMilliseconds}ms) → revealing "${currentState.finalMove.name}"',
+      );
       emit(PartyState.revealing(move: currentState.finalMove));
       return;
     }

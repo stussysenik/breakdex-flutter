@@ -31,6 +31,12 @@ class MoveNoteEntriesDao extends DatabaseAccessor<AppDatabase>
     );
   }
 
+  Future<void> updateEntry(String id, String body) {
+    return (update(moveNoteEntries)..where((t) => t.id.equals(id))).write(
+      MoveNoteEntriesCompanion(body: Value(body)),
+    );
+  }
+
   Future<void> deleteEntry(String id) {
     return (delete(moveNoteEntries)..where((t) => t.id.equals(id))).go();
   }

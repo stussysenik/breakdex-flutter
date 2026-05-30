@@ -3,6 +3,8 @@ import 'dart:math';
 import 'package:flutter/services.dart';
 import 'package:sensors_plus/sensors_plus.dart';
 
+import '../utils/diagnostics.dart';
+
 /// Detects an intentional "swing" motion using accelerometer data.
 ///
 /// Unlike a simple shake, a swing requires a sustained acceleration arc,
@@ -49,7 +51,7 @@ class SwingDetector {
 
     // 2. Add current point (userAccelerometer already excludes gravity)
     final magnitude = sqrt(event.x * event.x + event.y * event.y + event.z * event.z);
-    print('[SwingDetector] Event magnitude: ${magnitude.toStringAsFixed(2)} (threshold: $threshold), window length: ${_window.length}');
+    DiagnosticsLog.trace('SwingDetector', 'Event magnitude: ${magnitude.toStringAsFixed(2)} (threshold: $threshold), window length: ${_window.length}');
     _window.add(_MomentumPoint(event, magnitude, now));
 
     // 3. Analyze for "Swing"

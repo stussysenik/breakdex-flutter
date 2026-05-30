@@ -1,3 +1,6 @@
+import 'package:flutter/foundation.dart';
+import '../utils/diagnostics.dart';
+
 /// Zero-dependency state machine base class.
 ///
 /// [S] is a sealed class hierarchy of states (data-only, immutable).
@@ -6,9 +9,15 @@
 /// The transition function is `transition(S, E) -> S?` — pure, no side effects.
 /// Side effects execute in [onEntry] / [onExit] hooks after state changes.
 ///
+/// Override [diagnosticsLabel] to give this machine a subsystem name for
+/// structured diagnostic logging. Defaults to `S` type name.
+///
 /// ```dart
 /// final class MyMachine extends Machine<MyState, MyEvent> {
 ///   MyMachine(super.initialState);
+///
+///   @override
+///   String get diagnosticsLabel => 'MyMachine';
 ///
 ///   @override
 ///   MyState? transition(MyState state, MyEvent event) => switch ((state, event)) {
@@ -25,6 +34,9 @@ abstract class Machine<S, E> {
 
   /// The current state. Read by the UI to determine what to render.
   S get state => _state;
+
+  /// Subsystem label for diagnostic logging. Override to customize.
+  String get diagnosticsLabel => '$S';
 
   /// Child machines that receive events before this machine.
   final List<Machine<dynamic, E>> children = [];
@@ -43,11 +55,37 @@ abstract class Machine<S, E> {
     }
 
     final next = transition(_state, event);
-    if (next == null) return;
+    if (next == null) {
+      if (kDebugMode) {
+        DiagnosticsLog.debug(
+          diagnosticsLabel,
+          '↓ ignored ${_eventName(event)} @ ${_stateName(_state)}',
+        );
+      }
+      return;
+    }
+
+    if (kDebugMode) {
+      DiagnosticsLog.debug(
+        diagnosticsLabel,
+        '${_stateName(_state)} → ${_stateName(next)} ∵ ${_eventName(event)}',
+      );
+    }
 
     onExit(_state);
     _state = next;
     onEntry(_state);
+  }
+
+  static String _stateName(Object? s) =>
+      s?.runtimeType.toString() ?? 'null';
+
+  static String _eventName(Object? e) {
+    final name = e?.runtimeType.toString() ?? 'null';
+    if (e case final dynamic ee when ee.runtimeType.toString() != name) {
+      return name;
+    }
+    return name;
   }
 
   /// Pure transition function. Returns the next state, or `null` if the

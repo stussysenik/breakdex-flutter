@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:drift/drift.dart';
 import '../database.dart';
 import '../tables/combos.dart';
@@ -48,6 +49,10 @@ class CombosDao extends DatabaseAccessor<AppDatabase> with _$CombosDaoMixin {
   Stream<Combo> watchById(String id) =>
       (select(combos)..where((t) => t.id.equals(id))).watchSingle();
 
+  /// Performance: each cell using [watchComboMoves] creates a per-combo stream
+  /// subscription. With N combos in the grid this scales as O(N). Grid cells
+  /// should share a single-widget subscription (see _ComboGridCell) and prefer
+  /// combo.resolvedActiveVideoPath for thumbnail resolution where possible.
   Stream<List<ComboMoveWithDetail>> watchComboMoves(String comboId) {
     final query = select(comboMoves).join([
       innerJoin(moves, moves.id.equalsExp(comboMoves.moveId)),
@@ -73,11 +78,37 @@ class CombosDao extends DatabaseAccessor<AppDatabase> with _$CombosDaoMixin {
       (update(combos)..where((t) => t.id.equals(entry.id.value)))
           .write(entry);
 
-  Future<void> deleteCombo(String id) =>
-      (delete(combos)..where((t) => t.id.equals(id))).go();
+  Future<void> deleteCombo(String id) {
+    debugPrint('[CombosDao] deleteCombo id=$id');
+    return (delete(combos)..where((t) => t.id.equals(id))).go();
+  }
 
   Future<void> removeComboMove(String id) =>
       (delete(comboMoves)..where((t) => t.id.equals(id))).go();
+
+  Future<void> deleteAllMovesForCombo(String comboId) =>
+      (delete(comboMoves)..where((t) => t.comboId.equals(comboId))).go();
+
+  /// Loads all combo→moves relationships in a single join query.
+  /// Returns a map keyed by comboId→list of [ComboMoveWithDetail].
+  /// Avoids the N+1 query problem of calling [watchComboMoves] per combo.
+  Future<Map<String, List<ComboMoveWithDetail>>> getAllComboMovesMap() async {
+    final query = select(comboMoves).join([
+      innerJoin(moves, moves.id.equalsExp(comboMoves.moveId)),
+    ])
+      ..orderBy([OrderingTerm.asc(comboMoves.sequenceIndex)]);
+
+    final rows = await query.get();
+    final map = <String, List<ComboMoveWithDetail>>{};
+    for (final row in rows) {
+      final cm = row.readTable(comboMoves);
+      final m = row.readTable(moves);
+      map.putIfAbsent(cm.comboId, () => []).add(
+            ComboMoveWithDetail(comboMove: cm, move: m),
+          );
+    }
+    return map;
+  }
 
   /// Watches all combos paired with their move count via a LEFT JOIN on
   /// combo_moves grouped by comboId. Returns (Combo, int) tuples so the
@@ -99,10 +130,8 @@ class CombosDao extends DatabaseAccessor<AppDatabase> with _$CombosDaoMixin {
           .toList();
       
       list.sort((a, b) {
-        // Size up (ascending by count)
         final sizeCmp = a.$2.compareTo(b.$2);
         if (sizeCmp != 0) return sizeCmp;
-        // Fallback to name
         return a.$1.name.compareTo(b.$1.name);
       });
       

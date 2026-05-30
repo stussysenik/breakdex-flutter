@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:uuid/uuid.dart';
@@ -89,13 +90,27 @@ class LogsSection extends ConsumerWidget {
                             fontWeight: FontWeight.bold,
                           ),
                         ),
-                        GestureDetector(
-                          onTap: () => _deleteLog(context, ref, id),
-                          child: Icon(
-                            Icons.close_rounded,
-                            size: 14,
-                            color: colorScheme.outline,
-                          ),
+                        Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            GestureDetector(
+                              onTap: () => _editLog(context, ref, id, body),
+                              child: Icon(
+                                Icons.edit_outlined,
+                                size: 14,
+                                color: colorScheme.outline,
+                              ),
+                            ),
+                            const SizedBox(width: AppSpacing.sm),
+                            GestureDetector(
+                              onTap: () => _deleteLog(context, ref, id),
+                              child: Icon(
+                                Icons.close_rounded,
+                                size: 14,
+                                color: colorScheme.outline,
+                              ),
+                            ),
+                          ],
                         ),
                       ],
                     ),
@@ -107,7 +122,7 @@ class LogsSection extends ConsumerWidget {
                       ),
                     ),
                   ],
-                );
+                ).animate().fadeIn(duration: 250.ms, delay: (50 * index).ms).slideX(begin: 0.05, end: 0, duration: 250.ms, delay: (50 * index).ms);
               },
             );
           },
@@ -186,6 +201,43 @@ class LogsSection extends ConsumerWidget {
         await ref.read(comboNoteEntriesDaoProvider).deleteEntry(id);
       }
       unawaited(HapticFeedback.mediumImpact());
+    }
+  }
+
+  Future<void> _editLog(BuildContext context, WidgetRef ref, String id, String currentBody) async {
+    final controller = TextEditingController(text: currentBody);
+    final result = await showDialog<String>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Edit Log Entry'),
+        content: TextField(
+          controller: controller,
+          autofocus: true,
+          maxLines: null,
+          decoration: const InputDecoration(
+            hintText: 'What did you work on?',
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('CANCEL'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, controller.text.trim()),
+            child: const Text('SAVE'),
+          ),
+        ],
+      ),
+    );
+
+    if (result != null && result.isNotEmpty && result != currentBody) {
+      if (entityType == 'move') {
+        await ref.read(moveNoteEntriesDaoProvider).updateEntry(id, result);
+      } else {
+        await ref.read(comboNoteEntriesDaoProvider).updateEntry(id, result);
+      }
+      unawaited(HapticFeedback.selectionClick());
     }
   }
 }

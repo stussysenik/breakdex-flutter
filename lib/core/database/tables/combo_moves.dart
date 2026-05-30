@@ -9,6 +9,7 @@ class ComboMoves extends Table {
       text().references(Combos, #id, onDelete: KeyAction.cascade)();
   TextColumn get moveId =>
       text().references(Moves, #id, onDelete: KeyAction.cascade)();
+  IntColumn get count => integer().withDefault(const Constant(1))();
 
   @override
   Set<Column> get primaryKey => {id};

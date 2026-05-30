@@ -5,8 +5,11 @@ import 'package:drift/drift.dart';
 import '../database/database.dart';
 import '../database/daos/moves_dao.dart';
 import '../utils/filesystem_utils.dart';
+import '../utils/diagnostics.dart';
 import 'video_path_resolver.dart';
 import 'provenance_service.dart';
+
+import 'blackbox_service.dart';
 
 import 'blackbox_service.dart';
 
@@ -64,6 +67,7 @@ class StorageOrchestrator {
         currentRelativePath: oldRelative,
         category: newName,
         moveName: move.name,
+        contentHash: move.contentHash,
       );
 
       await _movesDao.updateMove(MovesCompanion(
@@ -102,12 +106,12 @@ class StorageOrchestrator {
         // If it's a match ignoring case but NOT the canonical one, merge it
         if (actualName.toLowerCase() == canonicalName.toLowerCase() && 
             actualName != canonicalName) {
-          debugPrint('[StorageOrchestrator] Merging duplicate folder: $actualName -> $canonicalName');
+          DiagnosticsLog.debug('StorageOrchestrator', 'Merging duplicate folder: $actualName -> $canonicalName');
           await _mergeDirectories(entity, Directory(p.join(rootMoves, canonicalName)));
         }
       }
     } catch (e) {
-      debugPrint('[StorageOrchestrator] Duplicate guard failed: $e');
+      DiagnosticsLog.warn('StorageOrchestrator', 'Duplicate guard failed: $e');
     }
   }
 
@@ -150,6 +154,7 @@ class StorageOrchestrator {
         currentRelativePath: move.videoPath!,
         category: newCategory,
         moveName: move.name,
+        contentHash: move.contentHash,
       );
     }
 
@@ -186,6 +191,7 @@ class StorageOrchestrator {
         currentRelativePath: move.videoPath!,
         category: move.category,
         moveName: newName,
+        contentHash: move.contentHash,
       );
     }
 
@@ -204,14 +210,29 @@ class StorageOrchestrator {
   /// Delete a move and its associated physical media.
   Future<void> deleteMove(Move move, {required Future<void> Function(Move) cleanupMedia}) async {
     await _blackbox?.log('delete_move', 'move', move.id, {'name': move.name});
-    
-    // 1. Physical Cleanup
-    await cleanupMedia(move);
+    final log = StageLogger.begin('deleteMove', subsystem: 'StorageOrchestrator', context: {
+      'moveId': move.id,
+      'name': move.name,
+    });
 
-    // 2. DB Deletion
-    await _movesDao.deleteMove(move.id);
+    try {
+      await cleanupMedia(move);
+      log.stage('mediaCleaned');
+    } catch (e, stack) {
+      log.stage('mediaCleanupFailed', {'error': '$e'});
+    }
 
-    // 3. Folder Cleanup
+    try {
+      await _movesDao.deleteMove(move.id);
+      log.stage('dbRowDeleted');
+    } catch (e, stack) {
+      log.fail(e, stack);
+      rethrow;
+    }
+
+    await _blackbox?.log('delete_move_complete', 'move', move.id, {});
+    log.complete();
+
     await _cleanupOldCategoryDir(move.category);
   }
 

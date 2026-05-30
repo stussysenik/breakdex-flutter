@@ -103,7 +103,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.forTesting(super.e);
 
   @override
-  int get schemaVersion => 19;
+  int get schemaVersion => 20;
 
   Future<void> _installIntegrityTriggers() async {
     await customStatement('''
@@ -532,6 +532,12 @@ class AppDatabase extends _$AppDatabase {
 
       if (from < 19) {
         await m.createTable(comboNoteEntries);
+      }
+
+      if (from < 20) {
+        await customStatement(
+          'ALTER TABLE combo_moves ADD COLUMN count INTEGER NOT NULL DEFAULT 1',
+        );
       }
 
       await _backfillReviewSnapshots();

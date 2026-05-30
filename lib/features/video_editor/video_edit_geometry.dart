@@ -1,5 +1,6 @@
 import 'dart:math' as math;
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
 
 @immutable
@@ -48,25 +49,34 @@ class VideoEditViewport {
     final scale = _matrixScale(clamped);
     final translation = clamped.getTranslation();
 
-    final left = (-translation.x / scale)
+    final leftPx = (-translation.x / scale)
         .clamp(0.0, orientedVideoSize.width)
         .toDouble();
-    final top = (-translation.y / scale)
+    final topPx = (-translation.y / scale)
         .clamp(0.0, orientedVideoSize.height)
         .toDouble();
-    final right = ((size.width - translation.x) / scale)
-        .clamp(left, orientedVideoSize.width)
+    final rightPx = ((size.width - translation.x) / scale)
+        .clamp(leftPx, orientedVideoSize.width)
         .toDouble();
-    final bottom = ((size.height - translation.y) / scale)
-        .clamp(top, orientedVideoSize.height)
+    final bottomPx = ((size.height - translation.y) / scale)
+        .clamp(topPx, orientedVideoSize.height)
         .toDouble();
 
-    return Rect.fromLTRB(
-      left / orientedVideoSize.width,
-      top / orientedVideoSize.height,
-      right / orientedVideoSize.width,
-      bottom / orientedVideoSize.height,
+    final left = leftPx / orientedVideoSize.width;
+    final top = topPx / orientedVideoSize.height;
+    final right = rightPx / orientedVideoSize.width;
+    final bottom = bottomPx / orientedVideoSize.height;
+
+    debugPrint(
+      '[VideoEditViewport] normalizedCropRect: '
+      'viewport=${size.width.toStringAsFixed(0)}x${size.height.toStringAsFixed(0)} '
+      'orientedVideo=${orientedVideoSize.width.toStringAsFixed(0)}x${orientedVideoSize.height.toStringAsFixed(0)} '
+      'scale=${scale.toStringAsFixed(4)} tx=${translation.x.toStringAsFixed(1)} ty=${translation.y.toStringAsFixed(1)} '
+      'leftPx=$leftPx topPx=$topPx rightPx=$rightPx bottomPx=$bottomPx '
+      '→ norm ltrb: ${left.toStringAsFixed(4)} ${top.toStringAsFixed(4)} ${right.toStringAsFixed(4)} ${bottom.toStringAsFixed(4)}',
     );
+
+    return Rect.fromLTRB(left, top, right, bottom);
   }
 
   static Matrix4 _matrix({

@@ -22,6 +22,7 @@ import '../../core/services/settings_service.dart';
 import '../../core/services/media_playback_coordinator.dart';
 import '../../core/services/thumbnail_load_coordinator.dart';
 import '../../core/services/video_service.dart';
+import '../../core/utils/diagnostics.dart';
 import '../../core/services/view_names_service.dart';
 import '../../shared/widgets/celebration_overlay.dart';
 import '../../shared/widgets/pressable.dart';
@@ -69,7 +70,11 @@ final _dismissedReliabilityReportEpochProvider = StateProvider<int?>(
 );
 
 final _combosStreamProvider = StreamProvider<List<(Combo, int)>>((ref) {
-  return ref.watch(comboRepositoryProvider).watchAllWithMoveCounts();
+  final stream = ref.watch(comboRepositoryProvider).watchAllWithMoveCounts();
+  return stream.map((combos) {
+    debugPrint('[MoveList] _combosStreamProvider emitted ${combos.length} combos');
+    return combos;
+  });
 });
 
 final _viewModeProvider = NotifierProvider<_ViewModeNotifier, ViewMode>(
@@ -95,7 +100,11 @@ class _ViewModeNotifier extends Notifier<ViewMode> {
 }
 
 final _movesStreamProvider = StreamProvider<List<Move>>((ref) {
-  return ref.watch(moveRepositoryProvider).watchAll();
+  final stream = ref.watch(moveRepositoryProvider).watchAll();
+  return stream.map((moves) {
+    debugPrint('[MoveList] _movesStreamProvider emitted ${moves.length} moves');
+    return moves;
+  });
 });
 
 // -- Screen ------------------------------------------------------------------
@@ -1023,6 +1032,8 @@ class _PillToggleRow<T> extends StatelessWidget {
 
 /// Staggered-animated SliverList shared by both Moves and Combos list modes.
 /// Uses SliverList for compositor-friendly scrolling within CustomScrollView.
+/// Animations are delegated to the row widgets so that [Dismissible] gesture
+/// detection is not blocked by [flutter_animate]'s transform-based effects.
 Widget _sliverStaggeredList({
   required int itemCount,
   required Widget Function(int index) builder,
@@ -1031,17 +1042,7 @@ Widget _sliverStaggeredList({
     padding: const EdgeInsets.symmetric(horizontal: AppSpacing.screenEdge),
     sliver: SliverList.builder(
       itemCount: itemCount,
-      itemBuilder: (_, index) => builder(index)
-          .animate()
-          .fadeIn(
-            duration: AppMotion.moderate01,
-            delay: Duration(milliseconds: index.clamp(0, 15) * 40),
-          )
-          .slideY(
-            begin: 0.03,
-            duration: AppMotion.moderate02,
-            delay: Duration(milliseconds: index.clamp(0, 15) * 40),
-          ),
+      itemBuilder: (_, index) => builder(index),
     ),
   );
 }
@@ -1125,7 +1126,7 @@ class _MoveListSliver extends StatelessWidget {
   Widget build(BuildContext context) {
     return _sliverStaggeredList(
       itemCount: moves.length,
-      builder: (index) => _MoveRow(move: moves[index]),
+      builder: (index) => _MoveRow(move: moves[index], index: index),
     );
   }
 }

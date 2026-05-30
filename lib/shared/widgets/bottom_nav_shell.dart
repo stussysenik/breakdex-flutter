@@ -9,6 +9,8 @@ import '../../core/design/theme.dart';
 import '../../core/services/media_playback_coordinator.dart';
 import '../../core/models/app_mode.dart';
 import '../../core/services/settings_service.dart';
+import '../../core/utils/diagnostics.dart';
+import 'shake_detector.dart';
 import 'sync_progress_bar.dart';
 
 class BottomNavShell extends ConsumerWidget {
@@ -32,13 +34,18 @@ class BottomNavShell extends ConsumerWidget {
     final brightness = Theme.of(context).brightness;
 
     return Scaffold(
-      // Stack the nav bar on top of content so the blur peeks through
       extendBody: true,
-      body: Column(
-        children: [
-          const SyncProgressBar(),
-          Expanded(child: navigationShell),
-        ],
+      body: ShakeDetector(
+        onShake: () {
+          DiagnosticsLog.info('BottomNavShell', 'shake triggered — navigating to review');
+          navigationShell.goBranch(2);
+        },
+        child: Column(
+          children: [
+            const SyncProgressBar(),
+            Expanded(child: navigationShell),
+          ],
+        ),
       ),
       bottomNavigationBar: ClipRect(
         child: BackdropFilter(

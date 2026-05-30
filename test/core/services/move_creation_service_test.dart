@@ -129,8 +129,8 @@ void main() {
         final move = await db.movesDao.getById('hash-123');
 
         expect(result.hasVideo, isTrue);
-        expect(result.videoPath, 'Moves/Footwork/Swipe/video.mov');
-        expect(move.videoPath, 'Moves/Footwork/Swipe/video.mov');
+        expect(result.videoPath, 'Moves/Footwork/Swipe/hash-123.mov');
+        expect(move.videoPath, 'Moves/Footwork/Swipe/hash-123.mov');
         expect(move.originalVideoName, 'IMG_0001.MOV');
         expect(move.notes, isNull);
         expect(move.managedAlbumAssetId, isNull);
@@ -138,7 +138,7 @@ void main() {
         expect(move.managedAlbumName, isNull);
         expect(
           syncCalls.single.localPath,
-          VideoPathResolver.toAbsolute('Moves/Footwork/Swipe/video.mov'),
+          VideoPathResolver.toAbsolute('Moves/Footwork/Swipe/hash-123.mov'),
         );
         expect(syncCalls.single.moveId, 'hash-123');
 

@@ -56,7 +56,7 @@ class _VideoEditorScreenState extends ConsumerState<VideoEditorScreen>
   static const _customAspectIndex = 6;
   bool _matrixInitialized = false;
   Size? _previewViewportSize;
-  double? _previewAvailableWidth;
+  VideoEditViewport? _previewViewport;
 
   final VideoService _videoService = VideoService();
   final TransformationController _transformController =
@@ -147,7 +147,7 @@ class _VideoEditorScreenState extends ConsumerState<VideoEditorScreen>
       _isPlaying.value = false;
       _matrixInitialized = false;
       _previewViewportSize = null;
-      _previewAvailableWidth = null;
+      _previewViewport = null;
       unawaited(_loadVideo());
     }
   }
@@ -179,12 +179,12 @@ class _VideoEditorScreenState extends ConsumerState<VideoEditorScreen>
       _thumbnails = [];
       _matrixInitialized = false;
       _previewViewportSize = null;
-      _previewAvailableWidth = null;
+      _previewViewport = null;
     });
 
     final status = await _videoService.checkVideoFileWithRetry(
       widget.videoPath,
-      maxRetries: 3,
+      maxRetries: 1,
     );
     if (!mounted || loadToken != _loadToken) return;
 
@@ -343,6 +343,14 @@ class _VideoEditorScreenState extends ConsumerState<VideoEditorScreen>
   }
 
   void _handleTrimChanged(double start, double end) {
+    final durationMs = _videoDuration.inMilliseconds;
+    final startMs = (start * durationMs).round();
+    final endMs = (end * durationMs).round();
+    debugPrint(
+      '[VideoEditor] Trim CHANGED: start=$start ($startMs ms), '
+      'end=$end ($endMs ms), durationMs=$durationMs, '
+      'trimDurationMs=${(endMs - startMs)}',
+    );
     _trimStart = start;
     _trimEnd = end;
     _playbackPosition.value = _playbackPosition.value
@@ -1128,13 +1136,13 @@ class _VideoEditorScreenState extends ConsumerState<VideoEditorScreen>
       return LayoutBuilder(
         builder: (context, constraints) {
           final maxW = constraints.maxWidth;
-          _previewAvailableWidth = maxW;
           final viewport = computeVideoEditViewport(
             videoSize: videoSize,
             rotation: _rotation,
             maxWidth: maxW,
             targetAspect: targetAspect,
           );
+          _previewViewport = viewport;
           final viewportSize = viewport.size;
 
           // Guard transform mutations with addPostFrameCallback to avoid
@@ -1531,8 +1539,6 @@ class _VideoEditorScreenState extends ConsumerState<VideoEditorScreen>
 
     String? tempPath;
     try {
-      final fallbackPreviewWidth =
-          MediaQuery.of(context).size.width - AppSpacing.screenEdge * 2;
       final tempDir = await getTemporaryDirectory();
       tempPath = p.join(tempDir.path, 'export_${const Uuid().v4()}.mp4');
 
@@ -1544,21 +1550,66 @@ class _VideoEditorScreenState extends ConsumerState<VideoEditorScreen>
           _effectiveTargetAspect != null ||
           _aspectLabels[_selectedAspectIndex] == 'Free Form';
 
+      debugPrint(
+        '[VideoEditor] _export PARAMS: '
+        'trimStart=$_trimStart trimEnd=$_trimEnd '
+        'trimStartMs=$trimStartMs trimEndMs=$trimEndMs '
+        'durationMs=${_videoDuration.inMilliseconds} '
+        'trimDurationMs=${trimEndMs - trimStartMs} '
+        'speed=$speed rotation=$normalizedRotation '
+        'aspectIndex=$_selectedAspectIndex isCrop=$isCropMode',
+      );
+
       Rect? finalCrop;
       if (isCropMode) {
-        final targetAspect = _effectiveTargetAspect;
-        final previewMaxWidth = _previewAvailableWidth ?? fallbackPreviewWidth;
-        final viewport = computeVideoEditViewport(
-          videoSize: _controller!.value.size,
-          rotation: _rotation,
-          maxWidth: previewMaxWidth,
-          targetAspect: targetAspect,
+        final viewport = _previewViewport;
+        if (viewport == null) {
+          debugPrint('[VideoEditor] _export SKIP crop: no _previewViewport stored');
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content:
+                    Text('Crop unavailable — please toggle aspect ratio and try again.'),
+              ),
+            );
+            setState(() {
+              _exporting = false;
+              _exportProgress = null;
+            });
+          }
+          return;
+        }
+
+        debugPrint(
+          '[VideoEditor] _export CROP viewport: '
+          'size=${viewport.size} '
+          'orientedVideoSize=${viewport.orientedVideoSize} '
+          'minScale=${viewport.minScale} '
+          'maxScale=${viewport.maxScale}',
         );
-        final cropRect = viewport.normalizedCropRect(
-          _transformController.value,
+
+        final rawTransform = _transformController.value;
+        debugPrint(
+          '[VideoEditor] _export CROP rawTransform: '
+          'scaleX=${rawTransform.getMaxScaleOnAxis()} '
+          'tx=${rawTransform.getTranslation().x} '
+          'ty=${rawTransform.getTranslation().y}',
+        );
+
+        final cropRect = viewport.normalizedCropRect(rawTransform);
+
+        debugPrint(
+          '[VideoEditor] _export CROP finalRect: '
+          'left=${cropRect.left.toStringAsFixed(4)} '
+          'top=${cropRect.top.toStringAsFixed(4)} '
+          'right=${cropRect.right.toStringAsFixed(4)} '
+          'bottom=${cropRect.bottom.toStringAsFixed(4)} '
+          'width=${cropRect.width.toStringAsFixed(4)} '
+          'height=${cropRect.height.toStringAsFixed(4)}',
         );
 
         if (cropRect.width < 0.01 || cropRect.height < 0.01) {
+          debugPrint('[VideoEditor] _export CROP rejected: rect too small');
           if (mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
               const SnackBar(
@@ -1590,7 +1641,6 @@ class _VideoEditorScreenState extends ConsumerState<VideoEditorScreen>
         cropRect: finalCrop,
       ).timeout(const Duration(seconds: 120));
 
-      // Stop progress stream & show finalizing phase
       unawaited(_progressSub?.cancel());
       _progressSub = null;
       if (mounted) {
@@ -1604,27 +1654,14 @@ class _VideoEditorScreenState extends ConsumerState<VideoEditorScreen>
         throw Exception('Export completed but output file is missing or empty');
       }
 
-      // 2. Compute Hash (The new "Truth")
-      final hashService = ref.read(assetHashServiceProvider);
-      final hash = await hashService.computeHash(resultPath);
-
-      // 3. Determine final internal semantic path
-      final docs = await getApplicationDocumentsDirectory();
-      final finalPath = p.join(docs.path, 'Moves', 'Edits', '$hash.mp4');
-      final finalFile = File(finalPath);
-      if (await finalFile.exists()) {
-        await finalFile.delete();
-      }
-      await FileSystemUtils.safeMove(exported.path, finalPath);
-
-      // 4. Return the new absolute path
-      unawaited(_videoService.generateThumbnail(finalPath));
-      await Future.microtask(() {});
-
+      // 2. Return the temp path directly — _saveVideo handles permanent
+      //    placement under the semantic Moves/{category}/{name}/{hash}.mp4 path.
+      //    No intermediate Edits/ directory that the healer might archive.
       unawaited(HapticFeedback.heavyImpact());
-      if (mounted) context.pop(finalPath);
+      debugPrint('[VideoEditor] _export SUCCESS resultPath=$resultPath');
+      if (mounted) context.pop(resultPath);
     } catch (e) {
-      debugPrint('Export failed: $e');
+      debugPrint('[VideoEditor] _export FAILED: $e');
       if (tempPath != null) {
         final f = File(tempPath);
         if (await f.exists()) await f.delete();

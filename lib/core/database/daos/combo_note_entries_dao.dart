@@ -31,6 +31,12 @@ class ComboNoteEntriesDao extends DatabaseAccessor<AppDatabase>
     );
   }
 
+  Future<void> updateEntry(String id, String body) {
+    return (update(comboNoteEntries)..where((t) => t.id.equals(id))).write(
+      ComboNoteEntriesCompanion(body: Value(body)),
+    );
+  }
+
   Future<void> deleteEntry(String id) {
     return (delete(comboNoteEntries)..where((t) => t.id.equals(id))).go();
   }

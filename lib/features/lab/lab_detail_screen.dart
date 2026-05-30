@@ -12,6 +12,7 @@ import '../../core/design/spacing.dart';
 import '../../core/design/theme.dart';
 import '../../core/design/typography.dart';
 import '../../core/providers.dart';
+import '../flow/providers/aura_providers.dart';
 import '../../shared/widgets/notes_section.dart';
 import 'providers/lab_providers.dart';
 import 'widgets/lab_timeline.dart';
@@ -123,13 +124,17 @@ class _LabDetailScreenState extends ConsumerState<LabDetailScreen> {
   Future<void> _showMovePicker() async {
     final labMoves = ref.read(labMovesProvider(widget.labId)).valueOrNull ?? [];
     final linkedMoveIds = labMoves.map((e) => e.move.id).toSet();
+    final lastMoveId = labMoves.isNotEmpty ? labMoves.last.move.id : null;
 
     if (!mounted) return;
 
     final selectedMoveId = await showModalBottomSheet<String>(
       context: context,
       isScrollControlled: true,
-      builder: (_) => _MovePickerSheet(linkedMoveIds: linkedMoveIds),
+      builder: (_) => _MovePickerSheet(
+        linkedMoveIds: linkedMoveIds,
+        lastMoveId: lastMoveId,
+      ),
     );
 
     if (selectedMoveId == null || !mounted) return;
@@ -521,9 +526,10 @@ class _LabStatusPill extends StatelessWidget {
 // =============================================================================
 
 class _MovePickerSheet extends ConsumerStatefulWidget {
-  const _MovePickerSheet({required this.linkedMoveIds});
+  const _MovePickerSheet({required this.linkedMoveIds, this.lastMoveId});
 
   final Set<String> linkedMoveIds;
+  final String? lastMoveId;
 
   @override
   ConsumerState<_MovePickerSheet> createState() => _MovePickerSheetState();
@@ -550,6 +556,12 @@ class _MovePickerSheetState extends ConsumerState<_MovePickerSheet> {
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
+
+    final suggestedAsync = widget.lastMoveId != null
+        ? ref.watch(naturalNextMovesProvider(widget.lastMoveId!))
+        : null;
+    final suggestedMoves = suggestedAsync?.valueOrNull ?? [];
+    final suggestedIds = suggestedMoves.map((m) => m.id).toSet();
 
     return DraggableScrollableSheet(
       initialChildSize: 0.7,
@@ -633,73 +645,20 @@ class _MovePickerSheetState extends ConsumerState<_MovePickerSheet> {
                     );
                   }
 
+                  final items = _buildMoveItems(
+                    filtered,
+                    linkedMoveIds: widget.linkedMoveIds,
+                    suggestedIds: suggestedIds,
+                    colorScheme: colorScheme,
+                  );
+
                   return ListView.builder(
                     controller: scrollController,
                     padding: const EdgeInsets.symmetric(
                       horizontal: AppSpacing.screenEdge,
                     ),
-                    itemCount: filtered.length,
-                    itemBuilder: (context, index) {
-                      final move = filtered[index];
-                      final isLinked =
-                          widget.linkedMoveIds.contains(move.id);
-
-                      return ListTile(
-                        leading: Container(
-                          width: 36,
-                          height: 36,
-                          decoration: BoxDecoration(
-                            color: isLinked
-                                ? colorScheme.surfaceContainerHighest
-                                : AppColors.accent.withValues(alpha: 0.12),
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          child: Center(
-                            child: Text(
-                              move.name.isNotEmpty
-                                  ? move.name[0].toUpperCase()
-                                  : '?',
-                              style: AppTypography.bodySmall.copyWith(
-                                color: isLinked
-                                    ? colorScheme.secondary
-                                    : AppColors.accent,
-                                fontWeight: FontWeight.w700,
-                              ),
-                            ),
-                          ),
-                        ),
-                        title: Text(
-                          move.name,
-                          style: AppTypography.bodySmall.copyWith(
-                            color: isLinked
-                                ? colorScheme.secondary.withValues(
-                                    alpha: 0.5)
-                                : colorScheme.onSurface,
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                        subtitle: Text(
-                          move.category,
-                          style: AppTypography.caption.copyWith(
-                            color: colorScheme.secondary,
-                          ),
-                        ),
-                        trailing: isLinked
-                            ? const Icon(
-                                Icons.check_rounded,
-                                color: AppColors.stateMastery,
-                                size: 20,
-                              )
-                            : null,
-                        enabled: !isLinked,
-                        onTap: isLinked
-                            ? null
-                            : () {
-                                HapticFeedback.selectionClick();
-                                Navigator.pop(context, move.id);
-                              },
-                      );
-                    },
+                    itemCount: items.length,
+                    itemBuilder: (context, index) => items[index],
                   );
                 },
               ),
@@ -707,6 +666,128 @@ class _MovePickerSheetState extends ConsumerState<_MovePickerSheet> {
           ],
         );
       },
+    );
+  }
+
+  List<Widget> _buildMoveItems(
+    List<Move> moves, {
+    required Set<String> linkedMoveIds,
+    required Set<String> suggestedIds,
+    required ColorScheme colorScheme,
+  }) {
+    final suggested = <Move>[];
+    final remaining = <Move>[];
+    for (final move in moves) {
+      if (suggestedIds.contains(move.id)) {
+        suggested.add(move);
+      } else {
+        remaining.add(move);
+      }
+    }
+
+    final items = <Widget>[];
+    if (suggested.isNotEmpty && _query.isEmpty) {
+      items.add(
+        Padding(
+          padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm),
+          child: Row(
+            children: [
+              Icon(
+                Icons.auto_awesome,
+                size: 14,
+                color: AppColors.stateMastery,
+              ),
+              const SizedBox(width: AppSpacing.xs),
+              Text(
+                'Suggested — flows naturally from previous move',
+                style: AppTypography.caption.copyWith(
+                  color: AppColors.stateMastery,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+      for (final move in suggested) {
+        items.add(
+          _buildMoveTile(move, isLinked: linkedMoveIds.contains(move.id),
+              isSuggested: true, colorScheme: colorScheme),
+        );
+      }
+      items.add(
+        Padding(
+          padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm),
+          child: Divider(color: colorScheme.outline.withValues(alpha: 0.15)),
+        ),
+      );
+    }
+    for (final move in remaining) {
+      items.add(
+        _buildMoveTile(move, isLinked: linkedMoveIds.contains(move.id),
+            isSuggested: false, colorScheme: colorScheme),
+      );
+    }
+    return items;
+  }
+
+  Widget _buildMoveTile(Move move, {
+    required bool isLinked,
+    required bool isSuggested,
+    required ColorScheme colorScheme,
+  }) {
+    final accent = isSuggested ? AppColors.stateMastery : AppColors.accent;
+    return ListTile(
+      leading: Container(
+        width: 36,
+        height: 36,
+        decoration: BoxDecoration(
+          color: isLinked
+              ? colorScheme.surfaceContainerHighest
+              : accent.withValues(alpha: 0.12),
+          borderRadius: BorderRadius.circular(8),
+        ),
+        child: Center(
+          child: Text(
+            move.name.isNotEmpty ? move.name[0].toUpperCase() : '?',
+            style: AppTypography.bodySmall.copyWith(
+              color: isLinked ? colorScheme.secondary : accent,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+        ),
+      ),
+      title: Text(
+        move.name,
+        style: AppTypography.bodySmall.copyWith(
+          color: isLinked
+              ? colorScheme.secondary.withValues(alpha: 0.5)
+              : isSuggested
+                  ? accent
+                  : colorScheme.onSurface,
+          fontWeight: isSuggested ? FontWeight.w600 : FontWeight.w500,
+        ),
+      ),
+      subtitle: Text(
+        move.category,
+        style: AppTypography.caption.copyWith(
+          color: colorScheme.secondary,
+        ),
+      ),
+      trailing: isLinked
+          ? const Icon(
+              Icons.check_rounded,
+              color: AppColors.stateMastery,
+              size: 20,
+            )
+          : null,
+      enabled: !isLinked,
+      onTap: isLinked
+          ? null
+          : () {
+              HapticFeedback.selectionClick();
+              Navigator.pop(context, move.id);
+            },
     );
   }
 }

@@ -10,6 +10,7 @@ import '../../../core/design/spacing.dart';
 import '../../../core/design/theme.dart';
 import '../../../core/design/typography.dart';
 import '../../../core/providers.dart';
+import '../../../core/utils/diagnostics.dart';
 import '../../flow/providers/aura_providers.dart';
 import '../../flow/widgets/aura_link_tile.dart' show AuraAffinity;
 
@@ -204,7 +205,7 @@ class _AuraPill extends ConsumerWidget {
             unawaited(HapticFeedback.selectionClick());
             context.push('/moves/move/$connectedMoveId');
           },
-          onLongPress: () => _confirmDelete(context, ref, moveName),
+          onLongPress: () => _showAffinitySheet(context, ref, moveName),
           child: Semantics(
             label: '$moveName (${affinity.label}). Long press to delete.',
             button: true,
@@ -254,26 +255,60 @@ class _AuraPill extends ConsumerWidget {
     );
   }
 
-  Future<void> _confirmDelete(BuildContext context, WidgetRef ref, String moveName) async {
-    final confirmed = await showDialog<bool>(
+  Future<void> _showAffinitySheet(BuildContext context, WidgetRef ref, String moveName) async {
+    final colorScheme = Theme.of(context).colorScheme;
+    final currentAffinity = AuraAffinity.fromString(link.affinity);
+
+    final result = await showModalBottomSheet<String>(
       context: context,
-      builder: (context) => AlertDialog(
-        title: Text('Delete Connection?'),
-        content: Text('Remove connection to "$moveName"?'),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('CANCEL')),
-          TextButton(
-            onPressed: () => Navigator.pop(context, true),
-            child: const Text('DELETE', style: TextStyle(color: Colors.red)),
+      builder: (ctx) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.only(bottom: AppSpacing.lg),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Padding(
+                padding: const EdgeInsets.fromLTRB(AppSpacing.screenEdge, AppSpacing.lg, AppSpacing.screenEdge, AppSpacing.md),
+                child: Text('Connection to "$moveName"', style: AppTypography.titleSmall),
+              ),
+              for (final affinity in AuraAffinity.values)
+                ListTile(
+                  leading: Container(
+                    width: 12, height: 12,
+                    decoration: BoxDecoration(color: affinity.color(context), shape: BoxShape.circle),
+                  ),
+                  title: Text(affinity.label, style: AppTypography.bodyMedium),
+                  trailing: currentAffinity == affinity
+                      ? Icon(Icons.check, color: colorScheme.primary, size: 20)
+                      : null,
+                  onTap: () => Navigator.pop(ctx, affinity.name),
+                ),
+              const Divider(),
+              ListTile(
+                leading: const Icon(Icons.delete_outline, color: Colors.red, size: 20),
+                title: Text('Remove Connection', style: AppTypography.bodyMedium.copyWith(color: Colors.red)),
+                onTap: () => Navigator.pop(ctx, '__delete__'),
+              ),
+            ],
           ),
-        ],
+        ),
       ),
     );
 
-    if (confirmed == true) {
-      final dao = ref.read(auraDaoProvider);
+    if (result == null) return;
+    final dao = ref.read(auraDaoProvider);
+
+    if (result == '__delete__') {
+      DiagnosticsLog.info('AuraPill', 'Deleting aura link ${link.fromMoveId}→${link.toMoveId} (was ${link.affinity})');
       await dao.deleteLink(link.fromMoveId, link.toMoveId);
+      DiagnosticsLog.info('AuraPill', 'Aura link deleted OK');
       unawaited(HapticFeedback.mediumImpact());
+    } else {
+      DiagnosticsLog.info('AuraPill', 'Changing aura link ${link.fromMoveId}→${link.toMoveId} from ${link.affinity} to $result');
+      await dao.upsertLink(link.fromMoveId, link.toMoveId, result);
+      DiagnosticsLog.info('AuraPill', 'Aura affinity updated OK');
+      unawaited(HapticFeedback.selectionClick());
     }
   }
 }

@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:io';
 
 import 'package:drift/drift.dart' show Value;
 import 'package:flutter/foundation.dart';
@@ -13,6 +14,7 @@ import '../../models/reviewable_item.dart';
 import '../../providers.dart';
 import '../../services/video_path_resolver.dart';
 import '../../services/native_video_album.dart';
+import '../../utils/diagnostics.dart';
 import 'state.dart';
 import 'event.dart';
 import 'machine.dart';
@@ -46,6 +48,7 @@ class MoveDetailNotifier extends Notifier<MoveDetailState> {
   }
 
   void send(MoveDetailEvent event) {
+    final prevState = state;
     final next = _machine.transition(state, event);
     if (next != null) {
       state = next;
@@ -123,13 +126,23 @@ class MoveDetailNotifier extends Notifier<MoveDetailState> {
   }
 
   Future<void> _saveState(Move move, LearningState newState) async {
+    final log = StageLogger.begin('_saveState', subsystem: 'MoveDetail', context: {
+      'moveId': move.id,
+      'currentState': move.learningState,
+      'newState': newState.dbValue,
+    });
     try {
       await ref.read(manualReviewStateServiceProvider).setMoveState(
         move,
         newState,
       );
-      send(SaveSucceeded(move.copyWith(learningState: newState.dbValue)));
-    } catch (e) {
+      log.stage('serviceCompleted');
+      final updatedMove = move.copyWith(learningState: newState.dbValue);
+      log.stage('moveCopied', {'newDbValue': updatedMove.learningState});
+      send(SaveSucceeded(updatedMove));
+      log.complete();
+    } catch (e, stack) {
+      log.fail(e, stack);
       send(SaveFailed('$e'));
     }
   }
@@ -161,35 +174,49 @@ class MoveDetailNotifier extends Notifier<MoveDetailState> {
     String localPath,
     String originalFileName,
   ) async {
+    final log = StageLogger.begin('_saveVideo', subsystem: 'MoveDetail', context: {
+      'moveId': move.id,
+      'localPath': localPath,
+      'originalFileName': originalFileName,
+    });
     try {
-      // 1. Resolve final semantic path
-      // ALWAYS move to the strict semantic path to prevent videos lingering in Edits/
+      final absPath = VideoPathResolver.toAbsolute(localPath);
+      final exists = await File(absPath).exists();
+      log.stage('resolvedPath', {'absPath': absPath, 'exists': exists});
+
+      final contentHash = await ref.read(assetHashServiceProvider).computeHash(absPath);
+      log.stage('contentHash', {'contentHash': contentHash});
+
       final semanticRelative = await VideoPathResolver.moveToSemanticPath(
-        currentRelativePath: VideoPathResolver.toRelative(localPath),
+        currentRelativePath: absPath,
         category: move.category,
         moveName: move.name,
+        contentHash: contentHash,
       );
+      log.stage('moveToSemanticPath', {'semanticRelative': semanticRelative});
 
-      // 2. Compute SHA-256 hash (the content truth)
       final resolvedAbs = VideoPathResolver.toAbsolute(semanticRelative);
-      final contentHash = await ref.read(assetHashServiceProvider).computeHash(resolvedAbs);
-
-      // 3. Cleanup old assets ONLY AFTER successful move/hash
-      // This ensures if moveToSemanticPath or computeHash fail, we don't delete the old file prematurely.
-      // Only delete physical file if the path has actually changed.
       final pathChanged = move.resolvedVideoPath != resolvedAbs;
-      await ref.read(mediaCleanupServiceProvider).cleanupDetachedAsset(
-            title: move.name,
-            category: move.category,
-            storedVideoPath: pathChanged ? move.videoPath : null,
-            resolvedVideoPath: pathChanged ? move.resolvedVideoPath : null,
-            contentHash: move.contentHash,
-            managedAlbumAssetId: move.managedAlbumAssetId,
-            excludingMoveId: move.id,
-            skipPhotosCleanup: true,
-          );
 
-      // 4. Update DB with final path and content hash
+      if (pathChanged) {
+        await ref.read(mediaCleanupServiceProvider).cleanupDetachedAsset(
+              title: move.name,
+              category: move.category,
+              storedVideoPath: move.videoPath,
+              resolvedVideoPath: move.resolvedVideoPath,
+              contentHash: move.contentHash,
+              managedAlbumAssetId: move.managedAlbumAssetId,
+              excludingMoveId: move.id,
+              skipPhotosCleanup: true,
+            );
+        log.stage('cleanupDetachedAsset', {'oldHash': move.contentHash});
+      } else {
+        log.stage('samePath_skipCleanup');
+      }
+
+      final videoService = ref.read(videoServiceProvider);
+      unawaited(videoService.generateThumbnail(resolvedAbs));
+
       await ref.read(moveRepositoryProvider).update(
             MovesCompanion(
               id: Value(move.id),
@@ -201,6 +228,7 @@ class MoveDetailNotifier extends Notifier<MoveDetailState> {
               contentHash: Value(contentHash),
             ),
           );
+      log.stage('dbUpdated');
 
       var updatedMove = move.copyWith(
         videoPath: Value(semanticRelative),
@@ -211,23 +239,30 @@ class MoveDetailNotifier extends Notifier<MoveDetailState> {
         contentHash: Value(contentHash),
       );
 
-      // 5. Fire sync hook (manifest, copies, upload) with precomputed hash
       unawaited(ref.read(videoImportSyncHookProvider).onVideoImported(
         localPath: resolvedAbs,
         moveId: move.id,
         precomputedHash: contentHash,
       ));
+      log.stage('syncHookFired');
 
       send(SaveSucceeded(updatedMove));
-    } catch (e) {
+      log.complete('newHash=$contentHash newPath=$semanticRelative');
+    } catch (e, stack) {
+      log.fail(e, stack);
       send(SaveFailed('$e'));
     }
   }
 
   Future<void> _removeVideo(Move move) async {
+    final log = StageLogger.begin('_removeVideo', subsystem: 'MoveDetail', context: {
+      'moveId': move.id,
+      'videoPath': move.videoPath ?? 'null',
+    });
     try {
       unawaited(HapticFeedback.mediumImpact());
       await ref.read(mediaCleanupServiceProvider).cleanupMoveMedia(move);
+      log.stage('cleanupMoveMedia');
       await ref.read(moveRepositoryProvider).update(
             MovesCompanion(
               id: Value(move.id),
@@ -239,6 +274,7 @@ class MoveDetailNotifier extends Notifier<MoveDetailState> {
               contentHash: const Value(null),
             ),
           );
+      log.stage('dbUpdated');
       send(
         SaveSucceeded(
           move.copyWith(
@@ -251,12 +287,18 @@ class MoveDetailNotifier extends Notifier<MoveDetailState> {
           ),
         ),
       );
-    } catch (e) {
+      log.complete();
+    } catch (e, stack) {
+      log.fail(e, stack);
       send(SaveFailed('$e'));
     }
   }
 
   Future<void> _deleteMove(Move move) async {
+    final log = StageLogger.begin('_deleteMove', subsystem: 'MoveDetail', context: {
+      'moveId': move.id,
+      'name': move.name,
+    });
     try {
       unawaited(HapticFeedback.mediumImpact());
       final orchestrator = ref.read(storageOrchestratorProvider);
@@ -264,9 +306,12 @@ class MoveDetailNotifier extends Notifier<MoveDetailState> {
         move,
         cleanupMedia: (m) => ref.read(mediaCleanupServiceProvider).cleanupMoveMedia(m),
       );
+      log.stage('storageOrchestrator.deleteMove');
       send(const DeleteSucceeded());
-    } catch (e) {
-      send(DeleteFailed('$e'));
+      log.complete();
+    } catch (e, stack) {
+      log.fail(e, stack);
+      send(DeleteFailed('Delete failed: $e'));
     }
   }
 

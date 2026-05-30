@@ -32,6 +32,7 @@ abstract class ComboRepository {
   Future<void> addMove(ComboMovesCompanion entry);
   Future<void> delete(String id);
   Future<void> removeMove(String id);
+  Future<void> clearMoves(String comboId);
 }
 
 /// Abstract interface for review data access.

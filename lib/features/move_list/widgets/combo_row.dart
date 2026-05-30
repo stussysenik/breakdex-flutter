@@ -13,7 +13,7 @@ class _CombosContentSliver extends StatelessWidget {
       itemCount: combos.length,
       builder: (index) {
         final (combo, moveCount) = combos[index];
-        return _ComboRow(combo: combo, moveCount: moveCount);
+        return _ComboRow(combo: combo, moveCount: moveCount, index: index);
       },
     );
   }
@@ -22,10 +22,11 @@ class _CombosContentSliver extends StatelessWidget {
 /// A combo list row with swipe-to-delete, move-count dots, and a colored
 /// leading bar. Mirrors the `_MoveRow` pattern for consistent UX.
 class _ComboRow extends ConsumerWidget {
-  const _ComboRow({required this.combo, required this.moveCount});
+  const _ComboRow({required this.combo, required this.moveCount, this.index = 0});
 
   final Combo combo;
   final int moveCount;
+  final int index;
 
   /// Max dots rendered before showing a "+N" overflow indicator.
   static const _maxDots = 8;
@@ -47,10 +48,14 @@ class _ComboRow extends ConsumerWidget {
         child: const Icon(Icons.delete, color: Colors.white),
       ),
       onDismissed: (_) {
+        DiagnosticsLog.info('ComboRow', 'Swipe-dismiss combo id=${combo.id} name="${combo.name}"');
         unawaited(HapticFeedback.heavyImpact());
         unawaited(_deleteCombo(ref));
       },
-      confirmDismiss: (_) async => true,
+      confirmDismiss: (direction) async {
+        DiagnosticsLog.trace('ComboRow', 'confirmDismiss direction=$direction id=${combo.id}');
+        return true;
+      },
       child: Semantics(
         identifier: 'combo-row-${combo.id}',
         label: '${combo.name}, $moveCount moves',
@@ -67,7 +72,6 @@ class _ComboRow extends ConsumerWidget {
             child: IntrinsicHeight(
               child: Row(
                 children: [
-                  // Leading accent bar
                   Container(
                     width: 5,
                     decoration: BoxDecoration(
@@ -115,7 +119,16 @@ class _ComboRow extends ConsumerWidget {
                   const SizedBox(width: AppSpacing.sm),
                 ],
               ),
-            ),
+            ).animate()
+                .fadeIn(
+                  duration: AppMotion.moderate01,
+                  delay: Duration(milliseconds: index.clamp(0, 15) * 40),
+                )
+                .slideY(
+                  begin: 0.03,
+                  duration: AppMotion.moderate02,
+                  delay: Duration(milliseconds: index.clamp(0, 15) * 40),
+                ),
           ),
         ),
       ),
@@ -123,10 +136,20 @@ class _ComboRow extends ConsumerWidget {
   }
 
   Future<void> _deleteCombo(WidgetRef ref) async {
-    // Note: We don't have a specific orchestrator.deleteCombo yet, 
-    // but we use the Blackbox + MediaCleanup logic.
-    await ref.read(blackboxServiceProvider).log('delete_combo', 'combo', combo.id, {'name': combo.name});
-    await ref.read(mediaCleanupServiceProvider).cleanupComboMedia(combo);
-    await ref.read(comboRepositoryProvider).delete(combo.id);
+    final log = StageLogger.begin('_deleteCombo', subsystem: 'ComboRow', context: {
+      'comboId': combo.id, 'name': combo.name,
+    });
+    try {
+      await ref.read(blackboxServiceProvider).log('delete_combo', 'combo', combo.id, {'name': combo.name});
+      log.stage('blackboxLogged');
+      await ref.read(mediaCleanupServiceProvider).cleanupComboMedia(combo);
+      log.stage('cleanupComboMedia');
+      await ref.read(comboRepositoryProvider).delete(combo.id);
+      log.stage('dbDeleted');
+      log.complete();
+    } catch (e, stack) {
+      log.fail(e, stack);
+      rethrow;
+    }
   }
 }

@@ -15,6 +15,87 @@ String resolveLearningStateLabel(
       state.displayText;
 }
 
+/// Whether to use default mode (3 built-in states) or custom mode
+/// (built-in + user-defined states).
+enum LearningMode { defaultMode, custom }
+
+final learningModeProvider =
+    NotifierProvider<LearningModeNotifier, LearningMode>(
+      LearningModeNotifier.new,
+    );
+
+class LearningModeNotifier extends Notifier<LearningMode> {
+  static const _key = 'learning_mode';
+
+  @override
+  LearningMode build() {
+    final prefs = ref.watch(sharedPreferencesProvider);
+    final value = prefs.getString(_key) ?? 'defaultMode';
+    return LearningMode.values.firstWhere(
+      (e) => e.name == value,
+      orElse: () => LearningMode.defaultMode,
+    );
+  }
+
+  Future<void> set(LearningMode mode) async {
+    final prefs = ref.read(sharedPreferencesProvider);
+    await prefs.setString(_key, mode.name);
+    state = mode;
+  }
+}
+
+/// User-defined learning states stored in SharedPreferences.
+final customLearningStatesProvider =
+    NotifierProvider<CustomLearningStatesNotifier, List<CustomLearningState>>(
+      CustomLearningStatesNotifier.new,
+    );
+
+class CustomLearningStatesNotifier extends Notifier<List<CustomLearningState>> {
+  static const _key = 'custom_learning_states';
+
+  @override
+  List<CustomLearningState> build() {
+    final prefs = ref.watch(sharedPreferencesProvider);
+    final json = prefs.getString(_key);
+    if (json == null) return [];
+    try {
+      final list = jsonDecode(json) as List<dynamic>;
+      return list
+          .map((e) => CustomLearningState.fromJson(e as Map<String, dynamic>))
+          .toList();
+    } catch (_) {
+      return [];
+    }
+  }
+
+  Future<void> add(CustomLearningState custom) async {
+    final updated = [...state, custom];
+    state = updated;
+    await _persist(updated);
+  }
+
+  Future<void> remove(String id) async {
+    final updated = state.where((s) => s.id != id).toList();
+    state = updated;
+    await _persist(updated);
+  }
+
+  Future<void> update(String id, CustomLearningState updated) async {
+    final list = state.toList();
+    final idx = list.indexWhere((s) => s.id == id);
+    if (idx == -1) return;
+    list[idx] = updated;
+    state = list;
+    await _persist(list);
+  }
+
+  Future<void> _persist(List<CustomLearningState> states) async {
+    final prefs = ref.read(sharedPreferencesProvider);
+    final json = jsonEncode(states.map((s) => s.toJson()).toList());
+    await prefs.setString(_key, json);
+  }
+}
+
 final learningStateLabelsProvider =
     NotifierProvider<LearningStateLabelsNotifier, Map<LearningState, String>>(
       LearningStateLabelsNotifier.new,

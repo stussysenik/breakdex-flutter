@@ -1,3 +1,5 @@
+import 'package:flutter/foundation.dart';
+
 import '../database/database.dart';
 import '../database/daos/combos_dao.dart';
 import '../database/daos/sync_dao.dart';
@@ -72,16 +74,20 @@ class SyncAwareMoveRepository implements MoveRepository {
 
   @override
   Future<void> archive(String id, {required String reason}) async {
+    debugPrint('[SyncAwareMoveRepo] archive id=$id reason=$reason');
     await _inner.archive(id, reason: reason);
     await _syncDao.logChange(entityId: id, table: 'moves', action: 'update');
     await _provenance?.logEdited('move', id, {'archived': true, 'reason': reason});
+    debugPrint('[SyncAwareMoveRepo] archive DONE id=$id');
   }
 
   @override
   Future<void> restore(String id) async {
+    debugPrint('[SyncAwareMoveRepo] restore id=$id');
     await _inner.restore(id);
     await _syncDao.logChange(entityId: id, table: 'moves', action: 'update');
     await _provenance?.logEdited('move', id, {'restored': true});
+    debugPrint('[SyncAwareMoveRepo] restore DONE id=$id');
   }
 }
 
@@ -154,8 +160,11 @@ class SyncAwareComboRepository implements ComboRepository {
 
   @override
   Future<void> delete(String id) async {
+    debugPrint('[SyncAwareComboRepo] delete id=$id');
     await _inner.delete(id);
+    debugPrint('[SyncAwareComboRepo] delete inner done id=$id');
     await _syncDao.logChange(entityId: id, table: 'combos', action: 'delete');
+    debugPrint('[SyncAwareComboRepo] delete sync logged id=$id');
   }
 
   @override
@@ -167,6 +176,9 @@ class SyncAwareComboRepository implements ComboRepository {
       action: 'delete',
     );
   }
+
+  @override
+  Future<void> clearMoves(String comboId) => _inner.clearMoves(comboId);
 }
 
 /// Decorator that wraps a [ReviewRepository] and logs mutations to [SyncDao].

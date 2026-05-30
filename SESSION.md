@@ -38,3 +38,15 @@ We diagnosed two critical issues:
 2. **Video Caching Issue**: Since editing a video in-place results in the same file path, Flutter's widget tree reused the `RobustVideoPlayer` state and played the cached video file instead of reloading the modified file. We resolved this by including the move's `contentHash` in the `RobustVideoPlayer` `ValueKey` in all parent views (combo detail, create combo, review card, and review screen). Whenever the video is edited, the content hash changes, forcing the player to rebuild and reload the video file.
 
 We verified these fixes via the automated widget tests and restarted the app on device `senik` successfully.
+
+## Update 9 (2026-05-30)
+Proposed integrating the Patrol testing framework. Created the implementation plan mapping out the native dependencies and proposed migrating the existing integration tests to use Patrol. Presented trade-offs for native Patrol CLI vs. using Patrol Finders via standard integration runners.
+
+## Update 10 (2026-05-30)
+Executed the approved Patrol integration:
+1. Installed `patrol: ^4.6.1` and `patrol_finders: ^3.4.0` dev dependencies. Activated `patrol_cli` globally.
+2. Programmatically added the `RunnerUITests` target (iOS UI Test Bundle, ObjC, matching deployment version) in Xcode project using the `xcodeproj` Ruby gem. Created the required `RunnerUITests.m` and `Info.plist` files.
+3. Updated the project `Podfile` to declare the `RunnerUITests` target and executed `pod install` to resolve and link the native Patrol pod dependency.
+4. Configured Android `build.gradle.kts` defaults and test runner dependencies (`PatrolJUnitRunner` & Android Test Orchestrator) and created `MainActivityTest.kt`.
+5. Migrated `integration_test/app_test.dart` to Patrol syntax and added a comprehensive test case `Settings renames learning tags and Review screen updates` to verify the tag customization propagation from Settings to Review screen.
+6. Triggered the background test compilation and execution runner against the iOS simulator.

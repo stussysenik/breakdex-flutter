@@ -12,11 +12,17 @@ part of 'party_bloc.dart';
 // dart format off
 T _$identity<T>(T value) => value;
 /// @nodoc
-mixin _$PartyEvent {
+mixin _$PartyEvent implements DiagnosticableTreeMixin {
 
 
 
 
+@override
+void debugFillProperties(DiagnosticPropertiesBuilder properties) {
+  properties
+    ..add(DiagnosticsProperty('type', 'PartyEvent'))
+    ;
+}
 
 @override
 bool operator ==(Object other) {
@@ -28,7 +34,7 @@ bool operator ==(Object other) {
 int get hashCode => runtimeType.hashCode;
 
 @override
-String toString() {
+String toString({ DiagnosticLevel minLevel = DiagnosticLevel.info }) {
   return 'PartyEvent()';
 }
 
@@ -180,7 +186,7 @@ return tick(_that.now);case _:
 /// @nodoc
 
 
-class _Shake implements PartyEvent {
+class _Shake with DiagnosticableTreeMixin implements PartyEvent {
   const _Shake(final  List<Move> allMoves, this.durationMs): _allMoves = allMoves;
   
 
@@ -200,6 +206,12 @@ class _Shake implements PartyEvent {
 _$ShakeCopyWith<_Shake> get copyWith => __$ShakeCopyWithImpl<_Shake>(this, _$identity);
 
 
+@override
+void debugFillProperties(DiagnosticPropertiesBuilder properties) {
+  properties
+    ..add(DiagnosticsProperty('type', 'PartyEvent.shake'))
+    ..add(DiagnosticsProperty('allMoves', allMoves))..add(DiagnosticsProperty('durationMs', durationMs));
+}
 
 @override
 bool operator ==(Object other) {
@@ -211,7 +223,7 @@ bool operator ==(Object other) {
 int get hashCode => Object.hash(runtimeType,const DeepCollectionEquality().hash(_allMoves),durationMs);
 
 @override
-String toString() {
+String toString({ DiagnosticLevel minLevel = DiagnosticLevel.info }) {
   return 'PartyEvent.shake(allMoves: $allMoves, durationMs: $durationMs)';
 }
 
@@ -254,7 +266,7 @@ as int,
 /// @nodoc
 
 
-class _Tick implements PartyEvent {
+class _Tick with DiagnosticableTreeMixin implements PartyEvent {
   const _Tick(this.now);
   
 
@@ -267,6 +279,12 @@ class _Tick implements PartyEvent {
 _$TickCopyWith<_Tick> get copyWith => __$TickCopyWithImpl<_Tick>(this, _$identity);
 
 
+@override
+void debugFillProperties(DiagnosticPropertiesBuilder properties) {
+  properties
+    ..add(DiagnosticsProperty('type', 'PartyEvent.tick'))
+    ..add(DiagnosticsProperty('now', now));
+}
 
 @override
 bool operator ==(Object other) {
@@ -278,7 +296,7 @@ bool operator ==(Object other) {
 int get hashCode => Object.hash(runtimeType,now);
 
 @override
-String toString() {
+String toString({ DiagnosticLevel minLevel = DiagnosticLevel.info }) {
   return 'PartyEvent.tick(now: $now)';
 }
 
@@ -318,11 +336,17 @@ as DateTime,
 }
 
 /// @nodoc
-mixin _$PartyState {
+mixin _$PartyState implements DiagnosticableTreeMixin {
 
 
 
 
+@override
+void debugFillProperties(DiagnosticPropertiesBuilder properties) {
+  properties
+    ..add(DiagnosticsProperty('type', 'PartyState'))
+    ;
+}
 
 @override
 bool operator ==(Object other) {
@@ -334,7 +358,7 @@ bool operator ==(Object other) {
 int get hashCode => runtimeType.hashCode;
 
 @override
-String toString() {
+String toString({ DiagnosticLevel minLevel = DiagnosticLevel.info }) {
   return 'PartyState()';
 }
 
@@ -498,7 +522,7 @@ return revealed(_that.move);case _:
 /// @nodoc
 
 
-class _Idle implements PartyState {
+class _Idle with DiagnosticableTreeMixin implements PartyState {
   const _Idle();
   
 
@@ -506,6 +530,12 @@ class _Idle implements PartyState {
 
 
 
+@override
+void debugFillProperties(DiagnosticPropertiesBuilder properties) {
+  properties
+    ..add(DiagnosticsProperty('type', 'PartyState.idle'))
+    ;
+}
 
 @override
 bool operator ==(Object other) {
@@ -517,7 +547,7 @@ bool operator ==(Object other) {
 int get hashCode => runtimeType.hashCode;
 
 @override
-String toString() {
+String toString({ DiagnosticLevel minLevel = DiagnosticLevel.info }) {
   return 'PartyState.idle()';
 }
 
@@ -530,7 +560,7 @@ String toString() {
 /// @nodoc
 
 
-class _Cycling implements PartyState {
+class _Cycling with DiagnosticableTreeMixin implements PartyState {
   const _Cycling({required final  List<Move> allMoves, required this.currentMove, required this.finalMove, required this.startTime, required this.lastFlip, required this.durationMs}): _allMoves = allMoves;
   
 
@@ -554,6 +584,12 @@ class _Cycling implements PartyState {
 _$CyclingCopyWith<_Cycling> get copyWith => __$CyclingCopyWithImpl<_Cycling>(this, _$identity);
 
 
+@override
+void debugFillProperties(DiagnosticPropertiesBuilder properties) {
+  properties
+    ..add(DiagnosticsProperty('type', 'PartyState.cycling'))
+    ..add(DiagnosticsProperty('allMoves', allMoves))..add(DiagnosticsProperty('currentMove', currentMove))..add(DiagnosticsProperty('finalMove', finalMove))..add(DiagnosticsProperty('startTime', startTime))..add(DiagnosticsProperty('lastFlip', lastFlip))..add(DiagnosticsProperty('durationMs', durationMs));
+}
 
 @override
 bool operator ==(Object other) {
@@ -565,7 +601,7 @@ bool operator ==(Object other) {
 int get hashCode => Object.hash(runtimeType,const DeepCollectionEquality().hash(_allMoves),currentMove,finalMove,startTime,lastFlip,durationMs);
 
 @override
-String toString() {
+String toString({ DiagnosticLevel minLevel = DiagnosticLevel.info }) {
   return 'PartyState.cycling(allMoves: $allMoves, currentMove: $currentMove, finalMove: $finalMove, startTime: $startTime, lastFlip: $lastFlip, durationMs: $durationMs)';
 }
 
@@ -612,7 +648,7 @@ as int,
 /// @nodoc
 
 
-class _Revealing implements PartyState {
+class _Revealing with DiagnosticableTreeMixin implements PartyState {
   const _Revealing({required this.move});
   
 
@@ -625,6 +661,12 @@ class _Revealing implements PartyState {
 _$RevealingCopyWith<_Revealing> get copyWith => __$RevealingCopyWithImpl<_Revealing>(this, _$identity);
 
 
+@override
+void debugFillProperties(DiagnosticPropertiesBuilder properties) {
+  properties
+    ..add(DiagnosticsProperty('type', 'PartyState.revealing'))
+    ..add(DiagnosticsProperty('move', move));
+}
 
 @override
 bool operator ==(Object other) {
@@ -636,7 +678,7 @@ bool operator ==(Object other) {
 int get hashCode => Object.hash(runtimeType,move);
 
 @override
-String toString() {
+String toString({ DiagnosticLevel minLevel = DiagnosticLevel.info }) {
   return 'PartyState.revealing(move: $move)';
 }
 
@@ -678,7 +720,7 @@ as Move,
 /// @nodoc
 
 
-class _Revealed implements PartyState {
+class _Revealed with DiagnosticableTreeMixin implements PartyState {
   const _Revealed({required this.move});
   
 
@@ -691,6 +733,12 @@ class _Revealed implements PartyState {
 _$RevealedCopyWith<_Revealed> get copyWith => __$RevealedCopyWithImpl<_Revealed>(this, _$identity);
 
 
+@override
+void debugFillProperties(DiagnosticPropertiesBuilder properties) {
+  properties
+    ..add(DiagnosticsProperty('type', 'PartyState.revealed'))
+    ..add(DiagnosticsProperty('move', move));
+}
 
 @override
 bool operator ==(Object other) {
@@ -702,7 +750,7 @@ bool operator ==(Object other) {
 int get hashCode => Object.hash(runtimeType,move);
 
 @override
-String toString() {
+String toString({ DiagnosticLevel minLevel = DiagnosticLevel.info }) {
   return 'PartyState.revealed(move: $move)';
 }
 

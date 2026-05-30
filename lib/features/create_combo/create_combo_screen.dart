@@ -1,8 +1,10 @@
 import 'dart:async';
 
 import 'package:drift/drift.dart' show Value;
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:uuid/uuid.dart';
@@ -15,6 +17,7 @@ import '../../core/design/typography.dart';
 import '../../core/models/learning_state.dart';
 import '../../core/models/reviewable_item.dart';
 import '../../core/providers.dart';
+import '../../core/utils/diagnostics.dart';
 import '../../shared/widgets/combo_step_line.dart';
 import '../../shared/widgets/secondary_button.dart';
 import '../../shared/widgets/video_player_widget.dart'
@@ -31,11 +34,14 @@ class CreateComboScreen extends ConsumerStatefulWidget {
   ConsumerState<CreateComboScreen> createState() => _CreateComboScreenState();
 }
 
+enum _ScreenState { editing, saving, saved }
+
 class _CreateComboScreenState extends ConsumerState<CreateComboScreen> {
   final List<Move> _selectedMoves = [];
   int _activeIndex = 0;
   String? _comboName;
   bool _isLoadingExisting = false;
+  _ScreenState _screenState = _ScreenState.editing;
 
   Set<String> get _selectedMoveIds =>
       _selectedMoves.map((move) => move.id).toSet();
@@ -46,6 +52,7 @@ class _CreateComboScreenState extends ConsumerState<CreateComboScreen> {
   @override
   void initState() {
     super.initState();
+    DiagnosticsLog.info('CreateCombo', 'initState isEditing=${widget.isEditing} comboId=${widget.comboId ?? "null"}');
     if (widget.isEditing) {
       _loadExistingCombo();
     }
@@ -61,17 +68,34 @@ class _CreateComboScreenState extends ConsumerState<CreateComboScreen> {
         ? _selectedMoves[safeIndex]
         : null;
 
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(widget.isEditing ? 'Edit Combo' : 'Create Combo'),
-        actions: [
-          if (_selectedMoves.isNotEmpty)
-            TextButton(
-              onPressed: () => _saveCombo(),
-              child: Text('SAVE', style: TextStyle(color: colorScheme.primary, fontWeight: FontWeight.bold)),
+    return Stack(
+      children: [
+        Scaffold(
+          appBar: AppBar(
+            title: GestureDetector(
+              onTap: _renameCombo,
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Flexible(
+                    child: Text(
+                      _comboName ?? (widget.isEditing ? 'Edit Combo' : 'Create Combo'),
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                  const SizedBox(width: 4),
+                  Icon(Icons.edit, size: 14, color: Theme.of(context).colorScheme.secondary.withValues(alpha: 0.6)),
+                ],
+              ),
             ),
-        ],
-      ),
+            actions: [
+              if (_selectedMoves.isNotEmpty && _screenState != _ScreenState.saving)
+                TextButton(
+                  onPressed: () => _saveCombo(),
+                  child: Text('SAVE', style: TextStyle(color: colorScheme.primary, fontWeight: FontWeight.bold)),
+                ),
+            ],
+          ),
       body: SafeArea(
         child: _isLoadingExisting
             ? const Center(child: CircularProgressIndicator())
@@ -92,7 +116,35 @@ class _CreateComboScreenState extends ConsumerState<CreateComboScreen> {
                   // -- Beat Grid --
                   if (_selectedMoves.isNotEmpty) ...[
                     _buildBeatGrid(context),
-                    const SizedBox(height: AppSpacing.lg),
+                    const SizedBox(height: AppSpacing.sm),
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: AppSpacing.lg),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Text(
+                            '${_selectedMoves.length} move${_selectedMoves.length == 1 ? '' : 's'}',
+                            style: AppTypography.caption.copyWith(color: colorScheme.secondary),
+                          ),
+                          const SizedBox(width: AppSpacing.md),
+                          Container(
+                            width: 4, height: 4,
+                            decoration: BoxDecoration(
+                              color: colorScheme.primary.withValues(alpha: 0.4),
+                              shape: BoxShape.circle,
+                            ),
+                          ),
+                          const SizedBox(width: AppSpacing.md),
+                          Text(
+                            '$_totalCounts beat${_totalCounts == 1 ? '' : 's'} total',
+                            style: AppTypography.caption.copyWith(
+                              color: colorScheme.primary,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
                   ],
 
                   Text(
@@ -208,6 +260,24 @@ class _CreateComboScreenState extends ConsumerState<CreateComboScreen> {
                 ],
               ),
       ),
+        ),
+        if (_screenState == _ScreenState.saving)
+          Positioned.fill(
+            child: Container(
+              color: Colors.black45,
+              child: const Center(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    CircularProgressIndicator(color: Colors.white),
+                    SizedBox(height: AppSpacing.md),
+                    Text('Saving combo...', style: TextStyle(color: Colors.white70, fontSize: 16)),
+                  ],
+                ),
+              ),
+            ),
+          ),
+      ],
     );
   }
 
@@ -357,25 +427,86 @@ class _CreateComboScreenState extends ConsumerState<CreateComboScreen> {
   }
 
   Future<void> _saveCombo() async {
+    if (_screenState == _ScreenState.saving) return;
+    setState(() => _screenState = _ScreenState.saving);
     final name = _comboName ?? await _promptForName();
-    if (name == null || name.isEmpty) return;
-
-    final comboId = widget.comboId ?? const Uuid().v4();
-    final companion = CombosCompanion(
-      id: Value(comboId),
-      name: Value(name),
-    );
-
-    if (widget.isEditing) {
-      await ref.read(comboRepositoryProvider).update(companion);
-    } else {
-      await ref.read(comboRepositoryProvider).insert(companion);
-      unawaited(
-        ref.read(fsrsCardsDaoProvider).ensureCard(comboId, entityType: 'combo'),
-      );
+    if (name == null || name.isEmpty) {
+      if (mounted) setState(() => _screenState = _ScreenState.editing);
+      return;
     }
 
-    if (mounted) context.pop();
+    final comboId = widget.comboId ?? const Uuid().v4();
+    final log = StageLogger.begin('_saveCombo', subsystem: 'CreateCombo', context: {
+      'comboId': comboId,
+      'name': name,
+      'moveCount': _selectedMoves.length,
+      'isEditing': widget.isEditing,
+    });
+
+    try {
+      final companion = CombosCompanion(
+        id: Value(comboId),
+        name: Value(name),
+      );
+
+      if (widget.isEditing) {
+        await ref.read(comboRepositoryProvider).update(companion);
+        log.stage('comboUpdated');
+        final db = ref.read(databaseProvider);
+        await db.combosDao.deleteAllMovesForCombo(comboId);
+        log.stage('oldMovesCleared');
+      } else {
+        await ref.read(comboRepositoryProvider).insert(companion);
+        log.stage('comboInserted');
+        unawaited(
+          ref.read(fsrsCardsDaoProvider).ensureCard(comboId, entityType: 'combo'),
+        );
+      }
+
+      for (var i = 0; i < _selectedMoves.length; i++) {
+        final move = _selectedMoves[i];
+        await ref.read(comboRepositoryProvider).addMove(
+              ComboMovesCompanion(
+                id: Value(const Uuid().v4()),
+                sequenceIndex: Value(i),
+                comboId: Value(comboId),
+                moveId: Value(move.id),
+              ),
+            );
+      }
+      log.stage('movesPersisted', {'count': _selectedMoves.length});
+      log.complete();
+
+      if (mounted) {
+        setState(() => _screenState = _ScreenState.saved);
+        _comboName = name;
+        if (widget.isEditing) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Combo saved'), duration: Duration(seconds: 1)),
+          );
+          Future.delayed(const Duration(milliseconds: 1200), () {
+            if (mounted) setState(() => _screenState = _ScreenState.editing);
+          });
+        } else {
+          context.pop();
+        }
+      }
+    } catch (e, stack) {
+      log.fail(e, stack);
+      if (mounted) {
+        setState(() => _screenState = _ScreenState.editing);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to save combo: $e')),
+        );
+      }
+    }
+  }
+
+  void _renameCombo() async {
+    final name = await _promptForName();
+    if (name != null && name.isNotEmpty && mounted) {
+      setState(() => _comboName = name);
+    }
   }
 
   Future<String?> _promptForName() async {

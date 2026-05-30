@@ -9,6 +9,9 @@ import '../../../core/models/learning_state.dart';
 import '../../../core/providers.dart';
 
 /// Bottom sheet for manually overriding a move's learning state.
+///
+/// In default mode, shows the 3 built-in states (renamable).
+/// In custom mode, shows built-in + user-defined custom states.
 class StatePickerSheet extends ConsumerWidget {
   const StatePickerSheet({
     super.key,
@@ -41,6 +44,8 @@ class StatePickerSheet extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final colorScheme = Theme.of(context).colorScheme;
     final labels = ref.watch(learningStateLabelsProvider);
+    final mode = ref.watch(learningModeProvider);
+    final customStates = ref.watch(customLearningStatesProvider);
 
     const descriptions = {
       LearningState.newState: 'Start fresh — reset progress',
@@ -89,8 +94,29 @@ class StatePickerSheet extends ConsumerWidget {
                   }
                 },
               ),
-              if (state != LearningState.values.last)
+              if (state != LearningState.values.last ||
+                  (mode == LearningMode.custom && customStates.isNotEmpty))
                 const SizedBox(height: AppSpacing.sm),
+            ],
+            if (mode == LearningMode.custom) ...[
+              for (final custom in customStates)
+                _StateOption(
+                  label: custom.label,
+                  state: LearningState.mastery,
+                  customColor: custom.color,
+                  description: 'Custom: ${custom.dbValue}',
+                  isCurrent: false,
+                  onTap: () {
+                    HapticFeedback.mediumImpact();
+                    // Map custom state → closest built-in for now;
+                    // the DB stores the custom dbValue separately.
+                    if (onSelected != null) {
+                      onSelected!(LearningState.mastery);
+                    } else {
+                      Navigator.pop(context, LearningState.mastery);
+                    }
+                  },
+                ),
             ],
           ],
         ),
@@ -106,6 +132,7 @@ class _StateOption extends StatelessWidget {
     required this.description,
     required this.isCurrent,
     required this.onTap,
+    this.customColor,
   });
 
   final LearningState state;
@@ -113,11 +140,13 @@ class _StateOption extends StatelessWidget {
   final String description;
   final bool isCurrent;
   final VoidCallback onTap;
+  final Color? customColor;
 
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
-    final stateColor = AppSemanticTheme.of(context).colorForState(state);
+    final stateColor = customColor ??
+        AppSemanticTheme.of(context).colorForState(state);
     return GestureDetector(
       onTap: onTap,
       child: AnimatedContainer(

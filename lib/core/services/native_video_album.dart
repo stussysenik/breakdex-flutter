@@ -414,6 +414,18 @@ class NativeVideoAlbum extends NativeBridge {
     return ManagedAlbumCopy.fromMap(payload);
   }
 
+  /// Deterministic deletion of a single managed Photos album copy by its
+  /// exact PHAsset localIdentifier. No filename-based fallback — if the
+  /// identifier doesn't resolve, nothing is deleted.
+  Future<void> deleteExactManagedCopy(String assetLocalIdentifier) async {
+    final normalized = assetLocalIdentifier.trim();
+    if (normalized.isEmpty) return;
+    await method.invokeMethod<void>(
+      'deleteExactManagedCopy',
+      {'assetLocalIdentifier': normalized},
+    );
+  }
+
   /// Best-effort cleanup for app-managed album copies created by Breakdex.
   ///
   /// The native side scans Breakdex albums for assets whose semantic filename

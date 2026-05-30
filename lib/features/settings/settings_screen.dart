@@ -392,7 +392,14 @@ class SettingsScreen extends ConsumerWidget {
               const SizedBox(height: AppSpacing.md),
               _SettingsPanel(
                 title: 'Party',
-                child: _PartyCycleDurationSlider(),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _PartyCycleDurationSlider(),
+                    const SizedBox(height: AppSpacing.md),
+                    _PartyComboModeToggle(),
+                  ],
+                ),
               ),
             ],
           ),
@@ -1521,6 +1528,50 @@ class _PartyCycleDurationSlider extends ConsumerWidget {
               ),
             ),
           ],
+        ),
+      ],
+    );
+  }
+}
+
+class _PartyComboModeToggle extends ConsumerWidget {
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final isEnabled = ref.watch(partyComboModeProvider);
+    final colorScheme = Theme.of(context).colorScheme;
+
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Combo mode',
+                style: AppTypography.caption.copyWith(
+                  color: colorScheme.secondary,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              const SizedBox(height: 2),
+              Text(
+                'Shake to discover random combos instead of moves',
+                style: AppTypography.caption.copyWith(
+                  color: colorScheme.secondary.withValues(alpha: 0.6),
+                  fontSize: 11,
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(width: AppSpacing.sm),
+        Switch(
+          value: isEnabled,
+          activeColor: colorScheme.primary,
+          onChanged: (_) {
+            ref.read(partyComboModeProvider.notifier).toggle();
+          },
         ),
       ],
     );

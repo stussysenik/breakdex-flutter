@@ -1,5 +1,42 @@
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import '../design/colors.dart';
+
+/// User-defined learning state for custom review modes.
+///
+/// Each custom state has a unique [id], a user-facing [label],
+/// a [dbValue] used in the moves table, and a [color].
+class CustomLearningState {
+  const CustomLearningState({
+    required this.id,
+    required this.label,
+    required this.dbValue,
+    required this.color,
+  });
+
+  final String id;
+  final String label;
+  final String dbValue;
+  final Color color;
+
+  Map<String, dynamic> toJson() => {
+        'id': id,
+        'label': label,
+        'dbValue': dbValue,
+        'color': color.value.toRadixString(16).padLeft(8, '0'),
+      };
+
+  factory CustomLearningState.fromJson(Map<String, dynamic> json) {
+    final colorHex = json['color'] as String? ?? 'FFC46F6F';
+    final colorInt = int.tryParse(colorHex, radix: 16) ?? 0xFFC46F6F;
+    return CustomLearningState(
+      id: json['id'] as String,
+      label: json['label'] as String,
+      dbValue: json['dbValue'] as String,
+      color: Color(colorInt),
+    );
+  }
+}
 
 enum LearningState {
   newState('NEW', 'New', AppColors.stateNew),

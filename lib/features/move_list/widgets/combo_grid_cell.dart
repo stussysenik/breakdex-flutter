@@ -13,83 +13,58 @@ class _ComboGridSliver extends StatelessWidget {
       itemCount: combos.length,
       builder: (index) {
         final (combo, moveCount) = combos[index];
-        return _ComboGridCell(combo: combo, moveCount: moveCount);
+        return _ComboGridCell(
+          key: ValueKey('combo-cell-${combo.id}'),
+          combo: combo,
+          moveCount: moveCount,
+        );
       },
     );
   }
 }
 
-/// A single combo card in grid view. Shows an accent-gradient placeholder
-/// with a playlist icon, the combo name, move-count dots, and a count pill.
+/// A single combo card in grid view. Subscribes to [watchComboMoves] once per
+/// cell to derive both the preview background and move-name subtitle — halving
+/// subscriptions vs the previous dual-widget approach.
 class _ComboGridCell extends ConsumerWidget {
-  const _ComboGridCell({required this.combo, required this.moveCount});
+  const _ComboGridCell({
+    super.key,
+    required this.combo,
+    required this.moveCount,
+  });
 
   final Combo combo;
   final int moveCount;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    return _GridCardShell(
-      onTap: () {
-        HapticFeedback.lightImpact();
-        context.go('/moves/combo/${combo.id}');
-      },
-      background: _ComboPreviewBackground(combo: combo),
-      name: combo.name,
-      subtitle: _ComboGridMeta(combo: combo, moveCount: moveCount),
-      topRightWidget: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-        decoration: BoxDecoration(
-          color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.9),
-          borderRadius: BorderRadius.circular(AppRadius.sm),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Icon(
-              Icons.linear_scale_rounded,
-              size: 12,
-              color: Colors.white,
-            ),
-            const SizedBox(width: 4),
-            Text(
-              '$moveCount',
-              style: AppTypography.caption.copyWith(
-                color: Colors.white,
-                fontSize: 10,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _ComboGridMeta extends ConsumerWidget {
-  const _ComboGridMeta({required this.combo, required this.moveCount});
-
-  final Combo combo;
-  final int moveCount;
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final comboMovesStream = ref
-        .watch(comboRepositoryProvider)
-        .watchComboMoves(combo.id);
+    final stream = ref.watch(comboRepositoryProvider).watchComboMoves(combo.id);
 
     return StreamBuilder<List<ComboMoveWithDetail>>(
-      stream: comboMovesStream,
+      stream: stream,
       builder: (context, snapshot) {
         final moves = snapshot.data ?? const <ComboMoveWithDetail>[];
+
+        final previewPath = moves
+                .map((item) => item.move.resolvedVideoPath)
+                .whereType<String>()
+                .firstOrNull ??
+            combo.resolvedActiveVideoPath;
+
+        final background = previewPath != null && previewPath.isNotEmpty
+            ? _GridThumbnail(videoPath: previewPath)
+            : _ComboPreviewFallback(
+                stepCount: moves.length,
+                stepNames: moves.map((item) => item.move.name).take(3).toList(),
+              );
+
         final names = moves.map((item) => item.move.name).take(3).toList();
         final overflow = moves.length - names.length;
         final sequenceLabel = names.isEmpty
             ? '$moveCount move${moveCount == 1 ? '' : 's'}'
-            : [names.join(' • '), if (overflow > 0) '+$overflow'].join(' ');
+            : [names.join(' \u2022 '), if (overflow > 0) '+$overflow'].join(' ');
 
-        return Column(
+        final subtitle = Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -129,40 +104,41 @@ class _ComboGridMeta extends ConsumerWidget {
             ),
           ],
         );
-      },
-    );
-  }
-}
 
-class _ComboPreviewBackground extends ConsumerWidget {
-  const _ComboPreviewBackground({required this.combo});
-
-  final Combo combo;
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final comboMovesStream = ref
-        .watch(comboRepositoryProvider)
-        .watchComboMoves(combo.id);
-
-    return StreamBuilder<List<ComboMoveWithDetail>>(
-      stream: comboMovesStream,
-      builder: (context, snapshot) {
-        final comboMoves = snapshot.data ?? const <ComboMoveWithDetail>[];
-        final previewPath =
-            comboMoves
-                .map((item) => item.move.resolvedVideoPath)
-                .whereType<String>()
-                .firstOrNull ??
-            combo.resolvedActiveVideoPath;
-
-        if (previewPath != null && previewPath.isNotEmpty) {
-          return _GridThumbnail(videoPath: previewPath);
-        }
-
-        return _ComboPreviewFallback(
-          stepCount: comboMoves.length,
-          stepNames: comboMoves.map((item) => item.move.name).take(3).toList(),
+        return _GridCardShell(
+          onTap: () {
+            HapticFeedback.lightImpact();
+            context.go('/moves/combo/${combo.id}');
+          },
+          background: background,
+          name: combo.name,
+          subtitle: subtitle,
+          topRightWidget: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+            decoration: BoxDecoration(
+              color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.9),
+              borderRadius: BorderRadius.circular(AppRadius.sm),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Icon(
+                  Icons.linear_scale_rounded,
+                  size: 12,
+                  color: Colors.white,
+                ),
+                const SizedBox(width: 4),
+                Text(
+                  '$moveCount',
+                  style: AppTypography.caption.copyWith(
+                    color: Colors.white,
+                    fontSize: 10,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
+            ),
+          ),
         );
       },
     );

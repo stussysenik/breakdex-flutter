@@ -1,9 +1,8 @@
 import 'package:drift/drift.dart';
-import 'package:flutter/foundation.dart';
-import 'package:path/path.dart' as p;
 
 import '../database/database.dart';
 import '../models/reviewable_item.dart';
+import '../utils/diagnostics.dart';
 import 'native_video_album.dart';
 import 'video_path_resolver.dart';
 import 'video_service.dart';
@@ -91,25 +90,27 @@ class MediaCleanupService {
     );
 
     final pathForCleanup = resolvedVideoPath ?? storedVideoPath;
+    final willDelete = !pathStillReferenced && pathForCleanup != null && pathForCleanup.trim().isNotEmpty;
+    final willTombstone = !hashStillReferenced && contentHash != null && contentHash.trim().isNotEmpty;
+    DiagnosticsLog.debug('MediaCleanup', '_cleanupAsset title="$title" willDelete=$willDelete willTombstone=$willTombstone');
     if (!pathStillReferenced &&
         pathForCleanup != null &&
         pathForCleanup.trim().isNotEmpty) {
       try {
+        DiagnosticsLog.debug('MediaCleanup', 'DELETING local video: $pathForCleanup');
         await _videoService.deleteVideo(pathForCleanup);
-      } catch (error) {
-        debugPrint('Local video cleanup failed for $title: $error');
+        DiagnosticsLog.debug('MediaCleanup', 'Local video DELETED: $pathForCleanup');
+      } catch (error, stack) {
+        DiagnosticsLog.warn('MediaCleanup', 'Local video cleanup FAILED for "$title": $error');
       }
 
-      if (!skipPhotosCleanup) {
+      if (!skipPhotosCleanup && managedAlbumAssetId != null && managedAlbumAssetId.trim().isNotEmpty) {
         try {
-          await _videoAlbum.deleteManagedCopies(
-            assetTitle: title,
-            category: category,
-            fileExtension: p.extension(pathForCleanup),
-            assetLocalIdentifier: managedAlbumAssetId,
-          );
-        } catch (error) {
-          debugPrint('Album cleanup failed for $title: $error');
+          DiagnosticsLog.debug('MediaCleanup', 'Deleting album copy for "$title" assetId=$managedAlbumAssetId');
+          await _videoAlbum.deleteExactManagedCopy(managedAlbumAssetId.trim());
+          DiagnosticsLog.debug('MediaCleanup', 'Album copy deleted for "$title"');
+        } catch (error, stack) {
+          DiagnosticsLog.warn('MediaCleanup', 'Album cleanup FAILED for "$title": $error');
         }
       }
     }
@@ -119,6 +120,7 @@ class MediaCleanupService {
         contentHash.trim().isEmpty) {
       return;
     }
+    DiagnosticsLog.debug('MediaCleanup', 'TOMBSTONING asset: $contentHash');
     await _tombstoneAsset(contentHash);
   }
 
@@ -141,7 +143,10 @@ class MediaCleanupService {
                         : t.id.isNotValue(excludingMoveId)),
               ))
               .get();
-      if (moveRefs.isNotEmpty) return true;
+      if (moveRefs.isNotEmpty) {
+        DiagnosticsLog.debug('MediaCleanup', '_isPathStillReferenced path="$normalizedPath" moveRefs=${moveRefs.length} => still referenced');
+        return true;
+      }
 
       final comboRefs =
           await (_db.select(_db.combos)..where(
@@ -152,9 +157,13 @@ class MediaCleanupService {
                         : t.id.isNotValue(excludingComboId)),
               ))
               .get();
-      if (comboRefs.isNotEmpty) return true;
+      if (comboRefs.isNotEmpty) {
+        DiagnosticsLog.debug('MediaCleanup', '_isPathStillReferenced path="$normalizedPath" comboRefs=${comboRefs.length} => still referenced');
+        return true;
+      }
     }
 
+    DiagnosticsLog.debug('MediaCleanup', '_isPathStillReferenced path="$normalizedPath" => NOT referenced (safe to delete)');
     return false;
   }
 
@@ -174,7 +183,10 @@ class MediaCleanupService {
                       : t.id.isNotValue(excludingMoveId)),
             ))
             .get();
-    if (moveHashRefs.isNotEmpty) return true;
+    if (moveHashRefs.isNotEmpty) {
+      DiagnosticsLog.debug('MediaCleanup', '_isHashStillReferenced hash=$contentHash moveHashRefs=${moveHashRefs.length} => still referenced');
+      return true;
+    }
 
     final comboHashRefs =
         await (_db.select(_db.combos)..where(
@@ -185,21 +197,34 @@ class MediaCleanupService {
                       : t.id.isNotValue(excludingComboId)),
             ))
             .get();
-    return comboHashRefs.isNotEmpty;
+    if (comboHashRefs.isNotEmpty) {
+      DiagnosticsLog.debug('MediaCleanup', '_isHashStillReferenced hash=$contentHash comboHashRefs=${comboHashRefs.length} => still referenced');
+      return true;
+    }
+
+    DiagnosticsLog.debug('MediaCleanup', '_isHashStillReferenced hash=$contentHash => NOT referenced (safe to tombstone)');
+    return false;
   }
 
   Future<void> _tombstoneAsset(String contentHash) async {
     final manifest = await _db.assetManifestDao.getByHash(contentHash);
-    if (manifest == null || manifest.deletedAt != null) return;
+    if (manifest == null) {
+      DiagnosticsLog.debug('MediaCleanup', '_tombstoneAsset hash=$contentHash => no manifest (skip)');
+      return;
+    }
+    if (manifest.deletedAt != null) {
+      DiagnosticsLog.debug('MediaCleanup', '_tombstoneAsset hash=$contentHash => already tombstoned (skip)');
+      return;
+    }
 
-    await _db.assetManifestDao.upsert(
-      AssetManifestCompanion(
-        contentHash: Value(contentHash),
-        localPath: const Value(null),
-        localVerifiedAt: const Value(null),
-      ),
+    DiagnosticsLog.debug('MediaCleanup', '_tombstoneAsset hash=$contentHash => executing tombstone...');
+    await _db.assetManifestDao.updateLocalState(
+      contentHash,
+      localPath: const Value(null),
+      localVerifiedAt: const Value(null),
     );
     await _db.assetManifestDao.softDelete(contentHash, 'user');
+    DiagnosticsLog.debug('MediaCleanup', '_tombstoneAsset hash=$contentHash => manifest tombstoned');
 
     final localCopy = await _db.assetCopiesDao.getLocalCopy(contentHash);
     if (localCopy != null) {
@@ -211,8 +236,9 @@ class MediaCleanupService {
           updatedAt: Value(DateTime.now()),
         ),
       );
+      DiagnosticsLog.debug('MediaCleanup', '_tombstoneAsset hash=$contentHash => local copy marked deleted');
     }
-
+    DiagnosticsLog.debug('MediaCleanup', '_tombstoneAsset hash=$contentHash => DONE');
     await _db.assetManifestDao.updateCopyCount(contentHash);
   }
 }

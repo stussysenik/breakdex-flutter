@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_animate/flutter_animate.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:path/path.dart' as p;
@@ -52,13 +53,18 @@ class _MoveDetailScreenState extends ConsumerState<MoveDetailScreen> {
   @override
   void initState() {
     super.initState();
-    // Use a microtask to initialize the machine since we can't read refs in initState directly
-    // safely without potentially triggering rebuilds during build.
     Future.microtask(() {
-      final move = ref.read(moveRepositoryProvider).getById(widget.moveId);
-      move.then((m) {
+      final moveId = widget.moveId;
+      debugPrint('[MoveDetailScreen] initState loading moveId=$moveId');
+      ref.read(moveRepositoryProvider).getById(moveId).then((m) {
         if (mounted) {
+          debugPrint('[MoveDetailScreen] initState loaded move name="${m.name}" id=${m.id}');
           ref.read(moveDetailProvider.notifier).init(m);
+        }
+      }).catchError((err, stack) {
+        debugPrint('[MoveDetailScreen] initState FAILED to load moveId=$moveId — $err');
+        if (mounted) {
+          context.pop();
         }
       });
     });
@@ -282,6 +288,7 @@ class _MoveDetailScreenState extends ConsumerState<MoveDetailScreen> {
   }
 
   List<Widget> _buildOverlays(MoveDetailState state, ColorScheme cs) {
+    debugPrint('[MoveDetailScreen] _buildOverlays state=${state.runtimeType}');
     final overlays = <Widget>[];
     final notifier = ref.read(moveDetailProvider.notifier);
 
@@ -350,6 +357,28 @@ class _MoveDetailScreenState extends ConsumerState<MoveDetailScreen> {
       ));
     }
 
+    if (state is ErrorState) {
+      overlays.add(ConfirmActionOverlay(
+        title: 'Error',
+        content: state.message,
+        confirmLabel: 'OK',
+        isDestructive: false,
+        onCancel: () => notifier.send(const Cancel()),
+        onConfirm: () => notifier.send(const Cancel()),
+      ));
+    }
+
+    if (state is AlbumSyncFailed) {
+      overlays.add(ConfirmActionOverlay(
+        title: 'Album Sync Failed',
+        content: state.message,
+        confirmLabel: 'OK',
+        isDestructive: false,
+        onCancel: () => notifier.send(const Cancel()),
+        onConfirm: () => notifier.send(const Cancel()),
+      ));
+    }
+
     if (state is ConfirmingRemoveVideo) {
       overlays.add(ConfirmActionOverlay(
         title: 'Remove Video?',
@@ -390,7 +419,9 @@ class _MoveDetailScreenState extends ConsumerState<MoveDetailScreen> {
   Future<void> _editVideo(BuildContext context, WidgetRef ref, Move move) async {
     if (move.videoPath == null) return;
     MediaPlaybackCoordinator.shared.pauseAll();
+    debugPrint('[MoveDetailScreen] _editVideo pushing editor with resolvedPath=${move.resolvedVideoPath}');
     final editedPath = await context.push<String>('/video-editor', extra: {'videoPath': move.resolvedVideoPath});
+    debugPrint('[MoveDetailScreen] _editVideo Editor returned path=$editedPath');
     if (editedPath != null) {
       ref.read(moveDetailProvider.notifier).send(VideoEdited(editedPath));
     }

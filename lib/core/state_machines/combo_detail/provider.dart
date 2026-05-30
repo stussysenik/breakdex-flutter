@@ -1,17 +1,30 @@
 import 'dart:async';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:drift/drift.dart' show Value;
+import 'package:uuid/uuid.dart';
 import 'machine.dart';
 import '../../../core/database/database.dart';
+import '../../../core/database/daos/combos_dao.dart';
 import '../../../core/providers.dart';
+import '../../../core/utils/diagnostics.dart';
+
+final comboByIdStreamProvider = StreamProvider.family<Combo, String>((ref, id) {
+  return ref.watch(comboRepositoryProvider).watchById(id);
+});
+
+final comboMovesStreamProvider = StreamProvider.family<List<ComboMoveWithDetail>, String>((ref, id) {
+  return ref.watch(comboRepositoryProvider).watchComboMoves(id);
+});
 
 class ComboDetailNotifier extends FamilyNotifier<ComboDetailState, String> {
   late final ComboDetailMachine _machine;
+  int _saveGeneration = 0;
+  String _latestDraft = '';
+  bool _streamInitialized = false;
 
   @override
   ComboDetailState build(String arg) {
-    // We don't have the combo yet, but the UI will call init() or we can watch it.
-    // For simplicity, we start with a dummy or expect a stream to feed it.
     final initialState = Idle(Combo(
       id: arg,
       name: 'Loading...',
@@ -19,12 +32,25 @@ class ComboDetailNotifier extends FamilyNotifier<ComboDetailState, String> {
       activeVideoPath: null,
     ));
     _machine = ComboDetailMachine(initialState);
-    return initialState;
-  }
+    DiagnosticsLog.info('ComboDetailNotifier', 'build comboId=$arg');
 
-  void init(Combo combo) {
-    state = Idle(combo);
-    _machine.send(StreamUpdate(combo));
+    ref.listen(comboByIdStreamProvider(arg), (prev, next) {
+      if (next.hasValue) {
+        final combo = next.value!;
+        final log = StageLogger.begin('ComboDetailNotifier._onComboStream',
+            subsystem: 'ComboDetail',
+            context: {'comboId': arg, 'name': combo.name});
+        log.stage('emit', {'initializedBefore': _streamInitialized});
+        if (!_streamInitialized) {
+          _streamInitialized = true;
+          _latestDraft = combo.notes ?? '';
+        }
+        send(StreamUpdate(combo));
+        log.complete();
+      }
+    });
+
+    return initialState;
   }
 
   void send(ComboDetailEvent event) {
@@ -37,35 +63,92 @@ class ComboDetailNotifier extends FamilyNotifier<ComboDetailState, String> {
 
   void _executeEntryActions(ComboDetailState s, ComboDetailEvent e) {
     if (s is SavingNotes && e is UpdateNotes) {
-      _saveNotes(s.combo, e.notes);
+      _latestDraft = e.text;
+      _saveNotes(s.combo, e.text, ++_saveGeneration);
+    } else if (s is NotesDirty && e is UpdateNotes) {
+      _latestDraft = e.text;
+      _saveNotes(s.combo, e.text, ++_saveGeneration);
     } else if (s is Deleting && e is ConfirmDelete) {
       _deleteCombo(s.combo);
+    } else if (s is SavingLog && e is SaveLogBody) {
+      _saveLogEntry(s.combo, s.body);
+    } else if (s is DeletingLog && e is Cancel) {
+      _deleteLogEntry(s.combo, s.entryId);
     }
   }
 
-  Future<void> _saveNotes(Combo combo, String notes) async {
+  Future<void> _saveNotes(Combo combo, String notes, int generation) async {
+    final log = StageLogger.begin('_saveNotes', subsystem: 'ComboDetail', context: {
+      'comboId': combo.id, 'generation': generation,
+    });
     try {
+      if (_latestDraft != notes) {
+        log.stage('skipped_stale', {'latestDraft': _latestDraft});
+        log.complete('superseded by newer draft');
+        return;
+      }
       await ref.read(blackboxServiceProvider).log('update_combo_notes', 'combo', combo.id);
+      log.stage('blackboxLogged');
       await ref.read(comboRepositoryProvider).update(
             CombosCompanion(
               id: Value(combo.id),
               notes: Value(notes.isEmpty ? null : notes),
             ),
           );
-      send(SaveSucceeded(combo.copyWith(notes: Value(notes.isEmpty ? null : notes))));
-    } catch (e) {
-      send(SaveFailed(e.toString()));
+      log.stage('dbUpdated');
+      if (_saveGeneration == generation) {
+        send(SaveSucceeded(combo.copyWith(notes: Value(notes.isEmpty ? null : notes))));
+      } else {
+        log.complete('skipped — newer generation $_saveGeneration');
+        return;
+      }
+      log.complete();
+    } catch (e, stack) {
+      log.fail(e, stack);
+      if (_saveGeneration == generation) {
+        send(SaveFailed(e.toString()));
+      }
     }
   }
 
   Future<void> _deleteCombo(Combo combo) async {
+    final log = StageLogger.begin('_deleteCombo', subsystem: 'ComboDetail', context: {
+      'comboId': combo.id, 'name': combo.name,
+    });
     try {
       await ref.read(blackboxServiceProvider).log('delete_combo', 'combo', combo.id, {'name': combo.name});
+      log.stage('blackboxLogged');
       await ref.read(mediaCleanupServiceProvider).cleanupComboMedia(combo);
+      log.stage('cleanupComboMedia');
       await ref.read(comboRepositoryProvider).delete(combo.id);
+      log.stage('dbDeleted');
       send(DeleteSucceeded());
-    } catch (e) {
+      log.complete();
+    } catch (e, stack) {
+      log.fail(e, stack);
       send(DeleteFailed(e.toString()));
+    }
+  }
+
+  Future<void> _saveLogEntry(Combo combo, String body) async {
+    try {
+      unawaited(HapticFeedback.mediumImpact());
+      final dao = ref.read(comboNoteEntriesDaoProvider);
+      await dao.addEntry(id: const Uuid().v4(), comboId: combo.id, body: body);
+      send(SaveSucceeded(combo));
+    } catch (e) {
+      send(SaveFailed('$e'));
+    }
+  }
+
+  Future<void> _deleteLogEntry(Combo combo, String entryId) async {
+    try {
+      unawaited(HapticFeedback.mediumImpact());
+      final dao = ref.read(comboNoteEntriesDaoProvider);
+      await dao.deleteEntry(entryId);
+      send(SaveSucceeded(combo));
+    } catch (e) {
+      send(SaveFailed('$e'));
     }
   }
 }

@@ -112,6 +112,17 @@ final class VideoAlbumPlugin: NSObject, FlutterPlugin, FlutterStreamHandler, PHP
                 category: category,
                 result: result
             )
+        case "deleteExactManagedCopy":
+            guard let args = call.arguments as? [String: Any],
+                  let assetLocalIdentifier = args["assetLocalIdentifier"] as? String,
+                  !assetLocalIdentifier.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
+                result(nil)
+                return
+            }
+            deleteExactManagedCopy(
+                assetLocalIdentifier: assetLocalIdentifier.trimmingCharacters(in: .whitespacesAndNewlines),
+                result: result
+            )
         case "deleteManagedCopies":
             guard let args = call.arguments as? [String: Any],
                   let assetTitle = args["assetTitle"] as? String else {
@@ -438,6 +449,46 @@ final class VideoAlbumPlugin: NSObject, FlutterPlugin, FlutterStreamHandler, PHP
         }
     }
 
+    /// Deterministic deletion: only deletes a Photos album asset by its exact
+    /// PHAsset localIdentifier. No filename matching, no heuristics — if the
+    /// identifier doesn't resolve to an existing asset, nothing happens.
+    private func deleteExactManagedCopy(
+        assetLocalIdentifier: String,
+        result: @escaping FlutterResult
+    ) {
+        let status = PHPhotoLibrary.authorizationStatus(for: .readWrite)
+        print("[VideoAlbumPlugin] deleteExactManagedCopy assetId='\(assetLocalIdentifier)' authStatus=\(status.rawValue)")
+        guard status == .authorized || status == .limited else {
+            print("[VideoAlbumPlugin] deleteExactManagedCopy PERMISSION_DENIED (status=\(status.rawValue))")
+            result(FlutterError(code: "PERMISSION_DENIED", message: "Photo library read/write access denied", details: nil))
+            return
+        }
+
+        let fetchResult = PHAsset.fetchAssets(withLocalIdentifiers: [assetLocalIdentifier], options: nil)
+        guard fetchResult.count > 0 else {
+            print("[VideoAlbumPlugin] deleteExactManagedCopy no asset found for id='\(assetLocalIdentifier)' — nothing to delete")
+            DispatchQueue.main.async { result(nil) }
+            return
+        }
+
+        let assets = fetchResult.objects(at: IndexSet(integersIn: 0..<fetchResult.count))
+        print("[VideoAlbumPlugin] deleteExactManagedCopy deleting asset: \(assetLocalIdentifier)")
+        PHPhotoLibrary.shared().performChanges({
+            PHAssetChangeRequest.deleteAssets(assets as NSFastEnumeration)
+        }) { success, error in
+            DispatchQueue.main.async {
+                if success {
+                    print("[VideoAlbumPlugin] deleteExactManagedCopy SUCCESS")
+                    result(nil)
+                } else {
+                    let msg = error?.localizedDescription ?? "Unknown error"
+                    print("[VideoAlbumPlugin] deleteExactManagedCopy FAILED: \(msg)")
+                    result(FlutterError(code: "DELETE_FAILED", message: msg, details: nil))
+                }
+            }
+        }
+    }
+
     private func deleteManagedCopies(
         assetTitle: String,
         category: String?,
@@ -446,7 +497,9 @@ final class VideoAlbumPlugin: NSObject, FlutterPlugin, FlutterStreamHandler, PHP
         result: @escaping FlutterResult
     ) {
         let status = PHPhotoLibrary.authorizationStatus(for: .readWrite)
+        print("[VideoAlbumPlugin] deleteManagedCopies assetTitle='\(assetTitle)' category='\(category ?? "nil")' ext='\(fileExtension ?? "nil")' assetId='\(assetLocalIdentifier ?? "nil")' authStatus=\(status.rawValue)")
         guard status == .authorized || status == .limited else {
+            print("[VideoAlbumPlugin] deleteManagedCopies PERMISSION_DENIED (status=\(status.rawValue))")
             result(
                 FlutterError(
                     code: "PERMISSION_DENIED",
@@ -495,11 +548,14 @@ final class VideoAlbumPlugin: NSObject, FlutterPlugin, FlutterStreamHandler, PHP
         ])
 
         let albums = self.fetchBreakdexAlbums()
+        print("[VideoAlbumPlugin] deleteManagedCopiesAuthorized found \(albums.count) Breakdex albums, candidate filenames: \(candidateFilenames)")
+
         var matchingAssets = self.findAssets(
             in: albums,
             matchingLocalIdentifier: assetLocalIdentifier
         )
         if matchingAssets.isEmpty {
+            print("[VideoAlbumPlugin] deleteManagedCopiesAuthorized no match by localIdentifier, trying filename match...")
             matchingAssets = self.findAssets(
                 in: albums,
                 matchingFilenames: candidateFilenames
@@ -507,21 +563,26 @@ final class VideoAlbumPlugin: NSObject, FlutterPlugin, FlutterStreamHandler, PHP
         }
 
         guard !matchingAssets.isEmpty else {
+            print("[VideoAlbumPlugin] deleteManagedCopiesAuthorized no matching assets found — nothing to delete")
             DispatchQueue.main.async { result(nil) }
             return
         }
 
+        print("[VideoAlbumPlugin] deleteManagedCopiesAuthorized deleting \(matchingAssets.count) matching asset(s): \(matchingAssets.map { $0.localIdentifier })")
         PHPhotoLibrary.shared().performChanges({
             PHAssetChangeRequest.deleteAssets(matchingAssets as NSFastEnumeration)
         }) { success, error in
             DispatchQueue.main.async {
                 if success {
+                    print("[VideoAlbumPlugin] deleteManagedCopiesAuthorized SUCCESS — deleted \(matchingAssets.count) asset(s)")
                     result(nil)
                 } else {
+                    let msg = error?.localizedDescription ?? "Unknown error deleting album copies"
+                    print("[VideoAlbumPlugin] deleteManagedCopiesAuthorized FAILED: \(msg)")
                     result(
                         FlutterError(
                             code: "DELETE_FAILED",
-                            message: error?.localizedDescription ?? "Unknown error deleting album copies",
+                            message: msg,
                             details: nil
                         )
                     )

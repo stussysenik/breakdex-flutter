@@ -1,5 +1,7 @@
 import 'dart:io';
+
 import 'package:flutter/foundation.dart';
+import 'package:path/path.dart' as p;
 
 /// Utilities for robust filesystem operations across platforms.
 abstract final class FileSystemUtils {
@@ -42,6 +44,50 @@ abstract final class FileSystemUtils {
           'Copy failed or resulted in an empty file',
           destinationPath,
         );
+      }
+    }
+  }
+
+  /// Recursively delete empty parent directories starting from [filePath]'s
+  /// parent, walking up until a non-empty directory or the [stopDir] is reached.
+  ///
+  /// This prevents accumulating ghost directories when video files are deleted.
+  /// Each level is only removed if it contains zero entries (files + subdirs).
+  ///
+  /// [stopDir] is a path below which we never ascend (e.g., the documents or
+  /// Moves root). Directories at or above [stopDir] are preserved.
+  static Future<void> pruneEmptyParents(
+    String filePath, {
+    required String stopDir,
+  }) async {
+    var current = Directory(p.dirname(filePath));
+    final normalizedStop = stopDir.endsWith('/')
+        ? stopDir.substring(0, stopDir.length - 1)
+        : stopDir;
+
+    while (true) {
+      final currentPath = current.path;
+      if (currentPath == normalizedStop ||
+          !currentPath.startsWith(normalizedStop)) {
+        break;
+      }
+
+      try {
+        if (!await current.exists()) {
+          current = current.parent;
+          continue;
+        }
+        final entries = await current.list().toList();
+        if (entries.isEmpty) {
+          await current.delete();
+          debugPrint('[FileSystemUtils] Pruned empty dir: ${current.path}');
+          current = current.parent;
+        } else {
+          break;
+        }
+      } catch (e) {
+        debugPrint('[FileSystemUtils] Prune failed (non-fatal): $e');
+        break;
       }
     }
   }

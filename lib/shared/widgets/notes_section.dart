@@ -1,6 +1,8 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -109,7 +111,9 @@ class _NotesSectionState extends ConsumerState<NotesSection> {
   @override
   Widget build(BuildContext context) {
     if (_editing) return _buildEditor(context);
-    return _buildReader(context);
+    return _buildReader(context)
+        .animate(key: ValueKey('notes-reader-${widget.notes}'))
+        .fadeIn(duration: 200.ms);
   }
 
   // ---------------------------------------------------------------------------
@@ -201,11 +205,33 @@ class _NotesSectionState extends ConsumerState<NotesSection> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          'NOTES',
-          style: AppTypography.sectionHeader.copyWith(
-            color: colorScheme.secondary,
-          ),
+        Row(
+          children: [
+            Expanded(
+              child: Text(
+                'NOTES',
+                style: AppTypography.sectionHeader.copyWith(
+                  color: colorScheme.secondary,
+                ),
+              ),
+            ),
+            TextButton(
+              onPressed: () {
+                _flushPendingSave();
+                setState(() => _editing = false);
+              },
+              style: TextButton.styleFrom(
+                foregroundColor: AppColors.accent,
+                padding: const EdgeInsets.symmetric(
+                  horizontal: AppSpacing.sm,
+                  vertical: AppSpacing.xs,
+                ),
+                minimumSize: Size.zero,
+                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+              ),
+              child: const Text('Save'),
+            ),
+          ],
         ),
         const SizedBox(height: AppSpacing.sm),
         TextField(

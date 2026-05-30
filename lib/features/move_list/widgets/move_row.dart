@@ -1,9 +1,10 @@
 part of '../move_list_screen.dart';
 
 class _MoveRow extends ConsumerWidget {
-  const _MoveRow({required this.move});
+  const _MoveRow({required this.move, this.index = 0});
 
   final Move move;
+  final int index;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -13,21 +14,25 @@ class _MoveRow extends ConsumerWidget {
     final stateColor = AppSemanticTheme.of(context).colorForState(state);
     final colorScheme = Theme.of(context).colorScheme;
 
-    return RepaintBoundary(
-      child: Dismissible(
-        key: ValueKey(move.id),
-        direction: DismissDirection.endToStart,
-        background: Container(
-          alignment: Alignment.centerRight,
-          padding: const EdgeInsets.only(right: AppSpacing.screenEdge),
-          color: AppColors.actionAgain,
-          child: const Icon(Icons.delete, color: Colors.white),
-        ),
-        onDismissed: (_) {
-          unawaited(HapticFeedback.heavyImpact());
-          unawaited(_deleteMove(ref));
-        },
-        confirmDismiss: (_) async => true,
+    return Dismissible(
+      key: ValueKey(move.id),
+      direction: DismissDirection.endToStart,
+      background: Container(
+        alignment: Alignment.centerRight,
+        padding: const EdgeInsets.only(right: AppSpacing.screenEdge),
+        color: AppColors.actionAgain,
+        child: const Icon(Icons.delete_outline, color: Colors.white),
+      ),
+      onDismissed: (_) {
+        debugPrint('[MoveRow] onDismissed moveId=${move.id} name="${move.name}"');
+        unawaited(HapticFeedback.heavyImpact());
+        unawaited(_archiveMove(ref, context));
+      },
+      confirmDismiss: (direction) async {
+        debugPrint('[MoveRow] confirmDismiss direction=$direction moveId=${move.id}');
+        return true;
+      },
+      child: RepaintBoundary(
         child: Semantics(
           identifier: 'move-row-${move.id}',
           label: '${move.name}, $stateLabel',
@@ -116,19 +121,55 @@ class _MoveRow extends ConsumerWidget {
                   ],
                 ),
               ),
-            ),
+            ).animate()
+                .fadeIn(
+                  duration: AppMotion.moderate01,
+                  delay: Duration(milliseconds: index.clamp(0, 15) * 40),
+                )
+                .slideY(
+                  begin: 0.03,
+                  duration: AppMotion.moderate02,
+                  delay: Duration(milliseconds: index.clamp(0, 15) * 40),
+                ),
           ),
         ),
       ),
     );
   }
 
-  Future<void> _deleteMove(WidgetRef ref) async {
-    final orchestrator = ref.read(storageOrchestratorProvider);
-    await orchestrator.deleteMove(
-      move,
-      cleanupMedia: (m) => ref.read(mediaCleanupServiceProvider).cleanupMoveMedia(m),
-    );
+  Future<void> _archiveMove(WidgetRef ref, BuildContext context) async {
+    debugPrint('[MoveRow] ARCHIVING move: id=${move.id} name="${move.name}"');
+    try {
+      final repo = ref.read(moveRepositoryProvider);
+      await repo.archive(move.id, reason: 'user_swipe');
+      debugPrint('[MoveRow] Move ARCHIVED: id=${move.id} name="${move.name}"');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('"${move.name}" moved to Recently Deleted'),
+          action: SnackBarAction(
+            label: 'Undo',
+            onPressed: () {
+              debugPrint('[MoveRow] UNDO archive: id=${move.id} name="${move.name}"');
+              unawaited(_undoArchive(ref));
+            },
+          ),
+          duration: const Duration(seconds: 5),
+        ),
+      );
+    } catch (e, stack) {
+      debugPrint('[MoveRow] Archive FAILED: $e\n$stack');
+    }
+  }
+
+  Future<void> _undoArchive(WidgetRef ref) async {
+    debugPrint('[MoveRow] RESTORING move: id=${move.id} name="${move.name}"');
+    try {
+      final repo = ref.read(moveRepositoryProvider);
+      await repo.restore(move.id);
+      debugPrint('[MoveRow] Move RESTORED: id=${move.id}');
+    } catch (e, stack) {
+      debugPrint('[MoveRow] Restore FAILED: $e\n$stack');
+    }
   }
 }
 

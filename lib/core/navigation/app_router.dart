@@ -26,6 +26,7 @@ import '../../features/settings/sync_providers_screen.dart';
 import '../../features/settings/sync_status_screen.dart';
 import '../../features/settings/help/asset_sync_help_screen.dart';
 import '../../shared/widgets/bottom_nav_shell.dart';
+import '../../shared/widgets/quick_video_viewer.dart';
 import '../../core/models/app_mode.dart';
 import '../../core/services/settings_service.dart';
 
@@ -188,6 +189,17 @@ final appRouter = GoRouter(
       path: '/settings-panel/sync-help',
       parentNavigatorKey: _rootNavigatorKey,
       builder: (context, state) => const AssetSyncHelpScreen(),
+    ),
+    GoRoute(
+      path: '/video-viewer',
+      parentNavigatorKey: _rootNavigatorKey,
+      builder: (context, state) {
+        final extras = state.extra as Map<String, dynamic>?;
+        return QuickVideoViewer(
+          videoPath: extras?['videoPath'] as String? ?? '',
+          title: extras?['title'] as String?,
+        );
+      },
     ),
     GoRoute(
       path: '/moves',

@@ -1,0 +1,15 @@
+targets:
+  $default:
+    builders:
+      drift_dev:
+        options:
+        generate_for:
+          # Scope to database directory only — prevents full-project regeneration
+          include:
+            - lib/core/database/**
+      freezed:
+        generate_for:
+          include:
+            - lib/core/domain/failures/**
+            - lib/core/state_machines/**
+            - lib/features/party/bloc/**

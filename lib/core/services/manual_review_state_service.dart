@@ -1,4 +1,5 @@
 import 'package:drift/drift.dart';
+import 'package:flutter/foundation.dart';
 
 import '../data/repositories.dart';
 import '../database/daos/fsrs_cards_dao.dart';
@@ -35,9 +36,11 @@ class ManualReviewStateService {
     Move move,
     LearningState nextState,
   ) async {
+    debugPrint('[ManualReviewState] setMoveState moveId=${move.id} oldState=${move.learningState} nextState=${nextState.name} dbValue=${nextState.dbValue}');
     final existingCard = await _fsrsCardsDao.getByEntityId(move.id);
     final preFsrsState = existingCard?.fsrsState ?? 0;
     final syncAction = existingCard == null ? 'create' : 'update';
+    debugPrint('[ManualReviewState] existingCard=${existingCard != null} preFsrsState=$preFsrsState');
 
     final (targetFsrsState, rating, due, lastReview, reps) = switch (nextState) {
       LearningState.newState => (
@@ -62,6 +65,7 @@ class ManualReviewStateService {
         1,
       ),
     };
+    debugPrint('[ManualReviewState] targetFsrsState=$targetFsrsState');
 
     await _fsrsCardsDao.upsert(
       FsrsCardsCompanion(
@@ -76,6 +80,7 @@ class ManualReviewStateService {
         fsrsState: Value(targetFsrsState),
       ),
     );
+    debugPrint('[ManualReviewState] fsrsCard upserted');
 
     await _moveRepository.update(
       MovesCompanion(
@@ -83,6 +88,8 @@ class ManualReviewStateService {
         learningState: Value(nextState.dbValue),
       ),
     );
+    debugPrint('[ManualReviewState] moveRepo updated learningState=${nextState.dbValue}');
+
     await _syncDao.logChange(
       entityId: move.id,
       table: 'fsrs_cards',

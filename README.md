@@ -143,6 +143,21 @@ Move row in DB
 
 Every video you import (from Photos, Files, or Camera) is **copied** into Breakdex's own sandboxed storage at `Documents/Moves/<uuid>.mp4`. The app stores only a **relative path** in its database — never a reference to the original file. After import, your original file in Photos or Files is completely independent and can be safely deleted, moved, or renamed.
 
+### Storage constraints & automatic cleanup
+
+Breakdex enforces strict boundaries on where videos live and automatically prunes empty directories to keep the filesystem clean:
+
+| Layer | Mechanism | Purpose |
+|-------|-----------|---------|
+| **Write guard** | `VideoStorageGate` | Rejects any video write outside `Documents/Moves/` or `Documents/.breakdex-master/`. No video file can land in a temporary cache, external volume, or the documents root. |
+| **Per-deletion prune** | `VideoService.deleteVideo()` | After deleting a video file and its thumbnail, walks up the directory tree removing empty parent folders up to (but not including) the `Moves/` root. |
+| **Startup sweep** | `VideoPathHealer._autoCleanFileSystem()` | Once every 24 hours, recursively walks `Moves/` and deletes any empty subdirectories. Runs after orphan cleanup and case-duplicate folder merging. |
+| **Canonical prune** | `CanonicalFolderService` | After removing a ledger entry or deduplicating a moved file, prunes empty hash-nested directories (`ab/cd/`) from `.breakdex-master/videos/`. |
+| **Category cleanup** | `StorageOrchestrator._cleanupOldCategoryDir()` | Removes empty category directories (e.g., `Moves/Power/`) after the last move in that category is deleted or moved. |
+| **Orphan quarantine** | `VideoPathHealer._cleanupMovesOrphans()` | Archives video files in `Moves/` that have no matching database record to `Moves/Archive/`. |
+
+This layered cleanup ensures the filesystem never accumulates ghost directories. Empty folders are pruned immediately on deletion and swept again at startup — the Documents directory stays exactly as populated as your database contents.
+
 ### Where do the copies live?
 
 ```

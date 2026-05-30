@@ -1,0 +1,195 @@
+import 'package:flutter/material.dart';
+
+import '../../core/database/database.dart';
+import '../../core/design/colors.dart';
+import '../../core/design/spacing.dart';
+import '../../core/design/typography.dart';
+import '../../core/models/learning_state.dart';
+import '../../core/models/reviewable_item.dart' show MoveVideoPath;
+import '../../shared/widgets/pressable.dart';
+import '../../shared/widgets/video_player_widget.dart';
+
+class InstaxVideoCard extends StatefulWidget {
+  const InstaxVideoCard({
+    super.key,
+    required this.move,
+    required this.isActive,
+    this.muted = false,
+    this.looping = true,
+    this.onLongPress,
+    this.onTap,
+  });
+
+  final Move move;
+  final bool isActive;
+  final bool muted;
+  final bool looping;
+  final VoidCallback? onLongPress;
+  final VoidCallback? onTap;
+
+  @override
+  State<InstaxVideoCard> createState() => _InstaxVideoCardState();
+}
+
+class _InstaxVideoCardState extends State<InstaxVideoCard> {
+  @override
+  void didUpdateWidget(InstaxVideoCard old) {
+    super.didUpdateWidget(old);
+    if (old.isActive != widget.isActive) {
+      debugPrint(
+        '[InstaxCard] activeChanged: ${widget.move.name} isActive=${widget.isActive}',
+      );
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final move = widget.move;
+    final hasVideo = move.videoPath != null;
+    final learningState = LearningState.fromString(move.learningState);
+
+    return Pressable(
+      onTap: widget.onTap,
+      onLongPress: widget.onLongPress,
+      child: Container(
+        margin: const EdgeInsets.symmetric(
+          horizontal: AppSpacing.screenEdge,
+          vertical: AppSpacing.sm,
+        ),
+        decoration: BoxDecoration(
+          color: AppColors.darkCard,
+          borderRadius: BorderRadius.circular(AppRadius.lg),
+          border: Border.all(
+            color: AppColors.darkSeparator.withValues(alpha: 0.3),
+            width: 1,
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.3),
+              blurRadius: 20,
+              offset: const Offset(0, 8),
+            ),
+          ],
+        ),
+        clipBehavior: Clip.antiAlias,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (hasVideo)
+              AspectRatio(
+                aspectRatio: 3 / 4,
+                child: Stack(
+                  fit: StackFit.expand,
+                  children: [
+                    RobustVideoPlayer(
+                      key: ValueKey('instax-${move.id}-${move.contentHash}'),
+                      videoPath: move.resolvedVideoPath!,
+                      autoPlay: widget.isActive,
+                      minimal: true,
+                      looping: widget.looping,
+                      muted: widget.muted,
+                      borderRadius: BorderRadius.zero,
+                    ),
+                    Positioned(
+                      top: 8,
+                      right: 8,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 10,
+                          vertical: 4,
+                        ),
+                        decoration: BoxDecoration(
+                          color: Colors.black.withValues(alpha: 0.5),
+                          borderRadius: BorderRadius.circular(AppRadius.pill),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Container(
+                              width: 8,
+                              height: 8,
+                              decoration: BoxDecoration(
+                                color: learningState.color,
+                                shape: BoxShape.circle,
+                              ),
+                            ),
+                            const SizedBox(width: 6),
+                            Text(
+                              learningState.displayText,
+                              style: AppTypography.caption.copyWith(
+                                color: Colors.white,
+                                fontSize: 10,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                    if (!widget.isActive)
+                      Positioned.fill(
+                        child: Icon(
+                          Icons.play_circle_fill_rounded,
+                          size: 64,
+                          color: Colors.white.withValues(alpha: 0.6),
+                        ),
+                      ),
+                  ],
+                ),
+              )
+            else
+              AspectRatio(
+                aspectRatio: 3 / 4,
+                child: Container(
+                  color: AppColors.darkFill,
+                  child: const Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(Icons.videocam_off_rounded, size: 48, color: Colors.white24),
+                      SizedBox(height: AppSpacing.sm),
+                      Text(
+                        'No video',
+                        style: TextStyle(color: Colors.white24),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(
+                horizontal: AppSpacing.md,
+                vertical: AppSpacing.md,
+              ),
+              color: AppColors.darkCard,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    move.name,
+                    style: AppTypography.bodyMedium.copyWith(
+                      color: Colors.white,
+                      fontWeight: FontWeight.w600,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  if (move.category != 'default') ...[
+                    const SizedBox(height: 4),
+                    Text(
+                      move.category,
+                      style: AppTypography.caption.copyWith(
+                        color: Colors.white54,
+                        fontSize: 11,
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}

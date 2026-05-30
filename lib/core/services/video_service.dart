@@ -13,9 +13,11 @@ import 'package:video_thumbnail/video_thumbnail.dart';
 import 'package:fpdart/fpdart.dart';
 
 import '../domain/failures/failure.dart';
+import '../utils/filesystem_utils.dart';
 import '../utils/loading_state_machine.dart';
 import 'native_video_preview.dart';
 import 'video_path_resolver.dart';
+import 'video_storage_gate.dart';
 
 enum VideoFileStatus { ready, missing, error }
 
@@ -621,6 +623,9 @@ class VideoService {
         ? p.extension(source.path)
         : '.mp4';
     final dest = p.join(movesDir.path, '${_uuid.v4()}$ext');
+
+    VideoStorageGate.guardWrite(dest);
+
     await _copyFileWithTimeout(
       source: source,
       destination: File(dest),
@@ -713,7 +718,6 @@ class VideoService {
       await file.delete();
     }
 
-    // Also delete cached thumbnail
     final videoName = p.basenameWithoutExtension(absolutePath);
     final thumbFile = File(
       p.join(p.dirname(absolutePath), '.thumbs', '$videoName.jpg'),
@@ -721,6 +725,12 @@ class VideoService {
     if (await thumbFile.exists()) {
       await thumbFile.delete();
     }
+
+    final docsPath = (await getApplicationDocumentsDirectory()).path;
+    await FileSystemUtils.pruneEmptyParents(
+      absolutePath,
+      stopDir: p.join(docsPath, 'Moves'),
+    );
   }
 }
 

@@ -1,3 +1,5 @@
+import 'package:flutter/foundation.dart';
+
 import '../database/database.dart';
 import '../database/daos/moves_dao.dart';
 import '../database/daos/combos_dao.dart';
@@ -85,10 +87,16 @@ class DriftComboRepository implements ComboRepository {
   Future<void> addMove(ComboMovesCompanion entry) => _dao.addMoveToCombo(entry);
 
   @override
-  Future<void> delete(String id) => _dao.deleteCombo(id);
+  Future<void> delete(String id) {
+    debugPrint('[DriftComboRepo] delete id=$id');
+    return _dao.deleteCombo(id);
+  }
 
   @override
   Future<void> removeMove(String id) => _dao.removeComboMove(id);
+
+  @override
+  Future<void> clearMoves(String comboId) => _dao.deleteAllMovesForCombo(comboId);
 }
 
 class DriftReviewRepository implements ReviewRepository {

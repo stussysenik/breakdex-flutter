@@ -1,4 +1,5 @@
 import 'package:drift/drift.dart';
+import 'package:flutter/foundation.dart';
 import '../database.dart';
 import '../tables/moves.dart';
 
@@ -14,11 +15,13 @@ class MovesDao extends DatabaseAccessor<AppDatabase> with _$MovesDaoMixin {
   String _normalizeName(String value) =>
       value.trim().toLowerCase().replaceAll(RegExp(r'\s+'), ' ');
 
-  Stream<List<Move>> watchAll() =>
-      (select(moves)
-            ..where(_isActive)
-            ..orderBy([(t) => OrderingTerm.desc(t.createdAt)]))
-          .watch();
+  Stream<List<Move>> watchAll() {
+    debugPrint('[MovesDao] watchAll() subscribed');
+    return (select(moves)
+          ..where(_isActive)
+          ..orderBy([(t) => OrderingTerm.desc(t.createdAt)]))
+        .watch();
+  }
 
   Stream<Move> watchById(String id) =>
       (select(moves)..where((t) => t.id.equals(id))).watchSingle();
@@ -63,26 +66,32 @@ class MovesDao extends DatabaseAccessor<AppDatabase> with _$MovesDaoMixin {
   Future<void> updateMove(MovesCompanion entry) =>
       (update(moves)..where((t) => t.id.equals(entry.id.value))).write(entry);
 
-  Future<void> deleteMove(String id) =>
-      (delete(moves)..where((t) => t.id.equals(id))).go();
+  Future<void> deleteMove(String id) {
+    debugPrint('[MovesDao] deleteMove id=$id');
+    return (delete(moves)..where((t) => t.id.equals(id))).go();
+  }
 
-  Future<void> archiveMove(String id, {required String reason}) =>
-      (update(moves)..where((t) => t.id.equals(id))).write(
-        MovesCompanion(
-          id: Value(id),
-          archivedAt: Value(DateTime.now().toUtc()),
-          archiveReason: Value(reason),
-        ),
-      );
+  Future<void> archiveMove(String id, {required String reason}) {
+    debugPrint('[MovesDao] archiveMove id=$id reason=$reason');
+    return (update(moves)..where((t) => t.id.equals(id))).write(
+      MovesCompanion(
+        id: Value(id),
+        archivedAt: Value(DateTime.now().toUtc()),
+        archiveReason: Value(reason),
+      ),
+    );
+  }
 
-  Future<void> restoreMove(String id) =>
-      (update(moves)..where((t) => t.id.equals(id))).write(
-        MovesCompanion(
-          id: Value(id),
-          archivedAt: const Value(null),
-          archiveReason: const Value(null),
-        ),
-      );
+  Future<void> restoreMove(String id) {
+    debugPrint('[MovesDao] restoreMove id=$id');
+    return (update(moves)..where((t) => t.id.equals(id))).write(
+      MovesCompanion(
+        id: Value(id),
+        archivedAt: const Value(null),
+        archiveReason: const Value(null),
+      ),
+    );
+  }
 
   Stream<List<Move>> watchByCategory(String category) =>
       (select(moves)
