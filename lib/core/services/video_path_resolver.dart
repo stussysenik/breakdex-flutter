@@ -7,6 +7,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import '../database/database.dart';
 import '../utils/filesystem_utils.dart';
+import '../utils/diagnostics.dart';
 import 'app_storage_paths.dart';
 
 String _sanitizeFilename(String name) {
@@ -128,6 +129,7 @@ abstract final class VideoPathResolver {
   /// Returns the found absolute path, or null if the file can't be located.
   /// This is the self-healing core — called only when a file is missing.
   static Future<String?> resolve(String storedPath) async {
+    DiagnosticsLog.info('VideoPathResolver', 'resolve storedPath=$storedPath');
     // First try the normal toAbsolute resolution
     final candidate = toAbsolute(storedPath);
     try {
@@ -139,12 +141,16 @@ abstract final class VideoPathResolver {
           const Duration(seconds: 3),
           onTimeout: () => throw Exception('stat timed out'),
         );
-        if (stat.size > 0) return candidate;
+        if (stat.size > 0) {
+          DiagnosticsLog.info('VideoPathResolver', 'resolve: direct hit $candidate');
+          return candidate;
+        }
       }
     } catch (_) {
       // Continue to fallback scan
     }
 
+    DiagnosticsLog.warn('VideoPathResolver', 'resolve: direct miss for $storedPath, scanning...');
     // Extract filename for directory scan
     final filename = p.basename(storedPath);
     if (filename.isEmpty) return null;
@@ -157,7 +163,10 @@ abstract final class VideoPathResolver {
         await for (final entity in dir.list()) {
           if (entity is File && p.basename(entity.path) == filename) {
             final stat = await entity.stat();
-            if (stat.size > 0) return entity.path;
+            if (stat.size > 0) {
+              DiagnosticsLog.info('VideoPathResolver', 'resolve: found in $subdir → ${entity.path}');
+              return entity.path;
+            }
           }
         }
       } catch (e) {
@@ -165,6 +174,7 @@ abstract final class VideoPathResolver {
       }
     }
 
+    DiagnosticsLog.error('VideoPathResolver', 'resolve: file not found for $storedPath');
     return null;
   }
 
@@ -249,7 +259,10 @@ abstract final class VideoPathResolver {
     final sourceAbs = toAbsolute(currentRelativePath);
     final sourceFile = File(sourceAbs);
 
-    if (!await sourceFile.exists()) return currentRelativePath;
+    if (!await sourceFile.exists()) {
+      DiagnosticsLog.warn('VideoPathResolver', 'moveToSemanticPath: source not found $sourceAbs');
+      return currentRelativePath;
+    }
 
     final ext = p.extension(currentRelativePath).isNotEmpty
         ? p.extension(currentRelativePath)
@@ -259,7 +272,10 @@ abstract final class VideoPathResolver {
         : semanticVideoPathLegacy(category, moveName, ext);
     final newAbs = toAbsolute(newRelative);
 
-    if (sourceAbs == newAbs) return currentRelativePath;
+    if (sourceAbs == newAbs) {
+      DiagnosticsLog.info('VideoPathResolver', 'moveToSemanticPath: already at target $newAbs');
+      return currentRelativePath;
+    }
 
     final newDir = Directory(p.dirname(newAbs));
     if (!await newDir.exists()) {
@@ -271,15 +287,22 @@ abstract final class VideoPathResolver {
     if (contentHash != null) {
       final legacyFile = File(p.join(p.dirname(newAbs), 'video.mp4'));
       try {
-        if (await legacyFile.exists()) await legacyFile.delete();
+        if (await legacyFile.exists()) {
+          await legacyFile.delete();
+          DiagnosticsLog.info('VideoPathResolver', 'cleaned legacy video.mp4');
+        }
       } catch (_) {}
     }
 
     try {
       await FileSystemUtils.safeMove(sourceAbs, newAbs);
+      DiagnosticsLog.info('VideoPathResolver', 'moveToSemanticPath: $sourceAbs → $newAbs');
+      // Prune empty parent dirs of the old path
+      final docsPath = _docsPath;
+      await FileSystemUtils.pruneEmptyParents(sourceAbs, stopDir: p.join(docsPath, 'Moves'));
       return toRelative(newAbs);
     } catch (e) {
-      debugPrint('[VideoPathResolver] Failed to move file to semantic path: $e');
+      DiagnosticsLog.error('VideoPathResolver', 'Failed to move file to semantic path: $e');
       return currentRelativePath;
     }
   }

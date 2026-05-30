@@ -5,6 +5,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../core/database/database.dart';
+import '../../core/models/reviewable_item.dart' show MoveVideoPath;
+import '../../core/services/media_playback_coordinator.dart';
 import '../../core/design/colors.dart';
 import '../../core/design/spacing.dart';
 import '../../core/design/typography.dart';
@@ -237,7 +239,7 @@ class _CarouselModeState extends State<_CarouselMode> {
             isActive: index == _activeIndex,
             looping: true,
             onLongPress: () => _onEditVideo(move),
-            onTap: () => context.go('/moves/move/${move.id}'),
+            onTap: () => _onTapMove(context, move),
           ).animate(key: ValueKey('carousel-$index')).fadeIn(
                 duration: AppMotion.moderate01,
                 delay: Duration(milliseconds: index.clamp(0, 10) * 40),
@@ -317,7 +319,7 @@ class _FeedModeState extends State<_FeedMode> {
             looping: true,
             muted: index != _activeIndex,
             onLongPress: () => _onEditVideo(move),
-            onTap: () => context.go('/moves/move/${move.id}'),
+            onTap: () => _onTapMove(context, move),
           ).animate(key: ValueKey('feed-$index')).fadeIn(
                 duration: AppMotion.moderate01,
                 delay: Duration(milliseconds: index.clamp(0, 5) * 30),
@@ -434,6 +436,20 @@ class _TinderModeState extends State<_TinderMode> {
   void _onEditVideo(Move move) {
     HapticFeedback.mediumImpact();
     debugPrint('[Tinder] _onEditVideo moveId=${move.id}');
+  }
+}
+
+void _onTapMove(BuildContext context, Move move) {
+  final videoPath = move.resolvedVideoPath;
+  debugPrint('[InstaxViewer] _onTapMove moveId=${move.id} name="${move.name}" '
+      'hasVideo=${videoPath != null}');
+  if (videoPath != null) {
+    context.push('/video-viewer', extra: {
+      'videoPath': videoPath,
+      'title': move.name,
+    });
+  } else {
+    context.push('/breakdex/move/${move.id}');
   }
 }
 

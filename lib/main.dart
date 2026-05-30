@@ -201,7 +201,13 @@ void main() async {
   DiagnosticsLog.configure(
     threshold: kDebugMode ? LogLevel.trace : LogLevel.info,
   );
-  DiagnosticsLog.setSubsystemThreshold('SwingDetector', LogLevel.warn);
+  DiagnosticsLog.setSubsystemThreshold('SwingDetector', LogLevel.trace);
+  DiagnosticsLog.setSubsystemThreshold('Party', LogLevel.trace);
+  DiagnosticsLog.setSubsystemThreshold('Party(Move)', LogLevel.trace);
+  DiagnosticsLog.setSubsystemThreshold('Party(Combo)', LogLevel.trace);
+  DiagnosticsLog.setSubsystemThreshold('ShakeDetector', LogLevel.trace);
+  DiagnosticsLog.setSubsystemThreshold('VideoPathResolver', LogLevel.trace);
+  DiagnosticsLog.setSubsystemThreshold('QuickVideoViewer', LogLevel.trace);
   DiagnosticsLog.info('Boot', 'Breakdex startup — diagnostics online');
 
   await Firebase.initializeApp(

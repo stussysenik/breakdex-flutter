@@ -25,7 +25,13 @@ class SwingDetector {
   bool _locked = false;
   DateTime _lastTrigger = DateTime(2000);
 
+  int _eventCount = 0;
+  int _aboveHalfThresholdCount = 0;
+
   void start() {
+    DiagnosticsLog.info('SwingDetector', 'listener started — threshold=$threshold');
+    _eventCount = 0;
+    _aboveHalfThresholdCount = 0;
     _subscription?.cancel();
     _subscription = userAccelerometerEventStream(
       samplingPeriod: SensorInterval.uiInterval,
@@ -33,6 +39,8 @@ class SwingDetector {
   }
 
   void stop() {
+    DiagnosticsLog.info('SwingDetector',
+        'listener stopped — totalEvents=$_eventCount aboveHalf=$_aboveHalfThresholdCount');
     _subscription?.cancel();
     _subscription = null;
     _window.clear();
@@ -41,6 +49,7 @@ class SwingDetector {
   }
 
   void _onEvent(UserAccelerometerEvent event) {
+    _eventCount++;
     final now = DateTime.now();
     if (_locked || now.difference(_lastTrigger) < const Duration(seconds: 1)) {
       return;
@@ -51,8 +60,13 @@ class SwingDetector {
 
     // 2. Add current point (userAccelerometer already excludes gravity)
     final magnitude = sqrt(event.x * event.x + event.y * event.y + event.z * event.z);
-    DiagnosticsLog.trace('SwingDetector', 'Event magnitude: ${magnitude.toStringAsFixed(2)} (threshold: $threshold), window length: ${_window.length}');
     _window.add(_MomentumPoint(event, magnitude, now));
+
+    if (_eventCount % 50 == 0) {
+      DiagnosticsLog.info('SwingDetector',
+          'listener alive — ${_eventCount} events, maxRecent=${magnitude.toStringAsFixed(1)}, '
+          'threshold=$threshold, aboveHalf=$_aboveHalfThresholdCount');
+    }
 
     // 3. Analyze for "Swing"
     if (_window.length < 5) return;
@@ -63,11 +77,19 @@ class SwingDetector {
     }
 
     final effectiveThreshold = threshold;
+    if (maxMagnitude > effectiveThreshold * 0.5) {
+      _aboveHalfThresholdCount++;
+    }
+
     if (maxMagnitude > effectiveThreshold * 0.6 && maxMagnitude < effectiveThreshold) {
+      DiagnosticsLog.debug('SwingDetector',
+          'near swing — maxMag=${maxMagnitude.toStringAsFixed(1)} threshold=$effectiveThreshold');
       _provideEasingHaptic(maxMagnitude / effectiveThreshold);
     }
 
     if (maxMagnitude > effectiveThreshold) {
+      DiagnosticsLog.info('SwingDetector',
+          'SWING TRIGGERED — maxMag=${maxMagnitude.toStringAsFixed(1)} threshold=$effectiveThreshold');
       _trigger();
     }
   }

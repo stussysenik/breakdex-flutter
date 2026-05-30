@@ -5,7 +5,6 @@ import 'package:flutter/foundation.dart';
 import 'package:path/path.dart' as p;
 
 import 'app_storage_paths.dart';
-import '../utils/filesystem_utils.dart';
 import 'video_storage_gate.dart';
 
 const _markerFileName = '.breakdex-master';
@@ -65,11 +64,7 @@ class CanonicalFolderService {
 
   Future<String> canonicalPathForHash(String hash) async {
     final videos = await videosDir;
-    // Nest by first 2 chars, then next 2 chars to avoid flat directory scaling issues.
-    // e.g. videos/ab/cd/abcdef1234...mp4
-    final p1 = hash.substring(0, 2);
-    final p2 = hash.substring(2, 4);
-    return p.join(videos.path, p1, p2, '$hash.mp4');
+    return p.join(videos.path, '$hash.mp4');
   }
 
   Future<List<File>> listVideoFiles() async {
@@ -92,12 +87,10 @@ class CanonicalFolderService {
       try {
         await File(sourcePath).delete();
       } catch (_) {}
-      await _pruneEmptyHashDirs(hash);
       return targetPath;
     }
-    await targetFile.parent.create(recursive: true);
+    VideoStorageGate.guardWrite(targetPath);
     await File(sourcePath).rename(targetPath);
-    await _pruneEmptyParentDirs(targetPath);
     return targetPath;
   }
 
@@ -107,9 +100,7 @@ class CanonicalFolderService {
     VideoStorageGate.guardWrite(targetPath);
     final targetFile = File(targetPath);
     if (await targetFile.exists()) return targetPath;
-    await targetFile.parent.create(recursive: true);
     await File(sourcePath).copy(targetPath);
-    await _pruneEmptyParentDirs(targetPath);
     return targetPath;
   }
 
@@ -146,7 +137,6 @@ class CanonicalFolderService {
     final ledger = await readLedger();
     final updated = ledger.remove(hash);
     await _writeLedger(updated);
-    await _pruneEmptyHashDirs(hash);
   }
 
   Future<void> _writeLedger(Ledger ledger) async {
@@ -205,41 +195,6 @@ class CanonicalFolderService {
     _cachedLedger = null;
   }
 
-  /// Prune empty parent directories after a file is written to its hash path.
-  /// Walks up from the file's parent checking for empty ancestor dirs.
-  Future<void> _pruneEmptyParentDirs(String filePath) async {
-    try {
-      final docs = await AppStoragePaths.documentsDirectory();
-      await FileSystemUtils.pruneEmptyParents(
-        filePath,
-        stopDir: p.join(docs.path, '.breakdex-master', 'videos'),
-      );
-    } catch (e) {
-      debugPrint('[CanonicalFolderService] Prune failed: $e');
-    }
-  }
-
-  /// Prune empty hash-nested directories (ab/cd/) after a file is removed
-  /// or deduplicated away.
-  Future<void> _pruneEmptyHashDirs(String hash) async {
-    try {
-      final videos = await videosDir;
-      final p2 = hash.substring(2, 4);
-      final p1 = hash.substring(0, 2);
-      final leafDir = Directory(p.join(videos.path, p1, p2));
-      if (await leafDir.exists()) {
-        final entries = await leafDir.list().toList();
-        if (entries.isEmpty) {
-          await leafDir.delete();
-          final parentDir = Directory(p.join(videos.path, p1));
-          final parentEntries = await parentDir.list().toList();
-          if (parentEntries.isEmpty) {
-            await parentDir.delete();
-          }
-        }
-      }
-    } catch (_) {}
-  }
 }
 
 class Ledger {

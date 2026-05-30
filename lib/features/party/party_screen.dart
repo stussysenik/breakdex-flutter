@@ -49,6 +49,7 @@ class _PartyScreenState extends ConsumerState<PartyScreen>
   void initState() {
     super.initState();
     _swingDetector = SwingDetector(
+      threshold: 18.0,
       onSwing: _onShakeDetected,
     );
     _revealController = AnimationController(
@@ -126,6 +127,13 @@ class _PartyScreenState extends ConsumerState<PartyScreen>
   }
 
   void _onComboShake() {
+    if (_comboBloc == null) {
+      DiagnosticsLog.error(
+        _partySubsystem,
+        'combo shake ignored: _comboBloc is null — widget not yet built in combo mode',
+      );
+      return;
+    }
     final combosAsync = ref.read(_partyCombosProvider);
     combosAsync.when(
       data: (combos) {
@@ -135,15 +143,15 @@ class _PartyScreenState extends ConsumerState<PartyScreen>
         );
         if (combos.isEmpty) return;
         final durationMs = ref.read(partyCycleDurationMsProvider);
-        DiagnosticsLog.debug(
+        DiagnosticsLog.info(
           _partySubsystem,
-          'dispatching ComboShake durationMs=$durationMs',
+          'dispatching ComboShake to bloc; durationMs=$durationMs combos=${combos.length}',
         );
-        _comboBloc?.add(ComboShake(combos, durationMs));
+        _comboBloc!.add(ComboShake(combos, durationMs));
       },
-      loading: () => DiagnosticsLog.debug(_partySubsystem, 'combos loading'),
+      loading: () => DiagnosticsLog.warn(_partySubsystem, 'combos still loading on shake'),
       error: (e, s) =>
-          DiagnosticsLog.error(_partySubsystem, 'combos error: $e'),
+          DiagnosticsLog.error(_partySubsystem, 'combos error on shake: $e'),
     );
   }
 
