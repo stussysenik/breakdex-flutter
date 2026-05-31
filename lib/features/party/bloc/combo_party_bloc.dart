@@ -25,12 +25,23 @@ class ComboTick extends ComboPartyEvent {
 class ComboPartyDisplay {
   final Combo combo;
   final List<String> moveNames;
+  final List<int> moveBeats;
+  final List<String?> moveVideoPaths;
+  final String? resolvedVideoPath;
 
-  const ComboPartyDisplay({required this.combo, required this.moveNames});
+  const ComboPartyDisplay({
+    required this.combo, 
+    required this.moveNames,
+    required this.moveBeats,
+    required this.moveVideoPaths,
+    this.resolvedVideoPath,
+  });
 
   String get name => combo.name;
   String get id => combo.id;
-  String? get videoPath => combo.activeVideoPath;
+  String? get videoPath => resolvedVideoPath ?? combo.activeVideoPath;
+  
+  int get totalBeats => moveBeats.fold(0, (sum, b) => sum + b);
 }
 
 sealed class ComboPartyState {

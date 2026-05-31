@@ -40,7 +40,7 @@ void main() {
 
     test('Idle + TapDelete → ConfirmingDelete', () {
       final m = MoveDetailMachine(Idle(_testMove()));
-      m.send(const TapDelete());
+      m.send(const TapDelete(combos: []));
       expect(m.state, isA<ConfirmingDelete>());
     });
 
@@ -125,7 +125,7 @@ void main() {
     test('full delete: Idle → ConfirmingDelete → Deleting → Gone', () {
       final m = MoveDetailMachine(Idle(_testMove()));
 
-      m.send(const TapDelete());
+      m.send(const TapDelete(combos: []));
       expect(m.state, isA<ConfirmingDelete>());
 
       m.send(const Confirm());
@@ -137,7 +137,7 @@ void main() {
 
     test('cancel delete: ConfirmingDelete → Idle', () {
       final m = MoveDetailMachine(Idle(_testMove()));
-      m.send(const TapDelete());
+      m.send(const TapDelete(combos: []));
       m.send(const Cancel());
       expect(m.state, isA<Idle>());
     });
@@ -146,7 +146,7 @@ void main() {
   group('MoveDetailMachine — mutual exclusion', () {
     test('cannot rename while confirming delete', () {
       final m = MoveDetailMachine(Idle(_testMove()));
-      m.send(const TapDelete());
+      m.send(const TapDelete(combos: []));
       expect(m.state, isA<ConfirmingDelete>());
 
       m.send(const TapRename());
@@ -158,7 +158,7 @@ void main() {
       m.send(const TapRename());
       expect(m.state, isA<Renaming>());
 
-      m.send(const TapDelete());
+      m.send(const TapDelete(combos: []));
       expect(m.state, isA<Renaming>()); // ignored
     });
 
@@ -170,7 +170,7 @@ void main() {
       expect(m.state, isA<SavingName>());
 
       // While saving, nothing else should be accepted
-      m.send(const TapDelete());
+      m.send(const TapDelete(combos: []));
       m.send(const TapRename());
       m.send(const TapChangeCategory());
       expect(m.state, isA<SavingName>()); // all ignored

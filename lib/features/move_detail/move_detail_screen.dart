@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:io';
+import 'dart:math';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -127,9 +128,12 @@ class _MoveDetailScreenState extends ConsumerState<MoveDetailScreen> {
                           move: move,
                           onReRecord: () => _addOrReplaceVideo(context, ref, move),
                           onImport: () => _addOrReplaceVideo(context, ref, move),
-                          onDelete: () => ref
-                              .read(moveDetailProvider.notifier)
-                              .send(const TapDelete()),
+                          onDelete: () async {
+                            final combosDao = ref.read(databaseProvider).combosDao;
+                            final combos = await combosDao.getCombosUsingMove(move.id);
+                            if (!mounted) return;
+                            ref.read(moveDetailProvider.notifier).send(TapDelete(combos: combos));
+                          },
                         ),
                       const SizedBox(height: AppSpacing.lg),
 
@@ -145,41 +149,34 @@ class _MoveDetailScreenState extends ConsumerState<MoveDetailScreen> {
                           move.contentHash != null) ...[
                         const SizedBox(height: 2),
                         Text(
-                          [
-                            if (move.originalVideoName != null)
-                              move.originalVideoName!,
-                            if (move.contentHash != null)
-                              move.contentHash!.length > 12
-                                  ? '\u2026${move.contentHash!.substring(move.contentHash!.length - 12)}'
-                                  : move.contentHash!,
-                          ].join(' \u00b7 '),
+                          move.originalVideoName ??
+                              'ID: ${move.contentHash?.substring(0, 8) ?? move.id.substring(0, 8)}',
                           style: AppTypography.caption.copyWith(
-                            color: colorScheme.onSurface.withValues(alpha: 0.45),
-                            fontFeatures: const [FontFeature.tabularFigures()],
+                            color: colorScheme.secondary,
+                            fontFamily: 'monospace',
                           ),
                         ),
                       ],
-                      const SizedBox(height: AppSpacing.sm),
 
-                      // Metadata Row
-                      Wrap(
-                        spacing: AppSpacing.sm,
-                        runSpacing: AppSpacing.sm,
+                      const SizedBox(height: AppSpacing.lg),
+
+                      // Attributes Row
+                      Row(
                         children: [
                           StatePill(
                             state: state,
                             onTap: () => ref
                                 .read(moveDetailProvider.notifier)
                                 .send(const TapChangeState()),
-                            showDisclosure: true,
-                            semanticsIdentifier: 'move-detail-state-pill',
                           ),
+                          const SizedBox(width: AppSpacing.sm),
                           _CategoryBadge(
                             category: move.category,
                             onTap: () => ref
                                 .read(moveDetailProvider.notifier)
                                 .send(const TapChangeCategory()),
                           ),
+                          const SizedBox(width: AppSpacing.sm),
                           _CountBadge(
                             count: move.count,
                             onTap: () => ref
@@ -188,7 +185,8 @@ class _MoveDetailScreenState extends ConsumerState<MoveDetailScreen> {
                           ),
                         ],
                       ),
-                      const SizedBox(height: AppSpacing.xl),
+
+                      const SizedBox(height: AppSpacing.xxl),
 
                       // Notes
                       NotesSection(
@@ -218,6 +216,57 @@ class _MoveDetailScreenState extends ConsumerState<MoveDetailScreen> {
                       LogsSection(entityId: move.id, entityType: 'move'),
                       const SizedBox(height: AppSpacing.md),
 
+                      if (move.videoPath != null) ...[
+                        const SizedBox(height: AppSpacing.lg),
+                        Text(
+                          'VIDEO INFO',
+                          style: AppTypography.sectionHeader.copyWith(
+                            color: colorScheme.secondary,
+                          ),
+                        ),
+                        const SizedBox(height: AppSpacing.md),
+                        Container(
+                          width: double.infinity,
+                          padding: const EdgeInsets.all(AppSpacing.md),
+                          decoration: BoxDecoration(
+                            color: colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
+                            borderRadius: BorderRadius.circular(AppRadius.sm),
+                            border: Border.all(color: colorScheme.outline.withValues(alpha: 0.1)),
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              if (move.videoCreationDate != null)
+                                _MetadataRow(
+                                  label: 'Recorded',
+                                  value: DateFormat('MMM d, yyyy · HH:mm').format(move.videoCreationDate!),
+                                  icon: Icons.calendar_today_rounded,
+                                ),
+                              if (move.videoFileSize != null)
+                                _MetadataRow(
+                                  label: 'File Size',
+                                  value: _formatFileSize(move.videoFileSize!.toInt()),
+                                  icon: Icons.data_usage_rounded,
+                                ),
+                              if (move.originalVideoName != null)
+                                _MetadataRow(
+                                  label: 'Original Name',
+                                  value: move.originalVideoName!,
+                                  icon: Icons.insert_drive_file_rounded,
+                                ),
+                              if (move.videoCreationDate == null &&
+                                  move.videoFileSize == null &&
+                                  move.originalVideoName == null)
+                                Text(
+                                  'No extended metadata available for this clip.',
+                                  style: AppTypography.caption.copyWith(color: colorScheme.secondary),
+                                ),
+                            ],
+                          ),
+                        ),
+                      ],
+
+                      const SizedBox(height: AppSpacing.md),
                       Divider(color: colorScheme.outline),
                       const SizedBox(height: AppSpacing.md),
 
@@ -270,11 +319,14 @@ class _MoveDetailScreenState extends ConsumerState<MoveDetailScreen> {
                         icon: Icons.delete_forever,
                         label: 'Delete Move',
                         destructive: true,
-                        onTap: () => ref
-                            .read(moveDetailProvider.notifier)
-                            .send(const TapDelete()),
+                        onTap: () async {
+                          final combosDao = ref.read(databaseProvider).combosDao;
+                          final combos = await combosDao.getCombosUsingMove(move.id);
+                          if (!mounted) return;
+                          ref.read(moveDetailProvider.notifier).send(TapDelete(combos: combos));
+                        },
                       ),
-                      const SizedBox(height: AppSpacing.xxl),
+                      const SizedBox(height: AppSpacing.xxxl),
                     ],
                   ),
                 ),
@@ -319,7 +371,7 @@ class _MoveDetailScreenState extends ConsumerState<MoveDetailScreen> {
     if (state is SavingCount) overlays.add(const SavingOverlay(message: 'Updating count...'));
     if (state is SavingNotes) overlays.add(const SavingOverlay(message: 'Saving notes...'));
     if (state is SavingPhotos) overlays.add(const SavingOverlay(message: 'Updating photos...'));
-    if (state is SavingVideo) overlays.add(const SavingOverlay(message: 'Importing video...'));
+    // Removed SavingVideo overlay to make video import non-blocking
 
     if (state is ChangingState) {
       overlays.add(StatePickerOverlay(
@@ -347,9 +399,14 @@ class _MoveDetailScreenState extends ConsumerState<MoveDetailScreen> {
     }
 
     if (state is ConfirmingDelete) {
+      final combos = state.combos;
+      final content = combos.isNotEmpty
+          ? 'This move is currently used in ${combos.length} combo(s) (e.g. ${combos.first.name}). Deleting it will permanently delete this move, its video, and remove it from those combos!'
+          : 'This will permanently delete this move and its video.';
+
       overlays.add(ConfirmActionOverlay(
         title: 'Delete Move?',
-        content: 'This will permanently delete this move and its video.',
+        content: content,
         confirmLabel: 'Delete',
         isDestructive: true,
         onCancel: () => notifier.send(const Cancel()),
@@ -394,43 +451,75 @@ class _MoveDetailScreenState extends ConsumerState<MoveDetailScreen> {
   }
 
   Future<void> _shareVideo(BuildContext context, Move move) async {
-    if (move.videoPath == null) return;
-    MediaPlaybackCoordinator.shared.pauseAll();
-    final origin = sharePositionOrigin(context);
+    final absPath = VideoPathResolver.toAbsolute(move.videoPath!);
     await NativeShareSheet.shareFiles(
-      filePaths: [move.resolvedVideoPath!],
+      filePaths: [absPath],
       subject: move.name,
-      sharePositionOrigin: origin,
+      sharePositionOrigin: sharePositionOrigin(context),
     );
-  }
-
-  Future<void> _addOrReplaceVideo(BuildContext context, WidgetRef ref, Move move) async {
-    MediaPlaybackCoordinator.shared.pauseAll();
-    final result = await VideoPickerSheet.show(
-      context,
-      previousVideoName: move.originalVideoName,
-      previousThumbnailPath: move.videoPath != null ? _thumbnailPathFor(move.resolvedVideoPath!) : null,
-    );
-    if (result != null) {
-      ref.read(moveDetailProvider.notifier).send(VideoPicked(result.localPath, result.originalFileName ?? ''));
-    }
   }
 
   Future<void> _editVideo(BuildContext context, WidgetRef ref, Move move) async {
-    if (move.videoPath == null) return;
-    MediaPlaybackCoordinator.shared.pauseAll();
-    debugPrint('[MoveDetailScreen] _editVideo pushing editor with resolvedPath=${move.resolvedVideoPath}');
-    final editedPath = await context.push<String>('/video-editor', extra: {'videoPath': move.resolvedVideoPath});
-    debugPrint('[MoveDetailScreen] _editVideo Editor returned path=$editedPath');
-    if (editedPath != null) {
+    final absPath = move.resolvedVideoPath!;
+    final editedPath = await context.push<String>('/video-editor', extra: {'videoPath': absPath});
+    if (editedPath != null && mounted) {
       ref.read(moveDetailProvider.notifier).send(VideoEdited(editedPath));
     }
   }
 
-  String? _thumbnailPathFor(String videoPath) {
-    final dir = p.dirname(videoPath);
-    final name = p.basenameWithoutExtension(videoPath);
-    return p.join(dir, '.thumbs', '$name.jpg');
+  Future<void> _addOrReplaceVideo(BuildContext context, WidgetRef ref, Move move) async {
+    final pickResult = await VideoPickerSheet.show(context);
+    if (pickResult != null && mounted) {
+      ref.read(moveDetailProvider.notifier).send(VideoEdited(pickResult.localPath));
+    }
+  }
+
+  String _formatFileSize(int bytes) {
+    if (bytes <= 0) return '0 B';
+    const suffixes = ['B', 'KB', 'MB', 'GB', 'TB'];
+    var i = (log(bytes) / log(1024)).floor();
+    return '${(bytes / pow(1024, i)).toStringAsFixed(1)} ${suffixes[i]}';
+  }
+}
+
+class _MetadataRow extends StatelessWidget {
+  final String label;
+  final String value;
+  final IconData icon;
+
+  const _MetadataRow({
+    required this.label,
+    required this.value,
+    required this.icon,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    return Padding(
+      padding: const EdgeInsets.only(bottom: AppSpacing.xs),
+      child: Row(
+        children: [
+          Icon(icon, size: 14, color: colorScheme.secondary),
+          const SizedBox(width: AppSpacing.sm),
+          Text(
+            '$label: ',
+            style: AppTypography.caption.copyWith(
+              color: colorScheme.secondary,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          Expanded(
+            child: Text(
+              value,
+              style: AppTypography.caption.copyWith(color: colorScheme.onSurface),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }
 
@@ -636,5 +725,3 @@ class _CloudVideoPlaceholderState extends ConsumerState<_CloudVideoPlaceholder> 
     );
   }
 }
-
-

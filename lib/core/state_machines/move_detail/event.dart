@@ -21,7 +21,8 @@ final class TapChangeCount extends MoveDetailEvent {
   const TapChangeCount();
 }
 final class TapDelete extends MoveDetailEvent {
-  const TapDelete();
+  final List<Combo> combos;
+  const TapDelete({required this.combos});
 }
 final class TapAddVideo extends MoveDetailEvent {
   const TapAddVideo();

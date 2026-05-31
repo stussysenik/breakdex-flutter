@@ -302,10 +302,12 @@ class MoveDetailNotifier extends Notifier<MoveDetailState> {
     try {
       unawaited(HapticFeedback.mediumImpact());
       final orchestrator = ref.read(storageOrchestratorProvider);
-      await orchestrator.deleteMove(
+      unawaited(orchestrator.deleteMove(
         move,
         cleanupMedia: (m) => ref.read(mediaCleanupServiceProvider).cleanupMoveMedia(m),
-      );
+      ).catchError((e) {
+         debugPrint('Background delete failed: $e');
+      }));
       log.stage('storageOrchestrator.deleteMove');
       send(const DeleteSucceeded());
       log.complete();

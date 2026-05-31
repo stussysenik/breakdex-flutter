@@ -8,6 +8,9 @@ import UniformTypeIdentifiers
 private struct ImportedVideo {
     let localPath: String
     let originalFileName: String
+    let creationDate: Date?
+    let fileSize: Int64
+    let duration: Double
 }
 
 final class NativeVideoImportPlugin: NSObject, FlutterPlugin, FlutterStreamHandler, NativeCapability {
@@ -49,12 +52,159 @@ final class NativeVideoImportPlugin: NSObject, FlutterPlugin, FlutterStreamHandl
         return nil
     }
 
+    private func fetchPhotoLibraryVideos(result: @escaping FlutterResult) {
+        // Run on background queue to avoid blocking main thread
+        DispatchQueue.global(qos: .userInitiated).async {
+            let options = PHFetchOptions()
+            options.sortDescriptors = [NSSortDescriptor(key: "creationDate", ascending: false)]
+            
+            // Only fetch strictly videos
+            let fetchResult = PHAsset.fetchAssets(with: .video, options: options)
+            
+            var assets: [[String: Any]] = []
+            let df = ISO8601DateFormatter()
+            
+            fetchResult.enumerateObjects { (asset, index, stop) in
+                // originalFilename can be slow. 
+                // We'll use a placeholder if it's not prefetched, or just accept the cost on background thread.
+                let resources = PHAssetResource.assetResources(for: asset)
+                let preferredResource = resources.first {
+                    $0.type == .video || $0.type == .fullSizeVideo || $0.type == .pairedVideo
+                } ?? resources.first
+                
+                let originalFilename = preferredResource?.originalFilename ?? "Unknown"
+                
+                assets.append([
+                    "localIdentifier": asset.localIdentifier,
+                    "creationDate": asset.creationDate != nil ? df.string(from: asset.creationDate!) : nil,
+                    "duration": asset.duration,
+                    "originalFileName": originalFilename,
+                    "width": asset.pixelWidth,
+                    "height": asset.pixelHeight
+                ])
+                
+                // Limit to 1000 most recent for performance
+                if assets.count >= 1000 {
+                    stop.pointee = true
+                }
+            }
+            
+            DispatchQueue.main.async {
+                result(assets)
+            }
+        }
+    }
+
+    private func getAssetThumbnail(assetIdentifier: String, width: Int, height: Int, result: @escaping FlutterResult) {
+        let fetchResult = PHAsset.fetchAssets(withLocalIdentifiers: [assetIdentifier], options: nil)
+        guard let asset = fetchResult.firstObject else {
+            result(FlutterError(code: "NOT_FOUND", message: "Asset not found", details: nil))
+            return
+        }
+        
+        let manager = PHImageManager.default()
+        let options = PHImageRequestOptions()
+        options.isSynchronous = false
+        // Use opportunistic but ensure high quality is eventually delivered
+        options.deliveryMode = .highQualityFormat
+        options.isNetworkAccessAllowed = true
+        options.version = .current
+        
+        // Use exact size to avoid unnecessary scaling
+        let targetSize = CGSize(width: width, height: height)
+        
+        manager.requestImage(for: asset, targetSize: targetSize, contentMode: .aspectFill, options: options) { image, info in
+            if let image = image {
+                // Fix for 'AlphaLast' opaque image warning:
+                // Ensure the image is rendered without alpha if it's opaque.
+                // Actually, jpegData already removes alpha, but the warning happens during internal save steps.
+                // We'll use a lower compression quality for better speed/memory.
+                if let data = image.jpegData(compressionQuality: 0.6) {
+                    result(FlutterStandardTypedData(bytes: data))
+                } else {
+                    result(FlutterError(code: "DATA_FAILED", message: "JPEG conversion failed", details: nil))
+                }
+            } else {
+                let isDegraded = info?[PHImageResultIsDegradedKey] as? Bool ?? false
+                if !isDegraded {
+                    result(FlutterError(code: "THUMB_FAILED", message: "Failed to load thumbnail", details: nil))
+                }
+            }
+        }
+    }
+
+    private func importSpecificAsset(assetIdentifier: String, result: @escaping FlutterResult) {
+        let fetchResult = PHAsset.fetchAssets(withLocalIdentifiers: [assetIdentifier], options: nil)
+        guard let asset = fetchResult.firstObject else {
+            result(FlutterError(code: "NOT_FOUND", message: "Asset not found", details: nil))
+            return
+        }
+        
+        let manager = PHImageManager.default()
+        let options = PHVideoRequestOptions()
+        options.isNetworkAccessAllowed = true
+        options.deliveryMode = .highQualityFormat
+        
+        manager.requestAVAsset(forVideo: asset, options: options) { avAsset, audioMix, info in
+            guard let urlAsset = avAsset as? AVURLAsset else {
+                DispatchQueue.main.async {
+                    result(FlutterError(code: "IMPORT_FAILED", message: "Could not get URL for asset", details: nil))
+                }
+                return
+            }
+            
+            do {
+                let resources = PHAssetResource.assetResources(for: asset)
+                let filename = resources.first?.originalFilename
+                
+                let imported = try self.copyToMovesDir(
+                    url: urlAsset.url,
+                    preferredOriginalFileName: filename,
+                    creationDate: asset.creationDate
+                )
+                
+                let df = ISO8601DateFormatter()
+                DispatchQueue.main.async {
+                    result([
+                        "localPath": imported.localPath,
+                        "originalFileName": imported.originalFileName,
+                        "creationDate": imported.creationDate != nil ? df.string(from: imported.creationDate!) : nil,
+                        "fileSize": imported.fileSize,
+                        "duration": imported.duration
+                    ])
+                }
+            } catch {
+                DispatchQueue.main.async {
+                    result(FlutterError(code: "IMPORT_FAILED", message: error.localizedDescription, details: nil))
+                }
+            }
+        }
+    }
+
     func handle(_ call: FlutterMethodCall, result: @escaping FlutterResult) {
         switch call.method {
         case "pickFromPhotos":
             runImport(result: result) {
                 try await self.importFromPhotos()
             }
+        case "fetchPhotoLibraryVideos":
+            self.fetchPhotoLibraryVideos(result: result)
+        case "getAssetThumbnail":
+            guard let args = call.arguments as? [String: Any],
+                  let id = args["identifier"] as? String,
+                  let w = args["width"] as? Int,
+                  let h = args["height"] as? Int else {
+                result(FlutterError(code: "INVALID_ARGS", message: "Missing args", details: nil))
+                return
+            }
+            self.getAssetThumbnail(assetIdentifier: id, width: w, height: h, result: result)
+        case "importSpecificAsset":
+            guard let args = call.arguments as? [String: Any],
+                  let id = args["identifier"] as? String else {
+                result(FlutterError(code: "INVALID_ARGS", message: "Missing id", details: nil))
+                return
+            }
+            self.importSpecificAsset(assetIdentifier: id, result: result)
         case "pickFromFiles":
             runImport(result: result) {
                 try await self.importFromFiles()
@@ -88,9 +238,14 @@ final class NativeVideoImportPlugin: NSObject, FlutterPlugin, FlutterStreamHandl
                     result(nil)
                     return
                 }
+                
+                let df = ISO8601DateFormatter()
                 result([
                     "localPath": imported.localPath,
                     "originalFileName": imported.originalFileName,
+                    "creationDate": imported.creationDate != nil ? df.string(from: imported.creationDate!) : nil,
+                    "fileSize": imported.fileSize,
+                    "duration": imported.duration
                 ])
             } catch {
                 let nsError = error as NSError
@@ -185,10 +340,11 @@ final class NativeVideoImportPlugin: NSObject, FlutterPlugin, FlutterStreamHandl
         return root
     }
 
-    /// Copies a video file into Documents/Moves/ with a unique UUID filename.
-    /// Works with any readable URL — temp files from PHPicker, inbox copies
-    /// from UIDocumentPicker(asCopy: true), etc.
-    private func copyToMovesDir(url: URL, preferredOriginalFileName: String? = nil) throws -> ImportedVideo {
+    private func copyToMovesDir(
+        url: URL,
+        preferredOriginalFileName: String? = nil,
+        creationDate: Date? = nil
+    ) throws -> ImportedVideo {
         let filename = normalizedOriginalFilename(
             preferredOriginalFileName,
             fallbackURL: url
@@ -201,8 +357,22 @@ final class NativeVideoImportPlugin: NSObject, FlutterPlugin, FlutterStreamHandl
 
         let destination = movesDir.appendingPathComponent("\(UUID().uuidString).\(ext)")
         try FileManager.default.copyItem(at: url, to: destination)
+        
+        let attributes = try FileManager.default.attributesOfItem(atPath: destination.path)
+        let fileSize = attributes[.size] as? Int64 ?? 0
+        
+        let asset = AVURLAsset(url: destination)
+        let duration = asset.duration.seconds
+        
+        print("[NativeVideoImport] Deterministic copy completed: \(filename), size=\(fileSize), duration=\(duration)")
 
-        return ImportedVideo(localPath: destination.path, originalFileName: filename)
+        return ImportedVideo(
+            localPath: destination.path,
+            originalFileName: filename,
+            creationDate: creationDate,
+            fileSize: fileSize,
+            duration: duration
+        )
     }
 
     private func normalizedOriginalFilename(_ preferred: String?, fallbackURL: URL) -> String {
@@ -213,16 +383,23 @@ final class NativeVideoImportPlugin: NSObject, FlutterPlugin, FlutterStreamHandl
         return fallbackURL.lastPathComponent
     }
 
-    private func originalFilename(for assetIdentifier: String?) -> String? {
-        guard let assetIdentifier else { return nil }
+    private struct ExtendedMetadata {
+        let filename: String?
+        let creationDate: Date?
+    }
+
+    private func extendedMetadata(for assetIdentifier: String?) -> ExtendedMetadata {
+        guard let assetIdentifier else { return ExtendedMetadata(filename: nil, creationDate: nil) }
         let trimmedIdentifier = assetIdentifier.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !trimmedIdentifier.isEmpty else { return nil }
+        guard !trimmedIdentifier.isEmpty else { return ExtendedMetadata(filename: nil, creationDate: nil) }
 
         let fetchResult = PHAsset.fetchAssets(
             withLocalIdentifiers: [trimmedIdentifier],
             options: nil
         )
-        guard let asset = fetchResult.firstObject else { return nil }
+        guard let asset = fetchResult.firstObject else {
+            return ExtendedMetadata(filename: nil, creationDate: nil)
+        }
 
         let resources = PHAssetResource.assetResources(for: asset)
         let preferredResource = resources.first {
@@ -231,7 +408,9 @@ final class NativeVideoImportPlugin: NSObject, FlutterPlugin, FlutterStreamHandl
 
         let originalFilename = preferredResource?.originalFilename
         let trimmedFilename = originalFilename?.trimmingCharacters(in: .whitespacesAndNewlines)
-        return (trimmedFilename?.isEmpty == false) ? trimmedFilename : nil
+        let filename = (trimmedFilename?.isEmpty == false) ? trimmedFilename : nil
+        
+        return ExtendedMetadata(filename: filename, creationDate: asset.creationDate)
     }
 }
 
@@ -251,9 +430,6 @@ extension NativeVideoImportPlugin: PHPickerViewControllerDelegate {
         let provider = item.itemProvider
         let type = UTType.movie.identifier
 
-        // loadFileRepresentation gives us a TEMPORARY URL that is deleted
-        // the moment this closure returns. We must copy synchronously here.
-        // The closure already runs on a background thread, so no dispatch needed.
         let progress = provider.loadFileRepresentation(forTypeIdentifier: type) { [weak self] url, error in
             guard let self else { return }
 
@@ -281,11 +457,12 @@ extension NativeVideoImportPlugin: PHPickerViewControllerDelegate {
                 return
             }
 
-            // CRITICAL: Copy inside this closure — url is invalidated when we return
             do {
+                let meta = self.extendedMetadata(for: item.assetIdentifier)
                 let imported = try self.copyToMovesDir(
                     url: url,
-                    preferredOriginalFileName: self.originalFilename(for: item.assetIdentifier)
+                    preferredOriginalFileName: meta.filename,
+                    creationDate: meta.creationDate
                 )
                 DispatchQueue.main.async {
                     self.progressObservation?.invalidate()
@@ -303,7 +480,6 @@ extension NativeVideoImportPlugin: PHPickerViewControllerDelegate {
             }
         }
 
-        // KVO observe progress — send fraction through eventSink for Dart progress bar
         self.progressObservation?.invalidate()
         self.progressObservation = progress.observe(\.fractionCompleted, options: [.new]) { [weak self] _, change in
             guard let fraction = change.newValue else { return }
@@ -329,10 +505,14 @@ extension NativeVideoImportPlugin: UIDocumentPickerDelegate {
             return
         }
 
-        // With asCopy: true the URL points to our inbox — safe to copy on any thread.
         DispatchQueue.global(qos: .userInitiated).async {
             do {
-                let imported = try self.copyToMovesDir(url: url)
+                let attributes = try FileManager.default.attributesOfItem(atPath: url.path)
+                let creationDate = attributes[.creationDate] as? Date
+                let imported = try self.copyToMovesDir(
+                    url: url,
+                    creationDate: creationDate
+                )
                 DispatchQueue.main.async {
                     self.filesContinuation = nil
                     continuation.resume(returning: imported)

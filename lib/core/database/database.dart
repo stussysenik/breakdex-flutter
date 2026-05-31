@@ -103,7 +103,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.forTesting(super.e);
 
   @override
-  int get schemaVersion => 20;
+  int get schemaVersion => 21;
 
   Future<void> _installIntegrityTriggers() async {
     await customStatement('''
@@ -538,6 +538,11 @@ class AppDatabase extends _$AppDatabase {
         await customStatement(
           'ALTER TABLE combo_moves ADD COLUMN count INTEGER NOT NULL DEFAULT 1',
         );
+      }
+
+      if (from < 21) {
+        await m.addColumn(moves, moves.videoFileSize);
+        await m.addColumn(moves, moves.videoCreationDate);
       }
 
       await _backfillReviewSnapshots();

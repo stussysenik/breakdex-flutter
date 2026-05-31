@@ -9,6 +9,7 @@ import '../data/repositories.dart';
 import '../database/database.dart';
 import '../database/daos/fsrs_cards_dao.dart';
 import '../models/move_creation.dart';
+import '../utils/diagnostics.dart';
 import '../utils/filesystem_utils.dart';
 import 'reviewable_naming_service.dart';
 import 'video_path_resolver.dart';
@@ -82,9 +83,17 @@ class MoveCreationService {
     String? finalAbsPath;
     if (request.localVideoPath != null) {
       final targetAbs = VideoPathResolver.toAbsolute(semanticRelative);
-      await FileSystemUtils.safeMove(request.localVideoPath!, targetAbs);
-      storedVideoPath = semanticRelative;
-      finalAbsPath = targetAbs;
+      try {
+        await FileSystemUtils.safeMove(request.localVideoPath!, targetAbs);
+        storedVideoPath = semanticRelative;
+        finalAbsPath = targetAbs;
+      } catch (e) {
+        DiagnosticsLog.error('MoveCreationService', 'Failed to move video to $targetAbs: $e');
+        // Fallback: use the temporary path for now if move failed but we MUST proceed?
+        // Actually, safeMove should handle fallback to copy, so if it fails, it's a real issue.
+        // We rethrow to prevent inconsistent DB state (move with no valid video path).
+        rethrow;
+      }
     }
 
     // Blackbox safety log
@@ -101,6 +110,8 @@ class MoveCreationService {
         category: Value(normalizedCategory),
         videoPath: Value(storedVideoPath),
         originalVideoName: Value(request.originalVideoName),
+        videoFileSize: Value(request.videoFileSize != null ? BigInt.from(request.videoFileSize!) : null),
+        videoCreationDate: Value(request.videoCreationDate),
         contentHash: Value(contentHash),
         count: Value(request.count),
         learningState: Value(request.learningState),

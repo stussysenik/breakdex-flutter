@@ -170,6 +170,29 @@ class $MovesTable extends Moves with TableInfo<$MovesTable, Move> {
     requiredDuringInsert: false,
     defaultValue: const Constant(4),
   );
+  static const VerificationMeta _videoFileSizeMeta = const VerificationMeta(
+    'videoFileSize',
+  );
+  @override
+  late final GeneratedColumn<BigInt> videoFileSize = GeneratedColumn<BigInt>(
+    'video_file_size',
+    aliasedName,
+    true,
+    type: DriftSqlType.bigInt,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _videoCreationDateMeta = const VerificationMeta(
+    'videoCreationDate',
+  );
+  @override
+  late final GeneratedColumn<DateTime> videoCreationDate =
+      GeneratedColumn<DateTime>(
+        'video_creation_date',
+        aliasedName,
+        true,
+        type: DriftSqlType.dateTime,
+        requiredDuringInsert: false,
+      );
   static const VerificationMeta _createdAtMeta = const VerificationMeta(
     'createdAt',
   );
@@ -199,6 +222,8 @@ class $MovesTable extends Moves with TableInfo<$MovesTable, Move> {
     imagePaths,
     contentHash,
     count,
+    videoFileSize,
+    videoCreationDate,
     createdAt,
   ];
   @override
@@ -325,6 +350,24 @@ class $MovesTable extends Moves with TableInfo<$MovesTable, Move> {
         count.isAcceptableOrUnknown(data['count']!, _countMeta),
       );
     }
+    if (data.containsKey('video_file_size')) {
+      context.handle(
+        _videoFileSizeMeta,
+        videoFileSize.isAcceptableOrUnknown(
+          data['video_file_size']!,
+          _videoFileSizeMeta,
+        ),
+      );
+    }
+    if (data.containsKey('video_creation_date')) {
+      context.handle(
+        _videoCreationDateMeta,
+        videoCreationDate.isAcceptableOrUnknown(
+          data['video_creation_date']!,
+          _videoCreationDateMeta,
+        ),
+      );
+    }
     if (data.containsKey('created_at')) {
       context.handle(
         _createdAtMeta,
@@ -400,6 +443,14 @@ class $MovesTable extends Moves with TableInfo<$MovesTable, Move> {
         DriftSqlType.int,
         data['${effectivePrefix}count'],
       )!,
+      videoFileSize: attachedDatabase.typeMapping.read(
+        DriftSqlType.bigInt,
+        data['${effectivePrefix}video_file_size'],
+      ),
+      videoCreationDate: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}video_creation_date'],
+      ),
       createdAt: attachedDatabase.typeMapping.read(
         DriftSqlType.dateTime,
         data['${effectivePrefix}created_at'],
@@ -429,6 +480,8 @@ class Move extends DataClass implements Insertable<Move> {
   final String? imagePaths;
   final String? contentHash;
   final int count;
+  final BigInt? videoFileSize;
+  final DateTime? videoCreationDate;
   final DateTime createdAt;
   const Move({
     required this.id,
@@ -446,6 +499,8 @@ class Move extends DataClass implements Insertable<Move> {
     this.imagePaths,
     this.contentHash,
     required this.count,
+    this.videoFileSize,
+    this.videoCreationDate,
     required this.createdAt,
   });
   @override
@@ -486,6 +541,12 @@ class Move extends DataClass implements Insertable<Move> {
       map['content_hash'] = Variable<String>(contentHash);
     }
     map['count'] = Variable<int>(count);
+    if (!nullToAbsent || videoFileSize != null) {
+      map['video_file_size'] = Variable<BigInt>(videoFileSize);
+    }
+    if (!nullToAbsent || videoCreationDate != null) {
+      map['video_creation_date'] = Variable<DateTime>(videoCreationDate);
+    }
     map['created_at'] = Variable<DateTime>(createdAt);
     return map;
   }
@@ -527,6 +588,12 @@ class Move extends DataClass implements Insertable<Move> {
           ? const Value.absent()
           : Value(contentHash),
       count: Value(count),
+      videoFileSize: videoFileSize == null && nullToAbsent
+          ? const Value.absent()
+          : Value(videoFileSize),
+      videoCreationDate: videoCreationDate == null && nullToAbsent
+          ? const Value.absent()
+          : Value(videoCreationDate),
       createdAt: Value(createdAt),
     );
   }
@@ -558,6 +625,10 @@ class Move extends DataClass implements Insertable<Move> {
       imagePaths: serializer.fromJson<String?>(json['imagePaths']),
       contentHash: serializer.fromJson<String?>(json['contentHash']),
       count: serializer.fromJson<int>(json['count']),
+      videoFileSize: serializer.fromJson<BigInt?>(json['videoFileSize']),
+      videoCreationDate: serializer.fromJson<DateTime?>(
+        json['videoCreationDate'],
+      ),
       createdAt: serializer.fromJson<DateTime>(json['createdAt']),
     );
   }
@@ -580,6 +651,8 @@ class Move extends DataClass implements Insertable<Move> {
       'imagePaths': serializer.toJson<String?>(imagePaths),
       'contentHash': serializer.toJson<String?>(contentHash),
       'count': serializer.toJson<int>(count),
+      'videoFileSize': serializer.toJson<BigInt?>(videoFileSize),
+      'videoCreationDate': serializer.toJson<DateTime?>(videoCreationDate),
       'createdAt': serializer.toJson<DateTime>(createdAt),
     };
   }
@@ -600,6 +673,8 @@ class Move extends DataClass implements Insertable<Move> {
     Value<String?> imagePaths = const Value.absent(),
     Value<String?> contentHash = const Value.absent(),
     int? count,
+    Value<BigInt?> videoFileSize = const Value.absent(),
+    Value<DateTime?> videoCreationDate = const Value.absent(),
     DateTime? createdAt,
   }) => Move(
     id: id ?? this.id,
@@ -627,6 +702,12 @@ class Move extends DataClass implements Insertable<Move> {
     imagePaths: imagePaths.present ? imagePaths.value : this.imagePaths,
     contentHash: contentHash.present ? contentHash.value : this.contentHash,
     count: count ?? this.count,
+    videoFileSize: videoFileSize.present
+        ? videoFileSize.value
+        : this.videoFileSize,
+    videoCreationDate: videoCreationDate.present
+        ? videoCreationDate.value
+        : this.videoCreationDate,
     createdAt: createdAt ?? this.createdAt,
   );
   Move copyWithCompanion(MovesCompanion data) {
@@ -664,6 +745,12 @@ class Move extends DataClass implements Insertable<Move> {
           ? data.contentHash.value
           : this.contentHash,
       count: data.count.present ? data.count.value : this.count,
+      videoFileSize: data.videoFileSize.present
+          ? data.videoFileSize.value
+          : this.videoFileSize,
+      videoCreationDate: data.videoCreationDate.present
+          ? data.videoCreationDate.value
+          : this.videoCreationDate,
       createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
     );
   }
@@ -686,6 +773,8 @@ class Move extends DataClass implements Insertable<Move> {
           ..write('imagePaths: $imagePaths, ')
           ..write('contentHash: $contentHash, ')
           ..write('count: $count, ')
+          ..write('videoFileSize: $videoFileSize, ')
+          ..write('videoCreationDate: $videoCreationDate, ')
           ..write('createdAt: $createdAt')
           ..write(')'))
         .toString();
@@ -708,6 +797,8 @@ class Move extends DataClass implements Insertable<Move> {
     imagePaths,
     contentHash,
     count,
+    videoFileSize,
+    videoCreationDate,
     createdAt,
   );
   @override
@@ -729,6 +820,8 @@ class Move extends DataClass implements Insertable<Move> {
           other.imagePaths == this.imagePaths &&
           other.contentHash == this.contentHash &&
           other.count == this.count &&
+          other.videoFileSize == this.videoFileSize &&
+          other.videoCreationDate == this.videoCreationDate &&
           other.createdAt == this.createdAt);
 }
 
@@ -748,6 +841,8 @@ class MovesCompanion extends UpdateCompanion<Move> {
   final Value<String?> imagePaths;
   final Value<String?> contentHash;
   final Value<int> count;
+  final Value<BigInt?> videoFileSize;
+  final Value<DateTime?> videoCreationDate;
   final Value<DateTime> createdAt;
   final Value<int> rowid;
   const MovesCompanion({
@@ -766,6 +861,8 @@ class MovesCompanion extends UpdateCompanion<Move> {
     this.imagePaths = const Value.absent(),
     this.contentHash = const Value.absent(),
     this.count = const Value.absent(),
+    this.videoFileSize = const Value.absent(),
+    this.videoCreationDate = const Value.absent(),
     this.createdAt = const Value.absent(),
     this.rowid = const Value.absent(),
   });
@@ -785,6 +882,8 @@ class MovesCompanion extends UpdateCompanion<Move> {
     this.imagePaths = const Value.absent(),
     this.contentHash = const Value.absent(),
     this.count = const Value.absent(),
+    this.videoFileSize = const Value.absent(),
+    this.videoCreationDate = const Value.absent(),
     this.createdAt = const Value.absent(),
     this.rowid = const Value.absent(),
   }) : id = Value(id),
@@ -805,6 +904,8 @@ class MovesCompanion extends UpdateCompanion<Move> {
     Expression<String>? imagePaths,
     Expression<String>? contentHash,
     Expression<int>? count,
+    Expression<BigInt>? videoFileSize,
+    Expression<DateTime>? videoCreationDate,
     Expression<DateTime>? createdAt,
     Expression<int>? rowid,
   }) {
@@ -826,6 +927,8 @@ class MovesCompanion extends UpdateCompanion<Move> {
       if (imagePaths != null) 'image_paths': imagePaths,
       if (contentHash != null) 'content_hash': contentHash,
       if (count != null) 'count': count,
+      if (videoFileSize != null) 'video_file_size': videoFileSize,
+      if (videoCreationDate != null) 'video_creation_date': videoCreationDate,
       if (createdAt != null) 'created_at': createdAt,
       if (rowid != null) 'rowid': rowid,
     });
@@ -847,6 +950,8 @@ class MovesCompanion extends UpdateCompanion<Move> {
     Value<String?>? imagePaths,
     Value<String?>? contentHash,
     Value<int>? count,
+    Value<BigInt?>? videoFileSize,
+    Value<DateTime?>? videoCreationDate,
     Value<DateTime>? createdAt,
     Value<int>? rowid,
   }) {
@@ -866,6 +971,8 @@ class MovesCompanion extends UpdateCompanion<Move> {
       imagePaths: imagePaths ?? this.imagePaths,
       contentHash: contentHash ?? this.contentHash,
       count: count ?? this.count,
+      videoFileSize: videoFileSize ?? this.videoFileSize,
+      videoCreationDate: videoCreationDate ?? this.videoCreationDate,
       createdAt: createdAt ?? this.createdAt,
       rowid: rowid ?? this.rowid,
     );
@@ -923,6 +1030,12 @@ class MovesCompanion extends UpdateCompanion<Move> {
     if (count.present) {
       map['count'] = Variable<int>(count.value);
     }
+    if (videoFileSize.present) {
+      map['video_file_size'] = Variable<BigInt>(videoFileSize.value);
+    }
+    if (videoCreationDate.present) {
+      map['video_creation_date'] = Variable<DateTime>(videoCreationDate.value);
+    }
     if (createdAt.present) {
       map['created_at'] = Variable<DateTime>(createdAt.value);
     }
@@ -950,6 +1063,8 @@ class MovesCompanion extends UpdateCompanion<Move> {
           ..write('imagePaths: $imagePaths, ')
           ..write('contentHash: $contentHash, ')
           ..write('count: $count, ')
+          ..write('videoFileSize: $videoFileSize, ')
+          ..write('videoCreationDate: $videoCreationDate, ')
           ..write('createdAt: $createdAt, ')
           ..write('rowid: $rowid')
           ..write(')'))
@@ -1383,8 +1498,24 @@ class $ComboMovesTable extends ComboMoves
       'REFERENCES moves (id) ON DELETE CASCADE',
     ),
   );
+  static const VerificationMeta _countMeta = const VerificationMeta('count');
   @override
-  List<GeneratedColumn> get $columns => [id, sequenceIndex, comboId, moveId];
+  late final GeneratedColumn<int> count = GeneratedColumn<int>(
+    'count',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(1),
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    sequenceIndex,
+    comboId,
+    moveId,
+    count,
+  ];
   @override
   String get aliasedName => _alias ?? actualTableName;
   @override
@@ -1429,6 +1560,12 @@ class $ComboMovesTable extends ComboMoves
     } else if (isInserting) {
       context.missing(_moveIdMeta);
     }
+    if (data.containsKey('count')) {
+      context.handle(
+        _countMeta,
+        count.isAcceptableOrUnknown(data['count']!, _countMeta),
+      );
+    }
     return context;
   }
 
@@ -1454,6 +1591,10 @@ class $ComboMovesTable extends ComboMoves
         DriftSqlType.string,
         data['${effectivePrefix}move_id'],
       )!,
+      count: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}count'],
+      )!,
     );
   }
 
@@ -1468,11 +1609,13 @@ class ComboMove extends DataClass implements Insertable<ComboMove> {
   final int sequenceIndex;
   final String comboId;
   final String moveId;
+  final int count;
   const ComboMove({
     required this.id,
     required this.sequenceIndex,
     required this.comboId,
     required this.moveId,
+    required this.count,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -1481,6 +1624,7 @@ class ComboMove extends DataClass implements Insertable<ComboMove> {
     map['sequence_index'] = Variable<int>(sequenceIndex);
     map['combo_id'] = Variable<String>(comboId);
     map['move_id'] = Variable<String>(moveId);
+    map['count'] = Variable<int>(count);
     return map;
   }
 
@@ -1490,6 +1634,7 @@ class ComboMove extends DataClass implements Insertable<ComboMove> {
       sequenceIndex: Value(sequenceIndex),
       comboId: Value(comboId),
       moveId: Value(moveId),
+      count: Value(count),
     );
   }
 
@@ -1503,6 +1648,7 @@ class ComboMove extends DataClass implements Insertable<ComboMove> {
       sequenceIndex: serializer.fromJson<int>(json['sequenceIndex']),
       comboId: serializer.fromJson<String>(json['comboId']),
       moveId: serializer.fromJson<String>(json['moveId']),
+      count: serializer.fromJson<int>(json['count']),
     );
   }
   @override
@@ -1513,6 +1659,7 @@ class ComboMove extends DataClass implements Insertable<ComboMove> {
       'sequenceIndex': serializer.toJson<int>(sequenceIndex),
       'comboId': serializer.toJson<String>(comboId),
       'moveId': serializer.toJson<String>(moveId),
+      'count': serializer.toJson<int>(count),
     };
   }
 
@@ -1521,11 +1668,13 @@ class ComboMove extends DataClass implements Insertable<ComboMove> {
     int? sequenceIndex,
     String? comboId,
     String? moveId,
+    int? count,
   }) => ComboMove(
     id: id ?? this.id,
     sequenceIndex: sequenceIndex ?? this.sequenceIndex,
     comboId: comboId ?? this.comboId,
     moveId: moveId ?? this.moveId,
+    count: count ?? this.count,
   );
   ComboMove copyWithCompanion(ComboMovesCompanion data) {
     return ComboMove(
@@ -1535,6 +1684,7 @@ class ComboMove extends DataClass implements Insertable<ComboMove> {
           : this.sequenceIndex,
       comboId: data.comboId.present ? data.comboId.value : this.comboId,
       moveId: data.moveId.present ? data.moveId.value : this.moveId,
+      count: data.count.present ? data.count.value : this.count,
     );
   }
 
@@ -1544,13 +1694,14 @@ class ComboMove extends DataClass implements Insertable<ComboMove> {
           ..write('id: $id, ')
           ..write('sequenceIndex: $sequenceIndex, ')
           ..write('comboId: $comboId, ')
-          ..write('moveId: $moveId')
+          ..write('moveId: $moveId, ')
+          ..write('count: $count')
           ..write(')'))
         .toString();
   }
 
   @override
-  int get hashCode => Object.hash(id, sequenceIndex, comboId, moveId);
+  int get hashCode => Object.hash(id, sequenceIndex, comboId, moveId, count);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -1558,7 +1709,8 @@ class ComboMove extends DataClass implements Insertable<ComboMove> {
           other.id == this.id &&
           other.sequenceIndex == this.sequenceIndex &&
           other.comboId == this.comboId &&
-          other.moveId == this.moveId);
+          other.moveId == this.moveId &&
+          other.count == this.count);
 }
 
 class ComboMovesCompanion extends UpdateCompanion<ComboMove> {
@@ -1566,12 +1718,14 @@ class ComboMovesCompanion extends UpdateCompanion<ComboMove> {
   final Value<int> sequenceIndex;
   final Value<String> comboId;
   final Value<String> moveId;
+  final Value<int> count;
   final Value<int> rowid;
   const ComboMovesCompanion({
     this.id = const Value.absent(),
     this.sequenceIndex = const Value.absent(),
     this.comboId = const Value.absent(),
     this.moveId = const Value.absent(),
+    this.count = const Value.absent(),
     this.rowid = const Value.absent(),
   });
   ComboMovesCompanion.insert({
@@ -1579,6 +1733,7 @@ class ComboMovesCompanion extends UpdateCompanion<ComboMove> {
     required int sequenceIndex,
     required String comboId,
     required String moveId,
+    this.count = const Value.absent(),
     this.rowid = const Value.absent(),
   }) : id = Value(id),
        sequenceIndex = Value(sequenceIndex),
@@ -1589,6 +1744,7 @@ class ComboMovesCompanion extends UpdateCompanion<ComboMove> {
     Expression<int>? sequenceIndex,
     Expression<String>? comboId,
     Expression<String>? moveId,
+    Expression<int>? count,
     Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
@@ -1596,6 +1752,7 @@ class ComboMovesCompanion extends UpdateCompanion<ComboMove> {
       if (sequenceIndex != null) 'sequence_index': sequenceIndex,
       if (comboId != null) 'combo_id': comboId,
       if (moveId != null) 'move_id': moveId,
+      if (count != null) 'count': count,
       if (rowid != null) 'rowid': rowid,
     });
   }
@@ -1605,6 +1762,7 @@ class ComboMovesCompanion extends UpdateCompanion<ComboMove> {
     Value<int>? sequenceIndex,
     Value<String>? comboId,
     Value<String>? moveId,
+    Value<int>? count,
     Value<int>? rowid,
   }) {
     return ComboMovesCompanion(
@@ -1612,6 +1770,7 @@ class ComboMovesCompanion extends UpdateCompanion<ComboMove> {
       sequenceIndex: sequenceIndex ?? this.sequenceIndex,
       comboId: comboId ?? this.comboId,
       moveId: moveId ?? this.moveId,
+      count: count ?? this.count,
       rowid: rowid ?? this.rowid,
     );
   }
@@ -1631,6 +1790,9 @@ class ComboMovesCompanion extends UpdateCompanion<ComboMove> {
     if (moveId.present) {
       map['move_id'] = Variable<String>(moveId.value);
     }
+    if (count.present) {
+      map['count'] = Variable<int>(count.value);
+    }
     if (rowid.present) {
       map['rowid'] = Variable<int>(rowid.value);
     }
@@ -1644,6 +1806,7 @@ class ComboMovesCompanion extends UpdateCompanion<ComboMove> {
           ..write('sequenceIndex: $sequenceIndex, ')
           ..write('comboId: $comboId, ')
           ..write('moveId: $moveId, ')
+          ..write('count: $count, ')
           ..write('rowid: $rowid')
           ..write(')'))
         .toString();
@@ -12363,6 +12526,8 @@ typedef $$MovesTableCreateCompanionBuilder =
       Value<String?> imagePaths,
       Value<String?> contentHash,
       Value<int> count,
+      Value<BigInt?> videoFileSize,
+      Value<DateTime?> videoCreationDate,
       Value<DateTime> createdAt,
       Value<int> rowid,
     });
@@ -12383,6 +12548,8 @@ typedef $$MovesTableUpdateCompanionBuilder =
       Value<String?> imagePaths,
       Value<String?> contentHash,
       Value<int> count,
+      Value<BigInt?> videoFileSize,
+      Value<DateTime?> videoCreationDate,
       Value<DateTime> createdAt,
       Value<int> rowid,
     });
@@ -12620,6 +12787,16 @@ class $$MovesTableFilterComposer extends Composer<_$AppDatabase, $MovesTable> {
 
   ColumnFilters<int> get count => $composableBuilder(
     column: $table.count,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<BigInt> get videoFileSize => $composableBuilder(
+    column: $table.videoFileSize,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get videoCreationDate => $composableBuilder(
+    column: $table.videoCreationDate,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -12913,6 +13090,16 @@ class $$MovesTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<BigInt> get videoFileSize => $composableBuilder(
+    column: $table.videoFileSize,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get videoCreationDate => $composableBuilder(
+    column: $table.videoCreationDate,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<DateTime> get createdAt => $composableBuilder(
     column: $table.createdAt,
     builder: (column) => ColumnOrderings(column),
@@ -12990,6 +13177,16 @@ class $$MovesTableAnnotationComposer
 
   GeneratedColumn<int> get count =>
       $composableBuilder(column: $table.count, builder: (column) => column);
+
+  GeneratedColumn<BigInt> get videoFileSize => $composableBuilder(
+    column: $table.videoFileSize,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<DateTime> get videoCreationDate => $composableBuilder(
+    column: $table.videoCreationDate,
+    builder: (column) => column,
+  );
 
   GeneratedColumn<DateTime> get createdAt =>
       $composableBuilder(column: $table.createdAt, builder: (column) => column);
@@ -13247,6 +13444,8 @@ class $$MovesTableTableManager
                 Value<String?> imagePaths = const Value.absent(),
                 Value<String?> contentHash = const Value.absent(),
                 Value<int> count = const Value.absent(),
+                Value<BigInt?> videoFileSize = const Value.absent(),
+                Value<DateTime?> videoCreationDate = const Value.absent(),
                 Value<DateTime> createdAt = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => MovesCompanion(
@@ -13265,6 +13464,8 @@ class $$MovesTableTableManager
                 imagePaths: imagePaths,
                 contentHash: contentHash,
                 count: count,
+                videoFileSize: videoFileSize,
+                videoCreationDate: videoCreationDate,
                 createdAt: createdAt,
                 rowid: rowid,
               ),
@@ -13285,6 +13486,8 @@ class $$MovesTableTableManager
                 Value<String?> imagePaths = const Value.absent(),
                 Value<String?> contentHash = const Value.absent(),
                 Value<int> count = const Value.absent(),
+                Value<BigInt?> videoFileSize = const Value.absent(),
+                Value<DateTime?> videoCreationDate = const Value.absent(),
                 Value<DateTime> createdAt = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => MovesCompanion.insert(
@@ -13303,6 +13506,8 @@ class $$MovesTableTableManager
                 imagePaths: imagePaths,
                 contentHash: contentHash,
                 count: count,
+                videoFileSize: videoFileSize,
+                videoCreationDate: videoCreationDate,
                 createdAt: createdAt,
                 rowid: rowid,
               ),
@@ -14014,6 +14219,7 @@ typedef $$ComboMovesTableCreateCompanionBuilder =
       required int sequenceIndex,
       required String comboId,
       required String moveId,
+      Value<int> count,
       Value<int> rowid,
     });
 typedef $$ComboMovesTableUpdateCompanionBuilder =
@@ -14022,6 +14228,7 @@ typedef $$ComboMovesTableUpdateCompanionBuilder =
       Value<int> sequenceIndex,
       Value<String> comboId,
       Value<String> moveId,
+      Value<int> count,
       Value<int> rowid,
     });
 
@@ -14082,6 +14289,11 @@ class $$ComboMovesTableFilterComposer
 
   ColumnFilters<int> get sequenceIndex => $composableBuilder(
     column: $table.sequenceIndex,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get count => $composableBuilder(
+    column: $table.count,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -14151,6 +14363,11 @@ class $$ComboMovesTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<int> get count => $composableBuilder(
+    column: $table.count,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   $$CombosTableOrderingComposer get comboId {
     final $$CombosTableOrderingComposer composer = $composerBuilder(
       composer: this,
@@ -14214,6 +14431,9 @@ class $$ComboMovesTableAnnotationComposer
     column: $table.sequenceIndex,
     builder: (column) => column,
   );
+
+  GeneratedColumn<int> get count =>
+      $composableBuilder(column: $table.count, builder: (column) => column);
 
   $$CombosTableAnnotationComposer get comboId {
     final $$CombosTableAnnotationComposer composer = $composerBuilder(
@@ -14294,12 +14514,14 @@ class $$ComboMovesTableTableManager
                 Value<int> sequenceIndex = const Value.absent(),
                 Value<String> comboId = const Value.absent(),
                 Value<String> moveId = const Value.absent(),
+                Value<int> count = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => ComboMovesCompanion(
                 id: id,
                 sequenceIndex: sequenceIndex,
                 comboId: comboId,
                 moveId: moveId,
+                count: count,
                 rowid: rowid,
               ),
           createCompanionCallback:
@@ -14308,12 +14530,14 @@ class $$ComboMovesTableTableManager
                 required int sequenceIndex,
                 required String comboId,
                 required String moveId,
+                Value<int> count = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => ComboMovesCompanion.insert(
                 id: id,
                 sequenceIndex: sequenceIndex,
                 comboId: comboId,
                 moveId: moveId,
+                count: count,
                 rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0

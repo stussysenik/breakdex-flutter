@@ -27,12 +27,55 @@ class VideoPickResult {
   final String localPath;
   final String? thumbnailPath;
   final String? originalFileName;
+  final DateTime? creationDate;
+  final int? fileSize;
+  final double? duration;
 
   const VideoPickResult({
     required this.localPath,
     this.thumbnailPath,
     this.originalFileName,
+    this.creationDate,
+    this.fileSize,
+    this.duration,
   });
+
+  @override
+  String toString() {
+    return 'VideoPickResult(path: $localPath, name: $originalFileName, date: $creationDate, size: $fileSize, dur: $duration)';
+  }
+}
+
+class MetadataAsset {
+  final String localIdentifier;
+  final DateTime? creationDate;
+  final double duration;
+  final String originalFileName;
+  final int width;
+  final int height;
+  final bool isLocal;
+
+  MetadataAsset({
+    required this.localIdentifier,
+    this.creationDate,
+    required this.duration,
+    required this.originalFileName,
+    required this.width,
+    required this.height,
+    this.isLocal = false,
+  });
+
+  factory MetadataAsset.fromMap(Map<String, dynamic> map) {
+    return MetadataAsset(
+      localIdentifier: map['localIdentifier'] as String,
+      creationDate: map['creationDate'] != null ? DateTime.tryParse(map['creationDate'] as String) : null,
+      duration: (map['duration'] as num).toDouble(),
+      originalFileName: map['originalFileName'] as String,
+      width: map['width'] as int,
+      height: map['height'] as int,
+      isLocal: false,
+    );
+  }
 }
 
 class VideoService {
@@ -75,6 +118,38 @@ class VideoService {
       localPath: native.localPath,
       thumbnailPath: thumb,
       originalFileName: native.originalFileName,
+      creationDate: native.creationDate,
+      fileSize: native.fileSize,
+      duration: native.duration,
+    );
+  }
+
+  /// Record a new video using the camera
+  TaskEither<AppFailure, VideoPickResult?> recordVideo({StatusCallback? onStatus}) {
+    return TaskEither.tryCatch(
+      () async {
+        onStatus?.call('Opening camera...');
+        final file = await _picker.pickVideo(source: ImageSource.camera);
+        if (file == null) return null;
+
+        onStatus?.call('Saving recording...');
+        final localPath = await _saveToDocumentsWithRetry(
+          File(file.path),
+          onStatus: onStatus,
+        );
+        onStatus?.call('Generating thumbnail...');
+        final thumb = await generateThumbnail(localPath);
+        final stat = await File(VideoPathResolver.toAbsolute(localPath)).stat();
+
+        return VideoPickResult(
+          localPath: localPath,
+          thumbnailPath: thumb,
+          originalFileName: p.basename(file.path),
+          creationDate: DateTime.now(),
+          fileSize: stat.size,
+        );
+      },
+      (error, stackTrace) => AppFailure.fileSystem('Failed to record video: $error'),
     );
   }
 
@@ -102,10 +177,14 @@ class VideoService {
         );
         onStatus?.call('Generating thumbnail...');
         final thumb = await generateThumbnail(localPath);
+        final stat = await File(VideoPathResolver.toAbsolute(localPath)).stat();
+
         return VideoPickResult(
           localPath: localPath,
           thumbnailPath: thumb,
           originalFileName: originalName,
+          creationDate: stat.changed, // Fallback for non-iOS
+          fileSize: stat.size,
         );
       },
       (error, stackTrace) => AppFailure.fileSystem('Failed to pick from photos: $error'),
@@ -142,38 +221,17 @@ class VideoService {
         );
         onStatus?.call('Generating thumbnail...');
         final thumb = await generateThumbnail(localPath);
+        final stat = await File(VideoPathResolver.toAbsolute(localPath)).stat();
+
         return VideoPickResult(
           localPath: localPath,
           thumbnailPath: thumb,
           originalFileName: originalName,
+          creationDate: stat.changed,
+          fileSize: stat.size,
         );
       },
       (error, stackTrace) => AppFailure.fileSystem('Failed to pick from files: $error'),
-    );
-  }
-
-  /// Record from camera
-  TaskEither<AppFailure, VideoPickResult?> recordVideo({StatusCallback? onStatus}) {
-    return TaskEither.tryCatch(
-      () async {
-        onStatus?.call('Opening camera...');
-        final file = await _picker.pickVideo(source: ImageSource.camera);
-        if (file == null) return null;
-
-        onStatus?.call('Saving video...');
-        final localPath = await _saveToDocumentsWithRetry(
-          File(file.path),
-          onStatus: onStatus,
-        );
-        onStatus?.call('Generating thumbnail...');
-        final thumb = await generateThumbnail(localPath);
-        return VideoPickResult(
-          localPath: localPath,
-          thumbnailPath: thumb,
-          originalFileName: 'Camera Recording',
-        );
-      },
-      (error, stackTrace) => AppFailure.fileSystem('Failed to record video: $error'),
     );
   }
 
@@ -184,15 +242,84 @@ class VideoService {
       if (payload == null) return null;
       final localPath = payload['localPath'] as String?;
       if (localPath == null || localPath.isEmpty) return null;
-      return VideoPickResult(
+
+      DateTime? creationDate;
+      if (payload['creationDate'] != null) {
+        creationDate = DateTime.tryParse(payload['creationDate'] as String);
+      }
+
+      final result = VideoPickResult(
         localPath: localPath,
         originalFileName: payload['originalFileName'] as String?,
+        creationDate: creationDate,
+        fileSize: payload['fileSize'] as int?,
+        duration: (payload['duration'] as num?)?.toDouble(),
       );
+
+      debugPrint('[VideoService] Native pick result: $result');
+      return result;
     } on PlatformException catch (e) {
       // User cancelled the picker — not an error
       final msg = (e.message ?? '').toLowerCase();
       if (msg.contains('cancelled') || msg.contains('canceled')) return null;
       rethrow;
+    }
+  }
+
+  Future<List<MetadataAsset>> fetchPhotoLibraryVideos() async {
+    if (!Platform.isIOS) return [];
+    try {
+      final List<dynamic>? assets = await _nativeImportChannel.invokeMethod('fetchPhotoLibraryVideos');
+      if (assets == null) return [];
+      return assets.map((a) => MetadataAsset.fromMap(Map<String, dynamic>.from(a as Map))).toList();
+    } catch (e) {
+      debugPrint('[VideoService] Failed to fetch assets: $e');
+      return [];
+    }
+  }
+
+  Future<Uint8List?> getAssetThumbnail(String identifier, {int width = 200, int height = 200}) async {
+    if (!Platform.isIOS) return null;
+    try {
+      final Uint8List? bytes = await _nativeImportChannel.invokeMethod('getAssetThumbnail', {
+        'identifier': identifier,
+        'width': width,
+        'height': height,
+      });
+      return bytes;
+    } catch (e) {
+      debugPrint('[VideoService] Failed to get thumb: $e');
+      return null;
+    }
+  }
+
+  Future<VideoPickResult?> importSpecificAsset(String identifier) async {
+    if (!Platform.isIOS) return null;
+    try {
+      final Map<String, dynamic>? payload = await _nativeImportChannel.invokeMapMethod<String, dynamic>(
+        'importSpecificAsset',
+        {'identifier': identifier},
+      );
+      if (payload == null) return null;
+      
+      DateTime? creationDate;
+      if (payload['creationDate'] != null) {
+        creationDate = DateTime.tryParse(payload['creationDate'] as String);
+      }
+
+      final result = VideoPickResult(
+        localPath: payload['localPath'] as String,
+        originalFileName: payload['originalFileName'] as String?,
+        creationDate: creationDate,
+        fileSize: payload['fileSize'] as int?,
+        duration: (payload['duration'] as num?)?.toDouble(),
+      );
+      
+      debugPrint('[VideoService] Specific asset import result: $result');
+      return result;
+    } catch (e) {
+      debugPrint('[VideoService] Failed to import asset: $e');
+      return null;
     }
   }
 

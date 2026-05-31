@@ -77,7 +77,8 @@ final class SavingCount extends MoveDetailState {
 // ── Delete flow ──
 
 final class ConfirmingDelete extends MoveDetailState {
-  const ConfirmingDelete(super.move);
+  final List<Combo> combos;
+  const ConfirmingDelete(super.move, {required this.combos});
 }
 
 final class Deleting extends MoveDetailState {

@@ -514,6 +514,7 @@
 		};
 		4F0D3F3F2B6B4E0E8D4A9B01 /* Re-sign Native Asset Frameworks */ = {
 			isa = PBXShellScriptBuildPhase;
+			alwaysOutOfDate = 1;
 			buildActionMask = 2147483647;
 			files = (
 			);

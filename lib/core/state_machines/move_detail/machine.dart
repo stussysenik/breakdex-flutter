@@ -40,7 +40,7 @@ final class MoveDetailMachine
       ),
 
       // ── Idle → Destructive (requires confirm) ──
-      (Idle(), TapDelete()) => ConfirmingDelete(s.move),
+      (Idle(), TapDelete(combos: final c)) => ConfirmingDelete(s.move, combos: c),
 
       // ── Idle → Inline edit ──
       (Idle(), UpdateNotes(text: final text)) => NotesDirty(

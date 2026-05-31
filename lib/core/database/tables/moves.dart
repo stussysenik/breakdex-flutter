@@ -16,6 +16,8 @@ class Moves extends Table {
   TextColumn get imagePaths => text().nullable()();
   TextColumn get contentHash => text().nullable()();
   IntColumn get count => integer().withDefault(const Constant(4))();
+  Int64Column get videoFileSize => int64().nullable()();
+  DateTimeColumn get videoCreationDate => dateTime().nullable()();
   DateTimeColumn get createdAt => dateTime().withDefault(currentDateAndTime)();
 
   @override

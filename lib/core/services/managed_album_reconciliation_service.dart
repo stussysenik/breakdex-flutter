@@ -345,6 +345,7 @@ class ManagedAlbumLifecycleController with WidgetsBindingObserver {
   StreamSubscription<Map<String, dynamic>>? _photoChangesSub;
   Future<void>? _runningSweep;
   ManagedAlbumReconcileReport? _latestReport;
+  Timer? _debounceTimer;
 
   Stream<ManagedAlbumReconcileReport> get reports => _reports.stream;
   ManagedAlbumReconcileReport? get latestReport => _latestReport;
@@ -356,6 +357,7 @@ class ManagedAlbumLifecycleController with WidgetsBindingObserver {
 
   Future<void> dispose() async {
     WidgetsBinding.instance.removeObserver(this);
+    _debounceTimer?.cancel();
     await _photoChangesSub?.cancel();
     await _reports.close();
   }
@@ -380,17 +382,23 @@ class ManagedAlbumLifecycleController with WidgetsBindingObserver {
       if (!_reports.isClosed) {
         _reports.add(report);
       }
-      if (report.accessStatus.allowsReadAccess && _photoChangesSub == null) {
+      
+      final shouldListen = report.accessStatus.allowsReadAccess && report.trackedMoves > 0;
+      
+      if (shouldListen && _photoChangesSub == null) {
         _photoChangesSub = _videoAlbum.libraryChangeStream.listen((event) {
           if (event['type'] != 'libraryChanged') return;
-          unawaited(
-            _ensureObservationAndSweep(
-              trigger: ManagedAlbumReconcileTrigger.libraryChanged,
-            ),
-          );
+          
+          _debounceTimer?.cancel();
+          _debounceTimer = Timer(const Duration(seconds: 2), () {
+            unawaited(
+              _ensureObservationAndSweep(
+                trigger: ManagedAlbumReconcileTrigger.libraryChanged,
+              ),
+            );
+          });
         });
-      } else if (!report.accessStatus.allowsReadAccess &&
-          _photoChangesSub != null) {
+      } else if (!shouldListen && _photoChangesSub != null) {
         await _photoChangesSub?.cancel();
         _photoChangesSub = null;
       }

@@ -4,6 +4,8 @@ class CreateMoveRequest {
     required this.category,
     this.localVideoPath,
     this.originalVideoName,
+    this.videoFileSize,
+    this.videoCreationDate,
     this.count = 4,
     this.learningState = 'NEW',
   });
@@ -12,6 +14,8 @@ class CreateMoveRequest {
   final String category;
   final String? localVideoPath;
   final String? originalVideoName;
+  final int? videoFileSize;
+  final DateTime? videoCreationDate;
   final int count;
   final String learningState;
 }

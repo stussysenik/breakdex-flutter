@@ -20,15 +20,16 @@ class BottomNavShell extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    // Only update tab index in post-frame — avoids side effects during build
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (context.mounted) {
-        ref.read(currentTabIndexProvider.notifier).state =
-            navigationShell.currentIndex;
+        final current = ref.read(currentTabIndexProvider);
+        if (current != navigationShell.currentIndex) {
+          ref.read(currentTabIndexProvider.notifier).state =
+              navigationShell.currentIndex;
+        }
       }
     });
-
-    // Watch sync trigger to keep auto-sync alive
-    ref.watch(syncTriggerProvider);
 
     final colorScheme = Theme.of(context).colorScheme;
     final brightness = Theme.of(context).brightness;
@@ -46,7 +47,13 @@ class BottomNavShell extends ConsumerWidget {
         },
         child: Column(
           children: [
-            const SyncProgressBar(),
+            // Only the progress bar and sync logic need to watch the trigger
+            Consumer(
+              builder: (context, ref, _) {
+                ref.watch(syncTriggerProvider);
+                return const SyncProgressBar();
+              },
+            ),
             Expanded(child: navigationShell),
           ],
         ),

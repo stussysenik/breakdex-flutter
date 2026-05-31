@@ -471,6 +471,7 @@ class _CreateComboScreenState extends ConsumerState<CreateComboScreen> {
                 sequenceIndex: Value(i),
                 comboId: Value(comboId),
                 moveId: Value(move.id),
+                count: Value(move.count),
               ),
             );
       }

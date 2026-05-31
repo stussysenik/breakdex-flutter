@@ -201,7 +201,8 @@ abstract final class VideoPathResolver {
         : sanitizedName.toUpperCase();
 
     final ext = extension.startsWith('.') ? extension.substring(1) : extension;
-    return p.join('Moves', safeCategory, safeName, '$contentHash.${ext.toLowerCase()}');
+    final shortHash = contentHash.substring(0, contentHash.length > 8 ? 8 : contentHash.length);
+    return p.join('Moves', safeCategory, '$safeName - $shortHash.${ext.toLowerCase()}');
   }
 
   /// Return a semantic relative path for video storage:
@@ -219,7 +220,7 @@ abstract final class VideoPathResolver {
         ? sanitizedName[0].toUpperCase() + sanitizedName.substring(1).toLowerCase()
         : sanitizedName.toUpperCase();
     final ext = extension.startsWith('.') ? extension.substring(1) : extension;
-    return p.join('Moves', safeCategory, safeName, 'video.${ext.toLowerCase()}');
+    return p.join('Moves', safeCategory, '$safeName.${ext.toLowerCase()}');
   }
 
   static String getSafeCategory(String category) {
@@ -303,7 +304,9 @@ abstract final class VideoPathResolver {
       return toRelative(newAbs);
     } catch (e) {
       DiagnosticsLog.error('VideoPathResolver', 'Failed to move file to semantic path: $e');
-      return currentRelativePath;
+      // THE FIX: Do not return currentRelativePath which swallows the error,
+      // instead rethrow so the upstream caller fails gracefully without corrupting DB state.
+      rethrow;
     }
   }
 }
@@ -506,15 +509,29 @@ abstract final class VideoPathHealer {
 
       // Proactive cross-reference: everything on disk must have a home in DB
       final allMoves = await db.movesDao.getAllIncludingArchived();
-      final validPaths = allMoves
-          .map((m) => m.videoPath)
-          .whereType<String>()
-          .map((p) => VideoPathResolver.toAbsolute(p))
-          .toSet();
+      final allCombos = await db.combosDao.getAll();
+      
+      final validPaths = <String>{};
+      
+      for (final m in allMoves) {
+        if (m.videoPath != null) {
+          validPaths.add(VideoPathResolver.toAbsolute(m.videoPath!));
+        }
+      }
+      
+      for (final c in allCombos) {
+        if (c.activeVideoPath != null) {
+          validPaths.add(VideoPathResolver.toAbsolute(c.activeVideoPath!));
+        }
+      }
 
-      await for (final entity in movesDir.list()) {
+      await for (final entity in movesDir.list(recursive: true)) {
         if (entity is! File) continue;
         final absPath = entity.path;
+        
+        // Don't orphan files that are already safely archived
+        if (p.isWithin(archiveDir.path, absPath)) continue;
+
         final name = p.basename(absPath);
 
         // If it's a flat file in Moves/ that we don't recognize -> Archive

@@ -61,10 +61,14 @@ class CombosDao extends DatabaseAccessor<AppDatabase> with _$CombosDaoMixin {
       ..orderBy([OrderingTerm.asc(comboMoves.sequenceIndex)]);
 
     return query.watch().map((rows) => rows
-        .map((row) => ComboMoveWithDetail(
-              comboMove: row.readTable(comboMoves),
-              move: row.readTable(moves),
-            ))
+        .map((row) {
+          final cm = row.readTable(comboMoves);
+          final m = row.readTable(moves);
+          return ComboMoveWithDetail(
+            comboMove: cm,
+            move: m.copyWith(count: cm.count),
+          );
+        })
         .toList());
   }
 
@@ -104,7 +108,7 @@ class CombosDao extends DatabaseAccessor<AppDatabase> with _$CombosDaoMixin {
       final cm = row.readTable(comboMoves);
       final m = row.readTable(moves);
       map.putIfAbsent(cm.comboId, () => []).add(
-            ComboMoveWithDetail(comboMove: cm, move: m),
+            ComboMoveWithDetail(comboMove: cm, move: m.copyWith(count: cm.count)),
           );
     }
     return map;
@@ -137,5 +141,15 @@ class CombosDao extends DatabaseAccessor<AppDatabase> with _$CombosDaoMixin {
       
       return list;
     });
+  }
+
+  /// Returns a deduplicated list of combos that reference the given [moveId].
+  Future<List<Combo>> getCombosUsingMove(String moveId) async {
+    final query = select(combos).join([
+      innerJoin(comboMoves, comboMoves.comboId.equalsExp(combos.id)),
+    ])..where(comboMoves.moveId.equals(moveId));
+
+    final rows = await query.get();
+    return rows.map((row) => row.readTable(combos)).toSet().toList();
   }
 }

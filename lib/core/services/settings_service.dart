@@ -109,7 +109,7 @@ final partyCycleDurationMsProvider =
 
 class PartyCycleDurationMsNotifier extends Notifier<int> {
   static const _key = 'party_cycle_duration_ms';
-  static const _defaultMs = 5500;
+  static const _defaultMs = 2000;
 
   @override
   int build() {

@@ -6,6 +6,7 @@ import '../../core/design/spacing.dart';
 import '../../core/design/typography.dart';
 import '../../core/services/media_playback_coordinator.dart';
 import '../../core/services/video_service.dart';
+import 'metadata_video_picker_sheet.dart';
 
 /// Bottom sheet with 3 video source options: Camera, Photo Library, Files (iCloud).
 /// Shows loading overlay during pick/download. Returns VideoPickResult or null.
@@ -92,29 +93,15 @@ class _VideoPickerSheetState extends State<VideoPickerSheet> {
       if (msg.isNotEmpty) return msg;
     }
     return 'Could not access file';
-  }
+    }
 
-  Future<void> _pickFromPhotos() async {
+    Future<void> _pickFromPhotos() async {
+
     unawaited(HapticFeedback.selectionClick());
-    setState(() {
-      _loading = true;
-      _progress = 0.0;
-      _statusText = 'Opening photo library...';
-    });
-    _startProgressListener();
-    try {
-      // Do not timeout the picker interaction itself; users may need
-      // more than 30s to browse iCloud/Photos and pick a file.
-      final resultEither = await _videoService.pickFromPhotos(onStatus: _onStatus).run();
-      if (!mounted) return;
-      resultEither.match(
-        (failure) => _showError(_describeError(Exception(failure.message))),
-        (result) {
-          if (result != null) Navigator.pop(context, result);
-        },
-      );
-    } catch (e) {
-      if (mounted) _showError(_describeError(e));
+    final result = await MetadataVideoPickerSheet.show(context);
+    if (!mounted) return;
+    if (result != null) {
+      Navigator.pop(context, result);
     }
   }
 
