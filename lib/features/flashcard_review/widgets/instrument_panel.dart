@@ -109,6 +109,7 @@ class InstrumentPanel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    debugPrint('[InstrumentPanel] build: title="$title" state=$state displaySettings=${displaySettings.showState}');
     if (!showMetadata) return const SizedBox.shrink();
 
     final showTitle = displaySettings.showTitle;

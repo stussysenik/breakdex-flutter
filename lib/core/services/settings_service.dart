@@ -145,3 +145,25 @@ class PartyComboModeNotifier extends Notifier<bool> {
     state = next;
   }
 }
+
+final useSimplifiedVideoEditorProvider =
+    NotifierProvider<UseSimplifiedVideoEditorNotifier, bool>(
+      UseSimplifiedVideoEditorNotifier.new,
+    );
+
+class UseSimplifiedVideoEditorNotifier extends Notifier<bool> {
+  static const _key = 'use_simplified_video_editor';
+
+  @override
+  bool build() {
+    final prefs = ref.watch(sharedPreferencesProvider);
+    return prefs.getBool(_key) ?? false;
+  }
+
+  Future<void> toggle() async {
+    final next = !state;
+    final prefs = ref.read(sharedPreferencesProvider);
+    await prefs.setBool(_key, next);
+    state = next;
+  }
+}

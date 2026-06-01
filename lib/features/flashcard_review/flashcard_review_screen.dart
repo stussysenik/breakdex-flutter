@@ -868,10 +868,12 @@ class _FlashcardReviewScreenState extends ConsumerState<FlashcardReviewScreen>
 
     if (item.isMove && item.move != null) {
       final move = item.move!;
+      debugPrint('[FlashcardReview] RATING move: id=${move.id} name="${move.name}" rating=$rating');
       final fsrsResult = await ref
           .read(fsrsServiceProvider)
           .processReview(move.id, rating, entityType: 'move');
       final nextState = learningStateFromFsrsState(fsrsResult.postState);
+      debugPrint('[FlashcardReview] FSRS transition: pre=${fsrsResult.preState} post=${fsrsResult.postState} → state=$nextState (displayText=${nextState.displayText})');
 
       await ref
           .read(moveRepositoryProvider)
@@ -881,6 +883,7 @@ class _FlashcardReviewScreenState extends ConsumerState<FlashcardReviewScreen>
               learningState: Value(nextState.dbValue),
             ),
           );
+      debugPrint('[FlashcardReview] DB update complete for move=${move.id}');
       await ref
           .read(syncDaoProvider)
           .logChange(entityId: move.id, table: 'fsrs_cards', action: 'update');
@@ -903,6 +906,7 @@ class _FlashcardReviewScreenState extends ConsumerState<FlashcardReviewScreen>
           );
 
       setState(() {
+        debugPrint('[FlashcardReview] setState: updating current item index=$_currentIndex');
         _items[_currentIndex] = ReviewSessionItem(
           entityId: move.id,
           entityType: 'move',

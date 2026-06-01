@@ -12,58 +12,62 @@ class DecksDao extends DatabaseAccessor<AppDatabase> with _$DecksDaoMixin {
 
   /// Watch all decks ordered by creation date.
   Stream<List<Deck>> watchAll() =>
-      (select(decks)..orderBy([(t) => OrderingTerm.desc(t.createdAt)]))
+      (select(decks)..orderBy([(final t) => OrderingTerm.desc(t.createdAt)]))
           .watch();
 
   Future<List<Deck>> getAll() => select(decks).get();
 
-  Future<Deck?> getById(String id) =>
-      (select(decks)..where((t) => t.id.equals(id))).getSingleOrNull();
+  Future<Deck?> getById(final String id) =>
+      (select(decks)..where((final t) => t.id.equals(id))).getSingleOrNull();
 
-  Future<void> insertDeck(DecksCompanion entry) =>
+  Future<void> insertDeck(final DecksCompanion entry) =>
       into(decks).insert(entry);
 
-  Future<void> updateDeck(DecksCompanion entry) =>
-      (update(decks)..where((t) => t.id.equals(entry.id.value)))
+  Future<void> updateDeck(final DecksCompanion entry) =>
+      (update(decks)..where((final t) => t.id.equals(entry.id.value)))
           .write(entry);
 
-  Future<void> deleteDeck(String id) async {
+  Future<void> deleteDeck(final String id) async {
     // DeckMoves cascade-deletes automatically via FK
-    await (delete(decks)..where((t) => t.id.equals(id))).go();
+    await (delete(decks)..where((final t) => t.id.equals(id))).go();
   }
 
   // -- DeckMoves (manual decks) -----------------------------------------------
 
   /// Get all move IDs in a manual deck.
-  Future<List<String>> getMoveIdsForDeck(String deckId) async {
+  Future<List<String>> getMoveIdsForDeck(final String deckId) async {
     final rows = await (select(deckMoves)
-          ..where((t) => t.deckId.equals(deckId)))
+          ..where((final t) => t.deckId.equals(deckId)))
         .get();
-    return rows.map((r) => r.moveId).toList();
+    return rows.map((final r) => r.moveId).toList();
   }
 
   /// Add a move to a manual deck.
-  Future<void> addMoveToDeck(String deckId, String moveId) =>
+  Future<void> addMoveToDeck(final String deckId, final String moveId) =>
       into(deckMoves).insert(
         DeckMovesCompanion.insert(deckId: deckId, moveId: moveId),
         mode: InsertMode.insertOrIgnore,
       );
 
   /// Remove a move from a manual deck.
-  Future<void> removeMoveFromDeck(String deckId, String moveId) =>
+  Future<void> removeMoveFromDeck(final String deckId, final String moveId) =>
       (delete(deckMoves)
             ..where(
-                (t) => t.deckId.equals(deckId) & t.moveId.equals(moveId)))
+                (final t) => t.deckId.equals(deckId) & t.moveId.equals(moveId)))
           .go();
 
+  /// Clear all moves from a manual deck.
+  Future<void> clearDeckMoves(final String deckId) =>
+      (delete(deckMoves)..where((final t) => t.deckId.equals(deckId))).go();
+
   /// Get full Move objects for a manual deck.
-  Future<List<Move>> getMovesForDeck(String deckId) async {
+  Future<List<Move>> getMovesForDeck(final String deckId) async {
     final query = select(moves).join([
       innerJoin(deckMoves, deckMoves.moveId.equalsExp(moves.id)),
     ])
       ..where(deckMoves.deckId.equals(deckId));
 
     final rows = await query.get();
-    return rows.map((r) => r.readTable(moves)).toList();
+    return rows.map((final r) => r.readTable(moves)).toList();
   }
 }

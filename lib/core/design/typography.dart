@@ -126,6 +126,11 @@ abstract final class AppTypography {
     letterSpacing: 1.2,
     height: 16 / _captionSize,
   );
+  static TextStyle get labelSmall => _base(
+    fontSize: 10,
+    fontWeight: FontWeight.w500,
+    height: 1.2,
+  );
 
   static TextStyle _base({
     required double fontSize,

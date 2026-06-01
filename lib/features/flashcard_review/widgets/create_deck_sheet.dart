@@ -12,15 +12,18 @@ import '../../../core/models/learning_state.dart';
 import '../../../core/providers.dart';
 import '../../../core/services/categories_service.dart';
 import '../../../core/services/deck_service.dart';
+import '../providers/deck_providers.dart';
 
 /// Bottom sheet for creating a new smart or manual deck.
 ///
 /// Smart deck: user picks categories, FSRS states, due-only toggle.
 /// Manual deck: user picks specific moves from a list.
 class CreateDeckSheet extends ConsumerStatefulWidget {
-  const CreateDeckSheet({super.key});
+  const CreateDeckSheet({super.key, this.deck});
 
-  static Future<void> show(BuildContext context) {
+  final Deck? deck;
+
+  static Future<void> show(final BuildContext context, {final Deck? deck}) {
     return showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -28,7 +31,7 @@ class CreateDeckSheet extends ConsumerStatefulWidget {
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(AppRadius.lg)),
       ),
-      builder: (_) => const CreateDeckSheet(),
+      builder: (_) => CreateDeckSheet(deck: deck),
     );
   }
 
@@ -48,13 +51,42 @@ class _CreateDeckSheetState extends ConsumerState<CreateDeckSheet> {
   final _selectedMoveIds = <String>{};
 
   @override
+  void initState() {
+    super.initState();
+    if (widget.deck != null) {
+      final deck = widget.deck!;
+      _nameController.text = deck.name;
+      _isSmart = deck.deckType == 'smart';
+      _sessionSize = deck.sessionSize;
+
+      if (_isSmart && deck.filterCriteria != null) {
+        try {
+          final filter = DeckFilter.fromJson(deck.filterCriteria!);
+          _selectedCategories.addAll(filter.categories);
+          _selectedStates.addAll(filter.fsrsStates);
+          _dueOnly = filter.dueOnly;
+        } catch (_) {}
+      } else if (!_isSmart) {
+        // Load manual moves
+        ref.read(deckMovesProvider(deck.id).future).then((final List<Move> moves) {
+          if (mounted) {
+            setState(() {
+              _selectedMoveIds.addAll(moves.map((final Move m) => m.id));
+            });
+          }
+        });
+      }
+    }
+  }
+
+  @override
   void dispose() {
     _nameController.dispose();
     super.dispose();
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(final BuildContext context) {
     final categories = ref.watch(categoriesProvider);
     final colorScheme = Theme.of(context).colorScheme;
     final stateLabels = ref.watch(learningStateLabelsProvider);
@@ -72,7 +104,7 @@ class _CreateDeckSheetState extends ConsumerState<CreateDeckSheet> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'Create Deck',
+              widget.deck == null ? 'Create Deck' : 'Edit Deck',
               style: AppTypography.titleMedium.copyWith(
                 color: colorScheme.onSurface,
               ),
@@ -197,7 +229,7 @@ class _CreateDeckSheetState extends ConsumerState<CreateDeckSheet> {
                 children: [
                   Switch.adaptive(
                     value: _dueOnly,
-                    onChanged: (v) => setState(() => _dueOnly = v),
+                    onChanged: (final v) => setState(() => _dueOnly = v),
                     activeTrackColor: Theme.of(context).colorScheme.primary,
                   ),
                   const SizedBox(width: AppSpacing.sm),
@@ -221,7 +253,7 @@ class _CreateDeckSheetState extends ConsumerState<CreateDeckSheet> {
               const SizedBox(height: AppSpacing.sm),
               _ManualMoveSelector(
                 selectedIds: _selectedMoveIds,
-                onToggle: (id) => setState(() {
+                onToggle: (final id) => setState(() {
                   if (_selectedMoveIds.contains(id)) {
                     _selectedMoveIds.remove(id);
                   } else {
@@ -260,7 +292,7 @@ class _CreateDeckSheetState extends ConsumerState<CreateDeckSheet> {
               width: double.infinity,
               height: 50,
               child: ElevatedButton(
-                onPressed: _canCreate ? _create : null,
+                onPressed: _canCreate ? _save : null,
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Theme.of(context).colorScheme.primary,
                   foregroundColor: Colors.white,
@@ -268,7 +300,7 @@ class _CreateDeckSheetState extends ConsumerState<CreateDeckSheet> {
                     context,
                   ).colorScheme.primary.withValues(alpha: 0.3),
                 ),
-                child: const Text('Create Deck'),
+                child: Text(widget.deck == null ? 'Create Deck' : 'Save Changes'),
               ),
             ),
           ],
@@ -283,7 +315,7 @@ class _CreateDeckSheetState extends ConsumerState<CreateDeckSheet> {
     return true;
   }
 
-  void _toggleState(int state) {
+  void _toggleState(final int state) {
     setState(() {
       if (_selectedStates.contains(state)) {
         _selectedStates.remove(state);
@@ -293,11 +325,11 @@ class _CreateDeckSheetState extends ConsumerState<CreateDeckSheet> {
     });
   }
 
-  Future<void> _create() async {
+  Future<void> _save() async {
     final name = _nameController.text.trim();
     if (name.isEmpty) return;
 
-    final id = const Uuid().v4();
+    final id = widget.deck?.id ?? const Uuid().v4();
     final dao = ref.read(decksDaoProvider);
 
     if (_isSmart) {
@@ -306,24 +338,50 @@ class _CreateDeckSheetState extends ConsumerState<CreateDeckSheet> {
         fsrsStates: _selectedStates.toList(),
         dueOnly: _dueOnly,
       );
-      await dao.insertDeck(
-        DecksCompanion.insert(
-          id: id,
-          name: name,
-          deckType: const Value('smart'),
-          filterCriteria: Value(filter.toJson()),
-          sessionSize: Value(_sessionSize),
-        ),
-      );
+      if (widget.deck == null) {
+        await dao.insertDeck(
+          DecksCompanion.insert(
+            id: id,
+            name: name,
+            deckType: const Value('smart'),
+            filterCriteria: Value(filter.toJson()),
+            sessionSize: Value(_sessionSize),
+          ),
+        );
+      } else {
+        await dao.updateDeck(
+          DecksCompanion(
+            id: Value(id),
+            name: Value(name),
+            deckType: const Value('smart'),
+            filterCriteria: Value(filter.toJson()),
+            sessionSize: Value(_sessionSize),
+          ),
+        );
+      }
     } else {
-      await dao.insertDeck(
-        DecksCompanion.insert(
-          id: id,
-          name: name,
-          deckType: const Value('manual'),
-          sessionSize: Value(_sessionSize),
-        ),
-      );
+      if (widget.deck == null) {
+        await dao.insertDeck(
+          DecksCompanion.insert(
+            id: id,
+            name: name,
+            deckType: const Value('manual'),
+            sessionSize: Value(_sessionSize),
+          ),
+        );
+      } else {
+        await dao.updateDeck(
+          DecksCompanion(
+            id: Value(id),
+            name: Value(name),
+            deckType: const Value('manual'),
+            sessionSize: Value(_sessionSize),
+          ),
+        );
+        // Clear old manual moves before adding new ones
+        await dao.clearDeckMoves(id);
+      }
+
       // Add selected moves
       for (final moveId in _selectedMoveIds) {
         await dao.addMoveToDeck(id, moveId);
@@ -334,6 +392,7 @@ class _CreateDeckSheetState extends ConsumerState<CreateDeckSheet> {
     if (mounted) Navigator.pop(context);
   }
 }
+
 
 class _TypeChip extends StatelessWidget {
   const _TypeChip({
@@ -349,7 +408,7 @@ class _TypeChip extends StatelessWidget {
   final VoidCallback onTap;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(final BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
     return GestureDetector(
       onTap: onTap,
@@ -398,7 +457,7 @@ class _FilterChip extends StatelessWidget {
   final VoidCallback onTap;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(final BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
     return GestureDetector(
       onTap: onTap,
@@ -451,13 +510,13 @@ class _ManualMoveSelector extends ConsumerWidget {
   final ValueChanged<String> onToggle;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(final BuildContext context, final WidgetRef ref) {
     final movesAsync = ref.watch(moveRepositoryProvider).watchAll();
     final colorScheme = Theme.of(context).colorScheme;
 
     return StreamBuilder<List<Move>>(
       stream: movesAsync,
-      builder: (context, snapshot) {
+      builder: (final context, final snapshot) {
         final moves = snapshot.data ?? [];
         if (moves.isEmpty) {
           return Text(
@@ -470,7 +529,7 @@ class _ManualMoveSelector extends ConsumerWidget {
           child: ListView.builder(
             shrinkWrap: true,
             itemCount: moves.length,
-            itemBuilder: (context, index) {
+            itemBuilder: (final context, final index) {
               final move = moves[index];
               final isSelected = selectedIds.contains(move.id);
               return ListTile(

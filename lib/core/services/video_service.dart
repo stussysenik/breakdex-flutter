@@ -766,12 +766,17 @@ class VideoService {
     throw lastError ?? Exception('Video copy failed');
   }
 
-  Future<String> _saveToDocuments(File source) async {
+  Future<Directory> getMovesDirectory() async {
     final docs = await getApplicationDocumentsDirectory();
     final movesDir = Directory(p.join(docs.path, 'Moves'));
     if (!await movesDir.exists()) {
       await movesDir.create(recursive: true);
     }
+    return movesDir;
+  }
+
+  Future<String> _saveToDocuments(File source) async {
+    final movesDir = await getMovesDirectory();
     final ext = p.extension(source.path).isNotEmpty
         ? p.extension(source.path)
         : '.mp4';
