@@ -13,16 +13,16 @@ import 'package:breakdex/core/database/database.dart';
 
 /// Builds a valid export JSON string from optional entity lists.
 String makeExportJson({
-  int schemaVersion = AppMetadata.exportSchemaVersion,
-  List<Map<String, dynamic>>? moves,
-  List<Map<String, dynamic>>? reviews,
-  List<Map<String, dynamic>>? combos,
-  List<Map<String, dynamic>>? comboMoves,
-  List<Map<String, dynamic>>? battleResults,
-  List<Map<String, dynamic>>? fsrsCards,
-  List<Map<String, dynamic>>? decks,
-  List<Map<String, dynamic>>? deckMoves,
-  List<Map<String, dynamic>>? categories,
+  final int schemaVersion = AppMetadata.exportSchemaVersion,
+  final List<Map<String, dynamic>>? moves,
+  final List<Map<String, dynamic>>? reviews,
+  final List<Map<String, dynamic>>? combos,
+  final List<Map<String, dynamic>>? comboMoves,
+  final List<Map<String, dynamic>>? battleResults,
+  final List<Map<String, dynamic>>? fsrsCards,
+  final List<Map<String, dynamic>>? decks,
+  final List<Map<String, dynamic>>? deckMoves,
+  final List<Map<String, dynamic>>? categories,
 }) {
   return jsonEncode({
     'schemaVersion': schemaVersion,
@@ -42,13 +42,13 @@ String makeExportJson({
 
 /// A single move in export JSON format.
 Map<String, dynamic> makeJsonMove({
-  String id = 'move-1',
-  String name = 'Windmill',
-  String category = 'power',
-  String learningState = 'NEW',
-  String? videoFilename,
-  String? originalVideoName,
-  DateTime? createdAt,
+  final String id = 'move-1',
+  final String name = 'Windmill',
+  final String category = 'power',
+  final String learningState = 'NEW',
+  final String? videoFilename,
+  final String? originalVideoName,
+  final DateTime? createdAt,
 }) {
   return {
     'id': id,
@@ -63,18 +63,18 @@ Map<String, dynamic> makeJsonMove({
 
 /// A single review in export JSON format.
 Map<String, dynamic> makeJsonReview({
-  String id = 'review-1',
-  String rating = 'GOOD',
-  String reviewType = 'STANDARD',
-  String? moveId = 'move-1',
-  String? comboId,
-  String? entityIdSnapshot,
-  String? entityType,
-  String? entityDisplayName,
-  String? entityCategory,
-  DateTime? reviewedAt,
-  int? fsrsPreState,
-  int? fsrsPostState,
+  final String id = 'review-1',
+  final String rating = 'GOOD',
+  final String reviewType = 'STANDARD',
+  final String? moveId = 'move-1',
+  final String? comboId,
+  final String? entityIdSnapshot,
+  final String? entityType,
+  final String? entityDisplayName,
+  final String? entityCategory,
+  final DateTime? reviewedAt,
+  final int? fsrsPreState,
+  final int? fsrsPostState,
 }) {
   return {
     'id': id,
@@ -94,19 +94,19 @@ Map<String, dynamic> makeJsonReview({
 
 /// A single combo in export JSON format.
 Map<String, dynamic> makeJsonCombo({
-  String id = 'combo-1',
-  String name = 'Power Combo',
-  String? activeVideoFilename,
+  final String id = 'combo-1',
+  final String name = 'Power Combo',
+  final String? activeVideoFilename,
 }) {
   return {'id': id, 'name': name, 'activeVideoFilename': ?activeVideoFilename};
 }
 
 /// A single comboMove in export JSON format.
 Map<String, dynamic> makeJsonComboMove({
-  String id = 'cm-1',
-  int sequenceIndex = 0,
-  String comboId = 'combo-1',
-  String moveId = 'move-1',
+  final String id = 'cm-1',
+  final int sequenceIndex = 0,
+  final String comboId = 'combo-1',
+  final String moveId = 'move-1',
 }) {
   return {
     'id': id,
@@ -118,15 +118,15 @@ Map<String, dynamic> makeJsonComboMove({
 
 /// A single battle result in export JSON format.
 Map<String, dynamic> makeJsonBattleResult({
-  String id = 'battle-1',
-  int score = 100,
-  int movesReviewed = 10,
-  int goodCount = 5,
-  int hardCount = 3,
-  int againCount = 2,
-  int longestStreak = 3,
-  String difficulty = 'MEDIUM',
-  DateTime? playedAt,
+  final String id = 'battle-1',
+  final int score = 100,
+  final int movesReviewed = 10,
+  final int goodCount = 5,
+  final int hardCount = 3,
+  final int againCount = 2,
+  final int longestStreak = 3,
+  final String difficulty = 'MEDIUM',
+  final DateTime? playedAt,
 }) {
   return {
     'id': id,
@@ -143,15 +143,15 @@ Map<String, dynamic> makeJsonBattleResult({
 
 /// A single FSRS card in export JSON format (v6 polymorphic).
 Map<String, dynamic> makeJsonFsrsCard({
-  String entityId = 'move-1',
-  String entityType = 'move',
-  double stability = 4.5,
-  double difficulty = 5.2,
-  DateTime? due,
-  DateTime? lastReview,
-  int reps = 3,
-  int lapses = 0,
-  int fsrsState = 2,
+  final String entityId = 'move-1',
+  final String entityType = 'move',
+  final double stability = 4.5,
+  final double difficulty = 5.2,
+  final DateTime? due,
+  final DateTime? lastReview,
+  final int reps = 3,
+  final int lapses = 0,
+  final int fsrsState = 2,
 }) {
   return {
     'entityId': entityId,
@@ -168,13 +168,13 @@ Map<String, dynamic> makeJsonFsrsCard({
 
 /// A single deck in export JSON format.
 Map<String, dynamic> makeJsonDeck({
-  String id = 'deck-1',
-  String name = 'Power Moves',
-  String deckType = 'manual',
-  String? filterCriteria,
-  int? sessionSize,
-  DateTime? createdAt,
-  DateTime? updatedAt,
+  final String id = 'deck-1',
+  final String name = 'Power Moves',
+  final String deckType = 'manual',
+  final String? filterCriteria,
+  final int? sessionSize,
+  final DateTime? createdAt,
+  final DateTime? updatedAt,
 }) {
   return {
     'id': id,
@@ -189,16 +189,16 @@ Map<String, dynamic> makeJsonDeck({
 
 /// A single deckMove in export JSON format.
 Map<String, dynamic> makeJsonDeckMove({
-  String deckId = 'deck-1',
-  String moveId = 'move-1',
+  final String deckId = 'deck-1',
+  final String moveId = 'move-1',
 }) {
   return {'deckId': deckId, 'moveId': moveId};
 }
 
 /// A single category in export JSON format.
 Map<String, dynamic> makeJsonCategory({
-  String name = 'power',
-  int colorValue = 0xFFFF0000,
+  final String name = 'power',
+  final int colorValue = 0xFFFF0000,
 }) {
   return {'name': name, 'colorValue': colorValue};
 }
@@ -209,12 +209,12 @@ Map<String, dynamic> makeJsonCategory({
 
 /// Seed a move into the database. Returns the ID.
 Future<String> seedMove(
-  AppDatabase db, {
-  String id = 'move-1',
-  String name = 'Windmill',
-  String category = 'power',
-  String? videoPath,
-  String? originalVideoName,
+  final AppDatabase db, {
+  final String id = 'move-1',
+  final String name = 'Windmill',
+  final String category = 'power',
+  final String? videoPath,
+  final String? originalVideoName,
 }) async {
   await db
       .into(db.moves)
@@ -232,19 +232,19 @@ Future<String> seedMove(
 
 /// Seed a review into the database.
 Future<void> seedReview(
-  AppDatabase db, {
-  String id = 'review-1',
-  String rating = 'GOOD',
-  String reviewType = 'STANDARD',
-  String? moveId = 'move-1',
-  String? comboId,
-  String? entityIdSnapshot,
-  String? entityType,
-  String? entityDisplayName,
-  String? entityCategory,
-  DateTime? reviewedAt,
-  int? fsrsPreState,
-  int? fsrsPostState,
+  final AppDatabase db, {
+  final String id = 'review-1',
+  final String rating = 'GOOD',
+  final String reviewType = 'STANDARD',
+  final String? moveId = 'move-1',
+  final String? comboId,
+  final String? entityIdSnapshot,
+  final String? entityType,
+  final String? entityDisplayName,
+  final String? entityCategory,
+  final DateTime? reviewedAt,
+  final int? fsrsPreState,
+  final int? fsrsPostState,
 }) async {
   await db
       .into(db.reviews)
@@ -268,20 +268,20 @@ Future<void> seedReview(
 
 /// Seed a combo into the database.
 Future<void> seedCombo(
-  AppDatabase db, {
-  String id = 'combo-1',
-  String name = 'Power Combo',
+  final AppDatabase db, {
+  final String id = 'combo-1',
+  final String name = 'Power Combo',
 }) async {
   await db.into(db.combos).insert(CombosCompanion.insert(id: id, name: name));
 }
 
 /// Seed a battle result into the database.
 Future<void> seedBattleResult(
-  AppDatabase db, {
-  String id = 'battle-1',
-  int score = 100,
-  int movesReviewed = 10,
-  String difficulty = 'MEDIUM',
+  final AppDatabase db, {
+  final String id = 'battle-1',
+  final int score = 100,
+  final int movesReviewed = 10,
+  final String difficulty = 'MEDIUM',
 }) async {
   await db
       .into(db.battleResults)
@@ -301,13 +301,13 @@ Future<void> seedBattleResult(
 
 /// Seed an FSRS card into the database.
 Future<void> seedFsrsCard(
-  AppDatabase db, {
-  String entityId = 'move-1',
-  String entityType = 'move',
-  double stability = 4.5,
-  double difficulty = 5.2,
-  DateTime? due,
-  int fsrsState = 2,
+  final AppDatabase db, {
+  final String entityId = 'move-1',
+  final String entityType = 'move',
+  final double stability = 4.5,
+  final double difficulty = 5.2,
+  final DateTime? due,
+  final int fsrsState = 2,
 }) async {
   await db.fsrsCardsDao.upsert(
     FsrsCardsCompanion(
@@ -323,10 +323,10 @@ Future<void> seedFsrsCard(
 
 /// Seed a deck into the database.
 Future<void> seedDeck(
-  AppDatabase db, {
-  String id = 'deck-1',
-  String name = 'Power Moves',
-  String deckType = 'manual',
+  final AppDatabase db, {
+  final String id = 'deck-1',
+  final String name = 'Power Moves',
+  final String deckType = 'manual',
 }) async {
   await db
       .into(db.decks)
@@ -337,9 +337,9 @@ Future<void> seedDeck(
 
 /// Seed a deckMove into the database.
 Future<void> seedDeckMove(
-  AppDatabase db, {
-  String deckId = 'deck-1',
-  String moveId = 'move-1',
+  final AppDatabase db, {
+  final String deckId = 'deck-1',
+  final String moveId = 'move-1',
 }) async {
   await db
       .into(db.deckMoves)

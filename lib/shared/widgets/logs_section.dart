@@ -7,7 +7,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:uuid/uuid.dart';
 
-import '../../core/database/database.dart';
 import '../../core/design/spacing.dart';
 import '../../core/design/typography.dart';
 import '../../core/utils/time_format.dart';
@@ -24,7 +23,7 @@ class LogsSection extends ConsumerWidget {
   final String entityType;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(final BuildContext context, final WidgetRef ref) {
     final colorScheme = Theme.of(context).colorScheme;
     final logsStream = entityType == 'move'
         ? ref.watch(moveNoteEntriesDaoProvider).getByMoveId(entityId).asStream()
@@ -54,7 +53,7 @@ class LogsSection extends ConsumerWidget {
         const SizedBox(height: AppSpacing.xs),
         StreamBuilder<List<dynamic>>(
           stream: logsStream,
-          builder: (context, snapshot) {
+          builder: (final context, final snapshot) {
             final logs = snapshot.data ?? [];
             if (logs.isEmpty) {
               return Text(
@@ -70,8 +69,8 @@ class LogsSection extends ConsumerWidget {
               shrinkWrap: true,
               physics: const NeverScrollableScrollPhysics(),
               itemCount: logs.length,
-              separatorBuilder: (_, __) => const SizedBox(height: AppSpacing.md),
-              itemBuilder: (context, index) {
+              separatorBuilder: (_, _) => const SizedBox(height: AppSpacing.md),
+              itemBuilder: (final context, final index) {
                 final log = logs[index];
                 final DateTime date = log.createdAt as DateTime;
                 final String body = log.body as String;
@@ -131,11 +130,11 @@ class LogsSection extends ConsumerWidget {
     );
   }
 
-  Future<void> _showAddLogDialog(BuildContext context, WidgetRef ref) async {
+  Future<void> _showAddLogDialog(final BuildContext context, final WidgetRef ref) async {
     final controller = TextEditingController();
     final result = await showDialog<String>(
       context: context,
-      builder: (context) => AlertDialog(
+      builder: (final context) => AlertDialog(
         title: const Text('Add Log Entry'),
         content: TextField(
           controller: controller,
@@ -176,10 +175,10 @@ class LogsSection extends ConsumerWidget {
     }
   }
 
-  Future<void> _deleteLog(BuildContext context, WidgetRef ref, String id) async {
+  Future<void> _deleteLog(final BuildContext context, final WidgetRef ref, final String id) async {
     final confirmed = await showDialog<bool>(
       context: context,
-      builder: (context) => AlertDialog(
+      builder: (final context) => AlertDialog(
         title: const Text('Delete entry?'),
         actions: [
           TextButton(
@@ -204,11 +203,11 @@ class LogsSection extends ConsumerWidget {
     }
   }
 
-  Future<void> _editLog(BuildContext context, WidgetRef ref, String id, String currentBody) async {
+  Future<void> _editLog(final BuildContext context, final WidgetRef ref, final String id, final String currentBody) async {
     final controller = TextEditingController(text: currentBody);
     final result = await showDialog<String>(
       context: context,
-      builder: (context) => AlertDialog(
+      builder: (final context) => AlertDialog(
         title: const Text('Edit Log Entry'),
         content: TextField(
           controller: controller,

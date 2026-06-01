@@ -50,7 +50,7 @@ void main() {
     });
 
     test('all fields accessible', () {
-      final provenance = ProvenanceTrail.empty();
+      const provenance = ProvenanceTrail.empty();
       final asset = CanonicalAssetLive(
         localPath: '/v/abc.mp4', hash: 'hash123', fileSizeBytes: 2048,
         durationMs: 5000, width: 1920, height: 1080,
@@ -172,7 +172,7 @@ void main() {
     });
 
     test('multiple adds chain correctly', () {
-      final trail = ProvenanceTrail.empty()
+      final trail = const ProvenanceTrail.empty()
           .add(AssetProvenanceEntry(eventType: 'imported', recordedAt: baseTime))
           .add(AssetProvenanceEntry(eventType: 'verified',
               recordedAt: baseTime.add(const Duration(hours: 1))))
@@ -185,9 +185,9 @@ void main() {
     });
 
     test('equality works for identical trails', () {
-      final a = ProvenanceTrail.empty()
+      final a = const ProvenanceTrail.empty()
           .add(AssetProvenanceEntry(eventType: 'imported', recordedAt: baseTime));
-      final b = ProvenanceTrail.empty()
+      final b = const ProvenanceTrail.empty()
           .add(AssetProvenanceEntry(eventType: 'imported', recordedAt: baseTime));
       expect(a, equals(b));
     });

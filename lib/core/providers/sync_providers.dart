@@ -5,32 +5,32 @@ part of '../providers.dart';
 // ---------------------------------------------------------------------------
 
 /// DAO for the content-addressable asset manifest.
-final assetManifestDaoProvider = Provider<AssetManifestDao>((ref) {
+final assetManifestDaoProvider = Provider<AssetManifestDao>((final ref) {
   return ref.watch(databaseProvider).assetManifestDao;
 });
 
 /// DAO for tracking asset copies across storage providers.
-final assetCopiesDaoProvider = Provider<AssetCopiesDao>((ref) {
+final assetCopiesDaoProvider = Provider<AssetCopiesDao>((final ref) {
   return ref.watch(databaseProvider).assetCopiesDao;
 });
 
 /// DAO for the sync operation queue.
-final syncOperationsDaoProvider = Provider<SyncOperationsDao>((ref) {
+final syncOperationsDaoProvider = Provider<SyncOperationsDao>((final ref) {
   return ref.watch(databaseProvider).syncOperationsDao;
 });
 
 /// SHA-256 hashing service (runs in background isolates).
-final assetHashServiceProvider = Provider<AssetHashService>((ref) {
+final assetHashServiceProvider = Provider<AssetHashService>((final ref) {
   return AssetHashService();
 });
 
 /// Network policy for sync transfer decisions.
-final networkPolicyProvider = Provider<NetworkPolicy>((ref) {
+final networkPolicyProvider = Provider<NetworkPolicy>((final ref) {
   return NetworkPolicy(ref.watch(sharedPreferencesProvider));
 });
 
 /// Two-copy enforcement guard.
-final safetyGuardProvider = Provider<SafetyGuard>((ref) {
+final safetyGuardProvider = Provider<SafetyGuard>((final ref) {
   return SafetyGuard(
     ref.watch(assetManifestDaoProvider),
     ref.watch(assetCopiesDaoProvider),
@@ -39,8 +39,8 @@ final safetyGuardProvider = Provider<SafetyGuard>((ref) {
 
 /// Configured cloud providers — watches sync_providers table and instantiates
 /// the corresponding [CloudProvider] subclass for each enabled row.
-final cloudProvidersProvider = StreamProvider<List<CloudProvider>>((ref) {
-  return ref.watch(syncProvidersDaoProvider).watchAll().map((rows) {
+final cloudProvidersProvider = StreamProvider<List<CloudProvider>>((final ref) {
+  return ref.watch(syncProvidersDaoProvider).watchAll().map((final rows) {
     final providers = <CloudProvider>[];
     for (final row in rows) {
       if (!row.enabled) continue;
@@ -69,7 +69,7 @@ final cloudProvidersProvider = StreamProvider<List<CloudProvider>>((ref) {
 });
 
 /// Main asset sync engine orchestrator.
-final assetSyncEngineProvider = Provider<asset_sync.AssetSyncEngine>((ref) {
+final assetSyncEngineProvider = Provider<asset_sync.AssetSyncEngine>((final ref) {
   final engine = asset_sync.AssetSyncEngine(
     manifestDao: ref.watch(assetManifestDaoProvider),
     copiesDao: ref.watch(assetCopiesDaoProvider),
@@ -86,13 +86,13 @@ final assetSyncEngineProvider = Provider<asset_sync.AssetSyncEngine>((ref) {
 
 /// Reactive stream of sync progress for UI display.
 final assetSyncProgressProvider = StreamProvider<asset_sync.SyncProgress>((
-  ref,
+  final ref,
 ) {
   return ref.watch(assetSyncEngineProvider).progressStream;
 });
 
 /// Integrity verifier for periodic file re-hashing.
-final integrityVerifierProvider = Provider<IntegrityVerifier>((ref) {
+final integrityVerifierProvider = Provider<IntegrityVerifier>((final ref) {
   return IntegrityVerifier(
     ref.watch(assetManifestDaoProvider),
     ref.watch(assetCopiesDaoProvider),
@@ -101,7 +101,7 @@ final integrityVerifierProvider = Provider<IntegrityVerifier>((ref) {
 });
 
 /// Legacy asset migration (v9 → v10 schema).
-final legacyAssetMigrationProvider = Provider<LegacyAssetMigration>((ref) {
+final legacyAssetMigrationProvider = Provider<LegacyAssetMigration>((final ref) {
   return LegacyAssetMigration(
     movesDao: ref.watch(movesDaoProvider),
     manifestDao: ref.watch(assetManifestDaoProvider),
@@ -112,7 +112,7 @@ final legacyAssetMigrationProvider = Provider<LegacyAssetMigration>((ref) {
 });
 
 /// Tombstone cleaner for 30-day grace period cleanup.
-final tombstoneCleanerProvider = Provider<TombstoneCleaner>((ref) {
+final tombstoneCleanerProvider = Provider<TombstoneCleaner>((final ref) {
   return TombstoneCleaner(
     manifestDao: ref.watch(assetManifestDaoProvider),
     copiesDao: ref.watch(assetCopiesDaoProvider),
@@ -122,12 +122,12 @@ final tombstoneCleanerProvider = Provider<TombstoneCleaner>((ref) {
 });
 
 /// Background sync manager.
-final backgroundSyncManagerProvider = Provider<BackgroundSyncManager>((ref) {
+final backgroundSyncManagerProvider = Provider<BackgroundSyncManager>((final ref) {
   return BackgroundSyncManager();
 });
 
 /// Post-import hook: hash → manifest → copy → queue upload → sync cycle.
-final videoImportSyncHookProvider = Provider<VideoImportSyncHook>((ref) {
+final videoImportSyncHookProvider = Provider<VideoImportSyncHook>((final ref) {
   return VideoImportSyncHook(
     hashService: ref.watch(assetHashServiceProvider),
     manifestDao: ref.watch(assetManifestDaoProvider),
@@ -143,7 +143,7 @@ final videoImportSyncHookProvider = Provider<VideoImportSyncHook>((ref) {
 // ---------------------------------------------------------------------------
 
 /// Serializes the full library into a compact manifest.json for web viewer.
-final manifestSerializerProvider = Provider<ManifestSerializer>((ref) {
+final manifestSerializerProvider = Provider<ManifestSerializer>((final ref) {
   return ManifestSerializer(
     movesDao: ref.watch(movesDaoProvider),
     combosDao: ref.watch(combosDaoProvider),
@@ -156,7 +156,7 @@ final manifestSerializerProvider = Provider<ManifestSerializer>((ref) {
 });
 
 /// Debounced manifest uploader — triggers 5s after last metadata change.
-final manifestSyncServiceProvider = Provider<ManifestSyncService>((ref) {
+final manifestSyncServiceProvider = Provider<ManifestSyncService>((final ref) {
   final service = ManifestSyncService(
     serializer: ref.watch(manifestSerializerProvider),
     getProviders: () => ref.read(cloudProvidersProvider).valueOrNull ?? [],
@@ -170,7 +170,7 @@ final manifestSyncServiceProvider = Provider<ManifestSyncService>((ref) {
 /// the watch subscriptions that drive manifest uploads.
 ///
 /// Must be read once at app startup (e.g., in BreakdexApp.build) to activate.
-final manifestSyncTriggerProvider = Provider<void>((ref) {
+final manifestSyncTriggerProvider = Provider<void>((final ref) {
   final syncService = ref.watch(manifestSyncServiceProvider);
 
   void onChange() => syncService.onMetadataChanged();
@@ -206,13 +206,13 @@ final manifestSyncTriggerProvider = Provider<void>((ref) {
 // ---------------------------------------------------------------------------
 
 /// Auto-detect iCloud on device (no DB write, just checks entitlement).
-final iCloudAvailableProvider = FutureProvider<bool>((ref) async {
+final iCloudAvailableProvider = FutureProvider<bool>((final ref) async {
   if (!Platform.isIOS) return false;
   return ICloudProvider().authenticate();
 });
 
 /// Whether the sync onboarding card has been shown/dismissed.
-final syncOnboardingShownProvider = StateProvider<bool>((ref) {
+final syncOnboardingShownProvider = StateProvider<bool>((final ref) {
   return ref
           .watch(sharedPreferencesProvider)
           .getBool('sync_onboarding_shown') ??
@@ -220,14 +220,14 @@ final syncOnboardingShownProvider = StateProvider<bool>((ref) {
 });
 
 /// One-tap iCloud setup orchestrator.
-final iCloudSetupProvider = Provider<ICloudSetupService>((ref) {
+final iCloudSetupProvider = Provider<ICloudSetupService>((final ref) {
   return ICloudSetupService(
     syncProvidersDao: ref.watch(syncProvidersDaoProvider),
   );
 });
 
 /// Google Drive OAuth setup orchestrator.
-final gDriveSetupProvider = Provider<GDriveSetupService>((ref) {
+final gDriveSetupProvider = Provider<GDriveSetupService>((final ref) {
   return GDriveSetupService(
     syncProvidersDao: ref.watch(syncProvidersDaoProvider),
   );
@@ -238,7 +238,7 @@ final gDriveSetupProvider = Provider<GDriveSetupService>((ref) {
 // ---------------------------------------------------------------------------
 
 /// Space manager for analyzing and freeing local video copies.
-final spaceManagerProvider = Provider<SpaceManager>((ref) {
+final spaceManagerProvider = Provider<SpaceManager>((final ref) {
   return SpaceManager(
     manifestDao: ref.watch(assetManifestDaoProvider),
     copiesDao: ref.watch(assetCopiesDaoProvider),
@@ -248,12 +248,12 @@ final spaceManagerProvider = Provider<SpaceManager>((ref) {
 
 /// Triggers an asset sync cycle when connectivity changes from offline → online.
 /// Must be watched in BreakdexApp.build to activate.
-final syncConnectivityTriggerProvider = Provider<void>((ref) {
+final syncConnectivityTriggerProvider = Provider<void>((final ref) {
   final connectivityService = ref.watch(connectivityServiceProvider);
   ConnectionType? previousType;
   var hasSeenInitialType = false;
 
-  final sub = connectivityService.connectionTypeStream.listen((type) {
+  final sub = connectivityService.connectionTypeStream.listen((final type) {
     if (!hasSeenInitialType) {
       hasSeenInitialType = true;
       previousType = type;
@@ -307,7 +307,7 @@ enum SyncHealth {
 }
 
 /// Computed provider combining engine state + provider config → single health enum.
-final syncHealthProvider = Provider<SyncHealth>((ref) {
+final syncHealthProvider = Provider<SyncHealth>((final ref) {
   final providers = ref.watch(cloudProvidersProvider).valueOrNull ?? [];
   if (providers.isEmpty) return SyncHealth.noProviders;
 
@@ -326,7 +326,7 @@ final syncHealthProvider = Provider<SyncHealth>((ref) {
 });
 
 /// On-demand downloader for re-downloading freed videos from cloud.
-final onDemandDownloaderProvider = Provider<OnDemandDownloader>((ref) {
+final onDemandDownloaderProvider = Provider<OnDemandDownloader>((final ref) {
   return OnDemandDownloader(
     manifestDao: ref.watch(assetManifestDaoProvider),
     copiesDao: ref.watch(assetCopiesDaoProvider),
@@ -338,7 +338,7 @@ final onDemandDownloaderProvider = Provider<OnDemandDownloader>((ref) {
 
 /// Controller for user-initiated cloud video retrieval.
 final videoRetrievalControllerProvider = Provider<VideoRetrievalController>((
-  ref,
+  final ref,
 ) {
   final controller = VideoRetrievalController(
     retriever: ref.watch(onDemandDownloaderProvider),
@@ -356,12 +356,12 @@ final videoRetrievalControllerProvider = Provider<VideoRetrievalController>((
 });
 
 final videoRetrievalStatusProvider =
-    StreamProvider.family<VideoRetrievalSnapshot, String>((ref, contentHash) {
+    StreamProvider.family<VideoRetrievalSnapshot, String>((final ref, final contentHash) {
       return ref.watch(videoRetrievalControllerProvider).watch(contentHash);
     });
 
 final videoReliabilityRuntimeProvider = Provider<VideoReliabilityRuntime>((
-  ref,
+  final ref,
 ) {
   final runtime = VideoReliabilityRuntime(
     movesDao: ref.watch(movesDaoProvider),
@@ -378,19 +378,19 @@ final videoReliabilityRuntimeProvider = Provider<VideoReliabilityRuntime>((
   return runtime;
 });
 
-final videoReliabilityLifecycleProvider = Provider<void>((ref) {
+final videoReliabilityLifecycleProvider = Provider<void>((final ref) {
   ref.watch(videoReliabilityRuntimeProvider).start();
 });
 
 final videoReliabilityReportProvider = StreamProvider<VideoReliabilityReport>((
-  ref,
+  final ref,
 ) {
   final runtime = ref.watch(videoReliabilityRuntimeProvider);
   final latest = runtime.latestReport;
   if (latest == null) {
     return runtime.reports;
   }
-  return Stream<VideoReliabilityReport>.multi((controller) {
+  return Stream<VideoReliabilityReport>.multi((final controller) {
     controller.add(latest);
     final sub = runtime.reports.listen(
       controller.add,

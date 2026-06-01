@@ -29,7 +29,7 @@ void main() {
   });
 
   group('InstaxVideoViewer', () {
-    testWidgets('shows empty state with no moves', (tester) async {
+    testWidgets('shows empty state with no moves', (final tester) async {
       await tester.pumpWidget(
         const ProviderScope(
           child: MaterialApp(

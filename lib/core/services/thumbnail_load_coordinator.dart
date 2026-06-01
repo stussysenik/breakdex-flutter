@@ -14,7 +14,7 @@ import 'video_service.dart';
 /// priority queue so cells closest to the viewport center decode first.
 /// Duplicate requests for the same [videoPath] are deduplicated.
 class ThumbnailLoadCoordinator {
-  ThumbnailLoadCoordinator({VideoService? videoService})
+  ThumbnailLoadCoordinator({final VideoService? videoService})
       : _videoService = videoService ?? VideoService();
 
   static const _maxConcurrent = 3;
@@ -40,9 +40,9 @@ class ThumbnailLoadCoordinator {
   /// counter so later requests have lower priority.
   /// [maxWidth] — resolution tier for the thumbnail.
   Future<String?> enqueue(
-    String videoPath, {
-    int? priority,
-    int maxWidth = 200,
+    final String videoPath, {
+    final int? priority,
+    final int maxWidth = 200,
   }) {
     // If already in-flight, piggyback on the existing request.
     final existing = _inFlight[videoPath];
@@ -64,7 +64,7 @@ class ThumbnailLoadCoordinator {
 
   /// Cancel a pending (not yet started) load by videoPath.
   /// If the load is already in-flight, it cannot be cancelled.
-  void cancel(String videoPath) {
+  void cancel(final String videoPath) {
     final key = _pathToPriority.remove(videoPath);
     if (key == null) return;
     final pending = _queue.remove(key);
@@ -84,7 +84,7 @@ class ThumbnailLoadCoordinator {
       final completer = Completer<String?>();
       _inFlight[load.videoPath] = completer;
 
-      _runLoad(load).then((path) {
+      _runLoad(load).then((final path) {
         _inFlight.remove(load.videoPath);
         if (!completer.isCompleted) completer.complete(path);
         if (!load.completer.isCompleted) load.completer.complete(path);
@@ -93,7 +93,7 @@ class ThumbnailLoadCoordinator {
     }
   }
 
-  Future<String?> _runLoad(_PendingLoad load) async {
+  Future<String?> _runLoad(final _PendingLoad load) async {
     try {
       return await _videoService.generateThumbnail(
         load.videoPath,
@@ -130,13 +130,13 @@ class ThumbnailCoordinatorScope extends InheritedWidget {
 
   final ThumbnailLoadCoordinator coordinator;
 
-  static ThumbnailLoadCoordinator? of(BuildContext context) {
+  static ThumbnailLoadCoordinator? of(final BuildContext context) {
     return context
         .dependOnInheritedWidgetOfExactType<ThumbnailCoordinatorScope>()
         ?.coordinator;
   }
 
   @override
-  bool updateShouldNotify(ThumbnailCoordinatorScope oldWidget) =>
+  bool updateShouldNotify(final ThumbnailCoordinatorScope oldWidget) =>
       coordinator != oldWidget.coordinator;
 }

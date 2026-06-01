@@ -15,28 +15,28 @@ class AssetCopiesDao extends DatabaseAccessor<AppDatabase>
   // ---------------------------------------------------------------------------
 
   /// All copies for a given content hash, ordered by provider.
-  Future<List<AssetCopy>> getByHash(String contentHash) =>
+  Future<List<AssetCopy>> getByHash(final String contentHash) =>
       (select(assetCopies)
-            ..where((t) => t.contentHash.equals(contentHash))
-            ..orderBy([(t) => OrderingTerm.asc(t.provider)]))
+            ..where((final t) => t.contentHash.equals(contentHash))
+            ..orderBy([(final t) => OrderingTerm.asc(t.provider)]))
           .get();
 
-  Stream<List<AssetCopy>> watchByHash(String contentHash) =>
+  Stream<List<AssetCopy>> watchByHash(final String contentHash) =>
       (select(assetCopies)
-            ..where((t) => t.contentHash.equals(contentHash))
-            ..orderBy([(t) => OrderingTerm.asc(t.provider)]))
+            ..where((final t) => t.contentHash.equals(contentHash))
+            ..orderBy([(final t) => OrderingTerm.asc(t.provider)]))
           .watch();
 
   /// Get the local copy for an asset (provider = 'local').
-  Future<AssetCopy?> getLocalCopy(String contentHash) =>
+  Future<AssetCopy?> getLocalCopy(final String contentHash) =>
       (select(assetCopies)
-            ..where((t) =>
+            ..where((final t) =>
                 t.contentHash.equals(contentHash) &
                 t.provider.equals('local')))
           .getSingleOrNull();
 
   /// Count verified copies for a given asset.
-  Future<int> countVerified(String contentHash) async {
+  Future<int> countVerified(final String contentHash) async {
     final count = assetCopies.id.count();
     final query = selectOnly(assetCopies)
       ..addColumns([count])
@@ -49,33 +49,33 @@ class AssetCopiesDao extends DatabaseAccessor<AppDatabase>
   /// Copies currently uploading (for progress UI).
   Stream<List<AssetCopy>> watchUploading() =>
       (select(assetCopies)
-            ..where((t) => t.status.equals('uploading'))
-            ..orderBy([(t) => OrderingTerm.asc(t.createdAt)]))
+            ..where((final t) => t.status.equals('uploading'))
+            ..orderBy([(final t) => OrderingTerm.asc(t.createdAt)]))
           .watch();
 
   /// All copies for a given provider.
-  Future<List<AssetCopy>> getByProvider(String provider) =>
+  Future<List<AssetCopy>> getByProvider(final String provider) =>
       (select(assetCopies)
-            ..where((t) => t.provider.equals(provider)))
+            ..where((final t) => t.provider.equals(provider)))
           .get();
 
   // ---------------------------------------------------------------------------
   // Writes
   // ---------------------------------------------------------------------------
 
-  Future<void> insertCopy(AssetCopiesCompanion entry) =>
+  Future<void> insertCopy(final AssetCopiesCompanion entry) =>
       into(assetCopies).insert(entry);
 
-  Future<void> upsertCopy(AssetCopiesCompanion entry) =>
+  Future<void> upsertCopy(final AssetCopiesCompanion entry) =>
       into(assetCopies).insertOnConflictUpdate(entry);
 
-  Future<void> updateCopy(AssetCopiesCompanion entry) =>
-      (update(assetCopies)..where((t) => t.id.equals(entry.id.value)))
+  Future<void> updateCopy(final AssetCopiesCompanion entry) =>
+      (update(assetCopies)..where((final t) => t.id.equals(entry.id.value)))
           .write(entry);
 
   /// Mark a copy as verified with the current timestamp.
-  Future<void> markVerified(String id, {String? etag}) =>
-      (update(assetCopies)..where((t) => t.id.equals(id))).write(
+  Future<void> markVerified(final String id, {final String? etag}) =>
+      (update(assetCopies)..where((final t) => t.id.equals(id))).write(
         AssetCopiesCompanion(
           status: const Value('verified'),
           verifiedAt: Value(DateTime.now()),
@@ -85,8 +85,8 @@ class AssetCopiesDao extends DatabaseAccessor<AppDatabase>
       );
 
   /// Mark a copy as failed with an error message.
-  Future<void> markFailed(String id, String errorMessage) =>
-      (update(assetCopies)..where((t) => t.id.equals(id))).write(
+  Future<void> markFailed(final String id, final String errorMessage) =>
+      (update(assetCopies)..where((final t) => t.id.equals(id))).write(
         AssetCopiesCompanion(
           status: const Value('failed'),
           errorMessage: Value(errorMessage),
@@ -95,8 +95,8 @@ class AssetCopiesDao extends DatabaseAccessor<AppDatabase>
       );
 
   /// Update upload progress for a copy.
-  Future<void> updateProgress(String id, double progress) =>
-      (update(assetCopies)..where((t) => t.id.equals(id))).write(
+  Future<void> updateProgress(final String id, final double progress) =>
+      (update(assetCopies)..where((final t) => t.id.equals(id))).write(
         AssetCopiesCompanion(
           uploadProgress: Value(progress),
           updatedAt: Value(DateTime.now()),
@@ -104,12 +104,12 @@ class AssetCopiesDao extends DatabaseAccessor<AppDatabase>
       );
 
   /// Delete all copies for a content hash (used by tombstone cleaner).
-  Future<void> deleteByHash(String contentHash) =>
+  Future<void> deleteByHash(final String contentHash) =>
       (delete(assetCopies)
-            ..where((t) => t.contentHash.equals(contentHash)))
+            ..where((final t) => t.contentHash.equals(contentHash)))
           .go();
 
   /// Delete a single copy by ID.
-  Future<void> deleteCopy(String id) =>
-      (delete(assetCopies)..where((t) => t.id.equals(id))).go();
+  Future<void> deleteCopy(final String id) =>
+      (delete(assetCopies)..where((final t) => t.id.equals(id))).go();
 }

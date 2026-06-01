@@ -1,4 +1,3 @@
-import 'dart:async';
 import 'package:flutter/foundation.dart';
 
 enum LogLevel {
@@ -18,22 +17,22 @@ abstract class DiagnosticsLog {
 
   static final Map<String, LogLevel> _subsystemThresholds = {};
 
-  static void configure({LogLevel threshold = LogLevel.info}) {
+  static void configure({final LogLevel threshold = LogLevel.info}) {
     _threshold = threshold;
     _startupEpoch ??= DateTime.now();
   }
 
-  static void setSubsystemThreshold(String subsystem, LogLevel level) {
+  static void setSubsystemThreshold(final String subsystem, final LogLevel level) {
     _subsystemThresholds[subsystem] = level;
   }
 
-  static bool _shouldLog(String subsystem, LogLevel level) {
+  static bool _shouldLog(final String subsystem, final LogLevel level) {
     final effectiveThreshold =
         _subsystemThresholds[subsystem] ?? _threshold;
     return level.index >= effectiveThreshold.index;
   }
 
-  static String _levelLabel(LogLevel level) => switch (level) {
+  static String _levelLabel(final LogLevel level) => switch (level) {
         LogLevel.trace => 'TRC',
         LogLevel.debug => 'DBG',
         LogLevel.info => 'INF',
@@ -48,26 +47,26 @@ abstract class DiagnosticsLog {
     return 'T+${s}s';
   }
 
-  static void _emit(String subsystem, LogLevel level, String message) {
+  static void _emit(final String subsystem, final LogLevel level, final String message) {
     if (!_shouldLog(subsystem, level)) return;
     final label = _levelLabel(level);
     final elapsed = _elapsed();
     debugPrint('[$label][$subsystem] $elapsed $message');
   }
 
-  static void trace(String subsystem, String message) =>
+  static void trace(final String subsystem, final String message) =>
       _emit(subsystem, LogLevel.trace, message);
 
-  static void debug(String subsystem, String message) =>
+  static void debug(final String subsystem, final String message) =>
       _emit(subsystem, LogLevel.debug, message);
 
-  static void info(String subsystem, String message) =>
+  static void info(final String subsystem, final String message) =>
       _emit(subsystem, LogLevel.info, message);
 
-  static void warn(String subsystem, String message) =>
+  static void warn(final String subsystem, final String message) =>
       _emit(subsystem, LogLevel.warn, message);
 
-  static void error(String subsystem, String message) =>
+  static void error(final String subsystem, final String message) =>
       _emit(subsystem, LogLevel.error, message);
 }
 
@@ -80,9 +79,9 @@ class StageLogger {
   String _currentStage = 'init';
 
   StageLogger._({
-    required String operation,
-    required String subsystem,
-    Map<String, Object?>? context,
+    required final String operation,
+    required final String subsystem,
+    final Map<String, Object?>? context,
   })  : _operation = operation,
         _subsystem = subsystem,
         _context = context ?? {},
@@ -95,9 +94,9 @@ class StageLogger {
   }
 
   factory StageLogger.begin(
-    String operation, {
-    required String subsystem,
-    Map<String, Object?>? context,
+    final String operation, {
+    required final String subsystem,
+    final Map<String, Object?>? context,
   }) {
     return StageLogger._(
       operation: operation,
@@ -109,15 +108,15 @@ class StageLogger {
   String _fmtContext() {
     if (_context.isEmpty) return '';
     return _context.entries
-        .map((e) => '${e.key}=${e.value}')
+        .map((final e) => '${e.key}=${e.value}')
         .join(' ');
   }
 
-  void stage(String name, [Map<String, Object?>? extra]) {
+  void stage(final String name, [final Map<String, Object?>? extra]) {
     final elapsed = _stopwatch.elapsedMilliseconds;
     final extraStr =
         extra != null && extra.isNotEmpty
-            ? ' ${extra.entries.map((e) => '${e.key}=${e.value}').join(' ')}'
+            ? ' ${extra.entries.map((final e) => '${e.key}=${e.value}').join(' ')}'
             : '';
     DiagnosticsLog.debug(
       _subsystem,
@@ -126,7 +125,7 @@ class StageLogger {
     _currentStage = name;
   }
 
-  void complete([String? detail]) {
+  void complete([final String? detail]) {
     _stopwatch.stop();
     final elapsed = _stopwatch.elapsedMilliseconds;
     final detailStr = detail != null ? ' — $detail' : '';
@@ -136,7 +135,7 @@ class StageLogger {
     );
   }
 
-  void fail(Object error, [StackTrace? stack]) {
+  void fail(final Object error, [final StackTrace? stack]) {
     _stopwatch.stop();
     final elapsed = _stopwatch.elapsedMilliseconds;
     DiagnosticsLog.error(

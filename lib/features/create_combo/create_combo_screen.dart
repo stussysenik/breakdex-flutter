@@ -1,20 +1,14 @@
 import 'dart:async';
 
 import 'package:drift/drift.dart' show Value;
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
-import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:uuid/uuid.dart';
 
 import '../../core/database/database.dart';
-import '../../core/database/daos/combos_dao.dart';
 import '../../core/design/spacing.dart';
-import '../../core/design/theme.dart';
 import '../../core/design/typography.dart';
-import '../../core/models/learning_state.dart';
 import '../../core/models/reviewable_item.dart';
 import '../../core/providers.dart';
 import '../../core/utils/diagnostics.dart';
@@ -44,10 +38,10 @@ class _CreateComboScreenState extends ConsumerState<CreateComboScreen> {
   _ScreenState _screenState = _ScreenState.editing;
 
   Set<String> get _selectedMoveIds =>
-      _selectedMoves.map((move) => move.id).toSet();
+      _selectedMoves.map((final move) => move.id).toSet();
 
   int get _totalCounts =>
-      _selectedMoves.fold(0, (sum, m) => sum + m.count);
+      _selectedMoves.fold(0, (final sum, final m) => sum + m.count);
 
   @override
   void initState() {
@@ -59,7 +53,7 @@ class _CreateComboScreenState extends ConsumerState<CreateComboScreen> {
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(final BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
     final safeIndex = _selectedMoves.isEmpty
         ? 0
@@ -158,7 +152,7 @@ class _CreateComboScreenState extends ConsumerState<CreateComboScreen> {
                   ComboStepLine(
                     stepCount: _selectedMoves.length,
                     activeIndex: safeIndex,
-                    onStepSelected: (index) =>
+                    onStepSelected: (final index) =>
                         setState(() => _activeIndex = index),
                     onAddStep: _showMovePicker,
                   ),
@@ -178,7 +172,7 @@ class _CreateComboScreenState extends ConsumerState<CreateComboScreen> {
                     buildDefaultDragHandles: false,
                     itemCount: _selectedMoves.length,
                     onReorder: _reorderMoves,
-                    itemBuilder: (context, index) {
+                    itemBuilder: (final context, final index) {
                       final move = _selectedMoves[index];
                       final isActive = index == safeIndex;
                       return Container(
@@ -281,7 +275,7 @@ class _CreateComboScreenState extends ConsumerState<CreateComboScreen> {
     );
   }
 
-  Widget _buildBeatGrid(BuildContext context) {
+  Widget _buildBeatGrid(final BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
     final total = _totalCounts;
     if (total == 0) return const SizedBox.shrink();
@@ -324,7 +318,7 @@ class _CreateComboScreenState extends ConsumerState<CreateComboScreen> {
     );
   }
 
-  Widget _buildGridBlock(BuildContext context, int index, int total) {
+  Widget _buildGridBlock(final BuildContext context, final int index, final int total) {
     final move = _selectedMoves[index];
     final colorScheme = Theme.of(context).colorScheme;
     final isActive = index == _activeIndex;
@@ -357,7 +351,7 @@ class _CreateComboScreenState extends ConsumerState<CreateComboScreen> {
     );
   }
 
-  Widget _buildTimeline(int total) {
+  Widget _buildTimeline(final int total) {
     final colorScheme = Theme.of(context).colorScheme;
     return Container(
       height: 4,
@@ -366,7 +360,7 @@ class _CreateComboScreenState extends ConsumerState<CreateComboScreen> {
         color: colorScheme.surfaceContainerHighest,
         borderRadius: BorderRadius.circular(2),
       ),
-      child: Stack(
+      child: const Stack(
         children: [
           // We could add a playhead here if needed
         ],
@@ -383,7 +377,7 @@ class _CreateComboScreenState extends ConsumerState<CreateComboScreen> {
       if (mounted) {
         setState(() {
           _comboName = combo.name;
-          _selectedMoves.addAll(movesWithDetail.map((m) => m.move));
+          _selectedMoves.addAll(movesWithDetail.map((final m) => m.move));
           _isLoadingExisting = false;
         });
       }
@@ -396,7 +390,7 @@ class _CreateComboScreenState extends ConsumerState<CreateComboScreen> {
     final result = await showModalBottomSheet<List<Move>>(
       context: context,
       isScrollControlled: true,
-      builder: (context) => _MovePickerSheet(
+      builder: (final context) => _MovePickerSheet(
         alreadySelectedIds: _selectedMoveIds,
       ),
     );
@@ -409,16 +403,17 @@ class _CreateComboScreenState extends ConsumerState<CreateComboScreen> {
     }
   }
 
-  void _reorderMoves(int oldIndex, int newIndex) {
+  void _reorderMoves(final int oldIndex, final int newIndex) {
     setState(() {
-      if (newIndex > oldIndex) newIndex -= 1;
+      int effectiveNewIndex = newIndex;
+      if (effectiveNewIndex > oldIndex) effectiveNewIndex -= 1;
       final move = _selectedMoves.removeAt(oldIndex);
-      _selectedMoves.insert(newIndex, move);
-      _activeIndex = newIndex;
+      _selectedMoves.insert(effectiveNewIndex, move);
+      _activeIndex = effectiveNewIndex;
     });
   }
 
-  void _adjustMoveCount(int index, int delta) {
+  void _adjustMoveCount(final int index, final int delta) {
     setState(() {
       final move = _selectedMoves[index];
       final newCount = (move.count + delta).clamp(1, 16);
@@ -491,14 +486,14 @@ class _CreateComboScreenState extends ConsumerState<CreateComboScreen> {
         );
 
         if (widget.isEditing) {
-          Future.delayed(const Duration(milliseconds: 1200), () {
+          unawaited(Future<void>.delayed(const Duration(milliseconds: 1200), () {
             if (mounted) setState(() => _screenState = _ScreenState.editing);
-          });
+          }));
         } else {
           // Add a tiny delay so the user sees the toast start to animate in before popping
-          Future.delayed(const Duration(milliseconds: 200), () {
+          unawaited(Future<void>.delayed(const Duration(milliseconds: 200), () {
             if (mounted) context.pop();
-          });
+          }));
         }
       }
     } catch (e, stack) {
@@ -523,7 +518,7 @@ class _CreateComboScreenState extends ConsumerState<CreateComboScreen> {
     final controller = TextEditingController(text: _comboName);
     return showDialog<String>(
       context: context,
-      builder: (context) => AlertDialog(
+      builder: (final context) => AlertDialog(
         title: const Text('Combo Name'),
         content: TextField(
           controller: controller,
@@ -551,7 +546,7 @@ class _CountControl extends StatelessWidget {
   final VoidCallback onTap;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(final BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
     return GestureDetector(
       onTap: enabled ? onTap : null,
@@ -585,7 +580,7 @@ class _MovePickerSheetState extends ConsumerState<_MovePickerSheet> {
   final List<Move> _selected = [];
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(final BuildContext context) {
     final movesAsync = ref.watch(allMovesProvider);
     final colorScheme = Theme.of(context).colorScheme;
 
@@ -594,7 +589,7 @@ class _MovePickerSheetState extends ConsumerState<_MovePickerSheet> {
       minChildSize: 0.5,
       maxChildSize: 0.95,
       expand: false,
-      builder: (context, scrollController) {
+      builder: (final context, final scrollController) {
         return Column(
           children: [
             Padding(
@@ -612,20 +607,20 @@ class _MovePickerSheetState extends ConsumerState<_MovePickerSheet> {
             ),
             Expanded(
               child: movesAsync.when(
-                data: (moves) {
+                data: (final moves) {
                   return ListView.builder(
                     controller: scrollController,
                     itemCount: moves.length,
-                    itemBuilder: (context, index) {
+                    itemBuilder: (final context, final index) {
                       final move = moves[index];
-                      final isPicked = _selected.any((m) => m.id == move.id);
+                      final isPicked = _selected.any((final m) => m.id == move.id);
                       final isAlreadyInCombo = widget.alreadySelectedIds.contains(move.id);
 
                       return ListTile(
                         onTap: isAlreadyInCombo ? null : () {
                           setState(() {
                             if (isPicked) {
-                              _selected.removeWhere((m) => m.id == move.id);
+                              _selected.removeWhere((final m) => m.id == move.id);
                             } else {
                               _selected.add(move);
                             }
@@ -644,7 +639,7 @@ class _MovePickerSheetState extends ConsumerState<_MovePickerSheet> {
                   );
                 },
                 loading: () => const Center(child: CircularProgressIndicator()),
-                error: (e, _) => Center(child: Text('Error: $e')),
+                error: (final e, _) => Center(child: Text('Error: $e')),
               ),
             ),
           ],
@@ -654,6 +649,6 @@ class _MovePickerSheetState extends ConsumerState<_MovePickerSheet> {
   }
 }
 
-final allMovesProvider = StreamProvider<List<Move>>((ref) {
+final allMovesProvider = StreamProvider<List<Move>>((final ref) {
   return ref.watch(moveRepositoryProvider).watchAll();
 });

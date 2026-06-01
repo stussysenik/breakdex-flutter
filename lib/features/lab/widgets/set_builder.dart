@@ -33,7 +33,7 @@ class SetBuilder extends ConsumerWidget {
   final VoidCallback onAddMove;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(final BuildContext context, final WidgetRef ref) {
     final labMovesAsync = ref.watch(labMovesProvider(labId));
     final colorScheme = Theme.of(context).colorScheme;
 
@@ -58,7 +58,7 @@ class SetBuilder extends ConsumerWidget {
             height: 120,
             child: Center(child: CircularProgressIndicator()),
           ),
-          error: (e, _) => Padding(
+          error: (final e, _) => Padding(
             padding: const EdgeInsets.symmetric(
               horizontal: AppSpacing.screenEdge,
             ),
@@ -67,7 +67,7 @@ class SetBuilder extends ConsumerWidget {
               style: AppTypography.caption.copyWith(color: AppColors.actionAgain),
             ),
           ),
-          data: (labMoves) {
+          data: (final labMoves) {
             if (labMoves.isEmpty) {
               return _EmptySetState(onAddMove: onAddMove);
             }
@@ -80,7 +80,7 @@ class SetBuilder extends ConsumerWidget {
                   horizontal: AppSpacing.screenEdge,
                 ),
                 itemCount: labMoves.length + 1, // +1 for add button
-                itemBuilder: (context, index) {
+                itemBuilder: (final context, final index) {
                   // Add button at the end
                   if (index == labMoves.length) {
                     return _AddMoveButton(onTap: onAddMove);
@@ -116,10 +116,10 @@ class SetBuilder extends ConsumerWidget {
                         ),
                         onDragStarted: () => HapticFeedback.mediumImpact(),
                         child: DragTarget<int>(
-                          onAcceptWithDetails: (details) {
+                          onAcceptWithDetails: (final details) {
                             _reorder(ref, labMoves, details.data, index);
                           },
-                          builder: (context, candidates, rejects) {
+                          builder: (final context, final candidates, final rejects) {
                             return AnimatedContainer(
                               duration: AppMotion.fast02,
                               padding: EdgeInsets.all(
@@ -165,20 +165,20 @@ class SetBuilder extends ConsumerWidget {
   /// Reorder moves by swapping source and target indices, then persisting
   /// the new order via the DAO.
   void _reorder(
-    WidgetRef ref,
-    List<LabMoveWithDetail> current,
-    int fromIndex,
-    int toIndex,
+    final WidgetRef ref,
+    final List<LabMoveWithDetail> current,
+    final int fromIndex,
+    final int toIndex,
   ) {
     if (fromIndex == toIndex) return;
-    final moveIds = current.map((e) => e.move.id).toList();
+    final moveIds = current.map((final e) => e.move.id).toList();
     final removed = moveIds.removeAt(fromIndex);
     moveIds.insert(toIndex, removed);
     ref.read(labsDaoProvider).reorderLabMoves(labId, moveIds);
     HapticFeedback.selectionClick();
   }
 
-  void _removeMoveFromLab(WidgetRef ref, String moveId) {
+  void _removeMoveFromLab(final WidgetRef ref, final String moveId) {
     ref.read(labsDaoProvider).removeMoveFromLab(labId, moveId);
     HapticFeedback.lightImpact();
   }
@@ -192,7 +192,7 @@ class _EmptySetState extends StatelessWidget {
   final VoidCallback onAddMove;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(final BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
 
     return GestureDetector(
@@ -240,7 +240,7 @@ class _AddMoveButton extends StatelessWidget {
   final VoidCallback onTap;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(final BuildContext context) {
     return Padding(
       padding: const EdgeInsets.only(left: AppSpacing.sm),
       child: GestureDetector(

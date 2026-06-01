@@ -2,7 +2,7 @@
 ///
 /// Returns human-readable strings like "now", "3m ago", "2h ago", "5d ago",
 /// "2w ago", "1mo ago". Used across lab cards, timelines, and quick-log feeds.
-String relativeTime(DateTime dt) {
+String relativeTime(final DateTime dt) {
   final diff = DateTime.now().difference(dt);
   if (diff.inMinutes < 1) return 'now';
   if (diff.inMinutes < 60) return '${diff.inMinutes}m ago';

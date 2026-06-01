@@ -62,7 +62,7 @@ class CanonicalFolderService {
     }
   }
 
-  Future<String> canonicalPathForHash(String hash) async {
+  Future<String> canonicalPathForHash(final String hash) async {
     final videos = await videosDir;
     return p.join(videos.path, '$hash.mp4');
   }
@@ -79,7 +79,7 @@ class CanonicalFolderService {
     return files;
   }
 
-  Future<String> moveToCanonical(String sourcePath, String hash) async {
+  Future<String> moveToCanonical(final String sourcePath, final String hash) async {
     await ensureInitialized();
     final targetPath = await canonicalPathForHash(hash);
     final targetFile = File(targetPath);
@@ -94,7 +94,7 @@ class CanonicalFolderService {
     return targetPath;
   }
 
-  Future<String> copyToCanonical(String sourcePath, String hash) async {
+  Future<String> copyToCanonical(final String sourcePath, final String hash) async {
     await ensureInitialized();
     final targetPath = await canonicalPathForHash(hash);
     VideoStorageGate.guardWrite(targetPath);
@@ -127,19 +127,19 @@ class CanonicalFolderService {
     }
   }
 
-  Future<void> upsertLedgerEntry(LedgerEntry entry) async {
+  Future<void> upsertLedgerEntry(final LedgerEntry entry) async {
     final ledger = await readLedger();
     final updated = ledger.upsert(entry);
     await _writeLedger(updated);
   }
 
-  Future<void> removeLedgerEntry(String hash) async {
+  Future<void> removeLedgerEntry(final String hash) async {
     final ledger = await readLedger();
     final updated = ledger.remove(hash);
     await _writeLedger(updated);
   }
 
-  Future<void> _writeLedger(Ledger ledger) async {
+  Future<void> _writeLedger(final Ledger ledger) async {
     final file = await _ledgerFile;
     await file.writeAsString(jsonEncode(ledger.toJson()));
     _cachedLedger = ledger;
@@ -206,7 +206,7 @@ class CanonicalFolderService {
     return removed;
   }
 
-  Future<int> _pruneEmptyRecursive(Directory dir) async {
+  Future<int> _pruneEmptyRecursive(final Directory dir) async {
     var removed = 0;
     try {
       await for (final entity in dir.list()) {
@@ -235,9 +235,9 @@ class Ledger {
 
   const Ledger({required this.entries, this.version = _ledgerVersion});
 
-  factory Ledger.empty() => Ledger(entries: {});
+  factory Ledger.empty() => const Ledger(entries: {});
 
-  factory Ledger.fromJson(Map<String, dynamic> json) {
+  factory Ledger.fromJson(final Map<String, dynamic> json) {
     final entriesJson = json['entries'] as Map<String, dynamic>?;
     final entries = <String, LedgerEntry>{};
     if (entriesJson != null) {
@@ -255,26 +255,26 @@ class Ledger {
 
   Map<String, dynamic> toJson() => {
         'version': version,
-        'entries': entries.map((k, v) => MapEntry(k, v.toJson())),
+        'entries': entries.map((final k, final v) => MapEntry(k, v.toJson())),
       };
 
-  Ledger upsert(LedgerEntry entry) {
+  Ledger upsert(final LedgerEntry entry) {
     final updated = Map<String, LedgerEntry>.from(entries);
     updated[entry.fileName] = entry;
     return Ledger(entries: updated, version: version);
   }
 
-  Ledger remove(String fileName) {
+  Ledger remove(final String fileName) {
     final updated = Map<String, LedgerEntry>.from(entries);
     updated.remove(fileName);
     return Ledger(entries: updated, version: version);
   }
 
-  bool contains(String fileName) => entries.containsKey(fileName);
-  LedgerEntry? operator [](String fileName) => entries[fileName];
+  bool contains(final String fileName) => entries.containsKey(fileName);
+  LedgerEntry? operator [](final String fileName) => entries[fileName];
 
   @override
-  bool operator ==(Object other) =>
+  bool operator ==(final Object other) =>
       other is Ledger &&
       other.version == version &&
       _mapEquals(other.entries, entries);
@@ -283,7 +283,7 @@ class Ledger {
   int get hashCode => Object.hash(version, Object.hashAll(entries.entries));
 }
 
-bool _mapEquals<K, V>(Map<K, V> a, Map<K, V> b) {
+bool _mapEquals<K, V>(final Map<K, V> a, final Map<K, V> b) {
   if (a.length != b.length) return false;
   for (final key in a.keys) {
     if (!b.containsKey(key) || a[key] != b[key]) return false;
@@ -304,7 +304,7 @@ class LedgerEntry {
     required this.recordedAt,
   });
 
-  factory LedgerEntry.fromJson(Map<String, dynamic> json) => LedgerEntry(
+  factory LedgerEntry.fromJson(final Map<String, dynamic> json) => LedgerEntry(
         fileName: json['file'] as String,
         fileSizeBytes: json['size'] as int,
         lastSeenAt: DateTime.parse(json['seen'] as String),
@@ -319,7 +319,7 @@ class LedgerEntry {
       };
 
   @override
-  bool operator ==(Object other) =>
+  bool operator ==(final Object other) =>
       other is LedgerEntry &&
       other.fileName == fileName &&
       other.fileSizeBytes == fileSizeBytes;

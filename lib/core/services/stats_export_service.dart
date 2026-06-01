@@ -90,7 +90,7 @@ class ImportResult {
 
 class StatsExportService {
   /// Generates a shareable text summary of stats.
-  static String generateTextSummary(StatsBundle stats) {
+  static String generateTextSummary(final StatsBundle stats) {
     final dist = stats.ratingDistribution;
     final again = dist['AGAIN'] ?? 0;
     final hard = dist['HARD'] ?? 0;
@@ -98,13 +98,13 @@ class StatsExportService {
     final easy = dist['EASY'] ?? 0;
     final total = again + hard + good + easy;
 
-    String pct(int count) =>
+    String pct(final int count) =>
         total > 0 ? '${(count / total * 100).round()}%' : '0%';
 
     final topMoves = stats.topMoveEntries
         .take(5)
-        .map((e) {
-          final move = stats.allMoves.where((m) => m.id == e.key).firstOrNull;
+        .map((final e) {
+          final move = stats.allMoves.where((final m) => m.id == e.key).firstOrNull;
           final name = move?.name ?? e.key;
           return '  $name — ${e.value} reviews';
         })
@@ -138,8 +138,8 @@ ${topMoves.isNotEmpty ? 'Most Practiced:\n$topMoves' : 'No moves practiced yet.'
   /// - fsrsCards uses entityId/entityType instead of moveId (polymorphic)
   /// - reviews includes comboId field
   static Future<ExportResult> generateJsonExport(
-    AppDatabase db,
-    SharedPreferences prefs,
+    final AppDatabase db,
+    final SharedPreferences prefs,
   ) async {
     final moves = await db.movesDao.getAllIncludingArchived();
     final reviews = await db.reviewsDao.watchAll().first;
@@ -167,7 +167,7 @@ ${topMoves.isNotEmpty ? 'Most Practiced:\n$topMoves' : 'No moves practiced yet.'
       'categories': categoriesJson,
       'moves': moves
           .map(
-            (m) => {
+            (final m) => {
               'id': m.id,
               'name': m.name,
               'category': m.category,
@@ -185,7 +185,7 @@ ${topMoves.isNotEmpty ? 'Most Practiced:\n$topMoves' : 'No moves practiced yet.'
           .toList(),
       'combos': combos
           .map(
-            (c) => {
+            (final c) => {
               'id': c.id,
               'name': c.name,
               'notes': c.notes,
@@ -197,7 +197,7 @@ ${topMoves.isNotEmpty ? 'Most Practiced:\n$topMoves' : 'No moves practiced yet.'
           .toList(),
       'comboMoves': comboMoves
           .map(
-            (cm) => {
+            (final cm) => {
               'id': cm.id,
               'sequenceIndex': cm.sequenceIndex,
               'comboId': cm.comboId,
@@ -207,7 +207,7 @@ ${topMoves.isNotEmpty ? 'Most Practiced:\n$topMoves' : 'No moves practiced yet.'
           .toList(),
       'reviews': reviews
           .map(
-            (r) => {
+            (final r) => {
               'id': r.id,
               'rating': r.rating,
               'reviewType': r.reviewType,
@@ -225,7 +225,7 @@ ${topMoves.isNotEmpty ? 'Most Practiced:\n$topMoves' : 'No moves practiced yet.'
           .toList(),
       'battleResults': battleResults
           .map(
-            (b) => {
+            (final b) => {
               'id': b.id,
               'score': b.score,
               'movesReviewed': b.movesReviewed,
@@ -241,7 +241,7 @@ ${topMoves.isNotEmpty ? 'Most Practiced:\n$topMoves' : 'No moves practiced yet.'
       // v6: entityId + entityType instead of moveId
       'fsrsCards': fsrsCards
           .map(
-            (fc) => {
+            (final fc) => {
               'entityId': fc.entityId,
               'entityType': fc.entityType,
               'stability': fc.stability,
@@ -256,7 +256,7 @@ ${topMoves.isNotEmpty ? 'Most Practiced:\n$topMoves' : 'No moves practiced yet.'
           .toList(),
       'decks': decks
           .map(
-            (d) => {
+            (final d) => {
               'id': d.id,
               'name': d.name,
               'deckType': d.deckType,
@@ -268,7 +268,7 @@ ${topMoves.isNotEmpty ? 'Most Practiced:\n$topMoves' : 'No moves practiced yet.'
           )
           .toList(),
       'deckMoves': deckMoves
-          .map((dm) => {'deckId': dm.deckId, 'moveId': dm.moveId})
+          .map((final dm) => {'deckId': dm.deckId, 'moveId': dm.moveId})
           .toList(),
     };
 
@@ -289,7 +289,7 @@ ${topMoves.isNotEmpty ? 'Most Practiced:\n$topMoves' : 'No moves practiced yet.'
   }
 
   /// Validates import JSON and returns summary counts.
-  static ImportValidation validateImportJson(String json) {
+  static ImportValidation validateImportJson(final String json) {
     try {
       final data = jsonDecode(json) as Map<String, dynamic>;
       final version = data['schemaVersion'] as int? ?? 1;
@@ -335,10 +335,10 @@ ${topMoves.isNotEmpty ? 'Most Practiced:\n$topMoves' : 'No moves practiced yet.'
 
   /// Imports data from JSON. Handles both old (v1–v5) and new (v6) formats.
   static Future<ImportResult> importFromJson(
-    AppDatabase db,
-    SharedPreferences prefs,
-    String json,
-    ImportMode mode,
+    final AppDatabase db,
+    final SharedPreferences prefs,
+    final String json,
+    final ImportMode mode,
   ) async {
     final data = jsonDecode(json) as Map<String, dynamic>;
     final version = data['schemaVersion'] as int? ?? 1;
@@ -367,7 +367,7 @@ ${topMoves.isNotEmpty ? 'Most Practiced:\n$topMoves' : 'No moves practiced yet.'
     await db.transaction(() async {
       // Import moves — replaceAll overwrites existing by ID instead of bulk-deleting
       final existingMoveIds = (await db.movesDao.getAllIncludingArchived())
-            .map((m) => m.id)
+            .map((final m) => m.id)
             .toSet();
 
       for (final m in movesJson) {
@@ -439,7 +439,7 @@ ${topMoves.isNotEmpty ? 'Most Practiced:\n$topMoves' : 'No moves practiced yet.'
 
       // Import combos
       final existingComboIds = mode == ImportMode.merge
-          ? (await db.combosDao.getAll()).map((c) => c.id).toSet()
+          ? (await db.combosDao.getAll()).map((final c) => c.id).toSet()
           : <String>{};
 
       for (final c in combosJson) {
@@ -463,7 +463,7 @@ ${topMoves.isNotEmpty ? 'Most Practiced:\n$topMoves' : 'No moves practiced yet.'
       // Import comboMoves
       if (comboMovesJson.isNotEmpty) {
         final existingCmIds = mode == ImportMode.merge
-            ? (await db.select(db.comboMoves).get()).map((cm) => cm.id).toSet()
+            ? (await db.select(db.comboMoves).get()).map((final cm) => cm.id).toSet()
             : <String>{};
 
         for (final cm in comboMovesJson) {
@@ -487,7 +487,7 @@ ${topMoves.isNotEmpty ? 'Most Practiced:\n$topMoves' : 'No moves practiced yet.'
 
       // Import reviews
       final existingReviewIds = mode == ImportMode.merge
-          ? (await db.reviewsDao.watchAll().first).map((r) => r.id).toSet()
+          ? (await db.reviewsDao.watchAll().first).map((final r) => r.id).toSet()
           : <String>{};
 
       for (final r in reviewsJson) {
@@ -524,7 +524,7 @@ ${topMoves.isNotEmpty ? 'Most Practiced:\n$topMoves' : 'No moves practiced yet.'
 
       // Import battle results
       final existingBrIds = mode == ImportMode.merge
-          ? (await db.select(db.battleResults).get()).map((b) => b.id).toSet()
+          ? (await db.select(db.battleResults).get()).map((final b) => b.id).toSet()
           : <String>{};
 
       for (final b in battleResultsJson) {
@@ -600,7 +600,7 @@ ${topMoves.isNotEmpty ? 'Most Practiced:\n$topMoves' : 'No moves practiced yet.'
       // Import decks
       if (decksJson.isNotEmpty) {
         final existingDeckIds = mode == ImportMode.merge
-            ? (await db.decksDao.getAll()).map((d) => d.id).toSet()
+            ? (await db.decksDao.getAll()).map((final d) => d.id).toSet()
             : <String>{};
 
         for (final d in decksJson) {
@@ -639,7 +639,7 @@ ${topMoves.isNotEmpty ? 'Most Practiced:\n$topMoves' : 'No moves practiced yet.'
       if (deckMovesJson.isNotEmpty) {
         final existingDmKeys = mode == ImportMode.merge
             ? (await db.select(db.deckMoves).get())
-                  .map((dm) => '${dm.deckId}:${dm.moveId}')
+                  .map((final dm) => '${dm.deckId}:${dm.moveId}')
                   .toSet()
             : <String>{};
 
@@ -665,8 +665,8 @@ ${topMoves.isNotEmpty ? 'Most Practiced:\n$topMoves' : 'No moves practiced yet.'
     // Import categories to SharedPreferences
     if (categoriesJson.isNotEmpty) {
       final cats = categoriesJson
-          .map((c) => c as Map<String, dynamic>)
-          .where((c) => c['name'] != null && c['colorValue'] != null)
+          .map((final c) => c as Map<String, dynamic>)
+          .where((final c) => c['name'] != null && c['colorValue'] != null)
           .toList();
       if (cats.isNotEmpty) {
         await prefs.setString('categories', jsonEncode(cats));

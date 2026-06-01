@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/database/database.dart';
 import '../../core/design/colors.dart';
@@ -6,10 +7,11 @@ import '../../core/design/spacing.dart';
 import '../../core/design/typography.dart';
 import '../../core/models/learning_state.dart';
 import '../../core/models/reviewable_item.dart' show MoveVideoPath;
+import '../../core/providers.dart';
 import '../../shared/widgets/pressable.dart';
 import '../../shared/widgets/video_player_widget.dart';
 
-class InstaxVideoCard extends StatefulWidget {
+class InstaxVideoCard extends ConsumerStatefulWidget {
   const InstaxVideoCard({
     super.key,
     required this.move,
@@ -28,12 +30,12 @@ class InstaxVideoCard extends StatefulWidget {
   final VoidCallback? onTap;
 
   @override
-  State<InstaxVideoCard> createState() => _InstaxVideoCardState();
+  ConsumerState<InstaxVideoCard> createState() => _InstaxVideoCardState();
 }
 
-class _InstaxVideoCardState extends State<InstaxVideoCard> {
+class _InstaxVideoCardState extends ConsumerState<InstaxVideoCard> {
   @override
-  void didUpdateWidget(InstaxVideoCard old) {
+  void didUpdateWidget(final InstaxVideoCard old) {
     super.didUpdateWidget(old);
     if (old.isActive != widget.isActive) {
       debugPrint(
@@ -43,10 +45,12 @@ class _InstaxVideoCardState extends State<InstaxVideoCard> {
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(final BuildContext context) {
     final move = widget.move;
     final hasVideo = move.videoPath != null;
     final learningState = LearningState.fromString(move.learningState);
+    final labels = ref.watch(learningStateLabelsProvider);
+    final label = resolveLearningStateLabel(labels, learningState);
 
     return Pressable(
       onTap: widget.onTap,
@@ -115,7 +119,7 @@ class _InstaxVideoCardState extends State<InstaxVideoCard> {
                             ),
                             const SizedBox(width: 6),
                             Text(
-                              learningState.displayText,
+                              label,
                               style: AppTypography.caption.copyWith(
                                 color: Colors.white,
                                 fontSize: 10,

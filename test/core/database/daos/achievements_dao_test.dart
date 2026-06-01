@@ -1,5 +1,4 @@
 import 'package:breakdex/core/database/database.dart';
-import 'package:drift/drift.dart' hide isNotNull, isNull;
 import 'package:flutter_test/flutter_test.dart';
 
 import '../../../helpers/test_data.dart';
@@ -28,9 +27,9 @@ void main() {
 
   /// Seeds a move and inserts a seed-tier achievement for it.
   Future<void> seedAchievement(
-    String moveId, {
-    String tier = 'seed',
-    String moveName = 'Test Move',
+    final String moveId, {
+    final String tier = 'seed',
+    final String moveName = 'Test Move',
   }) async {
     await seedMove(db, id: moveId, name: moveName);
     await db.achievementsDao.upsertTier(moveId, tier);

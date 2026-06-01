@@ -17,9 +17,9 @@ import '../database/daos/reviews_dao.dart';
 /// discouraging the learner after a bad session.
 class AchievementService {
   AchievementService({
-    required AchievementsDao achievementsDao,
-    required ReviewsDao reviewsDao,
-    required FsrsCardsDao fsrsCardsDao,
+    required final AchievementsDao achievementsDao,
+    required final ReviewsDao reviewsDao,
+    required final FsrsCardsDao fsrsCardsDao,
   })  : _achievementsDao = achievementsDao,
         _reviewsDao = reviewsDao,
         _fsrsCardsDao = fsrsCardsDao;
@@ -45,7 +45,7 @@ class AchievementService {
   /// tier the move currently qualifies for, then upserts if it exceeds the
   /// stored tier. This means a move can skip tiers (e.g. seed → growing)
   /// if the criteria are met in a single review burst.
-  Future<String?> checkAndAdvanceTier(String moveId) async {
+  Future<String?> checkAndAdvanceTier(final String moveId) async {
     final currentTier = await _achievementsDao.getCurrentTier(moveId);
     final currentRank = _tierRank[currentTier] ?? -1;
 
@@ -63,7 +63,7 @@ class AchievementService {
 
   /// Walk the tier ladder top-down and return the highest tier the move
   /// currently satisfies.
-  Future<String> _computeQualifiedTier(String moveId) async {
+  Future<String> _computeQualifiedTier(final String moveId) async {
     // Check mastered first (highest) — short-circuit if met.
     if (await _checkMastered(moveId)) return 'mastered';
     if (await _checkGrowing(moveId)) return 'growing';
@@ -74,7 +74,7 @@ class AchievementService {
   /// **Mastered**: FSRS card exists with fsrsState=2 (Review) AND
   /// stability > 7.0. A stability of 7 means the card's memory half-life
   /// is ~7 days — the learner can reliably recall it a week later.
-  Future<bool> _checkMastered(String moveId) async {
+  Future<bool> _checkMastered(final String moveId) async {
     final card = await _fsrsCardsDao.getByMoveId(moveId);
     if (card == null) return false;
     return card.fsrsState == 2 && card.stability > 7.0;
@@ -82,18 +82,18 @@ class AchievementService {
 
   /// **Growing**: 5+ reviews AND >60% rated GOOD or EASY.
   /// This ensures quantity (repeated practice) AND quality (consistent recall).
-  Future<bool> _checkGrowing(String moveId) async {
+  Future<bool> _checkGrowing(final String moveId) async {
     final reviews = await _reviewsDao.getByMoveId(moveId);
     if (reviews.length < 5) return false;
 
     final goodOrEasy = reviews.where(
-      (r) => r.rating == 'GOOD' || r.rating == 'EASY',
+      (final r) => r.rating == 'GOOD' || r.rating == 'EASY',
     ).length;
     return goodOrEasy / reviews.length > 0.6;
   }
 
   /// **Sprouting**: At least 1 review exists for the move.
-  Future<bool> _checkSprouting(String moveId) async {
+  Future<bool> _checkSprouting(final String moveId) async {
     final reviews = await _reviewsDao.getByMoveId(moveId);
     return reviews.isNotEmpty;
   }

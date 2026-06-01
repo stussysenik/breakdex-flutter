@@ -6,11 +6,11 @@ class ProvenanceReportService {
 
   final ProvenanceJournalService _journal;
 
-  Future<ProvenanceReport> loadReport({int limit = 200}) async {
+  Future<ProvenanceReport> loadReport({final int limit = 200}) async {
     final events = await _journal.readRecent(limit: limit);
     final criticalEvents = events
         .where(
-          (event) =>
+          (final event) =>
               event.scope == 'crash' ||
               event.status == 'failed' ||
               event.eventType.contains('failed'),
@@ -22,21 +22,21 @@ class ProvenanceReportService {
       totalEvents: events.length,
       failureCount: events
           .where(
-            (event) =>
+            (final event) =>
                 event.status == 'failed' || event.eventType.contains('failed'),
           )
           .length,
-      crashCount: events.where((event) => event.scope == 'crash').length,
+      crashCount: events.where((final event) => event.scope == 'crash').length,
       retrievalFailureCount: events
           .where(
-            (event) =>
+            (final event) =>
                 event.scope == 'video_retrieval' &&
                 (event.status == 'failed' ||
                     event.eventType.contains('failed')),
           )
           .length,
       databaseRecoveryCount: events
-          .where((event) => event.scope == 'database_recovery')
+          .where((final event) => event.scope == 'database_recovery')
           .length,
       recentCriticalEvents: criticalEvents.reversed
           .take(3)

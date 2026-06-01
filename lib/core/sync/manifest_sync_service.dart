@@ -27,8 +27,8 @@ class ManifestSyncService {
   static const _providerUnavailableCooldown = Duration(seconds: 30);
 
   ManifestSyncService({
-    required ManifestSerializer serializer,
-    required List<CloudProvider> Function() getProviders,
+    required final ManifestSerializer serializer,
+    required final List<CloudProvider> Function() getProviders,
   }) : _serializer = serializer,
        _getProviders = getProviders;
 

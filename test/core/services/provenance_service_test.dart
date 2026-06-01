@@ -98,13 +98,13 @@ void main() {
     test('getTimeline returns events ordered by timestamp', () async {
       final events = await ProvenanceEventsDao(db).getTimeline('move', 'm1');
       expect(events.length, 4);
-      expect(events.map((e) => e.eventType),
+      expect(events.map((final e) => e.eventType),
           containsAll(['created', 'reviewed', 'edited', 'milestone_reached']));
     });
 
     test('getRecentActivity returns events across entities', () async {
       final recent = await ProvenanceEventsDao(db).getRecentActivity(limit: 10);
-      final entityIds = recent.map((e) => e.entityId).toSet();
+      final entityIds = recent.map((final e) => e.entityId).toSet();
       expect(entityIds, containsAll(['m1', 'm2']));
     });
 
@@ -121,7 +121,7 @@ void main() {
 
       // Insert an old event via DAO with an old timestamp
       await db.customStatement(
-        "INSERT INTO provenance_events (id, entity_type, entity_id, event_type, timestamp) "
+        'INSERT INTO provenance_events (id, entity_type, entity_id, event_type, timestamp) '
         "VALUES ('e-old', 'move', 'm1', 'created', 1000000000)",
       );
 

@@ -48,7 +48,7 @@ class SwingDetector {
     _lastTrigger = DateTime(2000);
   }
 
-  void _onEvent(UserAccelerometerEvent event) {
+  void _onEvent(final UserAccelerometerEvent event) {
     _eventCount++;
     final now = DateTime.now();
     if (_locked || now.difference(_lastTrigger) < const Duration(seconds: 1)) {
@@ -56,7 +56,7 @@ class SwingDetector {
     }
 
     // 1. Clean window
-    _window.removeWhere((p) => now.difference(p.time) > windowSize);
+    _window.removeWhere((final p) => now.difference(p.time) > windowSize);
 
     // 2. Add current point (userAccelerometer already excludes gravity)
     final magnitude = sqrt(event.x * event.x + event.y * event.y + event.z * event.z);
@@ -64,7 +64,7 @@ class SwingDetector {
 
     if (_eventCount % 50 == 0) {
       DiagnosticsLog.info('SwingDetector',
-          'listener alive — ${_eventCount} events, maxRecent=${magnitude.toStringAsFixed(1)}, '
+          'listener alive — $_eventCount events, maxRecent=${magnitude.toStringAsFixed(1)}, '
           'threshold=$threshold, aboveHalf=$_aboveHalfThresholdCount');
     }
 
@@ -95,7 +95,7 @@ class SwingDetector {
   }
 
   int _lastHapticMs = 0;
-  void _provideEasingHaptic(double intensity) {
+  void _provideEasingHaptic(final double intensity) {
     final now = DateTime.now().millisecondsSinceEpoch;
     if (now - _lastHapticMs < 150) return;
     _lastHapticMs = now;
@@ -113,14 +113,14 @@ class SwingDetector {
     _window.clear();
     
     // Final satisfying trigger haptic
-    HapticFeedback.heavyImpact();
+    unawaited(HapticFeedback.heavyImpact());
     
     onSwing();
     
     // Unlock after a short delay
-    Future.delayed(const Duration(milliseconds: 500), () {
+    unawaited(Future<void>.delayed(const Duration(milliseconds: 500), () {
       _locked = false;
-    });
+    }));
   }
 }
 

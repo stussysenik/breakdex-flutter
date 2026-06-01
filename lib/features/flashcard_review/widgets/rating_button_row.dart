@@ -36,7 +36,7 @@ class RatingButtonRow extends ConsumerWidget {
 
   /// Distinct icon per rating for color-blind accessibility.
   /// Shape + color = double encoding (WCAG 1.4.1 Use of Color).
-  static IconData _iconForRating(ReviewRating rating) => switch (rating) {
+  static IconData _iconForRating(final ReviewRating rating) => switch (rating) {
         ReviewRating.again => Icons.close_rounded,    // X shape — "wrong"
         ReviewRating.hard  => Icons.trending_flat_rounded, // Wave — "struggled"
         ReviewRating.good  => Icons.check_rounded,    // Checkmark — "got it"
@@ -44,7 +44,7 @@ class RatingButtonRow extends ConsumerWidget {
       };
 
   /// Map from ReviewRating to the matching configurable color.
-  static Color _colorForRating(ReviewRating rating, RatingColors rc) =>
+  static Color _colorForRating(final ReviewRating rating, final RatingColors rc) =>
       switch (rating) {
         ReviewRating.again => rc.again,
         ReviewRating.hard  => rc.hard,
@@ -53,7 +53,7 @@ class RatingButtonRow extends ConsumerWidget {
       };
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(final BuildContext context, final WidgetRef ref) {
     final colorScheme = Theme.of(context).colorScheme;
     final rc = ref.watch(ratingColorsProvider);
 
@@ -105,7 +105,7 @@ class RatingButtonRow extends ConsumerWidget {
   /// - < 24 hours → "Xh" (hours)
   /// - < 30 days → "Xd" (days)
   /// - >= 30 days → "Xmo" (months)
-  static String _formatInterval(Duration? duration) {
+  static String _formatInterval(final Duration? duration) {
     if (duration == null) return '';
     final minutes = duration.inMinutes;
     if (minutes < 60) return '${minutes}m';
@@ -138,7 +138,7 @@ class _CompactRatingButton extends StatelessWidget {
   final String intervalLabel;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(final BuildContext context) {
     return Semantics(
       label: 'Rate ${rating.displayText}',
       button: true,
@@ -212,7 +212,7 @@ class _TintedPillButton extends StatelessWidget {
   final void Function(ReviewRating rating) onRate;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(final BuildContext context) {
     return Semantics(
       label: 'Rate ${rating.displayText}',
       button: true,

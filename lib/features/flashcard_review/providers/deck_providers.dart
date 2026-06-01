@@ -5,18 +5,18 @@ import '../../../core/models/learning_state.dart';
 import '../../../core/providers.dart';
 
 /// Live stream of all saved decks.
-final decksListProvider = StreamProvider<List<Deck>>((ref) {
+final decksListProvider = StreamProvider<List<Deck>>((final ref) {
   return ref.watch(decksDaoProvider).watchAll();
 });
 
 /// Currently selected deck for the next review session.
 /// Null = no deck selected (use default category/state filters).
-final selectedDeckProvider = StateProvider<Deck?>((ref) => null);
+final selectedDeckProvider = StateProvider<Deck?>((final ref) => null);
 
 /// Resolves a deck to its matching moves using DeckService.
 final deckMovesProvider = FutureProvider.family<List<Move>, String>((
-  ref,
-  deckId,
+  final ref,
+  final deckId,
 ) async {
   final deck = await ref.watch(decksDaoProvider).getById(deckId);
   if (deck == null) return [];
@@ -39,12 +39,12 @@ class DeckSummary {
   int get totalMoves => moves.length;
   bool get isSmart => deck.deckType == 'smart';
 
-  List<Move> movesForState(LearningState state) => stateMap[state] ?? const [];
+  List<Move> movesForState(final LearningState state) => stateMap[state] ?? const [];
 }
 
 final deckSummaryProvider = FutureProvider.family<DeckSummary, String>((
-  ref,
-  deckId,
+  final ref,
+  final deckId,
 ) async {
   final deck = await ref.watch(decksDaoProvider).getById(deckId);
   if (deck == null) {
@@ -55,10 +55,10 @@ final deckSummaryProvider = FutureProvider.family<DeckSummary, String>((
   final stateMap = {
     for (final state in LearningState.values)
       state: moves
-          .where((move) => move.learningState == state.dbValue)
+          .where((final move) => move.learningState == state.dbValue)
           .toList(),
   };
-  final categories = moves.map((move) => move.category).toSet();
+  final categories = moves.map((final move) => move.category).toSet();
 
   return DeckSummary(
     deck: deck,

@@ -30,12 +30,12 @@ class VideoImportSyncHook {
   final ConnectivityService _connectivityService;
 
   VideoImportSyncHook({
-    required AssetHashService hashService,
-    required AssetManifestDao manifestDao,
-    required AssetCopiesDao copiesDao,
-    required MovesDao movesDao,
-    required AssetSyncEngine syncEngine,
-    required ConnectivityService connectivityService,
+    required final AssetHashService hashService,
+    required final AssetManifestDao manifestDao,
+    required final AssetCopiesDao copiesDao,
+    required final MovesDao movesDao,
+    required final AssetSyncEngine syncEngine,
+    required final ConnectivityService connectivityService,
   })  : _hashService = hashService,
         _manifestDao = manifestDao,
         _copiesDao = copiesDao,
@@ -48,9 +48,9 @@ class VideoImportSyncHook {
   /// Runs asynchronously — callers should fire-and-forget via [unawaited].
   /// Failures are logged but never propagated to the UI.
   Future<void> onVideoImported({
-    required String localPath,
-    required String moveId,
-    String? precomputedHash,
+    required final String localPath,
+    required final String moveId,
+    final String? precomputedHash,
   }) async {
     try {
       final file = File(localPath);

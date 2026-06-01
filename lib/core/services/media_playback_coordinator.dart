@@ -17,7 +17,7 @@ class MediaPlaybackCoordinator extends ChangeNotifier {
   String? get primaryOwnerId => _primaryOwnerId;
   int get pauseGeneration => _pauseGeneration;
 
-  bool isPrimary(String ownerId) => _primaryOwnerId == ownerId;
+  bool isPrimary(final String ownerId) => _primaryOwnerId == ownerId;
 
   void suppressNextNavigationPause() {
     _suppressedNavigationPauseCount += 1;
@@ -29,16 +29,16 @@ class MediaPlaybackCoordinator extends ChangeNotifier {
     return true;
   }
 
-  void attach({required String playbackId, required VoidCallback onPause}) {
+  void attach({required final String playbackId, required final VoidCallback onPause}) {
     _pauseHandlers[playbackId] = onPause;
   }
 
-  void detach(String playbackId) {
+  void detach(final String playbackId) {
     release(playbackId);
     _pauseHandlers.remove(playbackId);
   }
 
-  void claimPrimary(String ownerId) {
+  void claimPrimary(final String ownerId) {
     if (_primaryOwnerId == ownerId) return;
     final previousOwnerId = _primaryOwnerId;
     if (previousOwnerId != null && previousOwnerId != ownerId) {
@@ -48,7 +48,7 @@ class MediaPlaybackCoordinator extends ChangeNotifier {
     notifyListeners();
   }
 
-  void release(String ownerId) {
+  void release(final String ownerId) {
     if (_primaryOwnerId != ownerId) return;
     _primaryOwnerId = null;
     notifyListeners();
@@ -72,7 +72,7 @@ class MediaPlaybackNavigationObserver extends NavigatorObserver {
   final MediaPlaybackCoordinator _coordinator;
 
   @override
-  void didPush(Route<dynamic> route, Route<dynamic>? previousRoute) {
+  void didPush(final Route<dynamic> route, final Route<dynamic>? previousRoute) {
     if (_coordinator.consumeNavigationPauseSuppression()) {
       super.didPush(route, previousRoute);
       return;
@@ -83,8 +83,8 @@ class MediaPlaybackNavigationObserver extends NavigatorObserver {
 
   @override
   void didReplace({
-    Route<dynamic>? newRoute,
-    Route<dynamic>? oldRoute,
+    final Route<dynamic>? newRoute,
+    final Route<dynamic>? oldRoute,
   }) {
     if (_coordinator.consumeNavigationPauseSuppression()) {
       super.didReplace(newRoute: newRoute, oldRoute: oldRoute);
@@ -95,13 +95,13 @@ class MediaPlaybackNavigationObserver extends NavigatorObserver {
   }
 
   @override
-  void didRemove(Route<dynamic> route, Route<dynamic>? previousRoute) {
+  void didRemove(final Route<dynamic> route, final Route<dynamic>? previousRoute) {
     _coordinator.pauseAll();
     super.didRemove(route, previousRoute);
   }
 
   @override
-  void didStartUserGesture(Route<dynamic> route, Route<dynamic>? previousRoute) {
+  void didStartUserGesture(final Route<dynamic> route, final Route<dynamic>? previousRoute) {
     _coordinator.pauseAll();
     super.didStartUserGesture(route, previousRoute);
   }

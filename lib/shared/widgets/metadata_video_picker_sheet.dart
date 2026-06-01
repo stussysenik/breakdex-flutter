@@ -1,6 +1,5 @@
 import 'dart:async';
 import 'dart:io';
-import 'dart:typed_data';
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -18,7 +17,7 @@ import '../../core/utils/diagnostics.dart';
 class MetadataVideoPickerSheet extends ConsumerStatefulWidget {
   const MetadataVideoPickerSheet({super.key});
 
-  static Future<VideoPickResult?> show(BuildContext context) {
+  static Future<VideoPickResult?> show(final BuildContext context) {
     DiagnosticsLog.info('MetadataVideoPickerSheet', 'Opening custom high-fidelity picker');
     return showModalBottomSheet<VideoPickResult>(
       context: context,
@@ -122,7 +121,7 @@ class _MetadataVideoPickerSheetState extends ConsumerState<MetadataVideoPickerSh
         }
       }
       
-      assets.sort((a, b) => (b.creationDate ?? DateTime(0)).compareTo(a.creationDate ?? DateTime(0)));
+      assets.sort((final a, final b) => (b.creationDate ?? DateTime(0)).compareTo(a.creationDate ?? DateTime(0)));
       DiagnosticsLog.info('MetadataVideoPickerSheet', 'App videos detected: ${assets.length}');
       return assets;
     } catch (e) {
@@ -131,7 +130,7 @@ class _MetadataVideoPickerSheetState extends ConsumerState<MetadataVideoPickerSh
     }
   }
 
-  Future<void> _handleSelection(MetadataAsset asset, Uint8List? thumbnail) async {
+  Future<void> _handleSelection(final MetadataAsset asset, final Uint8List? thumbnail) async {
     // Immediate pre-rendering / ghosting feedback (under 3ms)
     setState(() {
       _importingAsset = asset;
@@ -140,7 +139,7 @@ class _MetadataVideoPickerSheetState extends ConsumerState<MetadataVideoPickerSh
     });
 
     _progressSub?.cancel();
-    _progressSub = ref.read(videoServiceProvider).importProgress.listen((p) {
+    _progressSub = ref.read(videoServiceProvider).importProgress.listen((final p) {
       if (mounted) setState(() => _importProgress = p);
     });
 
@@ -154,7 +153,7 @@ class _MetadataVideoPickerSheetState extends ConsumerState<MetadataVideoPickerSh
       VideoPickResult? result;
       if (asset.isLocal) {
         // Give the UI a tiny moment to show the ghost state so the transition isn't harsh
-        await Future.delayed(const Duration(milliseconds: 150));
+        await Future<void>.delayed(const Duration(milliseconds: 150));
         result = VideoPickResult(
           localPath: asset.localIdentifier,
           originalFileName: asset.originalFileName,
@@ -186,7 +185,7 @@ class _MetadataVideoPickerSheetState extends ConsumerState<MetadataVideoPickerSh
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(final BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
     final size = MediaQuery.of(context).size;
 
@@ -237,7 +236,7 @@ class _MetadataVideoPickerSheetState extends ConsumerState<MetadataVideoPickerSh
     );
   }
 
-  Widget _buildGhostingOverlay(BuildContext context) {
+  Widget _buildGhostingOverlay(final BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
 
     return Positioned.fill(
@@ -320,7 +319,7 @@ class _MetadataVideoPickerSheetState extends ConsumerState<MetadataVideoPickerSh
     );
   }
 
-  Widget _buildHandle(BuildContext context) {
+  Widget _buildHandle(final BuildContext context) {
     return Center(
       child: Container(
         margin: const EdgeInsets.symmetric(vertical: 12),
@@ -334,7 +333,7 @@ class _MetadataVideoPickerSheetState extends ConsumerState<MetadataVideoPickerSh
     );
   }
 
-  Widget _buildHeader(BuildContext context) {
+  Widget _buildHeader(final BuildContext context) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
       child: Row(
@@ -356,7 +355,7 @@ class _MetadataVideoPickerSheetState extends ConsumerState<MetadataVideoPickerSh
     );
   }
 
-  Widget _buildGrid(List<MetadataAsset>? assets, String sourceLabel) {
+  Widget _buildGrid(final List<MetadataAsset>? assets, final String sourceLabel) {
     if (_loading) {
       return const Center(child: CircularProgressIndicator());
     }
@@ -403,7 +402,7 @@ class _MetadataVideoPickerSheetState extends ConsumerState<MetadataVideoPickerSh
         childAspectRatio: 1,
       ),
       itemCount: assets.length,
-      itemBuilder: (context, index) {
+      itemBuilder: (final context, final index) {
         return _VideoTile(
           asset: assets[index],
           onSelect: _handleSelection,
@@ -474,7 +473,7 @@ class _VideoTileState extends ConsumerState<_VideoTile> {
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(final BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
     final asset = widget.asset;
     
@@ -485,7 +484,7 @@ class _VideoTileState extends ConsumerState<_VideoTile> {
     return GestureDetector(
       behavior: HitTestBehavior.opaque,
       onTap: () {
-        HapticFeedback.mediumImpact();
+        unawaited(HapticFeedback.mediumImpact());
         widget.onSelect(asset, _thumbnail);
       },
       child: Container(
@@ -603,7 +602,7 @@ class _VideoTileState extends ConsumerState<_VideoTile> {
     );
   }
 
-  String _formatDuration(double seconds) {
+  String _formatDuration(final double seconds) {
     final d = Duration(seconds: seconds.round());
     final min = d.inMinutes;
     final sec = (d.inSeconds % 60).toString().padLeft(2, '0');

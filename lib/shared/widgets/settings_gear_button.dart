@@ -13,7 +13,7 @@ class SettingsGearButton extends ConsumerWidget {
   const SettingsGearButton({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(final BuildContext context, final WidgetRef ref) {
     final pendingCount =
         ref.watch(pendingChangesCountProvider).valueOrNull ?? 0;
     final isLoggedIn = ref.watch(isLoggedInProvider);

@@ -8,7 +8,7 @@ import 'package:breakdex/core/sync/asset_sync_engine.dart';
 import 'package:breakdex/core/sync/cloud_provider.dart';
 import 'package:breakdex/core/sync/network_policy.dart';
 import 'package:breakdex/core/sync/safety_guard.dart';
-import 'package:drift/drift.dart' hide isNull, isNotNull;
+import 'package:drift/drift.dart' hide isNotNull, isNull;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -23,7 +23,7 @@ class _TrackedFakeProvider implements CloudProvider {
   bool shouldThrowOnDownload = false;
 
   final String _providerType;
-  _TrackedFakeProvider({String providerType = 'icloud'})
+  _TrackedFakeProvider({final String providerType = 'icloud'})
     : _providerType = providerType;
 
   @override
@@ -48,10 +48,10 @@ class _TrackedFakeProvider implements CloudProvider {
 
   @override
   Future<RemoteAsset> upload({
-    required String localPath,
-    required String remotePath,
-    TransferProgress? onProgress,
-    CancellationToken? cancel,
+    required final String localPath,
+    required final String remotePath,
+    final TransferProgress? onProgress,
+    final CancellationToken? cancel,
   }) async {
     if (shouldThrowOnUpload) throw Exception('Upload failed');
     uploadedLocalPaths.add(localPath);
@@ -60,10 +60,10 @@ class _TrackedFakeProvider implements CloudProvider {
 
   @override
   Future<void> download({
-    required String remotePath,
-    required String localPath,
-    TransferProgress? onProgress,
-    CancellationToken? cancel,
+    required final String remotePath,
+    required final String localPath,
+    final TransferProgress? onProgress,
+    final CancellationToken? cancel,
   }) async {
     if (shouldThrowOnDownload) throw Exception('Download failed');
     downloadedRemotePaths.add(remotePath);
@@ -71,19 +71,19 @@ class _TrackedFakeProvider implements CloudProvider {
 
   @override
   Future<bool> verify({
-    required String remotePath,
-    String? expectedHash,
-    int? expectedSize,
+    required final String remotePath,
+    final String? expectedHash,
+    final int? expectedSize,
   }) async {
     verifiedRemotePaths.add(remotePath);
     return true;
   }
 
   @override
-  Future<List<RemoteAsset>> list({required String directory}) async => [];
+  Future<List<RemoteAsset>> list({required final String directory}) async => [];
 
   @override
-  Future<void> delete({required String remotePath}) async {
+  Future<void> delete({required final String remotePath}) async {
     deletedRemotePaths.add(remotePath);
   }
 
@@ -92,10 +92,10 @@ class _TrackedFakeProvider implements CloudProvider {
 }
 
 Future<void> _seedManifest(
-  AppDatabase db, {
-  required String hash,
-  String? localPath,
-  DateTime? deletedAt,
+  final AppDatabase db, {
+  required final String hash,
+  final String? localPath,
+  final DateTime? deletedAt,
 }) async {
   await db.assetManifestDao.upsert(AssetManifestCompanion(
     contentHash: Value(hash),
@@ -108,12 +108,12 @@ Future<void> _seedManifest(
 }
 
 Future<void> _seedCopy(
-  AppDatabase db, {
-  required String id,
-  required String hash,
-  required String provider,
-  String? remotePath,
-  String status = 'verified',
+  final AppDatabase db, {
+  required final String id,
+  required final String hash,
+  required final String provider,
+  final String? remotePath,
+  final String status = 'verified',
 }) async {
   await db.assetCopiesDao.insertCopy(AssetCopiesCompanion(
     id: Value(id),
@@ -127,13 +127,13 @@ Future<void> _seedCopy(
 }
 
 Future<void> _seedOperation(
-  AppDatabase db, {
-  required String id,
-  required String hash,
-  required String operationType,
-  String providerId = 'icloud',
-  String status = 'queued',
-  int priority = 1,
+  final AppDatabase db, {
+  required final String id,
+  required final String hash,
+  required final String operationType,
+  final String providerId = 'icloud',
+  final String status = 'queued',
+  final int priority = 1,
 }) async {
   await db.syncOperationsDao.insertOperation(
     SyncOperationsCompanion(
@@ -190,7 +190,7 @@ void main() {
       // Create a real temp file the engine can read
       final testFile = File('${tempDir.path}/test_upload.mp4');
       await testFile.writeAsBytes(List.filled(64, 0));
-      final relativePath = 'test_upload.mp4';
+      const relativePath = 'test_upload.mp4';
 
       await _seedManifest(db, hash: 'abc123', localPath: relativePath);
       await _seedOperation(
@@ -239,7 +239,7 @@ void main() {
 
       if (fakeProvider.downloadedRemotePaths.isEmpty) {
         final ops = await db.syncOperationsDao.getRetryable();
-        final failedOp = ops.where((o) => o.id == 'op-3').firstOrNull;
+        final failedOp = ops.where((final o) => o.id == 'op-3').firstOrNull;
         if (failedOp != null) {
           fail('Download op failed: ${failedOp.errorMessage}');
         }
@@ -309,7 +309,7 @@ void main() {
       await engine.runSyncCycle(ConnectionType.wifi);
 
       final ops = await db.syncOperationsDao.getQueued();
-      expect(ops.any((o) => o.id == 'op-fail'), isFalse);
+      expect(ops.any((final o) => o.id == 'op-fail'), isFalse);
     });
   });
 

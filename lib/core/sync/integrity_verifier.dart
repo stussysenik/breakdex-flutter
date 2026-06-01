@@ -45,7 +45,7 @@ class IntegrityVerifier {
     this._manifestDao,
     this._copiesDao,
     this._hashService, {
-    Random? random,
+    final Random? random,
   }) : _random = random ?? Random();
 
   /// Run an integrity check on a random sample of local files.
@@ -53,7 +53,7 @@ class IntegrityVerifier {
   /// [maxAge] controls which files are eligible — only files not verified
   /// within [maxAge] are candidates. Defaults to 7 days.
   Future<IntegrityReport> verify({
-    Duration maxAge = const Duration(days: 7),
+    final Duration maxAge = const Duration(days: 7),
   }) async {
     final stale = await _manifestDao.getStaleVerifications(maxAge);
     if (stale.isEmpty) {

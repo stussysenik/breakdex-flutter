@@ -22,9 +22,9 @@ class FsrsMigrationService {
   static const _comboMigrationKey = 'fsrs_combo_migration_v1_complete';
 
   static Future<void> migrateIfNeeded({
-    required MovesDao movesDao,
-    required FsrsCardsDao fsrsCardsDao,
-    required SharedPreferences prefs,
+    required final MovesDao movesDao,
+    required final FsrsCardsDao fsrsCardsDao,
+    required final SharedPreferences prefs,
   }) async {
     try {
       if (prefs.getBool(_migrationKey) == true) return;
@@ -70,9 +70,9 @@ class FsrsMigrationService {
   /// Combos start as New (fsrsState=0) since we have no legacy state
   /// to map from — unlike moves which had a learningState column.
   static Future<void> migrateComboCards({
-    required CombosDao combosDao,
-    required FsrsCardsDao fsrsCardsDao,
-    required SharedPreferences prefs,
+    required final CombosDao combosDao,
+    required final FsrsCardsDao fsrsCardsDao,
+    required final SharedPreferences prefs,
   }) async {
     try {
       if (prefs.getBool(_comboMigrationKey) == true) return;
@@ -121,11 +121,11 @@ class FsrsMigrationService {
   /// via a SharedPreferences timestamp. Pass [force: true] to bypass the
   /// throttle (e.g. after a migration or import).
   static Future<int> ensureIntegrity({
-    required MovesDao movesDao,
-    required FsrsCardsDao fsrsCardsDao,
-    CombosDao? combosDao,
-    SharedPreferences? prefs,
-    bool force = false,
+    required final MovesDao movesDao,
+    required final FsrsCardsDao fsrsCardsDao,
+    final CombosDao? combosDao,
+    final SharedPreferences? prefs,
+    final bool force = false,
   }) async {
     try {
       // Throttle: skip if we already ran recently (unless forced).

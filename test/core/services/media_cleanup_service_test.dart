@@ -12,7 +12,7 @@ class _FakeVideoService extends VideoService {
   final deletedPaths = <String>[];
 
   @override
-  Future<void> deleteVideo(String path) async {
+  Future<void> deleteVideo(final String path) async {
     deletedPaths.add(path);
   }
 }
@@ -22,10 +22,10 @@ class _FakeVideoAlbum extends NativeVideoAlbum {
 
   @override
   Future<void> deleteManagedCopies({
-    required String assetTitle,
-    String? category,
-    String? fileExtension,
-    String? assetLocalIdentifier,
+    required final String assetTitle,
+    final String? category,
+    final String? fileExtension,
+    final String? assetLocalIdentifier,
   }) async {
     deletedCalls.add({
       'assetTitle': assetTitle,
@@ -34,9 +34,21 @@ class _FakeVideoAlbum extends NativeVideoAlbum {
       'assetLocalIdentifier': assetLocalIdentifier,
     });
   }
+
+  @override
+  Future<void> deleteExactManagedCopy(final String localIdentifier) async {
+    deletedCalls.add({
+      'assetTitle': 'Airflare',
+      'category': 'toprock',
+      'fileExtension': '.mp4',
+      'assetLocalIdentifier': localIdentifier,
+    });
+  }
 }
 
 void main() {
+  TestWidgetsFlutterBinding.ensureInitialized();
+
   group('MediaCleanupService', () {
     late AppDatabase db;
     late _FakeVideoService videoService;

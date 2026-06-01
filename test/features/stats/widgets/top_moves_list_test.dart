@@ -1,5 +1,4 @@
 import 'package:breakdex/core/design/theme.dart';
-import 'package:breakdex/core/models/learning_state.dart';
 import 'package:breakdex/core/providers.dart';
 import 'package:breakdex/core/services/settings_service.dart';
 import 'package:breakdex/features/stats/providers/stats_providers.dart';
@@ -11,7 +10,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
   testWidgets('top moves list handles long metadata without overflow', (
-    tester,
+    final tester,
   ) async {
     SharedPreferences.setMockInitialValues({
       'learning_state_labels':
@@ -23,7 +22,7 @@ void main() {
       ProviderScope(
         overrides: [sharedPreferencesProvider.overrideWithValue(prefs)],
         child: Consumer(
-          builder: (context, ref, _) {
+          builder: (final context, final ref, _) {
             final stateColors = ref.watch(learningStateColorsProvider);
             return MaterialApp(
               theme: AppTheme.light(stateColors: stateColors),

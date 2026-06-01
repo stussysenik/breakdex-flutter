@@ -13,22 +13,22 @@ import '../../core/models/move_archive_reason.dart';
 import '../../core/providers.dart';
 import '../../shared/widgets/settings_list_group.dart';
 
-final archivedMovesProvider = StreamProvider<List<Move>>((ref) {
+final archivedMovesProvider = StreamProvider<List<Move>>((final ref) {
   return ref.watch(movesDaoProvider).watchArchived();
 });
 
-final archivedMovesCountProvider = StreamProvider<int>((ref) {
+final archivedMovesCountProvider = StreamProvider<int>((final ref) {
   return ref
       .watch(movesDaoProvider)
       .watchArchived()
-      .map((moves) => moves.length);
+      .map((final moves) => moves.length);
 });
 
 class RecentlyDeletedScreen extends ConsumerWidget {
   const RecentlyDeletedScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(final BuildContext context, final WidgetRef ref) {
     final archivedMovesAsync = ref.watch(archivedMovesProvider);
     final colorScheme = Theme.of(context).colorScheme;
 
@@ -74,7 +74,7 @@ class RecentlyDeletedScreen extends ConsumerWidget {
               const SizedBox(height: AppSpacing.lg),
               Expanded(
                 child: archivedMovesAsync.when(
-                  data: (moves) {
+                  data: (final moves) {
                     if (moves.isEmpty) {
                       return Center(
                         child: Text(
@@ -99,7 +99,7 @@ class RecentlyDeletedScreen extends ConsumerWidget {
                   },
                   loading: () =>
                       const Center(child: CircularProgressIndicator()),
-                  error: (error, stackTrace) => Center(
+                  error: (final error, final stackTrace) => Center(
                     child: Text(
                       'Recently Deleted could not be loaded.',
                       style: AppTypography.bodyMedium.copyWith(
@@ -123,7 +123,7 @@ class _ArchivedMoveRow extends ConsumerWidget {
   final Move move;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(final BuildContext context, final WidgetRef ref) {
     final colorScheme = Theme.of(context).colorScheme;
     final archiveReason =
         MoveArchiveReason.fromDbValue(move.archiveReason) ??
@@ -148,7 +148,7 @@ class _ArchivedMoveRow extends ConsumerWidget {
         style: AppTypography.caption.copyWith(color: colorScheme.secondary),
       ),
       trailing: PopupMenuButton<_ArchivedMoveAction>(
-        onSelected: (action) async {
+        onSelected: (final action) async {
           unawaited(HapticFeedback.mediumImpact());
           switch (action) {
             case _ArchivedMoveAction.restore:
@@ -157,7 +157,7 @@ class _ArchivedMoveRow extends ConsumerWidget {
               await _deletePermanently(context, ref);
           }
         },
-        itemBuilder: (context) => const [
+        itemBuilder: (final context) => const [
           PopupMenuItem(
             value: _ArchivedMoveAction.restore,
             child: Text('Restore'),
@@ -171,7 +171,7 @@ class _ArchivedMoveRow extends ConsumerWidget {
     );
   }
 
-  Future<void> _restore(BuildContext context, WidgetRef ref) async {
+  Future<void> _restore(final BuildContext context, final WidgetRef ref) async {
     try {
       await ref
           .read(managedAlbumReconciliationServiceProvider)
@@ -188,10 +188,10 @@ class _ArchivedMoveRow extends ConsumerWidget {
     }
   }
 
-  Future<void> _deletePermanently(BuildContext context, WidgetRef ref) async {
+  Future<void> _deletePermanently(final BuildContext context, final WidgetRef ref) async {
     final confirm = await showDialog<bool>(
       context: context,
-      builder: (context) => AlertDialog(
+      builder: (final context) => AlertDialog(
         title: const Text('Delete permanently?'),
         content: const Text(
           'This removes the move and its media from Breakdex.',
@@ -222,7 +222,7 @@ class _ArchivedMoveRow extends ConsumerWidget {
     ).showSnackBar(const SnackBar(content: Text('Move deleted permanently.')));
   }
 
-  static String _formatDate(DateTime value) {
+  static String _formatDate(final DateTime value) {
     final local = value.toLocal();
     final month = local.month.toString().padLeft(2, '0');
     final day = local.day.toString().padLeft(2, '0');

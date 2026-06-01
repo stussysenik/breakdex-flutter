@@ -13,7 +13,7 @@ class TimerRing extends StatelessWidget {
   final double totalTime;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(final BuildContext context) {
     final cs = Theme.of(context).colorScheme;
     final progress = (timeRemaining / totalTime).clamp(0.0, 1.0);
 
@@ -62,7 +62,7 @@ class _TimerRingPainter extends CustomPainter {
   final Brightness brightness;
 
   @override
-  void paint(Canvas canvas, Size size) {
+  void paint(final Canvas canvas, final Size size) {
     final center = Offset(size.width / 2, size.height / 2);
     final radius = size.width / 2 - 8;
     const strokeWidth = 8.0;
@@ -121,6 +121,6 @@ class _TimerRingPainter extends CustomPainter {
   }
 
   @override
-  bool shouldRepaint(covariant _TimerRingPainter old) =>
+  bool shouldRepaint(covariant final _TimerRingPainter old) =>
       old.progress != progress || old.ringColor != ringColor;
 }

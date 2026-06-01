@@ -49,7 +49,7 @@ class _AuraViewState extends ConsumerState<AuraView> {
   String? _selectedMoveId;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(final BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
     final activePresetAsync = ref.watch(activeAuraProvider);
 
@@ -78,8 +78,8 @@ class _AuraViewState extends ConsumerState<AuraView> {
                 // Active preset name as a subtle tag.
                 activePresetAsync.when(
                   loading: () => const SizedBox.shrink(),
-                  error: (_, __) => const SizedBox.shrink(),
-                  data: (preset) {
+                  error: (_, _) => const SizedBox.shrink(),
+                  data: (final preset) {
                     if (preset == null) return const SizedBox.shrink();
                     return Container(
                       padding: const EdgeInsets.symmetric(
@@ -115,7 +115,7 @@ class _AuraViewState extends ConsumerState<AuraView> {
         // -- Move grid with connection counts ------------------------------
         _MoveGrid(
           selectedMoveId: _selectedMoveId,
-          onMoveSelected: (moveId) {
+          onMoveSelected: (final moveId) {
             unawaited(HapticFeedback.selectionClick());
             setState(() {
               _selectedMoveId = _selectedMoveId == moveId ? null : moveId;
@@ -145,8 +145,8 @@ class _AuraViewState extends ConsumerState<AuraView> {
 
   /// Shows a bottom sheet to add a new transition link from the selected move.
   Future<void> _showAddConnectionSheet(
-    BuildContext context,
-    String fromMoveId,
+    final BuildContext context,
+    final String fromMoveId,
   ) async {
     final result = await showModalBottomSheet<({String toMoveId, String affinity})>(
       context: context,
@@ -176,17 +176,17 @@ class _MoveGrid extends ConsumerWidget {
   final ValueChanged<String> onMoveSelected;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(final BuildContext context, final WidgetRef ref) {
     final movesAsync = ref.watch(_allMovesStreamProvider);
 
     return movesAsync.when(
       loading: () => const SliverToBoxAdapter(
         child: Center(child: CircularProgressIndicator()),
       ),
-      error: (e, _) => SliverToBoxAdapter(
+      error: (final e, _) => SliverToBoxAdapter(
         child: Center(child: Text('Error loading moves: $e')),
       ),
-      data: (moves) {
+      data: (final moves) {
         if (moves.isEmpty) {
           return SliverToBoxAdapter(
             child: Padding(
@@ -229,7 +229,7 @@ class _MoveGrid extends ConsumerWidget {
               childAspectRatio: 1.3,
             ),
             delegate: SliverChildBuilderDelegate(
-              (context, index) {
+              (final context, final index) {
                 final move = moves[index];
                 final isSelected = move.id == selectedMoveId;
 
@@ -249,7 +249,7 @@ class _MoveGrid extends ConsumerWidget {
 }
 
 /// Internal stream provider for all moves — keeps the grid reactive.
-final _allMovesStreamProvider = StreamProvider<List<Move>>((ref) {
+final _allMovesStreamProvider = StreamProvider<List<Move>>((final ref) {
   return ref.watch(databaseProvider).movesDao.watchAll();
 });
 
@@ -269,7 +269,7 @@ class _MoveGridTile extends ConsumerWidget {
   final VoidCallback onTap;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(final BuildContext context, final WidgetRef ref) {
     final colorScheme = Theme.of(context).colorScheme;
     final linksAsync = ref.watch(auraLinksFromProvider(move.id));
     final linkCount = linksAsync.valueOrNull?.length ?? 0;
@@ -347,7 +347,7 @@ class _ConnectionPanel extends ConsumerWidget {
   final VoidCallback onAddConnection;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(final BuildContext context, final WidgetRef ref) {
     final colorScheme = Theme.of(context).colorScheme;
     final linksAsync = ref.watch(auraLinksFromProvider(moveId));
     final allMovesAsync = ref.watch(_allMovesStreamProvider);
@@ -412,8 +412,8 @@ class _ConnectionPanel extends ConsumerWidget {
                 padding: EdgeInsets.all(AppSpacing.lg),
                 child: Center(child: CircularProgressIndicator()),
               ),
-              error: (e, _) => Text('Error: $e'),
-              data: (links) {
+              error: (final e, _) => Text('Error: $e'),
+              data: (final links) {
                 if (links.isEmpty) {
                   return Padding(
                     padding: const EdgeInsets.symmetric(
@@ -449,7 +449,7 @@ class _ConnectionPanel extends ConsumerWidget {
                           affinity:
                               AuraAffinity.fromString(links[i].affinity),
                           notes: links[i].notes,
-                          onAffinityChanged: (newAffinity) {
+                          onAffinityChanged: (final newAffinity) {
                             ref.read(auraDaoProvider).upsertLink(
                                   links[i].fromMoveId,
                                   links[i].toMoveId,
@@ -489,7 +489,7 @@ class _ConnectionPanel extends ConsumerWidget {
   }
 
   /// Build a quick lookup map of moveId -> moveName from the moves stream.
-  Map<String, String> _buildMoveMap(AsyncValue<List<Move>> movesAsync) {
+  Map<String, String> _buildMoveMap(final AsyncValue<List<Move>> movesAsync) {
     final moves = movesAsync.valueOrNull ?? [];
     return {for (final m in moves) m.id: m.name};
   }
@@ -534,7 +534,7 @@ class _AddConnectionSheetState extends ConsumerState<_AddConnectionSheet> {
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(final BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
     final movesAsync = ref.watch(_allMovesStreamProvider);
     final existingLinksAsync =
@@ -545,7 +545,7 @@ class _AddConnectionSheetState extends ConsumerState<_AddConnectionSheet> {
       minChildSize: 0.4,
       maxChildSize: 0.9,
       expand: false,
-      builder: (context, scrollController) {
+      builder: (final context, final scrollController) {
         return Padding(
           padding: const EdgeInsets.fromLTRB(
             AppSpacing.screenEdge,
@@ -596,15 +596,15 @@ class _AddConnectionSheetState extends ConsumerState<_AddConnectionSheet> {
                 child: movesAsync.when(
                   loading: () =>
                       const Center(child: CircularProgressIndicator()),
-                  error: (e, _) => Center(child: Text('Error: $e')),
-                  data: (moves) {
+                  error: (final e, _) => Center(child: Text('Error: $e')),
+                  data: (final moves) {
                     // Exclude the source move and already-linked moves.
                     final existingIds = (existingLinksAsync.valueOrNull ?? [])
-                        .map((l) => l.toMoveId)
+                        .map((final l) => l.toMoveId)
                         .toSet();
 
                     final filtered = moves
-                        .where((m) =>
+                        .where((final m) =>
                             m.id != widget.fromMoveId &&
                             !existingIds.contains(m.id) &&
                             (_searchQuery.isEmpty ||
@@ -627,13 +627,13 @@ class _AddConnectionSheetState extends ConsumerState<_AddConnectionSheet> {
                     return ListView.separated(
                       controller: scrollController,
                       itemCount: filtered.length,
-                      separatorBuilder: (_, __) =>
+                      separatorBuilder: (_, _) =>
                           const SizedBox(height: AppSpacing.sm),
-                      itemBuilder: (context, index) {
+                      itemBuilder: (final context, final index) {
                         final move = filtered[index];
                         return _MoveConnectionRow(
                           moveName: move.name,
-                          onSelect: (affinity) {
+                          onSelect: (final affinity) {
                             Navigator.pop(context, (
                               toMoveId: move.id,
                               affinity: affinity.name,
@@ -664,7 +664,7 @@ class _MoveConnectionRow extends StatelessWidget {
   final ValueChanged<AuraAffinity> onSelect;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(final BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
 
     return Container(

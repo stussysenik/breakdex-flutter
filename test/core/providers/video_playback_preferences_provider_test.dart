@@ -10,7 +10,7 @@ void main() {
     late ProviderContainer container;
 
     Future<void> createContainer([
-      Map<String, Object> initialValues = const {},
+      final Map<String, Object> initialValues = const {},
     ]) async {
       SharedPreferences.setMockInitialValues(initialValues);
       prefs = await SharedPreferences.getInstance();
@@ -34,7 +34,7 @@ void main() {
 
       final notifier = container.read(silentPracticePlaybackProvider.notifier);
 
-      await notifier.setEnabled(true);
+      await notifier.setEnabled(value: true);
 
       expect(container.read(silentPracticePlaybackProvider), isTrue);
       expect(prefs.getBool('silent_practice_playback'), isTrue);

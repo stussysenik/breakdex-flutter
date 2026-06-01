@@ -9,21 +9,21 @@ class SyncProgressBar extends ConsumerWidget {
   const SyncProgressBar({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(final BuildContext context, final WidgetRef ref) {
     final stateAsync = ref.watch(syncStateProvider);
 
     return stateAsync.when(
-      data: (state) {
+      data: (final state) {
         return state.maybeWhen(
           idle: () => const SizedBox.shrink(),
           complete: () => const SizedBox.shrink(),
           error: (_) => const SizedBox.shrink(),
           authenticating: () => _buildBar(context, 'Authenticating...', null),
-          pushingMetadata: (current, total, desc) {
+          pushingMetadata: (final current, final total, final desc) {
             final progress = total > 0 ? current / total : null;
             return _buildBar(context, 'Syncing metadata ($desc)', progress);
           },
-          uploadingVideos: (current, total, desc) {
+          uploadingVideos: (final current, final total, final desc) {
             final progress = total > 0 ? current / total : null;
             return _buildBar(context, 'Uploading videos ($desc)', progress);
           },
@@ -35,7 +35,7 @@ class SyncProgressBar extends ConsumerWidget {
     );
   }
 
-  Widget _buildBar(BuildContext context, String label, double? progress) {
+  Widget _buildBar(final BuildContext context, final String label, final double? progress) {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),

@@ -1,4 +1,3 @@
-import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -28,7 +27,7 @@ void main() {
 
     messenger.setMockMethodCallHandler(
       const MethodChannel('dev.fluttercommunity.plus/sensors/method'),
-      (call) async => null,
+      (final call) async => null,
     );
   });
 
@@ -39,7 +38,7 @@ void main() {
   });
 
   // Provide tab index=2 so the shake listener starts (review tab active).
-  Widget buildPartyScreenActive({PartyBloc? bloc}) {
+  Widget buildPartyScreenActive({final PartyBloc? bloc}) {
     final effectiveBloc = bloc ?? PartyBloc();
     return ProviderScope(
       overrides: [
@@ -57,8 +56,8 @@ void main() {
   }
 
   /// Sends an accelerometer event through the platform channel directly.
-  Future<void> sendShake(WidgetTester tester) async {
-    final codec = const StandardMethodCodec();
+  Future<void> sendShake(final WidgetTester tester) async {
+    const codec = StandardMethodCodec();
     final now = DateTime.now().microsecondsSinceEpoch;
     for (int i = 0; i < 10; i++) {
       final data = codec.encodeSuccessEnvelope([
@@ -68,20 +67,20 @@ void main() {
       await tester.binding.defaultBinaryMessenger.handlePlatformMessage(
         'dev.fluttercommunity.plus/sensors/user_accel',
         data,
-        (ByteData? reply) {},
+        (final ByteData? reply) {},
       );
     }
     // We need to pump enough to let the detector and then the bloc process it
     await tester.pump(const Duration(milliseconds: 100));
   }
 
-  Future<void> cleanupWidget(WidgetTester tester) async {
+  Future<void> cleanupWidget(final WidgetTester tester) async {
     await db.close();
     await tester.pumpWidget(const SizedBox.shrink());
     await tester.pump(const Duration(milliseconds: 500));
   }
 
-  testWidgets('shows empty state when no moves exist', (tester) async {
+  testWidgets('shows empty state when no moves exist', (final tester) async {
     await tester.pumpWidget(buildPartyScreenActive());
     await tester.pumpAndSettle();
 
@@ -95,7 +94,7 @@ void main() {
   });
 
   testWidgets('shows idle phase with move count and shake prompt', (
-    tester,
+    final tester,
   ) async {
     await seedMove(db, id: 'move-1', name: 'Windmill', category: 'power');
     await seedMove(db, id: 'move-2', name: 'Headspin', category: 'power');
@@ -103,15 +102,15 @@ void main() {
     await tester.pumpWidget(buildPartyScreenActive());
     await tester.pumpAndSettle();
 
-    expect(find.text('Party'), findsAtLeast(1));
-    expect(find.text('2 moves ready'), findsOneWidget);
-    expect(find.text('Shake to discover\na random move'), findsOneWidget);
+    expect(find.text('PARTY'), findsAtLeast(1));
+    expect(find.text('2 MOVES READY'), findsOneWidget);
+    expect(find.text('SHAKE TO DISCOVER\nA RANDOM MOVE'), findsOneWidget);
 
     await cleanupWidget(tester);
   });
 
   testWidgets('shake starts cycling phase with moves in database', (
-    tester,
+    final tester,
   ) async {
     print('DEBUG: Seeding moves...');
     await seedMove(db, id: 'move-1', name: 'Windmill', category: 'power');
@@ -130,8 +129,8 @@ void main() {
     await tester.pump(const Duration(milliseconds: 100));
 
     print('DEBUG: Checking expectations...');
-    expect(find.text('Shuffling...'), findsOneWidget);
-    expect(find.text('Discovering your move...'), findsOneWidget);
+    expect(find.text('SHUFFLING...'), findsOneWidget);
+    expect(find.text('DISCOVERING YOUR MOVE...'), findsOneWidget);
 
     print('DEBUG: Cleaning up...');
     await cleanupWidget(tester);
@@ -140,7 +139,7 @@ void main() {
     print('DEBUG: Test finished!');
   });
 
-  testWidgets('shake reveals a move after full cycle', (tester) async {
+  testWidgets('shake reveals a move after full cycle', (final tester) async {
     await seedMove(db, id: 'move-1', name: 'Windmill', category: 'power');
 
     final bloc = PartyBloc();
@@ -151,15 +150,16 @@ void main() {
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 100));
     
-    // Cycle duration is 5.5s by default. Fast forward.
-    for(int i = 0; i < 20; i++) {
-       await tester.pump(const Duration(milliseconds: 300));
-    }
+    // Manually add a tick event with advanced time so elapsed time exceeds durationMs.
+    // This bypasses the fact that DateTime.now() doesn't advance in real time during the test execution.
+    bloc.add(PartyEvent.tick(DateTime.now().add(const Duration(seconds: 6))));
+    await tester.pump(); // Process the tick event to transition to revealing state
     
-    await tester.pumpAndSettle(); // Animation of reveal
+    await tester.pumpAndSettle(); // Settle the reveal animation which triggers the transition to revealed state
+    await tester.pump(); // Process the final transition to revealed state
 
-    expect(find.text('Windmill'), findsOneWidget);
-    expect(find.text('Shake again for another move'), findsOneWidget);
+    expect(find.text('WINDMILL'), findsOneWidget);
+    expect(find.text('SHAKE AGAIN FOR ANOTHER move'), findsOneWidget);
 
     await cleanupWidget(tester);
     await bloc.close();

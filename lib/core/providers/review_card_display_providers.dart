@@ -28,33 +28,33 @@ class ReviewCardDisplaySettingsNotifier
     );
   }
 
-  Future<void> setShowTitle(bool value) =>
-      _setBool(_showTitleKey, value, (settings) {
+  Future<void> setShowTitle({required final bool value}) =>
+      _setBool(_showTitleKey, value, (final settings) {
         return settings.copyWith(showTitle: value);
       });
 
-  Future<void> setShowState(bool value) =>
-      _setBool(_showStateKey, value, (settings) {
+  Future<void> setShowState({required final bool value}) =>
+      _setBool(_showStateKey, value, (final settings) {
         return settings.copyWith(showState: value);
       });
 
-  Future<void> setShowCategory(bool value) =>
-      _setBool(_showCategoryKey, value, (settings) {
+  Future<void> setShowCategory({required final bool value}) =>
+      _setBool(_showCategoryKey, value, (final settings) {
         return settings.copyWith(showCategory: value);
       });
 
-  Future<void> setShowComboTimeline(bool value) =>
-      _setBool(_showComboTimelineKey, value, (settings) {
+  Future<void> setShowComboTimeline({required final bool value}) =>
+      _setBool(_showComboTimelineKey, value, (final settings) {
         return settings.copyWith(showComboTimeline: value);
       });
 
-  Future<void> setShowComboStepName(bool value) =>
-      _setBool(_showComboStepNameKey, value, (settings) {
+  Future<void> setShowComboStepName({required final bool value}) =>
+      _setBool(_showComboStepNameKey, value, (final settings) {
         return settings.copyWith(showComboStepName: value);
       });
 
-  Future<void> setShowPlaybackControls(bool value) =>
-      _setBool(_showPlaybackControlsKey, value, (settings) {
+  Future<void> setShowPlaybackControls({required final bool value}) =>
+      _setBool(_showPlaybackControlsKey, value, (final settings) {
         return settings.copyWith(showPlaybackControls: value);
       });
 
@@ -74,9 +74,9 @@ class ReviewCardDisplaySettingsNotifier
   }
 
   Future<void> _setBool(
-    String key,
-    bool value,
-    ReviewCardDisplaySettings Function(ReviewCardDisplaySettings settings)
+    final String key,
+    final bool value,
+    final ReviewCardDisplaySettings Function(ReviewCardDisplaySettings settings)
     update,
   ) async {
     final prefs = ref.read(sharedPreferencesProvider);

@@ -24,7 +24,7 @@ class AccentColorSection extends ConsumerWidget {
   const AccentColorSection({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(final BuildContext context, final WidgetRef ref) {
     final accent = ref.watch(accentColorProvider);
 
     return ColorSettingTile(

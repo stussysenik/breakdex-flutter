@@ -7,29 +7,29 @@ class CloudStorageProviderRegistry {
   final List<void Function(List<CloudProvider>)> _listeners = [];
 
   /// Register a cloud provider instance.
-  void register(CloudProvider provider) {
+  void register(final CloudProvider provider) {
     _providers[provider.providerType] = provider;
     _notifyListeners();
   }
 
   /// Unregister a provider by type.
-  void unregister(String providerType) {
+  void unregister(final String providerType) {
     _providers.remove(providerType);
     _notifyListeners();
   }
 
   /// Get a provider by type.
-  CloudProvider? get(String providerType) => _providers[providerType];
+  CloudProvider? get(final String providerType) => _providers[providerType];
 
   /// All registered providers.
   List<CloudProvider> get all => _providers.values.toList(growable: false);
 
   /// Listen for provider registration changes.
-  void addListener(void Function(List<CloudProvider>) listener) {
+  void addListener(final void Function(List<CloudProvider>) listener) {
     _listeners.add(listener);
   }
 
-  void removeListener(void Function(List<CloudProvider>) listener) {
+  void removeListener(final void Function(List<CloudProvider>) listener) {
     _listeners.remove(listener);
   }
 

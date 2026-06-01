@@ -19,7 +19,7 @@ class CanonicalTrashScreen extends ConsumerWidget {
   const CanonicalTrashScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(final BuildContext context, final WidgetRef ref) {
     final trashedAsync = ref.watch(trashedAssetsProvider);
     final colorScheme = Theme.of(context).colorScheme;
 
@@ -52,7 +52,7 @@ class CanonicalTrashScreen extends ConsumerWidget {
               const SizedBox(height: AppSpacing.lg),
               Expanded(
                 child: trashedAsync.when(
-                  data: (assets) {
+                  data: (final assets) {
                     if (assets.isEmpty) {
                       return Center(
                         child: Text('No assets in trash.',
@@ -70,7 +70,7 @@ class CanonicalTrashScreen extends ConsumerWidget {
                     );
                   },
                   loading: () => const Center(child: CircularProgressIndicator()),
-                  error: (error, _) => Center(
+                  error: (final error, _) => Center(
                     child: Text('Could not load trashed assets.',
                         style: AppTypography.bodyMedium.copyWith(color: colorScheme.secondary)),
                   ),
@@ -91,14 +91,14 @@ class _TrashedAssetRow extends ConsumerWidget {
   static const _trashedColor = Color(0xFFE0A030);
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(final BuildContext context, final WidgetRef ref) {
     final colorScheme = Theme.of(context).colorScheme;
     final daysLeft = _computeDaysLeft(asset.deletedAt!);
     final source = _parseSource(asset.sourceType);
 
     return ListTile(
       contentPadding: const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: 4),
-      leading: Icon(Icons.video_file_outlined, color: _trashedColor, size: 28),
+      leading: const Icon(Icons.video_file_outlined, color: _trashedColor, size: 28),
       title: Row(children: [
         Expanded(child: Text(asset.sourceName ?? _shortHash(asset.contentHash),
             style: AppTypography.bodyMedium.copyWith(color: colorScheme.onSurface))),
@@ -108,7 +108,7 @@ class _TrashedAssetRow extends ConsumerWidget {
       subtitle: Text(_formatSubtitle(asset, daysLeft),
           style: AppTypography.caption.copyWith(color: colorScheme.secondary)),
       trailing: PopupMenuButton<_TrashAction>(
-        onSelected: (action) async {
+        onSelected: (final action) async {
           unawaited(HapticFeedback.mediumImpact());
           switch (action) {
             case _TrashAction.restore: await _restore(context, ref, asset);
@@ -123,7 +123,7 @@ class _TrashedAssetRow extends ConsumerWidget {
     );
   }
 
-  Future<void> _restore(BuildContext context, WidgetRef ref, AssetManifestData asset) async {
+  Future<void> _restore(final BuildContext context, final WidgetRef ref, final AssetManifestData asset) async {
     try {
       await ref.read(assetManifestDaoProvider).upsert(AssetManifestCompanion.insert(
             contentHash: asset.contentHash,
@@ -144,10 +144,10 @@ class _TrashedAssetRow extends ConsumerWidget {
   }
 
   Future<void> _deletePermanently(
-      BuildContext context, WidgetRef ref, AssetManifestData asset) async {
+      final BuildContext context, final WidgetRef ref, final AssetManifestData asset) async {
     final confirm = await showDialog<bool>(
       context: context,
-      builder: (ctx) => AlertDialog(
+      builder: (final ctx) => AlertDialog(
         title: const Text('Delete permanently?'),
         content: Text(
             'This removes the asset from Breakdex permanently '
@@ -173,12 +173,12 @@ class _TrashedAssetRow extends ConsumerWidget {
     }
   }
 
-  static int _computeDaysLeft(DateTime deletedAt) {
+  static int _computeDaysLeft(final DateTime deletedAt) {
     final remaining = deletedAt.add(const Duration(days: 30)).difference(DateTime.now());
     return remaining.inDays.clamp(0, 30);
   }
 
-  static AssetSource _parseSource(String sourceType) => switch (sourceType) {
+  static AssetSource _parseSource(final String sourceType) => switch (sourceType) {
         'camera' => AssetSource.camera,
         'photos' => AssetSource.photos,
         'files' => AssetSource.files,
@@ -187,10 +187,10 @@ class _TrashedAssetRow extends ConsumerWidget {
         _ => AssetSource.files,
       };
 
-  static String _shortHash(String hash) =>
+  static String _shortHash(final String hash) =>
       '${hash.substring(0, 4)}\u2026${hash.substring(hash.length - 4)}';
 
-  static String _formatSubtitle(AssetManifestData asset, int daysLeft) {
+  static String _formatSubtitle(final AssetManifestData asset, final int daysLeft) {
     final size = _formatFileSize(asset.fileSizeBytes);
     final reason = asset.tombstoneReason ?? 'Deleted';
     if (daysLeft <= 0) return '$reason \u2014 $size \u2014 Expiring soon';
@@ -198,7 +198,7 @@ class _TrashedAssetRow extends ConsumerWidget {
     return '$reason \u2014 $size \u2014 $daysLeft $dayLabel remaining';
   }
 
-  static String _formatFileSize(int bytes) {
+  static String _formatFileSize(final int bytes) {
     if (bytes < 1024) return '$bytes B';
     if (bytes < 1048576) return '${(bytes / 1024).toStringAsFixed(1)} KB';
     if (bytes < 1073741824) return '${(bytes / 1048576).toStringAsFixed(1)} MB';

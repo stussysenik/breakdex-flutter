@@ -11,7 +11,6 @@ import '../../core/design/colors.dart';
 import '../../core/design/spacing.dart';
 import '../../core/design/typography.dart';
 import '../../core/providers.dart';
-import '../../core/services/media_playback_coordinator.dart';
 import 'instax_video_card.dart';
 
 enum InstaxMode {
@@ -66,14 +65,14 @@ class _InstaxViewerScreenState extends ConsumerState<InstaxViewerScreen>
   }
 
   @override
-  void didChangeAppLifecycleState(AppLifecycleState state) {
+  void didChangeAppLifecycleState(final AppLifecycleState state) {
     if (state == AppLifecycleState.paused) {
       MediaPlaybackCoordinator.shared.pauseAll();
     }
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(final BuildContext context) {
     final mode = ref.watch(_instaxModeProvider);
     final movesAsync = ref.watch(_filteredMovesProvider(widget.category));
     debugPrint('[InstaxViewer] build mode=$mode category=${widget.category}');
@@ -82,21 +81,21 @@ class _InstaxViewerScreenState extends ConsumerState<InstaxViewerScreen>
       backgroundColor: AppColors.darkBg,
       appBar: _buildAppBar(mode),
       body: movesAsync.when(
-        data: (moves) => InstaxVideoViewer(
+        data: (final moves) => InstaxVideoViewer(
           moves: moves,
           category: widget.category,
         ),
         loading: () => const Center(
           child: CircularProgressIndicator(),
         ),
-        error: (err, _) => Center(
+        error: (final err, _) => const Center(
           child: Text('Failed to load moves', style: TextStyle(color: Colors.white38)),
         ),
       ),
     );
   }
 
-  PreferredSizeWidget _buildAppBar(InstaxMode mode) {
+  PreferredSizeWidget _buildAppBar(final InstaxMode mode) {
     final colorScheme = Theme.of(context).colorScheme;
     return PreferredSize(
       preferredSize: const Size.fromHeight(56 + 50),
@@ -124,7 +123,7 @@ class _InstaxViewerScreenState extends ConsumerState<InstaxViewerScreen>
               horizontal: AppSpacing.screenEdge,
             ),
             child: Row(
-              children: InstaxMode.values.map((m) {
+              children: InstaxMode.values.map((final m) {
                 final active = m == mode;
                 return Expanded(
                   child: GestureDetector(
@@ -212,10 +211,10 @@ class _CarouselModeState extends State<_CarouselMode> {
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(final BuildContext context) {
     if (widget.moves.isEmpty) return const SizedBox.shrink();
     return NotificationListener<ScrollNotification>(
-      onNotification: (notification) {
+      onNotification: (final notification) {
         if (notification is ScrollEndNotification) {
           final page = _pageController.page?.round() ?? 0;
           if (page != _activeIndex) {
@@ -228,11 +227,11 @@ class _CarouselModeState extends State<_CarouselMode> {
       child: PageView.builder(
         controller: _pageController,
         itemCount: widget.moves.length,
-        onPageChanged: (i) {
+        onPageChanged: (final i) {
           setState(() => _activeIndex = i);
           debugPrint('[Carousel] onPageChanged=$i move=${widget.moves[i].name}');
         },
-        itemBuilder: (context, index) {
+        itemBuilder: (final context, final index) {
           final move = widget.moves[index];
           return InstaxVideoCard(
             move: move,
@@ -249,7 +248,7 @@ class _CarouselModeState extends State<_CarouselMode> {
     );
   }
 
-  void _onEditVideo(Move move) {
+  void _onEditVideo(final Move move) {
     HapticFeedback.mediumImpact();
     debugPrint('[Carousel] _onEditVideo moveId=${move.id}');
     // TODO: wire up video editor
@@ -301,7 +300,7 @@ class _FeedModeState extends State<_FeedMode> {
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(final BuildContext context) {
     if (widget.moves.isEmpty) return const SizedBox.shrink();
     final screenHeight = MediaQuery.of(context).size.height - kToolbarHeight - 106;
     debugPrint('[Feed] build activeIndex=$_activeIndex screenHeight=$screenHeight');
@@ -309,7 +308,7 @@ class _FeedModeState extends State<_FeedMode> {
     return ListView.builder(
       controller: _scrollController,
       itemCount: widget.moves.length,
-      itemBuilder: (context, index) {
+      itemBuilder: (final context, final index) {
         final move = widget.moves[index];
         return SizedBox(
           height: screenHeight.clamp(400, double.infinity),
@@ -329,7 +328,7 @@ class _FeedModeState extends State<_FeedMode> {
     );
   }
 
-  void _onEditVideo(Move move) {
+  void _onEditVideo(final Move move) {
     HapticFeedback.mediumImpact();
     debugPrint('[Feed] _onEditVideo moveId=${move.id}');
   }
@@ -357,7 +356,7 @@ class _TinderModeState extends State<_TinderMode> {
   }
 
   @override
-  void didUpdateWidget(_TinderMode old) {
+  void didUpdateWidget(final _TinderMode old) {
     super.didUpdateWidget(old);
     if (widget.moves.length != old.moves.length) {
       _topIndex = _topIndex.clamp(0, widget.moves.length - 1);
@@ -365,11 +364,11 @@ class _TinderModeState extends State<_TinderMode> {
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(final BuildContext context) {
     if (widget.moves.isEmpty) return const SizedBox.shrink();
 
     final visibleCards = <Widget>[];
-    final maxStack = 3;
+    const maxStack = 3;
 
     for (int i = _topIndex; i < widget.moves.length && i < _topIndex + maxStack; i++) {
       final move = widget.moves[i];
@@ -387,11 +386,11 @@ class _TinderModeState extends State<_TinderMode> {
 
       if (offset == 0 && widget.moves.length > 1) {
         card = GestureDetector(
-          onHorizontalDragUpdate: (details) {
+          onHorizontalDragUpdate: (final details) {
             if (_swiping) return;
             debugPrint('[Tinder] drag dx=${details.delta.dx}');
           },
-          onHorizontalDragEnd: (details) {
+          onHorizontalDragEnd: (final details) {
             if (_swiping) return;
             final velocity = details.primaryVelocity ?? 0;
             debugPrint('[Tinder] drag end velocity=$velocity');
@@ -433,13 +432,13 @@ class _TinderModeState extends State<_TinderMode> {
     );
   }
 
-  void _onEditVideo(Move move) {
+  void _onEditVideo(final Move move) {
     HapticFeedback.mediumImpact();
     debugPrint('[Tinder] _onEditVideo moveId=${move.id}');
   }
 }
 
-void _onTapMove(BuildContext context, Move move) {
+void _onTapMove(final BuildContext context, final Move move) {
   final videoPath = move.resolvedVideoPath;
   debugPrint('[InstaxViewer] _onTapMove moveId=${move.id} name="${move.name}" '
       'hasVideo=${videoPath != null}');
@@ -454,10 +453,10 @@ void _onTapMove(BuildContext context, Move move) {
 }
 
 final _filteredMovesProvider =
-    FutureProvider.family<List<Move>, String>((ref, category) async {
+    FutureProvider.family<List<Move>, String>((final ref, final category) async {
   final repo = ref.watch(moveRepositoryProvider);
   final all = await repo.getAll();
-  return all.where((m) => m.category == category).toList();
+  return all.where((final m) => m.category == category).toList();
 });
 
 class InstaxVideoViewer extends ConsumerWidget {
@@ -471,7 +470,7 @@ class InstaxVideoViewer extends ConsumerWidget {
   final String category;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(final BuildContext context, final WidgetRef ref) {
     final mode = ref.watch(_instaxModeProvider);
 
     if (moves.isEmpty) {
@@ -479,7 +478,7 @@ class InstaxVideoViewer extends ConsumerWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(Icons.camera_alt_outlined, size: 48, color: Colors.white24),
+            const Icon(Icons.camera_alt_outlined, size: 48, color: Colors.white24),
             const SizedBox(height: AppSpacing.md),
             Text(
               'No moves yet',

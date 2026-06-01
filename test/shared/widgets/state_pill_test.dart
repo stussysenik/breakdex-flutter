@@ -10,7 +10,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
   testWidgets('state pill uses the configured semantic color and label', (
-    tester,
+    final tester,
   ) async {
     const customLearning = Color(0xFF4A8F6A);
 
@@ -25,7 +25,7 @@ void main() {
       ProviderScope(
         overrides: [sharedPreferencesProvider.overrideWithValue(prefs)],
         child: Consumer(
-          builder: (context, ref, _) {
+          builder: (final context, final ref, _) {
             final stateColors = ref.watch(learningStateColorsProvider);
             return MaterialApp(
               theme: AppTheme.light(stateColors: stateColors),
@@ -44,7 +44,7 @@ void main() {
     expect(label.style?.color, customLearning);
   });
 
-  testWidgets('state pill can act as a quick edit control', (tester) async {
+  testWidgets('state pill can act as a quick edit control', (final tester) async {
     SharedPreferences.setMockInitialValues({});
     final prefs = await SharedPreferences.getInstance();
     var tapped = false;
@@ -53,7 +53,7 @@ void main() {
       ProviderScope(
         overrides: [sharedPreferencesProvider.overrideWithValue(prefs)],
         child: Consumer(
-          builder: (context, ref, _) {
+          builder: (final context, final ref, _) {
             final stateColors = ref.watch(learningStateColorsProvider);
             return MaterialApp(
               theme: AppTheme.light(stateColors: stateColors),

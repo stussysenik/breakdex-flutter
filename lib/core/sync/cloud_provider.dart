@@ -83,24 +83,24 @@ abstract interface class AssetStorageProvider {
   Future<void> deauthenticate();
   Future<bool> get isAuthenticated;
   Future<RemoteAsset> upload({
-    required String localPath,
-    required String remotePath,
-    TransferProgress? onProgress,
-    CancellationToken? cancel,
+    required final String localPath,
+    required final String remotePath,
+    final TransferProgress? onProgress,
+    final CancellationToken? cancel,
   });
   Future<void> download({
-    required String remotePath,
-    required String localPath,
-    TransferProgress? onProgress,
-    CancellationToken? cancel,
+    required final String remotePath,
+    required final String localPath,
+    final TransferProgress? onProgress,
+    final CancellationToken? cancel,
   });
   Future<bool> verify({
-    required String remotePath,
-    String? expectedHash,
-    int? expectedSize,
+    required final String remotePath,
+    final String? expectedHash,
+    final int? expectedSize,
   });
-  Future<List<RemoteAsset>> list({required String directory});
-  Future<void> delete({required String remotePath});
+  Future<List<RemoteAsset>> list({required final String directory});
+  Future<void> delete({required final String remotePath});
   Future<({int totalBytes, int usedBytes})?> quota();
 }
 
@@ -124,11 +124,11 @@ class MediaAccessGrant {
 abstract interface class MediaDeliveryProvider {
   String get providerType;
 
-  Future<MediaAccessGrant> resolveOriginal(AssetDescriptor asset);
+  Future<MediaAccessGrant> resolveOriginal(final AssetDescriptor asset);
 
   Future<MediaAccessGrant?> resolvePreview(
-    AssetDescriptor asset, {
-    String? preset,
+    final AssetDescriptor asset, {
+    final String? preset,
   });
 }
 
@@ -177,10 +177,10 @@ abstract class CloudProvider implements AssetStorageProvider {
   /// Supports progress callbacks and cancellation for large files.
   @override
   Future<RemoteAsset> upload({
-    required String localPath,
-    required String remotePath,
-    TransferProgress? onProgress,
-    CancellationToken? cancel,
+    required final String localPath,
+    required final String remotePath,
+    final TransferProgress? onProgress,
+    final CancellationToken? cancel,
   });
 
   /// Download a remote file to a local path.
@@ -190,28 +190,28 @@ abstract class CloudProvider implements AssetStorageProvider {
   /// resume after interruption.
   @override
   Future<void> download({
-    required String remotePath,
-    required String localPath,
-    TransferProgress? onProgress,
-    CancellationToken? cancel,
+    required final String remotePath,
+    required final String localPath,
+    final TransferProgress? onProgress,
+    final CancellationToken? cancel,
   });
 
   /// Verify that a remote file exists and optionally matches expected
   /// hash/size. Returns true if the remote copy is valid.
   @override
   Future<bool> verify({
-    required String remotePath,
-    String? expectedHash,
-    int? expectedSize,
+    required final String remotePath,
+    final String? expectedHash,
+    final int? expectedSize,
   });
 
   /// List all assets in a remote directory.
   @override
-  Future<List<RemoteAsset>> list({required String directory});
+  Future<List<RemoteAsset>> list({required final String directory});
 
   /// Delete a remote file.
   @override
-  Future<void> delete({required String remotePath});
+  Future<void> delete({required final String remotePath});
 
   /// Query storage quota. Returns null if quota is unavailable.
   @override

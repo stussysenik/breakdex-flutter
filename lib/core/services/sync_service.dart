@@ -28,10 +28,10 @@ class SyncService {
   });
 
   TaskEither<AppFailure, Unit> authenticate() {
-    return authService.refreshAuth().mapLeft((f) => AppFailure.sync('Authentication failed: ${f.message}'));
+    return authService.refreshAuth().mapLeft((final f) => AppFailure.sync('Authentication failed: ${f.message}'));
   }
 
-  TaskEither<AppFailure, Unit> pushMetadata(void Function(int, int, String) onProgress) {
+  TaskEither<AppFailure, Unit> pushMetadata(final void Function(int, int, String) onProgress) {
     return TaskEither.tryCatch(
       () async {
         final pending = await syncDao.getPendingChanges();
@@ -81,16 +81,16 @@ class SyncService {
             }
           } catch (e) {
             debugPrint('[SyncService] Batch commit failed: $e');
-            throw e;
+            rethrow;
           }
         }
         return unit;
       },
-      (error, stackTrace) => AppFailure.sync('Pushing metadata failed: $error'),
+      (final error, final stackTrace) => AppFailure.sync('Pushing metadata failed: $error'),
     );
   }
 
-  TaskEither<AppFailure, Unit> uploadVideos(void Function(int, int, String) onProgress) {
+  TaskEither<AppFailure, Unit> uploadVideos(final void Function(int, int, String) onProgress) {
     return TaskEither.tryCatch(
       () async {
         final pending = await syncDao.getPendingVideoUploads();
@@ -129,7 +129,7 @@ class SyncService {
         }
         return unit;
       },
-      (error, stackTrace) => AppFailure.sync('Uploading videos failed: $error'),
+      (final error, final stackTrace) => AppFailure.sync('Uploading videos failed: $error'),
     );
   }
 
@@ -150,7 +150,7 @@ class SyncService {
             }
 
             final snapshot = await query.get();
-            final records = snapshot.docs.map((doc) => doc.data()).toList();
+            final records = snapshot.docs.map((final doc) => doc.data()).toList();
 
             for (final record in records) {
               await _mergeRemoteRecord(table, record);
@@ -159,7 +159,7 @@ class SyncService {
         }
         return unit;
       },
-      (error, stackTrace) => AppFailure.sync('Pulling remote metadata failed: $error'),
+      (final error, final stackTrace) => AppFailure.sync('Pulling remote metadata failed: $error'),
     );
   }
 
@@ -171,7 +171,7 @@ class SyncService {
 
         final cards = await db.fsrsCardsDao.getAll();
         final stateByMoveId = {
-          for (final card in cards.where((card) => card.entityType == 'move'))
+          for (final card in cards.where((final card) => card.entityType == 'move'))
             card.entityId: _learningStateFromFsrs(card.fsrsState),
         };
 
@@ -185,11 +185,11 @@ class SyncService {
         }
         return unit;
       },
-      (error, stackTrace) => AppFailure.database('Reconciling legacy states failed: $error'),
+      (final error, final stackTrace) => AppFailure.database('Reconciling legacy states failed: $error'),
     );
   }
 
-  TaskEither<AppFailure, Unit> downloadVideos(void Function(int, int, String) onProgress) {
+  TaskEither<AppFailure, Unit> downloadVideos(final void Function(int, int, String) onProgress) {
     return TaskEither.tryCatch(
       () async {
         final userId = authService.userId;
@@ -227,7 +227,7 @@ class SyncService {
 
             await File(localPath).writeAsBytes(bytes);
 
-            await (db.update(db.moves)..where((t) => t.id.equals(moveId))).write(
+            await (db.update(db.moves)..where((final t) => t.id.equals(moveId))).write(
               MovesCompanion(videoPath: Value(VideoPathResolver.toRelative(localPath))),
             );
           } catch (_) {}
@@ -266,7 +266,7 @@ class SyncService {
 
             await File(localPath).writeAsBytes(bytes);
 
-            await (db.update(db.combos)..where((t) => t.id.equals(comboId))).write(
+            await (db.update(db.combos)..where((final t) => t.id.equals(comboId))).write(
               CombosCompanion(activeVideoPath: Value(VideoPathResolver.toRelative(localPath))),
             );
           } catch (_) {}
@@ -274,7 +274,7 @@ class SyncService {
 
         return unit;
       },
-      (error, stackTrace) => AppFailure.sync('Downloading videos failed: $error'),
+      (final error, final stackTrace) => AppFailure.sync('Downloading videos failed: $error'),
     );
   }
 
@@ -285,13 +285,13 @@ class SyncService {
         await prefs.setInt('last_sync_at', DateTime.now().millisecondsSinceEpoch);
         return unit;
       },
-      (error, stackTrace) => AppFailure.sync('Reconciling albums failed: $error'),
+      (final error, final stackTrace) => AppFailure.sync('Reconciling albums failed: $error'),
     );
   }
 
   // --- Private Helpers ---
 
-  Future<Map<String, dynamic>?> _getLocalRecordBody(String table, String id) async {
+  Future<Map<String, dynamic>?> _getLocalRecordBody(final String table, final String id) async {
     try {
       switch (table) {
         case 'moves':
@@ -313,7 +313,7 @@ class SyncService {
             'active_video_path': combo.activeVideoPath,
           };
         case 'combo_moves':
-          final result = await (db.select(db.comboMoves)..where((t) => t.id.equals(id))).getSingle();
+          final result = await (db.select(db.comboMoves)..where((final t) => t.id.equals(id))).getSingle();
           return {
             'id': result.id,
             'sequence_index': result.sequenceIndex,
@@ -321,7 +321,7 @@ class SyncService {
             'move_id': result.moveId,
           };
         case 'reviews':
-          final results = await (db.select(db.reviews)..where((t) => t.id.equals(id))).get();
+          final results = await (db.select(db.reviews)..where((final t) => t.id.equals(id))).get();
           if (results.isEmpty) return null;
           final review = results.first;
           return {
@@ -353,7 +353,7 @@ class SyncService {
             'fsrs_state': card.fsrsState,
           };
         case 'battle_results':
-          final results = await (db.select(db.battleResults)..where((t) => t.id.equals(id))).get();
+          final results = await (db.select(db.battleResults)..where((final t) => t.id.equals(id))).get();
           if (results.isEmpty) return null;
           final br = results.first;
           return {
@@ -375,7 +375,7 @@ class SyncService {
     }
   }
 
-  Future<void> _mergeRemoteRecord(String table, Map<String, dynamic> record) async {
+  Future<void> _mergeRemoteRecord(final String table, final Map<String, dynamic> record) async {
     try {
       switch (table) {
         case 'moves':
@@ -456,7 +456,7 @@ class SyncService {
     } catch (_) {}
   }
 
-  String _learningStateFromFsrs(int fsrsState) => switch (fsrsState) {
+  String _learningStateFromFsrs(final int fsrsState) => switch (fsrsState) {
     2 => 'MASTERY',
     1 || 3 => 'LEARNING',
     _ => 'NEW',

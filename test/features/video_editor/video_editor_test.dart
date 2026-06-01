@@ -100,7 +100,7 @@ void main() {
     setUp(() {
       log = [];
       TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
-          .setMockMethodCallHandler(exportChannel, (call) async {
+          .setMockMethodCallHandler(exportChannel, (final call) async {
             log.add(call);
             if (call.method == 'exportVideo') {
               final args = Map<String, dynamic>.from(call.arguments as Map);
@@ -118,7 +118,7 @@ void main() {
     test('export button should be disabled during export (state test)', () {
       // Simulates the _exporting flag logic from VideoEditorScreen.
       // The export button is disabled when exporting OR editor not ready.
-      bool shouldDisable(bool exporting, bool isEditorReady) =>
+      bool shouldDisable(final bool exporting, final bool isEditorReady) =>
           exporting || !isEditorReady;
 
       expect(
@@ -146,7 +146,7 @@ void main() {
 
     test('trim range normalization clamps values correctly', () {
       // Simulates _clampToTrim logic
-      double clampToTrim(double normalized, double trimStart, double trimEnd) {
+      double clampToTrim(final double normalized, final double trimStart, final double trimEnd) {
         return normalized.clamp(trimStart, trimEnd).toDouble();
       }
 
@@ -158,7 +158,7 @@ void main() {
     });
 
     test('rotation normalizes to 0-360 range', () {
-      int normalizeRotation(int rotation) {
+      int normalizeRotation(final int rotation) {
         return ((rotation % 360) + 360) % 360;
       }
 
@@ -173,7 +173,7 @@ void main() {
     });
 
     test('segment duration calculation is correct', () {
-      int segmentDurationMs(double trimStart, double trimEnd, int totalMs) {
+      int segmentDurationMs(final double trimStart, final double trimEnd, final int totalMs) {
         if (totalMs <= 0) return 0;
         return ((trimEnd - trimStart).clamp(0.0, 1.0) * totalMs).round();
       }
@@ -186,7 +186,7 @@ void main() {
     });
 
     test('format duration produces correct MM:SS strings', () {
-      String formatDuration(double ms) {
+      String formatDuration(final double ms) {
         final d = Duration(milliseconds: ms.round());
         final minutes = d.inMinutes.remainder(60).toString().padLeft(2, '0');
         final seconds = d.inSeconds.remainder(60).toString().padLeft(2, '0');
@@ -465,13 +465,13 @@ void main() {
       // only update if position changed by more than _kPlaybackTolerance
       const kPlaybackTolerance = 0.002;
       final oldValue = notifier.value;
-      final newValue = 0.6005; // within tolerance
+      const newValue = 0.6005; // within tolerance
       if ((newValue - oldValue).abs() > kPlaybackTolerance) {
         notifier.value = newValue;
       }
       expect(listenerCallCount, 1); // No extra notification
 
-      final bigChange = 0.65; // outside tolerance
+      const bigChange = 0.65; // outside tolerance
       if ((bigChange - notifier.value).abs() > kPlaybackTolerance) {
         notifier.value = bigChange;
       }

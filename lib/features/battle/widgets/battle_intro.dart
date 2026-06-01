@@ -17,7 +17,7 @@ class BattleIntro extends StatelessWidget {
   final VoidCallback onStart;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(final BuildContext context) {
     final cs = Theme.of(context).colorScheme;
 
     return Padding(
@@ -98,7 +98,7 @@ class _DifficultyCard extends StatelessWidget {
   final VoidCallback onTap;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(final BuildContext context) {
     final cs = Theme.of(context).colorScheme;
 
     return GestureDetector(

@@ -38,7 +38,7 @@ class _SetMoveCardState extends State<SetMoveCard> {
   bool _showDelete = false;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(final BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
 
     return GestureDetector(

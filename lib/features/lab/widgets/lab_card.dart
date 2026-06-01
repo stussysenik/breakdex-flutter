@@ -28,7 +28,7 @@ class LabCard extends StatelessWidget {
   final VoidCallback? onTap;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(final BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
 
     if (compact) {
@@ -38,7 +38,7 @@ class LabCard extends StatelessWidget {
   }
 
   /// Full card for list view — name, status pill, progress bar, metadata.
-  Widget _buildFullCard(BuildContext context, ColorScheme colorScheme) {
+  Widget _buildFullCard(final BuildContext context, final ColorScheme colorScheme) {
     return GestureDetector(
       onTap: onTap,
       behavior: HitTestBehavior.opaque,
@@ -106,7 +106,7 @@ class LabCard extends StatelessWidget {
   }
 
   /// Compact card for board columns — name + status only.
-  Widget _buildCompactCard(BuildContext context, ColorScheme colorScheme) {
+  Widget _buildCompactCard(final BuildContext context, final ColorScheme colorScheme) {
     return GestureDetector(
       onTap: onTap,
       behavior: HitTestBehavior.opaque,
@@ -154,7 +154,7 @@ class _StatusPill extends StatelessWidget {
   final String status;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(final BuildContext context) {
     final (label, color) = _statusMeta(status);
 
     return Container(
@@ -185,7 +185,7 @@ class _StatusPill extends StatelessWidget {
     );
   }
 
-  static (String, Color) _statusMeta(String status) => switch (status) {
+  static (String, Color) _statusMeta(final String status) => switch (status) {
         'idea' => ('Idea', const Color(0xFFA7B1C2)),
         'attempting' => ('Attempting', AppColors.stateLearning),
         'landed' => ('Landed', AppColors.stateMastery),
@@ -206,7 +206,7 @@ class _LabProgressBar extends StatelessWidget {
   final String status;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(final BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
     final (_, color) = _StatusPill._statusMeta(status);
     final progress = _progressForStatus(status);
@@ -222,7 +222,7 @@ class _LabProgressBar extends StatelessWidget {
     );
   }
 
-  static double _progressForStatus(String status) => switch (status) {
+  static double _progressForStatus(final String status) => switch (status) {
         'idea' => 0.1,
         'attempting' => 0.4,
         'landed' => 0.75,

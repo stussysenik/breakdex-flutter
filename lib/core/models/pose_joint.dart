@@ -26,7 +26,7 @@ class PoseJoint {
   });
 
   /// Deserialize from the native Vision ML plugin's joint dictionary.
-  factory PoseJoint.fromMap(Map<String, dynamic> map) {
+  factory PoseJoint.fromMap(final Map<String, dynamic> map) {
     return PoseJoint(
       name: map['name'] as String? ?? '',
       x: (map['x'] as num?)?.toDouble() ?? 0.0,

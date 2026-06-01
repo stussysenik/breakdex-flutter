@@ -151,7 +151,7 @@ class AssetProvenanceEntry {
   });
 
   @override
-  bool operator ==(Object other) =>
+  bool operator ==(final Object other) =>
       other is AssetProvenanceEntry &&
       other.eventType == eventType &&
       other.recordedAt == recordedAt;
@@ -172,15 +172,15 @@ class ProvenanceTrail {
   AssetProvenanceEntry get first => _entries.first;
   AssetProvenanceEntry get last => _entries.last;
 
-  ProvenanceTrail add(AssetProvenanceEntry entry) =>
+  ProvenanceTrail add(final AssetProvenanceEntry entry) =>
       ProvenanceTrail._([..._entries, entry]);
 
   @override
-  bool operator ==(Object other) =>
+  bool operator ==(final Object other) =>
       other is ProvenanceTrail &&
       _entries.length == other._entries.length &&
       _entries.asMap().entries.every(
-            (e) => e.value == other._entries[e.key],
+            (final e) => e.value == other._entries[e.key],
           );
 
   @override

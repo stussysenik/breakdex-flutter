@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/cupertino.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/providers.dart';
@@ -36,17 +38,27 @@ class _VideoEditorScreenState extends ConsumerState<VideoEditorScreen> {
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(final BuildContext context) {
     final useSimplified = ref.watch(useSimplifiedVideoEditorProvider);
-
-    if (useSimplified) {
-      return SimplifiedVideoEditorView(videoPath: widget.videoPath);
-    }
+    final colorScheme = Theme.of(context).colorScheme;
 
     return Scaffold(
-      backgroundColor: Colors.black,
+      backgroundColor: colorScheme.surface,
+      floatingActionButton: FloatingActionButton.small(
+        onPressed: () {
+          HapticFeedback.mediumImpact();
+          ref.read(useSimplifiedVideoEditorProvider.notifier).toggle();
+        },
+        backgroundColor: colorScheme.secondaryContainer,
+        child: Icon(
+          useSimplified ? CupertinoIcons.square_grid_2x2 : CupertinoIcons.film,
+          color: colorScheme.onSecondaryContainer,
+        ),
+      ),
       body: SafeArea(
-        child: RobustVideoEditorView(controller: _controller),
+        child: useSimplified
+            ? SimplifiedVideoEditorView(videoPath: widget.videoPath)
+            : RobustVideoEditorView(controller: _controller),
       ),
     );
   }

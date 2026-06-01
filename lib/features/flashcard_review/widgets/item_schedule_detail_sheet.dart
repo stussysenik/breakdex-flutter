@@ -27,7 +27,7 @@ class ItemScheduleDetailSheet extends ConsumerWidget {
 
   final ReviewableItemWithCard item;
 
-  static Future<void> show(BuildContext context, ReviewableItemWithCard item) {
+  static Future<void> show(final BuildContext context, final ReviewableItemWithCard item) {
     return showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -37,7 +37,7 @@ class ItemScheduleDetailSheet extends ConsumerWidget {
   }
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(final BuildContext context, final WidgetRef ref) {
     final colorScheme = Theme.of(context).colorScheme;
     final canReviewNow = item.item is ReviewableMove;
     final coefficientsAsync = ref.watch(
@@ -136,8 +136,8 @@ class ItemScheduleDetailSheet extends ConsumerWidget {
                   child: CircularProgressIndicator(strokeWidth: 2),
                 ),
               ),
-              error: (error, stackTrace) => const SizedBox.shrink(),
-              data: (intervals) => _RatingPreviews(intervals: intervals),
+              error: (final error, final stackTrace) => const SizedBox.shrink(),
+              data: (final intervals) => _RatingPreviews(intervals: intervals),
             ),
             const SizedBox(height: AppSpacing.lg),
 
@@ -170,8 +170,8 @@ class ItemScheduleDetailSheet extends ConsumerWidget {
                         child: CircularProgressIndicator(strokeWidth: 2),
                       ),
                     ),
-                    error: (error, stackTrace) => const SizedBox.shrink(),
-                    data: (coeff) => _CoefficientDisplay(coeff: coeff),
+                    error: (final error, final stackTrace) => const SizedBox.shrink(),
+                    data: (final coeff) => _CoefficientDisplay(coeff: coeff),
                   ),
                 ],
               ),
@@ -233,7 +233,7 @@ class _StateBadge extends ConsumerWidget {
   final int fsrsState;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(final BuildContext context, final WidgetRef ref) {
     final visibleState = learningStateFromFsrsState(fsrsState);
     final labels = ref.watch(learningStateLabelsProvider);
     final label = resolveLearningStateLabel(labels, visibleState);
@@ -263,7 +263,7 @@ class _CoefficientDisplay extends StatelessWidget {
   final SrsCoefficients coeff;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(final BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
     final retPct = (coeff.retrievability * 100).round();
 
@@ -327,7 +327,7 @@ class _CoefficientDisplay extends StatelessWidget {
     );
   }
 
-  static String _fmtDuration(Duration d) {
+  static String _fmtDuration(final Duration d) {
     if (d.inDays > 0) return '${d.inDays}d';
     if (d.inHours > 0) return '${d.inHours}h';
     return '${d.inMinutes}m';
@@ -348,7 +348,7 @@ class _CoeffBar extends StatelessWidget {
   final Color color;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(final BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
 
     return Column(
@@ -399,7 +399,7 @@ class _StatChip extends StatelessWidget {
   final Color color;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(final BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
 
     return Expanded(
@@ -438,12 +438,12 @@ class _RatingPreviews extends StatelessWidget {
   final Map<ReviewRating, Duration> intervals;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(final BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
     final now = DateTime.now();
 
     return Column(
-      children: ReviewRating.values.map((rating) {
+      children: ReviewRating.values.map((final rating) {
         final interval = intervals[rating] ?? Duration.zero;
         final nextDue = now.add(interval);
         final dateStr = _formatDate(nextDue);
@@ -495,13 +495,13 @@ class _RatingPreviews extends StatelessWidget {
     );
   }
 
-  static String _formatInterval(Duration d) {
+  static String _formatInterval(final Duration d) {
     if (d.inDays > 0) return '${d.inDays}d';
     if (d.inHours > 0) return '${d.inHours}h';
     return '${d.inMinutes}m';
   }
 
-  static String _formatDate(DateTime dt) {
+  static String _formatDate(final DateTime dt) {
     final months = [
       'Jan',
       'Feb',

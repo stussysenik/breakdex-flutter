@@ -52,7 +52,7 @@ class _MovePhotosSectionState extends State<MovePhotosSection> {
     }
   }
 
-  Future<String?> _resolveAbsolutePath(String filename) async {
+  Future<String?> _resolveAbsolutePath(final String filename) async {
     final dir = await _photoDirectory();
     final fullPath = p.join(dir, filename);
     return File(fullPath).existsSync() ? fullPath : null;
@@ -63,7 +63,7 @@ class _MovePhotosSectionState extends State<MovePhotosSection> {
     try {
       final source = await showModalBottomSheet<String>(
         context: context,
-        builder: (ctx) => SafeArea(
+        builder: (final ctx) => SafeArea(
           child: Padding(
             padding: const EdgeInsets.all(AppSpacing.screenEdge),
             child: Column(
@@ -120,13 +120,13 @@ class _MovePhotosSectionState extends State<MovePhotosSection> {
     if (mounted) setState(() => _loading = false);
   }
 
-  Future<void> _viewPhoto(String filename) async {
+  Future<void> _viewPhoto(final String filename) async {
     final fullPath = await _resolveAbsolutePath(filename);
     if (fullPath == null || !mounted) return;
 
     await showDialog(
       context: context,
-      builder: (ctx) => Dialog.fullscreen(
+      builder: (final ctx) => Dialog.fullscreen(
         child: Stack(
           fit: StackFit.expand,
           children: [
@@ -153,20 +153,20 @@ class _MovePhotosSectionState extends State<MovePhotosSection> {
     );
   }
 
-  Future<void> _deletePhoto(String filename) async {
+  Future<void> _deletePhoto(final String filename) async {
     final dir = await _photoDirectory();
     final file = File(p.join(dir, filename));
     if (await file.exists()) {
       await file.delete();
     }
 
-    final updated = _paths.where((p) => p != filename).toList();
+    final updated = _paths.where((final p) => p != filename).toList();
     widget.onChanged(updated.isEmpty ? null : jsonEncode(updated));
     unawaited(HapticFeedback.mediumImpact());
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(final BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
     final paths = _paths;
 
@@ -195,9 +195,9 @@ class _MovePhotosSectionState extends State<MovePhotosSection> {
                 child: ListView.separated(
                   scrollDirection: Axis.horizontal,
                   itemCount: paths.length,
-                  separatorBuilder: (_, __) =>
+                  separatorBuilder: (_, _) =>
                       const SizedBox(width: AppSpacing.sm),
-                  itemBuilder: (context, index) {
+                  itemBuilder: (final context, final index) {
                     final filename = paths[index];
                     return _PhotoThumbnail(
                       filename: filename,
@@ -227,7 +227,7 @@ class _AddPhotoButton extends StatelessWidget {
   final ColorScheme colorScheme;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(final BuildContext context) {
     return GestureDetector(
       onTap: loading ? null : onTap,
       child: Container(
@@ -304,7 +304,7 @@ class _PhotoThumbnailState extends State<_PhotoThumbnail> {
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(final BuildContext context) {
     if (_absolutePath == null) {
       return const _PhotoPlaceholder();
     }
@@ -320,7 +320,7 @@ class _PhotoThumbnailState extends State<_PhotoThumbnail> {
           child: Image.file(
             File(_absolutePath!),
             fit: BoxFit.cover,
-            errorBuilder: (_, __, ___) => const _PhotoPlaceholder(),
+            errorBuilder: (_, _, _) => const _PhotoPlaceholder(),
           ),
         ),
       ),
@@ -332,7 +332,7 @@ class _PhotoPlaceholder extends StatelessWidget {
   const _PhotoPlaceholder();
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(final BuildContext context) {
     return Container(
       width: 120,
       height: 120,

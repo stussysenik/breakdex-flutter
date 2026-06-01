@@ -1,12 +1,11 @@
-import 'dart:math' as math;
-
 import 'package:flutter/material.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/services.dart';
-import 'package:go_router/go_router.dart';
 import 'package:video_player/video_player.dart';
 
 import '../../core/design/spacing.dart';
 import '../../core/design/typography.dart';
+import '../../core/utils/diagnostics.dart';
 import 'robust_trim_timeline.dart';
 import 'video_edit_geometry.dart';
 import 'video_editor_controller.dart';
@@ -21,39 +20,93 @@ class RobustVideoEditorView extends StatefulWidget {
 }
 
 class _RobustVideoEditorViewState extends State<RobustVideoEditorView> {
-  final TransformationController _transformController = TransformationController();
-  
+  final TransformationController _transformController =
+      TransformationController();
+  bool _isPreviewMode = false;
+  VideoEditViewport? _currentViewport;
+  bool _matrixInitialized = false;
+
+  @override
+  void initState() {
+    super.initState();
+  }
+
   @override
   void dispose() {
     _transformController.dispose();
     super.dispose();
   }
 
+  void _syncCropToController() {
+    final viewport = _currentViewport;
+    if (viewport == null) return;
+    final crop = viewport.normalizedCropRect(_transformController.value);
+    DiagnosticsLog.info('VideoEditor', 'Syncing crop to controller: ${crop.left.toStringAsFixed(3)},${crop.top.toStringAsFixed(3)}');
+    widget.controller.updateCrop(crop);
+  }
+
+  void _applyClamping() {
+    final viewport = _currentViewport;
+    if (viewport == null) return;
+    final currentTransform = _transformController.value;
+    final clamped = viewport.clampTransform(currentTransform);
+    if (!matrixCloseTo(currentTransform, clamped)) {
+      _transformController.value = clamped;
+    }
+  }
+
+  static const _speeds = ['0.25x', '0.5x', '1x', '1.5x', '2x'];
+  static const _aspects = ['Original', 'Free Form', '9:16', '16:9', '1:1', '4:5', 'Custom...'];
+
   @override
-  Widget build(BuildContext context) {
+  Widget build(final BuildContext context) {
     final controller = widget.controller;
     final colorScheme = Theme.of(context).colorScheme;
 
     return ListenableBuilder(
       listenable: controller,
-      builder: (context, _) {
-        if (controller.error != null) {
-          // ... error handling
+      builder: (final context, _) {
+        final status = controller.status;
+
+        if (status is EditorError) {
           return Center(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const Icon(Icons.error_outline, color: Colors.red, size: 48),
-                const SizedBox(height: 16),
-                Text(controller.error!, style: const TextStyle(color: Colors.red), textAlign: TextAlign.center),
-                const SizedBox(height: 24),
-                ElevatedButton(onPressed: () => Navigator.of(context).pop(), child: const Text('Back')),
-              ],
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.all(AppSpacing.lg),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Icon(CupertinoIcons.exclamationmark_circle, color: Colors.red, size: 48),
+                  const SizedBox(height: 16),
+                  Text(
+                    'EXPORT FAILED',
+                    style: AppTypography.labelLarge.copyWith(color: Colors.red, letterSpacing: 2),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    status.message,
+                    style: TextStyle(
+                      color: Colors.red.shade700,
+                      fontFamily: 'monospace',
+                      fontSize: 11,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 24),
+                  ElevatedButton(
+                    onPressed: () => Navigator.of(context).pop(),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: colorScheme.errorContainer,
+                      foregroundColor: colorScheme.onErrorContainer,
+                    ),
+                    child: const Text('Back to Gallery'),
+                  ),
+                ],
+              ),
             ),
           );
         }
 
-        if (!controller.isInitialized) {
+        if (status is EditorInitializing || controller.playerController == null) {
           return const Center(child: CircularProgressIndicator());
         }
 
@@ -65,180 +118,229 @@ class _RobustVideoEditorViewState extends State<RobustVideoEditorView> {
             Column(
               children: [
                 // Top Bar
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: AppSpacing.sm),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      TextButton(
-                        onPressed: () => Navigator.of(context).pop(),
-                        child: Text('Cancel', style: TextStyle(color: colorScheme.secondary)),
-                      ),
-                      Text(
-                        'EDIT VIDEO',
-                        style: AppTypography.labelLarge.copyWith(color: Colors.white, letterSpacing: 2),
-                      ),
-                      TextButton(
-                        onPressed: controller.isExporting ? null : () async {
-                          final result = await controller.export();
-                          if (result != null && context.mounted) {
-                            Navigator.of(context).pop(result);
-                          }
-                        },
-                        child: Text(
-                          'SAVE',
-                          style: TextStyle(
-                            color: colorScheme.primary,
-                            fontWeight: FontWeight.bold,
+                AnimatedContainer(
+                  duration: const Duration(milliseconds: 200),
+                  height: _isPreviewMode ? 0 : null,
+                  decoration: const BoxDecoration(),
+                  clipBehavior: Clip.antiAlias,
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: AppSpacing.sm),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        if (controller.hasUnsavedChanges)
+                          TextButton(
+                            onPressed: controller.revertToCommitted,
+                            child: Text('Discard', style: TextStyle(color: colorScheme.error)),
+                          )
+                        else
+                          TextButton(
+                            onPressed: () => Navigator.of(context).pop(),
+                            child: Text('Cancel', style: TextStyle(color: colorScheme.secondary)),
                           ),
+                        Text(
+                          'EDIT VIDEO',
+                          style: AppTypography.labelLarge.copyWith(color: colorScheme.onSurface, letterSpacing: 2),
+                        ),
+                        TextButton(
+                          onPressed: controller.isExporting ? null : () async {
+                            controller.commitEdits();
+                            final result = await controller.export();
+                            if (result != null && context.mounted) {
+                              Navigator.of(context).pop(result);
+                            }
+                          },
+                          child: Text(
+                            'SAVE',
+                            style: TextStyle(
+                              color: colorScheme.primary,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+
+                // Preview Area
+                Expanded(
+                  child: Stack(
+                    children: [
+                      Center(
+                        child: Padding(
+                          padding: EdgeInsets.all(_isPreviewMode ? 0 : AppSpacing.screenEdge),
+                          child: LayoutBuilder(
+                            builder: (final context, final constraints) {
+                              final aspects = <double?>[
+                                null, // Original
+                                null, // Free Form
+                                9 / 16,
+                                16 / 9,
+                                1 / 1,
+                                4 / 5,
+                                controller.customAspectRatio,
+                              ];
+                              final targetAspect =
+                                  aspects[controller.selectedAspectIndex];
+
+                              final viewport = computeVideoEditViewport(
+                                videoSize: videoSize,
+                                rotation: controller.rotation,
+                                maxWidth: constraints.maxWidth,
+                                maxHeight: constraints.maxHeight,
+                                targetAspect: targetAspect,
+                              );
+                              
+                              if (!_matrixInitialized || _currentViewport?.size != viewport.size) {
+                                _currentViewport = viewport;
+                                _transformController.value = viewport.initialTransform();
+                                _matrixInitialized = true;
+                                DiagnosticsLog.info('VideoEditor', 'Viewport initialized: ${viewport.size.width.toInt()}x${viewport.size.height.toInt()}');
+                              } else {
+                                _currentViewport = viewport;
+                              }
+
+                              return AnimatedContainer(
+                                duration: const Duration(milliseconds: 300),
+                                curve: Curves.easeInOutCubic,
+                                width: viewport.size.width,
+                                height: viewport.size.height,
+                                decoration: BoxDecoration(
+                                  color: Colors.black,
+                                  borderRadius: BorderRadius.circular(
+                                      _isPreviewMode ? 0 : AppRadius.md),
+                                  border: _isPreviewMode
+                                      ? null
+                                      : Border.all(
+                                          color: colorScheme.outlineVariant,
+                                          width: 1.5),
+                                  boxShadow: _isPreviewMode
+                                      ? null
+                                      : const [
+                                          BoxShadow(
+                                              color: Colors.black54,
+                                              blurRadius: 12),
+                                        ],
+                                ),
+                                clipBehavior: Clip.antiAlias,
+                                child: GestureDetector(
+                                  onTap: controller.togglePlay,
+                                  child: InteractiveViewer(
+                                    transformationController:
+                                        _transformController,
+                                    minScale: viewport.minScale,
+                                    maxScale: viewport.maxScale,
+                                    boundaryMargin: const EdgeInsets.all(
+                                        double.infinity),
+                                    constrained: false,
+                                    onInteractionUpdate: (_) => _applyClamping(),
+                                    onInteractionEnd: (_) => _syncCropToController(),
+                                    child: Center(
+                                      child: RotatedBox(
+                                        quarterTurns: (controller.rotation % 360) ~/ 90,
+                                        child: SizedBox(
+                                          width: videoSize.width,
+                                          height: videoSize.height,
+                                          child: VideoPlayer(
+                                              controller.playerController!),
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              );
+                            },
+                          ),
+                        ),
+                      ),
+                      
+                      // Preview Toggle Button - Moved to Top Right
+                      Positioned(
+                        top: AppSpacing.lg,
+                        right: AppSpacing.lg,
+                        child: FloatingActionButton.small(
+                          onPressed: () => setState(() => _isPreviewMode = !_isPreviewMode),
+                          backgroundColor: Colors.black45,
+                          foregroundColor: Colors.white,
+                          child: Icon(_isPreviewMode ? CupertinoIcons.pencil : CupertinoIcons.eye),
                         ),
                       ),
                     ],
                   ),
                 ),
 
-                // Preview Area
-                Expanded(
-                  child: Center(
-                    child: Padding(
-                      padding: const EdgeInsets.all(AppSpacing.screenEdge),
-                      child: LayoutBuilder(
-                        builder: (context, constraints) {
-                          final aspects = <double?>[
-                            null, // Original
-                            null, // Free Form
-                            9 / 16,
-                            16 / 9,
-                            1 / 1,
-                            4 / 5,
-                            controller.customAspectRatio,
-                          ];
-                          final targetAspect = aspects[controller.selectedAspectIndex];
-
-                          final viewport = computeVideoEditViewport(
-                            videoSize: videoSize,
-                            rotation: controller.rotation,
-                            maxWidth: constraints.maxWidth,
-                            maxHeight: constraints.maxHeight,
-                            targetAspect: targetAspect,
-                          );
-
-                          // Reset matrix on transform change to keep it centered
-                          WidgetsBinding.instance.addPostFrameCallback((_) {
-                            if (!mounted) return;
-                            final matrix = Matrix4.identity();
-                            final isRotated = (controller.rotation / 90).round() % 2 != 0;
-                            final orientedSize = isRotated 
-                                ? Size(videoSize.height, videoSize.width)
-                                : videoSize;
-                            
-                            final scale = viewport.size.width / orientedSize.width;
-                            matrix.scale(scale);
-                            
-                            // Center the rotated video in the viewport
-                            // Note: InteractiveViewer handles centering if constraints match
-                            _transformController.value = matrix;
-                          });
-
-                          return Container(
-                            width: viewport.size.width,
-                            height: viewport.size.height,
-                            decoration: BoxDecoration(
-                              color: Colors.black,
-                              borderRadius: BorderRadius.circular(AppRadius.md),
-                              border: Border.all(color: colorScheme.outlineVariant, width: 1.5),
-                              boxShadow: [
-                                BoxShadow(color: Colors.black54, blurRadius: 12),
+                // Controls Area
+                AnimatedContainer(
+                  duration: const Duration(milliseconds: 200),
+                  height: _isPreviewMode ? 0 : null,
+                  decoration: const BoxDecoration(),
+                  clipBehavior: Clip.antiAlias,
+                  child: Container(
+                    padding: const EdgeInsets.fromLTRB(AppSpacing.screenEdge, AppSpacing.lg, AppSpacing.screenEdge, AppSpacing.xl),
+                    decoration: BoxDecoration(
+                      color: colorScheme.surface,
+                      borderRadius: const BorderRadius.vertical(top: Radius.circular(AppRadius.lg)),
+                    ),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        RobustTrimTimeline(
+                          trimStart: controller.trimStart,
+                          trimEnd: controller.trimEnd,
+                          playbackPosition: controller.playbackPosition,
+                          isPlaying: controller.isPlaying,
+                          thumbnails: controller.thumbnails,
+                          videoDurationMs: controller.videoDuration.inMilliseconds,
+                          onTrimChanged: controller.updateTrim,
+                          onPlayheadChanged: controller.seekToNormalized,
+                        ),
+                        const SizedBox(height: AppSpacing.lg),
+                        _buildPillSelector(
+                          label: 'SPEED',
+                          items: _speeds,
+                          selectedIndex: controller.selectedSpeedIndex,
+                          onSelected: controller.setSpeed,
+                          colorScheme: colorScheme,
+                        ),
+                        const SizedBox(height: AppSpacing.md),
+                        _buildPillSelector(
+                          label: 'ASPECT RATIO',
+                          items: _aspects,
+                          selectedIndex: controller.selectedAspectIndex,
+                          onSelected: (final i) {
+                            if (i == 6) {
+                              _showCustomAspectDialog(context);
+                            } else {
+                              controller.setAspect(i);
+                            }
+                          },
+                          colorScheme: colorScheme,
+                        ),
+                        const SizedBox(height: AppSpacing.lg),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                          children: [
+                            _TransformBtn(
+                              icon: CupertinoIcons.rotate_left,
+                              label: 'Rotate Left',
+                              onTap: () => controller.setRotation(controller.rotation - 90),
+                            ),
+                            Column(
+                              children: [
+                                Text('ROTATION', style: AppTypography.caption.copyWith(color: colorScheme.secondary)),
+                                Text('${controller.rotation}°', style: const TextStyle(fontWeight: FontWeight.bold)),
                               ],
                             ),
-                            clipBehavior: Clip.antiAlias,
-                            child: InteractiveViewer(
-                              transformationController: _transformController,
-                              minScale: viewport.minScale,
-                              maxScale: viewport.maxScale,
-                              boundaryMargin: const EdgeInsets.all(double.infinity),
-                              constrained: false,
-                              child: Transform.rotate(
-                                angle: controller.rotation * math.pi / 180,
-                                child: SizedBox(
-                                  width: videoSize.width,
-                                  height: videoSize.height,
-                                  child: VideoPlayer(controller.playerController!),
-                                ),
-                              ),
+                            _TransformBtn(
+                              icon: CupertinoIcons.rotate_right,
+                              label: 'Rotate Right',
+                              onTap: () => controller.setRotation(controller.rotation + 90),
                             ),
-                          );
-                        },
-                      ),
+                          ],
+                        ),
+                      ],
                     ),
-                  ),
-                ),
-
-                // Controls Area
-                Container(
-                  padding: const EdgeInsets.fromLTRB(AppSpacing.screenEdge, AppSpacing.lg, AppSpacing.screenEdge, AppSpacing.xl),
-                  decoration: BoxDecoration(
-                    color: colorScheme.surface,
-                    borderRadius: const BorderRadius.vertical(top: Radius.circular(AppRadius.lg)),
-                  ),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      RobustTrimTimeline(
-                        trimStart: controller.trimStart,
-                        trimEnd: controller.trimEnd,
-                        playbackPosition: controller.playbackPosition,
-                        isPlaying: controller.isPlaying,
-                        thumbnails: controller.thumbnails,
-                        videoDurationMs: controller.videoDuration.inMilliseconds,
-                        onTrimChanged: controller.updateTrim,
-                        onPlayheadChanged: controller.seekToNormalized,
-                      ),
-                      const SizedBox(height: AppSpacing.lg),
-                      _buildPillSelector(
-                        label: 'SPEED',
-                        items: _speeds,
-                        selectedIndex: controller.selectedSpeedIndex,
-                        onSelected: controller.setSpeed,
-                        colorScheme: colorScheme,
-                      ),
-                      const SizedBox(height: AppSpacing.md),
-                      _buildPillSelector(
-                        label: 'ASPECT RATIO',
-                        items: _aspects,
-                        selectedIndex: controller.selectedAspectIndex,
-                        onSelected: (i) {
-                          if (i == 6) {
-                            _showCustomAspectDialog(context);
-                          } else {
-                            controller.setAspect(i);
-                          }
-                        },
-                        colorScheme: colorScheme,
-                      ),
-                      const SizedBox(height: AppSpacing.lg),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                        children: [
-                          _TransformBtn(
-                            icon: Icons.rotate_left_rounded,
-                            label: 'Rotate Left',
-                            onTap: () => controller.setRotation(controller.rotation - 90),
-                          ),
-                          Column(
-                            children: [
-                              Text('ROTATION', style: AppTypography.caption.copyWith(color: colorScheme.secondary)),
-                              Text('${controller.rotation}°', style: const TextStyle(fontWeight: FontWeight.bold)),
-                            ],
-                          ),
-                          _TransformBtn(
-                            icon: Icons.rotate_right_rounded,
-                            label: 'Rotate Right',
-                            onTap: () => controller.setRotation(controller.rotation + 90),
-                          ),
-                        ],
-                      ),
-                    ],
                   ),
                 ),
               ],
@@ -252,8 +354,8 @@ class _RobustVideoEditorViewState extends State<RobustVideoEditorView> {
     );
   }
 
-  Widget _buildExportOverlay(ColorScheme colorScheme) {
-    final progress = controller.exportProgress;
+  Widget _buildExportOverlay(final ColorScheme colorScheme) {
+    final progress = widget.controller.exportProgress;
     return Container(
       color: Colors.black87,
       child: Center(
@@ -287,13 +389,13 @@ class _RobustVideoEditorViewState extends State<RobustVideoEditorView> {
     );
   }
 
-  void _showCustomAspectDialog(BuildContext context) {
+  void _showCustomAspectDialog(final BuildContext context) {
     final controllerX = TextEditingController();
     final controllerY = TextEditingController();
     
-    showDialog(
+    showDialog<void>(
       context: context,
-      builder: (ctx) => AlertDialog(
+      builder: (final ctx) => AlertDialog(
         title: const Text('Custom Aspect Ratio'),
         content: Row(
           children: [
@@ -309,7 +411,7 @@ class _RobustVideoEditorViewState extends State<RobustVideoEditorView> {
               final x = double.tryParse(controllerX.text);
               final y = double.tryParse(controllerY.text);
               if (x != null && y != null && y > 0) {
-                controller.setAspect(6, custom: x / y);
+                widget.controller.setAspect(6, custom: x / y);
               }
               Navigator.pop(ctx);
             },
@@ -321,11 +423,11 @@ class _RobustVideoEditorViewState extends State<RobustVideoEditorView> {
   }
 
   Widget _buildPillSelector({
-    required String label,
-    required List<String> items,
-    required int selectedIndex,
-    required ValueChanged<int> onSelected,
-    required ColorScheme colorScheme,
+    required final String label,
+    required final List<String> items,
+    required final int selectedIndex,
+    required final ValueChanged<int> onSelected,
+    required final ColorScheme colorScheme,
   }) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -338,7 +440,7 @@ class _RobustVideoEditorViewState extends State<RobustVideoEditorView> {
             scrollDirection: Axis.horizontal,
             itemCount: items.length,
             separatorBuilder: (_, _) => const SizedBox(width: 8),
-            itemBuilder: (context, i) {
+            itemBuilder: (final context, final i) {
               final isSelected = i == selectedIndex;
               return GestureDetector(
                 onTap: () {
@@ -377,7 +479,7 @@ class _TransformBtn extends StatelessWidget {
   final VoidCallback onTap;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(final BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
     return Column(
       mainAxisSize: MainAxisSize.min,
@@ -391,7 +493,7 @@ class _TransformBtn extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 2),
-        Text(label, style: const TextStyle(fontSize: 9, color: Colors.white54)),
+        Text(label, style: AppTypography.caption.copyWith(color: colorScheme.secondary)),
       ],
     );
   }

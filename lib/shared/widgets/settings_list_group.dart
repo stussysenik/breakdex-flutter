@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../core/design/spacing.dart';
+import '../../core/design/theme.dart';
 import '../../core/design/typography.dart';
 
 class SettingsListGroup extends StatelessWidget {
@@ -9,26 +10,18 @@ class SettingsListGroup extends StatelessWidget {
   final List<Widget> children;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(final BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
 
     return Container(
-      decoration: BoxDecoration(
-        color: colorScheme.surfaceContainerHighest.withValues(alpha: 0.32),
-        borderRadius: BorderRadius.circular(AppRadius.md),
-        border: Border.all(color: colorScheme.outline.withValues(alpha: 0.18)),
-      ),
+      decoration: AppSurfaces.panel(context, tone: AppSurfaceTone.muted, radius: AppRadius.md),
       child: ClipRRect(
         borderRadius: BorderRadius.circular(AppRadius.md),
         child: Column(
           children: [
             for (var i = 0; i < children.length; i++) ...[
               if (i > 0)
-                Divider(
-                  height: 1,
-                  thickness: 1,
-                  color: colorScheme.outline.withValues(alpha: 0.12),
-                ),
+                const Divider(height: 1),
               children[i],
             ],
           ],
@@ -59,7 +52,7 @@ class SettingsListRow extends StatelessWidget {
   final EdgeInsetsGeometry? padding;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(final BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
 
     return Material(

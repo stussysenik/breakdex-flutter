@@ -19,19 +19,19 @@ class FakeMoveRepository implements MoveRepository {
         Move(id: '3', name: 'Move 3', category: 'default', learningState: 'MASTERY', count: 0, createdAt: DateTime.utc(2026)),
       ]);
   @override
-  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
+  dynamic noSuchMethod(final Invocation invocation) => super.noSuchMethod(invocation);
 }
 
 class FakeComboRepository implements ComboRepository {
   @override
   Stream<List<(Combo, int)>> watchAllWithMoveCounts() => Stream.value([]);
   @override
-  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
+  dynamic noSuchMethod(final Invocation invocation) => super.noSuchMethod(invocation);
 }
 
 void main() {
   testWidgets('state review launcher uses the quieter summary layout', (
-    tester,
+    final tester,
   ) async {
     SharedPreferences.setMockInitialValues({});
     final prefs = await SharedPreferences.getInstance();
@@ -42,9 +42,9 @@ void main() {
           moveRepositoryProvider.overrideWithValue(FakeMoveRepository()),
           comboRepositoryProvider.overrideWithValue(FakeComboRepository()),
           sharedPreferencesProvider.overrideWithValue(prefs),
-          totalReviewableCountProvider.overrideWith((ref) async => 3),
+          totalReviewableCountProvider.overrideWith((final ref) async => 3),
           reviewStateMatrixProvider.overrideWith(
-            (ref) async => const ReviewStateMatrix(
+            (final ref) async => const ReviewStateMatrix(
               moveCounts: {
                 LearningState.newState: 1,
                 LearningState.learning: 1,

@@ -15,9 +15,9 @@ class NativeShareSheet extends NativeBridge {
   static final NativeShareSheet _instance = NativeShareSheet._();
 
   static Future<void> shareText({
-    required String text,
-    String? subject,
-    Rect? sharePositionOrigin,
+    required final String text,
+    final String? subject,
+    final Rect? sharePositionOrigin,
   }) async {
     if (kIsWeb || defaultTargetPlatform != TargetPlatform.iOS) {
       await Share.share(
@@ -36,9 +36,9 @@ class NativeShareSheet extends NativeBridge {
   }
 
   static Future<void> shareFiles({
-    required List<String> filePaths,
-    String? subject,
-    Rect? sharePositionOrigin,
+    required final List<String> filePaths,
+    final String? subject,
+    final Rect? sharePositionOrigin,
   }) async {
     if (kIsWeb || defaultTargetPlatform != TargetPlatform.iOS) {
       await Share.shareXFiles(
@@ -56,7 +56,7 @@ class NativeShareSheet extends NativeBridge {
     });
   }
 
-  static Map<String, double> _originArgs(Rect? origin) {
+  static Map<String, double> _originArgs(final Rect? origin) {
     if (origin == null) return const {};
 
     return {

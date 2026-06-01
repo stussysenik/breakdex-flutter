@@ -8,7 +8,7 @@ enum ThemeSetting { system, dark, light }
 
 enum ViewingMode { standard, monoOutline }
 
-final sharedPreferencesProvider = Provider<SharedPreferences>((ref) {
+final sharedPreferencesProvider = Provider<SharedPreferences>((final ref) {
   throw UnimplementedError('Override in main');
 });
 
@@ -23,14 +23,14 @@ class ThemeSettingNotifier extends Notifier<ThemeSetting> {
   @override
   ThemeSetting build() {
     final prefs = ref.watch(sharedPreferencesProvider);
-    final value = prefs.getString(_key) ?? 'system';
+    final value = prefs.getString(_key) ?? 'light';
     return ThemeSetting.values.firstWhere(
-      (e) => e.name == value,
-      orElse: () => ThemeSetting.system,
+      (final e) => e.name == value,
+      orElse: () => ThemeSetting.light,
     );
   }
 
-  Future<void> set(ThemeSetting setting) async {
+  Future<void> set(final ThemeSetting setting) async {
     final prefs = ref.read(sharedPreferencesProvider);
     await prefs.setString(_key, setting.name);
     state = setting;
@@ -63,12 +63,12 @@ class ViewingModeNotifier extends Notifier<ViewingMode> {
     final prefs = ref.watch(sharedPreferencesProvider);
     final value = prefs.getString(_key) ?? ViewingMode.standard.name;
     return ViewingMode.values.firstWhere(
-      (e) => e.name == value,
+      (final e) => e.name == value,
       orElse: () => ViewingMode.standard,
     );
   }
 
-  Future<void> set(ViewingMode mode) async {
+  Future<void> set(final ViewingMode mode) async {
     final prefs = ref.read(sharedPreferencesProvider);
     await prefs.setString(_key, mode.name);
     state = mode;
@@ -95,7 +95,7 @@ class AppModeNotifier extends Notifier<AppMode> {
     return AppMode.fromString(prefs.getString(_key));
   }
 
-  Future<void> set(AppMode mode) async {
+  Future<void> set(final AppMode mode) async {
     final prefs = ref.read(sharedPreferencesProvider);
     await prefs.setString(_key, mode.name);
     state = mode;
@@ -117,7 +117,7 @@ class PartyCycleDurationMsNotifier extends Notifier<int> {
     return prefs.getInt(_key) ?? _defaultMs;
   }
 
-  Future<void> set(int ms) async {
+  Future<void> set(final int ms) async {
     final prefs = ref.read(sharedPreferencesProvider);
     await prefs.setInt(_key, ms);
     state = ms;
@@ -167,3 +167,44 @@ class UseSimplifiedVideoEditorNotifier extends Notifier<bool> {
     state = next;
   }
 }
+
+final fsrsEnabledProvider = NotifierProvider<FsrsEnabledNotifier, bool>(
+  FsrsEnabledNotifier.new,
+);
+
+class FsrsEnabledNotifier extends Notifier<bool> {
+  static const _key = 'fsrs_enabled';
+
+  @override
+  bool build() {
+    final prefs = ref.watch(sharedPreferencesProvider);
+    return prefs.getBool(_key) ?? true;
+  }
+
+  Future<void> set({required final bool enabled}) async {
+    final prefs = ref.read(sharedPreferencesProvider);
+    await prefs.setBool(_key, enabled);
+    state = enabled;
+  }
+}
+
+final quietModeEnabledProvider = NotifierProvider<QuietModeEnabledNotifier, bool>(
+  QuietModeEnabledNotifier.new,
+);
+
+class QuietModeEnabledNotifier extends Notifier<bool> {
+  static const _key = 'quiet_mode_enabled';
+
+  @override
+  bool build() {
+    final prefs = ref.watch(sharedPreferencesProvider);
+    return prefs.getBool(_key) ?? false;
+  }
+
+  Future<void> set({required final bool enabled}) async {
+    final prefs = ref.read(sharedPreferencesProvider);
+    await prefs.setBool(_key, enabled);
+    state = enabled;
+  }
+}
+

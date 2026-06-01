@@ -22,17 +22,17 @@ class LabSetsView extends ConsumerWidget {
   const LabSetsView({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(final BuildContext context, final WidgetRef ref) {
     final setsAsync = ref.watch(_setsStreamProvider);
 
     return setsAsync.when(
       loading: () => const SliverFillRemaining(
         child: Center(child: CircularProgressIndicator()),
       ),
-      error: (e, _) => SliverFillRemaining(
+      error: (final e, _) => SliverFillRemaining(
         child: Center(child: Text('Error: $e')),
       ),
-      data: (sets) {
+      data: (final sets) {
         if (sets.isEmpty) {
           return const SliverFillRemaining(child: _SetsEmptyState());
         }
@@ -43,7 +43,7 @@ class LabSetsView extends ConsumerWidget {
           ),
           sliver: SliverList.builder(
             itemCount: sets.length,
-            itemBuilder: (_, index) {
+            itemBuilder: (_, final index) {
               final lab = sets[index];
               return _SetCard(
                 lab: lab,
@@ -72,7 +72,7 @@ class LabSetsView extends ConsumerWidget {
 }
 
 /// Stream provider for sets only — filters to labType='set'.
-final _setsStreamProvider = StreamProvider<List<Lab>>((ref) {
+final _setsStreamProvider = StreamProvider<List<Lab>>((final ref) {
   return ref.watch(labsDaoProvider).watchByType('set');
 });
 
@@ -87,7 +87,7 @@ class _SetCard extends ConsumerWidget {
   final VoidCallback? onTap;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(final BuildContext context, final WidgetRef ref) {
     final colorScheme = Theme.of(context).colorScheme;
     final movesAsync = ref.watch(labMovesProvider(lab.id));
     final moves = movesAsync.valueOrNull ?? [];
@@ -221,7 +221,7 @@ class _SetsEmptyState extends StatelessWidget {
   const _SetsEmptyState();
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(final BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
 
     return Center(

@@ -108,7 +108,7 @@ class InstrumentPanel extends StatelessWidget {
   bool get _isCombo => comboMoves.isNotEmpty;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(final BuildContext context) {
     debugPrint('[InstrumentPanel] build: title="$title" state=$state displaySettings=${displaySettings.showState}');
     if (!showMetadata) return const SizedBox.shrink();
 
@@ -196,7 +196,7 @@ class InstrumentPanel extends StatelessWidget {
                 onStepSelected: onStepSelected ?? (_) {},
                 overlay: false,
                 stepNames:
-                    comboMoves.map((cm) => cm.move.name).toList(),
+                    comboMoves.map((final cm) => cm.move.name).toList(),
               ),
               const SizedBox(height: AppSpacing.sm),
             ],
@@ -279,7 +279,7 @@ class _InstrumentButton extends StatelessWidget {
   final VoidCallback? onTap;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(final BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
 
     return GestureDetector(
@@ -328,7 +328,7 @@ class _SpeedButton extends StatelessWidget {
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(final BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
     final isDefault = speed == 1.0;
 

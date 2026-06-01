@@ -121,12 +121,12 @@ class VideoReliabilityReport {
 /// videos without requiring the user to visit each move detail screen.
 class VideoReliabilityRuntime with WidgetsBindingObserver {
   VideoReliabilityRuntime({
-    required MovesDao movesDao,
-    required MoveRepository moveRepository,
-    required VideoService videoService,
-    required VideoRetrievalController retrievalController,
-    required Stream<ConnectionType> connectionTypeStream,
-    DateTime Function()? now,
+    required final MovesDao movesDao,
+    required final MoveRepository moveRepository,
+    required final VideoService videoService,
+    required final VideoRetrievalController retrievalController,
+    required final Stream<ConnectionType> connectionTypeStream,
+    final DateTime Function()? now,
     this.maxPriorityMoves = 12,
     this.maxAutomaticRecoveries = 4,
   }) : _movesDao = movesDao,
@@ -171,13 +171,13 @@ class VideoReliabilityRuntime with WidgetsBindingObserver {
   }
 
   @override
-  void didChangeAppLifecycleState(AppLifecycleState state) {
+  void didChangeAppLifecycleState(final AppLifecycleState state) {
     if (state != AppLifecycleState.resumed) return;
     unawaited(runSweep(trigger: VideoReliabilityTrigger.resume));
   }
 
   Future<VideoReliabilityReport> runSweep({
-    required VideoReliabilityTrigger trigger,
+    required final VideoReliabilityTrigger trigger,
   }) async {
     final activeSweep = _runningSweep;
     if (activeSweep != null) return activeSweep;
@@ -191,7 +191,7 @@ class VideoReliabilityRuntime with WidgetsBindingObserver {
     }
   }
 
-  void _handleConnectionType(ConnectionType next) {
+  void _handleConnectionType(final ConnectionType next) {
     final previous = _lastConnectionType;
     _lastConnectionType = next;
     if (previous == null) return;
@@ -200,8 +200,8 @@ class VideoReliabilityRuntime with WidgetsBindingObserver {
   }
 
   bool _isConnectivityImprovement(
-    ConnectionType previous,
-    ConnectionType next,
+    final ConnectionType previous,
+    final ConnectionType next,
   ) {
     if (previous == ConnectionType.none && next != ConnectionType.none) {
       return true;
@@ -214,7 +214,7 @@ class VideoReliabilityRuntime with WidgetsBindingObserver {
   }
 
   Future<VideoReliabilityReport> _runSweep({
-    required VideoReliabilityTrigger trigger,
+    required final VideoReliabilityTrigger trigger,
   }) async {
     final moves = await _movesDao.getAll();
     final priorityMoves = moves.take(maxPriorityMoves);
@@ -297,7 +297,7 @@ class VideoReliabilityRuntime with WidgetsBindingObserver {
     return report;
   }
 
-  VideoReliabilityDisposition _classify(VideoRetrievalSnapshot snapshot) {
+  VideoReliabilityDisposition _classify(final VideoRetrievalSnapshot snapshot) {
     switch (snapshot.state) {
       case VideoRetrievalState.available:
         return snapshot.progress >= 1
@@ -319,8 +319,8 @@ class VideoReliabilityRuntime with WidgetsBindingObserver {
   }
 
   Future<void> _attachLocalPathToMoves(
-    String contentHash,
-    String localPath,
+    final String contentHash,
+    final String localPath,
   ) async {
     final relativePath = VideoPathResolver.toRelative(localPath);
     final moves = await _movesDao.getActiveByContentHash(contentHash);

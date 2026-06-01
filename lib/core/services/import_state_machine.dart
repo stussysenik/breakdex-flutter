@@ -2,7 +2,6 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:drift/drift.dart' show Value;
-import 'package:flutter/foundation.dart';
 
 import '../database/daos/asset_copies_dao.dart';
 import '../database/daos/asset_manifest_dao.dart';
@@ -41,11 +40,11 @@ class ImportStateMachine {
   Stream<ImportState> get stateStream => _stateController.stream;
 
   ImportStateMachine({
-    required CanonicalImportGate gate,
-    required CanonicalFolderService folderService,
-    required AssetManifestDao manifestDao,
-    required AssetCopiesDao copiesDao,
-    required AssetHashService hashService,
+    required final CanonicalImportGate gate,
+    required final CanonicalFolderService folderService,
+    required final AssetManifestDao manifestDao,
+    required final AssetCopiesDao copiesDao,
+    required final AssetHashService hashService,
     this.phaseTimeout = const Duration(seconds: 60),
   }) : _gate = gate,
        _folderService = folderService,
@@ -56,9 +55,9 @@ class ImportStateMachine {
   final Duration phaseTimeout;
 
   Future<CanonicalAssetLive> import({
-    required String sourcePath,
-    required String displayName,
-    required AssetSource source,
+    required final String sourcePath,
+    required final String displayName,
+    required final AssetSource source,
   }) async {
     _transition(ImportPhase.hashing, progress: 0.0);
 
@@ -109,7 +108,7 @@ class ImportStateMachine {
         ImportPhase.verifying,
       );
       if (canonicalHash != _current.hash) {
-        throw _ImportException(
+        throw const _ImportException(
           'Content hash mismatch after copy — integrity check failed',
         );
       }
@@ -168,7 +167,7 @@ class ImportStateMachine {
         importedAt: now,
         lastVerifiedAt: now,
         copyCount: 1,
-        provenance: ProvenanceTrail.empty().add(
+        provenance: const ProvenanceTrail.empty().add(
           AssetProvenanceEntry(
             eventType: 'imported',
             recordedAt: now,
@@ -191,11 +190,11 @@ class ImportStateMachine {
   }
 
   void _transition(
-    ImportPhase phase, {
-    double? progress,
-    String? hash,
-    CanonicalAssetLive? asset,
-    String? error,
+    final ImportPhase phase, {
+    final double? progress,
+    final String? hash,
+    final CanonicalAssetLive? asset,
+    final String? error,
   }) {
     _current = ImportState(
       phase: phase,
@@ -207,7 +206,7 @@ class ImportStateMachine {
     _stateController.add(_current);
   }
 
-  Future<T> _withPhaseTimeout<T>(Future<T> operation, ImportPhase phase) async {
+  Future<T> _withPhaseTimeout<T>(final Future<T> operation, final ImportPhase phase) async {
     _startPhaseTimer(phase);
     try {
       return await operation.timeout(
@@ -221,7 +220,7 @@ class ImportStateMachine {
     }
   }
 
-  void _startPhaseTimer(ImportPhase phase) {
+  void _startPhaseTimer(final ImportPhase phase) {
     _clearPhaseTimer();
     _phaseTimer = Timer(phaseTimeout, () {
       _timeoutController.add(true);

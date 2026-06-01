@@ -2,7 +2,6 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'settings_service.dart';
-import '../database/daos/moves_dao.dart';
 import '../design/colors.dart';
 import '../providers.dart';
 
@@ -25,7 +24,7 @@ class Category {
     'isDefault': isDefault,
   };
 
-  factory Category.fromJson(Map<String, dynamic> json) => Category(
+  factory Category.fromJson(final Map<String, dynamic> json) => Category(
     name: json['name'] as String,
     colorValue: json['colorValue'] as int,
     isDefault: json['isDefault'] as bool? ?? false,
@@ -66,13 +65,13 @@ class CategoriesNotifier extends Notifier<List<Category>> {
     if (json == null) return List.from(_defaultCategories);
     try {
       final list = jsonDecode(json) as List;
-      return list.map((e) => Category.fromJson(e as Map<String, dynamic>)).toList();
+      return list.map((final e) => Category.fromJson(e as Map<String, dynamic>)).toList();
     } catch (_) {
       return List.from(_defaultCategories);
     }
   }
 
-  Future<void> addCategory(String name, Color color) async {
+  Future<void> addCategory(final String name, final Color color) async {
     final updated = [
       ...state,
       Category(name: name, colorValue: color.toARGB32()),
@@ -81,8 +80,8 @@ class CategoriesNotifier extends Notifier<List<Category>> {
     await _persist(updated);
   }
 
-  Future<void> removeCategory(String name) async {
-    final updated = state.where((c) => c.name != name).toList();
+  Future<void> removeCategory(final String name) async {
+    final updated = state.where((final c) => c.name != name).toList();
     state = updated;
     await _persist(updated);
   }
@@ -94,11 +93,11 @@ class CategoriesNotifier extends Notifier<List<Category>> {
   /// 2. Batch-updates all moves in SQLite
   /// 3. Moves physical video folders to the new semantic location
   Future<void> renameCategory(
-    String oldName,
-    String newName,
-    Color color,
+    final String oldName,
+    final String newName,
+    final Color color,
   ) async {
-    final updated = state.map((c) {
+    final updated = state.map((final c) {
       if (c.name == oldName) {
         return Category(
           name: newName,
@@ -118,11 +117,11 @@ class CategoriesNotifier extends Notifier<List<Category>> {
     }
   }
 
-  Future<void> _persist(List<Category> categories) async {
+  Future<void> _persist(final List<Category> categories) async {
     final prefs = ref.read(sharedPreferencesProvider);
     await prefs.setString(
       _key,
-      jsonEncode(categories.map((c) => c.toJson()).toList()),
+      jsonEncode(categories.map((final c) => c.toJson()).toList()),
     );
   }
 }

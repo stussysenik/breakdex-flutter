@@ -12,7 +12,7 @@ class WipBadge extends StatelessWidget {
   static const _badgeColor = Color(0xFFD97706);
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(final BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
     return Container(
       padding: EdgeInsets.symmetric(
@@ -46,7 +46,7 @@ class WipTabIcon extends StatelessWidget {
   static const _badgeColor = Color(0xFFD97706);
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(final BuildContext context) {
     return Stack(
       clipBehavior: Clip.none,
       children: [

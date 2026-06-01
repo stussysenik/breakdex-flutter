@@ -14,7 +14,7 @@ class SecondaryButton extends StatelessWidget {
   final VoidCallback? onPressed;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(final BuildContext context) {
     final fill = Theme.of(context).colorScheme.surfaceContainerHighest;
     final brightness = Theme.of(context).brightness;
     return DecoratedBox(

@@ -37,8 +37,8 @@ final appRouter = GoRouter(
   navigatorKey: _rootNavigatorKey,
   initialLocation: '/breakdex',
   observers: [appRouteObserver],
-  errorBuilder: (context, state) => const _RedirectToHome(),
-  redirect: (context, state) {
+  errorBuilder: (final context, final state) => const _RedirectToHome(),
+  redirect: (final context, final state) {
     if (state.matchedLocation == '/') {
       return '/breakdex';
     }
@@ -46,7 +46,7 @@ final appRouter = GoRouter(
   },
   routes: [
     StatefulShellRoute.indexedStack(
-      builder: (context, state, navigationShell) =>
+      builder: (final context, final state, final navigationShell) =>
           BottomNavShell(navigationShell: navigationShell),
       branches: [
         // Breakdex — moves library home
@@ -54,15 +54,15 @@ final appRouter = GoRouter(
           routes: [
             GoRoute(
               path: '/breakdex',
-              builder: (context, state) => const BreakdexScreen(),
+              builder: (final context, final state) => const BreakdexScreen(),
               routes: [
                 GoRoute(
                   path: 'moves',
-                  builder: (context, state) => const MoveCategoryScreen(),
+                  builder: (final context, final state) => const MoveCategoryScreen(),
                   routes: [
                     GoRoute(
                       path: ':category',
-                      builder: (context, state) =>
+                      builder: (final context, final state) =>
                           MoveCategoryDetailScreen(
                             categoryName: state.pathParameters['category']!,
                           ),
@@ -71,16 +71,16 @@ final appRouter = GoRouter(
                 ),
                 GoRoute(
                   path: 'combos',
-                  builder: (context, state) => const ComboListScreen(),
+                  builder: (final context, final state) => const ComboListScreen(),
                 ),
                 GoRoute(
                   path: 'move/:id',
-                  builder: (context, state) =>
+                  builder: (final context, final state) =>
                       MoveDetailScreen(moveId: state.pathParameters['id']!),
                 ),
                 GoRoute(
                   path: 'combo/:id',
-                  builder: (context, state) =>
+                  builder: (final context, final state) =>
                       ComboDetailScreen(comboId: state.pathParameters['id']!),
                 ),
               ],
@@ -90,7 +90,7 @@ final appRouter = GoRouter(
         // Add — create moves
         StatefulShellBranch(
           routes: [
-            GoRoute(path: '/add', builder: (context, state) => const AddScreen()),
+            GoRoute(path: '/add', builder: (final context, final state) => const AddScreen()),
           ],
         ),
         // Review — flashcard drill or party shake, controlled via AppMode
@@ -98,7 +98,7 @@ final appRouter = GoRouter(
           routes: [
             GoRoute(
               path: '/review',
-              builder: (context, state) => const _ReviewRouter(),
+              builder: (final context, final state) => const _ReviewRouter(),
             ),
           ],
         ),
@@ -107,7 +107,7 @@ final appRouter = GoRouter(
           routes: [
             GoRoute(
               path: '/settings',
-              builder: (context, state) => const SettingsScreen.tab(),
+              builder: (final context, final state) => const SettingsScreen.tab(),
             ),
           ],
         ),
@@ -117,23 +117,23 @@ final appRouter = GoRouter(
     GoRoute(
       path: '/create-combo',
       parentNavigatorKey: _rootNavigatorKey,
-      builder: (context, state) => const CreateComboScreen(),
+      builder: (final context, final state) => const CreateComboScreen(),
     ),
     GoRoute(
       path: '/edit-combo/:id',
       parentNavigatorKey: _rootNavigatorKey,
-      builder: (context, state) =>
+      builder: (final context, final state) =>
           CreateComboScreen(comboId: state.pathParameters['id']),
     ),
     GoRoute(
       path: '/battle',
       parentNavigatorKey: _rootNavigatorKey,
-      builder: (context, state) => const BattleScreen(),
+      builder: (final context, final state) => const BattleScreen(),
     ),
     GoRoute(
       path: '/video-editor',
       parentNavigatorKey: _rootNavigatorKey,
-      builder: (context, state) {
+      builder: (final context, final state) {
         final extras = state.extra as Map<String, dynamic>?;
         return VideoEditorScreen(
           videoPath: extras?['videoPath'] as String? ?? '',
@@ -143,7 +143,7 @@ final appRouter = GoRouter(
     GoRoute(
       path: '/move-analysis',
       parentNavigatorKey: _rootNavigatorKey,
-      builder: (context, state) {
+      builder: (final context, final state) {
         final extras = state.extra as Map<String, dynamic>?;
         return MoveAnalysisScreen(
           moveId: extras?['moveId'] as String?,
@@ -154,52 +154,52 @@ final appRouter = GoRouter(
     GoRoute(
       path: '/auth',
       parentNavigatorKey: _rootNavigatorKey,
-      builder: (context, state) => const AuthScreen(),
+      builder: (final context, final state) => const AuthScreen(),
     ),
     GoRoute(
       path: '/settings-panel',
       parentNavigatorKey: _rootNavigatorKey,
-      builder: (context, state) => const SettingsScreen(),
+      builder: (final context, final state) => const SettingsScreen(),
     ),
     GoRoute(
       path: '/settings-panel/sync-providers',
       parentNavigatorKey: _rootNavigatorKey,
-      builder: (context, state) => const SyncProvidersScreen(),
+      builder: (final context, final state) => const SyncProvidersScreen(),
     ),
     GoRoute(
       path: '/settings-panel/sync-status',
       parentNavigatorKey: _rootNavigatorKey,
-      builder: (context, state) => const SyncStatusScreen(),
+      builder: (final context, final state) => const SyncStatusScreen(),
     ),
     GoRoute(
       path: '/settings-panel/free-space',
       parentNavigatorKey: _rootNavigatorKey,
-      builder: (context, state) => const FreeSpaceScreen(),
+      builder: (final context, final state) => const FreeSpaceScreen(),
     ),
     GoRoute(
       path: '/settings-panel/recently-deleted',
       parentNavigatorKey: _rootNavigatorKey,
-      builder: (context, state) => const RecentlyDeletedScreen(),
+      builder: (final context, final state) => const RecentlyDeletedScreen(),
     ),
     GoRoute(
       path: '/settings-panel/canonical-trash',
       parentNavigatorKey: _rootNavigatorKey,
-      builder: (context, state) => const CanonicalTrashScreen(),
+      builder: (final context, final state) => const CanonicalTrashScreen(),
     ),
     GoRoute(
       path: '/settings-panel/system-status',
       parentNavigatorKey: _rootNavigatorKey,
-      builder: (context, state) => const SystemStatusScreen(),
+      builder: (final context, final state) => const SystemStatusScreen(),
     ),
     GoRoute(
       path: '/settings-panel/sync-help',
       parentNavigatorKey: _rootNavigatorKey,
-      builder: (context, state) => const AssetSyncHelpScreen(),
+      builder: (final context, final state) => const AssetSyncHelpScreen(),
     ),
     GoRoute(
       path: '/video-viewer',
       parentNavigatorKey: _rootNavigatorKey,
-      builder: (context, state) {
+      builder: (final context, final state) {
         final extras = state.extra as Map<String, dynamic>?;
         return QuickVideoViewer(
           videoPath: extras?['videoPath'] as String? ?? '',
@@ -209,19 +209,19 @@ final appRouter = GoRouter(
     ),
     GoRoute(
       path: '/moves',
-      redirect: (context, state) => '/breakdex/moves',
+      redirect: (final context, final state) => '/breakdex/moves',
     ),
     GoRoute(
       path: '/moves/move/:id',
-      redirect: (context, state) => '/breakdex/move/${state.pathParameters['id']}',
+      redirect: (final context, final state) => '/breakdex/move/${state.pathParameters['id']}',
     ),
     GoRoute(
       path: '/moves/combo/:id',
-      redirect: (context, state) => '/breakdex/combo/${state.pathParameters['id']}',
+      redirect: (final context, final state) => '/breakdex/combo/${state.pathParameters['id']}',
     ),
     GoRoute(
       path: '/arsenal',
-      redirect: (context, state) => '/breakdex',
+      redirect: (final context, final state) => '/breakdex',
     ),
   ],
 );
@@ -245,7 +245,7 @@ class _RedirectToHomeState extends State<_RedirectToHome> {
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(final BuildContext context) {
     return const Scaffold(
       body: Center(
         child: CircularProgressIndicator(),
@@ -258,12 +258,12 @@ class _ReviewRouter extends ConsumerWidget {
   const _ReviewRouter();
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(final BuildContext context, final WidgetRef ref) {
     final appMode = ref.watch(appModeProvider);
     return switch (appMode) {
       AppMode.anki => const FlashcardReviewScreen(),
       AppMode.party => BlocProvider(
-          create: (context) => PartyBloc(),
+          create: (final context) => PartyBloc(),
           child: const PartyScreen(),
         ),
     };

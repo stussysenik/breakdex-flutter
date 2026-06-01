@@ -338,11 +338,11 @@ class AppDatabase extends _$AppDatabase {
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
-    onCreate: (m) async {
+    onCreate: (final m) async {
       await m.createAll();
       await _installIntegrityTriggers();
     },
-    onUpgrade: (m, from, to) async {
+    onUpgrade: (final m, final from, final to) async {
       if (from < 2) {
         await m.createTable(battleResults);
       }

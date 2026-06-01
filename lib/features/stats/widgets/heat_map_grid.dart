@@ -20,16 +20,16 @@ class HeatMapGrid extends ConsumerWidget {
   static const double _gap = 4;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(final BuildContext context, final WidgetRef ref) {
     final colorScheme = Theme.of(context).colorScheme;
     final selectedDate = ref.watch(selectedDateProvider);
     final now = DateTime.now();
     final currentMonth = DateTime(now.year, now.month);
     final months = List<DateTime>.generate(
       6,
-      (index) => DateTime(currentMonth.year, currentMonth.month - index),
+      (final index) => DateTime(currentMonth.year, currentMonth.month - index),
     ).reversed.toList();
-    final maxCount = dailyCounts.values.fold<int>(0, (max, value) {
+    final maxCount = dailyCounts.values.fold<int>(0, (final max, final value) {
       return value > max ? value : max;
     });
 
@@ -64,7 +64,7 @@ class HeatMapGrid extends ConsumerWidget {
                   dailyCounts: dailyCounts,
                   maxCount: maxCount > 0 ? maxCount : 1,
                   selectedDate: selectedDate,
-                  onSelect: (date) {
+                  onSelect: (final date) {
                     HapticFeedback.selectionClick();
                     ref.read(selectedDateProvider.notifier).state = date;
                   },
@@ -119,7 +119,7 @@ class _HeaderRow extends StatelessWidget {
   final ColorScheme colorScheme;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(final BuildContext context) {
     return Row(
       children: [
         SizedBox(
@@ -167,7 +167,7 @@ class _MonthRow extends StatelessWidget {
   final ValueChanged<DateTime> onSelect;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(final BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
     final daysInMonth = DateUtils.getDaysInMonth(month.year, month.month);
     final today = DateTime.now();
@@ -205,7 +205,7 @@ class _MonthRow extends StatelessWidget {
     );
   }
 
-  String _monthLabel(int month) => switch (month) {
+  String _monthLabel(final int month) => switch (month) {
     1 => 'Jan',
     2 => 'Feb',
     3 => 'Mar',
@@ -239,7 +239,7 @@ class _DayCell extends StatelessWidget {
   final ValueChanged<DateTime> onTap;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(final BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
     final enabled = date != null;
     final intensity = enabled && (count ?? 0) > 0

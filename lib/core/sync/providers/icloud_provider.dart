@@ -55,10 +55,10 @@ class ICloudProvider extends CloudProvider {
 
   @override
   Future<RemoteAsset> upload({
-    required String localPath,
-    required String remotePath,
-    TransferProgress? onProgress,
-    CancellationToken? cancel,
+    required final String localPath,
+    required final String remotePath,
+    final TransferProgress? onProgress,
+    final CancellationToken? cancel,
   }) async {
     final Map<String, dynamic>? result;
     try {
@@ -94,10 +94,10 @@ class ICloudProvider extends CloudProvider {
 
   @override
   Future<void> download({
-    required String remotePath,
-    required String localPath,
-    TransferProgress? onProgress,
-    CancellationToken? cancel,
+    required final String remotePath,
+    required final String localPath,
+    final TransferProgress? onProgress,
+    final CancellationToken? cancel,
   }) async {
     await _channel.invokeMethod<void>('download', {
       'remotePath': remotePath,
@@ -107,9 +107,9 @@ class ICloudProvider extends CloudProvider {
 
   @override
   Future<bool> verify({
-    required String remotePath,
-    String? expectedHash,
-    int? expectedSize,
+    required final String remotePath,
+    final String? expectedHash,
+    final int? expectedSize,
   }) async {
     try {
       final result =
@@ -124,14 +124,14 @@ class ICloudProvider extends CloudProvider {
   }
 
   @override
-  Future<List<RemoteAsset>> list({required String directory}) async {
+  Future<List<RemoteAsset>> list({required final String directory}) async {
     final result =
         await _channel.invokeListMethod<Map<String, dynamic>>('list', {
       'directory': directory,
     });
     if (result == null) return [];
 
-    return result.map((map) {
+    return result.map((final map) {
       return RemoteAsset(
         remotePath: map['path'] as String,
         sizeBytes: map['size'] as int? ?? 0,
@@ -140,7 +140,7 @@ class ICloudProvider extends CloudProvider {
   }
 
   @override
-  Future<void> delete({required String remotePath}) async {
+  Future<void> delete({required final String remotePath}) async {
     await _channel.invokeMethod<void>('delete', {
       'remotePath': remotePath,
     });

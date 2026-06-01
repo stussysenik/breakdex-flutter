@@ -36,8 +36,8 @@ void main() {
         final archivedMoves = await db.movesDao.getArchived();
         final archivedMove = await db.movesDao.getById('archived-1');
 
-        expect(activeMoves.map((move) => move.id), ['active-1']);
-        expect(archivedMoves.map((move) => move.id), ['archived-1']);
+        expect(activeMoves.map((final move) => move.id), ['active-1']);
+        expect(archivedMoves.map((final move) => move.id), ['archived-1']);
         expect(archivedMove.archiveReason, 'external_album_delete');
       },
     );
@@ -65,7 +65,7 @@ void main() {
 
         final trackedMoves = await db.movesDao.getTrackedManagedAlbumMoves();
 
-        expect(trackedMoves.map((move) => move.id), ['tracked-1']);
+        expect(trackedMoves.map((final move) => move.id), ['tracked-1']);
       },
     );
   });

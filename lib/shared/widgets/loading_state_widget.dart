@@ -27,19 +27,19 @@ class LoadingStateWidget<T> extends StatelessWidget {
   final Widget? shimmerChild;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(final BuildContext context) {
     return state.map(
       idle: (_) => const SizedBox.shrink(),
       loading: (_) => _LoadingShimmer(child: shimmerChild),
-      downloading: (d) => _DownloadingBar(progress: d.progress),
-      ready: (r) => builder(r.data as T),
-      timeout: (t) => _TimeoutCard(onRetry: onRetry),
-      error: (e) => _ErrorCard(
+      downloading: (final d) => _DownloadingBar(progress: d.progress),
+      ready: (final r) => builder(r.data as T),
+      timeout: (final t) => _TimeoutCard(onRetry: onRetry),
+      error: (final e) => _ErrorCard(
         message: e.message,
         retryable: e.retryable,
         onRetry: onRetry,
       ),
-      retrying: (r) => _RetryingWidget(
+      retrying: (final r) => _RetryingWidget(
         attempt: r.attempt,
         maxAttempts: r.maxAttempts,
       ),
@@ -78,10 +78,10 @@ class _LoadingShimmerState extends State<_LoadingShimmer>
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(final BuildContext context) {
     return AnimatedBuilder(
       animation: _animation,
-      builder: (context, child) {
+      builder: (final context, final child) {
         return Opacity(
           opacity: _animation.value,
           child: widget.child ??
@@ -107,7 +107,7 @@ class _DownloadingBar extends StatelessWidget {
   final double progress;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(final BuildContext context) {
     final percentage = (progress * 100).round();
     return Container(
       padding: const EdgeInsets.all(16),
@@ -138,7 +138,7 @@ class _TimeoutCard extends StatelessWidget {
   final VoidCallback? onRetry;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(final BuildContext context) {
     return Container(
       padding: const EdgeInsets.all(16),
       margin: const EdgeInsets.all(8),
@@ -181,7 +181,7 @@ class _ErrorCard extends StatelessWidget {
   final VoidCallback? onRetry;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(final BuildContext context) {
     return Container(
       padding: const EdgeInsets.all(16),
       margin: const EdgeInsets.all(8),
@@ -232,7 +232,7 @@ class _RetryingWidget extends StatelessWidget {
   final int maxAttempts;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(final BuildContext context) {
     return Container(
       padding: const EdgeInsets.all(16),
       child: Column(

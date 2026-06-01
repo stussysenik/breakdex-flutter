@@ -29,7 +29,7 @@ class _StreakBurstState extends State<StreakBurst>
   }
 
   @override
-  void didUpdateWidget(StreakBurst oldWidget) {
+  void didUpdateWidget(final StreakBurst oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.trigger != widget.trigger) {
       _particles = _generateParticles();
@@ -54,10 +54,10 @@ class _StreakBurstState extends State<StreakBurst>
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(final BuildContext context) {
     return AnimatedBuilder(
       animation: _controller,
-      builder: (context, _) {
+      builder: (final context, _) {
         return CustomPaint(
           size: const Size(120, 120),
           painter: _BurstPainter(
@@ -82,7 +82,7 @@ class _BurstPainter extends CustomPainter {
   final double progress;
 
   @override
-  void paint(Canvas canvas, Size size) {
+  void paint(final Canvas canvas, final Size size) {
     final center = Offset(size.width / 2, size.height / 2);
     final paint = Paint()..style = PaintingStyle.fill;
 
@@ -98,6 +98,6 @@ class _BurstPainter extends CustomPainter {
   }
 
   @override
-  bool shouldRepaint(covariant _BurstPainter old) =>
+  bool shouldRepaint(covariant final _BurstPainter old) =>
       old.progress != progress;
 }

@@ -19,7 +19,7 @@ class BottomNavShell extends ConsumerWidget {
   final StatefulNavigationShell navigationShell;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(final BuildContext context, final WidgetRef ref) {
     // Only update tab index in post-frame — avoids side effects during build
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (context.mounted) {
@@ -49,7 +49,7 @@ class BottomNavShell extends ConsumerWidget {
           children: [
             // Only the progress bar and sync logic need to watch the trigger
             Consumer(
-              builder: (context, ref, _) {
+              builder: (final context, final ref, _) {
                 ref.watch(syncTriggerProvider);
                 return const SyncProgressBar();
               },
@@ -75,7 +75,7 @@ class BottomNavShell extends ConsumerWidget {
             ),
             child: BottomNavigationBar(
               currentIndex: navigationShell.currentIndex,
-              onTap: (index) {
+              onTap: (final index) {
                 MediaPlaybackCoordinator.shared.pauseAll();
                 navigationShell.goBranch(
                   index,
@@ -104,7 +104,7 @@ class BottomNavShell extends ConsumerWidget {
                   icon: Semantics(
                     identifier: 'review-tab',
                     child: Consumer(
-                      builder: (context, ref, _) {
+                      builder: (final context, final ref, _) {
                         final appMode = ref.watch(appModeProvider);
                         return Icon(
                           appMode == AppMode.anki

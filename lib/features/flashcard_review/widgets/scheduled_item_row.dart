@@ -26,7 +26,7 @@ class ScheduledItemRow extends ConsumerWidget {
   final VoidCallback onTap;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(final BuildContext context, final WidgetRef ref) {
     final colorScheme = Theme.of(context).colorScheme;
     final card = item.card;
     final visibleState = learningStateFromFsrsState(card?.fsrsState);
@@ -188,7 +188,7 @@ class ScheduledItemRow extends ConsumerWidget {
     );
   }
 
-  Widget _buildThumbnail(String path) {
+  Widget _buildThumbnail(final String path) {
     final file = File(path);
     if (!file.existsSync()) {
       return const Center(child: Icon(Icons.videocam_off, size: 20));
@@ -203,7 +203,7 @@ class ScheduledItemRow extends ConsumerWidget {
     );
   }
 
-  static String _fmtStability(double s) {
+  static String _fmtStability(final double s) {
     if (s < 1) return '${(s * 24).round()}h';
     if (s < 30) return '${s.round()}d';
     return '${(s / 30).toStringAsFixed(1)}mo';

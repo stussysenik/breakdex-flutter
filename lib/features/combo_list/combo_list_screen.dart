@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:math';
 
 import 'package:flutter/material.dart';
@@ -7,6 +8,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../core/database/database.dart';
 import '../../core/design/spacing.dart';
+import '../../core/design/theme.dart';
 import '../../core/design/typography.dart';
 import '../../core/providers.dart';
 import '../../shared/widgets/pressable.dart';
@@ -15,7 +17,7 @@ class ComboListScreen extends ConsumerWidget {
   const ComboListScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(final BuildContext context, final WidgetRef ref) {
     final combosAsync = ref.watch(_combosProvider);
     final colorScheme = Theme.of(context).colorScheme;
 
@@ -45,8 +47,8 @@ class ComboListScreen extends ConsumerWidget {
       ),
       body: combosAsync.when(
         loading: () => const Center(child: CircularProgressIndicator()),
-        error: (e, _) => Center(child: Text('Error: $e')),
-        data: (data) => data.isEmpty
+        error: (final e, _) => Center(child: Text('Error: $e')),
+        data: (final data) => data.isEmpty
             ? _ComboEmptyState(colorScheme: colorScheme)
             : _ComboTableView(combos: data, colorScheme: colorScheme),
       ),
@@ -72,7 +74,7 @@ class ComboListScreen extends ConsumerWidget {
   }
 }
 
-final _combosProvider = StreamProvider<List<(Combo, int)>>((ref) {
+final _combosProvider = StreamProvider<List<(Combo, int)>>((final ref) {
   return ref.watch(comboRepositoryProvider).watchAllWithMoveCounts();
 });
 
@@ -85,7 +87,7 @@ class _ComboTableView extends StatelessWidget {
   final ColorScheme colorScheme;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(final BuildContext context) {
     return Column(
       children: [
         // Table header
@@ -138,11 +140,8 @@ class _ComboTableView extends StatelessWidget {
               vertical: 0,
             ),
             itemCount: combos.length,
-            separatorBuilder: (_, _) => Divider(
-              height: 1,
-              color: colorScheme.outline.withValues(alpha: 0.08),
-            ),
-            itemBuilder: (context, index) {
+            separatorBuilder: (_, _) => const Divider(height: 1),
+            itemBuilder: (final context, final index) {
               final (combo, moveCount) = combos[index];
               return _ComboTableRow(
                 combo: combo,
@@ -174,7 +173,7 @@ class _ComboTableRow extends StatelessWidget {
   final VoidCallback onTap;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(final BuildContext context) {
     return Pressable(
       onTap: onTap,
       child: Container(
@@ -227,7 +226,7 @@ class _ComboEmptyState extends StatelessWidget {
   final ColorScheme colorScheme;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(final BuildContext context) {
     return Center(
       child: SingleChildScrollView(
         padding: const EdgeInsets.all(AppSpacing.screenEdge),
@@ -257,7 +256,7 @@ class _ComboEmptyState extends StatelessWidget {
                     width: 220,
                     child: FilledButton.icon(
                       onPressed: () async {
-                        HapticFeedback.mediumImpact();
+                        unawaited(HapticFeedback.mediumImpact());
                         final comboName = await context.push<String>(
                           '/create-combo',
                         );
@@ -295,7 +294,7 @@ class _DottedComboVisual extends StatelessWidget {
   final ColorScheme colorScheme;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(final BuildContext context) {
     return SizedBox(
       height: 160,
       child: CustomPaint(
@@ -324,20 +323,13 @@ class _PlaceholderMoveCard extends StatelessWidget {
   final int index;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(final BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
     final icons = [Icons.sports_martial_arts, Icons.directions_run, Icons.self_improvement];
     return Container(
       width: 64,
       height: 80,
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(AppRadius.sm),
-        border: Border.all(
-          color: colorScheme.outline.withValues(alpha: 0.2),
-          style: BorderStyle.solid,
-        ),
-        color: colorScheme.surface,
-      ),
+      decoration: AppSurfaces.panel(context, radius: AppRadius.sm),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
@@ -376,14 +368,14 @@ class _DottedLinePainter extends CustomPainter {
   final Color color;
 
   @override
-  void paint(Canvas canvas, Size size) {
+  void paint(final Canvas canvas, final Size size) {
     final paint = Paint()
       ..color = color
       ..strokeWidth = 1.5
       ..style = PaintingStyle.stroke;
 
-    final dashWidth = 5.0;
-    final dashSpace = 5.0;
+    const dashWidth = 5.0;
+    const dashSpace = 5.0;
     final startX = size.width / 2 - 100;
     final endX = size.width / 2 + 100;
     final y = size.height / 2;
@@ -397,5 +389,5 @@ class _DottedLinePainter extends CustomPainter {
   }
 
   @override
-  bool shouldRepaint(_DottedLinePainter oldDelegate) => false;
+  bool shouldRepaint(final _DottedLinePainter oldDelegate) => false;
 }

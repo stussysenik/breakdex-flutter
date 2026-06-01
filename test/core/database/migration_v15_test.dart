@@ -7,7 +7,7 @@ import 'package:breakdex/core/database/database.dart';
 /// and user_version=14 via the raw sqlite3 setup callback.
 NativeDatabase v14Database() {
   return NativeDatabase.memory(
-    setup: (rawDb) {
+    setup: (final rawDb) {
       rawDb.execute('''
         CREATE TABLE moves (
           id TEXT PRIMARY KEY,
@@ -251,7 +251,7 @@ NativeDatabase v14Database() {
 /// Creates a v14 database with pre-inserted test data.
 NativeDatabase v14DatabaseWithData() {
   return NativeDatabase.memory(
-    setup: (rawDb) {
+    setup: (final rawDb) {
       // Same schema as v14Database...
       rawDb.execute('''
         CREATE TABLE moves (
@@ -511,7 +511,7 @@ void main() {
         'SELECT name FROM sqlite_master WHERE type = \'table\' AND name IN (\'sets\', \'set_items\', \'provenance_events\')',
       ).get();
 
-      expect(tables.map((r) => r.read<String>('name')),
+      expect(tables.map((final r) => r.read<String>('name')),
           containsAll(['sets', 'set_items', 'provenance_events']));
 
       await db.close();
@@ -521,7 +521,7 @@ void main() {
       final db = AppDatabase.forTesting(v14Database());
 
       final columns = await db.customSelect('PRAGMA table_info(sets)').get();
-      final colNames = columns.map((r) => r.read<String>('name')).toSet();
+      final colNames = columns.map((final r) => r.read<String>('name')).toSet();
       expect(colNames, containsAll([
         'id',
         'name',
@@ -532,8 +532,8 @@ void main() {
       ]));
 
       final pkColumns = columns
-          .where((r) => r.read<int>('pk') > 0)
-          .map((r) => r.read<String>('name'))
+          .where((final r) => r.read<int>('pk') > 0)
+          .map((final r) => r.read<String>('name'))
           .toList();
       expect(pkColumns, ['id']);
 
@@ -554,7 +554,7 @@ void main() {
         "SELECT name FROM sqlite_master WHERE type = 'index' AND tbl_name = 'set_items'",
       ).get();
 
-      final indexNames = indices.map((r) => r.read<String>('name')).toSet();
+      final indexNames = indices.map((final r) => r.read<String>('name')).toSet();
       expect(indexNames, contains('idx_set_items_unique'));
 
       await db.close();
@@ -565,7 +565,7 @@ void main() {
 
       final columns =
           await db.customSelect('PRAGMA table_info(provenance_events)').get();
-      final colNames = columns.map((r) => r.read<String>('name')).toSet();
+      final colNames = columns.map((final r) => r.read<String>('name')).toSet();
       expect(colNames, containsAll([
         'id',
         'entity_type',
@@ -579,7 +579,7 @@ void main() {
         "SELECT name FROM sqlite_master WHERE type = 'index' AND tbl_name = 'provenance_events'",
       ).get();
 
-      final indexNames = indices.map((r) => r.read<String>('name')).toSet();
+      final indexNames = indices.map((final r) => r.read<String>('name')).toSet();
       expect(indexNames, contains('idx_provenance_entity'));
 
       await db.close();
@@ -626,7 +626,7 @@ void main() {
 
       // Existing v14 data intact
       final moves = await db.customSelect('SELECT name FROM moves').get();
-      final moveNames = moves.map((r) => r.read<String>('name')).toSet();
+      final moveNames = moves.map((final r) => r.read<String>('name')).toSet();
       expect(moveNames, containsAll(['Halo', 'Airflare']));
 
       // New v15 tables are functional

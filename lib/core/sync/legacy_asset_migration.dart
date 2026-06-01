@@ -44,11 +44,11 @@ class LegacyAssetMigration {
   final AppDatabase _db;
 
   LegacyAssetMigration({
-    required MovesDao movesDao,
-    required AssetManifestDao manifestDao,
-    required AssetCopiesDao copiesDao,
-    required AssetHashService hashService,
-    required AppDatabase db,
+    required final MovesDao movesDao,
+    required final AssetManifestDao manifestDao,
+    required final AssetCopiesDao copiesDao,
+    required final AssetHashService hashService,
+    required final AppDatabase db,
   }) : _movesDao = movesDao,
        _manifestDao = manifestDao,
        _copiesDao = copiesDao,
@@ -61,7 +61,7 @@ class LegacyAssetMigration {
   Stream<MigrationProgress> migrate() async* {
     final allMoves = await _movesDao.getAllIncludingArchived();
     final pending = allMoves
-        .where((m) => m.videoPath != null && m.contentHash == null)
+        .where((final m) => m.videoPath != null && m.contentHash == null)
         .toList();
 
     if (pending.isEmpty) {
@@ -89,7 +89,7 @@ class LegacyAssetMigration {
     yield MigrationProgress(completed: total, total: total);
   }
 
-  Future<void> _migrateMove(Move move) async {
+  Future<void> _migrateMove(final Move move) async {
     final videoPath = move.videoPath!;
     // Resolve to absolute path for file operations (may be relative or stale)
     final absolutePath = VideoPathResolver.toAbsolute(videoPath);

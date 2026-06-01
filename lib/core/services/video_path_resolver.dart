@@ -10,7 +10,7 @@ import '../utils/filesystem_utils.dart';
 import '../utils/diagnostics.dart';
 import 'app_storage_paths.dart';
 
-String _sanitizeFilename(String name) {
+String _sanitizeFilename(final String name) {
   return name
       .replaceAll('/', '-')
       .replaceAll(':', '-')
@@ -45,10 +45,13 @@ abstract final class VideoPathResolver {
 
   /// Test-only setter to bypass [AppStoragePaths] in unit tests.
   @visibleForTesting
-  static set docsPathOverride(String path) => _docsPath = path;
+  static set docsPathOverride(final String path) => _docsPath = path;
+
+  /// Expose the documents directory path (e.g. for VideoService to use without calling getApplicationDocumentsDirectory)
+  static String get documentsPath => _docsPath;
 
   /// Whether a path is already relative (doesn't start with `/`).
-  static bool isRelative(String path) => !path.startsWith('/');
+  static bool isRelative(final String path) => !path.startsWith('/');
 
   /// Convert an absolute path to a relative path suitable for DB storage.
   ///
@@ -57,7 +60,7 @@ abstract final class VideoPathResolver {
   /// 2. Starts with current docs prefix → strip prefix
   /// 3. Absolute but different container UUID → find `/Documents/` marker
   /// 4. Fallback → `Moves/{basename}`
-  static String toRelative(String path) {
+  static String toRelative(final String path) {
     assert(
       _docsPath.isNotEmpty,
       'VideoPathResolver.initialize() must be called first',
@@ -82,7 +85,7 @@ abstract final class VideoPathResolver {
 
     // New fallback: If it's already an absolute path under a 'Moves' folder
     // but we can't find /Documents/, try to find the 'Moves/' marker itself.
-    final movesMarker = p.separator + 'Moves' + p.separator;
+    final movesMarker = '${p.separator}Moves${p.separator}';
     final movesIndex = path.indexOf(movesMarker);
     if (movesIndex >= 0) {
       return path.substring(movesIndex + 1); // "Moves/..."
@@ -98,7 +101,7 @@ abstract final class VideoPathResolver {
   /// 1. Relative → prepend current docs directory
   /// 2. Starts with current docs prefix → return as-is
   /// 3. Absolute with wrong prefix → extract relative via /Documents/ marker
-  static String toAbsolute(String path) {
+  static String toAbsolute(final String path) {
     assert(
       _docsPath.isNotEmpty,
       'VideoPathResolver.initialize() must be called first',
@@ -128,7 +131,7 @@ abstract final class VideoPathResolver {
   ///
   /// Returns the found absolute path, or null if the file can't be located.
   /// This is the self-healing core — called only when a file is missing.
-  static Future<String?> resolve(String storedPath) async {
+  static Future<String?> resolve(final String storedPath) async {
     DiagnosticsLog.info('VideoPathResolver', 'resolve storedPath=$storedPath');
     // First try the normal toAbsolute resolution
     final candidate = toAbsolute(storedPath);
@@ -188,10 +191,10 @@ abstract final class VideoPathResolver {
   /// Category and move name are sanitized for safe filesystem usage.
   /// If the category is not recognized as a primary category, it defaults to 'Default'.
   static String semanticVideoPath(
-    String category,
-    String moveName,
-    String extension, {
-    required String contentHash,
+    final String category,
+    final String moveName,
+    final String extension, {
+    required final String contentHash,
   }) {
     final safeCategory = getSafeCategory(category);
 
@@ -201,8 +204,7 @@ abstract final class VideoPathResolver {
         : sanitizedName.toUpperCase();
 
     final ext = extension.startsWith('.') ? extension.substring(1) : extension;
-    final shortHash = contentHash.substring(0, contentHash.length > 8 ? 8 : contentHash.length);
-    return p.join('Moves', safeCategory, '$safeName - $shortHash.${ext.toLowerCase()}');
+    return p.join('Moves', safeCategory, safeName, '$contentHash.${ext.toLowerCase()}');
   }
 
   /// Return a semantic relative path for video storage:
@@ -210,9 +212,9 @@ abstract final class VideoPathResolver {
   /// for callers that don't have a content hash yet).
   @Deprecated('Use the contentHash variant instead')
   static String semanticVideoPathLegacy(
-    String category,
-    String moveName,
-    String extension,
+    final String category,
+    final String moveName,
+    final String extension,
   ) {
     final safeCategory = getSafeCategory(category);
     final sanitizedName = _sanitizeFilename(moveName.trim());
@@ -220,10 +222,10 @@ abstract final class VideoPathResolver {
         ? sanitizedName[0].toUpperCase() + sanitizedName.substring(1).toLowerCase()
         : sanitizedName.toUpperCase();
     final ext = extension.startsWith('.') ? extension.substring(1) : extension;
-    return p.join('Moves', safeCategory, '$safeName.${ext.toLowerCase()}');
+    return p.join('Moves', safeCategory, safeName, 'video.${ext.toLowerCase()}');
   }
 
-  static String getSafeCategory(String category) {
+  static String getSafeCategory(final String category) {
     final trimmed = category.trim();
     if (trimmed.isEmpty) return 'Default';
 
@@ -252,10 +254,10 @@ abstract final class VideoPathResolver {
   /// When [contentHash] is provided, the target filename is `{hash}.mp4`.
   /// When null (backward compat), falls back to `video.mp4`.
   static Future<String> moveToSemanticPath({
-    required String currentRelativePath,
-    required String category,
-    required String moveName,
-    String? contentHash,
+    required final String currentRelativePath,
+    required final String category,
+    required final String moveName,
+    final String? contentHash,
   }) async {
     final sourceAbs = toAbsolute(currentRelativePath);
     final sourceFile = File(sourceAbs);
@@ -323,7 +325,7 @@ abstract final class VideoPathHealer {
   ///
   /// Filesystem cleanup is deferred to run at most once every 24 hours to avoid
   /// blocking app startup with expensive directory scans on every boot.
-  static Future<void> healAll(AppDatabase db, SharedPreferences prefs) async {
+  static Future<void> healAll(final AppDatabase db, final SharedPreferences prefs) async {
     final now = DateTime.now().millisecondsSinceEpoch;
     final lastCleanup = prefs.getInt(_cleanupRunAtKey) ?? 0;
     final hoursSinceCleanup =
@@ -350,7 +352,7 @@ abstract final class VideoPathHealer {
 
   /// Automatically cleans up the root directory and Move folder orphans.
   /// This is the primary mechanism for enforcing a clean Files app view.
-  static Future<void> _autoCleanFileSystem(AppDatabase db) async {
+  static Future<void> _autoCleanFileSystem(final AppDatabase db) async {
     await _cleanupRootBackups();
     await _cleanupMovesOrphans(db);
     await _mergeDuplicateFolders();
@@ -405,7 +407,7 @@ abstract final class VideoPathHealer {
     }
   }
 
-  static Future<void> _mergeDirectories(Directory source, Directory target) async {
+  static Future<void> _mergeDirectories(final Directory source, final Directory target) async {
     if (!await target.exists()) await target.create(recursive: true);
     await for (final entity in source.list()) {
       final name = p.basename(entity.path);
@@ -447,7 +449,7 @@ abstract final class VideoPathHealer {
     }
   }
 
-  static Future<int> _pruneEmptyRecursive(Directory dir) async {
+  static Future<int> _pruneEmptyRecursive(final Directory dir) async {
     var removed = 0;
     try {
       await for (final entity in dir.list()) {
@@ -496,7 +498,7 @@ abstract final class VideoPathHealer {
     }
   }
 
-  static Future<void> _cleanupMovesOrphans(AppDatabase db) async {
+  static Future<void> _cleanupMovesOrphans(final AppDatabase db) async {
     try {
       final movesPath = p.join(VideoPathResolver.toAbsolute(''), 'Moves');
       final movesDir = Directory(movesPath);
@@ -553,7 +555,7 @@ abstract final class VideoPathHealer {
     }
   }
 
-  static Future<void> _healDatabasePaths(AppDatabase db) async {
+  static Future<void> _healDatabasePaths(final AppDatabase db) async {
     var healed = 0;
     var migrated = 0;
 
@@ -592,7 +594,7 @@ abstract final class VideoPathHealer {
       if (combo.activeVideoPath != null &&
           !VideoPathResolver.isRelative(combo.activeVideoPath!)) {
         final relative = VideoPathResolver.toRelative(combo.activeVideoPath!);
-        await (db.update(db.combos)..where((t) => t.id.equals(combo.id)))
+        await (db.update(db.combos)..where((final t) => t.id.equals(combo.id)))
             .write(CombosCompanion(activeVideoPath: Value(relative)));
         healed++;
       }

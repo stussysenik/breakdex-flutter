@@ -26,7 +26,7 @@ class DeckCard extends StatelessWidget {
   final VoidCallback onLongPress;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(final BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
     final isSmart = deck.deckType == 'smart';
     final iconData = isSmart ? Icons.tune_rounded : Icons.layers_outlined;

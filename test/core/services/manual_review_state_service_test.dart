@@ -31,7 +31,7 @@ void main() {
 
   test('resetting a move to New keeps move and FSRS in sync', () async {
     await seedMove(db, id: 'manual-sync-new', name: 'Manual Sync');
-    await (db.update(db.moves)..where((t) => t.id.equals('manual-sync-new')))
+    await (db.update(db.moves)..where((final t) => t.id.equals('manual-sync-new')))
         .write(const MovesCompanion(learningState: Value('MASTERY')));
     await seedFsrsCard(
       db,
@@ -62,7 +62,7 @@ void main() {
     final pending = await db.syncDao.getPendingChanges();
     expect(
       pending.any(
-        (entry) =>
+        (final entry) =>
             entry.entityId == 'manual-sync-new' &&
             entry.entityTable == 'moves' &&
             entry.action == 'update',
@@ -71,7 +71,7 @@ void main() {
     );
     expect(
       pending.any(
-        (entry) =>
+        (final entry) =>
             entry.entityId == 'manual-sync-new' &&
             entry.entityTable == 'fsrs_cards' &&
             entry.action == 'update',
@@ -103,7 +103,7 @@ void main() {
       final pending = await db.syncDao.getPendingChanges();
       expect(
         pending.any(
-          (entry) =>
+          (final entry) =>
               entry.entityId == 'manual-sync-mastery' &&
               entry.entityTable == 'fsrs_cards' &&
               entry.action == 'create',

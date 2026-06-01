@@ -12,7 +12,7 @@ enum PhotoLibraryAccessStatus {
       this == PhotoLibraryAccessStatus.authorized ||
       this == PhotoLibraryAccessStatus.limited;
 
-  static PhotoLibraryAccessStatus fromPlatformValue(String? value) {
+  static PhotoLibraryAccessStatus fromPlatformValue(final String? value) {
     switch (value?.trim().toLowerCase()) {
       case 'not_determined':
         return PhotoLibraryAccessStatus.notDetermined;
@@ -41,7 +41,7 @@ class ManagedAlbumCopy {
   final String filename;
   final String albumName;
 
-  static ManagedAlbumCopy? fromMap(Map<dynamic, dynamic>? payload) {
+  static ManagedAlbumCopy? fromMap(final Map<dynamic, dynamic>? payload) {
     if (payload == null) return null;
     final assetLocalIdentifier = payload['assetLocalIdentifier'] as String?;
     final filename = payload['filename'] as String?;
@@ -72,7 +72,7 @@ class ManagedAssetLookupResult {
   final List<String> missingAssetLocalIdentifiers;
 
   factory ManagedAssetLookupResult.empty({
-    PhotoLibraryAccessStatus accessStatus = PhotoLibraryAccessStatus.unknown,
+    final PhotoLibraryAccessStatus accessStatus = PhotoLibraryAccessStatus.unknown,
   }) {
     return ManagedAssetLookupResult(
       accessStatus: accessStatus,
@@ -80,13 +80,13 @@ class ManagedAssetLookupResult {
     );
   }
 
-  static ManagedAssetLookupResult fromMap(Map<dynamic, dynamic>? payload) {
+  static ManagedAssetLookupResult fromMap(final Map<dynamic, dynamic>? payload) {
     if (payload == null) return ManagedAssetLookupResult.empty();
     final missing =
         (payload['missingAssetLocalIdentifiers'] as List?)
             ?.whereType<String>()
-            .map((value) => value.trim())
-            .where((value) => value.isNotEmpty)
+            .map((final value) => value.trim())
+            .where((final value) => value.isNotEmpty)
             .toList() ??
         const <String>[];
     return ManagedAssetLookupResult(
@@ -120,7 +120,7 @@ enum ManagedAssetReconcileEventType {
   assetDeletedFromLibrary,
   assetRemovedFromManagedAlbum;
 
-  static ManagedAssetReconcileEventType? fromPlatformValue(String? value) {
+  static ManagedAssetReconcileEventType? fromPlatformValue(final String? value) {
     switch (value?.trim()) {
       case 'assetDeletedFromLibrary':
         return ManagedAssetReconcileEventType.assetDeletedFromLibrary;
@@ -145,7 +145,7 @@ class ManagedAssetReconcileEvent {
   final String moveId;
   final String albumName;
 
-  static ManagedAssetReconcileEvent? fromMap(Map<dynamic, dynamic>? payload) {
+  static ManagedAssetReconcileEvent? fromMap(final Map<dynamic, dynamic>? payload) {
     if (payload == null) return null;
     final type = ManagedAssetReconcileEventType.fromPlatformValue(
       payload['type'] as String?,
@@ -181,7 +181,7 @@ class ManagedAssetReconcileResult {
   final List<ManagedAssetReconcileEvent> events;
 
   factory ManagedAssetReconcileResult.empty({
-    PhotoLibraryAccessStatus accessStatus = PhotoLibraryAccessStatus.unknown,
+    final PhotoLibraryAccessStatus accessStatus = PhotoLibraryAccessStatus.unknown,
   }) {
     return ManagedAssetReconcileResult(
       accessStatus: accessStatus,
@@ -189,7 +189,7 @@ class ManagedAssetReconcileResult {
     );
   }
 
-  static ManagedAssetReconcileResult fromMap(Map<dynamic, dynamic>? payload) {
+  static ManagedAssetReconcileResult fromMap(final Map<dynamic, dynamic>? payload) {
     if (payload == null) return ManagedAssetReconcileResult.empty();
     final events =
         (payload['events'] as List?)
@@ -216,7 +216,7 @@ class ManagedAssetRestoreResult {
   final String localPath;
   final String originalFileName;
 
-  static ManagedAssetRestoreResult? fromMap(Map<dynamic, dynamic>? payload) {
+  static ManagedAssetRestoreResult? fromMap(final Map<dynamic, dynamic>? payload) {
     if (payload == null) return null;
     final localPath = payload['localPath'] as String?;
     final originalFileName = payload['originalFileName'] as String?;
@@ -244,7 +244,7 @@ class RecoverableManagedAsset {
   final String filename;
   final String albumName;
 
-  static RecoverableManagedAsset? fromMap(Map<dynamic, dynamic>? payload) {
+  static RecoverableManagedAsset? fromMap(final Map<dynamic, dynamic>? payload) {
     if (payload == null) return null;
     final assetLocalIdentifier = payload['assetLocalIdentifier'] as String?;
     final filename = payload['filename'] as String?;
@@ -281,7 +281,7 @@ class RecoverableManagedAssetDiscoveryResult {
   final int skippedMissingFilenameCount;
 
   factory RecoverableManagedAssetDiscoveryResult.empty({
-    PhotoLibraryAccessStatus accessStatus = PhotoLibraryAccessStatus.unknown,
+    final PhotoLibraryAccessStatus accessStatus = PhotoLibraryAccessStatus.unknown,
   }) {
     return RecoverableManagedAssetDiscoveryResult(
       accessStatus: accessStatus,
@@ -293,7 +293,7 @@ class RecoverableManagedAssetDiscoveryResult {
   }
 
   static RecoverableManagedAssetDiscoveryResult fromMap(
-    Map<dynamic, dynamic>? payload,
+    final Map<dynamic, dynamic>? payload,
   ) {
     if (payload == null) {
       return RecoverableManagedAssetDiscoveryResult.empty();
@@ -338,7 +338,7 @@ class NativeVideoAlbum extends NativeBridge {
 
   Stream<Map<String, dynamic>> get libraryChangeStream => eventStream;
 
-  static String defaultAlbumName([DateTime? date]) {
+  static String defaultAlbumName([final DateTime? date]) {
     final now = date ?? DateTime.now();
     final month = now.month.toString().padLeft(2, '0');
     final day = now.day.toString().padLeft(2, '0');
@@ -346,19 +346,19 @@ class NativeVideoAlbum extends NativeBridge {
   }
 
   static String semanticFilename({
-    String? assetTitle,
-    String? category,
-    String? fileExtension,
+    final String? assetTitle,
+    final String? category,
+    final String? fileExtension,
   }) {
     final parts = [assetTitle, category]
-        .map((value) => value?.trim())
+        .map((final value) => value?.trim())
         .whereType<String>()
-        .where((value) => value.isNotEmpty)
+        .where((final value) => value.isNotEmpty)
         .toList();
     final base = parts.isEmpty ? 'Breakdex Clip' : parts.join(' - ');
     final sanitized = base
         .split('')
-        .map((char) {
+        .map((final char) {
           final code = char.codeUnitAt(0);
           final isAlphaNumeric =
               (code >= 48 && code <= 57) ||
@@ -376,7 +376,7 @@ class NativeVideoAlbum extends NativeBridge {
     return '$normalizedBase.$normalizedExt';
   }
 
-  static String _normalizeFileExtension(String? fileExtension) {
+  static String _normalizeFileExtension(final String? fileExtension) {
     final trimmed = fileExtension?.trim() ?? '';
     if (trimmed.isEmpty) return 'mp4';
     return trimmed.startsWith('.') ? trimmed.substring(1) : trimmed;
@@ -385,10 +385,10 @@ class NativeVideoAlbum extends NativeBridge {
   /// Save a video file to a named Photos album.
   /// Creates the album if it doesn't exist yet.
   Future<ManagedAlbumCopy?> saveToAlbum({
-    required String videoPath,
-    required String albumName,
-    String? assetTitle,
-    String? category,
+    required final String videoPath,
+    required final String albumName,
+    final String? assetTitle,
+    final String? category,
   }) async {
     final normalizedPath = videoPath.trim();
     final normalizedAlbum = albumName.trim();
@@ -417,7 +417,7 @@ class NativeVideoAlbum extends NativeBridge {
   /// Deterministic deletion of a single managed Photos album copy by its
   /// exact PHAsset localIdentifier. No filename-based fallback — if the
   /// identifier doesn't resolve, nothing is deleted.
-  Future<void> deleteExactManagedCopy(String assetLocalIdentifier) async {
+  Future<void> deleteExactManagedCopy(final String assetLocalIdentifier) async {
     final normalized = assetLocalIdentifier.trim();
     if (normalized.isEmpty) return;
     await method.invokeMethod<void>(
@@ -431,10 +431,10 @@ class NativeVideoAlbum extends NativeBridge {
   /// The native side scans Breakdex albums for assets whose semantic filename
   /// matches the current title/category pair and deletes those copies.
   Future<void> deleteManagedCopies({
-    required String assetTitle,
-    String? category,
-    String? fileExtension,
-    String? assetLocalIdentifier,
+    required final String assetTitle,
+    final String? category,
+    final String? fileExtension,
+    final String? assetLocalIdentifier,
   }) async {
     final normalizedTitle = assetTitle.trim();
     if (normalizedTitle.isEmpty) return;
@@ -464,11 +464,11 @@ class NativeVideoAlbum extends NativeBridge {
   }
 
   Future<ManagedAssetLookupResult> findMissingManagedAssets(
-    List<String> assetLocalIdentifiers,
+    final List<String> assetLocalIdentifiers,
   ) async {
     final normalized = assetLocalIdentifiers
-        .map((value) => value.trim())
-        .where((value) => value.isNotEmpty)
+        .map((final value) => value.trim())
+        .where((final value) => value.isNotEmpty)
         .toSet()
         .toList();
     if (normalized.isEmpty) return ManagedAssetLookupResult.empty();
@@ -481,18 +481,18 @@ class NativeVideoAlbum extends NativeBridge {
   }
 
   Future<ManagedAssetReconcileResult> reconcileManagedAssets(
-    List<ManagedAssetReference> trackedAssets, {
-    String source = 'manual',
+    final List<ManagedAssetReference> trackedAssets, {
+    final String source = 'manual',
   }) async {
     final normalized = trackedAssets
         .where(
-          (asset) =>
+          (final asset) =>
               asset.moveId.trim().isNotEmpty &&
               asset.assetLocalIdentifier.trim().isNotEmpty &&
               asset.albumName.trim().isNotEmpty,
         )
         .map(
-          (asset) => ManagedAssetReference(
+          (final asset) => ManagedAssetReference(
             moveId: asset.moveId.trim(),
             assetLocalIdentifier: asset.assetLocalIdentifier.trim(),
             albumName: asset.albumName.trim(),
@@ -503,14 +503,14 @@ class NativeVideoAlbum extends NativeBridge {
 
     final payload = await method
         .invokeMapMethod<String, dynamic>('reconcileManagedAssets', {
-          'trackedAssets': normalized.map((asset) => asset.toMap()).toList(),
+          'trackedAssets': normalized.map((final asset) => asset.toMap()).toList(),
           'source': source.trim().isEmpty ? 'manual' : source.trim(),
         });
     return ManagedAssetReconcileResult.fromMap(payload);
   }
 
   Future<ManagedAssetRestoreResult?> restoreManagedAsset(
-    String assetLocalIdentifier,
+    final String assetLocalIdentifier,
   ) async {
     final normalized = assetLocalIdentifier.trim();
     if (normalized.isEmpty) return null;
@@ -523,11 +523,11 @@ class NativeVideoAlbum extends NativeBridge {
 
   Future<RecoverableManagedAssetDiscoveryResult>
   discoverRecoverableManagedAssets({
-    List<String> albumPatterns = historicalAlbumPatterns,
+    final List<String> albumPatterns = historicalAlbumPatterns,
   }) async {
     final normalizedPatterns = albumPatterns
-        .map((value) => value.trim())
-        .where((value) => value.isNotEmpty)
+        .map((final value) => value.trim())
+        .where((final value) => value.isNotEmpty)
         .toSet()
         .toList();
     if (normalizedPatterns.isEmpty) {

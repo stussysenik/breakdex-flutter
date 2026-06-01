@@ -33,7 +33,7 @@ class ProvenanceReport {
     return 'No recent crash or failure signals';
   }
 
-  String describeEvent(ProvenanceEvent event) {
+  String describeEvent(final ProvenanceEvent event) {
     final timestamp = DateFormat(
       'MMM d, HH:mm',
     ).format(event.recordedAt.toLocal());

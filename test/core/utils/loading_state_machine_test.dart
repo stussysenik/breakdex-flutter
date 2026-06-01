@@ -1,4 +1,3 @@
-import 'dart:async';
 
 import 'package:flutter_test/flutter_test.dart' hide Timeout;
 
@@ -162,7 +161,7 @@ void main() {
       final result = state.map(
         idle: (_) => '',
         loading: (_) => '',
-        downloading: (d) => '${d.progress}',
+        downloading: (final d) => '${d.progress}',
         ready: (_) => '',
         timeout: (_) => '',
         error: (_) => '',

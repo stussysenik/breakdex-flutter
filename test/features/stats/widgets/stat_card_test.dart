@@ -5,7 +5,7 @@ import 'package:flutter_test/flutter_test.dart';
 
 void main() {
   testWidgets('stat card presents the subject label above the value', (
-    tester,
+    final tester,
   ) async {
     await tester.pumpWidget(
       MaterialApp(

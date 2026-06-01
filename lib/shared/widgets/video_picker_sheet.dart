@@ -4,7 +4,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../../core/design/spacing.dart';
 import '../../core/design/typography.dart';
-import '../../core/design/theme.dart';
 import '../../core/services/video_service.dart';
 import '../../core/utils/loading_state_machine.dart';
 import 'metadata_video_picker_sheet.dart';
@@ -22,9 +21,9 @@ class VideoPickerSheet extends StatefulWidget {
   final String? previousThumbnailPath;
 
   static Future<VideoPickResult?> show(
-    BuildContext context, {
-    String? previousVideoName,
-    String? previousThumbnailPath,
+    final BuildContext context, {
+    final String? previousVideoName,
+    final String? previousThumbnailPath,
   }) {
     return showModalBottomSheet<VideoPickResult>(
       context: context,
@@ -32,7 +31,7 @@ class VideoPickerSheet extends StatefulWidget {
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(AppRadius.lg)),
       ),
-      builder: (ctx) => VideoPickerSheet(
+      builder: (final ctx) => VideoPickerSheet(
         previousVideoName: previousVideoName,
         previousThumbnailPath: previousThumbnailPath,
       ),
@@ -53,7 +52,7 @@ class _VideoPickerSheetState extends State<VideoPickerSheet> {
   @override
   void initState() {
     super.initState();
-    _stateSub = _loadingController.stream.listen((state) {
+    _stateSub = _loadingController.stream.listen((final state) {
       if (mounted) setState(() => _loadState = state);
     });
   }
@@ -68,7 +67,7 @@ class _VideoPickerSheetState extends State<VideoPickerSheet> {
 
   void _startProgressListener() {
     _progressSub?.cancel();
-    _progressSub = _videoService.importProgress.listen((p) {
+    _progressSub = _videoService.importProgress.listen((final p) {
       _loadingController.send(LoadingEvent.progress(p));
     });
   }
@@ -77,7 +76,7 @@ class _VideoPickerSheetState extends State<VideoPickerSheet> {
     if (mounted) Navigator.pop(context, null);
   }
 
-  String _describeError(Object error) {
+  String _describeError(final Object error) {
     if (error is PlatformException) {
       final msg = error.message ?? '';
       if (msg.contains('iCloud') || msg.contains('Timed out')) {
@@ -108,11 +107,11 @@ class _VideoPickerSheetState extends State<VideoPickerSheet> {
       final resultEither = await _videoService.pickFromFiles().run();
       if (!mounted) return;
       resultEither.match(
-        (failure) {
+        (final failure) {
           final err = _describeError(Exception(failure.message));
           _loadingController.send(LoadingEvent.fail(err, retryable: true));
         },
-        (result) {
+        (final result) {
           if (result != null) {
             _loadingController.send(LoadingEvent.complete(null));
             Navigator.pop(context, result);
@@ -135,11 +134,11 @@ class _VideoPickerSheetState extends State<VideoPickerSheet> {
       final resultEither = await _videoService.recordVideo().run();
       if (!mounted) return;
       resultEither.match(
-        (failure) {
+        (final failure) {
           final err = _describeError(Exception(failure.message));
           _loadingController.send(LoadingEvent.fail(err, retryable: true));
         },
-        (result) {
+        (final result) {
           if (result != null) {
             _loadingController.send(LoadingEvent.complete(null));
             Navigator.pop(context, result);
@@ -156,7 +155,7 @@ class _VideoPickerSheetState extends State<VideoPickerSheet> {
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(final BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
     final isLoading = _loadState is Loading || _loadState is Downloading;
 
@@ -213,7 +212,7 @@ class _VideoPickerSheetState extends State<VideoPickerSheet> {
     );
   }
 
-  Widget _buildLoadingOverlay(ColorScheme colorScheme) {
+  Widget _buildLoadingOverlay(final ColorScheme colorScheme) {
     return _loadState.map(
       idle: (_) => const SizedBox.shrink(),
       ready: (_) => const SizedBox.shrink(),
@@ -221,12 +220,12 @@ class _VideoPickerSheetState extends State<VideoPickerSheet> {
         statusText: 'Preparing...',
         onCancel: _cancel,
       ),
-      downloading: (s) => _LoadingOverlayContent(
+      downloading: (final s) => _LoadingOverlayContent(
         statusText: 'Importing...',
         progress: s.progress,
         onCancel: _cancel,
       ),
-      retrying: (s) => _LoadingOverlayContent(
+      retrying: (final s) => _LoadingOverlayContent(
         statusText: 'Retrying (${s.attempt}/${s.maxAttempts})...',
         onCancel: _cancel,
       ),
@@ -235,7 +234,7 @@ class _VideoPickerSheetState extends State<VideoPickerSheet> {
         onRetry: _pickFromFiles,
         onCancel: () => _loadingController.send(LoadingEvent.reset),
       ),
-      error: (s) => _ErrorOverlayContent(
+      error: (final s) => _ErrorOverlayContent(
         message: s.message,
         onRetry: s.retryable ? _pickFromFiles : null,
         onCancel: () => _loadingController.send(LoadingEvent.reset),
@@ -256,7 +255,7 @@ class _LoadingOverlayContent extends StatelessWidget {
   final VoidCallback onCancel;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(final BuildContext context) {
     return Positioned.fill(
       child: Container(
         decoration: const BoxDecoration(
@@ -318,7 +317,7 @@ class _ErrorOverlayContent extends StatelessWidget {
   final VoidCallback onCancel;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(final BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
     return Positioned.fill(
       child: Container(
@@ -364,7 +363,7 @@ class _GhostCard extends StatelessWidget {
   final String? thumbnailPath;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(final BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
     return Container(
       padding: const EdgeInsets.all(AppSpacing.md),
@@ -418,7 +417,7 @@ class _SourceTile extends StatelessWidget {
   final VoidCallback? onTap;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(final BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
     final enabled = onTap != null;
 

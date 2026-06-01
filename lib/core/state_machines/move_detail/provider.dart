@@ -2,7 +2,6 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:drift/drift.dart' show Value;
-import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:path/path.dart' as p;
@@ -10,10 +9,8 @@ import 'package:uuid/uuid.dart';
 
 import '../../database/database.dart';
 import '../../models/learning_state.dart';
-import '../../models/reviewable_item.dart';
 import '../../providers.dart';
 import '../../services/video_path_resolver.dart';
-import '../../services/native_video_album.dart';
 import '../../utils/diagnostics.dart';
 import '../../utils/filesystem_utils.dart';
 import 'state.dart';
@@ -39,12 +36,12 @@ class MoveDetailNotifier extends Notifier<MoveDetailState> {
     return initialState;
   }
 
-  void init(Move move) {
+  void init(final Move move) {
     state = Idle(move);
     _machine.send(StreamUpdate(move));
   }
 
-  void send(MoveDetailEvent event) {
+  void send(final MoveDetailEvent event) {
     final next = _machine.transition(state, event);
     if (next != null) {
       state = next;
@@ -52,7 +49,7 @@ class MoveDetailNotifier extends Notifier<MoveDetailState> {
     }
   }
 
-  void _executeEntryActions(MoveDetailState s) {
+  void _executeEntryActions(final MoveDetailState s) {
     switch (s) {
       case ValidatingName(:final move, :final candidateName):
         _validateName(move, candidateName);
@@ -87,7 +84,7 @@ class MoveDetailNotifier extends Notifier<MoveDetailState> {
 
   // ── Side effect methods ──
 
-  Future<void> _duplicateMove(Move move) async {
+  Future<void> _duplicateMove(final Move move) async {
     final log = StageLogger.begin('_duplicateMove', subsystem: 'MoveDetail', context: {
       'moveId': move.id,
       'name': move.name,
@@ -153,7 +150,7 @@ class MoveDetailNotifier extends Notifier<MoveDetailState> {
     }
   }
 
-  Future<void> _savePhotos(Move move, String? json) async {
+  Future<void> _savePhotos(final Move move, final String? json) async {
     try {
       await ref.read(moveRepositoryProvider).update(
         MovesCompanion(id: Value(move.id), imagePaths: Value(json)),
@@ -164,7 +161,7 @@ class MoveDetailNotifier extends Notifier<MoveDetailState> {
     }
   }
 
-  Future<void> _validateName(Move move, String candidateName) async {
+  Future<void> _validateName(final Move move, final String candidateName) async {
     final naming = ref.read(reviewableNamingServiceProvider);
     final normalized = naming.normalize(candidateName);
     final exists = await naming.isNameTaken(
@@ -178,17 +175,17 @@ class MoveDetailNotifier extends Notifier<MoveDetailState> {
     }
   }
 
-  Future<void> _saveName(Move move, String newName) async {
+  Future<void> _saveName(final Move move, final String newName) async {
     try {
       final orchestrator = ref.read(storageOrchestratorProvider);
-      var updatedMove = await orchestrator.updateMoveName(move, newName);
+      final updatedMove = await orchestrator.updateMoveName(move, newName);
       send(SaveSucceeded(updatedMove));
     } catch (e) {
       send(SaveFailed('$e'));
     }
   }
 
-  Future<void> _saveState(Move move, LearningState newState) async {
+  Future<void> _saveState(final Move move, final LearningState newState) async {
     final log = StageLogger.begin('_saveState', subsystem: 'MoveDetail', context: {
       'moveId': move.id,
       'currentState': move.learningState,
@@ -206,17 +203,17 @@ class MoveDetailNotifier extends Notifier<MoveDetailState> {
     }
   }
 
-  Future<void> _saveCategory(Move move, String newCategory) async {
+  Future<void> _saveCategory(final Move move, final String newCategory) async {
     try {
       final orchestrator = ref.read(storageOrchestratorProvider);
-      var updatedMove = await orchestrator.updateMoveCategory(move, newCategory);
+      final updatedMove = await orchestrator.updateMoveCategory(move, newCategory);
       send(SaveSucceeded(updatedMove));
     } catch (e) {
       send(SaveFailed('$e'));
     }
   }
 
-  Future<void> _saveCount(Move move, int newCount) async {
+  Future<void> _saveCount(final Move move, final int newCount) async {
     try {
       await ref.read(moveRepositoryProvider).update(
         MovesCompanion(id: Value(move.id), count: Value(newCount)),
@@ -227,7 +224,7 @@ class MoveDetailNotifier extends Notifier<MoveDetailState> {
     }
   }
 
-  Future<void> _saveVideo(Move move, String localPath, String originalFileName) async {
+  Future<void> _saveVideo(final Move move, final String localPath, final String originalFileName) async {
     final log = StageLogger.begin('_saveVideo', subsystem: 'MoveDetail', context: {
       'moveId': move.id,
       'localPath': localPath,
@@ -254,7 +251,7 @@ class MoveDetailNotifier extends Notifier<MoveDetailState> {
               contentHash: Value(contentHash),
             ),
           );
-      var updatedMove = move.copyWith(
+      final updatedMove = move.copyWith(
         videoPath: Value(semanticRelative),
         originalVideoName: Value(originalFileName),
         contentHash: Value(contentHash),
@@ -272,7 +269,7 @@ class MoveDetailNotifier extends Notifier<MoveDetailState> {
     }
   }
 
-  Future<void> _removeVideo(Move move) async {
+  Future<void> _removeVideo(final Move move) async {
     try {
       unawaited(HapticFeedback.mediumImpact());
       await ref.read(mediaCleanupServiceProvider).cleanupMoveMedia(move);
@@ -294,13 +291,13 @@ class MoveDetailNotifier extends Notifier<MoveDetailState> {
     }
   }
 
-  Future<void> _deleteMove(Move move) async {
+  Future<void> _deleteMove(final Move move) async {
     try {
       unawaited(HapticFeedback.mediumImpact());
       final orchestrator = ref.read(storageOrchestratorProvider);
       unawaited(orchestrator.deleteMove(
         move,
-        cleanupMedia: (m) => ref.read(mediaCleanupServiceProvider).cleanupMoveMedia(m),
+        cleanupMedia: (final m) => ref.read(mediaCleanupServiceProvider).cleanupMoveMedia(m),
       ));
       send(const DeleteSucceeded());
     } catch (e) {
@@ -308,7 +305,7 @@ class MoveDetailNotifier extends Notifier<MoveDetailState> {
     }
   }
 
-  Future<void> _saveLogEntry(Move move, String body) async {
+  Future<void> _saveLogEntry(final Move move, final String body) async {
     try {
       final dao = ref.read(moveNoteEntriesDaoProvider);
       await dao.addEntry(id: const Uuid().v4(), moveId: move.id, body: body);
@@ -318,7 +315,7 @@ class MoveDetailNotifier extends Notifier<MoveDetailState> {
     }
   }
 
-  Future<void> _deleteLogEntry(Move move, String entryId) async {
+  Future<void> _deleteLogEntry(final Move move, final String entryId) async {
     try {
       final dao = ref.read(moveNoteEntriesDaoProvider);
       await dao.deleteEntry(entryId);
@@ -328,7 +325,7 @@ class MoveDetailNotifier extends Notifier<MoveDetailState> {
     }
   }
 
-  Future<void> _saveNotes(Move move, String text) async {
+  Future<void> _saveNotes(final Move move, final String text) async {
     try {
       await ref.read(moveRepositoryProvider).update(
             MovesCompanion(

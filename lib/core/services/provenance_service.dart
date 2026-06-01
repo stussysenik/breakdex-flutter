@@ -18,13 +18,13 @@ class ProvenanceService {
   String _makeId() {
     final rnd = Random.secure();
     final bytes = List<int>.generate(16, (_) => rnd.nextInt(256));
-    return bytes.map((b) => b.toRadixString(16).padLeft(2, '0')).join();
+    return bytes.map((final b) => b.toRadixString(16).padLeft(2, '0')).join();
   }
 
   Future<void> logCreated(
-    String entityType,
-    String entityId, {
-    Map<String, dynamic>? metadata,
+    final String entityType,
+    final String entityId, {
+    final Map<String, dynamic>? metadata,
   }) {
     return _dao.insert(
       ProvenanceEventsCompanion.insert(
@@ -38,10 +38,10 @@ class ProvenanceService {
   }
 
   Future<void> logReviewed(
-    String entityType,
-    String entityId,
-    String rating, {
-    String? fsrsState,
+    final String entityType,
+    final String entityId,
+    final String rating, {
+    final String? fsrsState,
   }) {
     final meta = <String, dynamic>{
       'rating': rating,
@@ -62,9 +62,9 @@ class ProvenanceService {
   }
 
   Future<void> logEdited(
-    String entityType,
-    String entityId,
-    Map<String, dynamic> changes,
+    final String entityType,
+    final String entityId,
+    final Map<String, dynamic> changes,
   ) {
     return _dao.insert(
       ProvenanceEventsCompanion.insert(
@@ -78,9 +78,9 @@ class ProvenanceService {
   }
 
   Future<void> logMilestone(
-    String entityType,
-    String entityId,
-    String milestone,
+    final String entityType,
+    final String entityId,
+    final String milestone,
   ) {
     return _dao.insert(
       ProvenanceEventsCompanion.insert(
@@ -94,9 +94,9 @@ class ProvenanceService {
   }
 
   Future<void> logTagged(
-    String entityType,
-    String entityId,
-    String tag,
+    final String entityType,
+    final String entityId,
+    final String tag,
   ) {
     return _dao.insert(
       ProvenanceEventsCompanion.insert(
@@ -109,7 +109,7 @@ class ProvenanceService {
     );
   }
 
-  Future<int> purgeExpiredEvents(int retentionDays) {
+  Future<int> purgeExpiredEvents(final int retentionDays) {
     final cutoff = DateTime.now().subtract(Duration(days: retentionDays));
     return _dao.purgeExpired(cutoff);
   }

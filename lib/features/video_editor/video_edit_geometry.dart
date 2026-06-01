@@ -22,7 +22,7 @@ class VideoEditViewport {
     return _matrix(scale: minScale, tx: dx, ty: dy);
   }
 
-  Matrix4 clampTransform(Matrix4 transform) {
+  Matrix4 clampTransform(final Matrix4 transform) {
     final requestedScale = _matrixScale(transform);
     final scale = requestedScale.clamp(minScale, maxScale).toDouble();
     final contentWidth = orientedVideoSize.width * scale;
@@ -43,7 +43,7 @@ class VideoEditViewport {
     return _matrix(scale: scale, tx: tx, ty: ty);
   }
 
-  Rect normalizedCropRect(Matrix4 transform) {
+  Rect normalizedCropRect(final Matrix4 transform) {
     final clamped = clampTransform(transform);
     final scale = _matrixScale(clamped);
     final translation = clamped.getTranslation();
@@ -79,9 +79,9 @@ class VideoEditViewport {
   }
 
   static Matrix4 _matrix({
-    required double scale,
-    required double tx,
-    required double ty,
+    required final double scale,
+    required final double tx,
+    required final double ty,
   }) {
     final matrix = Matrix4.diagonal3Values(scale, scale, 1);
     matrix.setTranslationRaw(tx, ty, 0);
@@ -89,9 +89,9 @@ class VideoEditViewport {
   }
 
   static double _clampAxisTranslation(
-    double translation, {
-    required double viewportExtent,
-    required double contentExtent,
+    final double translation, {
+    required final double viewportExtent,
+    required final double contentExtent,
   }) {
     if (contentExtent <= viewportExtent) {
       return (viewportExtent - contentExtent) / 2;
@@ -99,7 +99,7 @@ class VideoEditViewport {
     return translation.clamp(viewportExtent - contentExtent, 0.0).toDouble();
   }
 
-  static double _matrixScale(Matrix4 matrix) {
+  static double _matrixScale(final Matrix4 matrix) {
     final storage = matrix.storage;
     final scaleX = math.sqrt(storage[0] * storage[0] + storage[1] * storage[1]);
     final scaleY = math.sqrt(storage[4] * storage[4] + storage[5] * storage[5]);
@@ -108,12 +108,12 @@ class VideoEditViewport {
 }
 
 VideoEditViewport computeVideoEditViewport({
-  required Size videoSize,
-  required int rotation,
-  required double maxWidth,
-  double maxHeight = 300,
-  double? targetAspect,
-  double maxScaleMultiplier = 8,
+  required final Size videoSize,
+  required final int rotation,
+  required final double maxWidth,
+  final double maxHeight = 300,
+  final double? targetAspect,
+  final double maxScaleMultiplier = 8,
 }) {
   final normalizedRotation = ((rotation % 360) + 360) % 360;
   final isRotated = normalizedRotation == 90 || normalizedRotation == 270;
@@ -126,6 +126,7 @@ VideoEditViewport computeVideoEditViewport({
     maxWidth: maxWidth,
     maxHeight: maxHeight,
     targetAspect: targetAspect,
+    videoAspect: orientedVideoSize.width / orientedVideoSize.height,
   );
   final minScale = math.max(
     viewportSize.width / orientedVideoSize.width,
@@ -138,27 +139,26 @@ VideoEditViewport computeVideoEditViewport({
     minScale: minScale,
     maxScale: minScale * maxScaleMultiplier,
   );
-}
-
-Size _computeViewportSize({
-  required double maxWidth,
-  required double maxHeight,
-  required double? targetAspect,
-}) {
-  if (targetAspect == null) {
-    return Size(maxWidth, maxHeight);
   }
 
-  if (maxWidth / maxHeight > targetAspect) {
+  Size _computeViewportSize({
+  required final double maxWidth,
+  required final double maxHeight,
+  required final double? targetAspect,
+  required final double videoAspect,
+  }) {
+  final aspect = targetAspect ?? videoAspect;
+
+  if (maxWidth / maxHeight > aspect) {
     final height = maxHeight;
-    return Size(height * targetAspect, height);
+    return Size(height * aspect, height);
   }
 
   final width = maxWidth;
-  return Size(width, width / targetAspect);
-}
+  return Size(width, width / aspect);
+  }
 
-bool matrixCloseTo(Matrix4 a, Matrix4 b, {double epsilon = 0.001}) {
+bool matrixCloseTo(final Matrix4 a, final Matrix4 b, {final double epsilon = 0.001}) {
   for (var i = 0; i < 16; i++) {
     if ((a.storage[i] - b.storage[i]).abs() > epsilon) {
       return false;

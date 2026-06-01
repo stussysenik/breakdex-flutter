@@ -18,7 +18,7 @@ class BattleResultsView extends StatelessWidget {
   final VoidCallback onDone;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(final BuildContext context) {
     final cs = Theme.of(context).colorScheme;
 
     return Padding(
@@ -168,7 +168,7 @@ class _StatRow extends StatelessWidget {
   final String value;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(final BuildContext context) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
@@ -197,7 +197,7 @@ class _MiniStat extends StatelessWidget {
   final Color color;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(final BuildContext context) {
     return Column(
       children: [
         Text(

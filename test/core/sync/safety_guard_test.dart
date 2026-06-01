@@ -18,9 +18,9 @@ void main() {
 
   /// Insert a manifest entry and optional copies for testing.
   Future<void> seedManifest(
-    AppDatabase db, {
-    required String hash,
-    DateTime? deletedAt,
+    final AppDatabase db, {
+    required final String hash,
+    final DateTime? deletedAt,
   }) async {
     await db.assetManifestDao.upsert(AssetManifestCompanion(
       contentHash: Value(hash),
@@ -32,11 +32,11 @@ void main() {
   }
 
   Future<void> seedCopy(
-    AppDatabase db, {
-    required String id,
-    required String hash,
-    required String provider,
-    String status = 'pending',
+    final AppDatabase db, {
+    required final String id,
+    required final String hash,
+    required final String provider,
+    final String status = 'pending',
   }) async {
     await db.assetCopiesDao.insertCopy(AssetCopiesCompanion(
       id: Value(id),

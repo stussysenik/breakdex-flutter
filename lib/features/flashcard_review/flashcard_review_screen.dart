@@ -48,6 +48,7 @@ class _FlashcardReviewScreenState extends ConsumerState<FlashcardReviewScreen>
   bool _completed = false;
   bool _assessmentStageVisible = false;
   List<ReviewSessionItem> _items = [];
+  final Map<String, int> _comboStepIndices = {};
   bool _initialized = false;
   List<ReviewSessionItem>? _pendingSessionItems;
 
@@ -131,6 +132,7 @@ class _FlashcardReviewScreenState extends ConsumerState<FlashcardReviewScreen>
     _completed = false;
     _assessmentStageVisible = false;
     _items = [];
+    _comboStepIndices.clear();
     _initialized = false;
     _pendingSessionItems = null;
     _cardScale = 1.0;
@@ -139,7 +141,7 @@ class _FlashcardReviewScreenState extends ConsumerState<FlashcardReviewScreen>
     _isProcessingRating = false;
   }
 
-  void _endSession({bool clearTarget = true}) {
+  void _endSession({final bool clearTarget = true}) {
     setState(_resetSessionState);
     if (clearTarget) {
       ref.read(reviewSessionTargetMoveIdsProvider.notifier).state = null;
@@ -154,7 +156,7 @@ class _FlashcardReviewScreenState extends ConsumerState<FlashcardReviewScreen>
     final total = _items.length;
     showModalBottomSheet<void>(
       context: context,
-      builder: (context) {
+      builder: (final context) {
         final colorScheme = Theme.of(context).colorScheme;
         return SafeArea(
           child: Padding(
@@ -225,7 +227,7 @@ class _FlashcardReviewScreenState extends ConsumerState<FlashcardReviewScreen>
     });
   }
 
-  void _setReviewMode(ReviewMode mode) {
+  void _setReviewMode(final ReviewMode mode) {
     ref.read(reviewModeProvider.notifier).set(mode);
     setState(_resetSessionState);
     ref.read(reviewSessionActiveProvider.notifier).state = false;
@@ -244,7 +246,7 @@ class _FlashcardReviewScreenState extends ConsumerState<FlashcardReviewScreen>
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(final BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
     final reviewMode = ref.watch(reviewModeProvider);
     final sessionActive = ref.watch(reviewSessionActiveProvider);
@@ -253,7 +255,11 @@ class _FlashcardReviewScreenState extends ConsumerState<FlashcardReviewScreen>
     // header and segment control are hidden. End button lives in the
     // card's top overlay instead.
     if (sessionActive) {
-      return Scaffold(body: SafeArea(child: _buildFlashcardSession()));
+      return Scaffold(
+        body: SafeArea(
+          child: _buildFlashcardSession(),
+        ),
+      );
     }
 
     return Scaffold(
@@ -316,7 +322,7 @@ class _FlashcardReviewScreenState extends ConsumerState<FlashcardReviewScreen>
     final itemsAsync = ref.watch(filteredReviewSessionItemsProvider);
 
     // Reset session when filters change (provider re-fetches)
-    ref.listen(filteredReviewSessionItemsProvider, (prev, next) {
+    ref.listen(filteredReviewSessionItemsProvider, (final prev, final next) {
       if (next is AsyncData<List<ReviewSessionItem>> && prev != next) {
         _queueOrApplySessionItems(next.value);
       }
@@ -324,8 +330,8 @@ class _FlashcardReviewScreenState extends ConsumerState<FlashcardReviewScreen>
 
     return itemsAsync.when(
       loading: () => const Center(child: CircularProgressIndicator()),
-      error: (e, _) => Center(child: Text('Error: $e')),
-      data: (items) {
+      error: (final e, _) => Center(child: Text('Error: $e')),
+      data: (final items) {
         // First load — also start shake listener for the active session
         if (!_initialized) {
           _items = List.from(items);
@@ -366,7 +372,7 @@ class _FlashcardReviewScreenState extends ConsumerState<FlashcardReviewScreen>
           // Breathing animation: 0.6% scale oscillation when idle.
           child: AnimatedBuilder(
             animation: _breathController,
-            builder: (context, child) {
+            builder: (final context, final child) {
               final reduceMotion = MediaQuery.of(context).disableAnimations;
               final breathScale = reduceMotion
                   ? 1.0
@@ -390,7 +396,7 @@ class _FlashcardReviewScreenState extends ConsumerState<FlashcardReviewScreen>
                     constraints: const BoxConstraints(maxWidth: 560),
                     child: ReviewCard(
                       key: ValueKey(
-                        'review-card-${item.entityType}-${item.entityId}',
+                        'review-card-${item.entityType}-${item.entityId}-${item.state.dbValue}',
                       ),
                       displaySettings: displaySettings,
                       showMetadataPanel: !_assessmentStageVisible,
@@ -429,6 +435,12 @@ class _FlashcardReviewScreenState extends ConsumerState<FlashcardReviewScreen>
                       onLoopToggle: _toggleLoop,
                       playbackSpeed: _playbackSpeed,
                       onSpeedCycle: _cycleSpeed,
+                      activeComboStepIndex: _comboStepIndices[item.entityId] ?? 0,
+                      onStepSelected: (final index) {
+                        setState(() {
+                          _comboStepIndices[item.entityId] = index;
+                        });
+                      },
                     ),
                   ),
                 ),
@@ -450,7 +462,7 @@ class _FlashcardReviewScreenState extends ConsumerState<FlashcardReviewScreen>
                   ),
                   child: RatingButtonRow(
                     compact: true,
-                    onRate: (rating) => _rateItem(item, rating),
+                    onRate: (final rating) => _rateItem(item, rating),
                     intervalPreviews: intervals,
                   ),
                 )
@@ -489,7 +501,7 @@ class _FlashcardReviewScreenState extends ConsumerState<FlashcardReviewScreen>
     );
   }
 
-  Widget _buildEmpty(ColorScheme colorScheme) {
+  Widget _buildEmpty(final ColorScheme colorScheme) {
     final stateFilter = ref.watch(reviewStateFilterProvider);
     final selectedDeck = ref.watch(selectedDeckProvider);
     final targetMoveIds = ref.watch(reviewSessionTargetMoveIdsProvider);
@@ -566,13 +578,17 @@ class _FlashcardReviewScreenState extends ConsumerState<FlashcardReviewScreen>
       );
     }
 
+    final stateLabel = stateFilter != null
+        ? resolveLearningStateLabel(stateLabels, stateFilter)
+        : 'due';
+
     final message = switch (reviewSource) {
       ReviewSessionSource.deck =>
         selectedDeck == null
             ? 'Pick a deck to start a review session'
             : '"${selectedDeck.name}" has no matching cards',
       ReviewSessionSource.stateBased when stateFilter != null =>
-        'No due ${(stateLabels[stateFilter] ?? stateFilter.displayText).toLowerCase()} ${entityKind == ReviewEntityKind.moves ? 'move cards' : 'combo cards'} available',
+        'No $stateLabel ${entityKind == ReviewEntityKind.moves ? 'move cards' : 'combo cards'} available',
       ReviewSessionSource.stateBased =>
         'No due ${entityKind == ReviewEntityKind.moves ? 'move cards' : 'combo cards'} available for this session',
     };
@@ -600,7 +616,7 @@ class _FlashcardReviewScreenState extends ConsumerState<FlashcardReviewScreen>
     );
   }
 
-  Widget _buildCompleted(ColorScheme colorScheme) {
+  Widget _buildCompleted(final ColorScheme colorScheme) {
     return Center(
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: AppSpacing.screenEdge),
@@ -693,11 +709,16 @@ class _FlashcardReviewScreenState extends ConsumerState<FlashcardReviewScreen>
     _skip();
   }
 
+  void _skip() {
+    HapticFeedback.lightImpact();
+    _advance();
+  }
+
   void _stopShakeListener() {
     _swingDetector.stop();
   }
 
-  void _queueOrApplySessionItems(List<ReviewSessionItem> nextItems) {
+  void _queueOrApplySessionItems(final List<ReviewSessionItem> nextItems) {
     if (_isProcessingRating || _animatingExit) {
       _pendingSessionItems = List<ReviewSessionItem>.from(nextItems);
       return;
@@ -705,7 +726,7 @@ class _FlashcardReviewScreenState extends ConsumerState<FlashcardReviewScreen>
     _applySessionItems(nextItems);
   }
 
-  void _applySessionItems(List<ReviewSessionItem> nextItems) {
+  void _applySessionItems(final List<ReviewSessionItem> nextItems) {
     final reconciliation = reconcileReviewSession(
       previousItems: _items,
       nextItems: nextItems,
@@ -737,7 +758,7 @@ class _FlashcardReviewScreenState extends ConsumerState<FlashcardReviewScreen>
     _applySessionItems(pending);
   }
 
-  Future<void> _repickVideo(Move move, int index) async {
+  Future<void> _repickVideo(final Move move, final int index) async {
     final result = await VideoPickerSheet.show(
       context,
       previousVideoName: move.originalVideoName,
@@ -817,7 +838,7 @@ class _FlashcardReviewScreenState extends ConsumerState<FlashcardReviewScreen>
     });
   }
 
-  Future<void> _showStatePicker(Move move, int index) async {
+  Future<void> _showStatePicker(final Move move, final int index) async {
     final currentState = _items[index].state;
     final newState = await StatePickerSheet.show(
       context,
@@ -862,7 +883,7 @@ class _FlashcardReviewScreenState extends ConsumerState<FlashcardReviewScreen>
     });
   }
 
-  Future<void> _rateItem(ReviewSessionItem item, ReviewRating rating) async {
+  Future<void> _rateItem(final ReviewSessionItem item, final ReviewRating rating) async {
     if (_isProcessingRating) return;
     _isProcessingRating = true;
 
@@ -969,9 +990,9 @@ class _FlashcardReviewScreenState extends ConsumerState<FlashcardReviewScreen>
   /// Runs asynchronously so it doesn't block the card advance animation.
   /// If the move earns a higher tier, the celebration overlay fires on top
   /// of the current screen. The overlay auto-dismisses after 1.5s.
-  void _checkAchievementAdvancement(String moveId, String moveName) {
+  void _checkAchievementAdvancement(final String moveId, final String moveName) {
     final service = ref.read(achievementServiceProvider);
-    service.checkAndAdvanceTier(moveId).then((newTier) {
+    service.checkAndAdvanceTier(moveId).then((final newTier) {
       if (newTier != null && mounted) {
         final label = switch (newTier) {
           'sprouting' => '\u{1F331} $moveName is sprouting!',
@@ -984,11 +1005,6 @@ class _FlashcardReviewScreenState extends ConsumerState<FlashcardReviewScreen>
     });
   }
 
-  void _skip() {
-    HapticFeedback.lightImpact();
-    _advance();
-  }
-
   /// Plays a scale-down + fade exit animation, then advances to the next card.
   /// The quick fade keeps the next card from popping in abruptly.
   void _animatedAdvance() {
@@ -999,7 +1015,7 @@ class _FlashcardReviewScreenState extends ConsumerState<FlashcardReviewScreen>
       _cardOpacity = 0.0;
     });
 
-    Future.delayed(AppMotion.moderate01, () {
+    unawaited(Future<void>.delayed(AppMotion.moderate01, () {
       if (!mounted) return;
       _advance();
       _flushPendingSessionItems();
@@ -1009,14 +1025,14 @@ class _FlashcardReviewScreenState extends ConsumerState<FlashcardReviewScreen>
         _assessmentStageVisible = false;
       });
 
-      Future.delayed(const Duration(milliseconds: 120), () {
+      unawaited(Future<void>.delayed(const Duration(milliseconds: 120), () {
         if (!mounted) return;
         setState(() {
           _animatingExit = false;
         });
         _isProcessingRating = false;
-      });
-    });
+      }));
+    }));
   }
 
   void _advance() {
@@ -1038,7 +1054,7 @@ class _FlashcardReviewScreenState extends ConsumerState<FlashcardReviewScreen>
   void didPopNext() => _reloadSessionIfActive();
 
   @override
-  void didChangeAppLifecycleState(AppLifecycleState state) {
+  void didChangeAppLifecycleState(final AppLifecycleState state) {
     if (state != AppLifecycleState.resumed) return;
     _reloadSessionIfActive();
   }

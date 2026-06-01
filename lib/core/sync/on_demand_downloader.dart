@@ -15,9 +15,9 @@ import 'cloud_provider.dart';
 
 abstract interface class LocalAssetRetriever {
   Future<String?> ensureLocal(
-    String contentHash, {
-    TransferProgress? onProgress,
-    CancellationToken? cancel,
+    final String contentHash, {
+    final TransferProgress? onProgress,
+    final CancellationToken? cancel,
   });
 }
 
@@ -38,11 +38,11 @@ class OnDemandDownloader implements LocalAssetRetriever {
   final SyncDao? _syncDao;
 
   OnDemandDownloader({
-    required AssetManifestDao manifestDao,
-    required AssetCopiesDao copiesDao,
-    required AssetHashService hashService,
-    required List<CloudProvider> Function() getProviders,
-    SyncDao? syncDao,
+    required final AssetManifestDao manifestDao,
+    required final AssetCopiesDao copiesDao,
+    required final AssetHashService hashService,
+    required final List<CloudProvider> Function() getProviders,
+    final SyncDao? syncDao,
   }) : _manifestDao = manifestDao,
        _copiesDao = copiesDao,
        _hashService = hashService,
@@ -55,9 +55,9 @@ class OnDemandDownloader implements LocalAssetRetriever {
   /// Calls [onProgress] with (bytesDownloaded, totalBytes) during transfer.
   @override
   Future<String?> ensureLocal(
-    String contentHash, {
-    TransferProgress? onProgress,
-    CancellationToken? cancel,
+    final String contentHash, {
+    final TransferProgress? onProgress,
+    final CancellationToken? cancel,
   }) async {
     // Check if already local
     final manifest = await _manifestDao.getByHash(contentHash);
@@ -75,7 +75,7 @@ class OnDemandDownloader implements LocalAssetRetriever {
     // Find a verified remote copy
     final copies = await _copiesDao.getByHash(contentHash);
     final remoteCopy = copies
-        .where((c) => c.provider != 'local' && c.status == 'verified')
+        .where((final c) => c.provider != 'local' && c.status == 'verified')
         .firstOrNull;
 
     if (remoteCopy == null) {
@@ -88,7 +88,7 @@ class OnDemandDownloader implements LocalAssetRetriever {
     // Find the matching provider
     final providers = _getProviders();
     final provider = providers
-        .where((p) => p.providerType == remoteCopy.provider)
+        .where((final p) => p.providerType == remoteCopy.provider)
         .firstOrNull;
 
     if (provider == null) {

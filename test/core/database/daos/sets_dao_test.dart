@@ -55,7 +55,7 @@ void main() {
       await dao.createSet(SetsCompanion.insert(id: _nextId(), name: 'Set C'));
 
       final all = await dao.getAll();
-      expect(all.map((s) => s.name), containsAll(['Set A', 'Set B', 'Set C']));
+      expect(all.map((final s) => s.name), containsAll(['Set A', 'Set B', 'Set C']));
       expect(all.length, 3);
     });
 
@@ -102,7 +102,7 @@ void main() {
       await dao.createSet(SetsCompanion.insert(id: _nextId(), name: 'Reactive Set'));
 
       final list = await stream.first;
-      expect(list.any((s) => s.name == 'Reactive Set'), isTrue);
+      expect(list.any((final s) => s.name == 'Reactive Set'), isTrue);
     });
   });
 
@@ -154,7 +154,7 @@ void main() {
       );
 
       final items = await dao.watchSetItems(setId).first;
-      expect(items.map((i) => i.itemId), ['m2', 'm3', 'm1']);
+      expect(items.map((final i) => i.itemId), ['m2', 'm3', 'm1']);
     });
 
     test('removeSetItem removes and reindexes', () async {
@@ -184,8 +184,8 @@ void main() {
 
       final items = await dao.watchSetItems(setId).first;
       expect(items.length, 2);
-      expect(items.map((i) => i.position), [0, 1]);
-      expect(items.map((i) => i.itemId), containsAll(['m1', 'm3']));
+      expect(items.map((final i) => i.position), [0, 1]);
+      expect(items.map((final i) => i.itemId), containsAll(['m1', 'm3']));
     });
 
     test('reorderSetItem moves item to new position', () async {
@@ -214,8 +214,8 @@ void main() {
       await dao.reorderSetItem(si3, 0);
 
       final items = await dao.watchSetItems(setId).first;
-      expect(items.map((i) => i.itemId), ['m1', 'm3', 'm2']);
-      expect(items.map((i) => i.position), [0, 1, 2]);
+      expect(items.map((final i) => i.itemId), ['m1', 'm3', 'm2']);
+      expect(items.map((final i) => i.position), [0, 1, 2]);
     });
 
     test('same PK insertion updates existing row', () async {
@@ -277,7 +277,7 @@ void main() {
 
       final items = await dao.watchSetItems(setId).first;
       expect(items.length, 3);
-      final types = items.map((i) => i.itemType).toSet();
+      final types = items.map((final i) => i.itemType).toSet();
       expect(types, containsAll(['move', 'combo', 'set']));
     });
   });

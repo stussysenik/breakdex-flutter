@@ -2,7 +2,7 @@ enum AppMode {
   anki,
   party;
 
-  static AppMode fromString(String? value) => switch (value) {
+  static AppMode fromString(final String? value) => switch (value) {
         'party' => AppMode.party,
         _ => AppMode.anki,
       };

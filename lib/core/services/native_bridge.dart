@@ -26,7 +26,7 @@ abstract class NativeBridge {
 
   /// Creates a bridge for the given capability name.
   /// [capability] maps to the Swift-side `NativeCapability.channelName`.
-  NativeBridge(String capability, {bool hasEventChannel = true})
+  NativeBridge(final String capability, {final bool hasEventChannel = true})
       : method = MethodChannel('com.breakdex/$capability'),
         events = hasEventChannel
             ? EventChannel('com.breakdex/$capability/stream')
@@ -34,7 +34,7 @@ abstract class NativeBridge {
 
   /// Invoke a native method with an optional arguments map.
   /// Returns a typed result or null if the native side returns void.
-  Future<T?> invoke<T>(String methodName, [Map<String, dynamic>? args]) {
+  Future<T?> invoke<T>(final String methodName, [final Map<String, dynamic>? args]) {
     return method.invokeMethod<T>(methodName, args);
   }
 
@@ -43,7 +43,7 @@ abstract class NativeBridge {
   Stream<Map<String, dynamic>> get eventStream {
     assert(events != null, 'This capability does not support event streaming');
     return events!.receiveBroadcastStream().map(
-      (e) => Map<String, dynamic>.from(e as Map),
+      (final e) => Map<String, dynamic>.from(e as Map),
     );
   }
 }

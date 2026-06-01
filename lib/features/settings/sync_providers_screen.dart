@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -24,7 +25,7 @@ class SyncProvidersScreen extends ConsumerWidget {
   const SyncProvidersScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(final BuildContext context, final WidgetRef ref) {
     final providersAsync = ref.watch(cloudProvidersProvider);
     final colorScheme = Theme.of(context).colorScheme;
 
@@ -41,8 +42,8 @@ class SyncProvidersScreen extends ConsumerWidget {
       ),
       body: providersAsync.when(
         loading: () => const Center(child: CircularProgressIndicator()),
-        error: (e, _) => Center(child: Text('Error: $e')),
-        data: (providers) => ListView(
+        error: (final e, _) => Center(child: Text('Error: $e')),
+        data: (final providers) => ListView(
           padding: const EdgeInsets.all(AppSpacing.screenEdge),
           children: [
             // Header
@@ -61,7 +62,7 @@ class SyncProvidersScreen extends ConsumerWidget {
               _EmptyProviderState(colorScheme: colorScheme)
             else
               ...providers.map(
-                (p) => _ProviderCard(provider: p, colorScheme: colorScheme),
+                (final p) => _ProviderCard(provider: p, colorScheme: colorScheme),
               ),
 
             const SizedBox(height: AppSpacing.lg),
@@ -80,7 +81,7 @@ class _EmptyProviderState extends StatelessWidget {
   const _EmptyProviderState({required this.colorScheme});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(final BuildContext context) {
     return Container(
       padding: const EdgeInsets.all(AppSpacing.xl),
       decoration: BoxDecoration(
@@ -128,7 +129,7 @@ class _ProviderCard extends ConsumerWidget {
   });
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(final BuildContext context, final WidgetRef ref) {
     // Watch sync operations to show error count for this provider
     final opsDao = ref.watch(syncOperationsDaoProvider);
 
@@ -163,7 +164,7 @@ class _ProviderCard extends ConsumerWidget {
                 const SizedBox(height: 2),
                 FutureBuilder<bool>(
                   future: provider.isAuthenticated,
-                  builder: (context, snap) {
+                  builder: (final context, final snap) {
                     final connected = snap.data ?? false;
                     return Text(
                       connected ? 'Connected' : 'Not connected',
@@ -179,9 +180,9 @@ class _ProviderCard extends ConsumerWidget {
                 // Show failed operation count for this provider
                 FutureBuilder<List<SyncOperation>>(
                   future: opsDao.getRetryable(),
-                  builder: (context, snap) {
+                  builder: (final context, final snap) {
                     final failed = (snap.data ?? [])
-                        .where((op) => op.providerId == provider.providerType)
+                        .where((final op) => op.providerId == provider.providerType)
                         .length;
                     if (failed == 0) return const SizedBox.shrink();
                     return Text(
@@ -204,7 +205,7 @@ class _ProviderCard extends ConsumerWidget {
     );
   }
 
-  IconData _iconForProvider(String type) => switch (type) {
+  IconData _iconForProvider(final String type) => switch (type) {
         'icloud' => Icons.cloud_outlined,
         'gdrive' => Icons.add_to_drive_outlined,
         's3' => Icons.storage_outlined,
@@ -217,7 +218,7 @@ class _AddProviderButton extends ConsumerWidget {
   const _AddProviderButton({required this.colorScheme});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(final BuildContext context, final WidgetRef ref) {
     return GestureDetector(
       onTap: () => _showAddProviderSheet(context, ref),
       child: Container(
@@ -232,7 +233,7 @@ class _AddProviderButton extends ConsumerWidget {
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.add, color: AppColors.accent, size: 20),
+            const Icon(Icons.add, color: AppColors.accent, size: 20),
             const SizedBox(width: AppSpacing.sm),
             Text(
               'Add Cloud Provider',
@@ -246,14 +247,14 @@ class _AddProviderButton extends ConsumerWidget {
     );
   }
 
-  void _showAddProviderSheet(BuildContext context, WidgetRef ref) {
+  void _showAddProviderSheet(final BuildContext context, final WidgetRef ref) {
     showModalBottomSheet(
       context: context,
       backgroundColor: Theme.of(context).colorScheme.surface,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
       ),
-      builder: (ctx) => Padding(
+      builder: (final ctx) => Padding(
         padding: const EdgeInsets.all(AppSpacing.screenEdge),
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -272,7 +273,7 @@ class _AddProviderButton extends ConsumerWidget {
               subtitle: 'Uses your Apple iCloud storage',
               onTap: () async {
                 Navigator.pop(ctx);
-                HapticFeedback.mediumImpact();
+                unawaited(HapticFeedback.mediumImpact());
                 final result = await ref.read(iCloudSetupProvider).enable();
                 if (!context.mounted) return;
                 switch (result) {
@@ -365,7 +366,7 @@ class _ProviderOption extends StatelessWidget {
   });
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(final BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
     return ListTile(
       leading: Icon(icon, color: AppColors.accent),

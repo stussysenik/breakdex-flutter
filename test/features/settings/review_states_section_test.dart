@@ -11,7 +11,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 void main() {
   testWidgets(
     'review states section combines custom labels and color metadata',
-    (tester) async {
+    (final tester) async {
       const customLearning = Color(0xFF4A8F6A);
 
       SharedPreferences.setMockInitialValues({
@@ -28,13 +28,13 @@ void main() {
         ProviderScope(
           overrides: [sharedPreferencesProvider.overrideWithValue(prefs)],
           child: Consumer(
-            builder: (context, ref, _) {
+            builder: (final context, final ref, _) {
               final stateColors = ref.watch(learningStateColorsProvider);
               return MaterialApp(
                 theme: AppTheme.light(stateColors: stateColors),
                 home: Scaffold(
                   body: ReviewStatesSection(
-                    onRename: (state, currentLabel) {
+                    onRename: (final state, final currentLabel) {
                       tappedState = state;
                       tappedLabel = currentLabel;
                     },

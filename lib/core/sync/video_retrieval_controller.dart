@@ -36,7 +36,7 @@ class VideoRetrievalSnapshot {
   final String? localPath;
   final String? message;
 
-  factory VideoRetrievalSnapshot.idle(String contentHash) {
+  factory VideoRetrievalSnapshot.idle(final String contentHash) {
     return VideoRetrievalSnapshot(
       contentHash: contentHash,
       state: VideoRetrievalState.idle,
@@ -53,12 +53,12 @@ class VideoRetrievalSnapshot {
       state == VideoRetrievalState.downloading;
 
   VideoRetrievalSnapshot copyWith({
-    VideoRetrievalState? state,
-    double? progress,
-    String? localPath,
-    String? message,
-    bool clearLocalPath = false,
-    bool clearMessage = false,
+    final VideoRetrievalState? state,
+    final double? progress,
+    final String? localPath,
+    final String? message,
+    final bool clearLocalPath = false,
+    final bool clearMessage = false,
   }) {
     return VideoRetrievalSnapshot(
       contentHash: contentHash,
@@ -82,7 +82,7 @@ class _PendingRetrievalRequest {
   final TransferIntent intent;
   final String message;
 
-  _PendingRetrievalRequest copyWith({TransferIntent? intent, String? message}) {
+  _PendingRetrievalRequest copyWith({final TransferIntent? intent, final String? message}) {
     return _PendingRetrievalRequest(
       contentHash: contentHash,
       intent: intent ?? this.intent,
@@ -99,13 +99,13 @@ class _PendingRetrievalRequest {
 /// requests automatically as conditions improve.
 class VideoRetrievalController {
   VideoRetrievalController({
-    required LocalAssetRetriever retriever,
-    required AssetManifestDao manifestDao,
-    required NetworkPolicy networkPolicy,
-    required Future<ConnectionType> Function() getConnectionType,
-    required Stream<ConnectionType> connectionTypeStream,
-    ProvenanceJournalService? provenanceJournal,
-    SyncDao? syncDao,
+    required final LocalAssetRetriever retriever,
+    required final AssetManifestDao manifestDao,
+    required final NetworkPolicy networkPolicy,
+    required final Future<ConnectionType> Function() getConnectionType,
+    required final Stream<ConnectionType> connectionTypeStream,
+    final ProvenanceJournalService? provenanceJournal,
+    final SyncDao? syncDao,
   }) : _retriever = retriever,
        _manifestDao = manifestDao,
        _networkPolicy = networkPolicy,
@@ -133,7 +133,7 @@ class VideoRetrievalController {
   bool _pumping = false;
   bool _repumpRequested = false;
 
-  Stream<VideoRetrievalSnapshot> watch(String contentHash) async* {
+  Stream<VideoRetrievalSnapshot> watch(final String contentHash) async* {
     yield snapshotFor(contentHash);
     // ignore: close_sinks
     final controller = _controllers.putIfAbsent(
@@ -143,11 +143,11 @@ class VideoRetrievalController {
     yield* controller.stream;
   }
 
-  VideoRetrievalSnapshot snapshotFor(String contentHash) {
+  VideoRetrievalSnapshot snapshotFor(final String contentHash) {
     return _snapshots[contentHash] ?? VideoRetrievalSnapshot.idle(contentHash);
   }
 
-  Future<void> requestPlayback(String contentHash) async {
+  Future<void> requestPlayback(final String contentHash) async {
     await requestAutomaticRecovery(
       contentHash,
       intent: TransferIntent.userInitiatedPlayback,
@@ -156,9 +156,9 @@ class VideoRetrievalController {
   }
 
   Future<void> requestAutomaticRecovery(
-    String contentHash, {
-    TransferIntent intent = TransferIntent.backgroundSync,
-    String? message,
+    final String contentHash, {
+    final TransferIntent intent = TransferIntent.backgroundSync,
+    final String? message,
   }) async {
     final snapshot = snapshotFor(contentHash);
     if (snapshot.state == VideoRetrievalState.downloading ||
@@ -345,7 +345,7 @@ class VideoRetrievalController {
         var lastTransferred = 0;
         final localPath = await _retriever.ensureLocal(
           contentHash,
-          onProgress: (transferred, total) {
+          onProgress: (final transferred, final total) {
             final delta = transferred - lastTransferred;
             lastTransferred = transferred;
             if (delta > 0 && connectionType == ConnectionType.mobile) {
@@ -416,14 +416,14 @@ class VideoRetrievalController {
     }
   }
 
-  void _emit(String contentHash, VideoRetrievalSnapshot snapshot) {
+  void _emit(final String contentHash, final VideoRetrievalSnapshot snapshot) {
     _snapshots[contentHash] = snapshot;
     _controllers[contentHash]?.add(snapshot);
   }
 
   Future<void> _log({
-    required String contentHash,
-    required String action,
+    required final String contentHash,
+    required final String action,
   }) async {
     if (_syncDao == null) return;
     try {
@@ -438,12 +438,12 @@ class VideoRetrievalController {
   }
 
   Future<void> _logProvenance({
-    required String contentHash,
-    required String eventType,
-    required String status,
-    String? connectionType,
-    String? localPath,
-    String? message,
+    required final String contentHash,
+    required final String eventType,
+    required final String status,
+    final String? connectionType,
+    final String? localPath,
+    final String? message,
   }) async {
     if (_provenanceJournal == null) return;
     try {
@@ -463,7 +463,7 @@ class VideoRetrievalController {
     }
   }
 
-  Future<void> _waitForSettledState(String contentHash) async {
+  Future<void> _waitForSettledState(final String contentHash) async {
     while (true) {
       final snapshot = snapshotFor(contentHash);
       if (snapshot.state != VideoRetrievalState.queued &&

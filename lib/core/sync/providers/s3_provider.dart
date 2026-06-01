@@ -43,7 +43,7 @@ class S3ProviderConfig {
         'region': region,
       };
 
-  factory S3ProviderConfig.fromJson(Map<String, dynamic> json) =>
+  factory S3ProviderConfig.fromJson(final Map<String, dynamic> json) =>
       S3ProviderConfig(
         endpointUrl: json['endpointUrl'] as String,
         bucketName: json['bucketName'] as String,
@@ -94,10 +94,10 @@ class S3Provider extends CloudProvider {
 
   @override
   Future<RemoteAsset> upload({
-    required String localPath,
-    required String remotePath,
-    TransferProgress? onProgress,
-    CancellationToken? cancel,
+    required final String localPath,
+    required final String remotePath,
+    final TransferProgress? onProgress,
+    final CancellationToken? cancel,
   }) async {
     // TODO: Implement with minio_new or raw HTTP
     // 1. Check file size — if > _multipartThreshold, use multipart upload
@@ -115,10 +115,10 @@ class S3Provider extends CloudProvider {
 
   @override
   Future<void> download({
-    required String remotePath,
-    required String localPath,
-    TransferProgress? onProgress,
-    CancellationToken? cancel,
+    required final String remotePath,
+    required final String localPath,
+    final TransferProgress? onProgress,
+    final CancellationToken? cancel,
   }) async {
     // TODO: Implement with minio_new or raw HTTP
     // 1. GET object with Range header support for resume
@@ -127,9 +127,9 @@ class S3Provider extends CloudProvider {
 
   @override
   Future<bool> verify({
-    required String remotePath,
-    String? expectedHash,
-    int? expectedSize,
+    required final String remotePath,
+    final String? expectedHash,
+    final int? expectedSize,
   }) async {
     // TODO: Implement HEAD request
     // 1. HEAD object to check existence
@@ -139,7 +139,7 @@ class S3Provider extends CloudProvider {
   }
 
   @override
-  Future<List<RemoteAsset>> list({required String directory}) async {
+  Future<List<RemoteAsset>> list({required final String directory}) async {
     // TODO: Implement ListObjectsV2
     // 1. List objects with prefix = directory
     // 2. Return as RemoteAsset list
@@ -147,7 +147,7 @@ class S3Provider extends CloudProvider {
   }
 
   @override
-  Future<void> delete({required String remotePath}) async {
+  Future<void> delete({required final String remotePath}) async {
     // TODO: Implement DELETE object
   }
 

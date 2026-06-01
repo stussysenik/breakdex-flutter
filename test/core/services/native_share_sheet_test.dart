@@ -1,4 +1,3 @@
-import 'dart:ui';
 
 import 'package:breakdex/core/services/native_share_sheet.dart';
 import 'package:flutter/foundation.dart';
@@ -15,7 +14,7 @@ void main() {
     log = [];
     debugDefaultTargetPlatformOverride = TargetPlatform.iOS;
     TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
-        .setMockMethodCallHandler(shareChannel, (call) async {
+        .setMockMethodCallHandler(shareChannel, (final call) async {
           log.add(call);
           return null;
         });

@@ -10,7 +10,7 @@ void main() {
     late ProviderContainer container;
 
     Future<void> createContainer([
-      Map<String, Object> initialValues = const {},
+      final Map<String, Object> initialValues = const {},
     ]) async {
       SharedPreferences.setMockInitialValues(initialValues);
       prefs = await SharedPreferences.getInstance();
@@ -50,8 +50,8 @@ void main() {
         reviewCardDisplaySettingsProvider.notifier,
       );
 
-      await notifier.setShowTitle(false);
-      await notifier.setShowPlaybackControls(false);
+      await notifier.setShowTitle(value: false);
+      await notifier.setShowPlaybackControls(value: false);
 
       var settings = container.read(reviewCardDisplaySettingsProvider);
       expect(settings.showTitle, isFalse);

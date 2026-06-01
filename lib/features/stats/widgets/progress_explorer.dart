@@ -38,7 +38,7 @@ class _ProgressExplorerState extends State<ProgressExplorer> {
   String? _selectedComboStepId;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(final BuildContext context) {
     final stats = widget.stats;
 
     return CustomScrollView(
@@ -69,7 +69,7 @@ class _ProgressExplorerState extends State<ProgressExplorer> {
                 _ExplorerControls(
                   subjectMode: _subjectMode,
                   structureMode: _structureMode,
-                  onSubjectChanged: (value) {
+                  onSubjectChanged: (final value) {
                     HapticFeedback.selectionClick();
                     setState(() {
                       _subjectMode = value;
@@ -82,7 +82,7 @@ class _ProgressExplorerState extends State<ProgressExplorer> {
                       }
                     });
                   },
-                  onStructureChanged: (value) {
+                  onStructureChanged: (final value) {
                     HapticFeedback.selectionClick();
                     setState(() => _structureMode = value);
                   },
@@ -126,7 +126,7 @@ class _ProgressExplorerState extends State<ProgressExplorer> {
     );
   }
 
-  List<Widget> _buildParentSlivers(BuildContext context) {
+  List<Widget> _buildParentSlivers(final BuildContext context) {
     if (_subjectMode == _ProgressSubjectMode.moves) {
       final groups = widget.stats.moveProgressGroups;
       if (groups.isEmpty) {
@@ -146,7 +146,7 @@ class _ProgressExplorerState extends State<ProgressExplorer> {
             0,
           ),
           sliver: SliverList(
-            delegate: SliverChildBuilderDelegate((context, index) {
+            delegate: SliverChildBuilderDelegate((final context, final index) {
               final group = groups[index];
               return Padding(
                 padding: EdgeInsets.only(
@@ -178,7 +178,7 @@ class _ProgressExplorerState extends State<ProgressExplorer> {
           0,
         ),
         sliver: SliverList(
-          delegate: SliverChildBuilderDelegate((context, index) {
+          delegate: SliverChildBuilderDelegate((final context, final index) {
             final group = groups[index];
             return Padding(
               padding: EdgeInsets.only(
@@ -192,7 +192,7 @@ class _ProgressExplorerState extends State<ProgressExplorer> {
     ];
   }
 
-  List<Widget> _buildGraphSlivers(BuildContext context) {
+  List<Widget> _buildGraphSlivers(final BuildContext context) {
     return [
       SliverPadding(
         padding: const EdgeInsets.fromLTRB(
@@ -207,13 +207,13 @@ class _ProgressExplorerState extends State<ProgressExplorer> {
                   groups: widget.stats.moveProgressGroups,
                   selectedCategory: _selectedMoveParentCategory,
                   selectedMoveId: _selectedMoveChildId,
-                  onSelectCategory: (category) {
+                  onSelectCategory: (final category) {
                     setState(() {
                       _selectedMoveParentCategory = category;
                       _selectedMoveChildId = null;
                     });
                   },
-                  onSelectMove: (moveId) {
+                  onSelectMove: (final moveId) {
                     setState(() => _selectedMoveChildId = moveId);
                   },
                 )
@@ -221,13 +221,13 @@ class _ProgressExplorerState extends State<ProgressExplorer> {
                   groups: widget.stats.comboProgressGroups,
                   selectedComboId: _selectedComboId,
                   selectedStepId: _selectedComboStepId,
-                  onSelectCombo: (comboId) {
+                  onSelectCombo: (final comboId) {
                     setState(() {
                       _selectedComboId = comboId;
                       _selectedComboStepId = null;
                     });
                   },
-                  onSelectStep: (moveId) {
+                  onSelectStep: (final moveId) {
                     setState(() => _selectedComboStepId = moveId);
                   },
                 ),
@@ -237,8 +237,8 @@ class _ProgressExplorerState extends State<ProgressExplorer> {
   }
 
   List<Widget> _emptyParentSlivers({
-    required String title,
-    required String subtitle,
+    required final String title,
+    required final String subtitle,
   }) {
     return [
       SliverPadding(
@@ -262,7 +262,7 @@ class _ProgressHeader extends StatelessWidget {
   final StatsBundle stats;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(final BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
 
     return Row(
@@ -316,7 +316,7 @@ class _ProgressStartCard extends StatelessWidget {
   final _ProgressSubjectMode subjectMode;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(final BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
     final moveRecommendation = _recommendedMoveParent(stats);
     final comboRecommendation = _recommendedComboParent(stats);
@@ -401,7 +401,7 @@ class _QueueChip extends StatelessWidget {
   final String value;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(final BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
 
     return Container(
@@ -449,7 +449,7 @@ class _ExplorerControls extends StatelessWidget {
   final ValueChanged<_ProgressStructureMode> onStructureChanged;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(final BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
 
     return Container(
@@ -472,7 +472,7 @@ class _ExplorerControls extends StatelessWidget {
           ),
           const SizedBox(height: AppSpacing.sm),
           LayoutBuilder(
-            builder: (context, constraints) {
+            builder: (final context, final constraints) {
               final stacked = constraints.maxWidth < 560;
               const subjectItems = [
                 AppSegmentedControlItem(
@@ -563,7 +563,7 @@ class _ControlGroup<T> extends StatelessWidget {
   final ValueChanged<T> onChanged;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(final BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
 
     return Column(
@@ -594,7 +594,7 @@ class _SectionHeading extends StatelessWidget {
   final String subtitle;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(final BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
 
     return Column(
@@ -622,7 +622,7 @@ class _MoveTreeGroupCard extends StatelessWidget {
   final MoveProgressGroup group;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(final BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
 
     return Container(
@@ -669,7 +669,7 @@ class _MoveTreeRow extends StatelessWidget {
   final MoveProgressItem item;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(final BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
 
     return Semantics(
@@ -745,7 +745,7 @@ class _MoveGraphExplorer extends StatelessWidget {
   final ValueChanged<String> onSelectMove;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(final BuildContext context) {
     if (groups.isEmpty) {
       return const _EmptyParentCard(
         title: 'No move graph yet',
@@ -755,11 +755,11 @@ class _MoveGraphExplorer extends StatelessWidget {
 
     final colorScheme = Theme.of(context).colorScheme;
     final selectedGroup = groups.firstWhere(
-      (group) => group.category == selectedCategory,
+      (final group) => group.category == selectedCategory,
       orElse: () => groups.first,
     );
     final selectedItem = selectedGroup.items.firstWhere(
-      (item) => item.moveId == selectedMoveId,
+      (final item) => item.moveId == selectedMoveId,
       orElse: () => selectedGroup.items.first,
     );
 
@@ -885,7 +885,7 @@ class _ComboTreeCard extends StatelessWidget {
   final ComboProgressGroup group;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(final BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
 
     return Container(
@@ -948,7 +948,7 @@ class _ComboStepRow extends StatelessWidget {
   final bool isLast;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(final BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
 
     return Semantics(
@@ -1051,7 +1051,7 @@ class _ComboGraphExplorer extends StatelessWidget {
   final ValueChanged<String> onSelectStep;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(final BuildContext context) {
     if (groups.isEmpty) {
       return const _EmptyParentCard(
         title: 'No combo graph yet',
@@ -1062,13 +1062,13 @@ class _ComboGraphExplorer extends StatelessWidget {
 
     final colorScheme = Theme.of(context).colorScheme;
     final selectedGroup = groups.firstWhere(
-      (group) => group.comboId == selectedComboId,
+      (final group) => group.comboId == selectedComboId,
       orElse: () => groups.first,
     );
     final ComboProgressStep? selectedStep = selectedGroup.steps.isEmpty
         ? null
         : selectedGroup.steps.firstWhere(
-            (step) => step.moveId == selectedStepId,
+            (final step) => step.moveId == selectedStepId,
             orElse: () => selectedGroup.steps.first,
           );
 
@@ -1231,7 +1231,7 @@ class _GraphParentChip extends StatelessWidget {
   final VoidCallback onTap;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(final BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
     final accent = selected ? colorScheme.primary : colorScheme.secondary;
 
@@ -1287,7 +1287,7 @@ class _MoveGraphDetailCard extends StatelessWidget {
   final MoveProgressItem item;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(final BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
 
     return Semantics(
@@ -1363,7 +1363,7 @@ class _ComboGraphDetailCard extends StatelessWidget {
   final ComboProgressStep? step;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(final BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
 
     return Semantics(
@@ -1435,7 +1435,7 @@ class _ParentNode extends StatelessWidget {
   final VoidCallback? onTap;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(final BuildContext context) {
     return Semantics(
       button: onTap != null,
       label: label,
@@ -1484,7 +1484,7 @@ class _ChildNode extends StatelessWidget {
   final VoidCallback onTap;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(final BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
 
     return Semantics(
@@ -1554,7 +1554,7 @@ class _StepNode extends StatelessWidget {
   final VoidCallback onTap;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(final BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
 
     return Semantics(
@@ -1611,7 +1611,7 @@ class _MetaPill extends StatelessWidget {
   final Color? accent;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(final BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
     final tone = accent ?? colorScheme.secondary;
 
@@ -1638,10 +1638,10 @@ class _DeepSignalsPanel extends StatelessWidget {
   final StatsBundle stats;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(final BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
     final activeDays = stats.dailyBreakdown
-        .where((day) => day.reviewCount > 0)
+        .where((final day) => day.reviewCount > 0)
         .length;
 
     return Container(
@@ -1733,7 +1733,7 @@ class _TimelineEntryTile extends StatelessWidget {
   final ReviewTimelineEntry entry;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(final BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
     final ratingColor = switch (entry.rating) {
       'AGAIN' => AppColors.actionAgain,
@@ -1799,7 +1799,7 @@ class _EmptyParentCard extends StatelessWidget {
   final String subtitle;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(final BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
 
     return Container(
@@ -1845,7 +1845,7 @@ class _RecommendationSummary {
   final String? meta;
 }
 
-_RecommendationSummary? _recommendedMoveParent(StatsBundle stats) {
+_RecommendationSummary? _recommendedMoveParent(final StatsBundle stats) {
   final ranked = <(MoveProgressGroup, MoveProgressItem)>[];
   for (final group in stats.moveProgressGroups) {
     for (final item in group.items) {
@@ -1854,7 +1854,7 @@ _RecommendationSummary? _recommendedMoveParent(StatsBundle stats) {
   }
   if (ranked.isEmpty) return null;
 
-  ranked.sort((a, b) {
+  ranked.sort((final a, final b) {
     final dueCompare = _dueBucketPriority(
       a.$2.dueBucket,
     ).compareTo(_dueBucketPriority(b.$2.dueBucket));
@@ -1877,7 +1877,7 @@ _RecommendationSummary? _recommendedMoveParent(StatsBundle stats) {
   );
 }
 
-String _moveResumeSubtitle(MoveProgressGroup group, MoveProgressItem item) {
+String _moveResumeSubtitle(final MoveProgressGroup group, final MoveProgressItem item) {
   return switch (item.dueBucket) {
     ProgressDueBucket.now =>
       '${group.dueNowCount} move${group.dueNowCount == 1 ? '' : 's'} ready now in this parent.',
@@ -1889,11 +1889,11 @@ String _moveResumeSubtitle(MoveProgressGroup group, MoveProgressItem item) {
   };
 }
 
-_RecommendationSummary? _recommendedComboParent(StatsBundle stats) {
+_RecommendationSummary? _recommendedComboParent(final StatsBundle stats) {
   final groups = [...stats.comboProgressGroups];
   if (groups.isEmpty) return null;
 
-  groups.sort((a, b) {
+  groups.sort((final a, final b) {
     final dueCompare = _dueBucketPriority(
       a.dueBucket,
     ).compareTo(_dueBucketPriority(b.dueBucket));
@@ -1915,10 +1915,10 @@ _RecommendationSummary? _recommendedComboParent(StatsBundle stats) {
   }
   nextStep ??=
       group.steps
-          .where((step) => step.dueBucket == ProgressDueBucket.today)
+          .where((final step) => step.dueBucket == ProgressDueBucket.today)
           .isNotEmpty
       ? group.steps
-            .where((step) => step.dueBucket == ProgressDueBucket.today)
+            .where((final step) => step.dueBucket == ProgressDueBucket.today)
             .first
       : null;
   nextStep ??= group.steps.isEmpty ? null : group.steps.first;
@@ -1933,7 +1933,7 @@ _RecommendationSummary? _recommendedComboParent(StatsBundle stats) {
   );
 }
 
-String _bucketReason(ProgressDueBucket bucket) => switch (bucket) {
+String _bucketReason(final ProgressDueBucket bucket) => switch (bucket) {
   ProgressDueBucket.now => 'Best next move',
   ProgressDueBucket.today => 'Up today',
   ProgressDueBucket.tomorrow => 'Coming tomorrow',
@@ -1941,7 +1941,7 @@ String _bucketReason(ProgressDueBucket bucket) => switch (bucket) {
   ProgressDueBucket.unscheduled => 'Still unstarted',
 };
 
-Color _dueBucketColor(BuildContext context, ProgressDueBucket bucket) {
+Color _dueBucketColor(final BuildContext context, final ProgressDueBucket bucket) {
   final colorScheme = Theme.of(context).colorScheme;
   return switch (bucket) {
     ProgressDueBucket.now => AppColors.actionAgain,
@@ -1952,7 +1952,7 @@ Color _dueBucketColor(BuildContext context, ProgressDueBucket bucket) {
   };
 }
 
-int _dueBucketPriority(ProgressDueBucket bucket) => switch (bucket) {
+int _dueBucketPriority(final ProgressDueBucket bucket) => switch (bucket) {
   ProgressDueBucket.now => 0,
   ProgressDueBucket.today => 1,
   ProgressDueBucket.tomorrow => 2,
@@ -1960,7 +1960,7 @@ int _dueBucketPriority(ProgressDueBucket bucket) => switch (bucket) {
   ProgressDueBucket.unscheduled => 4,
 };
 
-String _bucketLabel(ProgressDueBucket bucket) => switch (bucket) {
+String _bucketLabel(final ProgressDueBucket bucket) => switch (bucket) {
   ProgressDueBucket.now => 'Ready now',
   ProgressDueBucket.today => 'Today',
   ProgressDueBucket.tomorrow => 'Tomorrow',
@@ -1968,12 +1968,12 @@ String _bucketLabel(ProgressDueBucket bucket) => switch (bucket) {
   ProgressDueBucket.unscheduled => 'Unscheduled',
 };
 
-String _displayCategoryName(String raw) {
+String _displayCategoryName(final String raw) {
   if (raw == 'default') return 'Unsorted';
   return raw
       .split(RegExp(r'\s+'))
-      .where((part) => part.isNotEmpty)
-      .map((part) => '${part[0].toUpperCase()}${part.substring(1)}')
+      .where((final part) => part.isNotEmpty)
+      .map((final part) => '${part[0].toUpperCase()}${part.substring(1)}')
       .join(' ');
 }
 
@@ -2012,7 +2012,7 @@ class _ShareButtonState extends State<_ShareButton> {
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(final BuildContext context) {
     return IconButton(
       icon: _sharing
           ? const SizedBox(

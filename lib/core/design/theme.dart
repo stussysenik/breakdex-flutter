@@ -7,7 +7,7 @@ import 'spacing.dart';
 import 'typography.dart';
 
 abstract final class AppShadows {
-  static List<BoxShadow> soft(Brightness brightness) => [
+  static List<BoxShadow> soft(final Brightness brightness) => [
     BoxShadow(
       color: brightness == Brightness.light
           ? const Color(0x140F0B08)
@@ -17,7 +17,7 @@ abstract final class AppShadows {
     ),
   ];
 
-  static List<BoxShadow> raised(Brightness brightness) => [
+  static List<BoxShadow> raised(final Brightness brightness) => [
     BoxShadow(
       color: brightness == Brightness.light
           ? const Color(0x1A0F0B08)
@@ -27,7 +27,7 @@ abstract final class AppShadows {
     ),
   ];
 
-  static List<BoxShadow> focus(Brightness brightness) => [
+  static List<BoxShadow> focus(final Brightness brightness) => [
     BoxShadow(
       color: brightness == Brightness.light
           ? const Color(0x260F0B08)
@@ -41,7 +41,7 @@ abstract final class AppShadows {
   /// plus a key-light shadow (directional, offset). Produces depth that a
   /// single shadow cannot match — closer to cinematic lighting than Material
   /// elevation. Use on hero cards, floating panels, and bottom nav.
-  static List<BoxShadow> layered(Brightness brightness) => [
+  static List<BoxShadow> layered(final Brightness brightness) => [
     // Ambient — soft, centered, simulates scattered room light
     BoxShadow(
       color: brightness == Brightness.light
@@ -74,7 +74,7 @@ class GrainOverlay extends StatelessWidget {
   final double opacity;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(final BuildContext context) {
     return Positioned.fill(
       child: IgnorePointer(
         child: Opacity(
@@ -92,12 +92,12 @@ class GrainOverlay extends StatelessWidget {
 
 abstract final class AppSurfaces {
   static BoxDecoration panel(
-    BuildContext context, {
-    AppSurfaceTone tone = AppSurfaceTone.base,
-    bool raised = false,
-    bool focused = false,
-    double radius = AppRadius.md,
-    Color? borderColor,
+    final BuildContext context, {
+    final AppSurfaceTone tone = AppSurfaceTone.base,
+    final bool raised = false,
+    final bool focused = false,
+    final double radius = AppRadius.md,
+    final Color? borderColor,
   }) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
@@ -167,32 +167,44 @@ class AppSemanticTheme extends ThemeExtension<AppSemanticTheme> {
   final Color actionGood;
   final Color actionEasy;
 
-  Color colorForState(LearningState state) => switch (state) {
+  Color colorForState(final LearningState state) => switch (state) {
     LearningState.newState => stateNew,
     LearningState.learning => stateLearning,
     LearningState.mastery => stateMastery,
   };
 
-  Color colorForRating(ReviewRating rating) => switch (rating) {
+  Color colorForRating(final ReviewRating rating) => switch (rating) {
     ReviewRating.again => actionAgain,
     ReviewRating.hard => actionHard,
     ReviewRating.good => actionGood,
     ReviewRating.easy => actionEasy,
   };
 
-  static AppSemanticTheme of(BuildContext context) =>
-      Theme.of(context).extension<AppSemanticTheme>()!;
+  static AppSemanticTheme of(final BuildContext context) {
+    final extension = Theme.of(context).extension<AppSemanticTheme>();
+    if (extension != null) return extension;
+    return const AppSemanticTheme(
+      isMonoOutline: false,
+      stateNew: AppColors.stateNew,
+      stateLearning: AppColors.stateLearning,
+      stateMastery: AppColors.stateMastery,
+      actionAgain: AppColors.actionAgain,
+      actionHard: AppColors.actionHard,
+      actionGood: AppColors.actionGood,
+      actionEasy: AppColors.actionEasy,
+    );
+  }
 
   @override
   AppSemanticTheme copyWith({
-    bool? isMonoOutline,
-    Color? stateNew,
-    Color? stateLearning,
-    Color? stateMastery,
-    Color? actionAgain,
-    Color? actionHard,
-    Color? actionGood,
-    Color? actionEasy,
+    final bool? isMonoOutline,
+    final Color? stateNew,
+    final Color? stateLearning,
+    final Color? stateMastery,
+    final Color? actionAgain,
+    final Color? actionHard,
+    final Color? actionGood,
+    final Color? actionEasy,
   }) {
     return AppSemanticTheme(
       isMonoOutline: isMonoOutline ?? this.isMonoOutline,
@@ -207,7 +219,7 @@ class AppSemanticTheme extends ThemeExtension<AppSemanticTheme> {
   }
 
   @override
-  AppSemanticTheme lerp(ThemeExtension<AppSemanticTheme>? other, double t) {
+  AppSemanticTheme lerp(final ThemeExtension<AppSemanticTheme>? other, final double t) {
     if (other is! AppSemanticTheme) return this;
     return AppSemanticTheme(
       isMonoOutline: t < 0.5 ? isMonoOutline : other.isMonoOutline,
@@ -227,15 +239,15 @@ class AppSemanticTheme extends ThemeExtension<AppSemanticTheme> {
 extension AppSemanticThemeContext on BuildContext {
   AppSemanticTheme get semanticTheme => AppSemanticTheme.of(this);
 
-  Color stateColor(LearningState state) => semanticTheme.colorForState(state);
+  Color stateColor(final LearningState state) => semanticTheme.colorForState(state);
 }
 
 abstract final class AppTheme {
   static ThemeData light({
-    AppFontFamily family = AppFontFamily.inter,
-    Color accent = AppColors.accent,
-    LearningStateColors stateColors = LearningStateColors.defaults,
-    ViewingMode viewingMode = ViewingMode.standard,
+    final AppFontFamily family = AppFontFamily.inter,
+    final Color accent = AppColors.accent,
+    final LearningStateColors stateColors = LearningStateColors.defaults,
+    final ViewingMode viewingMode = ViewingMode.standard,
   }) => _build(
     brightness: Brightness.light,
     bg: viewingMode == ViewingMode.monoOutline
@@ -263,10 +275,10 @@ abstract final class AppTheme {
   );
 
   static ThemeData dark({
-    AppFontFamily family = AppFontFamily.inter,
-    Color accent = AppColors.accent,
-    LearningStateColors stateColors = LearningStateColors.defaults,
-    ViewingMode viewingMode = ViewingMode.standard,
+    final AppFontFamily family = AppFontFamily.inter,
+    final Color accent = AppColors.accent,
+    final LearningStateColors stateColors = LearningStateColors.defaults,
+    final ViewingMode viewingMode = ViewingMode.standard,
   }) => _build(
     brightness: Brightness.dark,
     bg: viewingMode == ViewingMode.monoOutline
@@ -294,17 +306,17 @@ abstract final class AppTheme {
   );
 
   static ThemeData _build({
-    required Brightness brightness,
-    required Color bg,
-    required Color card,
-    required Color fill,
-    required Color text,
-    required Color secondary,
-    required Color separator,
-    required AppFontFamily family,
-    required Color accent,
-    required LearningStateColors stateColors,
-    required ViewingMode viewingMode,
+    required final Brightness brightness,
+    required final Color bg,
+    required final Color card,
+    required final Color fill,
+    required final Color text,
+    required final Color secondary,
+    required final Color separator,
+    required final AppFontFamily family,
+    required final Color accent,
+    required final LearningStateColors stateColors,
+    required final ViewingMode viewingMode,
   }) {
     final effectiveAccent = viewingMode == ViewingMode.monoOutline
         ? text
@@ -413,13 +425,13 @@ abstract final class AppTheme {
       ),
       segmentedButtonTheme: SegmentedButtonThemeData(
         style: ButtonStyle(
-          backgroundColor: WidgetStateProperty.resolveWith((states) {
+          backgroundColor: WidgetStateProperty.resolveWith((final states) {
             if (states.contains(WidgetState.selected)) {
               return effectiveAccent;
             }
             return viewingMode == ViewingMode.monoOutline ? card : fill;
           }),
-          foregroundColor: WidgetStateProperty.resolveWith((states) {
+          foregroundColor: WidgetStateProperty.resolveWith((final states) {
             if (states.contains(WidgetState.selected)) {
               return colorScheme.onPrimary;
             }

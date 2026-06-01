@@ -29,7 +29,7 @@ class AppSegmentedControl<T> extends StatelessWidget {
   final ValueChanged<T> onChanged;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(final BuildContext context) {
     return Container(
       decoration: AppSurfaces.panel(context, radius: AppRadius.md),
       padding: const EdgeInsets.all(4),
@@ -63,7 +63,7 @@ class _AppSegmentedControlButton<T> extends StatelessWidget {
   final VoidCallback onTap;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(final BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
 
     return Material(

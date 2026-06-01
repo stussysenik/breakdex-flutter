@@ -6,7 +6,7 @@ void main() async {
   await Directory(tmpPath).create(recursive: true);
   final sourceFile = File(p.join(tmpPath, 'non_existent_video.mp4'));
   
-  Future<String> moveToSemanticPath(String currentRelativePath) async {
+  Future<String> moveToSemanticPath(final String currentRelativePath) async {
     final newAbs = p.join(Directory.current.path, 'mock_docs', 'Moves', 'Power moves', 'Yessir', 'hash.mp4');
     try {
       if (!await File(currentRelativePath).exists()) {

@@ -94,11 +94,11 @@ void main() {
 
     final events = await provenanceJournal.readRecent(limit: 10);
     expect(
-      events.where((event) => event.eventType == 'blocked_offline'),
+      events.where((final event) => event.eventType == 'blocked_offline'),
       isNotEmpty,
     );
     expect(
-      events.where((event) => event.eventType == 'download_restored'),
+      events.where((final event) => event.eventType == 'download_restored'),
       isNotEmpty,
     );
   });
@@ -141,7 +141,7 @@ void main() {
 
     final events = await provenanceJournal.readRecent(limit: 10);
     expect(
-      events.where((event) => event.eventType == 'download_failed'),
+      events.where((final event) => event.eventType == 'download_failed'),
       isNotEmpty,
     );
   });
@@ -198,9 +198,9 @@ void main() {
 }
 
 Future<void> _waitFor<T>(
-  T Function() readValue,
-  T expected, {
-  Duration timeout = const Duration(seconds: 1),
+  final T Function() readValue,
+  final T expected, {
+  final Duration timeout = const Duration(seconds: 1),
 }) async {
   final deadline = DateTime.now().add(timeout);
   while (DateTime.now().isBefore(deadline)) {
@@ -217,9 +217,9 @@ class _FakeRetriever implements LocalAssetRetriever {
 
   @override
   Future<String?> ensureLocal(
-    String contentHash, {
-    TransferProgress? onProgress,
-    CancellationToken? cancel,
+    final String contentHash, {
+    final TransferProgress? onProgress,
+    final CancellationToken? cancel,
   }) async {
     ensureLocalCalls += 1;
     onProgress?.call(512, 1024);

@@ -7,8 +7,8 @@ const defaultLearningStateLabels = <LearningState, String>{
 };
 
 String resolveLearningStateLabel(
-  Map<LearningState, String> labels,
-  LearningState state,
+  final Map<LearningState, String> labels,
+  final LearningState state,
 ) {
   return labels[state] ??
       defaultLearningStateLabels[state] ??
@@ -32,12 +32,12 @@ class LearningModeNotifier extends Notifier<LearningMode> {
     final prefs = ref.watch(sharedPreferencesProvider);
     final value = prefs.getString(_key) ?? 'defaultMode';
     return LearningMode.values.firstWhere(
-      (e) => e.name == value,
+      (final e) => e.name == value,
       orElse: () => LearningMode.defaultMode,
     );
   }
 
-  Future<void> set(LearningMode mode) async {
+  Future<void> set(final LearningMode mode) async {
     final prefs = ref.read(sharedPreferencesProvider);
     await prefs.setString(_key, mode.name);
     state = mode;
@@ -61,37 +61,37 @@ class CustomLearningStatesNotifier extends Notifier<List<CustomLearningState>> {
     try {
       final list = jsonDecode(json) as List<dynamic>;
       return list
-          .map((e) => CustomLearningState.fromJson(e as Map<String, dynamic>))
+          .map((final e) => CustomLearningState.fromJson(e as Map<String, dynamic>))
           .toList();
     } catch (_) {
       return [];
     }
   }
 
-  Future<void> add(CustomLearningState custom) async {
+  Future<void> add(final CustomLearningState custom) async {
     final updated = [...state, custom];
     state = updated;
     await _persist(updated);
   }
 
-  Future<void> remove(String id) async {
-    final updated = state.where((s) => s.id != id).toList();
+  Future<void> remove(final String id) async {
+    final updated = state.where((final s) => s.id != id).toList();
     state = updated;
     await _persist(updated);
   }
 
-  Future<void> update(String id, CustomLearningState updated) async {
+  Future<void> update(final String id, final CustomLearningState updated) async {
     final list = state.toList();
-    final idx = list.indexWhere((s) => s.id == id);
+    final idx = list.indexWhere((final s) => s.id == id);
     if (idx == -1) return;
     list[idx] = updated;
     state = list;
     await _persist(list);
   }
 
-  Future<void> _persist(List<CustomLearningState> states) async {
+  Future<void> _persist(final List<CustomLearningState> states) async {
     final prefs = ref.read(sharedPreferencesProvider);
-    final json = jsonEncode(states.map((s) => s.toJson()).toList());
+    final json = jsonEncode(states.map((final s) => s.toJson()).toList());
     await prefs.setString(_key, json);
   }
 }
@@ -129,7 +129,7 @@ class LearningStateLabelsNotifier extends Notifier<Map<LearningState, String>> {
     }
   }
 
-  Future<void> rename(LearningState stateKey, String newLabel) async {
+  Future<void> rename(final LearningState stateKey, final String newLabel) async {
     final trimmed = newLabel.trim();
     if (trimmed.isEmpty) return;
 
@@ -145,7 +145,7 @@ class LearningStateLabelsNotifier extends Notifier<Map<LearningState, String>> {
     state = Map<LearningState, String>.from(defaultLearningStateLabels);
   }
 
-  Future<void> _persist(Map<LearningState, String> labels) async {
+  Future<void> _persist(final Map<LearningState, String> labels) async {
     final prefs = ref.read(sharedPreferencesProvider);
     final payload = <String, String>{
       for (final entry in labels.entries) entry.key.dbValue: entry.value,

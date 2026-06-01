@@ -38,9 +38,9 @@ class ProvenanceEvent {
 
 class ProvenanceJournalService {
   ProvenanceJournalService({
-    Future<Directory> Function()? documentsDirectory,
-    DateTime Function()? now,
-    String Function()? sessionIdGenerator,
+    final Future<Directory> Function()? documentsDirectory,
+    final DateTime Function()? now,
+    final String Function()? sessionIdGenerator,
   }) : _documentsDirectory =
            documentsDirectory ?? AppStoragePaths.documentsDirectory,
        _now = now ?? DateTime.now,
@@ -55,16 +55,16 @@ class ProvenanceJournalService {
   final String sessionId;
 
   Future<void> log({
-    required String scope,
-    required String eventType,
-    String? status,
-    String? entityType,
-    String? entityId,
-    String? contentHash,
-    String? moveId,
-    String? connectionType,
-    String? localPath,
-    String? message,
+    required final String scope,
+    required final String eventType,
+    final String? status,
+    final String? entityType,
+    final String? entityId,
+    final String? contentHash,
+    final String? moveId,
+    final String? connectionType,
+    final String? localPath,
+    final String? message,
   }) async {
     final file = await _journalFile();
     final recordedAt = _now().toUtc().toIso8601String();
@@ -86,13 +86,13 @@ class ProvenanceJournalService {
     await _pruneIfNeeded(file);
   }
 
-  Future<List<ProvenanceEvent>> readRecent({int limit = 100}) async {
+  Future<List<ProvenanceEvent>> readRecent({final int limit = 100}) async {
     final file = await _journalFile();
     if (!await file.exists()) return const [];
 
     final lines = await file.readAsLines();
     final recentLines = lines.reversed
-        .where((line) => line.trim().isNotEmpty)
+        .where((final line) => line.trim().isNotEmpty)
         .take(limit)
         .toList()
         .reversed;
@@ -112,7 +112,7 @@ class ProvenanceJournalService {
     return File(p.join(directory.path, filename));
   }
 
-  Future<void> _pruneIfNeeded(File file) async {
+  Future<void> _pruneIfNeeded(final File file) async {
     if (!await file.exists()) return;
     final length = await file.length();
     if (length <= maxFileBytes) return;
@@ -122,13 +122,13 @@ class ProvenanceJournalService {
       lines.length > maxRetainedEvents ? lines.length - maxRetainedEvents : 0,
     );
     await file.writeAsString(
-      retained.where((line) => line.trim().isNotEmpty).join('\n') +
+      retained.where((final line) => line.trim().isNotEmpty).join('\n') +
           (retained.isEmpty ? '' : '\n'),
       mode: FileMode.write,
     );
   }
 
-  ProvenanceEvent? _parseLine(String line) {
+  ProvenanceEvent? _parseLine(final String line) {
     final fields = line.split('\t');
     if (fields.length < 12) return null;
     final recordedAt = DateTime.tryParse(fields[0]);
@@ -149,11 +149,11 @@ class ProvenanceJournalService {
     );
   }
 
-  String _clean(String? value) {
+  String _clean(final String? value) {
     final trimmed = value?.trim();
     if (trimmed == null || trimmed.isEmpty) return '';
     return trimmed.replaceAll(RegExp(r'[\r\n\t]+'), ' ');
   }
 
-  String? _nullIfEmpty(String value) => value.isEmpty ? null : value;
+  String? _nullIfEmpty(final String value) => value.isEmpty ? null : value;
 }

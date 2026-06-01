@@ -16,7 +16,7 @@ class AnalysisToolbar extends ConsumerWidget {
   const AnalysisToolbar({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(final BuildContext context, final WidgetRef ref) {
     final mode = ref.watch(analysisModeProvider);
     final segActive = ref.watch(segmentationActiveProvider);
     final livePose = ref.watch(livePoseActiveProvider);
@@ -40,7 +40,7 @@ class AnalysisToolbar extends ConsumerWidget {
             // Mode segmented control
             _ModeToggle(
               mode: mode,
-              onChanged: (m) =>
+              onChanged: (final m) =>
                   ref.read(analysisModeProvider.notifier).state = m,
             ),
             const Spacer(),
@@ -71,7 +71,7 @@ class _ModeToggle extends StatelessWidget {
   final ValueChanged<AnalysisMode> onChanged;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(final BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
 
     return Container(
@@ -115,7 +115,7 @@ class _SegmentButton extends StatelessWidget {
   final VoidCallback onTap;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(final BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
 
     return GestureDetector(
@@ -163,7 +163,7 @@ class _ToolbarButton extends StatelessWidget {
   final VoidCallback onTap;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(final BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
 
     return GestureDetector(
@@ -208,7 +208,7 @@ class _LiveIndicator extends StatelessWidget {
   final bool isActive;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(final BuildContext context) {
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [

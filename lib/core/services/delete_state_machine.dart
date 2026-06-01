@@ -34,16 +34,16 @@ class DeleteStateMachine {
   Stream<DeleteState> get stateStream => _stateController.stream;
 
   DeleteStateMachine({
-    required AssetManifestDao manifestDao,
-    required AssetCopiesDao copiesDao,
-    required CanonicalFolderService folderService,
-    required SafetyGuard safetyGuard,
+    required final AssetManifestDao manifestDao,
+    required final AssetCopiesDao copiesDao,
+    required final CanonicalFolderService folderService,
+    required final SafetyGuard safetyGuard,
   }) : _manifestDao = manifestDao,
        _copiesDao = copiesDao,
        _folderService = folderService,
        _safetyGuard = safetyGuard;
 
-  Future<void> trash(String hash, {String reason = 'user'}) async {
+  Future<void> trash(final String hash, {final String reason = 'user'}) async {
     _transition(DeletePhase.safetyCheck);
     try {
       final manifest = await _manifestDao.getByHash(hash);
@@ -64,7 +64,7 @@ class DeleteStateMachine {
     }
   }
 
-  Future<void> restore(String hash) async {
+  Future<void> restore(final String hash) async {
     _transition(DeletePhase.restoring);
     try {
       final manifest = await _manifestDao.getByHash(hash);
@@ -75,7 +75,7 @@ class DeleteStateMachine {
 
       final graceEnd = manifest.deletedAt!.add(const Duration(days: 30));
       if (DateTime.now().isAfter(graceEnd)) {
-        throw _DeleteException('Grace period expired — asset cannot be restored');
+        throw const _DeleteException('Grace period expired — asset cannot be restored');
       }
 
       await _manifestDao.upsert(
@@ -97,7 +97,7 @@ class DeleteStateMachine {
     }
   }
 
-  Future<void> hardDelete(String hash) async {
+  Future<void> hardDelete(final String hash) async {
     _transition(DeletePhase.safetyCheck);
     try {
       final manifest = await _manifestDao.getByHash(hash);
@@ -160,7 +160,7 @@ class DeleteStateMachine {
     return purged;
   }
 
-  Future<int?> daysUntilPurge(String hash) async {
+  Future<int?> daysUntilPurge(final String hash) async {
     final manifest = await _manifestDao.getByHash(hash);
     if (manifest == null || manifest.deletedAt == null) return null;
     final graceEnd = manifest.deletedAt!.add(const Duration(days: 30));
@@ -169,7 +169,7 @@ class DeleteStateMachine {
         : 0;
   }
 
-  void _transition(DeletePhase phase, {int? daysUntilPurge, String? error}) {
+  void _transition(final DeletePhase phase, {final int? daysUntilPurge, final String? error}) {
     _current = DeleteState(
       phase: phase,
       daysUntilPurge: daysUntilPurge ?? _current.daysUntilPurge,

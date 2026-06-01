@@ -19,24 +19,24 @@ class AuraDao extends DatabaseAccessor<AppDatabase> with _$AuraDaoMixin {
   Stream<List<AuraLink>> watchAll() => select(auraLinks).watch();
 
   /// Watch all transition links originating from a move.
-  Stream<List<AuraLink>> watchLinksFrom(String moveId) => (select(auraLinks)
-        ..where((t) => t.fromMoveId.equals(moveId))
-        ..orderBy([(t) => OrderingTerm.asc(t.createdAt)]))
+  Stream<List<AuraLink>> watchLinksFrom(final String moveId) => (select(auraLinks)
+        ..where((final t) => t.fromMoveId.equals(moveId))
+        ..orderBy([(final t) => OrderingTerm.asc(t.createdAt)]))
       .watch();
 
   /// Watch all transition links arriving at a move.
-  Stream<List<AuraLink>> watchLinksTo(String moveId) => (select(auraLinks)
-        ..where((t) => t.toMoveId.equals(moveId))
-        ..orderBy([(t) => OrderingTerm.asc(t.createdAt)]))
+  Stream<List<AuraLink>> watchLinksTo(final String moveId) => (select(auraLinks)
+        ..where((final t) => t.toMoveId.equals(moveId))
+        ..orderBy([(final t) => OrderingTerm.asc(t.createdAt)]))
       .watch();
 
   /// Insert or update a link between two moves. On conflict (same PK pair)
   /// the affinity and notes are updated in place.
   Future<void> upsertLink(
-    String fromMoveId,
-    String toMoveId,
-    String affinity, {
-    String? notes,
+    final String fromMoveId,
+    final String toMoveId,
+    final String affinity, {
+    final String? notes,
   }) =>
       into(auraLinks).insertOnConflictUpdate(
         AuraLinksCompanion.insert(
@@ -48,9 +48,9 @@ class AuraDao extends DatabaseAccessor<AppDatabase> with _$AuraDaoMixin {
       );
 
   /// Delete a link between two moves.
-  Future<void> deleteLink(String fromMoveId, String toMoveId) =>
+  Future<void> deleteLink(final String fromMoveId, final String toMoveId) =>
       (delete(auraLinks)
-            ..where((t) =>
+            ..where((final t) =>
                 t.fromMoveId.equals(fromMoveId) &
                 t.toMoveId.equals(toMoveId)))
           .go();
@@ -62,23 +62,23 @@ class AuraDao extends DatabaseAccessor<AppDatabase> with _$AuraDaoMixin {
 
   /// Get the currently active preset (isDefault = 1), or null if none.
   Future<AuraPreset?> getActivePreset() => (select(auraPresets)
-        ..where((t) => t.isDefault.equals(1)))
+        ..where((final t) => t.isDefault.equals(1)))
       .getSingleOrNull();
 
   /// Insert a new aura preset.
-  Future<void> insertPreset(AuraPresetsCompanion entry) =>
+  Future<void> insertPreset(final AuraPresetsCompanion entry) =>
       into(auraPresets).insert(entry);
 
   /// Set a preset as the active one. Clears isDefault on all others first,
   /// then sets isDefault = 1 on the target — done in a transaction for
   /// atomicity.
-  Future<void> setActivePreset(String id) async {
+  Future<void> setActivePreset(final String id) async {
     await transaction(() async {
       // Clear all presets
       await update(auraPresets)
           .write(const AuraPresetsCompanion(isDefault: Value(0)));
       // Activate the selected preset
-      await (update(auraPresets)..where((t) => t.id.equals(id)))
+      await (update(auraPresets)..where((final t) => t.id.equals(id)))
           .write(const AuraPresetsCompanion(isDefault: Value(1)));
     });
   }

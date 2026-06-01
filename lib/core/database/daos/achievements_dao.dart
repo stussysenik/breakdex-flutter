@@ -25,12 +25,12 @@ class AchievementsDao extends DatabaseAccessor<AppDatabase>
   Future<List<Achievement>> getAll() => select(achievements).get();
 
   /// Get the achievement for a specific move, or null if none exists.
-  Future<Achievement?> getByMoveId(String moveId) =>
-      (select(achievements)..where((t) => t.moveId.equals(moveId)))
+  Future<Achievement?> getByMoveId(final String moveId) =>
+      (select(achievements)..where((final t) => t.moveId.equals(moveId)))
           .getSingleOrNull();
 
   /// Get the current (highest) tier for a move, or null if no achievement.
-  Future<String?> getCurrentTier(String moveId) async {
+  Future<String?> getCurrentTier(final String moveId) async {
     final row = await getByMoveId(moveId);
     return row?.tier;
   }
@@ -38,7 +38,7 @@ class AchievementsDao extends DatabaseAccessor<AppDatabase>
   /// Insert or upgrade the tier for a move. If the new [tier] is higher than
   /// the current one the row is updated; if equal or lower it is silently
   /// ignored so callers don't need to pre-check.
-  Future<void> upsertTier(String moveId, String tier) async {
+  Future<void> upsertTier(final String moveId, final String tier) async {
     final existing = await getByMoveId(moveId);
 
     final newRank = _tierRank[tier] ?? 0;
@@ -57,7 +57,7 @@ class AchievementsDao extends DatabaseAccessor<AppDatabase>
       final currentRank = _tierRank[existing.tier] ?? 0;
       if (newRank > currentRank) {
         await (update(achievements)
-              ..where((t) => t.id.equals(existing.id)))
+              ..where((final t) => t.id.equals(existing.id)))
             .write(AchievementsCompanion(
               tier: Value(tier),
               unlockedAt: Value(DateTime.now()),

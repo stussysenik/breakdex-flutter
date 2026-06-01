@@ -8,6 +8,7 @@ import 'package:go_router/go_router.dart';
 import '../../core/database/database.dart';
 import '../../core/design/colors.dart';
 import '../../core/design/spacing.dart';
+import '../../core/design/theme.dart';
 import '../../core/design/typography.dart';
 import '../../core/providers.dart';
 import '../../core/services/categories_service.dart';
@@ -20,7 +21,7 @@ class MoveCategoryScreen extends ConsumerWidget {
   const MoveCategoryScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(final BuildContext context, final WidgetRef ref) {
     final categories = ref.watch(categoriesProvider);
     final movesAsync = ref.watch(_allMovesProvider);
     final theme = Theme.of(context);
@@ -28,7 +29,7 @@ class MoveCategoryScreen extends ConsumerWidget {
 
     final moves = movesAsync.valueOrNull ?? const <Move>[];
 
-    final categoryNames = categories.map((c) => c.name).toSet();
+    final categoryNames = categories.map((final c) => c.name).toSet();
     final categoryCounts = <String, int>{};
     int uncategorizedCount = 0;
 
@@ -96,7 +97,7 @@ class MoveCategoryScreen extends ConsumerWidget {
   }
 }
 
-final _allMovesProvider = StreamProvider<List<Move>>((ref) {
+final _allMovesProvider = StreamProvider<List<Move>>((final ref) {
   return ref.watch(moveRepositoryProvider).watchAll();
 });
 
@@ -108,7 +109,7 @@ class _CategoryTile extends StatelessWidget {
   final VoidCallback onTap;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(final BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
     return Padding(
       padding: const EdgeInsets.only(bottom: AppSpacing.sm),
@@ -116,11 +117,7 @@ class _CategoryTile extends StatelessWidget {
         onTap: onTap,
         child: Container(
           padding: const EdgeInsets.all(AppSpacing.md),
-          decoration: BoxDecoration(
-            color: colorScheme.surface,
-            borderRadius: BorderRadius.circular(AppRadius.md),
-            border: Border.all(color: colorScheme.outline.withValues(alpha: 0.12)),
-          ),
+          decoration: AppSurfaces.panel(context, radius: AppRadius.md),
           child: Row(
             children: [
               Container(
@@ -161,12 +158,12 @@ class _CategoryNavModeNotifier extends Notifier<CategoryNavMode> {
     final prefs = ref.watch(sharedPreferencesProvider);
     final value = prefs.getString(_key);
     return CategoryNavMode.values.firstWhere(
-      (m) => m.name == value,
+      (final m) => m.name == value,
       orElse: () => CategoryNavMode.scrollIndex,
     );
   }
 
-  Future<void> set(CategoryNavMode mode) async {
+  Future<void> set(final CategoryNavMode mode) async {
     state = mode;
     final prefs = ref.read(sharedPreferencesProvider);
     await prefs.setString(_key, mode.name);
@@ -179,22 +176,22 @@ class MoveCategoryDetailScreen extends ConsumerWidget {
   final String categoryName;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(final BuildContext context, final WidgetRef ref) {
     final movesAsync = ref.watch(_allMovesProvider);
     final navMode = ref.watch(_categoryNavModeProvider);
     final colorScheme = Theme.of(context).colorScheme;
 
     final allMoves = movesAsync.valueOrNull ?? const <Move>[];
     final categories = ref.watch(categoriesProvider);
-    final categoryNames = categories.map((c) => c.name).toSet();
+    final categoryNames = categories.map((final c) => c.name).toSet();
 
     final filtered = categoryName == 'uncategorized'
         ? allMoves
             .where(
-              (m) => !categoryNames.contains(m.category),
+              (final m) => !categoryNames.contains(m.category),
             )
             .toList()
-        : allMoves.where((m) => m.category == categoryName).toList();
+        : allMoves.where((final m) => m.category == categoryName).toList();
 
     return Scaffold(
       appBar: AppBar(
@@ -254,18 +251,18 @@ class MoveCategoryDetailScreen extends ConsumerWidget {
                   child: switch (navMode) {
                     CategoryNavMode.scrollIndex => _ScrollIndexView(
                         moves: filtered,
-                        onTap: (move) =>
+                        onTap: (final move) =>
                             context.push('/breakdex/move/${move.id}'),
                       ),
                     CategoryNavMode.search => _SearchBarView(
                         moves: filtered,
                         categoryName: categoryName,
-                        onTap: (move) =>
+                        onTap: (final move) =>
                             context.push('/breakdex/move/${move.id}'),
                       ),
                     CategoryNavMode.filterChips => _FilterChipsView(
                         moves: filtered,
-                        onTap: (move) =>
+                        onTap: (final move) =>
                             context.push('/breakdex/move/${move.id}'),
                       ),
                   },
@@ -282,7 +279,7 @@ class _NavModeToggle extends ConsumerWidget {
   final CategoryNavMode navMode;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(final BuildContext context, final WidgetRef ref) {
     final colorScheme = Theme.of(context).colorScheme;
     return Padding(
       padding: const EdgeInsets.fromLTRB(
@@ -321,39 +318,45 @@ class _NavModeToggle extends ConsumerWidget {
                             : colorScheme.surfaceContainerHighest,
                         borderRadius: BorderRadius.circular(AppRadius.sm),
                       ),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(
-                            switch (mode) {
-                              CategoryNavMode.scrollIndex =>
-                                Icons.sort_by_alpha_rounded,
-                              CategoryNavMode.search => Icons.search_rounded,
-                              CategoryNavMode.filterChips =>
-                                Icons.filter_list_rounded,
-                            },
-                            size: 16,
-                            color: navMode == mode
-                                ? Colors.white
-                                : colorScheme.secondary,
+                      child: FittedBox(
+                        fit: BoxFit.scaleDown,
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 4),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(
+                                switch (mode) {
+                                  CategoryNavMode.scrollIndex =>
+                                    Icons.sort_by_alpha_rounded,
+                                  CategoryNavMode.search => Icons.search_rounded,
+                                  CategoryNavMode.filterChips =>
+                                    Icons.filter_list_rounded,
+                                },
+                                size: 16,
+                                color: navMode == mode
+                                    ? Colors.white
+                                    : colorScheme.secondary,
+                              ),
+                              const SizedBox(width: 4),
+                              Text(
+                                switch (mode) {
+                                  CategoryNavMode.scrollIndex => 'Index',
+                                  CategoryNavMode.search => 'Search',
+                                  CategoryNavMode.filterChips => 'Filter',
+                                },
+                                style: AppTypography.caption.copyWith(
+                                  color: navMode == mode
+                                      ? Colors.white
+                                      : colorScheme.onSurface,
+                                  fontWeight: navMode == mode
+                                      ? FontWeight.w600
+                                      : FontWeight.w400,
+                                ),
+                              ),
+                            ],
                           ),
-                          const SizedBox(width: 6),
-                          Text(
-                            switch (mode) {
-                              CategoryNavMode.scrollIndex => 'Index',
-                              CategoryNavMode.search => 'Search',
-                              CategoryNavMode.filterChips => 'Filter',
-                            },
-                            style: AppTypography.caption.copyWith(
-                              color: navMode == mode
-                                  ? Colors.white
-                                  : colorScheme.onSurface,
-                              fontWeight: navMode == mode
-                                  ? FontWeight.w600
-                                  : FontWeight.w400,
-                            ),
-                          ),
-                        ],
+                        ),
                       ),
                     ),
                   ),
@@ -391,7 +394,7 @@ class _ScrollIndexViewState extends State<_ScrollIndexView> {
   void initState() {
     super.initState();
     _grouped = _groupByLetter(widget.moves);
-    _letters = _grouped.keys.toList()..sort((a, b) {
+    _letters = _grouped.keys.toList()..sort((final a, final b) {
       if (a == '#') return 1;
       if (b == '#') return -1;
       return a.compareTo(b);
@@ -401,7 +404,7 @@ class _ScrollIndexViewState extends State<_ScrollIndexView> {
     }
   }
 
-  Map<String, List<Move>> _groupByLetter(List<Move> moves) {
+  Map<String, List<Move>> _groupByLetter(final List<Move> moves) {
     final map = <String, List<Move>>{};
     for (final move in moves) {
       final first = move.name.isNotEmpty ? move.name[0].toUpperCase() : '#';
@@ -411,7 +414,7 @@ class _ScrollIndexViewState extends State<_ScrollIndexView> {
     return map;
   }
 
-  void _scrollToLetter(String letter) {
+  void _scrollToLetter(final String letter) {
     setState(() => _activeLetter = letter);
     final key = _letterHeaderKeys[letter];
     if (key?.currentContext != null) {
@@ -436,7 +439,7 @@ class _ScrollIndexViewState extends State<_ScrollIndexView> {
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(final BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
 
     final flatItems = <dynamic>[];
@@ -456,7 +459,7 @@ class _ScrollIndexViewState extends State<_ScrollIndexView> {
             AppSpacing.screenEdge,
           ),
           itemCount: flatItems.length,
-          itemBuilder: (context, index) {
+          itemBuilder: (final context, final index) {
             final item = flatItems[index];
             if (item is String) {
               return Padding(
@@ -532,22 +535,22 @@ class _LetterStrip extends StatelessWidget {
   final VoidCallback onDragEnd;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(final BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
     return LayoutBuilder(
-      builder: (context, constraints) {
+      builder: (final context, final constraints) {
         final letterHeight = constraints.maxHeight / letters.length;
         return GestureDetector(
           behavior: HitTestBehavior.opaque,
-          onVerticalDragStart: (d) =>
+          onVerticalDragStart: (final d) =>
               _resolveLetter(d.localPosition.dy, letterHeight),
-          onVerticalDragUpdate: (d) =>
+          onVerticalDragUpdate: (final d) =>
               _resolveLetter(d.localPosition.dy, letterHeight),
           onVerticalDragEnd: (_) => onDragEnd(),
           child: SizedBox(
             width: 24,
             child: Column(
-              children: letters.map((l) {
+              children: letters.map((final l) {
                 final isActive = l == activeLetter;
                 return SizedBox(
                   height: letterHeight,
@@ -573,7 +576,7 @@ class _LetterStrip extends StatelessWidget {
     );
   }
 
-  void _resolveLetter(double localY, double letterHeight) {
+  void _resolveLetter(final double localY, final double letterHeight) {
     final index = (localY / letterHeight).floor().clamp(0, letters.length - 1);
     onLetterChanged(letters[index]);
   }
@@ -608,7 +611,7 @@ class _SearchBarViewState extends State<_SearchBarView> {
     super.dispose();
   }
 
-  void _onChanged(String value) {
+  void _onChanged(final String value) {
     _debounce?.cancel();
     _debounce = Timer(const Duration(milliseconds: 200), () {
       if (mounted) setState(() => _query = value);
@@ -621,13 +624,13 @@ class _SearchBarViewState extends State<_SearchBarView> {
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(final BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
     final filtered = _query.isEmpty
         ? widget.moves
         : widget.moves
             .where(
-              (m) => m.name.toLowerCase().contains(_query.toLowerCase()),
+              (final m) => m.name.toLowerCase().contains(_query.toLowerCase()),
             )
             .toList();
 
@@ -676,7 +679,7 @@ class _SearchBarViewState extends State<_SearchBarView> {
                     horizontal: AppSpacing.screenEdge,
                   ),
                   itemCount: filtered.length,
-                  itemBuilder: (context, index) {
+                  itemBuilder: (final context, final index) {
                     final move = filtered[index];
                     return _MoveRow(
                       move: move,
@@ -706,19 +709,19 @@ class _FilterChipsView extends ConsumerWidget {
   final void Function(Move) onTap;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(final BuildContext context, final WidgetRef ref) {
     final activeStates = ref.watch(_filterLearningStatesProvider);
     final sortAscending = ref.watch(_filterSortOrderProvider);
     final colorScheme = Theme.of(context).colorScheme;
 
-    var filtered = activeStates.isEmpty
+    final filtered = activeStates.isEmpty
         ? moves
         : moves
-            .where((m) => activeStates.contains(m.learningState))
+            .where((final m) => activeStates.contains(m.learningState))
             .toList();
 
     filtered.sort(
-      (a, b) => sortAscending
+      (final a, final b) => sortAscending
           ? a.name.compareTo(b.name)
           : b.name.compareTo(a.name),
     );
@@ -808,7 +811,7 @@ class _FilterChipsView extends ConsumerWidget {
                     horizontal: AppSpacing.screenEdge,
                   ),
                   itemCount: filtered.length,
-                  itemBuilder: (context, index) {
+                  itemBuilder: (final context, final index) {
                     final move = filtered[index];
                     return _MoveRow(
                       move: move,
@@ -822,7 +825,7 @@ class _FilterChipsView extends ConsumerWidget {
     );
   }
 
-  void _toggleState(WidgetRef ref, String state) {
+  void _toggleState(final WidgetRef ref, final String state) {
     HapticFeedback.selectionClick();
     final notifier = ref.read(_filterLearningStatesProvider.notifier);
     final current = Set<String>.from(notifier.state);
@@ -849,7 +852,7 @@ class _FilterChip extends StatelessWidget {
   final VoidCallback onTap;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(final BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
     return GestureDetector(
       onTap: onTap,
@@ -889,7 +892,7 @@ class _MoveRow extends StatelessWidget {
   final VoidCallback onTap;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(final BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
     return Padding(
       padding: const EdgeInsets.only(bottom: AppSpacing.sm),
@@ -897,11 +900,7 @@ class _MoveRow extends StatelessWidget {
         onTap: onTap,
         child: Container(
           padding: const EdgeInsets.all(AppSpacing.md),
-          decoration: BoxDecoration(
-            color: colorScheme.surface,
-            borderRadius: BorderRadius.circular(AppRadius.md),
-            border: Border.all(color: colorScheme.outline.withValues(alpha: 0.12)),
-          ),
+          decoration: AppSurfaces.panel(context, radius: AppRadius.md),
           child: Row(
             children: [
               Expanded(

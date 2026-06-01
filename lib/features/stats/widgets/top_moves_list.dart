@@ -17,7 +17,7 @@ class TopMovesList extends ConsumerWidget {
   final List<TopMoveInfo> topMoves;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(final BuildContext context, final WidgetRef ref) {
     final cs = Theme.of(context).colorScheme;
     final categories = ref.watch(categoriesProvider);
     final stateLabels = ref.watch(learningStateLabelsProvider);
@@ -72,12 +72,12 @@ class _MoveRow extends StatelessWidget {
   final Map<LearningState, String> stateLabels;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(final BuildContext context) {
     final cs = Theme.of(context).colorScheme;
 
     // Resolve category color
     final catMatch = categories
-        .where((c) => c.name == info.category)
+        .where((final c) => c.name == info.category)
         .firstOrNull;
     final catColor = catMatch?.color ?? cs.secondary;
 
@@ -185,7 +185,7 @@ class _MoveRow extends StatelessWidget {
     );
   }
 
-  LearningState _visibleState(String rawLabel) {
+  LearningState _visibleState(final String rawLabel) {
     final normalized = rawLabel.trim().toLowerCase();
     return switch (normalized) {
       'mastered' || 'review' || 'mastery' => LearningState.mastery,

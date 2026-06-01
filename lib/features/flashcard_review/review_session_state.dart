@@ -1,6 +1,6 @@
 import 'providers/review_providers.dart';
 
-String reviewSessionItemKey(ReviewSessionItem item) =>
+String reviewSessionItemKey(final ReviewSessionItem item) =>
     '${item.entityType}:${item.entityId}';
 
 class ReviewSessionReconciliation {
@@ -22,11 +22,11 @@ class ReviewSessionReconciliation {
 }
 
 ReviewSessionReconciliation reconcileReviewSession({
-  required List<ReviewSessionItem> previousItems,
-  required List<ReviewSessionItem> nextItems,
-  required int currentIndex,
-  required bool completed,
-  required bool assessmentStageVisible,
+  required final List<ReviewSessionItem> previousItems,
+  required final List<ReviewSessionItem> nextItems,
+  required final int currentIndex,
+  required final bool completed,
+  required final bool assessmentStageVisible,
 }) {
   if (nextItems.isEmpty) {
     return ReviewSessionReconciliation(
@@ -83,7 +83,7 @@ ReviewSessionReconciliation reconcileReviewSession({
   }
 
   final preservedIndex = reconciled.indexWhere(
-    (item) => reviewSessionItemKey(item) == currentItemKey,
+    (final item) => reviewSessionItemKey(item) == currentItemKey,
   );
   final nextIndex = preservedIndex >= 0
       ? preservedIndex

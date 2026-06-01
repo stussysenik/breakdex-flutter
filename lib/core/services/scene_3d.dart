@@ -19,7 +19,7 @@ class Scene3D extends NativeBridge {
   ///
   /// [assetPath] can be a bundle asset name (e.g. "skeleton.usdz")
   /// or an absolute file path.
-  Future<bool> loadModel(String assetPath) async {
+  Future<bool> loadModel(final String assetPath) async {
     final normalizedPath = assetPath.trim();
     if (normalizedPath.isEmpty) return false;
 
@@ -31,11 +31,11 @@ class Scene3D extends NativeBridge {
   ///
   /// Creates/updates sphere nodes for each joint and cylinder bones
   /// connecting them. Animates smoothly between positions.
-  Future<void> updateSkeleton(List<PoseJoint> joints) {
+  Future<void> updateSkeleton(final List<PoseJoint> joints) {
     if (joints.isEmpty) return Future<void>.value();
 
     return invoke('updateSkeleton', {
-      'joints': joints.map((j) => j.toMap()).toList(),
+      'joints': joints.map((final j) => j.toMap()).toList(),
     });
   }
 
@@ -44,11 +44,11 @@ class Scene3D extends NativeBridge {
   /// [x], [y], [z] control position. [pitch] and [yaw] control
   /// orientation in degrees. Animates over 0.3s.
   Future<void> setCamera({
-    double x = 0,
-    double y = 1.0,
-    double z = 3.0,
-    double? pitch,
-    double? yaw,
+    final double x = 0,
+    final double y = 1.0,
+    final double z = 3.0,
+    final double? pitch,
+    final double? yaw,
   }) {
     final args = <String, Object>{'x': x, 'y': y, 'z': z};
     if (pitch != null) args['pitch'] = pitch;
@@ -62,9 +62,9 @@ class Scene3D extends NativeBridge {
   /// [intensity] ranges from 0 to ~2000 (default 800).
   /// [color] is an ARGB hex integer.
   Future<void> setLighting({
-    String type = 'directional',
-    double intensity = 800,
-    int? color,
+    final String type = 'directional',
+    final double intensity = 800,
+    final int? color,
   }) {
     final args = <String, Object>{'type': type, 'intensity': intensity};
     if (color != null) args['color'] = color;
@@ -72,7 +72,7 @@ class Scene3D extends NativeBridge {
   }
 
   /// Play a named animation on the loaded model.
-  Future<void> animate(String name) {
+  Future<void> animate(final String name) {
     return invoke('animate', {'name': name});
   }
 

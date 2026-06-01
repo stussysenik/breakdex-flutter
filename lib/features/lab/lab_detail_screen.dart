@@ -55,7 +55,7 @@ class _LabDetailScreenState extends ConsumerState<LabDetailScreen> {
 
   /// Advance the lab's status to the next stage in the cycle. Wraps around
   /// from 'clean' back to 'idea' so the user can reset if needed.
-  Future<void> _cycleStatus(Lab lab) async {
+  Future<void> _cycleStatus(final Lab lab) async {
     final currentIndex = _statusCycle.indexOf(lab.status);
     final nextIndex = (currentIndex + 1) % _statusCycle.length;
     final nextStatus = _statusCycle[nextIndex];
@@ -74,11 +74,11 @@ class _LabDetailScreenState extends ConsumerState<LabDetailScreen> {
   // Rename
   // ---------------------------------------------------------------------------
 
-  Future<void> _rename(Lab lab) async {
+  Future<void> _rename(final Lab lab) async {
     final controller = TextEditingController(text: lab.name);
     final newName = await showDialog<String>(
       context: context,
-      builder: (ctx) {
+      builder: (final ctx) {
         return AlertDialog(
           title: const Text('Rename Lab'),
           content: TextField(
@@ -86,7 +86,7 @@ class _LabDetailScreenState extends ConsumerState<LabDetailScreen> {
             autofocus: true,
             decoration: const InputDecoration(hintText: 'Lab name'),
             textInputAction: TextInputAction.done,
-            onSubmitted: (value) => Navigator.pop(ctx, value.trim()),
+            onSubmitted: (final value) => Navigator.pop(ctx, value.trim()),
           ),
           actions: [
             TextButton(
@@ -123,7 +123,7 @@ class _LabDetailScreenState extends ConsumerState<LabDetailScreen> {
   /// shown as disabled (greyed out) to prevent duplicates.
   Future<void> _showMovePicker() async {
     final labMoves = ref.read(labMovesProvider(widget.labId)).valueOrNull ?? [];
-    final linkedMoveIds = labMoves.map((e) => e.move.id).toSet();
+    final linkedMoveIds = labMoves.map((final e) => e.move.id).toSet();
     final lastMoveId = labMoves.isNotEmpty ? labMoves.last.move.id : null;
 
     if (!mounted) return;
@@ -151,10 +151,10 @@ class _LabDetailScreenState extends ConsumerState<LabDetailScreen> {
   // Delete lab
   // ---------------------------------------------------------------------------
 
-  Future<void> _deleteLab(Lab lab) async {
+  Future<void> _deleteLab(final Lab lab) async {
     final confirm = await showDialog<bool>(
       context: context,
-      builder: (ctx) => AlertDialog(
+      builder: (final ctx) => AlertDialog(
         title: const Text('Delete Lab?'),
         content: Text(
           'Permanently delete "${lab.name}" and all its milestones, entries, and move links?',
@@ -186,7 +186,7 @@ class _LabDetailScreenState extends ConsumerState<LabDetailScreen> {
   // ---------------------------------------------------------------------------
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(final BuildContext context) {
     final labAsync = ref.watch(labDetailProvider(widget.labId));
     final colorScheme = Theme.of(context).colorScheme;
 
@@ -194,7 +194,7 @@ class _LabDetailScreenState extends ConsumerState<LabDetailScreen> {
       body: SafeArea(
         child: labAsync.when(
           loading: () => const Center(child: CircularProgressIndicator()),
-          error: (e, _) => Center(
+          error: (final e, _) => Center(
             child: Text(
               'Error loading lab: $e',
               style: AppTypography.bodySmall.copyWith(
@@ -202,7 +202,7 @@ class _LabDetailScreenState extends ConsumerState<LabDetailScreen> {
               ),
             ),
           ),
-          data: (lab) {
+          data: (final lab) {
             if (lab == null) {
               return Center(
                 child: Text(
@@ -280,7 +280,7 @@ class _LabDetailScreenState extends ConsumerState<LabDetailScreen> {
                           Icons.more_horiz_rounded,
                           color: colorScheme.secondary,
                         ),
-                        onSelected: (value) {
+                        onSelected: (final value) {
                           switch (value) {
                             case 'rename':
                               _rename(lab);
@@ -391,7 +391,7 @@ class _LabDetailScreenState extends ConsumerState<LabDetailScreen> {
                   ),
                   child: NotesSection(
                     notes: lab.notes,
-                    onChanged: (text) {
+                    onChanged: (final text) {
                       ref.read(labsDaoProvider).updateLab(
                             LabsCompanion(
                               id: drift.Value(lab.id),
@@ -457,7 +457,7 @@ class _LabDetailScreenState extends ConsumerState<LabDetailScreen> {
   }
 
   /// Returns a human-readable "X days ago" string from a creation date.
-  String _daysAgo(DateTime created) {
+  String _daysAgo(final DateTime created) {
     final diff = DateTime.now().difference(created);
     if (diff.inDays == 0) return 'today';
     if (diff.inDays == 1) return '1 day ago';
@@ -475,7 +475,7 @@ class _LabStatusPill extends StatelessWidget {
   final String status;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(final BuildContext context) {
     final (label, color) = _statusMeta(status);
 
     return Container(
@@ -512,7 +512,7 @@ class _LabStatusPill extends StatelessWidget {
     );
   }
 
-  static (String, Color) _statusMeta(String status) => switch (status) {
+  static (String, Color) _statusMeta(final String status) => switch (status) {
         'idea' => ('Idea', const Color(0xFFA7B1C2)),
         'attempting' => ('Attempting', AppColors.stateLearning),
         'landed' => ('Landed', AppColors.stateMastery),
@@ -554,21 +554,21 @@ class _MovePickerSheetState extends ConsumerState<_MovePickerSheet> {
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(final BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
 
     final suggestedAsync = widget.lastMoveId != null
         ? ref.watch(naturalNextMovesProvider(widget.lastMoveId!))
         : null;
     final suggestedMoves = suggestedAsync?.valueOrNull ?? [];
-    final suggestedIds = suggestedMoves.map((m) => m.id).toSet();
+    final suggestedIds = suggestedMoves.map((final m) => m.id).toSet();
 
     return DraggableScrollableSheet(
       initialChildSize: 0.7,
       minChildSize: 0.4,
       maxChildSize: 0.9,
       expand: false,
-      builder: (context, scrollController) {
+      builder: (final context, final scrollController) {
         return Column(
           children: [
             // Drag handle
@@ -621,7 +621,7 @@ class _MovePickerSheetState extends ConsumerState<_MovePickerSheet> {
             Expanded(
               child: FutureBuilder<List<Move>>(
                 future: ref.read(moveRepositoryProvider).getAll(),
-                builder: (context, snapshot) {
+                builder: (final context, final snapshot) {
                   if (!snapshot.hasData) {
                     return const Center(child: CircularProgressIndicator());
                   }
@@ -630,7 +630,7 @@ class _MovePickerSheetState extends ConsumerState<_MovePickerSheet> {
                   final filtered = _query.isEmpty
                       ? allMoves
                       : allMoves
-                          .where((m) =>
+                          .where((final m) =>
                               m.name.toLowerCase().contains(_query))
                           .toList();
 
@@ -658,7 +658,7 @@ class _MovePickerSheetState extends ConsumerState<_MovePickerSheet> {
                       horizontal: AppSpacing.screenEdge,
                     ),
                     itemCount: items.length,
-                    itemBuilder: (context, index) => items[index],
+                    itemBuilder: (final context, final index) => items[index],
                   );
                 },
               ),
@@ -670,10 +670,10 @@ class _MovePickerSheetState extends ConsumerState<_MovePickerSheet> {
   }
 
   List<Widget> _buildMoveItems(
-    List<Move> moves, {
-    required Set<String> linkedMoveIds,
-    required Set<String> suggestedIds,
-    required ColorScheme colorScheme,
+    final List<Move> moves, {
+    required final Set<String> linkedMoveIds,
+    required final Set<String> suggestedIds,
+    required final ColorScheme colorScheme,
   }) {
     final suggested = <Move>[];
     final remaining = <Move>[];
@@ -692,7 +692,7 @@ class _MovePickerSheetState extends ConsumerState<_MovePickerSheet> {
           padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm),
           child: Row(
             children: [
-              Icon(
+              const Icon(
                 Icons.auto_awesome,
                 size: 14,
                 color: AppColors.stateMastery,
@@ -731,10 +731,10 @@ class _MovePickerSheetState extends ConsumerState<_MovePickerSheet> {
     return items;
   }
 
-  Widget _buildMoveTile(Move move, {
-    required bool isLinked,
-    required bool isSuggested,
-    required ColorScheme colorScheme,
+  Widget _buildMoveTile(final Move move, {
+    required final bool isLinked,
+    required final bool isSuggested,
+    required final ColorScheme colorScheme,
   }) {
     final accent = isSuggested ? AppColors.stateMastery : AppColors.accent;
     return ListTile(
@@ -810,7 +810,7 @@ class _ActionRow extends StatelessWidget {
   final bool destructive;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(final BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
     final color = destructive ? AppColors.actionAgain : colorScheme.onSurface;
 

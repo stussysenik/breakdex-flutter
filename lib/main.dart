@@ -32,9 +32,9 @@ final _rootScaffoldMessengerKey = GlobalKey<ScaffoldMessengerState>();
 
 /// Create a timestamped backup of the database file before migrations run.
 Future<void> _backupDatabaseIfNeeded(
-  SharedPreferences prefs,
-  DatabaseRecoveryService recoveryService,
-  ProvenanceJournalService provenanceJournal,
+  final SharedPreferences prefs,
+  final DatabaseRecoveryService recoveryService,
+  final ProvenanceJournalService provenanceJournal,
 ) async {
   final lastBackupSchema = prefs.getInt('last_backup_schema') ?? 0;
   const currentSchema = 19;
@@ -72,8 +72,8 @@ Future<void> _backupDatabaseIfNeeded(
 
 /// Open database with crash recovery.
 Future<AppDatabase> _openDatabaseSafely(
-  DatabaseRecoveryService recoveryService,
-  ProvenanceJournalService provenanceJournal,
+  final DatabaseRecoveryService recoveryService,
+  final ProvenanceJournalService provenanceJournal,
 ) async {
   Future<AppDatabase> openAndSmokeTest() async {
     final db = AppDatabase();
@@ -161,7 +161,7 @@ Future<AppDatabase> _openDatabaseSafely(
 }
 
 /// Run FSRS data migrations after the first frame has rendered.
-Future<void> _runMigrations(AppDatabase db, SharedPreferences prefs) async {
+Future<void> _runMigrations(final AppDatabase db, final SharedPreferences prefs) async {
   try {
     await FsrsMigrationService.migrateIfNeeded(
       movesDao: db.movesDao,
@@ -240,7 +240,7 @@ void main() async {
   await AutomationFixtureService().seedIfRequested(db, prefs: sharedPrefs);
 
   // --- Global error handlers ---
-  FlutterError.onError = (details) {
+  FlutterError.onError = (final details) {
     FlutterError.presentError(details);
     unawaited(
       provenanceJournal.log(
@@ -251,7 +251,7 @@ void main() async {
       ),
     );
   };
-  PlatformDispatcher.instance.onError = (error, stack) {
+  PlatformDispatcher.instance.onError = (final error, final stack) {
     unawaited(
       provenanceJournal.log(
         scope: 'crash',
@@ -264,7 +264,7 @@ void main() async {
   };
 
   // Global error widget for production resilience
-  ErrorWidget.builder = (details) => Material(
+  ErrorWidget.builder = (final details) => Material(
     color: Colors.transparent,
     child: Center(
       child: Padding(
@@ -313,7 +313,7 @@ void main() async {
       boot.completeGate(BootGate.pruning, detail: 'removed $removed');
       DiagnosticsLog.info('Boot', 'canonical folder prune done — removed $removed empty dir(s)');
       final orphans = await canonicalFolder.scanOrphans();
-      final diskOrphans = orphans.where((o) => o.isOrphan).length;
+      final diskOrphans = orphans.where((final o) => o.isOrphan).length;
       final ledger = await canonicalFolder.readLedger();
       DiagnosticsLog.info('Boot',
           'canonical folder ledger — ${orphans.length} files on disk, '
@@ -353,7 +353,7 @@ class BreakdexApp extends ConsumerWidget {
   const BreakdexApp({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(final BuildContext context, final WidgetRef ref) {
     // Activate manifest sync — watches all DAOs and uploads manifest.json
     ref.watch(manifestSyncTriggerProvider);
 
@@ -393,7 +393,7 @@ class BreakdexApp extends ConsumerWidget {
       ),
       themeMode: themeSetting.themeMode,
       routerConfig: appRouter,
-      builder: (context, child) {
+      builder: (final context, final child) {
         return _BootGateOverlay(
           child: _StartupReliabilityToastGate(child: child),
         );
@@ -408,7 +408,7 @@ class _BootGateOverlay extends ConsumerWidget {
   final Widget child;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(final BuildContext context, final WidgetRef ref) {
     final boot = ref.watch(bootCoordinatorProvider);
     
     // Once core gates are cleared, we show the app content.
@@ -474,8 +474,8 @@ class _StartupReliabilityToastGateState
   int? _shownManagedAlbumReportEpoch;
 
   @override
-  Widget build(BuildContext context) {
-    ref.listen(videoReliabilityReportProvider, (_, next) {
+  Widget build(final BuildContext context) {
+    ref.listen(videoReliabilityReportProvider, (_, final next) {
       final report = next.valueOrNull;
       if (report == null ||
           report.trigger != VideoReliabilityTrigger.startup ||
@@ -489,7 +489,7 @@ class _StartupReliabilityToastGateState
       _queueStartupSnackBar(report.snackBarMessage);
     });
 
-    ref.listen(managedAlbumLifecycleReportProvider, (_, next) {
+    ref.listen(managedAlbumLifecycleReportProvider, (_, final next) {
       final report = next.valueOrNull;
       if (report == null ||
           report.trigger != ManagedAlbumReconcileTrigger.startup ||
@@ -506,7 +506,7 @@ class _StartupReliabilityToastGateState
     return widget.child ?? const SizedBox.shrink();
   }
 
-  void _queueStartupSnackBar(String message) {
+  void _queueStartupSnackBar(final String message) {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final messenger = _rootScaffoldMessengerKey.currentState;
       if (messenger == null) return;

@@ -28,7 +28,7 @@ class TimelineNode extends StatelessWidget {
   final String? label;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(final BuildContext context) {
     final isAdd = style == TimelineNodeStyle.add;
     final isActive = style == TimelineNodeStyle.active;
 

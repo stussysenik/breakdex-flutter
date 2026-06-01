@@ -17,34 +17,34 @@ class AssetManifestDao extends DatabaseAccessor<AppDatabase>
 
   Stream<List<AssetManifestData>> watchAll() => (select(
     assetManifest,
-  )..orderBy([(t) => OrderingTerm.desc(t.importedAt)])).watch();
+  )..orderBy([(final t) => OrderingTerm.desc(t.importedAt)])).watch();
 
   Future<List<AssetManifestData>> getAll() => (select(
     assetManifest,
-  )..orderBy([(t) => OrderingTerm.desc(t.importedAt)])).get();
+  )..orderBy([(final t) => OrderingTerm.desc(t.importedAt)])).get();
 
-  Future<AssetManifestData?> getByHash(String contentHash) => (select(
+  Future<AssetManifestData?> getByHash(final String contentHash) => (select(
     assetManifest,
-  )..where((t) => t.contentHash.equals(contentHash))).getSingleOrNull();
+  )..where((final t) => t.contentHash.equals(contentHash))).getSingleOrNull();
 
-  Stream<AssetManifestData?> watchByHash(String contentHash) => (select(
+  Stream<AssetManifestData?> watchByHash(final String contentHash) => (select(
     assetManifest,
-  )..where((t) => t.contentHash.equals(contentHash))).watchSingleOrNull();
+  )..where((final t) => t.contentHash.equals(contentHash))).watchSingleOrNull();
 
   /// Assets that don't have enough cloud copies yet.
-  Future<List<AssetManifestData>> getUnderprotected({int minCopies = 2}) =>
+  Future<List<AssetManifestData>> getUnderprotected({final int minCopies = 2}) =>
       (select(assetManifest)..where(
-            (t) =>
+            (final t) =>
                 t.copyCount.isSmallerThanValue(minCopies) &
                 t.deletedAt.isNull(),
           ))
           .get();
 
   /// Assets pending local verification (never verified, or stale).
-  Future<List<AssetManifestData>> getStaleVerifications(Duration maxAge) async {
+  Future<List<AssetManifestData>> getStaleVerifications(final Duration maxAge) async {
     final cutoff = DateTime.now().subtract(maxAge);
     return (select(assetManifest)..where(
-          (t) =>
+          (final t) =>
               t.deletedAt.isNull() &
               t.localPath.isNotNull() &
               (t.localVerifiedAt.isNull() |
@@ -54,9 +54,9 @@ class AssetManifestDao extends DatabaseAccessor<AppDatabase>
   }
 
   /// Soft-deleted assets past the grace period, ready for hard deletion.
-  Future<List<AssetManifestData>> getTombstonedBefore(DateTime cutoff) =>
+  Future<List<AssetManifestData>> getTombstonedBefore(final DateTime cutoff) =>
       (select(assetManifest)..where(
-            (t) =>
+            (final t) =>
                 t.deletedAt.isNotNull() &
                 t.deletedAt.isSmallerThanValue(cutoff),
           ))
@@ -76,18 +76,18 @@ class AssetManifestDao extends DatabaseAccessor<AppDatabase>
   // Writes
   // ---------------------------------------------------------------------------
 
-  Future<void> upsert(AssetManifestCompanion entry) =>
+  Future<void> upsert(final AssetManifestCompanion entry) =>
       into(assetManifest).insertOnConflictUpdate(entry);
 
-  Future<void> insertManifest(AssetManifestCompanion entry) =>
+  Future<void> insertManifest(final AssetManifestCompanion entry) =>
       into(assetManifest).insert(entry, mode: InsertMode.insertOrIgnore);
 
   /// Update only the local copy fields without re-validating required columns.
   Future<void> updateLocalState(
-    String contentHash, {
-    Value<String?> localPath = const Value.absent(),
-    Value<DateTime?> localVerifiedAt = const Value.absent(),
-  }) => (update(assetManifest)..where((t) => t.contentHash.equals(contentHash)))
+    final String contentHash, {
+    final Value<String?> localPath = const Value.absent(),
+    final Value<DateTime?> localVerifiedAt = const Value.absent(),
+  }) => (update(assetManifest)..where((final t) => t.contentHash.equals(contentHash)))
       .write(
         AssetManifestCompanion(
           localPath: localPath,
@@ -96,10 +96,10 @@ class AssetManifestDao extends DatabaseAccessor<AppDatabase>
       );
 
   /// Soft-delete an asset (sets deletedAt + tombstoneReason).
-  Future<void> softDelete(String contentHash, String reason) =>
+  Future<void> softDelete(final String contentHash, final String reason) =>
       (update(
         assetManifest,
-      )..where((t) => t.contentHash.equals(contentHash))).write(
+      )..where((final t) => t.contentHash.equals(contentHash))).write(
         AssetManifestCompanion(
           deletedAt: Value(DateTime.now()),
           tombstoneReason: Value(reason),
@@ -107,25 +107,25 @@ class AssetManifestDao extends DatabaseAccessor<AppDatabase>
       );
 
   /// Update copy count after a copy is added or removed.
-  Future<void> updateCopyCount(String contentHash) async {
+  Future<void> updateCopyCount(final String contentHash) async {
     final copies =
         await (select(assetCopies)..where(
-              (t) =>
+              (final t) =>
                   t.contentHash.equals(contentHash) &
                   t.status.equals('verified'),
             ))
             .get();
     await (update(assetManifest)
-          ..where((t) => t.contentHash.equals(contentHash)))
+          ..where((final t) => t.contentHash.equals(contentHash)))
         .write(AssetManifestCompanion(copyCount: Value(copies.length)));
   }
 
   /// Mark local copy as verified with current timestamp.
-  Future<void> markLocalVerified(String contentHash) =>
+  Future<void> markLocalVerified(final String contentHash) =>
       updateLocalState(contentHash, localVerifiedAt: Value(DateTime.now()));
 
   /// Hard-delete a manifest entry (used by tombstone cleaner).
-  Future<void> hardDelete(String contentHash) => (delete(
+  Future<void> hardDelete(final String contentHash) => (delete(
     assetManifest,
-  )..where((t) => t.contentHash.equals(contentHash))).go();
+  )..where((final t) => t.contentHash.equals(contentHash))).go();
 }

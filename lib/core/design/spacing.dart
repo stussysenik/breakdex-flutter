@@ -2,22 +2,24 @@ import 'package:flutter/animation.dart';
 import 'package:flutter/physics.dart';
 
 abstract final class AppSpacing {
-  static const double screenEdge = 20;
-  static const double xs = 4;
-  static const double sm = 8;
+  static const double xxs = 4;
+  static const double xs = 8;
+  static const double sm = 12;
   static const double md = 16;
   static const double lg = 24;
   static const double xl = 32;
   static const double xxl = 48;
   static const double xxxl = 64;
+  static const double screenEdge = 24;
 }
 
 abstract final class AppRadius {
-  static const double xs = 6;
-  static const double sm = 10;
+  static const double xxs = 4;
+  static const double xs = 8;
+  static const double sm = 12;
   static const double md = 16;
-  static const double lg = 22;
-  static const double xl = 30;
+  static const double lg = 24;
+  static const double xl = 32;
   static const double pill = 500;
 }
 
@@ -45,13 +47,13 @@ abstract final class AppMotion {
   /// Gentle spring for layout transitions (expanding panels, card reorder).
   /// Low overshoot, smooth settle — feels physical without being playful.
   static final Curve springGentle = _SpringCurve(
-    SpringDescription(mass: 1, stiffness: 200, damping: 15),
+    const SpringDescription(mass: 1, stiffness: 200, damping: 15),
   );
 
   /// Bouncy spring for delight moments (FAB entrance, success check, card flip).
   /// Visible overshoot and settle — playful "pop" that draws attention.
   static final Curve springBouncy = _SpringCurve(
-    SpringDescription(mass: 1, stiffness: 150, damping: 10),
+    const SpringDescription(mass: 1, stiffness: 150, damping: 10),
   );
 }
 
@@ -61,13 +63,13 @@ abstract final class AppMotion {
 /// We clamp the output to [0, 1] because spring overshoot can momentarily
 /// exceed 1.0 (that overshoot is the visible "bounce").
 class _SpringCurve extends Curve {
-  _SpringCurve(SpringDescription spring)
+  _SpringCurve(final SpringDescription spring)
       : _simulation = SpringSimulation(spring, 0, 1, 0);
 
   final SpringSimulation _simulation;
 
   @override
-  double transformInternal(double t) {
+  double transformInternal(final double t) {
     // SpringSimulation.x(t) returns displacement at time `t` (seconds).
     // We treat the 0→1 curve parameter as 0→3 seconds — long enough for
     // any reasonable spring to settle, short enough to avoid wasted frames.

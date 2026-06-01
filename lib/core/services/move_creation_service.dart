@@ -21,13 +21,13 @@ typedef MoveVideoImportedHandler =
 
 class MoveCreationService {
   MoveCreationService({
-    required MoveRepository moveRepository,
-    required ReviewableNamingService namingService,
-    required MoveVideoImportedHandler onVideoImported,
-    required AssetHashService hashService,
-    required FsrsCardsDao fsrsCardsDao,
-    BlackboxService? blackbox,
-    String Function()? idGenerator,
+    required final MoveRepository moveRepository,
+    required final ReviewableNamingService namingService,
+    required final MoveVideoImportedHandler onVideoImported,
+    required final AssetHashService hashService,
+    required final FsrsCardsDao fsrsCardsDao,
+    final BlackboxService? blackbox,
+    final String Function()? idGenerator,
   }) : _moveRepository = moveRepository,
        _namingService = namingService,
        _onVideoImported = onVideoImported,
@@ -44,7 +44,7 @@ class MoveCreationService {
   final BlackboxService? _blackbox;
   final String Function() _idGenerator;
 
-  Future<CreateMoveResult> createMove(CreateMoveRequest request) async {
+  Future<CreateMoveResult> createMove(final CreateMoveRequest request) async {
     final normalizedName = _namingService.normalize(request.name);
     final normalizedCategory = request.category.trim();
 
@@ -129,7 +129,7 @@ class MoveCreationService {
           moveId: moveId,
           precomputedHash: contentHash,
         ).catchError(
-          (Object error, StackTrace stackTrace) =>
+          (final Object error, final StackTrace stackTrace) =>
               debugPrint('Move creation sync hook failed (non-fatal): $error'),
         ),
       );

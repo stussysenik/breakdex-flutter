@@ -1,6 +1,5 @@
 import '../machine.dart';
 import '../../models/move_creation.dart';
-import '../../services/move_creation_service.dart';
 
 sealed class MoveCreationState {}
 class Idle extends MoveCreationState {}
@@ -40,12 +39,12 @@ class MoveCreationMachine extends Machine<MoveCreationState, MoveCreationEvent> 
   MoveCreationMachine() : super(Idle());
 
   @override
-  MoveCreationState? transition(MoveCreationState state, MoveCreationEvent event) {
+  MoveCreationState? transition(final MoveCreationState state, final MoveCreationEvent event) {
     return switch ((state, event)) {
       (Idle(), StartCreation _) => Hashing(0.0),
-      (Hashing(), CreationProgress e) => Hashing(e.progress),
-      (Hashing(), CreationSuccess e) => Success(e.result),
-      (Hashing(), CreationError e) => Error(e.message),
+      (Hashing(), final CreationProgress e) => Hashing(e.progress),
+      (Hashing(), final CreationSuccess e) => Success(e.result),
+      (Hashing(), final CreationError e) => Error(e.message),
       (Error(), StartCreation _) => Hashing(0.0),
       (Success(), StartCreation _) => Hashing(0.0),
       _ => null,

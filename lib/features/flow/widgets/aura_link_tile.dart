@@ -22,7 +22,7 @@ enum AuraAffinity {
   stretch;
 
   /// Parse from DB string, defaulting to [possible] for unknown values.
-  static AuraAffinity fromString(String value) => switch (value) {
+  static AuraAffinity fromString(final String value) => switch (value) {
         'natural' => AuraAffinity.natural,
         'stretch' => AuraAffinity.stretch,
         _ => AuraAffinity.possible,
@@ -45,7 +45,7 @@ enum AuraAffinity {
 
   /// Semantic color for the affinity dot.
   /// Green = flows naturally, yellow = workable, red = forced.
-  Color color(BuildContext context) {
+  Color color(final BuildContext context) {
     final semantic = AppSemanticTheme.of(context);
     return switch (this) {
       AuraAffinity.natural => semantic.isMonoOutline
@@ -113,7 +113,7 @@ class AuraLinkTile extends StatelessWidget {
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(final BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
     final affinityColor = affinity.color(context);
 

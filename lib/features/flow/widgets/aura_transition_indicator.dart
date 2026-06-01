@@ -44,19 +44,19 @@ class AuraTransitionIndicator extends ConsumerWidget {
   final double size;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(final BuildContext context, final WidgetRef ref) {
     final affinityAsync = ref.watch(
       auraAffinityProvider((fromId: fromMoveId, toId: toMoveId)),
     );
 
     return affinityAsync.when(
       loading: () => _buildDot(context, null),
-      error: (_, __) => _buildDot(context, null),
-      data: (affinityString) => _buildDot(context, affinityString),
+      error: (_, _) => _buildDot(context, null),
+      data: (final affinityString) => _buildDot(context, affinityString),
     );
   }
 
-  Widget _buildDot(BuildContext context, String? affinityString) {
+  Widget _buildDot(final BuildContext context, final String? affinityString) {
     final affinity = affinityString != null
         ? AuraAffinity.fromString(affinityString)
         : null;
@@ -116,7 +116,7 @@ class AuraTransitionIndicator extends ConsumerWidget {
   }
 
   /// Gray color for unrated transitions — indicates no aura link exists.
-  Color _unratedColor(BuildContext context) {
+  Color _unratedColor(final BuildContext context) {
     return Theme.of(context).colorScheme.secondary.withValues(alpha: 0.35);
   }
 }
@@ -148,7 +148,7 @@ class AuraTransitionArrow extends ConsumerWidget {
   final double height;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(final BuildContext context, final WidgetRef ref) {
     final affinityAsync = ref.watch(
       auraAffinityProvider((fromId: fromMoveId, toId: toMoveId)),
     );
@@ -157,8 +157,8 @@ class AuraTransitionArrow extends ConsumerWidget {
 
     return affinityAsync.when(
       loading: () => _buildArrow(context, colorScheme.secondary.withValues(alpha: 0.35)),
-      error: (_, __) => _buildArrow(context, colorScheme.secondary.withValues(alpha: 0.35)),
-      data: (affinityString) {
+      error: (_, _) => _buildArrow(context, colorScheme.secondary.withValues(alpha: 0.35)),
+      data: (final affinityString) {
         final affinity = affinityString != null
             ? AuraAffinity.fromString(affinityString)
             : null;
@@ -169,7 +169,7 @@ class AuraTransitionArrow extends ConsumerWidget {
     );
   }
 
-  Widget _buildArrow(BuildContext context, Color dotColor) {
+  Widget _buildArrow(final BuildContext context, final Color dotColor) {
     final lineColor =
         Theme.of(context).colorScheme.outline.withValues(alpha: 0.2);
 

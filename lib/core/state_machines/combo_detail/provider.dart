@@ -9,11 +9,11 @@ import '../../../core/database/daos/combos_dao.dart';
 import '../../../core/providers.dart';
 import '../../../core/utils/diagnostics.dart';
 
-final comboByIdStreamProvider = StreamProvider.family<Combo, String>((ref, id) {
+final comboByIdStreamProvider = StreamProvider.family<Combo, String>((final ref, final id) {
   return ref.watch(comboRepositoryProvider).watchById(id);
 });
 
-final comboMovesStreamProvider = StreamProvider.family<List<ComboMoveWithDetail>, String>((ref, id) {
+final comboMovesStreamProvider = StreamProvider.family<List<ComboMoveWithDetail>, String>((final ref, final id) {
   return ref.watch(comboRepositoryProvider).watchComboMoves(id);
 });
 
@@ -24,7 +24,7 @@ class ComboDetailNotifier extends FamilyNotifier<ComboDetailState, String> {
   bool _streamInitialized = false;
 
   @override
-  ComboDetailState build(String arg) {
+  ComboDetailState build(final String arg) {
     final initialState = Idle(Combo(
       id: arg,
       name: 'Loading...',
@@ -34,7 +34,7 @@ class ComboDetailNotifier extends FamilyNotifier<ComboDetailState, String> {
     _machine = ComboDetailMachine(initialState);
     DiagnosticsLog.info('ComboDetailNotifier', 'build comboId=$arg');
 
-    ref.listen(comboByIdStreamProvider(arg), (prev, next) {
+    ref.listen(comboByIdStreamProvider(arg), (final prev, final next) {
       if (next.hasValue) {
         final combo = next.value!;
         final log = StageLogger.begin('ComboDetailNotifier._onComboStream',
@@ -53,7 +53,7 @@ class ComboDetailNotifier extends FamilyNotifier<ComboDetailState, String> {
     return initialState;
   }
 
-  void send(ComboDetailEvent event) {
+  void send(final ComboDetailEvent event) {
     final next = _machine.transition(state, event);
     if (next != null) {
       state = next;
@@ -61,7 +61,7 @@ class ComboDetailNotifier extends FamilyNotifier<ComboDetailState, String> {
     }
   }
 
-  void _executeEntryActions(ComboDetailState s, ComboDetailEvent e) {
+  void _executeEntryActions(final ComboDetailState s, final ComboDetailEvent e) {
     if (s is SavingNotes && e is UpdateNotes) {
       _latestDraft = e.text;
       _saveNotes(s.combo, e.text, ++_saveGeneration);
@@ -77,7 +77,7 @@ class ComboDetailNotifier extends FamilyNotifier<ComboDetailState, String> {
     }
   }
 
-  Future<void> _saveNotes(Combo combo, String notes, int generation) async {
+  Future<void> _saveNotes(final Combo combo, final String notes, final int generation) async {
     final log = StageLogger.begin('_saveNotes', subsystem: 'ComboDetail', context: {
       'comboId': combo.id, 'generation': generation,
     });
@@ -111,7 +111,7 @@ class ComboDetailNotifier extends FamilyNotifier<ComboDetailState, String> {
     }
   }
 
-  Future<void> _deleteCombo(Combo combo) async {
+  Future<void> _deleteCombo(final Combo combo) async {
     final log = StageLogger.begin('_deleteCombo', subsystem: 'ComboDetail', context: {
       'comboId': combo.id, 'name': combo.name,
     });
@@ -130,7 +130,7 @@ class ComboDetailNotifier extends FamilyNotifier<ComboDetailState, String> {
     }
   }
 
-  Future<void> _saveLogEntry(Combo combo, String body) async {
+  Future<void> _saveLogEntry(final Combo combo, final String body) async {
     try {
       unawaited(HapticFeedback.mediumImpact());
       final dao = ref.read(comboNoteEntriesDaoProvider);
@@ -141,7 +141,7 @@ class ComboDetailNotifier extends FamilyNotifier<ComboDetailState, String> {
     }
   }
 
-  Future<void> _deleteLogEntry(Combo combo, String entryId) async {
+  Future<void> _deleteLogEntry(final Combo combo, final String entryId) async {
     try {
       unawaited(HapticFeedback.mediumImpact());
       final dao = ref.read(comboNoteEntriesDaoProvider);

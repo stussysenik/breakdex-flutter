@@ -34,16 +34,16 @@ class FirebaseStorageProvider implements CloudProvider {
 
   @override
   Future<RemoteAsset> upload({
-    required String localPath,
-    required String remotePath,
-    TransferProgress? onProgress,
-    CancellationToken? cancel,
+    required final String localPath,
+    required final String remotePath,
+    final TransferProgress? onProgress,
+    final CancellationToken? cancel,
   }) async {
     final ref = FirebaseStorage.instance.ref(remotePath);
     final task = ref.putFile(File(localPath));
 
     if (onProgress != null) {
-      task.snapshotEvents.listen((snapshot) {
+      task.snapshotEvents.listen((final snapshot) {
         onProgress(snapshot.bytesTransferred, snapshot.totalBytes);
       });
     }
@@ -67,10 +67,10 @@ class FirebaseStorageProvider implements CloudProvider {
 
   @override
   Future<void> download({
-    required String remotePath,
-    required String localPath,
-    TransferProgress? onProgress,
-    CancellationToken? cancel,
+    required final String remotePath,
+    required final String localPath,
+    final TransferProgress? onProgress,
+    final CancellationToken? cancel,
   }) async {
     final ref = FirebaseStorage.instance.ref(remotePath);
     final file = File(localPath);
@@ -81,7 +81,7 @@ class FirebaseStorageProvider implements CloudProvider {
     final task = ref.writeToFile(file);
 
     if (onProgress != null) {
-      task.snapshotEvents.listen((snapshot) {
+      task.snapshotEvents.listen((final snapshot) {
         onProgress(snapshot.bytesTransferred, snapshot.totalBytes);
       });
     }
@@ -91,9 +91,9 @@ class FirebaseStorageProvider implements CloudProvider {
 
   @override
   Future<bool> verify({
-    required String remotePath,
-    String? expectedHash,
-    int? expectedSize,
+    required final String remotePath,
+    final String? expectedHash,
+    final int? expectedSize,
   }) async {
     try {
       final ref = FirebaseStorage.instance.ref(remotePath);
@@ -109,7 +109,7 @@ class FirebaseStorageProvider implements CloudProvider {
   }
 
   @override
-  Future<List<RemoteAsset>> list({required String directory}) async {
+  Future<List<RemoteAsset>> list({required final String directory}) async {
     final ref = FirebaseStorage.instance.ref(directory);
     final result = await ref.listAll();
     
@@ -127,7 +127,7 @@ class FirebaseStorageProvider implements CloudProvider {
   }
 
   @override
-  Future<void> delete({required String remotePath}) async {
+  Future<void> delete({required final String remotePath}) async {
     await FirebaseStorage.instance.ref(remotePath).delete();
   }
 

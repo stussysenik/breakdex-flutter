@@ -112,13 +112,13 @@ class ComboDetailMachine extends Machine<ComboDetailState, ComboDetailEvent> {
   String get diagnosticsLabel => 'ComboDetail';
 
   @override
-  ComboDetailState? transition(ComboDetailState s, ComboDetailEvent e) {
+  ComboDetailState? transition(final ComboDetailState s, final ComboDetailEvent e) {
     return switch ((s, e)) {
       // ── Notes ──
-      (Idle(), UpdateNotes e) => SavingNotes(s.combo, draftNotes: e.text),
-      (SavingNotes(), UpdateNotes e) => SavingNotes(s.combo, draftNotes: e.text),
-      (SavingNotes(), SaveSucceeded e) => Idle(e.combo),
-      (SavingNotes(), SaveFailed e) => ErrorState(s.combo, message: e.error),
+      (Idle(), final UpdateNotes e) => SavingNotes(s.combo, draftNotes: e.text),
+      (SavingNotes(), final UpdateNotes e) => SavingNotes(s.combo, draftNotes: e.text),
+      (SavingNotes(), final SaveSucceeded e) => Idle(e.combo),
+      (SavingNotes(), final SaveFailed e) => ErrorState(s.combo, message: e.error),
       (NotesDirty(), UpdateNotes(text: final t)) => NotesDirty(s.combo, draftText: t),
       (NotesDirty(), SaveSucceeded(combo: final _)) => Idle(s.combo),
       (NotesDirty(), SaveFailed(error: final e)) => ErrorState(s.combo, message: e),
@@ -126,11 +126,11 @@ class ComboDetailMachine extends Machine<ComboDetailState, ComboDetailEvent> {
       // ── Delete flow ──
       (Idle(), TapDelete _) => Deleting(s.combo),
       (Idle(), ConfirmDelete _) => Deleting(s.combo),
-      (Idle(), StreamUpdate e) => Idle(e.combo),
+      (Idle(), final StreamUpdate e) => Idle(e.combo),
       (Deleting(), ConfirmDelete _) => Deleting(s.combo),
       (Deleting(), Cancel _) => Idle(s.combo),
       (Deleting(), DeleteSucceeded _) => Gone(s.combo),
-      (Deleting(), DeleteFailed e) => ErrorState(s.combo, message: e.error),
+      (Deleting(), final DeleteFailed e) => ErrorState(s.combo, message: e.error),
 
       // ── Log entries ──
       (Idle(), TapAddLog _) => AddingLog(s.combo),

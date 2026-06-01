@@ -19,7 +19,7 @@ void main() {
 
     messenger.setMockMethodCallHandler(
       const MethodChannel('dev.fluttercommunity.plus/sensors/method'),
-      (call) async {
+      (final call) async {
         if (call.method == 'isSensorAvailable') {
           return true;
         }
@@ -29,9 +29,9 @@ void main() {
 
     messenger.setMockStreamHandler(
       const EventChannel('dev.fluttercommunity.plus/sensors/user_accel'),
-      MockStreamHandler.inline(onListen: (args, sink) {
+      MockStreamHandler.inline(onListen: (final args, final sink) {
         sensorController.stream.listen(
-          (event) => sink.success([
+          (final event) => sink.success([
             event.x,
             event.y,
             event.z,

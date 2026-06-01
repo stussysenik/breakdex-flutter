@@ -56,13 +56,13 @@ class _MoveAnalysisScreenState extends ConsumerState<MoveAnalysisScreen> {
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(final BuildContext context) {
     final mode = ref.watch(analysisModeProvider);
     final pose = ref.watch(currentPoseProvider);
     final colorScheme = Theme.of(context).colorScheme;
 
     // When mode changes, manage live pose streaming
-    ref.listen(analysisModeProvider, (prev, next) {
+    ref.listen(analysisModeProvider, (final prev, final next) {
       if (next == AnalysisMode.camera) {
         _startLivePose();
       } else {
@@ -132,7 +132,7 @@ class _MoveAnalysisScreenState extends ConsumerState<MoveAnalysisScreen> {
     );
   }
 
-  Widget _buildHeader(BuildContext context, ColorScheme colorScheme) {
+  Widget _buildHeader(final BuildContext context, final ColorScheme colorScheme) {
     return Container(
       padding: const EdgeInsets.symmetric(
         horizontal: AppSpacing.screenEdge,
@@ -174,7 +174,7 @@ class _MoveAnalysisScreenState extends ConsumerState<MoveAnalysisScreen> {
     );
   }
 
-  Widget _buildCameraPlaceholder(ColorScheme colorScheme) {
+  Widget _buildCameraPlaceholder(final ColorScheme colorScheme) {
     final livePose = ref.watch(livePoseActiveProvider);
 
     return Container(
@@ -208,7 +208,7 @@ class _MoveAnalysisScreenState extends ConsumerState<MoveAnalysisScreen> {
     );
   }
 
-  Widget _buildAnalyzeButton(ColorScheme colorScheme) {
+  Widget _buildAnalyzeButton(final ColorScheme colorScheme) {
     return GestureDetector(
       onTap: _isAnalyzing ? null : _analyzeCurrentFrame,
       child: Container(
@@ -280,14 +280,14 @@ class _MoveAnalysisScreenState extends ConsumerState<MoveAnalysisScreen> {
       await visionML.startLivePose();
       ref.read(livePoseActiveProvider.notifier).state = true;
 
-      _livePoseSubscription?.cancel();
+      unawaited(_livePoseSubscription?.cancel());
       _livePoseSubscription = visionML.livePoseStream.listen(
-        (frame) {
+        (final frame) {
           if (mounted) {
             ref.read(currentPoseProvider.notifier).state = frame;
           }
         },
-        onError: (e) {
+        onError: (final e) {
           debugPrint('[MoveAnalysis] Live pose error: $e');
           _stopLivePose();
         },

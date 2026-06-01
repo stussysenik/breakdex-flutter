@@ -50,3 +50,15 @@ Executed the approved Patrol integration:
 4. Configured Android `build.gradle.kts` defaults and test runner dependencies (`PatrolJUnitRunner` & Android Test Orchestrator) and created `MainActivityTest.kt`.
 5. Migrated `integration_test/app_test.dart` to Patrol syntax and added a comprehensive test case `Settings renames learning tags and Review screen updates` to verify the tag customization propagation from Settings to Review screen.
 6. Triggered the background test compilation and execution runner against the iOS simulator.
+
+## Update 11 (2026-06-01)
+We successfully booted the iOS simulator and ran the application on it (`iPhone Air`).
+During our inspection, we identified two main classes of issues:
+1. **Test Compile Failures**: Core test files for `review_card_display_settings` and `silent_practice_playback` were failing to compile due to calling settings methods (`setShowTitle`, `setEnabled`) with positional arguments instead of their defined required named parameters. We will fix these.
+2. **Visual Consistency Gaps**: Several screens (`MoveCategoryScreen`, `ComboListScreen`, and `SettingsListGroup`) define custom, hardcoded containers, borders, and divider opacities instead of referencing the design system's `AppSurfaces.panel` layout utility. This bypasses the adaptive border width, color, and shadow styling of standard vs. `monoOutline` (thin line design language) modes.
+
+We have drafted and saved the [implementation plan](file:///Users/s3nik/.gemini/antigravity-ide/brain/d02b4a89-d45a-41e0-bd6a-dd145fd16fce/implementation_plan.md) mapping out these fixes and our plan to utilize Dart VM Service and DevTools extensions to test layouts dynamically. We are waiting for the user's directive/approval.
+
+## Update 12 (2026-06-01)
+We received a request to review the Patrol tests and write a realistic production scenario test covering network stress and video editor operations. We drafted an [implementation plan](file:///Users/s3nik/.gemini/antigravity-ide/brain/b21dc099-fffe-47d6-9393-2191dd27222c/implementation_plan.md) outlining how we will simulate network stress (using a fake retriever and programmatic connectivity overrides), verify rendering under the 'Strong' state, and thoroughly test the custom video editor controls. We are waiting for the user's approval.
+

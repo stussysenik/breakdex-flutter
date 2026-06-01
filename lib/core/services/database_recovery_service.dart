@@ -8,8 +8,8 @@ import 'app_storage_paths.dart';
 
 class DatabaseRecoveryService {
   DatabaseRecoveryService({
-    Future<Directory> Function()? documentsDirectory,
-    DateTime Function()? now,
+    final Future<Directory> Function()? documentsDirectory,
+    final DateTime Function()? now,
   }) : _documentsDirectory =
            documentsDirectory ?? AppStoragePaths.documentsDirectory,
        _now = now ?? DateTime.now;
@@ -60,11 +60,11 @@ class DatabaseRecoveryService {
       backupFiles.add(entity);
     }
 
-    backupFiles.sort((a, b) => _sortKeyFor(b).compareTo(_sortKeyFor(a)));
+    backupFiles.sort((final a, final b) => _sortKeyFor(b).compareTo(_sortKeyFor(a)));
     return backupFiles;
   }
 
-  Future<void> replacePrimaryWithBackup(File backupFile) async {
+  Future<void> replacePrimaryWithBackup(final File backupFile) async {
     if (!await _isUsableFile(backupFile)) {
       throw StateError('Backup file is not readable.');
     }
@@ -102,7 +102,7 @@ class DatabaseRecoveryService {
     await primary.rename(corruptFile.path);
   }
 
-  Future<bool> createRollingBackupIfDue({bool force = false}) async {
+  Future<bool> createRollingBackupIfDue({final bool force = false}) async {
     final primary = await primaryDatabaseFile();
     if (!await _isUsableFile(primary)) return false;
 
@@ -140,13 +140,13 @@ class DatabaseRecoveryService {
     return true;
   }
 
-  int _sortKeyFor(File file) {
+  int _sortKeyFor(final File file) {
     final basename = p.basenameWithoutExtension(file.path);
     final rawValue = basename.substring(backupFilenamePrefix.length);
     return int.tryParse(rawValue) ?? 0;
   }
 
-  Future<bool> _isUsableFile(File file) async {
+  Future<bool> _isUsableFile(final File file) async {
     if (!await file.exists()) return false;
     return await file.length() > 0;
   }
@@ -160,7 +160,7 @@ class DatabaseRecoveryService {
 }
 
 class AutomaticDatabaseBackupController with WidgetsBindingObserver {
-  AutomaticDatabaseBackupController({required DatabaseRecoveryService service})
+  AutomaticDatabaseBackupController({required final DatabaseRecoveryService service})
     : _service = service;
 
   final DatabaseRecoveryService _service;
@@ -177,7 +177,7 @@ class AutomaticDatabaseBackupController with WidgetsBindingObserver {
   }
 
   @override
-  void didChangeAppLifecycleState(AppLifecycleState state) {
+  void didChangeAppLifecycleState(final AppLifecycleState state) {
     if (state != AppLifecycleState.paused &&
         state != AppLifecycleState.detached) {
       return;
@@ -185,7 +185,7 @@ class AutomaticDatabaseBackupController with WidgetsBindingObserver {
     unawaited(_backupIfNeeded(force: state == AppLifecycleState.detached));
   }
 
-  Future<void> _backupIfNeeded({bool force = false}) async {
+  Future<void> _backupIfNeeded({final bool force = false}) async {
     final runningBackup = _runningBackup;
     if (runningBackup != null) return runningBackup;
 

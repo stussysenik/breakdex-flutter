@@ -29,10 +29,10 @@ class SafetyGuard {
   /// Returns true only if it's safe to remove the local copy of this asset.
   ///
   /// Safe means at least one other verified copy exists on a cloud provider.
-  Future<bool> canDeleteLocal(String contentHash) async {
+  Future<bool> canDeleteLocal(final String contentHash) async {
     final copies = await _copiesDao.getByHash(contentHash);
     final verifiedRemoteCopies = copies.where(
-      (c) => c.provider != 'local' && c.status == 'verified',
+      (final c) => c.provider != 'local' && c.status == 'verified',
     );
     return verifiedRemoteCopies.isNotEmpty;
   }
@@ -41,7 +41,7 @@ class SafetyGuard {
   /// of the live library in one batch.
   ///
   /// Returns true if the batch size is within safe limits.
-  Future<bool> circuitBreakerCheck(List<String> hashesToDelete) async {
+  Future<bool> circuitBreakerCheck(final List<String> hashesToDelete) async {
     if (hashesToDelete.isEmpty) return true;
 
     final totalLive = await _manifestDao.countLive();
@@ -54,7 +54,7 @@ class SafetyGuard {
   /// Combined check: verifies both two-copy minimum and circuit breaker.
   ///
   /// Throws [SafetyException] with a descriptive message if deletion is unsafe.
-  Future<void> assertSafeToDeleteLocal(String contentHash) async {
+  Future<void> assertSafeToDeleteLocal(final String contentHash) async {
     if (!await canDeleteLocal(contentHash)) {
       throw const SafetyException(
         'Cannot delete local copy: no verified cloud backup exists. '

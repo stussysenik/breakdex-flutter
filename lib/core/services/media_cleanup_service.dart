@@ -9,9 +9,9 @@ import 'video_service.dart';
 
 class MediaCleanupService {
   MediaCleanupService({
-    required AppDatabase db,
-    required VideoService videoService,
-    NativeVideoAlbum? videoAlbum,
+    required final AppDatabase db,
+    required final VideoService videoService,
+    final NativeVideoAlbum? videoAlbum,
   }) : _db = db,
        _videoService = videoService,
        _videoAlbum = videoAlbum ?? NativeVideoAlbum();
@@ -20,7 +20,7 @@ class MediaCleanupService {
   final VideoService _videoService;
   final NativeVideoAlbum _videoAlbum;
 
-  Future<void> cleanupMoveMedia(Move move) {
+  Future<void> cleanupMoveMedia(final Move move) {
     return _cleanupAsset(
       storedVideoPath: move.videoPath,
       resolvedVideoPath: move.resolvedVideoPath,
@@ -32,7 +32,7 @@ class MediaCleanupService {
     );
   }
 
-  Future<void> cleanupComboMedia(Combo combo) {
+  Future<void> cleanupComboMedia(final Combo combo) {
     return _cleanupAsset(
       storedVideoPath: combo.activeVideoPath,
       resolvedVideoPath: combo.resolvedActiveVideoPath,
@@ -44,15 +44,15 @@ class MediaCleanupService {
   }
 
   Future<void> cleanupDetachedAsset({
-    required String title,
-    String? category,
-    String? storedVideoPath,
-    String? resolvedVideoPath,
-    String? contentHash,
-    String? managedAlbumAssetId,
-    String? excludingMoveId,
-    String? excludingComboId,
-    bool skipPhotosCleanup = false,
+    required final String title,
+    final String? category,
+    final String? storedVideoPath,
+    final String? resolvedVideoPath,
+    final String? contentHash,
+    final String? managedAlbumAssetId,
+    final String? excludingMoveId,
+    final String? excludingComboId,
+    final bool skipPhotosCleanup = false,
   }) {
     return _cleanupAsset(
       storedVideoPath: storedVideoPath,
@@ -68,15 +68,15 @@ class MediaCleanupService {
   }
 
   Future<void> _cleanupAsset({
-    required String title,
-    String? category,
-    String? storedVideoPath,
-    String? resolvedVideoPath,
-    String? contentHash,
-    String? managedAlbumAssetId,
-    String? excludingMoveId,
-    String? excludingComboId,
-    bool skipPhotosCleanup = false,
+    required final String title,
+    final String? category,
+    final String? storedVideoPath,
+    final String? resolvedVideoPath,
+    final String? contentHash,
+    final String? managedAlbumAssetId,
+    final String? excludingMoveId,
+    final String? excludingComboId,
+    final bool skipPhotosCleanup = false,
   }) async {
     final pathStillReferenced = await _isPathStillReferenced(
       storedVideoPath: storedVideoPath,
@@ -100,7 +100,7 @@ class MediaCleanupService {
         DiagnosticsLog.debug('MediaCleanup', 'DELETING local video: $pathForCleanup');
         await _videoService.deleteVideo(pathForCleanup);
         DiagnosticsLog.debug('MediaCleanup', 'Local video DELETED: $pathForCleanup');
-      } catch (error, stack) {
+      } catch (error) {
         DiagnosticsLog.warn('MediaCleanup', 'Local video cleanup FAILED for "$title": $error');
       }
 
@@ -109,7 +109,7 @@ class MediaCleanupService {
           DiagnosticsLog.debug('MediaCleanup', 'Deleting album copy for "$title" assetId=$managedAlbumAssetId');
           await _videoAlbum.deleteExactManagedCopy(managedAlbumAssetId.trim());
           DiagnosticsLog.debug('MediaCleanup', 'Album copy deleted for "$title"');
-        } catch (error, stack) {
+        } catch (error) {
           DiagnosticsLog.warn('MediaCleanup', 'Album cleanup FAILED for "$title": $error');
         }
       }
@@ -125,9 +125,9 @@ class MediaCleanupService {
   }
 
   Future<bool> _isPathStillReferenced({
-    String? storedVideoPath,
-    String? excludingMoveId,
-    String? excludingComboId,
+    final String? storedVideoPath,
+    final String? excludingMoveId,
+    final String? excludingComboId,
   }) async {
     final normalizedPath = storedVideoPath == null || storedVideoPath.isEmpty
         ? null
@@ -136,7 +136,7 @@ class MediaCleanupService {
     if (normalizedPath != null) {
       final moveRefs =
           await (_db.select(_db.moves)..where(
-                (t) =>
+                (final t) =>
                     t.videoPath.equals(normalizedPath) &
                     (excludingMoveId == null
                         ? const Constant(true)
@@ -150,7 +150,7 @@ class MediaCleanupService {
 
       final comboRefs =
           await (_db.select(_db.combos)..where(
-                (t) =>
+                (final t) =>
                     t.activeVideoPath.equals(normalizedPath) &
                     (excludingComboId == null
                         ? const Constant(true)
@@ -168,15 +168,15 @@ class MediaCleanupService {
   }
 
   Future<bool> _isHashStillReferenced({
-    String? contentHash,
-    String? excludingMoveId,
-    String? excludingComboId,
+    final String? contentHash,
+    final String? excludingMoveId,
+    final String? excludingComboId,
   }) async {
     if (contentHash == null || contentHash.isEmpty) return false;
 
     final moveHashRefs =
         await (_db.select(_db.moves)..where(
-              (t) =>
+              (final t) =>
                   t.contentHash.equals(contentHash) &
                   (excludingMoveId == null
                       ? const Constant(true)
@@ -190,7 +190,7 @@ class MediaCleanupService {
 
     final comboHashRefs =
         await (_db.select(_db.combos)..where(
-              (t) =>
+              (final t) =>
                   t.contentHash.equals(contentHash) &
                   (excludingComboId == null
                       ? const Constant(true)
@@ -206,7 +206,7 @@ class MediaCleanupService {
     return false;
   }
 
-  Future<void> _tombstoneAsset(String contentHash) async {
+  Future<void> _tombstoneAsset(final String contentHash) async {
     final manifest = await _db.assetManifestDao.getByHash(contentHash);
     if (manifest == null) {
       DiagnosticsLog.debug('MediaCleanup', '_tombstoneAsset hash=$contentHash => no manifest (skip)');

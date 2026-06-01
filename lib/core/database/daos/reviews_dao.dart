@@ -12,45 +12,45 @@ class ReviewsDao extends DatabaseAccessor<AppDatabase> with _$ReviewsDaoMixin {
 
   Stream<List<Review>> watchAll() => (select(
     reviews,
-  )..orderBy([(t) => OrderingTerm.desc(t.reviewedAt)])).watch();
+  )..orderBy([(final t) => OrderingTerm.desc(t.reviewedAt)])).watch();
 
-  Future<void> insertReview(ReviewsCompanion entry) =>
+  Future<void> insertReview(final ReviewsCompanion entry) =>
       into(reviews).insert(entry);
 
   Future<List<Review>> getAllOrdered() => (select(
     reviews,
-  )..orderBy([(t) => OrderingTerm.desc(t.reviewedAt)])).get();
+  )..orderBy([(final t) => OrderingTerm.desc(t.reviewedAt)])).get();
 
-  Future<List<Review>> getByMoveId(String moveId) =>
-      (select(reviews)..where((t) => t.moveId.equals(moveId))).get();
+  Future<List<Review>> getByMoveId(final String moveId) =>
+      (select(reviews)..where((final t) => t.moveId.equals(moveId))).get();
 
   Future<int> countAll() async {
     final result = await (select(reviews)).get();
     return result.length;
   }
 
-  Future<List<Review>> getInRange(DateTime start, DateTime end) =>
+  Future<List<Review>> getInRange(final DateTime start, final DateTime end) =>
       (select(reviews)
             ..where(
-              (t) =>
+              (final t) =>
                   t.reviewedAt.isBiggerOrEqualValue(start) &
                   t.reviewedAt.isSmallerOrEqualValue(end),
             )
-            ..orderBy([(t) => OrderingTerm.asc(t.reviewedAt)]))
+            ..orderBy([(final t) => OrderingTerm.asc(t.reviewedAt)]))
           .get();
 
   /// Get all reviews for a single calendar day, sorted chronologically.
-  Future<List<Review>> getForDay(DateTime day) {
+  Future<List<Review>> getForDay(final DateTime day) {
     final start = DateTime(day.year, day.month, day.day);
     final end = start.add(const Duration(days: 1));
     return getInRange(start, end);
   }
 
-  Future<Map<DateTime, int>> dailyCountsSince(DateTime since) async {
+  Future<Map<DateTime, int>> dailyCountsSince(final DateTime since) async {
     final rows =
         await (select(reviews)
-              ..where((t) => t.reviewedAt.isBiggerOrEqualValue(since))
-              ..orderBy([(t) => OrderingTerm.asc(t.reviewedAt)]))
+              ..where((final t) => t.reviewedAt.isBiggerOrEqualValue(since))
+              ..orderBy([(final t) => OrderingTerm.asc(t.reviewedAt)]))
             .get();
 
     final counts = <DateTime, int>{};
@@ -74,7 +74,7 @@ class ReviewsDao extends DatabaseAccessor<AppDatabase> with _$ReviewsDaoMixin {
     return dist;
   }
 
-  Future<List<MapEntry<String, int>>> topReviewedMoves(int limit) async {
+  Future<List<MapEntry<String, int>>> topReviewedMoves(final int limit) async {
     final rows = await select(reviews).get();
     final counts = <String, int>{};
     for (final r in rows) {
@@ -83,7 +83,7 @@ class ReviewsDao extends DatabaseAccessor<AppDatabase> with _$ReviewsDaoMixin {
       }
     }
     final sorted = counts.entries.toList()
-      ..sort((a, b) => b.value.compareTo(a.value));
+      ..sort((final a, final b) => b.value.compareTo(a.value));
     return sorted.take(limit).toList();
   }
 
@@ -91,7 +91,7 @@ class ReviewsDao extends DatabaseAccessor<AppDatabase> with _$ReviewsDaoMixin {
   Future<int> currentStreak() async {
     final rows = await (select(
       reviews,
-    )..orderBy([(t) => OrderingTerm.desc(t.reviewedAt)])).get();
+    )..orderBy([(final t) => OrderingTerm.desc(t.reviewedAt)])).get();
 
     if (rows.isEmpty) return 0;
 
@@ -102,7 +102,7 @@ class ReviewsDao extends DatabaseAccessor<AppDatabase> with _$ReviewsDaoMixin {
       );
     }
 
-    final sortedDays = days.toList()..sort((a, b) => b.compareTo(a));
+    final sortedDays = days.toList()..sort((final a, final b) => b.compareTo(a));
     final today = DateTime.now();
     final todayDate = DateTime(today.year, today.month, today.day);
 
@@ -131,12 +131,12 @@ class ReviewsDao extends DatabaseAccessor<AppDatabase> with _$ReviewsDaoMixin {
     final rows =
         await (select(reviews)
               ..where(
-                (t) =>
+                (final t) =>
                     t.fsrsPostState.equals(2) &
                     t.fsrsPreState.isNotNull() &
                     t.fsrsPreState.isNotValue(2),
               )
-              ..orderBy([(t) => OrderingTerm.desc(t.reviewedAt)]))
+              ..orderBy([(final t) => OrderingTerm.desc(t.reviewedAt)]))
             .get();
 
     if (rows.isEmpty) return 0;
@@ -149,7 +149,7 @@ class ReviewsDao extends DatabaseAccessor<AppDatabase> with _$ReviewsDaoMixin {
       );
     }
 
-    final sortedDays = days.toList()..sort((a, b) => b.compareTo(a));
+    final sortedDays = days.toList()..sort((final a, final b) => b.compareTo(a));
     final today = DateTime.now();
     final todayDate = DateTime(today.year, today.month, today.day);
 

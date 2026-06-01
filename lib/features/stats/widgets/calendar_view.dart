@@ -62,12 +62,12 @@ class _LabCalendarViewState extends ConsumerState<LabCalendarView> {
 
   /// Compute the month for a given page index relative to the anchor month.
   /// The anchor never changes, so this mapping is stable across page swipes.
-  DateTime _monthForPage(int page) {
+  DateTime _monthForPage(final int page) {
     final offset = page - _initialPage;
     return DateTime(_anchorMonth.year, _anchorMonth.month + offset);
   }
 
-  void _onPageChanged(int page) {
+  void _onPageChanged(final int page) {
     setState(() {
       _displayedMonth = _monthForPage(page);
     });
@@ -88,7 +88,7 @@ class _LabCalendarViewState extends ConsumerState<LabCalendarView> {
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(final BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
 
     return Padding(
@@ -134,11 +134,11 @@ class _LabCalendarViewState extends ConsumerState<LabCalendarView> {
             child: PageView.builder(
               controller: _pageController,
               onPageChanged: _onPageChanged,
-              itemBuilder: (context, page) {
+              itemBuilder: (final context, final page) {
                 final month = _monthForPage(page);
                 return _MonthGrid(
                   month: month,
-                  onDayTap: (date) => _showDayDetail(context, date),
+                  onDayTap: (final date) => _showDayDetail(context, date),
                 );
               },
             ),
@@ -153,7 +153,7 @@ class _LabCalendarViewState extends ConsumerState<LabCalendarView> {
   }
 
   /// Show a bottom sheet listing the day's activities.
-  Future<void> _showDayDetail(BuildContext context, DateTime date) async {
+  Future<void> _showDayDetail(final BuildContext context, final DateTime date) async {
     unawaited(HapticFeedback.selectionClick());
     await showModalBottomSheet<void>(
       context: context,
@@ -162,7 +162,7 @@ class _LabCalendarViewState extends ConsumerState<LabCalendarView> {
     );
   }
 
-  String _formatMonth(DateTime month) {
+  String _formatMonth(final DateTime month) {
     const months = [
       'January',
       'February',
@@ -189,7 +189,7 @@ class _WeekdayHeaders extends StatelessWidget {
   final ColorScheme colorScheme;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(final BuildContext context) {
     const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
     return Row(
       children: [
@@ -220,7 +220,7 @@ class _MonthGrid extends ConsumerWidget {
   final ValueChanged<DateTime> onDayTap;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(final BuildContext context, final WidgetRef ref) {
     final activityAsync = ref.watch(_monthActivityProvider(month));
     final activity = activityAsync.valueOrNull ?? const _MonthActivity();
 
@@ -261,13 +261,13 @@ class _MonthGrid extends ConsumerWidget {
   }
 
   Widget _buildCell(
-    BuildContext context, {
-    required int row,
-    required int col,
-    required int startOffset,
-    required int daysInMonth,
-    required DateTime todayDate,
-    required _MonthActivity activity,
+    final BuildContext context, {
+    required final int row,
+    required final int col,
+    required final int startOffset,
+    required final int daysInMonth,
+    required final DateTime todayDate,
+    required final _MonthActivity activity,
   }) {
     final cellIndex = row * 7 + col;
     final dayNumber = cellIndex - startOffset + 1;
@@ -313,7 +313,7 @@ class _DayCell extends StatelessWidget {
   final VoidCallback onTap;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(final BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
 
     return GestureDetector(
@@ -374,7 +374,7 @@ class _Dot extends StatelessWidget {
   final Color color;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(final BuildContext context) {
     return Container(
       width: 5,
       height: 5,
@@ -392,7 +392,7 @@ class _Legend extends StatelessWidget {
   final ColorScheme colorScheme;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(final BuildContext context) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
@@ -430,7 +430,7 @@ class _LegendItem extends StatelessWidget {
   final ColorScheme colorScheme;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(final BuildContext context) {
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
@@ -458,7 +458,7 @@ class _DayDetailSheet extends ConsumerWidget {
   final DateTime date;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(final BuildContext context, final WidgetRef ref) {
     final colorScheme = Theme.of(context).colorScheme;
     final dayDataAsync = ref.watch(_dayDetailProvider(date));
 
@@ -467,7 +467,7 @@ class _DayDetailSheet extends ConsumerWidget {
       minChildSize: 0.3,
       maxChildSize: 0.8,
       expand: false,
-      builder: (context, scrollController) {
+      builder: (final context, final scrollController) {
         return Padding(
           padding: const EdgeInsets.fromLTRB(
             AppSpacing.screenEdge,
@@ -503,8 +503,8 @@ class _DayDetailSheet extends ConsumerWidget {
                 child: dayDataAsync.when(
                   loading: () =>
                       const Center(child: CircularProgressIndicator()),
-                  error: (e, _) => Center(child: Text('Error: $e')),
-                  data: (data) {
+                  error: (final e, _) => Center(child: Text('Error: $e')),
+                  data: (final data) {
                     if (data.isEmpty) {
                       return Center(
                         child: Text(
@@ -521,7 +521,7 @@ class _DayDetailSheet extends ConsumerWidget {
                       itemCount: data.length,
                       separatorBuilder: (_, _) =>
                           const SizedBox(height: AppSpacing.sm),
-                      itemBuilder: (_, index) {
+                      itemBuilder: (_, final index) {
                         final item = data[index];
                         return Container(
                           padding: const EdgeInsets.all(AppSpacing.md),
@@ -571,7 +571,7 @@ class _DayDetailSheet extends ConsumerWidget {
     );
   }
 
-  String _formatDate(DateTime d) {
+  String _formatDate(final DateTime d) {
     const months = [
       'January',
       'February',
@@ -613,8 +613,8 @@ class _MonthActivity {
 /// provide futures for range queries (reviews) and we convert streams
 /// to futures for entries/milestones.
 final _monthActivityProvider = FutureProvider.family<_MonthActivity, DateTime>((
-  ref,
-  month,
+  final ref,
+  final month,
 ) async {
   final start = DateTime(month.year, month.month, 1);
   final end = DateTime(month.year, month.month + 1, 0, 23, 59, 59);
@@ -681,7 +681,7 @@ class _DayActivityItem {
 
 /// Provider that fetches all activity details for a specific day.
 final _dayDetailProvider =
-    FutureProvider.family<List<_DayActivityItem>, DateTime>((ref, date) async {
+    FutureProvider.family<List<_DayActivityItem>, DateTime>((final ref, final date) async {
       final start = DateTime(date.year, date.month, date.day);
       final end = start.add(const Duration(days: 1));
       final items = <_DayActivityItem>[];
@@ -745,6 +745,6 @@ final _dayDetailProvider =
       }
 
       // Sort by timestamp
-      items.sort((a, b) => a.timestamp.compareTo(b.timestamp));
+      items.sort((final a, final b) => a.timestamp.compareTo(b.timestamp));
       return items;
     });

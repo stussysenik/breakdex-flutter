@@ -62,7 +62,7 @@ void main() {
       test(
         'allows on mobile when syncOnMobileData is true and under cap',
         () async {
-          await policy.setSyncOnMobileData(true);
+          await policy.setSyncOnMobileData(enabled: true);
 
           final result = policy.canTransfer(
             1 * 1024 * 1024, // 1 MB — well under 100 MB cap
@@ -74,7 +74,7 @@ void main() {
       );
 
       test('returns dataCapExceeded when mobile usage exceeds cap', () async {
-        await policy.setSyncOnMobileData(true);
+        await policy.setSyncOnMobileData(enabled: true);
         await policy.setMobileDataCapMb(10); // 10 MB cap
 
         // Record usage near the cap
@@ -90,7 +90,7 @@ void main() {
       });
 
       test('allows on mobile when usage plus transfer is within cap', () async {
-        await policy.setSyncOnMobileData(true);
+        await policy.setSyncOnMobileData(enabled: true);
         await policy.setMobileDataCapMb(100); // 100 MB cap
 
         await policy.recordMobileUsage(50 * 1024 * 1024); // 50 MB used

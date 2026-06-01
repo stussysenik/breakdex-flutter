@@ -110,14 +110,14 @@ class AssetSyncEngine {
   bool _running = false;
 
   AssetSyncEngine({
-    required AssetManifestDao manifestDao,
-    required AssetCopiesDao copiesDao,
-    required SyncOperationsDao opsDao,
-    required AssetHashService hashService,
-    required NetworkPolicy networkPolicy,
-    required SafetyGuard safetyGuard,
-    required List<CloudProvider> providers,
-    SyncDao? syncDao,
+    required final AssetManifestDao manifestDao,
+    required final AssetCopiesDao copiesDao,
+    required final SyncOperationsDao opsDao,
+    required final AssetHashService hashService,
+    required final NetworkPolicy networkPolicy,
+    required final SafetyGuard safetyGuard,
+    required final List<CloudProvider> providers,
+    final SyncDao? syncDao,
   }) : _manifestDao = manifestDao,
        _copiesDao = copiesDao,
        _opsDao = opsDao,
@@ -134,7 +134,7 @@ class AssetSyncEngine {
   SyncEngineState get state => _state;
 
   /// Run a full sync cycle. No-op if already running.
-  Future<void> runSyncCycle(ConnectionType connectionType) async {
+  Future<void> runSyncCycle(final ConnectionType connectionType) async {
     if (_running) return;
     _running = true;
 
@@ -161,7 +161,7 @@ class AssetSyncEngine {
   }
 
   /// Queue an upload for an asset to all enabled providers.
-  Future<void> queueUpload(String contentHash) async {
+  Future<void> queueUpload(final String contentHash) async {
     for (final provider in _providers) {
       final alreadyExists = await _opsDao.operationExists(
         contentHash: contentHash,
@@ -187,10 +187,10 @@ class AssetSyncEngine {
   }
 
   /// Queue a download for an asset from the first available provider.
-  Future<void> queueDownload(String contentHash) async {
+  Future<void> queueDownload(final String contentHash) async {
     final copies = await _copiesDao.getByHash(contentHash);
     final remoteCopy = copies
-        .where((c) => c.provider != 'local' && c.status == 'verified')
+        .where((final c) => c.provider != 'local' && c.status == 'verified')
         .firstOrNull;
 
     if (remoteCopy == null) return;
@@ -215,7 +215,7 @@ class AssetSyncEngine {
 
   void pause() => _setState(SyncEngineState.paused);
 
-  void resume(ConnectionType connectionType) {
+  void resume(final ConnectionType connectionType) {
     if (_state == SyncEngineState.paused) {
       _setState(SyncEngineState.idle);
       runSyncCycle(connectionType);
@@ -230,7 +230,7 @@ class AssetSyncEngine {
   // Internal
   // ---------------------------------------------------------------------------
 
-  Future<void> _uploadUnderprotected(ConnectionType connectionType) async {
+  Future<void> _uploadUnderprotected(final ConnectionType connectionType) async {
     final underprotected = await _manifestDao.getUnderprotected();
     if (underprotected.isEmpty) return;
 
@@ -253,7 +253,7 @@ class AssetSyncEngine {
     }
   }
 
-  Future<void> _processQueue(ConnectionType connectionType) async {
+  Future<void> _processQueue(final ConnectionType connectionType) async {
     final maxConcurrent = _networkPolicy.maxConcurrentUploads(connectionType);
     final queued = await _opsDao.getQueued(limit: maxConcurrent);
 
@@ -271,11 +271,11 @@ class AssetSyncEngine {
   }
 
   Future<void> _executeOperation(
-    SyncOperation op,
-    ConnectionType connectionType,
+    final SyncOperation op,
+    final ConnectionType connectionType,
   ) async {
     final provider = _providers
-        .where((p) => p.providerType == op.providerId)
+        .where((final p) => p.providerType == op.providerId)
         .firstOrNull;
     if (provider == null) {
       await _opsDao.markFailed(op.id, 'Provider not configured');
@@ -303,9 +303,9 @@ class AssetSyncEngine {
   }
 
   Future<void> _executeUpload(
-    SyncOperation op,
-    CloudProvider provider,
-    ConnectionType connectionType,
+    final SyncOperation op,
+    final CloudProvider provider,
+    final ConnectionType connectionType,
   ) async {
     final manifest = await _manifestDao.getByHash(op.contentHash);
     if (manifest?.localPath == null) {
@@ -321,7 +321,7 @@ class AssetSyncEngine {
     final result = await provider.upload(
       localPath: localPath,
       remotePath: remotePath,
-      onProgress: (transferred, total) {
+      onProgress: (final transferred, final total) {
         _opsDao.updateProgress(op.id, transferred);
         final delta = transferred - lastTransferred;
         lastTransferred = transferred;
@@ -352,13 +352,13 @@ class AssetSyncEngine {
   }
 
   Future<void> _executeDownload(
-    SyncOperation op,
-    CloudProvider provider,
-    ConnectionType connectionType,
+    final SyncOperation op,
+    final CloudProvider provider,
+    final ConnectionType connectionType,
   ) async {
     final copies = await _copiesDao.getByHash(op.contentHash);
     final remoteCopy = copies
-        .where((c) => c.provider == provider.providerType)
+        .where((final c) => c.provider == provider.providerType)
         .firstOrNull;
 
     if (remoteCopy?.remotePath == null) {
@@ -375,7 +375,7 @@ class AssetSyncEngine {
     await provider.download(
       remotePath: remoteCopy!.remotePath!,
       localPath: localPath,
-      onProgress: (transferred, total) {
+      onProgress: (final transferred, final total) {
         _opsDao.updateProgress(op.id, transferred);
         final delta = transferred - lastTransferred;
         lastTransferred = transferred;
@@ -407,8 +407,8 @@ class AssetSyncEngine {
   }
 
   Future<String> _downloadPathFor(
-    AssetManifestData? manifest,
-    String contentHash,
+    final AssetManifestData? manifest,
+    final String contentHash,
   ) async {
     if (manifest?.localPath case final localPath?) {
       return VideoPathResolver.toAbsolute(localPath);
@@ -422,10 +422,10 @@ class AssetSyncEngine {
     return p.join(videosDir.path, '$contentHash.mp4');
   }
 
-  Future<void> _executeVerify(SyncOperation op, CloudProvider provider) async {
+  Future<void> _executeVerify(final SyncOperation op, final CloudProvider provider) async {
     final copies = await _copiesDao.getByHash(op.contentHash);
     final remoteCopy = copies
-        .where((c) => c.provider == provider.providerType)
+        .where((final c) => c.provider == provider.providerType)
         .firstOrNull;
 
     if (remoteCopy?.remotePath == null) {
@@ -449,8 +449,8 @@ class AssetSyncEngine {
   }
 
   Future<void> _executeDeleteRemote(
-    SyncOperation op,
-    CloudProvider provider,
+    final SyncOperation op,
+    final CloudProvider provider,
   ) async {
     // Safety check: only delete remote if this is a tombstoned asset
     final manifest = await _manifestDao.getByHash(op.contentHash);
@@ -464,7 +464,7 @@ class AssetSyncEngine {
 
     final copies = await _copiesDao.getByHash(op.contentHash);
     final remoteCopy = copies
-        .where((c) => c.provider == provider.providerType)
+        .where((final c) => c.provider == provider.providerType)
         .firstOrNull;
 
     if (remoteCopy?.remotePath == null) {
@@ -495,7 +495,7 @@ class AssetSyncEngine {
   /// the operation's `completedAt` (failure timestamp).
   static const _maxBackoffSeconds = 300; // 5 minutes
 
-  Future<void> _retryFailed(ConnectionType connectionType) async {
+  Future<void> _retryFailed(final ConnectionType connectionType) async {
     final retryable = await _opsDao.getRetryable();
     if (retryable.isEmpty) return;
 
@@ -524,10 +524,10 @@ class AssetSyncEngine {
   /// The [reason] field captures _why_ the transition happened (e.g.
   /// "user freed space", "on-demand download", "file not found").
   Future<void> logStateTransition({
-    required String contentHash,
-    required String fromState,
-    required String toState,
-    required String reason,
+    required final String contentHash,
+    required final String fromState,
+    required final String toState,
+    required final String reason,
   }) async {
     if (_syncDao == null) return;
     try {
@@ -544,7 +544,7 @@ class AssetSyncEngine {
     }
   }
 
-  void _setState(SyncEngineState newState) {
+  void _setState(final SyncEngineState newState) {
     _state = newState;
     _emitProgress();
   }

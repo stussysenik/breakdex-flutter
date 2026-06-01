@@ -26,7 +26,7 @@ class StatePill extends ConsumerWidget {
   final String? semanticsIdentifier;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(final BuildContext context, final WidgetRef ref) {
     final labels = ref.watch(learningStateLabelsProvider);
     final label = resolveLearningStateLabel(labels, state);
     final stateColor = AppSemanticTheme.of(context).colorForState(state);

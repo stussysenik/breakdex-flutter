@@ -26,13 +26,13 @@ class ManifestSerializer {
   final SharedPreferences _prefs;
 
   ManifestSerializer({
-    required MovesDao movesDao,
-    required CombosDao combosDao,
-    required FsrsCardsDao fsrsCardsDao,
-    required ReviewsDao reviewsDao,
-    required DecksDao decksDao,
-    required AppDatabase db,
-    required SharedPreferences prefs,
+    required final MovesDao movesDao,
+    required final CombosDao combosDao,
+    required final FsrsCardsDao fsrsCardsDao,
+    required final ReviewsDao reviewsDao,
+    required final DecksDao decksDao,
+    required final AppDatabase db,
+    required final SharedPreferences prefs,
   }) : _movesDao = movesDao,
        _combosDao = combosDao,
        _fsrsCardsDao = fsrsCardsDao,
@@ -68,7 +68,7 @@ class ManifestSerializer {
       exportedAt: DateTime.now(),
       moves: moves
           .map(
-            (move) => LibraryMove(
+            (final move) => LibraryMove(
               id: move.id,
               name: move.name,
               category: move.category,
@@ -78,11 +78,11 @@ class ManifestSerializer {
           )
           .toList(),
       combos: combos
-          .map((combo) => LibraryCombo(id: combo.id, name: combo.name))
+          .map((final combo) => LibraryCombo(id: combo.id, name: combo.name))
           .toList(),
       comboMoves: comboMoves
           .map(
-            (comboMove) => LibraryComboMove(
+            (final comboMove) => LibraryComboMove(
               comboId: comboMove.comboId,
               moveId: comboMove.moveId,
               sequenceIndex: comboMove.sequenceIndex,
@@ -91,7 +91,7 @@ class ManifestSerializer {
           .toList(),
       categories: categoriesJson
           .map(
-            (category) => LibraryCategory(
+            (final category) => LibraryCategory(
               name: category['name'] as String,
               colorValue: category['colorValue'] as int,
               isDefault: category['isDefault'] as bool? ?? false,
@@ -100,7 +100,7 @@ class ManifestSerializer {
           .toList(),
       fsrsCards: fsrsCards
           .map(
-            (card) => LibraryFsrsCard(
+            (final card) => LibraryFsrsCard(
               entityId: card.entityId,
               entityType: card.entityType,
               state: card.fsrsState,
@@ -112,7 +112,7 @@ class ManifestSerializer {
           .toList(),
       decks: decks
           .map(
-            (deck) => LibraryDeck(
+            (final deck) => LibraryDeck(
               id: deck.id,
               name: deck.name,
               deckType: deck.deckType,
@@ -121,7 +121,7 @@ class ManifestSerializer {
           .toList(),
       deckMoves: deckMoves
           .map(
-            (deckMove) => LibraryDeckMove(
+            (final deckMove) => LibraryDeckMove(
               deckId: deckMove.deckId,
               moveId: deckMove.moveId,
             ),
@@ -129,7 +129,7 @@ class ManifestSerializer {
           .toList(),
       reviews: reviews
           .map(
-            (review) => LibraryReview(
+            (final review) => LibraryReview(
               id: review.id,
               entityId:
                   review.entityIdSnapshot ??
@@ -146,7 +146,7 @@ class ManifestSerializer {
           .toList(),
       assets: assets
           .map(
-            (asset) => LibraryAsset(
+            (final asset) => LibraryAsset(
               contentHash: asset.contentHash,
               fileSizeBytes: asset.fileSizeBytes,
               mimeType: asset.mimeType,

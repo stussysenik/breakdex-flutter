@@ -11,7 +11,7 @@ void main() {
     late ProviderContainer container;
 
     Future<void> createContainer([
-      Map<String, Object> initialValues = const {},
+      final Map<String, Object> initialValues = const {},
     ]) async {
       SharedPreferences.setMockInitialValues(initialValues);
       prefs = await SharedPreferences.getInstance();

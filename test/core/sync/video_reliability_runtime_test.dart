@@ -23,8 +23,8 @@ class _FakeVideoService extends VideoService {
 
   @override
   Future<VideoFileStatus> checkVideoFileWithRetry(
-    String path, {
-    int maxRetries = 2,
+    final String path, {
+    final int maxRetries = 2,
   }) async {
     return statusByPath[path] ?? VideoFileStatus.missing;
   }
@@ -37,9 +37,9 @@ class _FakeRetriever implements LocalAssetRetriever {
 
   @override
   Future<String?> ensureLocal(
-    String contentHash, {
-    TransferProgress? onProgress,
-    CancellationToken? cancel,
+    final String contentHash, {
+    final TransferProgress? onProgress,
+    final CancellationToken? cancel,
   }) async {
     return pathForHash[contentHash];
   }

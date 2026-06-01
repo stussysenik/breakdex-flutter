@@ -1,15 +1,32 @@
 include: package:flutter_lints/flutter.yaml
 
 analyzer:
+  plugins:
+    - custom_lint
   errors:
     missing_required_param: error
     missing_return: error
+    unawaited_futures: error
+    always_declare_return_types: error
+    parameter_assignments: error
+    avoid_positional_boolean_parameters: error
   language:
     strict-casts: true
     strict-raw-types: true
+    strict-inference: true
 
 linter:
   rules:
+    # Immutability — FRP & DOP Core
+    prefer_final_locals: true
+    prefer_final_fields: true
+    avoid_returning_this: true
+    parameter_assignments: true
+
+    
+    # DOP & SRP — API Design
+    avoid_positional_boolean_parameters: true
+    
     # Performance — catch rebuild-heavy patterns at analysis time
     prefer_const_constructors: true
     prefer_const_literals_to_create_immutables: true
@@ -23,8 +40,15 @@ linter:
     avoid_print: true
     prefer_single_quotes: true
     unnecessary_null_checks: true
-
+    use_super_parameters: true
+    combinators_ordering: true
+    
     # Safety — resource leak detection
     cancel_subscriptions: true
     close_sinks: true
     unawaited_futures: true
+    
+    # Style — The MTS Way
+    lines_longer_than_80_chars: false # We prefer readable code over strict LOC limits
+    curly_braces_in_flow_control_structures: true
+    require_trailing_commas: true

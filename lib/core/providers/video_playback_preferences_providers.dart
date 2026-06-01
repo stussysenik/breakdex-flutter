@@ -14,13 +14,13 @@ class SilentPracticePlaybackNotifier extends Notifier<bool> {
     return prefs.getBool(_key) ?? false;
   }
 
-  Future<void> setEnabled(bool value) async {
+  Future<void> setEnabled({required final bool value}) async {
     final prefs = ref.read(sharedPreferencesProvider);
     await prefs.setBool(_key, value);
     state = value;
   }
 
-  Future<void> toggle() => setEnabled(!state);
+  Future<void> toggle() => setEnabled(value: !state);
 
   Future<void> reset() async {
     final prefs = ref.read(sharedPreferencesProvider);

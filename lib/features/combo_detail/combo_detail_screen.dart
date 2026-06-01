@@ -47,13 +47,13 @@ class _ComboDetailScreenState extends ConsumerState<ComboDetailScreen> {
   final NativeVideoAlbum _videoAlbum = NativeVideoAlbum();
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(final BuildContext context) {
     final comboAsync = ref.watch(comboByIdStreamProvider(widget.comboId));
     final movesAsync = ref.watch(comboMovesStreamProvider(widget.comboId));
     final fsrsCards = ref.watch(fsrsCardsRefreshProvider).valueOrNull ?? const [];
     final colorScheme = Theme.of(context).colorScheme;
 
-    ref.listen<sm.ComboDetailState>(comboDetailStateProvider(widget.comboId), (prev, next) {
+    ref.listen<sm.ComboDetailState>(comboDetailStateProvider(widget.comboId), (final prev, final next) {
       if (next is sm.Gone && mounted) {
         context.pop();
       }
@@ -75,16 +75,16 @@ class _ComboDetailScreenState extends ConsumerState<ComboDetailScreen> {
                     colorScheme: colorScheme,
                     comboId: widget.comboId,
                     activeIndex: _activeIndex,
-                    onStepSelected: (i) => setState(() => _activeIndex = i),
+                    onStepSelected: (final i) => setState(() => _activeIndex = i),
                     onEditVideo: _editVideo,
                     onShareVideo: _shareVideo,
                     onSaveToAlbum: _saveToAlbum,
-                    onDeleteCombo: (combo) => _showDeleteSheet(context, ref, combo),
+                    onDeleteCombo: (final combo) => _showDeleteSheet(context, ref, combo),
                   ),
           ),
           // State machine overlays
           Consumer(
-            builder: (context, ref, _) {
+            builder: (final context, final ref, _) {
               final smState = ref.watch(comboDetailStateProvider(widget.comboId));
               final notifier = ref.read(comboDetailStateProvider(widget.comboId).notifier);
               return Stack(
@@ -148,7 +148,7 @@ class _ComboDetailScreenState extends ConsumerState<ComboDetailScreen> {
   }
 
   /// Opens the video editor for a combo move's video and updates the move on return.
-  Future<void> _editVideo(Move move) async {
+  Future<void> _editVideo(final Move move) async {
     if (move.videoPath == null) return;
     final resolvedPath = move.resolvedVideoPath;
     MediaPlaybackCoordinator.shared.pauseAll();
@@ -223,7 +223,7 @@ class _ComboDetailScreenState extends ConsumerState<ComboDetailScreen> {
   }
 
   /// Shows a Cupertino-style destructive action sheet for deleting this combo.
-  void _showDeleteSheet(BuildContext context, WidgetRef ref, Combo combo) {
+  void _showDeleteSheet(final BuildContext context, final WidgetRef ref, final Combo combo) {
     showCupertinoModalPopup(
       context: context,
       builder: (_) => CupertinoActionSheet(
@@ -250,7 +250,7 @@ class _ComboDetailScreenState extends ConsumerState<ComboDetailScreen> {
     );
   }
 
-  Future<void> _shareVideo(Move move) async {
+  Future<void> _shareVideo(final Move move) async {
     final resolvedPath = move.resolvedVideoPath;
     if (resolvedPath == null) return;
     MediaPlaybackCoordinator.shared.pauseAll();
@@ -266,7 +266,7 @@ class _ComboDetailScreenState extends ConsumerState<ComboDetailScreen> {
     }
   }
 
-  Future<void> _saveToAlbum(Move move) async {
+  Future<void> _saveToAlbum(final Move move) async {
     final resolvedPath = move.resolvedVideoPath;
     if (resolvedPath == null) return;
     try {
@@ -321,7 +321,7 @@ class _ComboDetailBody extends ConsumerWidget {
   final void Function(Combo combo) onDeleteCombo;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(final BuildContext context, final WidgetRef ref) {
     final safeIndex = activeIndex.clamp(
       0,
       comboMoves.isEmpty ? 0 : comboMoves.length - 1,
@@ -341,7 +341,7 @@ class _ComboDetailBody extends ConsumerWidget {
       _ => LearningState.newState,
     };
 
-    final totalBeats = comboMoves.fold<int>(0, (sum, m) => sum + m.move.count);
+    final totalBeats = comboMoves.fold<int>(0, (final sum, final m) => sum + m.move.count);
 
     return ListView(
       padding: const EdgeInsets.all(AppSpacing.screenEdge),
@@ -432,7 +432,7 @@ class _ComboDetailBody extends ConsumerWidget {
           stepCount: comboMoves.length,
           activeIndex: safeIndex,
           onStepSelected: onStepSelected,
-          stepNames: comboMoves.map((m) => m.move.name).toList(),
+          stepNames: comboMoves.map((final m) => m.move.name).toList(),
         ),
         const SizedBox(height: AppSpacing.xl),
         if (currentMove != null) ...[
@@ -487,7 +487,7 @@ class _ComboDetailBody extends ConsumerWidget {
         ],
         NotesSection(
           notes: combo.notes,
-          onChanged: (text) => ref
+          onChanged: (final text) => ref
               .read(comboDetailStateProvider(comboId).notifier)
               .send(sm.UpdateNotes(text)),
         ),
@@ -513,7 +513,7 @@ class _VideoActionRow extends StatelessWidget {
   final VoidCallback onSaveToAlbum;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(final BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
     return Row(
       children: [
@@ -556,7 +556,7 @@ class _ActionTile extends StatelessWidget {
   final ColorScheme colorScheme;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(final BuildContext context) {
     return Expanded(
       child: GestureDetector(
         onTap: onTap,

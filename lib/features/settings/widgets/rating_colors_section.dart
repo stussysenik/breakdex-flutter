@@ -20,7 +20,7 @@ class RatingColorsSection extends ConsumerWidget {
   const RatingColorsSection({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(final BuildContext context, final WidgetRef ref) {
     final rc = ref.watch(ratingColorsProvider);
 
     final entries = [
@@ -59,7 +59,7 @@ class RatingColorRow extends ConsumerWidget {
   final IconData icon;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(final BuildContext context, final WidgetRef ref) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 6),
       child: ColorSettingTile(
@@ -72,7 +72,7 @@ class RatingColorRow extends ConsumerWidget {
     );
   }
 
-  Future<void> _showColorPicker(BuildContext context, WidgetRef ref) async {
+  Future<void> _showColorPicker(final BuildContext context, final WidgetRef ref) async {
     final selected = await showColorEditorDialog(
       context,
       initialColor: currentColor,

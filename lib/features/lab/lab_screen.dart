@@ -82,7 +82,7 @@ class _LabScreenState extends ConsumerState<LabScreen> {
   /// Whether the quick-log input and FAB should be visible for this mode.
   ///
   @override
-  Widget build(BuildContext context) {
+  Widget build(final BuildContext context) {
     final viewMode = ref.watch(labViewModeProvider);
     final colorScheme = Theme.of(context).colorScheme;
 
@@ -147,10 +147,10 @@ class _LabScreenState extends ConsumerState<LabScreen> {
 
   /// Shared header widget: title + 3-segment toggle + quick log.
   Widget _buildHeader(
-    BuildContext context,
-    LabViewMode viewMode,
-    ColorScheme colorScheme,
-    bool showQuickLog,
+    final BuildContext context,
+    final LabViewMode viewMode,
+    final ColorScheme colorScheme,
+    final bool showQuickLog,
   ) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -216,7 +216,7 @@ class _LabScreenState extends ConsumerState<LabScreen> {
               ),
             ],
             selectedValue: viewMode,
-            onChanged: (mode) {
+            onChanged: (final mode) {
               HapticFeedback.selectionClick();
               ref.read(labViewModeProvider.notifier).state = mode;
             },
@@ -264,7 +264,7 @@ class _LabScreenState extends ConsumerState<LabScreen> {
           ),
           // Recent quick-log entries — compact horizontal chip feed
           Consumer(
-            builder: (context, ref, _) {
+            builder: (final context, final ref, _) {
               final entriesAsync = ref.watch(labEntriesStreamProvider);
               final entries = entriesAsync.valueOrNull ?? [];
               if (entries.isEmpty) return const SizedBox.shrink();
@@ -279,7 +279,7 @@ class _LabScreenState extends ConsumerState<LabScreen> {
                   itemCount: entries.length,
                   separatorBuilder: (_, _) =>
                       const SizedBox(width: AppSpacing.xs),
-                  itemBuilder: (context, index) {
+                  itemBuilder: (final context, final index) {
                     final entry = entries[index];
                     final ago = relativeTime(entry.createdAt);
                     return Container(
@@ -358,7 +358,7 @@ class _CreateLabSheetState extends State<_CreateLabSheet> {
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(final BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
 
     return Padding(
@@ -471,7 +471,7 @@ class _TypeChip extends StatelessWidget {
   final VoidCallback onTap;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(final BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
 
     return GestureDetector(

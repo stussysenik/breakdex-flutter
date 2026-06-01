@@ -19,13 +19,13 @@ class ViewNamesNotifier extends Notifier<Map<String, String>> {
     if (json == null) return Map.from(_defaultViewNames);
     try {
       final decoded = jsonDecode(json) as Map<String, dynamic>;
-      return decoded.map((k, v) => MapEntry(k, v as String));
+      return decoded.map((final k, final v) => MapEntry(k, v as String));
     } catch (_) {
       return Map.from(_defaultViewNames);
     }
   }
 
-  Future<void> rename(String key, String newName) async {
+  Future<void> rename(final String key, final String newName) async {
     final updated = Map<String, String>.from(state);
     updated[key] = newName;
     state = updated;

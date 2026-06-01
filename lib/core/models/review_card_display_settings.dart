@@ -18,12 +18,12 @@ class ReviewCardDisplaySettings {
   final bool showPlaybackControls;
 
   ReviewCardDisplaySettings copyWith({
-    bool? showTitle,
-    bool? showState,
-    bool? showCategory,
-    bool? showComboTimeline,
-    bool? showComboStepName,
-    bool? showPlaybackControls,
+    final bool? showTitle,
+    final bool? showState,
+    final bool? showCategory,
+    final bool? showComboTimeline,
+    final bool? showComboStepName,
+    final bool? showPlaybackControls,
   }) {
     return ReviewCardDisplaySettings(
       showTitle: showTitle ?? this.showTitle,

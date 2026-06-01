@@ -6,7 +6,7 @@ class _MoveGridCell extends ConsumerWidget {
   final Move move;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(final BuildContext context, final WidgetRef ref) {
     final learningState = LearningState.fromString(move.learningState);
     final colorScheme = Theme.of(context).colorScheme;
 
@@ -77,7 +77,7 @@ class _GridThumbnailState extends State<_GridThumbnail> {
   }
 
   @override
-  void didUpdateWidget(covariant _GridThumbnail oldWidget) {
+  void didUpdateWidget(covariant final _GridThumbnail oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.videoPath != widget.videoPath) {
       // Cancel previous pending load if coordinator is available
@@ -138,7 +138,7 @@ class _GridThumbnailState extends State<_GridThumbnail> {
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(final BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
     if (_loaded && _thumbPath != null) {
       return Image.file(
@@ -166,7 +166,7 @@ class _GridThumbnailState extends State<_GridThumbnail> {
     // and consistent with the RobustVideoPlayer loading state.
     return Container(
       color: colorScheme.surfaceContainerHighest,
-    ).animate(onPlay: (c) => c.repeat()).shimmer(
+    ).animate(onPlay: (final c) => c.repeat()).shimmer(
       duration: 1200.ms,
       color: Colors.white12,
     );
@@ -193,7 +193,7 @@ class _GridCardShell extends StatelessWidget {
   final String? heroTag;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(final BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
     final semanticTheme = AppSemanticTheme.of(context);
 

@@ -43,7 +43,7 @@ abstract class Machine<S, E> {
 
   /// Sends an event to the machine. If a child handles it, the child
   /// transitions. Otherwise, this machine's [transition] is called.
-  void send(E event) {
+  void send(final E event) {
     for (final child in children) {
       final childNext = child.transition(child._state, event);
       if (childNext != null) {
@@ -77,10 +77,10 @@ abstract class Machine<S, E> {
     onEntry(_state);
   }
 
-  static String _stateName(Object? s) =>
+  static String _stateName(final Object? s) =>
       s?.runtimeType.toString() ?? 'null';
 
-  static String _eventName(Object? e) {
+  static String _eventName(final Object? e) {
     final name = e?.runtimeType.toString() ?? 'null';
     if (e case final dynamic ee when ee.runtimeType.toString() != name) {
       return name;
@@ -90,25 +90,25 @@ abstract class Machine<S, E> {
 
   /// Pure transition function. Returns the next state, or `null` if the
   /// event is invalid in the current state (identity transition — ignored).
-  S? transition(S state, E event);
+  S? transition(final S state, final E event);
 
   /// Called after the machine enters a new state. Override to execute
   /// side effects (DB writes, API calls, navigation). If the side effect
   /// is async, call [send] with a result event when it completes.
-  void onEntry(S state) {}
+  void onEntry(final S state) {}
 
   /// Called before the machine leaves the current state. Override to
   /// execute cleanup (dismiss overlays, cancel timers).
-  void onExit(S state) {}
+  void onExit(final S state) {}
 
   /// Registers a child machine. Child machines receive events before
   /// this machine. If a child handles an event, this machine won't see it.
-  void registerChild<S2, E2 extends E>(Machine<S2, E2> child) {
+  void registerChild<S2, E2 extends E>(final Machine<S2, E2> child) {
     children.add(child);
   }
 
   /// Removes a previously registered child machine.
-  void unregisterChild(Machine<dynamic, E> child) {
+  void unregisterChild(final Machine<dynamic, E> child) {
     children.remove(child);
   }
 }

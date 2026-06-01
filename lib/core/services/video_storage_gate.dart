@@ -18,7 +18,7 @@ abstract final class VideoStorageGate {
 
   /// Test-only override.
   @visibleForTesting
-  static set docsPathOverride(String path) => _docsPath = path;
+  static set docsPathOverride(final String path) => _docsPath = path;
 
   /// Allowed relative directories under the documents path.
   /// Videos must reside in one of these.
@@ -31,7 +31,7 @@ abstract final class VideoStorageGate {
   ///
   /// Rejects null, absolute paths outside documents, and anything not under
   /// the designated subdirectories.
-  static bool isAllowed(String? path) {
+  static bool isAllowed(final String? path) {
     if (path == null || path.isEmpty) return false;
     if (_docsPath == null) {
       debugPrint('[VideoStorageGate] Not initialized — rejecting path');
@@ -60,7 +60,7 @@ abstract final class VideoStorageGate {
   }
 
   /// Asserts [path] is allowed. Throws [VideoStorageViolation] if not.
-  static void assertAllowed(String? path) {
+  static void assertAllowed(final String? path) {
     if (!isAllowed(path)) {
       throw VideoStorageViolation(
         'Video path "$path" is outside the designated storage directories. '
@@ -71,7 +71,7 @@ abstract final class VideoStorageGate {
 
   /// Enforces that [destinationPath] is within allowed directories before
   /// allowing a write operation to proceed.
-  static void guardWrite(String? destinationPath) {
+  static void guardWrite(final String? destinationPath) {
     assertAllowed(destinationPath);
   }
 }

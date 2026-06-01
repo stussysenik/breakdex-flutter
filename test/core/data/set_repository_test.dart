@@ -46,7 +46,7 @@ void main() {
 
       final all = await directRepo.getAll();
       expect(all.length, 2);
-      expect(all.map((s) => s.name), containsAll(['A', 'B']));
+      expect(all.map((final s) => s.name), containsAll(['A', 'B']));
     });
 
     test('update modifies a set', () async {
@@ -80,7 +80,7 @@ void main() {
       );
 
       final list = await stream.first;
-      expect(list.any((s) => s.id == 's1'), isTrue);
+      expect(list.any((final s) => s.id == 's1'), isTrue);
     });
 
     test('watchById stream emits on update', () async {

@@ -23,12 +23,12 @@ class FlowCoachMarks {
   /// Waits 800ms for the graph to render before displaying, then walks
   /// through each tooltip with fade-in/fade-out transitions. Persists
   /// a boolean to [SharedPreferences] so the sequence is one-shot.
-  static Future<void> showIfNeeded(BuildContext context) async {
+  static Future<void> showIfNeeded(final BuildContext context) async {
     final prefs = await SharedPreferences.getInstance();
     if (prefs.getBool(_prefKey) == true) return;
 
     // Small delay so the graph has time to render its initial layout
-    await Future.delayed(const Duration(milliseconds: 800));
+    await Future<void>.delayed(const Duration(milliseconds: 800));
     if (!context.mounted) return;
 
     await _showSequence(context);
@@ -54,7 +54,7 @@ class FlowCoachMarks {
 
   /// Walks through each step in sequence, waiting for the user to
   /// tap "Next" or "Got it" before advancing.
-  static Future<void> _showSequence(BuildContext context) async {
+  static Future<void> _showSequence(final BuildContext context) async {
     for (var i = 0; i < _steps.length; i++) {
       if (!context.mounted) return;
       await _showStep(
@@ -72,10 +72,10 @@ class FlowCoachMarks {
   /// fades out over 150ms before the completer resolves. A 10% black
   /// scrim sits behind the tooltip so it stands out against the graph.
   static Future<void> _showStep(
-    BuildContext context, {
-    required _CoachStep step,
-    required int stepIndex,
-    required bool isLast,
+    final BuildContext context, {
+    required final _CoachStep step,
+    required final int stepIndex,
+    required final bool isLast,
   }) {
     final completer = Completer<void>();
     late OverlayEntry entry;
@@ -172,12 +172,12 @@ class _CoachTooltipOverlayState extends State<_CoachTooltipOverlay>
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(final BuildContext context) {
     final screenSize = MediaQuery.of(context).size;
 
     return AnimatedBuilder(
       animation: _fadeIn,
-      builder: (context, child) {
+      builder: (final context, final child) {
         return Opacity(
           opacity: _fadeIn.value,
           child: child,
@@ -210,7 +210,7 @@ class _CoachTooltipOverlayState extends State<_CoachTooltipOverlay>
 
   /// Builds the tooltip card with message text, action button,
   /// and a small triangular arrow pointing downward.
-  Widget _buildTooltip(BuildContext context) {
+  Widget _buildTooltip(final BuildContext context) {
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
@@ -288,7 +288,7 @@ class _TrianglePainter extends CustomPainter {
   final Color color;
 
   @override
-  void paint(Canvas canvas, Size size) {
+  void paint(final Canvas canvas, final Size size) {
     final paint = Paint()
       ..color = color
       ..style = PaintingStyle.fill;
@@ -303,7 +303,7 @@ class _TrianglePainter extends CustomPainter {
   }
 
   @override
-  bool shouldRepaint(_TrianglePainter old) => old.color != color;
+  bool shouldRepaint(final _TrianglePainter old) => old.color != color;
 }
 
 /// Wrapper widget that triggers [FlowCoachMarks.showIfNeeded] once
@@ -336,5 +336,5 @@ class _CoachMarkTriggerState extends State<CoachMarkTrigger> {
   }
 
   @override
-  Widget build(BuildContext context) => widget.child;
+  Widget build(final BuildContext context) => widget.child;
 }

@@ -17,7 +17,7 @@ class CelebrationOverlay extends StatefulWidget {
   final VoidCallback? onDismiss;
 
   /// Show as an overlay entry on top of the current screen.
-  static void show(BuildContext context, {required String title}) {
+  static void show(final BuildContext context, {required final String title}) {
     late OverlayEntry entry;
     entry = OverlayEntry(
       builder: (_) => CelebrationOverlay(
@@ -69,7 +69,7 @@ class _CelebrationOverlayState extends State<CelebrationOverlay>
     _particles = List.generate(_particleCount, (_) => _Particle(_random));
 
     _controller.forward();
-    _controller.addStatusListener((status) {
+    _controller.addStatusListener((final status) {
       if (status == AnimationStatus.completed) {
         widget.onDismiss?.call();
       }
@@ -83,12 +83,12 @@ class _CelebrationOverlayState extends State<CelebrationOverlay>
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(final BuildContext context) {
     return GestureDetector(
       onTap: widget.onDismiss,
       child: AnimatedBuilder(
         animation: _controller,
-        builder: (context, _) {
+        builder: (final context, _) {
           final opacity = 1.0 - _fade.value;
           final colors = [
             ..._baseColors,
@@ -142,7 +142,7 @@ class _Particle {
   final int colorIndex;
   final double rotationSpeed;
 
-  _Particle(Random r)
+  _Particle(final Random r)
       : angle = r.nextDouble() * 2 * pi,
         speed = 200 + r.nextDouble() * 400,
         size = 4 + r.nextDouble() * 8,
@@ -162,7 +162,7 @@ class _ParticlePainter extends CustomPainter {
   });
 
   @override
-  void paint(Canvas canvas, Size size) {
+  void paint(final Canvas canvas, final Size size) {
     final center = Offset(size.width / 2, size.height / 2);
     final gravity = size.height * 0.8;
 
@@ -205,5 +205,5 @@ class _ParticlePainter extends CustomPainter {
   }
 
   @override
-  bool shouldRepaint(_ParticlePainter old) => old.progress != progress;
+  bool shouldRepaint(final _ParticlePainter old) => old.progress != progress;
 }

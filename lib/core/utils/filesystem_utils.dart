@@ -13,7 +13,7 @@ abstract final class FileSystemUtils {
   /// on different partitions (e.g. from a temporary directory to the documents
   /// directory). This method implements a "Copy-and-Delete" fallback to ensure
   /// the move succeeds regardless of filesystem boundaries.
-  static Future<File> safeMove(String sourcePath, String destinationPath) async {
+  static Future<File> safeMove(final String sourcePath, final String destinationPath) async {
     final source = File(sourcePath);
     if (!await source.exists()) {
       DiagnosticsLog.error('FileSystemUtils', 'Source file does not exist for move: $sourcePath');
@@ -27,7 +27,7 @@ abstract final class FileSystemUtils {
       DiagnosticsLog.info('FileSystemUtils', 'Creating destination directory: ${destDir.path}');
       await destDir.create(recursive: true);
       // Small delay to ensure OS file system catch up (prevents rare race conditions)
-      await Future.delayed(const Duration(milliseconds: 50));
+      await Future<void>.delayed(const Duration(milliseconds: 50));
     }
 
     try {
@@ -64,19 +64,19 @@ abstract final class FileSystemUtils {
 
   /// Recursively delete empty parent directories...
   static Future<void> pruneEmptyParents(
-    String filePath, {
-    required String stopDir,
+    final String filePath, {
+    required final String stopDir,
   }) async {
     // ... (existing implementation)
   }
 
   /// Offloads a heavy file copy to a background isolate.
-  static Future<void> copyFileBackground(String source, String target) async {
+  static Future<void> copyFileBackground(final String source, final String target) async {
     await compute(_copyIsolate, _TransferArgs(source, target));
   }
 
   /// Offloads a file move to a background isolate (atomic rename or copy-delete).
-  static Future<void> moveFileBackground(String source, String target) async {
+  static Future<void> moveFileBackground(final String source, final String target) async {
     await compute(_moveIsolate, _TransferArgs(source, target));
   }
 }
@@ -87,7 +87,7 @@ class _TransferArgs {
   const _TransferArgs(this.source, this.target);
 }
 
-void _copyIsolate(_TransferArgs args) {
+void _copyIsolate(final _TransferArgs args) {
   final s = File(args.source);
   if (s.existsSync()) {
     Directory(p.dirname(args.target)).createSync(recursive: true);
@@ -95,7 +95,7 @@ void _copyIsolate(_TransferArgs args) {
   }
 }
 
-void _moveIsolate(_TransferArgs args) {
+void _moveIsolate(final _TransferArgs args) {
   final s = File(args.source);
   if (!s.existsSync()) return;
   Directory(p.dirname(args.target)).createSync(recursive: true);

@@ -13,8 +13,8 @@ part 'recovery_bloc.freezed.dart';
 @freezed
 class RecoveryEvent with _$RecoveryEvent {
   const factory RecoveryEvent.startScan() = _StartScan;
-  const factory RecoveryEvent.discardOrphans(List<String> files) = _DiscardOrphans;
-  const factory RecoveryEvent.recoverOrphans(List<String> files) = _RecoverOrphans;
+  const factory RecoveryEvent.discardOrphans(final List<String> files) = _DiscardOrphans;
+  const factory RecoveryEvent.recoverOrphans(final List<String> files) = _RecoverOrphans;
 }
 
 // --- States ---
@@ -22,10 +22,10 @@ class RecoveryEvent with _$RecoveryEvent {
 class RecoveryState with _$RecoveryState {
   const factory RecoveryState.idle() = _Idle;
   const factory RecoveryState.scanning() = _Scanning;
-  const factory RecoveryState.orphansFound(List<String> orphanedFiles) = _OrphansFound;
+  const factory RecoveryState.orphansFound(final List<String> orphanedFiles) = _OrphansFound;
   const factory RecoveryState.reconciling() = _Reconciling;
   const factory RecoveryState.done() = _Done;
-  const factory RecoveryState.error(AppFailure failure) = _Error;
+  const factory RecoveryState.error(final AppFailure failure) = _Error;
 }
 
 // --- Bloc ---
@@ -36,14 +36,14 @@ class RecoveryBloc extends Bloc<RecoveryEvent, RecoveryState> {
     on<_RecoverOrphans>(_onRecoverOrphans);
   }
 
-  Future<void> _onStartScan(_StartScan event, Emitter<RecoveryState> emit) async {
+  Future<void> _onStartScan(final _StartScan event, final Emitter<RecoveryState> emit) async {
     emit(const RecoveryState.scanning());
     
     final result = await _scanFileSystem().run();
     
     result.match(
-      (failure) => emit(RecoveryState.error(failure)),
-      (orphans) {
+      (final failure) => emit(RecoveryState.error(failure)),
+      (final orphans) {
         if (orphans.isEmpty) {
           emit(const RecoveryState.done());
         } else {
@@ -53,24 +53,24 @@ class RecoveryBloc extends Bloc<RecoveryEvent, RecoveryState> {
     );
   }
 
-  Future<void> _onDiscardOrphans(_DiscardOrphans event, Emitter<RecoveryState> emit) async {
+  Future<void> _onDiscardOrphans(final _DiscardOrphans event, final Emitter<RecoveryState> emit) async {
     emit(const RecoveryState.reconciling());
     
     final result = await _deleteFiles(event.files).run();
     
     result.match(
-      (failure) => emit(RecoveryState.error(failure)),
+      (final failure) => emit(RecoveryState.error(failure)),
       (_) => emit(const RecoveryState.done()),
     );
   }
 
-  Future<void> _onRecoverOrphans(_RecoverOrphans event, Emitter<RecoveryState> emit) async {
+  Future<void> _onRecoverOrphans(final _RecoverOrphans event, final Emitter<RecoveryState> emit) async {
     emit(const RecoveryState.reconciling());
     
     final result = await _moveToRecovered(event.files).run();
     
     result.match(
-      (failure) => emit(RecoveryState.error(failure)),
+      (final failure) => emit(RecoveryState.error(failure)),
       (_) => emit(const RecoveryState.done()),
     );
   }
@@ -98,11 +98,11 @@ class RecoveryBloc extends Bloc<RecoveryEvent, RecoveryState> {
         }
         return orphaned;
       },
-      (error, stackTrace) => AppFailure.fileSystem('Failed to scan file system: $error'),
+      (final error, final stackTrace) => AppFailure.fileSystem('Failed to scan file system: $error'),
     );
   }
 
-  TaskEither<AppFailure, Unit> _deleteFiles(List<String> files) {
+  TaskEither<AppFailure, Unit> _deleteFiles(final List<String> files) {
     return TaskEither.tryCatch(
       () async {
         for (final file in files) {
@@ -111,11 +111,11 @@ class RecoveryBloc extends Bloc<RecoveryEvent, RecoveryState> {
         }
         return unit;
       },
-      (error, stackTrace) => AppFailure.fileSystem('Failed to delete orphaned files: $error'),
+      (final error, final stackTrace) => AppFailure.fileSystem('Failed to delete orphaned files: $error'),
     );
   }
 
-  TaskEither<AppFailure, Unit> _moveToRecovered(List<String> files) {
+  TaskEither<AppFailure, Unit> _moveToRecovered(final List<String> files) {
     return TaskEither.tryCatch(
       () async {
         final dir = await getApplicationDocumentsDirectory();
@@ -133,7 +133,7 @@ class RecoveryBloc extends Bloc<RecoveryEvent, RecoveryState> {
         }
         return unit;
       },
-      (error, stackTrace) => AppFailure.fileSystem('Failed to move files to Recovered directory: $error'),
+      (final error, final stackTrace) => AppFailure.fileSystem('Failed to move files to Recovered directory: $error'),
     );
   }
 }

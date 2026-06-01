@@ -8,7 +8,7 @@ import 'package:breakdex/core/database/database.dart';
 AppDatabase createTestDatabase() {
   return AppDatabase.forTesting(
     NativeDatabase.memory(
-      setup: (db) {
+      setup: (final db) {
         // Enable WAL mode for better concurrent read performance in tests.
         db.execute('PRAGMA journal_mode=WAL');
       },

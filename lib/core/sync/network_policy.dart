@@ -47,18 +47,18 @@ class NetworkPolicy {
 
   bool get syncOnMobileData => _prefs.getBool(_keySyncOnMobile) ?? false;
 
-  Future<void> setSyncOnMobileData(bool value) =>
-      _prefs.setBool(_keySyncOnMobile, value);
+  Future<void> setSyncOnMobileData({required final bool enabled}) =>
+      _prefs.setBool(_keySyncOnMobile, enabled);
 
   int get mobileDataCapMb => _prefs.getInt(_keyMobileDataCap) ?? 100;
 
-  Future<void> setMobileDataCapMb(int mb) =>
+  Future<void> setMobileDataCapMb(final int mb) =>
       _prefs.setInt(_keyMobileDataCap, mb);
 
   String get downloadQuality =>
       _prefs.getString(_keyDownloadQuality) ?? 'original';
 
-  Future<void> setDownloadQuality(String quality) =>
+  Future<void> setDownloadQuality(final String quality) =>
       _prefs.setString(_keyDownloadQuality, quality);
 
   // ---------------------------------------------------------------------------
@@ -67,9 +67,9 @@ class NetworkPolicy {
 
   /// Determine if a transfer of [sizeBytes] is allowed right now.
   TransferDecision canTransfer(
-    int sizeBytes,
-    ConnectionType connectionType, {
-    TransferIntent intent = TransferIntent.backgroundSync,
+    final int sizeBytes,
+    final ConnectionType connectionType, {
+    final TransferIntent intent = TransferIntent.backgroundSync,
   }) {
     switch (connectionType) {
       case ConnectionType.none:
@@ -93,24 +93,24 @@ class NetworkPolicy {
   }
 
   /// Chunk size for uploads/downloads: 5 MB on WiFi, 1 MB on mobile.
-  int chunkSizeBytes(ConnectionType connectionType) {
+  int chunkSizeBytes(final ConnectionType connectionType) {
     return connectionType == ConnectionType.mobile
         ? 1 * 1024 * 1024
         : 5 * 1024 * 1024;
   }
 
   /// Throttle rate in bytes/second. Null on WiFi (unlimited), 256 KB/s mobile.
-  int? throttleBytesPerSec(ConnectionType connectionType) {
+  int? throttleBytesPerSec(final ConnectionType connectionType) {
     return connectionType == ConnectionType.mobile ? 256 * 1024 : null;
   }
 
   /// Max concurrent uploads: 2 on WiFi, 1 on mobile.
-  int maxConcurrentUploads(ConnectionType connectionType) {
+  int maxConcurrentUploads(final ConnectionType connectionType) {
     return connectionType == ConnectionType.mobile ? 1 : 2;
   }
 
   /// Max concurrent downloads: 3 on WiFi, 1 on mobile.
-  int maxConcurrentDownloads(ConnectionType connectionType) {
+  int maxConcurrentDownloads(final ConnectionType connectionType) {
     return connectionType == ConnectionType.mobile ? 1 : 3;
   }
 
@@ -119,7 +119,7 @@ class NetworkPolicy {
   // ---------------------------------------------------------------------------
 
   /// Record bytes transferred on mobile data.
-  Future<void> recordMobileUsage(int bytes) async {
+  Future<void> recordMobileUsage(final int bytes) async {
     final now = DateTime.now();
     final currentMonth = '${now.year}-${now.month}';
     final storedMonth = _prefs.getString(_keyMobileUsedMonth);
@@ -151,7 +151,7 @@ class NetworkPolicy {
 
   /// Convert connectivity_plus results to our simplified [ConnectionType].
   static ConnectionType resolveConnectionType(
-    List<ConnectivityResult> results,
+    final List<ConnectivityResult> results,
   ) {
     if (results.contains(ConnectivityResult.wifi)) return ConnectionType.wifi;
     if (results.contains(ConnectivityResult.ethernet)) {

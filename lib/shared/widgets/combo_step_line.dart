@@ -41,7 +41,7 @@ class _ComboStepLineState extends State<ComboStepLine> {
   }
 
   @override
-  void didUpdateWidget(ComboStepLine oldWidget) {
+  void didUpdateWidget(final ComboStepLine oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.activeIndex != widget.activeIndex) {
       _scrollToActiveStep();
@@ -75,7 +75,7 @@ class _ComboStepLineState extends State<ComboStepLine> {
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(final BuildContext context) {
     if (widget.stepCount <= 0 && widget.onAddStep == null) {
       return const SizedBox.shrink();
     }

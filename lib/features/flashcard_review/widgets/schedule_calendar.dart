@@ -12,9 +12,8 @@ import '../providers/review_providers.dart';
 /// Unlike [StatsCalendar] which only looks backward (past review counts),
 /// this calendar looks *forward* to show upcoming due dates. Each day cell
 /// shows colored dots indicating the FSRS state of items due that day:
-/// - Pink: New cards
-/// - Blue: Learning/Relearning cards
-/// - Purple: Review (mastered) cards
+/// - Overdue: Red
+/// - Future: Primary color (opacity scaled by count)
 class ScheduleCalendar extends ConsumerStatefulWidget {
   const ScheduleCalendar({super.key, required this.dueCounts});
 
@@ -56,7 +55,7 @@ class _ScheduleCalendarState extends ConsumerState<ScheduleCalendar> {
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(final BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
     final selectedDate = ref.watch(reviewCalendarSelectedDateProvider);
     final now = DateTime.now();
@@ -113,7 +112,7 @@ class _ScheduleCalendarState extends ConsumerState<ScheduleCalendar> {
           // Day-of-week headers
           Row(
             children: ['M', 'T', 'W', 'T', 'F', 'S', 'S']
-                .map((d) => Expanded(
+                .map((final d) => Expanded(
                       child: Center(
                         child: Text(
                           d,
@@ -129,11 +128,11 @@ class _ScheduleCalendarState extends ConsumerState<ScheduleCalendar> {
           const SizedBox(height: 4),
 
           // Day grid
-          ...List.generate(_rowCount(startOffset, daysInMonth), (row) {
+          ...List.generate(_rowCount(startOffset, daysInMonth), (final row) {
             return Padding(
               padding: const EdgeInsets.symmetric(vertical: 2),
               child: Row(
-                children: List.generate(7, (col) {
+                children: List.generate(7, (final col) {
                   final dayIndex = row * 7 + col - startOffset + 1;
                   if (dayIndex < 1 || dayIndex > daysInMonth) {
                     return const Expanded(child: SizedBox(height: 40));
@@ -216,19 +215,19 @@ class _ScheduleCalendarState extends ConsumerState<ScheduleCalendar> {
     );
   }
 
-  int _rowCount(int startOffset, int daysInMonth) {
+  int _rowCount(final int startOffset, final int daysInMonth) {
     return ((startOffset + daysInMonth + 6) / 7).floor();
   }
 
   /// Proportional dot size based on due count intensity.
-  double _dotSize(int count) {
+  double _dotSize(final int count) {
     if (count >= 6) return 8.0;
     if (count >= 3) return 6.0;
     return 4.0;
   }
 
   /// Badge color: overdue items are red, future items use accent.
-  Color _dotColor(int count, bool isPast, Color primary) {
+  Color _dotColor(final int count, final bool isPast, final Color primary) {
     if (isPast) return AppColors.actionAgain.withValues(alpha: 0.7);
     if (count >= 8) return primary;
     if (count >= 4) return primary.withValues(alpha: 0.7);

@@ -66,7 +66,7 @@ class MetadataAsset {
     this.isLocal = false,
   });
 
-  factory MetadataAsset.fromMap(Map<String, dynamic> map) {
+  factory MetadataAsset.fromMap(final Map<String, dynamic> map) {
     return MetadataAsset(
       localIdentifier: map['localIdentifier'] as String,
       creationDate: map['creationDate'] != null ? DateTime.tryParse(map['creationDate'] as String) : null,
@@ -94,7 +94,7 @@ class VideoService {
   /// Emits fractional progress as iCloud/large videos materialize on disk.
   Stream<double> get importProgress => _progressChannel
       .receiveBroadcastStream()
-      .map((e) => (e as num).toDouble());
+      .map((final e) => (e as num).toDouble());
 
   /// In-memory cache: videoPath → thumbnailPath. Avoids repeated disk checks
   /// when the grid view rebuilds (e.g. scroll, theme change, filter toggle).
@@ -106,9 +106,9 @@ class VideoService {
 
   /// Shared iOS pick-and-thumbnail helper for native channel methods.
   Future<VideoPickResult?> _nativePickWithThumb(
-    String method,
-    String statusLabel, {
-    StatusCallback? onStatus,
+    final String method,
+    final String statusLabel, {
+    final StatusCallback? onStatus,
   }) async {
     final logger = StageLogger.begin('NativePick', subsystem: 'VideoService', context: {'method': method});
     try {
@@ -138,7 +138,7 @@ class VideoService {
   }
 
   /// Record a new video using the camera
-  TaskEither<AppFailure, VideoPickResult?> recordVideo({StatusCallback? onStatus}) {
+  TaskEither<AppFailure, VideoPickResult?> recordVideo({final StatusCallback? onStatus}) {
     return TaskEither.tryCatch(
       () async {
         final logger = StageLogger.begin('RecordVideo', subsystem: 'VideoService');
@@ -170,12 +170,12 @@ class VideoService {
           fileSize: stat.size,
         );
       },
-      (error, stackTrace) => AppFailure.fileSystem('Failed to record video: $error'),
+      (final error, final stackTrace) => AppFailure.fileSystem('Failed to record video: $error'),
     );
   }
 
   /// Pick from photo library (includes iCloud Photos)
-  TaskEither<AppFailure, VideoPickResult?> pickFromPhotos({StatusCallback? onStatus}) {
+  TaskEither<AppFailure, VideoPickResult?> pickFromPhotos({final StatusCallback? onStatus}) {
     return TaskEither.tryCatch(
       () async {
         if (Platform.isIOS) {
@@ -208,12 +208,12 @@ class VideoService {
           fileSize: stat.size,
         );
       },
-      (error, stackTrace) => AppFailure.fileSystem('Failed to pick from photos: $error'),
+      (final error, final stackTrace) => AppFailure.fileSystem('Failed to pick from photos: $error'),
     );
   }
 
   /// Pick from Files app (iCloud Drive, Dropbox, local files)
-  TaskEither<AppFailure, VideoPickResult?> pickFromFiles({StatusCallback? onStatus}) {
+  TaskEither<AppFailure, VideoPickResult?> pickFromFiles({final StatusCallback? onStatus}) {
     return TaskEither.tryCatch(
       () async {
         if (Platform.isIOS) {
@@ -252,11 +252,11 @@ class VideoService {
           fileSize: stat.size,
         );
       },
-      (error, stackTrace) => AppFailure.fileSystem('Failed to pick from files: $error'),
+      (final error, final stackTrace) => AppFailure.fileSystem('Failed to pick from files: $error'),
     );
   }
 
-  Future<VideoPickResult?> _pickViaNativeChannel(String method) async {
+  Future<VideoPickResult?> _pickViaNativeChannel(final String method) async {
     try {
       final payload = await _nativeImportChannel
           .invokeMapMethod<String, dynamic>(method);
@@ -292,14 +292,14 @@ class VideoService {
     try {
       final List<dynamic>? assets = await _nativeImportChannel.invokeMethod('fetchPhotoLibraryVideos');
       if (assets == null) return [];
-      return assets.map((a) => MetadataAsset.fromMap(Map<String, dynamic>.from(a as Map))).toList();
+      return assets.map((final a) => MetadataAsset.fromMap(Map<String, dynamic>.from(a as Map))).toList();
     } catch (e) {
       debugPrint('[VideoService] Failed to fetch assets: $e');
       return [];
     }
   }
 
-  Future<Uint8List?> getAssetThumbnail(String identifier, {int width = 200, int height = 200}) async {
+  Future<Uint8List?> getAssetThumbnail(final String identifier, {final int width = 200, final int height = 200}) async {
     if (!Platform.isIOS) return null;
     try {
       final Uint8List? bytes = await _nativeImportChannel.invokeMethod('getAssetThumbnail', {
@@ -314,7 +314,7 @@ class VideoService {
     }
   }
 
-  Future<VideoPickResult?> importSpecificAsset(String identifier) async {
+  Future<VideoPickResult?> importSpecificAsset(final String identifier) async {
     if (!Platform.isIOS) return null;
     final logger = StageLogger.begin('ImportSpecific', subsystem: 'VideoService', context: {'id': identifier});
     try {
@@ -354,7 +354,7 @@ class VideoService {
   /// Applies a 5-second timeout to guard against iCloud files that stall
   /// during download — `File.exists()` can hang indefinitely when the OS
   /// is fetching from a cloud provider.
-  Future<VideoFileStatus> checkVideoFile(String path) async {
+  Future<VideoFileStatus> checkVideoFile(final String path) async {
     try {
       final file = File(path);
       final exists = await file.exists().timeout(
@@ -381,8 +381,8 @@ class VideoService {
   /// Useful for the video player where transient iCloud errors resolve
   /// after the OS finishes a background download.
   Future<VideoFileStatus> checkVideoFileWithRetry(
-    String path, {
-    int maxRetries = 2,
+    final String path, {
+    final int maxRetries = 2,
   }) async {
     var status = await checkVideoFile(path);
     for (int i = 0; i < maxRetries && status == VideoFileStatus.error; i++) {
@@ -397,8 +397,8 @@ class VideoService {
   /// complete/fail. Callers can listen to [LoadingStateController.stream]
   /// for reactive UI updates without managing state transitions manually.
   LoadingStateController<void> checkVideoFileWithState(
-    String path, {
-    int maxRetries = 2,
+    final String path, {
+    final int maxRetries = 2,
   }) {
     final controller = LoadingStateController<void>(
       maxAttempts: maxRetries,
@@ -408,9 +408,9 @@ class VideoService {
   }
 
   Future<void> _runFileCheck(
-    String path,
-    LoadingStateController<void> controller,
-    int maxRetries,
+    final String path,
+    final LoadingStateController<void> controller,
+    final int maxRetries,
   ) async {
     controller.send(LoadingEvent.start);
     var status = await checkVideoFile(path);
@@ -439,8 +439,8 @@ class VideoService {
   /// This is used after export so a corrupt or half-written file does not
   /// replace the last known-good saved video.
   Future<void> validatePlayableVideo(
-    String path, {
-    Duration initializeTimeout = const Duration(seconds: 12),
+    final String path, {
+    final Duration initializeTimeout = const Duration(seconds: 12),
   }) async {
     final status = await checkVideoFileWithRetry(path, maxRetries: 3);
     if (status != VideoFileStatus.ready) {
@@ -480,8 +480,8 @@ class VideoService {
   /// [thumbnailWidthGrid] (200px) for fast decodes; detail screens use
   /// the default [thumbnailWidthFull] (720px) for sharp previews.
   Future<String?> generateThumbnail(
-    String videoPath, {
-    int maxWidth = thumbnailWidthFull,
+    final String videoPath, {
+    final int maxWidth = thumbnailWidthFull,
   }) async {
     // Cache key uses relative path so sessions before/after migration share
     // the same cache entries. Resolution tier suffix prevents grid/detail collision.
@@ -491,8 +491,10 @@ class VideoService {
     if (_thumbCache.containsKey(cacheKey)) return _thumbCache[cacheKey];
 
     try {
-      final docs = await getApplicationDocumentsDirectory();
-      final thumbsDir = Directory(p.join(docs.path, 'Moves', '.thumbs'));
+      final docsPath = VideoPathResolver.documentsPath.isNotEmpty
+          ? VideoPathResolver.documentsPath
+          : (await getApplicationDocumentsDirectory()).path;
+      final thumbsDir = Directory(p.join(docsPath, 'Moves', '.thumbs'));
       if (!await thumbsDir.exists()) {
         await thumbsDir.create(recursive: true);
       }
@@ -539,12 +541,12 @@ class VideoService {
   /// deterministic O(1) hits after the first decode instead of hammering the
   /// platform with near-identical requests.
   Future<Uint8List?> loadFrameThumbnailData({
-    required String videoPath,
-    required int timeMs,
-    int maxWidth = 100,
-    int quality = 50,
-    int bucketMs = 50,
-    bool exact = false,
+    required final String videoPath,
+    required final int timeMs,
+    final int maxWidth = 100,
+    final int quality = 50,
+    final int bucketMs = 50,
+    final bool exact = false,
   }) async {
     final normalizedTimeMs = exact || bucketMs <= 1
         ? timeMs
@@ -585,11 +587,11 @@ class VideoService {
   }
 
   Future<List<Uint8List?>> loadTimelineThumbnails({
-    required String videoPath,
-    required int durationMs,
-    int count = 8,
-    int maxWidth = 80,
-    int quality = 50,
+    required final String videoPath,
+    required final int durationMs,
+    final int count = 8,
+    final int maxWidth = 80,
+    final int quality = 50,
   }) async {
     if (durationMs <= 0 || count <= 0) {
       return const <Uint8List?>[];
@@ -597,7 +599,7 @@ class VideoService {
 
     final times = List<int>.generate(
       count,
-      (index) => (durationMs * index / count).round(),
+      (final index) => (durationMs * index / count).round(),
       growable: false,
     );
     final results = List<Uint8List?>.filled(
@@ -660,7 +662,7 @@ class VideoService {
 
     final resolved = await Future.wait(
       missingIndexes.map(
-        (index) => loadFrameThumbnailData(
+        (final index) => loadFrameThumbnailData(
           videoPath: videoPath,
           timeMs: times[index],
           maxWidth: maxWidth,
@@ -677,12 +679,12 @@ class VideoService {
   }
 
   Future<Uint8List?> _loadFrameThumbnailUncached({
-    required String videoPath,
-    required int timeMs,
-    required int maxWidth,
-    required int quality,
-    required bool exact,
-    required int bucketMs,
+    required final String videoPath,
+    required final int timeMs,
+    required final int maxWidth,
+    required final int quality,
+    required final bool exact,
+    required final int bucketMs,
   }) async {
     if (Platform.isIOS) {
       try {
@@ -714,16 +716,16 @@ class VideoService {
   }
 
   static String _frameThumbnailKey({
-    required String videoPath,
-    required int timeMs,
-    required int maxWidth,
-    required int quality,
-    required bool exact,
+    required final String videoPath,
+    required final int timeMs,
+    required final int maxWidth,
+    required final int quality,
+    required final bool exact,
   }) {
     return '${VideoPathResolver.toRelative(videoPath)}|$timeMs|$maxWidth|$quality|${exact ? '1' : '0'}';
   }
 
-  static Uint8List? _readFrameThumbnail(String key) {
+  static Uint8List? _readFrameThumbnail(final String key) {
     if (!_frameThumbCache.containsKey(key)) {
       return null;
     }
@@ -732,7 +734,7 @@ class VideoService {
     return value;
   }
 
-  static void _rememberFrameThumbnail(String key, Uint8List? value) {
+  static void _rememberFrameThumbnail(final String key, final Uint8List? value) {
     _frameThumbCache.remove(key);
     _frameThumbCache[key] = value;
     while (_frameThumbCache.length > _maxFrameThumbEntries) {
@@ -741,14 +743,14 @@ class VideoService {
   }
 
   /// Top-level function for `compute()` — writes bytes to disk in an isolate.
-  static void _writeBytes(_WriteBytesArgs args) {
+  static void _writeBytes(final _WriteBytesArgs args) {
     File(args.path).writeAsBytesSync(args.bytes);
   }
 
   Future<String> _saveToDocumentsWithRetry(
-    File source, {
-    StatusCallback? onStatus,
-    int maxRetries = 2,
+    final File source, {
+    final StatusCallback? onStatus,
+    final int maxRetries = 2,
   }) async {
     Object? lastError;
     for (int attempt = 0; attempt <= maxRetries; attempt++) {
@@ -767,15 +769,17 @@ class VideoService {
   }
 
   Future<Directory> getMovesDirectory() async {
-    final docs = await getApplicationDocumentsDirectory();
-    final movesDir = Directory(p.join(docs.path, 'Moves'));
+    final docsPath = VideoPathResolver.documentsPath.isNotEmpty
+        ? VideoPathResolver.documentsPath
+        : (await getApplicationDocumentsDirectory()).path;
+    final movesDir = Directory(p.join(docsPath, 'Moves'));
     if (!await movesDir.exists()) {
       await movesDir.create(recursive: true);
     }
     return movesDir;
   }
 
-  Future<String> _saveToDocuments(File source) async {
+  Future<String> _saveToDocuments(final File source) async {
     final movesDir = await getMovesDirectory();
     final ext = p.extension(source.path).isNotEmpty
         ? p.extension(source.path)
@@ -793,9 +797,9 @@ class VideoService {
   }
 
   Future<void> _copyFileWithTimeout({
-    required File source,
-    required File destination,
-    required Duration timeout,
+    required final File source,
+    required final File destination,
+    required final Duration timeout,
   }) async {
     final exists = await source.exists().timeout(
       const Duration(seconds: 10),
@@ -810,7 +814,7 @@ class VideoService {
     Timer? inactivityTimer;
     final completer = Completer<void>();
 
-    void fail(Object error) {
+    void fail(final Object error) {
       if (completer.isCompleted) return;
       completer.completeError(error);
     }
@@ -826,7 +830,7 @@ class VideoService {
     try {
       resetTimer();
       subscription = source.openRead().listen(
-        (chunk) {
+        (final chunk) {
           sink.add(chunk);
           resetTimer();
         },
@@ -855,19 +859,19 @@ class VideoService {
 
   /// Invalidate the in-memory thumbnail cache (e.g. after video deletion).
   /// Clears all resolution tiers for the given video path.
-  static void invalidateThumbCache(String videoPath) {
+  static void invalidateThumbCache(final String videoPath) {
     final normalized = VideoPathResolver.toRelative(videoPath);
-    _thumbCache.removeWhere((key, _) => key.startsWith(normalized));
+    _thumbCache.removeWhere((final key, _) => key.startsWith(normalized));
   }
 
   /// Replace a move's video: delete old file + thumbnail, invalidate caches.
   /// Call BEFORE updating the DB path so we still know the old path.
-  Future<void> replaceVideo(String? oldPath) async {
+  Future<void> replaceVideo(final String? oldPath) async {
     if (oldPath == null) return;
     await deleteVideo(oldPath);
   }
 
-  Future<void> deleteVideo(String path) async {
+  Future<void> deleteVideo(final String path) async {
     final absolutePath = VideoPathResolver.toAbsolute(path);
     invalidateThumbCache(absolutePath);
 
@@ -884,7 +888,9 @@ class VideoService {
       await thumbFile.delete();
     }
 
-    final docsPath = (await getApplicationDocumentsDirectory()).path;
+    final docsPath = VideoPathResolver.documentsPath.isNotEmpty
+        ? VideoPathResolver.documentsPath
+        : (await getApplicationDocumentsDirectory()).path;
     await FileSystemUtils.pruneEmptyParents(
       absolutePath,
       stopDir: p.join(docsPath, 'Moves'),

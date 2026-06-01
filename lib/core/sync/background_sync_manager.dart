@@ -62,7 +62,7 @@ class BackgroundSyncManager {
   /// This runs the sync engine in the foreground — use [register] for
   /// background execution.
   Future<void> triggerImmediate({
-    required Future<void> Function() syncCallback,
+    required final Future<void> Function() syncCallback,
   }) async {
     try {
       await syncCallback();

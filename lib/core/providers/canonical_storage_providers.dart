@@ -1,10 +1,10 @@
 part of '../providers.dart';
 
-final canonicalFolderServiceProvider = Provider<CanonicalFolderService>((ref) {
+final canonicalFolderServiceProvider = Provider<CanonicalFolderService>((final ref) {
   return CanonicalFolderService();
 });
 
-final canonicalImportGateProvider = Provider<CanonicalImportGate>((ref) {
+final canonicalImportGateProvider = Provider<CanonicalImportGate>((final ref) {
   return CanonicalImportGate(
     manifestDao: ref.watch(assetManifestDaoProvider),
     hashService: ref.watch(assetHashServiceProvider),
@@ -12,7 +12,7 @@ final canonicalImportGateProvider = Provider<CanonicalImportGate>((ref) {
 });
 
 final canonicalReconcileServiceProvider =
-    Provider<CanonicalReconcileService>((ref) {
+    Provider<CanonicalReconcileService>((final ref) {
   return CanonicalReconcileService(
     folderService: ref.watch(canonicalFolderServiceProvider),
     manifestDao: ref.watch(assetManifestDaoProvider),
@@ -21,39 +21,39 @@ final canonicalReconcileServiceProvider =
   );
 });
 
-final reconcileReportProvider = FutureProvider<ReconcileReport>((ref) {
+final reconcileReportProvider = FutureProvider<ReconcileReport>((final ref) {
   return ref.watch(canonicalReconcileServiceProvider).scan();
 });
 
-final liveAssetsProvider = StreamProvider<List<AssetManifestData>>((ref) {
+final liveAssetsProvider = StreamProvider<List<AssetManifestData>>((final ref) {
   return ref.watch(assetManifestDaoProvider).watchAll().map(
-        (list) =>
-            list.where((a) => a.deletedAt == null).toList()
-              ..sort((a, b) => b.importedAt.compareTo(a.importedAt)),
+        (final list) =>
+            list.where((final a) => a.deletedAt == null).toList()
+              ..sort((final a, final b) => b.importedAt.compareTo(a.importedAt)),
       );
 });
 
-final liveAssetsCountProvider = Provider<int>((ref) {
+final liveAssetsCountProvider = Provider<int>((final ref) {
   return ref.watch(liveAssetsProvider).valueOrNull?.length ?? 0;
 });
 
-final trashedAssetsProvider = StreamProvider<List<AssetManifestData>>((ref) {
+final trashedAssetsProvider = StreamProvider<List<AssetManifestData>>((final ref) {
   return ref.watch(assetManifestDaoProvider).watchAll().map(
-        (list) =>
-            list.where((a) => a.deletedAt != null).toList()
-              ..sort((a, b) => b.deletedAt!.compareTo(a.deletedAt!)),
+        (final list) =>
+            list.where((final a) => a.deletedAt != null).toList()
+              ..sort((final a, final b) => b.deletedAt!.compareTo(a.deletedAt!)),
       );
 });
 
-final trashedAssetsCountProvider = Provider<int>((ref) {
+final trashedAssetsCountProvider = Provider<int>((final ref) {
   return ref.watch(trashedAssetsProvider).valueOrNull?.length ?? 0;
 });
 
-final canonicalFolderInitializedProvider = FutureProvider<bool>((ref) {
+final canonicalFolderInitializedProvider = FutureProvider<bool>((final ref) {
   return ref.watch(canonicalFolderServiceProvider).verify();
 });
 
-final canonicalStorageSizeProvider = FutureProvider<int>((ref) async {
+final canonicalStorageSizeProvider = FutureProvider<int>((final ref) async {
   final folder = ref.watch(canonicalFolderServiceProvider);
   final files = await folder.listVideoFiles();
   var total = 0;

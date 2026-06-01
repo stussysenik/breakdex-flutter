@@ -23,7 +23,7 @@ class FlowScreen extends ConsumerWidget {
   const FlowScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(final BuildContext context, final WidgetRef ref) {
     final colorScheme = Theme.of(context).colorScheme;
     final viewMode = ref.watch(flowViewModeProvider);
     final graphSummary = ref.watch(flowGraphSummaryProvider);
@@ -104,7 +104,7 @@ class FlowScreen extends ConsumerWidget {
                     ),
                   ],
                   selectedValue: viewMode,
-                  onChanged: (mode) {
+                  onChanged: (final mode) {
                     HapticFeedback.selectionClick();
                     ref.read(flowViewModeProvider.notifier).state = mode;
                   },
@@ -211,7 +211,7 @@ class _FlowModeDescription {
   final String description;
   final String hint;
 
-  static _FlowModeDescription forMode(FlowViewMode mode) => switch (mode) {
+  static _FlowModeDescription forMode(final FlowViewMode mode) => switch (mode) {
     FlowViewMode.map => const _FlowModeDescription(
       icon: CupertinoIcons.graph_square_fill,
       title: 'Whole practice network',
@@ -243,7 +243,7 @@ class _FlowModePanel extends StatelessWidget {
   final FlowGraphSummary summary;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(final BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
 
     return Container(
@@ -340,7 +340,7 @@ class _FlowGuidePanel extends StatelessWidget {
   final FlowGraphSummary summary;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(final BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
 
     return Container(
@@ -401,7 +401,7 @@ class _FlowSelectionInspector extends StatelessWidget {
   final VoidCallback onClear;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(final BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
     final semanticTheme = AppSemanticTheme.of(context);
     final masteryColor = switch (details.node.masteryState) {
@@ -549,7 +549,7 @@ class _MetricChip extends StatelessWidget {
   final String value;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(final BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
 
     return Container(
@@ -590,7 +590,7 @@ class _StatusChip extends StatelessWidget {
   final Color? highlight;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(final BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
     final tone = highlight ?? colorScheme.primary;
 
@@ -621,7 +621,7 @@ class _TextActionChip extends StatelessWidget {
   final VoidCallback? onTap;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(final BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
     final isEnabled = onTap != null;
 
@@ -681,7 +681,7 @@ class _IconActionButton extends StatelessWidget {
   final VoidCallback onTap;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(final BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
 
     return Semantics(
@@ -704,7 +704,7 @@ class _IconActionButton extends StatelessWidget {
   }
 }
 
-BoxDecoration _panelDecoration(BuildContext context, {Color? highlight}) {
+BoxDecoration _panelDecoration(final BuildContext context, {final Color? highlight}) {
   final colorScheme = Theme.of(context).colorScheme;
   final borderColor = (highlight ?? colorScheme.outline).withValues(
     alpha: highlight == null ? 0.18 : 0.24,
@@ -719,7 +719,7 @@ BoxDecoration _panelDecoration(BuildContext context, {Color? highlight}) {
   );
 }
 
-BoxDecoration _chipDecoration(BuildContext context, {Color? highlight}) {
+BoxDecoration _chipDecoration(final BuildContext context, {final Color? highlight}) {
   final colorScheme = Theme.of(context).colorScheme;
   final borderColor = (highlight ?? colorScheme.outline).withValues(
     alpha: highlight == null ? 0.16 : 0.22,

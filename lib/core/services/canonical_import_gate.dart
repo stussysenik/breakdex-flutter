@@ -42,15 +42,15 @@ class CanonicalImportGate {
   final AssetHashService _hashService;
 
   CanonicalImportGate({
-    required AssetManifestDao manifestDao,
-    required AssetHashService hashService,
+    required final AssetManifestDao manifestDao,
+    required final AssetHashService hashService,
   }) : _manifestDao = manifestDao,
        _hashService = hashService;
 
   Future<GateResult> check({
-    required String sourcePath,
-    required String displayName,
-    Duration timeout = const Duration(seconds: 30),
+    required final String sourcePath,
+    required final String displayName,
+    final Duration timeout = const Duration(seconds: 30),
   }) async {
     try {
       final hash = await _hashService
@@ -69,7 +69,7 @@ class CanonicalImportGate {
 
       return GateAllowed(hash: hash);
     } on _GateTimeoutException {
-      return GateBlocked(
+      return const GateBlocked(
         reason: 'Import timed out — the file may still be downloading from '
             'iCloud. Try again once the download completes.',
       );
@@ -79,7 +79,7 @@ class CanonicalImportGate {
     }
   }
 
-  Future<String?> checkNameConflict(String displayName) async {
+  Future<String?> checkNameConflict(final String displayName) async {
     try {
       final all = await _manifestDao.getAll();
       final normalized = displayName.toLowerCase().trim();
@@ -97,9 +97,9 @@ class CanonicalImportGate {
   }
 
   LoadingStateController<GateResult> checkWithState({
-    required String sourcePath,
-    required String displayName,
-    Duration timeout = const Duration(seconds: 30),
+    required final String sourcePath,
+    required final String displayName,
+    final Duration timeout = const Duration(seconds: 30),
   }) {
     final controller = LoadingStateController<GateResult>(maxAttempts: 1);
     _runGateCheck(controller, sourcePath, displayName, timeout);
@@ -107,10 +107,10 @@ class CanonicalImportGate {
   }
 
   Future<void> _runGateCheck(
-    LoadingStateController<GateResult> controller,
-    String sourcePath,
-    String displayName,
-    Duration timeout,
+    final LoadingStateController<GateResult> controller,
+    final String sourcePath,
+    final String displayName,
+    final Duration timeout,
   ) async {
     controller.send(LoadingEvent.start);
     final result = await check(
@@ -157,8 +157,8 @@ class SandboxMigrationEngine {
   int _errorCount = 0;
 
   SandboxMigrationEngine({
-    required String documentsPath,
-    required CanonicalImportGate gate,
+    required final String documentsPath,
+    required final CanonicalImportGate gate,
   }) : _sandboxDir = p.join(documentsPath, 'Moves'),
        _gate = gate;
 

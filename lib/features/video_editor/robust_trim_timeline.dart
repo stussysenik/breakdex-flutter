@@ -1,5 +1,7 @@
+import 'dart:ui';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/services.dart';
 
 import '../../core/design/colors.dart';
@@ -48,7 +50,7 @@ class _RobustTrimTimelineState extends State<RobustTrimTimeline> {
   static const double _kHandleVisualWidth = 20.0;
   static const double _kFineScrubIndicatorLiftPx = 32.0;
 
-  void _handleDragStart(DragStartDetails details) {
+  void _handleDragStart(final DragStartDetails details) {
     final box = context.findRenderObject() as RenderBox;
     final width = box.size.width;
     final localX = box.globalToLocal(details.globalPosition).dx;
@@ -89,13 +91,15 @@ class _RobustTrimTimelineState extends State<RobustTrimTimeline> {
     HapticFeedback.selectionClick();
   }
 
-  void _handleDragUpdate(DragUpdateDetails details) {
+  void _handleDragUpdate(final DragUpdateDetails details) {
     if (_activeHandle == null) return;
     final box = context.findRenderObject() as RenderBox;
     final width = box.size.width;
 
     if (_activeHandle == 'start' || _activeHandle == 'end') {
-      final lift = (_dragOrigin!.dy - details.globalPosition.dy).clamp(0.0, 100.0).toDouble();
+      final origin = _dragOrigin;
+      if (origin == null) return;
+      final lift = (origin.dy - details.globalPosition.dy).clamp(0.0, 100.0).toDouble();
       setState(() => _dragVerticalLiftPx = lift);
 
       final isStart = _activeHandle == 'start';
@@ -136,7 +140,7 @@ class _RobustTrimTimelineState extends State<RobustTrimTimeline> {
     }
   }
 
-  void _handleDragEnd(DragEndDetails details) {
+  void _handleDragEnd(final DragEndDetails details) {
     setState(() {
       _activeHandle = null;
       _dragValue = null;
@@ -148,7 +152,7 @@ class _RobustTrimTimelineState extends State<RobustTrimTimeline> {
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(final BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
     final timelineWidth = MediaQuery.of(context).size.width - AppSpacing.screenEdge * 2;
 
@@ -166,7 +170,6 @@ class _RobustTrimTimelineState extends State<RobustTrimTimeline> {
                   _formatDuration(widget.trimStart * widget.videoDurationMs),
                   style: AppTypography.caption.copyWith(
                     color: _activeHandle == 'start' ? colorScheme.primary : Colors.white54,
-                    fontSize: 10,
                     fontWeight: _activeHandle == 'start' ? FontWeight.bold : FontWeight.normal,
                   ),
                 ),
@@ -174,12 +177,11 @@ class _RobustTrimTimelineState extends State<RobustTrimTimeline> {
               Center(
                 child: ValueListenableBuilder<double>(
                   valueListenable: widget.playbackPosition,
-                  builder: (context, pos, _) => Text(
+                  builder: (final context, final pos, _) => Text(
                     _formatDuration(pos * widget.videoDurationMs),
                     style: AppTypography.caption.copyWith(
                       color: Colors.white,
                       fontWeight: FontWeight.bold,
-                      fontSize: 10,
                     ),
                   ),
                 ),
@@ -190,7 +192,6 @@ class _RobustTrimTimelineState extends State<RobustTrimTimeline> {
                   _formatDuration(widget.trimEnd * widget.videoDurationMs),
                   style: AppTypography.caption.copyWith(
                     color: _activeHandle == 'end' ? colorScheme.primary : Colors.white54,
-                    fontSize: 10,
                     fontWeight: _activeHandle == 'end' ? FontWeight.bold : FontWeight.normal,
                   ),
                 ),
@@ -215,7 +216,7 @@ class _RobustTrimTimelineState extends State<RobustTrimTimeline> {
               children: [
                 // Thumbnails
                 Row(
-                  children: List.generate(8, (i) {
+                  children: List.generate(8, (final i) {
                     return Expanded(
                       child: Container(
                         margin: const EdgeInsets.all(1),
@@ -265,23 +266,81 @@ class _RobustTrimTimelineState extends State<RobustTrimTimeline> {
                 _buildHandle(widget.trimStart * timelineWidth, true, colorScheme),
                 _buildHandle(widget.trimEnd * timelineWidth - _kHandleVisualWidth, false, colorScheme),
                 
-                // Playhead
+                // Playhead - High precision layered design
                 ValueListenableBuilder<double>(
                   valueListenable: widget.playbackPosition,
-                  builder: (context, pos, _) => Positioned(
-                    left: pos * timelineWidth - 1.5,
-                    top: -4, bottom: -4,
-                    child: Container(
-                      width: 3,
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(2),
-                        boxShadow: [
-                          BoxShadow(color: Colors.black.withValues(alpha: 0.5), blurRadius: 4),
-                        ],
+                  builder: (final context, final pos, _) {
+                    final isActive = _activeHandle == 'playhead';
+                    return Positioned(
+                      left: pos * timelineWidth - 4,
+                      top: -8,
+                      bottom: -8,
+                      width: 8,
+                      child: Center(
+                        child: Stack(
+                          alignment: Alignment.center,
+                          children: [
+                            // 1. Broad outer glow
+                            Container(
+                              width: 6,
+                              decoration: BoxDecoration(
+                                color: colorScheme.primary.withValues(alpha: isActive ? 0.3 : 0.15),
+                                borderRadius: BorderRadius.circular(4),
+                              ),
+                            ),
+                            // 2. Medium precision guide
+                            Container(
+                              width: 3,
+                              decoration: BoxDecoration(
+                                color: Colors.white.withValues(alpha: 0.4),
+                                borderRadius: BorderRadius.circular(2),
+                              ),
+                            ),
+                            // 3. Ultra-thin core 1px needle
+                            Container(
+                              width: 1,
+                              color: Colors.white,
+                            ),
+                            // 4. Mathematical alignment markers (Top/Bottom handle)
+                            Positioned(
+                              top: 0,
+                              child: Container(
+                                width: 8,
+                                height: 4,
+                                decoration: BoxDecoration(
+                                  color: Colors.white,
+                                  borderRadius: const BorderRadius.vertical(top: Radius.circular(2)),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: colorScheme.primary.withValues(alpha: 0.5),
+                                      blurRadius: 4,
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                            Positioned(
+                              bottom: 0,
+                              child: Container(
+                                width: 8,
+                                height: 4,
+                                decoration: BoxDecoration(
+                                  color: Colors.white,
+                                  borderRadius: const BorderRadius.vertical(bottom: Radius.circular(2)),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: colorScheme.primary.withValues(alpha: 0.5),
+                                      blurRadius: 4,
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
-                    ),
-                  ),
+                    );
+                  },
                 ),
 
                 // Fine scrubbing indicator
@@ -298,7 +357,7 @@ class _RobustTrimTimelineState extends State<RobustTrimTimeline> {
                         ),
                         child: Text(
                           'FINE SCRUBBING',
-                          style: AppTypography.labelSmall.copyWith(color: Colors.white, fontWeight: FontWeight.w900, fontSize: 8),
+                          style: AppTypography.labelSmall.copyWith(color: Colors.white, fontWeight: FontWeight.w900),
                         ),
                       ),
                     ),
@@ -311,7 +370,7 @@ class _RobustTrimTimelineState extends State<RobustTrimTimeline> {
     );
   }
 
-  Widget _buildHandle(double left, bool isStart, ColorScheme colorScheme) {
+  Widget _buildHandle(final double left, final bool isStart, final ColorScheme colorScheme) {
     final isActive = (isStart && _activeHandle == 'start') || (!isStart && _activeHandle == 'end');
     
     return Positioned(
@@ -330,7 +389,7 @@ class _RobustTrimTimelineState extends State<RobustTrimTimeline> {
           ),
           child: Center(
             child: Icon(
-              Icons.drag_indicator, 
+              CupertinoIcons.line_horizontal_3, 
               size: isActive ? 16 : 12, 
               color: isActive ? colorScheme.primary : Colors.white,
             ),
@@ -340,7 +399,7 @@ class _RobustTrimTimelineState extends State<RobustTrimTimeline> {
     );
   }
 
-  String _formatDuration(double ms) {
+  String _formatDuration(final double ms) {
     final d = Duration(milliseconds: ms.round());
     final minutes = d.inMinutes.remainder(60).toString().padLeft(2, '0');
     final seconds = d.inSeconds.remainder(60).toString().padLeft(2, '0');

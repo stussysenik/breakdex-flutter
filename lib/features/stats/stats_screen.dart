@@ -8,15 +8,15 @@ class StatsScreen extends ConsumerWidget {
   const StatsScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(final BuildContext context, final WidgetRef ref) {
     final statsAsync = ref.watch(statsBundleProvider);
 
     return Scaffold(
       body: SafeArea(
         child: statsAsync.when(
           loading: () => const Center(child: CircularProgressIndicator()),
-          error: (error, _) => Center(child: Text('Error: $error')),
-          data: (stats) => ProgressExplorer(stats: stats),
+          error: (final error, _) => Center(child: Text('Error: $error')),
+          data: (final stats) => ProgressExplorer(stats: stats),
         ),
       ),
     );

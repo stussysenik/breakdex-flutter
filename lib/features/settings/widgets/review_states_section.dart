@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -29,7 +30,7 @@ class ReviewStatesSection extends ConsumerWidget {
   final void Function(LearningState state, String currentLabel) onRename;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(final BuildContext context, final WidgetRef ref) {
     final labels = ref.watch(learningStateLabelsProvider);
     final colors = ref.watch(learningStateColorsProvider);
     final mode = ref.watch(learningModeProvider);
@@ -145,7 +146,7 @@ class ReviewStatesSection extends ConsumerWidget {
     );
   }
 
-  String? _subtitleFor(Map<LearningState, String> labels, LearningState state) {
+  String? _subtitleFor(final Map<LearningState, String> labels, final LearningState state) {
     final current = resolveLearningStateLabel(labels, state);
     final original = defaultLearningStateLabels[state] ?? state.displayText;
     if (current == original) return null;
@@ -153,9 +154,9 @@ class ReviewStatesSection extends ConsumerWidget {
   }
 
   Future<void> _showColorPicker(
-    BuildContext context,
-    WidgetRef ref,
-    LearningState state,
+    final BuildContext context,
+    final WidgetRef ref,
+    final LearningState state,
   ) async {
     final label = resolveLearningStateLabel(
       ref.read(learningStateLabelsProvider),
@@ -177,13 +178,13 @@ class ReviewStatesSection extends ConsumerWidget {
         .setColor(state, selected);
   }
 
-  Future<void> _addCustomState(BuildContext context, WidgetRef ref) async {
+  Future<void> _addCustomState(final BuildContext context, final WidgetRef ref) async {
     final controller = TextEditingController();
     Color selectedColor = reviewStatePresetColors[0];
     final result = await showDialog<CustomLearningState>(
       context: context,
-      builder: (ctx) => StatefulBuilder(
-        builder: (ctx, setDialogState) => AlertDialog(
+      builder: (final ctx) => StatefulBuilder(
+        builder: (final ctx, final setDialogState) => AlertDialog(
           title: const Text('New Custom State'),
           content: Column(
             mainAxisSize: MainAxisSize.min,
@@ -245,16 +246,16 @@ class ReviewStatesSection extends ConsumerWidget {
   }
 
   Future<void> _editCustomState(
-    BuildContext context,
-    WidgetRef ref,
-    CustomLearningState custom,
+    final BuildContext context,
+    final WidgetRef ref,
+    final CustomLearningState custom,
   ) async {
     final controller = TextEditingController(text: custom.label);
     Color selectedColor = custom.color;
     final result = await showDialog<CustomLearningState>(
       context: context,
-      builder: (ctx) => StatefulBuilder(
-        builder: (ctx, setDialogState) => AlertDialog(
+      builder: (final ctx) => StatefulBuilder(
+        builder: (final ctx, final setDialogState) => AlertDialog(
           title: const Text('Edit Custom State'),
           content: Column(
             mainAxisSize: MainAxisSize.min,
@@ -324,7 +325,7 @@ class _StateSwatch extends StatelessWidget {
   final Color color;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(final BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
     return Container(
       width: 18,
@@ -345,7 +346,7 @@ class _StateRowTrailing extends StatelessWidget {
   final VoidCallback onColorTap;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(final BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
 
     return Row(

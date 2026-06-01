@@ -40,7 +40,7 @@ class MoveAuraSection extends ConsumerWidget {
   final String moveId;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(final BuildContext context, final WidgetRef ref) {
     final outgoingAsync = ref.watch(auraLinksFromProvider(moveId));
     final incomingAsync = ref.watch(auraLinksToProvider(moveId));
     final colorScheme = Theme.of(context).colorScheme;
@@ -121,11 +121,11 @@ class _AuraFlowRow extends ConsumerWidget {
   final _FlowDirection direction;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(final BuildContext context, final WidgetRef ref) {
     final colorScheme = Theme.of(context).colorScheme;
 
     // Collect the connected move IDs so we can resolve names.
-    final connectedIds = links.map((l) => switch (direction) {
+    final connectedIds = links.map((final l) => switch (direction) {
           _FlowDirection.outgoing => l.toMoveId,
           _FlowDirection.incoming => l.fromMoveId,
         }).toList();
@@ -188,7 +188,7 @@ class _AuraPill extends ConsumerWidget {
   final _FlowDirection direction;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(final BuildContext context, final WidgetRef ref) {
     final affinity = AuraAffinity.fromString(link.affinity);
     final affinityColor = affinity.color(context);
 
@@ -197,7 +197,7 @@ class _AuraPill extends ConsumerWidget {
 
     return StreamBuilder<Move>(
       stream: moveStream,
-      builder: (context, snapshot) {
+      builder: (final context, final snapshot) {
         final moveName = snapshot.data?.name ?? '...';
 
         return GestureDetector(
@@ -255,13 +255,13 @@ class _AuraPill extends ConsumerWidget {
     );
   }
 
-  Future<void> _showAffinitySheet(BuildContext context, WidgetRef ref, String moveName) async {
+  Future<void> _showAffinitySheet(final BuildContext context, final WidgetRef ref, final String moveName) async {
     final colorScheme = Theme.of(context).colorScheme;
     final currentAffinity = AuraAffinity.fromString(link.affinity);
 
     final result = await showModalBottomSheet<String>(
       context: context,
-      builder: (ctx) => SafeArea(
+      builder: (final ctx) => SafeArea(
         child: Padding(
           padding: const EdgeInsets.only(bottom: AppSpacing.lg),
           child: Column(
@@ -327,7 +327,7 @@ class _AddConnectionButton extends ConsumerWidget {
   final _FlowDirection direction;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(final BuildContext context, final WidgetRef ref) {
     final colorScheme = Theme.of(context).colorScheme;
 
     return GestureDetector(
@@ -355,8 +355,8 @@ class _AddConnectionButton extends ConsumerWidget {
   }
 
   Future<void> _showAddConnectionSheet(
-    BuildContext context,
-    WidgetRef ref,
+    final BuildContext context,
+    final WidgetRef ref,
   ) async {
     final result =
         await showModalBottomSheet<({String targetMoveId, String affinity})>(
@@ -421,7 +421,7 @@ class _QuickAddSheetState extends ConsumerState<_QuickAddSheet> {
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(final BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
     final movesAsync = ref.watch(_allMovesForPickerProvider);
 
@@ -438,7 +438,7 @@ class _QuickAddSheetState extends ConsumerState<_QuickAddSheet> {
       minChildSize: 0.4,
       maxChildSize: 0.85,
       expand: false,
-      builder: (context, scrollController) {
+      builder: (final context, final scrollController) {
         return Padding(
           padding: const EdgeInsets.fromLTRB(
             AppSpacing.screenEdge,
@@ -502,18 +502,18 @@ class _QuickAddSheetState extends ConsumerState<_QuickAddSheet> {
                 child: movesAsync.when(
                   loading: () =>
                       const Center(child: CircularProgressIndicator()),
-                  error: (e, _) => Center(child: Text('Error: $e')),
-                  data: (moves) {
+                  error: (final e, _) => Center(child: Text('Error: $e')),
+                  data: (final moves) {
                     // Build set of already-linked IDs to exclude.
                     final existingIds = (existingLinksAsync.valueOrNull ?? [])
-                        .map((l) => switch (widget.direction) {
+                        .map((final l) => switch (widget.direction) {
                               _FlowDirection.outgoing => l.toMoveId,
                               _FlowDirection.incoming => l.fromMoveId,
                             })
                         .toSet();
 
                     final filtered = moves
-                        .where((m) =>
+                        .where((final m) =>
                             m.id != widget.moveId &&
                             !existingIds.contains(m.id) &&
                             (_searchQuery.isEmpty ||
@@ -538,13 +538,13 @@ class _QuickAddSheetState extends ConsumerState<_QuickAddSheet> {
                     return ListView.separated(
                       controller: scrollController,
                       itemCount: filtered.length,
-                      separatorBuilder: (_, __) =>
+                      separatorBuilder: (_, _) =>
                           const SizedBox(height: AppSpacing.sm),
-                      itemBuilder: (context, index) {
+                      itemBuilder: (final context, final index) {
                         final move = filtered[index];
                         return _QuickMoveRow(
                           moveName: move.name,
-                          onSelect: (affinity) {
+                          onSelect: (final affinity) {
                             Navigator.pop(context, (
                               targetMoveId: move.id,
                               affinity: affinity.name,
@@ -578,7 +578,7 @@ class _QuickMoveRow extends StatelessWidget {
   final ValueChanged<AuraAffinity> onSelect;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(final BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
 
     return Container(
@@ -651,7 +651,7 @@ class _EmptyAuraState extends ConsumerWidget {
   final String moveId;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(final BuildContext context, final WidgetRef ref) {
     final colorScheme = Theme.of(context).colorScheme;
 
     return GestureDetector(
@@ -691,8 +691,8 @@ class _EmptyAuraState extends ConsumerWidget {
   }
 
   Future<void> _showAddConnectionSheet(
-    BuildContext context,
-    WidgetRef ref,
+    final BuildContext context,
+    final WidgetRef ref,
   ) async {
     final result =
         await showModalBottomSheet<({String targetMoveId, String affinity})>(
@@ -718,6 +718,6 @@ class _EmptyAuraState extends ConsumerWidget {
 
 /// Stream of all moves for the picker sheet. Kept private to this file
 /// to avoid polluting the global provider namespace.
-final _allMovesForPickerProvider = StreamProvider<List<Move>>((ref) {
+final _allMovesForPickerProvider = StreamProvider<List<Move>>((final ref) {
   return ref.watch(databaseProvider).movesDao.watchAll();
 });

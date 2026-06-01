@@ -41,7 +41,7 @@ class ComboPartyDisplay {
   String get id => combo.id;
   String? get videoPath => resolvedVideoPath ?? combo.activeVideoPath;
   
-  int get totalBeats => moveBeats.fold(0, (sum, b) => sum + b);
+  int get totalBeats => moveBeats.fold(0, (final sum, final b) => sum + b);
 }
 
 sealed class ComboPartyState {
@@ -69,7 +69,7 @@ class ComboCycling extends ComboPartyState {
     required this.durationMs,
   });
 
-  ComboCycling copyWith({ComboPartyDisplay? currentCombo, DateTime? lastFlip}) {
+  ComboCycling copyWith({final ComboPartyDisplay? currentCombo, final DateTime? lastFlip}) {
     return ComboCycling(
       combos: combos,
       currentCombo: currentCombo ?? this.currentCombo,
@@ -104,7 +104,7 @@ class ComboPartyBloc extends Bloc<ComboPartyEvent, ComboPartyState> {
     on<ComboTick>(_onTick);
   }
 
-  void _onShake(ComboShake event, Emitter<ComboPartyState> emit) {
+  void _onShake(final ComboShake event, final Emitter<ComboPartyState> emit) {
     DiagnosticsLog.info(
       _subsystem,
       'shake received; state=${state.runtimeType} combos=${event.combos.length}',
@@ -139,7 +139,7 @@ class ComboPartyBloc extends Bloc<ComboPartyEvent, ComboPartyState> {
     ));
   }
 
-  void _onTick(ComboTick event, Emitter<ComboPartyState> emit) {
+  void _onTick(final ComboTick event, final Emitter<ComboPartyState> emit) {
     final currentState = state;
     if (currentState is ComboRevealing) {
       DiagnosticsLog.info(

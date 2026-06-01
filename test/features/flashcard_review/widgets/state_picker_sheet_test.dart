@@ -5,15 +5,14 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:breakdex/core/design/theme.dart';
 import 'package:breakdex/core/models/learning_state.dart';
-import 'package:breakdex/core/providers.dart';
 import 'package:breakdex/core/services/settings_service.dart';
 import 'package:breakdex/features/flashcard_review/widgets/state_picker_sheet.dart';
 
 Widget buildTestApp({
-  required LearningState currentState,
-  required String moveName,
-  ValueChanged<LearningState>? onSelected,
-  required SharedPreferences prefs,
+  required final LearningState currentState,
+  required final String moveName,
+  final ValueChanged<LearningState>? onSelected,
+  required final SharedPreferences prefs,
 }) {
   return ProviderScope(
     overrides: [
@@ -51,13 +50,13 @@ void main() {
   });
 
   testWidgets('onSelected callback is invoked when tapping a state option',
-      (tester) async {
+      (final tester) async {
     final prefs = await SharedPreferences.getInstance();
     LearningState? captured;
     await tester.pumpWidget(buildTestApp(
       currentState: LearningState.newState,
       moveName: 'Windmill',
-      onSelected: (state) => captured = state,
+      onSelected: (final state) => captured = state,
       prefs: prefs,
     ));
     await tester.pumpAndSettle();
@@ -68,13 +67,13 @@ void main() {
     expect(captured, LearningState.learning);
   });
 
-  testWidgets('onSelected captures mastery state when tapped', (tester) async {
+  testWidgets('onSelected captures mastery state when tapped', (final tester) async {
     final prefs = await SharedPreferences.getInstance();
     LearningState? captured;
     await tester.pumpWidget(buildTestApp(
       currentState: LearningState.learning,
       moveName: 'Flare',
-      onSelected: (state) => captured = state,
+      onSelected: (final state) => captured = state,
       prefs: prefs,
     ));
     await tester.pumpAndSettle();
@@ -85,13 +84,13 @@ void main() {
     expect(captured, LearningState.mastery);
   });
 
-  testWidgets('onSelected captures newState when tapped', (tester) async {
+  testWidgets('onSelected captures newState when tapped', (final tester) async {
     final prefs = await SharedPreferences.getInstance();
     LearningState? captured;
     await tester.pumpWidget(buildTestApp(
       currentState: LearningState.mastery,
       moveName: 'Halo',
-      onSelected: (state) => captured = state,
+      onSelected: (final state) => captured = state,
       prefs: prefs,
     ));
     await tester.pumpAndSettle();
@@ -102,7 +101,7 @@ void main() {
     expect(captured, LearningState.newState);
   });
 
-  testWidgets('renders all three learning state options', (tester) async {
+  testWidgets('renders all three learning state options', (final tester) async {
     final prefs = await SharedPreferences.getInstance();
     await tester.pumpWidget(buildTestApp(
       currentState: LearningState.newState,
@@ -117,7 +116,7 @@ void main() {
     expect(find.text('Strong'), findsOneWidget);
   });
 
-  testWidgets('current state shows a check circle indicator', (tester) async {
+  testWidgets('current state shows a check circle indicator', (final tester) async {
     final prefs = await SharedPreferences.getInstance();
     await tester.pumpWidget(buildTestApp(
       currentState: LearningState.learning,
@@ -132,7 +131,7 @@ void main() {
   });
 
   testWidgets('modal path uses Navigator.pop when onSelected is null',
-      (tester) async {
+      (final tester) async {
     tester.view.physicalSize = const Size(1080, 1920);
     tester.view.devicePixelRatio = 1.0;
     addTearDown(() => tester.view.resetPhysicalSize());
@@ -161,7 +160,7 @@ void main() {
           ],
         ),
         home: Builder(
-          builder: (context) => ElevatedButton(
+          builder: (final context) => ElevatedButton(
             onPressed: () async {
               result = await StatePickerSheet.show(
                 context,

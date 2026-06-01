@@ -20,16 +20,16 @@ class LearningStateColors {
     mastery: AppColors.stateMastery,
   );
 
-  Color forState(LearningState state) => switch (state) {
+  Color forState(final LearningState state) => switch (state) {
     LearningState.newState => newState,
     LearningState.learning => learning,
     LearningState.mastery => mastery,
   };
 
   LearningStateColors copyWith({
-    Color? newState,
-    Color? learning,
-    Color? mastery,
+    final Color? newState,
+    final Color? learning,
+    final Color? mastery,
   }) {
     return LearningStateColors(
       newState: newState ?? this.newState,

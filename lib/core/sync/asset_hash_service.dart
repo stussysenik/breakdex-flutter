@@ -15,12 +15,12 @@ class AssetHashService {
   /// Compute the SHA-256 hex digest of a file in a background isolate.
   ///
   /// Returns the lowercase hex string (64 chars for SHA-256).
-  Future<String> computeHash(String filePath) async {
+  Future<String> computeHash(final String filePath) async {
     return compute(_computeHashIsolate, filePath);
   }
 
   /// Verify that a file's content matches the expected hash.
-  Future<bool> verifyHash(String filePath, String expectedHash) async {
+  Future<bool> verifyHash(final String filePath, final String expectedHash) async {
     try {
       final actual = await computeHash(filePath);
       return actual == expectedHash;
@@ -34,7 +34,7 @@ class AssetHashService {
   /// Used during legacy migration and integrity verification. Each file is
   /// hashed sequentially to avoid saturating I/O bandwidth.
   Stream<(int completed, int total, String? currentHash)> hashAll(
-    List<String> filePaths,
+    final List<String> filePaths,
   ) async* {
     final total = filePaths.length;
     for (int i = 0; i < total; i++) {
@@ -53,10 +53,10 @@ class AssetHashService {
   /// Reads the file in [_chunkSize] chunks and feeds them to a SHA-256
   /// digest incrementally. This keeps memory usage proportional to
   /// [_chunkSize] regardless of file size.
-  static String _computeHashIsolate(String filePath) {
+  static String _computeHashIsolate(final String filePath) {
     final file = File(filePath);
-    var output = AccumulatorSink<Digest>();
-    var input = sha256.startChunkedConversion(output);
+    final output = AccumulatorSink<Digest>();
+    final input = sha256.startChunkedConversion(output);
 
     final raf = file.openSync();
     try {
@@ -87,7 +87,7 @@ class AccumulatorSink<T> implements Sink<T> {
   final List<T> events = [];
 
   @override
-  void add(T event) => events.add(event);
+  void add(final T event) => events.add(event);
 
   @override
   void close() {}

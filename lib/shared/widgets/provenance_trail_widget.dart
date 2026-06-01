@@ -10,7 +10,7 @@ class ProvenanceTrailWidget extends StatelessWidget {
   final int? maxEntries;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(final BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
     if (trail.isEmpty) {
       return Center(
@@ -26,7 +26,7 @@ class ProvenanceTrailWidget extends StatelessWidget {
           style: AppTypography.sectionHeader.copyWith(color: colorScheme.onSurface)),
       const SizedBox(height: AppSpacing.sm),
       ...List.generate(displayEntries.length,
-          (index) => _ProvenanceTile(entry: displayEntries[index], isLast: index == displayEntries.length - 1)),
+          (final index) => _ProvenanceTile(entry: displayEntries[index], isLast: index == displayEntries.length - 1)),
     ]);
   }
 }
@@ -38,7 +38,7 @@ class _ProvenanceTile extends StatelessWidget {
   static final _timeFormatter = DateFormat('MMM d, h:mm a');
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(final BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
     return Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
       SizedBox(width: 24, child: Column(children: [

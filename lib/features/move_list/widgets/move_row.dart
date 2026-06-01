@@ -7,7 +7,7 @@ class _MoveRow extends ConsumerWidget {
   final int index;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(final BuildContext context, final WidgetRef ref) {
     final state = LearningState.fromString(move.learningState);
     final stateLabels = ref.watch(learningStateLabelsProvider);
     final stateLabel = resolveLearningStateLabel(stateLabels, state);
@@ -28,7 +28,7 @@ class _MoveRow extends ConsumerWidget {
         unawaited(HapticFeedback.heavyImpact());
         unawaited(_archiveMove(ref, context));
       },
-      confirmDismiss: (direction) async {
+      confirmDismiss: (final direction) async {
         debugPrint('[MoveRow] confirmDismiss direction=$direction moveId=${move.id}');
         return true;
       },
@@ -62,7 +62,7 @@ class _MoveRow extends ConsumerWidget {
                       child: Padding(
                         padding: const EdgeInsets.symmetric(
                           horizontal: AppSpacing.md,
-                          vertical: 14,
+                          vertical: AppSpacing.sm,
                         ),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
@@ -103,7 +103,7 @@ class _MoveRow extends ConsumerWidget {
                                 ],
                               ],
                             ),
-                            const SizedBox(height: 6),
+                            const SizedBox(height: AppSpacing.xs),
                             Wrap(
                               spacing: AppSpacing.sm,
                               runSpacing: AppSpacing.xs,
@@ -137,7 +137,7 @@ class _MoveRow extends ConsumerWidget {
     );
   }
 
-  Future<void> _archiveMove(WidgetRef ref, BuildContext context) async {
+  Future<void> _archiveMove(final WidgetRef ref, final BuildContext context) async {
     debugPrint('[MoveRow] ARCHIVING move: id=${move.id} name="${move.name}"');
     try {
       final repo = ref.read(moveRepositoryProvider);
@@ -161,7 +161,7 @@ class _MoveRow extends ConsumerWidget {
     }
   }
 
-  Future<void> _undoArchive(WidgetRef ref) async {
+  Future<void> _undoArchive(final WidgetRef ref) async {
     debugPrint('[MoveRow] RESTORING move: id=${move.id} name="${move.name}"');
     try {
       final repo = ref.read(moveRepositoryProvider);
@@ -183,9 +183,9 @@ class _CategoryLabel extends ConsumerWidget {
   final Color? overrideTextColor;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(final BuildContext context, final WidgetRef ref) {
     final categories = ref.watch(categoriesProvider);
-    final match = categories.where((c) => c.name == category).firstOrNull;
+    final match = categories.where((final c) => c.name == category).firstOrNull;
     final dotColor = match?.color ?? Theme.of(context).colorScheme.secondary;
     final textColor =
         overrideTextColor ?? Theme.of(context).colorScheme.secondary;
@@ -198,12 +198,12 @@ class _CategoryLabel extends ConsumerWidget {
           height: 6,
           decoration: BoxDecoration(color: dotColor, shape: BoxShape.circle),
         ),
-        const SizedBox(width: 4),
+        const SizedBox(width: AppSpacing.xxs),
         Text(
           category,
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
-          style: AppTypography.caption.copyWith(color: textColor, fontSize: 10),
+          style: AppTypography.caption.copyWith(color: textColor),
         ),
       ],
     );
@@ -218,7 +218,7 @@ class _MoveCountDots extends StatelessWidget {
   final int count;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(final BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
     final dotsToShow = count.clamp(0, _ComboRow._maxDots);
     final overflow = count - dotsToShow;
@@ -249,7 +249,6 @@ class _MoveCountDots extends StatelessWidget {
             '+$overflow',
             style: AppTypography.caption.copyWith(
               color: colorScheme.secondary,
-              fontSize: 10,
             ),
           ),
         ],

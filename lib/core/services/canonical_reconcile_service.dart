@@ -73,10 +73,10 @@ class CanonicalReconcileService {
   final AssetHashService _hashService;
 
   CanonicalReconcileService({
-    required CanonicalFolderService folderService,
-    required AssetManifestDao manifestDao,
-    required AssetCopiesDao copiesDao,
-    required AssetHashService hashService,
+    required final CanonicalFolderService folderService,
+    required final AssetManifestDao manifestDao,
+    required final AssetCopiesDao copiesDao,
+    required final AssetHashService hashService,
   }) : _folderService = folderService,
        _manifestDao = manifestDao,
        _copiesDao = copiesDao,
@@ -107,7 +107,7 @@ class CanonicalReconcileService {
         dbOrphans.add(ReconciledAsset(
           hash: manifest.contentHash,
           sourceName: manifest.sourceName,
-          hasCloudCopies: copies.any((c) => c.status == 'verified'),
+          hasCloudCopies: copies.any((final c) => c.status == 'verified'),
         ));
         continue;
       }
@@ -120,7 +120,7 @@ class CanonicalReconcileService {
           hash: manifest.contentHash,
           expectedPath: absolutePath,
           sourceName: manifest.sourceName,
-          hasCloudCopies: copies.any((c) => c.status == 'verified'),
+          hasCloudCopies: copies.any((final c) => c.status == 'verified'),
         ));
       }
     }
@@ -134,7 +134,7 @@ class CanonicalReconcileService {
     );
   }
 
-  Future<int> importOrphans(List<ReconciledFile> orphans) async {
+  Future<int> importOrphans(final List<ReconciledFile> orphans) async {
     var imported = 0;
     for (final orphan in orphans) {
       try {
@@ -193,7 +193,7 @@ class CanonicalReconcileService {
     return imported;
   }
 
-  Future<int> recoverOrphansLocally(List<ReconciledAsset> orphans) async {
+  Future<int> recoverOrphansLocally(final List<ReconciledAsset> orphans) async {
     var recovered = 0;
     for (final orphan in orphans) {
       if (orphan.expectedPath == null) continue;

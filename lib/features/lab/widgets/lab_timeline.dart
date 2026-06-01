@@ -63,7 +63,7 @@ class _LabTimelineState extends ConsumerState<LabTimeline> {
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(final BuildContext context) {
     final entriesAsync = ref.watch(labEntriesByLabProvider(widget.labId));
     final milestonesAsync = ref.watch(labMilestonesProvider(widget.labId));
     final colorScheme = Theme.of(context).colorScheme;
@@ -120,7 +120,7 @@ class _LabTimelineState extends ConsumerState<LabTimeline> {
             padding: EdgeInsets.all(AppSpacing.md),
             child: Center(child: CircularProgressIndicator()),
           ),
-          error: (e, _) => Padding(
+          error: (final e, _) => Padding(
             padding: const EdgeInsets.symmetric(
               horizontal: AppSpacing.screenEdge,
             ),
@@ -128,7 +128,7 @@ class _LabTimelineState extends ConsumerState<LabTimeline> {
                 style:
                     AppTypography.caption.copyWith(color: AppColors.actionAgain)),
           ),
-          data: (entries) {
+          data: (final entries) {
             final milestones = milestonesAsync.valueOrNull ?? [];
             final items = _mergeChronologically(entries, milestones);
 
@@ -170,8 +170,8 @@ class _LabTimelineState extends ConsumerState<LabTimeline> {
   /// Merge lab entries and milestones into a single chronologically-sorted
   /// list (newest first) wrapped in a sealed union type.
   List<_TimelineItem> _mergeChronologically(
-    List<LabEntry> entries,
-    List<Milestone> milestones,
+    final List<LabEntry> entries,
+    final List<Milestone> milestones,
   ) {
     final items = <_TimelineItem>[
       for (final e in entries)
@@ -188,7 +188,7 @@ class _LabTimelineState extends ConsumerState<LabTimeline> {
         ),
     ];
     // Sort newest first
-    items.sort((a, b) => b.timestamp.compareTo(a.timestamp));
+    items.sort((final a, final b) => b.timestamp.compareTo(a.timestamp));
     return items;
   }
 }
@@ -213,9 +213,9 @@ class _TimelineItem {
   });
 
   factory _TimelineItem.entry({
-    required String content,
-    required bool hasVideo,
-    required DateTime timestamp,
+    required final String content,
+    required final bool hasVideo,
+    required final DateTime timestamp,
   }) =>
       _TimelineItem._(
         type: _TimelineItemType.entry,
@@ -225,9 +225,9 @@ class _TimelineItem {
       );
 
   factory _TimelineItem.milestone({
-    required String title,
-    required bool completed,
-    required DateTime timestamp,
+    required final String title,
+    required final bool completed,
+    required final DateTime timestamp,
   }) =>
       _TimelineItem._(
         type: _TimelineItemType.milestone,
@@ -257,7 +257,7 @@ class _TimelineRow extends StatelessWidget {
   final bool isLast;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(final BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
 
     return IntrinsicHeight(

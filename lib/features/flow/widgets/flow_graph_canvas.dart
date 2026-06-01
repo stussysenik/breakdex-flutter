@@ -39,7 +39,7 @@ import 'flow_graph_legend.dart';
 class _ForceLayout {
   const _ForceLayout();
 
-  static double repulsionFor(int nodeCount) => 8000 + nodeCount * 200;
+  static double repulsionFor(final int nodeCount) => 8000 + nodeCount * 200;
   static const double attractionStrength = 0.001;
   static const double damping = 0.90;
   static const int iterations = 250;
@@ -48,10 +48,10 @@ class _ForceLayout {
 
   /// Run the standard force-directed layout (Map / Focus modes).
   void run(
-    List<GraphNode> nodes,
-    List<GraphEdge> edges, {
-    required double width,
-    required double height,
+    final List<GraphNode> nodes,
+    final List<GraphEdge> edges, {
+    required final double width,
+    required final double height,
   }) {
     if (nodes.isEmpty) return;
     final rng = Random(42);
@@ -86,17 +86,17 @@ class _ForceLayout {
   };
 
   /// Compute absolute gravity centers for a given canvas size.
-  static Map<String, Offset> categoryGravity(double w, double h) => {
+  static Map<String, Offset> categoryGravity(final double w, final double h) => {
     for (final e in _categoryGravityRatios.entries)
       e.key: Offset(w * e.value.$1, h * e.value.$2),
   };
 
   /// Cluster layout — per-category gravity instead of generic centering.
   void runClustered(
-    List<GraphNode> nodes,
-    List<GraphEdge> edges, {
-    required double width,
-    required double height,
+    final List<GraphNode> nodes,
+    final List<GraphEdge> edges, {
+    required final double width,
+    required final double height,
   }) {
     if (nodes.isEmpty) return;
     final rng = Random(42);
@@ -118,7 +118,7 @@ class _ForceLayout {
       width: width,
       height: height,
       repulsionMultiplier: 1.5,
-      gravityFor: (n) => gravityMap[n.category] ?? Offset(cx, cy),
+      gravityFor: (final n) => gravityMap[n.category] ?? Offset(cx, cy),
       gravityStrength: 0.03,
     );
   }
@@ -126,13 +126,13 @@ class _ForceLayout {
   /// Shared simulation body — applies repulsion, edge attraction, gravity,
   /// and velocity damping for [iterations] ticks.
   void _simulate(
-    List<GraphNode> nodes,
-    List<GraphEdge> edges, {
-    required double width,
-    required double height,
-    required double repulsionMultiplier,
-    required Offset Function(GraphNode) gravityFor,
-    required double gravityStrength,
+    final List<GraphNode> nodes,
+    final List<GraphEdge> edges, {
+    required final double width,
+    required final double height,
+    required final double repulsionMultiplier,
+    required final Offset Function(GraphNode) gravityFor,
+    required final double gravityStrength,
   }) {
     final nodeById = <String, GraphNode>{};
     for (final node in nodes) {
@@ -149,8 +149,8 @@ class _ForceLayout {
         for (int j = i + 1; j < nodes.length; j++) {
           final a = nodes[i];
           final b = nodes[j];
-          var dx = b.x - a.x;
-          var dy = b.y - a.y;
+          final dx = b.x - a.x;
+          final dy = b.y - a.y;
           var dist = sqrt(dx * dx + dy * dy);
           if (dist < 1) dist = 1;
           final force = scaledRepulsion / (dist * dist);
@@ -168,8 +168,8 @@ class _ForceLayout {
         final a = nodeById[edge.fromId];
         final b = nodeById[edge.toId];
         if (a == null || b == null) continue;
-        var dx = b.x - a.x;
-        var dy = b.y - a.y;
+        final dx = b.x - a.x;
+        final dy = b.y - a.y;
         final dist = sqrt(dx * dx + dy * dy);
         if (dist < 1) continue;
         final stiffness = switch (edge.affinity) {
@@ -262,14 +262,14 @@ class _FlowGraphPainter extends CustomPainter {
   static const double _gridSpacing = AppSpacing.lg;
   static const double _gridDotRadius = 1;
 
-  double _radiusForMastery(int masteryState) => switch (masteryState) {
+  double _radiusForMastery(final int masteryState) => switch (masteryState) {
     2 => _radiusMastery,
     1 => _radiusLearning,
     _ => _radiusNew,
   };
 
   @override
-  void paint(Canvas canvas, Size size) {
+  void paint(final Canvas canvas, final Size size) {
     _drawDotGrid(canvas, size);
     if (viewMode == FlowViewMode.clusters) _drawCategoryLabels(canvas, size);
     _drawEdges(canvas);
@@ -281,7 +281,7 @@ class _FlowGraphPainter extends CustomPainter {
   ///
   /// The dots are barely visible (6% opacity) — just enough to give the
   /// canvas a textured feel without competing with the graph data.
-  void _drawDotGrid(Canvas canvas, Size size) {
+  void _drawDotGrid(final Canvas canvas, final Size size) {
     final dotColor = brightness == Brightness.light
         ? AppColors.lightText.withValues(alpha: 0.06)
         : AppColors.darkText.withValues(alpha: 0.06);
@@ -302,7 +302,7 @@ class _FlowGraphPainter extends CustomPainter {
   /// These labels provide spatial orientation — "Power Moves" in the
   /// top-left, "Footwork" top-right, etc. Drawn behind edges/nodes
   /// at low opacity so they don't compete with the graph data.
-  void _drawCategoryLabels(Canvas canvas, Size size) {
+  void _drawCategoryLabels(final Canvas canvas, final Size size) {
     final textColor = brightness == Brightness.light
         ? AppColors.lightText.withValues(alpha: 0.22)
         : AppColors.darkText.withValues(alpha: 0.22);
@@ -344,7 +344,7 @@ class _FlowGraphPainter extends CustomPainter {
   /// When a node is selected, connected edges turn blue and non-connected
   /// edges dim to 15% opacity. This "spotlight" effect uses the same
   /// accent blue as the rest of the app design system.
-  void _drawEdges(Canvas canvas) {
+  void _drawEdges(final Canvas canvas) {
     // Detect parallel edge pairs for curve offset.
     final pairCount = <String, int>{};
     for (final edge in edges) {
@@ -436,12 +436,12 @@ class _FlowGraphPainter extends CustomPainter {
   /// dashPathEffect (which allocates heavily) and sufficient for our
   /// line complexity.
   void _drawDashedLine(
-    Canvas canvas,
-    Offset start,
-    Offset end,
-    Paint paint, {
-    required double dashWidth,
-    required double gapWidth,
+    final Canvas canvas,
+    final Offset start,
+    final Offset end,
+    final Paint paint, {
+    required final double dashWidth,
+    required final double gapWidth,
   }) {
     final dx = end.dx - start.dx;
     final dy = end.dy - start.dy;
@@ -476,7 +476,7 @@ class _FlowGraphPainter extends CustomPainter {
   ///
   /// Selection dims non-connected nodes to 15% opacity, spotlighting the
   /// selected node's neighborhood.
-  void _drawNodes(Canvas canvas) {
+  void _drawNodes(final Canvas canvas) {
     for (final node in nodes) {
       final radius = _radiusForMastery(node.masteryState);
       final baseColor =
@@ -544,7 +544,7 @@ class _FlowGraphPainter extends CustomPainter {
   /// - Mastery: 13px w600 — prominent, rewarding
   /// - Learning: 12px w500 — present but secondary
   /// - New: hidden — no label until the move is practiced
-  void _drawLabels(Canvas canvas, Size size) {
+  void _drawLabels(final Canvas canvas, final Size size) {
     // Too zoomed out — labels are illegible, skip entirely.
     if (zoomScale < 0.5) return;
 
@@ -624,7 +624,7 @@ class _FlowGraphPainter extends CustomPainter {
     }
 
     // Mastery nodes first (they earned their labels), then multi-selected.
-    candidates.sort((a, b) {
+    candidates.sort((final a, final b) {
       final aBoost = multiSelectedIds.contains(a.node.id)
           ? 3
           : a.node.masteryState;
@@ -637,7 +637,7 @@ class _FlowGraphPainter extends CustomPainter {
     // Greedy collision-aware placement.
     final placed = <Rect>[];
     for (final c in candidates) {
-      final overlaps = placed.any((r) => r.overlaps(c.rect));
+      final overlaps = placed.any((final r) => r.overlaps(c.rect));
       if (overlaps) continue;
       placed.add(c.rect);
       canvas.drawParagraph(c.paragraph, Offset(c.x, c.y));
@@ -645,7 +645,7 @@ class _FlowGraphPainter extends CustomPainter {
   }
 
   @override
-  bool shouldRepaint(covariant _FlowGraphPainter oldDelegate) {
+  bool shouldRepaint(covariant final _FlowGraphPainter oldDelegate) {
     return nodes != oldDelegate.nodes ||
         edges != oldDelegate.edges ||
         selectedNodeId != oldDelegate.selectedNodeId ||
@@ -730,7 +730,7 @@ class _FlowGraphCanvasState extends ConsumerState<FlowGraphCanvas> {
   /// Uses the user's custom categories from [categoriesProvider], which are
   /// stored in SharedPreferences with user-chosen colors. Falls back to
   /// AppColors.lightSecondary for unknown categories.
-  Map<String, Color> _buildCategoryColors(List<Category> categories) {
+  Map<String, Color> _buildCategoryColors(final List<Category> categories) {
     return {for (final cat in categories) cat.name: cat.color};
   }
 
@@ -744,18 +744,18 @@ class _FlowGraphCanvasState extends ConsumerState<FlowGraphCanvas> {
   /// (1-hop neighborhood). In [FlowViewMode.clusters], uses category
   /// gravity centers instead of generic centering.
   void _runLayoutIfNeeded(
-    List<GraphNode> rawNodes,
-    List<GraphEdge> edges,
-    FlowViewMode viewMode,
-    String? selectedNodeId,
+    final List<GraphNode> rawNodes,
+    final List<GraphEdge> edges,
+    final FlowViewMode viewMode,
+    final String? selectedNodeId,
   ) {
     // Compute a lightweight hash including view mode and selection so
     // layout recomputes when switching modes or selecting nodes.
     final hash = Object.hashAll([
       viewMode.index,
       selectedNodeId ?? '',
-      ...rawNodes.map((n) => n.id),
-      ...edges.map((e) => '${e.fromId}-${e.toId}'),
+      ...rawNodes.map((final n) => n.id),
+      ...edges.map((final e) => '${e.fromId}-${e.toId}'),
     ]);
 
     if (hash == _lastDataHash && _layoutNodes.isNotEmpty) return;
@@ -779,11 +779,11 @@ class _FlowGraphCanvasState extends ConsumerState<FlowGraphCanvas> {
         if (edge.toId == selectedNodeId) neighborIds.add(edge.fromId);
       }
       filteredNodes = rawNodes
-          .where((n) => neighborIds.contains(n.id))
+          .where((final n) => neighborIds.contains(n.id))
           .toList();
       filteredEdges = edges
           .where(
-            (e) =>
+            (final e) =>
                 neighborIds.contains(e.fromId) && neighborIds.contains(e.toId),
           )
           .toList();
@@ -796,7 +796,7 @@ class _FlowGraphCanvasState extends ConsumerState<FlowGraphCanvas> {
     // affecting the provider's data.
     _layoutNodes = filteredNodes
         .map(
-          (n) => GraphNode(
+          (final n) => GraphNode(
             id: n.id,
             name: n.name,
             category: n.category,
@@ -832,7 +832,7 @@ class _FlowGraphCanvasState extends ConsumerState<FlowGraphCanvas> {
   ///
   /// Used for the spotlight effect: when a node is tapped, only its
   /// immediate neighbors remain at full opacity. Everything else dims.
-  Set<String> _computeConnectedIds(String nodeId) {
+  Set<String> _computeConnectedIds(final String nodeId) {
     final connected = <String>{nodeId}; // include the node itself
     for (final edge in _layoutEdges) {
       if (edge.fromId == nodeId) connected.add(edge.toId);
@@ -846,7 +846,7 @@ class _FlowGraphCanvasState extends ConsumerState<FlowGraphCanvas> {
   /// Returns the ID of the first node whose center is within tap radius,
   /// or null if tapping empty space. Uses a generous hit area (node radius
   /// + 8px padding) for fat-finger friendliness.
-  String? _hitTestNode(Offset localPosition) {
+  String? _hitTestNode(final Offset localPosition) {
     for (final node in _layoutNodes) {
       final effectiveRadius =
           switch (node.masteryState) {
@@ -867,7 +867,7 @@ class _FlowGraphCanvasState extends ConsumerState<FlowGraphCanvas> {
 
   /// Transform a screen-space point to canvas-space, accounting for
   /// pan/zoom from InteractiveViewer.
-  Offset _screenToCanvas(Offset screenPoint) {
+  Offset _screenToCanvas(final Offset screenPoint) {
     final inverse = Matrix4.inverted(_transformController.value);
     return MatrixUtils.transformPoint(inverse, screenPoint);
   }
@@ -877,7 +877,7 @@ class _FlowGraphCanvasState extends ConsumerState<FlowGraphCanvas> {
     ref.read(selectedNodeProvider.notifier).state = null;
   }
 
-  void _onTapUp(TapUpDetails details) {
+  void _onTapUp(final TapUpDetails details) {
     final hitId = _hitTestNode(_screenToCanvas(details.localPosition));
     final selectedNodeId = ref.read(selectedNodeProvider);
 
@@ -909,7 +909,7 @@ class _FlowGraphCanvasState extends ConsumerState<FlowGraphCanvas> {
   }
 
   /// Long-press a node to enter multi-select mode for set creation.
-  void _onLongPress(LongPressStartDetails details) {
+  void _onLongPress(final LongPressStartDetails details) {
     final hitId = _hitTestNode(_screenToCanvas(details.localPosition));
     if (hitId == null) return;
 
@@ -927,7 +927,7 @@ class _FlowGraphCanvasState extends ConsumerState<FlowGraphCanvas> {
 
     final name = await showDialog<String>(
       context: context,
-      builder: (ctx) {
+      builder: (final ctx) {
         final controller = TextEditingController();
         return AlertDialog(
           title: const Text('Create Set'),
@@ -935,7 +935,7 @@ class _FlowGraphCanvasState extends ConsumerState<FlowGraphCanvas> {
             controller: controller,
             autofocus: true,
             decoration: const InputDecoration(hintText: 'Set name'),
-            onSubmitted: (v) => Navigator.pop(ctx, v.trim()),
+            onSubmitted: (final v) => Navigator.pop(ctx, v.trim()),
           ),
           actions: [
             TextButton(
@@ -961,8 +961,8 @@ class _FlowGraphCanvasState extends ConsumerState<FlowGraphCanvas> {
 
     // Add moves in the order they appear in the layout nodes list.
     final orderedIds = _layoutNodes
-        .where((n) => _multiSelectedIds.contains(n.id))
-        .map((n) => n.id)
+        .where((final n) => _multiSelectedIds.contains(n.id))
+        .map((final n) => n.id)
         .toList();
     for (var i = 0; i < orderedIds.length; i++) {
       await dao.addMoveToLab(labId, orderedIds[i], i);
@@ -999,10 +999,10 @@ class _FlowGraphCanvasState extends ConsumerState<FlowGraphCanvas> {
 
   /// Compact, accessible overlay button for graph utilities.
   Widget _overlayControlButton({
-    required VoidCallback onTap,
-    required IconData icon,
-    required String semanticsLabel,
-    required String semanticsIdentifier,
+    required final VoidCallback onTap,
+    required final IconData icon,
+    required final String semanticsLabel,
+    required final String semanticsIdentifier,
   }) {
     final colorScheme = Theme.of(context).colorScheme;
 
@@ -1048,7 +1048,7 @@ class _FlowGraphCanvasState extends ConsumerState<FlowGraphCanvas> {
       ..scale(clampedScale); // ignore: deprecated_member_use
   }
 
-  Widget _emptyPlaceholder(IconData icon, String message) {
+  Widget _emptyPlaceholder(final IconData icon, final String message) {
     final secondary = Theme.of(context).colorScheme.secondary;
     return Center(
       child: Padding(
@@ -1070,7 +1070,7 @@ class _FlowGraphCanvasState extends ConsumerState<FlowGraphCanvas> {
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(final BuildContext context) {
     final graphData = ref.watch(flowGraphDataProvider);
     final viewMode = ref.watch(flowViewModeProvider);
     final selectedNodeId = ref.watch(selectedNodeProvider);
@@ -1082,7 +1082,7 @@ class _FlowGraphCanvasState extends ConsumerState<FlowGraphCanvas> {
     final categoryColors = _buildCategoryColors(categories);
     final hasSelectedNode =
         selectedNodeId != null &&
-        rawNodes.any((node) => node.id == selectedNodeId);
+        rawNodes.any((final node) => node.id == selectedNodeId);
     final effectiveSelectedNodeId = hasSelectedNode ? selectedNodeId : null;
 
     if (selectedNodeId != null && !hasSelectedNode) {
@@ -1140,7 +1140,7 @@ class _FlowGraphCanvasState extends ConsumerState<FlowGraphCanvas> {
                 child: GestureDetector(
                   onTapUp: _onTapUp,
                   onLongPressStart: _onLongPress,
-                  onDoubleTapDown: (details) =>
+                  onDoubleTapDown: (final details) =>
                       _doubleTapPosition = details.localPosition,
                   onDoubleTap: _onDoubleTap,
                   behavior: HitTestBehavior.opaque,

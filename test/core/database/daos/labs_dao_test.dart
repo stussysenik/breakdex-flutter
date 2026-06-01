@@ -1,4 +1,3 @@
-import 'dart:async';
 
 import 'package:breakdex/core/database/database.dart';
 import 'package:drift/drift.dart' hide isNotNull, isNull;
@@ -21,7 +20,7 @@ void main() {
     // Enable foreign key enforcement so FK ON DELETE CASCADE works.
     db = AppDatabase.forTesting(
       NativeDatabase.memory(
-        setup: (rawDb) {
+        setup: (final rawDb) {
           rawDb.execute('PRAGMA journal_mode=WAL');
           rawDb.execute('PRAGMA foreign_keys=ON');
         },
@@ -39,10 +38,10 @@ void main() {
 
   /// Inserts a lab and returns its ID for subsequent assertions.
   Future<String> insertLab({
-    required String id,
-    String name = 'Test Lab',
-    String labType = 'project',
-    String status = 'idea',
+    required final String id,
+    final String name = 'Test Lab',
+    final String labType = 'project',
+    final String status = 'idea',
   }) async {
     await db.labsDao.insertLab(LabsCompanion.insert(
       id: id,
@@ -113,9 +112,9 @@ void main() {
     test('updateLab changes status field', () async {
       await insertLab(id: 'lab-1', status: 'idea');
 
-      await db.labsDao.updateLab(LabsCompanion(
-        id: const Value('lab-1'),
-        status: const Value('attempting'),
+      await db.labsDao.updateLab(const LabsCompanion(
+        id: Value('lab-1'),
+        status: Value('attempting'),
       ));
 
       final updated = await db.labsDao.getById('lab-1');
@@ -125,9 +124,9 @@ void main() {
     test('updateLab changes name field', () async {
       await insertLab(id: 'lab-1', name: 'Original');
 
-      await db.labsDao.updateLab(LabsCompanion(
-        id: const Value('lab-1'),
-        name: const Value('Renamed'),
+      await db.labsDao.updateLab(const LabsCompanion(
+        id: Value('lab-1'),
+        name: Value('Renamed'),
       ));
 
       final updated = await db.labsDao.getById('lab-1');
@@ -260,7 +259,7 @@ void main() {
       await db.labsDao.addMoveToLab('lab-1', 'move-3', 2);
 
       final labMoves = await db.labsDao.watchLabMoves('lab-1').first;
-      expect(labMoves.map((lm) => lm.move.id).toList(),
+      expect(labMoves.map((final lm) => lm.move.id).toList(),
           ['move-1', 'move-2', 'move-3']);
     });
   });

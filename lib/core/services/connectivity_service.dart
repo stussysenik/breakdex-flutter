@@ -61,7 +61,7 @@ class ConnectivityService {
     try {
       _sub = _connectivity.onConnectivityChanged.listen(
         _handleResults,
-        onError: (Object e) {
+        onError: (final Object e) {
           debugPrint('Connectivity stream error: $e');
           _emitState(ConnectionType.none);
         },
@@ -70,7 +70,7 @@ class ConnectivityService {
       // connectivity_plus only fires onConnectivityChanged on *changes*, not on
       // initial subscription — without this, the provider stays loading forever
       // if connectivity never changes (common in release mode).
-      checkType().then((type) {
+      checkType().then((final type) {
         if (_disposed) return;
         _emitState(type);
       });
@@ -85,11 +85,11 @@ class ConnectivityService {
     _sub = null;
   }
 
-  void _handleResults(List<ConnectivityResult> results) {
+  void _handleResults(final List<ConnectivityResult> results) {
     _emitState(_resolveType(results));
   }
 
-  void _emitState(ConnectionType type) {
+  void _emitState(final ConnectionType type) {
     final isOnline = type != ConnectionType.none;
     final typeChanged = _currentType != type;
     final onlineChanged = _online != isOnline;
@@ -108,7 +108,7 @@ class ConnectivityService {
     }
   }
 
-  ConnectionType _resolveType(List<ConnectivityResult> results) {
+  ConnectionType _resolveType(final List<ConnectivityResult> results) {
     if (results.contains(ConnectivityResult.wifi)) return ConnectionType.wifi;
     if (results.contains(ConnectivityResult.ethernet)) {
       return ConnectionType.ethernet;

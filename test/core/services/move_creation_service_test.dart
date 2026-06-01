@@ -20,10 +20,10 @@ class _FakeVideoAlbum extends NativeVideoAlbum {
 
   @override
   Future<ManagedAlbumCopy?> saveToAlbum({
-    required String videoPath,
-    required String albumName,
-    String? assetTitle,
-    String? category,
+    required final String videoPath,
+    required final String albumName,
+    final String? assetTitle,
+    final String? category,
   }) async {
     saveCalls.add({
       'videoPath': videoPath,
@@ -37,7 +37,7 @@ class _FakeVideoAlbum extends NativeVideoAlbum {
 
 class _FakeHashService extends AssetHashService {
   @override
-  Future<String> computeHash(String filePath) async => 'hash-123';
+  Future<String> computeHash(final String filePath) async => 'hash-123';
 }
 
 void main() {
@@ -61,7 +61,7 @@ void main() {
         ),
         hashService: _FakeHashService(),
         fsrsCardsDao: db.fsrsCardsDao,
-        onVideoImported: ({required localPath, required moveId, precomputedHash}) async {
+        onVideoImported: ({required final localPath, required final moveId, final precomputedHash}) async {
           syncCalls.add((localPath: localPath, moveId: moveId, precomputedHash: precomputedHash));
         },
         idGenerator: () => 'move-1',

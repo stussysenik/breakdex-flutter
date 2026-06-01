@@ -58,13 +58,13 @@ class ManagedAlbumReconcileReport {
 
 class ManagedAlbumReconciliationService {
   ManagedAlbumReconciliationService({
-    required MovesDao movesDao,
-    required MoveRepository moveRepository,
-    required MediaCleanupService mediaCleanupService,
-    required NativeVideoAlbum videoAlbum,
-    required VideoService videoService,
-    ProvenanceJournalService? provenanceJournal,
-    DateTime Function()? now,
+    required final MovesDao movesDao,
+    required final MoveRepository moveRepository,
+    required final MediaCleanupService mediaCleanupService,
+    required final NativeVideoAlbum videoAlbum,
+    required final VideoService videoService,
+    final ProvenanceJournalService? provenanceJournal,
+    final DateTime Function()? now,
   }) : _movesDao = movesDao,
        _moveRepository = moveRepository,
        _mediaCleanupService = mediaCleanupService,
@@ -82,7 +82,7 @@ class ManagedAlbumReconciliationService {
   final DateTime Function() _now;
 
   Future<ManagedAlbumReconcileReport> reconcileExternalDeletes({
-    ManagedAlbumReconcileTrigger trigger = ManagedAlbumReconcileTrigger.startup,
+    final ManagedAlbumReconcileTrigger trigger = ManagedAlbumReconcileTrigger.startup,
   }) async {
     final activeMoves = await _movesDao.getAll();
     final trackedMoves = activeMoves.where(_hasManagedAlbumAssetId).toList();
@@ -102,7 +102,7 @@ class ManagedAlbumReconciliationService {
     }
 
     final trackedReferences = trackedMoves
-        .map((move) {
+        .map((final move) {
           final assetLocalIdentifier = move.managedAlbumAssetId;
           final albumName = move.managedAlbumName;
           if (assetLocalIdentifier == null || albumName == null) return null;
@@ -165,7 +165,7 @@ class ManagedAlbumReconciliationService {
   }
 
   Future<void> _recordReconcileReport(
-    ManagedAlbumReconcileReport report,
+    final ManagedAlbumReconcileReport report,
   ) async {
     final message =
         'trigger=${report.trigger.name} '
@@ -186,7 +186,7 @@ class ManagedAlbumReconciliationService {
     );
   }
 
-  Future<void> restoreArchivedMove(Move move) async {
+  Future<void> restoreArchivedMove(final Move move) async {
     final resolvedVideoPath = await _ensureLocalVideoAvailable(move);
     final archiveReason = MoveArchiveReason.fromDbValue(move.archiveReason);
 
@@ -222,13 +222,13 @@ class ManagedAlbumReconciliationService {
     );
   }
 
-  Future<void> permanentlyDeleteArchivedMove(Move move) async {
+  Future<void> permanentlyDeleteArchivedMove(final Move move) async {
     await _mediaCleanupService.cleanupMoveMedia(move);
     await _moveRepository.delete(move.id);
   }
 
   Future<int> purgeExpiredArchivedMoves({
-    Duration retention = moveArchiveRetention,
+    final Duration retention = moveArchiveRetention,
   }) async {
     final cutoff = _now().subtract(retention);
     final expiredMoves = await _movesDao.getExpiredArchived(cutoff);
@@ -238,12 +238,12 @@ class ManagedAlbumReconciliationService {
     return expiredMoves.length;
   }
 
-  bool _hasManagedAlbumAssetId(Move move) {
+  bool _hasManagedAlbumAssetId(final Move move) {
     final assetId = move.managedAlbumAssetId?.trim();
     return assetId != null && assetId.isNotEmpty;
   }
 
-  Future<String> _ensureLocalVideoAvailable(Move move) async {
+  Future<String> _ensureLocalVideoAvailable(final Move move) async {
     final resolvedVideoPath = move.resolvedVideoPath;
     if (resolvedVideoPath != null) {
       final videoStatus = await _videoService.checkVideoFileWithRetry(
@@ -276,7 +276,7 @@ class ManagedAlbumReconciliationService {
     return restored.localPath;
   }
 
-  Future<bool> _recoverMissingLocalVideo(Move move) async {
+  Future<bool> _recoverMissingLocalVideo(final Move move) async {
     final resolvedVideoPath = move.resolvedVideoPath;
     if (resolvedVideoPath != null) {
       final videoStatus = await _videoService.checkVideoFileWithRetry(
@@ -332,8 +332,8 @@ class ManagedAlbumReconciliationService {
 
 class ManagedAlbumLifecycleController with WidgetsBindingObserver {
   ManagedAlbumLifecycleController({
-    required ManagedAlbumReconciliationService service,
-    required NativeVideoAlbum videoAlbum,
+    required final ManagedAlbumReconciliationService service,
+    required final NativeVideoAlbum videoAlbum,
   }) : _service = service,
        _videoAlbum = videoAlbum;
 
@@ -363,7 +363,7 @@ class ManagedAlbumLifecycleController with WidgetsBindingObserver {
   }
 
   @override
-  void didChangeAppLifecycleState(AppLifecycleState state) {
+  void didChangeAppLifecycleState(final AppLifecycleState state) {
     if (state != AppLifecycleState.resumed) return;
     unawaited(
       _ensureObservationAndSweep(trigger: ManagedAlbumReconcileTrigger.resume),
@@ -371,7 +371,7 @@ class ManagedAlbumLifecycleController with WidgetsBindingObserver {
   }
 
   Future<void> _ensureObservationAndSweep({
-    ManagedAlbumReconcileTrigger trigger = ManagedAlbumReconcileTrigger.startup,
+    final ManagedAlbumReconcileTrigger trigger = ManagedAlbumReconcileTrigger.startup,
   }) async {
     final sweep = _runningSweep;
     if (sweep != null) return sweep;
@@ -386,7 +386,7 @@ class ManagedAlbumLifecycleController with WidgetsBindingObserver {
       final shouldListen = report.accessStatus.allowsReadAccess && report.trackedMoves > 0;
       
       if (shouldListen && _photoChangesSub == null) {
-        _photoChangesSub = _videoAlbum.libraryChangeStream.listen((event) {
+        _photoChangesSub = _videoAlbum.libraryChangeStream.listen((final event) {
           if (event['type'] != 'libraryChanged') return;
           
           _debounceTimer?.cancel();

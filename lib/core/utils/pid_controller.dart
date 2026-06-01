@@ -1,8 +1,8 @@
 class PidController {
   PidController({
-    double kp = 0.2,
-    double ki = 0.03,
-    double kd = 0.003,
+    final double kp = 0.2,
+    final double ki = 0.03,
+    final double kd = 0.003,
   }) : _kp = kp,
        _ki = ki,
        _kd = kd;
@@ -14,7 +14,7 @@ class PidController {
   double _previousError = 0;
   double _integral = 0;
 
-  double update(double setpoint, double current, double dt) {
+  double update(final double setpoint, final double current, final double dt) {
     final error = setpoint - current;
     final safeDt = dt <= 0 ? 0.016 : dt;
     final derivative = (error - _previousError) / safeDt;

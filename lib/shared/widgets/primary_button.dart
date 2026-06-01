@@ -16,7 +16,7 @@ class PrimaryButton extends StatelessWidget {
   final Color? color;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(final BuildContext context) {
     final brightness = Theme.of(context).brightness;
     return DecoratedBox(
       decoration: BoxDecoration(

@@ -8,10 +8,10 @@ class _ComboGridSliver extends StatelessWidget {
   final List<(Combo, int)> combos;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(final BuildContext context) {
     return _sliverArsenalGrid(
       itemCount: combos.length,
-      builder: (index) {
+      builder: (final index) {
         final (combo, moveCount) = combos[index];
         return _ComboGridCell(
           key: ValueKey('combo-cell-${combo.id}'),
@@ -37,16 +37,16 @@ class _ComboGridCell extends ConsumerWidget {
   final int moveCount;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(final BuildContext context, final WidgetRef ref) {
     final stream = ref.watch(comboRepositoryProvider).watchComboMoves(combo.id);
 
     return StreamBuilder<List<ComboMoveWithDetail>>(
       stream: stream,
-      builder: (context, snapshot) {
+      builder: (final context, final snapshot) {
         final moves = snapshot.data ?? const <ComboMoveWithDetail>[];
 
         final previewPath = moves
-                .map((item) => item.move.resolvedVideoPath)
+                .map((final item) => item.move.resolvedVideoPath)
                 .whereType<String>()
                 .firstOrNull ??
             combo.resolvedActiveVideoPath;
@@ -55,10 +55,10 @@ class _ComboGridCell extends ConsumerWidget {
             ? _GridThumbnail(videoPath: previewPath)
             : _ComboPreviewFallback(
                 stepCount: moves.length,
-                stepNames: moves.map((item) => item.move.name).take(3).toList(),
+                stepNames: moves.map((final item) => item.move.name).take(3).toList(),
               );
 
-        final names = moves.map((item) => item.move.name).take(3).toList();
+        final names = moves.map((final item) => item.move.name).take(3).toList();
         final overflow = moves.length - names.length;
         final sequenceLabel = names.isEmpty
             ? '$moveCount move${moveCount == 1 ? '' : 's'}'
@@ -155,7 +155,7 @@ class _ComboPreviewFallback extends StatelessWidget {
   final List<String> stepNames;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(final BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
     return Container(
       color: colorScheme.surfaceContainerHighest,

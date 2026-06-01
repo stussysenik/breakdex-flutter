@@ -20,17 +20,17 @@ class LabBoardView extends ConsumerWidget {
   const LabBoardView({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(final BuildContext context, final WidgetRef ref) {
     final labsAsync = ref.watch(labsStreamProvider);
 
     return labsAsync.when(
       loading: () => const SliverFillRemaining(
         child: Center(child: CircularProgressIndicator()),
       ),
-      error: (e, _) => SliverFillRemaining(
+      error: (final e, _) => SliverFillRemaining(
         child: Center(child: Text('Error: $e')),
       ),
-      data: (labs) {
+      data: (final labs) {
         // Bucket labs by status for the 4 columns.
         final Map<String, List<Lab>> buckets = {
           'idea': [],
@@ -105,7 +105,7 @@ class _BoardColumn extends StatelessWidget {
   final List<Lab> labs;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(final BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
 
     return SizedBox(
@@ -176,7 +176,7 @@ class _BoardColumn extends StatelessWidget {
                   : ListView.builder(
                       padding: const EdgeInsets.all(AppSpacing.xs),
                       itemCount: labs.length,
-                      itemBuilder: (context, index) {
+                      itemBuilder: (final context, final index) {
                         final lab = labs[index];
                         return LabCard(
                           lab: lab,

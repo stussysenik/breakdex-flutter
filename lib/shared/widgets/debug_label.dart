@@ -13,7 +13,7 @@ class TaggedBuilder extends StatelessWidget {
   final Widget? defaultWidget;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(final BuildContext context) {
     late final Widget child;
     try {
       child = builder(context);
@@ -30,9 +30,9 @@ class _TaggedWidget extends InheritedWidget {
   final String tag;
 
   @override
-  bool updateShouldNotify(_TaggedWidget old) => tag != old.tag;
+  bool updateShouldNotify(final _TaggedWidget old) => tag != old.tag;
 
-  static String? tagOf(BuildContext context) {
+  static String? tagOf(final BuildContext context) {
     final widget = context.getInheritedWidgetOfExactType<_TaggedWidget>();
     return widget?.tag;
   }

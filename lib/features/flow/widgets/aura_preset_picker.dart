@@ -30,14 +30,14 @@ class AuraPresetPicker extends ConsumerWidget {
   const AuraPresetPicker({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(final BuildContext context, final WidgetRef ref) {
     final presetsAsync = ref.watch(auraPresetsProvider);
     final activeAsync = ref.watch(activeAuraProvider);
 
     return presetsAsync.when(
       loading: () => const SizedBox(height: 36),
-      error: (_, __) => const SizedBox(height: 36),
-      data: (presets) {
+      error: (_, _) => const SizedBox(height: 36),
+      data: (final presets) {
         final activeId = activeAsync.valueOrNull?.id;
 
         return SizedBox(
@@ -48,8 +48,8 @@ class AuraPresetPicker extends ConsumerWidget {
               horizontal: AppSpacing.screenEdge,
             ),
             itemCount: presets.length + 1, // +1 for the "+" button
-            separatorBuilder: (_, __) => const SizedBox(width: AppSpacing.sm),
-            itemBuilder: (context, index) {
+            separatorBuilder: (_, _) => const SizedBox(width: AppSpacing.sm),
+            itemBuilder: (final context, final index) {
               // Last item = "add new preset" chip.
               if (index == presets.length) {
                 return _AddPresetChip(
@@ -75,15 +75,15 @@ class AuraPresetPicker extends ConsumerWidget {
   }
 
   /// Switch the active preset — single tap, no confirmation.
-  Future<void> _activatePreset(WidgetRef ref, String presetId) async {
+  Future<void> _activatePreset(final WidgetRef ref, final String presetId) async {
     unawaited(HapticFeedback.selectionClick());
     await ref.read(auraDaoProvider).setActivePreset(presetId);
   }
 
   /// Bottom sheet for creating a new preset with a name input.
   Future<void> _showCreatePresetSheet(
-    BuildContext context,
-    WidgetRef ref,
+    final BuildContext context,
+    final WidgetRef ref,
   ) async {
     final name = await showModalBottomSheet<String>(
       context: context,
@@ -105,15 +105,15 @@ class AuraPresetPicker extends ConsumerWidget {
 
   /// Bottom sheet with rename/delete options for an existing preset.
   Future<void> _showPresetOptionsSheet(
-    BuildContext context,
-    WidgetRef ref,
-    AuraPreset preset,
+    final BuildContext context,
+    final WidgetRef ref,
+    final AuraPreset preset,
   ) async {
     unawaited(HapticFeedback.lightImpact());
 
     final action = await showModalBottomSheet<_PresetAction>(
       context: context,
-      builder: (ctx) => _PresetOptionsSheet(presetName: preset.name),
+      builder: (final ctx) => _PresetOptionsSheet(presetName: preset.name),
     );
 
     if (action == null || !context.mounted) return;
@@ -132,7 +132,7 @@ class AuraPresetPicker extends ConsumerWidget {
           // Update preset name directly via the database.
           final db = ref.read(databaseProvider);
           await (db.update(db.auraPresets)
-                ..where((t) => t.id.equals(preset.id)))
+                ..where((final t) => t.id.equals(preset.id)))
               .write(AuraPresetsCompanion(name: Value(newName.trim())));
         }
 
@@ -141,7 +141,7 @@ class AuraPresetPicker extends ConsumerWidget {
         // in this schema version. Presets are organizational labels only.
         final db = ref.read(databaseProvider);
         await (db.delete(db.auraPresets)
-              ..where((t) => t.id.equals(preset.id)))
+              ..where((final t) => t.id.equals(preset.id)))
             .go();
         unawaited(HapticFeedback.mediumImpact());
     }
@@ -167,7 +167,7 @@ class _PresetChip extends StatelessWidget {
   final VoidCallback onLongPress;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(final BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
 
     return GestureDetector(
@@ -207,7 +207,7 @@ class _AddPresetChip extends StatelessWidget {
   final VoidCallback onTap;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(final BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
 
     return GestureDetector(
@@ -254,7 +254,7 @@ class _PresetOptionsSheet extends StatelessWidget {
   final String presetName;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(final BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
 
     return SafeArea(
@@ -353,7 +353,7 @@ class _PresetNameSheetState extends State<_PresetNameSheet> {
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(final BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
 
     return Padding(

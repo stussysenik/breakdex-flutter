@@ -57,9 +57,9 @@ void main() {
   });
 
   Future<void> pumpFlowScreen(
-    WidgetTester tester, {
-    String? selectedNodeId,
-    FlowViewMode mode = FlowViewMode.map,
+    final WidgetTester tester, {
+    final String? selectedNodeId,
+    final FlowViewMode mode = FlowViewMode.map,
   }) async {
     final prefs = await SharedPreferences.getInstance();
     tester.view.devicePixelRatio = 3.0;
@@ -74,12 +74,12 @@ void main() {
         overrides: [
           sharedPreferencesProvider.overrideWithValue(prefs),
           pendingChangesCountProvider.overrideWith(
-            (ref) => Stream<int>.value(0),
+            (final ref) => Stream<int>.value(0),
           ),
-          isLoggedInProvider.overrideWith((ref) => false),
-          flowGraphDataProvider.overrideWith((ref) => graphData),
-          selectedNodeProvider.overrideWith((ref) => selectedNodeId),
-          flowViewModeProvider.overrideWith((ref) => mode),
+          isLoggedInProvider.overrideWith((final ref) => false),
+          flowGraphDataProvider.overrideWith((final ref) => graphData),
+          selectedNodeProvider.overrideWith((final ref) => selectedNodeId),
+          flowViewModeProvider.overrideWith((final ref) => mode),
         ],
         child: MaterialApp(theme: AppTheme.light(), home: const FlowScreen()),
       ),
@@ -89,7 +89,7 @@ void main() {
   }
 
   testWidgets('shows the clearer mode explanation and honest entity note', (
-    tester,
+    final tester,
   ) async {
     await pumpFlowScreen(tester);
 
@@ -110,7 +110,7 @@ void main() {
   });
 
   testWidgets('shows the selected move inspector and its actions', (
-    tester,
+    final tester,
   ) async {
     await pumpFlowScreen(tester, selectedNodeId: 'move-b');
 

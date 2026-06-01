@@ -38,16 +38,16 @@ class FsrsCardsDao extends DatabaseAccessor<AppDatabase>
   FsrsCardsDao(super.db);
 
   /// Get a single FSRS card by entity ID and type, or null if not found.
-  Future<FsrsCard?> getByEntityId(String entityId,
-      {String entityType = 'move'}) =>
+  Future<FsrsCard?> getByEntityId(final String entityId,
+      {final String entityType = 'move'}) =>
       (select(fsrsCards)
-            ..where((t) =>
+            ..where((final t) =>
                 t.entityId.equals(entityId) &
                 t.entityType.equals(entityType)))
           .getSingleOrNull();
 
   /// Backward-compat wrapper: get card by move ID.
-  Future<FsrsCard?> getByMoveId(String moveId) =>
+  Future<FsrsCard?> getByMoveId(final String moveId) =>
       getByEntityId(moveId, entityType: 'move');
 
   /// Get all FSRS cards.
@@ -57,11 +57,11 @@ class FsrsCardsDao extends DatabaseAccessor<AppDatabase>
   Stream<List<FsrsCard>> watchAll() => select(fsrsCards).watch();
 
   /// Get cards that are due for review (due <= now).
-  Future<List<FsrsCard>> getDueCards({DateTime? asOf}) {
+  Future<List<FsrsCard>> getDueCards({final DateTime? asOf}) {
     final now = asOf ?? DateTime.now();
     return (select(fsrsCards)
-          ..where((t) => t.due.isSmallerOrEqualValue(now))
-          ..orderBy([(t) => OrderingTerm.asc(t.due)]))
+          ..where((final t) => t.due.isSmallerOrEqualValue(now))
+          ..orderBy([(final t) => OrderingTerm.asc(t.due)]))
         .get();
   }
 
@@ -70,8 +70,8 @@ class FsrsCardsDao extends DatabaseAccessor<AppDatabase>
   /// Uses LEFT JOIN because entities may have been deleted — orphan cards
   /// are still returned so the integrity check can clean them up.
   Future<List<FsrsCardWithEntity>> getDueCardsWithEntities({
-    DateTime? asOf,
-    String? category,
+    final DateTime? asOf,
+    final String? category,
   }) async {
     final now = asOf ?? DateTime.now();
     final query = select(fsrsCards).join([
@@ -92,7 +92,7 @@ class FsrsCardsDao extends DatabaseAccessor<AppDatabase>
     query.orderBy([OrderingTerm.asc(fsrsCards.due)]);
 
     final rows = await query.get();
-    return rows.map((row) {
+    return rows.map((final row) {
       return FsrsCardWithEntity(
         card: row.readTable(fsrsCards),
         move: row.readTableOrNull(moves),
@@ -103,14 +103,14 @@ class FsrsCardsDao extends DatabaseAccessor<AppDatabase>
 
   /// Legacy wrapper — returns FsrsCardWithEntity (typedef'd as FsrsCardWithMove).
   Future<List<FsrsCardWithMove>> getDueCardsWithMoves({
-    DateTime? asOf,
-    String? category,
+    final DateTime? asOf,
+    final String? category,
   }) =>
       getDueCardsWithEntities(asOf: asOf, category: category);
 
   /// Get all FSRS cards with due dates in a date range (for calendar view).
   Future<List<FsrsCardWithEntity>> getCardsInRange(
-      DateTime start, DateTime end) async {
+      final DateTime start, final DateTime end) async {
     final query = select(fsrsCards).join([
       leftOuterJoin(moves,
           moves.id.equalsExp(fsrsCards.entityId) &
@@ -125,7 +125,7 @@ class FsrsCardsDao extends DatabaseAccessor<AppDatabase>
     query.orderBy([OrderingTerm.asc(fsrsCards.due)]);
 
     final rows = await query.get();
-    return rows.map((row) {
+    return rows.map((final row) {
       return FsrsCardWithEntity(
         card: row.readTable(fsrsCards),
         move: row.readTableOrNull(moves),
@@ -135,13 +135,13 @@ class FsrsCardsDao extends DatabaseAccessor<AppDatabase>
   }
 
   /// Insert or update an FSRS card (upsert on entityId+entityType PK).
-  Future<void> upsert(FsrsCardsCompanion entry) async {
+  Future<void> upsert(final FsrsCardsCompanion entry) async {
     await into(fsrsCards).insertOnConflictUpdate(entry);
   }
 
   /// Ensure an FSRS card exists for an entity. Creates a default New card if missing.
-  Future<FsrsCard> ensureCard(String entityId,
-      {String entityType = 'move'}) async {
+  Future<FsrsCard> ensureCard(final String entityId,
+      {final String entityType = 'move'}) async {
     final existing = await getByEntityId(entityId, entityType: entityType);
     if (existing != null) return existing;
 
@@ -155,7 +155,7 @@ class FsrsCardsDao extends DatabaseAccessor<AppDatabase>
 
   /// Get all FSRS cards joined with their entities.
   Future<List<FsrsCardWithEntity>> getCardsWithEntities({
-    String? category,
+    final String? category,
   }) async {
     final query = select(fsrsCards).join([
       leftOuterJoin(moves,
@@ -172,7 +172,7 @@ class FsrsCardsDao extends DatabaseAccessor<AppDatabase>
     }
 
     final rows = await query.get();
-    return rows.map((row) {
+    return rows.map((final row) {
       return FsrsCardWithEntity(
         card: row.readTable(fsrsCards),
         move: row.readTableOrNull(moves),
@@ -183,7 +183,7 @@ class FsrsCardsDao extends DatabaseAccessor<AppDatabase>
 
   /// Legacy wrapper.
   Future<List<FsrsCardWithMove>> getCardsWithMoves({
-    String? category,
+    final String? category,
   }) =>
       getCardsWithEntities(category: category);
 
@@ -198,8 +198,8 @@ class FsrsCardsDao extends DatabaseAccessor<AppDatabase>
               fsrsCards.entityType.equals('combo')),
     ]);
 
-    return query.watch().map((rows) {
-      return rows.map((row) {
+    return query.watch().map((final rows) {
+      return rows.map((final row) {
         return FsrsCardWithEntity(
           card: row.readTable(fsrsCards),
           move: row.readTableOrNull(moves),
@@ -217,23 +217,23 @@ class FsrsCardsDao extends DatabaseAccessor<AppDatabase>
   Future<DateTime?> getNextDueDate() async {
     final now = DateTime.now().toUtc();
     final query = select(fsrsCards)
-      ..where((t) => t.due.isBiggerThanValue(now))
-      ..orderBy([(t) => OrderingTerm.asc(t.due)])
+      ..where((final t) => t.due.isBiggerThanValue(now))
+      ..orderBy([(final t) => OrderingTerm.asc(t.due)])
       ..limit(1);
     final result = await query.getSingleOrNull();
     return result?.due;
   }
 
   /// Delete an FSRS card by entity ID and type.
-  Future<void> deleteByEntityId(String entityId,
-      {String entityType = 'move'}) =>
+  Future<void> deleteByEntityId(final String entityId,
+      {final String entityType = 'move'}) =>
       (delete(fsrsCards)
-            ..where((t) =>
+            ..where((final t) =>
                 t.entityId.equals(entityId) &
                 t.entityType.equals(entityType)))
           .go();
 
   /// Legacy wrapper.
-  Future<void> deleteByMoveId(String moveId) =>
+  Future<void> deleteByMoveId(final String moveId) =>
       deleteByEntityId(moveId, entityType: 'move');
 }

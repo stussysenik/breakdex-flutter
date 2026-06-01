@@ -25,7 +25,7 @@ class LabListView extends ConsumerWidget {
   final String? labTypeFilter;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(final BuildContext context, final WidgetRef ref) {
     // Use the type-filtered stream when a filter is active, otherwise all labs.
     final labsAsync = labTypeFilter != null
         ? ref.watch(_labsByTypeProvider(labTypeFilter!))
@@ -35,10 +35,10 @@ class LabListView extends ConsumerWidget {
       loading: () => const SliverFillRemaining(
         child: Center(child: CircularProgressIndicator()),
       ),
-      error: (e, _) => SliverFillRemaining(
+      error: (final e, _) => SliverFillRemaining(
         child: Center(child: Text('Error: $e')),
       ),
-      data: (labs) {
+      data: (final labs) {
         if (labs.isEmpty) {
           return SliverFillRemaining(
             child: _LabEmptyState(labType: labTypeFilter),
@@ -51,7 +51,7 @@ class LabListView extends ConsumerWidget {
           ),
           sliver: SliverList.builder(
             itemCount: labs.length,
-            itemBuilder: (_, index) {
+            itemBuilder: (_, final index) {
               final lab = labs[index];
               return LabCard(
                 lab: lab,
@@ -82,7 +82,7 @@ class LabListView extends ConsumerWidget {
 /// Type-filtered stream provider — watches [LabsDao.watchByType] for a
 /// specific labType ('project' or 'set').
 final _labsByTypeProvider =
-    StreamProvider.family<List<Lab>, String>((ref, labType) {
+    StreamProvider.family<List<Lab>, String>((final ref, final labType) {
   return ref.watch(labsDaoProvider).watchByType(labType);
 });
 
@@ -94,7 +94,7 @@ class _LabEmptyState extends StatelessWidget {
   final String? labType;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(final BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
 
     final (icon, title, subtitle) = switch (labType) {

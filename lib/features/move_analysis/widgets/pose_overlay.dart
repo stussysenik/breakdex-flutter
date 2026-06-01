@@ -17,7 +17,7 @@ class PoseOverlay extends StatelessWidget {
   final PoseFrame? poseFrame;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(final BuildContext context) {
     if (poseFrame == null || !poseFrame!.isUsable) {
       return const SizedBox.shrink();
     }
@@ -55,7 +55,7 @@ class _PoseOverlayPainter extends CustomPainter {
   ];
 
   @override
-  void paint(Canvas canvas, Size size) {
+  void paint(final Canvas canvas, final Size size) {
     final jointMap = <String, PoseJoint>{};
     for (final j in frame.joints) {
       jointMap[j.name] = j;
@@ -115,13 +115,13 @@ class _PoseOverlayPainter extends CustomPainter {
   /// Map a joint's x/y to widget coordinates.
   /// Vision returns normalized coords — x in [-1, 1], y in [-1, 1].
   /// We map to [0, width] and [0, height], flipping y since screen Y is inverted.
-  Offset _toOffset(PoseJoint joint, Size size) {
+  Offset _toOffset(final PoseJoint joint, final Size size) {
     final x = (joint.x + 1) / 2 * size.width;
     final y = (1 - (joint.y + 1) / 2) * size.height;
     return Offset(x.clamp(0, size.width), y.clamp(0, size.height));
   }
 
-  Color _jointColor(String name) {
+  Color _jointColor(final String name) {
     if (name.contains('shoulder') ||
         name.contains('elbow') ||
         name.contains('wrist')) {
@@ -140,6 +140,6 @@ class _PoseOverlayPainter extends CustomPainter {
   }
 
   @override
-  bool shouldRepaint(_PoseOverlayPainter oldDelegate) =>
+  bool shouldRepaint(final _PoseOverlayPainter oldDelegate) =>
       oldDelegate.frame != frame;
 }

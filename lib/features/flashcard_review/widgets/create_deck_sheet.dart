@@ -203,7 +203,17 @@ class _CreateDeckSheetState extends ConsumerState<CreateDeckSheet> {
                     ),
                     dotColor: context.stateColor(LearningState.learning),
                     isSelected: _selectedStates.contains(1),
-                    onTap: () => _toggleState(1),
+                    onTap: () {
+                      setState(() {
+                        if (_selectedStates.contains(1)) {
+                          _selectedStates.remove(1);
+                          _selectedStates.remove(3);
+                        } else {
+                          _selectedStates.add(1);
+                          _selectedStates.add(3);
+                        }
+                      });
+                    },
                   ),
                   _FilterChip(
                     label: resolveLearningStateLabel(
@@ -213,12 +223,6 @@ class _CreateDeckSheetState extends ConsumerState<CreateDeckSheet> {
                     dotColor: context.stateColor(LearningState.mastery),
                     isSelected: _selectedStates.contains(2),
                     onTap: () => _toggleState(2),
-                  ),
-                  _FilterChip(
-                    label: 'Relearning',
-                    dotColor: context.stateColor(LearningState.learning),
-                    isSelected: _selectedStates.contains(3),
-                    onTap: () => _toggleState(3),
                   ),
                 ],
               ),

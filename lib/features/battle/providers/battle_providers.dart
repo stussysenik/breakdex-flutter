@@ -47,18 +47,18 @@ class BattleState {
   });
 
   BattleState copyWith({
-    BattlePhase? phase,
-    BattleDifficulty? difficulty,
-    List<Move>? moves,
-    int? currentIndex,
-    int? score,
-    int? streak,
-    int? longestStreak,
-    int? goodCount,
-    int? hardCount,
-    int? againCount,
-    double? timeRemaining,
-    bool? isFinished,
+    final BattlePhase? phase,
+    final BattleDifficulty? difficulty,
+    final List<Move>? moves,
+    final int? currentIndex,
+    final int? score,
+    final int? streak,
+    final int? longestStreak,
+    final int? goodCount,
+    final int? hardCount,
+    final int? againCount,
+    final double? timeRemaining,
+    final bool? isFinished,
   }) =>
       BattleState(
         phase: phase ?? this.phase,
@@ -87,7 +87,7 @@ class BattleNotifier extends StateNotifier<BattleState> {
   final AppDatabase _db;
   Timer? _timer;
 
-  void selectDifficulty(BattleDifficulty difficulty) {
+  void selectDifficulty(final BattleDifficulty difficulty) {
     state = state.copyWith(difficulty: difficulty);
   }
 
@@ -123,7 +123,7 @@ class BattleNotifier extends StateNotifier<BattleState> {
     });
   }
 
-  void rate(String rating) {
+  void rate(final String rating) {
     if (state.isFinished || state.phase != BattlePhase.active) return;
 
     int scoreAdd = 0;
@@ -208,7 +208,7 @@ class BattleNotifier extends StateNotifier<BattleState> {
 }
 
 final battleProvider =
-    StateNotifierProvider.autoDispose<BattleNotifier, BattleState>((ref) {
+    StateNotifierProvider.autoDispose<BattleNotifier, BattleState>((final ref) {
   final db = ref.watch(databaseProvider);
   return BattleNotifier(db);
 });

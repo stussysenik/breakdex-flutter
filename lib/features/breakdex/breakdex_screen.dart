@@ -9,7 +9,7 @@ class BreakdexScreen extends ConsumerWidget {
   const BreakdexScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(final BuildContext context, final WidgetRef ref) {
     final colorScheme = Theme.of(context).colorScheme;
     final textColor = colorScheme.onSurface;
 
@@ -25,7 +25,6 @@ class BreakdexScreen extends ConsumerWidget {
               identifier: 'moves-tile',
               child: _HeroNavTile(
                 label: 'Moves',
-                subtitle: 'Browse by category',
                 onTap: () => context.go('/breakdex/moves'),
                 color: textColor,
               ),
@@ -35,7 +34,6 @@ class BreakdexScreen extends ConsumerWidget {
               identifier: 'combos-tile',
               child: _HeroNavTile(
                 label: 'Combos',
-                subtitle: 'Build sequences',
                 onTap: () => context.go('/breakdex/combos'),
                 color: textColor,
               ),
@@ -50,18 +48,16 @@ class BreakdexScreen extends ConsumerWidget {
 class _HeroNavTile extends StatelessWidget {
   const _HeroNavTile({
     required this.label,
-    required this.subtitle,
     required this.onTap,
     required this.color,
   });
 
   final String label;
-  final String subtitle;
   final VoidCallback onTap;
   final Color color;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(final BuildContext context) {
     return GestureDetector(
       onTap: onTap,
       child: Column(
@@ -73,13 +69,6 @@ class _HeroNavTile extends StatelessWidget {
               fontWeight: FontWeight.w800,
               fontSize: 42,
               letterSpacing: -0.5,
-            ),
-          ),
-          const SizedBox(height: AppSpacing.xs),
-          Text(
-            subtitle,
-            style: AppTypography.bodySmall.copyWith(
-              color: color.withValues(alpha: 0.5),
             ),
           ),
         ],

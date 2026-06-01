@@ -25,22 +25,22 @@ void main() {
     albumCalls.clear();
 
     TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
-        .setMockMethodCallHandler(previewChannel, (call) async {
+        .setMockMethodCallHandler(previewChannel, (final call) async {
           previewCalls.add(call);
           return const <dynamic>[];
         });
     TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
-        .setMockMethodCallHandler(sceneChannel, (call) async {
+        .setMockMethodCallHandler(sceneChannel, (final call) async {
           sceneCalls.add(call);
           return true;
         });
     TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
-        .setMockMethodCallHandler(visionChannel, (call) async {
+        .setMockMethodCallHandler(visionChannel, (final call) async {
           visionCalls.add(call);
           return null;
         });
     TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
-        .setMockMethodCallHandler(albumChannel, (call) async {
+        .setMockMethodCallHandler(albumChannel, (final call) async {
           albumCalls.add(call);
           if (call.method == 'saveToAlbum') {
             return <String, dynamic>{
@@ -278,7 +278,7 @@ void main() {
         albumCalls.single.arguments as Map,
       );
       final trackedAssets = (args['trackedAssets'] as List)
-          .map((value) => Map<String, dynamic>.from(value as Map))
+          .map((final value) => Map<String, dynamic>.from(value as Map))
           .toList();
 
       expect(args['source'], 'resume');

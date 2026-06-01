@@ -59,7 +59,7 @@ class NativeVideoExport {
 
   /// Stream of real-time export progress.
   static Stream<ExportProgress> get progressStream {
-    return _events.receiveBroadcastStream().map((event) {
+    return _events.receiveBroadcastStream().map((final event) {
       final map = Map<String, dynamic>.from(event as Map);
       return ExportProgress(
         phase: map['phase'] as String? ?? 'preparing',
@@ -80,14 +80,14 @@ class NativeVideoExport {
   /// [aspectRatio] — null for original, or "9:16", "16:9", "1:1", "4:5"
   /// [cropRect] — optional free-form crop (normalized 0.0-1.0 Rect)
   static Future<String> export({
-    required String inputPath,
-    required String outputPath,
-    required int trimStartMs,
-    required int trimEndMs,
-    double speed = 1.0,
-    int rotation = 0,
-    String? aspectRatio,
-    Rect? cropRect,
+    required final String inputPath,
+    required final String outputPath,
+    required final int trimStartMs,
+    required final int trimEndMs,
+    final double speed = 1.0,
+    final int rotation = 0,
+    final String? aspectRatio,
+    final Rect? cropRect,
   }) async {
     final args = <String, dynamic>{
       'inputPath': inputPath,

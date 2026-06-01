@@ -1,4 +1,4 @@
-import 'package:drift/drift.dart' hide isNull, isNotNull;
+import 'package:drift/drift.dart' hide isNotNull, isNull;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -56,11 +56,11 @@ void main() {
       // Delete via DAO
       await (db.delete(
         db.moves,
-      )..where((m) => m.id.equals('sync-move-3'))).go();
+      )..where((final m) => m.id.equals('sync-move-3'))).go();
 
       // Verify the move is gone
       final remaining = await db.select(db.moves).get();
-      expect(remaining.where((m) => m.id == 'sync-move-3'), isEmpty);
+      expect(remaining.where((final m) => m.id == 'sync-move-3'), isEmpty);
     });
 
     test('multiple entity inserts create multiple sync entries', () async {
@@ -98,7 +98,7 @@ void main() {
 
       final row =
           await (db.select(db.syncLog)..where(
-                (t) =>
+                (final t) =>
                     t.entityId.equals('video-sync-2') &
                     t.entityTable.equals('moves') &
                     t.action.equals('update'),
@@ -119,7 +119,7 @@ void main() {
 
       final move = await (db.select(
         db.moves,
-      )..where((m) => m.id.equals('video-sync-1'))).getSingle();
+      )..where((final m) => m.id.equals('video-sync-1'))).getSingle();
 
       expect(move.videoPath, '/path/to/video.mp4');
     });
@@ -132,13 +132,13 @@ void main() {
         videoPath: '/old/path.mp4',
       );
 
-      await (db.update(db.moves)..where((m) => m.id.equals('update-1'))).write(
+      await (db.update(db.moves)..where((final m) => m.id.equals('update-1'))).write(
         const MovesCompanion(videoPath: Value('/new/path.mp4')),
       );
 
       final updated = await (db.select(
         db.moves,
-      )..where((m) => m.id.equals('update-1'))).getSingle();
+      )..where((final m) => m.id.equals('update-1'))).getSingle();
 
       expect(updated.name, 'Original');
       expect(updated.videoPath, '/new/path.mp4');
@@ -152,12 +152,12 @@ void main() {
         videoPath: '/path.mp4',
       );
 
-      await (db.update(db.moves)..where((m) => m.id.equals('clear-video-1')))
+      await (db.update(db.moves)..where((final m) => m.id.equals('clear-video-1')))
           .write(const MovesCompanion(videoPath: Value(null)));
 
       final updated = await (db.select(
         db.moves,
-      )..where((m) => m.id.equals('clear-video-1'))).getSingle();
+      )..where((final m) => m.id.equals('clear-video-1'))).getSingle();
 
       expect(updated.videoPath, isNull);
     });
@@ -225,12 +225,12 @@ void main() {
       // Verify combo and its moves exist
       final combo = await (db.select(
         db.combos,
-      )..where((c) => c.id.equals('sync-combo-1'))).getSingle();
+      )..where((final c) => c.id.equals('sync-combo-1'))).getSingle();
       expect(combo.name, 'Test Combo');
 
       final comboMoves = await (db.select(
         db.comboMoves,
-      )..where((cm) => cm.comboId.equals('sync-combo-1'))).get();
+      )..where((final cm) => cm.comboId.equals('sync-combo-1'))).get();
       expect(comboMoves.length, 2);
     });
   });

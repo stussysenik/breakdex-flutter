@@ -50,7 +50,7 @@ void main() {
       );
 
       container = ProviderContainer(
-        overrides: [flowGraphDataProvider.overrideWith((ref) => graphData)],
+        overrides: [flowGraphDataProvider.overrideWith((final ref) => graphData)],
       );
     });
 

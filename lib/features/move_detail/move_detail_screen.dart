@@ -1,27 +1,19 @@
 import 'dart:async';
-import 'dart:io';
 import 'dart:math';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter_animate/flutter_animate.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
-import 'package:path/path.dart' as p;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:uuid/uuid.dart';
 
 import '../../core/database/database.dart';
 import '../../core/design/colors.dart';
 import '../../core/design/spacing.dart';
 import '../../core/design/typography.dart';
-import '../../core/design/theme.dart';
 import '../../core/models/learning_state.dart';
 import '../../core/models/reviewable_item.dart';
 import '../../core/providers.dart';
-import '../../core/services/native_video_album.dart';
 import '../../core/services/video_path_resolver.dart';
-import '../../core/services/media_playback_coordinator.dart';
 import '../../core/state_machines/move_detail/provider.dart';
 import '../../core/state_machines/move_detail/state.dart';
 import '../../core/state_machines/move_detail/event.dart';
@@ -33,7 +25,6 @@ import '../../shared/widgets/state_pill.dart';
 import '../../shared/widgets/video_player_widget.dart';
 import '../../core/services/native_share_sheet.dart';
 import '../../shared/widgets/move_photos_section.dart';
-import '../flashcard_review/widgets/state_picker_sheet.dart';
 import '../lab/widgets/move_aura_section.dart';
 import '../../shared/widgets/video_picker_sheet.dart';
 import '../../core/services/categories_service.dart';
@@ -57,12 +48,12 @@ class _MoveDetailScreenState extends ConsumerState<MoveDetailScreen> {
     Future.microtask(() {
       final moveId = widget.moveId;
       debugPrint('[MoveDetailScreen] initState loading moveId=$moveId');
-      ref.read(moveRepositoryProvider).getById(moveId).then((m) {
+      ref.read(moveRepositoryProvider).getById(moveId).then((final m) {
         if (mounted) {
           debugPrint('[MoveDetailScreen] initState loaded move name="${m.name}" id=${m.id}');
           ref.read(moveDetailProvider.notifier).init(m);
         }
-      }).catchError((err, stack) {
+      }).catchError((final err, final stack) {
         debugPrint('[MoveDetailScreen] initState FAILED to load moveId=$moveId — $err');
         if (mounted) {
           context.pop();
@@ -72,7 +63,7 @@ class _MoveDetailScreenState extends ConsumerState<MoveDetailScreen> {
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(final BuildContext context) {
     final machineState = ref.watch(moveDetailProvider);
     final colorScheme = Theme.of(context).colorScheme;
 
@@ -117,7 +108,7 @@ class _MoveDetailScreenState extends ConsumerState<MoveDetailScreen> {
                       else if (move.contentHash != null)
                         _CloudVideoPlaceholder(
                           move: move,
-                          onDownloaded: (localPath) {
+                          onDownloaded: (final localPath) {
                             ref.read(moveDetailProvider.notifier).send(
                                   VideoEdited(localPath),
                                 );
@@ -191,7 +182,7 @@ class _MoveDetailScreenState extends ConsumerState<MoveDetailScreen> {
                       // Notes
                       NotesSection(
                         notes: move.notes,
-                        onChanged: (text) {
+                        onChanged: (final text) {
                           ref
                               .read(moveDetailProvider.notifier)
                               .send(UpdateNotes(text));
@@ -202,7 +193,7 @@ class _MoveDetailScreenState extends ConsumerState<MoveDetailScreen> {
                       // Photos
                       MovePhotosSection(
                         imagePaths: move.imagePaths,
-                        onChanged: (json) {
+                        onChanged: (final json) {
                           ref
                               .read(moveDetailProvider.notifier)
                               .send(UpdatePhotos(json));
@@ -345,7 +336,7 @@ class _MoveDetailScreenState extends ConsumerState<MoveDetailScreen> {
     );
   }
 
-  List<Widget> _buildOverlays(MoveDetailState state, ColorScheme cs) {
+  List<Widget> _buildOverlays(final MoveDetailState state, final ColorScheme cs) {
     debugPrint('[MoveDetailScreen] _buildOverlays state=${state.runtimeType}');
     final overlays = <Widget>[];
     final notifier = ref.read(moveDetailProvider.notifier);
@@ -353,18 +344,18 @@ class _MoveDetailScreenState extends ConsumerState<MoveDetailScreen> {
     if (state is Renaming) {
       overlays.add(RenameOverlay(
         draftName: state.draftName,
-        onDraftChanged: (n) => notifier.send(UpdateDraft(n)),
+        onDraftChanged: (final n) => notifier.send(UpdateDraft(n)),
         onCancel: () => notifier.send(const Cancel()),
-        onSave: (n) => notifier.send(SaveName(n)),
+        onSave: (final n) => notifier.send(SaveName(n)),
       ));
     }
 
     if (state is NameConflict) {
       overlays.add(RenameOverlay(
         draftName: state.conflictingName,
-        onDraftChanged: (n) => notifier.send(UpdateDraft(n)),
+        onDraftChanged: (final n) => notifier.send(UpdateDraft(n)),
         onCancel: () => notifier.send(const Cancel()),
-        onSave: (n) => notifier.send(SaveName(n)),
+        onSave: (final n) => notifier.send(SaveName(n)),
         isConflict: true,
         conflictName: state.conflictingName,
       ));
@@ -385,7 +376,7 @@ class _MoveDetailScreenState extends ConsumerState<MoveDetailScreen> {
         currentState: LearningState.fromName(state.move.learningState),
         moveName: state.move.name,
         onCancel: () => notifier.send(const Cancel()),
-        onSave: (next) => notifier.send(SaveState(next)),
+        onSave: (final next) => notifier.send(SaveState(next)),
       ));
     }
 
@@ -393,7 +384,7 @@ class _MoveDetailScreenState extends ConsumerState<MoveDetailScreen> {
       overlays.add(CategoryPickerOverlay(
         currentCategory: state.move.category,
         onCancel: () => notifier.send(const Cancel()),
-        onSave: (next) => notifier.send(SaveCategory(next)),
+        onSave: (final next) => notifier.send(SaveCategory(next)),
       ));
     }
 
@@ -401,7 +392,7 @@ class _MoveDetailScreenState extends ConsumerState<MoveDetailScreen> {
       overlays.add(CountEditorOverlay(
         initialCount: state.move.count,
         onCancel: () => notifier.send(const Cancel()),
-        onSave: (next) => notifier.send(SaveCount(next)),
+        onSave: (final next) => notifier.send(SaveCount(next)),
       ));
     }
 
@@ -457,7 +448,7 @@ class _MoveDetailScreenState extends ConsumerState<MoveDetailScreen> {
     return overlays;
   }
 
-  Future<void> _shareVideo(BuildContext context, Move move) async {
+  Future<void> _shareVideo(final BuildContext context, final Move move) async {
     final absPath = VideoPathResolver.toAbsolute(move.videoPath!);
     await NativeShareSheet.shareFiles(
       filePaths: [absPath],
@@ -466,7 +457,7 @@ class _MoveDetailScreenState extends ConsumerState<MoveDetailScreen> {
     );
   }
 
-  Future<void> _editVideo(BuildContext context, WidgetRef ref, Move move) async {
+  Future<void> _editVideo(final BuildContext context, final WidgetRef ref, final Move move) async {
     final absPath = move.resolvedVideoPath!;
     final editedPath = await context.push<String>('/video-editor', extra: {'videoPath': absPath});
     if (editedPath != null && mounted) {
@@ -474,17 +465,17 @@ class _MoveDetailScreenState extends ConsumerState<MoveDetailScreen> {
     }
   }
 
-  Future<void> _addOrReplaceVideo(BuildContext context, WidgetRef ref, Move move) async {
+  Future<void> _addOrReplaceVideo(final BuildContext context, final WidgetRef ref, final Move move) async {
     final pickResult = await VideoPickerSheet.show(context);
     if (pickResult != null && mounted) {
       ref.read(moveDetailProvider.notifier).send(VideoEdited(pickResult.localPath));
     }
   }
 
-  String _formatFileSize(int bytes) {
+  String _formatFileSize(final int bytes) {
     if (bytes <= 0) return '0 B';
     const suffixes = ['B', 'KB', 'MB', 'GB', 'TB'];
-    var i = (log(bytes) / log(1024)).floor();
+    final i = (log(bytes) / log(1024)).floor();
     return '${(bytes / pow(1024, i)).toStringAsFixed(1)} ${suffixes[i]}';
   }
 }
@@ -501,7 +492,7 @@ class _MetadataRow extends StatelessWidget {
   });
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(final BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
     return Padding(
       padding: const EdgeInsets.only(bottom: AppSpacing.xs),
@@ -536,10 +527,10 @@ class _CategoryBadge extends ConsumerWidget {
   final VoidCallback? onTap;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(final BuildContext context, final WidgetRef ref) {
     final colorScheme = Theme.of(context).colorScheme;
     final categories = ref.watch(categoriesProvider);
-    final match = categories.where((item) => item.name == category).firstOrNull;
+    final match = categories.where((final item) => item.name == category).firstOrNull;
     final dotColor = match?.color ?? colorScheme.secondary;
 
     return Semantics(
@@ -578,7 +569,7 @@ class _CountBadge extends StatelessWidget {
   final VoidCallback? onTap;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(final BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
 
     return Semantics(
@@ -620,7 +611,7 @@ class _VideoMissingCard extends StatelessWidget {
   const _VideoMissingCard({required this.move, required this.onReRecord, required this.onImport, required this.onDelete});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(final BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
     return Container(
       padding: const EdgeInsets.all(AppSpacing.lg),
@@ -659,7 +650,7 @@ class _MissingActionButton extends StatelessWidget {
   const _MissingActionButton({required this.icon, required this.label, required this.onTap});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(final BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
     return GestureDetector(
       onTap: () { HapticFeedback.mediumImpact(); onTap(); },
@@ -694,12 +685,12 @@ class _CloudVideoPlaceholder extends ConsumerStatefulWidget {
 class _CloudVideoPlaceholderState extends ConsumerState<_CloudVideoPlaceholder> {
   String? _reportedLocalPath;
   @override
-  Widget build(BuildContext context) {
+  Widget build(final BuildContext context) {
     final contentHash = widget.move.contentHash!;
     final retrievalAsync = ref.watch(videoRetrievalStatusProvider(contentHash));
     final retrieval = retrievalAsync.valueOrNull ?? ref.read(videoRetrievalControllerProvider).snapshotFor(contentHash);
 
-    ref.listen(videoRetrievalStatusProvider(contentHash), (_, next) {
+    ref.listen(videoRetrievalStatusProvider(contentHash), (_, final next) {
       final snapshot = next.valueOrNull;
       final localPath = snapshot?.localPath;
       if (snapshot?.state == VideoRetrievalState.available && localPath != null && localPath != _reportedLocalPath) {
@@ -721,7 +712,7 @@ class _CloudVideoPlaceholderState extends ConsumerState<_CloudVideoPlaceholder> 
             mainAxisSize: MainAxisSize.min,
             children: [
               if (isBusy) CircularProgressIndicator(value: retrieval.progress > 0 ? retrieval.progress : null)
-              else Icon(Icons.cloud_download_outlined, size: 48, color: AppColors.accent),
+              else const Icon(Icons.cloud_download_outlined, size: 48, color: AppColors.accent),
               const SizedBox(height: AppSpacing.md),
               Text('Video stored in cloud', style: AppTypography.bodySmall.copyWith(fontWeight: FontWeight.w600)),
               Text('Tap to download and play', style: AppTypography.caption),

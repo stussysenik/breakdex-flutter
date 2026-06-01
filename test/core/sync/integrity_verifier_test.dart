@@ -24,10 +24,10 @@ void main() {
 
   /// Insert a manifest entry with a known hash and local path.
   Future<void> seedManifest(
-    AppDatabase db, {
-    required String hash,
-    String? localPath,
-    DateTime? localVerifiedAt,
+    final AppDatabase db, {
+    required final String hash,
+    final String? localPath,
+    final DateTime? localVerifiedAt,
   }) async {
     await db.assetManifestDao.upsert(AssetManifestCompanion(
       contentHash: Value(hash),
@@ -40,9 +40,9 @@ void main() {
   }
 
   Future<void> seedLocalCopy(
-    AppDatabase db, {
-    required String hash,
-    String status = 'verified',
+    final AppDatabase db, {
+    required final String hash,
+    final String status = 'verified',
   }) async {
     await db.assetCopiesDao.insertCopy(AssetCopiesCompanion(
       id: Value('local-$hash'),

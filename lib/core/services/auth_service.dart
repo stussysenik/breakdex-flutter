@@ -36,27 +36,27 @@ class AuthService {
         _initialized = true;
         return unit;
       },
-      (error, stackTrace) => AppFailure.unexpected('Firebase not initialized: $error'),
+      (final error, final stackTrace) => AppFailure.unexpected('Firebase not initialized: $error'),
     );
   }
 
-  TaskEither<AppFailure, Unit> login(String email, String password) {
+  TaskEither<AppFailure, Unit> login(final String email, final String password) {
     return _ensureInitialized().flatMap((_) => TaskEither.tryCatch(
       () async {
         await FirebaseAuth.instance.signInWithEmailAndPassword(email: email, password: password);
         return unit;
       },
-      (error, stackTrace) => AppFailure.network('Login failed: $error'),
+      (final error, final stackTrace) => AppFailure.network('Login failed: $error'),
     ));
   }
 
-  TaskEither<AppFailure, Unit> register(String email, String password) {
+  TaskEither<AppFailure, Unit> register(final String email, final String password) {
     return _ensureInitialized().flatMap((_) => TaskEither.tryCatch(
       () async {
         await FirebaseAuth.instance.createUserWithEmailAndPassword(email: email, password: password);
         return unit;
       },
-      (error, stackTrace) => AppFailure.network('Registration failed: $error'),
+      (final error, final stackTrace) => AppFailure.network('Registration failed: $error'),
     ));
   }
 
@@ -67,7 +67,7 @@ class AuthService {
         await FirebaseAuth.instance.signOut();
         return unit;
       },
-      (error, stackTrace) => AppFailure.unexpected('Logout failed: $error'),
+      (final error, final stackTrace) => AppFailure.unexpected('Logout failed: $error'),
     );
   }
 
@@ -80,7 +80,7 @@ class AuthService {
         await user.getIdToken(true);
         return unit;
       },
-      (error, stackTrace) => AppFailure.network('Auth refresh failed: $error'),
+      (final error, final stackTrace) => AppFailure.network('Auth refresh failed: $error'),
     );
   }
 }

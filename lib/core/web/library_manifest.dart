@@ -28,15 +28,15 @@ class LibraryManifest {
   Map<String, dynamic> toJson() => {
     'version': version,
     'exportedAt': exportedAt.toUtc().toIso8601String(),
-    'moves': moves.map((move) => move.toJson()).toList(),
-    'combos': combos.map((combo) => combo.toJson()).toList(),
-    'comboMoves': comboMoves.map((comboMove) => comboMove.toJson()).toList(),
-    'categories': categories.map((category) => category.toJson()).toList(),
-    'fsrsCards': fsrsCards.map((card) => card.toJson()).toList(),
-    'decks': decks.map((deck) => deck.toJson()).toList(),
-    'deckMoves': deckMoves.map((deckMove) => deckMove.toJson()).toList(),
-    'reviews': reviews.map((review) => review.toJson()).toList(),
-    'assets': assets.map((asset) => asset.toJson()).toList(),
+    'moves': moves.map((final move) => move.toJson()).toList(),
+    'combos': combos.map((final combo) => combo.toJson()).toList(),
+    'comboMoves': comboMoves.map((final comboMove) => comboMove.toJson()).toList(),
+    'categories': categories.map((final category) => category.toJson()).toList(),
+    'fsrsCards': fsrsCards.map((final card) => card.toJson()).toList(),
+    'decks': decks.map((final deck) => deck.toJson()).toList(),
+    'deckMoves': deckMoves.map((final deckMove) => deckMove.toJson()).toList(),
+    'reviews': reviews.map((final review) => review.toJson()).toList(),
+    'assets': assets.map((final asset) => asset.toJson()).toList(),
   };
 }
 

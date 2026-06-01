@@ -18,16 +18,16 @@ class AchievementGarden extends ConsumerWidget {
   const AchievementGarden({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(final BuildContext context, final WidgetRef ref) {
     final gardenAsync = ref.watch(achievementGardenProvider);
 
     return gardenAsync.when(
       loading: () => const Center(child: CircularProgressIndicator()),
-      error: (e, _) => Center(
+      error: (final e, _) => Center(
         child: Text('Error loading garden: $e',
             style: AppTypography.bodySmall),
       ),
-      data: (garden) {
+      data: (final garden) {
         if (garden.entries.isEmpty) {
           return _buildEmpty(context);
         }
@@ -36,7 +36,7 @@ class AchievementGarden extends ConsumerWidget {
     );
   }
 
-  Widget _buildEmpty(BuildContext context) {
+  Widget _buildEmpty(final BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
     return Center(
       child: Column(
@@ -66,7 +66,7 @@ class AchievementGarden extends ConsumerWidget {
     );
   }
 
-  Widget _buildGarden(BuildContext context, GardenSummary garden) {
+  Widget _buildGarden(final BuildContext context, final GardenSummary garden) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -92,7 +92,7 @@ class AchievementGarden extends ConsumerWidget {
               childAspectRatio: 0.8,
             ),
             itemCount: garden.entries.length,
-            itemBuilder: (context, index) {
+            itemBuilder: (final context, final index) {
               final entry = garden.entries[index];
               return AchievementTile(
                 moveId: entry.moveId,
@@ -117,7 +117,7 @@ class _SummaryHeader extends StatelessWidget {
   final GardenSummary garden;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(final BuildContext context) {
     return Wrap(
       spacing: AppSpacing.sm,
       children: [
@@ -162,7 +162,7 @@ class _TierChip extends StatelessWidget {
   final Color color;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(final BuildContext context) {
     return Container(
       padding: const EdgeInsets.symmetric(
         horizontal: AppSpacing.sm,

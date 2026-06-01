@@ -3,21 +3,21 @@ import '../database/daos/moves_dao.dart';
 
 class ReviewableNamingService {
   ReviewableNamingService({
-    required MovesDao movesDao,
-    required CombosDao combosDao,
+    required final MovesDao movesDao,
+    required final CombosDao combosDao,
   }) : _movesDao = movesDao,
        _combosDao = combosDao;
 
   final MovesDao _movesDao;
   final CombosDao _combosDao;
 
-  String normalize(String value) =>
+  String normalize(final String value) =>
       value.trim().replaceAll(RegExp(r'\s+'), ' ');
 
   Future<bool> isNameTaken(
-    String value, {
-    String? excludingMoveId,
-    String? excludingComboId,
+    final String value, {
+    final String? excludingMoveId,
+    final String? excludingComboId,
   }) async {
     final normalized = normalize(value);
     if (normalized.isEmpty) return false;

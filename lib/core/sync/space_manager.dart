@@ -40,9 +40,9 @@ class SpaceManager {
   final SafetyGuard _safetyGuard;
 
   SpaceManager({
-    required AssetManifestDao manifestDao,
-    required AssetCopiesDao copiesDao,
-    required SafetyGuard safetyGuard,
+    required final AssetManifestDao manifestDao,
+    required final AssetCopiesDao copiesDao,
+    required final SafetyGuard safetyGuard,
   }) : _manifestDao = manifestDao,
        _copiesDao = copiesDao,
        _safetyGuard = safetyGuard;
@@ -94,7 +94,7 @@ class SpaceManager {
   /// 4. Mark the local copy as 'deleted'
   ///
   /// Returns the number of bytes freed.
-  Future<int> freeSpace(List<String> hashes) async {
+  Future<int> freeSpace(final List<String> hashes) async {
     int freedBytes = 0;
 
     // Circuit breaker: prevent bulk deletion of >25% of assets

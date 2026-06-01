@@ -12,11 +12,11 @@ class MoveCreationNotifier extends Notifier<MoveCreationState> {
     return Idle();
   }
 
-  void start(CreateMoveRequest request) {
+  void start(final CreateMoveRequest request) {
     _send(StartCreation(request));
   }
 
-  void _send(MoveCreationEvent event) {
+  void _send(final MoveCreationEvent event) {
     final next = _machine.transition(state, event);
     if (next != null) {
       state = next;
@@ -24,13 +24,13 @@ class MoveCreationNotifier extends Notifier<MoveCreationState> {
     }
   }
 
-  void _executeEntryActions(MoveCreationState s, MoveCreationEvent e) {
+  void _executeEntryActions(final MoveCreationState s, final MoveCreationEvent e) {
     if (s is Hashing && e is StartCreation) {
       _runCreation(e.request);
     }
   }
 
-  Future<void> _runCreation(CreateMoveRequest request) async {
+  Future<void> _runCreation(final CreateMoveRequest request) async {
     try {
       final service = ref.read(moveCreationServiceProvider);
       final result = await service.createMove(request);

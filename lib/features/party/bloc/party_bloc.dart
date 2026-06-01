@@ -11,23 +11,23 @@ part 'party_bloc.freezed.dart';
 
 @freezed
 abstract class PartyEvent with _$PartyEvent {
-  const factory PartyEvent.shake(List<Move> allMoves, int durationMs) = _Shake;
-  const factory PartyEvent.tick(DateTime now) = _Tick;
+  const factory PartyEvent.shake(final List<Move> allMoves, final int durationMs) = _Shake;
+  const factory PartyEvent.tick(final DateTime now) = _Tick;
 }
 
 @freezed
 abstract class PartyState with _$PartyState {
   const factory PartyState.idle() = _Idle;
   const factory PartyState.cycling({
-    required List<Move> allMoves,
-    required Move currentMove,
-    required Move finalMove,
-    required DateTime startTime,
-    required DateTime lastFlip,
-    required int durationMs,
+    required final List<Move> allMoves,
+    required final Move currentMove,
+    required final Move finalMove,
+    required final DateTime startTime,
+    required final DateTime lastFlip,
+    required final int durationMs,
   }) = _Cycling;
-  const factory PartyState.revealing({required Move move}) = _Revealing;
-  const factory PartyState.revealed({required Move move}) = _Revealed;
+  const factory PartyState.revealing({required final Move move}) = _Revealing;
+  const factory PartyState.revealed({required final Move move}) = _Revealed;
 }
 
 class PartyBloc extends Bloc<PartyEvent, PartyState> {
@@ -41,7 +41,7 @@ class PartyBloc extends Bloc<PartyEvent, PartyState> {
     on<_Tick>(_onTick);
   }
 
-  void _onShake(_Shake event, Emitter<PartyState> emit) {
+  void _onShake(final _Shake event, final Emitter<PartyState> emit) {
     DiagnosticsLog.info(
       _subsystem,
       'shake received; state=${state.runtimeType} moves=${event.allMoves.length}',
@@ -76,7 +76,7 @@ class PartyBloc extends Bloc<PartyEvent, PartyState> {
     ));
   }
 
-  void _onTick(_Tick event, Emitter<PartyState> emit) {
+  void _onTick(final _Tick event, final Emitter<PartyState> emit) {
     final currentState = state;
     if (currentState is _Revealing) {
       DiagnosticsLog.info(

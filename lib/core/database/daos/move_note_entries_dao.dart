@@ -10,17 +10,17 @@ class MoveNoteEntriesDao extends DatabaseAccessor<AppDatabase>
     with _$MoveNoteEntriesDaoMixin {
   MoveNoteEntriesDao(super.db);
 
-  Future<List<MoveNoteEntry>> getByMoveId(String moveId) {
+  Future<List<MoveNoteEntry>> getByMoveId(final String moveId) {
     return (select(moveNoteEntries)
-          ..where((t) => t.moveId.equals(moveId))
-          ..orderBy([(t) => OrderingTerm.desc(t.createdAt)]))
+          ..where((final t) => t.moveId.equals(moveId))
+          ..orderBy([(final t) => OrderingTerm.desc(t.createdAt)]))
         .get();
   }
 
   Future<void> addEntry({
-    required String id,
-    required String moveId,
-    required String body,
+    required final String id,
+    required final String moveId,
+    required final String body,
   }) {
     return into(moveNoteEntries).insert(
       MoveNoteEntriesCompanion.insert(
@@ -31,13 +31,13 @@ class MoveNoteEntriesDao extends DatabaseAccessor<AppDatabase>
     );
   }
 
-  Future<void> updateEntry(String id, String body) {
-    return (update(moveNoteEntries)..where((t) => t.id.equals(id))).write(
+  Future<void> updateEntry(final String id, final String body) {
+    return (update(moveNoteEntries)..where((final t) => t.id.equals(id))).write(
       MoveNoteEntriesCompanion(body: Value(body)),
     );
   }
 
-  Future<void> deleteEntry(String id) {
-    return (delete(moveNoteEntries)..where((t) => t.id.equals(id))).go();
+  Future<void> deleteEntry(final String id) {
+    return (delete(moveNoteEntries)..where((final t) => t.id.equals(id))).go();
   }
 }

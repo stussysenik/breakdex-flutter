@@ -28,7 +28,7 @@ class AchievementTile extends StatelessWidget {
   final String tier;
 
   /// Tier-to-emoji mapping. Each emoji signals progress at a glance.
-  static String tierIcon(String tier) => switch (tier) {
+  static String tierIcon(final String tier) => switch (tier) {
         'mastered' => '\u{1F48E}', // 💎
         'growing' => '\u{1F33F}', // 🌿
         'sprouting' => '\u{1F331}', // 🌱
@@ -42,7 +42,7 @@ class AchievementTile extends StatelessWidget {
   ///   Growing   → stateLearning (blue, active progress)
   ///   Sprouting → actionGood (green, positive signal)
   ///   Seed      → secondary grey (neutral, dormant)
-  static Color tierColor(String tier) => switch (tier) {
+  static Color tierColor(final String tier) => switch (tier) {
         'mastered' => AppColors.stateMastery,
         'growing' => AppColors.stateLearning,
         'sprouting' => AppColors.actionGood,
@@ -50,7 +50,7 @@ class AchievementTile extends StatelessWidget {
       };
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(final BuildContext context) {
     final color = tierColor(tier);
     final icon = tierIcon(tier);
 

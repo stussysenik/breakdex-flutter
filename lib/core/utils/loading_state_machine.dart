@@ -3,7 +3,7 @@ import 'dart:async';
 sealed class LoadingStateMachine<T> {
   const LoadingStateMachine();
 
-  LoadingStateMachine<T> transition(LoadingEvent event) {
+  LoadingStateMachine<T> transition(final LoadingEvent event) {
     return switch ((this, event.type)) {
       (Idle(), 'start') => const Loading(),
       (Loading(), 'progress') => Downloading(progress: event.progressValue!),
@@ -18,11 +18,11 @@ sealed class LoadingStateMachine<T> {
     };
   }
 
-  LoadingStateMachine<T> get _timeout => Timeout(after: const Duration(seconds: 30));
+  LoadingStateMachine<T> get _timeout => const Timeout(after: Duration(seconds: 30));
   LoadingStateMachine<T> get _maxRetriesExhausted =>
       const Error(message: 'Max retries exhausted', retryable: false);
 
-  LoadingStateMachine<T> _currentRetrying(LoadingEvent event) {
+  LoadingStateMachine<T> _currentRetrying(final LoadingEvent event) {
     final stateRetryable = switch (this) {
       Error(retryable: final r) => r,
       _ => true,
@@ -41,13 +41,13 @@ sealed class LoadingStateMachine<T> {
   }
 
   R map<R>({
-    required R Function(Idle<T>) idle,
-    required R Function(Loading<T>) loading,
-    required R Function(Downloading<T>) downloading,
-    required R Function(Ready<T>) ready,
-    required R Function(Timeout<T>) timeout,
-    required R Function(Error<T>) error,
-    required R Function(Retrying<T>) retrying,
+    required final R Function(Idle<T>) idle,
+    required final R Function(Loading<T>) loading,
+    required final R Function(Downloading<T>) downloading,
+    required final R Function(Ready<T>) ready,
+    required final R Function(Timeout<T>) timeout,
+    required final R Function(Error<T>) error,
+    required final R Function(Retrying<T>) retrying,
   }) {
     return switch (this) {
       Idle() => idle(this as Idle<T>),
@@ -111,12 +111,12 @@ class LoadingEvent {
   });
 
   static const start = LoadingEvent._('start');
-  static LoadingEvent progress(double p) =>
+  static LoadingEvent progress(final double p) =>
       LoadingEvent._('progress', progressValue: p);
-  static LoadingEvent complete(dynamic data) =>
+  static LoadingEvent complete(final dynamic data) =>
       LoadingEvent._('complete', data: data);
   static const timeout = LoadingEvent._('timeout');
-  static LoadingEvent fail(String msg, {bool retryable = true}) =>
+  static LoadingEvent fail(final String msg, {final bool retryable = true}) =>
       LoadingEvent._('fail', errorMessage: msg, retryable: retryable);
   static const retry = LoadingEvent._('retry');
   static const reset = LoadingEvent._('reset');
@@ -129,7 +129,7 @@ class LoadingEvent {
 }
 
 class LoadingStateController<T> {
-  LoadingStateController({int maxAttempts = 3})
+  LoadingStateController({final int maxAttempts = 3})
     : _maxAttempts = maxAttempts,
       _state = const Idle();
 
@@ -143,7 +143,7 @@ class LoadingStateController<T> {
   LoadingStateMachine<T> get state => _state;
   Stream<LoadingStateMachine<T>> get stream => _controller.stream;
 
-  void send(LoadingEvent event) {
+  void send(final LoadingEvent event) {
     final next = switch (event.type) {
       'retry' => _state.transition(LoadingEvent._('retry', retryable: _isRetryable)),
       'progress' => _withMonotonicProgress(event),
@@ -167,7 +167,7 @@ class LoadingStateController<T> {
     };
   }
 
-  LoadingStateMachine<T> _withMonotonicProgress(LoadingEvent event) {
+  LoadingStateMachine<T> _withMonotonicProgress(final LoadingEvent event) {
     final p = event.progressValue ?? 0;
     if (p < _lastProgress) {
       return Downloading(progress: _lastProgress);

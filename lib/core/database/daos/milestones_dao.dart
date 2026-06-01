@@ -10,26 +10,26 @@ class MilestonesDao extends DatabaseAccessor<AppDatabase>
   MilestonesDao(super.db);
 
   /// Watch milestones for a lab, ordered by creation date ascending.
-  Stream<List<Milestone>> watchByLab(String labId) => (select(milestones)
-        ..where((t) => t.labId.equals(labId))
-        ..orderBy([(t) => OrderingTerm.asc(t.createdAt)]))
+  Stream<List<Milestone>> watchByLab(final String labId) => (select(milestones)
+        ..where((final t) => t.labId.equals(labId))
+        ..orderBy([(final t) => OrderingTerm.asc(t.createdAt)]))
       .watch();
 
   /// Insert a new milestone.
-  Future<void> insertMilestone(MilestonesCompanion entry) =>
+  Future<void> insertMilestone(final MilestonesCompanion entry) =>
       into(milestones).insert(entry);
 
   /// Mark a milestone as completed (set completedAt to now).
-  Future<void> complete(String id) =>
-      (update(milestones)..where((t) => t.id.equals(id)))
+  Future<void> complete(final String id) =>
+      (update(milestones)..where((final t) => t.id.equals(id)))
           .write(MilestonesCompanion(completedAt: Value(DateTime.now())));
 
   /// Un-complete a milestone (clear completedAt).
-  Future<void> uncomplete(String id) =>
-      (update(milestones)..where((t) => t.id.equals(id)))
+  Future<void> uncomplete(final String id) =>
+      (update(milestones)..where((final t) => t.id.equals(id)))
           .write(const MilestonesCompanion(completedAt: Value(null)));
 
   /// Delete a milestone by ID.
-  Future<void> deleteMilestone(String id) =>
-      (delete(milestones)..where((t) => t.id.equals(id))).go();
+  Future<void> deleteMilestone(final String id) =>
+      (delete(milestones)..where((final t) => t.id.equals(id))).go();
 }

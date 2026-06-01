@@ -4,7 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 
 void main() {
   testWidgets('sharePositionOrigin returns the source widget bounds', (
-    tester,
+    final tester,
   ) async {
     final key = GlobalKey();
 

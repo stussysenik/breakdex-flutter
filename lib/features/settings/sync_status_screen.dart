@@ -13,7 +13,7 @@ class SyncStatusScreen extends ConsumerWidget {
   const SyncStatusScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(final BuildContext context, final WidgetRef ref) {
     final syncProgress = ref.watch(assetSyncProgressProvider);
     final colorScheme = Theme.of(context).colorScheme;
     final networkPolicy = ref.watch(networkPolicyProvider);
@@ -50,8 +50,8 @@ class SyncStatusScreen extends ConsumerWidget {
             trailing: Switch.adaptive(
               value: networkPolicy.syncOnMobileData,
               activeColor: AppColors.accent,
-              onChanged: (value) async {
-                await networkPolicy.setSyncOnMobileData(value);
+              onChanged: (final value) async {
+                await networkPolicy.setSyncOnMobileData(enabled: value);
               },
             ),
             colorScheme: colorScheme,
@@ -125,7 +125,7 @@ class _StatusCard extends StatelessWidget {
   });
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(final BuildContext context) {
     final isIdle = syncProgress.state == SyncEngineState.idle;
 
     return Container(
@@ -166,7 +166,7 @@ class _StatusCard extends StatelessWidget {
                 value: syncProgress.fraction,
                 backgroundColor:
                     colorScheme.onSurface.withValues(alpha: 0.1),
-                valueColor: AlwaysStoppedAnimation(AppColors.accent),
+                valueColor: const AlwaysStoppedAnimation(AppColors.accent),
                 minHeight: 6,
               ),
             ),
@@ -191,7 +191,7 @@ class _SectionHeader extends StatelessWidget {
   const _SectionHeader({required this.title, required this.colorScheme});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(final BuildContext context) {
     return Text(
       title.toUpperCase(),
       style: AppTypography.caption.copyWith(
@@ -216,7 +216,7 @@ class _SettingsTile extends StatelessWidget {
   });
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(final BuildContext context) {
     return Container(
       padding: const EdgeInsets.symmetric(
         horizontal: AppSpacing.md,
@@ -247,7 +247,7 @@ class _SettingsTile extends StatelessWidget {
               ],
             ),
           ),
-          if (trailing != null) trailing!,
+          ?trailing,
         ],
       ),
     );
@@ -266,7 +266,7 @@ class _DataUsageCard extends StatelessWidget {
   });
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(final BuildContext context) {
     final usedMb = usedBytes / (1024 * 1024);
     final capMb = capBytes / (1024 * 1024);
     final fraction = capBytes > 0 ? (usedBytes / capBytes).clamp(0.0, 1.0) : 0.0;
@@ -328,7 +328,7 @@ class _ActionTile extends StatelessWidget {
   });
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(final BuildContext context) {
     return GestureDetector(
       onTap: onTap,
       child: Container(

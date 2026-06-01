@@ -33,7 +33,7 @@ class Scene3DView extends StatelessWidget {
   final Color? backgroundColor;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(final BuildContext context) {
     return Container(
       color: backgroundColor ?? Colors.black,
       child: UiKitView(

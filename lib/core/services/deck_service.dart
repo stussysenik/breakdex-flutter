@@ -16,7 +16,7 @@ class DeckFilter {
     this.dueOnly = false,
   });
 
-  factory DeckFilter.fromJson(String json) {
+  factory DeckFilter.fromJson(final String json) {
     final map = jsonDecode(json) as Map<String, dynamic>;
     return DeckFilter(
       categories: (map['categories'] as List?)?.cast<String>() ?? [],
@@ -46,7 +46,7 @@ class DeckService {
   DeckService(this._decksDao, this._movesDao, this._fsrsCardsDao);
 
   /// Resolve a deck to its matching moves.
-  Future<List<Move>> resolveDeck(Deck deck) async {
+  Future<List<Move>> resolveDeck(final Deck deck) async {
     if (deck.deckType == 'manual') {
       return _decksDao.getMovesForDeck(deck.id);
     }
@@ -62,7 +62,7 @@ class DeckService {
     // Filter by categories
     if (filter.categories.isNotEmpty) {
       moves = moves
-          .where((m) => filter.categories.contains(m.category))
+          .where((final m) => filter.categories.contains(m.category))
           .toList();
     }
 
@@ -70,7 +70,7 @@ class DeckService {
     if (filter.fsrsStates.isNotEmpty) {
       final cards = await _fsrsCardsDao.getAll();
       final stateByMoveId = {for (final c in cards) c.entityId: c.fsrsState};
-      moves = moves.where((m) {
+      moves = moves.where((final m) {
         final state = stateByMoveId[m.id] ?? 0; // 0 = new
         return filter.fsrsStates.contains(state);
       }).toList();
@@ -80,10 +80,10 @@ class DeckService {
     if (filter.dueOnly) {
       final cards = await _fsrsCardsDao.getAll();
       final dueIds = cards
-          .where((c) => !c.due.isAfter(now))
-          .map((c) => c.entityId)
+          .where((final c) => !c.due.isAfter(now))
+          .map((final c) => c.entityId)
           .toSet();
-      moves = moves.where((m) => dueIds.contains(m.id)).toList();
+      moves = moves.where((final m) => dueIds.contains(m.id)).toList();
     }
 
     return moves;

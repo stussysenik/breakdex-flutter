@@ -25,7 +25,7 @@ enum MoveArchiveReason {
   final String title;
   final String description;
 
-  static MoveArchiveReason? fromDbValue(String? value) {
+  static MoveArchiveReason? fromDbValue(final String? value) {
     for (final reason in values) {
       if (reason.dbValue == value) return reason;
     }

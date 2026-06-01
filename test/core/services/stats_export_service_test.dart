@@ -166,7 +166,7 @@ void main() {
     test('large dataset (1000 moves) accepted', () {
       final moves = List.generate(
         1000,
-        (i) => makeJsonMove(id: 'move-$i', name: 'Move $i'),
+        (final i) => makeJsonMove(id: 'move-$i', name: 'Move $i'),
       );
       final json = makeExportJson(moves: moves);
 
@@ -295,7 +295,7 @@ void main() {
       final cards = data['fsrsCards'] as List;
 
       expect(cards.length, 2);
-      final types = cards.map((c) => (c as Map)['entityType']).toSet();
+      final types = cards.map((final c) => (c as Map)['entityType']).toSet();
       expect(types, containsAll(['move', 'combo']));
     });
 
@@ -399,9 +399,9 @@ void main() {
 
       final moves = await db.movesDao.getAll();
       expect(moves.length, 2);
-      final updated = moves.firstWhere((m) => m.id == 'old-move');
+      final updated = moves.firstWhere((final m) => m.id == 'old-move');
       expect(updated.name, 'Updated Name');
-      final extra = moves.firstWhere((m) => m.id == 'extra-move');
+      final extra = moves.firstWhere((final m) => m.id == 'extra-move');
       expect(extra.name, 'Extra Move');
     });
 
@@ -1029,8 +1029,8 @@ void main() {
       final data = jsonDecode(exported.json) as Map<String, dynamic>;
       final cards = (data['fsrsCards'] as List).cast<Map<String, dynamic>>();
 
-      final moveCard = cards.firstWhere((c) => c['entityType'] == 'move');
-      final comboCard = cards.firstWhere((c) => c['entityType'] == 'combo');
+      final moveCard = cards.firstWhere((final c) => c['entityType'] == 'move');
+      final comboCard = cards.firstWhere((final c) => c['entityType'] == 'combo');
 
       expect(moveCard['stability'], closeTo(3.0, 0.01));
       expect(comboCard['stability'], closeTo(7.0, 0.01));
@@ -1056,7 +1056,7 @@ void main() {
       final cats = (data['categories'] as List).cast<Map<String, dynamic>>();
 
       expect(cats.length, 2);
-      expect(cats.map((c) => c['name']), containsAll(['power', 'freeze']));
+      expect(cats.map((final c) => c['name']), containsAll(['power', 'freeze']));
     });
   });
 
@@ -1197,11 +1197,11 @@ void main() {
     test('500 moves + 2000 reviews scale test', () async {
       final moves = List.generate(
         500,
-        (i) => makeJsonMove(id: 'move-$i', name: 'Move $i'),
+        (final i) => makeJsonMove(id: 'move-$i', name: 'Move $i'),
       );
       final reviews = List.generate(
         2000,
-        (i) => makeJsonReview(
+        (final i) => makeJsonReview(
           id: 'review-$i',
           moveId: 'move-${i % 500}',
           rating: ['AGAIN', 'HARD', 'GOOD', 'EASY'][i % 4],
@@ -1238,7 +1238,7 @@ void main() {
 
       final moves = await db.movesDao.getAll();
       expect(moves.length, 3);
-      final names = moves.map((m) => m.name).toSet();
+      final names = moves.map((final m) => m.name).toSet();
       expect(names, contains('Wind"mill'));
       expect(names, contains('Head\\spin'));
       expect(names, contains('Top\nRock'));
@@ -1446,12 +1446,12 @@ void main() {
   // =========================================================================
   group('generateTextSummary', () {
     StatsBundle makeStats({
-      Map<String, int>? ratingDistribution,
-      List<MapEntry<String, int>>? topMoveEntries,
-      List<TopMoveInfo>? topMoves,
-      int currentStreak = 5,
-      List<Move>? allMoves,
-      double overallRetention = 0.85,
+      final Map<String, int>? ratingDistribution,
+      final List<MapEntry<String, int>>? topMoveEntries,
+      final List<TopMoveInfo>? topMoves,
+      final int currentStreak = 5,
+      final List<Move>? allMoves,
+      final double overallRetention = 0.85,
     }) {
       final defaultMoves = <Move>[];
       return StatsBundle(

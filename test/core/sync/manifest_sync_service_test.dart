@@ -88,14 +88,14 @@ class _FakeCloudProvider extends CloudProvider {
   Future<void> deauthenticate() async {}
 
   @override
-  Future<void> delete({required String remotePath}) async {}
+  Future<void> delete({required final String remotePath}) async {}
 
   @override
   Future<void> download({
-    required String remotePath,
-    required String localPath,
-    TransferProgress? onProgress,
-    CancellationToken? cancel,
+    required final String remotePath,
+    required final String localPath,
+    final TransferProgress? onProgress,
+    final CancellationToken? cancel,
   }) async {}
 
   @override
@@ -105,7 +105,7 @@ class _FakeCloudProvider extends CloudProvider {
   }
 
   @override
-  Future<List<RemoteAsset>> list({required String directory}) async => const [];
+  Future<List<RemoteAsset>> list({required final String directory}) async => const [];
 
   @override
   String get providerType => 'icloud';
@@ -115,10 +115,10 @@ class _FakeCloudProvider extends CloudProvider {
 
   @override
   Future<RemoteAsset> upload({
-    required String localPath,
-    required String remotePath,
-    TransferProgress? onProgress,
-    CancellationToken? cancel,
+    required final String localPath,
+    required final String remotePath,
+    final TransferProgress? onProgress,
+    final CancellationToken? cancel,
   }) async {
     uploadCalls += 1;
     if (uploadError != null) throw uploadError!;
@@ -127,9 +127,9 @@ class _FakeCloudProvider extends CloudProvider {
 
   @override
   Future<bool> verify({
-    required String remotePath,
-    String? expectedHash,
-    int? expectedSize,
+    required final String remotePath,
+    final String? expectedHash,
+    final int? expectedSize,
   }) async {
     return true;
   }

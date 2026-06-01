@@ -2,16 +2,11 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:path/path.dart' as p;
 
 import '../../../core/design/colors.dart';
 import '../../../core/design/spacing.dart';
 import '../../../core/design/typography.dart';
-import '../../../core/design/theme.dart';
 import '../../../core/models/learning_state.dart';
-import '../../../core/state_machines/move_detail/provider.dart';
-import '../../../core/state_machines/move_detail/state.dart';
-import '../../../core/state_machines/move_detail/event.dart';
 import '../../../core/services/categories_service.dart';
 import '../../../shared/widgets/color_setting_tile.dart';
 import '../../flashcard_review/widgets/state_picker_sheet.dart';
@@ -31,7 +26,7 @@ class StatePickerOverlay extends StatelessWidget {
   final ValueChanged<LearningState> onSave;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(final BuildContext context) {
     return Container(
       color: Colors.black54,
       child: Center(
@@ -88,7 +83,7 @@ class CategoryPickerOverlay extends ConsumerWidget {
   final ValueChanged<String> onSave;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(final BuildContext context, final WidgetRef ref) {
     final categories = ref.watch(categoriesProvider);
     final cs = Theme.of(context).colorScheme;
 
@@ -154,15 +149,15 @@ class CategoryPickerOverlay extends ConsumerWidget {
     );
   }
 
-  Future<String?> _showAddCategoryDialog(BuildContext context, WidgetRef ref) {
+  Future<String?> _showAddCategoryDialog(final BuildContext context, final WidgetRef ref) {
     return showDialog<String>(
       context: context,
-      builder: (context) {
+      builder: (final context) {
         final controller = TextEditingController();
         Color selectedColor = categoryPresetColors[0];
         String? errorText;
         return StatefulBuilder(
-          builder: (context, setDialogState) => AlertDialog(
+          builder: (final context, final setDialogState) => AlertDialog(
             title: const Text('New Category'),
             content: Column(
               mainAxisSize: MainAxisSize.min,
@@ -215,9 +210,9 @@ class CategoryPickerOverlay extends ConsumerWidget {
                   }
                   final exists = ref
                       .read(categoriesProvider)
-                      .any((item) => item.name == name);
+                      .any((final item) => item.name == name);
                   if (exists) {
-                    setDialogState(() => errorText = '\"$name\" already exists.');
+                    setDialogState(() => errorText = '"$name" already exists.');
                     unawaited(HapticFeedback.heavyImpact());
                     return;
                   }
@@ -265,7 +260,7 @@ class _CountEditorOverlayState extends State<CountEditorOverlay> {
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(final BuildContext context) {
     final cs = Theme.of(context).colorScheme;
     return Container(
       color: Colors.black54,
@@ -343,7 +338,7 @@ class ConfirmActionOverlay extends StatelessWidget {
   final bool isDestructive;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(final BuildContext context) {
     final cs = Theme.of(context).colorScheme;
     return Container(
       color: Colors.black54,
@@ -429,7 +424,7 @@ class _RenameOverlayState extends State<RenameOverlay> {
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(final BuildContext context) {
     final cs = Theme.of(context).colorScheme;
     return Container(
       color: Colors.black54,
@@ -454,7 +449,7 @@ class _RenameOverlayState extends State<RenameOverlay> {
                 Padding(
                   padding: const EdgeInsets.only(bottom: AppSpacing.md),
                   child: Text(
-                    'The name \"${widget.conflictName}\" is already taken by another move or combo.',
+                    'The name "${widget.conflictName}" is already taken by another move or combo.',
                     style: AppTypography.caption.copyWith(color: AppColors.actionAgain),
                   ),
                 ),
@@ -466,7 +461,7 @@ class _RenameOverlayState extends State<RenameOverlay> {
                   hintText: 'Enter new name',
                 ),
                 onChanged: widget.onDraftChanged,
-                onSubmitted: (val) {
+                onSubmitted: (final val) {
                   if (val.trim().isNotEmpty) widget.onSave(val.trim());
                 },
               ),
@@ -498,7 +493,7 @@ class SavingOverlay extends StatelessWidget {
   final String message;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(final BuildContext context) {
     return Container(
       color: Colors.black38,
       child: Center(
@@ -536,7 +531,7 @@ class _EditableCategoryChip extends StatelessWidget {
   final VoidCallback onTap;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(final BuildContext context) {
     return GestureDetector(
       onTap: onTap,
       child: AnimatedContainer(
@@ -568,7 +563,7 @@ class _CountButton extends StatelessWidget {
   final VoidCallback onPressed;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(final BuildContext context) {
     return IconButton.filledTonal(
       onPressed: () {
         HapticFeedback.lightImpact();

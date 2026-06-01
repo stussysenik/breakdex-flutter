@@ -1,7 +1,6 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -53,7 +52,7 @@ class _NotesSectionState extends ConsumerState<NotesSection> {
   }
 
   @override
-  void didUpdateWidget(covariant NotesSection oldWidget) {
+  void didUpdateWidget(covariant final NotesSection oldWidget) {
     super.didUpdateWidget(oldWidget);
     // Only sync the controller text when NOT editing — prevents cursor jump
     // while the user is typing and the StreamBuilder rebuilds.
@@ -81,14 +80,14 @@ class _NotesSectionState extends ConsumerState<NotesSection> {
     }
   }
 
-  void _onTextChanged(String value) {
+  void _onTextChanged(final String value) {
     _debounce?.cancel();
     _debounce = Timer(const Duration(seconds: 1), () {
       _save(value);
     });
   }
 
-  void _save(String value) {
+  void _save(final String value) {
     if (value == _lastSaved) return;
     _lastSaved = value;
     widget.onChanged(value);
@@ -109,7 +108,7 @@ class _NotesSectionState extends ConsumerState<NotesSection> {
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(final BuildContext context) {
     if (_editing) return _buildEditor(context);
     return _buildReader(context)
         .animate(key: ValueKey('notes-reader-${widget.notes}'))
@@ -120,7 +119,7 @@ class _NotesSectionState extends ConsumerState<NotesSection> {
   // Read mode
   // ---------------------------------------------------------------------------
 
-  Widget _buildReader(BuildContext context) {
+  Widget _buildReader(final BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
     final text = widget.notes;
     final isEmpty = text == null || text.trim().isEmpty;
@@ -167,7 +166,7 @@ class _NotesSectionState extends ConsumerState<NotesSection> {
             text: text,
             expanded: _expanded,
             onMentionTap: _navigateToMention,
-            onOverflowChanged: (overflows) {
+            onOverflowChanged: (final overflows) {
               // Only show toggle when content overflows
               if (overflows != _showToggle) {
                 setState(() => _showToggle = overflows);
@@ -199,7 +198,7 @@ class _NotesSectionState extends ConsumerState<NotesSection> {
   // Edit mode
   // ---------------------------------------------------------------------------
 
-  Widget _buildEditor(BuildContext context) {
+  Widget _buildEditor(final BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
 
     return Column(
@@ -275,7 +274,7 @@ class _NotesSectionState extends ConsumerState<NotesSection> {
   // @mention navigation
   // ---------------------------------------------------------------------------
 
-  void _navigateToMention(String href) {
+  void _navigateToMention(final String href) {
     if (href.startsWith('/')) {
       context.push('/moves$href');
     }
@@ -315,7 +314,7 @@ class _ConstrainedMarkdownState extends ConsumerState<_ConstrainedMarkdown> {
   }
 
   @override
-  void didUpdateWidget(covariant _ConstrainedMarkdown old) {
+  void didUpdateWidget(covariant final _ConstrainedMarkdown old) {
     super.didUpdateWidget(old);
     if (old.text != widget.text || old.expanded != widget.expanded) {
       WidgetsBinding.instance.addPostFrameCallback((_) => _checkOverflow());
@@ -330,7 +329,7 @@ class _ConstrainedMarkdownState extends ConsumerState<_ConstrainedMarkdown> {
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(final BuildContext context) {
     return Stack(
       children: [
         // Hidden unconstrained copy for measurement
@@ -375,17 +374,17 @@ class _MentionMarkdownBody extends ConsumerWidget {
   final ValueChanged<String> onMentionTap;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(final BuildContext context, final WidgetRef ref) {
     final colorScheme = Theme.of(context).colorScheme;
 
     return FutureBuilder<String>(
       future: _resolveMentions(ref, data),
-      builder: (context, snapshot) {
+      builder: (final context, final snapshot) {
         final resolved = snapshot.data ?? data;
         return MarkdownBody(
           data: resolved,
           selectable: false,
-          onTapLink: (text, href, title) {
+          onTapLink: (final text, final href, final title) {
             if (href != null) onMentionTap(href);
           },
           styleSheet: MarkdownStyleSheet(
@@ -417,7 +416,7 @@ class _MentionMarkdownBody extends ConsumerWidget {
   }
 
   /// Replaces `@some-name` with markdown links if the name matches a move or combo.
-  static Future<String> _resolveMentions(WidgetRef ref, String text) async {
+  static Future<String> _resolveMentions(final WidgetRef ref, final String text) async {
     final mentionPattern = RegExp(r'@([\w-]+)');
     final matches = mentionPattern.allMatches(text);
     if (matches.isEmpty) return text;

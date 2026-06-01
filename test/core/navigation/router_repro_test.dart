@@ -18,13 +18,9 @@ void main() {
     db = createTestDatabase();
   });
 
-  tearDown(() async {
-    await db.close();
-  });
-
-  testWidgets('router redirects legacy paths', (tester) async {
+  testWidgets('router redirects legacy paths', (final tester) async {
     final originalOnError = FlutterError.onError;
-    FlutterError.onError = (details) {
+    FlutterError.onError = (final details) {
       if (details.exception is FlutterError &&
           details.exception.toString().contains('overflowed')) {
         return;
@@ -60,5 +56,8 @@ void main() {
     appRouter.go('/arsenal');
     await tester.pumpAndSettle();
     expect(appRouter.routeInformationProvider.value.uri.path, equals('/breakdex'));
+
+    await db.close();
+    await tester.pump(const Duration(milliseconds: 500));
   });
 }

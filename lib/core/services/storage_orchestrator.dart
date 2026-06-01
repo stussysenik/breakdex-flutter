@@ -11,7 +11,6 @@ import 'provenance_service.dart';
 
 import 'blackbox_service.dart';
 
-import 'blackbox_service.dart';
 
 /// Orchestrates atomic-like operations across SQLite and the Filesystem.
 class StorageOrchestrator {
@@ -20,20 +19,20 @@ class StorageOrchestrator {
   final BlackboxService? _blackbox;
 
   StorageOrchestrator({
-    required AppDatabase db,
-    required MovesDao movesDao,
-    ProvenanceService? provenance,
-    BlackboxService? blackbox,
+    required final AppDatabase db,
+    required final MovesDao movesDao,
+    final ProvenanceService? provenance,
+    final BlackboxService? blackbox,
   }) : _movesDao = movesDao,
        _provenance = provenance,
        _blackbox = blackbox;
 
   /// Rename a category and move all associated video files.
-  Future<void> renameCategory(String oldName, String newName) async {
+  Future<void> renameCategory(final String oldName, final String newName) async {
     if (oldName == newName) return;
 
     final moves = await _movesDao.getAll();
-    final movesInCategory = moves.where((m) => m.category == oldName).toList();
+    final movesInCategory = moves.where((final m) => m.category == oldName).toList();
 
     // Blackbox safety log
     await _blackbox?.log('rename_category', 'category', oldName, {'to': newName});
@@ -92,7 +91,7 @@ class StorageOrchestrator {
 
   /// Proactively find and merge folders that differ only by casing.
   /// (e.g., if 'default' exists alongside 'Default', merge into 'Default')
-  Future<void> _enforceCanonicalCasing(String category) async {
+  Future<void> _enforceCanonicalCasing(final String category) async {
     try {
       final canonicalName = VideoPathResolver.getSafeCategory(category);
       final rootMoves = p.join(VideoPathResolver.toAbsolute(''), 'Moves');
@@ -115,7 +114,7 @@ class StorageOrchestrator {
     }
   }
 
-  Future<void> _mergeDirectories(Directory source, Directory target) async {
+  Future<void> _mergeDirectories(final Directory source, final Directory target) async {
     if (!await target.exists()) await target.create(recursive: true);
     await for (final entity in source.list()) {
       final name = p.basename(entity.path);
@@ -140,7 +139,7 @@ class StorageOrchestrator {
   }
 
   /// Update a move's category and physically move its video file.
-  Future<Move> updateMoveCategory(Move move, String newCategory) async {
+  Future<Move> updateMoveCategory(final Move move, final String newCategory) async {
     if (move.category == newCategory) return move;
 
     await _blackbox?.log('update_move_category', 'move', move.id, {
@@ -177,7 +176,7 @@ class StorageOrchestrator {
   }
 
   /// Update a move's name and physically rename its video folder/file.
-  Future<Move> updateMoveName(Move move, String newName) async {
+  Future<Move> updateMoveName(final Move move, final String newName) async {
     if (move.name == newName) return move;
 
     await _blackbox?.log('update_move_name', 'move', move.id, {
@@ -208,7 +207,7 @@ class StorageOrchestrator {
   }
 
   /// Delete a move and its associated physical media.
-  Future<void> deleteMove(Move move, {required Future<void> Function(Move) cleanupMedia}) async {
+  Future<void> deleteMove(final Move move, {required final Future<void> Function(Move) cleanupMedia}) async {
     await _blackbox?.log('delete_move', 'move', move.id, {'name': move.name});
     final log = StageLogger.begin('deleteMove', subsystem: 'StorageOrchestrator', context: {
       'moveId': move.id,
@@ -218,7 +217,7 @@ class StorageOrchestrator {
     try {
       await cleanupMedia(move);
       log.stage('mediaCleaned');
-    } catch (e, stack) {
+    } catch (e) {
       log.stage('mediaCleanupFailed', {'error': '$e'});
     }
 
@@ -236,7 +235,7 @@ class StorageOrchestrator {
     await _cleanupOldCategoryDir(move.category);
   }
 
-  Future<void> _cleanupOldCategoryDir(String categoryName) async {
+  Future<void> _cleanupOldCategoryDir(final String categoryName) async {
     try {
       final safeCategory = categoryName.replaceAll('/', '-').replaceAll(':', '-').trim();
       final dirPath = p.join(VideoPathResolver.toAbsolute(''), 'Moves', safeCategory);

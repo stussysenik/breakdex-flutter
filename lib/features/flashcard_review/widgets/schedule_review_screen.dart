@@ -26,7 +26,7 @@ class ScheduleReviewScreen extends ConsumerWidget {
   const ScheduleReviewScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(final BuildContext context, final WidgetRef ref) {
     final totalMoves = ref.watch(totalMoveCountProvider).valueOrNull ?? 0;
 
     // Reuse the same empty state from mastery prescreen when no moves exist
@@ -55,7 +55,7 @@ class ScheduleReviewScreen extends ConsumerWidget {
                 ),
               ),
               error: (_, _) => const SizedBox.shrink(),
-              data: (summary) => Center(
+              data: (final summary) => Center(
                 child: Padding(
                   padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm),
                   child: Text(
@@ -85,7 +85,7 @@ class ScheduleReviewScreen extends ConsumerWidget {
             child: dueCountsAsync.when(
               loading: () => const SizedBox(height: 280),
               error: (_, _) => const SizedBox.shrink(),
-              data: (counts) => ScheduleCalendar(dueCounts: counts),
+              data: (final counts) => ScheduleCalendar(dueCounts: counts),
             ),
           ),
         ),
@@ -121,7 +121,7 @@ class ScheduleReviewScreen extends ConsumerWidget {
                 itemsAsync.when(
                   loading: () => const SizedBox.shrink(),
                   error: (_, _) => const SizedBox.shrink(),
-                  data: (items) => Text(
+                  data: (final items) => Text(
                     '${items.length} item${items.length == 1 ? '' : 's'}',
                     style: AppTypography.caption.copyWith(
                       color: colorScheme.secondary,
@@ -139,9 +139,9 @@ class ScheduleReviewScreen extends ConsumerWidget {
           loading: () => const SliverToBoxAdapter(
             child: Center(child: CircularProgressIndicator()),
           ),
-          error: (e, _) =>
+          error: (final e, _) =>
               SliverToBoxAdapter(child: Center(child: Text('Error: $e'))),
-          data: (items) {
+          data: (final items) {
             if (items.isEmpty) {
               return SliverToBoxAdapter(
                 child: Padding(
@@ -179,7 +179,7 @@ class ScheduleReviewScreen extends ConsumerWidget {
               ),
               sliver: SliverList.builder(
                 itemCount: items.length,
-                itemBuilder: (context, index) {
+                itemBuilder: (final context, final index) {
                   final item = items[index];
                   return ScheduledItemRow(
                     item: item,
@@ -197,14 +197,14 @@ class ScheduleReviewScreen extends ConsumerWidget {
     );
   }
 
-  static bool _isToday(DateTime date) {
+  static bool _isToday(final DateTime date) {
     final now = DateTime.now();
     return date.year == now.year &&
         date.month == now.month &&
         date.day == now.day;
   }
 
-  static String _fmtDate(DateTime date) {
+  static String _fmtDate(final DateTime date) {
     final months = [
       'Jan',
       'Feb',
@@ -230,11 +230,11 @@ class _ScheduleEmptyState extends StatelessWidget {
   const _ScheduleEmptyState();
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(final BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
 
     return LayoutBuilder(
-      builder: (context, constraints) {
+      builder: (final context, final constraints) {
         final contentWidth = constraints.maxWidth > 480
             ? 420.0
             : constraints.maxWidth - (AppSpacing.screenEdge * 2);

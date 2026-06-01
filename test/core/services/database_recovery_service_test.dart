@@ -97,10 +97,10 @@ void main() {
         final backupsDir = Directory(p.join(tempDir.path, '.backups'));
         final corruptFiles = await backupsDir
             .list()
-            .where((entity) => entity is File)
+            .where((final entity) => entity is File)
             .cast<File>()
             .where(
-              (file) => p
+              (final file) => p
                   .basename(file.path)
                   .startsWith(DatabaseRecoveryService.corruptFilenamePrefix),
             )

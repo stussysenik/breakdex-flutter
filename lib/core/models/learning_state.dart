@@ -26,7 +26,7 @@ class CustomLearningState {
         'color': color.value.toRadixString(16).padLeft(8, '0'),
       };
 
-  factory CustomLearningState.fromJson(Map<String, dynamic> json) {
+  factory CustomLearningState.fromJson(final Map<String, dynamic> json) {
     final colorHex = json['color'] as String? ?? 'FFC46F6F';
     final colorInt = int.tryParse(colorHex, radix: 16) ?? 0xFFC46F6F;
     return CustomLearningState(
@@ -49,16 +49,16 @@ enum LearningState {
   final String displayText;
   final Color color;
 
-  static LearningState fromString(String value) => switch (value.toUpperCase()) {
+  static LearningState fromString(final String value) => switch (value.toUpperCase()) {
         'NEW' => LearningState.newState,
         'LEARNING' => LearningState.learning,
         'MASTERY' => LearningState.mastery,
         _ => LearningState.newState,
       };
 
-  static LearningState fromName(String value) => fromString(value);
+  static LearningState fromName(final String value) => fromString(value);
 
-  LearningState applyRating(ReviewRating rating) => switch (rating) {
+  LearningState applyRating(final ReviewRating rating) => switch (rating) {
         ReviewRating.again => LearningState.newState,
         ReviewRating.hard => LearningState.learning,
         ReviewRating.good => switch (this) {
@@ -82,7 +82,7 @@ enum ReviewRating {
   final String displayText;
   final Color color;
 
-  static ReviewRating fromString(String value) => switch (value) {
+  static ReviewRating fromString(final String value) => switch (value) {
         'AGAIN' => ReviewRating.again,
         'HARD' => ReviewRating.hard,
         'GOOD' => ReviewRating.good,
@@ -99,7 +99,7 @@ enum ReviewType {
   const ReviewType(this.dbValue);
   final String dbValue;
 
-  static ReviewType fromString(String value) => switch (value) {
+  static ReviewType fromString(final String value) => switch (value) {
         'MOVE' => ReviewType.move,
         'COMBO' => ReviewType.combo,
         'MANUAL' => ReviewType.manual,

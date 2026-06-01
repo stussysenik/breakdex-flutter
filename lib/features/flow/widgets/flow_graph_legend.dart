@@ -27,7 +27,7 @@ class FlowGraphLegend extends ConsumerWidget {
   final VoidCallback? onDismiss;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(final BuildContext context, final WidgetRef ref) {
     final colorScheme = Theme.of(context).colorScheme;
     final stateLabels = ref.watch(learningStateLabelsProvider);
 
@@ -69,7 +69,7 @@ class FlowGraphLegend extends ConsumerWidget {
   }
 
   /// Header row: bold "Legend" title on the left, dismiss text button right.
-  Widget _buildHeader(ColorScheme colorScheme) {
+  Widget _buildHeader(final ColorScheme colorScheme) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
@@ -105,9 +105,9 @@ class FlowGraphLegend extends ConsumerWidget {
   // ---------------------------------------------------------------------------
 
   Widget _buildNodesColumn(
-    BuildContext context,
-    ColorScheme colorScheme,
-    Map<LearningState, String> stateLabels,
+    final BuildContext context,
+    final ColorScheme colorScheme,
+    final Map<LearningState, String> stateLabels,
   ) {
     final labelColor = colorScheme.onSurface.withValues(alpha: 0.75);
 
@@ -156,11 +156,11 @@ class FlowGraphLegend extends ConsumerWidget {
 
   /// A single node-legend row: colored circle (with optional halo) + label.
   Widget _nodeRow({
-    required double circleRadius,
-    required Color color,
-    required bool halo,
-    required String label,
-    required Color labelColor,
+    required final double circleRadius,
+    required final Color color,
+    required final bool halo,
+    required final String label,
+    required final Color labelColor,
   }) {
     // Total widget height stays consistent via SizedBox.
     final diameter = halo ? (circleRadius + 2) * 2 : circleRadius * 2;
@@ -196,7 +196,7 @@ class FlowGraphLegend extends ConsumerWidget {
   // Column 2 — Edges
   // ---------------------------------------------------------------------------
 
-  Widget _buildEdgesColumn(ColorScheme colorScheme) {
+  Widget _buildEdgesColumn(final ColorScheme colorScheme) {
     final labelColor = colorScheme.onSurface.withValues(alpha: 0.75);
     final lineColor = colorScheme.onSurface.withValues(alpha: 0.50);
 
@@ -240,10 +240,10 @@ class FlowGraphLegend extends ConsumerWidget {
 
   /// A single edge-legend row: styled line + label.
   Widget _edgeRow({
-    required _EdgeLineStyle style,
-    required String label,
-    required Color lineColor,
-    required Color labelColor,
+    required final _EdgeLineStyle style,
+    required final String label,
+    required final Color lineColor,
+    required final Color labelColor,
   }) {
     return Row(
       children: [
@@ -273,7 +273,7 @@ class FlowGraphLegend extends ConsumerWidget {
   // Column 3 — Gestures
   // ---------------------------------------------------------------------------
 
-  Widget _buildGesturesColumn(ColorScheme colorScheme) {
+  Widget _buildGesturesColumn(final ColorScheme colorScheme) {
     final labelColor = colorScheme.onSurface.withValues(alpha: 0.75);
 
     return Column(
@@ -296,7 +296,7 @@ class FlowGraphLegend extends ConsumerWidget {
     );
   }
 
-  Widget _gestureRow(String text, Color color) {
+  Widget _gestureRow(final String text, final Color color) {
     return Text(
       text,
       style: AppTypography.caption.copyWith(fontSize: 10, color: color),
@@ -321,7 +321,7 @@ class _NodeCirclePainter extends CustomPainter {
   final bool halo;
 
   @override
-  void paint(Canvas canvas, Size size) {
+  void paint(final Canvas canvas, final Size size) {
     final center = Offset(size.width / 2, size.height / 2);
 
     if (halo) {
@@ -339,7 +339,7 @@ class _NodeCirclePainter extends CustomPainter {
   }
 
   @override
-  bool shouldRepaint(covariant _NodeCirclePainter oldDelegate) =>
+  bool shouldRepaint(covariant final _NodeCirclePainter oldDelegate) =>
       radius != oldDelegate.radius ||
       color != oldDelegate.color ||
       halo != oldDelegate.halo;
@@ -356,7 +356,7 @@ class _EdgeLinePainter extends CustomPainter {
   final Color color;
 
   @override
-  void paint(Canvas canvas, Size size) {
+  void paint(final Canvas canvas, final Size size) {
     final paint = Paint()
       ..color = color
       ..strokeWidth = 1.5
@@ -388,6 +388,6 @@ class _EdgeLinePainter extends CustomPainter {
   }
 
   @override
-  bool shouldRepaint(covariant _EdgeLinePainter oldDelegate) =>
+  bool shouldRepaint(covariant final _EdgeLinePainter oldDelegate) =>
       style != oldDelegate.style || color != oldDelegate.color;
 }

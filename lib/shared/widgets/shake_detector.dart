@@ -8,7 +8,7 @@ import 'package:sensors_plus/sensors_plus.dart';
 
 import '../../core/utils/diagnostics.dart';
 
-final shakeEnabledProvider = StateProvider<bool>((ref) => true);
+final shakeEnabledProvider = StateProvider<bool>((final ref) => true);
 
 class ShakeDetector extends ConsumerStatefulWidget {
   const ShakeDetector({super.key, required this.child, required this.onShake});
@@ -43,7 +43,7 @@ class _ShakeDetectorState extends ConsumerState<ShakeDetector> {
     super.dispose();
   }
 
-  void _onAccelerometerData(AccelerometerEvent event) {
+  void _onAccelerometerData(final AccelerometerEvent event) {
     if (!ref.read(shakeEnabledProvider)) return;
 
     final now = DateTime.now();
@@ -74,15 +74,15 @@ class _ShakeDetectorState extends ConsumerState<ShakeDetector> {
     }
   }
 
-  double _stdDev(List<double> values) {
+  double _stdDev(final List<double> values) {
     if (values.isEmpty) return 0;
-    final mean = values.reduce((a, b) => a + b) / values.length;
-    final squaredDiffs = values.map((v) => (v - mean) * (v - mean));
-    return sqrt(squaredDiffs.reduce((a, b) => a + b) / values.length);
+    final mean = values.reduce((final a, final b) => a + b) / values.length;
+    final squaredDiffs = values.map((final v) => (v - mean) * (v - mean));
+    return sqrt(squaredDiffs.reduce((final a, final b) => a + b) / values.length);
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(final BuildContext context) {
     return widget.child;
   }
 }
@@ -91,7 +91,7 @@ class ComboShakeWrapper extends ConsumerWidget {
   const ComboShakeWrapper({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(final BuildContext context, final WidgetRef ref) {
     final shakeEnabled = ref.watch(shakeEnabledProvider);
     if (!shakeEnabled) {
       return ref.watch(bottomNavShellProvider);
@@ -110,7 +110,7 @@ class ComboShakeWrapper extends ConsumerWidget {
   }
 }
 
-final bottomNavShellProvider = Provider.autoDispose<Widget>((ref) {
+final bottomNavShellProvider = Provider.autoDispose<Widget>((final ref) {
   throw UnimplementedError('Use ComboShakeWrapper as a wrapper instead');
 });
 

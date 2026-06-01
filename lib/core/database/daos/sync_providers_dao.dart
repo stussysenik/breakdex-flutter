@@ -22,21 +22,21 @@ class SyncProvidersDao extends DatabaseAccessor<AppDatabase>
   Future<List<SyncProvider>> getAll() => select(syncProviders).get();
 
   /// Look up a provider by type (e.g. 'icloud', 'gdrive', 's3').
-  Future<SyncProvider?> getByType(String providerType) =>
-      (select(syncProviders)..where((t) => t.providerType.equals(providerType)))
+  Future<SyncProvider?> getByType(final String providerType) =>
+      (select(syncProviders)..where((final t) => t.providerType.equals(providerType)))
           .getSingleOrNull();
 
   /// Insert a new provider configuration.
-  Future<int> insertProvider(SyncProvidersCompanion entry) =>
+  Future<int> insertProvider(final SyncProvidersCompanion entry) =>
       into(syncProviders).insert(entry);
 
   /// Toggle enabled state or update quota/config for an existing provider.
-  Future<bool> updateProvider(String id, SyncProvidersCompanion entry) =>
-      (update(syncProviders)..where((t) => t.id.equals(id))).write(entry).then(
-            (rows) => rows > 0,
+  Future<bool> updateProvider(final String id, final SyncProvidersCompanion entry) =>
+      (update(syncProviders)..where((final t) => t.id.equals(id))).write(entry).then(
+            (final rows) => rows > 0,
           );
 
   /// Remove a provider configuration.
-  Future<int> deleteProvider(String id) =>
-      (delete(syncProviders)..where((t) => t.id.equals(id))).go();
+  Future<int> deleteProvider(final String id) =>
+      (delete(syncProviders)..where((final t) => t.id.equals(id))).go();
 }

@@ -10,10 +10,10 @@ class _FakeLaunchArguments implements LaunchArgumentReader {
   final Map<String, Object?> values;
 
   @override
-  Future<bool?> getBool(String key) async => values[key] as bool?;
+  Future<bool?> getBool(final String key) async => values[key] as bool?;
 
   @override
-  Future<String?> getString(String key) async => values[key] as String?;
+  Future<String?> getString(final String key) async => values[key] as String?;
 }
 
 void main() {
@@ -38,7 +38,7 @@ void main() {
     final reviewCount = await db.reviewsDao.countAll();
 
     expect(
-      moves.map((move) => move.name),
+      moves.map((final move) => move.name),
       containsAll(['Fixture Swipe', 'Fixture Six-Step', 'Fixture Freeze']),
     );
     expect(combos.single.name, 'Fixture Combo');
@@ -67,13 +67,13 @@ void main() {
     expect(allLinks.length, greaterThanOrEqualTo(100));
 
     // All three affinity types must be present.
-    final affinities = allLinks.map((l) => l.affinity).toSet();
+    final affinities = allLinks.map((final l) => l.affinity).toSet();
     expect(affinities, containsAll(['natural', 'possible', 'stretch']));
 
     // No duplicate (fromMoveId, toMoveId) pairs — enforced by PK, but verify
     // the generator itself doesn't attempt duplicates.
     final pairSet = allLinks
-        .map((l) => '${l.fromMoveId}|${l.toMoveId}')
+        .map((final l) => '${l.fromMoveId}|${l.toMoveId}')
         .toSet();
     expect(pairSet.length, allLinks.length);
   });

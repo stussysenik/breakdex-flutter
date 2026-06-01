@@ -25,25 +25,25 @@ class _FixtureVideoSeed {
 }
 
 abstract class LaunchArgumentReader {
-  Future<String?> getString(String key);
-  Future<bool?> getBool(String key);
+  Future<String?> getString(final String key);
+  Future<bool?> getBool(final String key);
 }
 
 class FlutterLaunchArgumentReader implements LaunchArgumentReader {
-  FlutterLaunchArgumentReader({FlutterLaunchArguments? launchArguments})
+  FlutterLaunchArgumentReader({final FlutterLaunchArguments? launchArguments})
     : _launchArguments = launchArguments ?? FlutterLaunchArguments();
 
   final FlutterLaunchArguments _launchArguments;
 
   @override
-  Future<String?> getString(String key) => _launchArguments.getString(key);
+  Future<String?> getString(final String key) => _launchArguments.getString(key);
 
   @override
-  Future<bool?> getBool(String key) => _launchArguments.getBool(key);
+  Future<bool?> getBool(final String key) => _launchArguments.getBool(key);
 }
 
 class AutomationFixtureService {
-  AutomationFixtureService({LaunchArgumentReader? launchArguments})
+  AutomationFixtureService({final LaunchArgumentReader? launchArguments})
     : _launchArguments = launchArguments ?? FlutterLaunchArgumentReader();
 
   static const fixtureKey = 'breakdexFixture';
@@ -65,8 +65,8 @@ class AutomationFixtureService {
   final LaunchArgumentReader _launchArguments;
 
   Future<void> seedIfRequested(
-    AppDatabase db, {
-    SharedPreferences? prefs,
+    final AppDatabase db, {
+    final SharedPreferences? prefs,
   }) async {
     if (kReleaseMode) return;
 
@@ -88,7 +88,7 @@ class AutomationFixtureService {
   }
 
   /// Delete all user data tables in dependency order.
-  static Future<void> _clearAllTables(AppDatabase db) async {
+  static Future<void> _clearAllTables(final AppDatabase db) async {
     await db.delete(db.reviews).go();
     await db.delete(db.comboMoves).go();
     await db.delete(db.deckMoves).go();
@@ -124,14 +124,14 @@ class AutomationFixtureService {
     }
   }
 
-  Future<void> _seedReviewFixture(AppDatabase db) async {
+  Future<void> _seedReviewFixture(final AppDatabase db) async {
     final now = DateTime.now().toUtc();
     final fixtureVideos = await _prepareReviewFixtureVideos();
 
     await db.transaction(() async {
       await _clearAllTables(db);
 
-      await db.batch((batch) {
+      await db.batch((final batch) {
         batch.insertAll(db.moves, [
           MovesCompanion.insert(
             id: 'fixture-move-new',
@@ -321,8 +321,8 @@ class AutomationFixtureService {
     'default',
   ];
 
-  static String _padIdx(int i) => (i + 1).toString().padLeft(3, '0');
-  static String _moveId(int i) => 'stress-move-${_padIdx(i)}';
+  static String _padIdx(final int i) => (i + 1).toString().padLeft(3, '0');
+  static String _moveId(final int i) => 'stress-move-${_padIdx(i)}';
 
   static const _ratingWeights = [
     ReviewRating.good,  ReviewRating.good,  ReviewRating.good,  // 60%
@@ -332,7 +332,7 @@ class AutomationFixtureService {
     ReviewRating.easy,                                          // 10%
   ];
 
-  Future<void> _seedStressFixture(AppDatabase db) async {
+  Future<void> _seedStressFixture(final AppDatabase db) async {
     final now = DateTime.now().toUtc();
     final rng = Random(42);
 
@@ -348,7 +348,7 @@ class AutomationFixtureService {
       final reviews = _stressReviews(now, rng, moves.length, combos.length);
       final auraLinks = _stressAuraLinks();
 
-      await db.batch((batch) {
+      await db.batch((final batch) {
         batch.insertAll(db.moves, moves);
         batch.insertAll(db.combos, combos);
         batch.insertAll(db.comboMoves, comboMoves);
@@ -362,14 +362,14 @@ class AutomationFixtureService {
   }
 
   /// 100 moves: 40 new (0-39), 35 learning (40-74), 25 mastery (75-99).
-  static List<MovesCompanion> _stressMoves(DateTime now, Random rng) {
-    LearningState stateFor(int i) {
+  static List<MovesCompanion> _stressMoves(final DateTime now, final Random rng) {
+    LearningState stateFor(final int i) {
       if (i < 40) return LearningState.newState;
       if (i < 75) return LearningState.learning;
       return LearningState.mastery;
     }
 
-    return List.generate(100, (i) => MovesCompanion.insert(
+    return List.generate(100, (final i) => MovesCompanion.insert(
           id: _moveId(i),
           name: 'Stress Move ${_padIdx(i)}',
           learningState: Value(stateFor(i).dbValue),
@@ -379,15 +379,15 @@ class AutomationFixtureService {
   }
 
   /// 30 combos.
-  static List<CombosCompanion> _stressCombos(DateTime now) =>
-      List.generate(30, (i) => CombosCompanion.insert(
+  static List<CombosCompanion> _stressCombos(final DateTime now) =>
+      List.generate(30, (final i) => CombosCompanion.insert(
             id: 'stress-combo-${i + 1}',
             name: 'Stress Combo ${i + 1}',
           ));
 
   /// 2-8 steps per combo, drawn from the first 100 moves.
   static List<ComboMovesCompanion> _stressComboMoves(
-      List<MovesCompanion> moves) {
+      final List<MovesCompanion> moves) {
     final result = <ComboMovesCompanion>[];
     for (var c = 0; c < 30; c++) {
       final stepCount = c % 7 + 2; // 2–8
@@ -405,8 +405,8 @@ class AutomationFixtureService {
   }
 
   /// 10 decks.
-  static List<DecksCompanion> _stressDecks(DateTime now) =>
-      List.generate(10, (i) => DecksCompanion.insert(
+  static List<DecksCompanion> _stressDecks(final DateTime now) =>
+      List.generate(10, (final i) => DecksCompanion.insert(
             id: 'stress-deck-${i + 1}',
             name: 'Stress Deck ${i + 1}',
             deckType: const Value('manual'),
@@ -417,7 +417,7 @@ class AutomationFixtureService {
 
   /// 5-15 moves per deck, capped at 15.
   static List<DeckMovesCompanion> _stressDeckMoves(
-      List<MovesCompanion> moves) {
+      final List<MovesCompanion> moves) {
     final result = <DeckMovesCompanion>[];
     for (var d = 0; d < 10; d++) {
       final count = (5 + d * 2).clamp(5, 15);
@@ -434,7 +434,7 @@ class AutomationFixtureService {
 
   /// FSRS card for every move (100) and every combo (30) = 130 cards.
   static List<FsrsCardsCompanion> _stressFsrsCards(
-      DateTime now, Random rng, int moveCount, int comboCount) {
+      final DateTime now, final Random rng, final int moveCount, final int comboCount) {
     final cards = <FsrsCardsCompanion>[];
 
     for (var i = 0; i < moveCount; i++) {
@@ -477,7 +477,7 @@ class AutomationFixtureService {
   /// lastReviewOffset?) tuned to the move's state bucket (0-39 new, 40-74
   /// learning, 75-99 mastery).
   static (int, double, double, int, int, Duration, Duration?) _fsrsParams(
-      int i, Random rng) {
+      final int i, final Random rng) {
     if (i < 40) {
       return (0, 0.0, 0.0, 0, 0, Duration(minutes: 1 + rng.nextInt(10)), null);
     }
@@ -505,7 +505,7 @@ class AutomationFixtureService {
 
   /// 500 reviews spread over 90 days: 400 move reviews, 100 combo reviews.
   static List<ReviewsCompanion> _stressReviews(
-      DateTime now, Random rng, int moveCount, int comboCount) {
+      final DateTime now, final Random rng, final int moveCount, final int comboCount) {
     final reviews = <ReviewsCompanion>[];
 
     for (var i = 0; i < 400; i++) {
@@ -567,7 +567,7 @@ class AutomationFixtureService {
     final links = <AuraLinksCompanion>[];
     final seen = <(String, String)>{};
 
-    void add(int from, int to, String affinity) {
+    void add(final int from, final int to, final String affinity) {
       final key = (_moveId(from), _moveId(to));
       if (seen.contains(key)) return;
       seen.add(key);
@@ -636,13 +636,13 @@ class AutomationFixtureService {
   }
 
   /// Party fixture: 10 moves across categories for shake-to-discover testing.
-  static Future<void> _seedPartyFixture(AppDatabase db) async {
+  static Future<void> _seedPartyFixture(final AppDatabase db) async {
     final now = DateTime.now().toUtc();
 
     await db.transaction(() async {
       await _clearAllTables(db);
 
-      await db.batch((batch) {
+      await db.batch((final batch) {
         batch.insertAll(db.moves, [
           MovesCompanion.insert(
             id: 'party-move-01',

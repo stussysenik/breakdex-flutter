@@ -21,10 +21,10 @@ class FakeVideoAlbum implements NativeVideoAlbum {
 
   @override
   Future<ManagedAlbumCopy?> saveToAlbum({
-    required String videoPath,
-    required String albumName,
-    String? assetTitle,
-    String? category,
+    required final String videoPath,
+    required final String albumName,
+    final String? assetTitle,
+    final String? category,
   }) async {
     lastVideoPath = videoPath;
     savedCopy = ManagedAlbumCopy(
@@ -36,21 +36,21 @@ class FakeVideoAlbum implements NativeVideoAlbum {
   }
 
   @override
-  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
+  dynamic noSuchMethod(final Invocation invocation) => super.noSuchMethod(invocation);
 }
 
 class FakeVideoImportSyncHook implements VideoImportSyncHook {
   @override
   Future<void> onVideoImported({
-    required String localPath,
-    required String moveId,
-    String? precomputedHash,
+    required final String localPath,
+    required final String moveId,
+    final String? precomputedHash,
   }) async {
     // No-op
   }
 
   @override
-  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
+  dynamic noSuchMethod(final Invocation invocation) => super.noSuchMethod(invocation);
 }
 
 void main() {
@@ -127,7 +127,7 @@ void main() {
       // Verify: DB contains updated video path and content hash
       final dbMove = await (db.select(
         db.moves,
-      )..where((t) => t.id.equals('m1'))).getSingle();
+      )..where((final t) => t.id.equals('m1'))).getSingle();
       expect(dbMove.videoPath, isNotNull);
       expect(dbMove.videoPath, contains('Moves/Power/Windmill/'));
       expect(dbMove.contentHash, isNotNull);
@@ -146,7 +146,7 @@ void main() {
         '/Users/s3nik/Downloads/OPTW 05-19-2026 VERTICAL.mp4',
       ];
       final missing = sourcePaths
-          .where((path) => !File(path).existsSync())
+          .where((final path) => !File(path).existsSync())
           .toList();
       if (missing.isNotEmpty) {
         markTestSkipped(
@@ -181,18 +181,18 @@ void main() {
       final importsDir = Directory(p.join(tempDir, 'Imports'))
         ..createSync(recursive: true);
 
-      Future<Move> waitForHash(String expectedHash) async {
+      Future<Move> waitForHash(final String expectedHash) async {
         final deadline = DateTime.now().add(const Duration(seconds: 15));
         while (DateTime.now().isBefore(deadline)) {
           final dbMove = await (db.select(
             db.moves,
-          )..where((t) => t.id.equals('m-optw'))).getSingle();
+          )..where((final t) => t.id.equals('m-optw'))).getSingle();
           if (dbMove.contentHash == expectedHash) return dbMove;
           await Future<void>.delayed(const Duration(milliseconds: 100));
         }
         return (db.select(
           db.moves,
-        )..where((t) => t.id.equals('m-optw'))).getSingle();
+        )..where((final t) => t.id.equals('m-optw'))).getSingle();
       }
 
       for (final sourcePath in sourcePaths) {

@@ -4,11 +4,11 @@ import 'package:flutter/services.dart';
 import '../../core/design/spacing.dart';
 import '../../core/design/typography.dart';
 
-String formatColorHex(Color color) {
+String formatColorHex(final Color color) {
   return '#${color.toARGB32().toRadixString(16).padLeft(8, '0').toUpperCase()}';
 }
 
-Color? tryParseColorHex(String input) {
+Color? tryParseColorHex(final String input) {
   final normalized = input.trim().replaceAll('#', '');
   if (normalized.length != 6 && normalized.length != 8) return null;
 
@@ -21,11 +21,11 @@ Color? tryParseColorHex(String input) {
 }
 
 Future<Color?> showColorEditorDialog(
-  BuildContext context, {
-  required Color initialColor,
-  String title = 'Choose Color',
-  String? subtitle,
-  List<Color> presets = const [],
+  final BuildContext context, {
+  required final Color initialColor,
+  final String title = 'Choose Color',
+  final String? subtitle,
+  final List<Color> presets = const [],
 }) {
   return showDialog<Color>(
     context: context,
@@ -55,7 +55,7 @@ class ColorSettingTile extends StatelessWidget {
   final Widget? leading;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(final BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
 
     return Material(
@@ -162,7 +162,7 @@ class _ColorEditorDialogState extends State<_ColorEditorDialog> {
     super.dispose();
   }
 
-  void _setColor(Color color) {
+  void _setColor(final Color color) {
     setState(() {
       _color = color;
       _hexController.text = formatColorHex(_color);
@@ -170,10 +170,10 @@ class _ColorEditorDialogState extends State<_ColorEditorDialog> {
   }
 
   void _updateFromHsv({
-    double? hue,
-    double? saturation,
-    double? value,
-    double? alpha,
+    final double? hue,
+    final double? saturation,
+    final double? value,
+    final double? alpha,
   }) {
     final hsv = HSVColor.fromColor(_color);
     _setColor(
@@ -186,7 +186,7 @@ class _ColorEditorDialogState extends State<_ColorEditorDialog> {
     );
   }
 
-  void _applyHex(String value) {
+  void _applyHex(final String value) {
     final parsed = tryParseColorHex(value);
     if (parsed != null) {
       _setColor(parsed);
@@ -194,7 +194,7 @@ class _ColorEditorDialogState extends State<_ColorEditorDialog> {
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(final BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
     final hsv = HSVColor.fromColor(_color);
     final previewFg =
@@ -295,7 +295,7 @@ class _ColorEditorDialogState extends State<_ColorEditorDialog> {
                   prefixIcon: Icon(Icons.tag_rounded),
                 ),
                 onSubmitted: _applyHex,
-                onChanged: (value) {
+                onChanged: (final value) {
                   final hexLength = value.replaceAll('#', '').length;
                   if (hexLength == 6 || hexLength == 8) {
                     _applyHex(value);
@@ -326,8 +326,8 @@ class _ColorEditorDialogState extends State<_ColorEditorDialog> {
                   Color(0xFF7C4DFF),
                   Color(0xFFFF1744),
                 ],
-                formatter: (value) => '${value.round()}°',
-                onChanged: (value) => _updateFromHsv(hue: value),
+                formatter: (final value) => '${value.round()}°',
+                onChanged: (final value) => _updateFromHsv(hue: value),
               ),
               _GradientChannelSlider(
                 label: 'Saturation',
@@ -339,8 +339,8 @@ class _ColorEditorDialogState extends State<_ColorEditorDialog> {
                   HSVColor.fromAHSV(hsv.alpha, hsv.hue, 0, hsv.value).toColor(),
                   HSVColor.fromAHSV(hsv.alpha, hsv.hue, 1, hsv.value).toColor(),
                 ],
-                formatter: (value) => '${value.round()}%',
-                onChanged: (value) => _updateFromHsv(saturation: value / 100),
+                formatter: (final value) => '${value.round()}%',
+                onChanged: (final value) => _updateFromHsv(saturation: value / 100),
               ),
               _GradientChannelSlider(
                 label: 'Value',
@@ -353,8 +353,8 @@ class _ColorEditorDialogState extends State<_ColorEditorDialog> {
                   HSVColor.fromAHSV(hsv.alpha, hsv.hue, hsv.saturation, 1)
                       .toColor(),
                 ],
-                formatter: (value) => '${value.round()}%',
-                onChanged: (value) => _updateFromHsv(value: value / 100),
+                formatter: (final value) => '${value.round()}%',
+                onChanged: (final value) => _updateFromHsv(value: value / 100),
               ),
               if (widget.presets.isNotEmpty) ...[
                 const SizedBox(height: AppSpacing.lg),
@@ -369,7 +369,7 @@ class _ColorEditorDialogState extends State<_ColorEditorDialog> {
                 Wrap(
                   spacing: AppSpacing.sm,
                   runSpacing: AppSpacing.sm,
-                  children: widget.presets.map((preset) {
+                  children: widget.presets.map((final preset) {
                     final selected = preset.toARGB32() == _color.toARGB32();
                     return GestureDetector(
                       onTap: () => _setColor(preset),
@@ -406,7 +406,7 @@ class _ColorEditorDialogState extends State<_ColorEditorDialog> {
                 min: 0,
                 max: 255,
                 activeColor: colorScheme.primary,
-                onChanged: (value) => _updateFromHsv(alpha: value / 255),
+                onChanged: (final value) => _updateFromHsv(alpha: value / 255),
               ),
               _ChannelSlider(
                 label: 'Red',
@@ -414,7 +414,7 @@ class _ColorEditorDialogState extends State<_ColorEditorDialog> {
                 min: 0,
                 max: 255,
                 activeColor: Colors.red,
-                onChanged: (value) => _setColor(_color.withRed(value.round())),
+                onChanged: (final value) => _setColor(_color.withRed(value.round())),
               ),
               _ChannelSlider(
                 label: 'Green',
@@ -422,7 +422,7 @@ class _ColorEditorDialogState extends State<_ColorEditorDialog> {
                 min: 0,
                 max: 255,
                 activeColor: Colors.green,
-                onChanged: (value) =>
+                onChanged: (final value) =>
                     _setColor(_color.withGreen(value.round())),
               ),
               _ChannelSlider(
@@ -431,7 +431,7 @@ class _ColorEditorDialogState extends State<_ColorEditorDialog> {
                 min: 0,
                 max: 255,
                 activeColor: Colors.blue,
-                onChanged: (value) => _setColor(_color.withBlue(value.round())),
+                onChanged: (final value) => _setColor(_color.withBlue(value.round())),
               ),
               const SizedBox(height: AppSpacing.sm),
               Row(
@@ -474,7 +474,7 @@ class _ChannelSlider extends StatelessWidget {
   final ValueChanged<double> onChanged;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(final BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
     return Padding(
       padding: const EdgeInsets.only(bottom: AppSpacing.sm),
@@ -541,7 +541,7 @@ class _GradientChannelSlider extends StatelessWidget {
   final ValueChanged<double> onChanged;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(final BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
 
     return Padding(

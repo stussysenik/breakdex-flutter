@@ -61,7 +61,7 @@ class _MilestoneListState extends ConsumerState<MilestoneList> {
     unawaited(HapticFeedback.lightImpact());
   }
 
-  Future<void> _toggleMilestone(Milestone milestone) async {
+  Future<void> _toggleMilestone(final Milestone milestone) async {
     final dao = ref.read(milestonesDaoProvider);
     if (milestone.completedAt != null) {
       await dao.uncomplete(milestone.id);
@@ -71,10 +71,10 @@ class _MilestoneListState extends ConsumerState<MilestoneList> {
     unawaited(HapticFeedback.selectionClick());
   }
 
-  Future<void> _deleteMilestone(Milestone milestone) async {
+  Future<void> _deleteMilestone(final Milestone milestone) async {
     final confirm = await showDialog<bool>(
       context: context,
-      builder: (ctx) => AlertDialog(
+      builder: (final ctx) => AlertDialog(
         title: const Text('Delete Milestone?'),
         content: Text('Remove "${milestone.title}"?'),
         actions: [
@@ -99,7 +99,7 @@ class _MilestoneListState extends ConsumerState<MilestoneList> {
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(final BuildContext context) {
     final milestonesAsync = ref.watch(labMilestonesProvider(widget.labId));
     final colorScheme = Theme.of(context).colorScheme;
 
@@ -124,7 +124,7 @@ class _MilestoneListState extends ConsumerState<MilestoneList> {
             padding: EdgeInsets.all(AppSpacing.md),
             child: Center(child: CircularProgressIndicator()),
           ),
-          error: (e, _) => Padding(
+          error: (final e, _) => Padding(
             padding: const EdgeInsets.symmetric(
               horizontal: AppSpacing.screenEdge,
             ),
@@ -135,7 +135,7 @@ class _MilestoneListState extends ConsumerState<MilestoneList> {
               ),
             ),
           ),
-          data: (milestones) {
+          data: (final milestones) {
             if (milestones.isEmpty && !_showAddField) {
               return Padding(
                 padding: const EdgeInsets.symmetric(
@@ -261,7 +261,7 @@ class _MilestoneRow extends StatelessWidget {
   final VoidCallback onDelete;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(final BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
     final isComplete = milestone.completedAt != null;
 

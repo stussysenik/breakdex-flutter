@@ -5,7 +5,6 @@ import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:intl/intl.dart';
 
 import '../../core/database/database.dart';
 import '../../core/design/colors.dart';
@@ -112,7 +111,7 @@ class _PartyScreenState extends ConsumerState<PartyScreen>
   void _onMoveShake() {
     final movesAsync = ref.read(_partyMovesProvider);
     movesAsync.when(
-      data: (moves) {
+      data: (final moves) {
         DiagnosticsLog.info(
           _partySubsystem,
           'move shake: ${moves.length} moves available',
@@ -126,7 +125,7 @@ class _PartyScreenState extends ConsumerState<PartyScreen>
         context.read<PartyBloc>().add(PartyEvent.shake(moves, durationMs));
       },
       loading: () => DiagnosticsLog.debug(_partySubsystem, 'moves loading'),
-      error: (e, s) =>
+      error: (final e, final s) =>
           DiagnosticsLog.error(_partySubsystem, 'moves error: $e'),
     );
   }
@@ -134,7 +133,7 @@ class _PartyScreenState extends ConsumerState<PartyScreen>
   void _onComboShake() {
     final combosAsync = ref.read(_partyCombosProvider);
     combosAsync.when(
-      data: (combos) {
+      data: (final combos) {
         DiagnosticsLog.info(
           _partySubsystem,
           'combo shake: ${combos.length} combos available',
@@ -148,14 +147,14 @@ class _PartyScreenState extends ConsumerState<PartyScreen>
         _comboBloc.add(ComboShake(combos, durationMs));
       },
       loading: () => DiagnosticsLog.warn(_partySubsystem, 'combos still loading on shake'),
-      error: (e, s) =>
+      error: (final e, final s) =>
           DiagnosticsLog.error(_partySubsystem, 'combos error on shake: $e'),
     );
   }
 
   void _startMoveTicker() {
     _ticker?.cancel();
-    _ticker = Timer.periodic(const Duration(milliseconds: 16), (timer) {
+    _ticker = Timer.periodic(const Duration(milliseconds: 16), (final timer) {
       if (mounted) {
         context.read<PartyBloc>().add(PartyEvent.tick(DateTime.now()));
       }
@@ -164,7 +163,7 @@ class _PartyScreenState extends ConsumerState<PartyScreen>
 
   void _startComboTicker() {
     _ticker?.cancel();
-    _ticker = Timer.periodic(const Duration(milliseconds: 16), (timer) {
+    _ticker = Timer.periodic(const Duration(milliseconds: 16), (final timer) {
       if (mounted) {
         _comboBloc.add(ComboTick(DateTime.now()));
       }
@@ -177,10 +176,10 @@ class _PartyScreenState extends ConsumerState<PartyScreen>
   }
 
   void _triggerHaptics() {
-    HapticFeedback.heavyImpact();
-    Future.delayed(const Duration(milliseconds: 80), () {
-      HapticFeedback.heavyImpact();
-    });
+    unawaited(HapticFeedback.heavyImpact());
+    unawaited(Future<void>.delayed(const Duration(milliseconds: 80), () {
+      unawaited(HapticFeedback.heavyImpact());
+    }));
   }
 
   void _lockShake() {
@@ -192,7 +191,7 @@ class _PartyScreenState extends ConsumerState<PartyScreen>
     });
   }
 
-  void _onRevealAnimationComplete(void Function() onComplete) {
+  void _onRevealAnimationComplete(final void Function() onComplete) {
     _revealController.reset();
     _revealController.forward().then((_) {
       if (mounted) onComplete();
@@ -200,8 +199,8 @@ class _PartyScreenState extends ConsumerState<PartyScreen>
   }
 
   @override
-  Widget build(BuildContext context) {
-    ref.listen(currentTabIndexProvider, (prev, next) {
+  Widget build(final BuildContext context) {
+    ref.listen(currentTabIndexProvider, (final prev, final next) {
       if (next == 2) {
         _startShakeListener();
       } else {
@@ -227,10 +226,10 @@ class _PartyScreenState extends ConsumerState<PartyScreen>
     final colorScheme = Theme.of(context).colorScheme;
 
     return BlocListener<PartyBloc, PartyState>(
-      listener: (context, state) {
+      listener: (final context, final state) {
         DiagnosticsLog.trace(_partySubsystem, 'move listener: state=${state.runtimeType}');
         state.maybeWhen(
-          cycling: (_, __, ___, ____, _____, ______) {
+          cycling: (_, _, _, _, _, _) {
             DiagnosticsLog.debug(_partySubsystem, 'move bloc → cycling');
             if (_ticker == null) {
               _triggerHaptics();
@@ -256,10 +255,10 @@ class _PartyScreenState extends ConsumerState<PartyScreen>
         loading: () => const Scaffold(
           body: Center(child: CircularProgressIndicator()),
         ),
-        error: (e, _) => Scaffold(
+        error: (final e, _) => Scaffold(
           body: Center(child: Text('Error: $e')),
         ),
-        data: (moves) {
+        data: (final moves) {
           return Scaffold(
             body: SafeArea(
               child: moves.isEmpty
@@ -278,7 +277,7 @@ class _PartyScreenState extends ConsumerState<PartyScreen>
     final colorScheme = Theme.of(context).colorScheme;
 
     return BlocListener<ComboPartyBloc, ComboPartyState>(
-      listener: (context, state) {
+      listener: (final context, final state) {
         switch (state) {
           case ComboCycling():
             DiagnosticsLog.debug(_partySubsystem, 'combo bloc → cycling');
@@ -304,10 +303,10 @@ class _PartyScreenState extends ConsumerState<PartyScreen>
         loading: () => const Scaffold(
           body: Center(child: CircularProgressIndicator()),
         ),
-        error: (e, _) => Scaffold(
+        error: (final e, _) => Scaffold(
           body: Center(child: Text('Error: $e')),
         ),
-        data: (combos) {
+        data: (final combos) {
           return Scaffold(
             body: SafeArea(
               child: combos.isEmpty
@@ -320,7 +319,7 @@ class _PartyScreenState extends ConsumerState<PartyScreen>
     );
   }
 
-  Widget _buildEmptyState(ColorScheme colorScheme, {required bool isCombo}) {
+  Widget _buildEmptyState(final ColorScheme colorScheme, {required final bool isCombo}) {
     final itemLabel = isCombo ? 'combos' : 'moves';
     DiagnosticsLog.info(
       _partySubsystem,
@@ -360,9 +359,9 @@ class _PartyScreenState extends ConsumerState<PartyScreen>
   }
 
   Widget _buildMoveContent(
-    BuildContext context,
-    ColorScheme colorScheme,
-    List<Move> allMoves,
+    final BuildContext context,
+    final ColorScheme colorScheme,
+    final List<Move> allMoves,
   ) {
     final bottomPadding = MediaQuery.of(context).padding.bottom;
 
@@ -387,14 +386,14 @@ class _PartyScreenState extends ConsumerState<PartyScreen>
         const SizedBox(height: AppSpacing.sm),
         Expanded(
           child: BlocBuilder<PartyBloc, PartyState>(
-            builder: (context, state) {
+            builder: (final context, final state) {
               return state.when(
                 idle: () => _buildIdlePrompt(
                   colorScheme,
                   allMoves.length,
                   isCombo: false,
                 ),
-                cycling: (_, currentMove, __, startTime, ___, durationMs) =>
+                cycling: (_, final currentMove, _, final startTime, _, final durationMs) =>
                     _buildCyclingDisplay(
                   colorScheme,
                   currentMove.name,
@@ -402,9 +401,9 @@ class _PartyScreenState extends ConsumerState<PartyScreen>
                   startTime: startTime,
                   durationMs: durationMs,
                 ),
-                revealing: (move) =>
+                revealing: (final move) =>
                     _buildMoveRevealedCard(colorScheme, move),
-                revealed: (move) =>
+                revealed: (final move) =>
                     _buildMoveRevealedCard(colorScheme, move),
               );
             },
@@ -418,11 +417,11 @@ class _PartyScreenState extends ConsumerState<PartyScreen>
             AppSpacing.sm + bottomPadding,
           ),
           child: BlocBuilder<PartyBloc, PartyState>(
-            builder: (context, state) {
+            builder: (final context, final state) {
               return _buildBottomHint(
                 colorScheme,
                 state.maybeWhen(
-                  cycling: (_, __, ___, ____, _____, ______) => true,
+                  cycling: (_, _, _, _, _, _) => true,
                   orElse: () => false,
                 ),
                 state.maybeWhen(idle: () => true, orElse: () => false),
@@ -436,9 +435,9 @@ class _PartyScreenState extends ConsumerState<PartyScreen>
   }
 
   Widget _buildComboContent(
-    BuildContext context,
-    ColorScheme colorScheme,
-    List<ComboPartyDisplay> combos,
+    final BuildContext context,
+    final ColorScheme colorScheme,
+    final List<ComboPartyDisplay> combos,
   ) {
     final bottomPadding = MediaQuery.of(context).padding.bottom;
 
@@ -463,7 +462,7 @@ class _PartyScreenState extends ConsumerState<PartyScreen>
         const SizedBox(height: AppSpacing.sm),
         Expanded(
           child: BlocBuilder<ComboPartyBloc, ComboPartyState>(
-            builder: (context, state) {
+            builder: (final context, final state) {
               DiagnosticsLog.debug('Party',
                   'ComboBlocBuilder state=${state.runtimeType}');
               return switch (state) {
@@ -500,7 +499,7 @@ class _PartyScreenState extends ConsumerState<PartyScreen>
             AppSpacing.sm + bottomPadding,
           ),
           child: BlocBuilder<ComboPartyBloc, ComboPartyState>(
-            builder: (context, state) {
+            builder: (final context, final state) {
               return _buildBottomHint(
                 colorScheme,
                 state is ComboCycling,
@@ -515,9 +514,9 @@ class _PartyScreenState extends ConsumerState<PartyScreen>
   }
 
   Widget _buildIdlePrompt(
-    ColorScheme colorScheme,
-    int count, {
-    required bool isCombo,
+    final ColorScheme colorScheme,
+    final int count, {
+    required final bool isCombo,
   }) {
     final label = isCombo ? 'combo' : 'move';
     return Center(
@@ -574,11 +573,11 @@ class _PartyScreenState extends ConsumerState<PartyScreen>
   }
 
   Widget _buildCyclingDisplay(
-    ColorScheme colorScheme,
-    String name, {
-    required Key key,
-    required DateTime startTime,
-    required int durationMs,
+    final ColorScheme colorScheme,
+    final String name, {
+    required final Key key,
+    required final DateTime startTime,
+    required final int durationMs,
   }) {
     final elapsed = DateTime.now().difference(startTime);
     final duration = durationMs > 0 ? durationMs : 5500;
@@ -608,7 +607,6 @@ class _PartyScreenState extends ConsumerState<PartyScreen>
               key: key,
               style: AppTypography.titleLarge.copyWith(
                 color: colorScheme.onSurface,
-                fontSize: 28,
                 fontWeight: FontWeight.w900,
                 letterSpacing: 1.5,
               ),
@@ -629,7 +627,7 @@ class _PartyScreenState extends ConsumerState<PartyScreen>
     );
   }
 
-  Widget _buildMoveRevealedCard(ColorScheme colorScheme, Move move) {
+  Widget _buildMoveRevealedCard(final ColorScheme colorScheme, final Move move) {
     return _buildRevealedCardWrapper(
       colorScheme,
       child: _buildMoveCard(colorScheme, move),
@@ -637,8 +635,8 @@ class _PartyScreenState extends ConsumerState<PartyScreen>
   }
 
   Widget _buildComboRevealedCard(
-    ColorScheme colorScheme,
-    ComboPartyDisplay combo,
+    final ColorScheme colorScheme,
+    final ComboPartyDisplay combo,
   ) {
     return _buildRevealedCardWrapper(
       colorScheme,
@@ -647,8 +645,8 @@ class _PartyScreenState extends ConsumerState<PartyScreen>
   }
 
   Widget _buildRevealedCardWrapper(
-    ColorScheme colorScheme, {
-    required Widget child,
+    final ColorScheme colorScheme, {
+    required final Widget child,
   }) {
     return Center(
       child: Padding(
@@ -657,7 +655,7 @@ class _PartyScreenState extends ConsumerState<PartyScreen>
           constraints: const BoxConstraints(maxWidth: 400),
           child: AnimatedBuilder(
             animation: _revealScaleY,
-            builder: (context, child) {
+            builder: (final context, final child) {
               return Transform.scale(
                 scaleY: _revealScaleY.value.clamp(0.0, 1.0),
                 alignment: Alignment.center,
@@ -671,7 +669,7 @@ class _PartyScreenState extends ConsumerState<PartyScreen>
     );
   }
 
-  Widget _buildMoveCard(ColorScheme colorScheme, Move move) {
+  Widget _buildMoveCard(final ColorScheme colorScheme, final Move move) {
     final state = LearningState.fromString(move.learningState);
 
     return Column(
@@ -765,7 +763,7 @@ class _PartyScreenState extends ConsumerState<PartyScreen>
         ],
         const SizedBox(height: AppSpacing.lg),
         BlocBuilder<PartyBloc, PartyState>(
-          builder: (context, state) {
+          builder: (final context, final state) {
             return _PhaseIndicator(
               isRevealed: _isRevealed(state),
               isRevealing: _isRevealing(state),
@@ -781,8 +779,8 @@ class _PartyScreenState extends ConsumerState<PartyScreen>
   }
 
   Widget _buildComboCard(
-    ColorScheme colorScheme,
-    ComboPartyDisplay combo,
+    final ColorScheme colorScheme,
+    final ComboPartyDisplay combo,
   ) {
     final activeVideoPath = _selectedComboStepIndex < combo.moveVideoPaths.length
         ? combo.moveVideoPaths[_selectedComboStepIndex]
@@ -810,7 +808,7 @@ class _PartyScreenState extends ConsumerState<PartyScreen>
             alignment: WrapAlignment.center,
             spacing: AppSpacing.xs,
             runSpacing: 4,
-            children: List.generate(combo.moveNames.length, (idx) {
+            children: List.generate(combo.moveNames.length, (final idx) {
               final isSelected = idx == _selectedComboStepIndex;
               final name = combo.moveNames[idx];
               final beats = combo.moveBeats[idx];
@@ -922,7 +920,7 @@ class _PartyScreenState extends ConsumerState<PartyScreen>
           ComboStepLine(
             stepCount: combo.moveNames.length,
             activeIndex: _selectedComboStepIndex,
-            onStepSelected: (idx) {
+            onStepSelected: (final idx) {
               DiagnosticsLog.info('Party', 'Combo step selected: $idx');
               setState(() => _selectedComboStepIndex = idx);
             },
@@ -930,7 +928,7 @@ class _PartyScreenState extends ConsumerState<PartyScreen>
           ),
         const SizedBox(height: AppSpacing.lg),
         BlocBuilder<ComboPartyBloc, ComboPartyState>(
-          builder: (context, state) {
+          builder: (final context, final state) {
             return _PhaseIndicator(
               isRevealed: state is ComboRevealed,
               isRevealing: state is ComboRevealing,
@@ -946,10 +944,10 @@ class _PartyScreenState extends ConsumerState<PartyScreen>
   }
 
   Widget _buildBottomHint(
-    ColorScheme colorScheme,
-    bool isCycling,
-    bool isIdle, {
-    required bool isCombo,
+    final ColorScheme colorScheme,
+    final bool isCycling,
+    final bool isIdle, {
+    required final bool isCombo,
   }) {
     final itemLabel = isCombo ? 'combo' : 'move';
     final icon = isCycling ? Icons.casino_outlined : Icons.vibration;
@@ -1013,7 +1011,7 @@ class _PhaseIndicator extends StatelessWidget {
   final String itemLabel;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(final BuildContext context) {
     if (isRevealed) {
       return Text(
         'SHAKE AGAIN FOR ANOTHER $itemLabel',
@@ -1049,7 +1047,7 @@ class _PhaseIndicator extends StatelessWidget {
 }
 
 final _moveFsrsCardProvider =
-    FutureProvider.family<FsrsCard?, String>((ref, moveId) {
+    FutureProvider.family<FsrsCard?, String>((final ref, final moveId) {
   return ref.watch(fsrsCardsDaoProvider).getByEntityId(moveId, entityType: 'move');
 });
 
@@ -1058,13 +1056,13 @@ class _MoveReviewStats extends ConsumerWidget {
   final String moveId;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(final BuildContext context, final WidgetRef ref) {
     final cardAsync = ref.watch(_moveFsrsCardProvider(moveId));
 
     return cardAsync.when(
       loading: () => const SizedBox(height: 28),
       error: (_, _) => const SizedBox.shrink(),
-      data: (card) {
+      data: (final card) {
         if (card == null) return const SizedBox.shrink();
         final hasReviews = card.reps > 0 || card.lapses > 0;
         if (!hasReviews) return const SizedBox.shrink();
@@ -1108,7 +1106,7 @@ class _StatChip extends StatelessWidget {
   final IconData icon;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(final BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
     return Row(
       mainAxisSize: MainAxisSize.min,
@@ -1128,21 +1126,21 @@ class _StatChip extends StatelessWidget {
   }
 }
 
-bool _isRevealed(PartyState s) =>
+bool _isRevealed(final PartyState s) =>
     s.maybeWhen(revealed: (_) => true, orElse: () => false);
-bool _isRevealing(PartyState s) =>
+bool _isRevealing(final PartyState s) =>
     s.maybeWhen(revealing: (_) => true, orElse: () => false);
-bool _isCycling(PartyState s) =>
-    s.maybeWhen(cycling: (_, __, ___, ____, _____, ______) => true, orElse: () => false);
-bool _isIdle(PartyState s) =>
+bool _isCycling(final PartyState s) =>
+    s.maybeWhen(cycling: (_, _, _, _, _, _) => true, orElse: () => false);
+bool _isIdle(final PartyState s) =>
     s.maybeWhen(idle: () => true, orElse: () => false);
 
-final _partyMovesProvider = StreamProvider<List<Move>>((ref) {
+final _partyMovesProvider = StreamProvider<List<Move>>((final ref) {
   return ref.watch(moveRepositoryProvider).watchAll();
 });
 
 final _partyCombosProvider =
-    StreamProvider<List<ComboPartyDisplay>>((ref) async* {
+    StreamProvider<List<ComboPartyDisplay>>((final ref) async* {
   final combosDao = ref.watch(combosDaoProvider);
 
   // Watch a joined stream of combos and their moves so we react to any changes
@@ -1160,7 +1158,7 @@ final _partyCombosProvider =
       if (combo.activeVideoPath != null) {
         absVideoPath = VideoPathResolver.toAbsolute(combo.activeVideoPath!);
       } else {
-        final firstWithVideo = moves.where((m) => m.move.videoPath != null).firstOrNull;
+        final firstWithVideo = moves.where((final m) => m.move.videoPath != null).firstOrNull;
         if (firstWithVideo != null) {
           absVideoPath = VideoPathResolver.toAbsolute(firstWithVideo.move.videoPath!);
         }
@@ -1168,9 +1166,9 @@ final _partyCombosProvider =
 
       result.add(ComboPartyDisplay(
         combo: combo,
-        moveNames: moves.map((m) => m.move.name).toList(),
-        moveBeats: moves.map((m) => m.move.count).toList(),
-        moveVideoPaths: moves.map((m) => m.move.videoPath != null ? VideoPathResolver.toAbsolute(m.move.videoPath!) : null).toList(),
+        moveNames: moves.map((final m) => m.move.name).toList(),
+        moveBeats: moves.map((final m) => m.move.count).toList(),
+        moveVideoPaths: moves.map((final m) => m.move.videoPath != null ? VideoPathResolver.toAbsolute(m.move.videoPath!) : null).toList(),
         resolvedVideoPath: absVideoPath,
       ));
     }

@@ -4,6 +4,7 @@ import 'dart:ui';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -21,6 +22,7 @@ import '../../core/services/native_video_export.dart';
 import '../../core/services/video_service.dart';
 import '../../core/utils/loading_state_machine.dart';
 import '../../core/utils/pid_controller.dart';
+import '../../core/utils/diagnostics.dart';
 import 'video_edit_geometry.dart';
 
 class SimplifiedVideoEditorView extends ConsumerStatefulWidget {
@@ -55,9 +57,11 @@ class _SimplifiedVideoEditorViewState extends ConsumerState<SimplifiedVideoEdito
   LoadingStateMachine<void> _loadState = const Idle();
   StreamSubscription<LoadingStateMachine<void>>? _loadSub;
   final TransformationController _transformController = TransformationController();
+  
   final PidController _pidController = PidController();
   double _gestureBaseScale = 1.0;
   final Stopwatch _scaleStopwatch = Stopwatch();
+
   bool _exporting = false;
   ExportProgress? _exportProgress;
   StreamSubscription<ExportProgress>? _progressSub;
@@ -111,7 +115,7 @@ class _SimplifiedVideoEditorViewState extends ConsumerState<SimplifiedVideoEdito
       onPause: _pausePlayback,
     );
     _scaleStopwatch.start();
-    _loadSub = _loadingController.stream.listen((state) {
+    _loadSub = _loadingController.stream.listen((final state) {
       if (mounted) setState(() => _loadState = state);
     });
     unawaited(_loadVideo());
@@ -133,7 +137,7 @@ class _SimplifiedVideoEditorViewState extends ConsumerState<SimplifiedVideoEdito
   }
 
   @override
-  void didUpdateWidget(covariant SimplifiedVideoEditorView oldWidget) {
+  void didUpdateWidget(covariant final SimplifiedVideoEditorView oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.videoPath != widget.videoPath) {
       _trimStart = 0.0;
@@ -164,7 +168,7 @@ class _SimplifiedVideoEditorViewState extends ConsumerState<SimplifiedVideoEdito
   }
 
   @override
-  void didChangeAppLifecycleState(AppLifecycleState state) {
+  void didChangeAppLifecycleState(final AppLifecycleState state) {
     if (state == AppLifecycleState.paused) {
       _pausePlayback();
     }
@@ -181,7 +185,7 @@ class _SimplifiedVideoEditorViewState extends ConsumerState<SimplifiedVideoEdito
       _rotation != 0 ||
       _selectedAspectIndex != 0;
 
-  Future<void> _loadVideo({bool isRetry = false}) async {
+  Future<void> _loadVideo({final bool isRetry = false}) async {
     final loadToken = ++_loadToken;
     await _disposeController();
     if (!mounted || loadToken != _loadToken) return;
@@ -259,7 +263,7 @@ class _SimplifiedVideoEditorViewState extends ConsumerState<SimplifiedVideoEdito
   }
 
   Future<VideoPlayerController> _initializeControllerWithRetry(
-    String path,
+    final String path,
   ) async {
     final f = File(path);
     final controller = VideoPlayerController.file(f);
@@ -336,8 +340,8 @@ class _SimplifiedVideoEditorViewState extends ConsumerState<SimplifiedVideoEdito
   }
 
   Duration _normalizedPositionToDuration(
-    double normalized, {
-    Duration? duration,
+    final double normalized, {
+    final Duration? duration,
   }) {
     final d = duration ?? _videoDuration;
     return Duration(milliseconds: (normalized * d.inMilliseconds).round());
@@ -353,7 +357,7 @@ class _SimplifiedVideoEditorViewState extends ConsumerState<SimplifiedVideoEdito
     if (mounted) setState(() => _thumbnails = results);
   }
 
-  void _onTrimChanged(double start, double end) {
+  void _onTrimChanged(final double start, final double end) {
     setState(() {
       _trimStart = start;
       _trimEnd = end;
@@ -363,14 +367,16 @@ class _SimplifiedVideoEditorViewState extends ConsumerState<SimplifiedVideoEdito
   void _rotate() {
     setState(() {
       _rotation = (_rotation + 90) % 360;
+      DiagnosticsLog.info('VideoEditor', '[Simplified] Rotating to $_rotation°');
       _matrixInitialized = false;
       _previewViewportSize = null;
     });
     unawaited(HapticFeedback.selectionClick());
   }
 
-  void _setAspect(int index) {
+  void _setAspect(final int index) {
     if (index == _selectedAspectIndex && index != _customAspectIndex) return;
+    DiagnosticsLog.info('VideoEditor', '[Simplified] Setting aspect index $index');
     if (index == _customAspectIndex) {
       _showCustomAspectDialog();
     } else {
@@ -383,13 +389,16 @@ class _SimplifiedVideoEditorViewState extends ConsumerState<SimplifiedVideoEdito
     }
   }
 
-  void _setSpeed(int index) {
+  void _setSpeed(final int index) {
     if (index == _selectedSpeedIndex) return;
+    final speed = _speeds[index];
+    DiagnosticsLog.info('VideoEditor', '[Simplified] Setting speed to ${speed}x');
     setState(() => _selectedSpeedIndex = index);
+    unawaited(_controller?.setPlaybackSpeed(speed));
     unawaited(HapticFeedback.selectionClick());
   }
 
-  void _applyClampedPreviewTransform(VideoEditViewport viewport) {
+  void _applyClampedPreviewTransform(final VideoEditViewport viewport) {
     final matrix = _transformController.value;
     final scale = matrix.getMaxScaleOnAxis();
 
@@ -412,22 +421,22 @@ class _SimplifiedVideoEditorViewState extends ConsumerState<SimplifiedVideoEdito
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(final BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
 
     return Scaffold(
-      backgroundColor: AppColors.darkBg,
+      backgroundColor: colorScheme.surface,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.close, color: Colors.white),
+          icon: Icon(CupertinoIcons.xmark, color: colorScheme.onSurface),
           onPressed: () => _handleDiscard(context),
         ),
         title: Text(
           'EDIT VIDEO',
           style: AppTypography.labelLarge.copyWith(
-            color: Colors.white,
+            color: colorScheme.onSurface,
             letterSpacing: 2,
           ),
         ),
@@ -471,7 +480,7 @@ class _SimplifiedVideoEditorViewState extends ConsumerState<SimplifiedVideoEdito
     );
   }
 
-  Widget _buildVideoPreview(ColorScheme colorScheme) {
+  Widget _buildVideoPreview(final ColorScheme colorScheme) {
     return _loadState.map(
       idle: (_) => const SizedBox.shrink(),
       loading: (_) => _buildPreviewStatusCard(
@@ -481,14 +490,14 @@ class _SimplifiedVideoEditorViewState extends ConsumerState<SimplifiedVideoEdito
         subtitle: 'Preparing the editor and syncing the first frame.',
         showSpinner: true,
       ),
-      retrying: (s) => _buildPreviewStatusCard(
+      retrying: (final s) => _buildPreviewStatusCard(
         colorScheme,
         icon: null,
         title: 'Retrying video load...',
         subtitle: 'Attempt ${s.attempt} of ${s.maxAttempts}',
         showSpinner: true,
       ),
-      downloading: (s) => _buildPreviewStatusCard(
+      downloading: (final s) => _buildPreviewStatusCard(
         colorScheme,
         icon: null,
         title: 'Downloading video...',
@@ -497,15 +506,15 @@ class _SimplifiedVideoEditorViewState extends ConsumerState<SimplifiedVideoEdito
       ),
       timeout: (_) => _buildPreviewStatusCard(
         colorScheme,
-        icon: Icons.timer_outlined,
+        icon: CupertinoIcons.timer,
         title: 'Video load timed out',
         subtitle: 'Check your connection or try again.',
         actionLabel: 'Retry',
         onAction: () => unawaited(_loadVideo(isRetry: true)),
       ),
-      error: (s) => _buildPreviewStatusCard(
+      error: (final s) => _buildPreviewStatusCard(
         colorScheme,
-        icon: Icons.error_outline_rounded,
+        icon: CupertinoIcons.exclamationmark_circle,
         title: 'Video failed to load',
         subtitle: s.message,
         actionLabel: s.retryable ? 'Retry' : null,
@@ -515,14 +524,14 @@ class _SimplifiedVideoEditorViewState extends ConsumerState<SimplifiedVideoEdito
         if (!_isEditorReady) {
           return _buildPreviewStatusCard(
             colorScheme,
-            icon: Icons.hourglass_bottom_rounded,
+            icon: CupertinoIcons.hourglass,
             title: 'Preparing editor...',
             subtitle: 'One more moment while the preview becomes available.',
           );
         }
 
         const playOverlay = Center(
-          child: Icon(Icons.play_circle_filled, color: Colors.white70, size: 64),
+          child: Icon(CupertinoIcons.play_circle_fill, color: Colors.white70, size: 64),
         );
 
         final targetAspect = _effectiveTargetAspect;
@@ -545,7 +554,7 @@ class _SimplifiedVideoEditorViewState extends ConsumerState<SimplifiedVideoEdito
 
         if (isCropMode) {
           return LayoutBuilder(
-            builder: (context, constraints) {
+            builder: (final context, final constraints) {
               final viewport = computeVideoEditViewport(
                 videoSize: videoSize,
                 rotation: _rotation,
@@ -588,7 +597,7 @@ class _SimplifiedVideoEditorViewState extends ConsumerState<SimplifiedVideoEdito
                             _gestureBaseScale = _transformController.value.getMaxScaleOnAxis();
                             _pidController.reset();
                           },
-                          onInteractionUpdate: (details) {
+                          onInteractionUpdate: (final details) {
                             final dt = _scaleStopwatch.elapsedMilliseconds / 1000.0;
                             _scaleStopwatch.reset();
                             final currentScale = _transformController.value.getMaxScaleOnAxis();
@@ -673,13 +682,13 @@ class _SimplifiedVideoEditorViewState extends ConsumerState<SimplifiedVideoEdito
   }
 
   Widget _buildPreviewStatusCard(
-    ColorScheme colorScheme, {
-    required IconData? icon,
-    required String title,
-    String? subtitle,
-    String? actionLabel,
-    VoidCallback? onAction,
-    bool showSpinner = false,
+    final ColorScheme colorScheme, {
+    required final IconData? icon,
+    required final String title,
+    final String? subtitle,
+    final String? actionLabel,
+    final VoidCallback? onAction,
+    final bool showSpinner = false,
   }) {
     return Container(
       height: 300,
@@ -754,7 +763,7 @@ class _SimplifiedVideoEditorViewState extends ConsumerState<SimplifiedVideoEdito
     );
   }
 
-  Widget _buildBottomControls(ColorScheme colorScheme) {
+  Widget _buildBottomControls(final ColorScheme colorScheme) {
     return Container(
       color: AppColors.darkBg,
       padding: const EdgeInsets.fromLTRB(
@@ -775,7 +784,7 @@ class _SimplifiedVideoEditorViewState extends ConsumerState<SimplifiedVideoEdito
             videoDurationMs: _videoDuration.inMilliseconds,
             playbackPosition: _playbackPosition,
             isPlaying: _isPlaying,
-            onPlayheadChanged: (pos) {
+            onPlayheadChanged: (final pos) {
               _isInternallySeeking = true;
               unawaited(
                 _controller!
@@ -789,7 +798,7 @@ class _SimplifiedVideoEditorViewState extends ConsumerState<SimplifiedVideoEdito
           Row(
             children: [
               _TransformButton(
-                icon: Icons.rotate_left,
+                icon: CupertinoIcons.rotate_left,
                 onTap: _rotate,
               ),
               const SizedBox(width: AppSpacing.md),
@@ -817,7 +826,7 @@ class _SimplifiedVideoEditorViewState extends ConsumerState<SimplifiedVideoEdito
     );
   }
 
-  Widget _buildExportOverlay(ColorScheme colorScheme) {
+  Widget _buildExportOverlay(final ColorScheme colorScheme) {
     final progress = _exportProgress?.progress ?? 0.0;
     final phase = _exportProgress?.phase ?? 'Exporting...';
     final elapsed = _exportStartedAt != null
@@ -874,11 +883,11 @@ class _SimplifiedVideoEditorViewState extends ConsumerState<SimplifiedVideoEdito
     );
   }
 
-  Future<void> _handleDiscard(BuildContext context) async {
+  Future<void> _handleDiscard(final BuildContext context) async {
     if (_hasEdits) {
       final confirmed = await showDialog<bool>(
         context: context,
-        builder: (ctx) => AlertDialog(
+        builder: (final ctx) => AlertDialog(
           title: const Text('Discard edits?'),
           content: const Text('You have unsaved changes to this video.'),
           actions: [
@@ -915,7 +924,7 @@ class _SimplifiedVideoEditorViewState extends ConsumerState<SimplifiedVideoEdito
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(AppRadius.lg)),
       ),
-      builder: (ctx) {
+      builder: (final ctx) {
         final colorScheme = Theme.of(ctx).colorScheme;
         return Padding(
           padding: EdgeInsets.only(bottom: MediaQuery.of(ctx).viewInsets.bottom),
@@ -1014,7 +1023,7 @@ class _SimplifiedVideoEditorViewState extends ConsumerState<SimplifiedVideoEdito
 
     _pausePlayback();
 
-    _progressSub = NativeVideoExport.progressStream.listen((progress) {
+    _progressSub = NativeVideoExport.progressStream.listen((final progress) {
       if (mounted) setState(() => _exportProgress = progress);
     });
 
@@ -1095,7 +1104,7 @@ class _PillSelector extends StatelessWidget {
   final ValueChanged<int> onSelected;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(final BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
     return Column(
       mainAxisSize: MainAxisSize.min,
@@ -1121,7 +1130,7 @@ class _PillSelector extends StatelessWidget {
             scrollDirection: Axis.horizontal,
             itemCount: items.length,
             separatorBuilder: (_, _) => const SizedBox(width: 4),
-            itemBuilder: (ctx, i) {
+            itemBuilder: (final ctx, final i) {
               final active = i == selectedIndex;
               return Center(
                 child: GestureDetector(
@@ -1162,7 +1171,6 @@ class _TrimTimeline extends StatefulWidget {
     required this.isPlaying,
     this.onPlayheadChanged,
     this.onDragStart,
-    this.onDragEnd,
   });
 
   final double trimStart;
@@ -1175,7 +1183,6 @@ class _TrimTimeline extends StatefulWidget {
   final ValueListenable<bool> isPlaying;
   final ValueChanged<double>? onPlayheadChanged;
   final VoidCallback? onDragStart;
-  final VoidCallback? onDragEnd;
 
   @override
   State<_TrimTimeline> createState() => _TrimTimelineState();
@@ -1196,7 +1203,7 @@ class _TrimTimelineState extends State<_TrimTimeline> {
     _playheadPosition = widget.playbackPosition.value;
   }
 
-  void _handleDragStart(DragStartDetails details) {
+  void _handleDragStart(final DragStartDetails details) {
     final box = context.findRenderObject() as RenderBox;
     final localX = box.globalToLocal(details.globalPosition).dx;
     final width = box.size.width;
@@ -1226,7 +1233,7 @@ class _TrimTimelineState extends State<_TrimTimeline> {
     }
   }
 
-  void _handleDragUpdate(DragUpdateDetails details) {
+  void _handleDragUpdate(final DragUpdateDetails details) {
     if (_activeHandle == null) return;
     final box = context.findRenderObject() as RenderBox;
     final width = box.size.width;
@@ -1258,14 +1265,13 @@ class _TrimTimelineState extends State<_TrimTimeline> {
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(final BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
     return GestureDetector(
       onHorizontalDragStart: _handleDragStart,
       onHorizontalDragUpdate: _handleDragUpdate,
       onHorizontalDragEnd: (_) {
         setState(() => _activeHandle = null);
-        widget.onDragEnd?.call();
       },
       child: Container(
         height: 56,
@@ -1276,7 +1282,7 @@ class _TrimTimelineState extends State<_TrimTimeline> {
         child: Stack(
           children: [
              Row(
-              children: List.generate(8, (i) {
+              children: List.generate(8, (final i) {
                 return Expanded(
                   child: Container(
                     margin: const EdgeInsets.all(2),
@@ -1309,7 +1315,7 @@ class _TrimTimelineState extends State<_TrimTimeline> {
             ),
             ValueListenableBuilder<double>(
               valueListenable: widget.playbackPosition,
-              builder: (ctx, pos, _) {
+              builder: (final ctx, final pos, _) {
                 return Positioned(
                   left: pos * (MediaQuery.of(context).size.width - AppSpacing.screenEdge * 2),
                   top: 0, bottom: 0,
@@ -1330,7 +1336,7 @@ class _TransformButton extends StatelessWidget {
   final VoidCallback onTap;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(final BuildContext context) {
     return GestureDetector(
       onTap: onTap,
       child: Container(

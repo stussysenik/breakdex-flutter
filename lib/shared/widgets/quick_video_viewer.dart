@@ -5,7 +5,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:video_player/video_player.dart';
 
-import '../../core/design/colors.dart';
 import '../../core/design/spacing.dart';
 import '../../core/design/typography.dart';
 import '../../core/navigation/app_route_observer.dart';
@@ -50,12 +49,14 @@ class _QuickVideoViewerState extends ConsumerState<QuickVideoViewer>
               _controller.play();
             }
           })
-          .catchError((e, stack) {
+          .catchError((final e, final stack) {
             DiagnosticsLog.error('QuickVideoViewer', '_init failed: $e');
-            if (mounted) setState(() {
+            if (mounted) {
+              setState(() {
               _hasError = true;
               _errorMessage = '$e';
             });
+            }
           });
   }
 
@@ -86,7 +87,7 @@ class _QuickVideoViewerState extends ConsumerState<QuickVideoViewer>
   }
 
   @override
-  void didChangeAppLifecycleState(AppLifecycleState state) {
+  void didChangeAppLifecycleState(final AppLifecycleState state) {
     if (state == AppLifecycleState.resumed) return;
     _controller.pause();
   }
@@ -102,7 +103,7 @@ class _QuickVideoViewerState extends ConsumerState<QuickVideoViewer>
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(final BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.black,
       body: Stack(
@@ -226,7 +227,7 @@ class _CtrlBtn extends StatelessWidget {
   const _CtrlBtn(this.icon, this.onTap, {this.size = 32});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(final BuildContext context) {
     return GestureDetector(
       onTap: onTap,
       behavior: HitTestBehavior.opaque,

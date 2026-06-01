@@ -63,7 +63,7 @@ void main() {
       // Create a temporary video file to hash
       final tempDir = Directory.systemTemp.createTempSync('hook_test_');
       final tempFile = File('${tempDir.path}/test_video.mp4');
-      await tempFile.writeAsBytes(List.generate(1024, (i) => i % 256));
+      await tempFile.writeAsBytes(List.generate(1024, (final i) => i % 256));
 
       // Insert a move without contentHash
       const moveId = 'test-move-001';
@@ -82,7 +82,7 @@ void main() {
       // Verify: move now has a contentHash
       final move = await db.movesDao.getById(moveId);
       expect(move, isNotNull);
-      expect(move!.contentHash, isNotNull);
+      expect(move.contentHash, isNotNull);
       expect(move.contentHash!.length, equals(64)); // SHA-256 hex = 64 chars
 
       // Verify: asset_manifest entry exists
@@ -119,13 +119,13 @@ void main() {
 
       // Move should NOT have a contentHash
       final move = await db.movesDao.getById(moveId);
-      expect(move!.contentHash, isNull);
+      expect(move.contentHash, isNull);
     });
 
     test('deduplicates on same content hash', () async {
       final tempDir = Directory.systemTemp.createTempSync('hook_dedup_');
       final tempFile = File('${tempDir.path}/same_video.mp4');
-      await tempFile.writeAsBytes(List.generate(512, (i) => i % 256));
+      await tempFile.writeAsBytes(List.generate(512, (final i) => i % 256));
 
       // Import same file for two different moves
       const moveId1 = 'move-dup-1';
@@ -147,7 +147,7 @@ void main() {
       // Both moves should share the same contentHash
       final move1 = await db.movesDao.getById(moveId1);
       final move2 = await db.movesDao.getById(moveId2);
-      expect(move1!.contentHash, equals(move2!.contentHash));
+      expect(move1.contentHash, equals(move2.contentHash));
 
       // Only one manifest entry (content-addressable)
       final manifest =

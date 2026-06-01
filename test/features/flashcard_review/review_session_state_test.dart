@@ -3,7 +3,7 @@ import 'package:breakdex/features/flashcard_review/providers/review_providers.da
 import 'package:breakdex/features/flashcard_review/review_session_state.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-ReviewSessionItem makeItem(String id) => ReviewSessionItem(
+ReviewSessionItem makeItem(final String id) => ReviewSessionItem(
   entityId: id,
   entityType: 'move',
   displayName: 'Move $id',

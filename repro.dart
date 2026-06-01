@@ -17,12 +17,12 @@ void main() async {
   print('Source exists: ${await sourceFile.exists()}');
   
   // Try to simulate moveToSemanticPath
-  final category = 'Power moves';
-  final moveName = 'Yessir';
-  final hash = '123456';
+  const category = 'Power moves';
+  const moveName = 'Yessir';
+  const hash = '123456';
   
   // Mock VideoPathResolver logic
-  String getSafeCategory(String c) {
+  String getSafeCategory(final String c) {
     final sanitized = c.replaceAll('/', '-').replaceAll(':', '-').trim();
     if (sanitized.length <= 1) return sanitized.toUpperCase();
     return sanitized[0].toUpperCase() + sanitized.substring(1).toLowerCase();

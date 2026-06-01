@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -47,11 +49,11 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
     try {
       final auth = ref.read(authServiceProvider);
       if (_isLogin) {
-        await auth.login(email, password);
+        await auth.login(email, password).run();
       } else {
-        await auth.register(email, password);
+        await auth.register(email, password).run();
       }
-      HapticFeedback.mediumImpact();
+      unawaited(HapticFeedback.mediumImpact());
       if (mounted) {
         // Invalidate providers so they pick up the new auth state
         ref.invalidate(isLoggedInProvider);
@@ -68,7 +70,7 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(final BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
 
     return Scaffold(

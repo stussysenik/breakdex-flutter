@@ -37,7 +37,7 @@ final class TestMachine extends Machine<S, E> {
   TestMachine(super.initialState);
 
   @override
-  S? transition(S state, E event) => switch ((state, event)) {
+  S? transition(final S state, final E event) => switch ((state, event)) {
     (A(), Go()) => const B(),
     (B(), Back()) => const A(),
     (B(), Forward()) => const C(),
@@ -46,12 +46,12 @@ final class TestMachine extends Machine<S, E> {
   };
 
   @override
-  void onEntry(S state) {
+  void onEntry(final S state) {
     log.add('enter:${state.runtimeType}');
   }
 
   @override
-  void onExit(S state) {
+  void onExit(final S state) {
     log.add('exit:${state.runtimeType}');
   }
 }
@@ -60,7 +60,7 @@ final class ChildMachine extends Machine<S, E> {
   ChildMachine(super.initialState);
 
   @override
-  S? transition(S state, E event) => switch ((state, event)) {
+  S? transition(final S state, final E event) => switch ((state, event)) {
     (A(), Go()) => const B(),
     (B(), Back()) => const A(),
     _ => null,

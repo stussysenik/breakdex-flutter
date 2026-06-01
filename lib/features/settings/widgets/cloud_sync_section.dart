@@ -15,22 +15,22 @@ class CloudSyncSection extends ConsumerWidget {
   const CloudSyncSection({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(final BuildContext context, final WidgetRef ref) {
     final colorScheme = Theme.of(context).colorScheme;
     final iCloudAvailable = ref.watch(iCloudAvailableProvider);
     final configuredProviders = ref.watch(cloudProvidersProvider);
 
     // Check if iCloud is already configured & enabled in the DB
     final iCloudConnected = configuredProviders.whenOrNull(
-          data: (providers) =>
-              providers.any((p) => p.providerType == 'icloud'),
+          data: (final providers) =>
+              providers.any((final p) => p.providerType == 'icloud'),
         ) ??
         false;
 
     // Check if Google Drive is configured & enabled
     final gDriveConnected = configuredProviders.whenOrNull(
-          data: (providers) =>
-              providers.any((p) => p.providerType == 'gdrive'),
+          data: (final providers) =>
+              providers.any((final p) => p.providerType == 'gdrive'),
         ) ??
         false;
 
@@ -70,11 +70,11 @@ class CloudSyncSection extends ConsumerWidget {
           status: iCloudConnected
               ? ProviderStatus.connected
               : iCloudAvailable.when(
-                  data: (available) => available
+                  data: (final available) => available
                       ? ProviderStatus.available
                       : ProviderStatus.unavailable,
                   loading: () => ProviderStatus.loading,
-                  error: (_, __) => ProviderStatus.unavailable,
+                  error: (_, _) => ProviderStatus.unavailable,
                 ),
           onTap: iCloudConnected
               ? null
@@ -96,7 +96,7 @@ class CloudSyncSection extends ConsumerWidget {
         const SizedBox(height: AppSpacing.sm),
 
         // S3 — coming soon
-        SyncProviderRow(
+        const SyncProviderRow(
           icon: Icons.storage_outlined,
           title: 'S3 Compatible',
           status: ProviderStatus.comingSoon,
@@ -126,7 +126,7 @@ class CloudSyncSection extends ConsumerWidget {
     );
   }
 
-  Future<void> _enableGDrive(BuildContext context, WidgetRef ref) async {
+  Future<void> _enableGDrive(final BuildContext context, final WidgetRef ref) async {
     HapticFeedback.mediumImpact();
     final result = await ref.read(gDriveSetupProvider).enable();
     if (!context.mounted) return;
@@ -149,7 +149,7 @@ class CloudSyncSection extends ConsumerWidget {
     }
   }
 
-  Future<void> _enableICloud(BuildContext context, WidgetRef ref) async {
+  Future<void> _enableICloud(final BuildContext context, final WidgetRef ref) async {
     HapticFeedback.mediumImpact();
     final result = await ref.read(iCloudSetupProvider).enable();
     if (!context.mounted) return;
@@ -193,7 +193,7 @@ class SyncProviderRow extends StatelessWidget {
   });
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(final BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
     final isDisabled =
         status == ProviderStatus.comingSoon ||
@@ -242,7 +242,7 @@ class SyncProviderRow extends StatelessWidget {
     );
   }
 
-  Widget _statusLabel(ColorScheme colorScheme) {
+  Widget _statusLabel(final ColorScheme colorScheme) {
     switch (status) {
       case ProviderStatus.connected:
         return Text(
@@ -292,7 +292,7 @@ class SyncHealthDot extends StatelessWidget {
   const SyncHealthDot({super.key, required this.health});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(final BuildContext context) {
     return Container(
       width: 8,
       height: 8,

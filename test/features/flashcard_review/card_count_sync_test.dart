@@ -33,16 +33,16 @@ void main() {
           // cache invalidation. The full repository chain (moveRepository →
           // watchAll) doesn't resolve in the test environment.
           fsrsCardsRefreshProvider.overrideWith(
-            (ref) => Stream.value(<FsrsCard>[]),
+            (final ref) => Stream.value(<FsrsCard>[]),
           ),
           moveStateCountsProvider.overrideWith(
-            (ref) => Stream.value(<LearningState, int>{
+            (final ref) => Stream.value(<LearningState, int>{
               for (final s in LearningState.values) s: 0,
             }),
           ),
-          comboRefreshProvider.overrideWith((ref) => Stream.value(0)),
+          comboRefreshProvider.overrideWith((final ref) => Stream.value(0)),
           // Added these to fix timeouts in tests
-          reviewEntityKindProvider.overrideWith((ref) => ReviewEntityKind.moves),
+          reviewEntityKindProvider.overrideWith((final ref) => ReviewEntityKind.moves),
         ],
       );
     });
@@ -175,7 +175,7 @@ void main() {
       await settleStreams();
 
       // Delete one
-      await (db.delete(db.moves)..where((m) => m.id.equals('move-2'))).go();
+      await (db.delete(db.moves)..where((final m) => m.id.equals('move-2'))).go();
 
       container.invalidate(reviewStateMatrixProvider);
       container.invalidate(filteredReviewSessionItemsProvider);
@@ -230,9 +230,9 @@ void main() {
         await seedMove(db, id: 'move-new', name: 'Swipe');
         await seedMove(db, id: 'move-learning', name: 'Six-Step');
         await seedMove(db, id: 'move-mastery', name: 'Freeze');
-        await (db.update(db.moves)..where((t) => t.id.equals('move-learning')))
+        await (db.update(db.moves)..where((final t) => t.id.equals('move-learning')))
             .write(const MovesCompanion(learningState: Value('LEARNING')));
-        await (db.update(db.moves)..where((t) => t.id.equals('move-mastery')))
+        await (db.update(db.moves)..where((final t) => t.id.equals('move-mastery')))
             .write(const MovesCompanion(learningState: Value('MASTERY')));
         await seedFsrsCard(
           db,
@@ -271,7 +271,7 @@ void main() {
         );
 
         expect(newItems.length, 2);
-        expect(newItems.map((item) => item.entityId).toSet(), {
+        expect(newItems.map((final item) => item.entityId).toSet(), {
           'move-new',
           'move-mastery',
         });
@@ -312,7 +312,7 @@ void main() {
       );
 
       expect(learningCount, 1);
-      expect(sessionItems.map((item) => item.entityId), ['due-now']);
+      expect(sessionItems.map((final item) => item.entityId), ['due-now']);
     });
 
     test('Combo counts match between matrix and session items', () async {

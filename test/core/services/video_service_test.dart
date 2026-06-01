@@ -20,7 +20,7 @@ void main() {
   setUp(() {
     log = [];
     TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
-        .setMockMethodCallHandler(importChannel, (call) async {
+        .setMockMethodCallHandler(importChannel, (final call) async {
           log.add(call);
           switch (call.method) {
             case 'pickFromPhotos':
@@ -128,7 +128,7 @@ void main() {
       'PlatformException with "cancelled" message is a cancellation',
       () async {
         TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
-            .setMockMethodCallHandler(importChannel, (call) async {
+            .setMockMethodCallHandler(importChannel, (final call) async {
               throw PlatformException(
                 code: 'CANCELLED',
                 message: 'User cancelled the picker',
@@ -140,7 +140,7 @@ void main() {
               importChannel.invokeMapMethod<String, dynamic>('pickFromPhotos'),
           throwsA(
             isA<PlatformException>().having(
-              (e) => e.message?.toLowerCase().contains('cancelled'),
+              (final e) => e.message?.toLowerCase().contains('cancelled'),
               'message contains cancelled',
               true,
             ),
@@ -151,7 +151,7 @@ void main() {
 
     test('PlatformException with actual error propagates', () async {
       TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
-          .setMockMethodCallHandler(importChannel, (call) async {
+          .setMockMethodCallHandler(importChannel, (final call) async {
             throw PlatformException(
               code: 'PERMISSION_DENIED',
               message: 'Photo library access denied',
@@ -162,7 +162,7 @@ void main() {
         () => importChannel.invokeMapMethod<String, dynamic>('pickFromPhotos'),
         throwsA(
           isA<PlatformException>().having(
-            (e) => e.code,
+            (final e) => e.code,
             'error code',
             'PERMISSION_DENIED',
           ),
@@ -191,7 +191,7 @@ void main() {
 
     setUp(() {
       TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
-          .setMockMethodCallHandler(exportChannel, (call) async {
+          .setMockMethodCallHandler(exportChannel, (final call) async {
             log.add(call);
             switch (call.method) {
               case 'exportVideo':

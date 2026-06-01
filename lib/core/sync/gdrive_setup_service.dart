@@ -32,7 +32,7 @@ class GDriveSetupService {
       if (!existing.enabled) {
         await syncProvidersDao.updateProvider(
           existing.id,
-          SyncProvidersCompanion(enabled: const Value(true)),
+          const SyncProvidersCompanion(enabled: Value(true)),
         );
         return GDriveSetupResult.enabled;
       }
@@ -70,7 +70,7 @@ class GDriveSetupService {
     if (existing != null) {
       await syncProvidersDao.updateProvider(
         existing.id,
-        SyncProvidersCompanion(enabled: const Value(false)),
+        const SyncProvidersCompanion(enabled: Value(false)),
       );
     }
   }

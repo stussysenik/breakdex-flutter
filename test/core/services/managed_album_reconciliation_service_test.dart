@@ -29,15 +29,15 @@ class _FakeVideoAlbum extends NativeVideoAlbum {
 
   @override
   Future<ManagedAssetReconcileResult> reconcileManagedAssets(
-    List<ManagedAssetReference> trackedAssets, {
-    String source = 'manual',
+    final List<ManagedAssetReference> trackedAssets, {
+    final String source = 'manual',
   }) async {
     return reconcileResult;
   }
 
   @override
   Future<ManagedAssetRestoreResult?> restoreManagedAsset(
-    String assetLocalIdentifier,
+    final String assetLocalIdentifier,
   ) async {
     final handler = restoreHandler;
     if (handler != null) {
@@ -48,10 +48,10 @@ class _FakeVideoAlbum extends NativeVideoAlbum {
 
   @override
   Future<ManagedAlbumCopy?> saveToAlbum({
-    required String videoPath,
-    required String albumName,
-    String? assetTitle,
-    String? category,
+    required final String videoPath,
+    required final String albumName,
+    final String? assetTitle,
+    final String? category,
   }) async {
     saveCalls.add({
       'videoPath': videoPath,
@@ -68,8 +68,8 @@ class _FakeVideoService extends VideoService {
 
   @override
   Future<VideoFileStatus> checkVideoFileWithRetry(
-    String path, {
-    int maxRetries = 2,
+    final String path, {
+    final int maxRetries = 2,
   }) async {
     return statusByPath[path] ?? VideoFileStatus.missing;
   }

@@ -17,7 +17,7 @@ class FontFamilyNotifier extends Notifier<AppFontFamily> {
     return AppFontFamily.fromKey(prefs.getString(_key));
   }
 
-  Future<void> set(AppFontFamily family) async {
+  Future<void> set(final AppFontFamily family) async {
     state = family;
     final prefs = ref.read(sharedPreferencesProvider);
     await prefs.setString(_key, family.key);
@@ -42,7 +42,7 @@ class AccentColorNotifier extends Notifier<Color> {
     return _readColor(ref, _key, AppColors.accent);
   }
 
-  Future<void> set(Color color) async {
+  Future<void> set(final Color color) async {
     await _writeColor(ref, _key, color);
     state = color;
   }
@@ -74,7 +74,7 @@ class LearningStateColorsNotifier extends Notifier<LearningStateColors> {
     );
   }
 
-  Future<void> setColor(LearningState stateKey, Color color) async {
+  Future<void> setColor(final LearningState stateKey, final Color color) async {
     final key = switch (stateKey) {
       LearningState.newState => 'new',
       LearningState.learning => 'learning',
@@ -122,7 +122,7 @@ class RatingColors {
   );
 
   /// Look up the color for a given rating name (AGAIN, HARD, GOOD, EASY).
-  Color forName(String name) => switch (name) {
+  Color forName(final String name) => switch (name) {
     'AGAIN' => again,
     'HARD' => hard,
     'GOOD' => good,
@@ -130,7 +130,7 @@ class RatingColors {
     _ => again,
   };
 
-  RatingColors copyWith({Color? again, Color? hard, Color? good, Color? easy}) {
+  RatingColors copyWith({final Color? again, final Color? hard, final Color? good, final Color? easy}) {
     return RatingColors(
       again: again ?? this.again,
       hard: hard ?? this.hard,
@@ -159,7 +159,7 @@ class RatingColorsNotifier extends Notifier<RatingColors> {
     );
   }
 
-  Future<void> setColor(String key, Color color) async {
+  Future<void> setColor(final String key, final Color color) async {
     final prefKey = _prefix + key;
     await _writeColor(ref, prefKey, color);
     state = switch (key) {
@@ -179,18 +179,18 @@ class RatingColorsNotifier extends Notifier<RatingColors> {
   }
 }
 
-Color _readColor(Ref ref, String key, Color fallback) {
+Color _readColor(final Ref ref, final String key, final Color fallback) {
   final prefs = ref.read(sharedPreferencesProvider);
   final value = prefs.getInt(key);
   return value != null ? Color(value) : fallback;
 }
 
-Future<void> _writeColor(Ref ref, String key, Color color) async {
+Future<void> _writeColor(final Ref ref, final String key, final Color color) async {
   final prefs = ref.read(sharedPreferencesProvider);
   await prefs.setInt(key, color.toARGB32());
 }
 
-Future<void> _removeColor(Ref ref, String key) async {
+Future<void> _removeColor(final Ref ref, final String key) async {
   final prefs = ref.read(sharedPreferencesProvider);
   await prefs.remove(key);
 }

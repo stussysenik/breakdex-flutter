@@ -19,9 +19,9 @@ class PoseFrame {
   });
 
   /// Deserialize from the native Vision ML plugin's event dictionary.
-  factory PoseFrame.fromMap(Map<String, dynamic> map) {
+  factory PoseFrame.fromMap(final Map<String, dynamic> map) {
     final jointsList = (map['joints'] as List<dynamic>?)
-            ?.map((j) => PoseJoint.fromMap(Map<String, dynamic>.from(j as Map)))
+            ?.map((final j) => PoseJoint.fromMap(Map<String, dynamic>.from(j as Map)))
             .toList() ??
         [];
 
@@ -34,10 +34,10 @@ class PoseFrame {
 
   /// Whether this frame has enough confident joints to be useful for analysis.
   /// Requires at least 8 joints with confidence > 0.3.
-  bool get isUsable => joints.where((j) => j.isConfident).length >= 8;
+  bool get isUsable => joints.where((final j) => j.isConfident).length >= 8;
 
   /// Look up a joint by name. Returns null if not found.
-  PoseJoint? joint(String name) {
+  PoseJoint? joint(final String name) {
     for (final j in joints) {
       if (j.name == name) return j;
     }
@@ -46,7 +46,7 @@ class PoseFrame {
 
   /// Serialize all joints to maps (for passing to Scene3D.updateSkeleton).
   List<Map<String, dynamic>> toJointMaps() =>
-      joints.map((j) => j.toMap()).toList();
+      joints.map((final j) => j.toMap()).toList();
 
   @override
   String toString() =>

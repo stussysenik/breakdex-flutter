@@ -25,7 +25,7 @@ class VisionML extends NativeBridge {
   ///
   /// Returns a list of up to 17 [PoseJoint]s with 3D coordinates and confidence.
   /// Uses Apple Vision's built-in pose detection — no model download needed.
-  Future<List<PoseJoint>> detectPose(Uint8List imageData) async {
+  Future<List<PoseJoint>> detectPose(final Uint8List imageData) async {
     if (imageData.isEmpty) {
       return const <PoseJoint>[];
     }
@@ -37,7 +37,7 @@ class VisionML extends NativeBridge {
     if (result == null) return [];
 
     return result
-        .map((j) => PoseJoint.fromMap(Map<String, dynamic>.from(j as Map)))
+        .map((final j) => PoseJoint.fromMap(Map<String, dynamic>.from(j as Map)))
         .toList();
   }
 
@@ -59,7 +59,7 @@ class VisionML extends NativeBridge {
   ///
   /// Returns PNG mask bytes where white pixels = person, black = background.
   /// Uses DeepLabV3 CoreML model (must be bundled in the app).
-  Future<Uint8List?> segmentPerson(Uint8List imageData) async {
+  Future<Uint8List?> segmentPerson(final Uint8List imageData) async {
     if (imageData.isEmpty) {
       return null;
     }

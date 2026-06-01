@@ -12,17 +12,17 @@ import '../../../core/providers.dart';
 ///
 /// Follows the same pattern as [movesDaoProvider] in `providers.dart` —
 /// access the DAO lazily via the already-opened [AppDatabase] singleton.
-final labsDaoProvider = Provider<LabsDao>((ref) {
+final labsDaoProvider = Provider<LabsDao>((final ref) {
   return ref.watch(databaseProvider).labsDao;
 });
 
 /// Provides the [LabEntriesDao] instance from the shared database.
-final labEntriesDaoProvider = Provider<LabEntriesDao>((ref) {
+final labEntriesDaoProvider = Provider<LabEntriesDao>((final ref) {
   return ref.watch(databaseProvider).labEntriesDao;
 });
 
 /// Provides the [MilestonesDao] instance from the shared database.
-final milestonesDaoProvider = Provider<MilestonesDao>((ref) {
+final milestonesDaoProvider = Provider<MilestonesDao>((final ref) {
   return ref.watch(databaseProvider).milestonesDao;
 });
 
@@ -33,7 +33,7 @@ final milestonesDaoProvider = Provider<MilestonesDao>((ref) {
 /// Widgets that `ref.watch(labsStreamProvider)` will automatically rebuild
 /// whenever a lab is created, updated, or deleted — no manual invalidation
 /// needed. This mirrors `_movesStreamProvider` in the Arsenal tab.
-final labsStreamProvider = StreamProvider<List<Lab>>((ref) {
+final labsStreamProvider = StreamProvider<List<Lab>>((final ref) {
   return ref.watch(labsDaoProvider).watchAll();
 });
 
@@ -41,7 +41,7 @@ final labsStreamProvider = StreamProvider<List<Lab>>((ref) {
 ///
 /// Useful for the quick-log feed at the top of the Lab tab — shows recent
 /// activity without requiring the user to open a specific lab.
-final labEntriesStreamProvider = StreamProvider<List<LabEntry>>((ref) {
+final labEntriesStreamProvider = StreamProvider<List<LabEntry>>((final ref) {
   return ref.watch(labEntriesDaoProvider).watchRecent(20);
 });
 
@@ -66,13 +66,13 @@ final labViewModeProvider = StateProvider<LabViewMode>(
 /// Reactive stream of a single lab by ID. Returns null when the lab doesn't
 /// exist (deleted from another screen, for example).
 final labDetailProvider =
-    StreamProvider.family<Lab?, String>((ref, labId) async* {
+    StreamProvider.family<Lab?, String>((final ref, final labId) async* {
   final dao = ref.watch(labsDaoProvider);
   // watchAll filtered client-side for simplicity — Drift will emit on any
   // labs table change and we pluck the matching row.
-  yield* dao.watchAll().map((labs) {
+  yield* dao.watchAll().map((final labs) {
     try {
-      return labs.firstWhere((l) => l.id == labId);
+      return labs.firstWhere((final l) => l.id == labId);
     } catch (_) {
       return null;
     }
@@ -81,18 +81,18 @@ final labDetailProvider =
 
 /// Reactive stream of moves linked to a lab, ordered by sequenceIndex.
 final labMovesProvider =
-    StreamProvider.family<List<LabMoveWithDetail>, String>((ref, labId) {
+    StreamProvider.family<List<LabMoveWithDetail>, String>((final ref, final labId) {
   return ref.watch(labsDaoProvider).watchLabMoves(labId);
 });
 
 /// Reactive stream of milestones for a lab, ordered by createdAt ascending.
 final labMilestonesProvider =
-    StreamProvider.family<List<Milestone>, String>((ref, labId) {
+    StreamProvider.family<List<Milestone>, String>((final ref, final labId) {
   return ref.watch(milestonesDaoProvider).watchByLab(labId);
 });
 
 /// Reactive stream of lab entries for a specific lab, ordered newest first.
 final labEntriesByLabProvider =
-    StreamProvider.family<List<LabEntry>, String>((ref, labId) {
+    StreamProvider.family<List<LabEntry>, String>((final ref, final labId) {
   return ref.watch(labEntriesDaoProvider).watchByLab(labId);
 });

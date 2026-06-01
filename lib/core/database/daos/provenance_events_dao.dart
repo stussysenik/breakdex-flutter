@@ -10,59 +10,59 @@ class ProvenanceEventsDao extends DatabaseAccessor<AppDatabase>
     with _$ProvenanceEventsDaoMixin {
   ProvenanceEventsDao(super.db);
 
-  Future<void> insert(ProvenanceEventsCompanion entry) {
+  Future<void> insert(final ProvenanceEventsCompanion entry) {
     return into(provenanceEvents).insert(entry);
   }
 
   Future<List<ProvenanceEvent>> getTimeline(
-    String entityType,
-    String entityId,
+    final String entityType,
+    final String entityId,
   ) {
     return (select(provenanceEvents)
-      ..where((t) =>
+      ..where((final t) =>
           t.entityType.equals(entityType) & t.entityId.equals(entityId))
-      ..orderBy([(t) => OrderingTerm(expression: t.timestamp, mode: OrderingMode.desc)]))
+      ..orderBy([(final t) => OrderingTerm(expression: t.timestamp, mode: OrderingMode.desc)]))
         .get();
   }
 
   Future<List<ProvenanceEvent>> getTimelineRange(
-    String entityType,
-    String entityId,
-    DateTime start,
-    DateTime end,
+    final String entityType,
+    final String entityId,
+    final DateTime start,
+    final DateTime end,
   ) {
     return (select(provenanceEvents)
-      ..where((t) =>
+      ..where((final t) =>
           t.entityType.equals(entityType) &
           t.entityId.equals(entityId) &
           t.timestamp.isBetweenValues(start, end))
-      ..orderBy([(t) => OrderingTerm(expression: t.timestamp, mode: OrderingMode.desc)]))
+      ..orderBy([(final t) => OrderingTerm(expression: t.timestamp, mode: OrderingMode.desc)]))
         .get();
   }
 
-  Future<List<ProvenanceEvent>> getRecentActivity({int limit = 20}) {
+  Future<List<ProvenanceEvent>> getRecentActivity({final int limit = 20}) {
     return (select(provenanceEvents)
-      ..orderBy([(t) => OrderingTerm(expression: t.timestamp, mode: OrderingMode.desc)])
+      ..orderBy([(final t) => OrderingTerm(expression: t.timestamp, mode: OrderingMode.desc)])
       ..limit(limit))
         .get();
   }
 
   Future<List<ProvenanceEvent>> getEntityMilestones(
-    String entityType,
-    String entityId,
+    final String entityType,
+    final String entityId,
   ) {
     return (select(provenanceEvents)
-      ..where((t) =>
+      ..where((final t) =>
           t.entityType.equals(entityType) &
           t.entityId.equals(entityId) &
           t.eventType.equals('milestone_reached'))
-      ..orderBy([(t) => OrderingTerm(expression: t.timestamp, mode: OrderingMode.desc)]))
+      ..orderBy([(final t) => OrderingTerm(expression: t.timestamp, mode: OrderingMode.desc)]))
         .get();
   }
 
-  Future<int> purgeExpired(DateTime olderThan) {
+  Future<int> purgeExpired(final DateTime olderThan) {
     return (delete(provenanceEvents)
-          ..where((t) => t.timestamp.isSmallerThanValue(olderThan)))
+          ..where((final t) => t.timestamp.isSmallerThanValue(olderThan)))
         .go();
   }
 }

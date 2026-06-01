@@ -13,7 +13,7 @@ class StatCard extends StatelessWidget {
   bool get _isZero => value == '0' || value == '0%';
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(final BuildContext context) {
     final cs = Theme.of(context).colorScheme;
     return AnimatedOpacity(
       opacity: _isZero ? 0.4 : 1.0,

@@ -1,4 +1,3 @@
-import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../utils/diagnostics.dart';
@@ -54,7 +53,7 @@ class BootState {
   });
 
   factory BootState.initial() => BootState(
-        completedGates: {},
+        completedGates: const {},
         startTime: DateTime.now(),
       );
 
@@ -64,10 +63,10 @@ class BootState {
   }
 
   BootState copyWith({
-    Set<BootGate>? completedGates,
-    String? currentTask,
-    bool? isReadyForUI,
-    bool? isComplete,
+    final Set<BootGate>? completedGates,
+    final String? currentTask,
+    final bool? isReadyForUI,
+    final bool? isComplete,
   }) {
     return BootState(
       completedGates: completedGates ?? this.completedGates,
@@ -94,7 +93,7 @@ class BootCoordinator extends Notifier<BootState> {
   }
 
   /// Mark a specific initialization gate as complete.
-  void completeGate(BootGate gate, {String? detail}) {
+  void completeGate(final BootGate gate, {final String? detail}) {
     if (state.completedGates.contains(gate)) return;
 
     final newGates = Set<BootGate>.from(state.completedGates)..add(gate);
@@ -125,7 +124,7 @@ class BootCoordinator extends Notifier<BootState> {
   }
 
   /// Update the label of the task currently being processed.
-  void setTask(String task) {
+  void setTask(final String task) {
     state = state.copyWith(currentTask: task);
   }
 }

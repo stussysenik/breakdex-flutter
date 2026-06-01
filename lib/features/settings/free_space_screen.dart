@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -9,7 +10,7 @@ import '../../core/providers.dart';
 import '../../core/sync/space_manager.dart';
 
 /// Provider for space analysis — refreshes when this screen is opened.
-final spaceAnalysisProvider = FutureProvider<SpaceAnalysis>((ref) {
+final spaceAnalysisProvider = FutureProvider<SpaceAnalysis>((final ref) {
   return ref.watch(spaceManagerProvider).analyze();
 });
 
@@ -29,7 +30,7 @@ class _FreeSpaceScreenState extends ConsumerState<FreeSpaceScreen> {
   int? _freedBytes;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(final BuildContext context) {
     final analysis = ref.watch(spaceAnalysisProvider);
     final colorScheme = Theme.of(context).colorScheme;
 
@@ -46,7 +47,7 @@ class _FreeSpaceScreenState extends ConsumerState<FreeSpaceScreen> {
       ),
       body: analysis.when(
         loading: () => const Center(child: CircularProgressIndicator()),
-        error: (e, _) => Center(
+        error: (final e, _) => Center(
           child: Text(
             'Could not analyze storage: $e',
             style: AppTypography.bodySmall.copyWith(
@@ -54,15 +55,15 @@ class _FreeSpaceScreenState extends ConsumerState<FreeSpaceScreen> {
             ),
           ),
         ),
-        data: (data) => _buildContent(context, data, colorScheme),
+        data: (final data) => _buildContent(context, data, colorScheme),
       ),
     );
   }
 
   Widget _buildContent(
-    BuildContext context,
-    SpaceAnalysis analysis,
-    ColorScheme colorScheme,
+    final BuildContext context,
+    final SpaceAnalysis analysis,
+    final ColorScheme colorScheme,
   ) {
     final freeableMb = (analysis.freeableBytes / (1024 * 1024)).toStringAsFixed(1);
 
@@ -150,7 +151,7 @@ class _FreeSpaceScreenState extends ConsumerState<FreeSpaceScreen> {
             ),
             child: Row(
               children: [
-                Icon(Icons.check_circle, color: AppColors.stateMastery, size: 20),
+                const Icon(Icons.check_circle, color: AppColors.stateMastery, size: 20),
                 const SizedBox(width: AppSpacing.sm),
                 Expanded(
                   child: Text(
@@ -202,11 +203,11 @@ class _FreeSpaceScreenState extends ConsumerState<FreeSpaceScreen> {
     );
   }
 
-  Future<void> _freeAll(SpaceAnalysis analysis) async {
+  Future<void> _freeAll(final SpaceAnalysis analysis) async {
     // Safety confirmation dialog
     final confirmed = await showDialog<bool>(
       context: context,
-      builder: (ctx) => AlertDialog(
+      builder: (final ctx) => AlertDialog(
         title: const Text('Free Up Space?'),
         content: Text(
           'This will delete ${analysis.freeableHashes.length} local video files '
@@ -228,7 +229,7 @@ class _FreeSpaceScreenState extends ConsumerState<FreeSpaceScreen> {
     if (confirmed != true || !mounted) return;
 
     setState(() => _freeing = true);
-    HapticFeedback.mediumImpact();
+    unawaited(HapticFeedback.mediumImpact());
 
     try {
       final freed = await ref
@@ -267,7 +268,7 @@ class _StatRow extends StatelessWidget {
   });
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(final BuildContext context) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: AppSpacing.xs),
       child: Row(

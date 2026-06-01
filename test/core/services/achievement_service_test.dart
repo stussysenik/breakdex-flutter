@@ -1,6 +1,5 @@
 import 'package:breakdex/core/database/database.dart';
 import 'package:breakdex/core/services/achievement_service.dart';
-import 'package:drift/drift.dart' hide isNotNull, isNull;
 import 'package:flutter_test/flutter_test.dart';
 
 import '../../helpers/test_data.dart';
@@ -42,8 +41,8 @@ void main() {
   /// Seeds a move and its seed-tier achievement (simulating the auto-backfill
   /// that happens on move creation in the real app).
   Future<void> seedMoveWithAchievement(
-    String moveId, {
-    String name = 'Test Move',
+    final String moveId, {
+    final String name = 'Test Move',
   }) async {
     await seedMove(db, id: moveId, name: name);
     await db.achievementsDao.upsertTier(moveId, 'seed');
@@ -51,11 +50,11 @@ void main() {
 
   /// Seeds N reviews for a move with the given rating distribution.
   Future<void> seedReviews(
-    String moveId, {
-    int goodCount = 0,
-    int easyCount = 0,
-    int hardCount = 0,
-    int againCount = 0,
+    final String moveId, {
+    final int goodCount = 0,
+    final int easyCount = 0,
+    final int hardCount = 0,
+    final int againCount = 0,
   }) async {
     var idx = 0;
     for (var i = 0; i < goodCount; i++) {

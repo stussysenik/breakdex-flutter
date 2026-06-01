@@ -7,12 +7,10 @@ import 'package:go_router/go_router.dart';
 import 'package:path/path.dart' as p;
 
 import '../../core/design/spacing.dart';
-import '../../core/design/theme.dart';
 import '../../core/design/typography.dart';
 import '../../core/models/learning_state.dart';
 import '../../core/models/move_creation.dart';
 import '../../core/providers.dart';
-import '../../core/state_machines/move_creation/machine.dart';
 import '../../core/state_machines/move_creation/provider.dart';
 import '../../core/services/categories_service.dart';
 import '../../core/services/video_service.dart';
@@ -23,7 +21,7 @@ class AddScreen extends ConsumerWidget {
   const AddScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(final BuildContext context, final WidgetRef ref) {
     return Scaffold(
       body: CustomScrollView(
         slivers: [
@@ -44,16 +42,18 @@ class AddScreen extends ConsumerWidget {
               child: Column(
                 children: [
                   _ChoiceCard(
-                    icon: Icons.movie_outlined,
+                    emoji: '🤸',
                     title: 'New Move',
-                    subtitle: 'Capture or import a single move to track and review',
+                    subtitle:
+                        'Capture or import a single move to track and review',
                     onTap: () => _startClipFlow(context, ref),
                   ),
                   const SizedBox(height: AppSpacing.md),
                   _ChoiceCard(
-                    icon: Icons.auto_awesome_motion_outlined,
+                    emoji: '✨',
                     title: 'New Combo',
-                    subtitle: 'Build a sequence of moves with a visual beat grid to see your composition',
+                    subtitle:
+                        'Build a sequence of moves with a visual beat grid to see your composition',
                     onTap: () => context.push<String>('/create-combo'),
                   ),
                 ],
@@ -65,7 +65,7 @@ class AddScreen extends ConsumerWidget {
     );
   }
 
-  Future<void> _startClipFlow(BuildContext context, WidgetRef ref) async {
+  Future<void> _startClipFlow(final BuildContext context, final WidgetRef ref) async {
     final pickResult = await VideoPickerSheet.show(context);
     if (pickResult == null || !context.mounted) return;
 
@@ -88,9 +88,9 @@ class AddScreen extends ConsumerWidget {
   }
 
   Future<_MetadataResult?> _showMetadataSheet(
-    BuildContext context,
-    WidgetRef ref,
-    VideoPickResult pickResult,
+    final BuildContext context,
+    final WidgetRef ref,
+    final VideoPickResult pickResult,
   ) {
     return showModalBottomSheet<_MetadataResult>(
       context: context,
@@ -106,38 +106,34 @@ class AddScreen extends ConsumerWidget {
 
 class _ChoiceCard extends StatelessWidget {
   const _ChoiceCard({
-    required this.icon,
+    required this.emoji,
     required this.title,
     required this.subtitle,
     required this.onTap,
   });
 
-  final IconData icon;
+  final String emoji;
   final String title;
   final String subtitle;
   final VoidCallback onTap;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(final BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
     return InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(AppRadius.lg),
       child: Container(
-        padding: const EdgeInsets.all(AppSpacing.xl),
+        padding: const EdgeInsets.all(AppSpacing.lg),
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(AppRadius.lg),
-          border: Border.all(color: colorScheme.outlineVariant),
+          color: colorScheme.surfaceContainerHighest,
         ),
         child: Row(
           children: [
-            Container(
-              padding: const EdgeInsets.all(AppSpacing.md),
-              decoration: BoxDecoration(
-                color: colorScheme.primaryContainer.withValues(alpha: 0.3),
-                borderRadius: BorderRadius.circular(AppRadius.sm),
-              ),
-              child: Icon(icon, size: 24, color: colorScheme.primary),
+            Text(
+              emoji,
+              style: const TextStyle(fontSize: 48),
             ),
             const SizedBox(width: AppSpacing.lg),
             Expanded(
@@ -148,12 +144,12 @@ class _ChoiceCard extends StatelessWidget {
                   const SizedBox(height: AppSpacing.xs),
                   Text(
                     subtitle,
-                    style: AppTypography.bodySmall.copyWith(color: colorScheme.secondary),
+                    style: AppTypography.bodySmall
+                        .copyWith(color: colorScheme.secondary),
                   ),
                 ],
               ),
             ),
-            Icon(Icons.chevron_right, color: colorScheme.outline),
           ],
         ),
       ),
@@ -245,11 +241,11 @@ class _ClipMetadataFormState extends ConsumerState<_ClipMetadataForm> {
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(final BuildContext context) {
     final categories = ref.watch(categoriesProvider);
     final colorScheme = Theme.of(context).colorScheme;
 
-    final selectedCategory = categories.any((cat) => cat.name == _selectedCategory)
+    final selectedCategory = categories.any((final cat) => cat.name == _selectedCategory)
         ? _selectedCategory
         : (categories.isNotEmpty ? categories.first.name : null);
 
@@ -316,12 +312,12 @@ class _ClipMetadataFormState extends ConsumerState<_ClipMetadataForm> {
               Wrap(
                 spacing: AppSpacing.sm,
                 runSpacing: AppSpacing.sm,
-                children: categories.map((cat) {
+                children: categories.map((final cat) {
                   final active = cat.name == _selectedCategory;
                   return ChoiceChip(
                     label: Text(cat.name.toUpperCase()),
                     selected: active,
-                    onSelected: (val) {
+                    onSelected: (final val) {
                       if (val) setState(() => _selectedCategory = cat.name);
                     },
                   );
@@ -369,10 +365,10 @@ class _ClipMetadataFormState extends ConsumerState<_ClipMetadataForm> {
                           value: _selectedState,
                           isExpanded: true,
                           underline: const SizedBox.shrink(),
-                          items: LearningState.values.map((s) {
+                          items: LearningState.values.map((final s) {
                             return DropdownMenuItem(value: s, child: Text(s.name.toUpperCase()));
                           }).toList(),
-                          onChanged: (s) => setState(() => _selectedState = s!),
+                          onChanged: (final s) => setState(() => _selectedState = s!),
                         ),
                       ],
                     ),
@@ -410,7 +406,7 @@ class _CountButton extends StatelessWidget {
   final VoidCallback? onTap;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(final BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
     final enabled = onTap != null;
 

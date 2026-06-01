@@ -1,16 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:intl/intl.dart';
 import '../../core/services/boot_coordinator.dart';
 import '../../core/design/spacing.dart';
 import '../../core/design/typography.dart';
-import '../../core/utils/diagnostics.dart';
 
 class SystemStatusScreen extends ConsumerWidget {
   const SystemStatusScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(final BuildContext context, final WidgetRef ref) {
     final boot = ref.watch(bootCoordinatorProvider);
     final colorScheme = Theme.of(context).colorScheme;
 
@@ -49,7 +47,7 @@ class _StatusHeader extends StatelessWidget {
   final BootState boot;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(final BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
     final isHealthy = boot.isComplete;
 
@@ -101,9 +99,9 @@ class _GatesList extends StatelessWidget {
   final BootState boot;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(final BuildContext context) {
     return Column(
-      children: BootGate.values.map((gate) {
+      children: BootGate.values.map((final gate) {
         final isDone = boot.completedGates.contains(gate);
         return Padding(
           padding: const EdgeInsets.only(bottom: AppSpacing.sm),
@@ -138,7 +136,7 @@ class _GatesList extends StatelessWidget {
     );
   }
 
-  String _gateLabel(BootGate gate) {
+  String _gateLabel(final BootGate gate) {
     return switch (gate) {
       BootGate.firebase => 'Cloud Infrastructure',
       BootGate.preferences => 'User Preferences',
@@ -158,7 +156,7 @@ class _DiagnosticFeed extends ConsumerWidget {
   const _DiagnosticFeed();
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(final BuildContext context, final WidgetRef ref) {
     // In a real implementation, DiagnosticsLog would expose a stream of events.
     // For now, we show a simplified "Live Log" look.
     final colorScheme = Theme.of(context).colorScheme;
@@ -187,7 +185,7 @@ class _DiagnosticFeed extends ConsumerWidget {
           Expanded(
             child: ListView(
               reverse: true,
-              children: [
+              children: const [
                 _LogEntry(time: 'T+1.2s', tag: 'BOOT', msg: 'Core subsystems online'),
                 _LogEntry(time: 'T+0.8s', tag: 'SQL', msg: 'Database connection pooled'),
                 _LogEntry(time: 'T+0.4s', tag: 'FB', msg: 'Firebase initialized'),
@@ -208,7 +206,7 @@ class _LogEntry extends StatelessWidget {
   final String msg;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(final BuildContext context) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 2),
       child: Text.rich(

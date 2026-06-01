@@ -27,7 +27,7 @@ class _Skeleton3DPanelState extends ConsumerState<Skeleton3DPanel> {
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(final BuildContext context) {
     final pose = ref.watch(currentPoseProvider);
     final colorScheme = Theme.of(context).colorScheme;
 
@@ -58,7 +58,7 @@ class _Skeleton3DPanelState extends ConsumerState<Skeleton3DPanel> {
               const Spacer(),
               if (pose != null) ...[
                 Text(
-                  '${pose.joints.where((j) => j.isConfident).length} joints',
+                  '${pose.joints.where((final j) => j.isConfident).length} joints',
                   style: AppTypography.caption.copyWith(
                     color: colorScheme.secondary,
                   ),
@@ -87,7 +87,7 @@ class _ConfidenceDot extends StatelessWidget {
   final double confidence;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(final BuildContext context) {
     final color = confidence > 0.7
         ? AppColors.actionGood
         : confidence > 0.4

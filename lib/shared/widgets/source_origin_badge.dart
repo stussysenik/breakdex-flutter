@@ -7,7 +7,7 @@ class SourceOriginBadge extends StatelessWidget {
   final AssetSource source;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(final BuildContext context) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
       decoration: BoxDecoration(

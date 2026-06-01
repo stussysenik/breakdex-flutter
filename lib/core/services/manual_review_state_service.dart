@@ -21,9 +21,9 @@ class ManualMoveStateResult {
 
 class ManualReviewStateService {
   ManualReviewStateService({
-    required MoveRepository moveRepository,
-    required FsrsCardsDao fsrsCardsDao,
-    required SyncDao syncDao,
+    required final MoveRepository moveRepository,
+    required final FsrsCardsDao fsrsCardsDao,
+    required final SyncDao syncDao,
   }) : _moveRepository = moveRepository,
        _fsrsCardsDao = fsrsCardsDao,
        _syncDao = syncDao;
@@ -33,8 +33,8 @@ class ManualReviewStateService {
   final SyncDao _syncDao;
 
   Future<ManualMoveStateResult> setMoveState(
-    Move move,
-    LearningState nextState,
+    final Move move,
+    final LearningState nextState,
   ) async {
     debugPrint('[ManualReviewState] setMoveState moveId=${move.id} oldState=${move.learningState} nextState=${nextState.name} dbValue=${nextState.dbValue}');
     final existingCard = await _fsrsCardsDao.getByEntityId(move.id);

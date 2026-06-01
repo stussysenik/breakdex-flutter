@@ -31,7 +31,7 @@ class LinkedMovesSection extends ConsumerWidget {
   final VoidCallback onAddMove;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(final BuildContext context, final WidgetRef ref) {
     final labMovesAsync = ref.watch(labMovesProvider(labId));
     final colorScheme = Theme.of(context).colorScheme;
 
@@ -51,10 +51,10 @@ class LinkedMovesSection extends ConsumerWidget {
 
         // DragTarget wrapper — accepts move IDs dragged from Arsenal
         DragTarget<String>(
-          onAcceptWithDetails: (details) {
+          onAcceptWithDetails: (final details) {
             _linkMove(ref, details.data);
           },
-          builder: (context, candidates, rejects) {
+          builder: (final context, final candidates, final rejects) {
             final isHighlighted = candidates.isNotEmpty;
 
             return AnimatedContainer(
@@ -70,7 +70,7 @@ class LinkedMovesSection extends ConsumerWidget {
                   height: 80,
                   child: Center(child: CircularProgressIndicator()),
                 ),
-                error: (e, _) => Padding(
+                error: (final e, _) => Padding(
                   padding: const EdgeInsets.symmetric(
                     horizontal: AppSpacing.screenEdge,
                   ),
@@ -81,7 +81,7 @@ class LinkedMovesSection extends ConsumerWidget {
                     ),
                   ),
                 ),
-                data: (labMoves) {
+                data: (final labMoves) {
                   if (labMoves.isEmpty) {
                     return _EmptyLinkedMoves(onAddMove: onAddMove);
                   }
@@ -94,7 +94,7 @@ class LinkedMovesSection extends ConsumerWidget {
                         horizontal: AppSpacing.screenEdge,
                       ),
                       itemCount: labMoves.length + 1,
-                      itemBuilder: (context, index) {
+                      itemBuilder: (final context, final index) {
                         if (index == labMoves.length) {
                           return _AddLinkedMoveCard(onTap: onAddMove);
                         }
@@ -120,7 +120,7 @@ class LinkedMovesSection extends ConsumerWidget {
     );
   }
 
-  void _linkMove(WidgetRef ref, String moveId) {
+  void _linkMove(final WidgetRef ref, final String moveId) {
     // Get current count so we can append at the end
     final labMoves = ref.read(labMovesProvider(labId)).valueOrNull ?? [];
     ref
@@ -149,7 +149,7 @@ class _LinkedMoveCardState extends State<_LinkedMoveCard> {
   bool _showDelete = false;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(final BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
 
     return GestureDetector(
@@ -267,7 +267,7 @@ class _EmptyLinkedMoves extends StatelessWidget {
   final VoidCallback onAddMove;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(final BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
 
     return GestureDetector(
@@ -315,7 +315,7 @@ class _AddLinkedMoveCard extends StatelessWidget {
   final VoidCallback onTap;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(final BuildContext context) {
     return GestureDetector(
       onTap: () {
         HapticFeedback.selectionClick();

@@ -11,10 +11,10 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
   Future<void> pumpReviewCard(
-    WidgetTester tester, {
-    required bool showMetadataPanel,
-    required ReviewCardDisplaySettings displaySettings,
-    Map<String, Object> initialPrefs = const {},
+    final WidgetTester tester, {
+    required final bool showMetadataPanel,
+    required final ReviewCardDisplaySettings displaySettings,
+    final Map<String, Object> initialPrefs = const {},
   }) async {
     SharedPreferences.setMockInitialValues(initialPrefs);
     final prefs = await SharedPreferences.getInstance();
@@ -48,7 +48,7 @@ void main() {
 
   group('ReviewCard', () {
     testWidgets('shows the first-look video surface with learning info', (
-      tester,
+      final tester,
     ) async {
       await pumpReviewCard(
         tester,
@@ -65,7 +65,7 @@ void main() {
     });
 
     testWidgets('hides first-look metadata during the assessment stage', (
-      tester,
+      final tester,
     ) async {
       await pumpReviewCard(
         tester,
@@ -82,7 +82,7 @@ void main() {
     });
 
     testWidgets('respects configurable first-look card visibility settings', (
-      tester,
+      final tester,
     ) async {
       await pumpReviewCard(
         tester,
@@ -103,7 +103,7 @@ void main() {
     });
 
     testWidgets('uses custom learning state labels from settings', (
-      tester,
+      final tester,
     ) async {
       await pumpReviewCard(
         tester,

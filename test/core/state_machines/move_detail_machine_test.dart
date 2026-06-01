@@ -199,7 +199,7 @@ void main() {
       m.send(const VideoPicked('/videos/test.mp4', 'test.mp4'));
       expect(m.state, isA<SavingVideo>());
 
-      final updated = _testMove().copyWith(videoPath: Value('/videos/test.mp4'));
+      final updated = _testMove().copyWith(videoPath: const Value('/videos/test.mp4'));
       m.send(SaveSucceeded(updated));
       expect(m.state, isA<Idle>());
     });
@@ -265,7 +265,7 @@ void main() {
     test('notes save succeeds', () {
       final m = MoveDetailMachine(Idle(_testMove()));
       m.send(const UpdateNotes('notes'));
-      m.send(SaveSucceeded(_testMove().copyWith(notes: Value('notes'))));
+      m.send(SaveSucceeded(_testMove().copyWith(notes: const Value('notes'))));
       expect(m.state, isA<Idle>());
     });
   });

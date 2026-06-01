@@ -8,10 +8,10 @@ class _CombosContentSliver extends StatelessWidget {
   final List<(Combo, int)> combos;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(final BuildContext context) {
     return _sliverStaggeredList(
       itemCount: combos.length,
-      builder: (index) {
+      builder: (final index) {
         final (combo, moveCount) = combos[index];
         return _ComboRow(combo: combo, moveCount: moveCount, index: index);
       },
@@ -32,7 +32,7 @@ class _ComboRow extends ConsumerWidget {
   static const _maxDots = 8;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(final BuildContext context, final WidgetRef ref) {
     final colorScheme = Theme.of(context).colorScheme;
 
     return Dismissible(
@@ -52,7 +52,7 @@ class _ComboRow extends ConsumerWidget {
         unawaited(HapticFeedback.heavyImpact());
         unawaited(_deleteCombo(ref));
       },
-      confirmDismiss: (direction) async {
+      confirmDismiss: (final direction) async {
         DiagnosticsLog.trace('ComboRow', 'confirmDismiss direction=$direction id=${combo.id}');
         return true;
       },
@@ -135,7 +135,7 @@ class _ComboRow extends ConsumerWidget {
     );
   }
 
-  Future<void> _deleteCombo(WidgetRef ref) async {
+  Future<void> _deleteCombo(final WidgetRef ref) async {
     final log = StageLogger.begin('_deleteCombo', subsystem: 'ComboRow', context: {
       'comboId': combo.id, 'name': combo.name,
     });

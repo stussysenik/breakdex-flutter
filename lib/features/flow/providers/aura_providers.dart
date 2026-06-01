@@ -11,7 +11,7 @@ import '../../../core/providers.dart';
 /// Provides the [AuraDao] singleton from the shared [AppDatabase].
 ///
 /// All aura-related providers derive from this — one DAO, many reactive views.
-final auraDaoProvider = Provider<AuraDao>((ref) {
+final auraDaoProvider = Provider<AuraDao>((final ref) {
   return ref.watch(databaseProvider).auraDao;
 });
 
@@ -25,7 +25,7 @@ final auraDaoProvider = Provider<AuraDao>((ref) {
 /// watching `auraLinksFromProvider('toprock-id')` emits both links.
 /// Rebuilds automatically when links are added, updated, or deleted.
 final auraLinksFromProvider =
-    StreamProvider.family<List<AuraLink>, String>((ref, moveId) {
+    StreamProvider.family<List<AuraLink>, String>((final ref, final moveId) {
   return ref.watch(auraDaoProvider).watchLinksFrom(moveId);
 });
 
@@ -34,7 +34,7 @@ final auraLinksFromProvider =
 /// The inverse of [auraLinksFromProvider] — answers "which moves flow INTO
 /// this one?" Useful for showing bidirectional transition data.
 final auraLinksToProvider =
-    StreamProvider.family<List<AuraLink>, String>((ref, moveId) {
+    StreamProvider.family<List<AuraLink>, String>((final ref, final moveId) {
   return ref.watch(auraDaoProvider).watchLinksTo(moveId);
 });
 
@@ -46,7 +46,7 @@ final auraLinksToProvider =
 ///
 /// Presets are like Pokemon teams — different link configurations for
 /// different styles (power, footwork, freeze combos, etc.).
-final auraPresetsProvider = StreamProvider<List<AuraPreset>>((ref) {
+final auraPresetsProvider = StreamProvider<List<AuraPreset>>((final ref) {
   return ref.watch(auraDaoProvider).watchPresets();
 });
 
@@ -54,7 +54,7 @@ final auraPresetsProvider = StreamProvider<List<AuraPreset>>((ref) {
 ///
 /// Used by the header chip and the preset picker to highlight the active
 /// configuration. When the user switches presets, this re-evaluates.
-final activeAuraProvider = FutureProvider<AuraPreset?>((ref) {
+final activeAuraProvider = FutureProvider<AuraPreset?>((final ref) {
   // Re-evaluate whenever presets change (activation, rename, delete).
   ref.watch(auraPresetsProvider);
   return ref.watch(auraDaoProvider).getActivePreset();
@@ -73,15 +73,15 @@ final activeAuraProvider = FutureProvider<AuraPreset?>((ref) {
 /// Returns full [Move] objects (not just IDs) so the UI can display names
 /// and categories without additional lookups.
 final naturalNextMovesProvider =
-    FutureProvider.family<List<Move>, String>((ref, moveId) async {
+    FutureProvider.family<List<Move>, String>((final ref, final moveId) async {
   // Watch the links stream so this auto-refreshes when ratings change.
   final linksAsync = ref.watch(auraLinksFromProvider(moveId));
   final links = linksAsync.valueOrNull ?? [];
 
   // Filter to only "natural" affinity links.
   final naturalIds = links
-      .where((link) => link.affinity == 'natural')
-      .map((link) => link.toMoveId)
+      .where((final link) => link.affinity == 'natural')
+      .map((final link) => link.toMoveId)
       .toList();
 
   if (naturalIds.isEmpty) return [];
@@ -91,7 +91,7 @@ final naturalNextMovesProvider =
   final allMoves = await movesDao.getAll();
 
   final idSet = naturalIds.toSet();
-  return allMoves.where((m) => idSet.contains(m.id)).toList();
+  return allMoves.where((final m) => idSet.contains(m.id)).toList();
 });
 
 /// Looks up the affinity between two specific moves (if any link exists).
@@ -101,7 +101,7 @@ final naturalNextMovesProvider =
 /// two moves in a set sequence.
 final auraAffinityProvider =
     FutureProvider.family<String?, ({String fromId, String toId})>(
-        (ref, pair) async {
+        (final ref, final pair) async {
   final linksAsync = ref.watch(auraLinksFromProvider(pair.fromId));
   final links = linksAsync.valueOrNull ?? [];
 

@@ -49,7 +49,6 @@ import 'services/provenance_report_service.dart';
 import 'services/provenance_service.dart';
 import 'services/scene_3d.dart';
 import 'services/vision_ml.dart';
-import 'models/sync_progress.dart';
 import 'database/daos/asset_manifest_dao.dart';
 import 'database/daos/asset_copies_dao.dart';
 import 'database/daos/sync_operations_dao.dart';
@@ -87,11 +86,11 @@ part 'providers/learning_state_label_providers.dart';
 part 'providers/video_playback_preferences_providers.dart';
 part 'providers/canonical_storage_providers.dart';
 
-final blackboxServiceProvider = Provider<BlackboxService>((ref) {
+final blackboxServiceProvider = Provider<BlackboxService>((final ref) {
   return BlackboxService();
 });
 
-final storageOrchestratorProvider = Provider<StorageOrchestrator>((ref) {
+final storageOrchestratorProvider = Provider<StorageOrchestrator>((final ref) {
   return StorageOrchestrator(
     db: ref.watch(databaseProvider),
     movesDao: ref.watch(movesDaoProvider),
@@ -100,39 +99,39 @@ final storageOrchestratorProvider = Provider<StorageOrchestrator>((ref) {
   );
 });
 
-final databaseProvider = Provider<AppDatabase>((ref) {
+final databaseProvider = Provider<AppDatabase>((final ref) {
   final db = AppDatabase();
   ref.onDispose(() => db.close());
   return db;
 });
 
 // DAO providers (internal, used by repository implementations)
-final movesDaoProvider = Provider<MovesDao>((ref) {
+final movesDaoProvider = Provider<MovesDao>((final ref) {
   return ref.watch(databaseProvider).movesDao;
 });
 
-final combosDaoProvider = Provider<CombosDao>((ref) {
+final combosDaoProvider = Provider<CombosDao>((final ref) {
   return ref.watch(databaseProvider).combosDao;
 });
 
-final reviewsDaoProvider = Provider<ReviewsDao>((ref) {
+final reviewsDaoProvider = Provider<ReviewsDao>((final ref) {
   return ref.watch(databaseProvider).reviewsDao;
 });
 
-final syncDaoProvider = Provider<SyncDao>((ref) {
+final syncDaoProvider = Provider<SyncDao>((final ref) {
   return ref.watch(databaseProvider).syncDao;
 });
 
-final fsrsCardsDaoProvider = Provider<FsrsCardsDao>((ref) {
+final fsrsCardsDaoProvider = Provider<FsrsCardsDao>((final ref) {
   return ref.watch(databaseProvider).fsrsCardsDao;
 });
 
-final fsrsServiceProvider = Provider<FsrsService>((ref) {
+final fsrsServiceProvider = Provider<FsrsService>((final ref) {
   return FsrsService(ref.watch(fsrsCardsDaoProvider));
 });
 
 final manualReviewStateServiceProvider = Provider<ManualReviewStateService>((
-  ref,
+  final ref,
 ) {
   return ManualReviewStateService(
     moveRepository: ref.watch(moveRepositoryProvider),
@@ -141,19 +140,19 @@ final manualReviewStateServiceProvider = Provider<ManualReviewStateService>((
   );
 });
 
-final decksDaoProvider = Provider<DecksDao>((ref) {
+final decksDaoProvider = Provider<DecksDao>((final ref) {
   return ref.watch(databaseProvider).decksDao;
 });
 
-final setsDaoProvider = Provider<SetsDao>((ref) {
+final setsDaoProvider = Provider<SetsDao>((final ref) {
   return SetsDao(ref.watch(databaseProvider));
 });
 
-final syncProvidersDaoProvider = Provider<SyncProvidersDao>((ref) {
+final syncProvidersDaoProvider = Provider<SyncProvidersDao>((final ref) {
   return ref.watch(databaseProvider).syncProvidersDao;
 });
 
-final deckServiceProvider = Provider<DeckService>((ref) {
+final deckServiceProvider = Provider<DeckService>((final ref) {
   return DeckService(
     ref.watch(decksDaoProvider),
     ref.watch(movesDaoProvider),
@@ -162,12 +161,12 @@ final deckServiceProvider = Provider<DeckService>((ref) {
 });
 
 // Auth
-final authServiceProvider = Provider<AuthService>((ref) {
+final authServiceProvider = Provider<AuthService>((final ref) {
   final prefs = ref.watch(sharedPreferencesProvider);
   return AuthService(prefs);
 });
 
-final isLoggedInProvider = Provider<bool>((ref) {
+final isLoggedInProvider = Provider<bool>((final ref) {
   try {
     return ref.watch(authServiceProvider).isLoggedIn;
   } catch (_) {
@@ -177,62 +176,62 @@ final isLoggedInProvider = Provider<bool>((ref) {
 
 // Repository providers (public API — use these in screens)
 // When logged in, repos are wrapped with sync-aware decorators that log changes.
-final moveRepositoryProvider = Provider<MoveRepository>((ref) {
+final moveRepositoryProvider = Provider<MoveRepository>((final ref) {
   final inner = DriftMoveRepository(ref.watch(movesDaoProvider));
   if (!ref.watch(isLoggedInProvider)) return inner;
   return SyncAwareMoveRepository(inner, ref.watch(syncDaoProvider),
       provenance: ref.watch(provenanceServiceProvider));
 });
 
-final comboRepositoryProvider = Provider<ComboRepository>((ref) {
+final comboRepositoryProvider = Provider<ComboRepository>((final ref) {
   final inner = DriftComboRepository(ref.watch(combosDaoProvider));
   if (!ref.watch(isLoggedInProvider)) return inner;
   return SyncAwareComboRepository(inner, ref.watch(syncDaoProvider),
       provenance: ref.watch(provenanceServiceProvider));
 });
 
-final reviewRepositoryProvider = Provider<ReviewRepository>((ref) {
+final reviewRepositoryProvider = Provider<ReviewRepository>((final ref) {
   final inner = DriftReviewRepository(ref.watch(reviewsDaoProvider));
   if (!ref.watch(isLoggedInProvider)) return inner;
   return SyncAwareReviewRepository(inner, ref.watch(syncDaoProvider),
       provenance: ref.watch(provenanceServiceProvider));
 });
 
-final setRepositoryProvider = Provider<SetRepository>((ref) {
+final setRepositoryProvider = Provider<SetRepository>((final ref) {
   final inner = DriftSetRepository(ref.watch(setsDaoProvider));
   if (!ref.watch(isLoggedInProvider)) return inner;
   return SyncAwareSetRepository(inner, ref.watch(syncDaoProvider),
       provenance: ref.watch(provenanceServiceProvider));
 });
 
-final videoServiceProvider = Provider<VideoService>((ref) {
+final videoServiceProvider = Provider<VideoService>((final ref) {
   return VideoService();
 });
 
 final mediaPlaybackCoordinatorProvider = Provider<MediaPlaybackCoordinator>((
-  ref,
+  final ref,
 ) {
   return mediaPlaybackCoordinator;
 });
 
-final mediaCleanupServiceProvider = Provider<MediaCleanupService>((ref) {
+final mediaCleanupServiceProvider = Provider<MediaCleanupService>((final ref) {
   return MediaCleanupService(
     db: ref.watch(databaseProvider),
     videoService: ref.watch(videoServiceProvider),
   );
 });
 
-final nativeVideoAlbumProvider = Provider<NativeVideoAlbum>((ref) {
+final nativeVideoAlbumProvider = Provider<NativeVideoAlbum>((final ref) {
   return NativeVideoAlbum();
 });
 
 final photoLibraryAccessStatusProvider =
-    FutureProvider<PhotoLibraryAccessStatus>((ref) {
+    FutureProvider<PhotoLibraryAccessStatus>((final ref) {
       return ref.watch(nativeVideoAlbumProvider).requestReadAccess();
     });
 
 final managedAlbumReconciliationServiceProvider =
-    Provider<ManagedAlbumReconciliationService>((ref) {
+    Provider<ManagedAlbumReconciliationService>((final ref) {
       return ManagedAlbumReconciliationService(
         movesDao: ref.watch(movesDaoProvider),
         moveRepository: ref.watch(moveRepositoryProvider),
@@ -244,7 +243,7 @@ final managedAlbumReconciliationServiceProvider =
     });
 
 final managedAlbumLifecycleProvider = Provider<ManagedAlbumLifecycleController>(
-  (ref) {
+  (final ref) {
     final controller = ManagedAlbumLifecycleController(
       service: ref.watch(managedAlbumReconciliationServiceProvider),
       videoAlbum: ref.watch(nativeVideoAlbumProvider),
@@ -258,13 +257,13 @@ final managedAlbumLifecycleProvider = Provider<ManagedAlbumLifecycleController>(
 );
 
 final managedAlbumLifecycleReportProvider =
-    StreamProvider<ManagedAlbumReconcileReport>((ref) {
+    StreamProvider<ManagedAlbumReconcileReport>((final ref) {
       final controller = ref.watch(managedAlbumLifecycleProvider);
       final latest = controller.latestReport;
       if (latest == null) {
         return controller.reports;
       }
-      return Stream<ManagedAlbumReconcileReport>.multi((stream) {
+      return Stream<ManagedAlbumReconcileReport>.multi((final stream) {
         stream.add(latest);
         final sub = controller.reports.listen(
           stream.add,
@@ -275,12 +274,12 @@ final managedAlbumLifecycleReportProvider =
     });
 
 final databaseRecoveryServiceProvider = Provider<DatabaseRecoveryService>((
-  ref,
+  final ref,
 ) {
   return DatabaseRecoveryService();
 });
 
-final automaticDatabaseBackupLifecycleProvider = Provider<void>((ref) {
+final automaticDatabaseBackupLifecycleProvider = Provider<void>((final ref) {
   final controller = AutomaticDatabaseBackupController(
     service: ref.watch(databaseRecoveryServiceProvider),
   );
@@ -291,39 +290,39 @@ final automaticDatabaseBackupLifecycleProvider = Provider<void>((ref) {
 });
 
 final provenanceJournalServiceProvider = Provider<ProvenanceJournalService>((
-  ref,
+  final ref,
 ) {
   return ProvenanceJournalService();
 });
 
-final provenanceDaoProvider = Provider<ProvenanceEventsDao>((ref) {
+final provenanceDaoProvider = Provider<ProvenanceEventsDao>((final ref) {
   return ProvenanceEventsDao(ref.watch(databaseProvider));
 });
 
-final moveNoteEntriesDaoProvider = Provider<MoveNoteEntriesDao>((ref) {
+final moveNoteEntriesDaoProvider = Provider<MoveNoteEntriesDao>((final ref) {
   return ref.watch(databaseProvider).moveNoteEntriesDao;
 });
 
-final comboNoteEntriesDaoProvider = Provider<ComboNoteEntriesDao>((ref) {
+final comboNoteEntriesDaoProvider = Provider<ComboNoteEntriesDao>((final ref) {
   return ref.watch(databaseProvider).comboNoteEntriesDao;
 });
 
-final provenanceServiceProvider = Provider<ProvenanceService>((ref) {
+final provenanceServiceProvider = Provider<ProvenanceService>((final ref) {
   return ProvenanceService(ref.watch(provenanceDaoProvider));
 });
 
 final provenanceReportServiceProvider = Provider<ProvenanceReportService>((
-  ref,
+  final ref,
 ) {
   return ProvenanceReportService(ref.watch(provenanceJournalServiceProvider));
 });
 
-final provenanceReportProvider = FutureProvider<ProvenanceReport>((ref) {
+final provenanceReportProvider = FutureProvider<ProvenanceReport>((final ref) {
   return ref.watch(provenanceReportServiceProvider).loadReport();
 });
 
 final reviewableNamingServiceProvider = Provider<ReviewableNamingService>((
-  ref,
+  final ref,
 ) {
   return ReviewableNamingService(
     movesDao: ref.watch(movesDaoProvider),
@@ -331,17 +330,17 @@ final reviewableNamingServiceProvider = Provider<ReviewableNamingService>((
   );
 });
 
-final moveCreationMachineProvider = Provider<MoveCreationMachine>((ref) {
+final moveCreationMachineProvider = Provider<MoveCreationMachine>((final ref) {
   return MoveCreationMachine();
 });
-final moveCreationServiceProvider = Provider<MoveCreationService>((ref) {
+final moveCreationServiceProvider = Provider<MoveCreationService>((final ref) {
   return MoveCreationService(
     moveRepository: ref.watch(moveRepositoryProvider),
     namingService: ref.watch(reviewableNamingServiceProvider),
     hashService: ref.watch(assetHashServiceProvider),
     fsrsCardsDao: ref.watch(fsrsCardsDaoProvider),
     blackbox: ref.watch(blackboxServiceProvider),
-    onVideoImported: ({required localPath, required moveId, precomputedHash}) =>
+    onVideoImported: ({required final localPath, required final moveId, final precomputedHash}) =>
         ref.read(videoImportSyncHookProvider).onVideoImported(
               localPath: localPath,
               moveId: moveId,
@@ -351,7 +350,7 @@ final moveCreationServiceProvider = Provider<MoveCreationService>((ref) {
 });
 
 // Sync
-final syncServiceProvider = Provider<SyncService>((ref) {
+final syncServiceProvider = Provider<SyncService>((final ref) {
   return SyncService(
     authService: ref.watch(authServiceProvider),
     syncDao: ref.watch(syncDaoProvider),
@@ -360,27 +359,27 @@ final syncServiceProvider = Provider<SyncService>((ref) {
   );
 });
 
-final syncBlocProvider = Provider<SyncBloc>((ref) {
+final syncBlocProvider = Provider<SyncBloc>((final ref) {
   return SyncBloc(ref.watch(syncServiceProvider));
 });
-final syncStateProvider = StreamProvider<SyncState>((ref) {
+final syncStateProvider = StreamProvider<SyncState>((final ref) {
   final bloc = ref.watch(syncBlocProvider);
   return bloc.stream;
 });
 
 
-final pendingChangesCountProvider = StreamProvider<int>((ref) {
+final pendingChangesCountProvider = StreamProvider<int>((final ref) {
   return ref.watch(syncDaoProvider).watchPendingCount();
 });
 
 // Connectivity + auto-sync
-final connectivityServiceProvider = Provider<ConnectivityService>((ref) {
+final connectivityServiceProvider = Provider<ConnectivityService>((final ref) {
   final service = ConnectivityService();
   ref.onDispose(() => service.dispose());
   return service;
 });
 
-final connectivityProvider = StreamProvider<bool>((ref) {
+final connectivityProvider = StreamProvider<bool>((final ref) {
   return ref.watch(connectivityServiceProvider).onlineStream;
 });
 
@@ -407,7 +406,7 @@ class AutoSyncNotifier extends Notifier<bool> {
 
 // Auto-sync trigger — watches connectivity + setting + pending count.
 // Wrapped in try/catch so sync failures never crash the UI.
-final syncTriggerProvider = Provider<void>((ref) {
+final syncTriggerProvider = Provider<void>((final ref) {
   final isOnline = ref.watch(connectivityProvider).valueOrNull ?? false;
   final autoSync = ref.watch(autoSyncEnabledProvider);
   final isLoggedIn = ref.watch(isLoggedInProvider);
@@ -428,7 +427,7 @@ final syncTriggerProvider = Provider<void>((ref) {
 
 /// Reactive stream watching all FSRS cards. Providers that depend on card data
 /// should watch this to auto-refresh when reviews are processed.
-final fsrsCardsRefreshProvider = StreamProvider<List<FsrsCard>>((ref) {
+final fsrsCardsRefreshProvider = StreamProvider<List<FsrsCard>>((final ref) {
   return ref.watch(fsrsCardsDaoProvider).watchAll();
 });
 
@@ -449,7 +448,7 @@ class ReviewModeNotifier extends Notifier<ReviewMode> {
     return ReviewMode.fromString(prefs.getString(_key));
   }
 
-  Future<void> set(ReviewMode mode) async {
+  Future<void> set(final ReviewMode mode) async {
     state = mode;
     final prefs = ref.read(sharedPreferencesProvider);
     await prefs.setString(_key, mode.name);

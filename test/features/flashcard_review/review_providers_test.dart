@@ -28,14 +28,14 @@ void main() {
           databaseProvider.overrideWithValue(db),
           sharedPreferencesProvider.overrideWithValue(prefs),
           fsrsCardsRefreshProvider.overrideWith(
-            (ref) => Stream.value(<FsrsCard>[]),
+            (final ref) => Stream.value(<FsrsCard>[]),
           ),
           moveStateCountsProvider.overrideWith(
-            (ref) => Stream.value(
+            (final ref) => Stream.value(
               {for (final state in LearningState.values) state: 0},
             ),
           ),
-          comboRefreshProvider.overrideWith((ref) => Stream.value(0)),
+          comboRefreshProvider.overrideWith((final ref) => Stream.value(0)),
         ],
       );
     });
@@ -82,7 +82,7 @@ void main() {
 
       final moves = await container.read(filteredReviewMovesProvider.future);
 
-      expect(moves.map((move) => move.id), ['learn-1']);
+      expect(moves.map((final move) => move.id), ['learn-1']);
     });
 
     test('deck mode resolves only moves in the selected manual deck', () async {
@@ -99,7 +99,7 @@ void main() {
 
       final moves = await container.read(filteredReviewMovesProvider.future);
 
-      expect(moves.map((move) => move.id), ['move-2']);
+      expect(moves.map((final move) => move.id), ['move-2']);
     });
 
     test('targeted move IDs override deck and state filters', () async {
@@ -121,7 +121,7 @@ void main() {
 
       final moves = await container.read(filteredReviewMovesProvider.future);
 
-      expect(moves.map((move) => move.id), ['move-1']);
+      expect(moves.map((final move) => move.id), ['move-1']);
     });
   });
 }

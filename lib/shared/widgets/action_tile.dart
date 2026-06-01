@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../../core/design/colors.dart';
 import '../../core/design/spacing.dart';
-import '../../core/design/theme.dart';
 import '../../core/design/typography.dart';
 
 /// Reusable row tile with icon, label, chevron — used across settings, detail screens, etc.
@@ -21,7 +20,7 @@ class ActionTile extends StatelessWidget {
   final bool destructive;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(final BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
     final color = destructive ? AppColors.actionAgain : colorScheme.onSurface;
     return Semantics(

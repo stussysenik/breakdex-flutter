@@ -20,16 +20,16 @@ class SyncOnboardingCard extends ConsumerWidget {
   const SyncOnboardingCard({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(final BuildContext context, final WidgetRef ref) {
     final shown = ref.watch(syncOnboardingShownProvider);
     if (shown) return const SizedBox.shrink();
 
     final iCloudAvailable = ref.watch(iCloudAvailableProvider);
     return iCloudAvailable.when(
-      data: (available) =>
+      data: (final available) =>
           available ? _OnboardingCardContent() : const SizedBox.shrink(),
       loading: () => const SizedBox.shrink(),
-      error: (_, __) => const SizedBox.shrink(),
+      error: (_, _) => const SizedBox.shrink(),
     );
   }
 }
@@ -45,7 +45,7 @@ class _OnboardingCardContentState
   bool _enabling = false;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(final BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
 
     return Padding(
@@ -67,7 +67,7 @@ class _OnboardingCardContentState
           children: [
             Row(
               children: [
-                Icon(Icons.cloud_outlined, color: AppColors.accent, size: 24),
+                const Icon(Icons.cloud_outlined, color: AppColors.accent, size: 24),
                 const SizedBox(width: AppSpacing.sm),
                 Expanded(
                   child: Text(

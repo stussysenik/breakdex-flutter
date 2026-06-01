@@ -9,7 +9,7 @@ import '../../../core/services/achievement_service.dart';
 // DAO provider — follows the same pattern as movesDaoProvider, etc.
 // ---------------------------------------------------------------------------
 
-final achievementsDaoProvider = Provider<AchievementsDao>((ref) {
+final achievementsDaoProvider = Provider<AchievementsDao>((final ref) {
   return ref.watch(databaseProvider).achievementsDao;
 });
 
@@ -17,7 +17,7 @@ final achievementsDaoProvider = Provider<AchievementsDao>((ref) {
 // Service provider — pure logic, no UI. Mirrors fsrsServiceProvider pattern.
 // ---------------------------------------------------------------------------
 
-final achievementServiceProvider = Provider<AchievementService>((ref) {
+final achievementServiceProvider = Provider<AchievementService>((final ref) {
   return AchievementService(
     achievementsDao: ref.watch(achievementsDaoProvider),
     reviewsDao: ref.watch(reviewsDaoProvider),
@@ -30,7 +30,7 @@ final achievementServiceProvider = Provider<AchievementService>((ref) {
 // Follows the same StreamProvider pattern as fsrsCardsRefreshProvider.
 // ---------------------------------------------------------------------------
 
-final allAchievementsProvider = StreamProvider<List<Achievement>>((ref) {
+final allAchievementsProvider = StreamProvider<List<Achievement>>((final ref) {
   return ref.watch(achievementsDaoProvider).watchAll();
 });
 
@@ -39,7 +39,7 @@ final allAchievementsProvider = StreamProvider<List<Achievement>>((ref) {
 // ---------------------------------------------------------------------------
 
 final moveAchievementProvider =
-    FutureProvider.family<String?, String>((ref, moveId) async {
+    FutureProvider.family<String?, String>((final ref, final moveId) async {
   // Re-evaluate when the achievements stream changes.
   ref.watch(allAchievementsProvider);
   return ref.watch(achievementsDaoProvider).getCurrentTier(moveId);
@@ -88,7 +88,7 @@ const _tierSortRank = <String, int>{
   'seed': 3,
 };
 
-final achievementGardenProvider = FutureProvider<GardenSummary>((ref) async {
+final achievementGardenProvider = FutureProvider<GardenSummary>((final ref) async {
   // Watch both streams so the garden updates on move or achievement changes.
   ref.watch(allAchievementsProvider);
   final db = ref.watch(databaseProvider);
@@ -129,7 +129,7 @@ final achievementGardenProvider = FutureProvider<GardenSummary>((ref) async {
 
   // Sort: mastered first, then growing, sprouting, seed.
   // Within same tier, alphabetical by move name.
-  entries.sort((a, b) {
+  entries.sort((final a, final b) {
     final rankCompare =
         (_tierSortRank[a.tier] ?? 3).compareTo(_tierSortRank[b.tier] ?? 3);
     if (rankCompare != 0) return rankCompare;

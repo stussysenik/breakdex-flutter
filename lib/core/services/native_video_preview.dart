@@ -6,12 +6,12 @@ class NativeVideoPreview extends NativeBridge {
   NativeVideoPreview() : super('video_preview', hasEventChannel: false);
 
   Future<List<Uint8List?>> generateThumbnails({
-    required String videoPath,
-    required List<int> timesMs,
-    required int maxWidth,
-    required int quality,
-    int toleranceMs = 200,
-    bool exact = false,
+    required final String videoPath,
+    required final List<int> timesMs,
+    required final int maxWidth,
+    required final int quality,
+    final int toleranceMs = 200,
+    final bool exact = false,
   }) async {
     final normalizedPath = videoPath.trim();
     if (normalizedPath.isEmpty) {
@@ -31,7 +31,7 @@ class NativeVideoPreview extends NativeBridge {
     });
 
     return (raw ?? const <dynamic>[])
-        .map((value) => value is Uint8List ? value : null)
+        .map((final value) => value is Uint8List ? value : null)
         .toList(growable: false);
   }
 }

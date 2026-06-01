@@ -13,7 +13,7 @@ class BattleScreen extends ConsumerWidget {
   const BattleScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(final BuildContext context, final WidgetRef ref) {
     final state = ref.watch(battleProvider);
 
     return Scaffold(
@@ -30,7 +30,7 @@ class BattleScreen extends ConsumerWidget {
         child: switch (state.phase) {
           BattlePhase.intro => BattleIntro(
               selectedDifficulty: state.difficulty,
-              onSelectDifficulty: (d) =>
+              onSelectDifficulty: (final d) =>
                   ref.read(battleProvider.notifier).selectDifficulty(d),
               onStart: () => ref.read(battleProvider.notifier).start(),
             ),
@@ -51,11 +51,11 @@ class BattleScreen extends ConsumerWidget {
   }
 }
 
-Future<void> _handleClose(BuildContext context, WidgetRef ref, BattleState state) async {
+Future<void> _handleClose(final BuildContext context, final WidgetRef ref, final BattleState state) async {
   if (state.phase == BattlePhase.active) {
     final confirmed = await showDialog<bool>(
       context: context,
-      builder: (ctx) => AlertDialog(
+      builder: (final ctx) => AlertDialog(
         title: const Text('Forfeit battle?'),
         content: const Text(
           'Your current score will be lost.',
@@ -89,7 +89,7 @@ class _ActiveBattle extends ConsumerWidget {
   final BattleState state;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(final BuildContext context, final WidgetRef ref) {
     final move = state.currentMove;
     if (move == null) return const SizedBox.shrink();
     final cs = Theme.of(context).colorScheme;
@@ -220,7 +220,7 @@ class _RatingButton extends StatelessWidget {
   final VoidCallback onPressed;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(final BuildContext context) {
     return SizedBox(
       height: 52,
       child: ElevatedButton(

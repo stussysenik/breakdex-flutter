@@ -1,5 +1,4 @@
 import 'package:breakdex/core/database/database.dart';
-import 'package:drift/drift.dart' hide isNotNull, isNull;
 import 'package:flutter_test/flutter_test.dart';
 
 import '../../../helpers/test_data.dart';
@@ -118,7 +117,7 @@ void main() {
       final linksFromA = await db.auraDao.watchLinksFrom('move-a').first;
       expect(linksFromA, hasLength(2));
 
-      final targetIds = linksFromA.map((l) => l.toMoveId).toSet();
+      final targetIds = linksFromA.map((final l) => l.toMoveId).toSet();
       expect(targetIds, containsAll(['move-b', 'move-c']));
     });
 
@@ -149,7 +148,7 @@ void main() {
       final linksToA = await db.auraDao.watchLinksTo('move-a').first;
       expect(linksToA, hasLength(2));
 
-      final sourceIds = linksToA.map((l) => l.fromMoveId).toSet();
+      final sourceIds = linksToA.map((final l) => l.fromMoveId).toSet();
       expect(sourceIds, containsAll(['move-b', 'move-c']));
     });
   });
@@ -223,7 +222,7 @@ void main() {
 
       // Verify only one preset has isDefault = 1.
       final presets = await db.auraDao.watchPresets().first;
-      final activeCount = presets.where((p) => p.isDefault == 1).length;
+      final activeCount = presets.where((final p) => p.isDefault == 1).length;
       expect(activeCount, 1);
     });
 
@@ -257,7 +256,7 @@ void main() {
 
       final presets = await db.auraDao.watchPresets().first;
       final activeIds =
-          presets.where((p) => p.isDefault == 1).map((p) => p.id).toList();
+          presets.where((final p) => p.isDefault == 1).map((final p) => p.id).toList();
       expect(activeIds, ['preset-3']);
     });
   });
@@ -291,7 +290,7 @@ void main() {
       await db.auraDao.setActivePreset('preset-1');
 
       final presets = await db.auraDao.watchPresets().first;
-      final activePreset = presets.firstWhere((p) => p.isDefault == 1);
+      final activePreset = presets.firstWhere((final p) => p.isDefault == 1);
       expect(activePreset.id, 'preset-1');
     });
   });

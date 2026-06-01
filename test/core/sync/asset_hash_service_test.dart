@@ -15,7 +15,7 @@ void main() {
       test('returns 64-char lowercase hex string', () async {
         final dir = Directory.systemTemp.createTempSync('hash_test_');
         final file = File('${dir.path}/test_video.mp4');
-        file.writeAsBytesSync(List.generate(1024, (i) => i % 256));
+        file.writeAsBytesSync(List.generate(1024, (final i) => i % 256));
 
         final hash = await hashService.computeHash(file.path);
 
@@ -28,7 +28,7 @@ void main() {
 
       test('returns same hash for identical content', () async {
         final dir = Directory.systemTemp.createTempSync('hash_test_');
-        final content = List.generate(2048, (i) => i % 256);
+        final content = List.generate(2048, (final i) => i % 256);
         final file1 = File('${dir.path}/file1.mp4')
           ..writeAsBytesSync(content);
         final file2 = File('${dir.path}/file2.mp4')
@@ -112,9 +112,9 @@ void main() {
     group('hashAll', () {
       test('emits progress for each file', () async {
         final dir = Directory.systemTemp.createTempSync('hash_test_');
-        final files = List.generate(3, (i) {
+        final files = List.generate(3, (final i) {
           final f = File('${dir.path}/file_$i.mp4');
-          f.writeAsBytesSync(List.generate(100, (j) => (i * 100 + j) % 256));
+          f.writeAsBytesSync(List.generate(100, (final j) => (i * 100 + j) % 256));
           return f.path;
         });
 

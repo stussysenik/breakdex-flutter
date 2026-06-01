@@ -16,7 +16,7 @@ class BlackboxService {
   }
 
   /// Log a critical operation. Format: `[timestamp] action | entityType | entityId | dataJson`
-  Future<void> log(String action, String entityType, String entityId, [Map<String, dynamic>? data]) async {
+  Future<void> log(final String action, final String entityType, final String entityId, [final Map<String, dynamic>? data]) async {
     try {
       final file = await _file;
       final timestamp = DateTime.now().toUtc().toIso8601String();
@@ -30,7 +30,7 @@ class BlackboxService {
     }
   }
 
-  Future<List<String>> readRecent(int lines) async {
+  Future<List<String>> readRecent(final int lines) async {
     final file = await _file;
     if (!await file.exists()) return [];
     final content = await file.readAsLines();

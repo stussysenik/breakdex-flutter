@@ -3,7 +3,7 @@ import 'dart:io';
 import 'package:breakdex/core/database/database.dart';
 import 'package:breakdex/core/sync/cloud_provider.dart';
 import 'package:breakdex/core/sync/tombstone_cleaner.dart';
-import 'package:drift/drift.dart' hide isNull, isNotNull;
+import 'package:drift/drift.dart' hide isNotNull, isNull;
 import 'package:flutter_test/flutter_test.dart';
 
 import '../../helpers/test_database.dart';
@@ -33,34 +33,34 @@ class FakeCloudProvider implements CloudProvider {
 
   @override
   Future<RemoteAsset> upload({
-    required String localPath,
-    required String remotePath,
-    TransferProgress? onProgress,
-    CancellationToken? cancel,
+    required final String localPath,
+    required final String remotePath,
+    final TransferProgress? onProgress,
+    final CancellationToken? cancel,
   }) async =>
       RemoteAsset(remotePath: remotePath, sizeBytes: 0);
 
   @override
   Future<void> download({
-    required String remotePath,
-    required String localPath,
-    TransferProgress? onProgress,
-    CancellationToken? cancel,
+    required final String remotePath,
+    required final String localPath,
+    final TransferProgress? onProgress,
+    final CancellationToken? cancel,
   }) async {}
 
   @override
   Future<bool> verify({
-    required String remotePath,
-    String? expectedHash,
-    int? expectedSize,
+    required final String remotePath,
+    final String? expectedHash,
+    final int? expectedSize,
   }) async =>
       true;
 
   @override
-  Future<List<RemoteAsset>> list({required String directory}) async => [];
+  Future<List<RemoteAsset>> list({required final String directory}) async => [];
 
   @override
-  Future<void> delete({required String remotePath}) async {
+  Future<void> delete({required final String remotePath}) async {
     if (shouldThrow) throw Exception('Cloud delete failed');
     deletedPaths.add(remotePath);
   }
@@ -81,11 +81,11 @@ void main() {
   });
 
   Future<void> seedManifest(
-    AppDatabase db, {
-    required String hash,
-    String? localPath,
-    DateTime? deletedAt,
-    String? tombstoneReason,
+    final AppDatabase db, {
+    required final String hash,
+    final String? localPath,
+    final DateTime? deletedAt,
+    final String? tombstoneReason,
   }) async {
     await db.assetManifestDao.upsert(AssetManifestCompanion(
       contentHash: Value(hash),
@@ -99,12 +99,12 @@ void main() {
   }
 
   Future<void> seedCopy(
-    AppDatabase db, {
-    required String id,
-    required String hash,
-    required String provider,
-    String? remotePath,
-    String status = 'verified',
+    final AppDatabase db, {
+    required final String id,
+    required final String hash,
+    required final String provider,
+    final String? remotePath,
+    final String status = 'verified',
   }) async {
     await db.assetCopiesDao.insertCopy(AssetCopiesCompanion(
       id: Value(id),
@@ -118,9 +118,9 @@ void main() {
   }
 
   Future<void> seedOperation(
-    AppDatabase db, {
-    required String id,
-    required String hash,
+    final AppDatabase db, {
+    required final String id,
+    required final String hash,
   }) async {
     await db.syncOperationsDao.insertOperation(SyncOperationsCompanion(
       id: Value(id),
@@ -301,7 +301,7 @@ void main() {
 
       // Verify operations were cleaned up
       final ops = await db.syncOperationsDao.getQueued(limit: 100);
-      final matching = ops.where((o) => o.contentHash == 'ops_asset');
+      final matching = ops.where((final o) => o.contentHash == 'ops_asset');
       expect(matching, isEmpty);
     });
 

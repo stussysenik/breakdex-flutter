@@ -8,7 +8,7 @@ import 'package:flutter_test/flutter_test.dart';
 
 void main() {
   testWidgets('progress screen leads with parent-first structure and queue', (
-    tester,
+    final tester,
   ) async {
     final bundle = StatsBundle(
       ratingDistribution: const {'GOOD': 6, 'AGAIN': 2},
@@ -88,7 +88,7 @@ void main() {
 
     await tester.pumpWidget(
       ProviderScope(
-        overrides: [statsBundleProvider.overrideWith((ref) async => bundle)],
+        overrides: [statsBundleProvider.overrideWith((final ref) async => bundle)],
         child: MaterialApp(theme: AppTheme.light(), home: const StatsScreen()),
       ),
     );

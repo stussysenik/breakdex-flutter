@@ -26,7 +26,7 @@ enum AppFontFamily {
   final String displayName;
   const AppFontFamily(this.displayName);
 
-  static AppFontFamily fromKey(String? key) => switch (key) {
+  static AppFontFamily fromKey(final String? key) => switch (key) {
     'outfit' => AppFontFamily.outfit,
     'poppins' => AppFontFamily.poppins,
     'spaceMono' => AppFontFamily.spaceMono,
@@ -41,11 +41,11 @@ enum AppFontFamily {
 /// Builds [TextStyle]s for a given font family.
 ///
 TextStyle _fontStyle(
-  AppFontFamily family, {
-  required double fontSize,
-  required FontWeight fontWeight,
-  double? letterSpacing,
-  double? height,
+  final AppFontFamily family, {
+  required final double fontSize,
+  required final FontWeight fontWeight,
+  final double? letterSpacing,
+  final double? height,
 }) {
   return TextStyle(
     fontFamily: _resolvedFontFamily(family),
@@ -56,7 +56,7 @@ TextStyle _fontStyle(
   );
 }
 
-String? _resolvedFontFamily(AppFontFamily family) => switch (family) {
+String? _resolvedFontFamily(final AppFontFamily family) => switch (family) {
   AppFontFamily.inter => 'Inter',
   AppFontFamily.spaceMono ||
   AppFontFamily.jetBrainsMono => switch (defaultTargetPlatform) {
@@ -71,12 +71,14 @@ String? _resolvedFontFamily(AppFontFamily family) => switch (family) {
 /// The static fields use the default Inter. For user-selected fonts,
 /// call the factory constructors or use the instance methods.
 abstract final class AppTypography {
-  static const _titleLargeSize = 30.0;
+  static const _titleLargeSize = 32.0;
   static const _titleMediumSize = 24.0;
   static const _titleSmallSize = 20.0;
+  static const _bodyLargeSize = 18.0;
   static const _bodyMediumSize = 16.0;
   static const _bodySmallSize = 14.0;
   static const _captionSize = 12.0;
+  static const _labelSize = 10.0;
 
   // Default (Inter) styles — used throughout the app via static access
   static TextStyle get titleLarge => _base(
@@ -94,12 +96,12 @@ abstract final class AppTypography {
     fontWeight: FontWeight.w600,
     height: 26 / _titleSmallSize,
   );
-  static TextStyle get bodyMedium => _base(
-    fontSize: _bodyMediumSize,
-    fontWeight: FontWeight.w400,
-    height: 24 / _bodyMediumSize,
-  );
   static TextStyle get bodyLarge => _base(
+    fontSize: _bodyLargeSize,
+    fontWeight: FontWeight.w400,
+    height: 24 / _bodyLargeSize,
+  );
+  static TextStyle get bodyMedium => _base(
     fontSize: _bodyMediumSize,
     fontWeight: FontWeight.w400,
     height: 24 / _bodyMediumSize,
@@ -127,16 +129,16 @@ abstract final class AppTypography {
     height: 16 / _captionSize,
   );
   static TextStyle get labelSmall => _base(
-    fontSize: 10,
+    fontSize: _labelSize,
     fontWeight: FontWeight.w500,
     height: 1.2,
   );
 
   static TextStyle _base({
-    required double fontSize,
-    required FontWeight fontWeight,
-    double? letterSpacing,
-    double? height,
+    required final double fontSize,
+    required final FontWeight fontWeight,
+    final double? letterSpacing,
+    final double? height,
   }) => TextStyle(
     fontFamily: 'Inter',
     fontSize: fontSize,
@@ -151,15 +153,15 @@ abstract final class AppTypography {
   /// user changes their font preference, the theme rebuilds with the new
   /// family and all text respects the selection.
   static TextTheme textTheme(
-    Color textColor,
-    Color secondaryColor, {
-    AppFontFamily family = AppFontFamily.inter,
+    final Color textColor,
+    final Color secondaryColor, {
+    final AppFontFamily family = AppFontFamily.inter,
   }) {
     TextStyle s(
-      double size,
-      FontWeight weight, {
-      double? letterSpacing,
-      double? height,
+      final double size,
+      final FontWeight weight, {
+      final double? letterSpacing,
+      final double? height,
     }) => _fontStyle(
       family,
       fontSize: size,

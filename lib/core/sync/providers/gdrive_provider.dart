@@ -102,10 +102,10 @@ class GDriveProvider extends CloudProvider {
 
   @override
   Future<RemoteAsset> upload({
-    required String localPath,
-    required String remotePath,
-    TransferProgress? onProgress,
-    CancellationToken? cancel,
+    required final String localPath,
+    required final String remotePath,
+    final TransferProgress? onProgress,
+    final CancellationToken? cancel,
   }) async {
     final api = _requireApi();
     final file = File(localPath);
@@ -157,10 +157,10 @@ class GDriveProvider extends CloudProvider {
 
   @override
   Future<void> download({
-    required String remotePath,
-    required String localPath,
-    TransferProgress? onProgress,
-    CancellationToken? cancel,
+    required final String remotePath,
+    required final String localPath,
+    final TransferProgress? onProgress,
+    final CancellationToken? cancel,
   }) async {
     final api = _requireApi();
 
@@ -196,9 +196,9 @@ class GDriveProvider extends CloudProvider {
 
   @override
   Future<bool> verify({
-    required String remotePath,
-    String? expectedHash,
-    int? expectedSize,
+    required final String remotePath,
+    final String? expectedHash,
+    final int? expectedSize,
   }) async {
     final api = _requireApi();
 
@@ -226,7 +226,7 @@ class GDriveProvider extends CloudProvider {
   }
 
   @override
-  Future<List<RemoteAsset>> list({required String directory}) async {
+  Future<List<RemoteAsset>> list({required final String directory}) async {
     final api = _requireApi();
     final folderId = await _requireFolderId();
 
@@ -236,7 +236,7 @@ class GDriveProvider extends CloudProvider {
       pageSize: 1000,
     );
 
-    return (result.files ?? []).map((f) {
+    return (result.files ?? []).map((final f) {
       return RemoteAsset(
         remotePath: f.id!,
         sizeBytes: int.tryParse(f.size ?? '') ?? 0,
@@ -247,7 +247,7 @@ class GDriveProvider extends CloudProvider {
   }
 
   @override
-  Future<void> delete({required String remotePath}) async {
+  Future<void> delete({required final String remotePath}) async {
     final api = _requireApi();
 
     final fileId = await _resolveFileId(remotePath);
@@ -325,7 +325,7 @@ class GDriveProvider extends CloudProvider {
   }
 
   /// Find a file by name in the Breakdex folder.
-  Future<drive.File?> _findFile(String remotePath) async {
+  Future<drive.File?> _findFile(final String remotePath) async {
     final api = _requireApi();
     final folderId = await _requireFolderId();
     final fileName = remotePath.split('/').last;
@@ -340,7 +340,7 @@ class GDriveProvider extends CloudProvider {
   }
 
   /// Resolve a remotePath (either a Drive file ID or filename) to a file ID.
-  Future<String?> _resolveFileId(String remotePath) async {
+  Future<String?> _resolveFileId(final String remotePath) async {
     // If it looks like a Drive file ID (no path separators), use directly
     if (!remotePath.contains('/')) return remotePath;
 
@@ -349,7 +349,7 @@ class GDriveProvider extends CloudProvider {
   }
 
   /// Build an authenticated Drive API client from a Google Sign-In account.
-  Future<drive.DriveApi> _buildDriveApi(GoogleSignInAccount account) async {
+  Future<drive.DriveApi> _buildDriveApi(final GoogleSignInAccount account) async {
     final auth = await account.authentication;
     final client = GoogleAuthClient(auth);
     return drive.DriveApi(client);
@@ -364,7 +364,7 @@ class GoogleAuthClient extends http.BaseClient {
   GoogleAuthClient(this._auth);
 
   @override
-  Future<http.StreamedResponse> send(http.BaseRequest request) {
+  Future<http.StreamedResponse> send(final http.BaseRequest request) {
     request.headers['Authorization'] = 'Bearer ${_auth.accessToken}';
     return _inner.send(request);
   }

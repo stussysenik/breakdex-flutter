@@ -42,10 +42,10 @@ class TombstoneCleaner {
   static const gracePeriod = Duration(days: 30);
 
   TombstoneCleaner({
-    required AssetManifestDao manifestDao,
-    required AssetCopiesDao copiesDao,
-    required SyncOperationsDao opsDao,
-    required List<CloudProvider> providers,
+    required final AssetManifestDao manifestDao,
+    required final AssetCopiesDao copiesDao,
+    required final SyncOperationsDao opsDao,
+    required final List<CloudProvider> providers,
   })  : _manifestDao = manifestDao,
         _copiesDao = copiesDao,
         _opsDao = opsDao,
@@ -89,7 +89,7 @@ class TombstoneCleaner {
           if (copy.remotePath == null) continue;
 
           final provider = _providers
-              .where((p) => p.providerType == copy.provider)
+              .where((final p) => p.providerType == copy.provider)
               .firstOrNull;
           if (provider == null) continue;
 

@@ -6,17 +6,17 @@ import '../database/daos/combos_dao.dart';
 abstract class MoveRepository {
   Stream<List<Move>> watchAll();
   Stream<List<Move>> watchArchived();
-  Stream<List<Move>> watchByCategory(String category);
-  Stream<Move> watchById(String id);
+  Stream<List<Move>> watchByCategory(final String category);
+  Stream<Move> watchById(final String id);
   Future<List<Move>> getAll();
   Future<List<Move>> getArchived();
-  Future<Move> getById(String id);
-  Future<void> insert(MovesCompanion move);
-  Future<void> update(MovesCompanion move);
-  Future<void> delete(String id);
-  Future<void> archive(String id, {required String reason});
-  Future<void> restore(String id);
-  Stream<List<Move>> watchByState(String state);
+  Future<Move> getById(final String id);
+  Future<void> insert(final MovesCompanion move);
+  Future<void> update(final MovesCompanion move);
+  Future<void> delete(final String id);
+  Future<void> archive(final String id, {required final String reason});
+  Future<void> restore(final String id);
+  Stream<List<Move>> watchByState(final String state);
 }
 
 /// Abstract interface for combo data access.
@@ -24,44 +24,44 @@ abstract class ComboRepository {
   Stream<List<Combo>> watchAll();
   Stream<List<(Combo, int)>> watchAllWithMoveCounts();
   Future<List<Combo>> getAll();
-  Future<Combo> getById(String id);
-  Stream<Combo> watchById(String id);
-  Stream<List<ComboMoveWithDetail>> watchComboMoves(String comboId);
-  Future<void> insert(CombosCompanion combo);
-  Future<void> update(CombosCompanion combo);
-  Future<void> addMove(ComboMovesCompanion entry);
-  Future<void> delete(String id);
-  Future<void> removeMove(String id);
-  Future<void> clearMoves(String comboId);
+  Future<Combo> getById(final String id);
+  Stream<Combo> watchById(final String id);
+  Stream<List<ComboMoveWithDetail>> watchComboMoves(final String comboId);
+  Future<void> insert(final CombosCompanion combo);
+  Future<void> update(final CombosCompanion combo);
+  Future<void> addMove(final ComboMovesCompanion entry);
+  Future<void> delete(final String id);
+  Future<void> removeMove(final String id);
+  Future<void> clearMoves(final String comboId);
 }
 
 /// Abstract interface for review data access.
 abstract class ReviewRepository {
   Stream<List<Review>> watchAll();
-  Future<void> insert(ReviewsCompanion review);
-  Future<List<Review>> getByMoveId(String moveId);
+  Future<void> insert(final ReviewsCompanion review);
+  Future<List<Review>> getByMoveId(final String moveId);
   Future<int> countAll();
-  Future<List<Review>> getInRange(DateTime start, DateTime end);
-  Future<Map<DateTime, int>> dailyCountsSince(DateTime since);
+  Future<List<Review>> getInRange(final DateTime start, final DateTime end);
+  Future<Map<DateTime, int>> dailyCountsSince(final DateTime since);
   Future<Map<String, int>> ratingDistribution();
-  Future<List<MapEntry<String, int>>> topReviewedMoves(int limit);
+  Future<List<MapEntry<String, int>>> topReviewedMoves(final int limit);
   Future<int> currentStreak();
 }
 
 /// Abstract interface for set data access.
 abstract class SetRepository {
   Stream<List<BreakdexSet>> watchAll();
-  Stream<BreakdexSet> watchById(String id);
+  Stream<BreakdexSet> watchById(final String id);
   Future<List<BreakdexSet>> getAll();
-  Future<BreakdexSet> getById(String id);
-  Future<void> insert(SetsCompanion set);
-  Future<void> update(SetsCompanion set);
-  Future<void> delete(String id);
+  Future<BreakdexSet> getById(final String id);
+  Future<void> insert(final SetsCompanion set);
+  Future<void> update(final SetsCompanion set);
+  Future<void> delete(final String id);
 
-  Future<void> addItem(SetItemsCompanion item);
-  Future<void> removeItem(String id);
-  Future<void> reorderItem(String itemId, int newPosition);
-  Stream<List<SetItem>> watchItems(String setId);
-  Future<bool> validateNoCycle(String setId, String childSetId);
-  Future<int> depth(String setId);
+  Future<void> addItem(final SetItemsCompanion item);
+  Future<void> removeItem(final String id);
+  Future<void> reorderItem(final String itemId, final int newPosition);
+  Stream<List<SetItem>> watchItems(final String setId);
+  Future<bool> validateNoCycle(final String setId, final String childSetId);
+  Future<int> depth(final String setId);
 }

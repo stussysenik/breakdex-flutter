@@ -8,7 +8,7 @@ import 'package:breakdex/core/providers.dart';
 import 'package:breakdex/core/services/settings_service.dart';
 
 void main() {
-  testWidgets('BottomNavShell does not throw Riverpod modification error on build', (tester) async {
+  testWidgets('BottomNavShell does not throw Riverpod modification error on build', (final tester) async {
     SharedPreferences.setMockInitialValues({});
     final prefs = await SharedPreferences.getInstance();
 
@@ -16,11 +16,11 @@ void main() {
       initialLocation: '/a',
       routes: [
         StatefulShellRoute.indexedStack(
-          builder: (context, state, navigationShell) {
+          builder: (final context, final state, final navigationShell) {
             return ProviderScope(
               overrides: [
                 sharedPreferencesProvider.overrideWithValue(prefs),
-                syncTriggerProvider.overrideWith((ref) => null),
+                syncTriggerProvider.overrideWith((final ref) {}),
               ],
               child: BottomNavShell(navigationShell: navigationShell),
             );
@@ -30,7 +30,7 @@ void main() {
               routes: [
                 GoRoute(
                   path: '/a',
-                  builder: (context, state) => const Scaffold(body: Text('Tab A')),
+                  builder: (final context, final state) => const Scaffold(body: Text('Tab A')),
                 ),
               ],
             ),
@@ -38,7 +38,7 @@ void main() {
               routes: [
                 GoRoute(
                   path: '/b',
-                  builder: (context, state) => const Scaffold(body: Text('Tab B')),
+                  builder: (final context, final state) => const Scaffold(body: Text('Tab B')),
                 ),
               ],
             ),

@@ -17,7 +17,7 @@ final class MoveDetailMachine
   String get diagnosticsLabel => 'MoveDetail';
 
   @override
-  MoveDetailState? transition(MoveDetailState s, MoveDetailEvent e) {
+  MoveDetailState? transition(final MoveDetailState s, final MoveDetailEvent e) {
     return switch ((s, e)) {
       // ── Idle → Editing ──
       (Idle(), TapRename()) => Renaming(s.move, draftName: s.move.name),
