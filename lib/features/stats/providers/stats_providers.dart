@@ -36,7 +36,7 @@ class DayMoveReview {
 }
 
 /// Currently selected date in the calendar / daily breakdown.
-final selectedDateProvider = StateProvider<DateTime>((ref) {
+final selectedDateProvider = StateProvider<DateTime>((final ref) {
   final now = DateTime.now();
   return DateTime(now.year, now.month, now.day);
 });
@@ -44,8 +44,8 @@ final selectedDateProvider = StateProvider<DateTime>((ref) {
 /// Fetches per-move/combo review detail for a given day.
 /// Returns chronologically sorted list of [DayMoveReview].
 final dayDetailProvider = FutureProvider.family<List<DayMoveReview>, DateTime>((
-  ref,
-  date,
+  final ref,
+  final date,
 ) async {
   final db = ref.watch(databaseProvider);
   final results = await Future.wait([
@@ -60,7 +60,7 @@ final dayDetailProvider = FutureProvider.family<List<DayMoveReview>, DateTime>((
   final comboMap = {for (final c in allCombos) c.id: c};
 
   return reviews
-      .map((r) {
+      .map((final r) {
         final entity = _resolveReviewEntity(r, moveMap, comboMap);
         if (entity == null) return null;
         return DayMoveReview(
@@ -344,12 +344,12 @@ class _ResolvedReviewEntity {
 
 /// Watches the review stream so stats auto-rebuild after any review change.
 /// Drift watch streams provide Flutter-first reactivity without manual refresh.
-final statsRefreshProvider = StreamProvider<void>((ref) {
+final statsRefreshProvider = StreamProvider<void>((final ref) {
   final db = ref.watch(databaseProvider);
   return db.reviewsDao.watchAll().map((_) {});
 });
 
-final statsBundleProvider = FutureProvider<StatsBundle>((ref) async {
+final statsBundleProvider = FutureProvider<StatsBundle>((final ref) async {
   // Auto-rebuild when reviews change (Drift watch stream reactivity)
   ref.watch(statsRefreshProvider);
   // Also rebuild when FSRS card state changes (due counts, retention, mastery)
@@ -421,12 +421,12 @@ final statsBundleProvider = FutureProvider<StatsBundle>((ref) async {
   // Filter out top move entries where the move no longer exists
   final moveIds = {for (final m in allMoves) m.id};
   final topMoveEntries = (results[1] as List<MapEntry<String, int>>)
-      .where((e) => moveIds.contains(e.key))
+      .where((final e) => moveIds.contains(e.key))
       .toList();
 
   // Build enriched top-moves list with category, state, last reviewed
   final topMoves = topMoveEntries
-      .map((entry) {
+      .map((final entry) {
         final move = moveMap[entry.key];
         if (move == null) return null;
         final card = fsrsMap[_entityKey('move', move.id)];
@@ -461,18 +461,17 @@ final statsBundleProvider = FutureProvider<StatsBundle>((ref) async {
   );
 });
 
-String _fsrsStateLabel(int state) => switch (state) {
-  0 => 'New',
-  1 => 'Learning',
-  2 => 'Mastered',
-  3 => 'Relearning',
-  _ => 'Unknown',
-};
+String _fsrsStateLabel(final int state) => switch (state) {
+      0 => 'New',
+      1 || 3 => 'Practicing',
+      2 => 'Strong',
+      _ => 'Unknown',
+    };
 
 _ResolvedReviewEntity? _resolveReviewEntity(
-  Review review,
-  Map<String, Move> moveMap,
-  Map<String, Combo> comboMap,
+  final Review review,
+  final Map<String, Move> moveMap,
+  final Map<String, Combo> comboMap,
 ) {
   final move = review.moveId != null ? moveMap[review.moveId] : null;
   if (move != null) {
@@ -522,11 +521,11 @@ _ResolvedReviewEntity? _resolveReviewEntity(
 /// Build per-day stats for the last 30 days from raw review records.
 /// Includes both move and combo reviews in the daily breakdown.
 List<DayStats> _buildDailyBreakdown(
-  List<Review> reviews,
-  DateTime from,
-  DateTime to,
-  Map<String, Move> moveMap,
-  Map<String, Combo> comboMap,
+  final List<Review> reviews,
+  final DateTime from,
+  final DateTime to,
+  final Map<String, Move> moveMap,
+  final Map<String, Combo> comboMap,
 ) {
   // Group reviews by date
   final byDay = <DateTime, List<Review>>{};
@@ -589,10 +588,10 @@ List<DayStats> _buildDailyBreakdown(
   return result;
 }
 
-String _entityKey(String entityType, String entityId) =>
+String _entityKey(final String entityType, final String entityId) =>
     '$entityType:$entityId';
 
-ProgressDueBucket _dueBucketForCard(FsrsCard? card, DateTime now) {
+ProgressDueBucket _dueBucketForCard(final FsrsCard? card, final DateTime now) {
   if (card == null) return ProgressDueBucket.unscheduled;
 
   final due = card.due.toLocal();
@@ -606,7 +605,7 @@ ProgressDueBucket _dueBucketForCard(FsrsCard? card, DateTime now) {
   return ProgressDueBucket.later;
 }
 
-int _dueBucketPriority(ProgressDueBucket bucket) => switch (bucket) {
+int _dueBucketPriority(final ProgressDueBucket bucket) => switch (bucket) {
   ProgressDueBucket.now => 0,
   ProgressDueBucket.today => 1,
   ProgressDueBucket.tomorrow => 2,
@@ -615,9 +614,9 @@ int _dueBucketPriority(ProgressDueBucket bucket) => switch (bucket) {
 };
 
 String _statusLabelForSubject({
-  required int reviewCount,
-  required double successRatio,
-  required ProgressDueBucket dueBucket,
+  required final int reviewCount,
+  required final double successRatio,
+  required final ProgressDueBucket dueBucket,
 }) {
   if (reviewCount == 0) return 'Unstarted';
   if (dueBucket == ProgressDueBucket.now) return 'Ready now';
@@ -629,10 +628,10 @@ String _statusLabelForSubject({
 }
 
 List<MoveProgressGroup> _buildMoveProgressGroups(
-  List<Move> moves,
-  List<CardReviewStats> cardStats,
-  Map<String, FsrsCard> fsrsMap,
-  DateTime now,
+  final List<Move> moves,
+  final List<CardReviewStats> cardStats,
+  final Map<String, FsrsCard> fsrsMap,
+  final DateTime now,
 ) {
   final moveStatsById = {
     for (final item in cardStats)
@@ -664,9 +663,9 @@ List<MoveProgressGroup> _buildMoveProgressGroups(
         );
   }
 
-  final groups = grouped.entries.map((entry) {
+  final groups = grouped.entries.map((final entry) {
     final items = [...entry.value]
-      ..sort((a, b) {
+      ..sort((final a, final b) {
         final dueCompare = _dueBucketPriority(
           a.dueBucket,
         ).compareTo(_dueBucketPriority(b.dueBucket));
@@ -679,24 +678,24 @@ List<MoveProgressGroup> _buildMoveProgressGroups(
     return MoveProgressGroup(
       category: entry.key,
       items: items,
-      reviewedCount: items.where((item) => item.reviewCount > 0).length,
+      reviewedCount: items.where((final item) => item.reviewCount > 0).length,
       dueNowCount: items
-          .where((item) => item.dueBucket == ProgressDueBucket.now)
+          .where((final item) => item.dueBucket == ProgressDueBucket.now)
           .length,
       dueTodayCount: items
           .where(
-            (item) =>
+            (final item) =>
                 item.dueBucket == ProgressDueBucket.now ||
                 item.dueBucket == ProgressDueBucket.today,
           )
           .length,
       dueTomorrowCount: items
-          .where((item) => item.dueBucket == ProgressDueBucket.tomorrow)
+          .where((final item) => item.dueBucket == ProgressDueBucket.tomorrow)
           .length,
     );
   }).toList();
 
-  groups.sort((a, b) {
+  groups.sort((final a, final b) {
     final dueCompare = b.dueNowCount.compareTo(a.dueNowCount);
     if (dueCompare != 0) return dueCompare;
     final reviewedCompare = b.reviewedCount.compareTo(a.reviewedCount);
@@ -710,12 +709,12 @@ List<MoveProgressGroup> _buildMoveProgressGroups(
 }
 
 List<ComboProgressGroup> _buildComboProgressGroups(
-  List<Combo> combos,
-  List<ComboMove> comboMoves,
-  Map<String, Move> moveMap,
-  List<CardReviewStats> cardStats,
-  Map<String, FsrsCard> fsrsMap,
-  DateTime now,
+  final List<Combo> combos,
+  final List<ComboMove> comboMoves,
+  final Map<String, Move> moveMap,
+  final List<CardReviewStats> cardStats,
+  final Map<String, FsrsCard> fsrsMap,
+  final DateTime now,
 ) {
   final comboStatsById = {
     for (final item in cardStats)
@@ -726,9 +725,9 @@ List<ComboProgressGroup> _buildComboProgressGroups(
     comboMovesById.putIfAbsent(comboMove.comboId, () => []).add(comboMove);
   }
 
-  final groups = combos.map((combo) {
+  final groups = combos.map((final combo) {
     final steps = [...(comboMovesById[combo.id] ?? const <ComboMove>[])]
-      ..sort((a, b) => a.sequenceIndex.compareTo(b.sequenceIndex));
+      ..sort((final a, final b) => a.sequenceIndex.compareTo(b.sequenceIndex));
     final comboStats = comboStatsById[combo.id];
     final comboCard = fsrsMap[_entityKey('combo', combo.id)];
     final comboDueBucket = _dueBucketForCard(comboCard, now);
@@ -748,7 +747,7 @@ List<ComboProgressGroup> _buildComboProgressGroups(
       dueBucket: comboDueBucket,
       lastReviewedAt: comboStats?.lastReviewedAt ?? comboCard?.lastReview,
       steps: steps
-          .map((step) {
+          .map((final step) {
             final move = moveMap[step.moveId];
             if (move == null) return null;
             final moveCard = fsrsMap[_entityKey('move', move.id)];
@@ -766,7 +765,7 @@ List<ComboProgressGroup> _buildComboProgressGroups(
     );
   }).toList();
 
-  groups.sort((a, b) {
+  groups.sort((final a, final b) {
     final dueCompare = _dueBucketPriority(
       a.dueBucket,
     ).compareTo(_dueBucketPriority(b.dueBucket));
@@ -782,10 +781,10 @@ List<ComboProgressGroup> _buildComboProgressGroups(
 }
 
 List<CardReviewStats> _buildCardStats(
-  List<Review> reviews,
-  Map<String, Move> moveMap,
-  Map<String, Combo> comboMap,
-  Map<String, FsrsCard> fsrsMap,
+  final List<Review> reviews,
+  final Map<String, Move> moveMap,
+  final Map<String, Combo> comboMap,
+  final Map<String, FsrsCard> fsrsMap,
 ) {
   final aggregates = <String, _MutableCardStats>{};
 
@@ -826,7 +825,7 @@ List<CardReviewStats> _buildCardStats(
 
   final items = aggregates.values
       .map(
-        (aggregate) => CardReviewStats(
+        (final aggregate) => CardReviewStats(
           entityId: aggregate.entityId,
           entityType: aggregate.entityType,
           displayName: aggregate.displayName,
@@ -848,7 +847,7 @@ List<CardReviewStats> _buildCardStats(
       )
       .toList();
 
-  items.sort((a, b) {
+  items.sort((final a, final b) {
     final shownCompare = b.shownCount.compareTo(a.shownCount);
     if (shownCompare != 0) return shownCompare;
     final aTime = a.lastReviewedAt ?? DateTime.fromMillisecondsSinceEpoch(0);
@@ -860,9 +859,9 @@ List<CardReviewStats> _buildCardStats(
 }
 
 List<ReviewTimelineEntry> _buildReviewTimeline(
-  List<Review> reviews,
-  Map<String, Move> moveMap,
-  Map<String, Combo> comboMap,
+  final List<Review> reviews,
+  final Map<String, Move> moveMap,
+  final Map<String, Combo> comboMap,
 ) {
   final items = <ReviewTimelineEntry>[];
 
@@ -884,7 +883,7 @@ List<ReviewTimelineEntry> _buildReviewTimeline(
     );
   }
 
-  items.sort((a, b) => b.reviewedAt.compareTo(a.reviewedAt));
+  items.sort((final a, final b) => b.reviewedAt.compareTo(a.reviewedAt));
   return items;
 }
 
@@ -897,7 +896,7 @@ List<ReviewTimelineEntry> _buildReviewTimeline(
 
 /// Calendar heatmap data — one year of daily review counts.
 final dailyCountsProvider = FutureProvider.autoDispose<Map<DateTime, int>>((
-  ref,
+  final ref,
 ) async {
   ref.watch(statsRefreshProvider);
   final db = ref.watch(databaseProvider);
@@ -908,7 +907,7 @@ final dailyCountsProvider = FutureProvider.autoDispose<Map<DateTime, int>>((
 
 /// Leaderboard — top 5 most-reviewed moves with category + FSRS enrichment.
 final topMovesProvider = FutureProvider.autoDispose<List<TopMoveInfo>>((
-  ref,
+  final ref,
 ) async {
   ref.watch(statsRefreshProvider);
   final db = ref.watch(databaseProvider);
@@ -917,7 +916,7 @@ final topMovesProvider = FutureProvider.autoDispose<List<TopMoveInfo>>((
   final moveMap = {for (final m in allMoves) m.id: m};
   final moveIds = moveMap.keys.toSet();
 
-  final filtered = topEntries.where((e) => moveIds.contains(e.key)).toList();
+  final filtered = topEntries.where((final e) => moveIds.contains(e.key)).toList();
   final fsrsCards = await db.fsrsCardsDao.getAll();
   final fsrsMap = {
     for (final card in fsrsCards)
@@ -925,7 +924,7 @@ final topMovesProvider = FutureProvider.autoDispose<List<TopMoveInfo>>((
   };
 
   return filtered
-      .map((entry) {
+      .map((final entry) {
         final move = moveMap[entry.key];
         if (move == null) return null;
         final card = fsrsMap[_entityKey('move', move.id)];
@@ -945,7 +944,7 @@ final topMovesProvider = FutureProvider.autoDispose<List<TopMoveInfo>>((
 /// Due summary — FSRS card states and due counts.
 final dueSummaryProvider =
     FutureProvider.autoDispose<({DueSummary due, TotalStateCounts counts})>((
-      ref,
+      final ref,
     ) async {
       ref.watch(fsrsCardsRefreshProvider);
       final fsrs = ref.watch(fsrsServiceProvider);
@@ -956,7 +955,7 @@ final dueSummaryProvider =
     });
 
 /// Streak — single int, lightweight read for badge display.
-final streakProvider = FutureProvider.autoDispose<int>((ref) async {
+final streakProvider = FutureProvider.autoDispose<int>((final ref) async {
   ref.watch(statsRefreshProvider);
   return ref.watch(databaseProvider).reviewsDao.graduationStreak();
 });

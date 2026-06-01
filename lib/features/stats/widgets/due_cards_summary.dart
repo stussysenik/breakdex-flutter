@@ -19,7 +19,7 @@ class DueCardsSummary extends ConsumerWidget {
   final TotalStateCounts totalStateCounts;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(final BuildContext context, final WidgetRef ref) {
     final labels = ref.watch(learningStateLabelsProvider);
 
     return Row(
@@ -32,8 +32,7 @@ class DueCardsSummary extends ConsumerWidget {
         const SizedBox(width: AppSpacing.sm),
         _DueColumn(
           label: resolveLearningStateLabel(labels, LearningState.learning),
-          count:
-              totalStateCounts.learningCount + totalStateCounts.relearningCount,
+          count: totalStateCounts.learningCount,
           color: context.stateColor(LearningState.learning),
         ),
         const SizedBox(width: AppSpacing.sm),
@@ -59,7 +58,7 @@ class _DueColumn extends StatelessWidget {
   final Color color;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(final BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
     return Expanded(
       child: Container(

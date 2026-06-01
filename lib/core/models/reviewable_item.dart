@@ -96,9 +96,8 @@ class ReviewableItemWithCard {
   /// FSRS state label for display.
   String get stateLabel => switch (card?.fsrsState) {
         0 => 'New',
-        1 => 'Learning',
-        2 => 'Review',
-        3 => 'Relearning',
+        1 || 3 => 'Practicing',
+        2 => 'Strong',
         _ => 'New',
       };
 
@@ -106,7 +105,7 @@ class ReviewableItemWithCard {
   DateTime get dueDate => card?.due ?? DateTime.now().toUtc();
 
   /// Convenience: construct from a FsrsCardWithEntity JOIN result.
-  factory ReviewableItemWithCard.fromEntity(FsrsCardWithEntity entity) {
+  factory ReviewableItemWithCard.fromEntity(final FsrsCardWithEntity entity) {
     final ReviewableItem item;
     if (entity.move != null) {
       item = ReviewableMove(entity.move!);
@@ -167,9 +166,8 @@ class SrsCoefficients {
 
   String get stateLabel => switch (fsrsState) {
         0 => 'New',
-        1 => 'Learning',
-        2 => 'Review',
-        3 => 'Relearning',
+        1 || 3 => 'Practicing',
+        2 => 'Strong',
         _ => 'New',
       };
 
@@ -205,7 +203,7 @@ enum ReviewMode {
   review,
   deck;
 
-  static ReviewMode fromString(String? value) => switch (value) {
+  static ReviewMode fromString(final String? value) => switch (value) {
         'deck' => ReviewMode.deck,
         // Backward compat: old 'session' and 'schedule' both map to review
         'session' || 'schedule' || _ => ReviewMode.review,

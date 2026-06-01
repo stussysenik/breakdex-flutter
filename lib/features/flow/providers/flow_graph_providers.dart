@@ -201,21 +201,21 @@ enum FlowFilter { all, moves, combos, sets }
 /// Tapping a node in the graph sets this. The canvas highlights the
 /// selected node and its edges. In Focus mode, this determines the
 /// ego graph center. Setting to null clears the selection.
-final selectedNodeProvider = StateProvider<String?>((ref) => null);
+final selectedNodeProvider = StateProvider<String?>((final ref) => null);
 
 /// The active view mode (Map / Focus / Clusters).
 ///
 /// Persisted in widget state (not SharedPreferences) since it's a
 /// transient UI preference, not a user setting worth persisting.
 final flowViewModeProvider = StateProvider<FlowViewMode>(
-  (ref) => FlowViewMode.map,
+  (final ref) => FlowViewMode.map,
 );
 
 /// The active entity filter (All / Moves / Combos / Sets).
 ///
 /// Controls which node types are visible. When set to [FlowFilter.moves],
 /// only move nodes appear. Combo/set support is a future extension.
-final flowFilterProvider = StateProvider<FlowFilter>((ref) => FlowFilter.all);
+final flowFilterProvider = StateProvider<FlowFilter>((final ref) => FlowFilter.all);
 
 /// Reactive provider that combines moves, aura links, and FSRS cards
 /// into a [FlowGraphData] structure ready for the graph canvas.
@@ -236,7 +236,7 @@ final flowFilterProvider = StateProvider<FlowFilter>((ref) => FlowFilter.all);
 /// If a move has no FSRS card → masteryState = 0 (new).
 /// If fsrsState is 0 (New) or 1 (Learning) or 3 (Relearning) → 1 (learning).
 /// If fsrsState is 2 (Review) → 2 (mastered).
-final flowGraphDataProvider = Provider<FlowGraphData>((ref) {
+final flowGraphDataProvider = Provider<FlowGraphData>((final ref) {
   // --- Source 1: All moves (nodes) ---
   // moveRepositoryProvider returns a MoveRepository (sync provider), but
   // we need its reactive stream. _movesStreamProvider wraps watchAll()
@@ -257,7 +257,7 @@ final flowGraphDataProvider = Provider<FlowGraphData>((ref) {
   }
 
   // --- Combine into graph structure ---
-  final nodes = moves.map((move) {
+  final nodes = moves.map((final move) {
     final fsrsState = masteryMap[move.id];
     final mastery = _fsrsStateToMastery(fsrsState);
 
@@ -269,7 +269,7 @@ final flowGraphDataProvider = Provider<FlowGraphData>((ref) {
     );
   }).toList();
 
-  final edges = links.map((link) {
+  final edges = links.map((final link) {
     return GraphEdge(
       fromId: link.fromMoveId,
       toId: link.toMoveId,
@@ -281,7 +281,7 @@ final flowGraphDataProvider = Provider<FlowGraphData>((ref) {
 });
 
 /// Aggregates top-level Flow metrics for the compact dashboard row.
-final flowGraphSummaryProvider = Provider<FlowGraphSummary>((ref) {
+final flowGraphSummaryProvider = Provider<FlowGraphSummary>((final ref) {
   final graphData = ref.watch(flowGraphDataProvider);
 
   var masteredCount = 0;
@@ -318,14 +318,14 @@ final flowGraphSummaryProvider = Provider<FlowGraphSummary>((ref) {
     learningCount: learningCount,
     newCount: newCount,
     isolatedCount: graphData.nodes
-        .where((node) => !linkedNodeIds.contains(node.id))
+        .where((final node) => !linkedNodeIds.contains(node.id))
         .length,
   );
 });
 
 /// Provides the selected node plus its graph-local connection profile.
 final selectedFlowNodeDetailsProvider = Provider<SelectedFlowNodeDetails?>((
-  ref,
+  final ref,
 ) {
   final selectedId = ref.watch(selectedNodeProvider);
   if (selectedId == null) return null;
@@ -365,11 +365,11 @@ final selectedFlowNodeDetailsProvider = Provider<SelectedFlowNodeDetails?>((
   final neighborIds = {...incomingIds, ...outgoingIds};
   final reciprocalCount = incomingIds.intersection(outgoingIds).length;
   final sameCategoryCount = neighborIds
-      .where((id) => nodeById[id]?.category == node.category)
+      .where((final id) => nodeById[id]?.category == node.category)
       .length;
   final neighborNames =
-      neighborIds.map((id) => nodeById[id]?.name).whereType<String>().toList()
-        ..sort((a, b) => a.compareTo(b));
+      neighborIds.map((final id) => nodeById[id]?.name).whereType<String>().toList()
+        ..sort((final a, final b) => a.compareTo(b));
 
   return SelectedFlowNodeDetails(
     node: node,
@@ -388,11 +388,11 @@ final selectedFlowNodeDetailsProvider = Provider<SelectedFlowNodeDetails?>((
 /// Maps the 4-state FSRS model to a 3-tier visual mastery scale.
 ///
 /// FSRS states: New(0), Learning(1), Review(2), Relearning(3)
-/// Graph tiers: new(0), learning(1), mastered(2)
+/// Graph tiers: new(0), learning(1), strong(2)
 ///
 /// Relearning maps to learning because the user forgot the move and
-/// is re-acquiring it — visually it should look "in progress", not mastered.
-int _fsrsStateToMastery(int? fsrsState) {
+/// is re-acquiring it — visually it should look "in progress", not strong.
+int _fsrsStateToMastery(final int? fsrsState) {
   if (fsrsState == null) return 0; // No FSRS card → new
   switch (fsrsState) {
     case 0: // FSRS New
@@ -400,7 +400,7 @@ int _fsrsStateToMastery(int? fsrsState) {
     case 3: // FSRS Relearning
       return 1; // learning
     case 2: // FSRS Review (graduated)
-      return 2; // mastered
+      return 2; // strong
     default:
       return 0; // safety fallback
   }
@@ -416,11 +416,11 @@ int _fsrsStateToMastery(int? fsrsState) {
 // ---------------------------------------------------------------------------
 
 /// Internal: reactive stream of all moves from the repository.
-final _movesStreamProvider = StreamProvider<List<Move>>((ref) {
+final _movesStreamProvider = StreamProvider<List<Move>>((final ref) {
   return ref.watch(moveRepositoryProvider).watchAll();
 });
 
 /// Internal: reactive stream of all aura links from the DAO.
-final _auraLinksStreamProvider = StreamProvider<List<AuraLink>>((ref) {
+final _auraLinksStreamProvider = StreamProvider<List<AuraLink>>((final ref) {
   return ref.watch(auraDaoProvider).watchAll();
 });

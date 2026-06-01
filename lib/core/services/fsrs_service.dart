@@ -47,22 +47,18 @@ class TotalStateCounts {
   /// Cards never reviewed (fsrsState == 0).
   final int newCount;
 
-  /// Cards in Learning state (fsrsState == 1).
+  /// Cards in Learning/Relearning state (fsrsState == 1 or 3).
   final int learningCount;
 
   /// Cards in Review/mastered state (fsrsState == 2).
   final int reviewCount;
 
-  /// Cards in Relearning state (fsrsState == 3).
-  final int relearningCount;
-
-  int get total => newCount + learningCount + reviewCount + relearningCount;
+  int get total => newCount + learningCount + reviewCount;
 
   const TotalStateCounts({
     required this.newCount,
     required this.learningCount,
     required this.reviewCount,
-    required this.relearningCount,
   });
 }
 
@@ -73,7 +69,6 @@ class CategoryMastery {
   final int newCount;
   final int learningCount;
   final int reviewCount;
-  final int relearningCount;
   final int dueCount;
 
   const CategoryMastery({
@@ -82,7 +77,6 @@ class CategoryMastery {
     required this.newCount,
     required this.learningCount,
     required this.reviewCount,
-    required this.relearningCount,
     required this.dueCount,
   });
 
@@ -187,9 +181,9 @@ class FsrsService {
   /// 3. Call scheduler.reviewCard() to compute new scheduling params
   /// 4. Persist the updated card back to the database
   Future<FsrsReviewResult> processReview(
-    String entityId,
-    ReviewRating rating, {
-    String entityType = 'move',
+    final String entityId,
+    final ReviewRating rating, {
+    final String entityType = 'move',
   }) async {
     final dbCard = await _dao.ensureCard(entityId, entityType: entityType);
     final preState = dbCard.fsrsState;
@@ -230,8 +224,8 @@ class FsrsService {
 
   /// Get the current retrievability for an entity.
   Future<double> getRetrievability(
-    String entityId, {
-    String entityType = 'move',
+    final String entityId, {
+    final String entityType = 'move',
   }) async {
     final dbCard = await _dao.getByEntityId(entityId, entityType: entityType);
     if (dbCard == null || dbCard.lastReview == null) return 0.0;
@@ -241,7 +235,7 @@ class FsrsService {
   }
 
   /// Get all cards that are currently due for review.
-  Future<List<FsrsCardWithEntity>> getDueCards({String? category}) {
+  Future<List<FsrsCardWithEntity>> getDueCards({final String? category}) {
     return _dao.getDueCardsWithEntities(
       asOf: DateTime.now().toUtc(),
       category: category,
@@ -249,9 +243,9 @@ class FsrsService {
   }
 
   /// Get all reviewable items with their FSRS cards (the unified list).
-  Future<List<ReviewableItemWithCard>> getAllItems({String? category}) async {
+  Future<List<ReviewableItemWithCard>> getAllItems({final String? category}) async {
     final entities = await _dao.getCardsWithEntities(category: category);
-    return entities.map((e) => ReviewableItemWithCard.fromEntity(e)).toList();
+    return entities.map((final e) => ReviewableItemWithCard.fromEntity(e)).toList();
   }
 
   /// Anki-style due summary: breaks down due cards by FSRS state.
@@ -300,8 +294,8 @@ class FsrsService {
 
   /// Preview the scheduling interval for each rating without committing.
   Future<Map<ReviewRating, Duration>> previewIntervals(
-    String entityId, {
-    String entityType = 'move',
+    final String entityId, {
+    final String entityType = 'move',
   }) async {
     final dbCard = await _dao.ensureCard(entityId, entityType: entityType);
     final fsrsCard = _dbToFsrs(dbCard);
@@ -319,8 +313,8 @@ class FsrsService {
 
   /// Get SRS coefficients for a specific entity (for detail sheet).
   Future<SrsCoefficients> getSrsCoefficients(
-    String entityId, {
-    String entityType = 'move',
+    final String entityId, {
+    final String entityType = 'move',
   }) async {
     final dbCard = await _dao.getByEntityId(entityId, entityType: entityType);
     if (dbCard == null) {
@@ -368,21 +362,19 @@ class FsrsService {
       byCategory.putIfAbsent(cat, () => []).add(cw);
     }
 
-    return byCategory.entries.map((entry) {
+    return byCategory.entries.map((final entry) {
       final cards = entry.value;
-      int newCount = 0, learningCount = 0, reviewCount = 0, relearningCount = 0;
+      int newCount = 0, learningCount = 0, reviewCount = 0;
       int dueCount = 0;
 
       for (final cw in cards) {
         switch (cw.card.fsrsState) {
           case 0:
             newCount++;
-          case 1:
+          case 1 || 3:
             learningCount++;
           case 2:
             reviewCount++;
-          case 3:
-            relearningCount++;
         }
         if (!cw.card.due.isAfter(now)) {
           dueCount++;
@@ -395,7 +387,6 @@ class FsrsService {
         newCount: newCount,
         learningCount: learningCount,
         reviewCount: reviewCount,
-        relearningCount: relearningCount,
         dueCount: dueCount,
       );
     }).toList();
@@ -404,18 +395,16 @@ class FsrsService {
   /// Count all cards by FSRS state regardless of due date.
   Future<TotalStateCounts> getTotalStateCounts() async {
     final allCards = await _dao.getAll();
-    int newCount = 0, learningCount = 0, reviewCount = 0, relearningCount = 0;
+    int newCount = 0, learningCount = 0, reviewCount = 0;
 
     for (final card in allCards) {
       switch (card.fsrsState) {
         case 0:
           newCount++;
-        case 1:
+        case 1 || 3:
           learningCount++;
         case 2:
           reviewCount++;
-        case 3:
-          relearningCount++;
       }
     }
 
@@ -423,7 +412,6 @@ class FsrsService {
       newCount: newCount,
       learningCount: learningCount,
       reviewCount: reviewCount,
-      relearningCount: relearningCount,
     );
   }
 
@@ -432,7 +420,7 @@ class FsrsService {
     final cards = await _dao.getAll();
     if (cards.isEmpty) return 0.0;
 
-    final reviewed = cards.where((c) => c.lastReview != null).toList();
+    final reviewed = cards.where((final c) => c.lastReview != null).toList();
     if (reviewed.isEmpty) return 0.0;
 
     double totalR = 0;
@@ -448,7 +436,7 @@ class FsrsService {
   // ---------------------------------------------------------------------------
 
   /// Convert a database FsrsCard row to the fsrs package Card object.
-  fsrs.Card _dbToFsrs(FsrsCard dbCard) {
+  fsrs.Card _dbToFsrs(final FsrsCard dbCard) {
     if (dbCard.fsrsState == 0) {
       return fsrs.Card(
         cardId: dbCard.entityId.hashCode,
@@ -470,7 +458,7 @@ class FsrsService {
   }
 
   /// Map our app's ReviewRating enum to the fsrs package Rating.
-  fsrs.Rating _mapRating(ReviewRating rating) => switch (rating) {
+  fsrs.Rating _mapRating(final ReviewRating rating) => switch (rating) {
     ReviewRating.again => fsrs.Rating.again,
     ReviewRating.hard => fsrs.Rating.hard,
     ReviewRating.good => fsrs.Rating.good,
@@ -482,7 +470,7 @@ class FsrsService {
 ///
 /// FSRS keeps relearning in state 3, but the UI groups it with Learning so
 /// the user sees a simple NEW / LEARNING / MASTERY progression.
-LearningState learningStateFromFsrsState(int? fsrsState) => switch (fsrsState) {
+LearningState learningStateFromFsrsState(final int? fsrsState) => switch (fsrsState) {
   2 => LearningState.mastery,
   1 || 3 => LearningState.learning,
   _ => LearningState.newState,

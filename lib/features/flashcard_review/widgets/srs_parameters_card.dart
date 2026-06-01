@@ -15,7 +15,7 @@ class SrsParametersCard extends ConsumerWidget {
   const SrsParametersCard({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(final BuildContext context, final WidgetRef ref) {
     final config = ref.watch(fsrsConfigProvider);
     final colorScheme = Theme.of(context).colorScheme;
 
@@ -54,16 +54,9 @@ class SrsParametersCard extends ConsumerWidget {
           _ParamRow(
             label: 'Learning',
             value: config.learningSteps
-                .map((d) => _formatDuration(d))
+                .map((final d) => _formatDuration(d))
                 .join(' → '),
             icon: Icons.school,
-          ),
-          _ParamRow(
-            label: 'Relearning',
-            value: config.relearningSteps
-                .map((d) => _formatDuration(d))
-                .join(' → '),
-            icon: Icons.replay,
           ),
           _ParamRow(
             label: 'Max interval',
@@ -126,7 +119,7 @@ class SrsParametersCard extends ConsumerWidget {
     );
   }
 
-  static String _formatDuration(Duration d) {
+  static String _formatDuration(final Duration d) {
     if (d.inDays > 0) return '${d.inDays}d';
     if (d.inHours > 0) return '${d.inHours}h';
     return '${d.inMinutes}m';
@@ -145,7 +138,7 @@ class _ParamRow extends StatelessWidget {
   final IconData icon;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(final BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
 
     return Padding(

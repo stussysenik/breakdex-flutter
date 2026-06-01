@@ -30,10 +30,11 @@ import '../../shared/widgets/action_tile.dart';
 import '../../core/services/view_names_service.dart';
 import '../../shared/widgets/color_setting_tile.dart';
 import '../../shared/widgets/settings_list_group.dart';
+import '../../shared/widgets/shake_detector.dart';
 import '../stats/providers/stats_providers.dart';
 import 'recently_deleted_screen.dart';
 
-final _settingsMovesProvider = StreamProvider<List<Move>>((ref) {
+final _settingsMovesProvider = StreamProvider<List<Move>>((final ref) {
   return ref.watch(moveRepositoryProvider).watchAll();
 });
 
@@ -47,9 +48,8 @@ class SettingsScreen extends ConsumerWidget {
   final bool isTab;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(final BuildContext context, final WidgetRef ref) {
     final theme = ref.watch(themeSettingProvider);
-    final viewingMode = ref.watch(viewingModeProvider);
     final fontFamily = ref.watch(fontFamilyProvider);
     final categories = ref.watch(categoriesProvider);
     final moves =
@@ -57,7 +57,7 @@ class SettingsScreen extends ConsumerWidget {
     final archivedMoveCount =
         ref.watch(archivedMovesCountProvider).valueOrNull ?? 0;
     final colorScheme = Theme.of(context).colorScheme;
-    final appMode = ref.watch(appModeProvider);
+    final viewNames = ref.watch(viewNamesProvider);
     final categoryUsage = <String, int>{};
     for (final move in moves) {
       categoryUsage[move.category] = (categoryUsage[move.category] ?? 0) + 1;
@@ -108,12 +108,69 @@ class SettingsScreen extends ConsumerWidget {
             ),
             const SizedBox(height: AppSpacing.lg),
 
+            // ── PRACTICE & REVIEW ──────────────────────────────────────────
             _SettingsSection(
-              title: 'Appearance',
-              subtitle:
-                  'Theme, typography, colors, and labeling.',
+              title: 'Practice & Review',
+              subtitle: 'Learning engine, view composer, and session controls.',
+              child: Column(
+                children: [
+                  _SettingsPanel(
+                    title: 'App Mode',
+                    child: _SegmentedPicker<AppMode>(
+                      values: AppMode.values,
+                      selected: ref.watch(appModeProvider),
+                      labelOf: (final m) => m.displayName,
+                      onChanged: (final m) {
+                        HapticFeedback.selectionClick();
+                        ref.read(appModeProvider.notifier).set(m);
+                      },
+                    ),
+                  ),
+                  const SizedBox(height: AppSpacing.md),
+                  _SettingsPanel(
+                    title: 'Learning Engine',
+                    child: const _FsrsToggle(),
+                  ),
+                  const SizedBox(height: AppSpacing.md),
+                  _SettingsPanel(
+                    title: 'Quiet Mode',
+                    child: const _QuietModeToggle(),
+                  ),
+                  const SizedBox(height: AppSpacing.md),
+                  _SettingsPanel(
+                    title: 'Review View Composer',
+                    child: const ReviewCardDisplaySection(),
+                  ),
+                  const SizedBox(height: AppSpacing.md),
+                  _SettingsPanel(
+                    title: 'Party Mode',
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const _ShakeDiscoveryToggle(),
+                        const SizedBox(height: AppSpacing.md),
+                        _PartyCycleDurationSlider(),
+                        const SizedBox(height: AppSpacing.md),
+                        _PartyComboModeToggle(),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: AppSpacing.md),
+                  _SettingsPanel(
+                    title: 'Video Editor',
+                    child: const _VideoEditorToggle(),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: AppSpacing.xl),
+
+            // ── VISUALS & STYLE ───────────────────────────────────────────
+            _SettingsSection(
+              title: 'Visuals & Style',
+              subtitle: 'Theme, typography, colors, and global labels.',
               child: LayoutBuilder(
-                builder: (context, constraints) {
+                builder: (final context, final constraints) {
                   final isTwoColumn = constraints.maxWidth >= 640;
                   final panelWidth = isTwoColumn
                       ? (constraints.maxWidth - AppSpacing.md) / 2
@@ -125,39 +182,12 @@ class SettingsScreen extends ConsumerWidget {
                       SizedBox(
                         width: panelWidth,
                         child: _SettingsPanel(
-                          title: 'Viewing',
-                          child: _SegmentedPicker<ViewingMode>(
-                            values: ViewingMode.values,
-                            selected: viewingMode,
-                            labelOf: (mode) => mode.displayName,
-                            onChanged: (mode) => ref
-                                .read(viewingModeProvider.notifier)
-                                .set(mode),
-                          ),
-                        ),
-                      ),
-                      SizedBox(
-                        width: panelWidth,
-                        child: _SettingsPanel(
-                          title: 'Review Mode',
-                          child: _SegmentedPicker<AppMode>(
-                            values: AppMode.values,
-                            selected: appMode,
-                            labelOf: (m) => m.displayName,
-                            onChanged: (m) =>
-                                ref.read(appModeProvider.notifier).set(m),
-                          ),
-                        ),
-                      ),
-                      SizedBox(
-                        width: panelWidth,
-                        child: _SettingsPanel(
-                          title: 'Theme',
+                          title: 'App Theme',
                           child: _SegmentedPicker<ThemeSetting>(
                             values: ThemeSetting.values,
                             selected: theme,
-                            labelOf: (t) => t.displayName,
-                            onChanged: (t) =>
+                            labelOf: (final t) => t.displayName,
+                            onChanged: (final t) =>
                                 ref.read(themeSettingProvider.notifier).set(t),
                           ),
                         ),
@@ -165,11 +195,11 @@ class SettingsScreen extends ConsumerWidget {
                       SizedBox(
                         width: panelWidth,
                         child: _SettingsPanel(
-                          title: 'Font',
+                          title: 'Typography',
                           child: Wrap(
                             spacing: AppSpacing.sm,
                             runSpacing: AppSpacing.sm,
-                            children: AppFontFamily.values.map((f) {
+                            children: AppFontFamily.values.map((final f) {
                               final isSelected = f == fontFamily;
                               return ChoiceChip(
                                 label: Text(f.displayName),
@@ -206,53 +236,75 @@ class SettingsScreen extends ConsumerWidget {
                           ),
                         ),
                       ),
-                      Consumer(
-                        builder: (context, ref, _) {
-                          final viewNames = ref.watch(viewNamesProvider);
-                          return SizedBox(
-                            width: panelWidth,
-                            child: _SettingsPanel(
-                              title: 'Labels',
-                              child: ActionTile(
-                                icon: Icons.title,
-                                label:
-                                    'Page Title: ${viewNames['title'] ?? 'Arsenal'}',
-                                onTap: () => _showRenameArsenalDialog(
-                                  context,
-                                  ref,
-                                  viewNames['title'] ?? 'Arsenal',
-                                ),
-                              ),
-                            ),
-                          );
-                        },
-                      ),
                       SizedBox(
                         width: panelWidth,
                         child: _SettingsPanel(
-                          title: 'Accent Color',
+                          title: 'Review States',
                           action: TextButton(
                             onPressed: () async {
                               await HapticFeedback.mediumImpact();
-                              await ref.read(accentColorProvider.notifier).reset();
+                              await ref.read(learningStateLabelsProvider.notifier).reset();
+                              await ref.read(learningStateColorsProvider.notifier).resetAll();
                             },
                             child: const Text('Reset'),
                           ),
-                          child: const AccentColorSection(),
+                          child: ReviewStatesSection(
+                            onRename: (final state, final currentLabel) =>
+                                _showRenameLearningStateDialog(
+                                  context,
+                                  ref,
+                                  state,
+                                  currentLabel,
+                                ),
+                          ),
                         ),
                       ),
                       SizedBox(
                         width: panelWidth,
                         child: _SettingsPanel(
-                          title: 'Rating Colors',
-                          action: TextButton(
-                            onPressed: () async {
-                              await HapticFeedback.mediumImpact();
-                              await ref.read(ratingColorsProvider.notifier).resetAll();
-                            },
-                            child: const Text('Reset'),
+                          title: 'Colors',
+                          child: Column(
+                            children: [
+                              _SettingsSubPanel(
+                                title: 'Accent Color',
+                                action: TextButton(
+                                  onPressed: () async {
+                                    await HapticFeedback.mediumImpact();
+                                    await ref.read(accentColorProvider.notifier).reset();
+                                  },
+                                  child: const Text('Reset'),
+                                ),
+                                child: const AccentColorSection(),
+                              ),
+                              const SizedBox(height: AppSpacing.md),
+                              _SettingsSubPanel(
+                                title: 'Rating Colors',
+                                action: TextButton(
+                                  onPressed: () async {
+                                    await HapticFeedback.mediumImpact();
+                                    await ref.read(ratingColorsProvider.notifier).resetAll();
+                                  },
+                                  child: const Text('Reset'),
+                                ),
+                                child: const RatingColorsSection(),
+                              ),
+                            ],
                           ),
-                          child: const RatingColorsSection(),
+                        ),
+                      ),
+                      SizedBox(
+                        width: panelWidth,
+                        child: _SettingsPanel(
+                          title: 'Global Labels',
+                          child: ActionTile(
+                            icon: Icons.title,
+                            label: 'Arsenal Title: ${viewNames['title'] ?? 'Arsenal'}',
+                            onTap: () => _showRenameArsenalDialog(
+                              context,
+                              ref,
+                              viewNames['title'] ?? 'Arsenal',
+                            ),
+                          ),
                         ),
                       ),
                     ],
@@ -260,257 +312,113 @@ class SettingsScreen extends ConsumerWidget {
                 },
               ),
             ),
-            const SizedBox(height: AppSpacing.lg),
+            const SizedBox(height: AppSpacing.xl),
 
+            // ── LIBRARY & DATA ─────────────────────────────────────────────
             _SettingsSection(
-              title: 'Library',
-              subtitle: 'Categories and photo library access.',
-            child: Column(
-              children: [
-            _SettingsPanel(
-              title: 'Move Categories',
-              action: TextButton.icon(
-                onPressed: () => _showAddCategoryDialog(context, ref),
-                icon: const Icon(Icons.add, size: 16),
-                label: const Text('Add'),
-              ),
-              child: SettingsListGroup(
-                children: [
-                  for (final cat in categories)
-                        _CategoryRow(
-                          name: cat.name,
-                          color: cat.color,
-                          isDefault: cat.isDefault,
-                          usageCount: categoryUsage[cat.name] ?? 0,
-                          onTap: () =>
-                              context.push('/breakdex/moves/${Uri.encodeComponent(cat.name)}'),
-                          onLongPress: () => _showCategoryActionsSheet(
-                            context,
-                            ref,
-                            cat,
-                            usageCount: categoryUsage[cat.name] ?? 0,
-                          ),
-                    ),
-                ],
-              ),
-            ),
-            const SizedBox(height: AppSpacing.md),
-            _PhotosAccessTile(),
-            ],),),
-            const SizedBox(height: AppSpacing.lg),
-
-            _SettingsSection(
-              title: 'Review',
-              subtitle:
-                  'Quiet playback, first-look card details, review states, and party controls.',
+              title: 'Library & Data',
+              subtitle: 'Categories, backups, and photo library access.',
               child: Column(
                 children: [
                   _SettingsPanel(
-                    title: 'Cards & States',
-                    action: PopupMenuButton<ReviewSettingsResetAction>(
-                  tooltip: 'Reset review settings',
-                  onSelected: (action) async {
-                    await HapticFeedback.mediumImpact();
-                    switch (action) {
-                      case ReviewSettingsResetAction.cardPlayback:
-                        await ref
-                            .read(reviewCardDisplaySettingsProvider.notifier)
-                            .reset();
-                        await ref
-                            .read(silentPracticePlaybackProvider.notifier)
-                            .reset();
-                      case ReviewSettingsResetAction.states:
-                        await ref
-                            .read(learningStateLabelsProvider.notifier)
-                            .reset();
-                        await ref
-                            .read(learningStateColorsProvider.notifier)
-                            .resetAll();
-                      case ReviewSettingsResetAction.all:
-                        await ref
-                            .read(reviewCardDisplaySettingsProvider.notifier)
-                            .reset();
-                        await ref
-                            .read(silentPracticePlaybackProvider.notifier)
-                            .reset();
-                        await ref
-                            .read(learningStateLabelsProvider.notifier)
-                            .reset();
-                        await ref
-                            .read(learningStateColorsProvider.notifier)
-                            .resetAll();
-                    }
-                  },
-                  itemBuilder: (context) => const [
-                    PopupMenuItem(
-                      value: ReviewSettingsResetAction.cardPlayback,
-                      child: Text('Reset card + playback'),
+                    title: 'Move Categories',
+                    action: TextButton.icon(
+                      onPressed: () => _showAddCategoryDialog(context, ref),
+                      icon: const Icon(Icons.add, size: 16),
+                      label: const Text('Add'),
                     ),
-                    PopupMenuItem(
-                      value: ReviewSettingsResetAction.states,
-                      child: Text('Reset state names + colors'),
-                    ),
-                    PopupMenuItem(
-                      value: ReviewSettingsResetAction.all,
-                      child: Text('Reset all review settings'),
-                    ),
-                  ],
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Card & Playback',
-                      style: AppTypography.caption.copyWith(
-                        color: colorScheme.secondary,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                    const SizedBox(height: AppSpacing.xs),
-                    const ReviewCardDisplaySection(),
-                    const SizedBox(height: AppSpacing.md),
-                    Text(
-                      'State Names & Colors',
-                      style: AppTypography.caption.copyWith(
-                        color: colorScheme.secondary,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                    const SizedBox(height: AppSpacing.xs),
-                    ReviewStatesSection(
-                      onRename: (state, currentLabel) =>
-                          _showRenameLearningStateDialog(
-                            context,
-                            ref,
-                            state,
-                            currentLabel,
+                    child: SettingsListGroup(
+                      children: [
+                        for (final cat in categories)
+                          _CategoryRow(
+                            name: cat.name,
+                            color: cat.color,
+                            isDefault: cat.isDefault,
+                            usageCount: categoryUsage[cat.name] ?? 0,
+                            onTap: () =>
+                                context.push('/breakdex/moves/${Uri.encodeComponent(cat.name)}'),
+                            onLongPress: () => _showCategoryActionsSheet(
+                              context,
+                              ref,
+                              cat,
+                              usageCount: categoryUsage[cat.name] ?? 0,
+                            ),
                           ),
+                      ],
                     ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: AppSpacing.md),
-              _SettingsPanel(
-                title: 'Party',
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    _PartyCycleDurationSlider(),
-                    const SizedBox(height: AppSpacing.md),
-                    _PartyComboModeToggle(),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        ),
-            const SizedBox(height: AppSpacing.lg),
-
-            _SettingsSection(
-              title: 'Data',
-              subtitle: 'Backups, imports, and destructive actions.',
-              child: _SettingsPanel(
-                title: 'Backup & Reset',
-                child: Column(
-                  children: [
-                    _DataActionTileAsync(
-                      icon: Icons.ios_share,
-                      label: 'Export Stats',
-                      onTap: (tileContext) async {
-                        final origin = sharePositionOrigin(tileContext);
-                        final stats = await ref.read(
-                          statsBundleProvider.future,
-                        );
-                        final summary = StatsExportService.generateTextSummary(
-                          stats,
-                        );
-                        await NativeShareSheet.shareText(
-                          text: summary,
-                          sharePositionOrigin: origin,
-                        );
-                        return null;
-                      },
+                  ),
+                  const SizedBox(height: AppSpacing.md),
+                  const _PhotosAccessTile(),
+                  const SizedBox(height: AppSpacing.md),
+                  _SettingsPanel(
+                    title: 'Backup & Reset',
+                    child: Column(
+                      children: [
+                        _DataActionTileAsync(
+                          icon: Icons.ios_share,
+                          label: 'Export Stats Summary',
+                          onTap: (final tileContext) async {
+                            final origin = sharePositionOrigin(tileContext);
+                            final stats = await ref.read(statsBundleProvider.future);
+                            final summary = StatsExportService.generateTextSummary(stats);
+                            await NativeShareSheet.shareText(text: summary, sharePositionOrigin: origin);
+                            return null;
+                          },
+                        ),
+                        const SizedBox(height: AppSpacing.sm),
+                        _DataActionTileAsync(
+                          icon: Icons.file_download_outlined,
+                          label: 'Export Full JSON Backup',
+                          onTap: (final tileContext) async {
+                            final origin = sharePositionOrigin(tileContext);
+                            final db = ref.read(databaseProvider);
+                            final prefs = ref.read(sharedPreferencesProvider);
+                            final result = await StatsExportService.generateJsonExport(db, prefs);
+                            final dir = await AppStoragePaths.documentsDirectory();
+                            final exportsDir = Directory(p.join(dir.path, 'Exports'));
+                            if (!await exportsDir.exists()) await exportsDir.create(recursive: true);
+                            final file = File(p.join(exportsDir.path, StatsExportService.exportFilename));
+                            await file.writeAsString(result.json, flush: true);
+                            await NativeShareSheet.shareFiles(filePaths: [file.path], sharePositionOrigin: origin);
+                            return 'Exported ${result.totalRecords} records';
+                          },
+                          showResultSnackBar: true,
+                        ),
+                        const SizedBox(height: AppSpacing.sm),
+                        _DataActionTileAsync(
+                          icon: Icons.file_upload_outlined,
+                          label: 'Import from JSON',
+                          onTap: (_) async {
+                            await _showImportFlow(context, ref);
+                            return null;
+                          },
+                        ),
+                        const SizedBox(height: AppSpacing.sm),
+                        ActionTile(
+                          icon: Icons.restore_from_trash_outlined,
+                          label: archivedMoveCount == 0 ? 'Recently Deleted' : 'Recently Deleted ($archivedMoveCount)',
+                          onTap: () => context.push('/settings-panel/recently-deleted'),
+                        ),
+                        const SizedBox(height: AppSpacing.sm),
+                        ActionTile(
+                          icon: Icons.terminal_rounded,
+                          label: 'System Status & Logs',
+                          onTap: () => context.push('/settings-panel/system-status'),
+                        ),
+                        const SizedBox(height: AppSpacing.sm),
+                        ActionTile(
+                          icon: Icons.delete_forever,
+                          label: 'Clear All Data',
+                          destructive: true,
+                          onTap: () => _showClearDataDialog(context, ref),
+                        ),
+                      ],
                     ),
-                    const SizedBox(height: AppSpacing.sm),
-                    _DataActionTileAsync(
-                      icon: Icons.file_download_outlined,
-                      label: 'Export Full Backup',
-                      onTap: (tileContext) async {
-                        final origin = sharePositionOrigin(tileContext);
-                        final db = ref.read(databaseProvider);
-                        final prefs = ref.read(sharedPreferencesProvider);
-                        final result =
-                            await StatsExportService.generateJsonExport(
-                              db,
-                              prefs,
-                            );
-                        final dir = await AppStoragePaths.documentsDirectory();
-                        final exportsDir = Directory(
-                          p.join(dir.path, 'Exports'),
-                        );
-                        if (!await exportsDir.exists()) {
-                          await exportsDir.create(recursive: true);
-                        }
-                        final file = File(
-                          p.join(
-                            exportsDir.path,
-                            StatsExportService.exportFilename,
-                          ),
-                        );
-                        await file.writeAsString(result.json, flush: true);
-                        final fileSize = await file.length();
-                        debugPrint(
-                          '[SettingsExport] Prepared backup at ${file.path}'
-                          ' ($fileSize bytes)',
-                        );
-                        if (fileSize == 0) {
-                          throw const FileSystemException(
-                            'Exported backup file is empty',
-                          );
-                        }
-                        await NativeShareSheet.shareFiles(
-                          filePaths: [file.path],
-                          sharePositionOrigin: origin,
-                        );
-                        return 'Exported ${result.totalRecords} records (${result.moveCount} moves, ${result.reviewCount} reviews, ${result.comboCount} combos)';
-                      },
-                      showResultSnackBar: true,
-                    ),
-                    const SizedBox(height: AppSpacing.sm),
-                    _DataActionTileAsync(
-                      icon: Icons.file_upload_outlined,
-                      label: 'Import Backup',
-                      onTap: (_) async {
-                        await _showImportFlow(context, ref);
-                        return null;
-                      },
-                    ),
-                    const SizedBox(height: AppSpacing.sm),
-                    ActionTile(
-                      icon: Icons.restore_from_trash_outlined,
-                      label: archivedMoveCount == 0
-                          ? 'Recently Deleted'
-                          : 'Recently Deleted ($archivedMoveCount)',
-                      onTap: () => context.push('/settings-panel/recently-deleted'),
-                    ),
-                    const SizedBox(height: AppSpacing.sm),
-                    ActionTile(
-                      icon: Icons.terminal_rounded,
-                      label: 'System Status & Logs',
-                      onTap: () => context.push('/settings-panel/system-status'),
-                    ),
-                    const SizedBox(height: AppSpacing.sm),
-                    ActionTile(
-                      icon: Icons.delete_forever,
-                      label: 'Clear All Data',
-                      destructive: true,
-                      onTap: () => _showClearDataDialog(context, ref),
-                    ),
-                  ],
-                ),
+                  ),
+                ],
               ),
             ),
-            const SizedBox(height: AppSpacing.lg),
+            const SizedBox(height: AppSpacing.xl),
 
             // Version footer
             Center(
@@ -528,11 +436,11 @@ class SettingsScreen extends ConsumerWidget {
     );
   }
 
-  void _showClearDataDialog(BuildContext context, WidgetRef ref) {
+  void _showClearDataDialog(final BuildContext context, final WidgetRef ref) {
     showDialog(
       context: context,
-      builder: (ctx) => StatefulBuilder(
-        builder: (ctx, setDialogState) {
+      builder: (final ctx) => StatefulBuilder(
+        builder: (final ctx, final setDialogState) {
           final controller = TextEditingController();
           var canConfirm = false;
           return AlertDialog(
@@ -559,7 +467,7 @@ class SettingsScreen extends ConsumerWidget {
                     hintText: 'DELETE',
                     border: OutlineInputBorder(),
                   ),
-                  onChanged: (value) {
+                  onChanged: (final value) {
                     setDialogState(() {
                       canConfirm = value.trim() == 'DELETE';
                     });
@@ -585,7 +493,7 @@ class SettingsScreen extends ConsumerWidget {
           );
         },
       ),
-    ).then((confirmed) async {
+    ).then((final confirmed) async {
       if (confirmed != true) return;
       await HapticFeedback.mediumImpact();
 
@@ -634,7 +542,7 @@ class SettingsScreen extends ConsumerWidget {
     });
   }
 
-  Future<void> _showImportFlow(BuildContext context, WidgetRef ref) async {
+  Future<void> _showImportFlow(final BuildContext context, final WidgetRef ref) async {
     final result = await FilePicker.platform.pickFiles(
       type: FileType.custom,
       allowedExtensions: ['json'],
@@ -659,7 +567,7 @@ class SettingsScreen extends ConsumerWidget {
     // Show mode selection dialog
     final mode = await showDialog<ImportMode>(
       context: context,
-      builder: (ctx) => AlertDialog(
+      builder: (final ctx) => AlertDialog(
         title: const Text('Import Backup'),
         content: Column(
           mainAxisSize: MainAxisSize.min,
@@ -736,10 +644,10 @@ class SettingsScreen extends ConsumerWidget {
   }
 
   Future<void> _showCategoryActionsSheet(
-    BuildContext context,
-    WidgetRef ref,
-    Category category, {
-    required int usageCount,
+    final BuildContext context,
+    final WidgetRef ref,
+    final Category category, {
+    required final int usageCount,
   }) async {
     final action = await showModalBottomSheet<_CategorySheetAction>(
       context: context,
@@ -747,7 +655,7 @@ class SettingsScreen extends ConsumerWidget {
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(AppRadius.lg)),
       ),
-      builder: (context) => SafeArea(
+      builder: (final context) => SafeArea(
         child: Padding(
           padding: const EdgeInsets.fromLTRB(
             AppSpacing.lg,
@@ -816,17 +724,17 @@ class SettingsScreen extends ConsumerWidget {
   }
 
   void _showRenameCategoryDialog(
-    BuildContext context,
-    WidgetRef ref,
-    Category cat,
+    final BuildContext context,
+    final WidgetRef ref,
+    final Category cat,
   ) {
     showDialog(
       context: context,
-      builder: (context) {
+      builder: (final context) {
         final controller = TextEditingController(text: cat.name);
         Color selectedColor = cat.color;
         return StatefulBuilder(
-          builder: (context, setDialogState) => AlertDialog(
+          builder: (final context, final setDialogState) => AlertDialog(
             title: const Text('Rename Category'),
             content: Column(
               mainAxisSize: MainAxisSize.min,
@@ -875,7 +783,7 @@ class SettingsScreen extends ConsumerWidget {
                   final exists = ref
                       .read(categoriesProvider)
                       .any(
-                        (item) => item.name == newName && item.name != cat.name,
+                        (final item) => item.name == newName && item.name != cat.name,
                       );
                   if (exists) {
                     ScaffoldMessenger.of(context).showSnackBar(
@@ -904,14 +812,14 @@ class SettingsScreen extends ConsumerWidget {
   }
 
   void _showRenameArsenalDialog(
-    BuildContext context,
-    WidgetRef ref,
-    String current,
+    final BuildContext context,
+    final WidgetRef ref,
+    final String current,
   ) {
     final controller = TextEditingController(text: current);
     showDialog(
       context: context,
-      builder: (ctx) => AlertDialog(
+      builder: (final ctx) => AlertDialog(
         title: const Text('Rename Page Title'),
         content: TextField(
           controller: controller,
@@ -940,15 +848,15 @@ class SettingsScreen extends ConsumerWidget {
   }
 
   void _showRenameLearningStateDialog(
-    BuildContext context,
-    WidgetRef ref,
-    LearningState state,
-    String current,
+    final BuildContext context,
+    final WidgetRef ref,
+    final LearningState state,
+    final String current,
   ) {
     final controller = TextEditingController(text: current);
     showDialog(
       context: context,
-      builder: (ctx) => AlertDialog(
+      builder: (final ctx) => AlertDialog(
         title: Text('Rename ${defaultLearningStateLabels[state]}'),
         content: TextField(
           controller: controller,
@@ -980,14 +888,14 @@ class SettingsScreen extends ConsumerWidget {
     );
   }
 
-  void _showAddCategoryDialog(BuildContext context, WidgetRef ref) {
+  void _showAddCategoryDialog(final BuildContext context, final WidgetRef ref) {
     showDialog(
       context: context,
-      builder: (context) {
+      builder: (final context) {
         final controller = TextEditingController();
         Color selectedColor = categoryPresetColors[0];
         return StatefulBuilder(
-          builder: (context, setDialogState) => AlertDialog(
+          builder: (final context, final setDialogState) => AlertDialog(
             title: const Text('New Category'),
             content: Column(
               mainAxisSize: MainAxisSize.min,
@@ -1035,7 +943,7 @@ class SettingsScreen extends ConsumerWidget {
 
                   final exists = ref
                       .read(categoriesProvider)
-                      .any((item) => item.name == name);
+                      .any((final item) => item.name == name);
                   if (exists) {
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(content: Text('"$name" already exists.')),
@@ -1059,14 +967,14 @@ class SettingsScreen extends ConsumerWidget {
   }
 
   Future<bool> _confirmDeleteCategory(
-    BuildContext context,
-    Category category, {
-    required int usageCount,
+    final BuildContext context,
+    final Category category, {
+    required final int usageCount,
   }) async {
     if (usageCount > 0) {
       await showDialog<void>(
         context: context,
-        builder: (ctx) => AlertDialog(
+        builder: (final ctx) => AlertDialog(
           title: const Text('Category In Use'),
           content: Text(
             'Reassign the $usageCount move${usageCount == 1 ? '' : 's'} in "${category.name}" before deleting it.',
@@ -1104,7 +1012,7 @@ class _SegmentedPicker<T> extends StatelessWidget {
   final double? fontSize;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(final BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
     return Container(
       padding: const EdgeInsets.all(4),
@@ -1113,7 +1021,7 @@ class _SegmentedPicker<T> extends StatelessWidget {
         borderRadius: BorderRadius.circular(AppRadius.sm),
       ),
       child: Row(
-        children: values.map((v) {
+        children: values.map((final v) {
           final isSelected = v == selected;
           return Expanded(
             child: GestureDetector(
@@ -1176,7 +1084,7 @@ class _CategoryRow extends StatelessWidget {
   final VoidCallback? onLongPress;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(final BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
     final meta = [
       if (isDefault) 'Default',
@@ -1216,7 +1124,7 @@ class _SettingsSection extends StatelessWidget {
   final Widget child;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(final BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -1243,6 +1151,40 @@ class _SettingsSection extends StatelessWidget {
   }
 }
 
+class _SettingsSubPanel extends StatelessWidget {
+  const _SettingsSubPanel({required this.title, required this.child, this.action});
+
+  final String title;
+  final Widget child;
+  final Widget? action;
+
+  @override
+  Widget build(final BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Expanded(
+              child: Text(
+                title,
+                style: AppTypography.caption.copyWith(
+                  color: colorScheme.secondary,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+            if (action != null) action!,
+          ],
+        ),
+        const SizedBox(height: AppSpacing.xs),
+        child,
+      ],
+    );
+  }
+}
+
 class _SettingsPanel extends StatelessWidget {
   const _SettingsPanel({required this.title, required this.child, this.action});
 
@@ -1251,7 +1193,7 @@ class _SettingsPanel extends StatelessWidget {
   final Widget? action;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(final BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
     return Container(
       padding: const EdgeInsets.all(AppSpacing.md),
@@ -1309,7 +1251,7 @@ class _DataActionTileAsyncState extends State<_DataActionTileAsync> {
   bool _loading = false;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(final BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
     final messenger = ScaffoldMessenger.of(context);
     return InkWell(
@@ -1373,14 +1315,14 @@ class _PhotosAccessTile extends ConsumerWidget {
   const _PhotosAccessTile();
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(final BuildContext context, final WidgetRef ref) {
     final status = ref.watch(photoLibraryAccessStatusProvider);
     final colorScheme = Theme.of(context).colorScheme;
 
     return _SettingsPanel(
       title: 'Photo Library',
       child: status.when(
-        data: (access) => SettingsListGroup(
+        data: (final access) => SettingsListGroup(
           children: [
             SettingsListRow(
               title: _statusDisplayName(access),
@@ -1422,7 +1364,7 @@ class _PhotosAccessTile extends ConsumerWidget {
             ),
           ],
         ),
-        error: (_, __) => const SettingsListGroup(
+        error: (_, _) => const SettingsListGroup(
           children: [
             SettingsListRow(
               title: 'Photo Library',
@@ -1435,7 +1377,7 @@ class _PhotosAccessTile extends ConsumerWidget {
     );
   }
 
-  static String _statusDisplayName(PhotoLibraryAccessStatus status) {
+  static String _statusDisplayName(final PhotoLibraryAccessStatus status) {
     return switch (status) {
       PhotoLibraryAccessStatus.notDetermined => 'Not Determined',
       PhotoLibraryAccessStatus.restricted => 'Restricted',
@@ -1446,7 +1388,7 @@ class _PhotosAccessTile extends ConsumerWidget {
     };
   }
 
-  static String _statusDescription(PhotoLibraryAccessStatus status) {
+  static String _statusDescription(final PhotoLibraryAccessStatus status) {
     return switch (status) {
       PhotoLibraryAccessStatus.notDetermined => 'Tap to request access',
       PhotoLibraryAccessStatus.restricted => 'Tap to open Settings',
@@ -1457,7 +1399,7 @@ class _PhotosAccessTile extends ConsumerWidget {
     };
   }
 
-  static IconData _statusIcon(PhotoLibraryAccessStatus status) {
+  static IconData _statusIcon(final PhotoLibraryAccessStatus status) {
     return switch (status) {
       PhotoLibraryAccessStatus.notDetermined => Icons.help_outline,
       PhotoLibraryAccessStatus.restricted => Icons.lock_outline,
@@ -1474,7 +1416,7 @@ class _PartyCycleDurationSlider extends ConsumerWidget {
   static const _maxMs = 15000;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(final BuildContext context, final WidgetRef ref) {
     final durationMs = ref.watch(partyCycleDurationMsProvider);
     final colorScheme = Theme.of(context).colorScheme;
 
@@ -1498,7 +1440,7 @@ class _PartyCycleDurationSlider extends ConsumerWidget {
                 max: _maxMs.toDouble(),
                 divisions: (_maxMs - _minMs) ~/ 100,
                 activeColor: colorScheme.primary,
-                onChanged: (value) {
+                onChanged: (final value) {
                   ref
                       .read(partyCycleDurationMsProvider.notifier)
                       .set(value.round());
@@ -1542,7 +1484,7 @@ class _PartyCycleDurationSlider extends ConsumerWidget {
 
 class _PartyComboModeToggle extends ConsumerWidget {
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(final BuildContext context, final WidgetRef ref) {
     final isEnabled = ref.watch(partyComboModeProvider);
     final colorScheme = Theme.of(context).colorScheme;
 
@@ -1574,7 +1516,7 @@ class _PartyComboModeToggle extends ConsumerWidget {
         const SizedBox(width: AppSpacing.sm),
         Switch(
           value: isEnabled,
-          activeColor: colorScheme.primary,
+          activeThumbColor: colorScheme.primary,
           onChanged: (_) {
             ref.read(partyComboModeProvider.notifier).toggle();
           },
@@ -1583,3 +1525,190 @@ class _PartyComboModeToggle extends ConsumerWidget {
     );
   }
 }
+
+class _VideoEditorToggle extends ConsumerWidget {
+  const _VideoEditorToggle();
+
+  @override
+  Widget build(final BuildContext context, final WidgetRef ref) {
+    final useSimplified = ref.watch(useSimplifiedVideoEditorProvider);
+    final colorScheme = Theme.of(context).colorScheme;
+
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Use simplified editor',
+                style: AppTypography.caption.copyWith(
+                  color: colorScheme.secondary,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              const SizedBox(height: 2),
+              Text(
+                'Switch to the legacy editor if the robust editor is unstable.',
+                style: AppTypography.caption.copyWith(
+                  color: colorScheme.secondary.withValues(alpha: 0.6),
+                  fontSize: 11,
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(width: AppSpacing.sm),
+        Switch(
+          value: useSimplified,
+          activeThumbColor: colorScheme.primary,
+          onChanged: (_) {
+            ref.read(useSimplifiedVideoEditorProvider.notifier).toggle();
+          },
+        ),
+      ],
+    );
+  }
+}
+
+class _FsrsToggle extends ConsumerWidget {
+  const _FsrsToggle();
+
+  @override
+  Widget build(final BuildContext context, final WidgetRef ref) {
+    final isEnabled = ref.watch(fsrsEnabledProvider);
+    final colorScheme = Theme.of(context).colorScheme;
+
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'FSRS (Spaced Repetition)',
+                style: AppTypography.caption.copyWith(
+                  color: colorScheme.secondary,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              const SizedBox(height: 2),
+              Text(
+                isEnabled
+                    ? 'Smart scheduling enabled'
+                    : 'Manual progression only',
+                style: AppTypography.caption.copyWith(
+                  color: colorScheme.secondary.withValues(alpha: 0.6),
+                  fontSize: 11,
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(width: AppSpacing.sm),
+        Switch(
+          value: isEnabled,
+          activeThumbColor: colorScheme.primary,
+          onChanged: (final value) {
+            ref.read(fsrsEnabledProvider.notifier).set(enabled: value);
+          },
+        ),
+      ],
+    );
+  }
+}
+
+class _ShakeDiscoveryToggle extends ConsumerWidget {
+  const _ShakeDiscoveryToggle();
+
+  @override
+  Widget build(final BuildContext context, final WidgetRef ref) {
+    final isEnabled = ref.watch(shakeEnabledProvider);
+    final colorScheme = Theme.of(context).colorScheme;
+
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Shake to Discover',
+                style: AppTypography.caption.copyWith(
+                  color: colorScheme.secondary,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              const SizedBox(height: 2),
+              Text(
+                'Shake your device to shuffle items in Party mode.',
+                style: AppTypography.caption.copyWith(
+                  color: colorScheme.secondary.withValues(alpha: 0.6),
+                  fontSize: 11,
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(width: AppSpacing.sm),
+        Switch(
+          value: isEnabled,
+          activeThumbColor: colorScheme.primary,
+          onChanged: (final value) {
+            ref.read(shakeEnabledProvider.notifier).state = value;
+          },
+        ),
+      ],
+    );
+  }
+}
+
+class _QuietModeToggle extends ConsumerWidget {
+  const _QuietModeToggle();
+
+  @override
+  Widget build(final BuildContext context, final WidgetRef ref) {
+    final isEnabled = ref.watch(quietModeEnabledProvider);
+    final colorScheme = Theme.of(context).colorScheme;
+
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Keep music playing',
+                style: AppTypography.caption.copyWith(
+                  color: colorScheme.secondary,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              const SizedBox(height: 2),
+              Text(
+                'Videos will start muted to avoid interrupting your music.',
+                style: AppTypography.caption.copyWith(
+                  color: colorScheme.secondary.withValues(alpha: 0.6),
+                  fontSize: 11,
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(width: AppSpacing.sm),
+        Switch(
+          value: isEnabled,
+          activeThumbColor: colorScheme.primary,
+          onChanged: (final value) {
+            ref.read(quietModeEnabledProvider.notifier).set(enabled: value);
+          },
+        ),
+      ],
+    );
+  }
+}
+

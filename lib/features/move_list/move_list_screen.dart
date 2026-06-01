@@ -15,7 +15,7 @@ import '../../core/design/typography.dart';
 import '../../core/models/learning_state.dart';
 import '../../core/models/move_creation.dart';
 import '../../core/models/reviewable_item.dart'
-    show MoveVideoPath, ComboVideoPath;
+    show ComboVideoPath, MoveVideoPath;
 import '../../core/providers.dart';
 import '../../core/services/categories_service.dart';
 import '../../core/services/settings_service.dart';
@@ -58,7 +58,7 @@ class _SearchQueryNotifier extends Notifier<String> {
     return '';
   }
 
-  void onChanged(String value) {
+  void onChanged(final String value) {
     _debounce?.cancel();
     _debounce = Timer(const Duration(milliseconds: 300), () {
       state = value;
@@ -66,12 +66,12 @@ class _SearchQueryNotifier extends Notifier<String> {
   }
 }
 final _dismissedReliabilityReportEpochProvider = StateProvider<int?>(
-  (ref) => null,
+  (final ref) => null,
 );
 
-final _combosStreamProvider = StreamProvider<List<(Combo, int)>>((ref) {
+final _combosStreamProvider = StreamProvider<List<(Combo, int)>>((final ref) {
   final stream = ref.watch(comboRepositoryProvider).watchAllWithMoveCounts();
-  return stream.map((combos) {
+  return stream.map((final combos) {
     debugPrint('[MoveList] _combosStreamProvider emitted ${combos.length} combos');
     return combos;
   });
@@ -92,16 +92,16 @@ class _ViewModeNotifier extends Notifier<ViewMode> {
     return ViewMode.list;
   }
 
-  Future<void> set(ViewMode mode) async {
+  Future<void> set(final ViewMode mode) async {
     state = mode;
     final prefs = ref.read(sharedPreferencesProvider);
     await prefs.setString(_key, mode.name);
   }
 }
 
-final _movesStreamProvider = StreamProvider<List<Move>>((ref) {
+final _movesStreamProvider = StreamProvider<List<Move>>((final ref) {
   final stream = ref.watch(moveRepositoryProvider).watchAll();
-  return stream.map((moves) {
+  return stream.map((final moves) {
     debugPrint('[MoveList] _movesStreamProvider emitted ${moves.length} moves');
     return moves;
   });
@@ -116,7 +116,7 @@ class MoveListScreen extends ConsumerWidget {
       ThumbnailLoadCoordinator();
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(final BuildContext context, final WidgetRef ref) {
     final movesAsync = ref.watch(_movesStreamProvider);
     final combosAsync = ref.watch(_combosStreamProvider);
     final searchQuery = ref.watch(_searchQueryProvider);
@@ -164,7 +164,7 @@ class MoveListScreen extends ConsumerWidget {
                         label: 'Search',
                         textField: true,
                         child: TextField(
-                          onChanged: (v) =>
+                          onChanged: (final v) =>
                               ref.read(_searchQueryProvider.notifier).onChanged(v),
                           decoration: InputDecoration(
                             hintText: segment == ArsenalSegment.moves
@@ -200,15 +200,15 @@ class MoveListScreen extends ConsumerWidget {
                       loading: () => const SliverFillRemaining(
                         child: Center(child: CircularProgressIndicator()),
                       ),
-                      error: (e, _) => SliverFillRemaining(
+                      error: (final e, _) => SliverFillRemaining(
                         child: Center(child: Text('Error: $e')),
                       ),
-                      data: (moves) {
+                      data: (final moves) {
                         final filtered = searchQuery.isEmpty
                             ? moves
                             : moves
                                   .where(
-                                    (m) => m.name.toLowerCase().contains(
+                                    (final m) => m.name.toLowerCase().contains(
                                       searchQuery.toLowerCase(),
                                     ),
                                   )
@@ -233,15 +233,15 @@ class MoveListScreen extends ConsumerWidget {
                       loading: () => const SliverFillRemaining(
                         child: Center(child: CircularProgressIndicator()),
                       ),
-                      error: (e, _) => SliverFillRemaining(
+                      error: (final e, _) => SliverFillRemaining(
                         child: Center(child: Text('Error: $e')),
                       ),
-                      data: (combosWithCounts) {
+                      data: (final combosWithCounts) {
                         final filtered = searchQuery.isEmpty
                             ? combosWithCounts
                             : combosWithCounts
                                   .where(
-                                    (c) => c.$1.name.toLowerCase().contains(
+                                    (final c) => c.$1.name.toLowerCase().contains(
                                       searchQuery.toLowerCase(),
                                     ),
                                   )
@@ -271,7 +271,7 @@ class MoveListScreen extends ConsumerWidget {
                   bottom:
                       kBottomNavigationBarHeight +
                       MediaQuery.of(context).padding.bottom +
-                      AppSpacing.lg,
+                      AppSpacing.xxl,
                 ),
               ),
             ],
@@ -282,7 +282,8 @@ class MoveListScreen extends ConsumerWidget {
         padding: EdgeInsets.only(
           bottom:
               kBottomNavigationBarHeight +
-              MediaQuery.of(context).padding.bottom,
+              MediaQuery.of(context).padding.bottom +
+              AppSpacing.sm,
         ),
         child:
             Semantics(
@@ -324,8 +325,8 @@ class MoveListScreen extends ConsumerWidget {
   }
 
   Future<void> _startMoveCreationFlow(
-    BuildContext context,
-    WidgetRef ref,
+    final BuildContext context,
+    final WidgetRef ref,
   ) async {
     final draft = await showModalBottomSheet<({String name, String category})>(
       context: context,
@@ -385,7 +386,7 @@ class MoveListScreen extends ConsumerWidget {
   }
 
   Future<({String localPath, String? originalVideoName})?>
-  _captureVideoAttachment(BuildContext context, WidgetRef ref) async {
+  _captureVideoAttachment(final BuildContext context, final WidgetRef ref) async {
     MediaPlaybackCoordinator.shared.pauseAll();
     final pickerResult = await VideoPickerSheet.show(context);
     if (!context.mounted || pickerResult == null) return null;
@@ -409,10 +410,10 @@ class MoveListScreen extends ConsumerWidget {
     );
   }
 
-  Future<bool> _confirmCreateWithoutVideo(BuildContext context) async {
+  Future<bool> _confirmCreateWithoutVideo(final BuildContext context) async {
     final result = await showDialog<bool>(
       context: context,
-      builder: (dialogContext) => AlertDialog(
+      builder: (final dialogContext) => AlertDialog(
         title: const Text('Create Without Video?'),
         content: const Text(
           'No video was attached. You can still create the move now and add or trim a video later from the move detail screen.',
@@ -437,7 +438,7 @@ class _StartupVideoReliabilityBanner extends ConsumerWidget {
   const _StartupVideoReliabilityBanner();
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(final BuildContext context, final WidgetRef ref) {
     final report = ref.watch(videoReliabilityReportProvider).valueOrNull;
     if (report == null || !report.hasUserSignal) {
       return const SizedBox.shrink();
@@ -559,7 +560,7 @@ class _MoveMetadataSheetState extends ConsumerState<_MoveMetadataSheet> {
     }
   }
 
-  Future<void> _submit(String? selectedCategory) async {
+  Future<void> _submit(final String? selectedCategory) async {
     if (_nameEmpty || selectedCategory == null) return;
 
     final naming = ref.read(reviewableNamingServiceProvider);
@@ -585,11 +586,11 @@ class _MoveMetadataSheetState extends ConsumerState<_MoveMetadataSheet> {
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(final BuildContext context) {
     final categories = ref.watch(categoriesProvider);
     final colorScheme = Theme.of(context).colorScheme;
     final selectedCategory =
-        categories.any((cat) => cat.name == _selectedCategory)
+        categories.any((final cat) => cat.name == _selectedCategory)
         ? _selectedCategory
         : (categories.isNotEmpty ? categories.first.name : null);
 
@@ -738,11 +739,11 @@ class _MoveMetadataSheetState extends ConsumerState<_MoveMetadataSheet> {
   }
 
   Widget _buildCategoryChip(
-    BuildContext context, {
-    required String label,
-    required Color color,
-    required bool selected,
-    required VoidCallback onTap,
+    final BuildContext context, {
+    required final String label,
+    required final Color color,
+    required final bool selected,
+    required final VoidCallback onTap,
   }) {
     final colorScheme = Theme.of(context).colorScheme;
     return GestureDetector(
@@ -790,7 +791,7 @@ class _MoveVideoPromptSheet extends StatelessWidget {
   final String category;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(final BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
 
     return SafeArea(
@@ -848,32 +849,32 @@ class _ViewModeToggle extends ConsumerWidget {
   final Map<String, String> viewNames;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(final BuildContext context, final WidgetRef ref) {
     return _PillToggleRow<ViewMode>(
       items: ViewMode.values,
       selected: viewMode,
-      iconOf: (m) => switch (m) {
+      iconOf: (final m) => switch (m) {
         ViewMode.list => Icons.view_list_rounded,
         ViewMode.grid => Icons.grid_view_rounded,
       },
-      labelOf: (m) =>
+      labelOf: (final m) =>
           viewNames[m.name] ??
           switch (m) {
             ViewMode.list => 'List',
             ViewMode.grid => 'Gallery',
           },
-      onSelected: (m) {
+      onSelected: (final m) {
         HapticFeedback.selectionClick();
         ref.read(_viewModeProvider.notifier).set(m);
       },
-      onLongPress: (m) => _showRenameDialog(context, ref, m),
+      onLongPress: (final m) => _showRenameDialog(context, ref, m),
     );
   }
 
   Future<void> _showRenameDialog(
-    BuildContext context,
-    WidgetRef ref,
-    ViewMode mode,
+    final BuildContext context,
+    final WidgetRef ref,
+    final ViewMode mode,
   ) async {
     final controller = TextEditingController(
       text:
@@ -886,7 +887,7 @@ class _ViewModeToggle extends ConsumerWidget {
 
     final newName = await showDialog<String>(
       context: context,
-      builder: (ctx) => AlertDialog(
+      builder: (final ctx) => AlertDialog(
         title: const Text('Rename View'),
         content: TextField(
           controller: controller,
@@ -923,19 +924,19 @@ class _ArsenalSegmentControl extends ConsumerWidget {
   final ArsenalSegment segment;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(final BuildContext context, final WidgetRef ref) {
     return _PillToggleRow(
       items: ArsenalSegment.values,
       selected: segment,
-      iconOf: (s) => switch (s) {
+      iconOf: (final s) => switch (s) {
         ArsenalSegment.moves => Icons.sports_martial_arts,
         ArsenalSegment.combos => Icons.linear_scale_rounded,
       },
-      labelOf: (s) => switch (s) {
+      labelOf: (final s) => switch (s) {
         ArsenalSegment.moves => 'Moves',
         ArsenalSegment.combos => 'Combos',
       },
-      onSelected: (s) {
+      onSelected: (final s) {
         HapticFeedback.selectionClick();
         ref.read(_arsenalSegmentProvider.notifier).state = s;
       },
@@ -963,7 +964,7 @@ class _PillToggleRow<T> extends StatelessWidget {
   final void Function(T)? onLongPress;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(final BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: AppSpacing.screenEdge),
@@ -1035,22 +1036,22 @@ class _PillToggleRow<T> extends StatelessWidget {
 /// Animations are delegated to the row widgets so that [Dismissible] gesture
 /// detection is not blocked by [flutter_animate]'s transform-based effects.
 Widget _sliverStaggeredList({
-  required int itemCount,
-  required Widget Function(int index) builder,
+  required final int itemCount,
+  required final Widget Function(int index) builder,
 }) {
   return SliverPadding(
     padding: const EdgeInsets.symmetric(horizontal: AppSpacing.screenEdge),
     sliver: SliverList.builder(
       itemCount: itemCount,
-      itemBuilder: (_, index) => builder(index),
+      itemBuilder: (_, final index) => builder(index),
     ),
   );
 }
 
 /// 2-column SliverGrid shared by both Moves and Combos grid modes.
 Widget _sliverArsenalGrid({
-  required int itemCount,
-  required Widget Function(int index) builder,
+  required final int itemCount,
+  required final Widget Function(int index) builder,
 }) {
   return SliverPadding(
     padding: const EdgeInsets.symmetric(horizontal: AppSpacing.screenEdge),
@@ -1062,7 +1063,7 @@ Widget _sliverArsenalGrid({
         childAspectRatio: 0.8,
       ),
       itemCount: itemCount,
-      itemBuilder: (_, index) => builder(index),
+      itemBuilder: (_, final index) => builder(index),
     ),
   );
 }
@@ -1076,7 +1077,7 @@ class _EmptyState extends StatelessWidget {
   final bool isCombo;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(final BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
     return Center(
       child: Column(
@@ -1123,10 +1124,10 @@ class _MoveListSliver extends StatelessWidget {
   final List<Move> moves;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(final BuildContext context) {
     return _sliverStaggeredList(
       itemCount: moves.length,
-      builder: (index) => _MoveRow(move: moves[index], index: index),
+      builder: (final index) => _MoveRow(move: moves[index], index: index),
     );
   }
 }
@@ -1139,10 +1140,10 @@ class _MoveGridSliver extends StatelessWidget {
   final List<Move> moves;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(final BuildContext context) {
     return _sliverArsenalGrid(
       itemCount: moves.length,
-      builder: (index) => _MoveGridCell(move: moves[index]),
+      builder: (final index) => _MoveGridCell(move: moves[index]),
     );
   }
 }

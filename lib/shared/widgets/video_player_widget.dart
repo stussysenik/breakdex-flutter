@@ -9,8 +9,8 @@ import '../../core/design/colors.dart';
 import '../../core/design/spacing.dart';
 import '../../core/design/typography.dart';
 import '../../core/navigation/app_route_observer.dart';
-import '../../core/providers.dart';
 import '../../core/services/media_playback_coordinator.dart';
+import '../../core/services/settings_service.dart';
 import '../../core/services/video_path_resolver.dart';
 import '../../core/services/video_service.dart';
 import '../../core/utils/loading_state_machine.dart';
@@ -35,14 +35,13 @@ mixin _VideoTransportMixin<T extends StatefulWidget> on State<T> {
       setState(() => _showControls = true);
       _hideTimer?.cancel();
     } else {
-      videoController.play();
+      unawaited(videoController.play());
       setState(() {}); // Rebuild to show pause icon immediately
       scheduleHide();
     }
   }
 
-  /// Single tap toggles play/pause directly — no more 2-tap dance.
-  /// Controls scrim auto-hides but the persistent center icon stays visible.
+  /// Single tap toggles play/pause directly.
   void tapHandler() {
     togglePlay();
   }
@@ -56,20 +55,20 @@ mixin _VideoTransportMixin<T extends StatefulWidget> on State<T> {
     });
   }
 
-  void skip(int seconds) {
+  void skip(final int seconds) {
     final pos = videoController.value.position;
     final dur = videoController.value.duration;
     var next = pos + Duration(seconds: seconds);
     if (next < Duration.zero) next = Duration.zero;
     if (next > dur) next = dur;
-    videoController.seekTo(next);
+    unawaited(videoController.seekTo(next));
     if (videoController.value.isPlaying) scheduleHide();
   }
 
   void cancelHideTimer() => _hideTimer?.cancel();
 }
 
-class VideoPlayerWidget extends StatefulWidget {
+class VideoPlayerWidget extends ConsumerStatefulWidget {
   const VideoPlayerWidget({
     super.key,
     required this.videoPath,
@@ -81,7 +80,6 @@ class VideoPlayerWidget extends StatefulWidget {
     this.minimal = false,
     this.looping = true,
     this.muted = false,
-    this.mixWithOthers = false,
     this.playbackSpeed = 1.0,
     this.onPlayStateChanged,
   });
@@ -92,34 +90,17 @@ class VideoPlayerWidget extends StatefulWidget {
   final Widget? overlay;
   final VoidCallback? onEdit;
   final bool autoPlay;
-
-  /// When true, disables the transport-controls overlay and mute toggle,
-  /// showing only a simple center play/pause icon suitable for embedding
-  /// inside a parent that provides its own controls (e.g. review cards).
   final bool minimal;
-
-  /// External control of looping. Defaults to true (existing behavior).
   final bool looping;
-
-  /// External control of mute. Defaults to false (existing behavior).
   final bool muted;
-
-  /// Allows external audio sources to keep playing while this video is active.
-  ///
-  /// Used for silent practice mode so the athlete can keep listening to music.
-  final bool mixWithOthers;
-
-  /// External control of playback speed. Defaults to 1.0.
   final double playbackSpeed;
-
-  /// Fires whenever the video transitions between playing and paused.
   final ValueChanged<bool>? onPlayStateChanged;
 
   @override
-  State<VideoPlayerWidget> createState() => _VideoPlayerWidgetState();
+  ConsumerState<VideoPlayerWidget> createState() => _VideoPlayerWidgetState();
 }
 
-class _VideoPlayerWidgetState extends State<VideoPlayerWidget>
+class _VideoPlayerWidgetState extends ConsumerState<VideoPlayerWidget>
     with _VideoTransportMixin, RouteAware, WidgetsBindingObserver {
   final _videoService = VideoService();
   final String _playbackId = UniqueKey().toString();
@@ -149,7 +130,7 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget>
   @override
   void initState() {
     super.initState();
-    _isMuted = widget.muted;
+    _isMuted = widget.muted || ref.read(quietModeEnabledProvider);
     WidgetsBinding.instance.addObserver(this);
     MediaPlaybackCoordinator.shared.attach(
       playbackId: _playbackId,
@@ -184,110 +165,92 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget>
   }
 
   @override
-  void didUpdateWidget(covariant VideoPlayerWidget oldWidget) {
+  void didUpdateWidget(covariant final VideoPlayerWidget oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.videoPath != widget.videoPath) {
       cancelHideTimer();
       MediaPlaybackCoordinator.shared.release(_playbackId);
       _controller.dispose();
-      _isMuted = widget.muted;
+      _isMuted = widget.muted || ref.read(quietModeEnabledProvider);
       _initPlayer();
       return;
     }
-    if (oldWidget.mixWithOthers != widget.mixWithOthers) {
-      final resumePosition = _initialized ? _controller.value.position : null;
-      final resumePlaying = _initialized && _controller.value.isPlaying;
-      cancelHideTimer();
-      MediaPlaybackCoordinator.shared.release(_playbackId);
-      _controller.dispose();
-      _isMuted = widget.muted;
-      _initPlayer(
-        resumePosition: resumePosition,
-        resumePlaying: resumePlaying,
-        allowAutoPlay: false,
-      );
-      return;
-    }
-    // React to external parameter changes without reinitializing the player.
+
     if (_initialized) {
       if (oldWidget.looping != widget.looping) {
-        _controller.setLooping(widget.looping);
+        unawaited(_controller.setLooping(widget.looping));
       }
       if (oldWidget.muted != widget.muted) {
-        _controller.setVolume(widget.muted ? 0.0 : 1.0);
-        // Keep internal mute state in sync when controlled externally.
-        _isMuted = widget.muted;
+        final effectiveMute = widget.muted || ref.read(quietModeEnabledProvider);
+        unawaited(_controller.setVolume(effectiveMute ? 0.0 : 1.0));
+        _isMuted = effectiveMute;
       }
       if (oldWidget.playbackSpeed != widget.playbackSpeed) {
-        _controller.setPlaybackSpeed(widget.playbackSpeed);
+        unawaited(_controller.setPlaybackSpeed(widget.playbackSpeed));
       }
     }
   }
 
   void _initPlayer({
-    Duration? resumePosition,
-    bool resumePlaying = false,
-    bool allowAutoPlay = true,
+    final Duration? resumePosition,
+    final bool resumePlaying = false,
+    final bool allowAutoPlay = true,
   }) {
     _initialized = false;
     _hasError = false;
     _posterPath = null;
     unawaited(_loadPoster());
-    _controller =
-        VideoPlayerController.file(
-            File(widget.videoPath),
-            videoPlayerOptions: VideoPlayerOptions(
-              mixWithOthers: widget.mixWithOthers,
-            ),
+
+    final quietMode = ref.read(quietModeEnabledProvider);
+
+    _controller = VideoPlayerController.file(
+      File(widget.videoPath),
+      videoPlayerOptions: VideoPlayerOptions(mixWithOthers: quietMode),
+    )
+      ..setLooping(widget.looping)
+      ..initialize()
+          .timeout(
+            const Duration(seconds: 10),
+            onTimeout: () => throw TimeoutException('Video init timed out'),
           )
-          ..setLooping(widget.looping)
-          ..initialize()
-              .timeout(
-                const Duration(seconds: 10),
-                onTimeout: () => throw TimeoutException('Video init timed out'),
-              )
-              .then((_) async {
-                if (mounted) {
-                  // Apply external mute/speed settings after initialization.
-                  if (_isMuted) await _controller.setVolume(0.0);
-                  if (widget.playbackSpeed != 1.0) {
-                    await _controller.setPlaybackSpeed(widget.playbackSpeed);
-                  }
-                  if (resumePosition != null) {
-                    final duration = _controller.value.duration;
-                    final safePosition = resumePosition > duration
-                        ? duration
-                        : resumePosition;
-                    await _controller.seekTo(safePosition);
-                  }
-                  if ((resumePlaying || (allowAutoPlay && widget.autoPlay)) &&
-                      _tickerModeEnabled) {
-                    MediaPlaybackCoordinator.shared.claimPrimary(_playbackId);
-                    await _controller.play();
-                    widget.onPlayStateChanged?.call(true);
-                    scheduleHide();
-                  }
-                  setState(() => _initialized = true);
-                }
-              })
-              .catchError((_) {
-                if (mounted) setState(() => _hasError = true);
-              });
+          .then((_) async {
+            if (mounted) {
+              final effectiveMute = widget.muted || quietMode;
+              if (effectiveMute) await _controller.setVolume(0.0);
+              if (widget.playbackSpeed != 1.0) {
+                await _controller.setPlaybackSpeed(widget.playbackSpeed);
+              }
+              if (resumePosition != null) {
+                final duration = _controller.value.duration;
+                await _controller.seekTo(
+                  resumePosition > duration ? duration : resumePosition,
+                );
+              }
+              if ((resumePlaying || (allowAutoPlay && widget.autoPlay)) &&
+                  _tickerModeEnabled) {
+                MediaPlaybackCoordinator.shared.claimPrimary(_playbackId);
+                await _controller.play();
+                widget.onPlayStateChanged?.call(true);
+                scheduleHide();
+              }
+              setState(() => _initialized = true);
+            }
+          })
+          .catchError((_) {
+            if (mounted) setState(() => _hasError = true);
+          });
   }
 
   Future<void> _loadPoster() async {
-    final videoPath = widget.videoPath;
-    final poster = await _videoService.generateThumbnail(videoPath);
-    if (!mounted || poster == null || widget.videoPath != videoPath) {
-      return;
-    }
+    final poster = await _videoService.generateThumbnail(widget.videoPath);
+    if (!mounted || poster == null) return;
     setState(() => _posterPath = poster);
   }
 
   void _toggleMute() {
     setState(() {
       _isMuted = !_isMuted;
-      _controller.setVolume(_isMuted ? 0 : 1);
+      unawaited(_controller.setVolume(_isMuted ? 0 : 1));
     });
   }
 
@@ -298,18 +261,14 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget>
       unawaited(_controller.pause());
       widget.onPlayStateChanged?.call(false);
     }
-    if (mounted) {
-      setState(() => _showControls = true);
-    }
+    if (mounted) setState(() => _showControls = true);
   }
 
   @override
   void dispose() {
     cancelHideTimer();
     WidgetsBinding.instance.removeObserver(this);
-    if (_route is ModalRoute<dynamic>) {
-      appRouteObserver.unsubscribe(this);
-    }
+    if (_route is ModalRoute<dynamic>) appRouteObserver.unsubscribe(this);
     MediaPlaybackCoordinator.shared.detach(_playbackId);
     _controller.dispose();
     super.dispose();
@@ -319,9 +278,6 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget>
     cancelHideTimer();
     _suppressNextRoutePause = true;
     MediaPlaybackCoordinator.shared.suppressNextNavigationPause();
-    // Use rootNavigator so the fullscreen player covers the tab bar shell.
-    // Without this, StatefulShellRoute's BottomNavShell stays visible and
-    // clips the seek bar (which contains the exit-fullscreen button).
     Navigator.of(context, rootNavigator: true)
         .push(
           PageRouteBuilder(
@@ -330,15 +286,13 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget>
               playbackId: _playbackId,
               onEdit: widget.onEdit,
             ),
-            transitionsBuilder: (_, anim, _, child) =>
+            transitionsBuilder: (_, final anim, _, final child) =>
                 FadeTransition(opacity: anim, child: child),
             transitionDuration: AppMotion.moderate01,
             reverseTransitionDuration: AppMotion.moderate01,
           ),
         )
-        .whenComplete(() {
-          _suppressNextRoutePause = false;
-        });
+        .whenComplete(() => _suppressNextRoutePause = false);
   }
 
   @override
@@ -348,16 +302,31 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget>
   }
 
   @override
-  void didChangeAppLifecycleState(AppLifecycleState state) {
+  void didChangeAppLifecycleState(final AppLifecycleState state) {
     if (state == AppLifecycleState.resumed) return;
     _pausePlayback();
   }
 
-  // -- Build --------------------------------------------------------------
-
   @override
-  Widget build(BuildContext context) {
+  Widget build(final BuildContext context) {
+    ref.listen(quietModeEnabledProvider, (final previous, final next) {
+      if (previous != next && mounted) {
+        final pos = _initialized ? _controller.value.position : null;
+        final playing = _initialized && _controller.value.isPlaying;
+        cancelHideTimer();
+        MediaPlaybackCoordinator.shared.release(_playbackId);
+        _controller.dispose();
+        _isMuted = widget.muted || next;
+        _initPlayer(
+          resumePosition: pos,
+          resumePlaying: playing,
+          allowAutoPlay: false,
+        );
+      }
+    });
+
     final radius = widget.borderRadius ?? BorderRadius.circular(AppRadius.lg);
+    final colorScheme = Theme.of(context).colorScheme;
 
     return ClipRRect(
       borderRadius: radius,
@@ -367,11 +336,7 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget>
         color: AppColors.darkBg,
         child: _hasError
             ? const Center(
-                child: Icon(
-                  Icons.error_outline,
-                  color: Colors.white54,
-                  size: 48,
-                ),
+                child: Icon(Icons.error_outline, color: Colors.white54, size: 48),
               )
             : !_initialized
             ? Stack(
@@ -390,9 +355,7 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget>
                               strokeWidth: 3,
                             ),
                           )
-                        : CircularProgressIndicator(
-                            color: Theme.of(context).colorScheme.primary,
-                          ),
+                        : CircularProgressIndicator(color: colorScheme.primary),
                   ),
                 ],
               )
@@ -413,10 +376,6 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget>
                       ),
                     ),
                     if (!widget.minimal) ...[
-                      // Controls scrim — auto-hides during playback.
-                      // RepaintBoundary isolates the animated opacity, gradient
-                      // scrim, and per-frame ValueListenableBuilder seek bar
-                      // from the video surface so neither dirties the other.
                       RepaintBoundary(
                         child: AnimatedOpacity(
                           opacity: _showControls ? 1.0 : 0.0,
@@ -434,8 +393,6 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget>
                           ),
                         ),
                       ),
-                      // Persistent center play/pause icon — never fully hidden.
-                      // Always-visible at reduced opacity so users know where to tap.
                       IgnorePointer(
                         child: Center(
                           child: AnimatedOpacity(
@@ -451,40 +408,36 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget>
                           ),
                         ),
                       ),
-                      // Persistent mute toggle — top-right corner, always tappable
-                      if (!widget.mixWithOthers)
-                        Positioned(
-                          top: 8,
-                          right: 8,
-                          child: Semantics(
-                            label: _isMuted ? 'Unmute' : 'Mute',
-                            button: true,
-                            child: GestureDetector(
-                              onTap: _toggleMute,
-                              behavior: HitTestBehavior.opaque,
-                              child: Container(
-                                width: 48,
-                                height: 48,
-                                alignment: Alignment.center,
-                                child: AnimatedOpacity(
-                                  opacity: _showControls ? 0.9 : 0.5,
-                                  duration: AppMotion.moderate01,
-                                  child: Icon(
-                                    _isMuted
-                                        ? Icons.volume_off_rounded
-                                        : Icons.volume_up_rounded,
-                                    color: Colors.white,
-                                    size: 22,
-                                  ),
+                      Positioned(
+                        top: 8,
+                        right: 8,
+                        child: Semantics(
+                          label: _isMuted ? 'Unmute' : 'Mute',
+                          button: true,
+                          child: GestureDetector(
+                            onTap: _toggleMute,
+                            behavior: HitTestBehavior.opaque,
+                            child: Container(
+                              width: 48,
+                              height: 48,
+                              alignment: Alignment.center,
+                              child: AnimatedOpacity(
+                                opacity: _showControls ? 0.9 : 0.5,
+                                duration: AppMotion.moderate01,
+                                child: Icon(
+                                  _isMuted
+                                      ? Icons.volume_off_rounded
+                                      : Icons.volume_up_rounded,
+                                  color: Colors.white,
+                                  size: 22,
                                 ),
                               ),
                             ),
                           ),
                         ),
+                      ),
                     ],
                     if (widget.minimal) ...[
-                      // Minimal mode: simple center play/pause icon.
-                      // Visible at 0.6 opacity when paused, invisible when playing.
                       IgnorePointer(
                         child: Center(
                           child: AnimatedOpacity(
@@ -510,12 +463,6 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget>
   }
 }
 
-// -- Transport Controls Overlay -------------------------------------------
-
-/// Gradient-scrim overlay with music-player-style transport controls.
-///
-/// Layout: large play/pause center-stage flanked by ±5s skip buttons,
-/// a draggable seek bar with timestamps, and a fullscreen toggle in the corner.
 class _VideoControls extends StatelessWidget {
   const _VideoControls({
     required this.controller,
@@ -538,7 +485,7 @@ class _VideoControls extends StatelessWidget {
   final bool isFullscreen;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(final BuildContext context) {
     final isPlaying = controller.value.isPlaying;
 
     return Container(
@@ -553,45 +500,31 @@ class _VideoControls extends StatelessWidget {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.end,
         children: [
-          // Transport row: skip back | play/pause | skip forward
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Semantics(
-                label: 'Skip back 5 seconds',
-                button: true,
-                child: _TransportButton(
-                  icon: Icons.replay_5_rounded,
-                  onTap: onSkipBack,
-                  size: isFullscreen ? 40 : 32,
-                ),
+              _TransportButton(
+                icon: Icons.replay_5_rounded,
+                onTap: onSkipBack,
+                size: isFullscreen ? 40 : 32,
               ),
               const SizedBox(width: AppSpacing.lg),
-              Semantics(
-                label: isPlaying ? 'Pause' : 'Play',
-                button: true,
-                child: _TransportButton(
-                  icon: isPlaying
-                      ? Icons.pause_circle_filled_rounded
-                      : Icons.play_circle_filled_rounded,
-                  onTap: onTogglePlay,
-                  size: isFullscreen ? 56 : 48,
-                ),
+              _TransportButton(
+                icon: isPlaying
+                    ? Icons.pause_circle_filled_rounded
+                    : Icons.play_circle_filled_rounded,
+                onTap: onTogglePlay,
+                size: isFullscreen ? 56 : 48,
               ),
               const SizedBox(width: AppSpacing.lg),
-              Semantics(
-                label: 'Skip forward 5 seconds',
-                button: true,
-                child: _TransportButton(
-                  icon: Icons.forward_5_rounded,
-                  onTap: onSkipForward,
-                  size: isFullscreen ? 40 : 32,
-                ),
+              _TransportButton(
+                icon: Icons.forward_5_rounded,
+                onTap: onSkipForward,
+                size: isFullscreen ? 40 : 32,
               ),
             ],
           ),
           const SizedBox(height: AppSpacing.sm),
-          // Seek bar row: time | slider | time | fullscreen
           _SeekBar(
             controller: controller,
             isFullscreen: isFullscreen,
@@ -606,13 +539,6 @@ class _VideoControls extends StatelessWidget {
   }
 }
 
-// -- Seek Bar -------------------------------------------------------------
-
-/// Draggable seek bar with timestamps and fullscreen toggle.
-///
-/// Uses local [_dragging] state to decouple the slider from the controller
-/// during a drag gesture. This prevents the slider from snapping back to the
-/// controller's (slightly stale) position mid-scrub, which causes jitter.
 class _SeekBar extends StatefulWidget {
   const _SeekBar({
     required this.controller,
@@ -637,61 +563,44 @@ class _SeekBarState extends State<_SeekBar> {
   double _dragValue = 0;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(final BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
 
-    // Static action buttons — never change per frame.
     final actionButtons = [
       if (widget.onEdit != null) ...[
         const SizedBox(width: 4),
-        Semantics(
-          label: 'Edit video',
-          button: true,
-          child: _TransportButton(
-            icon: Icons.tune_rounded,
-            onTap: widget.onEdit!,
-            size: 24,
-          ),
+        _TransportButton(
+          icon: Icons.tune_rounded,
+          onTap: widget.onEdit!,
+          size: 24,
         ),
       ],
       const SizedBox(width: 4),
-      Semantics(
-        label: widget.isFullscreen ? 'Exit fullscreen' : 'Fullscreen',
-        button: true,
-        child: _TransportButton(
-          icon: widget.isFullscreen
-              ? Icons.fullscreen_exit_rounded
-              : Icons.fullscreen_rounded,
-          onTap: widget.isFullscreen
-              ? (widget.onExitFullscreen ?? () {})
-              : (widget.onFullscreen ?? () {}),
-          size: 24,
-        ),
+      _TransportButton(
+        icon: widget.isFullscreen
+            ? Icons.fullscreen_exit_rounded
+            : Icons.fullscreen_rounded,
+        onTap: widget.isFullscreen
+            ? (widget.onExitFullscreen ?? () {})
+            : (widget.onFullscreen ?? () {}),
+        size: 24,
       ),
     ];
 
-    // VideoPlayerController IS a ValueNotifier<VideoPlayerValue> — only the
-    // seek bar slider needs to repaint per frame; transport buttons are static.
     return Padding(
       padding: EdgeInsets.symmetric(
         horizontal: widget.isFullscreen ? AppSpacing.md : AppSpacing.sm,
       ),
       child: ValueListenableBuilder<VideoPlayerValue>(
         valueListenable: widget.controller,
-        builder: (context, value, _) {
-          final position = value.position;
+        builder: (final context, final value, _) {
           final duration = value.duration;
+          final position = value.position;
           final progress = duration.inMilliseconds > 0
-              ? (position.inMilliseconds / duration.inMilliseconds).clamp(
-                  0.0,
-                  1.0,
-                )
+              ? (position.inMilliseconds / duration.inMilliseconds).clamp(0.0, 1.0)
               : 0.0;
-
           final displayPosition = _dragging
-              ? Duration(
-                  milliseconds: (_dragValue * duration.inMilliseconds).round(),
-                )
+              ? Duration(milliseconds: (_dragValue * duration.inMilliseconds).round())
               : position;
 
           return Row(
@@ -700,22 +609,15 @@ class _SeekBarState extends State<_SeekBar> {
                 width: 38,
                 child: Text(
                   _fmt(displayPosition),
-                  style: AppTypography.caption.copyWith(
-                    color: Colors.white70,
-                    fontSize: 11,
-                  ),
+                  style: AppTypography.caption.copyWith(color: Colors.white70, fontSize: 11),
                 ),
               ),
               Expanded(
                 child: SliderTheme(
                   data: SliderThemeData(
                     trackHeight: 3,
-                    thumbShape: const RoundSliderThumbShape(
-                      enabledThumbRadius: 6,
-                    ),
-                    overlayShape: const RoundSliderOverlayShape(
-                      overlayRadius: 14,
-                    ),
+                    thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 6),
+                    overlayShape: const RoundSliderOverlayShape(overlayRadius: 14),
                     activeTrackColor: colorScheme.primary,
                     inactiveTrackColor: Colors.white24,
                     thumbColor: colorScheme.primary,
@@ -723,18 +625,16 @@ class _SeekBarState extends State<_SeekBar> {
                   ),
                   child: Slider(
                     value: _dragging ? _dragValue : progress,
-                    onChangeStart: (v) => setState(() {
+                    onChangeStart: (final v) => setState(() {
                       _dragging = true;
                       _dragValue = v;
                     }),
-                    onChanged: (v) => setState(() => _dragValue = v),
-                    onChangeEnd: (v) {
+                    onChanged: (final v) => setState(() => _dragValue = v),
+                    onChangeEnd: (final v) {
                       setState(() => _dragging = false);
-                      widget.controller.seekTo(
-                        Duration(
-                          milliseconds: (v * duration.inMilliseconds).round(),
-                        ),
-                      );
+                      unawaited(widget.controller.seekTo(
+                        Duration(milliseconds: (v * duration.inMilliseconds).round()),
+                      ));
                     },
                   ),
                 ),
@@ -743,10 +643,7 @@ class _SeekBarState extends State<_SeekBar> {
                 width: 38,
                 child: Text(
                   _fmt(duration),
-                  style: AppTypography.caption.copyWith(
-                    color: Colors.white70,
-                    fontSize: 11,
-                  ),
+                  style: AppTypography.caption.copyWith(color: Colors.white70, fontSize: 11),
                   textAlign: TextAlign.end,
                 ),
               ),
@@ -758,32 +655,21 @@ class _SeekBarState extends State<_SeekBar> {
     );
   }
 
-  static String _fmt(Duration d) {
+  static String _fmt(final Duration d) {
     final m = d.inMinutes;
     final s = (d.inSeconds % 60).toString().padLeft(2, '0');
     return '$m:$s';
   }
 }
 
-// -- Transport Button -----------------------------------------------------
-
-/// Minimal tappable icon for transport controls.
-///
-/// Padding ensures the touch target meets Apple HIG 44pt minimum even for
-/// smaller icons (24–32pt).
 class _TransportButton extends StatelessWidget {
-  const _TransportButton({
-    required this.icon,
-    required this.onTap,
-    this.size = 32,
-  });
-
+  const _TransportButton({required this.icon, required this.onTap, this.size = 32});
   final IconData icon;
   final VoidCallback onTap;
   final double size;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(final BuildContext context) {
     return GestureDetector(
       onTap: onTap,
       behavior: HitTestBehavior.opaque,
@@ -795,20 +681,12 @@ class _TransportButton extends StatelessWidget {
   }
 }
 
-// -- Fullscreen Player ----------------------------------------------------
-
-/// Immersive fullscreen video player pushed as a route.
-///
-/// Shares the same [VideoPlayerController] as the inline player so playback
-/// is seamless — no reload, no position jump. Enables immersive system UI
-/// and unlocks landscape rotation for wider videos.
 class _FullscreenVideoPlayer extends StatefulWidget {
   const _FullscreenVideoPlayer({
     required this.controller,
     required this.playbackId,
     this.onEdit,
   });
-
   final VideoPlayerController controller;
   final String playbackId;
   final VoidCallback? onEdit;
@@ -838,12 +716,12 @@ class _FullscreenVideoPlayerState extends State<_FullscreenVideoPlayer>
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
-    SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
-    SystemChrome.setPreferredOrientations([
+    unawaited(SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky));
+    unawaited(SystemChrome.setPreferredOrientations([
       DeviceOrientation.portraitUp,
       DeviceOrientation.landscapeLeft,
       DeviceOrientation.landscapeRight,
-    ]);
+    ]));
     if (widget.controller.value.isPlaying) scheduleHide();
   }
 
@@ -852,39 +730,27 @@ class _FullscreenVideoPlayerState extends State<_FullscreenVideoPlayer>
     super.didChangeDependencies();
     final nextRoute = ModalRoute.of(context);
     if (_route != nextRoute) {
-      if (_route is ModalRoute<dynamic>) {
-        appRouteObserver.unsubscribe(this);
-      }
+      if (_route is ModalRoute<dynamic>) appRouteObserver.unsubscribe(this);
       _route = nextRoute;
-      if (nextRoute is ModalRoute<dynamic>) {
-        appRouteObserver.subscribe(this, nextRoute);
-      }
+      if (nextRoute is ModalRoute<dynamic>) appRouteObserver.subscribe(this, nextRoute);
     }
   }
 
   void _pauseFullscreenPlayback() {
     cancelHideTimer();
     MediaPlaybackCoordinator.shared.release(widget.playbackId);
-    if (widget.controller.value.isPlaying) {
-      unawaited(widget.controller.pause());
-    }
-    if (mounted) {
-      setState(() => _showControls = true);
-    }
+    if (widget.controller.value.isPlaying) unawaited(widget.controller.pause());
+    if (mounted) setState(() => _showControls = true);
   }
 
   @override
   void dispose() {
     cancelHideTimer();
     WidgetsBinding.instance.removeObserver(this);
-    if (_route is ModalRoute<dynamic>) {
-      appRouteObserver.unsubscribe(this);
-    }
-    if (!widget.controller.value.isPlaying) {
-      MediaPlaybackCoordinator.shared.release(widget.playbackId);
-    }
-    SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
-    SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
+    if (_route is ModalRoute<dynamic>) appRouteObserver.unsubscribe(this);
+    if (!widget.controller.value.isPlaying) MediaPlaybackCoordinator.shared.release(widget.playbackId);
+    unawaited(SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge));
+    unawaited(SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]));
     super.dispose();
   }
 
@@ -892,13 +758,13 @@ class _FullscreenVideoPlayerState extends State<_FullscreenVideoPlayer>
   void didPushNext() => _pauseFullscreenPlayback();
 
   @override
-  void didChangeAppLifecycleState(AppLifecycleState state) {
+  void didChangeAppLifecycleState(final AppLifecycleState state) {
     if (state == AppLifecycleState.resumed) return;
     _pauseFullscreenPlayback();
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(final BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.black,
       body: GestureDetector(
@@ -929,8 +795,6 @@ class _FullscreenVideoPlayerState extends State<_FullscreenVideoPlayer>
                 ),
               ),
             ),
-            // Always-visible close button — never auto-hidden so the user
-            // always has an obvious way to exit fullscreen.
             Positioned(
               top: MediaQuery.of(context).padding.top + 8,
               left: 8,
@@ -946,11 +810,7 @@ class _FullscreenVideoPlayerState extends State<_FullscreenVideoPlayer>
                       color: Colors.black.withValues(alpha: 0.4),
                       shape: BoxShape.circle,
                     ),
-                    child: const Icon(
-                      Icons.close_rounded,
-                      color: Colors.white,
-                      size: 24,
-                    ),
+                    child: const Icon(Icons.close_rounded, color: Colors.white, size: 24),
                   ),
                 ),
               ),
@@ -962,41 +822,23 @@ class _FullscreenVideoPlayerState extends State<_FullscreenVideoPlayer>
   }
 }
 
-// -- Supporting Widgets (unchanged) ---------------------------------------
-
 class VideoPlaceholder extends StatelessWidget {
-  const VideoPlaceholder({
-    super.key,
-    this.height = 300,
-    this.icon = Icons.videocam_outlined,
-  });
-
+  const VideoPlaceholder({super.key, this.height = 300, this.icon = Icons.videocam_outlined});
   final double height;
   final IconData icon;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(final BuildContext context) {
     final fill = Theme.of(context).colorScheme.surfaceContainerHighest;
     return Container(
       height: height,
       width: double.infinity,
-      decoration: BoxDecoration(
-        color: fill,
-        borderRadius: BorderRadius.circular(AppRadius.lg),
-      ),
-      child: Icon(
-        icon,
-        color: Theme.of(context).colorScheme.secondary,
-        size: 48,
-      ),
+      decoration: BoxDecoration(color: fill, borderRadius: BorderRadius.circular(AppRadius.lg)),
+      child: Icon(icon, color: Theme.of(context).colorScheme.secondary, size: 48),
     );
   }
 }
 
-/// Wraps VideoPlayerWidget with file-existence checking and error recovery.
-///
-/// When [ghostThumbnailPath] is set, a faded thumbnail appears behind the
-/// "Video not found" card so the user retains visual memory of the clip.
 class RobustVideoPlayer extends ConsumerStatefulWidget {
   const RobustVideoPlayer({
     super.key,
@@ -1022,29 +864,13 @@ class RobustVideoPlayer extends ConsumerStatefulWidget {
   final VoidCallback? onEdit;
   final Widget? overlay;
   final String? ghostThumbnailPath;
-
-  /// Original filename shown when the video file is missing, so the user
-  /// can identify which clip needs to be re-imported.
   final String? originalVideoName;
   final bool autoPlay;
-
-  /// Custom border radius. Pass [BorderRadius.zero] for immersive layouts
-  /// where the parent handles clipping.
   final BorderRadius? borderRadius;
-
-  /// Forwarded to [VideoPlayerWidget.minimal].
   final bool minimal;
-
-  /// Forwarded to [VideoPlayerWidget.looping].
   final bool looping;
-
-  /// Forwarded to [VideoPlayerWidget.muted].
   final bool muted;
-
-  /// Forwarded to [VideoPlayerWidget.playbackSpeed].
   final double playbackSpeed;
-
-  /// Forwarded to [VideoPlayerWidget.onPlayStateChanged].
   final ValueChanged<bool>? onPlayStateChanged;
 
   @override
@@ -1061,7 +887,7 @@ class _RobustVideoPlayerState extends ConsumerState<RobustVideoPlayer> {
   @override
   void initState() {
     super.initState();
-    _stateSub = _loadingController.stream.listen((state) {
+    _stateSub = _loadingController.stream.listen((final state) {
       if (mounted) setState(() => _loadingState = state);
     });
     _checkFile();
@@ -1075,24 +901,16 @@ class _RobustVideoPlayerState extends ConsumerState<RobustVideoPlayer> {
   }
 
   @override
-  void didUpdateWidget(RobustVideoPlayer oldWidget) {
+  void didUpdateWidget(final RobustVideoPlayer oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (oldWidget.videoPath != widget.videoPath) {
-      _checkFile();
-    }
+    if (oldWidget.videoPath != widget.videoPath) _checkFile();
   }
 
-  Future<void> _checkFile({bool isRetry = false}) async {
-    _loadingController.send(
-      isRetry ? LoadingEvent.retry : LoadingEvent.start,
-    );
+  Future<void> _checkFile({final bool isRetry = false}) async {
+    _loadingController.send(isRetry ? LoadingEvent.retry : LoadingEvent.start);
     _resolvedPath = null;
-
-    final status = await _videoService.checkVideoFileWithRetry(
-      widget.videoPath,
-    );
+    final status = await _videoService.checkVideoFileWithRetry(widget.videoPath);
     if (!mounted) return;
-
     if (status == VideoFileStatus.missing) {
       final found = await VideoPathResolver.resolve(widget.videoPath);
       if (!mounted) return;
@@ -1102,28 +920,20 @@ class _RobustVideoPlayerState extends ConsumerState<RobustVideoPlayer> {
         return;
       }
     }
-
     switch (status) {
       case VideoFileStatus.ready:
         _loadingController.send(LoadingEvent.complete(null));
-        break;
       case VideoFileStatus.missing:
-        _loadingController.send(
-          LoadingEvent.fail('Video not found', retryable: false),
-        );
-        break;
+        _loadingController.send(LoadingEvent.fail('Video not found', retryable: false));
       case VideoFileStatus.error:
-        _loadingController.send(
-          LoadingEvent.fail('Something went wrong', retryable: true),
-        );
-        break;
+        _loadingController.send(LoadingEvent.fail('Something went wrong', retryable: true));
     }
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(final BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
-    final silentPracticeMode = ref.watch(silentPracticePlaybackProvider);
+    final quietMode = ref.watch(quietModeEnabledProvider);
 
     return _loadingState.map(
       idle: (_) => const SizedBox.shrink(),
@@ -1138,19 +948,18 @@ class _RobustVideoPlayerState extends ConsumerState<RobustVideoPlayer> {
         autoPlay: widget.autoPlay,
         minimal: widget.minimal,
         looping: widget.looping,
-        muted: widget.muted || silentPracticeMode,
-        mixWithOthers: silentPracticeMode,
+        muted: widget.muted || quietMode,
         playbackSpeed: widget.playbackSpeed,
         onPlayStateChanged: widget.onPlayStateChanged,
       ).animate().fadeIn(duration: 300.ms),
-      timeout: (t) => _buildStatusCard(
+      timeout: (final t) => _buildStatusCard(
         icon: Icons.cloud_off,
         message: 'Connection timed out',
         actionLabel: 'Tap to retry',
         onAction: () => _checkFile(isRetry: true),
         colorScheme: colorScheme,
       ),
-      error: (e) => e.message == 'Video not found'
+      error: (final e) => e.message == 'Video not found'
           ? _buildStatusCard(
               icon: Icons.cloud_off,
               message: 'Video not found',
@@ -1163,8 +972,7 @@ class _RobustVideoPlayerState extends ConsumerState<RobustVideoPlayer> {
               icon: Icons.error_outline,
               message: e.message,
               actionLabel: e.retryable ? 'Tap to retry' : null,
-              onAction:
-                  e.retryable ? () => _checkFile(isRetry: true) : null,
+              onAction: e.retryable ? () => _checkFile(isRetry: true) : null,
               colorScheme: colorScheme,
             ),
       retrying: (_) => _buildStatusCard(
@@ -1182,22 +990,21 @@ class _RobustVideoPlayerState extends ConsumerState<RobustVideoPlayer> {
           width: double.infinity,
           decoration: BoxDecoration(
             color: Theme.of(context).colorScheme.surfaceContainerHighest,
-            borderRadius:
-                widget.borderRadius ?? BorderRadius.circular(AppRadius.lg),
+            borderRadius: widget.borderRadius ?? BorderRadius.circular(AppRadius.lg),
           ),
         )
-        .animate(onPlay: (c) => c.repeat())
+        .animate(onPlay: (final c) => c.repeat())
         .shimmer(duration: 1200.ms, color: Colors.white12);
   }
 
   Widget _buildStatusCard({
-    required IconData icon,
-    required String message,
-    String? actionLabel,
-    VoidCallback? onAction,
-    required ColorScheme colorScheme,
-    bool showGhost = false,
-    bool showSpinner = false,
+    required final IconData icon,
+    required final String message,
+    final String? actionLabel,
+    final VoidCallback? onAction,
+    required final ColorScheme colorScheme,
+    final bool showGhost = false,
+    final bool showSpinner = false,
   }) {
     return ClipRRect(
       borderRadius: widget.borderRadius ?? BorderRadius.circular(AppRadius.lg),
@@ -1219,9 +1026,7 @@ class _RobustVideoPlayerState extends ConsumerState<RobustVideoPlayer> {
             Container(
               decoration: BoxDecoration(
                 color: showGhost && widget.ghostThumbnailPath != null
-                    ? colorScheme.surfaceContainerHighest.withValues(
-                        alpha: 0.85,
-                      )
+                    ? colorScheme.surfaceContainerHighest.withValues(alpha: 0.85)
                     : colorScheme.surfaceContainerHighest,
               ),
               child: Column(
@@ -1239,19 +1044,11 @@ class _RobustVideoPlayerState extends ConsumerState<RobustVideoPlayer> {
                   else
                     Icon(icon, color: colorScheme.secondary, size: 48),
                   const SizedBox(height: AppSpacing.sm),
-                  Text(
-                    message,
-                    style: AppTypography.bodyMedium.copyWith(
-                      color: colorScheme.secondary,
-                    ),
-                  ),
-                  if (widget.originalVideoName != null &&
-                      message == 'Video not found') ...[
+                  Text(message, style: AppTypography.bodyMedium.copyWith(color: colorScheme.secondary)),
+                  if (widget.originalVideoName != null && message == 'Video not found') ...[
                     const SizedBox(height: 4),
                     Padding(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: AppSpacing.lg,
-                      ),
+                      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
                       child: Text(
                         widget.originalVideoName!,
                         style: AppTypography.caption.copyWith(

@@ -25,15 +25,15 @@ class StatePickerSheet extends ConsumerWidget {
   final ValueChanged<LearningState>? onSelected;
 
   static Future<LearningState?> show(
-    BuildContext context, {
-    required LearningState currentState,
-    required String moveName,
+    final BuildContext context, {
+    required final LearningState currentState,
+    required final String moveName,
   }) {
     return showModalBottomSheet<LearningState>(
       context: context,
       backgroundColor: Theme.of(context).colorScheme.surface,
       shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(AppRadius.lg)),
+        borderRadius: BorderRadius.zero, // Sharp corners for brutalist feel
       ),
       builder: (_) =>
           StatePickerSheet(currentState: currentState, moveName: moveName),
@@ -41,85 +41,86 @@ class StatePickerSheet extends ConsumerWidget {
   }
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(final BuildContext context, final WidgetRef ref) {
     final colorScheme = Theme.of(context).colorScheme;
     final labels = ref.watch(learningStateLabelsProvider);
     final mode = ref.watch(learningModeProvider);
     final customStates = ref.watch(customLearningStatesProvider);
 
-    const descriptions = {
-      LearningState.newState: 'Start fresh — reset progress',
-      LearningState.learning: 'In progress — needs practice',
-      LearningState.mastery: 'Nailed it — fully learned',
-    };
-
     return SafeArea(
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(
-          AppSpacing.screenEdge,
-          AppSpacing.lg,
-          AppSpacing.screenEdge,
-          AppSpacing.lg,
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Set State',
-              style: AppTypography.titleMedium.copyWith(
-                color: colorScheme.onSurface,
-              ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(
+              AppSpacing.md,
+              AppSpacing.xl,
+              AppSpacing.md,
+              AppSpacing.md,
             ),
-            const SizedBox(height: 4),
-            Text(
-              moveName,
-              style: AppTypography.bodySmall.copyWith(
-                color: colorScheme.secondary,
-              ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'MOVE STATE'.toUpperCase(),
+                  style: AppTypography.caption.copyWith(
+                    color: colorScheme.secondary,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: 1.2,
+                    fontFamily: 'Menlo',
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  moveName.toUpperCase(),
+                  style: AppTypography.bodySmall.copyWith(
+                    color: colorScheme.onSurface,
+                    fontWeight: FontWeight.w900,
+                    fontFamily: 'Menlo',
+                  ),
+                ),
+              ],
             ),
-            const SizedBox(height: AppSpacing.lg),
-            for (final state in LearningState.values) ...[
+          ),
+          
+          const Divider(height: 1),
+
+          for (final state in LearningState.values)
+            _StateOption(
+              label: resolveLearningStateLabel(labels, state).toUpperCase(),
+              state: state,
+              isCurrent: state == currentState,
+              onTap: () {
+                HapticFeedback.mediumImpact();
+                if (onSelected != null) {
+                  onSelected!(state);
+                } else {
+                  Navigator.pop(context, state);
+                }
+              },
+            ),
+
+          if (mode == LearningMode.custom) ...[
+            for (final custom in customStates)
               _StateOption(
-                label: resolveLearningStateLabel(labels, state),
-                state: state,
-                description: descriptions[state] ?? '',
-                isCurrent: state == currentState,
+                label: custom.label.toUpperCase(),
+                state: LearningState.mastery,
+                customColor: custom.color,
+                isCurrent: false,
                 onTap: () {
                   HapticFeedback.mediumImpact();
                   if (onSelected != null) {
-                    onSelected!(state);
+                    onSelected!(LearningState.mastery);
                   } else {
-                    Navigator.pop(context, state);
+                    Navigator.pop(context, LearningState.mastery);
                   }
                 },
               ),
-              if (state != LearningState.values.last ||
-                  (mode == LearningMode.custom && customStates.isNotEmpty))
-                const SizedBox(height: AppSpacing.sm),
-            ],
-            if (mode == LearningMode.custom) ...[
-              for (final custom in customStates)
-                _StateOption(
-                  label: custom.label,
-                  state: LearningState.mastery,
-                  customColor: custom.color,
-                  description: 'Custom: ${custom.dbValue}',
-                  isCurrent: false,
-                  onTap: () {
-                    HapticFeedback.mediumImpact();
-                    // Map custom state → closest built-in for now;
-                    // the DB stores the custom dbValue separately.
-                    if (onSelected != null) {
-                      onSelected!(LearningState.mastery);
-                    } else {
-                      Navigator.pop(context, LearningState.mastery);
-                    }
-                  },
-                ),
-            ],
           ],
-        ),
+          
+          const SizedBox(height: AppSpacing.xl),
+        ],
       ),
     );
   }
@@ -129,7 +130,6 @@ class _StateOption extends StatelessWidget {
   const _StateOption({
     required this.state,
     required this.label,
-    required this.description,
     required this.isCurrent,
     required this.onTap,
     this.customColor,
@@ -137,67 +137,70 @@ class _StateOption extends StatelessWidget {
 
   final LearningState state;
   final String label;
-  final String description;
   final bool isCurrent;
   final VoidCallback onTap;
   final Color? customColor;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(final BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
-    final stateColor = customColor ??
-        AppSemanticTheme.of(context).colorForState(state);
-    return GestureDetector(
+    final stateColor = customColor ?? context.stateColor(state);
+
+    return InkWell(
       onTap: onTap,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
-        padding: const EdgeInsets.all(AppSpacing.md),
+      child: Container(
+        padding: const EdgeInsets.symmetric(
+          horizontal: AppSpacing.md,
+          vertical: AppSpacing.lg,
+        ),
         decoration: BoxDecoration(
-          color: isCurrent
-              ? stateColor.withValues(alpha: 0.1)
-              : colorScheme.surfaceContainerHighest,
-          borderRadius: BorderRadius.circular(AppRadius.md),
-          border: isCurrent
-              ? Border.all(color: stateColor.withValues(alpha: 0.4), width: 1.5)
-              : null,
+          border: Border(
+            bottom: BorderSide(
+              color: colorScheme.outline.withValues(alpha: 0.1),
+              width: 1,
+            ),
+          ),
         ),
         child: Row(
           children: [
             Container(
-              width: 12,
-              height: 12,
-              decoration: BoxDecoration(
-                color: stateColor,
-                shape: BoxShape.circle,
-              ),
+              width: 4,
+              height: 24,
+              color: stateColor,
             ),
             const SizedBox(width: AppSpacing.md),
             Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    label,
-                    style: AppTypography.bodyMedium.copyWith(
-                      color: colorScheme.onSurface,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
-                    description,
-                    style: AppTypography.caption.copyWith(
-                      color: colorScheme.secondary,
-                    ),
-                  ),
-                ],
+              child: Text(
+                label,
+                style: AppTypography.bodyMedium.copyWith(
+                  fontWeight: isCurrent ? FontWeight.w900 : FontWeight.w600,
+                  letterSpacing: 1.0,
+                  fontFamily: 'Menlo',
+                  color: isCurrent ? colorScheme.onSurface : colorScheme.onSurface.withValues(alpha: 0.6),
+                ),
               ),
             ),
             if (isCurrent)
-              Icon(Icons.check_circle, color: stateColor, size: 20),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                decoration: BoxDecoration(
+                  border: Border.all(color: stateColor),
+                  borderRadius: BorderRadius.zero,
+                ),
+                child: Text(
+                  'CURRENT',
+                  style: AppTypography.bodySmall.copyWith(
+                    fontWeight: FontWeight.w900,
+                    fontFamily: 'Menlo',
+                    fontSize: 10,
+                    color: stateColor,
+                  ),
+                ),
+              ),
           ],
         ),
       ),
     );
   }
 }
+

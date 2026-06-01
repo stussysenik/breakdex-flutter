@@ -30,10 +30,17 @@ class MasteryPrescreen extends ConsumerWidget {
     final totalReviewable = ref.watch(totalReviewableCountProvider).valueOrNull;
     if (totalReviewable == 0) return const _ReviewEmptyState();
 
+    final viewPadding = MediaQuery.of(context).padding;
+    final bottomNavHeight = kBottomNavigationBarHeight;
+
     return SingleChildScrollView(
-      padding: const EdgeInsets.symmetric(
-        horizontal: AppSpacing.screenEdge,
-        vertical: AppSpacing.lg,
+      // Ensure we have enough padding at the bottom to scroll past the floating action button
+      // and the frosted bottom navigation bar.
+      padding: EdgeInsets.fromLTRB(
+        AppSpacing.screenEdge,
+        AppSpacing.lg,
+        AppSpacing.screenEdge,
+        bottomNavHeight + viewPadding.bottom + AppSpacing.xxl,
       ),
       child: Center(
         child: ConstrainedBox(
