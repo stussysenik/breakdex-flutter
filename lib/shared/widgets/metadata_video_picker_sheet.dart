@@ -88,13 +88,14 @@ class _MetadataVideoPickerSheetState extends ConsumerState<MetadataVideoPickerSh
   Future<List<MetadataAsset>> _fetchAppVideos() async {
     try {
       final docs = await getApplicationDocumentsDirectory();
-      final movesDir = Directory(p.join(docs.path, 'Moves'));
-      if (!await movesDir.exists()) {
-         DiagnosticsLog.info('MetadataVideoPickerSheet', 'Moves directory does not exist at ${movesDir.path}');
+      // Use the canonical storage path defined in CanonicalFolderService
+      final videosDir = Directory(p.join(docs.path, '.breakdex-master', 'videos'));
+      if (!await videosDir.exists()) {
+         DiagnosticsLog.info('MetadataVideoPickerSheet', 'Canonical videos directory does not exist at ${videosDir.path}');
          return [];
       }
 
-      final List<FileSystemEntity> entities = await movesDir.list(recursive: true).toList();
+      final List<FileSystemEntity> entities = await videosDir.list(recursive: true).toList();
       final List<MetadataAsset> assets = [];
       
       for (final entity in entities) {
@@ -180,7 +181,9 @@ class _MetadataVideoPickerSheetState extends ConsumerState<MetadataVideoPickerSh
         );
       }
     } finally {
-      await _progressSub?.cancel();
+      if (_progressSub != null) {
+        unawaited(_progressSub!.cancel());
+      }
     }
   }
 

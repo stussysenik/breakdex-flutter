@@ -208,3 +208,24 @@ class QuietModeEnabledNotifier extends Notifier<bool> {
   }
 }
 
+final showStatsTabProvider = NotifierProvider<ShowStatsTabNotifier, bool>(
+  ShowStatsTabNotifier.new,
+);
+
+class ShowStatsTabNotifier extends Notifier<bool> {
+  static const _key = 'show_stats_tab';
+
+  @override
+  bool build() {
+    final prefs = ref.watch(sharedPreferencesProvider);
+    return prefs.getBool(_key) ?? false;
+  }
+
+  Future<void> toggle() async {
+    final next = !state;
+    final prefs = ref.read(sharedPreferencesProvider);
+    await prefs.setBool(_key, next);
+    state = next;
+  }
+}
+

@@ -20,11 +20,14 @@ class BottomNavShell extends ConsumerWidget {
 
   @override
   Widget build(final BuildContext context, final WidgetRef ref) {
+    final showStats = ref.watch(showStatsTabProvider);
+
     // Only update tab index in post-frame — avoids side effects during build
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (context.mounted) {
         final current = ref.read(currentTabIndexProvider);
         if (current != navigationShell.currentIndex) {
+          DiagnosticsLog.debug('BottomNavShell', 'Syncing tab index: current=$current, next=${navigationShell.currentIndex}');
           ref.read(currentTabIndexProvider.notifier).state =
               navigationShell.currentIndex;
         }
@@ -74,12 +77,14 @@ class BottomNavShell extends ConsumerWidget {
               boxShadow: AppShadows.layered(brightness),
             ),
             child: BottomNavigationBar(
-              currentIndex: navigationShell.currentIndex,
+              currentIndex: _calculateRealIndex(navigationShell.currentIndex, showStats),
               onTap: (final index) {
                 MediaPlaybackCoordinator.shared.pauseAll();
+                final branchIndex = _calculateBranchIndex(index, showStats);
+                DiagnosticsLog.info('BottomNavShell', 'Tab tapped: visual_index=$index, showStats=$showStats -> branch_index=$branchIndex');
                 navigationShell.goBranch(
-                  index,
-                  initialLocation: index == navigationShell.currentIndex,
+                  branchIndex,
+                  initialLocation: branchIndex == navigationShell.currentIndex,
                 );
               },
               // Transparent so the frosted container shows through
@@ -116,13 +121,14 @@ class BottomNavShell extends ConsumerWidget {
                   ),
                   label: 'Review',
                 ),
-                BottomNavigationBarItem(
-                  icon: Semantics(
-                    identifier: 'stats-tab',
-                    child: const Icon(Icons.insights_rounded),
+                if (showStats)
+                  BottomNavigationBarItem(
+                    icon: Semantics(
+                      identifier: 'stats-tab',
+                      child: const Icon(Icons.insights_rounded),
+                    ),
+                    label: 'Stats',
                   ),
-                  label: 'Stats',
-                ),
                 BottomNavigationBarItem(
                   icon: Semantics(
                     identifier: 'settings-tab',
@@ -130,36 +136,25 @@ class BottomNavShell extends ConsumerWidget {
                   ),
                   label: 'Settings',
                 ),
-                // ARCHIVED: Progress, Lab, Flow tabs — restore when ready
-                // BottomNavigationBarItem(
-                //   icon: Semantics(
-                //     identifier: 'progress-tab',
-                //     label: 'Progress, work in progress',
-                //     child: const WipTabIcon(icon: Icons.insights_rounded),
-                //   ),
-                //   label: 'Progress',
-                // ),
-                // BottomNavigationBarItem(
-                //   icon: Semantics(
-                //     identifier: 'lab-tab',
-                //     label: 'Lab, work in progress',
-                //     child: const WipTabIcon(icon: Icons.science_outlined),
-                //   ),
-                //   label: 'Lab',
-                // ),
-                // BottomNavigationBarItem(
-                //   icon: Semantics(
-                //     identifier: 'flow-tab',
-                //     label: 'Flow, work in progress',
-                //     child: const WipTabIcon(icon: Icons.auto_awesome_outlined),
-                //   ),
-                //   label: 'Flow',
-                // ),
               ],
             ),
           ),
         ),
       ),
     );
+  }
+
+  int _calculateRealIndex(final int branchIndex, final bool showStats) {
+    if (showStats) return branchIndex;
+    // If stats is hidden, branch 4 (Settings) becomes visual index 3
+    if (branchIndex == 4) return 3;
+    return branchIndex;
+  }
+
+  int _calculateBranchIndex(final int visualIndex, final bool showStats) {
+    if (showStats) return visualIndex;
+    // If stats is hidden, visual index 3 maps to branch 4 (Settings)
+    if (visualIndex == 3) return 4;
+    return visualIndex;
   }
 }

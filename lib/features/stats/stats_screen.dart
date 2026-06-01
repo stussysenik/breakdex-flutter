@@ -4,13 +4,15 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/design/spacing.dart';
 import '../../core/design/typography.dart';
 import 'providers/stats_providers.dart';
-import 'widgets/heat_map_grid.dart';
+import 'widgets/practice_calendar_view.dart';
+import '../../core/utils/diagnostics.dart';
 
 class StatsScreen extends ConsumerWidget {
   const StatsScreen({super.key});
 
   @override
   Widget build(final BuildContext context, final WidgetRef ref) {
+    DiagnosticsLog.info('StatsScreen', 'Building StatsScreen');
     final statsAsync = ref.watch(statsBundleProvider);
     final colorScheme = Theme.of(context).colorScheme;
 
@@ -59,7 +61,7 @@ class StatsScreen extends ConsumerWidget {
                     const SizedBox(height: AppSpacing.xl),
                     
                     Text(
-                      'ACTIVITY MAP'.toUpperCase(),
+                      'PRACTICE CALENDAR'.toUpperCase(),
                       style: AppTypography.caption.copyWith(
                         color: colorScheme.secondary,
                         fontWeight: FontWeight.w800,
@@ -68,7 +70,7 @@ class StatsScreen extends ConsumerWidget {
                       ),
                     ),
                     const SizedBox(height: AppSpacing.md),
-                    HeatMapGrid(dailyCounts: stats.dailyCounts),
+                    const PracticeCalendarView(),
                     
                     const SizedBox(height: AppSpacing.xl),
                     

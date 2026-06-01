@@ -162,7 +162,7 @@ class _VideoPickerSheetState extends State<VideoPickerSheet> {
     return Stack(
       children: [
         SafeArea(
-          child: Padding(
+          child: SingleChildScrollView(
             padding: const EdgeInsets.all(AppSpacing.screenEdge),
             child: Column(
               mainAxisSize: MainAxisSize.min,

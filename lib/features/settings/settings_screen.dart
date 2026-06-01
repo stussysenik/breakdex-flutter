@@ -160,6 +160,11 @@ class SettingsScreen extends ConsumerWidget {
                     title: 'Video Editor',
                     child: const _VideoEditorToggle(),
                   ),
+                  const SizedBox(height: AppSpacing.md),
+                  _SettingsPanel(
+                    title: 'Stats Tab',
+                    child: const _StatsTabToggle(),
+                  ),
                 ],
               ),
             ),
@@ -1705,6 +1710,52 @@ class _QuietModeToggle extends ConsumerWidget {
           activeThumbColor: colorScheme.primary,
           onChanged: (final value) {
             ref.read(quietModeEnabledProvider.notifier).set(enabled: value);
+          },
+        ),
+      ],
+    );
+  }
+}
+
+class _StatsTabToggle extends ConsumerWidget {
+  const _StatsTabToggle();
+
+  @override
+  Widget build(final BuildContext context, final WidgetRef ref) {
+    final isEnabled = ref.watch(showStatsTabProvider);
+    final colorScheme = Theme.of(context).colorScheme;
+
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Show Stats Tab',
+                style: AppTypography.caption.copyWith(
+                  color: colorScheme.secondary,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              const SizedBox(height: 2),
+              Text(
+                'Enable the insights tab in the bottom navigation.',
+                style: AppTypography.caption.copyWith(
+                  color: colorScheme.secondary.withValues(alpha: 0.6),
+                  fontSize: 11,
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(width: AppSpacing.sm),
+        Switch(
+          value: isEnabled,
+          activeThumbColor: colorScheme.primary,
+          onChanged: (_) {
+            ref.read(showStatsTabProvider.notifier).toggle();
           },
         ),
       ],
