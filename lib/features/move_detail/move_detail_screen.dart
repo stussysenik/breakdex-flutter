@@ -316,6 +316,12 @@ class _MoveDetailScreenState extends ConsumerState<MoveDetailScreen> {
                       ),
                       const SizedBox(height: AppSpacing.sm),
                       ActionTile(
+                        icon: Icons.copy_rounded,
+                        label: 'Duplicate Move',
+                        onTap: () => ref.read(moveDetailProvider.notifier).send(const TapDuplicate()),
+                      ),
+                      const SizedBox(height: AppSpacing.sm),
+                      ActionTile(
                         icon: Icons.delete_forever,
                         label: 'Delete Move',
                         destructive: true,
@@ -371,6 +377,7 @@ class _MoveDetailScreenState extends ConsumerState<MoveDetailScreen> {
     if (state is SavingCount) overlays.add(const SavingOverlay(message: 'Updating count...'));
     if (state is SavingNotes) overlays.add(const SavingOverlay(message: 'Saving notes...'));
     if (state is SavingPhotos) overlays.add(const SavingOverlay(message: 'Updating photos...'));
+    if (state is Duplicating) overlays.add(const SavingOverlay(message: 'Duplicating move...'));
     // Removed SavingVideo overlay to make video import non-blocking
 
     if (state is ChangingState) {

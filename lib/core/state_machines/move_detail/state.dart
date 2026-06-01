@@ -152,6 +152,10 @@ final class SavingPhotos extends MoveDetailState {
   const SavingPhotos(super.move, {required this.json});
 }
 
+final class Duplicating extends MoveDetailState {
+  const Duplicating(super.move);
+}
+
 // ── Error ──
 
 final class ErrorState extends MoveDetailState {

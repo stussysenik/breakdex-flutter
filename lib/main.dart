@@ -26,12 +26,11 @@ import 'core/sync/asset_hash_service.dart';
 import 'core/sync/legacy_asset_migration.dart';
 import 'core/sync/video_reliability_runtime.dart';
 import 'core/utils/diagnostics.dart';
+import 'core/services/boot_coordinator.dart';
 
 final _rootScaffoldMessengerKey = GlobalKey<ScaffoldMessengerState>();
 
 /// Create a timestamped backup of the database file before migrations run.
-/// This is a safety net — if a migration corrupts data, the user can recover
-/// from the backup file in the documents directory.
 Future<void> _backupDatabaseIfNeeded(
   SharedPreferences prefs,
   DatabaseRecoveryService recoveryService,
@@ -68,17 +67,10 @@ Future<void> _backupDatabaseIfNeeded(
         message: 'Rolling database backup failed: $error',
       ),
     );
-    // Backup failure is non-fatal — don't block app launch
   }
 }
 
-/// Open database with crash recovery. If the DB smoke test throws
-/// (e.g. corrupted file in release mode), delete the DB and start fresh.
-/// This prevents infinite crash loops on physical devices.
-///
-/// **Note:** Migrations are intentionally NOT run here — they happen after
-/// the first frame via [_runMigrations] to avoid iOS Jetsam kills during
-/// the critical launch window.
+/// Open database with crash recovery.
 Future<AppDatabase> _openDatabaseSafely(
   DatabaseRecoveryService recoveryService,
   ProvenanceJournalService provenanceJournal,
@@ -169,8 +161,6 @@ Future<AppDatabase> _openDatabaseSafely(
 }
 
 /// Run FSRS data migrations after the first frame has rendered.
-/// Deferring this work prevents iOS from killing the app for excessive
-/// memory or main-thread stall during the startup watchdog window.
 Future<void> _runMigrations(AppDatabase db, SharedPreferences prefs) async {
   try {
     await FsrsMigrationService.migrateIfNeeded(
@@ -197,6 +187,7 @@ Future<void> _runMigrations(AppDatabase db, SharedPreferences prefs) async {
 }
 
 void main() async {
+  final stopwatch = Stopwatch()..start();
   WidgetsFlutterBinding.ensureInitialized();
 
   DiagnosticsLog.configure(
@@ -211,15 +202,46 @@ void main() async {
   DiagnosticsLog.setSubsystemThreshold('QuickVideoViewer', LogLevel.trace);
   DiagnosticsLog.info('Boot', 'Breakdex startup — diagnostics online');
 
-  await Firebase.initializeApp(
-    options: DefaultFirebaseOptions.currentPlatform,
-  );
+  // 1. Initialize synchronous-ish core dependencies first
+  final sharedPrefs = await SharedPreferences.getInstance();
   final provenanceJournal = ProvenanceJournalService();
+  final recoveryService = DatabaseRecoveryService();
 
-  // --- Global error handlers (catch crashes that would kill release builds) ---
+  // 2. Open database with recovery logic
+  final restoredPrimary = await recoveryService
+      .restoreLatestBackupIfPrimaryUnavailable();
+  
+  await _backupDatabaseIfNeeded(sharedPrefs, recoveryService, provenanceJournal);
+  final db = await _openDatabaseSafely(recoveryService, provenanceJournal);
+
+  // 3. Create THE container with all final instances
+  final container = ProviderContainer(
+    overrides: [
+      sharedPreferencesProvider.overrideWithValue(sharedPrefs),
+      databaseProvider.overrideWithValue(db),
+      databaseRecoveryServiceProvider.overrideWithValue(recoveryService),
+      provenanceJournalServiceProvider.overrideWithValue(provenanceJournal),
+    ],
+  );
+
+  final boot = container.read(bootCoordinatorProvider.notifier);
+  boot.completeGate(BootGate.database);
+  boot.completeGate(BootGate.recovery, detail: restoredPrimary ? 'restored' : 'skipped');
+  boot.completeGate(BootGate.preferences);
+
+  // 4. Initialize async plugins in parallel
+  unawaited(Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform)
+      .then((_) => boot.completeGate(BootGate.firebase)));
+  unawaited(VideoPathResolver.initialize()
+      .then((_) => boot.completeGate(BootGate.videoResolver)));
+  unawaited(VideoStorageGate.initialize()
+      .then((_) => boot.completeGate(BootGate.storageGate)));
+
+  await AutomationFixtureService().seedIfRequested(db, prefs: sharedPrefs);
+
+  // --- Global error handlers ---
   FlutterError.onError = (details) {
     FlutterError.presentError(details);
-    debugPrint('FlutterError: ${details.exceptionAsString()}');
     unawaited(
       provenanceJournal.log(
         scope: 'crash',
@@ -228,12 +250,8 @@ void main() async {
         message: details.exceptionAsString(),
       ),
     );
-    if (!kReleaseMode && details.stack != null) {
-      debugPrintStack(stackTrace: details.stack);
-    }
   };
   PlatformDispatcher.instance.onError = (error, stack) {
-    debugPrint('Uncaught platform error: $error\n$stack');
     unawaited(
       provenanceJournal.log(
         scope: 'crash',
@@ -242,47 +260,8 @@ void main() async {
         message: '$error',
       ),
     );
-    return true; // Prevent crash — error is logged but app stays alive
+    return true;
   };
-
-  final prefs = await SharedPreferences.getInstance();
-  final recoveryService = DatabaseRecoveryService();
-  await provenanceJournal.log(
-    scope: 'startup',
-    eventType: 'app_boot',
-    status: 'started',
-    message: 'Application boot sequence started.',
-  );
-  final restoredPrimary = await recoveryService
-      .restoreLatestBackupIfPrimaryUnavailable();
-  await provenanceJournal.log(
-    scope: 'database_recovery',
-    eventType: restoredPrimary
-        ? 'missing_primary_restored'
-        : 'primary_present_or_no_backup',
-    status: restoredPrimary ? 'restored' : 'skipped',
-    entityType: 'database',
-    entityId: DatabaseRecoveryService.databaseFilename,
-    message: restoredPrimary
-        ? 'Primary database was missing and restored from backup.'
-        : 'Primary database already existed or no backup was available.',
-  );
-
-  // Cache the current documents directory path so VideoPathResolver can
-  // convert between relative (DB) and absolute (file system) paths.
-  await VideoPathResolver.initialize();
-
-  // Initialize the storage gate so video write operations are validated
-  // against the designated storage directories.
-  await VideoStorageGate.initialize();
-
-  // Backup database before migration (safety net for schema changes)
-  await _backupDatabaseIfNeeded(prefs, recoveryService, provenanceJournal);
-
-  // Open DB with crash recovery — prevents infinite crash loop on device.
-  // Migrations are deferred to after the first frame (see addPostFrameCallback below).
-  final db = await _openDatabaseSafely(recoveryService, provenanceJournal);
-  await AutomationFixtureService().seedIfRequested(db, prefs: prefs);
 
   // Global error widget for production resilience
   ErrorWidget.builder = (details) => Material(
@@ -302,44 +281,36 @@ void main() async {
   );
 
   runApp(
-    ProviderScope(
-      overrides: [
-        sharedPreferencesProvider.overrideWithValue(prefs),
-        databaseProvider.overrideWithValue(db),
-        databaseRecoveryServiceProvider.overrideWithValue(recoveryService),
-        provenanceJournalServiceProvider.overrideWithValue(provenanceJournal),
-      ],
+    UncontrolledProviderScope(
+      container: container,
       child: const BreakdexApp(),
     ),
   );
 
-  // Run deferred startup work after the first frame renders — keeps the
-  // launch window lightweight so iOS doesn't Jetsam-kill us.
+  // Run deferred startup work after the first frame renders
   WidgetsBinding.instance.addPostFrameCallback((_) async {
-    // Delay 2 seconds to let Flutter finish painting the initial route
-    // before heavy I/O competes with the raster thread.
-    await Future<void>.delayed(const Duration(seconds: 2));
-
-    // Run FSRS migrations (idempotent, gated by prefs)
+    // Run FSRS migrations
     try {
-      await _runMigrations(db, prefs);
+      await _runMigrations(db, sharedPrefs);
+      boot.completeGate(BootGate.migrations);
     } catch (e) {
       debugPrint('FSRS migration failed: $e');
     }
 
     // Convert legacy absolute video paths and clean up filesystem.
-    // Auto-cleanup is gated to once per 24h; DB healing is version-gated.
     try {
-      await VideoPathHealer.healAll(db, prefs);
+      await VideoPathHealer.healAll(db, sharedPrefs);
+      boot.completeGate(BootGate.healing);
     } catch (e) {
       debugPrint('Video path healing failed: $e');
     }
 
-    // Prune empty directories in canonical storage (cleanup from old nested hash layout).
+    // Prune empty directories in canonical storage.
     try {
       final canonicalFolder = CanonicalFolderService();
       await canonicalFolder.ensureInitialized();
       final removed = await canonicalFolder.pruneEmptyDirectories();
+      boot.completeGate(BootGate.pruning, detail: 'removed $removed');
       DiagnosticsLog.info('Boot', 'canonical folder prune done — removed $removed empty dir(s)');
       final orphans = await canonicalFolder.scanOrphans();
       final diskOrphans = orphans.where((o) => o.isOrphan).length;
@@ -352,8 +323,6 @@ void main() async {
     }
 
     // Migrate existing videos into the content-addressable manifest.
-    // Idempotent — skips moves that already have a contentHash.
-    // Runs one move at a time to avoid I/O saturation.
     try {
       final migration = LegacyAssetMigration(
         movesDao: db.movesDao,
@@ -370,9 +339,13 @@ void main() async {
           );
         }
       }
+      boot.completeGate(BootGate.legacyMigration);
     } catch (e) {
       debugPrint('Legacy asset migration failed: $e');
     }
+    
+    DiagnosticsLog.info('Boot', 'App startup completed in ${stopwatch.elapsedMilliseconds}ms');
+    stopwatch.stop();
   });
 }
 
@@ -382,10 +355,9 @@ class BreakdexApp extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     // Activate manifest sync — watches all DAOs and uploads manifest.json
-    // to cloud storage on any metadata change (debounced 5s).
     ref.watch(manifestSyncTriggerProvider);
 
-    // Auto-retry asset sync when connectivity is restored (offline → online).
+    // Auto-retry asset sync when connectivity is restored.
     ref.watch(syncConnectivityTriggerProvider);
 
     // Reconcile managed Photos album copies with move archive state.
@@ -422,8 +394,66 @@ class BreakdexApp extends ConsumerWidget {
       themeMode: themeSetting.themeMode,
       routerConfig: appRouter,
       builder: (context, child) {
-        return _StartupReliabilityToastGate(child: child);
+        return _BootGateOverlay(
+          child: _StartupReliabilityToastGate(child: child),
+        );
       },
+    );
+  }
+}
+
+/// Overlay that shows a loading indicator until the core boot gates are cleared.
+class _BootGateOverlay extends ConsumerWidget {
+  const _BootGateOverlay({required this.child});
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final boot = ref.watch(bootCoordinatorProvider);
+    
+    // Once core gates are cleared, we show the app content.
+    // Post-frame background work (migrations, etc.) happens while the app is interactive.
+    if (boot.isReadyForUI) {
+      return Stack(
+        children: [
+          child,
+          if (!boot.isComplete)
+            Positioned(
+              top: 0,
+              left: 0,
+              right: 0,
+              child: PreferredSize(
+                preferredSize: const Size.fromHeight(2),
+                child: LinearProgressIndicator(
+                  value: boot.progress,
+                  backgroundColor: Colors.transparent,
+                  color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.5),
+                  minHeight: 2,
+                ),
+              ),
+            ),
+        ],
+      );
+    }
+
+    // Show a minimal splash while core gates are clearing
+    return Scaffold(
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+      body: Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const CircularProgressIndicator(),
+            if (boot.currentTask != null) ...[
+              const SizedBox(height: 16),
+              Text(
+                boot.currentTask!,
+                style: Theme.of(context).textTheme.bodySmall,
+              ),
+            ],
+          ],
+        ),
+      ),
     );
   }
 }

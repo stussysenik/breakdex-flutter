@@ -481,15 +481,24 @@ class _CreateComboScreenState extends ConsumerState<CreateComboScreen> {
       if (mounted) {
         setState(() => _screenState = _ScreenState.saved);
         _comboName = name;
+        
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(widget.isEditing ? 'Combo updated successfully' : 'Combo created successfully'),
+            duration: const Duration(seconds: 2),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+
         if (widget.isEditing) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Combo saved'), duration: Duration(seconds: 1)),
-          );
           Future.delayed(const Duration(milliseconds: 1200), () {
             if (mounted) setState(() => _screenState = _ScreenState.editing);
           });
         } else {
-          context.pop();
+          // Add a tiny delay so the user sees the toast start to animate in before popping
+          Future.delayed(const Duration(milliseconds: 200), () {
+            if (mounted) context.pop();
+          });
         }
       }
     } catch (e, stack) {

@@ -7,6 +7,7 @@ import 'package:flutter/services.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:path/path.dart' as p;
+import '../utils/diagnostics.dart';
 import 'package:uuid/uuid.dart';
 import 'package:video_player/video_player.dart';
 import 'package:video_thumbnail/video_thumbnail.dart';
@@ -109,38 +110,58 @@ class VideoService {
     String statusLabel, {
     StatusCallback? onStatus,
   }) async {
-    onStatus?.call(statusLabel);
-    final native = await _pickViaNativeChannel(method);
-    if (native == null) return null;
-    onStatus?.call('Generating thumbnail...');
-    final thumb = await generateThumbnail(native.localPath);
-    return VideoPickResult(
-      localPath: native.localPath,
-      thumbnailPath: thumb,
-      originalFileName: native.originalFileName,
-      creationDate: native.creationDate,
-      fileSize: native.fileSize,
-      duration: native.duration,
-    );
+    final logger = StageLogger.begin('NativePick', subsystem: 'VideoService', context: {'method': method});
+    try {
+      onStatus?.call(statusLabel);
+      logger.stage('pick_channel');
+      final native = await _pickViaNativeChannel(method);
+      if (native == null) {
+        logger.complete('cancelled');
+        return null;
+      }
+      onStatus?.call('Generating thumbnail...');
+      logger.stage('gen_thumb');
+      final thumb = await generateThumbnail(native.localPath);
+      logger.complete('success');
+      return VideoPickResult(
+        localPath: native.localPath,
+        thumbnailPath: thumb,
+        originalFileName: native.originalFileName,
+        creationDate: native.creationDate,
+        fileSize: native.fileSize,
+        duration: native.duration,
+      );
+    } catch (e, st) {
+      logger.fail(e, st);
+      rethrow;
+    }
   }
 
   /// Record a new video using the camera
   TaskEither<AppFailure, VideoPickResult?> recordVideo({StatusCallback? onStatus}) {
     return TaskEither.tryCatch(
       () async {
+        final logger = StageLogger.begin('RecordVideo', subsystem: 'VideoService');
         onStatus?.call('Opening camera...');
+        logger.stage('pick_camera');
         final file = await _picker.pickVideo(source: ImageSource.camera);
-        if (file == null) return null;
+        if (file == null) {
+          logger.complete('cancelled');
+          return null;
+        }
 
         onStatus?.call('Saving recording...');
+        logger.stage('save_docs');
         final localPath = await _saveToDocumentsWithRetry(
           File(file.path),
           onStatus: onStatus,
         );
         onStatus?.call('Generating thumbnail...');
+        logger.stage('gen_thumb');
         final thumb = await generateThumbnail(localPath);
         final stat = await File(VideoPathResolver.toAbsolute(localPath)).stat();
 
+        logger.complete('success');
         return VideoPickResult(
           localPath: localPath,
           thumbnailPath: thumb,
@@ -295,12 +316,16 @@ class VideoService {
 
   Future<VideoPickResult?> importSpecificAsset(String identifier) async {
     if (!Platform.isIOS) return null;
+    final logger = StageLogger.begin('ImportSpecific', subsystem: 'VideoService', context: {'id': identifier});
     try {
       final Map<String, dynamic>? payload = await _nativeImportChannel.invokeMapMethod<String, dynamic>(
         'importSpecificAsset',
         {'identifier': identifier},
       );
-      if (payload == null) return null;
+      if (payload == null) {
+        logger.complete('cancelled');
+        return null;
+      }
       
       DateTime? creationDate;
       if (payload['creationDate'] != null) {
@@ -315,10 +340,11 @@ class VideoService {
         duration: (payload['duration'] as num?)?.toDouble(),
       );
       
+      logger.complete('success');
       debugPrint('[VideoService] Specific asset import result: $result');
       return result;
-    } catch (e) {
-      debugPrint('[VideoService] Failed to import asset: $e');
+    } catch (e, st) {
+      logger.fail(e, st);
       return null;
     }
   }

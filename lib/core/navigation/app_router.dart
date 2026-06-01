@@ -25,6 +25,7 @@ import '../../features/settings/free_space_screen.dart';
 import '../../features/settings/sync_providers_screen.dart';
 import '../../features/settings/sync_status_screen.dart';
 import '../../features/settings/help/asset_sync_help_screen.dart';
+import '../../features/settings/system_status_screen.dart';
 import '../../shared/widgets/bottom_nav_shell.dart';
 import '../../shared/widgets/quick_video_viewer.dart';
 import '../../core/models/app_mode.dart';
@@ -184,6 +185,11 @@ final appRouter = GoRouter(
       path: '/settings-panel/canonical-trash',
       parentNavigatorKey: _rootNavigatorKey,
       builder: (context, state) => const CanonicalTrashScreen(),
+    ),
+    GoRoute(
+      path: '/settings-panel/system-status',
+      parentNavigatorKey: _rootNavigatorKey,
+      builder: (context, state) => const SystemStatusScreen(),
     ),
     GoRoute(
       path: '/settings-panel/sync-help',

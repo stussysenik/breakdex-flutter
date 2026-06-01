@@ -4,15 +4,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../../core/design/spacing.dart';
 import '../../core/design/typography.dart';
-import '../../core/services/media_playback_coordinator.dart';
+import '../../core/design/theme.dart';
 import '../../core/services/video_service.dart';
+import '../../core/utils/loading_state_machine.dart';
 import 'metadata_video_picker_sheet.dart';
 
 /// Bottom sheet with 3 video source options: Camera, Photo Library, Files (iCloud).
-/// Shows loading overlay during pick/download. Returns VideoPickResult or null.
-///
-/// When [previousVideoName] is provided, shows a ghost suggestion header
-/// so the user can identify which video to re-pick.
+/// Shows loading overlay during pick/download. Returns [VideoPickResult] or null.
 class VideoPickerSheet extends StatefulWidget {
   const VideoPickerSheet({
     super.key,
@@ -28,14 +26,13 @@ class VideoPickerSheet extends StatefulWidget {
     String? previousVideoName,
     String? previousThumbnailPath,
   }) {
-    MediaPlaybackCoordinator.shared.pauseAll();
     return showModalBottomSheet<VideoPickResult>(
       context: context,
       backgroundColor: Theme.of(context).colorScheme.surface,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(AppRadius.lg)),
       ),
-      builder: (_) => VideoPickerSheet(
+      builder: (ctx) => VideoPickerSheet(
         previousVideoName: previousVideoName,
         previousThumbnailPath: previousThumbnailPath,
       ),
@@ -48,39 +45,38 @@ class VideoPickerSheet extends StatefulWidget {
 
 class _VideoPickerSheetState extends State<VideoPickerSheet> {
   final _videoService = VideoService();
-  bool _loading = false;
-  String _statusText = '';
-  double _progress = 0.0;
+  final _loadingController = LoadingStateController<void>();
+  LoadingStateMachine<void> _loadState = const Idle();
+  StreamSubscription<LoadingStateMachine<void>>? _stateSub;
   StreamSubscription<double>? _progressSub;
 
   @override
+  void initState() {
+    super.initState();
+    _stateSub = _loadingController.stream.listen((state) {
+      if (mounted) setState(() => _loadState = state);
+    });
+  }
+
+  @override
   void dispose() {
+    _stateSub?.cancel();
     _progressSub?.cancel();
+    _loadingController.dispose();
     super.dispose();
   }
 
   void _startProgressListener() {
     _progressSub?.cancel();
     _progressSub = _videoService.importProgress.listen((p) {
-      if (mounted) setState(() => _progress = p);
+      _loadingController.send(LoadingEvent.progress(p));
     });
   }
 
-  void _onStatus(String status) {
-    if (mounted) setState(() => _statusText = status);
-  }
-
-  /// Dismiss the sheet without a result. Any in-flight native picker operation
-  /// will complete in the background but its result is silently discarded
-  /// because the `mounted` guards in each pick method prevent post-pop updates.
   void _cancel() {
     if (mounted) Navigator.pop(context, null);
   }
 
-  /// Extract a human-readable message from the error thrown by the native
-  /// video import channel. `PlatformException.message` already carries the
-  /// `NSError.localizedDescription` from Swift, so we surface it directly
-  /// with a few friendly overrides for common cases.
   String _describeError(Object error) {
     if (error is PlatformException) {
       final msg = error.message ?? '';
@@ -93,10 +89,9 @@ class _VideoPickerSheetState extends State<VideoPickerSheet> {
       if (msg.isNotEmpty) return msg;
     }
     return 'Could not access file';
-    }
+  }
 
-    Future<void> _pickFromPhotos() async {
-
+  Future<void> _pickFromPhotos() async {
     unawaited(HapticFeedback.selectionClick());
     final result = await MetadataVideoPickerSheet.show(context);
     if (!mounted) return;
@@ -107,63 +102,63 @@ class _VideoPickerSheetState extends State<VideoPickerSheet> {
 
   Future<void> _pickFromFiles() async {
     unawaited(HapticFeedback.selectionClick());
-    setState(() {
-      _loading = true;
-      _progress = 0.0;
-      _statusText = 'Opening files...';
-    });
+    _loadingController.send(LoadingEvent.start);
     _startProgressListener();
     try {
-      // Do not timeout the picker interaction itself; users may need
-      // more than 30s to browse iCloud Drive and pick a file.
-      final resultEither = await _videoService.pickFromFiles(onStatus: _onStatus).run();
+      final resultEither = await _videoService.pickFromFiles().run();
       if (!mounted) return;
       resultEither.match(
-        (failure) => _showError(_describeError(Exception(failure.message))),
+        (failure) {
+          final err = _describeError(Exception(failure.message));
+          _loadingController.send(LoadingEvent.fail(err, retryable: true));
+        },
         (result) {
-          if (result != null) Navigator.pop(context, result);
+          if (result != null) {
+            _loadingController.send(LoadingEvent.complete(null));
+            Navigator.pop(context, result);
+          } else {
+            _loadingController.send(LoadingEvent.reset);
+          }
         },
       );
     } catch (e) {
-      if (mounted) _showError(_describeError(e));
+      if (mounted) {
+        _loadingController.send(LoadingEvent.fail(_describeError(e), retryable: true));
+      }
     }
   }
 
   Future<void> _recordVideo() async {
     unawaited(HapticFeedback.selectionClick());
-    setState(() {
-      _loading = true;
-      _statusText = 'Opening camera...';
-    });
+    _loadingController.send(LoadingEvent.start);
     try {
-      final resultEither = await _videoService.recordVideo(onStatus: _onStatus).run();
+      final resultEither = await _videoService.recordVideo().run();
       if (!mounted) return;
       resultEither.match(
-        (failure) => _showError(_describeError(Exception(failure.message))),
+        (failure) {
+          final err = _describeError(Exception(failure.message));
+          _loadingController.send(LoadingEvent.fail(err, retryable: true));
+        },
         (result) {
-          if (result != null) Navigator.pop(context, result);
+          if (result != null) {
+            _loadingController.send(LoadingEvent.complete(null));
+            Navigator.pop(context, result);
+          } else {
+            _loadingController.send(LoadingEvent.reset);
+          }
         },
       );
     } catch (e) {
-      if (mounted) _showError(_describeError(e));
+      if (mounted) {
+        _loadingController.send(LoadingEvent.fail(_describeError(e), retryable: true));
+      }
     }
-  }
-
-  void _showError(String message) {
-    _progressSub?.cancel();
-    setState(() {
-      _loading = false;
-      _progress = 0.0;
-      _statusText = message;
-    });
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(message)),
-    );
   }
 
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
+    final isLoading = _loadState is Loading || _loadState is Downloading;
 
     return Stack(
       children: [
@@ -192,80 +187,219 @@ class _VideoPickerSheetState extends State<VideoPickerSheet> {
                   icon: Icons.photo_library,
                   label: 'Photo Library',
                   subtitle: 'Includes iCloud Photos',
-                  onTap: _loading ? null : _pickFromPhotos,
+                  onTap: isLoading ? null : _pickFromPhotos,
                 ),
                 const SizedBox(height: AppSpacing.sm),
                 _SourceTile(
                   icon: Icons.folder,
                   label: 'Files',
                   subtitle: 'iCloud Drive, Dropbox, local files',
-                  onTap: _loading ? null : _pickFromFiles,
+                  onTap: isLoading ? null : _pickFromFiles,
                 ),
                 const SizedBox(height: AppSpacing.sm),
                 _SourceTile(
                   icon: Icons.videocam,
                   label: 'Camera',
                   subtitle: 'Record a new video',
-                  onTap: _loading ? null : _recordVideo,
+                  onTap: isLoading ? null : _recordVideo,
                 ),
                 const SizedBox(height: AppSpacing.md),
               ],
             ),
           ),
         ),
-        if (_loading)
-          Positioned.fill(
-            child: Container(
-              decoration: const BoxDecoration(
-                color: Colors.black54,
-                borderRadius: BorderRadius.vertical(
-                  top: Radius.circular(AppRadius.lg),
-                ),
-              ),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Text(
-                    '${(_progress * 100).toInt()}%',
-                    style: AppTypography.titleMedium.copyWith(
-                      color: Colors.white70,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 40),
-                    child: ClipRRect(
-                      borderRadius: BorderRadius.circular(4),
-                      child: LinearProgressIndicator(
-                        value: _progress > 0 ? _progress : null,
-                        backgroundColor: Colors.white24,
-                        color: Theme.of(context).colorScheme.primary,
-                        minHeight: 6,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    _statusText,
-                    style: AppTypography.bodySmall.copyWith(
-                      color: Colors.white70,
-                    ),
-                  ),
-                  const SizedBox(height: AppSpacing.lg),
-                  TextButton(
-                    onPressed: _cancel,
-                    child: Text(
-                      'Cancel',
-                      style: AppTypography.bodySmall.copyWith(
-                        color: Colors.white70,
-                      ),
-                    ),
-                  ),
-                ],
+        _buildLoadingOverlay(colorScheme),
+      ],
+    );
+  }
+
+  Widget _buildLoadingOverlay(ColorScheme colorScheme) {
+    return _loadState.map(
+      idle: (_) => const SizedBox.shrink(),
+      ready: (_) => const SizedBox.shrink(),
+      loading: (_) => _LoadingOverlayContent(
+        statusText: 'Preparing...',
+        onCancel: _cancel,
+      ),
+      downloading: (s) => _LoadingOverlayContent(
+        statusText: 'Importing...',
+        progress: s.progress,
+        onCancel: _cancel,
+      ),
+      retrying: (s) => _LoadingOverlayContent(
+        statusText: 'Retrying (${s.attempt}/${s.maxAttempts})...',
+        onCancel: _cancel,
+      ),
+      timeout: (_) => _ErrorOverlayContent(
+        message: 'iCloud download timed out.',
+        onRetry: _pickFromFiles,
+        onCancel: () => _loadingController.send(LoadingEvent.reset),
+      ),
+      error: (s) => _ErrorOverlayContent(
+        message: s.message,
+        onRetry: s.retryable ? _pickFromFiles : null,
+        onCancel: () => _loadingController.send(LoadingEvent.reset),
+      ),
+    );
+  }
+}
+
+class _LoadingOverlayContent extends StatelessWidget {
+  const _LoadingOverlayContent({
+    required this.statusText,
+    this.progress,
+    required this.onCancel,
+  });
+
+  final String statusText;
+  final double? progress;
+  final VoidCallback onCancel;
+
+  @override
+  Widget build(BuildContext context) {
+    return Positioned.fill(
+      child: Container(
+        decoration: const BoxDecoration(
+          color: Colors.black54,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(AppRadius.lg)),
+        ),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const SizedBox(
+              width: 48,
+              height: 48,
+              child: CircularProgressIndicator(
+                strokeWidth: 3,
+                color: Colors.white,
               ),
             ),
+            const SizedBox(height: 16),
+            if (progress != null)
+              Text(
+                '${(progress! * 100).toInt()}%',
+                style: AppTypography.titleMedium.copyWith(
+                  color: Colors.white,
+                  fontWeight: FontWeight.w900,
+                ),
+              ),
+            const SizedBox(height: 8),
+            Text(
+              statusText,
+              style: AppTypography.bodySmall.copyWith(
+                color: Colors.white70,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            const SizedBox(height: AppSpacing.lg),
+            TextButton(
+              onPressed: onCancel,
+              child: Text(
+                'Cancel',
+                style: AppTypography.bodySmall.copyWith(color: Colors.white70),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _ErrorOverlayContent extends StatelessWidget {
+  const _ErrorOverlayContent({
+    required this.message,
+    this.onRetry,
+    required this.onCancel,
+  });
+
+  final String message;
+  final VoidCallback? onRetry;
+  final VoidCallback onCancel;
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    return Positioned.fill(
+      child: Container(
+        decoration: const BoxDecoration(
+          color: Colors.black87,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(AppRadius.lg)),
+        ),
+        padding: const EdgeInsets.all(AppSpacing.xl),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Icon(Icons.error_outline_rounded, color: Colors.redAccent, size: 48),
+            const SizedBox(height: AppSpacing.md),
+            Text(
+              message,
+              style: AppTypography.bodyMedium.copyWith(color: Colors.white),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: AppSpacing.xl),
+            if (onRetry != null)
+              ElevatedButton(
+                onPressed: onRetry,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: colorScheme.primary,
+                  foregroundColor: colorScheme.onPrimary,
+                ),
+                child: const Text('RETRY'),
+              ),
+            TextButton(
+              onPressed: onCancel,
+              child: const Text('Back', style: TextStyle(color: Colors.white70)),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _GhostCard extends StatelessWidget {
+  const _GhostCard({required this.videoName, this.thumbnailPath});
+  final String videoName;
+  final String? thumbnailPath;
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    return Container(
+      padding: const EdgeInsets.all(AppSpacing.md),
+      decoration: BoxDecoration(
+        color: colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
+        borderRadius: BorderRadius.circular(AppRadius.md),
+        border: Border.all(color: colorScheme.outlineVariant),
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 48, height: 48,
+            decoration: BoxDecoration(
+              color: colorScheme.surfaceContainerHighest,
+              borderRadius: BorderRadius.circular(4),
+            ),
+            clipBehavior: Clip.antiAlias,
+            child: thumbnailPath != null
+                ? Image.file(File(thumbnailPath!), fit: BoxFit.cover)
+                : const Icon(Icons.movie, size: 20),
           ),
-      ],
+          const SizedBox(width: AppSpacing.md),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text('CURRENT SELECTION', style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, letterSpacing: 1)),
+                const SizedBox(height: 2),
+                Text(videoName, style: AppTypography.bodySmall, overflow: TextOverflow.ellipsis, maxLines: 1),
+              ],
+            ),
+          ),
+          Icon(Icons.history, color: colorScheme.secondary, size: 18),
+        ],
+      ),
     );
   }
 }
@@ -275,7 +409,7 @@ class _SourceTile extends StatelessWidget {
     required this.icon,
     required this.label,
     required this.subtitle,
-    required this.onTap,
+    this.onTap,
   });
 
   final IconData icon;
@@ -286,117 +420,35 @@ class _SourceTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
+    final enabled = onTap != null;
+
     return InkWell(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(AppRadius.sm),
-      child: Container(
-        padding: const EdgeInsets.symmetric(
-          horizontal: AppSpacing.md,
-          vertical: 14,
-        ),
-        decoration: BoxDecoration(
-          color: colorScheme.surfaceContainerHighest,
-          borderRadius: BorderRadius.circular(AppRadius.sm),
-        ),
-        child: Row(
-          children: [
-            Icon(icon, color: Theme.of(context).colorScheme.primary, size: 28),
-            const SizedBox(width: AppSpacing.md),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    label,
-                    style: AppTypography.bodyMedium.copyWith(
-                      color: colorScheme.onSurface,
-                    ),
-                  ),
-                  Text(
-                    subtitle,
-                    style: AppTypography.caption.copyWith(
-                      color: colorScheme.secondary,
-                    ),
-                  ),
-                ],
+      borderRadius: BorderRadius.circular(AppRadius.md),
+      child: Opacity(
+        opacity: enabled ? 1.0 : 0.5,
+        child: Container(
+          padding: const EdgeInsets.all(AppSpacing.lg),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(AppRadius.md),
+            border: Border.all(color: colorScheme.outlineVariant),
+          ),
+          child: Row(
+            children: [
+              Icon(icon, color: colorScheme.primary),
+              const SizedBox(width: AppSpacing.lg),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(label, style: AppTypography.titleSmall),
+                    Text(subtitle, style: AppTypography.bodySmall.copyWith(color: colorScheme.secondary)),
+                  ],
+                ),
               ),
-            ),
-            Icon(Icons.chevron_right, color: colorScheme.secondary),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-/// Ghost card shown at 0.45 opacity above source tiles when re-picking.
-/// Shows the previous video's thumbnail + original filename for context.
-class _GhostCard extends StatelessWidget {
-  const _GhostCard({required this.videoName, this.thumbnailPath});
-
-  final String videoName;
-  final String? thumbnailPath;
-
-  @override
-  Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
-    return Opacity(
-      opacity: 0.45,
-      child: Container(
-        padding: const EdgeInsets.all(AppSpacing.sm),
-        decoration: BoxDecoration(
-          color: colorScheme.surfaceContainerHighest,
-          borderRadius: BorderRadius.circular(AppRadius.sm),
-        ),
-        child: Row(
-          children: [
-            // Thumbnail or fallback icon
-            ClipRRect(
-              borderRadius: BorderRadius.circular(6),
-              child: SizedBox(
-                width: 40,
-                height: 40,
-                child: thumbnailPath != null
-                    ? Image.file(
-                        File(thumbnailPath!),
-                        fit: BoxFit.cover,
-                        errorBuilder: (_, _, _) => Container(
-                          color: colorScheme.surfaceContainerHighest,
-                          child: Icon(Icons.videocam_off,
-                              color: colorScheme.secondary, size: 20),
-                        ),
-                      )
-                    : Container(
-                        color: colorScheme.surfaceContainerHighest,
-                        child: Icon(Icons.videocam_off,
-                            color: colorScheme.secondary, size: 20),
-                      ),
-              ),
-            ),
-            const SizedBox(width: AppSpacing.sm),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Previous video',
-                    style: AppTypography.caption.copyWith(
-                      color: colorScheme.secondary,
-                    ),
-                  ),
-                  Text(
-                    videoName,
-                    style: AppTypography.bodySmall.copyWith(
-                      color: colorScheme.onSurface,
-                    ),
-                    overflow: TextOverflow.ellipsis,
-                    maxLines: 1,
-                  ),
-                ],
-              ),
-            ),
-            Icon(Icons.history, color: colorScheme.secondary, size: 18),
-          ],
+              Icon(Icons.chevron_right, color: colorScheme.outline),
+            ],
+          ),
         ),
       ),
     );

@@ -1,6 +1,10 @@
+import 'dart:async';
 import 'dart:io';
 import 'dart:typed_data';
+import 'dart:ui';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:path/path.dart' as p;
@@ -36,6 +40,12 @@ class _MetadataVideoPickerSheetState extends ConsumerState<MetadataVideoPickerSh
   bool _loading = true;
   String? _error;
 
+  // Ghosting / Pre-rendering import state
+  MetadataAsset? _importingAsset;
+  Uint8List? _importingThumbnail;
+  double _importProgress = 0.0;
+  StreamSubscription<double>? _progressSub;
+
   @override
   void initState() {
     super.initState();
@@ -46,6 +56,7 @@ class _MetadataVideoPickerSheetState extends ConsumerState<MetadataVideoPickerSh
   @override
   void dispose() {
     _tabController.dispose();
+    _progressSub?.cancel();
     super.dispose();
   }
 
@@ -120,6 +131,60 @@ class _MetadataVideoPickerSheetState extends ConsumerState<MetadataVideoPickerSh
     }
   }
 
+  Future<void> _handleSelection(MetadataAsset asset, Uint8List? thumbnail) async {
+    // Immediate pre-rendering / ghosting feedback (under 3ms)
+    setState(() {
+      _importingAsset = asset;
+      _importingThumbnail = thumbnail;
+      _importProgress = 0.0;
+    });
+
+    _progressSub?.cancel();
+    _progressSub = ref.read(videoServiceProvider).importProgress.listen((p) {
+      if (mounted) setState(() => _importProgress = p);
+    });
+
+    final navigator = Navigator.of(context);
+    final logger = StageLogger.begin('ImportAsset', subsystem: 'MetadataVideoPickerSheet', context: {
+      'name': asset.originalFileName,
+      'isLocal': asset.isLocal,
+    });
+    
+    try {
+      VideoPickResult? result;
+      if (asset.isLocal) {
+        // Give the UI a tiny moment to show the ghost state so the transition isn't harsh
+        await Future.delayed(const Duration(milliseconds: 150));
+        result = VideoPickResult(
+          localPath: asset.localIdentifier,
+          originalFileName: asset.originalFileName,
+          creationDate: asset.creationDate,
+        );
+      } else {
+        logger.stage('import_native');
+        result = await ref.read(videoServiceProvider).importSpecificAsset(asset.localIdentifier);
+      }
+      
+      if (mounted) {
+        logger.complete(result != null ? 'success' : 'cancelled');
+        navigator.pop(result);
+      }
+    } catch (e, st) {
+      logger.fail(e, st);
+      if (mounted) {
+        setState(() {
+          _importingAsset = null;
+          _importingThumbnail = null;
+        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Import failed: $e')),
+        );
+      }
+    } finally {
+      await _progressSub?.cancel();
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
@@ -131,36 +196,126 @@ class _MetadataVideoPickerSheetState extends ConsumerState<MetadataVideoPickerSh
         color: colorScheme.surface,
         borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
       ),
-      child: Column(
+      child: Stack(
         children: [
-          _buildHandle(context),
-          _buildHeader(context),
-          const SizedBox(height: AppSpacing.sm),
-          TabBar(
-            controller: _tabController,
-            tabs: const [
-              Tab(text: 'PHOTO LIBRARY'),
-              Tab(text: 'APP VIDEOS'),
+          Column(
+            children: [
+              _buildHandle(context),
+              _buildHeader(context),
+              const SizedBox(height: AppSpacing.sm),
+              TabBar(
+                controller: _tabController,
+                tabs: const [
+                  Tab(text: 'PHOTO LIBRARY'),
+                  Tab(text: 'APP VIDEOS'),
+                ],
+                dividerColor: Colors.transparent,
+                labelColor: colorScheme.primary,
+                unselectedLabelColor: colorScheme.secondary,
+                indicatorColor: colorScheme.primary,
+                indicatorSize: TabBarIndicatorSize.label,
+                labelStyle: AppTypography.labelLarge.copyWith(fontWeight: FontWeight.w800, letterSpacing: 1.2),
+                unselectedLabelStyle: AppTypography.labelLarge.copyWith(fontWeight: FontWeight.w500, letterSpacing: 1.2),
+              ),
+              const Divider(height: 1, thickness: 0.5),
+              Expanded(
+                child: TabBarView(
+                  controller: _tabController,
+                  children: [
+                    _buildGrid(_libraryAssets, 'Photos'),
+                    _buildGrid(_appAssets, 'Managed'),
+                  ],
+                ),
+              ),
             ],
-            dividerColor: Colors.transparent,
-            labelColor: colorScheme.primary,
-            unselectedLabelColor: colorScheme.secondary,
-            indicatorColor: colorScheme.primary,
-            indicatorSize: TabBarIndicatorSize.label,
-            labelStyle: AppTypography.labelLarge.copyWith(fontWeight: FontWeight.w800, letterSpacing: 1.2),
-            unselectedLabelStyle: AppTypography.labelLarge.copyWith(fontWeight: FontWeight.w500, letterSpacing: 1.2),
           ),
-          const Divider(height: 1, thickness: 0.5),
-          Expanded(
-            child: TabBarView(
-              controller: _tabController,
-              children: [
-                _buildGrid(_libraryAssets, 'Photos'),
-                _buildGrid(_appAssets, 'Managed'),
-              ],
-            ),
-          ),
+          
+          if (_importingAsset != null)
+            _buildGhostingOverlay(context),
         ],
+      ),
+    );
+  }
+
+  Widget _buildGhostingOverlay(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+
+    return Positioned.fill(
+      child: ClipRRect(
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+        child: Stack(
+          fit: StackFit.expand,
+          children: [
+            if (_importingThumbnail != null)
+              Image.memory(_importingThumbnail!, fit: BoxFit.cover),
+            
+            BackdropFilter(
+              filter: ImageFilter.blur(sigmaX: 32, sigmaY: 32),
+              child: Container(color: Colors.black.withValues(alpha: 0.75)),
+            ),
+
+            Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Container(
+                  width: 160,
+                  height: 160,
+                  decoration: BoxDecoration(
+                    color: colorScheme.surfaceContainerHighest,
+                    borderRadius: BorderRadius.circular(16),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.5),
+                        blurRadius: 30,
+                        offset: const Offset(0, 15),
+                      ),
+                    ],
+                  ),
+                  clipBehavior: Clip.antiAlias,
+                  child: _importingThumbnail != null
+                      ? Image.memory(_importingThumbnail!, fit: BoxFit.cover)
+                      : const Icon(Icons.videocam, size: 64, color: Colors.white54),
+                ).animate().scale(begin: const Offset(0.9, 0.9), end: const Offset(1, 1), curve: Curves.easeOutCubic, duration: 400.ms),
+                
+                const SizedBox(height: AppSpacing.xxl),
+                
+                Text(
+                  'IMPORTING VIDEO',
+                  style: AppTypography.labelLarge.copyWith(
+                    color: Colors.white,
+                    letterSpacing: 3.0,
+                    fontWeight: FontWeight.w900,
+                  ),
+                ).animate().fadeIn(duration: 400.ms).slideY(begin: 0.2),
+                
+                const SizedBox(height: AppSpacing.md),
+                
+                SizedBox(
+                  width: 220,
+                  height: 6,
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(3),
+                    child: LinearProgressIndicator(
+                      value: _importProgress > 0 ? _importProgress : null,
+                      backgroundColor: Colors.white24,
+                      color: colorScheme.primary,
+                    ),
+                  ),
+                ).animate().fadeIn(delay: 150.ms),
+                
+                const SizedBox(height: AppSpacing.sm),
+                
+                Text(
+                  '${(_importProgress * 100).toInt()}%',
+                  style: AppTypography.titleLarge.copyWith(
+                    color: Colors.white,
+                    fontWeight: FontWeight.w900,
+                  ),
+                ).animate().fadeIn(delay: 150.ms),
+              ],
+            ).animate().fadeIn(duration: 300.ms),
+          ],
+        ),
       ),
     );
   }
@@ -249,7 +404,10 @@ class _MetadataVideoPickerSheetState extends ConsumerState<MetadataVideoPickerSh
       ),
       itemCount: assets.length,
       itemBuilder: (context, index) {
-        return _VideoTile(asset: assets[index]);
+        return _VideoTile(
+          asset: assets[index],
+          onSelect: _handleSelection,
+        );
       },
     );
   }
@@ -257,7 +415,9 @@ class _MetadataVideoPickerSheetState extends ConsumerState<MetadataVideoPickerSh
 
 class _VideoTile extends ConsumerStatefulWidget {
   final MetadataAsset asset;
-  const _VideoTile({required this.asset});
+  final void Function(MetadataAsset, Uint8List?) onSelect;
+
+  const _VideoTile({required this.asset, required this.onSelect});
 
   @override
   ConsumerState<_VideoTile> createState() => _VideoTileState();
@@ -270,7 +430,6 @@ class _VideoTileState extends ConsumerState<_VideoTile> {
   @override
   void initState() {
     super.initState();
-    // Use a small delay or didChangeDependencies to avoid MediaQuery.of during init
   }
 
   @override
@@ -283,10 +442,7 @@ class _VideoTileState extends ConsumerState<_VideoTile> {
 
   Future<void> _loadThumbnail() async {
     final asset = widget.asset;
-    
-    // Fixed target dimension for simplicity and high quality (approx 360px)
-    // Avoids dependOnInheritedWidgetOfExactType error
-    const targetDim = 360;
+    const targetDim = 200;
     
     Uint8List? bytes;
     try {
@@ -327,29 +483,19 @@ class _VideoTileState extends ConsumerState<_VideoTile> {
       : 'UNKNOWN';
 
     return GestureDetector(
-      onTap: () async {
-        final navigator = Navigator.of(context);
-        DiagnosticsLog.info('MetadataVideoPickerSheet', 'Importing selected asset: ${asset.originalFileName}');
-        
-        VideoPickResult? result;
-        if (asset.isLocal) {
-          result = VideoPickResult(
-            localPath: asset.localIdentifier,
-            originalFileName: asset.originalFileName,
-            creationDate: asset.creationDate,
-          );
-        } else {
-          result = await ref.read(videoServiceProvider).importSpecificAsset(asset.localIdentifier);
-        }
-        
-        if (mounted) {
-          navigator.pop(result);
-        }
+      behavior: HitTestBehavior.opaque,
+      onTap: () {
+        HapticFeedback.mediumImpact();
+        widget.onSelect(asset, _thumbnail);
       },
       child: Container(
         decoration: BoxDecoration(
           color: colorScheme.surfaceContainerHighest,
           borderRadius: BorderRadius.circular(4),
+          border: Border.all(
+            color: colorScheme.primary.withValues(alpha: 0.1),
+            width: 0.5,
+          ),
         ),
         clipBehavior: Clip.antiAlias,
         child: Stack(
@@ -357,8 +503,10 @@ class _VideoTileState extends ConsumerState<_VideoTile> {
           children: [
             if (_thumbnail != null)
               Image.memory(_thumbnail!, fit: BoxFit.cover, filterQuality: FilterQuality.medium)
+                  .animate()
+                  .fade(duration: 300.ms)
             else if (_loading)
-              const Center(child: SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 1.5)))
+              const Center(child: SizedBox(width: 24, height: 24, child: CircularProgressIndicator(strokeWidth: 2)))
             else
               const Icon(Icons.videocam_rounded, size: 24),
             
@@ -409,7 +557,7 @@ class _VideoTileState extends ConsumerState<_VideoTile> {
               left: 0,
               right: 0,
               child: Container(
-                padding: const EdgeInsets.fromLTRB(6, 12, 32, 4), // Reserve space for Bottom-Right anchor
+                padding: const EdgeInsets.fromLTRB(6, 12, 32, 4),
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
                     begin: Alignment.topCenter,

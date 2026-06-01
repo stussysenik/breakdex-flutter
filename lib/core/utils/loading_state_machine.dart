@@ -119,6 +119,7 @@ class LoadingEvent {
   static LoadingEvent fail(String msg, {bool retryable = true}) =>
       LoadingEvent._('fail', errorMessage: msg, retryable: retryable);
   static const retry = LoadingEvent._('retry');
+  static const reset = LoadingEvent._('reset');
 
   final String type;
   final double? progressValue;

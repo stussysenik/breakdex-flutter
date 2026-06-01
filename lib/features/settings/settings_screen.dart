@@ -495,6 +495,12 @@ class SettingsScreen extends ConsumerWidget {
                     ),
                     const SizedBox(height: AppSpacing.sm),
                     ActionTile(
+                      icon: Icons.terminal_rounded,
+                      label: 'System Status & Logs',
+                      onTap: () => context.push('/settings-panel/system-status'),
+                    ),
+                    const SizedBox(height: AppSpacing.sm),
+                    ActionTile(
                       icon: Icons.delete_forever,
                       label: 'Clear All Data',
                       destructive: true,

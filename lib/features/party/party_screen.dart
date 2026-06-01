@@ -1145,17 +1145,17 @@ final _partyCombosProvider =
     StreamProvider<List<ComboPartyDisplay>>((ref) async* {
   final combosDao = ref.watch(combosDaoProvider);
 
-  // Watch both combos and the join table to ensure we always have move details
-  final comboStream = combosDao.watchAll();
-  
-  await for (final combos in comboStream) {
-    // Re-fetch the map whenever combos change
-    final movesMap = await combosDao.getAllComboMovesMap();
+  // Watch a joined stream of combos and their moves so we react to any changes
+  // in either table, preventing race conditions where moves are inserted after the combo.
+  final comboStream = combosDao.watchAllCombosWithMoves();
+
+  await for (final comboList in comboStream) {
     final result = <ComboPartyDisplay>[];
-    
-    for (final combo in combos) {
-      final moves = movesMap[combo.id] ?? [];
-      
+
+    for (final item in comboList) {
+      final combo = item.combo;
+      final moves = item.moves;
+
       String? absVideoPath;
       if (combo.activeVideoPath != null) {
         absVideoPath = VideoPathResolver.toAbsolute(combo.activeVideoPath!);
@@ -1165,7 +1165,7 @@ final _partyCombosProvider =
           absVideoPath = VideoPathResolver.toAbsolute(firstWithVideo.move.videoPath!);
         }
       }
-      
+
       result.add(ComboPartyDisplay(
         combo: combo,
         moveNames: moves.map((m) => m.move.name).toList(),

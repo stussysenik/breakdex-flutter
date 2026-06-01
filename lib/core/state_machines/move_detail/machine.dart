@@ -42,6 +42,10 @@ final class MoveDetailMachine
       // ── Idle → Destructive (requires confirm) ──
       (Idle(), TapDelete(combos: final c)) => ConfirmingDelete(s.move, combos: c),
 
+      (Idle(), TapDuplicate()) => Duplicating(s.move),
+      (Duplicating(), DuplicateSucceeded(newMove: final m)) => Idle(m),
+      (Duplicating(), DuplicateFailed(error: final e)) => ErrorState(s.move, message: e),
+
       // ── Idle → Inline edit ──
       (Idle(), UpdateNotes(text: final text)) => NotesDirty(
         s.move,

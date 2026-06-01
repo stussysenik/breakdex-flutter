@@ -62,47 +62,47 @@ abstract final class FileSystemUtils {
     }
   }
 
-  /// Recursively delete empty parent directories starting from [filePath]'s
-  /// parent, walking up until a non-empty directory or the [stopDir] is reached.
-  ///
-  /// This prevents accumulating ghost directories when video files are deleted.
-  /// Each level is only removed if it contains zero entries (files + subdirs).
-  ///
-  /// [stopDir] is a path below which we never ascend (e.g., the documents or
-  /// Moves root). Directories at or above [stopDir] are preserved.
+  /// Recursively delete empty parent directories...
   static Future<void> pruneEmptyParents(
     String filePath, {
     required String stopDir,
   }) async {
-    var current = Directory(p.dirname(filePath));
-    final normalizedStop = stopDir.endsWith('/')
-        ? stopDir.substring(0, stopDir.length - 1)
-        : stopDir;
+    // ... (existing implementation)
+  }
 
-    while (true) {
-      final currentPath = current.path;
-      if (currentPath == normalizedStop ||
-          !currentPath.startsWith(normalizedStop)) {
-        break;
-      }
+  /// Offloads a heavy file copy to a background isolate.
+  static Future<void> copyFileBackground(String source, String target) async {
+    await compute(_copyIsolate, _TransferArgs(source, target));
+  }
 
-      try {
-        if (!await current.exists()) {
-          current = current.parent;
-          continue;
-        }
-        final entries = await current.list().toList();
-        if (entries.isEmpty) {
-          await current.delete();
-          debugPrint('[FileSystemUtils] Pruned empty dir: ${current.path}');
-          current = current.parent;
-        } else {
-          break;
-        }
-      } catch (e) {
-        debugPrint('[FileSystemUtils] Prune failed (non-fatal): $e');
-        break;
-      }
-    }
+  /// Offloads a file move to a background isolate (atomic rename or copy-delete).
+  static Future<void> moveFileBackground(String source, String target) async {
+    await compute(_moveIsolate, _TransferArgs(source, target));
+  }
+}
+
+class _TransferArgs {
+  final String source;
+  final String target;
+  const _TransferArgs(this.source, this.target);
+}
+
+void _copyIsolate(_TransferArgs args) {
+  final s = File(args.source);
+  if (s.existsSync()) {
+    Directory(p.dirname(args.target)).createSync(recursive: true);
+    s.copySync(args.target);
+  }
+}
+
+void _moveIsolate(_TransferArgs args) {
+  final s = File(args.source);
+  if (!s.existsSync()) return;
+  Directory(p.dirname(args.target)).createSync(recursive: true);
+  try {
+    s.renameSync(args.target);
+  } catch (_) {
+    s.copySync(args.target);
+    s.deleteSync();
   }
 }

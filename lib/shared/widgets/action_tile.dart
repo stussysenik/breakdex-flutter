@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import '../../core/design/colors.dart';
 import '../../core/design/spacing.dart';
 import '../../core/design/theme.dart';
@@ -27,21 +28,23 @@ class ActionTile extends StatelessWidget {
       label: label,
       button: true,
       child: InkWell(
-        onTap: onTap,
+        onTap: () {
+          HapticFeedback.lightImpact();
+          onTap();
+        },
         borderRadius: BorderRadius.circular(AppRadius.sm),
         child: Container(
           padding: const EdgeInsets.symmetric(
             horizontal: AppSpacing.md,
-            vertical: 14,
+            vertical: 16,
           ),
-          constraints: const BoxConstraints(minHeight: 56),
+          constraints: const BoxConstraints(minHeight: 60),
           decoration: BoxDecoration(
             color: colorScheme.surfaceContainerHighest,
             borderRadius: BorderRadius.circular(AppRadius.sm),
             border: Border.all(
-              color: colorScheme.outline.withValues(alpha: 0.32),
+              color: colorScheme.outline.withValues(alpha: 0.1),
             ),
-            boxShadow: AppShadows.soft(Theme.of(context).brightness),
           ),
           child: Row(
             children: [
@@ -52,11 +55,18 @@ class ActionTile extends StatelessWidget {
                   label,
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
-                  style: AppTypography.bodyMedium.copyWith(color: color),
+                  style: AppTypography.bodyMedium.copyWith(
+                    color: color,
+                    fontWeight: FontWeight.w700,
+                  ),
                 ),
               ),
               const SizedBox(width: AppSpacing.sm),
-              Icon(Icons.chevron_right, color: colorScheme.secondary, size: 20),
+              Icon(
+                Icons.chevron_right,
+                color: colorScheme.secondary.withValues(alpha: 0.5),
+                size: 20,
+              ),
             ],
           ),
         ),

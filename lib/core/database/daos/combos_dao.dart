@@ -30,6 +30,34 @@ class CombosDao extends DatabaseAccessor<AppDatabase> with _$CombosDaoMixin {
 
   Stream<List<Combo>> watchAll() => select(combos).watch();
 
+  Stream<List<ComboWithMoves>> watchAllCombosWithMoves() {
+    final query = select(combos).join([
+      leftOuterJoin(comboMoves, comboMoves.comboId.equalsExp(combos.id)),
+      leftOuterJoin(moves, moves.id.equalsExp(comboMoves.moveId)),
+    ])..orderBy([OrderingTerm.asc(comboMoves.sequenceIndex)]);
+
+    return query.watch().map((rows) {
+      final map = <String, ComboWithMoves>{};
+      for (final row in rows) {
+        final combo = row.readTable(combos);
+        final cm = row.readTableOrNull(comboMoves);
+        final m = row.readTableOrNull(moves);
+        
+        final comboWithMoves = map.putIfAbsent(
+          combo.id, 
+          () => ComboWithMoves(combo: combo, moves: []),
+        );
+        
+        if (cm != null && m != null) {
+          comboWithMoves.moves.add(
+            ComboMoveWithDetail(comboMove: cm, move: m.copyWith(count: cm.count)),
+          );
+        }
+      }
+      return map.values.toList();
+    });
+  }
+
   Future<List<Combo>> getAll() => select(combos).get();
 
   Future<Combo> getById(String id) =>

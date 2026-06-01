@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:path/path.dart' as p;
 
 import '../../core/design/spacing.dart';
 import '../../core/design/theme.dart';
@@ -14,7 +15,9 @@ import '../../core/providers.dart';
 import '../../core/state_machines/move_creation/machine.dart';
 import '../../core/state_machines/move_creation/provider.dart';
 import '../../core/services/categories_service.dart';
+import '../../core/services/video_service.dart';
 import '../../shared/widgets/video_picker_sheet.dart';
+import '../../shared/widgets/video_player_widget.dart';
 
 class AddScreen extends ConsumerWidget {
   const AddScreen({super.key});
@@ -22,31 +25,42 @@ class AddScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Add'),
-      ),
-      body: Center(
-        child: Padding(
-          padding: const EdgeInsets.all(AppSpacing.screenEdge),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              _ChoiceCard(
-                icon: Icons.video_call_rounded,
-                title: 'Create Move',
-                subtitle: 'Import a video clip, set its count, and add it to your library',
-                onTap: () => _startClipFlow(context, ref),
-              ),
-              const SizedBox(height: AppSpacing.md),
-              _ChoiceCard(
-                icon: Icons.linear_scale_rounded,
-                title: 'Create Combo',
-                subtitle: 'Build a sequence of moves with a visual beat grid to see your composition',
-                onTap: () => context.push<String>('/create-combo'),
+      body: CustomScrollView(
+        slivers: [
+          SliverAppBar.large(
+            title: const Text('Add Content'),
+            floating: true,
+            actions: [
+              IconButton(
+                icon: const Icon(Icons.help_outline),
+                onPressed: () {},
               ),
             ],
           ),
-        ),
+          SliverFillRemaining(
+            hasScrollBody: false,
+            child: Padding(
+              padding: const EdgeInsets.all(AppSpacing.screenEdge),
+              child: Column(
+                children: [
+                  _ChoiceCard(
+                    icon: Icons.movie_outlined,
+                    title: 'New Move',
+                    subtitle: 'Capture or import a single move to track and review',
+                    onTap: () => _startClipFlow(context, ref),
+                  ),
+                  const SizedBox(height: AppSpacing.md),
+                  _ChoiceCard(
+                    icon: Icons.auto_awesome_motion_outlined,
+                    title: 'New Combo',
+                    subtitle: 'Build a sequence of moves with a visual beat grid to see your composition',
+                    onTap: () => context.push<String>('/create-combo'),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -55,7 +69,7 @@ class AddScreen extends ConsumerWidget {
     final pickResult = await VideoPickerSheet.show(context);
     if (pickResult == null || !context.mounted) return;
 
-    final metadata = await _showMetadataSheet(context, ref);
+    final metadata = await _showMetadataSheet(context, ref, pickResult);
     if (metadata == null || !context.mounted) return;
 
     final notifier = ref.read(moveCreationStateProvider.notifier);
@@ -68,27 +82,15 @@ class AddScreen extends ConsumerWidget {
         videoFileSize: pickResult.fileSize,
         videoCreationDate: pickResult.creationDate,
         count: metadata.count,
-        learningState: metadata.learningState.name,
+        learningState: metadata.learningState.dbValue,
       ),
     );
-
-    // Listen for completion to show snackbar
-    ref.listenManual(moveCreationStateProvider, (previous, next) {
-      if (next is Success && context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Created "${next.result.name}"')),
-        );
-      } else if (next is Error && context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed: ${next.message}')),
-        );
-      }
-    });
   }
 
   Future<_MetadataResult?> _showMetadataSheet(
     BuildContext context,
     WidgetRef ref,
+    VideoPickResult pickResult,
   ) {
     return showModalBottomSheet<_MetadataResult>(
       context: context,
@@ -97,7 +99,7 @@ class AddScreen extends ConsumerWidget {
         borderRadius: BorderRadius.vertical(top: Radius.circular(AppRadius.lg)),
       ),
       isScrollControlled: true,
-      builder: (_) => _ClipMetadataForm(),
+      builder: (_) => _ClipMetadataForm(pickResult: pickResult),
     );
   }
 }
@@ -118,61 +120,40 @@ class _ChoiceCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
-
-    return GestureDetector(
+    return InkWell(
       onTap: onTap,
+      borderRadius: BorderRadius.circular(AppRadius.lg),
       child: Container(
-        width: double.infinity,
-        padding: const EdgeInsets.symmetric(vertical: AppSpacing.lg),
+        padding: const EdgeInsets.all(AppSpacing.xl),
         decoration: BoxDecoration(
-          border: Border(
-            bottom: BorderSide(
-              color: colorScheme.outline.withValues(alpha: 0.1),
-              width: 1,
-            ),
-          ),
+          borderRadius: BorderRadius.circular(AppRadius.lg),
+          border: Border.all(color: colorScheme.outlineVariant),
         ),
         child: Row(
           children: [
             Container(
-              width: 48,
-              height: 48,
+              padding: const EdgeInsets.all(AppSpacing.md),
               decoration: BoxDecoration(
-                color: colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
+                color: colorScheme.primaryContainer.withValues(alpha: 0.3),
                 borderRadius: BorderRadius.circular(AppRadius.sm),
               ),
-              child: Icon(
-                icon,
-                size: 24,
-                color: colorScheme.primary,
-              ),
+              child: Icon(icon, size: 24, color: colorScheme.primary),
             ),
             const SizedBox(width: AppSpacing.lg),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    title,
-                    style: AppTypography.titleMedium.copyWith(
-                      color: colorScheme.onSurface,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                  const SizedBox(height: 2),
+                  Text(title, style: AppTypography.titleMedium),
+                  const SizedBox(height: AppSpacing.xs),
                   Text(
                     subtitle,
-                    style: AppTypography.bodySmall.copyWith(
-                      color: colorScheme.secondary,
-                    ),
+                    style: AppTypography.bodySmall.copyWith(color: colorScheme.secondary),
                   ),
                 ],
               ),
             ),
-            Icon(
-              Icons.chevron_right_rounded,
-              color: colorScheme.outline,
-            ),
+            Icon(Icons.chevron_right, color: colorScheme.outline),
           ],
         ),
       ),
@@ -181,19 +162,22 @@ class _ChoiceCard extends StatelessWidget {
 }
 
 class _MetadataResult {
-  final String name;
-  final String category;
-  final int count;
-  final LearningState learningState;
-  const _MetadataResult({
+  _MetadataResult({
     required this.name,
     required this.category,
     required this.count,
     required this.learningState,
   });
+  final String name;
+  final String category;
+  final int count;
+  final LearningState learningState;
 }
 
 class _ClipMetadataForm extends ConsumerStatefulWidget {
+  const _ClipMetadataForm({required this.pickResult});
+  final VideoPickResult pickResult;
+
   @override
   ConsumerState<_ClipMetadataForm> createState() => _ClipMetadataFormState();
 }
@@ -210,6 +194,10 @@ class _ClipMetadataFormState extends ConsumerState<_ClipMetadataForm> {
   void initState() {
     super.initState();
     _nameController.addListener(_onNameChanged);
+    if (widget.pickResult.originalFileName != null) {
+      final name = p.basenameWithoutExtension(widget.pickResult.originalFileName!);
+      _nameController.text = name.replaceAll('_', ' ').replaceAll('-', ' ');
+    }
   }
 
   void _onNameChanged() {
@@ -279,139 +267,136 @@ class _ClipMetadataFormState extends ConsumerState<_ClipMetadataForm> {
           AppSpacing.screenEdge,
           MediaQuery.of(context).viewInsets.bottom + AppSpacing.lg,
         ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Center(
-              child: Container(
-                width: 36, height: 4,
-                decoration: BoxDecoration(
-                  color: colorScheme.outline.withValues(alpha: 0.5),
-                  borderRadius: BorderRadius.circular(2),
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Center(
+                child: Container(
+                  width: 36, height: 4,
+                  decoration: BoxDecoration(
+                    color: colorScheme.outline.withValues(alpha: 0.5),
+                    borderRadius: BorderRadius.circular(2),
+                  ),
                 ),
               ),
-            ),
-            const SizedBox(height: AppSpacing.lg),
-            Text('NAME', style: AppTypography.labelLarge.copyWith(color: colorScheme.secondary, letterSpacing: 1.5)),
-            TextField(
-              controller: _nameController,
-              autofocus: true,
-              style: AppTypography.titleLarge,
-              decoration: InputDecoration(
-                hintText: 'e.g. Windmill',
-                errorText: _errorText,
-                filled: false,
-                border: InputBorder.none,
-                enabledBorder: InputBorder.none,
-                focusedBorder: InputBorder.none,
-                contentPadding: EdgeInsets.zero,
+              const SizedBox(height: AppSpacing.lg),
+              
+              ClipRRect(
+                borderRadius: BorderRadius.circular(AppRadius.md),
+                child: AspectRatio(
+                  aspectRatio: 16 / 9,
+                  child: RobustVideoPlayer(
+                    videoPath: widget.pickResult.localPath,
+                    autoPlay: true,
+                    looping: true,
+                    muted: true,
+                  ),
+                ),
               ),
-              textInputAction: TextInputAction.done,
-              onSubmitted: (_) => _submit(),
-            ),
-            const SizedBox(height: AppSpacing.lg),
-            Text('CATEGORY', style: AppTypography.labelLarge.copyWith(color: colorScheme.secondary, letterSpacing: 1.5)),
-            const SizedBox(height: AppSpacing.sm),
-            Wrap(
-              spacing: AppSpacing.sm,
-              runSpacing: AppSpacing.sm,
-              children: [
-                for (final cat in categories)
-                  GestureDetector(
-                    onTap: () {
-                      HapticFeedback.selectionClick();
-                      setState(() => _selectedCategory = cat.name);
+              const SizedBox(height: AppSpacing.lg),
+
+              Text('NAME', style: AppTypography.labelLarge.copyWith(color: colorScheme.secondary, letterSpacing: 1.5)),
+              TextField(
+                controller: _nameController,
+                autofocus: true,
+                style: AppTypography.titleLarge,
+                decoration: InputDecoration(
+                  hintText: 'e.g. Flare, Windmill...',
+                  errorText: _errorText,
+                  border: InputBorder.none,
+                  hintStyle: AppTypography.titleLarge.copyWith(color: colorScheme.outline),
+                ),
+                textCapitalization: TextCapitalization.words,
+              ),
+              const SizedBox(height: AppSpacing.xl),
+              Text('CATEGORY', style: AppTypography.labelLarge.copyWith(color: colorScheme.secondary, letterSpacing: 1.5)),
+              const SizedBox(height: AppSpacing.md),
+              Wrap(
+                spacing: AppSpacing.sm,
+                runSpacing: AppSpacing.sm,
+                children: categories.map((cat) {
+                  final active = cat.name == _selectedCategory;
+                  return ChoiceChip(
+                    label: Text(cat.name.toUpperCase()),
+                    selected: active,
+                    onSelected: (val) {
+                      if (val) setState(() => _selectedCategory = cat.name);
                     },
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                      decoration: BoxDecoration(
-                        color: _selectedCategory == cat.name ? colorScheme.primary : colorScheme.surface,
-                        borderRadius: BorderRadius.circular(AppRadius.pill),
-                        border: Border.all(
-                          color: _selectedCategory == cat.name ? colorScheme.primary : colorScheme.outline.withValues(alpha: 0.2),
+                  );
+                }).toList(),
+              ),
+              const SizedBox(height: AppSpacing.xl),
+              Row(
+                children: [
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text('BEAT COUNT', style: AppTypography.labelLarge.copyWith(color: colorScheme.secondary, letterSpacing: 1.5)),
+                        const SizedBox(height: AppSpacing.md),
+                        Row(
+                          children: [
+                            _CountButton(
+                              icon: Icons.remove,
+                              onTap: _count > 1 ? () => setState(() => _count--) : null,
+                            ),
+                            SizedBox(
+                              width: 48,
+                              child: Text(
+                                _count.toString(),
+                                textAlign: TextAlign.center,
+                                style: AppTypography.titleLarge,
+                              ),
+                            ),
+                            _CountButton(
+                              icon: Icons.add,
+                              onTap: _count < 32 ? () => setState(() => _count++) : null,
+                            ),
+                          ],
                         ),
-                      ),
-                      child: Text(cat.name, style: AppTypography.caption.copyWith(
-                        color: _selectedCategory == cat.name ? colorScheme.onPrimary : colorScheme.onSurface,
-                        fontWeight: FontWeight.w600,
-                      )),
+                      ],
                     ),
                   ),
-              ],
-            ),
-            const SizedBox(height: AppSpacing.lg),
-            Text('KNOWLEDGE STATE', style: AppTypography.labelLarge.copyWith(color: colorScheme.secondary, letterSpacing: 1.5)),
-            const SizedBox(height: AppSpacing.sm),
-            Row(
-              children: LearningState.values.map((state) {
-                final selected = _selectedState == state;
-                return Padding(
-                  padding: const EdgeInsets.only(right: AppSpacing.sm),
-                  child: GestureDetector(
-                    onTap: () {
-                      HapticFeedback.selectionClick();
-                      setState(() => _selectedState = state);
-                    },
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                      decoration: BoxDecoration(
-                        color: selected ? colorScheme.primary : colorScheme.surface,
-                        borderRadius: BorderRadius.circular(AppRadius.pill),
-                        border: Border.all(
-                          color: selected ? colorScheme.primary : colorScheme.outline.withValues(alpha: 0.2),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text('STATUS', style: AppTypography.labelLarge.copyWith(color: colorScheme.secondary, letterSpacing: 1.5)),
+                        const SizedBox(height: AppSpacing.md),
+                        DropdownButton<LearningState>(
+                          value: _selectedState,
+                          isExpanded: true,
+                          underline: const SizedBox.shrink(),
+                          items: LearningState.values.map((s) {
+                            return DropdownMenuItem(value: s, child: Text(s.name.toUpperCase()));
+                          }).toList(),
+                          onChanged: (s) => setState(() => _selectedState = s!),
                         ),
-                      ),
-                      child: Text(state.displayText, style: AppTypography.caption.copyWith(
-                        color: selected ? colorScheme.onPrimary : colorScheme.onSurface,
-                        fontWeight: FontWeight.w600,
-                      )),
+                      ],
                     ),
                   ),
-                );
-              }).toList(),
-            ),
-            const SizedBox(height: AppSpacing.lg),
-            Text('BEATS', style: AppTypography.labelLarge.copyWith(color: colorScheme.secondary, letterSpacing: 1.5)),
-            const SizedBox(height: AppSpacing.sm),
-            Row(
-              children: [
-                _CountButton(
-                  icon: Icons.remove_rounded,
-                  onTap: _count > 1 ? () => setState(() => _count--) : null,
-                ),
-                const SizedBox(width: AppSpacing.lg),
-                Text(
-                  '$_count',
-                  style: AppTypography.titleLarge.copyWith(
-                    color: colorScheme.onSurface,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-                const SizedBox(width: AppSpacing.lg),
-                _CountButton(
-                  icon: Icons.add_rounded,
-                  onTap: _count < 16 ? () => setState(() => _count++) : null,
-                ),
-              ],
-            ),
-            const SizedBox(height: AppSpacing.xl),
-            SizedBox(
-              width: double.infinity,
-              height: 56,
-              child: ElevatedButton(
-                onPressed: _nameEmpty || selectedCategory == null ? null : _submit,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: colorScheme.onSurface,
-                  foregroundColor: colorScheme.surface,
-                  disabledBackgroundColor: colorScheme.onSurface.withValues(alpha: 0.1),
-                  disabledForegroundColor: colorScheme.onSurface.withValues(alpha: 0.3),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppRadius.sm)),
-                ),
-                child: const Text('SAVE MOVE'),
+                ],
               ),
-            ),
-          ],
+              const SizedBox(height: AppSpacing.xl),
+              SizedBox(
+                width: double.infinity,
+                height: 56,
+                child: ElevatedButton(
+                  onPressed: _nameEmpty || selectedCategory == null ? null : _submit,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: colorScheme.onSurface,
+                    foregroundColor: colorScheme.surface,
+                    disabledBackgroundColor: colorScheme.onSurface.withValues(alpha: 0.1),
+                    disabledForegroundColor: colorScheme.onSurface.withValues(alpha: 0.3),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppRadius.sm)),
+                  ),
+                  child: const Text('SAVE MOVE'),
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );

@@ -1106,14 +1106,17 @@ class _RobustVideoPlayerState extends ConsumerState<RobustVideoPlayer> {
     switch (status) {
       case VideoFileStatus.ready:
         _loadingController.send(LoadingEvent.complete(null));
+        break;
       case VideoFileStatus.missing:
         _loadingController.send(
           LoadingEvent.fail('Video not found', retryable: false),
         );
+        break;
       case VideoFileStatus.error:
         _loadingController.send(
           LoadingEvent.fail('Something went wrong', retryable: true),
         );
+        break;
     }
   }
 

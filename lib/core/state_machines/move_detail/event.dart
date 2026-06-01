@@ -47,6 +47,18 @@ final class TapDeleteLog extends MoveDetailEvent {
   const TapDeleteLog(this.entryId);
 }
 
+final class TapDuplicate extends MoveDetailEvent {
+  const TapDuplicate();
+}
+final class DuplicateSucceeded extends MoveDetailEvent {
+  final Move newMove;
+  const DuplicateSucceeded(this.newMove);
+}
+final class DuplicateFailed extends MoveDetailEvent {
+  final String error;
+  const DuplicateFailed(this.error);
+}
+
 // ── Dialog interactions ──
 
 final class Cancel extends MoveDetailEvent {
