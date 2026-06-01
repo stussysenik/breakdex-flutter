@@ -131,8 +131,13 @@ class MoveListScreen extends ConsumerWidget {
       body: ThumbnailCoordinatorScope(
         coordinator: _thumbnailCoordinator,
         child: SafeArea(
+          bottom: false,
           child: CustomScrollView(
+            physics: const AlwaysScrollableScrollPhysics(),
             slivers: [
+              // Top padding for the header
+              const SliverToBoxAdapter(child: SizedBox(height: AppSpacing.md)),
+
               // Title + search + controls as pinned header
               SliverToBoxAdapter(
                 child: Column(

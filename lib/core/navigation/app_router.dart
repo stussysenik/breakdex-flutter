@@ -20,6 +20,7 @@ import '../../features/combo_list/combo_list_screen.dart';
 import '../../features/add/add_screen.dart';
 import '../../features/party/party_screen.dart';
 import '../../features/party/bloc/party_bloc.dart';
+import '../../features/stats/stats_screen.dart';
 import '../../features/auth/auth_screen.dart';
 import '../../features/settings/free_space_screen.dart';
 import '../../features/settings/sync_providers_screen.dart';
@@ -99,6 +100,15 @@ final appRouter = GoRouter(
             GoRoute(
               path: '/review',
               builder: (final context, final state) => const _ReviewRouter(),
+            ),
+          ],
+        ),
+        // Stats — progress and learning metrics
+        StatefulShellBranch(
+          routes: [
+            GoRoute(
+              path: '/stats',
+              builder: (final context, final state) => const StatsScreen(),
             ),
           ],
         ),

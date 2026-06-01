@@ -1,7 +1,7 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'dart:async';
 
 import '../../../core/database/database.dart';
 import '../../../core/design/spacing.dart';
@@ -15,9 +15,6 @@ import '../providers/review_providers.dart';
 import 'create_deck_sheet.dart';
 
 /// The session launcher shown before entering a flashcard review session.
-///
-/// The parent (FlashcardReviewScreen) passes [source] based on the active
-/// mode tab — Review → stateBased, Deck → deck.
 class MasteryPrescreen extends ConsumerWidget {
   const MasteryPrescreen({super.key, required this.source});
 
@@ -28,17 +25,19 @@ class MasteryPrescreen extends ConsumerWidget {
     // Ensure reactivity on card changes
     ref.watch(fsrsCardsRefreshProvider);
     final totalReviewable = ref.watch(totalReviewableCountProvider).valueOrNull;
-    if (totalReviewable == 0) return const _ReviewEmptyState();
+    if (totalReviewable == 0 && source == ReviewSessionSource.stateBased) {
+      return const _ReviewEmptyState();
+    }
 
     final viewPadding = MediaQuery.of(context).padding;
-    final bottomNavHeight = kBottomNavigationBarHeight;
+    const bottomNavHeight = kBottomNavigationBarHeight;
 
     return SingleChildScrollView(
-      // Ensure we have enough padding at the bottom to scroll past the floating action button
-      // and the frosted bottom navigation bar.
+      // Top padding accounts for status bar + extra space
+      // Bottom padding accounts for frosted nav bar + safe area + extra breathing room
       padding: EdgeInsets.fromLTRB(
         AppSpacing.screenEdge,
-        AppSpacing.lg,
+        AppSpacing.xl + viewPadding.top,
         AppSpacing.screenEdge,
         bottomNavHeight + viewPadding.bottom + AppSpacing.xxl,
       ),
@@ -66,6 +65,8 @@ class _StateModeSection extends ConsumerWidget {
     final stateLabels = ref.watch(learningStateLabelsProvider);
     final title = isMoves ? 'Moves' : 'Combos';
 
+    final practiceAll = ref.watch(_practiceAllModeProvider);
+
     return matrixAsync.when(
       loading: () => const Padding(
         padding: EdgeInsets.symmetric(vertical: AppSpacing.xl),
@@ -89,12 +90,25 @@ class _StateModeSection extends ConsumerWidget {
                 ref.read(reviewEntityKindProvider.notifier).state = selection;
               },
             ),
+            const SizedBox(height: AppSpacing.lg),
+            
+            _BasicPracticeToggle(
+              isEnabled: practiceAll,
+              onChanged: (final value) {
+                HapticFeedback.selectionClick();
+                ref.read(_practiceAllModeProvider.notifier).state = value;
+                // Sync to the provider that actually affects the counts and filtering
+                ref.read(reviewPracticeAllProvider.notifier).state = value;
+              },
+            ),
+
             const SizedBox(height: AppSpacing.xl),
             _ReviewListDashboard(
               title: title,
               stateLabels: stateLabels,
               counts: counts,
               customCounts: matrix.customMoveCounts,
+              isBasicPractice: practiceAll,
               onStartAll: () => _startStateSession(ref, selectedKind, null),
               onStartState: (final state) =>
                   _startStateSession(ref, selectedKind, state),
@@ -121,6 +135,8 @@ class _StateModeSection extends ConsumerWidget {
     ref.read(reviewSessionTargetMoveIdsProvider.notifier).state = null;
     ref.read(reviewStateFilterProvider.notifier).state = state;
     ref.read(reviewCustomStateFilterProvider.notifier).state = null;
+    
+    // We already synced practiceAll in the toggle, so just refresh and launch
     refreshReviewSession(ref);
     ref.read(reviewSessionActiveProvider.notifier).state = true;
   }
@@ -139,8 +155,69 @@ class _StateModeSection extends ConsumerWidget {
     ref.read(reviewSessionTargetMoveIdsProvider.notifier).state = null;
     ref.read(reviewStateFilterProvider.notifier).state = null;
     ref.read(reviewCustomStateFilterProvider.notifier).state = dbValue;
+    
     refreshReviewSession(ref);
     ref.read(reviewSessionActiveProvider.notifier).state = true;
+  }
+}
+
+final _practiceAllModeProvider = StateProvider<bool>((final ref) => false);
+
+class _BasicPracticeToggle extends StatelessWidget {
+  const _BasicPracticeToggle({required this.isEnabled, required this.onChanged});
+  final bool isEnabled;
+  final ValueChanged<bool> onChanged;
+
+  @override
+  Widget build(final BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: 8),
+      decoration: BoxDecoration(
+        color: isEnabled ? colorScheme.primary.withValues(alpha: 0.05) : Colors.transparent,
+        border: Border.all(color: colorScheme.outline.withValues(alpha: 0.2)),
+        borderRadius: BorderRadius.circular(AppRadius.sm),
+      ),
+      child: Row(
+        children: [
+          Icon(
+            isEnabled ? Icons.bolt_rounded : Icons.bolt_outlined,
+            color: isEnabled ? colorScheme.primary : colorScheme.secondary,
+            size: 20,
+          ),
+          const SizedBox(width: AppSpacing.md),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'BASIC PRACTICE'.toUpperCase(),
+                  style: AppTypography.bodySmall.copyWith(
+                    fontWeight: FontWeight.w900,
+                    fontFamily: 'Menlo',
+                    color: isEnabled ? colorScheme.primary : colorScheme.onSurface,
+                  ),
+                ),
+                Text(
+                  isEnabled ? 'BYPASSING FSRS (MATH)' : 'FSRS ACTIVE (DUE ONLY)',
+                  style: AppTypography.caption.copyWith(
+                    fontFamily: 'Menlo',
+                    fontSize: 10,
+                    color: colorScheme.secondary,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Switch(
+            value: isEnabled,
+            onChanged: onChanged,
+            activeThumbColor: colorScheme.primary,
+          ),
+
+        ],
+      ),
+    );
   }
 }
 
@@ -226,7 +303,7 @@ class _DecksSection extends ConsumerWidget {
                 color: colorScheme.secondary,
                 fontWeight: FontWeight.w800,
                 letterSpacing: 1.2,
-                fontFamily: 'Menlo', // Monospace for brutalist feel
+                fontFamily: 'Menlo',
               ),
             ),
             IconButton(
@@ -308,7 +385,6 @@ class _DecksSection extends ConsumerWidget {
     );
   }
 }
-
 
 class _EmptyDeckState extends StatelessWidget {
   @override
@@ -417,6 +493,7 @@ class _ReviewListDashboard extends ConsumerWidget {
     required this.onStartAll,
     required this.onStartState,
     required this.onStartCustomState,
+    required this.isBasicPractice,
   });
 
   final String title;
@@ -426,6 +503,7 @@ class _ReviewListDashboard extends ConsumerWidget {
   final VoidCallback onStartAll;
   final void Function(LearningState state) onStartState;
   final void Function(String dbValue) onStartCustomState;
+  final bool isBasicPractice;
 
   @override
   Widget build(final BuildContext context, final WidgetRef ref) {
@@ -441,9 +519,9 @@ class _ReviewListDashboard extends ConsumerWidget {
         Padding(
           padding: const EdgeInsets.only(left: 4, bottom: AppSpacing.sm),
           child: Text(
-            '$title BOXES'.toUpperCase(),
+            isBasicPractice ? 'ALL $title (BASIC PRACTICE)'.toUpperCase() : '$title BOXES'.toUpperCase(),
             style: AppTypography.caption.copyWith(
-              color: colorScheme.secondary,
+              color: isBasicPractice ? colorScheme.primary : colorScheme.secondary,
               fontWeight: FontWeight.w800,
               letterSpacing: 1.2,
               fontFamily: 'Menlo',
@@ -451,16 +529,14 @@ class _ReviewListDashboard extends ConsumerWidget {
           ),
         ),
         
-        // Column-based list of standard state boxes
         for (final state in LearningState.values)
           _ReviewStateRow(
             state: state,
-            label: _labelFor(state),
+            label: resolveLearningStateLabel(stateLabels, state),
             count: counts[state] ?? 0,
             onTap: () => onStartState(state),
           ),
         
-        // Custom state boxes
         for (final custom in customStates)
           if ((customCounts[custom.dbValue] ?? 0) > 0)
             _ReviewStateRow(
@@ -498,7 +574,7 @@ class _ReviewListDashboard extends ConsumerWidget {
                 if (total > 0) const Icon(Icons.play_arrow_rounded, size: 24),
                 if (total > 0) const SizedBox(width: AppSpacing.sm),
                 Text(
-                  (total == 0 ? 'ALL BOXES EMPTY' : 'REVIEW ALL DUE').toUpperCase(),
+                  (total == 0 ? 'ALL BOXES EMPTY' : (isBasicPractice ? 'START BASIC PRACTICE' : 'REVIEW ALL DUE')).toUpperCase(),
                   style: AppTypography.titleSmall.copyWith(
                     fontWeight: FontWeight.w900,
                     letterSpacing: 1.0,
@@ -512,9 +588,6 @@ class _ReviewListDashboard extends ConsumerWidget {
       ],
     );
   }
-
-  String _labelFor(final LearningState state) =>
-      resolveLearningStateLabel(stateLabels, state);
 }
 
 class _ReviewStateRow extends StatelessWidget {
@@ -610,5 +683,3 @@ class _ReviewStateRow extends StatelessWidget {
     );
   }
 }
-
-

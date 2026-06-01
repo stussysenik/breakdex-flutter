@@ -193,6 +193,10 @@ class MoveCategoryDetailScreen extends ConsumerWidget {
             .toList()
         : allMoves.where((final m) => m.category == categoryName).toList();
 
+    final bottomPadding = kBottomNavigationBarHeight +
+        MediaQuery.of(context).padding.bottom +
+        AppSpacing.xxl;
+
     return Scaffold(
       appBar: AppBar(
         leading: Semantics(
@@ -251,17 +255,20 @@ class MoveCategoryDetailScreen extends ConsumerWidget {
                   child: switch (navMode) {
                     CategoryNavMode.scrollIndex => _ScrollIndexView(
                         moves: filtered,
+                        bottomPadding: bottomPadding,
                         onTap: (final move) =>
                             context.push('/breakdex/move/${move.id}'),
                       ),
                     CategoryNavMode.search => _SearchBarView(
                         moves: filtered,
                         categoryName: categoryName,
+                        bottomPadding: bottomPadding,
                         onTap: (final move) =>
                             context.push('/breakdex/move/${move.id}'),
                       ),
                     CategoryNavMode.filterChips => _FilterChipsView(
                         moves: filtered,
+                        bottomPadding: bottomPadding,
                         onTap: (final move) =>
                             context.push('/breakdex/move/${move.id}'),
                       ),
@@ -373,10 +380,15 @@ class _NavModeToggle extends ConsumerWidget {
 // -- Solution 1: Alphabetical scroll index ------------------------------------
 
 class _ScrollIndexView extends StatefulWidget {
-  const _ScrollIndexView({required this.moves, required this.onTap});
+  const _ScrollIndexView({
+    required this.moves,
+    required this.onTap,
+    required this.bottomPadding,
+  });
 
   final List<Move> moves;
   final void Function(Move) onTap;
+  final double bottomPadding;
 
   @override
   State<_ScrollIndexView> createState() => _ScrollIndexViewState();
@@ -452,11 +464,11 @@ class _ScrollIndexViewState extends State<_ScrollIndexView> {
       children: [
         ListView.builder(
           controller: _scrollController,
-          padding: const EdgeInsets.fromLTRB(
+          padding: EdgeInsets.fromLTRB(
             AppSpacing.screenEdge,
             AppSpacing.xs,
             32,
-            AppSpacing.screenEdge,
+            widget.bottomPadding,
           ),
           itemCount: flatItems.length,
           itemBuilder: (final context, final index) {
@@ -589,11 +601,13 @@ class _SearchBarView extends StatefulWidget {
     required this.moves,
     required this.categoryName,
     required this.onTap,
+    required this.bottomPadding,
   });
 
   final List<Move> moves;
   final String categoryName;
   final void Function(Move) onTap;
+  final double bottomPadding;
 
   @override
   State<_SearchBarView> createState() => _SearchBarViewState();
@@ -675,8 +689,11 @@ class _SearchBarViewState extends State<_SearchBarView> {
                   ),
                 )
               : ListView.builder(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: AppSpacing.screenEdge,
+                  padding: EdgeInsets.fromLTRB(
+                    AppSpacing.screenEdge,
+                    0,
+                    AppSpacing.screenEdge,
+                    widget.bottomPadding,
                   ),
                   itemCount: filtered.length,
                   itemBuilder: (final context, final index) {
@@ -703,10 +720,15 @@ final _filterLearningStatesProvider = StateProvider<Set<String>>(
 final _filterSortOrderProvider = StateProvider<bool>((_) => true);
 
 class _FilterChipsView extends ConsumerWidget {
-  const _FilterChipsView({required this.moves, required this.onTap});
+  const _FilterChipsView({
+    required this.moves,
+    required this.onTap,
+    required this.bottomPadding,
+  });
 
   final List<Move> moves;
   final void Function(Move) onTap;
+  final double bottomPadding;
 
   @override
   Widget build(final BuildContext context, final WidgetRef ref) {
@@ -807,8 +829,11 @@ class _FilterChipsView extends ConsumerWidget {
                   ),
                 )
               : ListView.builder(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: AppSpacing.screenEdge,
+                  padding: EdgeInsets.fromLTRB(
+                    AppSpacing.screenEdge,
+                    0,
+                    AppSpacing.screenEdge,
+                    bottomPadding,
                   ),
                   itemCount: filtered.length,
                   itemBuilder: (final context, final index) {

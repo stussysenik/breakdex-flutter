@@ -183,6 +183,7 @@ final reviewStateMatrixProvider = FutureProvider<ReviewStateMatrix>((
   ref.watch(moveStateCountsProvider);
   ref.watch(comboRefreshProvider);
   ref.watch(customLearningStatesProvider);
+  final practiceAll = ref.watch(reviewPracticeAllProvider);
   final db = ref.watch(databaseProvider);
 
   final results = await Future.wait([
@@ -205,7 +206,7 @@ final reviewStateMatrixProvider = FutureProvider<ReviewStateMatrix>((
 
   for (final move in moves) {
     final card = cardMap[_entityKey('move', move.id)];
-    if (!_isDue(card, now)) continue;
+    if (!practiceAll && !_isDue(card, now)) continue;
     
     // Categorize by move.learningState if it's not a standard one
     final dbState = move.learningState;
@@ -222,7 +223,7 @@ final reviewStateMatrixProvider = FutureProvider<ReviewStateMatrix>((
 
   for (final combo in combos) {
     final card = cardMap[_entityKey('combo', combo.id)];
-    if (!_isDue(card, now)) continue;
+    if (!practiceAll && !_isDue(card, now)) continue;
     final state = learningStateFromFsrsState(card?.fsrsState);
     comboCounts[state] = (comboCounts[state] ?? 0) + 1;
   }
@@ -256,6 +257,7 @@ final filteredReviewSessionItemsProvider =
       
       final seed = ref.watch(_sessionSeedProvider);
       final source = ref.watch(reviewSessionSourceProvider);
+      final practiceAll = ref.watch(reviewPracticeAllProvider);
       final stateFilter = ref.watch(reviewStateFilterProvider);
       final customStateFilter = ref.watch(reviewCustomStateFilterProvider);
       final sessionSize = ref.watch(reviewSessionSizeProvider);
@@ -317,7 +319,7 @@ final filteredReviewSessionItemsProvider =
             .toList();
       } else if (entityKind == ReviewEntityKind.moves) {
         items = moves
-            .where((final move) => _isDue(cardMap[_entityKey('move', move.id)], now))
+            .where((final move) => practiceAll || _isDue(cardMap[_entityKey('move', move.id)], now))
             .map(
               (final move) => ReviewSessionItem(
                 entityId: move.id,
@@ -336,7 +338,7 @@ final filteredReviewSessionItemsProvider =
       } else {
         items = combos
             .where(
-              (final combo) => _isDue(cardMap[_entityKey('combo', combo.id)], now),
+              (final combo) => practiceAll || _isDue(cardMap[_entityKey('combo', combo.id)], now),
             )
             .map(
               (final combo) => ReviewSessionItem(
@@ -438,6 +440,9 @@ final totalReviewableCountProvider = FutureProvider<int>((final ref) async {
 /// Whether the user is in an active review session (showing flashcards)
 /// or on the mastery pre-screen.
 final reviewSessionActiveProvider = StateProvider<bool>((final ref) => false);
+
+/// Whether to bypass FSRS "due" logic and practice everything.
+final reviewPracticeAllProvider = StateProvider<bool>((final ref) => false);
 
 /// FSRS category mastery data for the pre-screen grid.
 final categoryMasteryProvider = FutureProvider<List<CategoryMastery>>((

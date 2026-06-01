@@ -118,6 +118,13 @@ class BottomNavShell extends ConsumerWidget {
                 ),
                 BottomNavigationBarItem(
                   icon: Semantics(
+                    identifier: 'stats-tab',
+                    child: const Icon(Icons.insights_rounded),
+                  ),
+                  label: 'Stats',
+                ),
+                BottomNavigationBarItem(
+                  icon: Semantics(
                     identifier: 'settings-tab',
                     child: const Icon(Icons.settings_outlined),
                   ),
