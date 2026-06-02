@@ -79,6 +79,42 @@ abstract final class FileSystemUtils {
   static Future<void> moveFileBackground(final String source, final String target) async {
     await compute(_moveIsolate, _TransferArgs(source, target));
   }
+
+  /// Moves a file with real-time progress tracking.
+  /// Falls back to copy-delete if rename fails.
+  static Stream<double> moveFileWithProgress(final String sourcePath, final String targetPath) async* {
+    final source = File(sourcePath);
+    final target = File(targetPath);
+    
+    if (!await source.exists()) throw FileSystemException('Source missing', sourcePath);
+    
+    // Ensure target dir
+    final targetDir = target.parent;
+    if (!await targetDir.exists()) await targetDir.create(recursive: true);
+
+    try {
+      // Fast path: Atomic rename (0% -> 100% instantly)
+      await source.rename(targetPath);
+      yield 1.0;
+    } catch (_) {
+      // Slow path: Partition crossing copy-delete
+      final total = await source.length();
+      var processed = 0;
+      
+      final sink = target.openWrite();
+      final stream = source.openRead();
+      
+      await for (final chunk in stream) {
+        sink.add(chunk);
+        processed += chunk.length;
+        yield processed / total;
+      }
+      
+      await sink.flush();
+      await sink.close();
+      await source.delete();
+    }
+  }
 }
 
 class _TransferArgs {

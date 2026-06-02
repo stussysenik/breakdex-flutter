@@ -15,6 +15,8 @@ import 'reviewable_naming_service.dart';
 import 'video_path_resolver.dart';
 import '../sync/asset_hash_service.dart';
 import 'blackbox_service.dart';
+import 'storage_action_machine.dart';
+import '../models/canonical_path.dart';
 
 typedef MoveVideoImportedHandler =
     Future<void> Function({required String localPath, required String moveId, String? precomputedHash});
@@ -24,14 +26,14 @@ class MoveCreationService {
     required final MoveRepository moveRepository,
     required final ReviewableNamingService namingService,
     required final MoveVideoImportedHandler onVideoImported,
-    required final AssetHashService hashService,
+    required final StorageActionMachine storageEngine,
     required final FsrsCardsDao fsrsCardsDao,
     final BlackboxService? blackbox,
     final String Function()? idGenerator,
   }) : _moveRepository = moveRepository,
        _namingService = namingService,
        _onVideoImported = onVideoImported,
-       _hashService = hashService,
+       _storageEngine = storageEngine,
        _fsrsCardsDao = fsrsCardsDao,
        _blackbox = blackbox,
        _idGenerator = idGenerator ?? (() => const Uuid().v4());
@@ -39,7 +41,7 @@ class MoveCreationService {
   final MoveRepository _moveRepository;
   final ReviewableNamingService _namingService;
   final MoveVideoImportedHandler _onVideoImported;
-  final AssetHashService _hashService;
+  final StorageActionMachine _storageEngine;
   final FsrsCardsDao _fsrsCardsDao;
   final BlackboxService? _blackbox;
   final String Function() _idGenerator;
@@ -48,67 +50,39 @@ class MoveCreationService {
     final normalizedName = _namingService.normalize(request.name);
     final normalizedCategory = request.category.trim();
 
-    if (normalizedName.isEmpty) {
-      throw StateError('empty_move_name');
-    }
-    if (normalizedCategory.isEmpty) {
-      throw StateError('empty_move_category');
-    }
+    if (normalizedName.isEmpty) throw StateError('empty_move_name');
+    if (normalizedCategory.isEmpty) throw StateError('empty_move_category');
 
     final isTaken = await _namingService.isNameTaken(normalizedName);
-    if (isTaken) {
-      throw StateError('duplicate_card_name');
-    }
+    if (isTaken) throw StateError('duplicate_card_name');
 
-    // Generate or derive Move ID (Prefer SHA-256 hash for unified identity)
-    String moveId;
+    CanonicalPath? storedVideoPath;
+    String? moveId;
     String? contentHash;
+
+    // 1. Materialize via Engine (Hashing + Moving)
     if (request.localVideoPath != null) {
-      contentHash = await _hashService.computeHash(request.localVideoPath!);
+      storedVideoPath = await _storageEngine.execute(MaterializeAction(
+        sourcePath: request.localVideoPath!,
+        category: normalizedCategory,
+        moveName: normalizedName,
+      ));
+      
+      // Identity is derived from the materialized path (which contains the hash)
+      final filename = p.basenameWithoutExtension(storedVideoPath.value);
+      contentHash = filename.split(' - ').last;
       moveId = contentHash;
     } else {
       moveId = _idGenerator();
     }
 
-    final ext = request.localVideoPath != null ? p.extension(request.localVideoPath!) : '.mp4';
-    final semanticRelative = VideoPathResolver.semanticVideoPath(
-      normalizedCategory,
-      normalizedName,
-      ext,
-      contentHash: contentHash ?? moveId,
-    );
-
-    // If we have a local path, move it to semantic path IMMEDIATELY
-    String? storedVideoPath;
-    String? finalAbsPath;
-    if (request.localVideoPath != null) {
-      final targetAbs = VideoPathResolver.toAbsolute(semanticRelative);
-      try {
-        await FileSystemUtils.safeMove(request.localVideoPath!, targetAbs);
-        storedVideoPath = semanticRelative;
-        finalAbsPath = targetAbs;
-      } catch (e) {
-        DiagnosticsLog.error('MoveCreationService', 'Failed to move video to $targetAbs: $e');
-        // Fallback: use the temporary path for now if move failed but we MUST proceed?
-        // Actually, safeMove should handle fallback to copy, so if it fails, it's a real issue.
-        // We rethrow to prevent inconsistent DB state (move with no valid video path).
-        rethrow;
-      }
-    }
-
-    // Blackbox safety log
-    await _blackbox?.log('create_move', 'move', moveId, {
-      'name': normalizedName,
-      'category': normalizedCategory,
-      'hash': contentHash,
-    });
-
+    // 2. Commit Truth to DB
     await _moveRepository.insert(
       MovesCompanion.insert(
         id: moveId,
         name: normalizedName,
         category: Value(normalizedCategory),
-        videoPath: Value(storedVideoPath),
+        videoPath: Value(storedVideoPath?.value),
         originalVideoName: Value(request.originalVideoName),
         videoFileSize: Value(request.videoFileSize != null ? BigInt.from(request.videoFileSize!) : null),
         videoCreationDate: Value(request.videoCreationDate),
@@ -118,28 +92,28 @@ class MoveCreationService {
       ),
     );
 
-    unawaited(
-      _fsrsCardsDao.ensureCard(moveId, entityType: 'move'),
-    );
+    await _blackbox?.log('create_move', 'move', moveId, {
+      'name': normalizedName,
+      'category': normalizedCategory,
+      'hash': contentHash,
+    });
 
-    if (finalAbsPath != null) {
-      unawaited(
-        _onVideoImported(
-          localPath: finalAbsPath,
-          moveId: moveId,
-          precomputedHash: contentHash,
-        ).catchError(
-          (final Object error, final StackTrace stackTrace) =>
-              debugPrint('Move creation sync hook failed (non-fatal): $error'),
-        ),
-      );
+    unawaited(_fsrsCardsDao.ensureCard(moveId, entityType: 'move'));
+
+    if (storedVideoPath != null) {
+      final finalAbs = VideoPathResolver.toAbsolute(storedVideoPath.value);
+      unawaited(_onVideoImported(
+        localPath: finalAbs,
+        moveId: moveId,
+        precomputedHash: contentHash,
+      ).catchError((final e) => debugPrint('[SyncHook] Failed: $e')));
     }
 
     return CreateMoveResult(
       moveId: moveId,
       name: normalizedName,
       category: normalizedCategory,
-      videoPath: storedVideoPath,
+      videoPath: storedVideoPath?.value,
     );
   }
 }

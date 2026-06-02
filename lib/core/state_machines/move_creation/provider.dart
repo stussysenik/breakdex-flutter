@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../models/move_creation.dart';
 import '../../providers.dart';
+import '../../services/storage_action_machine.dart';
 import 'machine.dart';
 
 class MoveCreationNotifier extends Notifier<MoveCreationState> {
@@ -31,12 +32,21 @@ class MoveCreationNotifier extends Notifier<MoveCreationState> {
   }
 
   Future<void> _runCreation(final CreateMoveRequest request) async {
+    final engine = ref.read(storageActionMachineProvider);
+    
+    // Listen for "Hot" progress updates
+    final subscription = engine.progress.listen((final p) {
+      _send(CreationProgress(p.progress));
+    });
+
     try {
       final service = ref.read(moveCreationServiceProvider);
       final result = await service.createMove(request);
       _send(CreationSuccess(result));
     } catch (e) {
       _send(CreationError(e.toString()));
+    } finally {
+      await subscription.cancel();
     }
   }
 }

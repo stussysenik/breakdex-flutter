@@ -257,7 +257,7 @@ class _MoveAnalysisScreenState extends ConsumerState<MoveAnalysisScreen> {
       // TODO: Extract current video frame as image bytes
       // For now, this is a placeholder — full implementation needs
       // video frame extraction via the native bridge
-      HapticFeedback.lightImpact();
+      await HapticFeedback.lightImpact();
 
       // Placeholder: In production, extract frame bytes and call:
       // final joints = await ref.read(visionMLProvider).detectPose(frameBytes);

@@ -118,11 +118,12 @@ Theme, font, categories, sync, and export control. Native iOS share sheet via UI
 
 Every move and combo lives in a SQLite database (Drift ORM). The folder structure on disk is purely for file storage and does **not** drive the app's behavior. This means:
 
+- **Declarative Storage Truth**: The database defines exactly where every file *should* be. If a file is in the wrong place or missing, the `StorageOrchestrator` and `VideoPathHealer` work to materialize it from the content-addressed master or move it to its canonical location.
+- **Content-addressable materialization**: `CanonicalFolderService` maintains a content-addressed copy in `Documents/.breakdex-master/videos/ab/cd/hash.mp4` nested by hash. This acts as the immutable source of truth for the library, immune to renames or UUID changes.
 - **Renaming a move** updates the database and **atomically moves the video file** to its new semantic path.
 - **Deleting a move** removes the database row and the sandboxed video copy. Your original source file (Photos, Files, Camera roll) is never touched.
-- **Semantic Storage**: Video files are stored at `Documents/Moves/{category}/{moveName}/video.mp4` (e.g. `Documents/Moves/Power/Windmill/video.mp4`). This makes the library browsable via the file system.
-- **Self-healing paths**: if iOS changes the app's container UUID (common on reinstall/update), `VideoPathResolver` recomputes the absolute path. If the file is still missing, it scans `Documents/Moves/` and `Documents/videos/` by filename as a last-resort fallback.
-- **Content-addressable backup**: `CanonicalFolderService` maintains a content-addressed copy in `Documents/.breakdex-master/videos/ab/cd/hash.mp4` nested by hash — immune to renames, moves, or UUID changes.
+- **Semantic Storage**: Video files are stored at `Documents/Moves/{category}/{moveName}/video.mp4` (e.g. `Documents/Moves/Power/Windmill/video.mp4`).
+- **Self-healing paths**: if iOS changes the app's container UUID, `VideoPathResolver` recomputes the absolute path. If the file is still missing, it scans `Documents/Moves/` and `Documents/videos/` by filename as a last-resort fallback.
 
 ### Resolution chain (when the app needs to play a video)
 
@@ -132,7 +133,8 @@ Move row in DB
        └─ VideoPathResolver.toAbsolute()
             └─ /current-container/Documents/Moves/Category/Name/video.mp4
                  ├─ File exists? → play it
-                 └─ File missing? → resolve() scans disk by filename
+                 └─ File missing? → attempt materialization from .breakdex-master/ (Content-Addressable)
+                      └─ Materialization failed? → resolve() scans disk by filename
 ```
 
 ---

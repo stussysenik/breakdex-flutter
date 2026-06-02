@@ -6,14 +6,15 @@ import 'package:path/path.dart' as p;
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../database/database.dart';
+import '../models/canonical_path.dart';
 import '../utils/filesystem_utils.dart';
 import '../utils/diagnostics.dart';
 import 'app_storage_paths.dart';
 
 String _sanitizeFilename(final String name) {
   return name
-      .replaceAll('/', '-')
-      .replaceAll(':', '-')
+      .replaceAll(RegExp(r'[^a-zA-Z0-9 _-]'), '-')
+      .replaceAll(RegExp(r'-{2,}'), '-')
       .trim();
 }
 
@@ -21,208 +22,115 @@ String _sanitizeFilename(final String name) {
 ///
 /// iOS changes the container UUID on every reinstall/update, which breaks
 /// absolute paths stored in the database. This utility stores paths as relative
-/// (`Moves/uuid.mp4`) and resolves them to the current container at runtime.
-///
-/// **Three core operations:**
-/// - [toRelative] — strips the documents prefix for DB storage
-/// - [toAbsolute] — prepends the current documents dir for file access
-/// - [resolve] — last-resort disk scan when the expected file is missing
-///
-/// Call [initialize] once at app startup before any path operations.
+/// (`Moves/Category/Name - Hash.mp4`) and resolves them to the current container at runtime.
 abstract final class VideoPathResolver {
   static String _docsPath = '';
 
   /// Cache the current documents directory path. Must be called once at
-  /// startup before [toRelative], [toAbsolute], or [resolve] are used.
+  /// startup before any path operations are used.
   static Future<void> initialize() async {
     final dir = await AppStoragePaths.documentsDirectory();
     _docsPath = dir.path;
-    // Ensure trailing separator is stripped for consistent prefix matching
     if (_docsPath.endsWith('/')) {
       _docsPath = _docsPath.substring(0, _docsPath.length - 1);
     }
   }
 
-  /// Test-only setter to bypass [AppStoragePaths] in unit tests.
   @visibleForTesting
   static set docsPathOverride(final String path) => _docsPath = path;
 
-  /// Expose the documents directory path (e.g. for VideoService to use without calling getApplicationDocumentsDirectory)
   static String get documentsPath => _docsPath;
 
-  /// Whether a path is already relative (doesn't start with `/`).
   static bool isRelative(final String path) => !path.startsWith('/');
 
-  /// Convert an absolute path to a relative path suitable for DB storage.
-  ///
-  /// Algorithm:
-  /// 1. Already relative → return as-is
-  /// 2. Starts with current docs prefix → strip prefix
-  /// 3. Absolute but different container UUID → find `/Documents/` marker
-  /// 4. Fallback → `Moves/{basename}`
-  static String toRelative(final String path) {
-    assert(
-      _docsPath.isNotEmpty,
-      'VideoPathResolver.initialize() must be called first',
-    );
-    // Already relative — nothing to do
-    if (!path.startsWith('/')) return path;
+  /// Convert an absolute path to a relative [CanonicalPath].
+  static CanonicalPath toRelative(final String path) {
+    assert(_docsPath.isNotEmpty, 'VideoPathResolver.initialize() not called');
+    if (!path.startsWith('/')) return CanonicalPath(path);
 
-    // Starts with current documents directory
     if (path.startsWith(_docsPath)) {
       final relative = path.substring(_docsPath.length);
-      // Strip leading slash: "/Moves/uuid.mp4" → "Moves/uuid.mp4"
-      if (relative.startsWith('/')) return relative.substring(1);
-      return relative;
+      return CanonicalPath(relative.startsWith('/') ? relative.substring(1) : relative);
     }
 
-    // Different container UUID — extract from /Documents/ marker
     const marker = '/Documents/';
     final markerIndex = path.indexOf(marker);
     if (markerIndex >= 0) {
-      return path.substring(markerIndex + marker.length);
+      return CanonicalPath(path.substring(markerIndex + marker.length));
     }
 
-    // New fallback: If it's already an absolute path under a 'Moves' folder
-    // but we can't find /Documents/, try to find the 'Moves/' marker itself.
     final movesMarker = '${p.separator}Moves${p.separator}';
     final movesIndex = path.indexOf(movesMarker);
     if (movesIndex >= 0) {
-      return path.substring(movesIndex + 1); // "Moves/..."
+      return CanonicalPath(path.substring(movesIndex + 1));
     }
 
-    // Fallback: use Moves/{basename} as a safe relative path
-    return 'Moves/${p.basename(path)}';
+    return CanonicalPath('Moves/${p.basename(path)}');
   }
 
-  /// Convert a (possibly relative) path to an absolute path for file access.
-  ///
-  /// Algorithm:
-  /// 1. Relative → prepend current docs directory
-  /// 2. Starts with current docs prefix → return as-is
-  /// 3. Absolute with wrong prefix → extract relative via /Documents/ marker
+  /// Convert a [CanonicalPath] or raw relative path to an absolute string.
   static String toAbsolute(final String path) {
-    assert(
-      _docsPath.isNotEmpty,
-      'VideoPathResolver.initialize() must be called first',
-    );
-    // Relative path — prepend docs directory
-    if (!path.startsWith('/')) {
-      return '$_docsPath/$path';
-    }
-
-    // Already points to current container
+    assert(_docsPath.isNotEmpty, 'VideoPathResolver.initialize() not called');
+    if (!path.startsWith('/')) return '$_docsPath/$path';
     if (path.startsWith(_docsPath)) return path;
 
-    // Absolute with stale container UUID — extract relative portion
     const marker = '/Documents/';
     final markerIndex = path.indexOf(marker);
     if (markerIndex >= 0) {
-      final relative = path.substring(markerIndex + marker.length);
-      return '$_docsPath/$relative';
+      return '$_docsPath/${path.substring(markerIndex + marker.length)}';
     }
 
-    // Unknown absolute path — return as-is, caller will handle missing file
     return path;
   }
 
-  /// Last-resort file resolution: scans known directories for a matching
-  /// filename when the expected path doesn't exist on disk.
-  ///
-  /// Returns the found absolute path, or null if the file can't be located.
-  /// This is the self-healing core — called only when a file is missing.
-  static Future<String?> resolve(final String storedPath) async {
-    DiagnosticsLog.info('VideoPathResolver', 'resolve storedPath=$storedPath');
-    // First try the normal toAbsolute resolution
-    final candidate = toAbsolute(storedPath);
-    try {
-      final exists = await File(
-        candidate,
-      ).exists().timeout(const Duration(seconds: 3), onTimeout: () => false);
-      if (exists) {
-        final stat = await File(candidate).stat().timeout(
-          const Duration(seconds: 3),
-          onTimeout: () => throw Exception('stat timed out'),
-        );
-        if (stat.size > 0) {
-          DiagnosticsLog.info('VideoPathResolver', 'resolve: direct hit $candidate');
-          return candidate;
-        }
-      }
-    } catch (_) {
-      // Continue to fallback scan
+  /// Last-resort fallback: If the stored relative path is missing, scan the
+  /// filesystem for the filename in common locations.
+  static Future<String?> resolve(final String relativePath) async {
+    // 1. Check if it's already absolute and exists
+    if (!isRelative(relativePath) && await File(relativePath).exists()) {
+      return relativePath;
     }
 
-    DiagnosticsLog.warn('VideoPathResolver', 'resolve: direct miss for $storedPath, scanning...');
-    // Extract filename for directory scan
-    final filename = p.basename(storedPath);
-    if (filename.isEmpty) return null;
+    // 2. Try the "correct" absolute path
+    final correctAbs = toAbsolute(relativePath);
+    if (await File(correctAbs).exists()) return correctAbs;
 
-    // Scan Documents/Moves/ and Documents/videos/ for matching filename
-    for (final subdir in ['Moves', 'videos']) {
-      final dir = Directory('$_docsPath/$subdir');
-      try {
-        if (!await dir.exists()) continue;
-        await for (final entity in dir.list()) {
-          if (entity is File && p.basename(entity.path) == filename) {
-            final stat = await entity.stat();
-            if (stat.size > 0) {
-              DiagnosticsLog.info('VideoPathResolver', 'resolve: found in $subdir → ${entity.path}');
-              return entity.path;
-            }
-          }
+    // 3. Fallback: Scan by filename
+    final filename = p.basename(relativePath);
+
+    // a. Check in 'videos/' (cloud download folder)
+    final videosDir = p.join(_docsPath, 'videos');
+    final inVideos = p.join(videosDir, filename);
+    if (await File(inVideos).exists()) return inVideos;
+
+    // b. Recursive search in Moves/ (can be slow, but this is last resort)
+    final movesRoot = p.join(_docsPath, 'Moves');
+    final movesDir = Directory(movesRoot);
+    if (await movesDir.exists()) {
+      await for (final entity in movesDir.list(recursive: true)) {
+        if (entity is File && p.basename(entity.path) == filename) {
+          return entity.path;
         }
-      } catch (e) {
-        debugPrint('[VideoPathResolver] Scan error in $subdir: $e');
       }
     }
 
-    DiagnosticsLog.error('VideoPathResolver', 'resolve: file not found for $storedPath');
     return null;
   }
 
-  /// Return a semantic relative path for video storage:
-  /// `Moves/{category}/{moveName}/{contentHash}.{ext}`.
-  ///
-  /// Uses content hash as the filename so different edits always produce
-  /// different paths, forcing Flutter widget keys to evict cached video
-  /// players and preventing stale video display.
-  ///
-  /// Category and move name are sanitized for safe filesystem usage.
-  /// If the category is not recognized as a primary category, it defaults to 'Default'.
-  static String semanticVideoPath(
+  /// Deterministic path generation: `Moves/{Category}/{Name} - {Hash}.{ext}`.
+  static CanonicalPath semanticVideoPath(
     final String category,
     final String moveName,
     final String extension, {
-    required final String contentHash,
+    required final ContentHash contentHash,
   }) {
     final safeCategory = getSafeCategory(category);
-
-    final sanitizedName = _sanitizeFilename(moveName.trim());
-    final safeName = sanitizedName.length > 1
-        ? sanitizedName[0].toUpperCase() + sanitizedName.substring(1).toLowerCase()
-        : sanitizedName.toUpperCase();
+    final safeName = _sanitizeFilename(moveName);
+    final shortHash = contentHash.short;
 
     final ext = extension.startsWith('.') ? extension.substring(1) : extension;
-    return p.join('Moves', safeCategory, safeName, '$contentHash.${ext.toLowerCase()}');
-  }
-
-  /// Return a semantic relative path for video storage:
-  /// `Moves/{category}/{moveName}/video.{ext}` (backward-compatible stub
-  /// for callers that don't have a content hash yet).
-  @Deprecated('Use the contentHash variant instead')
-  static String semanticVideoPathLegacy(
-    final String category,
-    final String moveName,
-    final String extension,
-  ) {
-    final safeCategory = getSafeCategory(category);
-    final sanitizedName = _sanitizeFilename(moveName.trim());
-    final safeName = sanitizedName.length > 1
-        ? sanitizedName[0].toUpperCase() + sanitizedName.substring(1).toLowerCase()
-        : sanitizedName.toUpperCase();
-    final ext = extension.startsWith('.') ? extension.substring(1) : extension;
-    return p.join('Moves', safeCategory, safeName, 'video.${ext.toLowerCase()}');
+    // Standardize on Flat files within Category folders for human readability
+    return CanonicalPath(p.join('Moves', safeCategory, '$safeName - $shortHash.${ext.toLowerCase()}'));
   }
 
   static String getSafeCategory(final String category) {
@@ -230,84 +138,50 @@ abstract final class VideoPathResolver {
     if (trimmed.isEmpty) return 'Default';
 
     final lower = trimmed.toLowerCase();
-    
-    // Catch all variations of "default" and force canonical 'Default'
-    if (lower == 'default' ||
-        lower == 'none' ||
-        lower == 'uncategorized' ||
-        lower == 'general') {
+    if (['default', 'none', 'uncategorized', 'general'].contains(lower)) {
       return 'Default';
     }
 
-    // Force Title Case for all categories to prevent "Footwork" vs "footwork" folders
     final sanitized = _sanitizeFilename(trimmed);
     if (sanitized.length <= 1) return sanitized.toUpperCase();
     return sanitized[0].toUpperCase() + sanitized.substring(1).toLowerCase();
   }
 
-  /// Move the file at [currentRelativePath] to a semantic path based on
-  /// [category], [moveName], and [contentHash]. Returns the new relative path.
-  ///
-  /// If the source file cannot be found, returns [currentRelativePath] as-is.
-  /// Creates intermediate directories as needed.
-  ///
-  /// When [contentHash] is provided, the target filename is `{hash}.mp4`.
-  /// When null (backward compat), falls back to `video.mp4`.
-  static Future<String> moveToSemanticPath({
+  /// Central materialization logic: Moves a file to its canonical location.
+  static Future<CanonicalPath> moveToSemanticPath({
     required final String currentRelativePath,
     required final String category,
     required final String moveName,
-    final String? contentHash,
+    required final ContentHash contentHash,
   }) async {
     final sourceAbs = toAbsolute(currentRelativePath);
     final sourceFile = File(sourceAbs);
 
     if (!await sourceFile.exists()) {
-      DiagnosticsLog.warn('VideoPathResolver', 'moveToSemanticPath: source not found $sourceAbs');
-      return currentRelativePath;
+      DiagnosticsLog.warn('VideoPathResolver', 'Source not found: $sourceAbs');
+      return toRelative(currentRelativePath);
     }
 
     final ext = p.extension(currentRelativePath).isNotEmpty
         ? p.extension(currentRelativePath)
         : '.mp4';
-    final newRelative = contentHash != null
-        ? semanticVideoPath(category, moveName, ext, contentHash: contentHash)
-        : semanticVideoPathLegacy(category, moveName, ext);
-    final newAbs = toAbsolute(newRelative);
+    
+    final newRelative = semanticVideoPath(category, moveName, ext, contentHash: contentHash);
+    final newAbs = toAbsolute(newRelative.value);
 
-    if (sourceAbs == newAbs) {
-      DiagnosticsLog.info('VideoPathResolver', 'moveToSemanticPath: already at target $newAbs');
-      return currentRelativePath;
-    }
+    if (sourceAbs == newAbs) return newRelative;
 
     final newDir = Directory(p.dirname(newAbs));
-    if (!await newDir.exists()) {
-      await newDir.create(recursive: true);
-    }
-
-    // Clean up any old legacy `video.mp4` in the same directory to avoid
-    // having both the old and new files.
-    if (contentHash != null) {
-      final legacyFile = File(p.join(p.dirname(newAbs), 'video.mp4'));
-      try {
-        if (await legacyFile.exists()) {
-          await legacyFile.delete();
-          DiagnosticsLog.info('VideoPathResolver', 'cleaned legacy video.mp4');
-        }
-      } catch (_) {}
-    }
+    if (!await newDir.exists()) await newDir.create(recursive: true);
 
     try {
       await FileSystemUtils.safeMove(sourceAbs, newAbs);
-      DiagnosticsLog.info('VideoPathResolver', 'moveToSemanticPath: $sourceAbs → $newAbs');
-      // Prune empty parent dirs of the old path
-      final docsPath = _docsPath;
-      await FileSystemUtils.pruneEmptyParents(sourceAbs, stopDir: p.join(docsPath, 'Moves'));
-      return toRelative(newAbs);
+      DiagnosticsLog.info('VideoPathResolver', '[MATERIALIZE] $sourceAbs → $newAbs');
+      
+      await FileSystemUtils.pruneEmptyParents(sourceAbs, stopDir: p.join(_docsPath, 'Moves'));
+      return newRelative;
     } catch (e) {
-      DiagnosticsLog.error('VideoPathResolver', 'Failed to move file to semantic path: $e');
-      // THE FIX: Do not return currentRelativePath which swallows the error,
-      // instead rethrow so the upstream caller fails gracefully without corrupting DB state.
+      DiagnosticsLog.error('VideoPathResolver', 'Materialization failed: $e');
       rethrow;
     }
   }
@@ -577,7 +451,7 @@ abstract final class VideoPathHealer {
         currentRelativePath: currentPath,
         category: move.category,
         moveName: move.name,
-        contentHash: move.contentHash,
+        contentHash: ContentHash(move.contentHash!),
       );
 
       if (semanticRelative != currentPath) {

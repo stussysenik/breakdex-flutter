@@ -4,6 +4,7 @@ import 'package:path/path.dart' as p;
 import 'package:drift/drift.dart';
 import '../database/database.dart';
 import '../database/daos/moves_dao.dart';
+import '../models/canonical_path.dart';
 import '../utils/filesystem_utils.dart';
 import '../utils/diagnostics.dart';
 import 'video_path_resolver.dart';
@@ -66,7 +67,7 @@ class StorageOrchestrator {
         currentRelativePath: oldRelative,
         category: newName,
         moveName: move.name,
-        contentHash: move.contentHash,
+        contentHash: ContentHash(move.contentHash!),
       );
 
       await _movesDao.updateMove(MovesCompanion(
@@ -153,7 +154,7 @@ class StorageOrchestrator {
         currentRelativePath: move.videoPath!,
         category: newCategory,
         moveName: move.name,
-        contentHash: move.contentHash,
+        contentHash: ContentHash(move.contentHash!),
       );
     }
 
@@ -190,7 +191,7 @@ class StorageOrchestrator {
         currentRelativePath: move.videoPath!,
         category: move.category,
         moveName: newName,
-        contentHash: move.contentHash,
+        contentHash: ContentHash(move.contentHash!),
       );
     }
 

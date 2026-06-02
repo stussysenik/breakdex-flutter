@@ -306,7 +306,7 @@ class _AddProviderButton extends ConsumerWidget {
                 subtitle: 'Requires Google account sign-in',
                 onTap: () async {
                   Navigator.pop(ctx);
-                  HapticFeedback.mediumImpact();
+                  await HapticFeedback.mediumImpact();
                   final result =
                       await ref.read(gDriveSetupProvider).enable();
                   if (!context.mounted) return;

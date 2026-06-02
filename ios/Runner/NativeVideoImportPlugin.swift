@@ -52,45 +52,55 @@ final class NativeVideoImportPlugin: NSObject, FlutterPlugin, FlutterStreamHandl
         return nil
     }
 
-    private func fetchPhotoLibraryVideos(result: @escaping FlutterResult) {
-        // Run on background queue to avoid blocking main thread
-        DispatchQueue.global(qos: .userInitiated).async {
-            let options = PHFetchOptions()
-            options.sortDescriptors = [NSSortDescriptor(key: "creationDate", ascending: false)]
-            
-            // Only fetch strictly videos
-            let fetchResult = PHAsset.fetchAssets(with: .video, options: options)
-            
-            var assets: [[String: Any]] = []
-            let df = ISO8601DateFormatter()
-            
-            fetchResult.enumerateObjects { (asset, index, stop) in
-                // originalFilename can be slow. 
-                // We'll use a placeholder if it's not prefetched, or just accept the cost on background thread.
-                let resources = PHAssetResource.assetResources(for: asset)
-                let preferredResource = resources.first {
-                    $0.type == .video || $0.type == .fullSizeVideo || $0.type == .pairedVideo
-                } ?? resources.first
-                
-                let originalFilename = preferredResource?.originalFilename ?? "Unknown"
-                
-                assets.append([
-                    "localIdentifier": asset.localIdentifier,
-                    "creationDate": asset.creationDate != nil ? df.string(from: asset.creationDate!) : nil,
-                    "duration": asset.duration,
-                    "originalFileName": originalFilename,
-                    "width": asset.pixelWidth,
-                    "height": asset.pixelHeight
-                ])
-                
-                // Limit to 1000 most recent for performance
-                if assets.count >= 1000 {
-                    stop.pointee = true
-                }
+    private func fetchPhotoLibraryVideos(offset: Int, limit: Int, result: @escaping FlutterResult) {
+        PHPhotoLibrary.requestAuthorization(for: .readWrite) { status in
+            guard status == .authorized || status == .limited else {
+                DispatchQueue.main.async { result([]) }
+                return
             }
             
-            DispatchQueue.main.async {
-                result(assets)
+            // Run on background queue to avoid blocking main thread
+            DispatchQueue.global(qos: .userInitiated).async {
+                let options = PHFetchOptions()
+                options.sortDescriptors = [NSSortDescriptor(key: "creationDate", ascending: false)]
+                
+                // Only fetch strictly videos
+                let fetchResult = PHAsset.fetchAssets(with: .video, options: options)
+                
+                var assets: [[String: Any]] = []
+                let df = ISO8601DateFormatter()
+                
+                let totalCount = fetchResult.count
+                let start = max(0, offset)
+                let end = min(totalCount, start + limit)
+                
+                guard start < totalCount else {
+                    DispatchQueue.main.async { result([]) }
+                    return
+                }
+                
+                for i in start..<end {
+                    let asset = fetchResult.object(at: i)
+                    let resources = PHAssetResource.assetResources(for: asset)
+                    let preferredResource = resources.first {
+                        $0.type == .video || $0.type == .fullSizeVideo || $0.type == .pairedVideo
+                    } ?? resources.first
+                    
+                    let originalFilename = preferredResource?.originalFilename ?? "Unknown"
+                    
+                    assets.append([
+                        "localIdentifier": asset.localIdentifier,
+                        "creationDate": asset.creationDate != nil ? df.string(from: asset.creationDate!) : nil,
+                        "duration": asset.duration,
+                        "originalFileName": originalFilename,
+                        "width": asset.pixelWidth,
+                        "height": asset.pixelHeight
+                    ])
+                }
+                
+                DispatchQueue.main.async {
+                    result(assets)
+                }
             }
         }
     }
@@ -188,7 +198,14 @@ final class NativeVideoImportPlugin: NSObject, FlutterPlugin, FlutterStreamHandl
                 try await self.importFromPhotos()
             }
         case "fetchPhotoLibraryVideos":
-            self.fetchPhotoLibraryVideos(result: result)
+            guard let args = call.arguments as? [String: Any],
+                  let offset = args["offset"] as? Int,
+                  let limit = args["limit"] as? Int else {
+                // Fallback for old callers
+                self.fetchPhotoLibraryVideos(offset: 0, limit: 100, result: result)
+                return
+            }
+            self.fetchPhotoLibraryVideos(offset: offset, limit: limit, result: result)
         case "getAssetThumbnail":
             guard let args = call.arguments as? [String: Any],
                   let id = args["identifier"] as? String,

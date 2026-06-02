@@ -9,8 +9,10 @@ import 'package:uuid/uuid.dart';
 
 import '../../database/database.dart';
 import '../../models/learning_state.dart';
+import '../../models/canonical_path.dart';
 import '../../providers.dart';
 import '../../services/video_path_resolver.dart';
+import '../../services/storage_action_machine.dart';
 import '../../utils/diagnostics.dart';
 import '../../utils/filesystem_utils.dart';
 import 'state.dart';
@@ -85,65 +87,45 @@ class MoveDetailNotifier extends Notifier<MoveDetailState> {
   // ── Side effect methods ──
 
   Future<void> _duplicateMove(final Move move) async {
-    final log = StageLogger.begin('_duplicateMove', subsystem: 'MoveDetail', context: {
-      'moveId': move.id,
-      'name': move.name,
-    });
+    final log = StageLogger.begin('_duplicateMove', subsystem: 'MoveDetail', context: {'moveId': move.id});
     try {
-      unawaited(HapticFeedback.heavyImpact());
+      final engine = ref.read(storageActionMachineProvider);
+      final repo = ref.read(moveRepositoryProvider);
       final newName = '${move.name} (Copy)';
-      
-      final newId = const Uuid().v4();
-      String? newVideoPath;
-      
-      if (move.videoPath != null) {
-        log.stage('copying_video_isolate');
-        final sourceAbs = VideoPathResolver.toAbsolute(move.videoPath!);
-        final ext = p.extension(sourceAbs);
-        final targetRelative = VideoPathResolver.semanticVideoPath(
-          move.category,
-          newName,
-          ext,
-          contentHash: newId,
-        );
-        final targetAbs = VideoPathResolver.toAbsolute(targetRelative);
-        
-        // offload to background isolate to keep UI thread at 60/120fps
-        await FileSystemUtils.copyFileBackground(sourceAbs, targetAbs);
-        
-        newVideoPath = targetRelative;
-        
-        // Also copy thumbnail in background
-        final sourceThumb = p.join(p.dirname(sourceAbs), '.thumbs', '${p.basenameWithoutExtension(sourceAbs)}.jpg');
-        final targetThumb = p.join(p.dirname(targetAbs), '.thumbs', '${p.basenameWithoutExtension(targetAbs)}.jpg');
-        if (await File(sourceThumb).exists()) {
-          await FileSystemUtils.copyFileBackground(sourceThumb, targetThumb);
-        }
-      }
-      
+
+      // 1. Materialize duplicate via Engine
+      final sourceRelative = CanonicalPath(move.videoPath ?? '');
+      final targetRelative = await engine.execute(DuplicateAction(
+        sourceRelative: sourceRelative,
+        newName: newName,
+        category: move.category,
+      ));
+
+      // 2. Derive Identity from Engine output
+      final filename = p.basenameWithoutExtension(targetRelative.value);
+      final contentHash = filename.split(' - ').last;
+
       final companion = MovesCompanion.insert(
-        id: newId,
+        id: contentHash,
         name: newName,
         category: Value(move.category),
         count: Value(move.count),
         learningState: Value(move.learningState),
         notes: Value(move.notes),
-        videoPath: Value(newVideoPath),
+        videoPath: Value(targetRelative.value),
         originalVideoName: Value(move.originalVideoName),
         videoFileSize: Value(move.videoFileSize),
         videoCreationDate: Value(DateTime.now()),
         imagePaths: Value(move.imagePaths),
-        contentHash: Value(move.contentHash),
+        contentHash: Value(contentHash),
       );
       
-      await ref.read(moveRepositoryProvider).insert(companion);
-      log.stage('db_inserted');
+      await repo.insert(companion);
+      await ref.read(fsrsCardsDaoProvider).ensureCard(contentHash, entityType: 'move');
       
-      final newMove = await ref.read(moveRepositoryProvider).getById(newId);
-      await ref.read(fsrsCardsDaoProvider).ensureCard(newId, entityType: 'move');
-      
+      final newMove = await repo.getById(contentHash);
       send(DuplicateSucceeded(newMove));
-      log.complete('newId=$newId');
+      log.complete('newId=$contentHash');
     } catch (e, st) {
       log.fail(e, st);
       send(DuplicateFailed('Duplication failed: $e'));
@@ -228,39 +210,41 @@ class MoveDetailNotifier extends Notifier<MoveDetailState> {
     final log = StageLogger.begin('_saveVideo', subsystem: 'MoveDetail', context: {
       'moveId': move.id,
       'localPath': localPath,
-      'originalFileName': originalFileName,
     });
     try {
-      final absPath = VideoPathResolver.toAbsolute(localPath);
-      final contentHash = await ref.read(assetHashServiceProvider).computeHash(absPath);
-      final semanticRelative = await VideoPathResolver.moveToSemanticPath(
-        currentRelativePath: absPath,
+      final engine = ref.read(storageActionMachineProvider);
+      
+      // 1. Materialize via Engine (Hot)
+      final semanticRelative = await engine.execute(MaterializeAction(
+        sourcePath: localPath,
         category: move.category,
         moveName: move.name,
-        contentHash: contentHash,
-      );
-      final resolvedAbs = VideoPathResolver.toAbsolute(semanticRelative);
-      final videoService = ref.read(videoServiceProvider);
-      unawaited(videoService.generateThumbnail(resolvedAbs));
+      ));
+      
+      final contentHash = p.basenameWithoutExtension(semanticRelative.value).split(' - ').last;
+      final resolvedAbs = VideoPathResolver.toAbsolute(semanticRelative.value);
+      unawaited(ref.read(videoServiceProvider).generateThumbnail(resolvedAbs));
 
       await ref.read(moveRepositoryProvider).update(
             MovesCompanion(
               id: Value(move.id),
-              videoPath: Value(semanticRelative),
+              videoPath: Value(semanticRelative.value),
               originalVideoName: Value(originalFileName),
               contentHash: Value(contentHash),
             ),
           );
       final updatedMove = move.copyWith(
-        videoPath: Value(semanticRelative),
+        videoPath: Value(semanticRelative.value),
         originalVideoName: Value(originalFileName),
         contentHash: Value(contentHash),
       );
+      
       unawaited(ref.read(videoImportSyncHookProvider).onVideoImported(
         localPath: resolvedAbs,
         moveId: move.id,
         precomputedHash: contentHash,
       ));
+      
       send(SaveSucceeded(updatedMove));
       log.complete();
     } catch (e, stack) {

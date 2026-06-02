@@ -127,7 +127,7 @@ class _OnboardingCardContentState
 
   Future<void> _enableICloud() async {
     setState(() => _enabling = true);
-    HapticFeedback.mediumImpact();
+    await HapticFeedback.mediumImpact();
 
     final result = await ref.read(iCloudSetupProvider).enable();
     if (!mounted) return;

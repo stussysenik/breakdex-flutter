@@ -127,7 +127,7 @@ class CloudSyncSection extends ConsumerWidget {
   }
 
   Future<void> _enableGDrive(final BuildContext context, final WidgetRef ref) async {
-    HapticFeedback.mediumImpact();
+    await HapticFeedback.mediumImpact();
     final result = await ref.read(gDriveSetupProvider).enable();
     if (!context.mounted) return;
 
@@ -150,7 +150,7 @@ class CloudSyncSection extends ConsumerWidget {
   }
 
   Future<void> _enableICloud(final BuildContext context, final WidgetRef ref) async {
-    HapticFeedback.mediumImpact();
+    await HapticFeedback.mediumImpact();
     final result = await ref.read(iCloudSetupProvider).enable();
     if (!context.mounted) return;
 

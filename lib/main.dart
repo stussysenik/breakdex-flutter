@@ -26,6 +26,7 @@ import 'core/sync/asset_hash_service.dart';
 import 'core/sync/legacy_asset_migration.dart';
 import 'core/sync/video_reliability_runtime.dart';
 import 'core/utils/diagnostics.dart';
+import 'core/services/storage_janitor.dart';
 import 'core/services/boot_coordinator.dart';
 
 final _rootScaffoldMessengerKey = GlobalKey<ScaffoldMessengerState>();
@@ -297,29 +298,12 @@ void main() async {
       debugPrint('FSRS migration failed: $e');
     }
 
-    // Convert legacy absolute video paths and clean up filesystem.
+    // Reconcile Filesystem with Database Truth (The Janitor)
     try {
-      await VideoPathHealer.healAll(db, sharedPrefs);
+      await container.read(storageJanitorProvider).reconcile();
       boot.completeGate(BootGate.healing);
     } catch (e) {
-      debugPrint('Video path healing failed: $e');
-    }
-
-    // Prune empty directories in canonical storage.
-    try {
-      final canonicalFolder = CanonicalFolderService();
-      await canonicalFolder.ensureInitialized();
-      final removed = await canonicalFolder.pruneEmptyDirectories();
-      boot.completeGate(BootGate.pruning, detail: 'removed $removed');
-      DiagnosticsLog.info('Boot', 'canonical folder prune done — removed $removed empty dir(s)');
-      final orphans = await canonicalFolder.scanOrphans();
-      final diskOrphans = orphans.where((final o) => o.isOrphan).length;
-      final ledger = await canonicalFolder.readLedger();
-      DiagnosticsLog.info('Boot',
-          'canonical folder ledger — ${orphans.length} files on disk, '
-          '${ledger.entries.length} in ledger, $diskOrphans disk orphan(s)');
-    } catch (e) {
-      debugPrint('Canonical folder init failed: $e');
+      debugPrint('Storage reconciliation failed: $e');
     }
 
     // Migrate existing videos into the content-addressable manifest.

@@ -14,6 +14,7 @@ import '../../core/database/database.dart';
 import '../../core/database/daos/combos_dao.dart';
 import '../../core/design/spacing.dart';
 import '../../core/design/typography.dart';
+import '../../core/models/canonical_path.dart';
 import '../../core/models/learning_state.dart';
 import '../../core/models/reviewable_item.dart';
 import '../../core/providers.dart';
@@ -166,7 +167,7 @@ class _ComboDetailScreenState extends ConsumerState<ComboDetailScreen> {
         currentRelativePath: editedPath,
         category: move.category,
         moveName: move.name,
-        contentHash: contentHash,
+        contentHash: ContentHash(contentHash),
       );
       final resolvedAbs = VideoPathResolver.toAbsolute(semanticRelative);
 

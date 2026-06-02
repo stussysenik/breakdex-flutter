@@ -287,10 +287,16 @@ class VideoService {
     }
   }
 
-  Future<List<MetadataAsset>> fetchPhotoLibraryVideos() async {
+  Future<List<MetadataAsset>> fetchPhotoLibraryVideos({
+    final int offset = 0,
+    final int limit = 50,
+  }) async {
     if (!Platform.isIOS) return [];
     try {
-      final List<dynamic>? assets = await _nativeImportChannel.invokeMethod('fetchPhotoLibraryVideos');
+      final List<dynamic>? assets = await _nativeImportChannel.invokeMethod(
+        'fetchPhotoLibraryVideos',
+        {'offset': offset, 'limit': limit},
+      );
       if (assets == null) return [];
       return assets.map((final a) => MetadataAsset.fromMap(Map<String, dynamic>.from(a as Map))).toList();
     } catch (e) {

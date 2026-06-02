@@ -11,8 +11,18 @@ class ReviewableNamingService {
   final MovesDao _movesDao;
   final CombosDao _combosDao;
 
+  /// Strict regex for filesystem-safe names: Alphanumeric, Space, Underscore, Dash.
+  /// Rejects characters like / \ : * ? " < > | which break cross-platform sync.
+  static final RegExp safeNamePattern = RegExp(r'^[a-zA-Z0-9 _-]+$');
+
   String normalize(final String value) =>
       value.trim().replaceAll(RegExp(r'\s+'), ' ');
+
+  bool isValidName(final String value) {
+    final normalized = normalize(value);
+    if (normalized.isEmpty) return false;
+    return safeNamePattern.hasMatch(normalized);
+  }
 
   Future<bool> isNameTaken(
     final String value, {
@@ -30,5 +40,4 @@ class ReviewableNamingService {
 
     return _combosDao.nameExists(normalized, excludingId: excludingComboId);
   }
-
 }

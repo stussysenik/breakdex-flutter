@@ -5,20 +5,21 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:intl/intl.dart';
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 import '../../core/design/spacing.dart';
 import '../../core/design/typography.dart';
 import '../../core/providers.dart';
 import '../../core/services/video_service.dart';
+import '../../core/services/storage_action_machine.dart';
+import '../../core/services/video_path_resolver.dart';
 import '../../core/utils/diagnostics.dart';
 
 class MetadataVideoPickerSheet extends ConsumerStatefulWidget {
   const MetadataVideoPickerSheet({super.key});
 
   static Future<VideoPickResult?> show(final BuildContext context) {
-    DiagnosticsLog.info('MetadataVideoPickerSheet', 'Opening custom high-fidelity picker');
+    DiagnosticsLog.info('MetadataVideoPickerSheet', 'Opening high-fidelity discovery picker');
     return showModalBottomSheet<VideoPickResult>(
       context: context,
       isScrollControlled: true,
@@ -34,68 +35,132 @@ class MetadataVideoPickerSheet extends ConsumerStatefulWidget {
 
 class _MetadataVideoPickerSheetState extends ConsumerState<MetadataVideoPickerSheet> with SingleTickerProviderStateMixin {
   late TabController _tabController;
-  List<MetadataAsset>? _libraryAssets;
+  late ScrollController _scrollController;
+  
+  List<MetadataAsset> _libraryAssets = [];
+  List<MetadataAsset> _managedAssets = [];
   List<MetadataAsset>? _appAssets;
   bool _loading = true;
+  bool _loadingMore = false;
+  bool _hasMore = true;
+  int _offset = 0;
+  static const _pageSize = 60;
   String? _error;
 
-  // Ghosting / Pre-rendering import state
+  final Set<String> _selectedIds = {};
+
   MetadataAsset? _importingAsset;
-  Uint8List? _importingThumbnail;
-  double _importProgress = 0.0;
-  StreamSubscription<double>? _progressSub;
+  StorageProgress _currentProgress = StorageProgress.initial();
+  StreamSubscription<StorageProgress>? _progressSub;
 
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 2, vsync: this);
-    _loadAll();
+    _tabController = TabController(length: 3, vsync: this);
+    _scrollController = ScrollController()..addListener(_onScroll);
+    _loadInitial();
   }
 
   @override
   void dispose() {
     _tabController.dispose();
+    _scrollController.dispose();
     _progressSub?.cancel();
     super.dispose();
   }
 
-  Future<void> _loadAll() async {
-    DiagnosticsLog.info('MetadataVideoPickerSheet', 'Starting full asset load (recursive)');
+  void _onScroll() {
+    if (_scrollController.position.pixels >= _scrollController.position.maxScrollExtent - 600) {
+      if (!_loadingMore && _hasMore && _tabController.index == 0) {
+        _loadMore();
+      }
+    }
+  }
+
+  Future<void> _loadInitial() async {
+    setState(() {
+      _loading = true;
+      _error = null;
+    });
+    
     try {
       final results = await Future.wait([
-        ref.read(videoServiceProvider).fetchPhotoLibraryVideos(),
+        ref.read(videoServiceProvider).fetchPhotoLibraryVideos(offset: 0, limit: _pageSize),
         _fetchAppVideos(),
+        _fetchManagedVideos(),
       ]);
+      
       if (mounted) {
         setState(() {
-          _libraryAssets = results[0];
+          _libraryAssets = results[0].where((final a) => a.duration > 0).toList();
           _appAssets = results[1];
+          _managedAssets = results[2];
+          _offset = results[0].length;
+          _hasMore = results[0].length >= _pageSize;
           _loading = false;
         });
-        DiagnosticsLog.info('MetadataVideoPickerSheet', 'Load complete: lib=${_libraryAssets?.length ?? 0}, app=${_appAssets?.length ?? 0}');
       }
     } catch (e) {
-      DiagnosticsLog.error('MetadataVideoPickerSheet', 'Failed to load assets: $e');
+      if (mounted) setState(() { _error = e.toString(); _loading = false; });
+    }
+  }
+
+  Future<void> _loadMore() async {
+    if (_loadingMore || !_hasMore) return;
+    setState(() => _loadingMore = true);
+    
+    try {
+      final more = await ref.read(videoServiceProvider).fetchPhotoLibraryVideos(
+        offset: _offset, 
+        limit: _pageSize,
+      );
+      
       if (mounted) {
         setState(() {
-          _error = e.toString();
-          _loading = false;
+          final moreVideos = more.where((final a) => a.duration > 0).toList();
+          _libraryAssets.addAll(moreVideos);
+          _offset += more.length;
+          _hasMore = more.length >= _pageSize;
+          _loadingMore = false;
         });
       }
+    } catch (_) {
+      if (mounted) setState(() => _loadingMore = false);
+    }
+  }
+
+  Future<List<MetadataAsset>> _fetchManagedVideos() async {
+    try {
+      final result = await ref.read(nativeVideoAlbumProvider).discoverRecoverableManagedAssets();
+      return result.assets.map((final a) => MetadataAsset(
+        localIdentifier: a.assetLocalIdentifier,
+        originalFileName: a.filename,
+        duration: 0.0,
+        width: 0,
+        height: 0,
+      )).toList();
+    } catch (_) {
+      return [];
     }
   }
 
   Future<List<MetadataAsset>> _fetchAppVideos() async {
     try {
-      final docs = await getApplicationDocumentsDirectory();
-      // Use the canonical storage path defined in CanonicalFolderService
-      final videosDir = Directory(p.join(docs.path, '.breakdex-master', 'videos'));
-      if (!await videosDir.exists()) {
-         DiagnosticsLog.info('MetadataVideoPickerSheet', 'Canonical videos directory does not exist at ${videosDir.path}');
-         return [];
+      final docsPath = VideoPathResolver.documentsPath.isNotEmpty
+          ? VideoPathResolver.documentsPath
+          : (await getApplicationDocumentsDirectory()).path;
+          
+      final movesDir = Directory(p.join(docsPath, 'Moves'));
+      final combosDir = Directory(p.join(docsPath, 'Combos'));
+      
+      final List<FileSystemEntity> entities = [];
+      if (await movesDir.exists()) {
+        entities.addAll(await movesDir.list(recursive: true).toList());
+      }
+      if (await combosDir.exists()) {
+        entities.addAll(await combosDir.list(recursive: true).toList());
       }
 
-      final List<FileSystemEntity> entities = await videosDir.list(recursive: true).toList();
       final List<MetadataAsset> assets = [];
       
       for (final entity in entities) {
@@ -104,85 +169,79 @@ class _MetadataVideoPickerSheetState extends ConsumerState<MetadataVideoPickerSh
           if (path.contains('/.thumbs/') || path.contains('/.ds_store')) continue;
           
           if (path.endsWith('.mp4') || path.endsWith('.mov') || path.endsWith('.m4v')) {
-            try {
-              final stat = await entity.stat();
-              assets.add(MetadataAsset(
-                localIdentifier: entity.path, 
-                originalFileName: p.basename(entity.path),
-                creationDate: stat.changed,
-                duration: 0,
-                width: 0,
-                height: 0,
-                isLocal: true,
-              ));
-            } catch (e) {
-              DiagnosticsLog.warn('MetadataVideoPickerSheet', 'Failed to stat local file ${entity.path}: $e');
-            }
+            final stat = await entity.stat();
+            assets.add(MetadataAsset(
+              localIdentifier: entity.path, 
+              originalFileName: p.basename(entity.path),
+              creationDate: stat.changed,
+              duration: 1, 
+              width: 0,
+              height: 0,
+              isLocal: true,
+            ));
           }
         }
       }
       
       assets.sort((final a, final b) => (b.creationDate ?? DateTime(0)).compareTo(a.creationDate ?? DateTime(0)));
-      DiagnosticsLog.info('MetadataVideoPickerSheet', 'App videos detected: ${assets.length}');
       return assets;
-    } catch (e) {
-      DiagnosticsLog.error('MetadataVideoPickerSheet', 'Error listing app videos: $e');
+    } catch (_) {
       return [];
     }
   }
 
-  Future<void> _handleSelection(final MetadataAsset asset, final Uint8List? thumbnail) async {
-    // Immediate pre-rendering / ghosting feedback (under 3ms)
+  void _toggleSelection(final String id) {
+    setState(() {
+      if (_selectedIds.contains(id)) {
+        _selectedIds.remove(id);
+      } else {
+        _selectedIds.add(id);
+        unawaited(HapticFeedback.selectionClick());
+      }
+    });
+  }
+
+  Future<void> _handleImport() async {
+    if (_selectedIds.isEmpty) return;
+    
+    final id = _selectedIds.first;
+    final asset = _libraryAssets
+        .followedBy(_managedAssets)
+        .followedBy(_appAssets ?? [])
+        .firstWhere((final a) => a.localIdentifier == id);
+
     setState(() {
       _importingAsset = asset;
-      _importingThumbnail = thumbnail;
-      _importProgress = 0.0;
+      _currentProgress = StorageProgress.initial();
     });
 
-    _progressSub?.cancel();
-    _progressSub = ref.read(videoServiceProvider).importProgress.listen((final p) {
-      if (mounted) setState(() => _importProgress = p);
+    final engine = ref.read(storageActionMachineProvider);
+    _progressSub = engine.progress.listen((final p) {
+      if (mounted) setState(() => _currentProgress = p);
     });
 
     final navigator = Navigator.of(context);
-    final logger = StageLogger.begin('ImportAsset', subsystem: 'MetadataVideoPickerSheet', context: {
-      'name': asset.originalFileName,
-      'isLocal': asset.isLocal,
-    });
-    
     try {
       VideoPickResult? result;
+      
       if (asset.isLocal) {
-        // Give the UI a tiny moment to show the ghost state so the transition isn't harsh
-        await Future<void>.delayed(const Duration(milliseconds: 150));
         result = VideoPickResult(
           localPath: asset.localIdentifier,
           originalFileName: asset.originalFileName,
           creationDate: asset.creationDate,
         );
       } else {
-        logger.stage('import_native');
         result = await ref.read(videoServiceProvider).importSpecificAsset(asset.localIdentifier);
       }
-      
-      if (mounted) {
-        logger.complete(result != null ? 'success' : 'cancelled');
+
+      if (mounted && result != null) {
+        unawaited(HapticFeedback.heavyImpact());
         navigator.pop(result);
       }
-    } catch (e, st) {
-      logger.fail(e, st);
+    } catch (e) {
       if (mounted) {
-        setState(() {
-          _importingAsset = null;
-          _importingThumbnail = null;
-        });
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Import failed: $e')),
-        );
-      }
-    } finally {
-      if (_progressSub != null) {
-        unawaited(_progressSub!.cancel());
+        setState(() => _importingAsset = null);
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Import failed: $e')));
       }
     }
   }
@@ -193,43 +252,73 @@ class _MetadataVideoPickerSheetState extends ConsumerState<MetadataVideoPickerSh
     final size = MediaQuery.of(context).size;
 
     return Container(
-      height: size.height * 0.85,
+      height: size.height * 0.9,
       decoration: BoxDecoration(
         color: colorScheme.surface,
         borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
       ),
+      clipBehavior: Clip.antiAlias,
       child: Stack(
         children: [
-          Column(
-            children: [
-              _buildHandle(context),
-              _buildHeader(context),
-              const SizedBox(height: AppSpacing.sm),
-              TabBar(
-                controller: _tabController,
-                tabs: const [
-                  Tab(text: 'PHOTO LIBRARY'),
-                  Tab(text: 'APP VIDEOS'),
-                ],
-                dividerColor: Colors.transparent,
-                labelColor: colorScheme.primary,
-                unselectedLabelColor: colorScheme.secondary,
-                indicatorColor: colorScheme.primary,
-                indicatorSize: TabBarIndicatorSize.label,
-                labelStyle: AppTypography.labelLarge.copyWith(fontWeight: FontWeight.w800, letterSpacing: 1.2),
-                unselectedLabelStyle: AppTypography.labelLarge.copyWith(fontWeight: FontWeight.w500, letterSpacing: 1.2),
-              ),
-              const Divider(height: 1, thickness: 0.5),
-              Expanded(
-                child: TabBarView(
+          Scaffold(
+            backgroundColor: Colors.transparent,
+            body: Column(
+              children: [
+                _buildHandle(context),
+                _buildHeader(context),
+                const SizedBox(height: AppSpacing.sm),
+                TabBar(
                   controller: _tabController,
-                  children: [
-                    _buildGrid(_libraryAssets, 'Photos'),
-                    _buildGrid(_appAssets, 'Managed'),
+                  isScrollable: true,
+                  tabAlignment: TabAlignment.start,
+                  padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
+                  tabs: const [
+                    Tab(text: 'PHOTO LIBRARY'),
+                    Tab(text: 'VIDEO LIBRARY'),
+                    Tab(text: 'APP VIDEOS'),
                   ],
+                  dividerColor: Colors.transparent,
+                  labelColor: colorScheme.primary,
+                  unselectedLabelColor: colorScheme.secondary,
+                  indicatorColor: colorScheme.primary,
+                  indicatorSize: TabBarIndicatorSize.label,
+                  labelStyle: AppTypography.labelLarge.copyWith(fontWeight: FontWeight.w800, letterSpacing: 1.2),
+                  unselectedLabelStyle: AppTypography.labelLarge.copyWith(fontWeight: FontWeight.w500, letterSpacing: 1.2),
                 ),
-              ),
-            ],
+                const Divider(height: 1, thickness: 0.5),
+                Expanded(
+                  child: TabBarView(
+                    controller: _tabController,
+                    children: [
+                      _buildGrid(_libraryAssets, 'Device Videos', isLibrary: true),
+                      _buildGrid(_managedAssets, 'Breakdex Album', isLibrary: false),
+                      _buildGrid(_appAssets, 'App Storage', isLibrary: false),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            bottomNavigationBar: _selectedIds.isNotEmpty && _importingAsset == null
+                ? SafeArea(
+                    child: Padding(
+                      padding: const EdgeInsets.all(AppSpacing.lg),
+                      child: SizedBox(
+                        width: double.infinity,
+                        height: 56,
+                        child: ElevatedButton(
+                          onPressed: _handleImport,
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: colorScheme.primary,
+                            foregroundColor: colorScheme.onPrimary,
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                            elevation: 0,
+                          ),
+                          child: Text('IMPORT ${_selectedIds.length} VIDEO${_selectedIds.length > 1 ? 'S' : ''}'),
+                        ),
+                      ),
+                    ).animate().slideY(begin: 1, end: 0, curve: Curves.easeOutCubic),
+                  )
+                : null,
           ),
           
           if (_importingAsset != null)
@@ -239,88 +328,6 @@ class _MetadataVideoPickerSheetState extends ConsumerState<MetadataVideoPickerSh
     );
   }
 
-  Widget _buildGhostingOverlay(final BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
-
-    return Positioned.fill(
-      child: ClipRRect(
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
-        child: Stack(
-          fit: StackFit.expand,
-          children: [
-            if (_importingThumbnail != null)
-              Image.memory(_importingThumbnail!, fit: BoxFit.cover),
-            
-            BackdropFilter(
-              filter: ImageFilter.blur(sigmaX: 32, sigmaY: 32),
-              child: Container(color: Colors.black.withValues(alpha: 0.75)),
-            ),
-
-            Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Container(
-                  width: 160,
-                  height: 160,
-                  decoration: BoxDecoration(
-                    color: colorScheme.surfaceContainerHighest,
-                    borderRadius: BorderRadius.circular(16),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withValues(alpha: 0.5),
-                        blurRadius: 30,
-                        offset: const Offset(0, 15),
-                      ),
-                    ],
-                  ),
-                  clipBehavior: Clip.antiAlias,
-                  child: _importingThumbnail != null
-                      ? Image.memory(_importingThumbnail!, fit: BoxFit.cover)
-                      : const Icon(Icons.videocam, size: 64, color: Colors.white54),
-                ).animate().scale(begin: const Offset(0.9, 0.9), end: const Offset(1, 1), curve: Curves.easeOutCubic, duration: 400.ms),
-                
-                const SizedBox(height: AppSpacing.xxl),
-                
-                Text(
-                  'IMPORTING VIDEO',
-                  style: AppTypography.labelLarge.copyWith(
-                    color: Colors.white,
-                    letterSpacing: 3.0,
-                    fontWeight: FontWeight.w900,
-                  ),
-                ).animate().fadeIn(duration: 400.ms).slideY(begin: 0.2),
-                
-                const SizedBox(height: AppSpacing.md),
-                
-                SizedBox(
-                  width: 220,
-                  height: 6,
-                  child: ClipRRect(
-                    borderRadius: BorderRadius.circular(3),
-                    child: LinearProgressIndicator(
-                      value: _importProgress > 0 ? _importProgress : null,
-                      backgroundColor: Colors.white24,
-                      color: colorScheme.primary,
-                    ),
-                  ),
-                ).animate().fadeIn(delay: 150.ms),
-                
-                const SizedBox(height: AppSpacing.sm),
-                
-                Text(
-                  '${(_importProgress * 100).toInt()}%',
-                  style: AppTypography.titleLarge.copyWith(
-                    color: Colors.white,
-                    fontWeight: FontWeight.w900,
-                  ),
-                ).animate().fadeIn(delay: 150.ms),
-              ],
-            ).animate().fadeIn(duration: 300.ms),
-          ],
-        ),
-      ),
-    );
-  }
 
   Widget _buildHandle(final BuildContext context) {
     return Center(
@@ -358,27 +365,13 @@ class _MetadataVideoPickerSheetState extends ConsumerState<MetadataVideoPickerSh
     );
   }
 
-  Widget _buildGrid(final List<MetadataAsset>? assets, final String sourceLabel) {
-    if (_loading) {
+  Widget _buildGrid(final List<MetadataAsset>? assets, final String sourceLabel, {required final bool isLibrary}) {
+    if (_loading && isLibrary) {
       return const Center(child: CircularProgressIndicator());
     }
 
-    if (_error != null) {
-      return Center(
-        child: Padding(
-          padding: const EdgeInsets.all(AppSpacing.xl),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const Icon(Icons.error_outline_rounded, size: 48, color: Colors.redAccent),
-              const SizedBox(height: AppSpacing.md),
-              Text('Sync Error', style: AppTypography.bodySmall.copyWith(fontWeight: FontWeight.bold)),
-              const SizedBox(height: 4),
-              Text(_error!, style: AppTypography.caption, textAlign: TextAlign.center),
-            ],
-          ),
-        ),
-      );
+    if (_error != null && isLibrary) {
+      return Center(child: Text(_error!, style: AppTypography.caption));
     }
 
     if (assets == null || assets.isEmpty) {
@@ -389,37 +382,127 @@ class _MetadataVideoPickerSheetState extends ConsumerState<MetadataVideoPickerSh
             Icon(Icons.videocam_off_outlined, size: 48, color: Theme.of(context).colorScheme.outline.withValues(alpha: 0.5)),
             const SizedBox(height: AppSpacing.md),
             Text('NO VIDEOS FOUND', style: AppTypography.caption.copyWith(letterSpacing: 1.0, fontWeight: FontWeight.bold)),
-            const SizedBox(height: 4),
-            Text('Check your $sourceLabel storage', style: AppTypography.caption),
           ],
         ),
       );
     }
 
     return GridView.builder(
-      padding: const EdgeInsets.all(4),
+      controller: isLibrary ? _scrollController : null,
+      padding: const EdgeInsets.all(2),
       gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
         crossAxisCount: 3,
         crossAxisSpacing: 2,
         mainAxisSpacing: 2,
         childAspectRatio: 1,
       ),
-      itemCount: assets.length,
+      itemCount: assets.length + (isLibrary && _hasMore ? 1 : 0),
       itemBuilder: (final context, final index) {
+        if (isLibrary && index == assets.length) {
+          return const Center(child: Padding(padding: EdgeInsets.all(16), child: CircularProgressIndicator(strokeWidth: 2)));
+        }
+        
+        final asset = assets[index];
+        final isSelected = _selectedIds.contains(asset.localIdentifier);
+        
         return _VideoTile(
-          asset: assets[index],
-          onSelect: _handleSelection,
+          asset: asset,
+          isSelected: isSelected,
+          onSelect: (final a, final _) => _toggleSelection(a.localIdentifier),
         );
       },
+    );
+  }
+
+  Widget _buildGhostingOverlay(final BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+
+    return Positioned.fill(
+      child: ClipRRect(
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+        child: Stack(
+          fit: StackFit.expand,
+          children: [
+            BackdropFilter(
+              filter: ImageFilter.blur(sigmaX: 32, sigmaY: 32),
+              child: Container(color: Colors.black.withValues(alpha: 0.85)),
+            ),
+
+            Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Container(
+                  width: 120,
+                  height: 120,
+                  decoration: BoxDecoration(
+                    color: colorScheme.surfaceContainerHighest,
+                    borderRadius: BorderRadius.circular(24),
+                    boxShadow: [
+                      BoxShadow(
+                        color: colorScheme.primary.withValues(alpha: 0.2),
+                        blurRadius: 40,
+                        spreadRadius: 10,
+                      ),
+                    ],
+                  ),
+                  child: const Center(child: Icon(Icons.sync_rounded, size: 48, color: Colors.white)),
+                ).animate(onPlay: (final c) => c.repeat()).rotate(duration: 3.seconds),
+                
+                const SizedBox(height: AppSpacing.xxl),
+                
+                Text(
+                  _currentProgress.stage.toUpperCase(),
+                  style: AppTypography.labelLarge.copyWith(
+                    color: Colors.white,
+                    letterSpacing: 4.0,
+                    fontWeight: FontWeight.w900,
+                  ),
+                ).animate().fadeIn(),
+                
+                const SizedBox(height: AppSpacing.md),
+                
+                SizedBox(
+                  width: 240,
+                  height: 4,
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(2),
+                    child: LinearProgressIndicator(
+                      value: _currentProgress.progress > 0 ? _currentProgress.progress : null,
+                      backgroundColor: Colors.white10,
+                      color: colorScheme.primary,
+                    ),
+                  ),
+                ),
+                
+                const SizedBox(height: AppSpacing.sm),
+                
+                Text(
+                  '${(_currentProgress.progress * 100).toInt()}%',
+                  style: AppTypography.titleLarge.copyWith(
+                    color: Colors.white,
+                    fontWeight: FontWeight.w900,
+                    fontFeatures: [const FontFeature.tabularFigures()],
+                  ),
+                ),
+              ],
+            ).animate().fadeIn(duration: 300.ms),
+          ],
+        ),
+      ),
     );
   }
 }
 
 class _VideoTile extends ConsumerStatefulWidget {
   final MetadataAsset asset;
+  final bool isSelected;
   final void Function(MetadataAsset, Uint8List?) onSelect;
 
-  const _VideoTile({required this.asset, required this.onSelect});
+  const _VideoTile({
+    required this.asset,
+    required this.isSelected,
+    required this.onSelect,
+  });
 
   @override
   ConsumerState<_VideoTile> createState() => _VideoTileState();
@@ -430,172 +513,90 @@ class _VideoTileState extends ConsumerState<_VideoTile> {
   bool _loading = true;
 
   @override
-  void initState() {
-    super.initState();
-  }
-
-  @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    if (_thumbnail == null && _loading) {
-      _loadThumbnail();
-    }
+    if (_thumbnail == null && _loading) _loadThumbnail();
   }
 
   Future<void> _loadThumbnail() async {
     final asset = widget.asset;
-    const targetDim = 200;
-    
-    Uint8List? bytes;
     try {
+      Uint8List? bytes;
       if (asset.isLocal) {
-        final thumbPath = await ref.read(videoServiceProvider).generateThumbnail(
-          asset.localIdentifier, 
-          maxWidth: targetDim,
-        );
-        if (thumbPath != null) {
-          bytes = await File(thumbPath).readAsBytes();
-        }
+        final path = await ref.read(videoServiceProvider).generateThumbnail(asset.localIdentifier, maxWidth: 200);
+        if (path != null) bytes = await File(path).readAsBytes();
       } else {
-        bytes = await ref.read(videoServiceProvider).getAssetThumbnail(
-          asset.localIdentifier,
-          width: targetDim,
-          height: targetDim,
-        );
+        bytes = await ref.read(videoServiceProvider).getAssetThumbnail(asset.localIdentifier);
       }
-    } catch (e) {
-      DiagnosticsLog.warn('MetadataVideoPickerSheet', 'Thumb load error: $e');
-    }
-    
-    if (mounted) {
-      setState(() {
-        _thumbnail = bytes;
-        _loading = false;
-      });
+      if (mounted) setState(() { _thumbnail = bytes; _loading = false; });
+    } catch (_) {
+      if (mounted) setState(() => _loading = false);
     }
   }
 
   @override
   Widget build(final BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
-    final asset = widget.asset;
-    
-    final dateStr = asset.creationDate != null 
-      ? DateFormat('MMM d, yyyy').format(asset.creationDate!) 
-      : 'UNKNOWN';
-
     return GestureDetector(
-      behavior: HitTestBehavior.opaque,
-      onTap: () {
-        unawaited(HapticFeedback.mediumImpact());
-        widget.onSelect(asset, _thumbnail);
-      },
-      child: Container(
+      onTap: () => widget.onSelect(widget.asset, _thumbnail),
+      child: AnimatedContainer(
+        duration: 200.ms,
         decoration: BoxDecoration(
           color: colorScheme.surfaceContainerHighest,
           borderRadius: BorderRadius.circular(4),
           border: Border.all(
-            color: colorScheme.primary.withValues(alpha: 0.1),
-            width: 0.5,
+            color: widget.isSelected ? colorScheme.primary : Colors.transparent,
+            width: 2,
           ),
         ),
         clipBehavior: Clip.antiAlias,
         child: Stack(
           fit: StackFit.expand,
           children: [
-            if (_thumbnail != null)
-              Image.memory(_thumbnail!, fit: BoxFit.cover, filterQuality: FilterQuality.medium)
-                  .animate()
-                  .fade(duration: 300.ms)
-            else if (_loading)
-              const Center(child: SizedBox(width: 24, height: 24, child: CircularProgressIndicator(strokeWidth: 2)))
-            else
-              const Icon(Icons.videocam_rounded, size: 24),
+            if (_thumbnail != null) Image.memory(_thumbnail!, fit: BoxFit.cover)
+            else if (_loading) const Center(child: SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 1))),
             
-            // Source Anchor (Top Left)
-            Positioned(
-              top: 6,
-              left: 6,
-              child: Container(
-                padding: const EdgeInsets.all(3),
-                decoration: BoxDecoration(
-                  color: Colors.black.withValues(alpha: 0.4),
-                  borderRadius: BorderRadius.circular(4),
-                ),
-                child: Icon(
-                  asset.isLocal ? Icons.verified_user_rounded : Icons.camera_roll_rounded,
-                  size: 10,
-                  color: asset.isLocal ? colorScheme.primaryContainer : Colors.white,
-                ),
-              ),
-            ),
-
-            // Duration / Beats Anchor (Bottom Right)
-            if (!asset.isLocal && asset.duration > 0)
-              Positioned(
-                bottom: 4,
-                right: 4,
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
-                  decoration: BoxDecoration(
-                    color: Colors.black.withValues(alpha: 0.7),
-                    borderRadius: BorderRadius.circular(2),
-                  ),
-                  child: Text(
-                    _formatDuration(asset.duration),
-                    style: const TextStyle(
-                      color: Colors.white, 
-                      fontSize: 8, 
-                      fontWeight: FontWeight.w900,
-                      letterSpacing: 0.5,
-                    ),
-                  ),
-                ),
-              ),
-
-            // Metadata Overlay (Bottom Left)
+            if (widget.isSelected) Container(color: colorScheme.primary.withValues(alpha: 0.2)),
+            
+            // Metadata Overlay
             Positioned(
               bottom: 0,
               left: 0,
               right: 0,
               child: Container(
-                padding: const EdgeInsets.fromLTRB(6, 12, 32, 4),
+                padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
                     begin: Alignment.topCenter,
                     end: Alignment.bottomCenter,
                     colors: [
-                      Colors.transparent, 
+                      Colors.transparent,
                       Colors.black.withValues(alpha: 0.7),
-                      Colors.black.withValues(alpha: 0.85)
                     ],
                   ),
                 ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(
-                      asset.originalFileName.toUpperCase(),
-                      style: AppTypography.labelLarge.copyWith(
-                        color: Colors.white, 
-                        fontSize: 8, 
-                        fontWeight: FontWeight.w900,
-                        letterSpacing: 0.5,
-                      ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    const SizedBox(height: 1),
-                    Text(
-                      dateStr,
-                      style: AppTypography.caption.copyWith(
-                        color: Colors.white.withValues(alpha: 0.7), 
-                        fontSize: 7,
-                        fontWeight: FontWeight.w800,
-                      ),
-                    ),
-                  ],
+                child: Text(
+                  widget.asset.originalFileName,
+                  style: AppTypography.labelSmall.copyWith(
+                    color: Colors.white,
+                    fontSize: 8,
+                    fontWeight: FontWeight.w600,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+            ),
+
+            Positioned(
+              top: 4, right: 4,
+              child: AnimatedScale(
+                scale: widget.isSelected ? 1.0 : 0.0,
+                duration: 200.ms,
+                child: Container(
+                  padding: const EdgeInsets.all(2),
+                  decoration: BoxDecoration(color: colorScheme.primary, shape: BoxShape.circle),
+                  child: const Icon(Icons.check, size: 12, color: Colors.white),
                 ),
               ),
             ),
@@ -603,12 +604,5 @@ class _VideoTileState extends ConsumerState<_VideoTile> {
         ),
       ),
     );
-  }
-
-  String _formatDuration(final double seconds) {
-    final d = Duration(seconds: seconds.round());
-    final min = d.inMinutes;
-    final sec = (d.inSeconds % 60).toString().padLeft(2, '0');
-    return '$min:$sec';
   }
 }

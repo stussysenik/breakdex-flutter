@@ -37,6 +37,7 @@ import 'services/database_recovery_service.dart';
 import 'services/managed_album_reconciliation_service.dart';
 import 'services/media_playback_coordinator.dart';
 import 'services/move_creation_service.dart';
+import 'services/storage_action_machine.dart';
 import 'services/sync_service.dart';
 import 'services/connectivity_service.dart';
 import 'services/fsrs_service.dart';
@@ -337,7 +338,7 @@ final moveCreationServiceProvider = Provider<MoveCreationService>((final ref) {
   return MoveCreationService(
     moveRepository: ref.watch(moveRepositoryProvider),
     namingService: ref.watch(reviewableNamingServiceProvider),
-    hashService: ref.watch(assetHashServiceProvider),
+    storageEngine: ref.watch(storageActionMachineProvider),
     fsrsCardsDao: ref.watch(fsrsCardsDaoProvider),
     blackbox: ref.watch(blackboxServiceProvider),
     onVideoImported: ({required final localPath, required final moveId, final precomputedHash}) =>

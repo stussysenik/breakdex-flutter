@@ -243,7 +243,7 @@ class _FreeSpaceScreenState extends ConsumerState<FreeSpaceScreen> {
         });
         // Refresh analysis
         ref.invalidate(spaceAnalysisProvider);
-        HapticFeedback.heavyImpact();
+        await HapticFeedback.heavyImpact();
       }
     } catch (e) {
       if (mounted) {

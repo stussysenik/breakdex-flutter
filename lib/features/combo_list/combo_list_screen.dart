@@ -12,6 +12,9 @@ import '../../core/design/theme.dart';
 import '../../core/design/typography.dart';
 import '../../core/providers.dart';
 import '../../shared/widgets/pressable.dart';
+import 'providers/combo_list_provider.dart';
+import '../../core/state_machines/combo_list/state.dart';
+import '../../core/state_machines/combo_list/event.dart';
 
 class ComboListScreen extends ConsumerWidget {
   const ComboListScreen({super.key});
@@ -19,6 +22,7 @@ class ComboListScreen extends ConsumerWidget {
   @override
   Widget build(final BuildContext context, final WidgetRef ref) {
     final combosAsync = ref.watch(_combosProvider);
+    final viewState = ref.watch(comboListProvider);
     final colorScheme = Theme.of(context).colorScheme;
 
     final combos = combosAsync.valueOrNull ?? const <(Combo, int)>[];
@@ -44,13 +48,50 @@ class ComboListScreen extends ConsumerWidget {
           ),
         ),
         title: const Text('Combos'),
+        bottom: PreferredSize(
+          preferredSize: const Size.fromHeight(60),
+          child: Padding(
+            padding: const EdgeInsets.all(AppSpacing.sm),
+            child: SegmentedButton<Type>(
+              segments: const [
+                ButtonSegment(
+                  value: ComboViewBasic,
+                  label: Text('Basic'),
+                  icon: Icon(Icons.list),
+                ),
+                ButtonSegment(
+                  value: ComboViewPractice,
+                  label: Text('Practice'),
+                  icon: Icon(Icons.calendar_month),
+                ),
+              ],
+              selected: {viewState.runtimeType},
+              onSelectionChanged: (final set) {
+                final type = set.first;
+                if (type == ComboViewBasic) {
+                  ref.read(comboListProvider.notifier).send(const SelectBasicView());
+                } else if (type == ComboViewPractice) {
+                  ref.read(comboListProvider.notifier).send(const SelectPracticeView());
+                }
+              },
+            ),
+          ),
+        ),
       ),
       body: combosAsync.when(
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (final e, _) => Center(child: Text('Error: $e')),
-        data: (final data) => data.isEmpty
-            ? _ComboEmptyState(colorScheme: colorScheme)
-            : _ComboTableView(combos: data, colorScheme: colorScheme),
+        data: (final data) {
+          if (data.isEmpty) {
+            return _ComboEmptyState(colorScheme: colorScheme);
+          }
+          
+          if (viewState is ComboViewPractice) {
+            return _ComboPracticeView(combos: data, colorScheme: colorScheme);
+          }
+          
+          return _ComboTableView(combos: data, colorScheme: colorScheme);
+        },
       ),
       floatingActionButton: combos.isNotEmpty
           ? Semantics(
@@ -391,3 +432,68 @@ class _DottedLinePainter extends CustomPainter {
   @override
   bool shouldRepaint(final _DottedLinePainter oldDelegate) => false;
 }
+
+// -- Practice View ------------------------------------------------------------
+
+class _ComboPracticeView extends StatelessWidget {
+  const _ComboPracticeView({required this.combos, required this.colorScheme});
+
+  final List<(Combo, int)> combos;
+  final ColorScheme colorScheme;
+
+  @override
+  Widget build(final BuildContext context) {
+    // A simplified week-based practice view for combos
+    return ListView(
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.screenEdge,
+        vertical: AppSpacing.md,
+      ),
+      children: [
+        _buildWeekSection(context, 'This Week', combos.take(3).toList()),
+        const SizedBox(height: AppSpacing.lg),
+        _buildWeekSection(context, 'Next Week', combos.skip(3).take(3).toList()),
+      ],
+    );
+  }
+
+  Widget _buildWeekSection(BuildContext context, String title, List<(Combo, int)> weekCombos) {
+    if (weekCombos.isEmpty) return const SizedBox.shrink();
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm, vertical: AppSpacing.xs),
+          child: Text(
+            title,
+            style: AppTypography.titleSmall.copyWith(
+              color: colorScheme.primary,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+        ),
+        const SizedBox(height: AppSpacing.xs),
+        Container(
+          decoration: AppSurfaces.panel(context, radius: AppRadius.md),
+          child: ListView.separated(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            itemCount: weekCombos.length,
+            separatorBuilder: (_, __) => const Divider(height: 1),
+            itemBuilder: (context, index) {
+              final (combo, moveCount) = weekCombos[index];
+              return ListTile(
+                title: Text(combo.name, style: AppTypography.bodyMedium),
+                subtitle: Text('$moveCount moves', style: AppTypography.caption),
+                trailing: const Icon(Icons.play_circle_outline),
+                onTap: () => context.push('/breakdex/combo/${combo.id}'),
+              );
+            },
+          ),
+        ),
+      ],
+    );
+  }
+}
+
