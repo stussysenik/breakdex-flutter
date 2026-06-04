@@ -24,6 +24,7 @@ import '../../core/services/native_video_album.dart';
 import '../../core/services/native_share_sheet.dart';
 import '../../core/utils/share_sheet.dart';
 import '../../core/utils/diagnostics.dart';
+import '../../shared/widgets/action_tile.dart';
 import '../../shared/widgets/combo_step_line.dart';
 import '../../shared/widgets/notes_section.dart';
 import '../../shared/widgets/logs_section.dart';
@@ -347,46 +348,27 @@ class _ComboDetailBody extends ConsumerWidget {
     return ListView(
       padding: const EdgeInsets.all(AppSpacing.screenEdge),
       children: [
-        Row(
-          children: [
-            Expanded(
-              child: GestureDetector(
-                onTap: () => context.pop(),
-                child: Row(
-                  children: [
-                    Icon(
-                      Icons.chevron_left,
-                      color: colorScheme.secondary,
-                      size: 20,
-                    ),
-                    Text(
-                      'Combo',
-                      style: AppTypography.sectionHeader.copyWith(
-                        color: colorScheme.secondary,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-            GestureDetector(
-              onTap: () => context.push('/edit-combo/${combo.id}'),
-              child: Icon(
-                Icons.edit_outlined,
+        // Back affordance only — edit/delete now live in the ACTIONS section
+        // below, mirroring the move detail IA for consistency and larger
+        // tap targets.
+        GestureDetector(
+          onTap: () => context.pop(),
+          behavior: HitTestBehavior.opaque,
+          child: Row(
+            children: [
+              Icon(
+                Icons.chevron_left,
                 color: colorScheme.secondary,
                 size: 20,
               ),
-            ),
-            const SizedBox(width: AppSpacing.md),
-            GestureDetector(
-              onTap: () => onDeleteCombo(combo),
-              child: Icon(
-                Icons.delete_outline,
-                color: colorScheme.secondary,
-                size: 22,
+              Text(
+                'Combo',
+                style: AppTypography.sectionHeader.copyWith(
+                  color: colorScheme.secondary,
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
         const SizedBox(height: AppSpacing.lg),
         Semantics(
@@ -454,7 +436,7 @@ class _ComboDetailBody extends ConsumerWidget {
                         fontWeight: FontWeight.w800,
                       ),
                     ),
-                    const SizedBox(height: 2),
+                    const SizedBox(height: 4),
                     Text(
                       '${currentMove.category.toUpperCase()} · ${currentMove.count} BEATS',
                       style: AppTypography.caption.copyWith(
@@ -494,7 +476,31 @@ class _ComboDetailBody extends ConsumerWidget {
         ),
         const SizedBox(height: AppSpacing.xl),
         LogsSection(entityId: combo.id, entityType: 'combo'),
-        const SizedBox(height: AppSpacing.xl),
+        const SizedBox(height: AppSpacing.md),
+        Divider(color: colorScheme.outline),
+        const SizedBox(height: AppSpacing.md),
+
+        // Actions
+        Text(
+          'ACTIONS',
+          style: AppTypography.sectionHeader.copyWith(
+            color: colorScheme.secondary,
+          ),
+        ),
+        const SizedBox(height: AppSpacing.md),
+        ActionTile(
+          icon: Icons.edit_outlined,
+          label: 'Edit Combo',
+          onTap: () => context.push('/edit-combo/${combo.id}'),
+        ),
+        const SizedBox(height: AppSpacing.sm),
+        ActionTile(
+          icon: Icons.delete_forever,
+          label: 'Delete Combo',
+          destructive: true,
+          onTap: () => onDeleteCombo(combo),
+        ),
+        const SizedBox(height: AppSpacing.xxxl),
       ],
     );
   }
@@ -562,7 +568,7 @@ class _ActionTile extends StatelessWidget {
       child: GestureDetector(
         onTap: onTap,
         child: Container(
-          padding: const EdgeInsets.symmetric(vertical: 10),
+          padding: const EdgeInsets.symmetric(vertical: 12),
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(8),
             border: Border.all(color: colorScheme.outline.withValues(alpha: 0.2)),

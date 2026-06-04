@@ -553,7 +553,7 @@ class _MetricChip extends StatelessWidget {
     final colorScheme = Theme.of(context).colorScheme;
 
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       decoration: _chipDecoration(context),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -595,7 +595,7 @@ class _StatusChip extends StatelessWidget {
     final tone = highlight ?? colorScheme.primary;
 
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       decoration: _chipDecoration(
         context,
         highlight: highlighted || highlight != null ? tone : null,
@@ -635,7 +635,7 @@ class _TextActionChip extends StatelessWidget {
           onTap: onTap,
           borderRadius: BorderRadius.circular(AppRadius.sm),
           child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
             decoration: _chipDecoration(
               context,
               highlight: isEnabled ? colorScheme.primary : null,

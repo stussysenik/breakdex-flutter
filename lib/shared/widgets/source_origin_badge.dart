@@ -9,7 +9,7 @@ class SourceOriginBadge extends StatelessWidget {
   @override
   Widget build(final BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
       decoration: BoxDecoration(
         color: _badgeColor.withValues(alpha: 0.12),
         borderRadius: BorderRadius.circular(4),

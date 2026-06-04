@@ -30,6 +30,7 @@ import '../../shared/widgets/action_tile.dart';
 import '../../core/services/view_names_service.dart';
 import '../../shared/widgets/color_setting_tile.dart';
 import '../../shared/widgets/settings_list_group.dart';
+import 'widgets/cloud_sync_section.dart';
 import '../../shared/widgets/shake_detector.dart';
 import '../stats/providers/stats_providers.dart';
 import 'recently_deleted_screen.dart';
@@ -354,6 +355,8 @@ class SettingsScreen extends ConsumerWidget {
                   ),
                   const SizedBox(height: AppSpacing.md),
                   const _PhotosAccessTile(),
+                  const SizedBox(height: AppSpacing.md),
+                  const CloudSyncSection(),
                   const SizedBox(height: AppSpacing.md),
                   _SettingsPanel(
                     title: 'Backup & Reset',
@@ -1033,7 +1036,7 @@ class _SegmentedPicker<T> extends StatelessWidget {
               onTap: () => onChanged(v),
               child: AnimatedContainer(
                 duration: const Duration(milliseconds: 200),
-                padding: const EdgeInsets.symmetric(vertical: 10),
+                padding: const EdgeInsets.symmetric(vertical: 12),
                 decoration: BoxDecoration(
                   color: isSelected ? colorScheme.surface : Colors.transparent,
                   borderRadius: BorderRadius.circular(AppRadius.sm - 2),
@@ -1507,7 +1510,7 @@ class _PartyComboModeToggle extends ConsumerWidget {
                   fontWeight: FontWeight.w600,
                 ),
               ),
-              const SizedBox(height: 2),
+              const SizedBox(height: 4),
               Text(
                 'Shake to discover random combos instead of moves',
                 style: AppTypography.caption.copyWith(
@@ -1553,7 +1556,7 @@ class _VideoEditorToggle extends ConsumerWidget {
                   fontWeight: FontWeight.w600,
                 ),
               ),
-              const SizedBox(height: 2),
+              const SizedBox(height: 4),
               Text(
                 'Switch to the legacy editor if the robust editor is unstable.',
                 style: AppTypography.caption.copyWith(
@@ -1599,7 +1602,7 @@ class _FsrsToggle extends ConsumerWidget {
                   fontWeight: FontWeight.w600,
                 ),
               ),
-              const SizedBox(height: 2),
+              const SizedBox(height: 4),
               Text(
                 isEnabled
                     ? 'Smart scheduling enabled'
@@ -1647,7 +1650,7 @@ class _ShakeDiscoveryToggle extends ConsumerWidget {
                   fontWeight: FontWeight.w600,
                 ),
               ),
-              const SizedBox(height: 2),
+              const SizedBox(height: 4),
               Text(
                 'Shake your device to shuffle items in Party mode.',
                 style: AppTypography.caption.copyWith(
@@ -1693,7 +1696,7 @@ class _QuietModeToggle extends ConsumerWidget {
                   fontWeight: FontWeight.w600,
                 ),
               ),
-              const SizedBox(height: 2),
+              const SizedBox(height: 4),
               Text(
                 'Videos will start muted to avoid interrupting your music.',
                 style: AppTypography.caption.copyWith(
@@ -1739,7 +1742,7 @@ class _StatsTabToggle extends ConsumerWidget {
                   fontWeight: FontWeight.w600,
                 ),
               ),
-              const SizedBox(height: 2),
+              const SizedBox(height: 4),
               Text(
                 'Enable the insights tab in the bottom navigation.',
                 style: AppTypography.caption.copyWith(

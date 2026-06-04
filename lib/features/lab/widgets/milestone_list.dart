@@ -320,7 +320,7 @@ class _MilestoneRow extends StatelessWidget {
                     ),
                   ),
                   if (isComplete) ...[
-                    const SizedBox(height: 2),
+                    const SizedBox(height: 4),
                     Text(
                       'Completed ${DateFormat('MMM d').format(milestone.completedAt!)}',
                       style: AppTypography.caption.copyWith(
@@ -330,7 +330,7 @@ class _MilestoneRow extends StatelessWidget {
                   ],
                   if (milestone.notes != null &&
                       milestone.notes!.trim().isNotEmpty) ...[
-                    const SizedBox(height: 2),
+                    const SizedBox(height: 4),
                     Text(
                       milestone.notes!,
                       style: AppTypography.caption.copyWith(

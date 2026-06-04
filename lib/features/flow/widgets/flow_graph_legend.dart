@@ -43,7 +43,7 @@ class FlowGraphLegend extends ConsumerWidget {
               color: colorScheme.outline.withValues(alpha: 0.06),
             ),
           ),
-          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
@@ -130,7 +130,7 @@ class FlowGraphLegend extends ConsumerWidget {
           label: resolveLearningStateLabel(stateLabels, LearningState.mastery),
           labelColor: labelColor,
         ),
-        const SizedBox(height: 3),
+        const SizedBox(height: 4),
         // Learning: mid-size solid circle.
         _nodeRow(
           circleRadius: 3.5,
@@ -139,7 +139,7 @@ class FlowGraphLegend extends ConsumerWidget {
           label: resolveLearningStateLabel(stateLabels, LearningState.learning),
           labelColor: labelColor,
         ),
-        const SizedBox(height: 3),
+        const SizedBox(height: 4),
         // New: tiny, faded circle.
         _nodeRow(
           circleRadius: 2,
@@ -218,7 +218,7 @@ class FlowGraphLegend extends ConsumerWidget {
           lineColor: lineColor,
           labelColor: labelColor,
         ),
-        const SizedBox(height: 3),
+        const SizedBox(height: 4),
         // Possible: dashed line.
         _edgeRow(
           style: _EdgeLineStyle.dashed,
@@ -226,7 +226,7 @@ class FlowGraphLegend extends ConsumerWidget {
           lineColor: lineColor,
           labelColor: labelColor,
         ),
-        const SizedBox(height: 3),
+        const SizedBox(height: 4),
         // Stretch: dotted line.
         _edgeRow(
           style: _EdgeLineStyle.dotted,
@@ -288,9 +288,9 @@ class FlowGraphLegend extends ConsumerWidget {
         ),
         const SizedBox(height: AppSpacing.xs),
         _gestureRow('Tap = spotlight', labelColor),
-        const SizedBox(height: 3),
+        const SizedBox(height: 4),
         _gestureRow('2× tap = open', labelColor),
-        const SizedBox(height: 3),
+        const SizedBox(height: 4),
         _gestureRow('Pinch = zoom', labelColor),
       ],
     );

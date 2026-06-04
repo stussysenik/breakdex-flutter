@@ -91,7 +91,7 @@ class _ComboRow extends ConsumerWidget {
                   const SizedBox(width: AppSpacing.md),
                   Expanded(
                     child: Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      padding: const EdgeInsets.symmetric(vertical: 16),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         mainAxisAlignment: MainAxisAlignment.center,

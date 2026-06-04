@@ -24,17 +24,37 @@ class _RobustVideoEditorViewState extends State<RobustVideoEditorView> {
       TransformationController();
   bool _isPreviewMode = false;
   VideoEditViewport? _currentViewport;
-  bool _matrixInitialized = false;
-
-  @override
-  void initState() {
-    super.initState();
-  }
+  Size? _appliedViewportSize;
 
   @override
   void dispose() {
     _transformController.dispose();
     super.dispose();
+  }
+
+  /// Re-frames the crop window whenever the viewport changes (first layout,
+  /// aspect-ratio change, or rotation). Mutating the [TransformationController]
+  /// or calling [updateCrop] (which notifies listeners) *during* build is
+  /// illegal in Flutter and was the cause of the erratic crop jumps, so the
+  /// reset + crop sync is deferred to after the frame.
+  void _scheduleViewportSync(final VideoEditViewport viewport) {
+    if (_appliedViewportSize == viewport.size) return;
+    final isFirstLayout = _appliedViewportSize == null;
+    _appliedViewportSize = viewport.size;
+
+    // First layout: set synchronously so the very first frame is framed
+    // correctly (no listeners attached yet, so this is safe and flash-free).
+    if (isFirstLayout) {
+      _transformController.value = viewport.initialTransform();
+    }
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      if (!isFirstLayout) {
+        _transformController.value = viewport.initialTransform();
+      }
+      _syncCropToController();
+    });
   }
 
   void _syncCropToController() {
@@ -192,14 +212,8 @@ class _RobustVideoEditorViewState extends State<RobustVideoEditorView> {
                                 targetAspect: targetAspect,
                               );
                               
-                              if (!_matrixInitialized || _currentViewport?.size != viewport.size) {
-                                _currentViewport = viewport;
-                                _transformController.value = viewport.initialTransform();
-                                _matrixInitialized = true;
-                                DiagnosticsLog.info('VideoEditor', 'Viewport initialized: ${viewport.size.width.toInt()}x${viewport.size.height.toInt()}');
-                              } else {
-                                _currentViewport = viewport;
-                              }
+                              _currentViewport = viewport;
+                              _scheduleViewportSync(viewport);
 
                               return AnimatedContainer(
                                 duration: const Duration(milliseconds: 300),
@@ -224,30 +238,50 @@ class _RobustVideoEditorViewState extends State<RobustVideoEditorView> {
                                         ],
                                 ),
                                 clipBehavior: Clip.antiAlias,
-                                child: GestureDetector(
-                                  onTap: controller.togglePlay,
-                                  child: InteractiveViewer(
-                                    transformationController:
-                                        _transformController,
-                                    minScale: viewport.minScale,
-                                    maxScale: viewport.maxScale,
-                                    boundaryMargin: const EdgeInsets.all(
-                                        double.infinity),
-                                    constrained: false,
-                                    onInteractionUpdate: (_) => _applyClamping(),
-                                    onInteractionEnd: (_) => _syncCropToController(),
-                                    child: Center(
-                                      child: RotatedBox(
-                                        quarterTurns: (controller.rotation % 360) ~/ 90,
-                                        child: SizedBox(
-                                          width: videoSize.width,
-                                          height: videoSize.height,
-                                          child: VideoPlayer(
-                                              controller.playerController!),
+                                child: Stack(
+                                  fit: StackFit.expand,
+                                  children: [
+                                    GestureDetector(
+                                      onTap: controller.togglePlay,
+                                      child: InteractiveViewer(
+                                        transformationController:
+                                            _transformController,
+                                        minScale: viewport.minScale,
+                                        maxScale: viewport.maxScale,
+                                        boundaryMargin: const EdgeInsets.all(
+                                            double.infinity),
+                                        constrained: false,
+                                        // Clamp + sync the crop only when the
+                                        // gesture ends. Clamping mid-gesture
+                                        // overwrites the matrix the gesture is
+                                        // still reading from, which makes
+                                        // pinch/pan jitter.
+                                        onInteractionEnd: (_) {
+                                          _applyClamping();
+                                          _syncCropToController();
+                                        },
+                                        child: Center(
+                                          child: RotatedBox(
+                                            quarterTurns: (controller.rotation % 360) ~/ 90,
+                                            child: SizedBox(
+                                              width: videoSize.width,
+                                              height: videoSize.height,
+                                              child: VideoPlayer(
+                                                  controller.playerController!),
+                                            ),
+                                          ),
                                         ),
                                       ),
                                     ),
-                                  ),
+                                    // Rule-of-thirds framing guide over the crop
+                                    // window (hidden in full-screen preview).
+                                    if (!_isPreviewMode)
+                                      const IgnorePointer(
+                                        child: CustomPaint(
+                                          painter: _CropGridPainter(),
+                                        ),
+                                      ),
+                                  ],
                                 ),
                               );
                             },
@@ -492,9 +526,31 @@ class _TransformBtn extends StatelessWidget {
             foregroundColor: colorScheme.onSurface,
           ),
         ),
-        const SizedBox(height: 2),
+        const SizedBox(height: 4),
         Text(label, style: AppTypography.caption.copyWith(color: colorScheme.secondary)),
       ],
     );
   }
+}
+
+/// Rule-of-thirds overlay drawn on top of the crop window to help frame the
+/// content that will be kept. Purely visual — never intercepts gestures.
+class _CropGridPainter extends CustomPainter {
+  const _CropGridPainter();
+
+  @override
+  void paint(final Canvas canvas, final Size size) {
+    final paint = Paint()
+      ..color = Colors.white.withValues(alpha: 0.22)
+      ..strokeWidth = 0.5;
+    for (var i = 1; i < 3; i++) {
+      final dx = size.width * i / 3;
+      canvas.drawLine(Offset(dx, 0), Offset(dx, size.height), paint);
+      final dy = size.height * i / 3;
+      canvas.drawLine(Offset(0, dy), Offset(size.width, dy), paint);
+    }
+  }
+
+  @override
+  bool shouldRepaint(final _CropGridPainter oldDelegate) => false;
 }

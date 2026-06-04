@@ -185,7 +185,7 @@ class AuraLinkTile extends StatelessWidget {
                   ),
                 ),
                 if (notes != null && notes!.isNotEmpty) ...[
-                  const SizedBox(height: 2),
+                  const SizedBox(height: 4),
                   Text(
                     notes!,
                     maxLines: 1,

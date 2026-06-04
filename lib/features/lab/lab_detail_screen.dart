@@ -325,7 +325,7 @@ class _LabDetailScreenState extends ConsumerState<LabDetailScreen> {
                       // Lab type badge
                       Container(
                         padding: const EdgeInsets.symmetric(
-                          horizontal: 10,
+                          horizontal: 12,
                           vertical: 4,
                         ),
                         decoration: BoxDecoration(
@@ -479,7 +479,7 @@ class _LabStatusPill extends StatelessWidget {
     final (label, color) = _statusMeta(status);
 
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
       decoration: BoxDecoration(
         color: color.withValues(alpha: 0.15),
         borderRadius: BorderRadius.circular(20),

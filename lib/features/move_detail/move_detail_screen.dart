@@ -1,10 +1,12 @@
 import 'dart:async';
+import 'dart:io';
 import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:video_player/video_player.dart';
 
 import '../../core/database/database.dart';
 import '../../core/design/colors.dart';
@@ -18,6 +20,7 @@ import '../../core/state_machines/move_detail/provider.dart';
 import '../../core/state_machines/move_detail/state.dart';
 import '../../core/state_machines/move_detail/event.dart';
 import '../../core/utils/share_sheet.dart';
+import '../../core/utils/transfer_rate_estimator.dart';
 import '../../shared/widgets/action_tile.dart';
 import '../../shared/widgets/notes_section.dart';
 import '../../shared/widgets/logs_section.dart';
@@ -138,7 +141,7 @@ class _MoveDetailScreenState extends ConsumerState<MoveDetailScreen> {
                       // Hash / filename
                       if (move.originalVideoName != null ||
                           move.contentHash != null) ...[
-                        const SizedBox(height: 2),
+                        const SizedBox(height: 4),
                         Text(
                           move.originalVideoName ??
                               'ID: ${move.contentHash?.substring(0, 8) ?? move.id.substring(0, 8)}',
@@ -245,13 +248,13 @@ class _MoveDetailScreenState extends ConsumerState<MoveDetailScreen> {
                                   value: move.originalVideoName!,
                                   icon: Icons.insert_drive_file_rounded,
                                 ),
-                              if (move.videoCreationDate == null &&
-                                  move.videoFileSize == null &&
-                                  move.originalVideoName == null)
-                                Text(
-                                  'No extended metadata available for this clip.',
-                                  style: AppTypography.caption.copyWith(color: colorScheme.secondary),
-                                ),
+                              // Duration + resolution are read from the clip
+                              // at display-time (not persisted) so they stay
+                              // correct even for legacy/imported videos.
+                              _VideoTechInfoRows(
+                                key: ValueKey('techinfo-${move.id}-${move.videoPath}'),
+                                videoPath: move.resolvedVideoPath!,
+                              ),
                             ],
                           ),
                         ),
@@ -521,6 +524,84 @@ class _MetadataRow extends StatelessWidget {
   }
 }
 
+/// Reads duration + pixel resolution directly from the video file at
+/// display-time via a throwaway, muted controller. These fields are not
+/// persisted to the DB, so this keeps them accurate for any playable clip
+/// (including videos imported before metadata capture existed) without a
+/// schema change. Renders nothing until extraction succeeds, and nothing at
+/// all if the probe fails — the surrounding panel degrades gracefully.
+class _VideoTechInfoRows extends StatefulWidget {
+  const _VideoTechInfoRows({super.key, required this.videoPath});
+
+  final String videoPath;
+
+  @override
+  State<_VideoTechInfoRows> createState() => _VideoTechInfoRowsState();
+}
+
+class _VideoTechInfoRowsState extends State<_VideoTechInfoRows> {
+  Duration? _duration;
+  Size? _resolution;
+  bool _failed = false;
+
+  @override
+  void initState() {
+    super.initState();
+    unawaited(_probe());
+  }
+
+  Future<void> _probe() async {
+    final controller = VideoPlayerController.file(File(widget.videoPath));
+    try {
+      await controller.setVolume(0);
+      await controller
+          .initialize()
+          .timeout(const Duration(seconds: 8));
+      if (!mounted) return;
+      setState(() {
+        _duration = controller.value.duration;
+        _resolution = controller.value.size;
+      });
+    } catch (_) {
+      if (mounted) setState(() => _failed = true);
+    } finally {
+      await controller.dispose();
+    }
+  }
+
+  static String _formatDuration(final Duration d) {
+    final s = (d.inSeconds % 60).toString().padLeft(2, '0');
+    if (d.inHours > 0) {
+      final m = (d.inMinutes % 60).toString().padLeft(2, '0');
+      return '${d.inHours}:$m:$s';
+    }
+    return '${d.inMinutes}:$s';
+  }
+
+  @override
+  Widget build(final BuildContext context) {
+    if (_failed) return const SizedBox.shrink();
+    final resolution = _resolution;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        if (_duration != null)
+          _MetadataRow(
+            label: 'Duration',
+            value: _formatDuration(_duration!),
+            icon: Icons.timer_outlined,
+          ),
+        if (resolution != null && resolution.width > 0)
+          _MetadataRow(
+            label: 'Resolution',
+            value: '${resolution.width.toInt()} × ${resolution.height.toInt()}',
+            icon: Icons.aspect_ratio_rounded,
+          ),
+      ],
+    );
+  }
+}
+
 class _CategoryBadge extends ConsumerWidget {
   const _CategoryBadge({required this.category, this.onTap});
   final String category;
@@ -701,6 +782,24 @@ class _CloudVideoPlaceholderState extends ConsumerState<_CloudVideoPlaceholder> 
 
     final colorScheme = Theme.of(context).colorScheme;
     final isBusy = retrieval.state == VideoRetrievalState.queued || retrieval.state == VideoRetrievalState.downloading;
+    final isDownloading = retrieval.state == VideoRetrievalState.downloading;
+    final eta = retrieval.etaRemaining;
+    final rate = retrieval.bytesPerSecond;
+
+    final String detailLine;
+    if (!isBusy) {
+      detailLine = 'Tap to download and play';
+    } else if (retrieval.isStalled) {
+      detailLine = 'Stalled — retrying…';
+    } else if (isDownloading) {
+      detailLine = <String>[
+        '${(retrieval.progress * 100).round()}%',
+        if (eta != null) formatTransferEta(eta),
+        if (rate != null && rate > 0) formatTransferRate(rate),
+      ].join(' · ');
+    } else {
+      detailLine = 'Preparing…';
+    }
 
     return Container(
       height: 220,
@@ -711,11 +810,21 @@ class _CloudVideoPlaceholderState extends ConsumerState<_CloudVideoPlaceholder> 
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              if (isBusy) CircularProgressIndicator(value: retrieval.progress > 0 ? retrieval.progress : null)
-              else const Icon(Icons.cloud_download_outlined, size: 48, color: AppColors.accent),
+              if (isBusy)
+                SizedBox(
+                  width: 48,
+                  height: 48,
+                  child: CircularProgressIndicator(value: retrieval.progress > 0 ? retrieval.progress : null),
+                )
+              else
+                const Icon(Icons.cloud_download_outlined, size: 48, color: AppColors.accent),
               const SizedBox(height: AppSpacing.md),
-              Text('Video stored in cloud', style: AppTypography.bodySmall.copyWith(fontWeight: FontWeight.w600)),
-              Text('Tap to download and play', style: AppTypography.caption),
+              Text(
+                isBusy ? (retrieval.message ?? 'Downloading…') : 'Video stored in cloud',
+                style: AppTypography.bodySmall.copyWith(fontWeight: FontWeight.w600),
+              ),
+              const SizedBox(height: 4),
+              Text(detailLine, style: AppTypography.caption),
             ],
           ),
         ),

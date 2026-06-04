@@ -1118,7 +1118,7 @@ class _PillSelector extends StatelessWidget {
             letterSpacing: 1.2,
           ),
         ),
-        const SizedBox(height: 6),
+        const SizedBox(height: 8),
         Container(
           height: 32,
           decoration: BoxDecoration(
@@ -1136,7 +1136,7 @@ class _PillSelector extends StatelessWidget {
                 child: GestureDetector(
                   onTap: () => onSelected(i),
                   child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
                     decoration: BoxDecoration(
                       color: active ? colorScheme.primary : Colors.transparent,
                       borderRadius: BorderRadius.circular(AppRadius.xs),

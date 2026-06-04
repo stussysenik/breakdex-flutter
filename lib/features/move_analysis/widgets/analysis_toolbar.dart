@@ -169,7 +169,7 @@ class _ToolbarButton extends StatelessWidget {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
         decoration: BoxDecoration(
           color: isActive
               ? Theme.of(context).colorScheme.primary.withValues(alpha: 0.2)

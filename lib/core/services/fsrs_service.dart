@@ -5,6 +5,7 @@ import '../database/database.dart';
 import '../database/daos/fsrs_cards_dao.dart';
 import '../models/learning_state.dart';
 import '../models/reviewable_item.dart';
+import '../utils/app_clock.dart';
 
 /// Anki-style due count breakdown by card state.
 ///
@@ -151,10 +152,16 @@ class FsrsConfig {
 /// review fatigue while still maintaining muscle memory.
 class FsrsService {
   final FsrsCardsDao _dao;
+  final AppClock _clock;
   final fsrs.Scheduler _scheduler;
 
-  FsrsService(this._dao)
-    : _scheduler = fsrs.Scheduler(
+  /// [clock] is the single trusted time source. It defaults to [SystemClock]
+  /// so direct constructions keep working, but production wires in the
+  /// app-wide [appClockProvider] so all scheduling reads "now" from one seam
+  /// (deterministic under test, and a future hook for trusted/NTP time).
+  FsrsService(this._dao, {final AppClock? clock})
+    : _clock = clock ?? SystemClock(),
+      _scheduler = fsrs.Scheduler(
         desiredRetention: 0.85,
         // Keep learning lightweight: one short reinforcement step before
         // graduating to the longer review intervals.
@@ -208,7 +215,7 @@ class FsrsService {
         stability: Value(updated.stability ?? 0.0),
         difficulty: Value(updated.difficulty ?? 0.0),
         due: Value(updated.due),
-        lastReview: Value(updated.lastReview ?? DateTime.now().toUtc()),
+        lastReview: Value(updated.lastReview ?? _clock.nowUtc()),
         reps: Value(newReps),
         lapses: Value(newLapses),
         fsrsState: Value(postState),
@@ -237,7 +244,7 @@ class FsrsService {
   /// Get all cards that are currently due for review.
   Future<List<FsrsCardWithEntity>> getDueCards({final String? category}) {
     return _dao.getDueCardsWithEntities(
-      asOf: DateTime.now().toUtc(),
+      asOf: _clock.nowUtc(),
       category: category,
     );
   }
@@ -250,7 +257,7 @@ class FsrsService {
 
   /// Anki-style due summary: breaks down due cards by FSRS state.
   Future<DueSummary> getDueSummary() async {
-    final now = DateTime.now().toUtc();
+    final now = _clock.nowUtc();
     final endOfToday = DateTime.utc(now.year, now.month, now.day, 23, 59, 59);
     final endOfTomorrow = endOfToday.add(const Duration(days: 1));
 
@@ -299,7 +306,7 @@ class FsrsService {
   }) async {
     final dbCard = await _dao.ensureCard(entityId, entityType: entityType);
     final fsrsCard = _dbToFsrs(dbCard);
-    final now = DateTime.now().toUtc();
+    final now = _clock.nowUtc();
 
     return {
       for (final rating in ReviewRating.values)
@@ -353,7 +360,7 @@ class FsrsService {
   /// Get mastery breakdown per category.
   Future<List<CategoryMastery>> getCategoryMastery() async {
     final cardsWithEntities = await _dao.getCardsWithEntities();
-    final now = DateTime.now().toUtc();
+    final now = _clock.nowUtc();
 
     // Group by category (combos without category go under 'combos')
     final byCategory = <String, List<FsrsCardWithEntity>>{};

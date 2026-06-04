@@ -345,7 +345,7 @@ class _DayCell extends StatelessWidget {
                 ),
               ),
             ),
-            const SizedBox(height: 2),
+            const SizedBox(height: 4),
             // Activity dots row
             SizedBox(
               height: 8,
@@ -544,7 +544,7 @@ class _DayDetailSheet extends ConsumerWidget {
                                         fontWeight: FontWeight.w600,
                                       ),
                                     ),
-                                    const SizedBox(height: 2),
+                                    const SizedBox(height: 4),
                                     Text(
                                       item.description,
                                       style: AppTypography.bodySmall.copyWith(

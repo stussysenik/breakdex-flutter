@@ -37,7 +37,7 @@ class GDriveProvider extends CloudProvider {
   /// `google-services.json` (Android) is bundled with the app. This prevents
   /// the `google_sign_in` SDK from being instantiated with a placeholder
   /// client ID, which causes a SIGABRT at launch.
-  static bool get isConfigured => false; // TODO: flip to true once GDrive OAuth is set up
+  static bool get isConfigured => true; // OAuth client + REVERSED_CLIENT_ID URL scheme configured
 
   @override
   String get providerType => 'gdrive';
@@ -76,6 +76,9 @@ class GDriveProvider extends CloudProvider {
 
       _driveApi = await _buildDriveApi(_account!);
       await _ensureBreakdexFolder();
+      // Surface the resolved folder ID so setup can persist it (avoids a
+      // Drive lookup on every subsequent launch).
+      configFolderId = _breakdexFolderId;
       return true;
     } catch (e) {
       debugPrint('[GDriveProvider] Auth failed: $e');

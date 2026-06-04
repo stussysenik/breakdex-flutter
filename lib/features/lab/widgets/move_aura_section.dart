@@ -210,7 +210,7 @@ class _AuraPill extends ConsumerWidget {
             label: '$moveName (${affinity.label}). Long press to delete.',
             button: true,
             child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
               decoration: BoxDecoration(
                 color: affinityColor.withValues(alpha: 0.12),
                 borderRadius: BorderRadius.circular(14),
@@ -336,7 +336,7 @@ class _AddConnectionButton extends ConsumerWidget {
         label: 'Add connection',
         button: true,
         child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(14),
             border: Border.all(
@@ -606,7 +606,7 @@ class _QuickMoveRow extends StatelessWidget {
           for (final affinity in AuraAffinity.values)
             Padding(
               padding: EdgeInsets.only(
-                left: affinity == AuraAffinity.natural ? 0 : 6,
+                left: affinity == AuraAffinity.natural ? 0 : 8,
               ),
               child: GestureDetector(
                 onTap: () => onSelect(affinity),

@@ -219,7 +219,7 @@ class _CoachTooltipOverlayState extends State<_CoachTooltipOverlay>
           constraints: const BoxConstraints(maxWidth: 220),
           padding: const EdgeInsets.symmetric(
             horizontal: 12,
-            vertical: 10,
+            vertical: 12,
           ),
           decoration: BoxDecoration(
             color: AppColors.accent.withValues(alpha: 0.95),
@@ -247,8 +247,8 @@ class _CoachTooltipOverlayState extends State<_CoachTooltipOverlay>
                 onTap: _handleDismiss,
                 child: Container(
                   padding: const EdgeInsets.symmetric(
-                    horizontal: 14,
-                    vertical: 6,
+                    horizontal: 16,
+                    vertical: 8,
                   ),
                   decoration: BoxDecoration(
                     color: Colors.white.withValues(alpha: 0.20),

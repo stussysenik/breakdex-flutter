@@ -73,6 +73,7 @@ import 'sync/on_demand_downloader.dart';
 import 'sync/space_manager.dart';
 import 'sync/video_reliability_runtime.dart';
 import 'sync/video_retrieval_controller.dart';
+import 'utils/app_clock.dart';
 import 'sync/video_import_sync_hook.dart';
 import 'services/storage_orchestrator.dart';
 import 'services/blackbox_service.dart';
@@ -128,7 +129,10 @@ final fsrsCardsDaoProvider = Provider<FsrsCardsDao>((final ref) {
 });
 
 final fsrsServiceProvider = Provider<FsrsService>((final ref) {
-  return FsrsService(ref.watch(fsrsCardsDaoProvider));
+  return FsrsService(
+    ref.watch(fsrsCardsDaoProvider),
+    clock: ref.watch(appClockProvider),
+  );
 });
 
 final manualReviewStateServiceProvider = Provider<ManualReviewStateService>((

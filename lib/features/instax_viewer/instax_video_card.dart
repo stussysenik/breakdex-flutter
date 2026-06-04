@@ -99,7 +99,7 @@ class _InstaxVideoCardState extends ConsumerState<InstaxVideoCard> {
                       right: 8,
                       child: Container(
                         padding: const EdgeInsets.symmetric(
-                          horizontal: 10,
+                          horizontal: 12,
                           vertical: 4,
                         ),
                         decoration: BoxDecoration(

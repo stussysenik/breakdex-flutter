@@ -87,7 +87,7 @@ class DeckCard extends StatelessWidget {
                       ),
                   ],
                 ),
-                const SizedBox(height: 10),
+                const SizedBox(height: 12),
                 Text(
                   deck.name,
                   style: AppTypography.bodySmall.copyWith(

@@ -45,6 +45,11 @@ post_install do |installer|
     target.build_configurations.each do |config|
       config.build_settings["IPHONEOS_DEPLOYMENT_TARGET"] = "17.0"
       config.build_settings['CODE_SIGNING_ALLOWED'] = 'NO'
+      # Xcode 16+/26 builds Swift modules explicitly by default, which cannot
+      # resolve Firebase's precompiled XCFramework module deps (FirebaseFirestore
+      # → FirebaseFirestoreInternal/FirebaseSharedSwift) on device builds. Opt
+      # out so the Firestore pod compiles against the binary framework.
+      config.build_settings['SWIFT_ENABLE_EXPLICIT_MODULES'] = 'NO'
     end
   end
 end

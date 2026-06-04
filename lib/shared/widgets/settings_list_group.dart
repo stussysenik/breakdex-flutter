@@ -86,7 +86,7 @@ class SettingsListRow extends StatelessWidget {
                       ),
                     ),
                     if (subtitle != null) ...[
-                      const SizedBox(height: 2),
+                      const SizedBox(height: 4),
                       Text(
                         subtitle!,
                         style: AppTypography.caption.copyWith(

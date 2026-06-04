@@ -284,8 +284,8 @@ class _LabScreenState extends ConsumerState<LabScreen> {
                     final ago = relativeTime(entry.createdAt);
                     return Container(
                       padding: const EdgeInsets.symmetric(
-                        horizontal: 10,
-                        vertical: 6,
+                        horizontal: 12,
+                        vertical: 8,
                       ),
                       decoration: BoxDecoration(
                         color: colorScheme.surfaceContainerHighest,

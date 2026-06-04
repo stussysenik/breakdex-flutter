@@ -397,7 +397,7 @@ abstract final class AppTheme {
           shadowColor: Colors.transparent,
           backgroundColor: effectiveAccent,
           foregroundColor: Colors.white,
-          padding: const EdgeInsets.symmetric(vertical: 14),
+          padding: const EdgeInsets.symmetric(vertical: 16),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(AppRadius.lg),
           ),
@@ -414,7 +414,7 @@ abstract final class AppTheme {
             color: separator,
             width: viewingMode == ViewingMode.monoOutline ? 1.2 : 1,
           ),
-          padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
+          padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(AppRadius.sm),
           ),

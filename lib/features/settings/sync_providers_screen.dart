@@ -14,7 +14,7 @@ import '../../core/sync/icloud_setup_service.dart';
 
 /// Feature flag: Google Drive requires OAuth client ID setup (GoogleService-
 /// Info.plist). Flip to `true` once the Google Cloud project is provisioned.
-const kGDriveEnabled = false;
+const kGDriveEnabled = true;
 
 /// Configuration screen for cloud storage providers.
 ///
@@ -161,7 +161,7 @@ class _ProviderCard extends ConsumerWidget {
                     color: colorScheme.onSurface,
                   ),
                 ),
-                const SizedBox(height: 2),
+                const SizedBox(height: 4),
                 FutureBuilder<bool>(
                   future: provider.isAuthenticated,
                   builder: (final context, final snap) {
@@ -176,7 +176,7 @@ class _ProviderCard extends ConsumerWidget {
                     );
                   },
                 ),
-                const SizedBox(height: 2),
+                const SizedBox(height: 4),
                 // Show failed operation count for this provider
                 FutureBuilder<List<SyncOperation>>(
                   future: opsDao.getRetryable(),

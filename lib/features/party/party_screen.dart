@@ -697,7 +697,7 @@ class _PartyScreenState extends ConsumerState<PartyScreen>
               const SizedBox(width: AppSpacing.sm),
               Container(
                 padding: const EdgeInsets.symmetric(
-                  horizontal: 10,
+                  horizontal: 12,
                   vertical: 4,
                 ),
                 decoration: BoxDecoration(

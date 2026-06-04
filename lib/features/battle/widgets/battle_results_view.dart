@@ -207,7 +207,7 @@ class _MiniStat extends StatelessWidget {
                 color: color,
               ),
         ),
-        const SizedBox(height: 2),
+        const SizedBox(height: 4),
         Text(
           label,
           style: Theme.of(context).textTheme.labelSmall?.copyWith(

@@ -200,7 +200,7 @@ class _ScheduleCalendarState extends ConsumerState<ScheduleCalendar> {
                                 ),
                               )
                             else
-                              const SizedBox(height: 2),
+                              const SizedBox(height: 4),
                           ],
                         ),
                       ),

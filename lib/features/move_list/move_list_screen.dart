@@ -757,7 +757,7 @@ class _MoveMetadataSheetState extends ConsumerState<_MoveMetadataSheet> {
         onTap();
       },
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
         decoration: BoxDecoration(
           color: selected
               ? colorScheme.primary

@@ -199,7 +199,7 @@ class _RobustTrimTimelineState extends State<RobustTrimTimeline> {
             ],
           ),
         ),
-        const SizedBox(height: 6),
+        const SizedBox(height: 8),
         // Timeline Strip
         GestureDetector(
           onHorizontalDragStart: _handleDragStart,

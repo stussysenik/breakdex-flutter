@@ -1,6 +1,10 @@
+import 'dart:async';
+import 'dart:math' as math;
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../utils/diagnostics.dart';
+import 'settings_service.dart' show sharedPreferencesProvider;
 
 /// The critical stages of the application startup sequence.
 enum BootGate {
@@ -35,6 +39,18 @@ enum BootGate {
   legacyMigration,
 }
 
+/// Gates that must clear before the UI is shown. The splash progress bar
+/// represents *these* — post-frame work (migrations, healing, …) runs after
+/// the app is already interactive and must not inflate the splash denominator.
+const Set<BootGate> kCoreBootGates = {
+  BootGate.firebase,
+  BootGate.preferences,
+  BootGate.videoResolver,
+  BootGate.storageGate,
+  BootGate.database,
+  BootGate.recovery,
+};
+
 /// Represents the current progress of the app's boot sequence.
 @immutable
 class BootState {
@@ -44,12 +60,18 @@ class BootState {
   final bool isComplete;
   final DateTime startTime;
 
+  /// EWMA of how long previous launches took to reach [isReadyForUI], loaded
+  /// from persistent storage. Null on first ever launch. Drives smooth
+  /// interpolation and ETA so the splash reflects real waiting time.
+  final Duration? expectedReady;
+
   const BootState({
     required this.completedGates,
     this.currentTask,
     this.isReadyForUI = false,
     this.isComplete = false,
     required this.startTime,
+    this.expectedReady,
   });
 
   factory BootState.initial() => BootState(
@@ -57,9 +79,49 @@ class BootState {
         startTime: DateTime.now(),
       );
 
-  double get progress {
-    if (isComplete) return 1.0;
-    return completedGates.length / BootGate.values.length;
+  int get _completedCoreGates =>
+      completedGates.where(kCoreBootGates.contains).length;
+
+  /// Discrete monotonic floor: fraction of core gates cleared. Reaches 1.0
+  /// exactly when [isReadyForUI] flips — so the splash never claims more
+  /// progress than has truly been made, and never less.
+  double get coreFloor =>
+      isReadyForUI ? 1.0 : _completedCoreGates / kCoreBootGates.length;
+
+  /// Progress of the post-frame background work (migrations, healing, …),
+  /// shown as the thin top bar once the UI is interactive.
+  double get postFrameProgress {
+    final postFrame =
+        BootGate.values.where((final g) => !kCoreBootGates.contains(g));
+    final total = postFrame.length;
+    if (total == 0) return 1.0;
+    final done = postFrame.where(completedGates.contains).length;
+    return done / total;
+  }
+
+  /// Smoothly-interpolated splash progress. Blends the discrete gate [coreFloor]
+  /// (correctness) with elapsed-vs-[expectedReady] time (smoothness), so the bar
+  /// advances continuously toward the time the device historically takes,
+  /// snapping forward whenever a real gate clears. Capped below 1.0 until the
+  /// UI is genuinely ready.
+  double interpolatedProgress(final Duration elapsed) {
+    if (isReadyForUI) return 1.0;
+    final floor = coreFloor;
+    final expected = expectedReady;
+    if (expected == null || expected.inMilliseconds <= 0) return floor;
+    final timeBased =
+        (elapsed.inMilliseconds / expected.inMilliseconds).clamp(0.0, 0.95);
+    return math.max(floor, timeBased);
+  }
+
+  /// Estimated time remaining until [isReadyForUI], or null when unknown or
+  /// already ready.
+  Duration? eta(final Duration elapsed) {
+    if (isReadyForUI) return null;
+    final expected = expectedReady;
+    if (expected == null) return null;
+    final remaining = expected - elapsed;
+    return remaining.isNegative ? Duration.zero : remaining;
   }
 
   BootState copyWith({
@@ -67,6 +129,7 @@ class BootState {
     final String? currentTask,
     final bool? isReadyForUI,
     final bool? isComplete,
+    final Duration? expectedReady,
   }) {
     return BootState(
       completedGates: completedGates ?? this.completedGates,
@@ -74,6 +137,7 @@ class BootState {
       isReadyForUI: isReadyForUI ?? this.isReadyForUI,
       isComplete: isComplete ?? this.isComplete,
       startTime: startTime,
+      expectedReady: expectedReady ?? this.expectedReady,
     );
   }
 }
@@ -86,10 +150,20 @@ class BootState {
 class BootCoordinator extends Notifier<BootState> {
   late final StageLogger _logger;
 
+  static const _expectedReadyKey = 'boot_expected_ready_ms';
+
   @override
   BootState build() {
     _logger = StageLogger.begin('BootSequence', subsystem: 'Boot');
-    return BootState.initial();
+    Duration? expected;
+    try {
+      final prefs = ref.read(sharedPreferencesProvider);
+      final ms = prefs.getInt(_expectedReadyKey);
+      if (ms != null && ms > 0) expected = Duration(milliseconds: ms);
+    } catch (_) {
+      // Prefs unavailable (e.g. unit tests) — fall back to discrete progress.
+    }
+    return BootState.initial().copyWith(expectedReady: expected);
   }
 
   /// Mark a specific initialization gate as complete.
@@ -101,14 +175,8 @@ class BootCoordinator extends Notifier<BootState> {
 
     // UI is considered "ready" once the core persistent stores and database
     // are available. Heavy post-frame migrations don't block the UI gate.
-    final isReadyForUI = newGates.containsAll({
-      BootGate.firebase,
-      BootGate.preferences,
-      BootGate.videoResolver,
-      BootGate.storageGate,
-      BootGate.database,
-      BootGate.recovery,
-    });
+    final isReadyForUI = newGates.containsAll(kCoreBootGates);
+    final justBecameReady = isReadyForUI && !state.isReadyForUI;
 
     final isComplete = newGates.length == BootGate.values.length;
 
@@ -118,8 +186,28 @@ class BootCoordinator extends Notifier<BootState> {
       isComplete: isComplete,
     );
 
+    if (justBecameReady) _persistReadyDuration();
+
     if (isComplete) {
       _logger.complete('All gates cleared in ${DateTime.now().difference(state.startTime).inMilliseconds}ms');
+    }
+  }
+
+  /// Persist an EWMA of the time-to-ready so the next launch's splash can show
+  /// a calibrated ETA. Disposable cache (SharedPreferences) — never user data.
+  void _persistReadyDuration() {
+    try {
+      final prefs = ref.read(sharedPreferencesProvider);
+      final elapsedMs =
+          DateTime.now().difference(state.startTime).inMilliseconds;
+      if (elapsedMs <= 0) return;
+      final prevMs = prefs.getInt(_expectedReadyKey);
+      final blended = prevMs == null
+          ? elapsedMs
+          : (0.3 * elapsedMs + 0.7 * prevMs).round();
+      unawaited(prefs.setInt(_expectedReadyKey, blended));
+    } catch (_) {
+      // Calibration is best-effort; never block boot on it.
     }
   }
 

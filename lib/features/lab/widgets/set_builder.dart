@@ -145,7 +145,7 @@ class SetBuilder extends ConsumerWidget {
                       // between consecutive moves in the set sequence.
                       if (index < labMoves.length - 1)
                         Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 6),
+                          padding: const EdgeInsets.symmetric(horizontal: 8),
                           child: AuraTransitionIndicator(
                             fromMoveId: labMoves[index].move.id,
                             toMoveId: labMoves[index + 1].move.id,

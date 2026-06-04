@@ -391,7 +391,7 @@ class _GhostCard extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 const Text('CURRENT SELECTION', style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, letterSpacing: 1)),
-                const SizedBox(height: 2),
+                const SizedBox(height: 4),
                 Text(videoName, style: AppTypography.bodySmall, overflow: TextOverflow.ellipsis, maxLines: 1),
               ],
             ),

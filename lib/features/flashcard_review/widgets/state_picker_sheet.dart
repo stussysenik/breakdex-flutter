@@ -71,7 +71,7 @@ class StatePickerSheet extends ConsumerWidget {
                     fontFamily: 'Menlo',
                   ),
                 ),
-                const SizedBox(height: 2),
+                const SizedBox(height: 4),
                 Text(
                   moveName.toUpperCase(),
                   style: AppTypography.bodySmall.copyWith(

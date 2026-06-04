@@ -52,11 +52,11 @@ class _ProvenanceTile extends StatelessWidget {
           padding: EdgeInsets.only(bottom: isLast ? 0 : AppSpacing.md),
           child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
             Text(_title, style: AppTypography.bodySmall.copyWith(color: colorScheme.onSurface)),
-            const SizedBox(height: 2),
+            const SizedBox(height: 4),
             Text(_timeFormatter.format(entry.recordedAt.toLocal()),
                 style: AppTypography.caption.copyWith(color: colorScheme.secondary)),
             if (entry.detail != null) ...[
-              const SizedBox(height: 2),
+              const SizedBox(height: 4),
               Text(entry.detail!, style: AppTypography.caption.copyWith(color: colorScheme.secondary),
                   maxLines: 2, overflow: TextOverflow.ellipsis),
             ],

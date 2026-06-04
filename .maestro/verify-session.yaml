@@ -1,0 +1,48 @@
+# Verification: cold boot + tab walk + settings/sync inspection
+# Confirms deterministic loading, all 4 tabs render, and surfaces
+# the auth/sync section state. Nav labels aren't in the Flutter a11y
+# tree, so tabs are tapped by percentage coordinates.
+appId: com.breakdex.breakdex
+name: "Verify Session"
+tags:
+  - verify
+
+---
+
+- launchApp:
+    permissions:
+      all: allow
+- tapOn:
+    text: "Allow Full Access"
+    optional: true
+- assertVisible: "Breakdex"
+- takeScreenshot: e2e-screenshots/verify-01-home
+
+# Add tab (2nd of 4)
+- tapOn:
+    point: "37%,93%"
+- takeScreenshot: e2e-screenshots/verify-02-add
+
+# Review tab (3rd of 4)
+- tapOn:
+    point: "62%,93%"
+- takeScreenshot: e2e-screenshots/verify-03-review
+
+# Settings tab (4th of 4) — auth + sync providers live here
+- tapOn:
+    point: "87%,93%"
+- assertVisible: "Settings"
+- takeScreenshot: e2e-screenshots/verify-04-settings
+- swipe:
+    direction: UP
+    duration: 600
+- takeScreenshot: e2e-screenshots/verify-05-settings-scrolled
+- swipe:
+    direction: UP
+    duration: 600
+- takeScreenshot: e2e-screenshots/verify-06-settings-bottom
+
+# Back to first tab (Moves)
+- tapOn:
+    point: "12%,93%"
+- takeScreenshot: e2e-screenshots/verify-07-home-return

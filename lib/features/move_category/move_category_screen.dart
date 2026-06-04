@@ -882,7 +882,7 @@ class _FilterChip extends StatelessWidget {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
         decoration: BoxDecoration(
           color: active ? activeColor : colorScheme.surfaceContainerHighest,
           borderRadius: BorderRadius.circular(AppRadius.sm),
@@ -892,7 +892,7 @@ class _FilterChip extends StatelessWidget {
           children: [
             if (active)
               const Padding(
-                padding: EdgeInsets.only(right: 6),
+                padding: EdgeInsets.only(right: 8),
                 child: Icon(Icons.check_rounded, size: 14, color: Colors.white),
               ),
             Text(
@@ -934,7 +934,7 @@ class _MoveRow extends StatelessWidget {
                   children: [
                     Text(move.name, style: AppTypography.bodyMedium.copyWith(color: colorScheme.onSurface, fontWeight: FontWeight.w600)),
                     if (move.originalVideoName != null) ...[
-                      const SizedBox(height: 2),
+                      const SizedBox(height: 4),
                       Text(move.originalVideoName!, style: AppTypography.caption.copyWith(color: colorScheme.secondary), maxLines: 1, overflow: TextOverflow.ellipsis),
                     ],
                   ],

@@ -418,7 +418,7 @@ class _StatChip extends StatelessWidget {
                 fontSize: 10,
               ),
             ),
-            const SizedBox(height: 2),
+            const SizedBox(height: 4),
             Text(
               value,
               style: AppTypography.bodySmall.copyWith(

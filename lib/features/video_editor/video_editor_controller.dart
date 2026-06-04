@@ -396,9 +396,10 @@ class VideoEditorController extends ChangeNotifier {
 
     try {
       final speeds = [0.25, 0.5, 1.0, 1.5, 2.0];
+      // Index 0 (Original) and 1 (Free Form) impose no aspect constraint.
       final aspectStrings = <String?>[
         null,
-        'Free Form',
+        null,
         '9:16',
         '16:9',
         '1:1',
@@ -409,7 +410,18 @@ class VideoEditorController extends ChangeNotifier {
       final docs = await _videoService.getMovesDirectory();
       final outputPath = p.join(docs.path, '${const Uuid().v4()}.mp4');
 
-      log.stage('startingNativeExport', {'output': outputPath});
+      // WYSIWYG: the crop window already encodes the chosen aspect ratio, so a
+      // real crop is always exported via cropRect (preview == output). Only a
+      // genuinely untouched full frame falls back to the aspect string, which
+      // is null unless a fixed ratio was picked without any reframing.
+      final crop = s.current.cropRect;
+      final isFullFrame = crop == null ||
+          (crop.left <= 0.001 &&
+              crop.top <= 0.001 &&
+              crop.right >= 0.999 &&
+              crop.bottom >= 0.999);
+
+      log.stage('startingNativeExport', {'output': outputPath, 'fullFrame': isFullFrame});
       final result = await NativeVideoExport.export(
         inputPath: videoPath,
         outputPath: outputPath,
@@ -418,8 +430,8 @@ class VideoEditorController extends ChangeNotifier {
         trimEndMs: (s.current.trimEnd * videoDuration.inMilliseconds).round(),
         speed: speeds[s.current.selectedSpeedIndex],
         rotation: s.current.rotation,
-        aspectRatio: s.current.cropRect != null ? null : aspectStrings[s.current.selectedAspectIndex],
-        cropRect: s.current.cropRect,
+        aspectRatio: isFullFrame ? aspectStrings[s.current.selectedAspectIndex] : null,
+        cropRect: isFullFrame ? null : crop,
       ).timeout(const Duration(seconds: 120));
 
       log.complete(result);

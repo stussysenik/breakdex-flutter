@@ -39,7 +39,7 @@ class StatCard extends StatelessWidget {
               ).textTheme.labelSmall?.copyWith(color: cs.secondary),
               overflow: TextOverflow.ellipsis,
             ),
-            const SizedBox(height: 6),
+            const SizedBox(height: 8),
             AnimatedSwitcher(
               duration: AppMotion.moderate01,
               child: Text(

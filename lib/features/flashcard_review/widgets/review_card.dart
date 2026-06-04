@@ -174,7 +174,7 @@ class ReviewCard extends ConsumerWidget {
                       ),
                     ],
                   ),
-                  padding: const EdgeInsets.fromLTRB(14, 14, 14, 48), // Bottom-heavy frame
+                  padding: const EdgeInsets.fromLTRB(16, 16, 16, 48), // Bottom-heavy frame
                   child: Container(
                     clipBehavior: Clip.antiAlias,
                     decoration: BoxDecoration(

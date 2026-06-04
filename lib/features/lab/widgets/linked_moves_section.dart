@@ -197,7 +197,7 @@ class _LinkedMoveCardState extends State<_LinkedMoveCard> {
                       // Category pill
                       Container(
                         padding: const EdgeInsets.symmetric(
-                          horizontal: 6,
+                          horizontal: 8,
                           vertical: 2,
                         ),
                         decoration: BoxDecoration(
@@ -339,7 +339,7 @@ class _AddLinkedMoveCard extends StatelessWidget {
               color: AppColors.accent.withValues(alpha: 0.7),
               size: 24,
             ),
-            const SizedBox(height: 2),
+            const SizedBox(height: 4),
             Text(
               'Add',
               style: AppTypography.caption.copyWith(

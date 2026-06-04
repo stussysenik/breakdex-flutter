@@ -81,7 +81,7 @@ class RatingButtonRow extends ConsumerWidget {
                         onRate: onRate,
                       ),
                       if (intervalPreviews != null) ...[
-                        const SizedBox(height: 2),
+                        const SizedBox(height: 4),
                         Text(
                           _formatInterval(intervalPreviews![rating]),
                           style: AppTypography.caption.copyWith(
@@ -166,7 +166,7 @@ class _CompactRatingButton extends StatelessWidget {
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 Icon(icon, size: 24, color: color),
-                const SizedBox(height: 2),
+                const SizedBox(height: 4),
                 Text(
                   rating.displayText,
                   style: AppTypography.caption.copyWith(

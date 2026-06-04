@@ -213,7 +213,7 @@ class _GridCardShell extends StatelessWidget {
               right: 0,
               bottom: 0,
               child: Container(
-                padding: const EdgeInsets.fromLTRB(10, 24, 10, 10),
+                padding: const EdgeInsets.fromLTRB(12, 24, 12, 12),
                 decoration: BoxDecoration(
                   color:
                       (semanticTheme.isMonoOutline
@@ -235,7 +235,7 @@ class _GridCardShell extends StatelessWidget {
                       overflow: TextOverflow.ellipsis,
                     ),
                     if (subtitle != null) ...[
-                      const SizedBox(height: 2),
+                      const SizedBox(height: 4),
                       subtitle!,
                     ],
                   ],

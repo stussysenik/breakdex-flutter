@@ -32,7 +32,7 @@ class StatePill extends ConsumerWidget {
     final stateColor = AppSemanticTheme.of(context).colorForState(state);
 
     final pill = Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
       decoration: BoxDecoration(
         color: stateColor.withValues(alpha: overlay ? 0.20 : 0.15),
         borderRadius: BorderRadius.circular(20),

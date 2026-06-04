@@ -405,7 +405,7 @@ class _QueueChip extends StatelessWidget {
     final colorScheme = Theme.of(context).colorScheme;
 
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
       decoration: BoxDecoration(
         color: colorScheme.surface,
         borderRadius: BorderRadius.circular(AppRadius.md),
@@ -421,7 +421,7 @@ class _QueueChip extends StatelessWidget {
               fontWeight: FontWeight.w700,
             ),
           ),
-          const SizedBox(height: 2),
+          const SizedBox(height: 4),
           Text(
             value,
             style: AppTypography.bodyMedium.copyWith(
@@ -698,7 +698,7 @@ class _MoveTreeRow extends StatelessWidget {
                           fontWeight: FontWeight.w700,
                         ),
                       ),
-                      const SizedBox(height: 2),
+                      const SizedBox(height: 4),
                       Text(
                         [
                           item.stateLabel,
@@ -912,7 +912,7 @@ class _ComboTreeCard extends StatelessWidget {
                       color: colorScheme.onSurface,
                     ),
                   ),
-                  const SizedBox(height: 2),
+                  const SizedBox(height: 4),
                   Text(
                     [
                       group.stateLabel,
@@ -1008,7 +1008,7 @@ class _ComboStepRow extends StatelessWidget {
                           fontWeight: FontWeight.w700,
                         ),
                       ),
-                      const SizedBox(height: 2),
+                      const SizedBox(height: 4),
                       Text(
                         '${_displayCategoryName(step.category)} · ${step.stateLabel}',
                         style: AppTypography.bodySmall.copyWith(
@@ -1247,7 +1247,7 @@ class _GraphParentChip extends StatelessWidget {
           duration: AppMotion.moderate01,
           curve: AppMotion.productive,
           constraints: const BoxConstraints(minHeight: 44),
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
           decoration: BoxDecoration(
             color: accent.withValues(alpha: selected ? 0.14 : 0.08),
             borderRadius: BorderRadius.circular(999),
@@ -1263,7 +1263,7 @@ class _GraphParentChip extends StatelessWidget {
                   fontWeight: FontWeight.w700,
                 ),
               ),
-              const SizedBox(height: 2),
+              const SizedBox(height: 4),
               Text(
                 subtitle,
                 style: AppTypography.caption.copyWith(color: accent),
@@ -1445,7 +1445,7 @@ class _ParentNode extends StatelessWidget {
         onTap: onTap,
         child: Container(
           constraints: const BoxConstraints(minHeight: 44),
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
           decoration: BoxDecoration(
             color: accent.withValues(alpha: 0.12),
             borderRadius: BorderRadius.circular(999),
@@ -1616,7 +1616,7 @@ class _MetaPill extends StatelessWidget {
     final tone = accent ?? colorScheme.secondary;
 
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
         color: tone.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(999),
@@ -1770,7 +1770,7 @@ class _TimelineEntryTile extends StatelessWidget {
                     fontWeight: FontWeight.w700,
                   ),
                 ),
-                const SizedBox(height: 2),
+                const SizedBox(height: 4),
                 Text(
                   entry.graduated
                       ? '${entry.rating} · graduated into review'

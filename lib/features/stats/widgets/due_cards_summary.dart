@@ -83,7 +83,7 @@ class _DueColumn extends StatelessWidget {
               overflow: TextOverflow.ellipsis,
               textAlign: TextAlign.center,
             ),
-            const SizedBox(height: 2),
+            const SizedBox(height: 4),
             Text(
               '$count',
               style: AppTypography.titleSmall.copyWith(

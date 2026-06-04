@@ -350,6 +350,7 @@ final videoRetrievalControllerProvider = Provider<VideoRetrievalController>((
         .connectionTypeStream,
     provenanceJournal: ref.watch(provenanceJournalServiceProvider),
     syncDao: ref.watch(syncDaoProvider),
+    clock: ref.watch(appClockProvider),
   );
   ref.onDispose(controller.dispose);
   return controller;

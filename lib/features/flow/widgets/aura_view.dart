@@ -305,7 +305,7 @@ class _MoveGridTile extends ConsumerWidget {
             if (linkCount > 0)
               Container(
                 padding:
-                    const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                    const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                 decoration: BoxDecoration(
                   color: colorScheme.primary.withValues(alpha: 0.12),
                   borderRadius: BorderRadius.circular(8),
@@ -377,7 +377,7 @@ class _ConnectionPanel extends ConsumerWidget {
                   onTap: onAddConnection,
                   child: Container(
                     padding:
-                        const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                        const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
                     decoration: BoxDecoration(
                       color: colorScheme.primary.withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(12),
@@ -693,7 +693,7 @@ class _MoveConnectionRow extends StatelessWidget {
           for (final affinity in AuraAffinity.values)
             Padding(
               padding: EdgeInsets.only(
-                left: affinity == AuraAffinity.natural ? 0 : 6,
+                left: affinity == AuraAffinity.natural ? 0 : 8,
               ),
               child: GestureDetector(
                 onTap: () => onSelect(affinity),

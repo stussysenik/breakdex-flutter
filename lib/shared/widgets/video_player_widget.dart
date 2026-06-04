@@ -674,7 +674,7 @@ class _TransportButton extends StatelessWidget {
       onTap: onTap,
       behavior: HitTestBehavior.opaque,
       child: Padding(
-        padding: const EdgeInsets.all(6),
+        padding: const EdgeInsets.all(8),
         child: Icon(icon, color: Colors.white, size: size),
       ),
     );

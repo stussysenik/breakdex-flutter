@@ -387,20 +387,51 @@ class BreakdexApp extends ConsumerWidget {
 }
 
 /// Overlay that shows a loading indicator until the core boot gates are cleared.
-class _BootGateOverlay extends ConsumerWidget {
+///
+/// While the splash is visible it ticks ~12x/second so the progress bar
+/// interpolates smoothly toward the device's historical time-to-ready (rather
+/// than freezing between discrete gate completions) and shows a live ETA.
+class _BootGateOverlay extends ConsumerStatefulWidget {
   const _BootGateOverlay({required this.child});
   final Widget child;
 
   @override
-  Widget build(final BuildContext context, final WidgetRef ref) {
+  ConsumerState<_BootGateOverlay> createState() => _BootGateOverlayState();
+}
+
+class _BootGateOverlayState extends ConsumerState<_BootGateOverlay> {
+  Timer? _ticker;
+
+  @override
+  void initState() {
+    super.initState();
+    _ticker = Timer.periodic(const Duration(milliseconds: 80), (_) {
+      if (!mounted) return;
+      if (ref.read(bootCoordinatorProvider).isReadyForUI) {
+        _ticker?.cancel();
+        _ticker = null;
+        return;
+      }
+      setState(() {});
+    });
+  }
+
+  @override
+  void dispose() {
+    _ticker?.cancel();
+    super.dispose();
+  }
+
+  @override
+  Widget build(final BuildContext context) {
     final boot = ref.watch(bootCoordinatorProvider);
-    
+
     // Once core gates are cleared, we show the app content.
-    // Post-frame background work (migrations, etc.) happens while the app is interactive.
+    // Post-frame background work (migrations, etc.) happens while interactive.
     if (boot.isReadyForUI) {
       return Stack(
         children: [
-          child,
+          widget.child,
           if (!boot.isComplete)
             Positioned(
               top: 0,
@@ -409,7 +440,7 @@ class _BootGateOverlay extends ConsumerWidget {
               child: PreferredSize(
                 preferredSize: const Size.fromHeight(2),
                 child: LinearProgressIndicator(
-                  value: boot.progress,
+                  value: boot.postFrameProgress,
                   backgroundColor: Colors.transparent,
                   color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.5),
                   minHeight: 2,
@@ -420,19 +451,42 @@ class _BootGateOverlay extends ConsumerWidget {
       );
     }
 
-    // Show a minimal splash while core gates are clearing
+    // Determinate splash while core gates are clearing — real progress + ETA.
+    final elapsed = DateTime.now().difference(boot.startTime);
+    final progress = boot.interpolatedProgress(elapsed);
+    final eta = boot.eta(elapsed);
+    final theme = Theme.of(context);
     return Scaffold(
-      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+      backgroundColor: theme.scaffoldBackgroundColor,
       body: Center(
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const CircularProgressIndicator(),
+            SizedBox(
+              width: 40,
+              height: 40,
+              child: CircularProgressIndicator(
+                value: progress > 0 ? progress : null,
+              ),
+            ),
+            const SizedBox(height: 16),
+            Text(
+              '${(progress * 100).round()}%',
+              style: theme.textTheme.bodySmall,
+            ),
             if (boot.currentTask != null) ...[
-              const SizedBox(height: 16),
+              const SizedBox(height: 4),
               Text(
                 boot.currentTask!,
-                style: Theme.of(context).textTheme.bodySmall,
+                style: theme.textTheme.bodySmall,
+              ),
+            ],
+            if (eta != null && eta.inMilliseconds > 250) ...[
+              const SizedBox(height: 4),
+              Text(
+                '~${eta.inSeconds + 1}s',
+                style: theme.textTheme.bodySmall
+                    ?.copyWith(color: theme.hintColor),
               ),
             ],
           ],

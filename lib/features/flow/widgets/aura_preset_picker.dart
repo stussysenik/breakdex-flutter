@@ -176,7 +176,7 @@ class _PresetChip extends StatelessWidget {
       child: AnimatedContainer(
         duration: AppMotion.moderate01,
         curve: AppMotion.productive,
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         decoration: BoxDecoration(
           color: isActive
               ? colorScheme.primary
@@ -213,7 +213,7 @@ class _AddPresetChip extends StatelessWidget {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
         decoration: BoxDecoration(
           color: Colors.transparent,
           borderRadius: BorderRadius.circular(20),

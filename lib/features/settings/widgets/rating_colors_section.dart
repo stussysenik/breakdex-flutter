@@ -61,7 +61,7 @@ class RatingColorRow extends ConsumerWidget {
   @override
   Widget build(final BuildContext context, final WidgetRef ref) {
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 6),
+      padding: const EdgeInsets.symmetric(vertical: 8),
       child: ColorSettingTile(
         title: label,
         subtitle: formatColorHex(currentColor),

@@ -130,7 +130,7 @@ class ScheduledItemRow extends ConsumerWidget {
                           ),
                         ],
                       ),
-                      const SizedBox(height: 2),
+                      const SizedBox(height: 4),
                       // SRS detail line
                       if (card != null)
                         Text(

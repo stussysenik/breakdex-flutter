@@ -38,7 +38,7 @@ class SyncProgressBar extends ConsumerWidget {
   Widget _buildBar(final BuildContext context, final String label, final double? progress) {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.1),
       child: Row(
         children: [

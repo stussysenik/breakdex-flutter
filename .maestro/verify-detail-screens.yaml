@@ -1,0 +1,50 @@
+# Verify P4 (move-detail video metadata) + P5 (combo-detail IA)
+# using the stress fixture (100 moves, 30 combos).
+appId: com.breakdex.breakdex
+name: "Verify Detail Screens"
+tags:
+  - verify
+
+---
+
+- launchApp:
+    arguments:
+      maestro: true
+      breakdexFixture: stress
+    permissions:
+      all: allow
+- assertVisible: "Breakdex"
+- takeScreenshot: e2e-screenshots/verify-d01-home-seeded
+
+# Open Moves list
+- tapOn:
+    text: "Moves"
+- takeScreenshot: e2e-screenshots/verify-d02-moves-list
+
+# Open first move tile (top of grid)
+- tapOn:
+    point: "27%,30%"
+- takeScreenshot: e2e-screenshots/verify-d03-move-detail
+# scroll to the VIDEO INFO panel (Duration/Resolution = P4)
+- swipe:
+    direction: UP
+    duration: 600
+- takeScreenshot: e2e-screenshots/verify-d04-move-detail-info
+- swipe:
+    direction: UP
+    duration: 600
+- takeScreenshot: e2e-screenshots/verify-d05-move-detail-info2
+
+# Back to home, open a Combo
+- tapOn:
+    point: "12%,93%"
+- tapOn:
+    text: "Combos"
+- takeScreenshot: e2e-screenshots/verify-d06-combos-list
+- tapOn:
+    point: "50%,30%"
+- takeScreenshot: e2e-screenshots/verify-d07-combo-detail
+- swipe:
+    direction: UP
+    duration: 600
+- takeScreenshot: e2e-screenshots/verify-d08-combo-detail-actions

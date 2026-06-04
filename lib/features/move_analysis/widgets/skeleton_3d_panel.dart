@@ -43,7 +43,7 @@ class _Skeleton3DPanelState extends ConsumerState<Skeleton3DPanel> {
       children: [
         // Info bar
         Container(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
           color: colorScheme.surfaceContainerHighest,
           child: Row(
             children: [

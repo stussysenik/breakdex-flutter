@@ -5,6 +5,8 @@ import '../database/daos/asset_manifest_dao.dart';
 import '../database/daos/sync_dao.dart';
 import '../services/connectivity_service.dart';
 import '../services/provenance_journal_service.dart';
+import '../utils/app_clock.dart';
+import '../utils/transfer_rate_estimator.dart';
 import 'network_policy.dart';
 import 'on_demand_downloader.dart';
 
@@ -27,6 +29,11 @@ class VideoRetrievalSnapshot {
     required this.updatedAt,
     this.localPath,
     this.message,
+    this.bytesTransferred,
+    this.totalBytes,
+    this.bytesPerSecond,
+    this.etaRemaining,
+    this.isStalled = false,
   });
 
   final String contentHash;
@@ -35,6 +42,14 @@ class VideoRetrievalSnapshot {
   final DateTime updatedAt;
   final String? localPath;
   final String? message;
+
+  /// Live transfer telemetry — only meaningful while [state] is
+  /// [VideoRetrievalState.downloading]; null/stale otherwise.
+  final int? bytesTransferred;
+  final int? totalBytes;
+  final double? bytesPerSecond;
+  final Duration? etaRemaining;
+  final bool isStalled;
 
   factory VideoRetrievalSnapshot.idle(final String contentHash) {
     return VideoRetrievalSnapshot(
@@ -57,8 +72,14 @@ class VideoRetrievalSnapshot {
     final double? progress,
     final String? localPath,
     final String? message,
+    final int? bytesTransferred,
+    final int? totalBytes,
+    final double? bytesPerSecond,
+    final Duration? etaRemaining,
+    final bool? isStalled,
     final bool clearLocalPath = false,
     final bool clearMessage = false,
+    final bool clearTransferStats = false,
   }) {
     return VideoRetrievalSnapshot(
       contentHash: contentHash,
@@ -67,6 +88,14 @@ class VideoRetrievalSnapshot {
       updatedAt: DateTime.now(),
       localPath: clearLocalPath ? null : (localPath ?? this.localPath),
       message: clearMessage ? null : (message ?? this.message),
+      bytesTransferred:
+          clearTransferStats ? null : (bytesTransferred ?? this.bytesTransferred),
+      totalBytes: clearTransferStats ? null : (totalBytes ?? this.totalBytes),
+      bytesPerSecond:
+          clearTransferStats ? null : (bytesPerSecond ?? this.bytesPerSecond),
+      etaRemaining:
+          clearTransferStats ? null : (etaRemaining ?? this.etaRemaining),
+      isStalled: clearTransferStats ? false : (isStalled ?? this.isStalled),
     );
   }
 }
@@ -106,12 +135,14 @@ class VideoRetrievalController {
     required final Stream<ConnectionType> connectionTypeStream,
     final ProvenanceJournalService? provenanceJournal,
     final SyncDao? syncDao,
+    final AppClock? clock,
   }) : _retriever = retriever,
        _manifestDao = manifestDao,
        _networkPolicy = networkPolicy,
        _getConnectionType = getConnectionType,
        _provenanceJournal = provenanceJournal,
-       _syncDao = syncDao {
+       _syncDao = syncDao,
+       _clock = clock ?? SystemClock() {
     _connectionSub = connectionTypeStream.listen((_) {
       unawaited(_pumpQueue());
     });
@@ -123,6 +154,10 @@ class VideoRetrievalController {
   final Future<ConnectionType> Function() _getConnectionType;
   final ProvenanceJournalService? _provenanceJournal;
   final SyncDao? _syncDao;
+  final AppClock _clock;
+
+  /// Per-item rate/ETA estimators, keyed by content hash.
+  final Map<String, TransferRateEstimator> _estimators = {};
 
   final LinkedHashMap<String, _PendingRetrievalRequest> _pending =
       LinkedHashMap<String, _PendingRetrievalRequest>();
@@ -343,6 +378,10 @@ class VideoRetrievalController {
         );
 
         var lastTransferred = 0;
+        final estimator = _estimators.putIfAbsent(
+          contentHash,
+          () => TransferRateEstimator(clock: _clock),
+        )..reset();
         final localPath = await _retriever.ensureLocal(
           contentHash,
           onProgress: (final transferred, final total) {
@@ -351,11 +390,17 @@ class VideoRetrievalController {
             if (delta > 0 && connectionType == ConnectionType.mobile) {
               unawaited(_networkPolicy.recordMobileUsage(delta));
             }
+            estimator.record(transferred, total);
             _emit(
               contentHash,
               snapshotFor(contentHash).copyWith(
                 state: VideoRetrievalState.downloading,
                 progress: total > 0 ? transferred / total : 0,
+                bytesTransferred: transferred,
+                totalBytes: total,
+                bytesPerSecond: estimator.bytesPerSecond,
+                etaRemaining: estimator.etaRemaining,
+                isStalled: estimator.isStalled,
                 message: connectionType == ConnectionType.mobile
                     ? 'Downloading on mobile data'
                     : 'Downloading from cloud',
@@ -366,6 +411,7 @@ class VideoRetrievalController {
         );
 
         _pending.remove(contentHash);
+        _estimators.remove(contentHash);
 
         if (localPath == null) {
           _emit(
@@ -375,6 +421,7 @@ class VideoRetrievalController {
               progress: 0,
               message: 'Download failed. Check your connection.',
               clearLocalPath: true,
+              clearTransferStats: true,
             ),
           );
           await _log(contentHash: contentHash, action: 'retrieval_failed');
@@ -395,6 +442,7 @@ class VideoRetrievalController {
             progress: 1,
             localPath: localPath,
             message: 'Video restored locally',
+            clearTransferStats: true,
           ),
         );
         await _log(contentHash: contentHash, action: 'retrieval_available');
@@ -476,6 +524,7 @@ class VideoRetrievalController {
 
   void dispose() {
     _connectionSub.cancel();
+    _estimators.clear();
     for (final controller in _controllers.values) {
       controller.close();
     }
