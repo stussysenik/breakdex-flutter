@@ -7,6 +7,9 @@ mixin _$CombosDaoMixin on DatabaseAccessor<AppDatabase> {
   $CombosTable get combos => attachedDatabase.combos;
   $MovesTable get moves => attachedDatabase.moves;
   $ComboMovesTable get comboMoves => attachedDatabase.comboMoves;
+  $ComboNoteEntriesTable get comboNoteEntries =>
+      attachedDatabase.comboNoteEntries;
+  $ComboPlansTable get comboPlans => attachedDatabase.comboPlans;
   CombosDaoManager get managers => CombosDaoManager(this);
 }
 
@@ -19,4 +22,11 @@ class CombosDaoManager {
       $$MovesTableTableManager(_db.attachedDatabase, _db.moves);
   $$ComboMovesTableTableManager get comboMoves =>
       $$ComboMovesTableTableManager(_db.attachedDatabase, _db.comboMoves);
+  $$ComboNoteEntriesTableTableManager get comboNoteEntries =>
+      $$ComboNoteEntriesTableTableManager(
+        _db.attachedDatabase,
+        _db.comboNoteEntries,
+      );
+  $$ComboPlansTableTableManager get comboPlans =>
+      $$ComboPlansTableTableManager(_db.attachedDatabase, _db.comboPlans);
 }

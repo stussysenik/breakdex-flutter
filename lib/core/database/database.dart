@@ -29,6 +29,7 @@ import 'tables/set_items.dart';
 import 'tables/provenance_events.dart';
 import 'tables/move_note_entries.dart';
 import 'tables/combo_note_entries.dart';
+import 'tables/combo_plans.dart';
 import 'daos/moves_dao.dart';
 import 'daos/combos_dao.dart';
 import 'daos/reviews_dao.dart';
@@ -46,6 +47,7 @@ import 'daos/achievements_dao.dart';
 import 'daos/aura_dao.dart';
 import 'daos/move_note_entries_dao.dart';
 import 'daos/combo_note_entries_dao.dart';
+import 'daos/combo_plans_dao.dart';
 
 part 'database.g.dart';
 
@@ -76,6 +78,7 @@ part 'database.g.dart';
     ProvenanceEvents,
     MoveNoteEntries,
     ComboNoteEntries,
+    ComboPlans,
   ],
   daos: [
     MovesDao,
@@ -95,6 +98,7 @@ part 'database.g.dart';
     AuraDao,
     MoveNoteEntriesDao,
     ComboNoteEntriesDao,
+    ComboPlansDao,
   ],
 )
 class AppDatabase extends _$AppDatabase {
@@ -103,7 +107,15 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.forTesting(super.e);
 
   @override
-  int get schemaVersion => 21;
+  int get schemaVersion => 22;
+
+  /// Column names currently present on [table] — used to keep migrations
+  /// idempotent across legacy databases and tables created mid-upgrade
+  /// from current Drift definitions.
+  Future<Set<String>> _columnNames(final String table) async {
+    final rows = await customSelect('PRAGMA table_info($table)').get();
+    return rows.map((final r) => r.read<String>('name')).toSet();
+  }
 
   Future<void> _installIntegrityTriggers() async {
     await customStatement('''
@@ -543,6 +555,60 @@ class AppDatabase extends _$AppDatabase {
       if (from < 21) {
         await m.addColumn(moves, moves.videoFileSize);
         await m.addColumn(moves, moves.videoCreationDate);
+      }
+
+      if (from < 22) {
+        // --- Schema v22: Combo journey system (all additive) ---
+        //
+        // PRAGMA-guarded adds: legacy devices may already carry a
+        // created_at on combos (pre-Drift schema), and upgraders from <19
+        // get combo_note_entries created from the *current* definition
+        // (already including kind/video columns) earlier in this upgrade.
+        final comboCols = await _columnNames('combos');
+        if (!comboCols.contains('status')) {
+          await customStatement(
+            "ALTER TABLE combos ADD COLUMN status TEXT NOT NULL DEFAULT 'idea'",
+          );
+        }
+        if (!comboCols.contains('created_at')) {
+          // SQLite forbids ADD COLUMN with non-constant default; add with
+          // 0 and backfill below.
+          await customStatement(
+            'ALTER TABLE combos ADD COLUMN created_at INTEGER NOT NULL DEFAULT 0',
+          );
+        }
+
+        // Backfill createdAt: earliest journal entry when one exists,
+        // else migration time. Existing non-zero values are respected.
+        await customStatement('''
+          UPDATE combos SET created_at = COALESCE(
+            (SELECT MIN(e.created_at) FROM combo_note_entries e
+              WHERE e.combo_id = combos.id),
+            strftime('%s', 'now')
+          )
+          WHERE created_at IS NULL OR created_at = 0
+        ''');
+
+        final entryCols = await _columnNames('combo_note_entries');
+        if (!entryCols.contains('kind')) {
+          await m.addColumn(comboNoteEntries, comboNoteEntries.kind);
+        }
+        if (!entryCols.contains('video_path')) {
+          await m.addColumn(comboNoteEntries, comboNoteEntries.videoPath);
+        }
+        if (!entryCols.contains('video_hash')) {
+          await m.addColumn(comboNoteEntries, comboNoteEntries.videoHash);
+        }
+
+        await m.createTable(comboPlans);
+        await customStatement('''
+          CREATE INDEX IF NOT EXISTS idx_combo_plans_combo
+          ON combo_plans(combo_id)
+        ''');
+        await customStatement('''
+          CREATE INDEX IF NOT EXISTS idx_combo_plans_date
+          ON combo_plans(plan_date)
+        ''');
       }
 
       await _backfillReviewSnapshots();

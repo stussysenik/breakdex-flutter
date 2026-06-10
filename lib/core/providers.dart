@@ -16,6 +16,7 @@ import 'database/daos/sets_dao.dart';
 import 'database/daos/provenance_events_dao.dart';
 import 'database/daos/move_note_entries_dao.dart';
 import 'database/daos/combo_note_entries_dao.dart';
+import 'database/daos/combo_plans_dao.dart';
 import 'data/repositories.dart';
 import 'data/drift_repositories.dart';
 import 'data/sync_aware_repositories.dart';
@@ -310,6 +311,10 @@ final moveNoteEntriesDaoProvider = Provider<MoveNoteEntriesDao>((final ref) {
 
 final comboNoteEntriesDaoProvider = Provider<ComboNoteEntriesDao>((final ref) {
   return ref.watch(databaseProvider).comboNoteEntriesDao;
+});
+
+final comboPlansDaoProvider = Provider<ComboPlansDao>((final ref) {
+  return ref.watch(databaseProvider).comboPlansDao;
 });
 
 final provenanceServiceProvider = Provider<ProvenanceService>((final ref) {

@@ -17,16 +17,32 @@ class ComboNoteEntriesDao extends DatabaseAccessor<AppDatabase>
         .get();
   }
 
+  Stream<List<ComboNoteEntry>> watchByComboId(final String comboId) {
+    return (select(comboNoteEntries)
+          ..where((final t) => t.comboId.equals(comboId))
+          ..orderBy([
+            (final t) => OrderingTerm.desc(t.createdAt),
+            (final t) => OrderingTerm.desc(t.id),
+          ]))
+        .watch();
+  }
+
   Future<void> addEntry({
     required final String id,
     required final String comboId,
     required final String body,
+    final String kind = 'jot',
+    final String? videoPath,
+    final String? videoHash,
   }) {
     return into(comboNoteEntries).insert(
       ComboNoteEntriesCompanion.insert(
         id: id,
         comboId: comboId,
         body: body,
+        kind: Value(kind),
+        videoPath: Value(videoPath),
+        videoHash: Value(videoHash),
       ),
     );
   }

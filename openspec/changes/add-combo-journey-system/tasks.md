@@ -2,18 +2,18 @@
 
 ## Phase 1 — Data model (schema v22, additive only)
 
-- [ ] 1.1 Add `status` (default `'idea'`) and `createdAt` columns to `combos` table definition
-- [ ] 1.2 Add `kind` (default `'jot'`), `videoPath`, `videoHash` columns to `combo_note_entries`
-- [ ] 1.3 Create `combo_plans` table (id, comboId FK cascade, planDate, position, createdAt, completedAt)
-- [ ] 1.4 Write v21→v22 migration: 4× addColumn, 1× createTable, `createdAt` backfill from `MIN(combo_note_entries.createdAt)`
-- [ ] 1.5 `dart run build_runner build` — regenerate, compiles clean
-- [ ] 1.6 Migration test: seed v21 fixture → upgrade → assert row counts, byte-identical bodies, correct backfills
-- [ ] 1.7 DAO: `CombosDao.updateStatus()` appends `kind='status'` ledger row in same transaction; test proves atomicity
-- [ ] 1.8 DAO: `ComboPlansDao` CRUD + `watchPlansQueue()` + `watchPlansForDate()`; unit tests
-- [ ] 1.9 DAO: `watchCombosWithMeta()` (combo + last jot + counts, grouped by createdAt month); unit test
-- [ ] 1.10 Rollup: `watchActivityRollup()` (per-day jot/take counts for calendar heat) derived from ledger; unit test
-- [ ] 1.11 Evidence completion: query stamps `completedAt` when a jot exists for (comboId, planDate); unit test
-- [ ] 1.12 Export schema v7 (new fields) + import accepts v6 with defaults; round-trip test
+- [x] 1.1 Add `status` (default `'idea'`) and `createdAt` columns to `combos` table definition
+- [x] 1.2 Add `kind` (default `'jot'`), `videoPath`, `videoHash` columns to `combo_note_entries`
+- [x] 1.3 Create `combo_plans` table (id, comboId FK cascade, planDate, position, createdAt, completedAt)
+- [x] 1.4 Write v21→v22 migration: 4× addColumn, 1× createTable, `createdAt` backfill from `MIN(combo_note_entries.createdAt)` (PRAGMA-guarded for legacy `created_at` columns)
+- [x] 1.5 `dart run build_runner build` — regenerate, compiles clean
+- [x] 1.6 Migration test: seed v21 fixture → upgrade → assert row counts, byte-identical bodies, correct backfills
+- [x] 1.7 DAO: `CombosDao.updateStatus()` appends `kind='status'` ledger row in same transaction; test proves atomicity
+- [x] 1.8 DAO: `ComboPlansDao` CRUD + `watchPlansQueue()` + `watchPlansForDate()`; unit tests
+- [x] 1.9 DAO: `watchCombosWithMeta()` (combo + last jot + counts, grouped by createdAt month); unit test
+- [x] 1.10 Rollup: `watchActivityRollup()` (per-day jot/take counts for calendar heat) derived from ledger; unit test
+- [x] 1.11 Evidence completion: query stamps `completedAt` when a jot exists for (comboId, planDate); unit test
+- [x] 1.12 Export schema v9 (current was already v8, not v6; new fields) + import accepts v8 and older with defaults; round-trip test
 
 ## Phase 2 — Combo detail page (the working surface)
 

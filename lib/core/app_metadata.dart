@@ -1,5 +1,5 @@
 abstract final class AppMetadata {
-  static const exportSchemaVersion = 8;
+  static const exportSchemaVersion = 9;
   static const appVersion = '1.1.0';
   static const buildNumber = '3';
 

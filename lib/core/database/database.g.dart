@@ -1127,6 +1127,28 @@ class $CombosTable extends Combos with TableInfo<$CombosTable, Combo> {
     type: DriftSqlType.string,
     requiredDuringInsert: false,
   );
+  static const VerificationMeta _statusMeta = const VerificationMeta('status');
+  @override
+  late final GeneratedColumn<String> status = GeneratedColumn<String>(
+    'status',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant('idea'),
+  );
+  static const VerificationMeta _createdAtMeta = const VerificationMeta(
+    'createdAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> createdAt = GeneratedColumn<DateTime>(
+    'created_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+    defaultValue: currentDateAndTime,
+  );
   @override
   List<GeneratedColumn> get $columns => [
     id,
@@ -1134,6 +1156,8 @@ class $CombosTable extends Combos with TableInfo<$CombosTable, Combo> {
     notes,
     activeVideoPath,
     contentHash,
+    status,
+    createdAt,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -1184,6 +1208,18 @@ class $CombosTable extends Combos with TableInfo<$CombosTable, Combo> {
         ),
       );
     }
+    if (data.containsKey('status')) {
+      context.handle(
+        _statusMeta,
+        status.isAcceptableOrUnknown(data['status']!, _statusMeta),
+      );
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(
+        _createdAtMeta,
+        createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta),
+      );
+    }
     return context;
   }
 
@@ -1213,6 +1249,14 @@ class $CombosTable extends Combos with TableInfo<$CombosTable, Combo> {
         DriftSqlType.string,
         data['${effectivePrefix}content_hash'],
       ),
+      status: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}status'],
+      )!,
+      createdAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}created_at'],
+      )!,
     );
   }
 
@@ -1228,12 +1272,18 @@ class Combo extends DataClass implements Insertable<Combo> {
   final String? notes;
   final String? activeVideoPath;
   final String? contentHash;
+
+  /// 'idea', 'attempting', 'landed', or 'clean' — same vocabulary as labs.
+  final String status;
+  final DateTime createdAt;
   const Combo({
     required this.id,
     required this.name,
     this.notes,
     this.activeVideoPath,
     this.contentHash,
+    required this.status,
+    required this.createdAt,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -1249,6 +1299,8 @@ class Combo extends DataClass implements Insertable<Combo> {
     if (!nullToAbsent || contentHash != null) {
       map['content_hash'] = Variable<String>(contentHash);
     }
+    map['status'] = Variable<String>(status);
+    map['created_at'] = Variable<DateTime>(createdAt);
     return map;
   }
 
@@ -1265,6 +1317,8 @@ class Combo extends DataClass implements Insertable<Combo> {
       contentHash: contentHash == null && nullToAbsent
           ? const Value.absent()
           : Value(contentHash),
+      status: Value(status),
+      createdAt: Value(createdAt),
     );
   }
 
@@ -1279,6 +1333,8 @@ class Combo extends DataClass implements Insertable<Combo> {
       notes: serializer.fromJson<String?>(json['notes']),
       activeVideoPath: serializer.fromJson<String?>(json['activeVideoPath']),
       contentHash: serializer.fromJson<String?>(json['contentHash']),
+      status: serializer.fromJson<String>(json['status']),
+      createdAt: serializer.fromJson<DateTime>(json['createdAt']),
     );
   }
   @override
@@ -1290,6 +1346,8 @@ class Combo extends DataClass implements Insertable<Combo> {
       'notes': serializer.toJson<String?>(notes),
       'activeVideoPath': serializer.toJson<String?>(activeVideoPath),
       'contentHash': serializer.toJson<String?>(contentHash),
+      'status': serializer.toJson<String>(status),
+      'createdAt': serializer.toJson<DateTime>(createdAt),
     };
   }
 
@@ -1299,6 +1357,8 @@ class Combo extends DataClass implements Insertable<Combo> {
     Value<String?> notes = const Value.absent(),
     Value<String?> activeVideoPath = const Value.absent(),
     Value<String?> contentHash = const Value.absent(),
+    String? status,
+    DateTime? createdAt,
   }) => Combo(
     id: id ?? this.id,
     name: name ?? this.name,
@@ -1307,6 +1367,8 @@ class Combo extends DataClass implements Insertable<Combo> {
         ? activeVideoPath.value
         : this.activeVideoPath,
     contentHash: contentHash.present ? contentHash.value : this.contentHash,
+    status: status ?? this.status,
+    createdAt: createdAt ?? this.createdAt,
   );
   Combo copyWithCompanion(CombosCompanion data) {
     return Combo(
@@ -1319,6 +1381,8 @@ class Combo extends DataClass implements Insertable<Combo> {
       contentHash: data.contentHash.present
           ? data.contentHash.value
           : this.contentHash,
+      status: data.status.present ? data.status.value : this.status,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
     );
   }
 
@@ -1329,14 +1393,23 @@ class Combo extends DataClass implements Insertable<Combo> {
           ..write('name: $name, ')
           ..write('notes: $notes, ')
           ..write('activeVideoPath: $activeVideoPath, ')
-          ..write('contentHash: $contentHash')
+          ..write('contentHash: $contentHash, ')
+          ..write('status: $status, ')
+          ..write('createdAt: $createdAt')
           ..write(')'))
         .toString();
   }
 
   @override
-  int get hashCode =>
-      Object.hash(id, name, notes, activeVideoPath, contentHash);
+  int get hashCode => Object.hash(
+    id,
+    name,
+    notes,
+    activeVideoPath,
+    contentHash,
+    status,
+    createdAt,
+  );
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -1345,7 +1418,9 @@ class Combo extends DataClass implements Insertable<Combo> {
           other.name == this.name &&
           other.notes == this.notes &&
           other.activeVideoPath == this.activeVideoPath &&
-          other.contentHash == this.contentHash);
+          other.contentHash == this.contentHash &&
+          other.status == this.status &&
+          other.createdAt == this.createdAt);
 }
 
 class CombosCompanion extends UpdateCompanion<Combo> {
@@ -1354,6 +1429,8 @@ class CombosCompanion extends UpdateCompanion<Combo> {
   final Value<String?> notes;
   final Value<String?> activeVideoPath;
   final Value<String?> contentHash;
+  final Value<String> status;
+  final Value<DateTime> createdAt;
   final Value<int> rowid;
   const CombosCompanion({
     this.id = const Value.absent(),
@@ -1361,6 +1438,8 @@ class CombosCompanion extends UpdateCompanion<Combo> {
     this.notes = const Value.absent(),
     this.activeVideoPath = const Value.absent(),
     this.contentHash = const Value.absent(),
+    this.status = const Value.absent(),
+    this.createdAt = const Value.absent(),
     this.rowid = const Value.absent(),
   });
   CombosCompanion.insert({
@@ -1369,6 +1448,8 @@ class CombosCompanion extends UpdateCompanion<Combo> {
     this.notes = const Value.absent(),
     this.activeVideoPath = const Value.absent(),
     this.contentHash = const Value.absent(),
+    this.status = const Value.absent(),
+    this.createdAt = const Value.absent(),
     this.rowid = const Value.absent(),
   }) : id = Value(id),
        name = Value(name);
@@ -1378,6 +1459,8 @@ class CombosCompanion extends UpdateCompanion<Combo> {
     Expression<String>? notes,
     Expression<String>? activeVideoPath,
     Expression<String>? contentHash,
+    Expression<String>? status,
+    Expression<DateTime>? createdAt,
     Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
@@ -1386,6 +1469,8 @@ class CombosCompanion extends UpdateCompanion<Combo> {
       if (notes != null) 'notes': notes,
       if (activeVideoPath != null) 'active_video_path': activeVideoPath,
       if (contentHash != null) 'content_hash': contentHash,
+      if (status != null) 'status': status,
+      if (createdAt != null) 'created_at': createdAt,
       if (rowid != null) 'rowid': rowid,
     });
   }
@@ -1396,6 +1481,8 @@ class CombosCompanion extends UpdateCompanion<Combo> {
     Value<String?>? notes,
     Value<String?>? activeVideoPath,
     Value<String?>? contentHash,
+    Value<String>? status,
+    Value<DateTime>? createdAt,
     Value<int>? rowid,
   }) {
     return CombosCompanion(
@@ -1404,6 +1491,8 @@ class CombosCompanion extends UpdateCompanion<Combo> {
       notes: notes ?? this.notes,
       activeVideoPath: activeVideoPath ?? this.activeVideoPath,
       contentHash: contentHash ?? this.contentHash,
+      status: status ?? this.status,
+      createdAt: createdAt ?? this.createdAt,
       rowid: rowid ?? this.rowid,
     );
   }
@@ -1426,6 +1515,12 @@ class CombosCompanion extends UpdateCompanion<Combo> {
     if (contentHash.present) {
       map['content_hash'] = Variable<String>(contentHash.value);
     }
+    if (status.present) {
+      map['status'] = Variable<String>(status.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<DateTime>(createdAt.value);
+    }
     if (rowid.present) {
       map['rowid'] = Variable<int>(rowid.value);
     }
@@ -1440,6 +1535,8 @@ class CombosCompanion extends UpdateCompanion<Combo> {
           ..write('notes: $notes, ')
           ..write('activeVideoPath: $activeVideoPath, ')
           ..write('contentHash: $contentHash, ')
+          ..write('status: $status, ')
+          ..write('createdAt: $createdAt, ')
           ..write('rowid: $rowid')
           ..write(')'))
         .toString();
@@ -12032,6 +12129,38 @@ class $ComboNoteEntriesTable extends ComboNoteEntries
     type: DriftSqlType.string,
     requiredDuringInsert: true,
   );
+  static const VerificationMeta _kindMeta = const VerificationMeta('kind');
+  @override
+  late final GeneratedColumn<String> kind = GeneratedColumn<String>(
+    'kind',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant('jot'),
+  );
+  static const VerificationMeta _videoPathMeta = const VerificationMeta(
+    'videoPath',
+  );
+  @override
+  late final GeneratedColumn<String> videoPath = GeneratedColumn<String>(
+    'video_path',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _videoHashMeta = const VerificationMeta(
+    'videoHash',
+  );
+  @override
+  late final GeneratedColumn<String> videoHash = GeneratedColumn<String>(
+    'video_hash',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
   static const VerificationMeta _createdAtMeta = const VerificationMeta(
     'createdAt',
   );
@@ -12045,7 +12174,15 @@ class $ComboNoteEntriesTable extends ComboNoteEntries
     defaultValue: currentDateAndTime,
   );
   @override
-  List<GeneratedColumn> get $columns => [id, comboId, body, createdAt];
+  List<GeneratedColumn> get $columns => [
+    id,
+    comboId,
+    body,
+    kind,
+    videoPath,
+    videoHash,
+    createdAt,
+  ];
   @override
   String get aliasedName => _alias ?? actualTableName;
   @override
@@ -12079,6 +12216,24 @@ class $ComboNoteEntriesTable extends ComboNoteEntries
     } else if (isInserting) {
       context.missing(_bodyMeta);
     }
+    if (data.containsKey('kind')) {
+      context.handle(
+        _kindMeta,
+        kind.isAcceptableOrUnknown(data['kind']!, _kindMeta),
+      );
+    }
+    if (data.containsKey('video_path')) {
+      context.handle(
+        _videoPathMeta,
+        videoPath.isAcceptableOrUnknown(data['video_path']!, _videoPathMeta),
+      );
+    }
+    if (data.containsKey('video_hash')) {
+      context.handle(
+        _videoHashMeta,
+        videoHash.isAcceptableOrUnknown(data['video_hash']!, _videoHashMeta),
+      );
+    }
     if (data.containsKey('created_at')) {
       context.handle(
         _createdAtMeta,
@@ -12106,6 +12261,18 @@ class $ComboNoteEntriesTable extends ComboNoteEntries
         DriftSqlType.string,
         data['${effectivePrefix}body'],
       )!,
+      kind: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}kind'],
+      )!,
+      videoPath: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}video_path'],
+      ),
+      videoHash: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}video_hash'],
+      ),
       createdAt: attachedDatabase.typeMapping.read(
         DriftSqlType.dateTime,
         data['${effectivePrefix}created_at'],
@@ -12123,11 +12290,23 @@ class ComboNoteEntry extends DataClass implements Insertable<ComboNoteEntry> {
   final String id;
   final String comboId;
   final String body;
+
+  /// 'jot', 'status', 'plan', or 'duplicate'.
+  final String kind;
+
+  /// Relative reference into Documents/Moves/… — never a per-combo copy.
+  final String? videoPath;
+
+  /// Content hash into the content-addressable master, when known.
+  final String? videoHash;
   final DateTime createdAt;
   const ComboNoteEntry({
     required this.id,
     required this.comboId,
     required this.body,
+    required this.kind,
+    this.videoPath,
+    this.videoHash,
     required this.createdAt,
   });
   @override
@@ -12136,6 +12315,13 @@ class ComboNoteEntry extends DataClass implements Insertable<ComboNoteEntry> {
     map['id'] = Variable<String>(id);
     map['combo_id'] = Variable<String>(comboId);
     map['body'] = Variable<String>(body);
+    map['kind'] = Variable<String>(kind);
+    if (!nullToAbsent || videoPath != null) {
+      map['video_path'] = Variable<String>(videoPath);
+    }
+    if (!nullToAbsent || videoHash != null) {
+      map['video_hash'] = Variable<String>(videoHash);
+    }
     map['created_at'] = Variable<DateTime>(createdAt);
     return map;
   }
@@ -12145,6 +12331,13 @@ class ComboNoteEntry extends DataClass implements Insertable<ComboNoteEntry> {
       id: Value(id),
       comboId: Value(comboId),
       body: Value(body),
+      kind: Value(kind),
+      videoPath: videoPath == null && nullToAbsent
+          ? const Value.absent()
+          : Value(videoPath),
+      videoHash: videoHash == null && nullToAbsent
+          ? const Value.absent()
+          : Value(videoHash),
       createdAt: Value(createdAt),
     );
   }
@@ -12158,6 +12351,9 @@ class ComboNoteEntry extends DataClass implements Insertable<ComboNoteEntry> {
       id: serializer.fromJson<String>(json['id']),
       comboId: serializer.fromJson<String>(json['comboId']),
       body: serializer.fromJson<String>(json['body']),
+      kind: serializer.fromJson<String>(json['kind']),
+      videoPath: serializer.fromJson<String?>(json['videoPath']),
+      videoHash: serializer.fromJson<String?>(json['videoHash']),
       createdAt: serializer.fromJson<DateTime>(json['createdAt']),
     );
   }
@@ -12168,6 +12364,9 @@ class ComboNoteEntry extends DataClass implements Insertable<ComboNoteEntry> {
       'id': serializer.toJson<String>(id),
       'comboId': serializer.toJson<String>(comboId),
       'body': serializer.toJson<String>(body),
+      'kind': serializer.toJson<String>(kind),
+      'videoPath': serializer.toJson<String?>(videoPath),
+      'videoHash': serializer.toJson<String?>(videoHash),
       'createdAt': serializer.toJson<DateTime>(createdAt),
     };
   }
@@ -12176,11 +12375,17 @@ class ComboNoteEntry extends DataClass implements Insertable<ComboNoteEntry> {
     String? id,
     String? comboId,
     String? body,
+    String? kind,
+    Value<String?> videoPath = const Value.absent(),
+    Value<String?> videoHash = const Value.absent(),
     DateTime? createdAt,
   }) => ComboNoteEntry(
     id: id ?? this.id,
     comboId: comboId ?? this.comboId,
     body: body ?? this.body,
+    kind: kind ?? this.kind,
+    videoPath: videoPath.present ? videoPath.value : this.videoPath,
+    videoHash: videoHash.present ? videoHash.value : this.videoHash,
     createdAt: createdAt ?? this.createdAt,
   );
   ComboNoteEntry copyWithCompanion(ComboNoteEntriesCompanion data) {
@@ -12188,6 +12393,9 @@ class ComboNoteEntry extends DataClass implements Insertable<ComboNoteEntry> {
       id: data.id.present ? data.id.value : this.id,
       comboId: data.comboId.present ? data.comboId.value : this.comboId,
       body: data.body.present ? data.body.value : this.body,
+      kind: data.kind.present ? data.kind.value : this.kind,
+      videoPath: data.videoPath.present ? data.videoPath.value : this.videoPath,
+      videoHash: data.videoHash.present ? data.videoHash.value : this.videoHash,
       createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
     );
   }
@@ -12198,13 +12406,17 @@ class ComboNoteEntry extends DataClass implements Insertable<ComboNoteEntry> {
           ..write('id: $id, ')
           ..write('comboId: $comboId, ')
           ..write('body: $body, ')
+          ..write('kind: $kind, ')
+          ..write('videoPath: $videoPath, ')
+          ..write('videoHash: $videoHash, ')
           ..write('createdAt: $createdAt')
           ..write(')'))
         .toString();
   }
 
   @override
-  int get hashCode => Object.hash(id, comboId, body, createdAt);
+  int get hashCode =>
+      Object.hash(id, comboId, body, kind, videoPath, videoHash, createdAt);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -12212,6 +12424,9 @@ class ComboNoteEntry extends DataClass implements Insertable<ComboNoteEntry> {
           other.id == this.id &&
           other.comboId == this.comboId &&
           other.body == this.body &&
+          other.kind == this.kind &&
+          other.videoPath == this.videoPath &&
+          other.videoHash == this.videoHash &&
           other.createdAt == this.createdAt);
 }
 
@@ -12219,12 +12434,18 @@ class ComboNoteEntriesCompanion extends UpdateCompanion<ComboNoteEntry> {
   final Value<String> id;
   final Value<String> comboId;
   final Value<String> body;
+  final Value<String> kind;
+  final Value<String?> videoPath;
+  final Value<String?> videoHash;
   final Value<DateTime> createdAt;
   final Value<int> rowid;
   const ComboNoteEntriesCompanion({
     this.id = const Value.absent(),
     this.comboId = const Value.absent(),
     this.body = const Value.absent(),
+    this.kind = const Value.absent(),
+    this.videoPath = const Value.absent(),
+    this.videoHash = const Value.absent(),
     this.createdAt = const Value.absent(),
     this.rowid = const Value.absent(),
   });
@@ -12232,6 +12453,9 @@ class ComboNoteEntriesCompanion extends UpdateCompanion<ComboNoteEntry> {
     required String id,
     required String comboId,
     required String body,
+    this.kind = const Value.absent(),
+    this.videoPath = const Value.absent(),
+    this.videoHash = const Value.absent(),
     this.createdAt = const Value.absent(),
     this.rowid = const Value.absent(),
   }) : id = Value(id),
@@ -12241,6 +12465,9 @@ class ComboNoteEntriesCompanion extends UpdateCompanion<ComboNoteEntry> {
     Expression<String>? id,
     Expression<String>? comboId,
     Expression<String>? body,
+    Expression<String>? kind,
+    Expression<String>? videoPath,
+    Expression<String>? videoHash,
     Expression<DateTime>? createdAt,
     Expression<int>? rowid,
   }) {
@@ -12248,6 +12475,9 @@ class ComboNoteEntriesCompanion extends UpdateCompanion<ComboNoteEntry> {
       if (id != null) 'id': id,
       if (comboId != null) 'combo_id': comboId,
       if (body != null) 'body': body,
+      if (kind != null) 'kind': kind,
+      if (videoPath != null) 'video_path': videoPath,
+      if (videoHash != null) 'video_hash': videoHash,
       if (createdAt != null) 'created_at': createdAt,
       if (rowid != null) 'rowid': rowid,
     });
@@ -12257,6 +12487,9 @@ class ComboNoteEntriesCompanion extends UpdateCompanion<ComboNoteEntry> {
     Value<String>? id,
     Value<String>? comboId,
     Value<String>? body,
+    Value<String>? kind,
+    Value<String?>? videoPath,
+    Value<String?>? videoHash,
     Value<DateTime>? createdAt,
     Value<int>? rowid,
   }) {
@@ -12264,6 +12497,9 @@ class ComboNoteEntriesCompanion extends UpdateCompanion<ComboNoteEntry> {
       id: id ?? this.id,
       comboId: comboId ?? this.comboId,
       body: body ?? this.body,
+      kind: kind ?? this.kind,
+      videoPath: videoPath ?? this.videoPath,
+      videoHash: videoHash ?? this.videoHash,
       createdAt: createdAt ?? this.createdAt,
       rowid: rowid ?? this.rowid,
     );
@@ -12281,6 +12517,15 @@ class ComboNoteEntriesCompanion extends UpdateCompanion<ComboNoteEntry> {
     if (body.present) {
       map['body'] = Variable<String>(body.value);
     }
+    if (kind.present) {
+      map['kind'] = Variable<String>(kind.value);
+    }
+    if (videoPath.present) {
+      map['video_path'] = Variable<String>(videoPath.value);
+    }
+    if (videoHash.present) {
+      map['video_hash'] = Variable<String>(videoHash.value);
+    }
     if (createdAt.present) {
       map['created_at'] = Variable<DateTime>(createdAt.value);
     }
@@ -12296,7 +12541,431 @@ class ComboNoteEntriesCompanion extends UpdateCompanion<ComboNoteEntry> {
           ..write('id: $id, ')
           ..write('comboId: $comboId, ')
           ..write('body: $body, ')
+          ..write('kind: $kind, ')
+          ..write('videoPath: $videoPath, ')
+          ..write('videoHash: $videoHash, ')
           ..write('createdAt: $createdAt, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $ComboPlansTable extends ComboPlans
+    with TableInfo<$ComboPlansTable, ComboPlan> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $ComboPlansTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+    'id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _comboIdMeta = const VerificationMeta(
+    'comboId',
+  );
+  @override
+  late final GeneratedColumn<String> comboId = GeneratedColumn<String>(
+    'combo_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES combos (id) ON DELETE CASCADE',
+    ),
+  );
+  static const VerificationMeta _planDateMeta = const VerificationMeta(
+    'planDate',
+  );
+  @override
+  late final GeneratedColumn<DateTime> planDate = GeneratedColumn<DateTime>(
+    'plan_date',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _positionMeta = const VerificationMeta(
+    'position',
+  );
+  @override
+  late final GeneratedColumn<int> position = GeneratedColumn<int>(
+    'position',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0),
+  );
+  static const VerificationMeta _createdAtMeta = const VerificationMeta(
+    'createdAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> createdAt = GeneratedColumn<DateTime>(
+    'created_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+    defaultValue: currentDateAndTime,
+  );
+  static const VerificationMeta _completedAtMeta = const VerificationMeta(
+    'completedAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> completedAt = GeneratedColumn<DateTime>(
+    'completed_at',
+    aliasedName,
+    true,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    comboId,
+    planDate,
+    position,
+    createdAt,
+    completedAt,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'combo_plans';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<ComboPlan> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    } else if (isInserting) {
+      context.missing(_idMeta);
+    }
+    if (data.containsKey('combo_id')) {
+      context.handle(
+        _comboIdMeta,
+        comboId.isAcceptableOrUnknown(data['combo_id']!, _comboIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_comboIdMeta);
+    }
+    if (data.containsKey('plan_date')) {
+      context.handle(
+        _planDateMeta,
+        planDate.isAcceptableOrUnknown(data['plan_date']!, _planDateMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_planDateMeta);
+    }
+    if (data.containsKey('position')) {
+      context.handle(
+        _positionMeta,
+        position.isAcceptableOrUnknown(data['position']!, _positionMeta),
+      );
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(
+        _createdAtMeta,
+        createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta),
+      );
+    }
+    if (data.containsKey('completed_at')) {
+      context.handle(
+        _completedAtMeta,
+        completedAt.isAcceptableOrUnknown(
+          data['completed_at']!,
+          _completedAtMeta,
+        ),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  ComboPlan map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return ComboPlan(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}id'],
+      )!,
+      comboId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}combo_id'],
+      )!,
+      planDate: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}plan_date'],
+      )!,
+      position: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}position'],
+      )!,
+      createdAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}created_at'],
+      )!,
+      completedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}completed_at'],
+      ),
+    );
+  }
+
+  @override
+  $ComboPlansTable createAlias(String alias) {
+    return $ComboPlansTable(attachedDatabase, alias);
+  }
+}
+
+class ComboPlan extends DataClass implements Insertable<ComboPlan> {
+  final String id;
+  final String comboId;
+
+  /// The day it's planned for (date-only semantics).
+  final DateTime planDate;
+
+  /// The dancer's sequence within a day/queue.
+  final int position;
+  final DateTime createdAt;
+
+  /// Stamped by evidence (a jot on planDate), never required.
+  final DateTime? completedAt;
+  const ComboPlan({
+    required this.id,
+    required this.comboId,
+    required this.planDate,
+    required this.position,
+    required this.createdAt,
+    this.completedAt,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    map['combo_id'] = Variable<String>(comboId);
+    map['plan_date'] = Variable<DateTime>(planDate);
+    map['position'] = Variable<int>(position);
+    map['created_at'] = Variable<DateTime>(createdAt);
+    if (!nullToAbsent || completedAt != null) {
+      map['completed_at'] = Variable<DateTime>(completedAt);
+    }
+    return map;
+  }
+
+  ComboPlansCompanion toCompanion(bool nullToAbsent) {
+    return ComboPlansCompanion(
+      id: Value(id),
+      comboId: Value(comboId),
+      planDate: Value(planDate),
+      position: Value(position),
+      createdAt: Value(createdAt),
+      completedAt: completedAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(completedAt),
+    );
+  }
+
+  factory ComboPlan.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return ComboPlan(
+      id: serializer.fromJson<String>(json['id']),
+      comboId: serializer.fromJson<String>(json['comboId']),
+      planDate: serializer.fromJson<DateTime>(json['planDate']),
+      position: serializer.fromJson<int>(json['position']),
+      createdAt: serializer.fromJson<DateTime>(json['createdAt']),
+      completedAt: serializer.fromJson<DateTime?>(json['completedAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'comboId': serializer.toJson<String>(comboId),
+      'planDate': serializer.toJson<DateTime>(planDate),
+      'position': serializer.toJson<int>(position),
+      'createdAt': serializer.toJson<DateTime>(createdAt),
+      'completedAt': serializer.toJson<DateTime?>(completedAt),
+    };
+  }
+
+  ComboPlan copyWith({
+    String? id,
+    String? comboId,
+    DateTime? planDate,
+    int? position,
+    DateTime? createdAt,
+    Value<DateTime?> completedAt = const Value.absent(),
+  }) => ComboPlan(
+    id: id ?? this.id,
+    comboId: comboId ?? this.comboId,
+    planDate: planDate ?? this.planDate,
+    position: position ?? this.position,
+    createdAt: createdAt ?? this.createdAt,
+    completedAt: completedAt.present ? completedAt.value : this.completedAt,
+  );
+  ComboPlan copyWithCompanion(ComboPlansCompanion data) {
+    return ComboPlan(
+      id: data.id.present ? data.id.value : this.id,
+      comboId: data.comboId.present ? data.comboId.value : this.comboId,
+      planDate: data.planDate.present ? data.planDate.value : this.planDate,
+      position: data.position.present ? data.position.value : this.position,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+      completedAt: data.completedAt.present
+          ? data.completedAt.value
+          : this.completedAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('ComboPlan(')
+          ..write('id: $id, ')
+          ..write('comboId: $comboId, ')
+          ..write('planDate: $planDate, ')
+          ..write('position: $position, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('completedAt: $completedAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode =>
+      Object.hash(id, comboId, planDate, position, createdAt, completedAt);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is ComboPlan &&
+          other.id == this.id &&
+          other.comboId == this.comboId &&
+          other.planDate == this.planDate &&
+          other.position == this.position &&
+          other.createdAt == this.createdAt &&
+          other.completedAt == this.completedAt);
+}
+
+class ComboPlansCompanion extends UpdateCompanion<ComboPlan> {
+  final Value<String> id;
+  final Value<String> comboId;
+  final Value<DateTime> planDate;
+  final Value<int> position;
+  final Value<DateTime> createdAt;
+  final Value<DateTime?> completedAt;
+  final Value<int> rowid;
+  const ComboPlansCompanion({
+    this.id = const Value.absent(),
+    this.comboId = const Value.absent(),
+    this.planDate = const Value.absent(),
+    this.position = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.completedAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  ComboPlansCompanion.insert({
+    required String id,
+    required String comboId,
+    required DateTime planDate,
+    this.position = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.completedAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  }) : id = Value(id),
+       comboId = Value(comboId),
+       planDate = Value(planDate);
+  static Insertable<ComboPlan> custom({
+    Expression<String>? id,
+    Expression<String>? comboId,
+    Expression<DateTime>? planDate,
+    Expression<int>? position,
+    Expression<DateTime>? createdAt,
+    Expression<DateTime>? completedAt,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (comboId != null) 'combo_id': comboId,
+      if (planDate != null) 'plan_date': planDate,
+      if (position != null) 'position': position,
+      if (createdAt != null) 'created_at': createdAt,
+      if (completedAt != null) 'completed_at': completedAt,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  ComboPlansCompanion copyWith({
+    Value<String>? id,
+    Value<String>? comboId,
+    Value<DateTime>? planDate,
+    Value<int>? position,
+    Value<DateTime>? createdAt,
+    Value<DateTime?>? completedAt,
+    Value<int>? rowid,
+  }) {
+    return ComboPlansCompanion(
+      id: id ?? this.id,
+      comboId: comboId ?? this.comboId,
+      planDate: planDate ?? this.planDate,
+      position: position ?? this.position,
+      createdAt: createdAt ?? this.createdAt,
+      completedAt: completedAt ?? this.completedAt,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (comboId.present) {
+      map['combo_id'] = Variable<String>(comboId.value);
+    }
+    if (planDate.present) {
+      map['plan_date'] = Variable<DateTime>(planDate.value);
+    }
+    if (position.present) {
+      map['position'] = Variable<int>(position.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<DateTime>(createdAt.value);
+    }
+    if (completedAt.present) {
+      map['completed_at'] = Variable<DateTime>(completedAt.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('ComboPlansCompanion(')
+          ..write('id: $id, ')
+          ..write('comboId: $comboId, ')
+          ..write('planDate: $planDate, ')
+          ..write('position: $position, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('completedAt: $completedAt, ')
           ..write('rowid: $rowid')
           ..write(')'))
         .toString();
@@ -12337,6 +13006,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   late final $ComboNoteEntriesTable comboNoteEntries = $ComboNoteEntriesTable(
     this,
   );
+  late final $ComboPlansTable comboPlans = $ComboPlansTable(this);
   late final MovesDao movesDao = MovesDao(this as AppDatabase);
   late final CombosDao combosDao = CombosDao(this as AppDatabase);
   late final ReviewsDao reviewsDao = ReviewsDao(this as AppDatabase);
@@ -12368,6 +13038,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   late final ComboNoteEntriesDao comboNoteEntriesDao = ComboNoteEntriesDao(
     this as AppDatabase,
   );
+  late final ComboPlansDao comboPlansDao = ComboPlansDao(this as AppDatabase);
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
@@ -12398,6 +13069,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     provenanceEvents,
     moveNoteEntries,
     comboNoteEntries,
+    comboPlans,
   ];
   @override
   StreamQueryUpdateRules get streamUpdateRules => const StreamQueryUpdateRules([
@@ -12505,6 +13177,13 @@ abstract class _$AppDatabase extends GeneratedDatabase {
         limitUpdateKind: UpdateKind.delete,
       ),
       result: [TableUpdate('combo_note_entries', kind: UpdateKind.delete)],
+    ),
+    WritePropagation(
+      on: TableUpdateQuery.onTableName(
+        'combos',
+        limitUpdateKind: UpdateKind.delete,
+      ),
+      result: [TableUpdate('combo_plans', kind: UpdateKind.delete)],
     ),
   ]);
 }
@@ -13721,6 +14400,8 @@ typedef $$CombosTableCreateCompanionBuilder =
       Value<String?> notes,
       Value<String?> activeVideoPath,
       Value<String?> contentHash,
+      Value<String> status,
+      Value<DateTime> createdAt,
       Value<int> rowid,
     });
 typedef $$CombosTableUpdateCompanionBuilder =
@@ -13730,6 +14411,8 @@ typedef $$CombosTableUpdateCompanionBuilder =
       Value<String?> notes,
       Value<String?> activeVideoPath,
       Value<String?> contentHash,
+      Value<String> status,
+      Value<DateTime> createdAt,
       Value<int> rowid,
     });
 
@@ -13793,6 +14476,24 @@ final class $$CombosTableReferences
       manager.$state.copyWith(prefetchedData: cache),
     );
   }
+
+  static MultiTypedResultKey<$ComboPlansTable, List<ComboPlan>>
+  _comboPlansRefsTable(_$AppDatabase db) => MultiTypedResultKey.fromTable(
+    db.comboPlans,
+    aliasName: $_aliasNameGenerator(db.combos.id, db.comboPlans.comboId),
+  );
+
+  $$ComboPlansTableProcessedTableManager get comboPlansRefs {
+    final manager = $$ComboPlansTableTableManager(
+      $_db,
+      $_db.comboPlans,
+    ).filter((f) => f.comboId.id.sqlEquals($_itemColumn<String>('id')!));
+
+    final cache = $_typedResult.readTableOrNull(_comboPlansRefsTable($_db));
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
 }
 
 class $$CombosTableFilterComposer
@@ -13826,6 +14527,16 @@ class $$CombosTableFilterComposer
 
   ColumnFilters<String> get contentHash => $composableBuilder(
     column: $table.contentHash,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get status => $composableBuilder(
+    column: $table.status,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -13903,6 +14614,31 @@ class $$CombosTableFilterComposer
     );
     return f(composer);
   }
+
+  Expression<bool> comboPlansRefs(
+    Expression<bool> Function($$ComboPlansTableFilterComposer f) f,
+  ) {
+    final $$ComboPlansTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.comboPlans,
+      getReferencedColumn: (t) => t.comboId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$ComboPlansTableFilterComposer(
+            $db: $db,
+            $table: $db.comboPlans,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
 }
 
 class $$CombosTableOrderingComposer
@@ -13938,6 +14674,16 @@ class $$CombosTableOrderingComposer
     column: $table.contentHash,
     builder: (column) => ColumnOrderings(column),
   );
+
+  ColumnOrderings<String> get status => $composableBuilder(
+    column: $table.status,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnOrderings(column),
+  );
 }
 
 class $$CombosTableAnnotationComposer
@@ -13967,6 +14713,12 @@ class $$CombosTableAnnotationComposer
     column: $table.contentHash,
     builder: (column) => column,
   );
+
+  GeneratedColumn<String> get status =>
+      $composableBuilder(column: $table.status, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get createdAt =>
+      $composableBuilder(column: $table.createdAt, builder: (column) => column);
 
   Expression<T> comboMovesRefs<T extends Object>(
     Expression<T> Function($$ComboMovesTableAnnotationComposer a) f,
@@ -14042,6 +14794,31 @@ class $$CombosTableAnnotationComposer
     );
     return f(composer);
   }
+
+  Expression<T> comboPlansRefs<T extends Object>(
+    Expression<T> Function($$ComboPlansTableAnnotationComposer a) f,
+  ) {
+    final $$ComboPlansTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.comboPlans,
+      getReferencedColumn: (t) => t.comboId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$ComboPlansTableAnnotationComposer(
+            $db: $db,
+            $table: $db.comboPlans,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
 }
 
 class $$CombosTableTableManager
@@ -14061,6 +14838,7 @@ class $$CombosTableTableManager
             bool comboMovesRefs,
             bool reviewsRefs,
             bool comboNoteEntriesRefs,
+            bool comboPlansRefs,
           })
         > {
   $$CombosTableTableManager(_$AppDatabase db, $CombosTable table)
@@ -14081,6 +14859,8 @@ class $$CombosTableTableManager
                 Value<String?> notes = const Value.absent(),
                 Value<String?> activeVideoPath = const Value.absent(),
                 Value<String?> contentHash = const Value.absent(),
+                Value<String> status = const Value.absent(),
+                Value<DateTime> createdAt = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => CombosCompanion(
                 id: id,
@@ -14088,6 +14868,8 @@ class $$CombosTableTableManager
                 notes: notes,
                 activeVideoPath: activeVideoPath,
                 contentHash: contentHash,
+                status: status,
+                createdAt: createdAt,
                 rowid: rowid,
               ),
           createCompanionCallback:
@@ -14097,6 +14879,8 @@ class $$CombosTableTableManager
                 Value<String?> notes = const Value.absent(),
                 Value<String?> activeVideoPath = const Value.absent(),
                 Value<String?> contentHash = const Value.absent(),
+                Value<String> status = const Value.absent(),
+                Value<DateTime> createdAt = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => CombosCompanion.insert(
                 id: id,
@@ -14104,6 +14888,8 @@ class $$CombosTableTableManager
                 notes: notes,
                 activeVideoPath: activeVideoPath,
                 contentHash: contentHash,
+                status: status,
+                createdAt: createdAt,
                 rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0
@@ -14117,6 +14903,7 @@ class $$CombosTableTableManager
                 comboMovesRefs = false,
                 reviewsRefs = false,
                 comboNoteEntriesRefs = false,
+                comboPlansRefs = false,
               }) {
                 return PrefetchHooks(
                   db: db,
@@ -14124,6 +14911,7 @@ class $$CombosTableTableManager
                     if (comboMovesRefs) db.comboMoves,
                     if (reviewsRefs) db.reviews,
                     if (comboNoteEntriesRefs) db.comboNoteEntries,
+                    if (comboPlansRefs) db.comboPlans,
                   ],
                   addJoins: null,
                   getPrefetchedDataCallback: (items) async {
@@ -14187,6 +14975,27 @@ class $$CombosTableTableManager
                               ),
                           typedResults: items,
                         ),
+                      if (comboPlansRefs)
+                        await $_getPrefetchedData<
+                          Combo,
+                          $CombosTable,
+                          ComboPlan
+                        >(
+                          currentTable: table,
+                          referencedTable: $$CombosTableReferences
+                              ._comboPlansRefsTable(db),
+                          managerFromTypedResult: (p0) =>
+                              $$CombosTableReferences(
+                                db,
+                                table,
+                                p0,
+                              ).comboPlansRefs,
+                          referencedItemsForCurrentItem:
+                              (item, referencedItems) => referencedItems.where(
+                                (e) => e.comboId == item.id,
+                              ),
+                          typedResults: items,
+                        ),
                     ];
                   },
                 );
@@ -14211,6 +15020,7 @@ typedef $$CombosTableProcessedTableManager =
         bool comboMovesRefs,
         bool reviewsRefs,
         bool comboNoteEntriesRefs,
+        bool comboPlansRefs,
       })
     >;
 typedef $$ComboMovesTableCreateCompanionBuilder =
@@ -21914,6 +22724,9 @@ typedef $$ComboNoteEntriesTableCreateCompanionBuilder =
       required String id,
       required String comboId,
       required String body,
+      Value<String> kind,
+      Value<String?> videoPath,
+      Value<String?> videoHash,
       Value<DateTime> createdAt,
       Value<int> rowid,
     });
@@ -21922,6 +22735,9 @@ typedef $$ComboNoteEntriesTableUpdateCompanionBuilder =
       Value<String> id,
       Value<String> comboId,
       Value<String> body,
+      Value<String> kind,
+      Value<String?> videoPath,
+      Value<String?> videoHash,
       Value<DateTime> createdAt,
       Value<int> rowid,
     });
@@ -21973,6 +22789,21 @@ class $$ComboNoteEntriesTableFilterComposer
     builder: (column) => ColumnFilters(column),
   );
 
+  ColumnFilters<String> get kind => $composableBuilder(
+    column: $table.kind,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get videoPath => $composableBuilder(
+    column: $table.videoPath,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get videoHash => $composableBuilder(
+    column: $table.videoHash,
+    builder: (column) => ColumnFilters(column),
+  );
+
   ColumnFilters<DateTime> get createdAt => $composableBuilder(
     column: $table.createdAt,
     builder: (column) => ColumnFilters(column),
@@ -22021,6 +22852,21 @@ class $$ComboNoteEntriesTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<String> get kind => $composableBuilder(
+    column: $table.kind,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get videoPath => $composableBuilder(
+    column: $table.videoPath,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get videoHash => $composableBuilder(
+    column: $table.videoHash,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<DateTime> get createdAt => $composableBuilder(
     column: $table.createdAt,
     builder: (column) => ColumnOrderings(column),
@@ -22064,6 +22910,15 @@ class $$ComboNoteEntriesTableAnnotationComposer
 
   GeneratedColumn<String> get body =>
       $composableBuilder(column: $table.body, builder: (column) => column);
+
+  GeneratedColumn<String> get kind =>
+      $composableBuilder(column: $table.kind, builder: (column) => column);
+
+  GeneratedColumn<String> get videoPath =>
+      $composableBuilder(column: $table.videoPath, builder: (column) => column);
+
+  GeneratedColumn<String> get videoHash =>
+      $composableBuilder(column: $table.videoHash, builder: (column) => column);
 
   GeneratedColumn<DateTime> get createdAt =>
       $composableBuilder(column: $table.createdAt, builder: (column) => column);
@@ -22125,12 +22980,18 @@ class $$ComboNoteEntriesTableTableManager
                 Value<String> id = const Value.absent(),
                 Value<String> comboId = const Value.absent(),
                 Value<String> body = const Value.absent(),
+                Value<String> kind = const Value.absent(),
+                Value<String?> videoPath = const Value.absent(),
+                Value<String?> videoHash = const Value.absent(),
                 Value<DateTime> createdAt = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => ComboNoteEntriesCompanion(
                 id: id,
                 comboId: comboId,
                 body: body,
+                kind: kind,
+                videoPath: videoPath,
+                videoHash: videoHash,
                 createdAt: createdAt,
                 rowid: rowid,
               ),
@@ -22139,12 +23000,18 @@ class $$ComboNoteEntriesTableTableManager
                 required String id,
                 required String comboId,
                 required String body,
+                Value<String> kind = const Value.absent(),
+                Value<String?> videoPath = const Value.absent(),
+                Value<String?> videoHash = const Value.absent(),
                 Value<DateTime> createdAt = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => ComboNoteEntriesCompanion.insert(
                 id: id,
                 comboId: comboId,
                 body: body,
+                kind: kind,
+                videoPath: videoPath,
+                videoHash: videoHash,
                 createdAt: createdAt,
                 rowid: rowid,
               ),
@@ -22217,6 +23084,345 @@ typedef $$ComboNoteEntriesTableProcessedTableManager =
       ComboNoteEntry,
       PrefetchHooks Function({bool comboId})
     >;
+typedef $$ComboPlansTableCreateCompanionBuilder =
+    ComboPlansCompanion Function({
+      required String id,
+      required String comboId,
+      required DateTime planDate,
+      Value<int> position,
+      Value<DateTime> createdAt,
+      Value<DateTime?> completedAt,
+      Value<int> rowid,
+    });
+typedef $$ComboPlansTableUpdateCompanionBuilder =
+    ComboPlansCompanion Function({
+      Value<String> id,
+      Value<String> comboId,
+      Value<DateTime> planDate,
+      Value<int> position,
+      Value<DateTime> createdAt,
+      Value<DateTime?> completedAt,
+      Value<int> rowid,
+    });
+
+final class $$ComboPlansTableReferences
+    extends BaseReferences<_$AppDatabase, $ComboPlansTable, ComboPlan> {
+  $$ComboPlansTableReferences(super.$_db, super.$_table, super.$_typedResult);
+
+  static $CombosTable _comboIdTable(_$AppDatabase db) => db.combos.createAlias(
+    $_aliasNameGenerator(db.comboPlans.comboId, db.combos.id),
+  );
+
+  $$CombosTableProcessedTableManager get comboId {
+    final $_column = $_itemColumn<String>('combo_id')!;
+
+    final manager = $$CombosTableTableManager(
+      $_db,
+      $_db.combos,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_comboIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+}
+
+class $$ComboPlansTableFilterComposer
+    extends Composer<_$AppDatabase, $ComboPlansTable> {
+  $$ComboPlansTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get planDate => $composableBuilder(
+    column: $table.planDate,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get position => $composableBuilder(
+    column: $table.position,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get completedAt => $composableBuilder(
+    column: $table.completedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  $$CombosTableFilterComposer get comboId {
+    final $$CombosTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.comboId,
+      referencedTable: $db.combos,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$CombosTableFilterComposer(
+            $db: $db,
+            $table: $db.combos,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$ComboPlansTableOrderingComposer
+    extends Composer<_$AppDatabase, $ComboPlansTable> {
+  $$ComboPlansTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get planDate => $composableBuilder(
+    column: $table.planDate,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get position => $composableBuilder(
+    column: $table.position,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get completedAt => $composableBuilder(
+    column: $table.completedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  $$CombosTableOrderingComposer get comboId {
+    final $$CombosTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.comboId,
+      referencedTable: $db.combos,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$CombosTableOrderingComposer(
+            $db: $db,
+            $table: $db.combos,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$ComboPlansTableAnnotationComposer
+    extends Composer<_$AppDatabase, $ComboPlansTable> {
+  $$ComboPlansTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get planDate =>
+      $composableBuilder(column: $table.planDate, builder: (column) => column);
+
+  GeneratedColumn<int> get position =>
+      $composableBuilder(column: $table.position, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get createdAt =>
+      $composableBuilder(column: $table.createdAt, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get completedAt => $composableBuilder(
+    column: $table.completedAt,
+    builder: (column) => column,
+  );
+
+  $$CombosTableAnnotationComposer get comboId {
+    final $$CombosTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.comboId,
+      referencedTable: $db.combos,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$CombosTableAnnotationComposer(
+            $db: $db,
+            $table: $db.combos,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$ComboPlansTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $ComboPlansTable,
+          ComboPlan,
+          $$ComboPlansTableFilterComposer,
+          $$ComboPlansTableOrderingComposer,
+          $$ComboPlansTableAnnotationComposer,
+          $$ComboPlansTableCreateCompanionBuilder,
+          $$ComboPlansTableUpdateCompanionBuilder,
+          (ComboPlan, $$ComboPlansTableReferences),
+          ComboPlan,
+          PrefetchHooks Function({bool comboId})
+        > {
+  $$ComboPlansTableTableManager(_$AppDatabase db, $ComboPlansTable table)
+    : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$ComboPlansTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$ComboPlansTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$ComboPlansTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<String> id = const Value.absent(),
+                Value<String> comboId = const Value.absent(),
+                Value<DateTime> planDate = const Value.absent(),
+                Value<int> position = const Value.absent(),
+                Value<DateTime> createdAt = const Value.absent(),
+                Value<DateTime?> completedAt = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => ComboPlansCompanion(
+                id: id,
+                comboId: comboId,
+                planDate: planDate,
+                position: position,
+                createdAt: createdAt,
+                completedAt: completedAt,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String id,
+                required String comboId,
+                required DateTime planDate,
+                Value<int> position = const Value.absent(),
+                Value<DateTime> createdAt = const Value.absent(),
+                Value<DateTime?> completedAt = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => ComboPlansCompanion.insert(
+                id: id,
+                comboId: comboId,
+                planDate: planDate,
+                position: position,
+                createdAt: createdAt,
+                completedAt: completedAt,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map(
+                (e) => (
+                  e.readTable(table),
+                  $$ComboPlansTableReferences(db, table, e),
+                ),
+              )
+              .toList(),
+          prefetchHooksCallback: ({comboId = false}) {
+            return PrefetchHooks(
+              db: db,
+              explicitlyWatchedTables: [],
+              addJoins:
+                  <
+                    T extends TableManagerState<
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic
+                    >
+                  >(state) {
+                    if (comboId) {
+                      state =
+                          state.withJoin(
+                                currentTable: table,
+                                currentColumn: table.comboId,
+                                referencedTable: $$ComboPlansTableReferences
+                                    ._comboIdTable(db),
+                                referencedColumn: $$ComboPlansTableReferences
+                                    ._comboIdTable(db)
+                                    .id,
+                              )
+                              as T;
+                    }
+
+                    return state;
+                  },
+              getPrefetchedDataCallback: (items) async {
+                return [];
+              },
+            );
+          },
+        ),
+      );
+}
+
+typedef $$ComboPlansTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $ComboPlansTable,
+      ComboPlan,
+      $$ComboPlansTableFilterComposer,
+      $$ComboPlansTableOrderingComposer,
+      $$ComboPlansTableAnnotationComposer,
+      $$ComboPlansTableCreateCompanionBuilder,
+      $$ComboPlansTableUpdateCompanionBuilder,
+      (ComboPlan, $$ComboPlansTableReferences),
+      ComboPlan,
+      PrefetchHooks Function({bool comboId})
+    >;
 
 class $AppDatabaseManager {
   final _$AppDatabase _db;
@@ -22269,4 +23475,6 @@ class $AppDatabaseManager {
       $$MoveNoteEntriesTableTableManager(_db, _db.moveNoteEntries);
   $$ComboNoteEntriesTableTableManager get comboNoteEntries =>
       $$ComboNoteEntriesTableTableManager(_db, _db.comboNoteEntries);
+  $$ComboPlansTableTableManager get comboPlans =>
+      $$ComboPlansTableTableManager(_db, _db.comboPlans);
 }

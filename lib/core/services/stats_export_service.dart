@@ -129,10 +129,12 @@ Rating Breakdown:
 ${topMoves.isNotEmpty ? 'Most Practiced:\n$topMoves' : 'No moves practiced yet.'}''';
   }
 
-  /// Generates a full JSON export of all data (schema v7).
+  /// Generates a full JSON export of all data (schema v9).
   ///
-  /// v7 changes from v6:
-  /// - moves and combos include notes field
+  /// v9 changes from v8:
+  /// - combos include status and createdAt (combo journey)
+  /// - adds comboNoteEntries (journal: kind, videoPath, videoHash)
+  /// - adds comboPlans (practice planner)
   ///
   /// v6 changes from v5:
   /// - fsrsCards uses entityId/entityType instead of moveId (polymorphic)
@@ -146,6 +148,8 @@ ${topMoves.isNotEmpty ? 'Most Practiced:\n$topMoves' : 'No moves practiced yet.'
     final battleResults = await db.select(db.battleResults).get();
     final combos = await db.combosDao.getAll();
     final comboMoves = await db.select(db.comboMoves).get();
+    final comboNoteEntries = await db.select(db.comboNoteEntries).get();
+    final comboPlans = await db.comboPlansDao.getAll();
     final fsrsCards = await db.fsrsCardsDao.getAll();
     final decks = await db.decksDao.getAll();
     final deckMoves = await db.select(db.deckMoves).get();
@@ -192,6 +196,8 @@ ${topMoves.isNotEmpty ? 'Most Practiced:\n$topMoves' : 'No moves practiced yet.'
               'activeVideoFilename': c.activeVideoPath != null
                   ? p.basename(c.activeVideoPath!)
                   : null,
+              'status': c.status,
+              'createdAt': c.createdAt.toIso8601String(),
             },
           )
           .toList(),
@@ -202,6 +208,33 @@ ${topMoves.isNotEmpty ? 'Most Practiced:\n$topMoves' : 'No moves practiced yet.'
               'sequenceIndex': cm.sequenceIndex,
               'comboId': cm.comboId,
               'moveId': cm.moveId,
+            },
+          )
+          .toList(),
+      // v9: append-only combo journal (videos exported by reference only)
+      'comboNoteEntries': comboNoteEntries
+          .map(
+            (final e) => {
+              'id': e.id,
+              'comboId': e.comboId,
+              'body': e.body,
+              'kind': e.kind,
+              'videoPath': e.videoPath,
+              'videoHash': e.videoHash,
+              'createdAt': e.createdAt.toIso8601String(),
+            },
+          )
+          .toList(),
+      // v9: practice plans
+      'comboPlans': comboPlans
+          .map(
+            (final pl) => {
+              'id': pl.id,
+              'comboId': pl.comboId,
+              'planDate': pl.planDate.toIso8601String(),
+              'position': pl.position,
+              'createdAt': pl.createdAt.toIso8601String(),
+              'completedAt': pl.completedAt?.toIso8601String(),
             },
           )
           .toList(),
@@ -347,6 +380,9 @@ ${topMoves.isNotEmpty ? 'Most Practiced:\n$topMoves' : 'No moves practiced yet.'
     final reviewsJson = data['reviews'] as List? ?? [];
     final combosJson = data['combos'] as List? ?? [];
     final comboMovesJson = data['comboMoves'] as List? ?? [];
+    // v9 fields — absent in older exports, imported with defaults
+    final comboNoteEntriesJson = data['comboNoteEntries'] as List? ?? [];
+    final comboPlansJson = data['comboPlans'] as List? ?? [];
     final battleResultsJson = data['battleResults'] as List? ?? [];
     final categoriesJson = data['categories'] as List? ?? [];
     final fsrsCardsJson = data['fsrsCards'] as List? ?? [];
@@ -455,9 +491,81 @@ ${topMoves.isNotEmpty ? 'Most Practiced:\n$topMoves' : 'No moves practiced yet.'
                 name: map['name'] as String,
                 notes: Value(map['notes'] as String?),
                 activeVideoPath: const Value(null),
+                // pre-v9 exports lack these → defaults
+                status: Value(map['status'] as String? ?? 'idea'),
+                createdAt: map['createdAt'] != null
+                    ? Value(DateTime.parse(map['createdAt'] as String))
+                    : const Value.absent(),
               ),
             );
         combosImported++;
+      }
+
+      // Import combo journal entries (v9+; absent in older exports)
+      if (comboNoteEntriesJson.isNotEmpty) {
+        final existingEntryIds = mode == ImportMode.merge
+            ? (await db.select(db.comboNoteEntries).get())
+                  .map((final e) => e.id)
+                  .toSet()
+            : <String>{};
+
+        for (final e in comboNoteEntriesJson) {
+          final map = e as Map<String, dynamic>;
+          final id = map['id'] as String;
+          if (mode == ImportMode.merge && existingEntryIds.contains(id)) {
+            continue;
+          }
+
+          await db
+              .into(db.comboNoteEntries)
+              .insert(
+                ComboNoteEntriesCompanion.insert(
+                  id: id,
+                  comboId: map['comboId'] as String,
+                  body: map['body'] as String? ?? '',
+                  kind: Value(map['kind'] as String? ?? 'jot'),
+                  videoPath: Value(map['videoPath'] as String?),
+                  videoHash: Value(map['videoHash'] as String?),
+                  createdAt: map['createdAt'] != null
+                      ? Value(DateTime.parse(map['createdAt'] as String))
+                      : const Value.absent(),
+                ),
+              );
+        }
+      }
+
+      // Import combo plans (v9+; absent in older exports)
+      if (comboPlansJson.isNotEmpty) {
+        final existingPlanIds = mode == ImportMode.merge
+            ? (await db.comboPlansDao.getAll()).map((final pl) => pl.id).toSet()
+            : <String>{};
+
+        for (final plJson in comboPlansJson) {
+          final map = plJson as Map<String, dynamic>;
+          final id = map['id'] as String;
+          if (mode == ImportMode.merge && existingPlanIds.contains(id)) {
+            continue;
+          }
+
+          await db
+              .into(db.comboPlans)
+              .insert(
+                ComboPlansCompanion.insert(
+                  id: id,
+                  comboId: map['comboId'] as String,
+                  planDate: DateTime.parse(map['planDate'] as String),
+                  position: Value(map['position'] as int? ?? 0),
+                  createdAt: map['createdAt'] != null
+                      ? Value(DateTime.parse(map['createdAt'] as String))
+                      : const Value.absent(),
+                  completedAt: Value(
+                    map['completedAt'] != null
+                        ? DateTime.parse(map['completedAt'] as String)
+                        : null,
+                  ),
+                ),
+              );
+        }
       }
 
       // Import comboMoves

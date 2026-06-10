@@ -30,6 +30,8 @@ class ComboDetailNotifier extends FamilyNotifier<ComboDetailState, String> {
       name: 'Loading...',
       notes: null,
       activeVideoPath: null,
+      status: 'idea',
+      createdAt: DateTime.fromMillisecondsSinceEpoch(0),
     ));
     _machine = ComboDetailMachine(initialState);
     DiagnosticsLog.info('ComboDetailNotifier', 'build comboId=$arg');

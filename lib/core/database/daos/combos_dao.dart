@@ -3,9 +3,44 @@ import 'package:drift/drift.dart';
 import '../database.dart';
 import '../tables/combos.dart';
 import '../tables/combo_moves.dart';
+import '../tables/combo_note_entries.dart';
+import '../tables/combo_plans.dart';
 import '../tables/moves.dart';
 
 part 'combos_dao.g.dart';
+
+/// A combo with the metadata the Library list renders: move count,
+/// jot count, and the most recent journal entry.
+class ComboWithMeta {
+  final Combo combo;
+  final int moveCount;
+  final int jotCount;
+  final String? lastEntryBody;
+  final String? lastEntryKind;
+  final DateTime? lastEntryAt;
+
+  ComboWithMeta({
+    required this.combo,
+    required this.moveCount,
+    required this.jotCount,
+    this.lastEntryBody,
+    this.lastEntryKind,
+    this.lastEntryAt,
+  });
+}
+
+/// Per-day journal activity for the calendar heat map.
+class DayActivity {
+  final DateTime day;
+  final int jotCount;
+  final int takeCount;
+
+  DayActivity({
+    required this.day,
+    required this.jotCount,
+    required this.takeCount,
+  });
+}
 
 class ComboWithMoves {
   final Combo combo;
@@ -21,7 +56,7 @@ class ComboMoveWithDetail {
   ComboMoveWithDetail({required this.comboMove, required this.move});
 }
 
-@DriftAccessor(tables: [Combos, ComboMoves, Moves])
+@DriftAccessor(tables: [Combos, ComboMoves, ComboNoteEntries, ComboPlans, Moves])
 class CombosDao extends DatabaseAccessor<AppDatabase> with _$CombosDaoMixin {
   CombosDao(super.db);
 
@@ -112,7 +147,12 @@ class CombosDao extends DatabaseAccessor<AppDatabase> with _$CombosDaoMixin {
 
   Future<void> deleteCombo(final String id) {
     debugPrint('[CombosDao] deleteCombo id=$id');
-    return (delete(combos)..where((final t) => t.id.equals(id))).go();
+    // Explicit child deletes: SQLite FK cascade is not enforced on this
+    // connection (no PRAGMA foreign_keys), so clean up plans ourselves.
+    return transaction(() async {
+      await (delete(comboPlans)..where((final t) => t.comboId.equals(id))).go();
+      await (delete(combos)..where((final t) => t.id.equals(id))).go();
+    });
   }
 
   Future<void> removeComboMove(final String id) =>
@@ -179,5 +219,156 @@ class CombosDao extends DatabaseAccessor<AppDatabase> with _$CombosDaoMixin {
 
     final rows = await query.get();
     return rows.map((final row) => row.readTable(combos)).toSet().toList();
+  }
+
+  /// Changes the combo's status tag and appends an immutable `kind='status'`
+  /// journal row in the same transaction — both or neither.
+  Future<void> updateStatus({
+    required final String comboId,
+    required final String newStatus,
+    required final String entryId,
+  }) async {
+    await transaction(() async {
+      final combo = await getById(comboId);
+      if (combo.status == newStatus) return;
+
+      await (update(combos)..where((final t) => t.id.equals(comboId)))
+          .write(CombosCompanion(status: Value(newStatus)));
+
+      await into(comboNoteEntries).insert(
+        ComboNoteEntriesCompanion.insert(
+          id: entryId,
+          comboId: comboId,
+          body: '${combo.status} → $newStatus',
+          kind: const Value('status'),
+        ),
+      );
+    });
+  }
+
+  /// Clones a combo's structure (combo + combo_moves) as a new `idea`
+  /// sketch, seeding the new journal with a `kind='duplicate'` provenance
+  /// row. Videos are untouched — steps reference the same moves.
+  Future<void> duplicateCombo({
+    required final String sourceComboId,
+    required final String newComboId,
+    required final String newName,
+    required final String provenanceEntryId,
+    required final String Function() comboMoveIdFactory,
+  }) async {
+    await transaction(() async {
+      final source = await getById(sourceComboId);
+      final sourceMoves = await (select(comboMoves)
+            ..where((final t) => t.comboId.equals(sourceComboId))
+            ..orderBy([(final t) => OrderingTerm.asc(t.sequenceIndex)]))
+          .get();
+
+      await into(combos).insert(
+        CombosCompanion.insert(
+          id: newComboId,
+          name: newName,
+          notes: Value(source.notes),
+          activeVideoPath: Value(source.activeVideoPath),
+          status: const Value('idea'),
+        ),
+      );
+
+      for (final cm in sourceMoves) {
+        await into(comboMoves).insert(
+          ComboMovesCompanion.insert(
+            id: comboMoveIdFactory(),
+            comboId: newComboId,
+            moveId: cm.moveId,
+            sequenceIndex: cm.sequenceIndex,
+            count: Value(cm.count),
+          ),
+        );
+      }
+
+      await into(comboNoteEntries).insert(
+        ComboNoteEntriesCompanion.insert(
+          id: provenanceEntryId,
+          comboId: newComboId,
+          body: 'Duplicated from "${source.name}"',
+          kind: const Value('duplicate'),
+        ),
+      );
+    });
+  }
+
+  /// All combos with Library metadata, newest first. customSelect with
+  /// explicit readsFrom so the stream re-emits on journal/step changes too.
+  Stream<List<ComboWithMeta>> watchCombosWithMeta() {
+    final query = customSelect(
+      '''
+      SELECT c.id, c.name, c.notes, c.active_video_path, c.content_hash,
+             c.status, c.created_at,
+        (SELECT COUNT(*) FROM combo_moves cm
+          WHERE cm.combo_id = c.id) AS move_count,
+        (SELECT COUNT(*) FROM combo_note_entries e
+          WHERE e.combo_id = c.id AND e.kind = 'jot') AS jot_count,
+        (SELECT e.body FROM combo_note_entries e
+          WHERE e.combo_id = c.id
+          ORDER BY e.created_at DESC, e.id DESC LIMIT 1) AS last_entry_body,
+        (SELECT e.kind FROM combo_note_entries e
+          WHERE e.combo_id = c.id
+          ORDER BY e.created_at DESC, e.id DESC LIMIT 1) AS last_entry_kind,
+        (SELECT MAX(e.created_at) FROM combo_note_entries e
+          WHERE e.combo_id = c.id) AS last_entry_at
+      FROM combos c
+      ORDER BY c.created_at DESC, c.name ASC
+      ''',
+      readsFrom: {combos, comboMoves, comboNoteEntries},
+    );
+
+    return query.watch().map((final rows) => rows.map((final row) {
+          final lastEntryAt = row.readNullable<int>('last_entry_at');
+          return ComboWithMeta(
+            combo: Combo(
+              id: row.read<String>('id'),
+              name: row.read<String>('name'),
+              notes: row.readNullable<String>('notes'),
+              activeVideoPath: row.readNullable<String>('active_video_path'),
+              contentHash: row.readNullable<String>('content_hash'),
+              status: row.read<String>('status'),
+              createdAt: DateTime.fromMillisecondsSinceEpoch(
+                row.read<int>('created_at') * 1000,
+              ),
+            ),
+            moveCount: row.read<int>('move_count'),
+            jotCount: row.read<int>('jot_count'),
+            lastEntryBody: row.readNullable<String>('last_entry_body'),
+            lastEntryKind: row.readNullable<String>('last_entry_kind'),
+            lastEntryAt: lastEntryAt != null
+                ? DateTime.fromMillisecondsSinceEpoch(lastEntryAt * 1000)
+                : null,
+          );
+        }).toList());
+  }
+
+  /// Per-day journal activity (jots, and jots carrying a video reference)
+  /// for the calendar heat map. Days are local dates.
+  Stream<List<DayActivity>> watchActivityRollup() {
+    final query = customSelect(
+      '''
+      SELECT date(created_at, 'unixepoch', 'localtime') AS day,
+        SUM(CASE WHEN kind = 'jot' THEN 1 ELSE 0 END) AS jot_count,
+        SUM(CASE WHEN kind = 'jot'
+              AND (video_path IS NOT NULL OR video_hash IS NOT NULL)
+            THEN 1 ELSE 0 END) AS take_count
+      FROM combo_note_entries
+      GROUP BY day
+      ORDER BY day ASC
+      ''',
+      readsFrom: {comboNoteEntries},
+    );
+
+    return query.watch().map((final rows) => rows
+        .map((final row) => DayActivity(
+              day: DateTime.parse(row.read<String>('day')),
+              jotCount: row.read<int>('jot_count'),
+              takeCount: row.read<int>('take_count'),
+            ))
+        .toList());
   }
 }
