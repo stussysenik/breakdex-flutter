@@ -12,7 +12,9 @@ import '../../core/design/typography.dart';
 import '../../core/models/reviewable_item.dart';
 import '../../core/providers.dart';
 import '../../core/utils/diagnostics.dart';
+import '../../shared/widgets/beat_grid.dart';
 import '../../shared/widgets/combo_step_line.dart';
+import '../combos/plan_combo_flow.dart';
 import '../../shared/widgets/secondary_button.dart';
 import '../../shared/widgets/video_player_widget.dart'
     show RobustVideoPlayer, VideoPlaceholder;
@@ -39,9 +41,6 @@ class _CreateComboScreenState extends ConsumerState<CreateComboScreen> {
 
   Set<String> get _selectedMoveIds =>
       _selectedMoves.map((final move) => move.id).toSet();
-
-  int get _totalCounts =>
-      _selectedMoves.fold(0, (final sum, final m) => sum + m.count);
 
   @override
   void initState() {
@@ -107,38 +106,20 @@ class _CreateComboScreenState extends ConsumerState<CreateComboScreen> {
                     const VideoPlaceholder(),
                   const SizedBox(height: AppSpacing.lg),
 
-                  // -- Beat Grid --
+                  // -- Beat Grid (renders its own moves/beats summary) --
                   if (_selectedMoves.isNotEmpty) ...[
-                    _buildBeatGrid(context),
-                    const SizedBox(height: AppSpacing.sm),
-                    Padding(
-                      padding: const EdgeInsets.only(bottom: AppSpacing.lg),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Text(
-                            '${_selectedMoves.length} move${_selectedMoves.length == 1 ? '' : 's'}',
-                            style: AppTypography.caption.copyWith(color: colorScheme.secondary),
+                    BeatGrid(
+                      items: [
+                        for (int i = 0; i < _selectedMoves.length; i++)
+                          BeatGridItem(
+                            label: _selectedMoves[i].name,
+                            count: _selectedMoves[i].count,
+                            isActive: i == safeIndex,
+                            onTap: () => setState(() => _activeIndex = i),
                           ),
-                          const SizedBox(width: AppSpacing.md),
-                          Container(
-                            width: 4, height: 4,
-                            decoration: BoxDecoration(
-                              color: colorScheme.primary.withValues(alpha: 0.4),
-                              shape: BoxShape.circle,
-                            ),
-                          ),
-                          const SizedBox(width: AppSpacing.md),
-                          Text(
-                            '$_totalCounts beat${_totalCounts == 1 ? '' : 's'} total',
-                            style: AppTypography.caption.copyWith(
-                              color: colorScheme.primary,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ],
-                      ),
+                      ],
                     ),
+                    const SizedBox(height: AppSpacing.lg),
                   ],
 
                   Text(
@@ -155,6 +136,7 @@ class _CreateComboScreenState extends ConsumerState<CreateComboScreen> {
                     onStepSelected: (final index) =>
                         setState(() => _activeIndex = index),
                     onAddStep: _showMovePicker,
+                    beatCounts: _selectedMoves.map((final m) => m.count).toList(),
                   ),
                   const SizedBox(height: AppSpacing.xl),
 
@@ -272,99 +254,6 @@ class _CreateComboScreenState extends ConsumerState<CreateComboScreen> {
             ),
           ),
       ],
-    );
-  }
-
-  Widget _buildBeatGrid(final BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
-    final total = _totalCounts;
-    if (total == 0) return const SizedBox.shrink();
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Text(
-              'BEAT GRID',
-              style: AppTypography.labelLarge.copyWith(
-                color: colorScheme.secondary,
-                letterSpacing: 1.5,
-              ),
-            ),
-            Text(
-              '$total BEATS',
-              style: AppTypography.caption.copyWith(
-                color: colorScheme.secondary,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: AppSpacing.md),
-        SizedBox(
-          height: 40,
-          child: Row(
-            children: [
-              for (int i = 0; i < _selectedMoves.length; i++)
-                _buildGridBlock(context, i, total),
-            ],
-          ),
-        ),
-        const SizedBox(height: AppSpacing.sm),
-        _buildTimeline(total),
-      ],
-    );
-  }
-
-  Widget _buildGridBlock(final BuildContext context, final int index, final int total) {
-    final move = _selectedMoves[index];
-    final colorScheme = Theme.of(context).colorScheme;
-    final isActive = index == _activeIndex;
-
-    return Expanded(
-      flex: move.count,
-      child: GestureDetector(
-        onTap: () => setState(() => _activeIndex = index),
-        child: Container(
-          margin: const EdgeInsets.symmetric(horizontal: 1),
-          decoration: BoxDecoration(
-            color: isActive
-                ? colorScheme.primary
-                : colorScheme.surfaceContainerHighest,
-            borderRadius: BorderRadius.circular(4),
-            border: isActive
-                ? null
-                : Border.all(color: colorScheme.outline.withValues(alpha: 0.2)),
-          ),
-          alignment: Alignment.center,
-          child: Text(
-            '${move.count}',
-            style: AppTypography.caption.copyWith(
-              color: isActive ? Colors.white : colorScheme.secondary,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildTimeline(final int total) {
-    final colorScheme = Theme.of(context).colorScheme;
-    return Container(
-      height: 4,
-      width: double.infinity,
-      decoration: BoxDecoration(
-        color: colorScheme.surfaceContainerHighest,
-        borderRadius: BorderRadius.circular(2),
-      ),
-      child: const Stack(
-        children: [
-          // We could add a playhead here if needed
-        ],
-      ),
     );
   }
 
@@ -490,10 +379,10 @@ class _CreateComboScreenState extends ConsumerState<CreateComboScreen> {
             if (mounted) setState(() => _screenState = _ScreenState.editing);
           }));
         } else {
-          // Add a tiny delay so the user sees the toast start to animate in before popping
-          unawaited(Future<void>.delayed(const Duration(milliseconds: 200), () {
-            if (mounted) context.pop();
-          }));
+          // New combo is born as an idea — offer to put it on the calendar
+          // while this screen (and its ref) is still alive, then leave.
+          await _offerPlanIt(comboId);
+          if (mounted) context.pop();
         }
       }
     } catch (e, stack) {
@@ -505,6 +394,61 @@ class _CreateComboScreenState extends ConsumerState<CreateComboScreen> {
         );
       }
     }
+  }
+
+  /// Post-create affordance: "Plan it?" — accepting opens the date picker
+  /// and persists a plan for the freshly created combo.
+  Future<void> _offerPlanIt(final String comboId) async {
+    final wantsPlan = await showModalBottomSheet<bool>(
+      context: context,
+      builder: (final sheetContext) {
+        final colorScheme = Theme.of(sheetContext).colorScheme;
+        return SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.all(AppSpacing.screenEdge),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  'Plan it?',
+                  style: AppTypography.titleSmall.copyWith(
+                    color: colorScheme.onSurface,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                const SizedBox(height: AppSpacing.xs),
+                Text(
+                  'Put this combo on a practice day.',
+                  style: AppTypography.bodySmall.copyWith(
+                    color: colorScheme.secondary,
+                  ),
+                ),
+                const SizedBox(height: AppSpacing.lg),
+                Row(
+                  children: [
+                    Expanded(
+                      child: OutlinedButton(
+                        onPressed: () => Navigator.pop(sheetContext, false),
+                        child: const Text('Not now'),
+                      ),
+                    ),
+                    const SizedBox(width: AppSpacing.md),
+                    Expanded(
+                      child: FilledButton(
+                        onPressed: () => Navigator.pop(sheetContext, true),
+                        child: const Text('Pick a day'),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+    if (wantsPlan != true || !mounted) return;
+    await planComboFlow(context, ref, comboId: comboId);
   }
 
   void _renameCombo() async {
@@ -578,6 +522,23 @@ class _MovePickerSheet extends ConsumerStatefulWidget {
 
 class _MovePickerSheetState extends ConsumerState<_MovePickerSheet> {
   final List<Move> _selected = [];
+  final _searchController = TextEditingController();
+  String _query = '';
+
+  @override
+  void initState() {
+    super.initState();
+    _searchController.addListener(() {
+      final q = _searchController.text.trim().toLowerCase();
+      if (q != _query) setState(() => _query = q);
+    });
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(final BuildContext context) {
@@ -600,14 +561,51 @@ class _MovePickerSheetState extends ConsumerState<_MovePickerSheet> {
                   Text('Pick Moves', style: AppTypography.titleSmall),
                   TextButton(
                     onPressed: _selected.isEmpty ? null : () => Navigator.pop(context, _selected),
-                    child: const Text('ADD'),
+                    child: Text(
+                      _selected.isEmpty ? 'ADD' : 'ADD ${_selected.length}',
+                    ),
                   ),
                 ],
               ),
             ),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
+              child: TextField(
+                controller: _searchController,
+                decoration: InputDecoration(
+                  hintText: 'Search moves…',
+                  prefixIcon: const Icon(Icons.search, size: 20),
+                  isDense: true,
+                  filled: true,
+                  fillColor:
+                      colorScheme.surfaceContainerHighest.withValues(alpha: 0.4),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(AppRadius.md),
+                    borderSide: BorderSide.none,
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(height: AppSpacing.xs),
             Expanded(
               child: movesAsync.when(
-                data: (final moves) {
+                data: (final allMoves) {
+                  final moves = _query.isEmpty
+                      ? allMoves
+                      : allMoves
+                          .where((final m) =>
+                              m.name.toLowerCase().contains(_query) ||
+                              m.category.toLowerCase().contains(_query))
+                          .toList();
+                  if (moves.isEmpty) {
+                    return Center(
+                      child: Text(
+                        'No moves match "$_query"',
+                        style: AppTypography.bodySmall
+                            .copyWith(color: colorScheme.secondary),
+                      ),
+                    );
+                  }
                   return ListView.builder(
                     controller: scrollController,
                     itemCount: moves.length,

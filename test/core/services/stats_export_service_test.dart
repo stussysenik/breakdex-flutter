@@ -141,7 +141,7 @@ void main() {
     });
 
     test('missing schemaVersion defaults to 1', () {
-      final json = jsonEncode({'moves': []});
+      final json = jsonEncode({'moves': <Map<String, Object?>>[]});
 
       final result = StatsExportService.validateImportJson(json);
 
@@ -1320,7 +1320,7 @@ void main() {
         'moves': [
           {'id': 'move-1', 'name': 'Test', 'extraField': 42},
         ],
-        'reviews': [],
+        'reviews': <Map<String, Object?>>[],
         'futureEntity': [
           {'id': 'x'},
         ],
@@ -1474,7 +1474,6 @@ void main() {
           newCount: 10,
           learningCount: 5,
           reviewCount: 20,
-          relearningCount: 2,
         ),
         overallRetention: overallRetention,
         categoryMastery: [],

@@ -16,7 +16,7 @@ import '../../features/video_editor/video_editor_screen.dart';
 import '../../features/move_analysis/move_analysis_screen.dart';
 import '../../features/breakdex/breakdex_screen.dart';
 import '../../features/move_category/move_category_screen.dart';
-import '../../features/combo_list/combo_list_screen.dart';
+import '../../features/combos/combos_screen.dart';
 import '../../features/add/add_screen.dart';
 import '../../features/party/party_screen.dart';
 import '../../features/party/bloc/party_bloc.dart';
@@ -72,7 +72,7 @@ final appRouter = GoRouter(
                 ),
                 GoRoute(
                   path: 'combos',
-                  builder: (final context, final state) => const ComboListScreen(),
+                  builder: (final context, final state) => const CombosScreen(),
                 ),
                 GoRoute(
                   path: 'move/:id',

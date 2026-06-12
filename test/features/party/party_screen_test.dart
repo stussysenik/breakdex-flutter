@@ -112,31 +112,31 @@ void main() {
   testWidgets('shake starts cycling phase with moves in database', (
     final tester,
   ) async {
-    print('DEBUG: Seeding moves...');
+    debugPrint('DEBUG: Seeding moves...');
     await seedMove(db, id: 'move-1', name: 'Windmill', category: 'power');
     await seedMove(db, id: 'move-2', name: 'Headspin', category: 'power');
 
     final bloc = PartyBloc();
-    print('DEBUG: Pumping widget...');
+    debugPrint('DEBUG: Pumping widget...');
     await tester.pumpWidget(buildPartyScreenActive(bloc: bloc));
     await tester.pumpAndSettle();
 
-    print('DEBUG: Sending shake...');
+    debugPrint('DEBUG: Sending shake...');
     await sendShake(tester);
-    print('DEBUG: Pump 1...');
+    debugPrint('DEBUG: Pump 1...');
     await tester.pump(); 
-    print('DEBUG: Pump 2...');
+    debugPrint('DEBUG: Pump 2...');
     await tester.pump(const Duration(milliseconds: 100));
 
-    print('DEBUG: Checking expectations...');
+    debugPrint('DEBUG: Checking expectations...');
     expect(find.text('SHUFFLING...'), findsOneWidget);
     expect(find.text('DISCOVERING YOUR MOVE...'), findsOneWidget);
 
-    print('DEBUG: Cleaning up...');
+    debugPrint('DEBUG: Cleaning up...');
     await cleanupWidget(tester);
-    print('DEBUG: Closing bloc...');
-    bloc.close();
-    print('DEBUG: Test finished!');
+    debugPrint('DEBUG: Closing bloc...');
+    await bloc.close();
+    debugPrint('DEBUG: Test finished!');
   });
 
   testWidgets('shake reveals a move after full cycle', (final tester) async {

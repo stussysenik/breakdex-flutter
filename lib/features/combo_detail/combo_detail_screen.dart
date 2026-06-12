@@ -1,39 +1,34 @@
 import 'dart:async';
 
-import 'package:path/path.dart' as p;
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-
-import 'package:flutter/foundation.dart';
-import 'package:drift/drift.dart' show Value;
+import 'package:intl/intl.dart';
+import 'package:uuid/uuid.dart';
 
 import '../../core/database/database.dart';
+import '../../core/database/daos/combo_plans_dao.dart';
 import '../../core/database/daos/combos_dao.dart';
 import '../../core/design/spacing.dart';
 import '../../core/design/typography.dart';
-import '../../core/models/canonical_path.dart';
-import '../../core/models/learning_state.dart';
 import '../../core/models/reviewable_item.dart';
 import '../../core/providers.dart';
 import '../../core/services/media_playback_coordinator.dart';
-import '../../core/services/video_path_resolver.dart';
-import '../../core/services/native_video_album.dart';
 import '../../core/services/native_share_sheet.dart';
-import '../../core/utils/share_sheet.dart';
+import '../../core/services/native_video_album.dart';
 import '../../core/utils/diagnostics.dart';
-import '../../shared/widgets/action_tile.dart';
-import '../../shared/widgets/combo_step_line.dart';
-import '../../shared/widgets/notes_section.dart';
-import '../../shared/widgets/logs_section.dart';
-import '../../shared/widgets/state_pill.dart';
+import '../../core/utils/share_sheet.dart';
+import '../../shared/widgets/beat_grid.dart';
 import '../../shared/widgets/video_player_widget.dart'
     show RobustVideoPlayer, VideoPlaceholder;
 
 import '../../core/state_machines/combo_detail/machine.dart' as sm;
 import '../../core/state_machines/combo_detail/provider.dart';
+import 'widgets/status_tag.dart';
+import 'widgets/journal_list.dart';
+import 'widgets/jot_composer.dart';
 
 class ComboDetailScreen extends ConsumerStatefulWidget {
   const ComboDetailScreen({super.key, required this.comboId});
@@ -52,7 +47,7 @@ class _ComboDetailScreenState extends ConsumerState<ComboDetailScreen> {
   Widget build(final BuildContext context) {
     final comboAsync = ref.watch(comboByIdStreamProvider(widget.comboId));
     final movesAsync = ref.watch(comboMovesStreamProvider(widget.comboId));
-    final fsrsCards = ref.watch(fsrsCardsRefreshProvider).valueOrNull ?? const [];
+    final allIdsAsync = ref.watch(allComboIdsProvider);
     final colorScheme = Theme.of(context).colorScheme;
 
     ref.listen<sm.ComboDetailState>(comboDetailStateProvider(widget.comboId), (final prev, final next) {
@@ -63,170 +58,196 @@ class _ComboDetailScreenState extends ConsumerState<ComboDetailScreen> {
 
     final combo = comboAsync.valueOrNull;
     final comboMoves = movesAsync.valueOrNull;
+    final allIds = allIdsAsync.valueOrNull ?? <String>[];
+    final currentIdx = allIds.indexOf(widget.comboId);
+    final hasPrev = currentIdx > 0;
+    final hasNext = currentIdx >= 0 && currentIdx < allIds.length - 1;
 
     return Scaffold(
+      appBar: AppBar(
+        leadingWidth: 104,
+        leading: GestureDetector(
+          onTap: () => context.pop(),
+          behavior: HitTestBehavior.opaque,
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(Icons.chevron_left, color: colorScheme.secondary, size: 20),
+              Text(
+                'Combos',
+                style: AppTypography.sectionHeader.copyWith(
+                  color: colorScheme.secondary,
+                ),
+              ),
+            ],
+          ),
+        ),
+        actions: combo == null
+            ? null
+            : [
+                if (hasPrev)
+                  IconButton(
+                    icon: Icon(Icons.chevron_left_rounded, color: colorScheme.onSurface, size: 22),
+                    tooltip: 'Previous combo',
+                    onPressed: () => _navigateToCombo(context, allIds[currentIdx - 1]),
+                  ),
+                if (hasNext)
+                  IconButton(
+                    icon: Icon(Icons.chevron_right_rounded, color: colorScheme.onSurface, size: 22),
+                    tooltip: 'Next combo',
+                    onPressed: () => _navigateToCombo(context, allIds[currentIdx + 1]),
+                  ),
+                PopupMenuButton<String>(
+                  icon: Icon(Icons.more_horiz, color: colorScheme.onSurface),
+                  onSelected: (final action) => _handleAction(context, action, combo),
+                  itemBuilder: (_) => [
+                    PopupMenuItem(
+                      value: 'plan',
+                      child: Row(children: [
+                        Icon(Icons.calendar_today, size: 18, color: colorScheme.secondary),
+                        const SizedBox(width: AppSpacing.sm),
+                        const Text('Plan for a day…'),
+                      ]),
+                    ),
+                    PopupMenuItem(
+                      value: 'duplicate',
+                      child: Row(children: [
+                        Icon(Icons.copy, size: 18, color: colorScheme.secondary),
+                        const SizedBox(width: AppSpacing.sm),
+                        const Text('Duplicate'),
+                      ]),
+                    ),
+                    PopupMenuItem(
+                      value: 'edit',
+                      child: Row(children: [
+                        Icon(Icons.edit_outlined, size: 18, color: colorScheme.secondary),
+                        const SizedBox(width: AppSpacing.sm),
+                        const Text('Edit'),
+                      ]),
+                    ),
+                    PopupMenuItem(
+                      value: 'share',
+                      child: Row(children: [
+                        Icon(Icons.ios_share, size: 18, color: colorScheme.secondary),
+                        const SizedBox(width: AppSpacing.sm),
+                        const Text('Share'),
+                      ]),
+                    ),
+                    PopupMenuItem(
+                      value: 'save-album',
+                      child: Row(children: [
+                        Icon(Icons.save_alt_outlined, size: 18, color: colorScheme.secondary),
+                        const SizedBox(width: AppSpacing.sm),
+                        const Text('Save to Album'),
+                      ]),
+                    ),
+                    const PopupMenuDivider(),
+                    PopupMenuItem(
+                      value: 'delete',
+                      child: Row(children: [
+                        Icon(Icons.delete_forever, size: 18, color: colorScheme.error),
+                        const SizedBox(width: AppSpacing.sm),
+                        Text('Delete', style: TextStyle(color: colorScheme.error)),
+                      ]),
+                    ),
+                  ],
+                ),
+              ],
+      ),
       body: Stack(
         children: [
-          SafeArea(
-            child: combo == null || comboMoves == null
-                ? const Center(child: CircularProgressIndicator())
-                : _ComboDetailBody(
-                    combo: combo,
-                    comboMoves: comboMoves,
-                    fsrsCards: fsrsCards,
-                    colorScheme: colorScheme,
-                    comboId: widget.comboId,
-                    activeIndex: _activeIndex,
-                    onStepSelected: (final i) => setState(() => _activeIndex = i),
-                    onEditVideo: _editVideo,
-                    onShareVideo: _shareVideo,
-                    onSaveToAlbum: _saveToAlbum,
-                    onDeleteCombo: (final combo) => _showDeleteSheet(context, ref, combo),
-                  ),
-          ),
-          // State machine overlays
-          Consumer(
-            builder: (final context, final ref, _) {
-              final smState = ref.watch(comboDetailStateProvider(widget.comboId));
-              final notifier = ref.read(comboDetailStateProvider(widget.comboId).notifier);
-              return Stack(
-                children: [
-                  if (smState is sm.Deleting)
-                    Positioned.fill(
-                      child: Container(
-                        color: Colors.black54,
-                        child: const Center(
-                          child: Column(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              CircularProgressIndicator(color: Colors.white),
-                              SizedBox(height: AppSpacing.md),
-                              Text('Deleting...', style: TextStyle(color: Colors.white70)),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ),
-                  if (smState is sm.SavingNotes || smState is sm.SavingLog)
-                    Positioned.fill(
-                      child: Container(
-                        color: Colors.black26,
-                        child: const Center(
-                          child: CircularProgressIndicator(color: Colors.white),
-                        ),
-                      ),
-                    ),
-                  if (smState is sm.ErrorState)
-                    Positioned.fill(
-                      child: Container(
-                        color: Colors.black54,
-                        child: Center(
-                          child: Padding(
-                            padding: const EdgeInsets.all(AppSpacing.lg),
-                            child: Column(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                const Icon(Icons.error_outline, color: Colors.white70, size: 48),
-                                const SizedBox(height: AppSpacing.md),
-                                Text(smState.message, style: const TextStyle(color: Colors.white70), textAlign: TextAlign.center),
-                                const SizedBox(height: AppSpacing.lg),
-                                TextButton(
-                                  onPressed: () => notifier.send(sm.Cancel()),
-                                  child: const Text('OK', style: TextStyle(color: Colors.white)),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
-                ],
-              );
-            },
-          ),
+          combo == null || comboMoves == null
+              ? const Center(child: CircularProgressIndicator())
+              : _ComboDetailBody(
+                  combo: combo,
+                  comboMoves: comboMoves,
+                  comboId: widget.comboId,
+                  activeIndex: _activeIndex,
+                  onStepSelected: (final i) => setState(() => _activeIndex = i),
+                ),
+          _SmOverlay(comboId: widget.comboId),
         ],
       ),
     );
   }
 
-  /// Opens the video editor for a combo move's video and updates the move on return.
-  Future<void> _editVideo(final Move move) async {
-    if (move.videoPath == null) return;
-    final resolvedPath = move.resolvedVideoPath;
-    MediaPlaybackCoordinator.shared.pauseAll();
-    final editedPath = await context.push<String>(
-      '/video-editor',
-      extra: {'videoPath': resolvedPath},
-    );
-    if (editedPath != null && mounted) {
-      // 1. Compute SHA-256 hash from absolute temp path
-      final contentHash =
-          await ref.read(assetHashServiceProvider).computeHash(editedPath);
-
-      // 2. Resolve final semantic path with contentHash
-      final semanticRelative = await VideoPathResolver.moveToSemanticPath(
-        currentRelativePath: editedPath,
-        category: move.category,
-        moveName: move.name,
-        contentHash: ContentHash(contentHash),
-      );
-      final resolvedAbs = VideoPathResolver.toAbsolute(semanticRelative);
-
-      // 3. Cleanup old assets
-      final pathChanged = move.resolvedVideoPath != resolvedAbs;
-      await ref.read(mediaCleanupServiceProvider).cleanupDetachedAsset(
-            title: move.name,
-            category: move.category,
-            storedVideoPath: pathChanged ? move.videoPath : null,
-            resolvedVideoPath: pathChanged ? move.resolvedVideoPath : null,
-            contentHash: move.contentHash,
-            managedAlbumAssetId: move.managedAlbumAssetId,
-            excludingMoveId: move.id,
-            skipPhotosCleanup: true,
-          );
-
-      // 4. Update DB
-      await ref.read(moveRepositoryProvider).update(
-            MovesCompanion(
-              id: Value(move.id),
-              videoPath: Value(semanticRelative),
-              originalVideoName: Value(p.basename(editedPath)),
-              managedAlbumAssetId: const Value(null),
-              managedAlbumFilename: const Value(null),
-              managedAlbumName: const Value(null),
-              contentHash: Value(contentHash),
-            ),
-          );
-
-      unawaited(
-        ref
-            .read(videoImportSyncHookProvider)
-            .onVideoImported(localPath: resolvedAbs, moveId: move.id),
-      );
-      try {
-        final managedCopy = await _videoAlbum.saveToAlbum(
-          videoPath: resolvedAbs,
-          albumName: NativeVideoAlbum.defaultAlbumName(),
-          assetTitle: move.name,
-          category: move.category,
-        );
-        await ref.read(moveRepositoryProvider).update(
-              MovesCompanion(
-                id: Value(move.id),
-                managedAlbumAssetId: Value(managedCopy?.assetLocalIdentifier),
-                managedAlbumFilename: Value(managedCopy?.filename),
-                managedAlbumName: Value(managedCopy?.albumName),
-              ),
-            );
-      } catch (error) {
-        debugPrint('Album save failed (non-fatal): $error');
-      }
+  void _handleAction(final BuildContext context, final String action, final Combo combo) {
+    switch (action) {
+      case 'plan':
+        _planCombo(context);
+      case 'duplicate':
+        _duplicateCombo(context, combo);
+      case 'edit':
+        context.push('/edit-combo/${combo.id}');
+      case 'share':
+        final current = _currentMove;
+        if (current?.resolvedVideoPath != null) {
+          _shareVideo(current!);
+        }
+      case 'save-album':
+        final current = _currentMove;
+        if (current?.resolvedVideoPath != null) {
+          _saveToAlbum(current!);
+        }
+      case 'delete':
+        _showDeleteSheet(context, combo);
     }
   }
 
-  /// Shows a Cupertino-style destructive action sheet for deleting this combo.
-  void _showDeleteSheet(final BuildContext context, final WidgetRef ref, final Combo combo) {
-    showCupertinoModalPopup(
+  Move? get _currentMove {
+    final movesAsync = ref.read(comboMovesStreamProvider(widget.comboId));
+    final moves = movesAsync.valueOrNull;
+    if (moves == null || moves.isEmpty) return null;
+    final safeIndex = _activeIndex.clamp(0, moves.length - 1);
+    return moves[safeIndex].move;
+  }
+
+  void _planCombo(final BuildContext context) {
+    final now = DateTime.now();
+    showDatePicker(
+      context: context,
+      initialDate: now,
+      firstDate: now.subtract(const Duration(days: 365)),
+      lastDate: now.add(const Duration(days: 365)),
+    ).then((final picked) async {
+      if (picked == null || !mounted) return;
+      await ref.read(comboPlansDaoProvider).insertPlan(
+        ComboPlansCompanion.insert(
+          id: const Uuid().v4(),
+          comboId: widget.comboId,
+          planDate: ComboPlansDao.dateOnly(picked),
+        ),
+      );
+      if (mounted) {
+        ScaffoldMessenger.of(this.context).showSnackBar(
+          SnackBar(content: Text('Planned for ${DateFormat('MMM d').format(picked)}')),
+        );
+      }
+    });
+  }
+
+  Future<void> _duplicateCombo(final BuildContext context, final Combo source) async {
+    final newId = const Uuid().v4();
+    final newName = '${source.name} (copy)';
+
+    await ref.read(combosDaoProvider).duplicateCombo(
+          sourceComboId: source.id,
+          newComboId: newId,
+          newName: newName,
+          provenanceEntryId: const Uuid().v4(),
+          comboMoveIdFactory: () => const Uuid().v4(),
+        );
+
+    if (mounted) {
+      ScaffoldMessenger.of(this.context).showSnackBar(
+        SnackBar(content: Text('Duplicated as "$newName"')),
+      );
+      unawaited(this.context.push('/breakdex/combo/$newId'));
+    }
+  }
+
+  void _showDeleteSheet(final BuildContext context, final Combo combo) {
+    showCupertinoModalPopup<void>(
       context: context,
       builder: (_) => CupertinoActionSheet(
         title: Text('Delete "${combo.name}"?'),
@@ -262,9 +283,8 @@ class _ComboDetailScreenState extends ConsumerState<ComboDetailScreen> {
         subject: move.name,
         sharePositionOrigin: sharePositionOrigin(context),
       );
-    } catch (e, stack) {
+    } catch (e) {
       DiagnosticsLog.error('ComboDetail', '_shareVideo failed: $e');
-      if (kDebugMode) debugPrintStack(stackTrace: stack);
     }
   }
 
@@ -283,9 +303,8 @@ class _ComboDetailScreenState extends ConsumerState<ComboDetailScreen> {
           SnackBar(content: Text('Saved "${move.name}" to Photos')),
         );
       }
-    } catch (e, stack) {
+    } catch (e) {
       DiagnosticsLog.error('ComboDetail', '_saveToAlbum failed: $e');
-      if (kDebugMode) debugPrintStack(stackTrace: stack);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Failed to save: $e')),
@@ -293,300 +312,192 @@ class _ComboDetailScreenState extends ConsumerState<ComboDetailScreen> {
       }
     }
   }
+
+  void _navigateToCombo(final BuildContext context, final String targetId) {
+    context.go('/breakdex/combo/$targetId');
+  }
 }
 
 class _ComboDetailBody extends ConsumerWidget {
   const _ComboDetailBody({
     required this.combo,
     required this.comboMoves,
-    required this.fsrsCards,
-    required this.colorScheme,
     required this.comboId,
     required this.activeIndex,
     required this.onStepSelected,
-    required this.onEditVideo,
-    required this.onShareVideo,
-    required this.onSaveToAlbum,
-    required this.onDeleteCombo,
   });
 
   final Combo combo;
   final List<ComboMoveWithDetail> comboMoves;
-  final List<FsrsCard> fsrsCards;
-  final ColorScheme colorScheme;
   final String comboId;
   final int activeIndex;
   final ValueChanged<int> onStepSelected;
-  final void Function(Move move) onEditVideo;
-  final void Function(Move move) onShareVideo;
-  final void Function(Move move) onSaveToAlbum;
-  final void Function(Combo combo) onDeleteCombo;
 
   @override
   Widget build(final BuildContext context, final WidgetRef ref) {
-    final safeIndex = activeIndex.clamp(
-      0,
-      comboMoves.isEmpty ? 0 : comboMoves.length - 1,
-    );
+    final colorScheme = Theme.of(context).colorScheme;
+    final safeIndex = activeIndex.clamp(0, comboMoves.isEmpty ? 0 : comboMoves.length - 1);
     final currentMove = comboMoves.isNotEmpty ? comboMoves[safeIndex].move : null;
+    final chain = comboMoves.map((final m) => m.move.name).join(' → ');
 
-    FsrsCard? comboCard;
-    for (final card in fsrsCards) {
-      if (card.entityType == 'combo' && card.entityId == combo.id) {
-        comboCard = card;
-        break;
-      }
-    }
-    final comboState = switch (comboCard?.fsrsState) {
-      2 => LearningState.mastery,
-      1 || 3 => LearningState.learning,
-      _ => LearningState.newState,
-    };
-
-    final totalBeats = comboMoves.fold<int>(0, (final sum, final m) => sum + m.move.count);
-
-    return ListView(
-      padding: const EdgeInsets.all(AppSpacing.screenEdge),
+    return Column(
       children: [
-        // Back affordance only — edit/delete now live in the ACTIONS section
-        // below, mirroring the move detail IA for consistency and larger
-        // tap targets.
-        GestureDetector(
-          onTap: () => context.pop(),
-          behavior: HitTestBehavior.opaque,
-          child: Row(
+        Expanded(
+          child: ListView(
+            padding: const EdgeInsets.all(AppSpacing.screenEdge),
             children: [
-              Icon(
-                Icons.chevron_left,
-                color: colorScheme.secondary,
-                size: 20,
-              ),
-              Text(
-                'Combo',
-                style: AppTypography.sectionHeader.copyWith(
-                  color: colorScheme.secondary,
+              // Name
+              Semantics(
+                header: true,
+                child: Text(
+                  combo.name,
+                  style: AppTypography.titleLarge.copyWith(
+                    color: colorScheme.onSurface,
+                  ),
                 ),
               ),
-            ],
-          ),
-        ),
-        const SizedBox(height: AppSpacing.lg),
-        Semantics(
-          header: true,
-          child: Text(
-            combo.name,
-            style: AppTypography.titleLarge.copyWith(
-              color: colorScheme.onSurface,
-            ),
-          ),
-        ),
-        const SizedBox(height: AppSpacing.md),
-        Row(children: [
-          StatePill(state: comboState),
-          const SizedBox(width: AppSpacing.md),
-          Text(
-            '${comboMoves.length} STEPS · $totalBeats BEATS',
-            style: AppTypography.sectionHeader.copyWith(
-              color: colorScheme.secondary,
-            ),
-          ),
-        ]),
-        const SizedBox(height: AppSpacing.lg),
-        if (currentMove != null && currentMove.videoPath != null)
-          RobustVideoPlayer(
-            key: ValueKey('${currentMove.id}:$safeIndex:${currentMove.contentHash}'),
-            videoPath: currentMove.resolvedVideoPath!,
-            autoPlay: true,
-            onEdit: () => onEditVideo(currentMove),
-          )
-        else
-          const VideoPlaceholder(),
-        if (currentMove != null && currentMove.videoPath != null) ...[
-          const SizedBox(height: AppSpacing.md),
-          _VideoActionRow(
-            move: currentMove,
-            onEdit: () => onEditVideo(currentMove),
-            onShare: () => onShareVideo(currentMove),
-            onSaveToAlbum: () => onSaveToAlbum(currentMove),
-          ),
-        ],
-        const SizedBox(height: AppSpacing.lg),
-        ComboStepLine(
-          stepCount: comboMoves.length,
-          activeIndex: safeIndex,
-          onStepSelected: onStepSelected,
-          stepNames: comboMoves.map((final m) => m.move.name).toList(),
-        ),
-        const SizedBox(height: AppSpacing.xl),
-        if (currentMove != null) ...[
-          GestureDetector(
-            behavior: HitTestBehavior.opaque,
-            onTap: () => context.push('/breakdex/move/${currentMove.id}'),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'STEP ${safeIndex + 1}: ${currentMove.name.toUpperCase()}',
-                      style: AppTypography.labelLarge.copyWith(
-                        color: colorScheme.primary,
-                        letterSpacing: 1.5,
-                        fontWeight: FontWeight.w800,
-                      ),
+              const SizedBox(height: AppSpacing.sm),
+              // Transition chain
+              if (chain.isNotEmpty)
+                Text(
+                  chain,
+                  style: AppTypography.bodySmall.copyWith(
+                    color: colorScheme.secondary,
+                  ),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              const SizedBox(height: AppSpacing.md),
+              // Status tag
+              StatusTag(
+                status: combo.status,
+                onChanged: (final newStatus) async {
+                  await ref.read(combosDaoProvider).updateStatus(
+                        comboId: comboId,
+                        newStatus: newStatus,
+                        entryId: const Uuid().v4(),
+                      );
+                },
+              ),
+              const SizedBox(height: AppSpacing.lg),
+              // Video player
+              if (currentMove != null && currentMove.videoPath != null)
+                RobustVideoPlayer(
+                  key: ValueKey('${currentMove.id}:$safeIndex:${currentMove.contentHash}'),
+                  videoPath: currentMove.resolvedVideoPath!,
+                  autoPlay: true,
+                )
+              else
+                const VideoPlaceholder(),
+              const SizedBox(height: AppSpacing.md),
+
+              // Beat grid
+              BeatGrid(
+                items: [
+                  for (int i = 0; i < comboMoves.length; i++)
+                    BeatGridItem(
+                      label: comboMoves[i].move.name,
+                      count: comboMoves[i].move.count,
+                      isActive: i == safeIndex,
+                      onTap: () => onStepSelected(i),
                     ),
-                    const SizedBox(height: 4),
-                    Text(
-                      '${currentMove.category.toUpperCase()} · ${currentMove.count} BEATS',
-                      style: AppTypography.caption.copyWith(
-                        color: colorScheme.secondary.withValues(alpha: 0.8),
-                        letterSpacing: 1.2,
-                        fontWeight: FontWeight.w600,
-                        fontSize: 11,
-                      ),
+                ],
+              ),
+              const SizedBox(height: AppSpacing.lg),
+              // Current step info
+              if (currentMove != null)
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'STEP ${safeIndex + 1}: ${currentMove.name.toUpperCase()}',
+                          style: AppTypography.labelLarge.copyWith(
+                            color: colorScheme.primary,
+                            letterSpacing: 1.5,
+                            fontWeight: FontWeight.w800,
+                          ),
+                        ),
+                      ],
+                    ),
+                    Icon(
+                      Icons.arrow_forward_ios,
+                      size: 14,
+                      color: colorScheme.secondary,
                     ),
                   ],
                 ),
-                Icon(
-                  Icons.arrow_forward_ios,
-                  size: 14,
-                  color: colorScheme.secondary,
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: AppSpacing.md),
-          if (currentMove.notes != null && currentMove.notes!.isNotEmpty)
-            Padding(
-              padding: const EdgeInsets.only(bottom: AppSpacing.md),
-              child: Text(
-                currentMove.notes!,
-                style: AppTypography.bodySmall.copyWith(
-                  color: colorScheme.onSurface,
-                ),
-              ),
-            ),
-        ],
-        NotesSection(
-          notes: combo.notes,
-          onChanged: (final text) => ref
-              .read(comboDetailStateProvider(comboId).notifier)
-              .send(sm.UpdateNotes(text)),
-        ),
-        const SizedBox(height: AppSpacing.xl),
-        LogsSection(entityId: combo.id, entityType: 'combo'),
-        const SizedBox(height: AppSpacing.md),
-        Divider(color: colorScheme.outline),
-        const SizedBox(height: AppSpacing.md),
-
-        // Actions
-        Text(
-          'ACTIONS',
-          style: AppTypography.sectionHeader.copyWith(
-            color: colorScheme.secondary,
-          ),
-        ),
-        const SizedBox(height: AppSpacing.md),
-        ActionTile(
-          icon: Icons.edit_outlined,
-          label: 'Edit Combo',
-          onTap: () => context.push('/edit-combo/${combo.id}'),
-        ),
-        const SizedBox(height: AppSpacing.sm),
-        ActionTile(
-          icon: Icons.delete_forever,
-          label: 'Delete Combo',
-          destructive: true,
-          onTap: () => onDeleteCombo(combo),
-        ),
-        const SizedBox(height: AppSpacing.xxxl),
-      ],
-    );
-  }
-}
-
-class _VideoActionRow extends StatelessWidget {
-  const _VideoActionRow({
-    required this.move,
-    required this.onEdit,
-    required this.onShare,
-    required this.onSaveToAlbum,
-  });
-
-  final Move move;
-  final VoidCallback onEdit;
-  final VoidCallback onShare;
-  final VoidCallback onSaveToAlbum;
-
-  @override
-  Widget build(final BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
-    return Row(
-      children: [
-        _ActionTile(
-          icon: Icons.edit_outlined,
-          label: 'Edit',
-          onTap: onEdit,
-          colorScheme: colorScheme,
-        ),
-        const SizedBox(width: AppSpacing.sm),
-        _ActionTile(
-          icon: Icons.ios_share,
-          label: 'Share',
-          onTap: onShare,
-          colorScheme: colorScheme,
-        ),
-        const SizedBox(width: AppSpacing.sm),
-        _ActionTile(
-          icon: Icons.save_alt_outlined,
-          label: 'Save',
-          onTap: onSaveToAlbum,
-          colorScheme: colorScheme,
-        ),
-      ],
-    );
-  }
-}
-
-class _ActionTile extends StatelessWidget {
-  const _ActionTile({
-    required this.icon,
-    required this.label,
-    required this.onTap,
-    required this.colorScheme,
-  });
-
-  final IconData icon;
-  final String label;
-  final VoidCallback onTap;
-  final ColorScheme colorScheme;
-
-  @override
-  Widget build(final BuildContext context) {
-    return Expanded(
-      child: GestureDetector(
-        onTap: onTap,
-        child: Container(
-          padding: const EdgeInsets.symmetric(vertical: 12),
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(8),
-            border: Border.all(color: colorScheme.outline.withValues(alpha: 0.2)),
-          ),
-          child: Column(
-            children: [
-              Icon(icon, size: 18, color: colorScheme.secondary),
-              const SizedBox(height: 4),
-              Text(
-                label,
-                style: TextStyle(
-                  fontSize: 10,
-                  color: colorScheme.secondary,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
+              const SizedBox(height: AppSpacing.lg),
+              // Journal
+              JournalList(comboId: comboId),
+              const SizedBox(height: AppSpacing.xxl),
             ],
           ),
+        ),
+        // Pinned jot composer — lifted above the shell's bottom nav
+        // (house pattern, see move_list_screen FAB).
+        Padding(
+          padding: EdgeInsets.only(
+            bottom: kBottomNavigationBarHeight +
+                MediaQuery.of(context).padding.bottom,
+          ),
+          child: JotComposer(comboId: comboId),
+        ),
+      ],
+    );
+  }
+}
+
+class _SmOverlay extends ConsumerWidget {
+  const _SmOverlay({required this.comboId});
+
+  final String comboId;
+
+  @override
+  Widget build(final BuildContext context, final WidgetRef ref) {
+    final smState = ref.watch(comboDetailStateProvider(comboId));
+    final notifier = ref.read(comboDetailStateProvider(comboId).notifier);
+
+    if (smState is! sm.Deleting &&
+        smState is! sm.SavingNotes &&
+        smState is! sm.SavingLog &&
+        smState is! sm.ErrorState) {
+      return const SizedBox.shrink();
+    }
+
+    return Positioned.fill(
+      child: Container(
+        color: Colors.black54,
+        child: Center(
+          child: smState is sm.ErrorState
+              ? Padding(
+                  padding: const EdgeInsets.all(AppSpacing.lg),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(Icons.error_outline, color: Colors.white70, size: 48),
+                      const SizedBox(height: AppSpacing.md),
+                      Text(smState.message,
+                          style: const TextStyle(color: Colors.white70),
+                          textAlign: TextAlign.center),
+                      const SizedBox(height: AppSpacing.lg),
+                      TextButton(
+                        onPressed: () => notifier.send(sm.Cancel()),
+                        child: const Text('OK', style: TextStyle(color: Colors.white)),
+                      ),
+                    ],
+                  ),
+                )
+              : const Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    CircularProgressIndicator(color: Colors.white),
+                    SizedBox(height: AppSpacing.md),
+                    Text('Working...', style: TextStyle(color: Colors.white70)),
+                  ],
+                ),
         ),
       ),
     );

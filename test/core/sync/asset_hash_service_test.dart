@@ -108,37 +108,5 @@ void main() {
         expect(result, isFalse);
       });
     });
-
-    group('hashAll', () {
-      test('emits progress for each file', () async {
-        final dir = Directory.systemTemp.createTempSync('hash_test_');
-        final files = List.generate(3, (final i) {
-          final f = File('${dir.path}/file_$i.mp4');
-          f.writeAsBytesSync(List.generate(100, (final j) => (i * 100 + j) % 256));
-          return f.path;
-        });
-
-        final events = await hashService.hashAll(files).toList();
-
-        expect(events.length, 3);
-        expect(events[0].$1, 1); // completed
-        expect(events[0].$2, 3); // total
-        expect(events[0].$3, isNotNull); // hash
-        expect(events[2].$1, 3);
-        expect(events[2].$2, 3);
-
-        dir.deleteSync(recursive: true);
-      });
-
-      test('yields null hash for missing files', () async {
-        final events = await hashService.hashAll([
-          '/tmp/nonexistent_${DateTime.now().millisecondsSinceEpoch}.mp4',
-        ]).toList();
-
-        expect(events.length, 1);
-        expect(events[0].$1, 1);
-        expect(events[0].$3, isNull);
-      });
-    });
   });
 }

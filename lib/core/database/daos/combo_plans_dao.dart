@@ -42,6 +42,20 @@ class ComboPlansDao extends DatabaseAccessor<AppDatabase>
       (update(comboPlans)..where((final t) => t.id.equals(id)))
           .write(ComboPlansCompanion(position: Value(position)));
 
+  /// Next free position at the end of [date]'s queue (append semantics).
+  Future<int> nextPositionForDate(final DateTime date) async {
+    final dayStart = dateOnly(date);
+    final dayEnd = dayStart.add(const Duration(days: 1));
+    final maxPos = comboPlans.position.max();
+    final query = selectOnly(comboPlans)
+      ..addColumns([maxPos])
+      ..where(comboPlans.planDate.isBiggerOrEqualValue(dayStart) &
+          comboPlans.planDate.isSmallerThanValue(dayEnd));
+    final row = await query.getSingle();
+    final current = row.read(maxPos);
+    return current == null ? 0 : current + 1;
+  }
+
   Future<void> updatePlanDate(final String id, final DateTime planDate) =>
       (update(comboPlans)..where((final t) => t.id.equals(id))).write(
         ComboPlansCompanion(planDate: Value(dateOnly(planDate))),

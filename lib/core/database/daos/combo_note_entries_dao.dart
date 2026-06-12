@@ -27,6 +27,16 @@ class ComboNoteEntriesDao extends DatabaseAccessor<AppDatabase>
         .watch();
   }
 
+  /// Most recent journal entries carrying a video reference, across all
+  /// combos — the "RECENT TAKES" section of the library video picker.
+  Stream<List<ComboNoteEntry>> watchRecentTakeRefs({final int limit = 10}) {
+    return (select(comboNoteEntries)
+          ..where((final t) => t.videoPath.isNotNull())
+          ..orderBy([(final t) => OrderingTerm.desc(t.createdAt)])
+          ..limit(limit))
+        .watch();
+  }
+
   Future<void> addEntry({
     required final String id,
     required final String comboId,

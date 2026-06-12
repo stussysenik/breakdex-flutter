@@ -99,6 +99,8 @@ final storageOrchestratorProvider = Provider<StorageOrchestrator>((final ref) {
     movesDao: ref.watch(movesDaoProvider),
     provenance: ref.watch(provenanceServiceProvider),
     blackbox: ref.watch(blackboxServiceProvider),
+    actionMachine: ref.watch(storageActionMachineProvider),
+    fsrsCardsDao: ref.watch(fsrsCardsDaoProvider),
   );
 });
 

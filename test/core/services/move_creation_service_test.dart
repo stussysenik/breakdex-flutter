@@ -9,6 +9,8 @@ import 'package:breakdex/core/models/move_creation.dart';
 import 'package:breakdex/core/services/move_creation_service.dart';
 import 'package:breakdex/core/services/native_video_album.dart';
 import 'package:breakdex/core/services/reviewable_naming_service.dart';
+import 'package:breakdex/core/models/canonical_path.dart';
+import 'package:breakdex/core/services/storage_action_machine.dart';
 import 'package:breakdex/core/services/video_path_resolver.dart';
 import 'package:breakdex/core/sync/asset_hash_service.dart';
 
@@ -40,6 +42,18 @@ class _FakeHashService extends AssetHashService {
   Future<String> computeHash(final String filePath) async => 'hash-123';
 }
 
+class _MockStorageEngine extends StorageActionMachine {
+  _MockStorageEngine() : super(hashService: _FakeHashService());
+
+  @override
+  Future<CanonicalPath> execute(final StorageAction action) async {
+    if (action is MaterializeAction) {
+      return CanonicalPath('Moves/${action.category}/${action.moveName}/hash-123.mov');
+    }
+    return const CanonicalPath('');
+  }
+}
+
 void main() {
   group('MoveCreationService', () {
     late AppDatabase db;
@@ -59,7 +73,7 @@ void main() {
           movesDao: db.movesDao,
           combosDao: db.combosDao,
         ),
-        hashService: _FakeHashService(),
+        storageEngine: _MockStorageEngine(),
         fsrsCardsDao: db.fsrsCardsDao,
         onVideoImported: ({required final localPath, required final moveId, final precomputedHash}) async {
           syncCalls.add((localPath: localPath, moveId: moveId, precomputedHash: precomputedHash));

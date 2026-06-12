@@ -10,6 +10,7 @@ import 'package:uuid/uuid.dart';
 import '../../core/services/swing_detector.dart';
 
 import '../../core/database/database.dart';
+import '../../core/database/daos/combos_dao.dart';
 import '../../core/design/colors.dart';
 import '../../core/design/spacing.dart';
 import '../../core/design/theme.dart';
@@ -21,6 +22,7 @@ import '../../core/providers.dart';
 import '../../core/services/fsrs_service.dart';
 import '../../core/services/native_video_album.dart';
 import '../../core/services/video_path_resolver.dart';
+import '../../shared/widgets/beat_grid.dart';
 import '../../shared/widgets/primary_button.dart';
 import 'providers/deck_providers.dart';
 import 'providers/review_providers.dart';
@@ -460,10 +462,25 @@ class _FlashcardReviewScreenState extends ConsumerState<FlashcardReviewScreen>
                     AppSpacing.screenEdge,
                     AppSpacing.sm + bottomPadding,
                   ),
-                  child: RatingButtonRow(
-                    compact: true,
-                    onRate: (final rating) => _rateItem(item, rating),
-                    intervalPreviews: intervals,
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      if (item.isCombo && item.combo != null)
+                        _ComboBeatAssessment(
+                          combo: item.combo!,
+                          activeStepIndex: _comboStepIndices[item.entityId] ?? 0,
+                          onStepSelected: (final index) {
+                            setState(() {
+                              _comboStepIndices[item.entityId] = index;
+                            });
+                          },
+                        ),
+                      RatingButtonRow(
+                        compact: true,
+                        onRate: (final rating) => _rateItem(item, rating),
+                        intervalPreviews: intervals,
+                      ),
+                    ],
                   ),
                 )
               : Padding(
@@ -1057,5 +1074,72 @@ class _FlashcardReviewScreenState extends ConsumerState<FlashcardReviewScreen>
   void didChangeAppLifecycleState(final AppLifecycleState state) {
     if (state != AppLifecycleState.resumed) return;
     _reloadSessionIfActive();
+  }
+}
+
+class _ComboBeatAssessment extends ConsumerWidget {
+  const _ComboBeatAssessment({
+    required this.combo,
+    this.activeStepIndex = 0,
+    this.onStepSelected,
+  });
+
+  final Combo combo;
+  final int activeStepIndex;
+
+  /// Keeps the move switcher live during the assessment stage — the learner
+  /// can freely change which step they're looking at while rating.
+  final ValueChanged<int>? onStepSelected;
+
+  @override
+  Widget build(final BuildContext context, final WidgetRef ref) {
+    final movesStream = ref.watch(comboRepositoryProvider).watchComboMoves(combo.id);
+    final colorScheme = Theme.of(context).colorScheme;
+
+    return StreamBuilder<List<ComboMoveWithDetail>>(
+      stream: movesStream,
+      builder: (final context, final snapshot) {
+        final comboMoves = snapshot.data ?? const <ComboMoveWithDetail>[];
+        if (comboMoves.isEmpty) return const SizedBox.shrink();
+
+        final safeIndex = activeStepIndex.clamp(0, comboMoves.length - 1);
+        final activeMove = comboMoves[safeIndex].move;
+
+        return Padding(
+          padding: const EdgeInsets.only(bottom: AppSpacing.sm),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              BeatGrid(
+                items: [
+                  for (int i = 0; i < comboMoves.length; i++)
+                    BeatGridItem(
+                      label: comboMoves[i].move.name,
+                      count: comboMoves[i].move.count,
+                      isActive: i == safeIndex,
+                      onTap: onStepSelected == null
+                          ? null
+                          : () => onStepSelected!(i),
+                    ),
+                ],
+                showSummary: false,
+              ),
+              const SizedBox(height: AppSpacing.xs),
+              // What's being rated: combo name anchors the rating; the
+              // active step is context the learner can change above.
+              Text(
+                'Step ${safeIndex + 1} · ${activeMove.name}',
+                style: AppTypography.caption.copyWith(
+                  color: colorScheme.secondary,
+                  fontWeight: FontWeight.w600,
+                ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ],
+          ),
+        );
+      },
+    );
   }
 }

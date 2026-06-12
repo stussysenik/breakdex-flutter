@@ -4,6 +4,7 @@ import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:path/path.dart' as p;
 
+import '../utils/diagnostics.dart';
 import 'app_storage_paths.dart';
 import 'video_storage_gate.dart';
 
@@ -221,6 +222,55 @@ class CanonicalFolderService {
       }
     } catch (_) {}
     return removed;
+  }
+
+  /// Moves unreferenced master files to `Moves/Archive/` (never hard-deletes).
+  /// Returns count of files quarantined. Idempotent.
+  Future<int> quarantineOrphans(final Set<String> referencedHashes) async {
+    final log = StageLogger.begin('quarantineOrphans',
+        subsystem: 'StorageHygiene');
+    try {
+      log.stage('scanning');
+      final orphans = await scanOrphans();
+      final orphanFiles = orphans.where((final o) => o.isOrphan).toList();
+      if (orphanFiles.isEmpty) {
+        log.complete('0 files to quarantine');
+        return 0;
+      }
+
+      final docs = await AppStoragePaths.documentsDirectory();
+      final archiveDir = Directory(p.join(docs.path, 'Moves', 'Archive'));
+      if (!await archiveDir.exists()) {
+        await archiveDir.create(recursive: true);
+      }
+
+      var count = 0;
+      for (final orphan in orphanFiles) {
+        log.stage('quarantining ${orphan.fileName}');
+        final targetPath = p.join(archiveDir.path, orphan.fileName);
+        try {
+          if (await File(targetPath).exists()) {
+            await File(orphan.path).delete();
+            DiagnosticsLog.info('StorageHygiene',
+                'Deleted duplicate orphan: ${orphan.fileName}');
+          } else {
+            await File(orphan.path).rename(targetPath);
+            DiagnosticsLog.info('StorageHygiene',
+                'Quarantined to Archive: ${orphan.fileName}');
+          }
+          count++;
+        } catch (e) {
+          DiagnosticsLog.error('StorageHygiene',
+              'Failed to quarantine ${orphan.fileName}: $e');
+        }
+      }
+
+      log.complete('quarantined $count file(s)');
+      return count;
+    } catch (e, stack) {
+      log.fail(e, stack);
+      return 0;
+    }
   }
 
   void clearCache() {

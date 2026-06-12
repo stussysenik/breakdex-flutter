@@ -13,6 +13,7 @@ class ComboStepLine extends StatefulWidget {
     this.onAddStep,
     this.overlay = false,
     this.stepNames,
+    this.beatCounts,
   });
 
   final int stepCount;
@@ -25,6 +26,9 @@ class ComboStepLine extends StatefulWidget {
 
   /// Optional step names shown below each circle (e.g. move names).
   final List<String>? stepNames;
+
+  /// Optional beat counts shown below each circle (e.g. "4 beats").
+  final List<int>? beatCounts;
 
   @override
   State<ComboStepLine> createState() => _ComboStepLineState();
@@ -52,6 +56,21 @@ class _ComboStepLineState extends State<ComboStepLine> {
   void dispose() {
     _scrollController.dispose();
     super.dispose();
+  }
+
+  String? _buildLabel(final int index) {
+    final name = widget.stepNames != null &&
+            index < widget.stepNames!.length
+        ? widget.stepNames![index]
+        : null;
+    final beats = widget.beatCounts != null &&
+            index < widget.beatCounts!.length
+        ? widget.beatCounts![index]
+        : null;
+
+    if (name == null && beats == null) return null;
+    if (name != null && beats != null) return '$name · $beats';
+    return name ?? '$beats';
   }
 
   /// Smoothly scrolls to center the active step node in the viewport.
@@ -117,10 +136,7 @@ class _ComboStepLineState extends State<ComboStepLine> {
                         index < widget.stepCount - 1 ||
                         widget.onAddStep != null,
                     overlay: widget.overlay,
-                    label: widget.stepNames != null &&
-                            index < widget.stepNames!.length
-                        ? widget.stepNames![index]
-                        : null,
+                    label: _buildLabel(index),
                   ),
                 ),
               ),

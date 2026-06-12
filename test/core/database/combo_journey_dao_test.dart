@@ -1,4 +1,4 @@
-import 'package:drift/drift.dart' hide isNull, isNotNull;
+import 'package:drift/drift.dart' hide isNotNull, isNull;
 import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -128,6 +128,57 @@ void main() {
       // Delete
       await db.comboPlansDao.deletePlan('p-late');
       expect((await db.comboPlansDao.getAll()).length, 2);
+    });
+
+    test('nextPositionForDate appends to the end of that day only', () async {
+      await seedCombo('c1', 'Opener');
+      final tomorrow = ComboPlansDao.dateOnly(
+        DateTime.now().add(const Duration(days: 1)),
+      );
+      final nextWeek = ComboPlansDao.dateOnly(
+        DateTime.now().add(const Duration(days: 7)),
+      );
+
+      expect(await db.comboPlansDao.nextPositionForDate(tomorrow), 0);
+
+      await db.comboPlansDao.insertPlan(ComboPlansCompanion.insert(
+        id: 'p1',
+        comboId: 'c1',
+        planDate: tomorrow,
+        position: const Value(0),
+      ));
+      await db.comboPlansDao.insertPlan(ComboPlansCompanion.insert(
+        id: 'p2',
+        comboId: 'c1',
+        planDate: tomorrow,
+        position: const Value(1),
+      ));
+
+      expect(await db.comboPlansDao.nextPositionForDate(tomorrow), 2);
+      // Other days are unaffected by tomorrow's queue.
+      expect(await db.comboPlansDao.nextPositionForDate(nextWeek), 0);
+    });
+
+    test('inserted plan appears in queue and per-day plan counts', () async {
+      await seedCombo('c1', 'Opener');
+      final tomorrow = ComboPlansDao.dateOnly(
+        DateTime.now().add(const Duration(days: 1)),
+      );
+
+      await db.comboPlansDao.insertPlan(ComboPlansCompanion.insert(
+        id: 'p1',
+        comboId: 'c1',
+        planDate: tomorrow,
+        position: const Value(0),
+      ));
+
+      final queue = await db.comboPlansDao.watchPlansQueue().first;
+      expect(queue.single.plan.id, 'p1');
+
+      final counts = await db.combosDao.watchPlanCountByDay().first;
+      expect(counts.length, 1);
+      expect(ComboPlansDao.dateOnly(counts.single.$1), tomorrow);
+      expect(counts.single.$2, 1);
     });
 
     test('watchPlansForDate returns only that day', () async {

@@ -158,3 +158,9 @@ class ComboDetailNotifier extends FamilyNotifier<ComboDetailState, String> {
 final comboDetailStateProvider = NotifierProvider.family<ComboDetailNotifier, ComboDetailState, String>(
   ComboDetailNotifier.new,
 );
+
+final allComboIdsProvider = StreamProvider<List<String>>((final ref) {
+  return ref.watch(combosDaoProvider).watchAll().map(
+        (final combos) => combos.map((final c) => c.id).toList(),
+      );
+});

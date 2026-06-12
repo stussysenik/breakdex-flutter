@@ -19,6 +19,9 @@ class FakeNamingService implements ReviewableNamingService {
   
   @override
   String normalize(final String value) => value.trim();
+
+  @override
+  bool isValidName(final String value) => value.isNotEmpty;
 }
 
 class FakeBlackboxService implements BlackboxService {
@@ -102,7 +105,7 @@ void main() {
     notifier.send(const NameAvailable());
 
     // Wait for async side effects to complete
-    await Future.delayed(const Duration(milliseconds: 200));
+    await Future<void>.delayed(const Duration(milliseconds: 200));
 
     // VERIFY: File moved on disk
     final newAbsPath = VideoPathResolver.toAbsolute('Moves/Toprock/New name/video.mp4');

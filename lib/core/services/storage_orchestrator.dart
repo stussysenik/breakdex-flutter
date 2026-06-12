@@ -13,20 +13,77 @@ import 'provenance_service.dart';
 import 'blackbox_service.dart';
 
 
+import '../database/daos/fsrs_cards_dao.dart';
+import 'storage_action_machine.dart';
+
 /// Orchestrates atomic-like operations across SQLite and the Filesystem.
 class StorageOrchestrator {
+  final AppDatabase _db;
   final MovesDao _movesDao;
   final ProvenanceService? _provenance;
   final BlackboxService? _blackbox;
+  final StorageActionMachine? _actionMachine;
+  final FsrsCardsDao? _fsrsCardsDao;
 
   StorageOrchestrator({
     required final AppDatabase db,
     required final MovesDao movesDao,
     final ProvenanceService? provenance,
     final BlackboxService? blackbox,
-  }) : _movesDao = movesDao,
+    final StorageActionMachine? actionMachine,
+    final FsrsCardsDao? fsrsCardsDao,
+  }) : _db = db,
+       _movesDao = movesDao,
        _provenance = provenance,
-       _blackbox = blackbox;
+       _blackbox = blackbox,
+       _actionMachine = actionMachine,
+       _fsrsCardsDao = fsrsCardsDao;
+
+  Future<Move> duplicateMove(final Move move) async {
+    final log = StageLogger.begin('duplicateMove', subsystem: 'StorageOrchestrator', context: {'moveId': move.id});
+    try {
+      final newName = '${move.name} (Copy)';
+
+      // 1. Materialize duplicate via Engine
+      final sourceRelative = CanonicalPath(move.videoPath ?? '');
+      final targetRelative = await _actionMachine!.execute(DuplicateAction(
+        sourceRelative: sourceRelative,
+        newName: newName,
+        category: move.category,
+      ));
+
+      // 2. Derive Identity from Engine output
+      final filename = p.basenameWithoutExtension(targetRelative.value);
+      final contentHash = filename.split(' - ').last;
+
+      final companion = MovesCompanion.insert(
+        id: contentHash,
+        name: newName,
+        category: Value(move.category),
+        count: Value(move.count),
+        learningState: Value(move.learningState),
+        notes: Value(move.notes),
+        videoPath: Value(targetRelative.value),
+        originalVideoName: Value(move.originalVideoName),
+        videoFileSize: Value(move.videoFileSize),
+        videoCreationDate: Value(DateTime.now()),
+        imagePaths: Value(move.imagePaths),
+        contentHash: Value(contentHash),
+      );
+      
+      await _db.into(_db.moves).insert(companion);
+      if (_fsrsCardsDao != null) {
+        await _fsrsCardsDao.ensureCard(contentHash, entityType: 'move');
+      }
+      
+      final newMove = await _movesDao.getById(contentHash);
+      log.complete('newId=$contentHash');
+      return newMove;
+    } catch (e, st) {
+      log.fail(e, st);
+      rethrow;
+    }
+  }
 
   /// Rename a category and move all associated video files.
   Future<void> renameCategory(final String oldName, final String newName) async {

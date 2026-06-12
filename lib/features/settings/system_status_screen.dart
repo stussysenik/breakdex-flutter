@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/services/boot_coordinator.dart';
+import '../../core/services/video_path_resolver.dart';
 import '../../core/design/spacing.dart';
 import '../../core/design/typography.dart';
 
@@ -30,6 +31,14 @@ class SystemStatusScreen extends ConsumerWidget {
           const SizedBox(height: AppSpacing.md),
           _GatesList(boot: boot),
           const SizedBox(height: AppSpacing.xl),
+          Text(
+            'STORAGE HYGIENE',
+            style: AppTypography.sectionHeader.copyWith(color: colorScheme.secondary),
+          ),
+          const SizedBox(height: AppSpacing.md),
+          const _HygieneCounters(),
+          const SizedBox(height: AppSpacing.xl),
+
           Text(
             'DIAGNOSTIC LOG',
             style: AppTypography.sectionHeader.copyWith(color: colorScheme.secondary),
@@ -227,6 +236,80 @@ class _LogEntry extends StatelessWidget {
           fontFamily: 'monospace',
           fontSize: 10,
         ),
+      ),
+    );
+  }
+}
+
+class _HygieneCounters extends StatelessWidget {
+  const _HygieneCounters();
+
+  @override
+  Widget build(final BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    return Container(
+      padding: const EdgeInsets.all(AppSpacing.md),
+      decoration: BoxDecoration(
+        color: colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
+        borderRadius: BorderRadius.circular(AppRadius.sm),
+        border: Border.all(color: colorScheme.outline.withValues(alpha: 0.2)),
+      ),
+      child: Column(
+        children: [
+          _CounterRow(
+            label: 'Stale folders removed',
+            value: '${VideoPathHealer.staleFoldersRemoved}',
+            colorScheme: colorScheme,
+          ),
+          _CounterRow(
+            label: 'Orphans quarantined',
+            value: '${VideoPathHealer.orphansQuarantined}',
+            colorScheme: colorScheme,
+          ),
+          _CounterRow(
+            label: 'Paths healed',
+            value: '${VideoPathHealer.pathsHealed}',
+            colorScheme: colorScheme,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _CounterRow extends StatelessWidget {
+  const _CounterRow({
+    required this.label,
+    required this.value,
+    required this.colorScheme,
+  });
+
+  final String label;
+  final String value;
+  final ColorScheme colorScheme;
+
+  @override
+  Widget build(final BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: AppSpacing.xxs),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(
+            label,
+            style: AppTypography.bodySmall.copyWith(
+              color: colorScheme.secondary,
+            ),
+          ),
+          Text(
+            value,
+            style: AppTypography.bodySmall.copyWith(
+              color: colorScheme.primary,
+              fontWeight: FontWeight.w700,
+              fontFamily: 'monospace',
+            ),
+          ),
+        ],
       ),
     );
   }

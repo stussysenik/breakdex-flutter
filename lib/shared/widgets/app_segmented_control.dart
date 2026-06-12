@@ -8,12 +8,14 @@ class AppSegmentedControlItem<T> {
   const AppSegmentedControlItem({
     required this.value,
     required this.label,
-    required this.icon,
+    this.icon,
   });
 
   final T value;
   final String label;
-  final IconData icon;
+
+  /// Optional — omit when three or more segments would truncate labels.
+  final IconData? icon;
 }
 
 class AppSegmentedControl<T> extends StatelessWidget {
@@ -79,12 +81,15 @@ class _AppSegmentedControlButton<T> extends StatelessWidget {
           child: Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(
-                item.icon,
-                size: 18,
-                color: selected ? colorScheme.onPrimary : colorScheme.secondary,
-              ),
-              const SizedBox(width: AppSpacing.xs),
+              if (item.icon != null) ...[
+                Icon(
+                  item.icon,
+                  size: 18,
+                  color:
+                      selected ? colorScheme.onPrimary : colorScheme.secondary,
+                ),
+                const SizedBox(width: AppSpacing.xs),
+              ],
               Flexible(
                 child: Text(
                   item.label,

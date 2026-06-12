@@ -42,6 +42,27 @@ class DayActivity {
   });
 }
 
+/// A single Library row: combo + transition chain + counts + last entry.
+class LibraryRow {
+  final Combo combo;
+  final String transitionChain;
+  final int moveCount;
+  final int jotCount;
+  final String? lastEntryBody;
+  final DateTime? lastEntryAt;
+
+  LibraryRow({
+    required this.combo,
+    required this.transitionChain,
+    required this.moveCount,
+    required this.jotCount,
+    this.lastEntryBody,
+    this.lastEntryAt,
+  });
+
+  DateTime? get lastJotOrStatusAt => lastEntryAt ?? combo.createdAt;
+}
+
 class ComboWithMoves {
   final Combo combo;
   final List<ComboMoveWithDetail> moves;
@@ -370,5 +391,120 @@ class CombosDao extends DatabaseAccessor<AppDatabase> with _$CombosDaoMixin {
               takeCount: row.read<int>('take_count'),
             ))
         .toList());
+  }
+
+  /// Single-query Library feed: combos + transition chain names + meta.
+  /// Uses GROUP_CONCAT on moves ordered by sequence_index for the chain.
+  Stream<List<LibraryRow>> watchLibraryRows() {
+    final query = customSelect(
+      '''
+      SELECT c.id, c.name, c.notes, c.active_video_path, c.content_hash,
+             c.status, c.created_at,
+        (SELECT GROUP_CONCAT(m.name, ' → ')
+         FROM combo_moves cm
+         JOIN moves m ON m.id = cm.move_id
+         WHERE cm.combo_id = c.id
+         ORDER BY cm.sequence_index) AS transition_chain,
+        (SELECT COUNT(*) FROM combo_moves cm
+          WHERE cm.combo_id = c.id) AS move_count,
+        (SELECT COUNT(*) FROM combo_note_entries e
+          WHERE e.combo_id = c.id AND e.kind = 'jot') AS jot_count,
+        (SELECT e.body FROM combo_note_entries e
+          WHERE e.combo_id = c.id
+          ORDER BY e.created_at DESC, e.id DESC LIMIT 1) AS last_entry_body,
+        (SELECT MAX(e.created_at) FROM combo_note_entries e
+          WHERE e.combo_id = c.id) AS last_entry_at
+      FROM combos c
+      ORDER BY c.created_at DESC, c.name ASC
+      ''',
+      readsFrom: {combos, comboMoves, moves, comboNoteEntries},
+    );
+
+    return query.watch().map((final rows) => rows.map((final row) {
+          final lastEntryAt = row.readNullable<int>('last_entry_at');
+          return LibraryRow(
+            combo: Combo(
+              id: row.read<String>('id'),
+              name: row.read<String>('name'),
+              notes: row.readNullable<String>('notes'),
+              activeVideoPath: row.readNullable<String>('active_video_path'),
+              contentHash: row.readNullable<String>('content_hash'),
+              status: row.read<String>('status'),
+              createdAt: DateTime.fromMillisecondsSinceEpoch(
+                row.read<int>('created_at') * 1000,
+              ),
+            ),
+            transitionChain: row.readNullable<String>('transition_chain') ?? '',
+            moveCount: row.read<int>('move_count'),
+            jotCount: row.read<int>('jot_count'),
+            lastEntryBody: row.readNullable<String>('last_entry_body'),
+            lastEntryAt: lastEntryAt != null
+                ? DateTime.fromMillisecondsSinceEpoch(lastEntryAt * 1000)
+                : null,
+          );
+        }).toList());
+  }
+
+  /// Per-day plans (planDate → count), for calendar future plan dots.
+  Stream<List<(DateTime, int)>> watchPlanCountByDay() {
+    final query = customSelect(
+      '''
+      SELECT plan_date, COUNT(*) AS plan_count
+      FROM combo_plans
+      GROUP BY plan_date
+      ORDER BY plan_date ASC
+      ''',
+      readsFrom: {comboPlans},
+    );
+
+    return query.watch().map((final rows) => rows
+        .map((final row) => (
+              DateTime.fromMillisecondsSinceEpoch(
+                row.read<int>('plan_date') * 1000,
+              ),
+              row.read<int>('plan_count'),
+            ))
+        .toList());
+  }
+
+  /// Planned tab progress strip numbers — all derived from ledger, documented.
+  Stream<(int, int, int)> watchProgressStrip() {
+    final query = customSelect(
+      '''
+      SELECT
+        (SELECT COUNT(*) FROM combo_plans
+          WHERE completed_at IS NOT NULL) AS landed_count,
+        (SELECT COUNT(DISTINCT e.combo_id) FROM combo_note_entries e
+          WHERE e.kind = 'jot') AS practiced_count,
+        (SELECT COUNT(*) FROM combo_plans) AS total_plans_count
+      ''',
+      readsFrom: {comboPlans, comboNoteEntries},
+    );
+
+    return query.watch().map((final rows) {
+      final row = rows.first;
+      return (
+        row.read<int>('landed_count'),
+        row.read<int>('practiced_count'),
+        row.read<int>('total_plans_count'),
+      );
+    });
+  }
+
+  /// Combo move videos for the library video picker "THIS COMBO'S MOVES"
+  /// section: move name, filename, path, size, duration, usage counts.
+  Future<List<(Move, int)>> getComboMoveVideos(final String comboId) async {
+    final query = select(comboMoves).join([
+      innerJoin(moves, moves.id.equalsExp(comboMoves.moveId)),
+    ])
+      ..where(comboMoves.comboId.equals(comboId))
+      ..where(moves.videoPath.isNotNull())
+      ..orderBy([OrderingTerm.asc(comboMoves.sequenceIndex)]);
+
+    final rows = await query.get();
+    return rows.map((final row) {
+      final m = row.readTable(moves);
+      return (m, 0);
+    }).toList();
   }
 }

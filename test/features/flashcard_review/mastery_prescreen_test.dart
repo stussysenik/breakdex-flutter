@@ -55,6 +55,7 @@ void main() {
                 LearningState.learning: 0,
                 LearningState.mastery: 0,
               },
+              customMoveCounts: {},
             ),
           ),
         ],

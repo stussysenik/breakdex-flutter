@@ -154,7 +154,14 @@ final class NativeVideoImportPlugin: NSObject, FlutterPlugin, FlutterStreamHandl
         let options = PHVideoRequestOptions()
         options.isNetworkAccessAllowed = true
         options.deliveryMode = .highQualityFormat
-        
+        // Forward iCloud download progress so the Dart overlay can render a
+        // determinate bar instead of jumping 0→100 after the download.
+        options.progressHandler = { [weak self] progress, _, _, _ in
+            DispatchQueue.main.async {
+                self?.eventSink?(progress)
+            }
+        }
+
         manager.requestAVAsset(forVideo: asset, options: options) { avAsset, audioMix, info in
             guard let urlAsset = avAsset as? AVURLAsset else {
                 DispatchQueue.main.async {

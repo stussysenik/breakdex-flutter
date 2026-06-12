@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:io';
 
 import 'package:drift/drift.dart' show Value;
 import 'package:flutter/services.dart';
@@ -14,7 +13,6 @@ import '../../providers.dart';
 import '../../services/video_path_resolver.dart';
 import '../../services/storage_action_machine.dart';
 import '../../utils/diagnostics.dart';
-import '../../utils/filesystem_utils.dart';
 import 'state.dart';
 import 'event.dart';
 import 'machine.dart';
@@ -279,10 +277,10 @@ class MoveDetailNotifier extends Notifier<MoveDetailState> {
     try {
       unawaited(HapticFeedback.mediumImpact());
       final orchestrator = ref.read(storageOrchestratorProvider);
-      unawaited(orchestrator.deleteMove(
+      await orchestrator.deleteMove(
         move,
         cleanupMedia: (final m) => ref.read(mediaCleanupServiceProvider).cleanupMoveMedia(m),
-      ));
+      );
       send(const DeleteSucceeded());
     } catch (e) {
       send(DeleteFailed('Delete failed: $e'));

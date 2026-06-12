@@ -28,7 +28,6 @@ void main() {
         newCount: 2,
         learningCount: 1,
         reviewCount: 4,
-        relearningCount: 0,
       ),
       overallRetention: 0.75,
       categoryMastery: const [],

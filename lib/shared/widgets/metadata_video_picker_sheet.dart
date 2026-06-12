@@ -50,8 +50,46 @@ class _MetadataVideoPickerSheetState extends ConsumerState<MetadataVideoPickerSh
   final Set<String> _selectedIds = {};
 
   MetadataAsset? _importingAsset;
+  String? _importError;
   StorageProgress _currentProgress = StorageProgress.initial();
   StreamSubscription<StorageProgress>? _progressSub;
+  StreamSubscription<double>? _nativeProgressSub;
+
+  // Stall detection: if an active import makes no progress for 2s, log it
+  // with stage context so frozen bars are diagnosable from the field.
+  Timer? _stallTimer;
+  DateTime _lastProgressAt = DateTime.now();
+  double _lastProgressValue = -1;
+  bool _stallLogged = false;
+
+  void _noteProgress(final double value) {
+    if (value != _lastProgressValue) {
+      _lastProgressValue = value;
+      _lastProgressAt = DateTime.now();
+      _stallLogged = false;
+    }
+  }
+
+  void _startStallWatch() {
+    _stallTimer?.cancel();
+    _lastProgressAt = DateTime.now();
+    _lastProgressValue = -1;
+    _stallLogged = false;
+    _stallTimer = Timer.periodic(const Duration(seconds: 1), (_) {
+      if (_importingAsset == null || _importError != null) return;
+      final stalled =
+          DateTime.now().difference(_lastProgressAt) > const Duration(seconds: 2);
+      if (stalled && !_stallLogged) {
+        _stallLogged = true;
+        DiagnosticsLog.info(
+          'MetadataVideoPickerSheet',
+          'Import stalled >2s — stage=${_currentProgress.stage} '
+          'progress=${(_currentProgress.progress * 100).toStringAsFixed(0)}% '
+          'asset=${_importingAsset?.originalFileName}',
+        );
+      }
+    });
+  }
 
   @override
   void initState() {
@@ -66,6 +104,8 @@ class _MetadataVideoPickerSheetState extends ConsumerState<MetadataVideoPickerSh
     _tabController.dispose();
     _scrollController.dispose();
     _progressSub?.cancel();
+    _nativeProgressSub?.cancel();
+    _stallTimer?.cancel();
     super.dispose();
   }
 
@@ -190,12 +230,16 @@ class _MetadataVideoPickerSheetState extends ConsumerState<MetadataVideoPickerSh
     }
   }
 
+  /// Single-select: tapping a second tile moves the selection — the import
+  /// path only ever imports one asset, so the UI must not advertise more.
   void _toggleSelection(final String id) {
     setState(() {
       if (_selectedIds.contains(id)) {
         _selectedIds.remove(id);
       } else {
-        _selectedIds.add(id);
+        _selectedIds
+          ..clear()
+          ..add(id);
         unawaited(HapticFeedback.selectionClick());
       }
     });
@@ -212,13 +256,31 @@ class _MetadataVideoPickerSheetState extends ConsumerState<MetadataVideoPickerSh
 
     setState(() {
       _importingAsset = asset;
+      _importError = null;
       _currentProgress = StorageProgress.initial();
     });
 
     final engine = ref.read(storageActionMachineProvider);
     _progressSub = engine.progress.listen((final p) {
-      if (mounted) setState(() => _currentProgress = p);
+      if (mounted) {
+        _noteProgress(p.progress);
+        setState(() => _currentProgress = p);
+      }
     });
+    // PHAsset imports report progress on the native event channel — the
+    // iCloud download fraction arrives here, not via the storage machine.
+    _nativeProgressSub = ref.read(videoServiceProvider).importProgress.listen(
+      (final fraction) {
+        if (mounted) {
+          _noteProgress(fraction);
+          setState(() => _currentProgress = StorageProgress(
+                progress: fraction.clamp(0.0, 1.0),
+                stage: fraction >= 1.0 ? 'Importing' : 'Downloading',
+              ));
+        }
+      },
+    );
+    _startStallWatch();
 
     final navigator = Navigator.of(context);
     try {
@@ -239,9 +301,10 @@ class _MetadataVideoPickerSheetState extends ConsumerState<MetadataVideoPickerSh
         navigator.pop(result);
       }
     } catch (e) {
+      // Stay in the overlay: edge-network failures get an in-place Retry
+      // for the same asset rather than a transient snackbar.
       if (mounted) {
-        setState(() => _importingAsset = null);
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Import failed: $e')));
+        setState(() => _importError = '$e');
       }
     }
   }
@@ -313,7 +376,7 @@ class _MetadataVideoPickerSheetState extends ConsumerState<MetadataVideoPickerSh
                             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                             elevation: 0,
                           ),
-                          child: Text('IMPORT ${_selectedIds.length} VIDEO${_selectedIds.length > 1 ? 'S' : ''}'),
+                          child: const Text('IMPORT VIDEO'),
                         ),
                       ),
                     ).animate().slideY(begin: 1, end: 0, curve: Curves.easeOutCubic),
@@ -428,7 +491,46 @@ class _MetadataVideoPickerSheetState extends ConsumerState<MetadataVideoPickerSh
               child: Container(color: Colors.black.withValues(alpha: 0.85)),
             ),
 
-            Column(
+            if (_importError != null)
+              Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Icon(Icons.cloud_off_rounded,
+                      color: Colors.redAccent, size: 48),
+                  const SizedBox(height: AppSpacing.md),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: AppSpacing.xl),
+                    child: Text(
+                      _importError!,
+                      style: AppTypography.bodyMedium
+                          .copyWith(color: Colors.white),
+                      textAlign: TextAlign.center,
+                      maxLines: 4,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                  const SizedBox(height: AppSpacing.xl),
+                  ElevatedButton(
+                    onPressed: _handleImport,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: colorScheme.primary,
+                      foregroundColor: colorScheme.onPrimary,
+                    ),
+                    child: const Text('RETRY'),
+                  ),
+                  TextButton(
+                    onPressed: () => setState(() {
+                      _importingAsset = null;
+                      _importError = null;
+                    }),
+                    child: const Text('Cancel',
+                        style: TextStyle(color: Colors.white70)),
+                  ),
+                ],
+              )
+            else
+              Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 Container(
@@ -511,12 +613,50 @@ class _VideoTile extends ConsumerStatefulWidget {
 class _VideoTileState extends ConsumerState<_VideoTile> {
   Uint8List? _thumbnail;
   bool _loading = true;
+  int? _fileSizeBytes;
 
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
     if (_thumbnail == null && _loading) _loadThumbnail();
+    if (_fileSizeBytes == null && widget.asset.isLocal) _loadFileSize();
   }
+
+  Future<void> _loadFileSize() async {
+    try {
+      final size = await File(widget.asset.localIdentifier).length();
+      if (mounted) setState(() => _fileSizeBytes = size);
+    } catch (_) {
+      // Size stays unknown — the overlay renders without it.
+    }
+  }
+
+  /// "0:12 · 48 MB · Jun 8" — duration/size first (what distinguishes
+  /// takes), date second. Unknown parts are simply omitted.
+  String get _factsLine {
+    final parts = <String>[];
+    final d = widget.asset.duration;
+    if (d > 0) {
+      final mins = d ~/ 60;
+      final secs = (d % 60).round().toString().padLeft(2, '0');
+      parts.add('$mins:$secs');
+    }
+    final size = _fileSizeBytes;
+    if (size != null && size > 0) {
+      final mb = size / (1024 * 1024);
+      parts.add(mb >= 100 ? '${mb.round()} MB' : '${mb.toStringAsFixed(1)} MB');
+    }
+    final date = widget.asset.creationDate;
+    if (date != null) {
+      parts.add('${_monthNames[date.month - 1]} ${date.day}');
+    }
+    return parts.join(' · ');
+  }
+
+  static const _monthNames = [
+    'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+    'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
+  ];
 
   Future<void> _loadThumbnail() async {
     final asset = widget.asset;
@@ -575,15 +715,32 @@ class _VideoTileState extends ConsumerState<_VideoTile> {
                     ],
                   ),
                 ),
-                child: Text(
-                  widget.asset.originalFileName,
-                  style: AppTypography.labelSmall.copyWith(
-                    color: Colors.white,
-                    fontSize: 8,
-                    fontWeight: FontWeight.w600,
-                  ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    if (_factsLine.isNotEmpty)
+                      Text(
+                        _factsLine,
+                        style: AppTypography.labelSmall.copyWith(
+                          color: Colors.white,
+                          fontSize: 9,
+                          fontWeight: FontWeight.w700,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    Text(
+                      widget.asset.originalFileName,
+                      style: AppTypography.labelSmall.copyWith(
+                        color: Colors.white.withValues(alpha: 0.75),
+                        fontSize: 8,
+                        fontWeight: FontWeight.w500,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ],
                 ),
               ),
             ),

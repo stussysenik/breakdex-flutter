@@ -118,16 +118,16 @@ void main() {
     test('export button should be disabled during export (state test)', () {
       // Simulates the _exporting flag logic from VideoEditorScreen.
       // The export button is disabled when exporting OR editor not ready.
-      bool shouldDisable(final bool exporting, final bool isEditorReady) =>
+      bool shouldDisable({required final bool exporting, required final bool isEditorReady}) =>
           exporting || !isEditorReady;
 
       expect(
-        shouldDisable(false, true),
+        shouldDisable(exporting: false, isEditorReady: true),
         isFalse,
       ); // Enabled: not exporting, ready
-      expect(shouldDisable(true, true), isTrue); // Disabled: exporting
-      expect(shouldDisable(false, false), isTrue); // Disabled: not ready
-      expect(shouldDisable(true, false), isTrue); // Disabled: both
+      expect(shouldDisable(exporting: true, isEditorReady: true), isTrue); // Disabled: exporting
+      expect(shouldDisable(exporting: false, isEditorReady: false), isTrue); // Disabled: not ready
+      expect(shouldDisable(exporting: true, isEditorReady: false), isTrue); // Disabled: both
     });
 
     test('speed selector cycles through all options', () {

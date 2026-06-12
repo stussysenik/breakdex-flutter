@@ -54,7 +54,7 @@
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
 	<key>LSSupportsOpeningDocumentsInPlace</key>
-	<true/>
+	<false/>
 	<key>NSCameraUsageDescription</key>
 	<string>Breakdex needs camera access to record training videos.</string>
 	<key>NSMicrophoneUsageDescription</key>

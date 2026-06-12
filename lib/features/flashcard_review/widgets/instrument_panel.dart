@@ -7,9 +7,8 @@ import '../../../core/design/spacing.dart';
 import '../../../core/design/typography.dart';
 import '../../../core/models/learning_state.dart';
 import '../../../core/models/review_card_display_settings.dart';
-import '../../../shared/widgets/combo_step_line.dart';
+import '../../../shared/widgets/beat_grid.dart';
 import '../../../shared/widgets/state_pill.dart';
-
 /// Instrument panel — metadata and playback controls that sit between the
 /// video player and the rating buttons in the redesigned review card.
 ///
@@ -109,7 +108,6 @@ class InstrumentPanel extends StatelessWidget {
 
   @override
   Widget build(final BuildContext context) {
-    debugPrint('[InstrumentPanel] build: title="$title" state=$state displaySettings=${displaySettings.showState}');
     if (!showMetadata) return const SizedBox.shrink();
 
     final showTitle = displaySettings.showTitle;
@@ -187,16 +185,20 @@ class InstrumentPanel extends StatelessWidget {
                 ],
               ),
 
-            // ── Combo: step line timeline ────────────────────────────────
+            // ── Combo: beat grid timeline ────────────────────────────────
             if (showComboTimeline) ...[
               const SizedBox(height: AppSpacing.sm),
-              ComboStepLine(
-                stepCount: comboMoves.length,
-                activeIndex: activeComboStepIndex,
-                onStepSelected: onStepSelected ?? (_) {},
-                overlay: false,
-                stepNames:
-                    comboMoves.map((final cm) => cm.move.name).toList(),
+              BeatGrid(
+                items: [
+                  for (int i = 0; i < comboMoves.length; i++)
+                    BeatGridItem(
+                      label: comboMoves[i].move.name,
+                      count: comboMoves[i].move.count,
+                      isActive: i == activeComboStepIndex,
+                      onTap: () => onStepSelected?.call(i),
+                    ),
+                ],
+                showSummary: false,
               ),
               const SizedBox(height: AppSpacing.sm),
             ],

@@ -195,6 +195,11 @@ abstract final class VideoPathHealer {
   static const _prefsKey = 'video_paths_healed_v3';
   static const _cleanupRunAtKey = 'video_paths_cleanup_run_at';
 
+  /// Diagnostics counters for the system status screen.
+  static int staleFoldersRemoved = 0;
+  static int orphansQuarantined = 0;
+  static int pathsHealed = 0;
+
   /// Proactive healing of both the database records and physical filesystem.
   ///
   /// Filesystem cleanup is deferred to run at most once every 24 hours to avoid
@@ -227,10 +232,117 @@ abstract final class VideoPathHealer {
   /// Automatically cleans up the root directory and Move folder orphans.
   /// This is the primary mechanism for enforcing a clean Files app view.
   static Future<void> _autoCleanFileSystem(final AppDatabase db) async {
-    await _cleanupRootBackups();
-    await _cleanupMovesOrphans(db);
-    await _mergeDuplicateFolders();
-    await _pruneEmptyMovesDirectories();
+    final log = StageLogger.begin('_autoCleanFileSystem',
+        subsystem: 'VideoPathHealer');
+    try {
+      await _cleanupRootBackups();
+      log.stage('rootBackups');
+      await _mergeDuplicateFolders();
+      log.stage('foldersMerged');
+      await _pruneEmptyMovesDirectories();
+      log.stage('emptyDirsPruned');
+      await _pruneLegacyVideosDirectory(db);
+      log.stage('legacyVideosPruned');
+      await _pruneStaleExportDirs();
+      log.stage('staleExportsPruned');
+      pathsHealed = staleFoldersRemoved;
+      log.complete('done');
+    } catch (e, stack) {
+      log.fail(e, stack);
+    }
+  }
+
+  /// Migrate files from legacy `Documents/videos/` to canonical paths,
+  /// then prune the directory. Gated by SharedPreferences — runs once.
+  static Future<void> _pruneLegacyVideosDirectory(final AppDatabase db) async {
+    try {
+      final docsPath = VideoPathResolver.toAbsolute('');
+      final legacyDir = Directory(p.join(docsPath, 'videos'));
+      if (!await legacyDir.exists()) return;
+
+      final log = StageLogger.begin('_pruneLegacyVideos',
+          subsystem: 'VideoPathHealer');
+
+      // Migrate any files that match known moves/combo entries
+      int migrated = 0;
+      await for (final entity in legacyDir.list()) {
+        if (entity is! File || !entity.path.endsWith('.mp4')) continue;
+        try {
+          // Find matching move by originalVideoName or filename
+          final filename = p.basename(entity.path);
+          final allMoves = await db.movesDao.getAllIncludingArchived();
+          Move? match;
+          for (final m in allMoves) {
+            if (m.originalVideoName == filename ||
+                (m.videoPath != null && p.basename(m.videoPath!) == filename)) {
+              match = m;
+              break;
+            }
+          }
+          if (match != null && match.videoPath != null) {
+            final targetAbs = VideoPathResolver.toAbsolute(match.videoPath!);
+            if (!await File(targetAbs).exists()) {
+              await FileSystemUtils.safeMove(entity.path, targetAbs);
+              migrated++;
+              DiagnosticsLog.info('VideoPathHealer',
+                  'Legacy video migrated: $filename → ${match.videoPath}');
+            }
+          }
+        } catch (_) {}
+      }
+
+      log.stage('migrated $migrated file(s)');
+
+      // Prune the legacy directory if empty (after migration)
+      try {
+        final remaining = await legacyDir.list().toList();
+        if (remaining.isEmpty) {
+          await legacyDir.delete();
+          staleFoldersRemoved++;
+          DiagnosticsLog.info('VideoPathHealer',
+              'Legacy videos/ directory removed');
+        }
+      } catch (_) {}
+
+      log.complete();
+    } catch (e) {
+      DiagnosticsLog.error('VideoPathHealer',
+          'Legacy videos cleanup failed: $e');
+    }
+  }
+
+  /// Remove stale temporary export directories older than 24 hours.
+  /// These accumulate in the system temp directory from video export operations.
+  static Future<void> _pruneStaleExportDirs() async {
+    try {
+      final tmpDir = Directory.systemTemp;
+      if (!await tmpDir.exists()) return;
+
+      final cutoff = DateTime.now().subtract(const Duration(hours: 24));
+      final log = StageLogger.begin('_pruneStaleExportDirs',
+          subsystem: 'VideoPathHealer');
+
+      var removed = 0;
+      await for (final entity in tmpDir.list()) {
+        if (entity is! Directory) continue;
+        final name = p.basename(entity.path);
+        if (!name.startsWith('export_')) continue;
+
+        try {
+          final stat = await entity.stat();
+          if (stat.modified.isBefore(cutoff)) {
+            await entity.delete(recursive: true);
+            removed++;
+          }
+        } catch (_) {}
+      }
+
+      staleFoldersRemoved += removed;
+      log.complete('removed $removed stale export dir(s)');
+    } catch (e) {
+      DiagnosticsLog.error('VideoPathHealer',
+          'Stale export cleanup failed: $e');
+    }
   }
 
   /// Proactively find and merge folders that differ only by casing.
@@ -369,63 +481,6 @@ abstract final class VideoPathHealer {
       }
     } catch (e) {
       debugPrint('[VideoPathHealer] Root cleanup failed: $e');
-    }
-  }
-
-  static Future<void> _cleanupMovesOrphans(final AppDatabase db) async {
-    try {
-      final movesPath = p.join(VideoPathResolver.toAbsolute(''), 'Moves');
-      final movesDir = Directory(movesPath);
-      if (!await movesDir.exists()) return;
-
-      final archiveDir = Directory(p.join(movesPath, 'Archive'));
-      if (!await archiveDir.exists()) {
-        await archiveDir.create(recursive: true);
-      }
-
-      // Proactive cross-reference: everything on disk must have a home in DB
-      final allMoves = await db.movesDao.getAllIncludingArchived();
-      final allCombos = await db.combosDao.getAll();
-      
-      final validPaths = <String>{};
-      
-      for (final m in allMoves) {
-        if (m.videoPath != null) {
-          validPaths.add(VideoPathResolver.toAbsolute(m.videoPath!));
-        }
-      }
-      
-      for (final c in allCombos) {
-        if (c.activeVideoPath != null) {
-          validPaths.add(VideoPathResolver.toAbsolute(c.activeVideoPath!));
-        }
-      }
-
-      await for (final entity in movesDir.list(recursive: true)) {
-        if (entity is! File) continue;
-        final absPath = entity.path;
-        
-        // Don't orphan files that are already safely archived
-        if (p.isWithin(archiveDir.path, absPath)) continue;
-
-        final name = p.basename(absPath);
-
-        // If it's a flat file in Moves/ that we don't recognize -> Archive
-        if (validPaths.contains(absPath)) continue;
-        if (name.startsWith('.') || name.endsWith('.jpg') || name.endsWith('.png')) continue;
-
-        final targetPath = p.join(archiveDir.path, name);
-        if (await File(targetPath).exists()) {
-          // Suffix orphan if it collides in Archive
-          final timestamp = DateTime.now().millisecondsSinceEpoch;
-          final targetPathWithTs = p.join(archiveDir.path, '${p.basenameWithoutExtension(name)}_orphan_$timestamp${p.extension(name)}');
-          await FileSystemUtils.safeMove(entity.path, targetPathWithTs);
-        } else {
-          await FileSystemUtils.safeMove(entity.path, targetPath);
-        }
-      }
-    } catch (e) {
-      debugPrint('[VideoPathHealer] Orphan cleanup failed: $e');
     }
   }
 
