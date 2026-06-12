@@ -13,7 +13,6 @@ final class ComboListMachine extends Machine<ComboListState, ComboListEvent> {
     return switch ((s, e)) {
       (_, SelectBasicView()) => const ComboViewBasic(),
       (_, SelectPracticeView()) => const ComboViewPractice(),
-      _ => null,
     };
   }
 }

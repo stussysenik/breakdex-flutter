@@ -1,8 +1,5 @@
-import 'package:flutter/material.dart';
-import 'lib/features/video_editor/video_editor_controller.dart';
-import 'lib/features/video_editor/robust_video_editor_view.dart';
-import 'lib/features/breakdex/breakdex_screen.dart';
-
+// Scratch debug script — not part of the app.
+// ignore_for_file: avoid_print
 void main() {
   print('Compilation check successful');
 }

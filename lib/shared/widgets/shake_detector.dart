@@ -25,7 +25,6 @@ class _ShakeDetectorState extends ConsumerState<ShakeDetector> {
   DateTime _lastShake = DateTime.now();
   static const _shakeThreshold = 15.0;
   static const _minInterval = Duration(seconds: 2);
-  static const _sampleWindow = Duration(milliseconds: 500);
 
   final List<double> _xSamples = [];
   final List<double> _ySamples = [];
@@ -51,7 +50,6 @@ class _ShakeDetectorState extends ConsumerState<ShakeDetector> {
     _ySamples.add(event.y);
     _zSamples.add(event.z);
 
-    final oldest = now.subtract(_sampleWindow);
     _xSamples.removeWhere((_) => _xSamples.length > 50);
     _ySamples.removeWhere((_) => _ySamples.length > 50);
     _zSamples.removeWhere((_) => _zSamples.length > 50);
@@ -113,7 +111,3 @@ class ComboShakeWrapper extends ConsumerWidget {
 final bottomNavShellProvider = Provider.autoDispose<Widget>((final ref) {
   throw UnimplementedError('Use ComboShakeWrapper as a wrapper instead');
 });
-
-extension on GoRouter {
-  String get currentPath => routerDelegate.currentConfiguration.uri.path;
-}

@@ -6,10 +6,9 @@ import 'package:fpdart/fpdart.dart';
 import '../domain/failures/failure.dart';
 
 class AuthService {
-  final SharedPreferences _prefs;
   bool _initialized = false;
 
-  AuthService(this._prefs);
+  AuthService(SharedPreferences _);
 
   bool get isLoggedIn {
     if (!_initialized) return false;

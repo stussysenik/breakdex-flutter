@@ -78,9 +78,9 @@ class StorageActionMachine {
     
     try {
       return await switch (action) {
-        MaterializeAction a => _handleMaterialize(a, logger),
-        DuplicateAction a => _handleDuplicate(a, logger),
-        DeleteAction a => _handleDelete(a, logger),
+        final MaterializeAction a => _handleMaterialize(a, logger),
+        final DuplicateAction a => _handleDuplicate(a, logger),
+        final DeleteAction a => _handleDelete(a, logger),
       };
     } catch (e, st) {
       logger.fail(e, st);

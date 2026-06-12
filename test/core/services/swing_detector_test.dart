@@ -64,7 +64,7 @@ void main() {
         ));
       }
 
-      await Future.delayed(const Duration(milliseconds: 100));
+      await Future<void>.delayed(const Duration(milliseconds: 100));
 
       detector.stop();
       expect(swingCount, 1);
@@ -88,7 +88,7 @@ void main() {
         ));
       }
 
-      await Future.delayed(const Duration(milliseconds: 100));
+      await Future<void>.delayed(const Duration(milliseconds: 100));
 
       detector.stop();
       expect(swingCount, 0);
@@ -111,7 +111,7 @@ void main() {
         ));
       }
 
-      await Future.delayed(const Duration(milliseconds: 100));
+      await Future<void>.delayed(const Duration(milliseconds: 100));
 
       detector.stop();
       expect(swingCount, 0);
@@ -137,11 +137,11 @@ void main() {
         ));
       }
 
-      await Future.delayed(const Duration(milliseconds: 50));
+      await Future<void>.delayed(const Duration(milliseconds: 50));
       expect(swingCount, 1);
 
       // Wait past the 1-second cooldown
-      await Future.delayed(const Duration(seconds: 2));
+      await Future<void>.delayed(const Duration(seconds: 2));
 
       // Second swing — should trigger
       final t2 = DateTime.now();
@@ -152,7 +152,7 @@ void main() {
         ));
       }
 
-      await Future.delayed(const Duration(milliseconds: 100));
+      await Future<void>.delayed(const Duration(milliseconds: 100));
 
       detector.stop();
       expect(swingCount, 2);
@@ -176,7 +176,7 @@ void main() {
         ));
       }
 
-      await Future.delayed(const Duration(milliseconds: 50));
+      await Future<void>.delayed(const Duration(milliseconds: 50));
       expect(swingCount, 1);
 
       // Stop and restart
@@ -192,7 +192,7 @@ void main() {
         ));
       }
 
-      await Future.delayed(const Duration(milliseconds: 100));
+      await Future<void>.delayed(const Duration(milliseconds: 100));
 
       detector.stop();
       expect(swingCount, 2);

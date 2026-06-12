@@ -392,7 +392,7 @@ class VideoService {
   }) async {
     var status = await checkVideoFile(path);
     for (int i = 0; i < maxRetries && status == VideoFileStatus.error; i++) {
-      await Future.delayed(Duration(seconds: 1 << i));
+      await Future<void>.delayed(Duration(seconds: 1 << i));
       status = await checkVideoFile(path);
     }
     return status;
@@ -423,7 +423,7 @@ class VideoService {
     for (int i = 0;
         i < maxRetries && status == VideoFileStatus.error;
         i++) {
-      await Future.delayed(Duration(seconds: 1 << i));
+      await Future<void>.delayed(Duration(seconds: 1 << i));
       status = await checkVideoFile(path);
     }
     switch (status) {
@@ -768,7 +768,7 @@ class VideoService {
         onStatus?.call(
           'Waiting for iCloud download... (retry ${attempt + 1}/${maxRetries + 1})',
         );
-        await Future.delayed(Duration(seconds: 1 << attempt));
+        await Future<void>.delayed(Duration(seconds: 1 << attempt));
       }
     }
     throw lastError ?? Exception('Video copy failed');

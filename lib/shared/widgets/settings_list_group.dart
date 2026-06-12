@@ -11,8 +11,6 @@ class SettingsListGroup extends StatelessWidget {
 
   @override
   Widget build(final BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
-
     return Container(
       decoration: AppSurfaces.panel(context, tone: AppSurfaceTone.muted, radius: AppRadius.md),
       child: ClipRRect(

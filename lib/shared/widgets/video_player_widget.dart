@@ -280,7 +280,7 @@ class _VideoPlayerWidgetState extends ConsumerState<VideoPlayerWidget>
     MediaPlaybackCoordinator.shared.suppressNextNavigationPause();
     Navigator.of(context, rootNavigator: true)
         .push(
-          PageRouteBuilder(
+          PageRouteBuilder<void>(
             pageBuilder: (_, _, _) => _FullscreenVideoPlayer(
               controller: _controller,
               playbackId: _playbackId,

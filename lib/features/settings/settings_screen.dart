@@ -128,19 +128,19 @@ class SettingsScreen extends ConsumerWidget {
                     ),
                   ),
                   const SizedBox(height: AppSpacing.md),
-                  _SettingsPanel(
+                  const _SettingsPanel(
                     title: 'Learning Engine',
-                    child: const _FsrsToggle(),
+                    child: _FsrsToggle(),
                   ),
                   const SizedBox(height: AppSpacing.md),
-                  _SettingsPanel(
+                  const _SettingsPanel(
                     title: 'Quiet Mode',
-                    child: const _QuietModeToggle(),
+                    child: _QuietModeToggle(),
                   ),
                   const SizedBox(height: AppSpacing.md),
-                  _SettingsPanel(
+                  const _SettingsPanel(
                     title: 'Review View Composer',
-                    child: const ReviewCardDisplaySection(),
+                    child: ReviewCardDisplaySection(),
                   ),
                   const SizedBox(height: AppSpacing.md),
                   _SettingsPanel(
@@ -157,14 +157,14 @@ class SettingsScreen extends ConsumerWidget {
                     ),
                   ),
                   const SizedBox(height: AppSpacing.md),
-                  _SettingsPanel(
+                  const _SettingsPanel(
                     title: 'Video Editor',
-                    child: const _VideoEditorToggle(),
+                    child: _VideoEditorToggle(),
                   ),
                   const SizedBox(height: AppSpacing.md),
-                  _SettingsPanel(
+                  const _SettingsPanel(
                     title: 'Stats Tab',
-                    child: const _StatsTabToggle(),
+                    child: _StatsTabToggle(),
                   ),
                 ],
               ),
@@ -445,7 +445,7 @@ class SettingsScreen extends ConsumerWidget {
   }
 
   void _showClearDataDialog(final BuildContext context, final WidgetRef ref) {
-    showDialog(
+    showDialog<bool>(
       context: context,
       builder: (final ctx) => StatefulBuilder(
         builder: (final ctx, final setDialogState) {
@@ -736,7 +736,7 @@ class SettingsScreen extends ConsumerWidget {
     final WidgetRef ref,
     final Category cat,
   ) {
-    showDialog(
+    showDialog<void>(
       context: context,
       builder: (final context) {
         final controller = TextEditingController(text: cat.name);
@@ -825,7 +825,7 @@ class SettingsScreen extends ConsumerWidget {
     final String current,
   ) {
     final controller = TextEditingController(text: current);
-    showDialog(
+    showDialog<void>(
       context: context,
       builder: (final ctx) => AlertDialog(
         title: const Text('Rename Page Title'),
@@ -862,7 +862,7 @@ class SettingsScreen extends ConsumerWidget {
     final String current,
   ) {
     final controller = TextEditingController(text: current);
-    showDialog(
+    showDialog<void>(
       context: context,
       builder: (final ctx) => AlertDialog(
         title: Text('Rename ${defaultLearningStateLabels[state]}'),
@@ -897,7 +897,7 @@ class SettingsScreen extends ConsumerWidget {
   }
 
   void _showAddCategoryDialog(final BuildContext context, final WidgetRef ref) {
-    showDialog(
+    showDialog<void>(
       context: context,
       builder: (final context) {
         final controller = TextEditingController();
@@ -1183,7 +1183,7 @@ class _SettingsSubPanel extends StatelessWidget {
                 ),
               ),
             ),
-            if (action != null) action!,
+            ?action,
           ],
         ),
         const SizedBox(height: AppSpacing.xs),

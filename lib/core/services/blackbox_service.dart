@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'package:flutter/foundation.dart';
 import 'package:path/path.dart' as p;
 import 'app_storage_paths.dart';
 
@@ -26,7 +27,7 @@ class BlackboxService {
       await file.writeAsString(entry, mode: FileMode.append, flush: true);
     } catch (e) {
       // Safety log failure should not crash the app, but we print it
-      print('[Blackbox] Logging failed: $e');
+      debugPrint('[Blackbox] Logging failed: $e');
     }
   }
 

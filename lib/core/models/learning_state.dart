@@ -23,7 +23,7 @@ class CustomLearningState {
         'id': id,
         'label': label,
         'dbValue': dbValue,
-        'color': color.value.toRadixString(16).padLeft(8, '0'),
+        'color': color.toARGB32().toRadixString(16).padLeft(8, '0'),
       };
 
   factory CustomLearningState.fromJson(final Map<String, dynamic> json) {

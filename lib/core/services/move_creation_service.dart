@@ -9,11 +9,8 @@ import '../data/repositories.dart';
 import '../database/database.dart';
 import '../database/daos/fsrs_cards_dao.dart';
 import '../models/move_creation.dart';
-import '../utils/diagnostics.dart';
-import '../utils/filesystem_utils.dart';
 import 'reviewable_naming_service.dart';
 import 'video_path_resolver.dart';
-import '../sync/asset_hash_service.dart';
 import 'blackbox_service.dart';
 import 'storage_action_machine.dart';
 import '../models/canonical_path.dart';
@@ -106,7 +103,7 @@ class MoveCreationService {
         localPath: finalAbs,
         moveId: moveId,
         precomputedHash: contentHash,
-      ).catchError((final e) => debugPrint('[SyncHook] Failed: $e')));
+      ).catchError((final Object e) => debugPrint('[SyncHook] Failed: $e')));
     }
 
     return CreateMoveResult(

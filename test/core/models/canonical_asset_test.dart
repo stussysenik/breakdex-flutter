@@ -195,7 +195,7 @@ void main() {
 
   group('CanonicalAsset is sealed', () {
     test('subclasses type-checked by compiler', () {
-      final live = CanonicalAssetLive(
+      final CanonicalAsset live = CanonicalAssetLive(
         localPath: '/p/v.mp4', hash: 'hash', fileSizeBytes: 100,
         source: AssetSource.camera, importedAt: baseTime,
       );

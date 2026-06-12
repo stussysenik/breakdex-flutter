@@ -907,7 +907,7 @@ class _SimplifiedVideoEditorViewState extends ConsumerState<SimplifiedVideoEdito
       );
       if (confirmed != true || !mounted) return;
     }
-    if (mounted) context.pop();
+    if (mounted) this.context.pop();
   }
 
   void _showCustomAspectDialog() {
@@ -918,7 +918,7 @@ class _SimplifiedVideoEditorViewState extends ConsumerState<SimplifiedVideoEdito
       hController.text = (16.0 / _customAspectRatio!).round().toString();
     }
 
-    showModalBottomSheet(
+    showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
       shape: const RoundedRectangleBorder(
@@ -1219,8 +1219,11 @@ class _TrimTimelineState extends State<_TrimTimeline> {
     String? target;
     if (dStart < _kGrabRadiusPx && dStart <= dEnd && dStart <= dPlayhead) {
       target = 'start';
-    } else if (dEnd < _kGrabRadiusPx && dEnd <= dStart && dEnd <= dPlayhead) target = 'end';
-    else if (dPlayhead < _kGrabRadiusPx) target = 'playhead';
+    } else if (dEnd < _kGrabRadiusPx && dEnd <= dStart && dEnd <= dPlayhead) {
+      target = 'end';
+    } else if (dPlayhead < _kGrabRadiusPx) {
+      target = 'playhead';
+    }
 
     if (target != null) {
       widget.onDragStart?.call();

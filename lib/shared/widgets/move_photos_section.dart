@@ -124,7 +124,7 @@ class _MovePhotosSectionState extends State<MovePhotosSection> {
     final fullPath = await _resolveAbsolutePath(filename);
     if (fullPath == null || !mounted) return;
 
-    await showDialog(
+    await showDialog<void>(
       context: context,
       builder: (final ctx) => Dialog.fullscreen(
         child: Stack(

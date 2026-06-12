@@ -31,9 +31,4 @@ class _TaggedWidget extends InheritedWidget {
 
   @override
   bool updateShouldNotify(final _TaggedWidget old) => tag != old.tag;
-
-  static String? tagOf(final BuildContext context) {
-    final widget = context.getInheritedWidgetOfExactType<_TaggedWidget>();
-    return widget?.tag;
-  }
 }

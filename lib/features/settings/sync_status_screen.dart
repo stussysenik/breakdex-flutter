@@ -49,7 +49,7 @@ class SyncStatusScreen extends ConsumerWidget {
                 : 'WiFi only',
             trailing: Switch.adaptive(
               value: networkPolicy.syncOnMobileData,
-              activeColor: AppColors.accent,
+              activeThumbColor: AppColors.accent,
               onChanged: (final value) async {
                 await networkPolicy.setSyncOnMobileData(enabled: value);
               },

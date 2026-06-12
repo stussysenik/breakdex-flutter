@@ -118,16 +118,16 @@ NativeDatabase v21Database({final bool legacyCreatedAt = false}) {
         "INSERT INTO combos (id, name) VALUES ('c2', 'Fresh Sketch')",
       );
       rawDb.execute(
-        "INSERT INTO combo_moves (id, combo_id, move_id, sequence_index) "
+        'INSERT INTO combo_moves (id, combo_id, move_id, sequence_index) '
         "VALUES ('cm1', 'c1', 'm1', 0)",
       );
       // Entries with known timestamps: earliest = 1700000000
       rawDb.execute(
-        "INSERT INTO combo_note_entries (id, combo_id, body, created_at) "
+        'INSERT INTO combo_note_entries (id, combo_id, body, created_at) '
         "VALUES ('e1', 'c1', 'first jot — unicode ✓ → preserved', 1700000000)",
       );
       rawDb.execute(
-        "INSERT INTO combo_note_entries (id, combo_id, body, created_at) "
+        'INSERT INTO combo_note_entries (id, combo_id, body, created_at) '
         "VALUES ('e2', 'c1', 'second jot', 1710000000)",
       );
 
@@ -264,7 +264,7 @@ void main() {
       expect(c1.read<String>('status'), 'attempting');
 
       await db.customStatement(
-        "INSERT INTO combo_plans (id, combo_id, plan_date, position, created_at) "
+        'INSERT INTO combo_plans (id, combo_id, plan_date, position, created_at) '
         "VALUES ('p1', 'c1', strftime('%s','now'), 0, strftime('%s','now'))",
       );
       final plans =

@@ -331,7 +331,7 @@ void main() {
 
     test('valid nesting (no cycle) is accepted', () async {
       final aId = await dao.createSet(SetsCompanion.insert(id: _nextId(), name: 'Set A'));
-      final bId = await dao.createSet(SetsCompanion.insert(id: _nextId(), name: 'Set B'));
+      await dao.createSet(SetsCompanion.insert(id: _nextId(), name: 'Set B'));
       final cId = await dao.createSet(SetsCompanion.insert(id: _nextId(), name: 'Set C'));
 
       final valid = await dao.validateNoCycle(aId, cId);

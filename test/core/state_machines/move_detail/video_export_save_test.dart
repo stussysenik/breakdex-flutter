@@ -122,7 +122,7 @@ void main() {
       notifier.send(VideoEdited(sourceVideoFile.path));
 
       // Wait for the async side effects to execute
-      await Future.delayed(const Duration(milliseconds: 200));
+      await Future<void>.delayed(const Duration(milliseconds: 200));
 
       // Verify: DB contains updated video path and content hash
       final dbMove = await (db.select(

@@ -1,4 +1,3 @@
-import 'package:flutter/foundation.dart';
 
 sealed class ComboListState {
   const ComboListState();

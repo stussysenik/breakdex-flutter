@@ -16,7 +16,6 @@ import 'core/providers.dart';
 import 'core/services/automation_fixture_service.dart';
 import 'core/services/database_recovery_service.dart';
 import 'core/services/video_path_resolver.dart';
-import 'core/services/canonical_folder_service.dart';
 import 'core/services/video_storage_gate.dart';
 import 'core/services/fsrs_migration_service.dart';
 import 'core/services/managed_album_reconciliation_service.dart';

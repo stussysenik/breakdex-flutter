@@ -49,7 +49,7 @@ class _QuickVideoViewerState extends ConsumerState<QuickVideoViewer>
               _controller.play();
             }
           })
-          .catchError((final e, final stack) {
+          .catchError((final Object e, final StackTrace stack) {
             DiagnosticsLog.error('QuickVideoViewer', '_init failed: $e');
             if (mounted) {
               setState(() {

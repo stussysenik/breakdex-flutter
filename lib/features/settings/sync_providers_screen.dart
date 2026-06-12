@@ -248,7 +248,7 @@ class _AddProviderButton extends ConsumerWidget {
   }
 
   void _showAddProviderSheet(final BuildContext context, final WidgetRef ref) {
-    showModalBottomSheet(
+    showModalBottomSheet<void>(
       context: context,
       backgroundColor: Theme.of(context).colorScheme.surface,
       shape: const RoundedRectangleBorder(

@@ -143,6 +143,7 @@ class _MoveRow extends ConsumerWidget {
       final repo = ref.read(moveRepositoryProvider);
       await repo.archive(move.id, reason: 'user_swipe');
       debugPrint('[MoveRow] Move ARCHIVED: id=${move.id} name="${move.name}"');
+      if (!context.mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('"${move.name}" moved to Recently Deleted'),

@@ -56,7 +56,7 @@ class _MoveDetailScreenState extends ConsumerState<MoveDetailScreen> {
           debugPrint('[MoveDetailScreen] initState loaded move name="${m.name}" id=${m.id}');
           ref.read(moveDetailProvider.notifier).init(m);
         }
-      }).catchError((final err, final stack) {
+      }).catchError((final Object err, final StackTrace stack) {
         debugPrint('[MoveDetailScreen] initState FAILED to load moveId=$moveId — $err');
         if (mounted) {
           context.pop();
@@ -72,7 +72,9 @@ class _MoveDetailScreenState extends ConsumerState<MoveDetailScreen> {
 
     // Handle terminal states
     if (machineState is Gone) {
-      Future.microtask(() => context.pop());
+      Future.microtask(() {
+        if (mounted) this.context.pop();
+      });
       return const Scaffold(body: Center(child: CircularProgressIndicator()));
     }
 

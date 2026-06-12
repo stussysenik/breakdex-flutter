@@ -287,7 +287,7 @@ class _MoveAnalysisScreenState extends ConsumerState<MoveAnalysisScreen> {
             ref.read(currentPoseProvider.notifier).state = frame;
           }
         },
-        onError: (final e) {
+        onError: (final Object e) {
           debugPrint('[MoveAnalysis] Live pose error: $e');
           _stopLivePose();
         },

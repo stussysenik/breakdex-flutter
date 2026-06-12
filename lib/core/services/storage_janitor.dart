@@ -1,11 +1,9 @@
 import 'dart:io';
-import 'package:flutter/foundation.dart';
 import 'package:path/path.dart' as p;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../database/database.dart';
 import '../providers.dart';
-import '../models/canonical_path.dart';
 import '../utils/diagnostics.dart';
 import '../utils/filesystem_utils.dart';
 import 'video_path_resolver.dart';

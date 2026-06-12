@@ -34,7 +34,7 @@ sealed class LoadingStateMachine<T> {
     };
     final maxAttempts = switch (this) {
       Retrying(maxAttempts: final m) => m,
-      _ => 3,
+      _ => event.maxAttempts ?? 3,
     };
     if (currentAttempt >= maxAttempts) return _maxRetriesExhausted;
     return Retrying(attempt: currentAttempt + 1, maxAttempts: maxAttempts);
@@ -108,6 +108,7 @@ class LoadingEvent {
     this.data,
     this.errorMessage,
     this.retryable,
+    this.maxAttempts,
   });
 
   static const start = LoadingEvent._('start');
@@ -126,6 +127,7 @@ class LoadingEvent {
   final dynamic data;
   final String? errorMessage;
   final bool? retryable;
+  final int? maxAttempts;
 }
 
 class LoadingStateController<T> {
@@ -145,7 +147,8 @@ class LoadingStateController<T> {
 
   void send(final LoadingEvent event) {
     final next = switch (event.type) {
-      'retry' => _state.transition(LoadingEvent._('retry', retryable: _isRetryable)),
+      'retry' => _state.transition(
+          LoadingEvent._('retry', retryable: _isRetryable, maxAttempts: _maxAttempts)),
       'progress' => _withMonotonicProgress(event),
       _ => _state.transition(event),
     };

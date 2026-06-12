@@ -1,3 +1,5 @@
+// Scratch debug script — not part of the app.
+// ignore_for_file: avoid_print, unused_local_variable
 import 'dart:io';
 import 'package:path/path.dart' as p;
 
