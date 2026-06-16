@@ -22,6 +22,7 @@ import 'data/drift_repositories.dart';
 import 'data/sync_aware_repositories.dart';
 import 'design/colors.dart';
 import 'design/typography.dart';
+import 'models/fsrs_settings.dart';
 import 'models/learning_state.dart';
 import 'models/learning_state_colors.dart';
 import 'models/provenance_report.dart';
@@ -132,9 +133,13 @@ final fsrsCardsDaoProvider = Provider<FsrsCardsDao>((final ref) {
 });
 
 final fsrsServiceProvider = Provider<FsrsService>((final ref) {
+  // Watches settings so the scheduler is rebuilt from current values when the
+  // learner edits a parameter; the next review then uses the latest settings.
+  // No in-flight card is mutated by this — only the math on its next review.
   return FsrsService(
     ref.watch(fsrsCardsDaoProvider),
     clock: ref.watch(appClockProvider),
+    settings: ref.watch(fsrsSettingsProvider),
   );
 });
 
@@ -467,8 +472,73 @@ class ReviewModeNotifier extends Notifier<ReviewMode> {
   }
 }
 
-/// Static FSRS config provider for the SRS parameters card.
-final fsrsConfigProvider = Provider<FsrsConfig>((_) => FsrsService.config);
+// ---------------------------------------------------------------------------
+// FSRS scheduling settings — user-tunable, persisted in SharedPreferences.
+// Strictly prefs-only: no schema change, no migration, no write to fsrs_cards.
+// ---------------------------------------------------------------------------
+
+final fsrsSettingsProvider =
+    NotifierProvider<FsrsSettingsNotifier, FsrsSettings>(
+  FsrsSettingsNotifier.new,
+);
+
+/// Holds the live FSRS settings, seeded from prefs (defaults when absent).
+///
+/// Every setter clamps to a safe range, persists, then updates state — so the
+/// UI reflects the edit immediately and `fsrsServiceProvider` rebuilds the
+/// scheduler. Persistence is awaited inside each setter, but state is updated
+/// synchronously first so the control never appears frozen while the (fast,
+/// in-memory-backed) prefs write completes.
+class FsrsSettingsNotifier extends Notifier<FsrsSettings> {
+  @override
+  FsrsSettings build() {
+    final prefs = ref.watch(sharedPreferencesProvider);
+    return FsrsSettings.fromPrefs(prefs);
+  }
+
+  Future<void> _persist(final FsrsSettings next) async {
+    state = next;
+    await next.writeTo(ref.read(sharedPreferencesProvider));
+  }
+
+  Future<void> setDesiredRetention(final double value) =>
+      _persist(state.copyWith(
+        desiredRetention: FsrsSettings.clampRetention(value),
+      ));
+
+  Future<void> setMaximumInterval(final int days) =>
+      _persist(state.copyWith(
+        maximumInterval: FsrsSettings.clampMaximumInterval(days),
+      ));
+
+  Future<void> setFuzzing({required final bool enabled}) =>
+      _persist(state.copyWith(enableFuzzing: enabled));
+
+  Future<void> setLearningSteps(final List<Duration> steps) =>
+      _persist(state.copyWith(
+        learningSteps: FsrsSettings.sanitizeSteps(steps),
+      ));
+
+  Future<void> setRelearningSteps(final List<Duration> steps) =>
+      _persist(state.copyWith(
+        relearningSteps: FsrsSettings.sanitizeSteps(steps),
+      ));
+
+  Future<void> resetToDefaults() => _persist(FsrsSettings.defaults);
+}
+
+/// FSRS config for the SRS parameters card — derived from the live settings so
+/// the card reflects edits immediately.
+final fsrsConfigProvider = Provider<FsrsConfig>((final ref) {
+  final s = ref.watch(fsrsSettingsProvider);
+  return FsrsConfig(
+    desiredRetention: s.desiredRetention,
+    learningSteps: s.learningSteps,
+    relearningSteps: s.relearningSteps,
+    maximumInterval: s.maximumInterval,
+    enableFuzzing: s.enableFuzzing,
+  );
+});
 
 // ---------------------------------------------------------------------------
 // Native ML + 3D capabilities

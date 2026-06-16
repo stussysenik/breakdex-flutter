@@ -3,6 +3,7 @@ import 'package:fsrs/fsrs.dart' as fsrs;
 
 import '../database/database.dart';
 import '../database/daos/fsrs_cards_dao.dart';
+import '../models/fsrs_settings.dart';
 import '../models/learning_state.dart';
 import '../models/reviewable_item.dart';
 import '../utils/app_clock.dart';
@@ -159,26 +160,26 @@ class FsrsService {
   /// so direct constructions keep working, but production wires in the
   /// app-wide [appClockProvider] so all scheduling reads "now" from one seam
   /// (deterministic under test, and a future hook for trusted/NTP time).
-  FsrsService(this._dao, {final AppClock? clock})
-    : _clock = clock ?? SystemClock(),
-      _scheduler = fsrs.Scheduler(
-        desiredRetention: 0.85,
-        // Keep learning lightweight: one short reinforcement step before
-        // graduating to the longer review intervals.
-        learningSteps: [const Duration(minutes: 10)],
-        relearningSteps: [const Duration(minutes: 10)],
-        maximumInterval: 36500,
-        enableFuzzing: true,
-      );
-
-  /// Static config exposed for the SRS parameters card UI.
-  static const config = FsrsConfig(
-    desiredRetention: 0.85,
-    learningSteps: [Duration(minutes: 10)],
-    relearningSteps: [Duration(minutes: 10)],
-    maximumInterval: 36500,
-    enableFuzzing: true,
-  );
+  ///
+  /// [settings] supplies the scheduler parameters. It defaults to
+  /// [FsrsSettings.defaults] — the prior hardcoded constants — so existing
+  /// direct constructions and tests schedule identically. In production
+  /// `fsrsServiceProvider` injects the user's persisted settings and rebuilds
+  /// the service when they change, so the *next* review uses current values.
+  FsrsService(
+    this._dao, {
+    final AppClock? clock,
+    final FsrsSettings settings = FsrsSettings.defaults,
+  })  : _clock = clock ?? SystemClock(),
+        _scheduler = fsrs.Scheduler(
+          desiredRetention:
+              FsrsSettings.clampRetention(settings.desiredRetention),
+          learningSteps: settings.learningSteps,
+          relearningSteps: settings.relearningSteps,
+          maximumInterval:
+              FsrsSettings.clampMaximumInterval(settings.maximumInterval),
+          enableFuzzing: settings.enableFuzzing,
+        );
 
   /// Process a review rating for an entity and update FSRS scheduling data.
   ///
