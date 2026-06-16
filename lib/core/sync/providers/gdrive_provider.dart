@@ -7,6 +7,10 @@ import 'package:http/http.dart' as http;
 
 import '../cloud_provider.dart';
 
+/// Restores a Drive session without UI, returning an authenticated client or
+/// `null` when no cached Google session is available. Injectable for testing.
+typedef DriveApiRestorer = Future<drive.DriveApi?> Function();
+
 /// Google Drive adapter — stores videos in a user-visible "Breakdex" folder.
 ///
 /// Uses `DriveApi.driveFileScope` (not appDataScope) so the web viewer can
@@ -18,9 +22,20 @@ import '../cloud_provider.dart';
 /// - OAuth 2.0 client ID in Google Cloud Console
 /// - GoogleService-Info.plist (iOS) / google-services.json (Android)
 class GDriveProvider extends CloudProvider {
+  /// [restoreSession] re-hydrates a cached session without UI. Defaults to a
+  /// real silent Google Sign-In; tests inject a fake.
+  GDriveProvider({final DriveApiRestorer? restoreSession})
+    : _restoreSession = restoreSession ?? _defaultRestoreSession;
+
+  final DriveApiRestorer _restoreSession;
+
   GoogleSignInAccount? _account;
   drive.DriveApi? _driveApi;
   String? _breakdexFolderId;
+
+  /// Shared in-flight restore so a burst of file ops triggers one silent
+  /// sign-in, not one per caller.
+  Future<drive.DriveApi?>? _restoreInFlight;
 
   /// Stored folder ID from provider config — avoids repeated lookups.
   String? configFolderId;
@@ -37,7 +52,8 @@ class GDriveProvider extends CloudProvider {
   /// `google-services.json` (Android) is bundled with the app. This prevents
   /// the `google_sign_in` SDK from being instantiated with a placeholder
   /// client ID, which causes a SIGABRT at launch.
-  static bool get isConfigured => true; // OAuth client + REVERSED_CLIENT_ID URL scheme configured
+  static bool get isConfigured =>
+      true; // OAuth client + REVERSED_CLIENT_ID URL scheme configured
 
   @override
   String get providerType => 'gdrive';
@@ -47,10 +63,10 @@ class GDriveProvider extends CloudProvider {
 
   @override
   Set<CloudProviderCapability> get capabilities => {
-        CloudProviderCapability.resumableUpload,
-        CloudProviderCapability.rangeDownload,
-        CloudProviderCapability.quota,
-      };
+    CloudProviderCapability.resumableUpload,
+    CloudProviderCapability.rangeDownload,
+    CloudProviderCapability.quota,
+  };
 
   // ---------------------------------------------------------------------------
   // Authentication
@@ -97,7 +113,24 @@ class GDriveProvider extends CloudProvider {
   }
 
   @override
-  Future<bool> get isAuthenticated async => _account != null && _driveApi != null;
+  Future<bool> get isAuthenticated async => (await _restoredApi()) != null;
+
+  /// Production session restore: silent Google Sign-In → Drive client, no UI.
+  static Future<drive.DriveApi?> _defaultRestoreSession() async {
+    if (!isConfigured) return null;
+    try {
+      final googleSignIn = GoogleSignIn(
+        scopes: [drive.DriveApi.driveFileScope],
+      );
+      final account = await googleSignIn.signInSilently();
+      if (account == null) return null;
+      final auth = await account.authentication;
+      return drive.DriveApi(GoogleAuthClient(auth));
+    } catch (e) {
+      debugPrint('[GDriveProvider] Silent session restore failed: $e');
+      return null;
+    }
+  }
 
   // ---------------------------------------------------------------------------
   // File operations
@@ -109,8 +142,8 @@ class GDriveProvider extends CloudProvider {
     required final String remotePath,
     final TransferProgress? onProgress,
     final CancellationToken? cancel,
-  }) async {
-    final api = _requireApi();
+  }) => _run(() async {
+    final api = await _ensureApi();
     final file = File(localPath);
     final stat = await file.stat();
     final folderId = await _requireFolderId();
@@ -156,7 +189,7 @@ class GDriveProvider extends CloudProvider {
       sizeBytes: int.tryParse(result.size ?? '') ?? stat.size,
       etag: result.md5Checksum,
     );
-  }
+  });
 
   @override
   Future<void> download({
@@ -164,8 +197,8 @@ class GDriveProvider extends CloudProvider {
     required final String localPath,
     final TransferProgress? onProgress,
     final CancellationToken? cancel,
-  }) async {
-    final api = _requireApi();
+  }) => _run(() async {
+    final api = await _ensureApi();
 
     // remotePath is either a Drive file ID or a filename in Breakdex
     final fileId = await _resolveFileId(remotePath);
@@ -173,10 +206,12 @@ class GDriveProvider extends CloudProvider {
       throw StateError('File not found: $remotePath');
     }
 
-    final response = await api.files.get(
-      fileId,
-      downloadOptions: drive.DownloadOptions.fullMedia,
-    ) as drive.Media;
+    final response =
+        await api.files.get(
+              fileId,
+              downloadOptions: drive.DownloadOptions.fullMedia,
+            )
+            as drive.Media;
 
     final outFile = File(localPath);
     final sink = outFile.openWrite();
@@ -195,7 +230,7 @@ class GDriveProvider extends CloudProvider {
 
     await sink.close();
     debugPrint('[GDriveProvider] Downloaded $fileId → $localPath');
-  }
+  });
 
   @override
   Future<bool> verify({
@@ -203,16 +238,15 @@ class GDriveProvider extends CloudProvider {
     final String? expectedHash,
     final int? expectedSize,
   }) async {
-    final api = _requireApi();
+    final api = await _ensureApi();
 
     final fileId = await _resolveFileId(remotePath);
     if (fileId == null) return false;
 
     try {
-      final file = await api.files.get(
-        fileId,
-        $fields: 'size,md5Checksum',
-      ) as drive.File;
+      final file =
+          await api.files.get(fileId, $fields: 'size,md5Checksum')
+              as drive.File;
 
       if (expectedSize != null) {
         final actualSize = int.tryParse(file.size ?? '');
@@ -229,40 +263,41 @@ class GDriveProvider extends CloudProvider {
   }
 
   @override
-  Future<List<RemoteAsset>> list({required final String directory}) async {
-    final api = _requireApi();
-    final folderId = await _requireFolderId();
+  Future<List<RemoteAsset>> list({required final String directory}) =>
+      _run(() async {
+        final api = await _ensureApi();
+        final folderId = await _requireFolderId();
 
-    final result = await api.files.list(
-      q: "'$folderId' in parents and trashed = false",
-      $fields: 'files(id,name,size,md5Checksum,modifiedTime)',
-      pageSize: 1000,
-    );
+        final result = await api.files.list(
+          q: "'$folderId' in parents and trashed = false",
+          $fields: 'files(id,name,size,md5Checksum,modifiedTime)',
+          pageSize: 1000,
+        );
 
-    return (result.files ?? []).map((final f) {
-      return RemoteAsset(
-        remotePath: f.id!,
-        sizeBytes: int.tryParse(f.size ?? '') ?? 0,
-        etag: f.md5Checksum,
-        modifiedAt: f.modifiedTime,
-      );
-    }).toList();
-  }
+        return (result.files ?? []).map((final f) {
+          return RemoteAsset(
+            remotePath: f.id!,
+            sizeBytes: int.tryParse(f.size ?? '') ?? 0,
+            etag: f.md5Checksum,
+            modifiedAt: f.modifiedTime,
+          );
+        }).toList();
+      });
 
   @override
-  Future<void> delete({required final String remotePath}) async {
-    final api = _requireApi();
+  Future<void> delete({required final String remotePath}) => _run(() async {
+    final api = await _ensureApi();
 
     final fileId = await _resolveFileId(remotePath);
     if (fileId == null) return;
 
     await api.files.delete(fileId);
     debugPrint('[GDriveProvider] Deleted $fileId');
-  }
+  });
 
   @override
   Future<({int totalBytes, int usedBytes})?> quota() async {
-    final api = _requireApi();
+    final api = await _ensureApi();
 
     try {
       final about = await api.about.get($fields: 'storageQuota');
@@ -283,11 +318,51 @@ class GDriveProvider extends CloudProvider {
   // Internals
   // ---------------------------------------------------------------------------
 
-  drive.DriveApi _requireApi() {
-    if (_driveApi == null) {
+  /// Returns the live Drive client, restoring a cached session on demand so a
+  /// fresh provider (rebuilt from the DB row) can operate without an explicit
+  /// re-authenticate. Throws only when no session can be restored.
+  Future<drive.DriveApi> _ensureApi() async {
+    final api = await _restoredApi();
+    if (api == null) {
       throw StateError('GDriveProvider not authenticated');
     }
-    return _driveApi!;
+    return api;
+  }
+
+  /// Memoised restore: returns the live client if present, otherwise a single
+  /// shared restore future so concurrent callers don't each silent-sign-in.
+  Future<drive.DriveApi?> _restoredApi() {
+    if (_driveApi != null) return Future.value(_driveApi);
+    return _restoreInFlight ??= _doRestore();
+  }
+
+  Future<drive.DriveApi?> _doRestore() async {
+    try {
+      return _driveApi = await _restoreSession();
+    } finally {
+      _restoreInFlight = null;
+    }
+  }
+
+  /// Drops the cached client so the next op restores a fresh session — the
+  /// recovery path when an access token has expired or been revoked.
+  void _invalidateSession() {
+    _driveApi = null;
+    _restoreInFlight = null;
+  }
+
+  /// Runs a Drive op, transparently restoring a fresh session and retrying
+  /// once if the cached token is rejected (401/403). Every wrapped op
+  /// re-derives its request (and file streams) on retry, so one retry is safe.
+  Future<T> _run<T>(final Future<T> Function() op) async {
+    try {
+      return await op();
+    } on drive.DetailedApiRequestError catch (e) {
+      if (e.status != 401 && e.status != 403) rethrow;
+      debugPrint('[GDriveProvider] Auth rejected (${e.status}) — restoring');
+      _invalidateSession();
+      return await op();
+    }
   }
 
   Future<String> _requireFolderId() async {
@@ -302,7 +377,7 @@ class GDriveProvider extends CloudProvider {
 
   /// Find or create the "Breakdex" folder in the user's Drive root.
   Future<void> _ensureBreakdexFolder() async {
-    final api = _requireApi();
+    final api = await _ensureApi();
 
     // Search for existing folder
     final result = await api.files.list(
@@ -329,7 +404,7 @@ class GDriveProvider extends CloudProvider {
 
   /// Find a file by name in the Breakdex folder.
   Future<drive.File?> _findFile(final String remotePath) async {
-    final api = _requireApi();
+    final api = await _ensureApi();
     final folderId = await _requireFolderId();
     final fileName = remotePath.split('/').last;
 
@@ -352,7 +427,9 @@ class GDriveProvider extends CloudProvider {
   }
 
   /// Build an authenticated Drive API client from a Google Sign-In account.
-  Future<drive.DriveApi> _buildDriveApi(final GoogleSignInAccount account) async {
+  Future<drive.DriveApi> _buildDriveApi(
+    final GoogleSignInAccount account,
+  ) async {
     final auth = await account.authentication;
     final client = GoogleAuthClient(auth);
     return drive.DriveApi(client);
