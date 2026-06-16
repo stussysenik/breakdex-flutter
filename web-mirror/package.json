@@ -1,0 +1,33 @@
+{
+  "name": "breakdex-web-mirror",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Thin read-only web mirror of a Breakdex library — reads manifest.json + videos from the user's own Google Drive, gated by Firebase Auth.",
+  "scripts": {
+    "uno": "unocss \"src/**/*.{ts,tsx}\" -o src/app/uno.generated.css",
+    "uno:watch": "unocss \"src/**/*.{ts,tsx}\" -o src/app/uno.generated.css --watch",
+    "predev": "npm run uno",
+    "dev": "next dev -p 3000",
+    "prebuild": "npm run uno",
+    "build": "next build",
+    "start": "next start -p 3000",
+    "lint": "next lint"
+  },
+  "dependencies": {
+    "firebase": "^11.3.1",
+    "next": "^15.5.19",
+    "react": "19.0.0",
+    "react-dom": "19.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.7",
+    "@types/react": "^19.0.7",
+    "@types/react-dom": "^19.0.3",
+    "@unocss/cli": "^66.7.2",
+    "@unocss/preset-attributify": "^66.7.2",
+    "@unocss/preset-wind3": "^66.7.2",
+    "@unocss/reset": "^66.7.2",
+    "typescript": "^5.7.3",
+    "unocss": "^66.7.2"
+  }
+}

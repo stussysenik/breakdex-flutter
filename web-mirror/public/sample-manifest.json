@@ -1,0 +1,63 @@
+{
+  "version": 2,
+  "exportedAt": "2026-06-16T18:30:00.000Z",
+  "moves": [
+    { "id": "m1", "name": "Six-Step", "category": "Footwork", "contentHash": "h-sixstep", "createdAt": "2026-01-04T10:00:00.000Z" },
+    { "id": "m2", "name": "Baby Freeze", "category": "Freezes", "contentHash": "h-babyfreeze", "createdAt": "2026-01-10T10:00:00.000Z" },
+    { "id": "m3", "name": "Windmill", "category": "Power Moves", "contentHash": "h-windmill", "createdAt": "2026-02-01T10:00:00.000Z" },
+    { "id": "m4", "name": "CC / Coffee Grinder", "category": "Footwork", "contentHash": "h-cc", "createdAt": "2026-02-14T10:00:00.000Z" },
+    { "id": "m5", "name": "Chair Freeze", "category": "Freezes", "contentHash": null, "createdAt": "2026-03-02T10:00:00.000Z" },
+    { "id": "m6", "name": "Flare", "category": "Power Moves", "contentHash": "h-flare", "createdAt": "2026-03-20T10:00:00.000Z" }
+  ],
+  "combos": [
+    { "id": "c1", "name": "Opener — TR to freeze" },
+    { "id": "c2", "name": "Power exit" }
+  ],
+  "comboMoves": [
+    { "comboId": "c1", "moveId": "m1", "sequenceIndex": 0 },
+    { "comboId": "c1", "moveId": "m4", "sequenceIndex": 1 },
+    { "comboId": "c1", "moveId": "m2", "sequenceIndex": 2 },
+    { "comboId": "c2", "moveId": "m3", "sequenceIndex": 0 },
+    { "comboId": "c2", "moveId": "m6", "sequenceIndex": 1 }
+  ],
+  "categories": [
+    { "name": "Footwork", "colorValue": 4280887458, "isDefault": true },
+    { "name": "Freezes", "colorValue": 4293881943, "isDefault": true },
+    { "name": "Power Moves", "colorValue": 4292284472, "isDefault": true }
+  ],
+  "fsrsCards": [
+    { "entityId": "m1", "entityType": "move", "state": 2, "stability": 12.4, "difficulty": 5.1, "due": "2026-06-22T00:00:00.000Z" },
+    { "entityId": "m2", "entityType": "move", "state": 2, "stability": 8.0, "difficulty": 6.0, "due": "2026-06-19T00:00:00.000Z" },
+    { "entityId": "m3", "entityType": "move", "state": 1, "stability": 2.1, "difficulty": 7.4, "due": "2026-06-17T00:00:00.000Z" },
+    { "entityId": "c1", "entityType": "combo", "state": 2, "stability": 5.5, "difficulty": 5.8, "due": "2026-06-20T00:00:00.000Z" }
+  ],
+  "decks": [
+    { "id": "d1", "name": "Daily drills", "deckType": "custom" }
+  ],
+  "deckMoves": [
+    { "deckId": "d1", "moveId": "m1" },
+    { "deckId": "d1", "moveId": "m3" }
+  ],
+  "reviews": [
+    { "id": "r1", "entityId": "m1", "entityType": "move", "rating": "good", "createdAt": "2026-06-10T09:00:00.000Z" },
+    { "id": "r2", "entityId": "m1", "entityType": "move", "rating": "easy", "createdAt": "2026-06-14T09:00:00.000Z" },
+    { "id": "r3", "entityId": "m3", "entityType": "move", "rating": "hard", "createdAt": "2026-06-14T09:05:00.000Z" },
+    { "id": "r4", "entityId": "m2", "entityType": "move", "rating": "again", "createdAt": "2026-06-15T09:00:00.000Z" },
+    { "id": "r5", "entityId": "c1", "entityType": "combo", "rating": "good", "createdAt": "2026-06-15T09:10:00.000Z" }
+  ],
+  "assets": [
+    { "contentHash": "h-sixstep", "fileSizeBytes": 5242880, "mimeType": "video/mp4", "durationMs": 6200, "width": 1080, "height": 1920, "importedAt": "2026-01-04T10:00:00.000Z", "sourceType": "camera", "sourceName": "sixstep.mp4", "deletedAt": null },
+    { "contentHash": "h-windmill", "fileSizeBytes": 8388608, "mimeType": "video/mp4", "durationMs": 4800, "width": 1080, "height": 1920, "importedAt": "2026-02-01T10:00:00.000Z", "sourceType": "camera", "sourceName": "windmill.mp4", "deletedAt": null }
+  ],
+  "notes": [
+    { "id": "n1", "comboId": "c1", "kind": "status", "body": "idea → attempting", "videoContentHash": null, "createdAt": "2026-06-01T12:00:00.000Z" },
+    { "id": "n2", "comboId": "c1", "kind": "jot", "body": "Six-step into CC felt clean today. Need to slow the entry to the baby freeze.", "videoContentHash": "h-sixstep", "createdAt": "2026-06-12T19:30:00.000Z" },
+    { "id": "n3", "comboId": "c2", "kind": "jot", "body": "Windmill revs are catching — flare exit still inconsistent.", "videoContentHash": "h-windmill", "createdAt": "2026-06-13T20:00:00.000Z" },
+    { "id": "n4", "comboId": "c1", "kind": "status", "body": "attempting → landed", "videoContentHash": null, "createdAt": "2026-06-15T18:00:00.000Z" }
+  ],
+  "plans": [
+    { "id": "p1", "comboId": "c1", "planDate": "2026-06-15T00:00:00.000Z", "position": 0, "completedAt": "2026-06-15T18:00:00.000Z" },
+    { "id": "p2", "comboId": "c2", "planDate": "2026-06-18T00:00:00.000Z", "position": 0, "completedAt": null },
+    { "id": "p3", "comboId": "c1", "planDate": "2026-06-20T00:00:00.000Z", "position": 1, "completedAt": null }
+  ]
+}
