@@ -13,7 +13,9 @@ import '../../core/providers.dart';
 import '../../core/services/video_service.dart';
 import '../../core/services/storage_action_machine.dart';
 import '../../core/services/video_path_resolver.dart';
+import '../../core/utils/app_clock.dart';
 import '../../core/utils/diagnostics.dart';
+import '../../core/utils/stall_detector.dart';
 
 class MetadataVideoPickerSheet extends ConsumerStatefulWidget {
   const MetadataVideoPickerSheet({super.key});
@@ -55,41 +57,11 @@ class _MetadataVideoPickerSheetState extends ConsumerState<MetadataVideoPickerSh
   StreamSubscription<StorageProgress>? _progressSub;
   StreamSubscription<double>? _nativeProgressSub;
 
-  // Stall detection: if an active import makes no progress for 2s, log it
-  // with stage context so frozen bars are diagnosable from the field.
-  Timer? _stallTimer;
-  DateTime _lastProgressAt = DateTime.now();
-  double _lastProgressValue = -1;
-  bool _stallLogged = false;
-
-  void _noteProgress(final double value) {
-    if (value != _lastProgressValue) {
-      _lastProgressValue = value;
-      _lastProgressAt = DateTime.now();
-      _stallLogged = false;
-    }
-  }
-
-  void _startStallWatch() {
-    _stallTimer?.cancel();
-    _lastProgressAt = DateTime.now();
-    _lastProgressValue = -1;
-    _stallLogged = false;
-    _stallTimer = Timer.periodic(const Duration(seconds: 1), (_) {
-      if (_importingAsset == null || _importError != null) return;
-      final stalled =
-          DateTime.now().difference(_lastProgressAt) > const Duration(seconds: 2);
-      if (stalled && !_stallLogged) {
-        _stallLogged = true;
-        DiagnosticsLog.info(
-          'MetadataVideoPickerSheet',
-          'Import stalled >2s — stage=${_currentProgress.stage} '
-          'progress=${(_currentProgress.progress * 100).toStringAsFixed(0)}% '
-          'asset=${_importingAsset?.originalFileName}',
-        );
-      }
-    });
-  }
+  // Stall detection: while an import is in flight, 2s without the progress
+  // value advancing logs a `stalled` stage entry (and `recovered` when it
+  // moves again) so frozen bars are diagnosable from the field.
+  StallDetector? _stallDetector;
+  StageLogger? _importLog;
 
   @override
   void initState() {
@@ -105,7 +77,7 @@ class _MetadataVideoPickerSheetState extends ConsumerState<MetadataVideoPickerSh
     _scrollController.dispose();
     _progressSub?.cancel();
     _nativeProgressSub?.cancel();
-    _stallTimer?.cancel();
+    _stallDetector?.stop();
     super.dispose();
   }
 
@@ -260,10 +232,21 @@ class _MetadataVideoPickerSheetState extends ConsumerState<MetadataVideoPickerSh
       _currentProgress = StorageProgress.initial();
     });
 
+    _importLog = StageLogger.begin(
+      'GalleryImport',
+      subsystem: 'MetadataVideoPickerSheet',
+      context: {'asset': asset.originalFileName},
+    );
+    _stallDetector?.stop();
+    _stallDetector = StallDetector(
+      log: _importLog!,
+      clock: ref.read(appClockProvider),
+    )..start();
+
     final engine = ref.read(storageActionMachineProvider);
     _progressSub = engine.progress.listen((final p) {
       if (mounted) {
-        _noteProgress(p.progress);
+        _stallDetector?.note(p.progress);
         setState(() => _currentProgress = p);
       }
     });
@@ -272,7 +255,7 @@ class _MetadataVideoPickerSheetState extends ConsumerState<MetadataVideoPickerSh
     _nativeProgressSub = ref.read(videoServiceProvider).importProgress.listen(
       (final fraction) {
         if (mounted) {
-          _noteProgress(fraction);
+          _stallDetector?.note(fraction);
           setState(() => _currentProgress = StorageProgress(
                 progress: fraction.clamp(0.0, 1.0),
                 stage: fraction >= 1.0 ? 'Importing' : 'Downloading',
@@ -280,7 +263,6 @@ class _MetadataVideoPickerSheetState extends ConsumerState<MetadataVideoPickerSh
         }
       },
     );
-    _startStallWatch();
 
     final navigator = Navigator.of(context);
     try {
@@ -296,11 +278,15 @@ class _MetadataVideoPickerSheetState extends ConsumerState<MetadataVideoPickerSh
         result = await ref.read(videoServiceProvider).importSpecificAsset(asset.localIdentifier);
       }
 
+      _stallDetector?.stop();
       if (mounted && result != null) {
+        _importLog?.complete('imported');
         unawaited(HapticFeedback.heavyImpact());
         navigator.pop(result);
       }
     } catch (e) {
+      _stallDetector?.stop();
+      _importLog?.fail(e);
       // Stay in the overlay: edge-network failures get an in-place Retry
       // for the same asset rather than a transient snackbar.
       if (mounted) {
@@ -595,6 +581,35 @@ class _MetadataVideoPickerSheetState extends ConsumerState<MetadataVideoPickerSh
   }
 }
 
+/// "0:12 · 48 MB · Jun 8" — duration/size first (what distinguishes
+/// takes), date second. Unknown parts are simply omitted.
+@visibleForTesting
+String formatVideoFactsLine({
+  required final double durationSeconds,
+  final int? sizeBytes,
+  final DateTime? date,
+}) {
+  final parts = <String>[];
+  if (durationSeconds > 0) {
+    final mins = durationSeconds ~/ 60;
+    final secs = (durationSeconds % 60).round().toString().padLeft(2, '0');
+    parts.add('$mins:$secs');
+  }
+  if (sizeBytes != null && sizeBytes > 0) {
+    final mb = sizeBytes / (1024 * 1024);
+    parts.add(mb >= 100 ? '${mb.round()} MB' : '${mb.toStringAsFixed(1)} MB');
+  }
+  if (date != null) {
+    parts.add('${_monthNames[date.month - 1]} ${date.day}');
+  }
+  return parts.join(' · ');
+}
+
+const _monthNames = [
+  'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+  'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
+];
+
 class _VideoTile extends ConsumerStatefulWidget {
   final MetadataAsset asset;
   final bool isSelected;
@@ -631,32 +646,11 @@ class _VideoTileState extends ConsumerState<_VideoTile> {
     }
   }
 
-  /// "0:12 · 48 MB · Jun 8" — duration/size first (what distinguishes
-  /// takes), date second. Unknown parts are simply omitted.
-  String get _factsLine {
-    final parts = <String>[];
-    final d = widget.asset.duration;
-    if (d > 0) {
-      final mins = d ~/ 60;
-      final secs = (d % 60).round().toString().padLeft(2, '0');
-      parts.add('$mins:$secs');
-    }
-    final size = _fileSizeBytes;
-    if (size != null && size > 0) {
-      final mb = size / (1024 * 1024);
-      parts.add(mb >= 100 ? '${mb.round()} MB' : '${mb.toStringAsFixed(1)} MB');
-    }
-    final date = widget.asset.creationDate;
-    if (date != null) {
-      parts.add('${_monthNames[date.month - 1]} ${date.day}');
-    }
-    return parts.join(' · ');
-  }
-
-  static const _monthNames = [
-    'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-    'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
-  ];
+  String get _factsLine => formatVideoFactsLine(
+        durationSeconds: widget.asset.duration,
+        sizeBytes: _fileSizeBytes,
+        date: widget.asset.creationDate,
+      );
 
   Future<void> _loadThumbnail() async {
     final asset = widget.asset;

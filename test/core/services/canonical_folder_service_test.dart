@@ -1,5 +1,9 @@
+import 'dart:io';
+
 import 'package:flutter_test/flutter_test.dart';
+import 'package:path/path.dart' as p;
 import 'package:breakdex/core/services/canonical_folder_service.dart';
+import 'package:breakdex/core/services/video_path_resolver.dart';
 
 void main() {
   group('Ledger', () {
@@ -77,6 +81,100 @@ void main() {
       final r = FileScanResult(path: '/v.mp4', fileName: 'v.mp4',
           fileSizeBytes: 100, modifiedAt: testDate, inLedger: true);
       expect(r.isOrphan, false);
+    });
+  });
+
+  group('quarantineOrphans', () {
+    late Directory docsDir;
+    late CanonicalFolderService service;
+
+    Future<File> seedMaster(final String fileName, final String content) async {
+      final videos = await service.videosDir;
+      final file = File(p.join(videos.path, fileName));
+      await file.writeAsString(content);
+      return file;
+    }
+
+    setUp(() async {
+      docsDir = await Directory.systemTemp.createTemp('canonical_docs_');
+      service = CanonicalFolderService(docsDirOverride: docsDir);
+      await service.ensureInitialized();
+      VideoPathHealer.resetCounters();
+    });
+
+    tearDown(() async {
+      if (await docsDir.exists()) await docsDir.delete(recursive: true);
+    });
+
+    test('moves unreferenced masters to Moves/Archive, keeps ledger- and '
+        'hash-referenced files; second run is a no-op', () async {
+      final inLedger = await seedMaster('aaa.mp4', 'ledger');
+      final byHash = await seedMaster('bbb.mp4', 'manifest');
+      final orphan = await seedMaster('ccc.mp4', 'orphan');
+
+      await service.upsertLedgerEntry(LedgerEntry(
+        fileName: 'aaa.mp4',
+        fileSizeBytes: 6,
+        lastSeenAt: DateTime(2026, 1, 15),
+        recordedAt: DateTime(2026, 1, 15),
+      ));
+
+      final first = await service.quarantineOrphans({'bbb'});
+      expect(first, 1);
+      expect(await inLedger.exists(), isTrue);
+      expect(await byHash.exists(), isTrue);
+      expect(await orphan.exists(), isFalse);
+
+      final archived =
+          File(p.join(docsDir.path, 'Moves', 'Archive', 'ccc.mp4'));
+      expect(await archived.exists(), isTrue);
+      expect(await archived.readAsString(), 'orphan');
+      expect(VideoPathHealer.orphansQuarantined, 1);
+
+      final second = await service.quarantineOrphans({'bbb'});
+      expect(second, 0, reason: 'second run must be a no-op');
+      expect(VideoPathHealer.orphansQuarantined, 1);
+      expect(await inLedger.exists(), isTrue);
+      expect(await byHash.exists(), isTrue);
+    });
+
+    test('archive name collision suffixes instead of deleting', () async {
+      await seedMaster('dup.mp4', 'NEW');
+      final archiveDir =
+          Directory(p.join(docsDir.path, 'Moves', 'Archive'));
+      await archiveDir.create(recursive: true);
+      final preExisting = File(p.join(archiveDir.path, 'dup.mp4'));
+      await preExisting.writeAsString('OLD');
+
+      final count = await service.quarantineOrphans({});
+      expect(count, 1);
+
+      // Both copies survive: the pre-existing archive file untouched, the
+      // orphan moved under a suffixed name — nothing deleted.
+      expect(await preExisting.readAsString(), 'OLD');
+      final archiveFiles = await archiveDir
+          .list()
+          .where((final e) => e is File)
+          .toList();
+      expect(archiveFiles.length, 2);
+      final suffixed = archiveFiles
+          .map((final e) => e.path)
+          .firstWhere((final path) => p.basename(path) != 'dup.mp4');
+      expect(await File(suffixed).readAsString(), 'NEW');
+    });
+
+    test('clean master is a no-op with zero counters', () async {
+      await seedMaster('eee.mp4', 'kept');
+      await service.upsertLedgerEntry(LedgerEntry(
+        fileName: 'eee.mp4',
+        fileSizeBytes: 4,
+        lastSeenAt: DateTime(2026, 1, 15),
+        recordedAt: DateTime(2026, 1, 15),
+      ));
+
+      final count = await service.quarantineOrphans({});
+      expect(count, 0);
+      expect(VideoPathHealer.orphansQuarantined, 0);
     });
   });
 

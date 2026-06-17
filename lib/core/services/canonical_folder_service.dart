@@ -5,7 +5,9 @@ import 'package:flutter/foundation.dart';
 import 'package:path/path.dart' as p;
 
 import '../utils/diagnostics.dart';
+import '../utils/filesystem_utils.dart';
 import 'app_storage_paths.dart';
+import 'video_path_resolver.dart';
 import 'video_storage_gate.dart';
 
 const _markerFileName = '.breakdex-master';
@@ -13,12 +15,19 @@ const _ledgerFileName = '.breakdex-ledger.json';
 const _ledgerVersion = 1;
 
 class CanonicalFolderService {
-  CanonicalFolderService();
+  CanonicalFolderService({final Directory? docsDirOverride})
+      : _docsDirOverride = docsDirOverride;
+
+  /// Test seam: bypasses [AppStoragePaths] (platform channel) when set.
+  final Directory? _docsDirOverride;
 
   Ledger? _cachedLedger;
 
+  Future<Directory> get _docsDir async =>
+      _docsDirOverride ?? await AppStoragePaths.documentsDirectory();
+
   Future<Directory> get _masterDir async {
-    final docs = await AppStoragePaths.documentsDirectory();
+    final docs = await _docsDir;
     return Directory(p.join(docs.path, _markerFileName));
   }
 
@@ -224,21 +233,29 @@ class CanonicalFolderService {
     return removed;
   }
 
-  /// Moves unreferenced master files to `Moves/Archive/` (never hard-deletes).
-  /// Returns count of files quarantined. Idempotent.
+  /// Ledger-consistency pass: moves master files referenced by neither the
+  /// ledger nor [referencedHashes] (asset manifest / moves / journal video
+  /// hashes) to `Moves/Archive/` — never hard-deletes. Idempotent: a second
+  /// consecutive run finds no orphans and performs zero moves.
+  ///
+  /// Returns count of files quarantined.
   Future<int> quarantineOrphans(final Set<String> referencedHashes) async {
     final log = StageLogger.begin('quarantineOrphans',
         subsystem: 'StorageHygiene');
     try {
       log.stage('scanning');
       final orphans = await scanOrphans();
-      final orphanFiles = orphans.where((final o) => o.isOrphan).toList();
+      final orphanFiles = orphans
+          .where((final o) =>
+              o.isOrphan &&
+              !referencedHashes.contains(p.basenameWithoutExtension(o.fileName)))
+          .toList();
       if (orphanFiles.isEmpty) {
         log.complete('0 files to quarantine');
         return 0;
       }
 
-      final docs = await AppStoragePaths.documentsDirectory();
+      final docs = await _docsDir;
       final archiveDir = Directory(p.join(docs.path, 'Moves', 'Archive'));
       if (!await archiveDir.exists()) {
         await archiveDir.create(recursive: true);
@@ -247,17 +264,19 @@ class CanonicalFolderService {
       var count = 0;
       for (final orphan in orphanFiles) {
         log.stage('quarantining ${orphan.fileName}');
-        final targetPath = p.join(archiveDir.path, orphan.fileName);
+        var targetPath = p.join(archiveDir.path, orphan.fileName);
         try {
           if (await File(targetPath).exists()) {
-            await File(orphan.path).delete();
-            DiagnosticsLog.info('StorageHygiene',
-                'Deleted duplicate orphan: ${orphan.fileName}');
-          } else {
-            await File(orphan.path).rename(targetPath);
-            DiagnosticsLog.info('StorageHygiene',
-                'Quarantined to Archive: ${orphan.fileName}');
+            // Collision: keep both — suffix instead of deleting (user files
+            // are sacred; quarantine only, never delete).
+            final base = p.basenameWithoutExtension(orphan.fileName);
+            final ext = p.extension(orphan.fileName);
+            final timestamp = DateTime.now().millisecondsSinceEpoch;
+            targetPath = p.join(archiveDir.path, '${base}_archived_$timestamp$ext');
           }
+          await FileSystemUtils.safeMove(orphan.path, targetPath);
+          DiagnosticsLog.info('StorageHygiene',
+              'Quarantined to Archive: ${orphan.fileName}');
           count++;
         } catch (e) {
           DiagnosticsLog.error('StorageHygiene',
@@ -265,6 +284,7 @@ class CanonicalFolderService {
         }
       }
 
+      VideoPathHealer.orphansQuarantined += count;
       log.complete('quarantined $count file(s)');
       return count;
     } catch (e, stack) {

@@ -7,6 +7,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import '../database/database.dart';
 import '../models/canonical_path.dart';
+import '../utils/app_clock.dart';
 import '../utils/filesystem_utils.dart';
 import '../utils/diagnostics.dart';
 import 'app_storage_paths.dart';
@@ -200,12 +201,22 @@ abstract final class VideoPathHealer {
   static int orphansQuarantined = 0;
   static int pathsHealed = 0;
 
+  /// Injectable clock for the 24h staleness cutoffs. Override in tests.
+  static AppClock clock = SystemClock();
+
+  @visibleForTesting
+  static void resetCounters() {
+    staleFoldersRemoved = 0;
+    orphansQuarantined = 0;
+    pathsHealed = 0;
+  }
+
   /// Proactive healing of both the database records and physical filesystem.
   ///
   /// Filesystem cleanup is deferred to run at most once every 24 hours to avoid
   /// blocking app startup with expensive directory scans on every boot.
   static Future<void> healAll(final AppDatabase db, final SharedPreferences prefs) async {
-    final now = DateTime.now().millisecondsSinceEpoch;
+    final now = clock.nowUtc().millisecondsSinceEpoch;
     final lastCleanup = prefs.getInt(_cleanupRunAtKey) ?? 0;
     final hoursSinceCleanup =
         (now - lastCleanup) / (1000 * 60 * 60);
@@ -241,11 +252,10 @@ abstract final class VideoPathHealer {
       log.stage('foldersMerged');
       await _pruneEmptyMovesDirectories();
       log.stage('emptyDirsPruned');
-      await _pruneLegacyVideosDirectory(db);
+      await pruneLegacyVideosDirectory(db);
       log.stage('legacyVideosPruned');
-      await _pruneStaleExportDirs();
+      await pruneStaleExportDirs();
       log.stage('staleExportsPruned');
-      pathsHealed = staleFoldersRemoved;
       log.complete('done');
     } catch (e, stack) {
       log.fail(e, stack);
@@ -253,24 +263,31 @@ abstract final class VideoPathHealer {
   }
 
   /// Migrate files from legacy `Documents/videos/` to canonical paths,
-  /// then prune the directory. Gated by SharedPreferences — runs once.
-  static Future<void> _pruneLegacyVideosDirectory(final AppDatabase db) async {
+  /// then prune the directory once empty. Idempotent — once the legacy
+  /// directory is gone a rerun performs zero mutations.
+  ///
+  /// Returns the number of mutations (files migrated + directories removed).
+  static Future<int> pruneLegacyVideosDirectory(final AppDatabase db) async {
+    final log = StageLogger.begin('pruneLegacyVideos',
+        subsystem: 'VideoPathHealer');
+    var mutations = 0;
     try {
       final docsPath = VideoPathResolver.toAbsolute('');
       final legacyDir = Directory(p.join(docsPath, 'videos'));
-      if (!await legacyDir.exists()) return;
+      if (!await legacyDir.exists()) {
+        log.complete('no legacy directory');
+        return 0;
+      }
 
-      final log = StageLogger.begin('_pruneLegacyVideos',
-          subsystem: 'VideoPathHealer');
+      log.stage('scanning');
+      final allMoves = await db.movesDao.getAllIncludingArchived();
 
-      // Migrate any files that match known moves/combo entries
-      int migrated = 0;
+      // Migrate any files that match known moves by originalVideoName or filename
+      var migrated = 0;
       await for (final entity in legacyDir.list()) {
         if (entity is! File || !entity.path.endsWith('.mp4')) continue;
         try {
-          // Find matching move by originalVideoName or filename
           final filename = p.basename(entity.path);
-          final allMoves = await db.movesDao.getAllIncludingArchived();
           Move? match;
           for (final m in allMoves) {
             if (m.originalVideoName == filename ||
@@ -290,39 +307,49 @@ abstract final class VideoPathHealer {
           }
         } catch (_) {}
       }
+      mutations += migrated;
 
       log.stage('migrated $migrated file(s)');
 
-      // Prune the legacy directory if empty (after migration)
-      try {
-        final remaining = await legacyDir.list().toList();
-        if (remaining.isEmpty) {
-          await legacyDir.delete();
-          staleFoldersRemoved++;
-          DiagnosticsLog.info('VideoPathHealer',
-              'Legacy videos/ directory removed');
-        }
-      } catch (_) {}
+      // Prune the legacy directory if empty (after migration). Files that
+      // matched nothing stay where they are — never delete user files.
+      final remaining = await legacyDir.list().toList();
+      if (remaining.isEmpty) {
+        await legacyDir.delete();
+        staleFoldersRemoved++;
+        mutations++;
+        DiagnosticsLog.info('VideoPathHealer',
+            'Legacy videos/ directory removed');
+      }
 
-      log.complete();
-    } catch (e) {
-      DiagnosticsLog.error('VideoPathHealer',
-          'Legacy videos cleanup failed: $e');
+      log.complete('$mutations mutation(s)');
+      return mutations;
+    } catch (e, stack) {
+      log.fail(e, stack);
+      return mutations;
     }
   }
 
-  /// Remove stale temporary export directories older than 24 hours.
-  /// These accumulate in the system temp directory from video export operations.
-  static Future<void> _pruneStaleExportDirs() async {
+  /// Remove stale temporary export directories older than 24 hours, as
+  /// measured by [clock]. These accumulate in the system temp directory from
+  /// video export operations. Idempotent — removed directories cannot match
+  /// again on a rerun.
+  ///
+  /// Returns the number of directories removed.
+  static Future<int> pruneStaleExportDirs({final Directory? tempDir}) async {
+    final log = StageLogger.begin('pruneStaleExportDirs',
+        subsystem: 'VideoPathHealer');
+    var removed = 0;
     try {
-      final tmpDir = Directory.systemTemp;
-      if (!await tmpDir.exists()) return;
+      final tmpDir = tempDir ?? Directory.systemTemp;
+      if (!await tmpDir.exists()) {
+        log.complete('no temp directory');
+        return 0;
+      }
 
-      final cutoff = DateTime.now().subtract(const Duration(hours: 24));
-      final log = StageLogger.begin('_pruneStaleExportDirs',
-          subsystem: 'VideoPathHealer');
+      final cutoff = clock.nowUtc().subtract(const Duration(hours: 24));
+      log.stage('scanning');
 
-      var removed = 0;
       await for (final entity in tmpDir.list()) {
         if (entity is! Directory) continue;
         final name = p.basename(entity.path);
@@ -339,9 +366,10 @@ abstract final class VideoPathHealer {
 
       staleFoldersRemoved += removed;
       log.complete('removed $removed stale export dir(s)');
-    } catch (e) {
-      DiagnosticsLog.error('VideoPathHealer',
-          'Stale export cleanup failed: $e');
+      return removed;
+    } catch (e, stack) {
+      log.fail(e, stack);
+      return removed;
     }
   }
 
@@ -485,65 +513,73 @@ abstract final class VideoPathHealer {
   }
 
   static Future<void> _healDatabasePaths(final AppDatabase db) async {
+    final log = StageLogger.begin('healDatabasePaths',
+        subsystem: 'VideoPathHealer');
     var healed = 0;
     var migrated = 0;
+    try {
+      // Heal moves.videoPath
+      final moves = await db.movesDao.getAllIncludingArchived();
+      for (final move in moves) {
+        String? currentPath = move.videoPath;
+        if (currentPath == null) continue;
 
-    // Heal moves.videoPath
-    final moves = await db.movesDao.getAllIncludingArchived();
-    for (final move in moves) {
-      String? currentPath = move.videoPath;
-      if (currentPath == null) continue;
+        if (!VideoPathResolver.isRelative(currentPath)) {
+          currentPath = VideoPathResolver.toRelative(currentPath);
+          await db.movesDao.updateMove(
+            MovesCompanion(id: Value(move.id), videoPath: Value(currentPath)),
+          );
+          healed++;
+        }
 
-      if (!VideoPathResolver.isRelative(currentPath)) {
-        currentPath = VideoPathResolver.toRelative(currentPath);
-        await db.movesDao.updateMove(
-          MovesCompanion(id: Value(move.id), videoPath: Value(currentPath)),
+        final semanticRelative = await VideoPathResolver.moveToSemanticPath(
+          currentRelativePath: currentPath,
+          category: move.category,
+          moveName: move.name,
+          contentHash: ContentHash(move.contentHash!),
         );
-        healed++;
+
+        if (semanticRelative != currentPath) {
+          await db.movesDao.updateMove(
+            MovesCompanion(id: Value(move.id), videoPath: Value(semanticRelative)),
+          );
+          migrated++;
+        }
       }
+      log.stage('movesHealed', {'healed': healed, 'migrated': migrated});
 
-      final semanticRelative = await VideoPathResolver.moveToSemanticPath(
-        currentRelativePath: currentPath,
-        category: move.category,
-        moveName: move.name,
-        contentHash: ContentHash(move.contentHash!),
-      );
-
-      if (semanticRelative != currentPath) {
-        await db.movesDao.updateMove(
-          MovesCompanion(id: Value(move.id), videoPath: Value(semanticRelative)),
-        );
-        migrated++;
+      // Heal combos and asset manifest
+      final combos = await db.combosDao.getAll();
+      for (final combo in combos) {
+        if (combo.activeVideoPath != null &&
+            !VideoPathResolver.isRelative(combo.activeVideoPath!)) {
+          final relative = VideoPathResolver.toRelative(combo.activeVideoPath!);
+          await (db.update(db.combos)..where((final t) => t.id.equals(combo.id)))
+              .write(CombosCompanion(activeVideoPath: Value(relative)));
+          healed++;
+        }
       }
-    }
+      log.stage('combosHealed');
 
-    // Heal combos and asset manifest
-    final combos = await db.combosDao.getAll();
-    for (final combo in combos) {
-      if (combo.activeVideoPath != null &&
-          !VideoPathResolver.isRelative(combo.activeVideoPath!)) {
-        final relative = VideoPathResolver.toRelative(combo.activeVideoPath!);
-        await (db.update(db.combos)..where((final t) => t.id.equals(combo.id)))
-            .write(CombosCompanion(activeVideoPath: Value(relative)));
-        healed++;
+      final manifests = await db.assetManifestDao.getAll();
+      for (final manifest in manifests) {
+        if (manifest.localPath != null &&
+            !VideoPathResolver.isRelative(manifest.localPath!)) {
+          final relative = VideoPathResolver.toRelative(manifest.localPath!);
+          await db.assetManifestDao.updateLocalState(
+            manifest.contentHash,
+            localPath: Value(relative),
+          );
+          healed++;
+        }
       }
-    }
+      log.stage('manifestsHealed');
 
-    final manifests = await db.assetManifestDao.getAll();
-    for (final manifest in manifests) {
-      if (manifest.localPath != null &&
-          !VideoPathResolver.isRelative(manifest.localPath!)) {
-        final relative = VideoPathResolver.toRelative(manifest.localPath!);
-        await db.assetManifestDao.updateLocalState(
-          manifest.contentHash,
-          localPath: Value(relative),
-        );
-        healed++;
-      }
-    }
-
-    if (healed > 0 || migrated > 0) {
-      debugPrint('[VideoPathHealer] Completed record healing.');
+      pathsHealed += healed + migrated;
+      log.complete('healed $healed, migrated $migrated');
+    } catch (e, stack) {
+      log.fail(e, stack);
+      rethrow;
     }
   }
 }

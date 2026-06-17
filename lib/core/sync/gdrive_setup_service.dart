@@ -74,6 +74,22 @@ class GDriveSetupService {
       );
     }
   }
+
+  /// Fully disconnect Google Drive: signs out of the cached Google session and
+  /// removes the provider configuration. Reconnecting requires a fresh
+  /// interactive sign-in.
+  ///
+  /// Clearing the native session is what makes the disconnect "stick" — without
+  /// it, a rebuilt provider would silently restore the session via
+  /// `signInSilently` and the UI would flip back to "Connected". Videos already
+  /// backed up to Drive are left untouched.
+  Future<void> disconnect() async {
+    await GDriveProvider().deauthenticate();
+    final existing = await syncProvidersDao.getByType('gdrive');
+    if (existing != null) {
+      await syncProvidersDao.deleteProvider(existing.id);
+    }
+  }
 }
 
 enum GDriveSetupResult {

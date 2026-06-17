@@ -339,6 +339,75 @@ void main() {
     });
   });
 
+  group('CombosDao.deleteCombo orphan scoping', () {
+    test('removes structural combo_moves but preserves user-authored jots',
+        () async {
+      await seedCombo('c1', 'Opener');
+      await db.movesDao.insertMove(MovesCompanion.insert(
+        id: 'm1',
+        name: 'Windmill',
+      ));
+      await db.combosDao.addMoveToCombo(ComboMovesCompanion.insert(
+        id: 'cm1',
+        comboId: 'c1',
+        moveId: 'm1',
+        sequenceIndex: 0,
+      ));
+      await db.comboNoteEntriesDao.addEntry(
+        id: 'j1',
+        comboId: 'c1',
+        body: 'I worked on this',
+      );
+
+      await db.combosDao.deleteCombo('c1');
+
+      // Structure goes with the combo.
+      expect(await db.combosDao.watchComboMoves('c1').first, isEmpty,
+          reason: 'orphaned combo_moves must be cleaned up');
+      // User-authored journal content is never deleted.
+      final jots = await db.comboNoteEntriesDao.getByComboId('c1');
+      expect(jots.length, 1,
+          reason: 'jots are user content — preserved, not destroyed');
+    });
+
+    test('orphaned jots do not inflate Practiced count or activity heat',
+        () async {
+      await seedCombo('c1', 'Opener');
+      await seedCombo('c2', 'Closer');
+      await db.comboNoteEntriesDao.addEntry(
+        id: 'j-c1',
+        comboId: 'c1',
+        body: 'practiced opener',
+      );
+      await db.comboNoteEntriesDao.addEntry(
+        id: 'j-c2',
+        comboId: 'c2',
+        body: 'practiced closer',
+      );
+
+      // Before delete: both combos counted as practiced, two jots in heat.
+      var strip = await db.combosDao.watchProgressStrip().first;
+      expect(strip.$2, 2, reason: 'practiced = both combos');
+      var rollup = await db.combosDao.watchActivityRollup().first;
+      expect(rollup.single.jotCount, 2);
+
+      await db.combosDao.deleteCombo('c1');
+
+      // After delete: the ghost jot for c1 still exists in the table…
+      expect(
+        (await db.comboNoteEntriesDao.getByComboId('c1')).length,
+        1,
+        reason: 'non-destructive: jot row preserved',
+      );
+      // …but no longer inflates the scoped stats.
+      strip = await db.combosDao.watchProgressStrip().first;
+      expect(strip.$2, 1, reason: 'practiced excludes deleted combo');
+      rollup = await db.combosDao.watchActivityRollup().first;
+      expect(rollup.single.jotCount, 1,
+          reason: 'activity heat excludes deleted combo');
+    });
+  });
+
   group('CombosDao.duplicateCombo', () {
     test('clones structure as idea with provenance journal row', () async {
       await seedCombo('c1', 'Opener');

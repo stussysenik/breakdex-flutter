@@ -13,6 +13,8 @@
 		<dict>
 			<key>CFBundleTypeName</key>
 			<string>Video</string>
+			<key>CFBundleTypeRole</key>
+			<string>Viewer</string>
 			<key>LSHandlerRank</key>
 			<string>Alternate</string>
 			<key>LSItemContentTypes</key>
@@ -53,6 +55,8 @@
 	<string>499240019967-sdv5ar5fs5pm12h947jfjvsjmqu2o20q.apps.googleusercontent.com</string>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
+	<key>LSSupportsOpeningDocumentsInPlace</key>
+	<false/>
 	<key>NSBonjourServices</key>
 	<array>
 		<string>_dartVmService._tcp</string>

@@ -10,7 +10,9 @@ class LibraryManifest {
     required this.deckMoves,
     required this.reviews,
     required this.assets,
-    this.version = 1,
+    this.notes = const [],
+    this.plans = const [],
+    this.version = 2,
   });
 
   final int version;
@@ -25,6 +27,12 @@ class LibraryManifest {
   final List<LibraryReview> reviews;
   final List<LibraryAsset> assets;
 
+  /// User-authored journal notes (jots/status/plan markers) across all combos.
+  final List<LibraryNote> notes;
+
+  /// Practice plans (intentions) across all combos.
+  final List<LibraryPlan> plans;
+
   Map<String, dynamic> toJson() => {
     'version': version,
     'exportedAt': exportedAt.toUtc().toIso8601String(),
@@ -37,6 +45,8 @@ class LibraryManifest {
     'deckMoves': deckMoves.map((final deckMove) => deckMove.toJson()).toList(),
     'reviews': reviews.map((final review) => review.toJson()).toList(),
     'assets': assets.map((final asset) => asset.toJson()).toList(),
+    'notes': notes.map((final note) => note.toJson()).toList(),
+    'plans': plans.map((final plan) => plan.toJson()).toList(),
   };
 }
 
@@ -223,5 +233,61 @@ class LibraryAsset {
     'sourceType': sourceType,
     'sourceName': sourceName,
     'deletedAt': deletedAt?.toUtc().toIso8601String(),
+  };
+}
+
+/// A user-authored combo journal entry (jot/status/plan/duplicate). The
+/// optional [videoContentHash] lets a read-only viewer resolve a linked take
+/// to its Drive video the same way moves resolve (`<contentHash>.mp4`).
+class LibraryNote {
+  const LibraryNote({
+    required this.id,
+    required this.comboId,
+    required this.kind,
+    required this.body,
+    required this.videoContentHash,
+    required this.createdAt,
+  });
+
+  final String id;
+  final String comboId;
+  final String kind;
+  final String body;
+  final String? videoContentHash;
+  final DateTime createdAt;
+
+  Map<String, dynamic> toJson() => {
+    'id': id,
+    'comboId': comboId,
+    'kind': kind,
+    'body': body,
+    'videoContentHash': videoContentHash,
+    'createdAt': createdAt.toUtc().toIso8601String(),
+  };
+}
+
+/// A practice plan (intention) for a combo on a given day, with optional
+/// evidence-stamped completion.
+class LibraryPlan {
+  const LibraryPlan({
+    required this.id,
+    required this.comboId,
+    required this.planDate,
+    required this.position,
+    required this.completedAt,
+  });
+
+  final String id;
+  final String comboId;
+  final DateTime planDate;
+  final int position;
+  final DateTime? completedAt;
+
+  Map<String, dynamic> toJson() => {
+    'id': id,
+    'comboId': comboId,
+    'planDate': planDate.toUtc().toIso8601String(),
+    'position': position,
+    'completedAt': completedAt?.toUtc().toIso8601String(),
   };
 }

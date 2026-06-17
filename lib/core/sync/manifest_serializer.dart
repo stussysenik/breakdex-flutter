@@ -53,6 +53,8 @@ class ManifestSerializer {
     final decks = await _decksDao.getAll();
     final deckMoves = await _db.select(_db.deckMoves).get();
     final assets = await _db.select(_db.assetManifest).get();
+    final notes = await _db.select(_db.comboNoteEntries).get();
+    final plans = await _db.select(_db.comboPlans).get();
 
     // Categories from SharedPreferences
     List<Map<String, dynamic>> categoriesJson = [];
@@ -157,6 +159,29 @@ class ManifestSerializer {
               sourceType: asset.sourceType,
               sourceName: asset.sourceName,
               deletedAt: asset.deletedAt,
+            ),
+          )
+          .toList(),
+      notes: notes
+          .map(
+            (final note) => LibraryNote(
+              id: note.id,
+              comboId: note.comboId,
+              kind: note.kind,
+              body: note.body,
+              videoContentHash: note.videoHash,
+              createdAt: note.createdAt,
+            ),
+          )
+          .toList(),
+      plans: plans
+          .map(
+            (final plan) => LibraryPlan(
+              id: plan.id,
+              comboId: plan.comboId,
+              planDate: plan.planDate,
+              position: plan.position,
+              completedAt: plan.completedAt,
             ),
           )
           .toList(),

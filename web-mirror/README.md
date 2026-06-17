@@ -12,41 +12,85 @@ is no Firestore and no server. Access is restricted to an owner allowlist.
 Mobile app ──► Drive: Breakdex/manifest.json + <hash>.mp4 ──► this web app (read-only)
 ```
 
-## Local preview (no credentials)
+---
+
+## Run it
+
+Requires Node 18+ and npm. All commands run from `web-mirror/`.
 
 ```bash
 npm install
-npm run dev
-# open http://localhost:3000/?demo=1   ← full UI against a sample fixture
+npm run dev          # boots Next.js on http://localhost:3000
 ```
 
-`?demo=1` loads `public/sample-manifest.json` + `public/sample-video.mp4` so you
-can see every view (Library, Combos, Journal, Plans, Stats) and video playback
-without any Firebase or Drive setup.
+`npm run dev` first regenerates the UnoCSS stylesheet (`predev` hook), then
+starts the dev server. You should see `✓ Ready` and `Environments: .env.local`.
 
-## Real setup (owner-run, one-time)
+Two ways to view it:
 
-These steps require interactive logins the build cannot perform. Run them
-yourself; the app reuses the **existing `breakdex-flutter` Firebase project**.
+| Mode | URL | Needs credentials? |
+| --- | --- | --- |
+| **Demo** | http://localhost:3000/?demo=1 | No — sample fixture |
+| **Real** | http://localhost:3000 | Yes — Google sign-in to your Drive |
 
-1. **Register a Web app** in Firebase → Project settings → *Your apps* → Web.
-   Copy `apiKey` and `appId`.
+### Demo mode (no credentials)
+
+Open **http://localhost:3000/?demo=1**. This loads
+`public/sample-manifest.json` + `public/sample-video.mp4` so you can see every
+view (Library, Combos, Journal, Plans, Stats) and video playback without any
+Firebase or Drive setup. Good for UI work.
+
+### Real mode (your Drive)
+
+Open **http://localhost:3000**, click **Sign in with Google**, and pick the
+owner account on the allowlist. The library then loads live from that account's
+`Breakdex/` Drive folder.
+
+This needs (a) a filled `.env.local` and (b) Google sign-in enabled once in the
+Firebase console — see [Connect your Drive](#connect-your-drive-one-time-owner-only)
+below. On the owner machine `.env.local` is already present; if it's missing,
+`npm run dev` shows a "Not configured" screen and you should fill it first.
+
+---
+
+## Connect your Drive (one-time, owner-only)
+
+These steps need interactive console logins the build cannot perform. The app
+reuses the **existing `breakdex-flutter` Firebase project** and the already-
+registered web app `breakdex-web-mirror`, so the only hard blocker for a *local*
+sign-in is enabling the Google provider.
+
+1. **Fill env** — if `.env.local` is not already present:
    ```bash
-   npx firebase-tools login
-   npx firebase-tools apps:create WEB "Breakdex Web Mirror" --project breakdex-flutter
-   npx firebase-tools apps:sdkconfig WEB --project breakdex-flutter   # prints the web config
+   cp .env.example .env.local
    ```
-2. **Enable Google sign-in:** Firebase Console → Authentication → Sign-in method
-   → enable **Google**.
-3. **Create a Web OAuth client:** Google Cloud Console → APIs & Services →
-   Credentials → *Create OAuth client ID* → **Web application**. Add Authorized
-   JavaScript origins: `http://localhost:3000` and your Vercel domain.
-4. **Authorize domains:** Firebase Console → Authentication → Settings →
-   Authorized domains → add your Vercel domain.
-5. **Fill env:** `cp .env.example .env.local` and paste the values from step 1.
-6. Run `npm run dev`, sign in with the owner account, and the library loads from
-   your Drive. (Requires that the mobile app has synced at least once, so
-   `Breakdex/manifest.json` exists.)
+   Paste the Firebase web config (Console → Project settings → *Your apps* →
+   Web → `breakdex-web-mirror`). Set `NEXT_PUBLIC_OWNER_ALLOWLIST` to the owner
+   email(s) that may view the mirror.
+
+2. **Enable Google sign-in** — Firebase Console → **Authentication → Sign-in
+   method → Google → Enable → Save**. This is the one required toggle; without
+   it sign-in fails with `auth/operation-not-allowed`. Enabling it also
+   auto-provisions an OAuth client that already works on `localhost`.
+
+3. **Sign in** — `npm run dev`, open http://localhost:3000, **Sign in with
+   Google**, choose the allowlisted owner account.
+
+> `localhost` is authorized by Firebase Auth automatically — you do **not** need
+> the OAuth-origins or authorized-domains steps until you deploy (see
+> [Deploy to Vercel](#deploy-to-vercel)).
+
+### What each outcome means
+
+| You see | Meaning |
+| --- | --- |
+| Library loads | ✅ Sign-in + Drive read work end-to-end. |
+| "…is not on the owner allowlist" | Wrong account — the function is fine; sign in with an allowlisted email. |
+| "No Breakdex folder" / "no manifest.json yet" | Sign-in + Drive token **succeeded**; the mobile app just hasn't synced once yet. |
+| `auth/operation-not-allowed` | Step 2 (enable Google) isn't saved. |
+| popup blocked / `unauthorized-domain` | Allow popups, or the origin isn't authorized (only relevant off `localhost`). |
+
+---
 
 ## Deploy to Vercel
 
@@ -59,14 +103,35 @@ vercel                 # preview deployment
 vercel --prod          # promote
 ```
 
-After the first deploy, add the Vercel URL to the OAuth client origins (step 3)
-and Firebase Authorized domains (step 4).
+After the first deploy, authorize the live origin (not needed for `localhost`):
+
+- **OAuth client** — Google Cloud Console → APIs & Services → Credentials →
+  the Web client → add the Vercel URL to *Authorized JavaScript origins*.
+- **Firebase Auth** — Console → Authentication → Settings → *Authorized
+  domains* → add the Vercel domain.
+
+`npm run build` runs `next build` (with a `prebuild` UnoCSS pass); `npm start`
+serves the production build on port 3000.
+
+---
 
 ## Environment variables
 
 See [`.env.example`](./.env.example). All are `NEXT_PUBLIC_*` client config
-(public by design) except none are secret — but they are still injected via env
-so nothing is committed. `NEXT_PUBLIC_OWNER_ALLOWLIST` controls who may view.
+(public by design — none are secret), still injected via env so the repo carries
+no live configuration. `.env.local` is gitignored.
+
+| Var | Purpose |
+| --- | --- |
+| `NEXT_PUBLIC_FIREBASE_API_KEY` | Firebase web app API key |
+| `NEXT_PUBLIC_FIREBASE_APP_ID` | Firebase web app id (required to init) |
+| `NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN` | Defaults to `breakdex-flutter.firebaseapp.com` |
+| `NEXT_PUBLIC_FIREBASE_PROJECT_ID` | Defaults to `breakdex-flutter` |
+| `NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID` | Firebase sender id |
+| `NEXT_PUBLIC_OWNER_ALLOWLIST` | Comma-separated emails allowed to view |
+| `NEXT_PUBLIC_DRIVE_SCOPE` | Drive OAuth scope (see below) |
+
+---
 
 ## Scope notes
 
@@ -75,3 +140,15 @@ so nothing is committed. `NEXT_PUBLIC_OWNER_ALLOWLIST` controls who may view.
   `NEXT_PUBLIC_DRIVE_SCOPE=https://www.googleapis.com/auth/drive.readonly`.
 - Video resolution: a move's `contentHash` maps to the Drive file `<hash>.mp4`.
 - Manifest types mirror `lib/core/web/library_manifest.dart` (manifest v2).
+
+## How it works
+
+- `src/lib/firebase.ts` — `signInWithGoogle()`: one Google popup yields both the
+  Firebase session and a Drive OAuth access token (requests `NEXT_PUBLIC_DRIVE_SCOPE`).
+- `src/lib/allowlist.ts` — `isOwner()`: rejects any email not on the allowlist
+  before any Drive request is made.
+- `src/lib/drive.ts` — `loadFromDrive()`: read-only. Finds the `Breakdex/`
+  folder, loads `manifest.json`, builds the `contentHash → fileId` map, and
+  lazily resolves video object-URLs. Never issues create/update/delete.
+- `src/app/page.tsx` — phase machine: `init → needConfig → signedOut → loading →
+  ready / error`.

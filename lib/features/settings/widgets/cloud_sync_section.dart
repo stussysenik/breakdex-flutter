@@ -90,7 +90,7 @@ class CloudSyncSection extends ConsumerWidget {
               ? ProviderStatus.connected
               : ProviderStatus.available,
           onTap: gDriveConnected
-              ? null
+              ? () => _disconnectGDrive(context, ref)
               : () => _enableGDrive(context, ref),
         ),
         const SizedBox(height: AppSpacing.sm),
@@ -147,6 +147,39 @@ class CloudSyncSection extends ConsumerWidget {
           const SnackBar(content: Text('Google sign-in was cancelled')),
         );
     }
+  }
+
+  Future<void> _disconnectGDrive(
+    final BuildContext context,
+    final WidgetRef ref,
+  ) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (final ctx) => AlertDialog(
+        title: const Text('Disconnect Google Drive?'),
+        content: const Text(
+          'Videos already backed up to Drive stay there. New videos won’t '
+          'back up until you reconnect and sign in again.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Disconnect'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true) return;
+    await HapticFeedback.mediumImpact();
+    await ref.read(gDriveSetupProvider).disconnect();
+    if (!context.mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Google Drive disconnected')),
+    );
   }
 
   Future<void> _enableICloud(final BuildContext context, final WidgetRef ref) async {

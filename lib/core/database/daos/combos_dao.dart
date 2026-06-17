@@ -169,9 +169,15 @@ class CombosDao extends DatabaseAccessor<AppDatabase> with _$CombosDaoMixin {
   Future<void> deleteCombo(final String id) {
     debugPrint('[CombosDao] deleteCombo id=$id');
     // Explicit child deletes: SQLite FK cascade is not enforced on this
-    // connection (no PRAGMA foreign_keys), so clean up plans ourselves.
+    // connection (no PRAGMA foreign_keys), so clean up structural rows
+    // ourselves. Plans and combo_moves are structure that has no meaning once
+    // the combo is gone, so they go with it. Journal entries (combo_note_entries)
+    // are user-authored content — we deliberately do NOT delete them; instead the
+    // stats queries are scoped to existing combos so orphaned jots can't inflate
+    // the "Practiced" count or calendar heat.
     return transaction(() async {
       await (delete(comboPlans)..where((final t) => t.comboId.equals(id))).go();
+      await (delete(comboMoves)..where((final t) => t.comboId.equals(id))).go();
       await (delete(combos)..where((final t) => t.id.equals(id))).go();
     });
   }
@@ -377,11 +383,12 @@ class CombosDao extends DatabaseAccessor<AppDatabase> with _$CombosDaoMixin {
         SUM(CASE WHEN kind = 'jot'
               AND (video_path IS NOT NULL OR video_hash IS NOT NULL)
             THEN 1 ELSE 0 END) AS take_count
-      FROM combo_note_entries
+      FROM combo_note_entries e
+      WHERE EXISTS (SELECT 1 FROM combos c WHERE c.id = e.combo_id)
       GROUP BY day
       ORDER BY day ASC
       ''',
-      readsFrom: {comboNoteEntries},
+      readsFrom: {comboNoteEntries, combos},
     );
 
     return query.watch().map((final rows) => rows
@@ -475,10 +482,12 @@ class CombosDao extends DatabaseAccessor<AppDatabase> with _$CombosDaoMixin {
         (SELECT COUNT(*) FROM combo_plans
           WHERE completed_at IS NOT NULL) AS landed_count,
         (SELECT COUNT(DISTINCT e.combo_id) FROM combo_note_entries e
-          WHERE e.kind = 'jot') AS practiced_count,
+          WHERE e.kind = 'jot'
+            AND EXISTS (SELECT 1 FROM combos c WHERE c.id = e.combo_id))
+            AS practiced_count,
         (SELECT COUNT(*) FROM combo_plans) AS total_plans_count
       ''',
-      readsFrom: {comboPlans, comboNoteEntries},
+      readsFrom: {comboPlans, comboNoteEntries, combos},
     );
 
     return query.watch().map((final rows) {

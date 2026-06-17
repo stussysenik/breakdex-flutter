@@ -64,7 +64,16 @@ class _JotComposerState extends ConsumerState<JotComposer> {
       log.complete();
     } catch (e, stack) {
       log.fail(e, stack);
+      _showError("Couldn't save your jot. Try again.");
     }
+  }
+
+  /// Surfaces a failed write to the user instead of swallowing it silently.
+  void _showError(final String message) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(message)),
+    );
   }
 
   Future<void> _attachVideo() async {
@@ -96,6 +105,7 @@ class _JotComposerState extends ConsumerState<JotComposer> {
           log.complete();
         } catch (e, stack) {
           log.fail(e, stack);
+          _showError("Couldn't link the video. Try again.");
         }
       },
     );

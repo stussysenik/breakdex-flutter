@@ -107,6 +107,14 @@ class ComboPlansDao extends DatabaseAccessor<AppDatabase>
   /// Evidence-based completion: stamps `completedAt` on any incomplete plan
   /// whose combo has a journal jot created on the plan's day. A rollup
   /// query, not a trigger — safe to call after any jot write.
+  ///
+  /// `plan_date` is persisted as the unix epoch of *local midnight* at the time
+  /// the plan was created. Re-applying `'localtime'` to that epoch shifts it by
+  /// the device's *current* offset, so a DST/timezone change between planning
+  /// and jotting could push the plan's day ±1h across a midnight boundary and
+  /// silently miss the match. Anchoring at local noon (`'+12 hours'`) before
+  /// taking `date(...)` makes the comparison immune to any offset change under
+  /// 12 hours. Read-path only — no stored row is rewritten.
   Future<int> stampCompletionsFromEvidence() {
     return customUpdate(
       '''
@@ -116,7 +124,7 @@ class ComboPlansDao extends DatabaseAccessor<AppDatabase>
         WHERE e.combo_id = combo_plans.combo_id
           AND e.kind = 'jot'
           AND date(e.created_at, 'unixepoch', 'localtime')
-            = date(combo_plans.plan_date, 'unixepoch', 'localtime')
+            = date(combo_plans.plan_date, 'unixepoch', 'localtime', '+12 hours')
       )
       WHERE completed_at IS NULL
         AND EXISTS (
@@ -124,7 +132,7 @@ class ComboPlansDao extends DatabaseAccessor<AppDatabase>
           WHERE e.combo_id = combo_plans.combo_id
             AND e.kind = 'jot'
             AND date(e.created_at, 'unixepoch', 'localtime')
-              = date(combo_plans.plan_date, 'unixepoch', 'localtime')
+              = date(combo_plans.plan_date, 'unixepoch', 'localtime', '+12 hours')
         )
       ''',
       updates: {comboPlans},

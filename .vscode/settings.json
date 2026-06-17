@@ -1,0 +1,13 @@
+{
+  // Folder organization, not restructure: collapse generated/companion files under their
+  // source so the Explorer sidebar is short and navigable. Touches no app code.
+  "explorer.fileNesting.enabled": true,
+  "explorer.fileNesting.expand": false,
+  "explorer.fileNesting.patterns": {
+    // Drift / build_runner / freezed generated files nest under their .dart parent
+    "*.dart": "${capture}.g.dart, ${capture}.freezed.dart, ${capture}.gr.dart, ${capture}.config.dart, ${capture}.mocks.dart",
+    // Project meta files nest under pubspec
+    "pubspec.yaml": "pubspec.lock, pubspec_overrides.yaml, .flutter-plugins, .flutter-plugins-dependencies, .metadata, analysis_options.yaml, .packages, build.yaml",
+    "README.md": "*.md, LICENSE, CHANGELOG*"
+  }
+}

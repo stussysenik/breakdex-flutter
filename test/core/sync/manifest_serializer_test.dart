@@ -39,11 +39,11 @@ void main() {
   });
 
   group('ManifestSerializer', () {
-    test('produces valid JSON with version 1 schema', () async {
+    test('produces valid JSON with version 2 schema', () async {
       final json = await serializer.serialize();
       final data = jsonDecode(json) as Map<String, dynamic>;
 
-      expect(data['version'], equals(1));
+      expect(data['version'], equals(2));
       expect(data['exportedAt'], isNotNull);
       expect(data.containsKey('moves'), isTrue);
       expect(data.containsKey('combos'), isTrue);
@@ -52,6 +52,8 @@ void main() {
       expect(data.containsKey('reviews'), isTrue);
       expect(data.containsKey('decks'), isTrue);
       expect(data.containsKey('assets'), isTrue);
+      expect(data.containsKey('notes'), isTrue);
+      expect(data.containsKey('plans'), isTrue);
     });
 
     test('serializes moves with contentHash', () async {
@@ -107,6 +109,46 @@ void main() {
       expect((data['fsrsCards'] as List), isEmpty);
       expect((data['decks'] as List), isEmpty);
       expect((data['assets'] as List), isEmpty);
+      expect((data['notes'] as List), isEmpty);
+      expect((data['plans'] as List), isEmpty);
+    });
+
+    test('serializes combo journal notes and practice plans', () async {
+      await db.combosDao.insertCombo(
+        CombosCompanion.insert(id: 'c1', name: 'Opener'),
+      );
+      await db.comboNoteEntriesDao.addEntry(
+        id: 'note-1',
+        comboId: 'c1',
+        body: 'felt strong on the freeze',
+        kind: 'jot',
+        videoHash: 'abc123',
+      );
+      await db.comboPlansDao.insertPlan(
+        ComboPlansCompanion.insert(
+          id: 'plan-1',
+          comboId: 'c1',
+          planDate: DateTime.utc(2026, 6, 20),
+        ),
+      );
+
+      final json = await serializer.serialize();
+      final data = jsonDecode(json) as Map<String, dynamic>;
+
+      final notes = (data['notes'] as List).cast<Map<String, dynamic>>();
+      expect(notes, hasLength(1));
+      expect(notes.single['id'], equals('note-1'));
+      expect(notes.single['comboId'], equals('c1'));
+      expect(notes.single['kind'], equals('jot'));
+      expect(notes.single['body'], equals('felt strong on the freeze'));
+      expect(notes.single['videoContentHash'], equals('abc123'));
+      expect(notes.single['createdAt'], endsWith('Z'));
+
+      final plans = (data['plans'] as List).cast<Map<String, dynamic>>();
+      expect(plans, hasLength(1));
+      expect(plans.single['id'], equals('plan-1'));
+      expect(plans.single['comboId'], equals('c1'));
+      expect(plans.single['completedAt'], isNull);
     });
 
     test('serializes provider-agnostic asset metadata', () async {
