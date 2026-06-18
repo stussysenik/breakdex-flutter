@@ -150,14 +150,29 @@ class StorageActionMachine {
     final hash = await _hashService.computeHash(sourceAbs);
     final contentHash = ContentHash(hash);
     
-    // 2. Prepare Target
-    final target = VideoPathResolver.semanticVideoPath(
-      a.category, 
-      a.newName, 
-      p.extension(sourceAbs), 
+    // 2. Prepare Target. Content-identical duplicates resolve to the SAME
+    //    deterministic path ({name} - {shortHash}), so a re-duplicate would
+    //    clobber the sibling copy's bytes and orphan it on delete. Suffix the
+    //    name until a free slot is found so each copy is an independent file.
+    final ext = p.extension(sourceAbs);
+    var target = VideoPathResolver.semanticVideoPath(
+      a.category,
+      a.newName,
+      ext,
       contentHash: contentHash,
     );
-    final targetAbs = VideoPathResolver.toAbsolute(target.value);
+    var targetAbs = VideoPathResolver.toAbsolute(target.value);
+    var copyIndex = 2;
+    while (await File(targetAbs).exists()) {
+      target = VideoPathResolver.semanticVideoPath(
+        a.category,
+        '${a.newName} ($copyIndex)',
+        ext,
+        contentHash: contentHash,
+      );
+      targetAbs = VideoPathResolver.toAbsolute(target.value);
+      copyIndex++;
+    }
 
     // 3. Copy (Isolate-offloaded)
     logger.stage('copying');

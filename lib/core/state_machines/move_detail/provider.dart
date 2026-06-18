@@ -99,12 +99,17 @@ class MoveDetailNotifier extends Notifier<MoveDetailState> {
         category: move.category,
       ));
 
-      // 2. Derive Identity from Engine output
+      // 2. Derive identity. The content hash is SHARED with the source (same
+      //    bytes → same Drive asset, no re-upload), but the move gets its OWN
+      //    id so any number of independent copies can coexist. Using the hash
+      //    as the move id caused a primary-key collision on the 2nd duplicate,
+      //    which is why "infinite copies" failed.
       final filename = p.basenameWithoutExtension(targetRelative.value);
       final contentHash = filename.split(' - ').last;
+      final newId = const Uuid().v4();
 
       final companion = MovesCompanion.insert(
-        id: contentHash,
+        id: newId,
         name: newName,
         category: Value(move.category),
         count: Value(move.count),
@@ -117,13 +122,13 @@ class MoveDetailNotifier extends Notifier<MoveDetailState> {
         imagePaths: Value(move.imagePaths),
         contentHash: Value(contentHash),
       );
-      
+
       await repo.insert(companion);
-      await ref.read(fsrsCardsDaoProvider).ensureCard(contentHash, entityType: 'move');
-      
-      final newMove = await repo.getById(contentHash);
+      await ref.read(fsrsCardsDaoProvider).ensureCard(newId, entityType: 'move');
+
+      final newMove = await repo.getById(newId);
       send(DuplicateSucceeded(newMove));
-      log.complete('newId=$contentHash');
+      log.complete('newId=$newId hash=$contentHash');
     } catch (e, st) {
       log.fail(e, st);
       send(DuplicateFailed('Duplication failed: $e'));
