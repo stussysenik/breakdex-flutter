@@ -52,7 +52,7 @@ class _InstaxVideoCardState extends ConsumerState<InstaxVideoCard> {
     // TODO: Handle learning state for combos if available
     final learningState = item is ReviewableMove
         ? LearningState.fromString(item.move.learningState)
-        : LearningState.newCard;
+        : LearningState.newState;
 
     final labels = ref.watch(learningStateLabelsProvider);
     final label = resolveLearningStateLabel(labels, learningState);

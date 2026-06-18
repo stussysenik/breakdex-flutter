@@ -5,7 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../core/database/database.dart';
-import '../../core/models/reviewable_item.dart' show MoveVideoPath;
+import '../../core/models/reviewable_item.dart' show MoveVideoPath, ReviewableMove;
 import '../../core/services/media_playback_coordinator.dart';
 import '../../core/design/colors.dart';
 import '../../core/design/spacing.dart';
@@ -234,7 +234,7 @@ class _CarouselModeState extends State<_CarouselMode> {
         itemBuilder: (final context, final index) {
           final move = widget.moves[index];
           return InstaxVideoCard(
-            move: move,
+            item: ReviewableMove(move),
             isActive: index == _activeIndex,
             looping: true,
             onLongPress: () => _onEditVideo(move),
@@ -313,7 +313,7 @@ class _FeedModeState extends State<_FeedMode> {
         return SizedBox(
           height: screenHeight.clamp(400, double.infinity),
           child: InstaxVideoCard(
-            move: move,
+            item: ReviewableMove(move),
             isActive: index == _activeIndex,
             looping: true,
             muted: index != _activeIndex,
@@ -376,7 +376,7 @@ class _TinderModeState extends State<_TinderMode> {
 
       Widget card = InstaxVideoCard(
         key: ValueKey('tinder-${move.id}'),
-        move: move,
+        item: ReviewableMove(move),
         isActive: offset == 0,
         looping: true,
         muted: offset != 0,
