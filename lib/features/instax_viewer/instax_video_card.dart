@@ -1,12 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../core/database/database.dart';
 import '../../core/design/colors.dart';
 import '../../core/design/spacing.dart';
 import '../../core/design/typography.dart';
 import '../../core/models/learning_state.dart';
-import '../../core/models/reviewable_item.dart' show MoveVideoPath;
+import '../../core/models/reviewable_item.dart';
 import '../../core/providers.dart';
 import '../../shared/widgets/pressable.dart';
 import '../../shared/widgets/video_player_widget.dart';
@@ -14,7 +13,7 @@ import '../../shared/widgets/video_player_widget.dart';
 class InstaxVideoCard extends ConsumerStatefulWidget {
   const InstaxVideoCard({
     super.key,
-    required this.move,
+    required this.item,
     required this.isActive,
     this.muted = false,
     this.looping = true,
@@ -22,7 +21,7 @@ class InstaxVideoCard extends ConsumerStatefulWidget {
     this.onTap,
   });
 
-  final Move move;
+  final ReviewableItem item;
   final bool isActive;
   final bool muted;
   final bool looping;
@@ -39,16 +38,22 @@ class _InstaxVideoCardState extends ConsumerState<InstaxVideoCard> {
     super.didUpdateWidget(old);
     if (old.isActive != widget.isActive) {
       debugPrint(
-        '[InstaxCard] activeChanged: ${widget.move.name} isActive=${widget.isActive}',
+        '[InstaxCard] activeChanged: ${widget.item.displayName} isActive=${widget.isActive}',
       );
     }
   }
 
   @override
   Widget build(final BuildContext context) {
-    final move = widget.move;
-    final hasVideo = move.videoPath != null;
-    final learningState = LearningState.fromString(move.learningState);
+    final item = widget.item;
+    final videoPath = item.videoPath;
+    final hasVideo = videoPath != null;
+
+    // TODO: Handle learning state for combos if available
+    final learningState = item is ReviewableMove
+        ? LearningState.fromString(item.move.learningState)
+        : LearningState.newCard;
+
     final labels = ref.watch(learningStateLabelsProvider);
     final label = resolveLearningStateLabel(labels, learningState);
 
@@ -86,8 +91,8 @@ class _InstaxVideoCardState extends ConsumerState<InstaxVideoCard> {
                   fit: StackFit.expand,
                   children: [
                     RobustVideoPlayer(
-                      key: ValueKey('instax-${move.id}-${move.contentHash}'),
-                      videoPath: move.resolvedVideoPath!,
+                      key: ValueKey('instax-${item.entityType}-${item.entityId}'),
+                      videoPath: videoPath,
                       autoPlay: widget.isActive,
                       minimal: true,
                       looping: widget.looping,
@@ -170,7 +175,7 @@ class _InstaxVideoCardState extends ConsumerState<InstaxVideoCard> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    move.name,
+                    item.displayName,
                     style: AppTypography.bodyMedium.copyWith(
                       color: Colors.white,
                       fontWeight: FontWeight.w600,
@@ -178,10 +183,10 @@ class _InstaxVideoCardState extends ConsumerState<InstaxVideoCard> {
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),
-                  if (move.category != 'default') ...[
+                  if (item.category != null && item.category != 'default') ...[
                     const SizedBox(height: 4),
                     Text(
-                      move.category,
+                      item.category!,
                       style: AppTypography.caption.copyWith(
                         color: Colors.white54,
                         fontSize: 11,
@@ -197,3 +202,4 @@ class _InstaxVideoCardState extends ConsumerState<InstaxVideoCard> {
     );
   }
 }
+

@@ -57,6 +57,7 @@ class LibraryMove {
     required this.category,
     required this.contentHash,
     required this.createdAt,
+    this.deletedAt,
   });
 
   final String id;
@@ -65,12 +66,18 @@ class LibraryMove {
   final String? contentHash;
   final DateTime createdAt;
 
+  /// Soft-archive marker (mirrors `Moves.archivedAt`). When set, the move is a
+  /// tombstone: still emitted so combos/sets that reference it stay resolvable
+  /// on the web, but rendered as archived. Null for active moves.
+  final DateTime? deletedAt;
+
   Map<String, dynamic> toJson() => {
     'id': id,
     'name': name,
     'category': category,
     'contentHash': contentHash,
     'createdAt': createdAt.toUtc().toIso8601String(),
+    'deletedAt': deletedAt?.toUtc().toIso8601String(),
   };
 }
 

@@ -48,11 +48,29 @@ class ManifestSyncService {
     _debounceTimer = Timer(_debounceDuration, _uploadManifest);
   }
 
-  Future<void> _uploadManifest() async {
+  /// Force an immediate manifest upload, bypassing the debounce. Used by the
+  /// manual "Re-upload library now" control so the web mirror can be refreshed
+  /// on demand (e.g. to verify Drive writes or push a corrected snapshot)
+  /// without waiting for the next metadata edit. Respects the in-flight guard:
+  /// if an upload is already running, this coalesces into the pending round.
+  /// Returns the number of providers the manifest was successfully uploaded to
+  /// (0 if none are connected/available, or an upload is already in flight and
+  /// this call coalesced into it).
+  Future<int> syncNow() async {
+    _debounceTimer?.cancel();
+    if (_uploading) {
+      _pendingWhileUploading = true;
+      return 0;
+    }
+    return _uploadManifest();
+  }
+
+  Future<int> _uploadManifest() async {
     _uploading = true;
+    var uploaded = 0;
     try {
       final providers = await _availableProviders();
-      if (providers.isEmpty) return;
+      if (providers.isEmpty) return 0;
 
       // Serialize the full library only when some provider can accept it.
       final json = await _serializer.serialize();
@@ -73,6 +91,7 @@ class ManifestSyncService {
               remotePath: 'breakdex/manifest.json',
             );
             debugPrint('[ManifestSync] Uploaded to ${provider.displayName}');
+            uploaded++;
             _providerCooldownUntil.remove(provider.providerType);
           } on CloudProviderUnavailableException catch (e) {
             _providerCooldownUntil[provider.providerType] = DateTime.now().add(
@@ -101,6 +120,7 @@ class ManifestSyncService {
         onMetadataChanged();
       }
     }
+    return uploaded;
   }
 
   Future<List<CloudProvider>> _availableProviders() async {

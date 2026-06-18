@@ -45,7 +45,10 @@ class ManifestSerializer {
   ///
   /// Returns the JSON string ready for upload to cloud storage.
   Future<String> serialize() async {
-    final moves = await _movesDao.getAll();
+    // Include archived moves so combos/sets that reference a retired move stay
+    // resolvable on the web (it renders them as tombstones). Active-only would
+    // orphan those links into bare IDs with no name or video.
+    final moves = await _movesDao.getAllIncludingArchived();
     final combos = await _combosDao.getAll();
     final comboMoves = await _db.select(_db.comboMoves).get();
     final fsrsCards = await _fsrsCardsDao.getAll();
@@ -76,6 +79,7 @@ class ManifestSerializer {
               category: move.category,
               contentHash: move.contentHash,
               createdAt: move.createdAt,
+              deletedAt: move.archivedAt,
             ),
           )
           .toList(),

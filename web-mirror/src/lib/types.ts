@@ -7,11 +7,17 @@ export interface Move {
   category: string;
   contentHash: string | null;
   createdAt: string;
+  // Soft-archive marker (forward-looking, manifest-optional). When present the
+  // move is a tombstone: still listed and playable, but rendered as archived.
+  // Older manifests omit it → active. The canonical truth never hard-deletes.
+  deletedAt?: string | null;
 }
 
 export interface Combo {
   id: string;
   name: string;
+  // Soft-archive marker; see Move.deletedAt.
+  deletedAt?: string | null;
 }
 
 export interface ComboMove {

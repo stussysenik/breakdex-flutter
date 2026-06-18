@@ -1,12 +1,22 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import type { MirrorData, Move, Note } from "@/lib/types";
+import type { Asset, MirrorData, Move, Note } from "@/lib/types";
 import { computeStats } from "@/lib/stats";
+import { projectLifecycle, type EntityRef } from "@/lib/lifecycle";
 import StatsPanel from "./StatsPanel";
 import VideoModal from "./VideoModal";
+import EntityHistoryModal from "./EntityHistoryModal";
+import Discover from "./graph/Discover";
 
-type Tab = "library" | "combos" | "journal" | "plans" | "stats";
+type Tab =
+  | "library"
+  | "combos"
+  | "sets"
+  | "journal"
+  | "plans"
+  | "stats"
+  | "discover";
 
 interface Selection {
   title: string;
@@ -46,6 +56,32 @@ function Chevron({ open }: { open: boolean }) {
   );
 }
 
+function HistoryButton({ onClick, label }: { onClick: () => void; label: string }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      aria-label={`Lifecycle of ${label}`}
+      title="View lifecycle"
+      text="muted"
+      p="1.5"
+      rounded="md"
+      className="focus-ring shrink-0 hover:text-ink hover:bg-surface transition-colors"
+    >
+      <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
+        <circle cx="7" cy="7" r="5.25" stroke="currentColor" strokeWidth="1.3" />
+        <path
+          d="M7 4.2V7l1.9 1.1"
+          stroke="currentColor"
+          strokeWidth="1.3"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+      </svg>
+    </button>
+  );
+}
+
 function PlayGlyph({ dim }: { dim?: boolean }) {
   return (
     <span
@@ -74,36 +110,51 @@ function Disclosure({
   title,
   count,
   defaultOpen = true,
+  archived = false,
+  action,
   children,
 }: {
   title: string;
   count: number;
   defaultOpen?: boolean;
+  archived?: boolean;
+  action?: React.ReactNode;
   children: React.ReactNode;
 }) {
   const [open, setOpen] = useState(defaultOpen);
   return (
     <section border="b line">
-      <button
-        type="button"
-        aria-expanded={open}
-        onClick={() => setOpen((o) => !o)}
-        w="full"
-        flex="~"
-        items="center"
-        gap="2"
-        p="y-3"
-        text="left muted"
-        className="focus-ring"
-      >
-        <Chevron open={open} />
-        <span text="sm ink" font="medium">
-          {title}
-        </span>
-        <span text="xs muted" m="l-auto" className="tnum">
-          {count}
-        </span>
-      </button>
+      <div flex="~" items="center" gap="1">
+        <button
+          type="button"
+          aria-expanded={open}
+          onClick={() => setOpen((o) => !o)}
+          flex="1"
+          items="center"
+          gap="2"
+          p="y-3"
+          text="left muted"
+          className="focus-ring flex min-w-0"
+        >
+          <Chevron open={open} />
+          <span
+            text="sm ink"
+            font="medium"
+            className={`truncate ${archived ? "line-through text-muted" : ""}`}
+          >
+            {title}
+          </span>
+          {archived ? (
+            <span text="xs warn" font="semibold" className="shrink-0 uppercase tracking-wide">
+              archived
+            </span>
+          ) : null}
+          <span text="xs muted" m="l-auto" className="tnum shrink-0">
+            {count}
+          </span>
+        </button>
+        {action ?? null}
+      </div>
       {open ? (
         <ul m="b-2" className="anim-rise list-none p-0">
           {children}
@@ -117,19 +168,31 @@ function MoveRow({
   name,
   contentHash,
   onPlay,
+  archived = false,
+  onShowHistory,
 }: {
   name: string;
   contentHash: string | null;
   onPlay: () => void;
+  archived?: boolean;
+  onShowHistory?: () => void;
 }) {
   const playable = !!contentHash;
   const inner = (
     <>
       <PlayGlyph dim={!playable} />
-      <span flex="1" text="sm ink" className="truncate">
+      <span
+        flex="1"
+        text="sm ink"
+        className={`truncate ${archived ? "line-through text-muted" : ""}`}
+      >
         {name}
       </span>
-      {!playable ? (
+      {archived ? (
+        <span text="xs warn" font="semibold" className="shrink-0 uppercase tracking-wide">
+          archived
+        </span>
+      ) : !playable ? (
         <span text="xs faint" className="shrink-0">
           no video
         </span>
@@ -137,33 +200,67 @@ function MoveRow({
     </>
   );
   return (
-    <li>
+    <li flex="~" items="center" gap="1">
       {playable ? (
         <button
           type="button"
           onClick={onPlay}
-          w="full"
-          flex="~"
+          flex="1"
           items="center"
           gap="3"
           p="x-2 y-2"
           rounded="md"
           text="left"
-          className="focus-ring hover:bg-surface transition-colors"
+          className={`focus-ring flex hover:bg-surface transition-colors min-w-0 ${archived ? "opacity-75" : ""}`}
         >
           {inner}
         </button>
       ) : (
         <div
-          flex="~"
+          flex="1"
           items="center"
           gap="3"
           p="x-2 y-2"
-          className="opacity-70 cursor-default"
+          className={`flex cursor-default min-w-0 ${archived ? "opacity-75" : "opacity-70"}`}
         >
           {inner}
         </div>
       )}
+      {onShowHistory ? <HistoryButton onClick={onShowHistory} label={name} /> : null}
+    </li>
+  );
+}
+
+/** Friendly label for an orphan asset: its source filename, else a short hash. */
+function clipLabel(a: Asset): string {
+  return a.sourceName ?? `${a.contentHash.slice(0, 10)}…`;
+}
+
+function ClipRow({ asset, onPlay }: { asset: Asset; onPlay: () => void }) {
+  return (
+    <li>
+      <button
+        type="button"
+        onClick={onPlay}
+        w="full"
+        flex="~"
+        items="center"
+        gap="3"
+        p="x-2 y-2"
+        rounded="md"
+        text="left"
+        className="focus-ring hover:bg-surface transition-colors"
+      >
+        <PlayGlyph />
+        <span flex="1" text="sm ink" className="truncate">
+          {clipLabel(asset)}
+        </span>
+        {asset.deletedAt ? (
+          <span text="xs faint" className="shrink-0 uppercase tracking-wide">
+            archived
+          </span>
+        ) : null}
+      </button>
     </li>
   );
 }
@@ -178,10 +275,18 @@ export default function Mirror({
   const { manifest, resolveVideo, sourceLabel } = data;
   const [tab, setTab] = useState<Tab>("library");
   const [sel, setSel] = useState<Selection | null>(null);
+  const [histRef, setHistRef] = useState<EntityRef | null>(null);
 
   const stats = useMemo(() => computeStats(manifest), [manifest]);
   const notes = manifest.notes ?? [];
   const plans = manifest.plans ?? [];
+
+  // Lifecycle timeline for the selected entity — reconstructed from the
+  // manifest (no recorded history is carried yet). Read-only projection.
+  const timeline = useMemo(
+    () => (histRef ? projectLifecycle(manifest, histRef) : null),
+    [histRef, manifest],
+  );
 
   const movesById = useMemo(() => {
     const m = new Map<string, Move>();
@@ -217,12 +322,40 @@ export default function Mirror({
     return [...m.entries()];
   }, [notes]);
 
+  // Sets/decks → their member moves, in manifest order. Mirrors the combos view.
+  const decksWithMoves = useMemo(
+    () =>
+      manifest.decks.map((deck) => ({
+        deck,
+        moves: manifest.deckMoves
+          .filter((dm) => dm.deckId === deck.id)
+          .map((dm) => movesById.get(dm.moveId))
+          .filter((mv): mv is Move => !!mv),
+      })),
+    [manifest.decks, manifest.deckMoves, movesById],
+  );
+
+  // Clips present in the library's asset list but attached to no move and no
+  // note. Surfaced (not silently omitted) so every video stays reachable.
+  const unattachedClips = useMemo(() => {
+    const referenced = new Set<string>();
+    for (const mv of manifest.moves) if (mv.contentHash) referenced.add(mv.contentHash);
+    for (const n of notes) if (n.videoContentHash) referenced.add(n.videoContentHash);
+    return manifest.assets.filter((a) => !referenced.has(a.contentHash));
+  }, [manifest.assets, manifest.moves, notes]);
+
   const tabs: { id: Tab; label: string; count: number }[] = [
     { id: "library", label: "Library", count: manifest.moves.length },
     { id: "combos", label: "Combos", count: manifest.combos.length },
+    { id: "sets", label: "Sets", count: manifest.decks.length },
     { id: "journal", label: "Journal", count: notes.length },
     { id: "plans", label: "Plans", count: plans.length },
     { id: "stats", label: "Stats", count: manifest.reviews.length },
+    {
+      id: "discover",
+      label: "Discover",
+      count: manifest.moves.length + manifest.combos.length,
+    },
   ];
 
   const goHome = () => {
@@ -372,7 +505,7 @@ export default function Mirror({
         {/* key={tab} re-triggers the rise animation on each section change. */}
         <div key={tab} className="anim-rise">
         {tab === "library" &&
-          (movesByCategory.length === 0 ? (
+          (movesByCategory.length === 0 && unattachedClips.length === 0 ? (
             <Empty>No moves yet.</Empty>
           ) : (
             <div>
@@ -383,6 +516,10 @@ export default function Mirror({
                       key={mv.id}
                       name={mv.name}
                       contentHash={mv.contentHash}
+                      archived={!!mv.deletedAt}
+                      onShowHistory={() =>
+                        setHistRef({ entityType: "move", entityId: mv.id })
+                      }
                       onPlay={() =>
                         setSel({
                           title: mv.name,
@@ -392,6 +529,61 @@ export default function Mirror({
                       }
                     />
                   ))}
+                </Disclosure>
+              ))}
+              {unattachedClips.length > 0 ? (
+                <Disclosure
+                  title="Unattached clips"
+                  count={unattachedClips.length}
+                  defaultOpen={false}
+                >
+                  {unattachedClips.map((a) => (
+                    <ClipRow
+                      key={a.contentHash}
+                      asset={a}
+                      onPlay={() =>
+                        setSel({
+                          title: clipLabel(a),
+                          subtitle: a.deletedAt
+                            ? "unattached clip · archived"
+                            : "unattached clip",
+                          contentHash: a.contentHash,
+                        })
+                      }
+                    />
+                  ))}
+                </Disclosure>
+              ) : null}
+            </div>
+          ))}
+
+        {tab === "sets" &&
+          (decksWithMoves.length === 0 ? (
+            <Empty>No sets yet.</Empty>
+          ) : (
+            <div>
+              {decksWithMoves.map(({ deck, moves: deckMoves }) => (
+                <Disclosure key={deck.id} title={deck.name} count={deckMoves.length}>
+                  {deckMoves.length === 0 ? (
+                    <li text="xs muted" p="x-2 y-2">
+                      No moves in this set.
+                    </li>
+                  ) : (
+                    deckMoves.map((mv, i) => (
+                      <MoveRow
+                        key={`${mv.id}-${i}`}
+                        name={mv.name}
+                        contentHash={mv.contentHash}
+                        onPlay={() =>
+                          setSel({
+                            title: mv.name,
+                            subtitle: deck.name,
+                            contentHash: mv.contentHash,
+                          })
+                        }
+                      />
+                    ))
+                  )}
                 </Disclosure>
               ))}
             </div>
@@ -407,7 +599,20 @@ export default function Mirror({
                   .filter((cm) => cm.comboId === combo.id)
                   .sort((a, b) => a.sequenceIndex - b.sequenceIndex);
                 return (
-                  <Disclosure key={combo.id} title={combo.name} count={seq.length}>
+                  <Disclosure
+                    key={combo.id}
+                    title={combo.name}
+                    count={seq.length}
+                    archived={!!combo.deletedAt}
+                    action={
+                      <HistoryButton
+                        label={combo.name}
+                        onClick={() =>
+                          setHistRef({ entityType: "combo", entityId: combo.id })
+                        }
+                      />
+                    }
+                  >
                     {seq.length === 0 ? (
                       <li text="xs muted" p="x-2 y-2">
                         No moves linked.
@@ -465,6 +670,31 @@ export default function Mirror({
                       <p text="sm ink" m="t-1" className="leading-relaxed">
                         {n.body}
                       </p>
+                      {n.videoContentHash ? (
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setSel({
+                              title: comboName.get(n.comboId) ?? "Clip",
+                              subtitle: `journal · ${n.kind}`,
+                              contentHash: n.videoContentHash,
+                            })
+                          }
+                          flex="~"
+                          items="center"
+                          gap="2"
+                          m="t-1.5"
+                          p="x-2 y-1"
+                          rounded="md"
+                          text="left"
+                          className="focus-ring hover:bg-surface transition-colors"
+                        >
+                          <PlayGlyph />
+                          <span text="xs accent" font="medium">
+                            Play clip
+                          </span>
+                        </button>
+                      ) : null}
                     </li>
                   ))}
                 </Disclosure>
@@ -480,6 +710,19 @@ export default function Mirror({
           ))}
 
         {tab === "stats" && <StatsPanel stats={stats} engine="local" />}
+
+        {tab === "discover" && (
+          <Discover
+            manifest={manifest}
+            onOpenMove={(mv) =>
+              setSel({
+                title: mv.name,
+                subtitle: mv.category,
+                contentHash: mv.contentHash,
+              })
+            }
+          />
+        )}
         </div>
       </main>
 
@@ -492,6 +735,10 @@ export default function Mirror({
           sourceLabel={sourceLabel}
           onClose={() => setSel(null)}
         />
+      ) : null}
+
+      {timeline ? (
+        <EntityHistoryModal timeline={timeline} onClose={() => setHistRef(null)} />
       ) : null}
     </div>
   );

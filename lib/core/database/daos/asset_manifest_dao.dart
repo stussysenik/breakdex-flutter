@@ -40,6 +40,14 @@ class AssetManifestDao extends DatabaseAccessor<AppDatabase>
           ))
           .get();
 
+  /// All live assets that currently have a local file on disk. Used by the
+  /// manual integrity check, which hashes everything rather than sampling.
+  Future<List<AssetManifestData>> getLocalAssets() =>
+      (select(assetManifest)..where(
+            (final t) => t.deletedAt.isNull() & t.localPath.isNotNull(),
+          ))
+          .get();
+
   /// Assets pending local verification (never verified, or stale).
   Future<List<AssetManifestData>> getStaleVerifications(final Duration maxAge) async {
     final cutoff = DateTime.now().subtract(maxAge);

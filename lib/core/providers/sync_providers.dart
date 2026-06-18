@@ -175,29 +175,31 @@ final manifestSyncTriggerProvider = Provider<void>((final ref) {
 
   void onChange() => syncService.onMetadataChanged();
 
-  // Subscribe to all reactive DAO streams that affect manifest content
-  final moveSub = ref
-      .watch(movesDaoProvider)
-      .watchAll()
-      .listen((_) => onChange());
-  final comboSub = ref
-      .watch(combosDaoProvider)
-      .watchAll()
-      .listen((_) => onChange());
-  final fsrsSub = ref
-      .watch(fsrsCardsDaoProvider)
-      .watchAll()
-      .listen((_) => onChange());
-  final reviewSub = ref
-      .watch(reviewsDaoProvider)
-      .watchAll()
-      .listen((_) => onChange());
+  final db = ref.watch(databaseProvider);
+
+  // Every stream whose table contributes to the manifest. Missing any of these
+  // means edits to that table never re-upload the manifest, so the web mirror
+  // shows a stale structure. Combo/set membership, ordering, notes and plans
+  // were previously unwatched — reordering or re-linking a combo silently went
+  // unsynced. The 5s upload debounce coalesces bursts across all of them.
+  final subscriptions = <StreamSubscription<Object?>>[
+    ref.watch(movesDaoProvider).watchAll().listen((_) => onChange()),
+    ref.watch(combosDaoProvider).watchAll().listen((_) => onChange()),
+    ref.watch(fsrsCardsDaoProvider).watchAll().listen((_) => onChange()),
+    ref.watch(reviewsDaoProvider).watchAll().listen((_) => onChange()),
+    // Combo membership + ordering (sequenceIndex) and set membership.
+    db.select(db.comboMoves).watch().listen((_) => onChange()),
+    db.select(db.decks).watch().listen((_) => onChange()),
+    db.select(db.deckMoves).watch().listen((_) => onChange()),
+    // Journal notes and practice plans.
+    db.select(db.comboNoteEntries).watch().listen((_) => onChange()),
+    db.select(db.comboPlans).watch().listen((_) => onChange()),
+  ];
 
   ref.onDispose(() {
-    moveSub.cancel();
-    comboSub.cancel();
-    fsrsSub.cancel();
-    reviewSub.cancel();
+    for (final sub in subscriptions) {
+      sub.cancel();
+    }
   });
 });
 

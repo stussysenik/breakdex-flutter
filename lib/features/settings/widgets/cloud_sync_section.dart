@@ -104,6 +104,17 @@ class CloudSyncSection extends ConsumerWidget {
         ),
         const SizedBox(height: AppSpacing.lg),
 
+        // Force a fresh manifest push so the web mirror reflects the current
+        // library on demand — also the quickest way to confirm Drive writes.
+        if (iCloudConnected || gDriveConnected) ...[
+          ActionTile(
+            icon: Icons.cloud_upload_outlined,
+            label: 'Re-upload library now',
+            onTap: () => _reuploadManifest(context, ref),
+          ),
+          const SizedBox(height: AppSpacing.sm),
+        ],
+
         // Links to sync screens
         ActionTile(
           icon: Icons.sync,
@@ -124,6 +135,37 @@ class CloudSyncSection extends ConsumerWidget {
         ),
       ],
     );
+  }
+
+  Future<void> _reuploadManifest(
+    final BuildContext context,
+    final WidgetRef ref,
+  ) async {
+    final messenger = ScaffoldMessenger.of(context);
+    await HapticFeedback.mediumImpact();
+    messenger.showSnackBar(
+      const SnackBar(content: Text('Re-uploading library…')),
+    );
+    try {
+      final count = await ref.read(manifestSyncServiceProvider).syncNow();
+      if (!context.mounted) return;
+      messenger.hideCurrentSnackBar();
+      messenger.showSnackBar(
+        SnackBar(
+          content: Text(
+            count > 0
+                ? 'Library re-uploaded — refresh the web mirror'
+                : 'No cloud provider connected to upload to',
+          ),
+        ),
+      );
+    } catch (e) {
+      if (!context.mounted) return;
+      messenger.hideCurrentSnackBar();
+      messenger.showSnackBar(
+        SnackBar(content: Text('Re-upload failed: $e')),
+      );
+    }
   }
 
   Future<void> _enableGDrive(final BuildContext context, final WidgetRef ref) async {

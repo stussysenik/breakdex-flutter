@@ -150,6 +150,83 @@ void main() {
       dir.deleteSync(recursive: true);
     });
 
+    test('checkAll scans recently-verified files (ignores staleness)',
+        () async {
+      final verifier = IntegrityVerifier(
+        db.assetManifestDao,
+        db.assetCopiesDao,
+        hashService,
+      );
+
+      // A file verified just now — would be skipped by the sampled path.
+      final dir = Directory.systemTemp.createTempSync('verify_test_');
+      final file = File('${dir.path}/fresh.mp4')
+        ..writeAsBytesSync([9, 8, 7]);
+      final realHash = await hashService.computeHash(file.path);
+      await seedManifest(db,
+          hash: realHash,
+          localPath: file.path,
+          localVerifiedAt: DateTime.now());
+
+      final sampled = await verifier.verify();
+      expect(sampled.filesChecked, 0, reason: 'fresh file is not stale');
+
+      final full = await verifier.verify(checkAll: true);
+      expect(full.filesChecked, 1, reason: 'checkAll ignores staleness');
+      expect(full.filesOk, 1);
+
+      dir.deleteSync(recursive: true);
+    });
+
+    test('heal:false reports the mismatch without marking the copy failed',
+        () async {
+      final verifier = IntegrityVerifier(
+        db.assetManifestDao,
+        db.assetCopiesDao,
+        hashService,
+      );
+
+      final dir = Directory.systemTemp.createTempSync('verify_test_');
+      final file = File('${dir.path}/edited.mp4')
+        ..writeAsBytesSync([1, 2, 3, 4, 5]);
+      final wrongHash = 'a' * 64;
+      await seedManifest(db, hash: wrongHash, localPath: file.path);
+      await seedLocalCopy(db, hash: wrongHash);
+
+      final report =
+          await verifier.verify(checkAll: true, heal: false);
+
+      expect(report.filesMismatched, 1);
+      // Issue detail is populated for the debug UI.
+      expect(report.issues.single.kind, IntegrityIssueKind.mismatch);
+      expect(report.issues.single.actualHash, isA<String>());
+      expect(report.issues.single.actualHash, isNot(wrongHash));
+      expect(report.mismatchedHashes, [wrongHash]);
+
+      // Read-only: the local copy is untouched (no clobber-by-redownload).
+      final localCopy = await db.assetCopiesDao.getLocalCopy(wrongHash);
+      expect(localCopy?.status, 'verified');
+
+      dir.deleteSync(recursive: true);
+    });
+
+    test('healMismatches marks the named copies failed', () async {
+      final verifier = IntegrityVerifier(
+        db.assetManifestDao,
+        db.assetCopiesDao,
+        hashService,
+      );
+
+      await seedManifest(db, hash: 'h1', localPath: '/tmp/a.mp4');
+      await seedLocalCopy(db, hash: 'h1');
+
+      final healed = await verifier.healMismatches(['h1']);
+
+      expect(healed, 1);
+      final localCopy = await db.assetCopiesDao.getLocalCopy('h1');
+      expect(localCopy?.status, 'failed');
+    });
+
     test('counts null localPath as filesMissing', () {
       // The verifier's "missing" counter only increments when localPath is
       // null, which getStaleVerifications filters out. Test the report model
