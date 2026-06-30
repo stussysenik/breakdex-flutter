@@ -1,0 +1,13 @@
+// GENERATED preview entries for BreakdexScreen. Safe to edit — add @Preview variants
+// (sizes, brightness, seeded states) as you iterate on this screen.
+import 'package:flutter/widget_previews.dart';
+import 'package:flutter/widgets.dart';
+
+import '../../dev/preview_harness.dart';
+import 'breakdex_screen.dart';
+
+@Preview(name: 'BreakdexScreen · light', group: 'breakdex', wrapper: PreviewHarness.wrapLight)
+Widget breakdexScreenLight() => const BreakdexScreen();
+
+@Preview(name: 'BreakdexScreen · dark', group: 'breakdex', wrapper: PreviewHarness.wrapDark)
+Widget breakdexScreenDark() => const BreakdexScreen();

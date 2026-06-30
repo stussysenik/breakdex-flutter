@@ -1,0 +1,56 @@
+# Verify: Planned-combo changes
+#   1. The + FAB on the Planned tab opens the plan-a-combo flow (encapsulation)
+#   2. A planned combo lands in the queue
+#   3. Swipe-to-remove clears it from the stack (with Undo) — never stuck
+#
+# Seeds the stress fixture (30 combos). Tags: verify
+appId: com.breakdex.breakdex
+name: "Verify Combo Plan"
+tags:
+  - verify
+
+---
+
+- clearState
+- launchApp:
+    arguments:
+      maestro: true
+      breakdexFixture: stress
+    permissions:
+      all: allow
+- assertVisible: "Breakdex"
+
+# Home → Combos → Planned tab
+- tapOn:
+    id: "combos-tile"
+- assertVisible: "Library"
+- tapOn: "Planned"
+- assertVisible: "No plans yet — tap + to plan a combo"
+- takeScreenshot: e2e-screenshots/plan-01-empty
+
+# The + button is the single entry point for planning
+- tapOn:
+    id: "combos-fab"
+- assertVisible: "Plan a combo"
+- waitForAnimationToEnd
+# Pick the first seeded combo. Flutter merges ListTile child text into one
+# semantics node (no standalone bounds), so tap the row by point, not text.
+- tapOn:
+    point: "40%,59%"
+# Date picker — accept the default (today). The plan now lands in the queue
+# (combo name lives in a merged ListTile node Maestro can't text-match, so we
+# assert on the section header + plan count, captured in the screenshot).
+- tapOn: "OK"
+# The QUEUE header only renders when a plan exists, so its presence proves the
+# plan landed (the combo name lives in a merged ListTile node Maestro can't
+# text-match; the screenshot captures it).
+- assertVisible: "QUEUE"
+- takeScreenshot: e2e-screenshots/plan-02-queued
+
+# Remove the plan from the stack via swipe (first queue row, ~37% down)
+- swipe:
+    start: "85%,37%"
+    end: "10%,37%"
+- assertVisible: "Undo"
+- takeScreenshot: e2e-screenshots/plan-03-removed
+- assertVisible: "No plans yet — tap + to plan a combo"

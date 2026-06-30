@@ -12,6 +12,17 @@ import '../../core/design/typography.dart';
 import '../../core/utils/time_format.dart';
 import '../../core/providers.dart';
 
+/// Live log entries for a move or combo. Keyed on (type, id) so the family
+/// caches one stream per entity. Backed by Drift `.watch()` queries, it
+/// re-emits on every add/edit/delete — the section updates instantly.
+final _logEntriesProvider =
+    StreamProvider.family<List<dynamic>, ({String type, String id})>(
+        (final ref, final key) {
+  return key.type == 'move'
+      ? ref.watch(moveNoteEntriesDaoProvider).watchByMoveId(key.id)
+      : ref.watch(comboNoteEntriesDaoProvider).watchByComboId(key.id);
+});
+
 class LogsSection extends ConsumerWidget {
   const LogsSection({
     super.key,
@@ -25,9 +36,8 @@ class LogsSection extends ConsumerWidget {
   @override
   Widget build(final BuildContext context, final WidgetRef ref) {
     final colorScheme = Theme.of(context).colorScheme;
-    final logsStream = entityType == 'move'
-        ? ref.watch(moveNoteEntriesDaoProvider).getByMoveId(entityId).asStream()
-        : ref.watch(comboNoteEntriesDaoProvider).getByComboId(entityId).asStream();
+    final logsAsync =
+        ref.watch(_logEntriesProvider((type: entityType, id: entityId)));
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -51,10 +61,9 @@ class LogsSection extends ConsumerWidget {
           ],
         ),
         const SizedBox(height: AppSpacing.xs),
-        StreamBuilder<List<dynamic>>(
-          stream: logsStream,
-          builder: (final context, final snapshot) {
-            final logs = snapshot.data ?? [];
+        Builder(
+          builder: (final context) {
+            final logs = logsAsync.valueOrNull ?? const <dynamic>[];
             if (logs.isEmpty) {
               return Text(
                 'No entries yet.',

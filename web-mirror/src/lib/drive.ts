@@ -101,6 +101,15 @@ export async function loadFromDrive(token: string): Promise<MirrorData> {
     if (base && base !== "manifest") byHash.set(base, f.id);
   }
 
+  // contentHash → MIME type, from the manifest's asset records. The mobile app
+  // uploads video bytes to Drive without a content type, so Drive serves them as
+  // `application/octet-stream`; a <video> element can't decode a blob typed that
+  // way. We re-stamp the blob with the manifest's real MIME so playback works.
+  const mimeByHash = new Map<string, string>();
+  for (const a of manifest.assets) {
+    if (a.contentHash && a.mimeType) mimeByHash.set(a.contentHash, a.mimeType);
+  }
+
   // Object-URL cache so re-selecting a move doesn't re-download it.
   const urlCache = new Map<string, string>();
 
@@ -113,7 +122,13 @@ export async function loadFromDrive(token: string): Promise<MirrorData> {
     const fileId = byHash.get(contentHash);
     if (!fileId) return null;
     const res = await driveGet(`/files/${fileId}`, token, { alt: "media" });
-    const blob = await res.blob();
+    const raw = await res.blob();
+    // Drive serves the bytes as octet-stream; re-stamp with the manifest's MIME
+    // (default to video/mp4) so the <video> element can decode the object URL.
+    const mime = mimeByHash.get(contentHash) ?? "video/mp4";
+    const blob = raw.type.startsWith("video/")
+      ? raw
+      : new Blob([raw], { type: mime });
     const objectUrl = URL.createObjectURL(blob);
     urlCache.set(contentHash, objectUrl);
     return objectUrl;

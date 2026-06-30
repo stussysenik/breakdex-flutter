@@ -17,6 +17,18 @@ class MoveNoteEntriesDao extends DatabaseAccessor<AppDatabase>
         .get();
   }
 
+  /// Live stream of a move's log entries — re-emits on every add/edit/delete
+  /// so the detail screen updates instantly (no leave-and-return refresh).
+  Stream<List<MoveNoteEntry>> watchByMoveId(final String moveId) {
+    return (select(moveNoteEntries)
+          ..where((final t) => t.moveId.equals(moveId))
+          ..orderBy([
+            (final t) => OrderingTerm.desc(t.createdAt),
+            (final t) => OrderingTerm.desc(t.id),
+          ]))
+        .watch();
+  }
+
   Future<void> addEntry({
     required final String id,
     required final String moveId,

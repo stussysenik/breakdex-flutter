@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:math';
 
+import 'package:drift/drift.dart' show Value;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -9,6 +10,7 @@ import 'package:intl/intl.dart';
 
 import '../../core/database/daos/combo_plans_dao.dart';
 import '../../core/database/daos/combos_dao.dart';
+import '../../core/database/database.dart' show ComboPlansCompanion;
 import '../../core/design/spacing.dart';
 import '../../core/design/theme.dart';
 import '../../core/design/typography.dart';
@@ -95,24 +97,37 @@ class _CombosScreenState extends ConsumerState<CombosScreen> {
           ComboCalendarView(),
         ],
       ),
-      floatingActionButton: _tabIndex == 0
+      // The + button is the single entry point for adding on each tab:
+      // Library → create a combo, Planned → plan a combo. (Calendar plans
+      // per-day via its own inline affordance.)
+      floatingActionButton: _tabIndex == 2
+          ? null
           // Lift above the shell's bottom nav (house pattern, see
           // move_list_screen) — otherwise the FAB renders behind it.
-          ? Padding(
+          : Padding(
               padding: EdgeInsets.only(
                 bottom: kBottomNavigationBarHeight +
                     MediaQuery.of(context).padding.bottom +
                     AppSpacing.sm,
               ),
-              child: FloatingActionButton(
-                onPressed: () async {
-                  await context.push('/create-combo');
-                },
-                backgroundColor: colorScheme.primary,
-                child: const Icon(Icons.add, color: Colors.white),
+              child: Semantics(
+                identifier: 'combos-fab',
+                button: true,
+                label: _tabIndex == 1 ? 'Plan a combo' : 'Create combo',
+                child: FloatingActionButton(
+                  tooltip: _tabIndex == 1 ? 'Plan a combo' : 'Create combo',
+                  onPressed: () async {
+                    if (_tabIndex == 1) {
+                      await planComboFlow(context, ref);
+                    } else {
+                      await context.push('/create-combo');
+                    }
+                  },
+                  backgroundColor: colorScheme.primary,
+                  child: const Icon(Icons.add, color: Colors.white),
+                ),
               ),
-            )
-          : null,
+            ),
     );
   }
 }
@@ -393,26 +408,10 @@ class _ComboPlannedViewState extends ConsumerState<ComboPlannedView> {
           colorScheme: colorScheme,
         ),
         const SizedBox(height: AppSpacing.lg),
-        // "Plan a combo" primary button
-        SizedBox(
-          width: double.infinity,
-          child: ElevatedButton.icon(
-            onPressed: () => _showPlanPicker(context),
-            icon: const Icon(Icons.add, size: 20),
-            label: const Text('Plan a combo'),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: colorScheme.primary,
-              foregroundColor: colorScheme.onPrimary,
-              padding: const EdgeInsets.symmetric(vertical: AppSpacing.md),
-              textStyle: AppTypography.bodyMedium.copyWith(fontWeight: FontWeight.w700),
-            ),
-          ),
-        ),
-        const SizedBox(height: AppSpacing.lg),
         if (plans.isEmpty)
           Center(
             child: Text(
-              'No plans yet — add one above',
+              'No plans yet — tap + to plan a combo',
               style: AppTypography.bodySmall.copyWith(
                 color: colorScheme.secondary.withValues(alpha: 0.6),
               ),
@@ -452,11 +451,24 @@ class _ComboPlannedViewState extends ConsumerState<ComboPlannedView> {
           final planDate = DateFormat('MMM d').format(pw.plan.planDate);
           final completed = pw.plan.completedAt != null;
 
-          return Container(
+          return Dismissible(
             key: ValueKey(pw.plan.id),
-            margin: const EdgeInsets.only(bottom: AppSpacing.xs),
-            decoration: AppSurfaces.panel(context, radius: AppRadius.sm),
-            child: ListTile(
+            direction: DismissDirection.endToStart,
+            onDismissed: (_) => _removePlan(pw),
+            background: Container(
+              margin: const EdgeInsets.only(bottom: AppSpacing.xs),
+              alignment: Alignment.centerRight,
+              padding: const EdgeInsets.only(right: AppSpacing.lg),
+              decoration: BoxDecoration(
+                color: colorScheme.error.withValues(alpha: 0.15),
+                borderRadius: BorderRadius.circular(AppRadius.sm),
+              ),
+              child: Icon(Icons.delete_outline, color: colorScheme.error),
+            ),
+            child: Container(
+              margin: const EdgeInsets.only(bottom: AppSpacing.xs),
+              decoration: AppSurfaces.panel(context, radius: AppRadius.sm),
+              child: ListTile(
               leading: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
@@ -509,6 +521,7 @@ class _ComboPlannedViewState extends ConsumerState<ComboPlannedView> {
               trailing: completed
                   ? Icon(Icons.check_circle, color: colorScheme.primary, size: 20)
                   : null,
+              ),
             ),
           );
         },
@@ -516,8 +529,31 @@ class _ComboPlannedViewState extends ConsumerState<ComboPlannedView> {
     ];
   }
 
-  Future<void> _showPlanPicker(final BuildContext context) async {
-    await planComboFlow(context, ref);
+  /// Removes a plan from the queue with an UNDO affordance — a plan is a
+  /// lightweight scheduling entry, so removal stays reversible and the
+  /// dancer is never stuck with a queue they can't clear.
+  Future<void> _removePlan(final PlanWithCombo pw) async {
+    final dao = ref.read(comboPlansDaoProvider);
+    await dao.deletePlan(pw.plan.id);
+    unawaited(HapticFeedback.mediumImpact());
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('Removed "${pw.combo.name}" from queue'),
+        action: SnackBarAction(
+          label: 'Undo',
+          onPressed: () => unawaited(dao.insertPlan(
+            ComboPlansCompanion.insert(
+              id: pw.plan.id,
+              comboId: pw.plan.comboId,
+              planDate: pw.plan.planDate,
+              position: Value(pw.plan.position),
+              completedAt: Value(pw.plan.completedAt),
+            ),
+          )),
+        ),
+      ),
+    );
   }
 }
 
