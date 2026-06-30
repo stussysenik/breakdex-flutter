@@ -9,7 +9,7 @@
 - [ ] 0.3 Confirm scope boundary: Firebase **Auth** and **Storage** remain in place this change; only **Firestore** metadata moves. Note follow-on changes for auth + web CRUD.
 
 ## Phase 1: SyncBackend contract + Convex shadow (additive, no client treats Convex as truth yet)
-- [ ] 1.1 Define the `SyncBackend` Dart interface (`push`/`pull`/`subscribe`, `SyncRecord`, `Tombstone`, `EntityType`) parallel to `AssetStorageProvider`. No caller wired yet.
+- [x] 1.1 Define the `SyncBackend` Dart interface (`push`/`pull`/`subscribe`, `SyncRecord`, `SyncTombstone`, `SyncDelta`, `SyncEntityType`) parallel to `AssetStorageProvider`. No caller wired yet. → `lib/core/sync/sync_backend.dart` (analyzer clean; additive, touches no data path).
 - [ ] 1.2 Author the Convex schema + queries/mutations mapped from the Drift metadata tables (`moves`, `combos`/`combo_moves`, `reviews`, `fsrs_cards`, `decks`/`deck_moves`), each with `updatedAt` + local-row id; video pointer only.
 - [ ] 1.3 Implement the **Convex** `SyncBackend` (community `convex_flutter` client; isolate it so the HTTP API is a drop-in fallback per design Decision 6).
 - [ ] 1.4 Implement **non-destructive backfill** (read local Drift → write Convex shadow); assert zero local deletions/mutations. Run against a **copy** of real data first.

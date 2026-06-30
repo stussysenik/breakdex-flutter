@@ -147,8 +147,10 @@ Risk-ordered. Each is its own OpenSpec proposal; none expands this change.
    FSRS event-sourced.
 2. **`evolve-web-mirror-to-crud-platform`** (exists) — rewire Next.js onto Convex; `drive.ts` →
    media-by-pointer; web CRUD.
-3. **`convex-auth-and-identity`** (new) — Firebase Auth as IdP → Convex identity; add Sign in with
-   Apple; access rules authorize by server-derived identity (never client-passed userId).
+3. **`convex-auth-and-identity`** (new) — Firebase Auth as IdP → Convex identity; offer **both
+   Google Sign-In and Sign in with Apple** (the latter satisfies Apple Guideline 4.8 when Google
+   sign-in is present); access rules authorize by server-derived identity (never client-passed
+   userId).
 4. **`convex-scheduled-reminders-and-push`** (new) — Convex **cron/scheduled functions** compute
    due FSRS cards server-side → APNs/FCM review reminders. (Spaced-repetition reminders are a
    backend job, not a local timer.)
