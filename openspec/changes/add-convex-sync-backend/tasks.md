@@ -17,8 +17,8 @@
 ## Phase 2: Strangler-fig per entity (dual-read; one entity at a time; reversible)
 - [ ] 2.1 `moves`: wire `SyncBackend` behind `sync_service`/`sync_aware_repositories` with **dual-read** (Convex first, Firestore fallback). Verify two-way reconcile vs real data → cut over → keep rollback.
 - [ ] 2.2 `combos` + `combo_moves`: same dual-read → verify → cut over.
-- [ ] 2.3 `reviews`: same dual-read → verify → cut over.
-- [ ] 2.4 `fsrs_cards` (polymorphic entityId+entityType): same dual-read → verify → cut over.
+- [ ] 2.3 `reviews` → **append-only `reviewEvents`** in Convex (with `clientOpId`); dual-read → verify → cut over.
+- [ ] 2.4 `fsrs_cards` (polymorphic entityId+entityType): **derive** card state via a Convex reduce over `reviewEvents` (NOT LWW-written); verify derived state matches local against a copy of real data → cut over.
 - [ ] 2.5 `decks` + `deck_moves`: same dual-read → verify → cut over.
 - [ ] 2.6 Tombstone deletes verified end-to-end across clients (no hard-delete crosses the boundary).
 

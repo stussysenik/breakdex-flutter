@@ -78,6 +78,22 @@ SHALL apply tombstones by last-writer-wins on a monotonic timestamp.
 - **WHEN** a record is deleted on one client
 - **THEN** a tombstone is pushed and reconciled on other clients, and no hard-delete crosses the boundary
 
+### Requirement: FSRS state reconciles event-sourced, not last-writer-wins
+
+Review ratings SHALL be recorded as append-only, immutable events carrying
+`{entityId, entityType, rating, reviewedAt, clientOpId}`. Derived FSRS card state (stability,
+difficulty, due) SHALL be computed by a Convex function that reduces the review-event log, and
+SHALL NOT be reconciled by last-writer-wins on the card record. Replaying a duplicate
+`clientOpId` SHALL NOT change the derived state (idempotent).
+
+#### Scenario: Concurrent reviews do not regress scheduling
+- **WHEN** two devices each submit a review for the same card while offline and later sync
+- **THEN** both review events are appended and the derived card state reflects the reduced log, with no stale write regressing the schedule
+
+#### Scenario: Duplicate review submission is idempotent
+- **WHEN** a review event with an already-seen `clientOpId` is pushed again on retry
+- **THEN** the derived FSRS state is unchanged
+
 ### Requirement: Convex stores video pointers only
 
 Convex records SHALL store only references to video assets (Drive file id / object key), never
