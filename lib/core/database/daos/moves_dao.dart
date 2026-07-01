@@ -61,10 +61,20 @@ class MovesDao extends DatabaseAccessor<AppDatabase> with _$MovesDaoMixin {
     );
   }
 
-  Future<void> insertMove(final MovesCompanion entry) => into(moves).insert(entry);
+  Future<void> insertMove(final MovesCompanion entry) =>
+      into(moves).insert(_stampUpdatedAt(entry));
 
   Future<void> updateMove(final MovesCompanion entry) =>
-      (update(moves)..where((final t) => t.id.equals(entry.id.value))).write(entry);
+      (update(moves)..where((final t) => t.id.equals(entry.id.value)))
+          .write(_stampUpdatedAt(entry));
+
+  /// Stamp [updatedAt] with the local mutation time for last-writer-wins sync,
+  /// unless the caller already set it explicitly — the reconcile path passes a
+  /// remote timestamp that must be preserved, not clobbered with `now()`.
+  MovesCompanion _stampUpdatedAt(final MovesCompanion entry) =>
+      entry.updatedAt.present
+      ? entry
+      : entry.copyWith(updatedAt: Value(DateTime.now().toUtc()));
 
   Future<void> deleteMove(final String id) {
     debugPrint('[MovesDao] deleteMove id=$id');
@@ -78,6 +88,7 @@ class MovesDao extends DatabaseAccessor<AppDatabase> with _$MovesDaoMixin {
         id: Value(id),
         archivedAt: Value(DateTime.now().toUtc()),
         archiveReason: Value(reason),
+        updatedAt: Value(DateTime.now().toUtc()),
       ),
     );
   }
@@ -89,6 +100,7 @@ class MovesDao extends DatabaseAccessor<AppDatabase> with _$MovesDaoMixin {
         id: Value(id),
         archivedAt: const Value(null),
         archiveReason: const Value(null),
+        updatedAt: Value(DateTime.now().toUtc()),
       ),
     );
   }

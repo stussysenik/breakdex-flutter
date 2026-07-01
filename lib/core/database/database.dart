@@ -107,7 +107,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.forTesting(super.e);
 
   @override
-  int get schemaVersion => 22;
+  int get schemaVersion => 23;
 
   /// Column names currently present on [table] — used to keep migrations
   /// idempotent across legacy databases and tables created mid-upgrade
@@ -609,6 +609,23 @@ class AppDatabase extends _$AppDatabase {
           CREATE INDEX IF NOT EXISTS idx_combo_plans_date
           ON combo_plans(plan_date)
         ''');
+      }
+
+      if (from < 23) {
+        // --- Schema v23: moves.updated_at for Convex last-writer-wins sync ---
+        //
+        // Additive + backfilled. SQLite forbids ADD COLUMN with a non-constant
+        // default, so add nullable, then seed every existing row's updated_at
+        // from its created_at (the best available proxy for last-modified).
+        final moveCols = await _columnNames('moves');
+        if (!moveCols.contains('updated_at')) {
+          await customStatement(
+            'ALTER TABLE moves ADD COLUMN updated_at INTEGER',
+          );
+        }
+        await customStatement(
+          'UPDATE moves SET updated_at = created_at WHERE updated_at IS NULL',
+        );
       }
 
       await _backfillReviewSnapshots();

@@ -205,6 +205,17 @@ class $MovesTable extends Moves with TableInfo<$MovesTable, Move> {
     requiredDuringInsert: false,
     defaultValue: currentDateAndTime,
   );
+  static const VerificationMeta _updatedAtMeta = const VerificationMeta(
+    'updatedAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> updatedAt = GeneratedColumn<DateTime>(
+    'updated_at',
+    aliasedName,
+    true,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+  );
   @override
   List<GeneratedColumn> get $columns => [
     id,
@@ -225,6 +236,7 @@ class $MovesTable extends Moves with TableInfo<$MovesTable, Move> {
     videoFileSize,
     videoCreationDate,
     createdAt,
+    updatedAt,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -374,6 +386,12 @@ class $MovesTable extends Moves with TableInfo<$MovesTable, Move> {
         createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta),
       );
     }
+    if (data.containsKey('updated_at')) {
+      context.handle(
+        _updatedAtMeta,
+        updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta),
+      );
+    }
     return context;
   }
 
@@ -455,6 +473,10 @@ class $MovesTable extends Moves with TableInfo<$MovesTable, Move> {
         DriftSqlType.dateTime,
         data['${effectivePrefix}created_at'],
       )!,
+      updatedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}updated_at'],
+      ),
     );
   }
 
@@ -483,6 +505,12 @@ class Move extends DataClass implements Insertable<Move> {
   final BigInt? videoFileSize;
   final DateTime? videoCreationDate;
   final DateTime createdAt;
+
+  /// Last local mutation time — the monotonic clock the Convex sync backend
+  /// uses for last-writer-wins reconciliation. Bumped by [MovesDao] on every
+  /// user edit; a reconcile write preserves the remote timestamp instead.
+  /// Nullable so the additive v23 migration can backfill it to [createdAt].
+  final DateTime? updatedAt;
   const Move({
     required this.id,
     required this.name,
@@ -502,6 +530,7 @@ class Move extends DataClass implements Insertable<Move> {
     this.videoFileSize,
     this.videoCreationDate,
     required this.createdAt,
+    this.updatedAt,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -548,6 +577,9 @@ class Move extends DataClass implements Insertable<Move> {
       map['video_creation_date'] = Variable<DateTime>(videoCreationDate);
     }
     map['created_at'] = Variable<DateTime>(createdAt);
+    if (!nullToAbsent || updatedAt != null) {
+      map['updated_at'] = Variable<DateTime>(updatedAt);
+    }
     return map;
   }
 
@@ -595,6 +627,9 @@ class Move extends DataClass implements Insertable<Move> {
           ? const Value.absent()
           : Value(videoCreationDate),
       createdAt: Value(createdAt),
+      updatedAt: updatedAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(updatedAt),
     );
   }
 
@@ -630,6 +665,7 @@ class Move extends DataClass implements Insertable<Move> {
         json['videoCreationDate'],
       ),
       createdAt: serializer.fromJson<DateTime>(json['createdAt']),
+      updatedAt: serializer.fromJson<DateTime?>(json['updatedAt']),
     );
   }
   @override
@@ -654,6 +690,7 @@ class Move extends DataClass implements Insertable<Move> {
       'videoFileSize': serializer.toJson<BigInt?>(videoFileSize),
       'videoCreationDate': serializer.toJson<DateTime?>(videoCreationDate),
       'createdAt': serializer.toJson<DateTime>(createdAt),
+      'updatedAt': serializer.toJson<DateTime?>(updatedAt),
     };
   }
 
@@ -676,6 +713,7 @@ class Move extends DataClass implements Insertable<Move> {
     Value<BigInt?> videoFileSize = const Value.absent(),
     Value<DateTime?> videoCreationDate = const Value.absent(),
     DateTime? createdAt,
+    Value<DateTime?> updatedAt = const Value.absent(),
   }) => Move(
     id: id ?? this.id,
     name: name ?? this.name,
@@ -709,6 +747,7 @@ class Move extends DataClass implements Insertable<Move> {
         ? videoCreationDate.value
         : this.videoCreationDate,
     createdAt: createdAt ?? this.createdAt,
+    updatedAt: updatedAt.present ? updatedAt.value : this.updatedAt,
   );
   Move copyWithCompanion(MovesCompanion data) {
     return Move(
@@ -752,6 +791,7 @@ class Move extends DataClass implements Insertable<Move> {
           ? data.videoCreationDate.value
           : this.videoCreationDate,
       createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+      updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
     );
   }
 
@@ -775,7 +815,8 @@ class Move extends DataClass implements Insertable<Move> {
           ..write('count: $count, ')
           ..write('videoFileSize: $videoFileSize, ')
           ..write('videoCreationDate: $videoCreationDate, ')
-          ..write('createdAt: $createdAt')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt')
           ..write(')'))
         .toString();
   }
@@ -800,6 +841,7 @@ class Move extends DataClass implements Insertable<Move> {
     videoFileSize,
     videoCreationDate,
     createdAt,
+    updatedAt,
   );
   @override
   bool operator ==(Object other) =>
@@ -822,7 +864,8 @@ class Move extends DataClass implements Insertable<Move> {
           other.count == this.count &&
           other.videoFileSize == this.videoFileSize &&
           other.videoCreationDate == this.videoCreationDate &&
-          other.createdAt == this.createdAt);
+          other.createdAt == this.createdAt &&
+          other.updatedAt == this.updatedAt);
 }
 
 class MovesCompanion extends UpdateCompanion<Move> {
@@ -844,6 +887,7 @@ class MovesCompanion extends UpdateCompanion<Move> {
   final Value<BigInt?> videoFileSize;
   final Value<DateTime?> videoCreationDate;
   final Value<DateTime> createdAt;
+  final Value<DateTime?> updatedAt;
   final Value<int> rowid;
   const MovesCompanion({
     this.id = const Value.absent(),
@@ -864,6 +908,7 @@ class MovesCompanion extends UpdateCompanion<Move> {
     this.videoFileSize = const Value.absent(),
     this.videoCreationDate = const Value.absent(),
     this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
     this.rowid = const Value.absent(),
   });
   MovesCompanion.insert({
@@ -885,6 +930,7 @@ class MovesCompanion extends UpdateCompanion<Move> {
     this.videoFileSize = const Value.absent(),
     this.videoCreationDate = const Value.absent(),
     this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
     this.rowid = const Value.absent(),
   }) : id = Value(id),
        name = Value(name);
@@ -907,6 +953,7 @@ class MovesCompanion extends UpdateCompanion<Move> {
     Expression<BigInt>? videoFileSize,
     Expression<DateTime>? videoCreationDate,
     Expression<DateTime>? createdAt,
+    Expression<DateTime>? updatedAt,
     Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
@@ -930,6 +977,7 @@ class MovesCompanion extends UpdateCompanion<Move> {
       if (videoFileSize != null) 'video_file_size': videoFileSize,
       if (videoCreationDate != null) 'video_creation_date': videoCreationDate,
       if (createdAt != null) 'created_at': createdAt,
+      if (updatedAt != null) 'updated_at': updatedAt,
       if (rowid != null) 'rowid': rowid,
     });
   }
@@ -953,6 +1001,7 @@ class MovesCompanion extends UpdateCompanion<Move> {
     Value<BigInt?>? videoFileSize,
     Value<DateTime?>? videoCreationDate,
     Value<DateTime>? createdAt,
+    Value<DateTime?>? updatedAt,
     Value<int>? rowid,
   }) {
     return MovesCompanion(
@@ -974,6 +1023,7 @@ class MovesCompanion extends UpdateCompanion<Move> {
       videoFileSize: videoFileSize ?? this.videoFileSize,
       videoCreationDate: videoCreationDate ?? this.videoCreationDate,
       createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
       rowid: rowid ?? this.rowid,
     );
   }
@@ -1039,6 +1089,9 @@ class MovesCompanion extends UpdateCompanion<Move> {
     if (createdAt.present) {
       map['created_at'] = Variable<DateTime>(createdAt.value);
     }
+    if (updatedAt.present) {
+      map['updated_at'] = Variable<DateTime>(updatedAt.value);
+    }
     if (rowid.present) {
       map['rowid'] = Variable<int>(rowid.value);
     }
@@ -1066,6 +1119,7 @@ class MovesCompanion extends UpdateCompanion<Move> {
           ..write('videoFileSize: $videoFileSize, ')
           ..write('videoCreationDate: $videoCreationDate, ')
           ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt, ')
           ..write('rowid: $rowid')
           ..write(')'))
         .toString();
@@ -13208,6 +13262,7 @@ typedef $$MovesTableCreateCompanionBuilder =
       Value<BigInt?> videoFileSize,
       Value<DateTime?> videoCreationDate,
       Value<DateTime> createdAt,
+      Value<DateTime?> updatedAt,
       Value<int> rowid,
     });
 typedef $$MovesTableUpdateCompanionBuilder =
@@ -13230,6 +13285,7 @@ typedef $$MovesTableUpdateCompanionBuilder =
       Value<BigInt?> videoFileSize,
       Value<DateTime?> videoCreationDate,
       Value<DateTime> createdAt,
+      Value<DateTime?> updatedAt,
       Value<int> rowid,
     });
 
@@ -13481,6 +13537,11 @@ class $$MovesTableFilterComposer extends Composer<_$AppDatabase, $MovesTable> {
 
   ColumnFilters<DateTime> get createdAt => $composableBuilder(
     column: $table.createdAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -13783,6 +13844,11 @@ class $$MovesTableOrderingComposer
     column: $table.createdAt,
     builder: (column) => ColumnOrderings(column),
   );
+
+  ColumnOrderings<DateTime> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
 }
 
 class $$MovesTableAnnotationComposer
@@ -13869,6 +13935,9 @@ class $$MovesTableAnnotationComposer
 
   GeneratedColumn<DateTime> get createdAt =>
       $composableBuilder(column: $table.createdAt, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get updatedAt =>
+      $composableBuilder(column: $table.updatedAt, builder: (column) => column);
 
   Expression<T> comboMovesRefs<T extends Object>(
     Expression<T> Function($$ComboMovesTableAnnotationComposer a) f,
@@ -14126,6 +14195,7 @@ class $$MovesTableTableManager
                 Value<BigInt?> videoFileSize = const Value.absent(),
                 Value<DateTime?> videoCreationDate = const Value.absent(),
                 Value<DateTime> createdAt = const Value.absent(),
+                Value<DateTime?> updatedAt = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => MovesCompanion(
                 id: id,
@@ -14146,6 +14216,7 @@ class $$MovesTableTableManager
                 videoFileSize: videoFileSize,
                 videoCreationDate: videoCreationDate,
                 createdAt: createdAt,
+                updatedAt: updatedAt,
                 rowid: rowid,
               ),
           createCompanionCallback:
@@ -14168,6 +14239,7 @@ class $$MovesTableTableManager
                 Value<BigInt?> videoFileSize = const Value.absent(),
                 Value<DateTime?> videoCreationDate = const Value.absent(),
                 Value<DateTime> createdAt = const Value.absent(),
+                Value<DateTime?> updatedAt = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => MovesCompanion.insert(
                 id: id,
@@ -14188,6 +14260,7 @@ class $$MovesTableTableManager
                 videoFileSize: videoFileSize,
                 videoCreationDate: videoCreationDate,
                 createdAt: createdAt,
+                updatedAt: updatedAt,
                 rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0

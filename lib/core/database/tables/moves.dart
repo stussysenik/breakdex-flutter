@@ -20,6 +20,12 @@ class Moves extends Table {
   DateTimeColumn get videoCreationDate => dateTime().nullable()();
   DateTimeColumn get createdAt => dateTime().withDefault(currentDateAndTime)();
 
+  /// Last local mutation time — the monotonic clock the Convex sync backend
+  /// uses for last-writer-wins reconciliation. Bumped by [MovesDao] on every
+  /// user edit; a reconcile write preserves the remote timestamp instead.
+  /// Nullable so the additive v23 migration can backfill it to [createdAt].
+  DateTimeColumn get updatedAt => dateTime().nullable()();
+
   @override
   Set<Column> get primaryKey => {id};
 }
