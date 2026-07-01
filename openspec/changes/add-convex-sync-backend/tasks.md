@@ -5,12 +5,13 @@
 
 ## Phase 0: Decisions & provisioning (owner-run; agent supplies exact steps)
 - [ ] 0.1 **Decision 1 (RESOLVED)** — Canonical backend = **Convex** (Cloud now, self-host escape hatch); supersedes Phoenix+Postgres+S3. Recorded in `design.md`.
-- [ ] 0.2 Provision a Convex Cloud project (free tier). Capture deployment URL + admin key into the app's secret config (not committed). Owner-run; agent supplies CLI steps.
+- [~] 0.2 Provision a Convex Cloud project (free tier). Capture deployment URL + admin key into the app's secret config (not committed). Owner-run; agent supplies CLI steps.
+  - Cloud project `brilliant-mongoose-46` created; `CONVEX_URL`/`CONVEX_SITE_URL` captured in gitignored `.env.local`. **Remaining:** owner generates a Production deploy key in the dashboard so `CONVEX_DEPLOY_KEY=… npx convex deploy` can push headlessly (CLI login isn't available non-interactively). Schema+functions already proven deploy-valid against a local backend.
 - [ ] 0.3 Confirm scope boundary: Firebase **Auth** and **Storage** remain in place this change; only **Firestore** metadata moves. Note follow-on changes for auth + web CRUD.
 
 ## Phase 1: SyncBackend contract + Convex shadow (additive, no client treats Convex as truth yet)
 - [x] 1.1 Define the `SyncBackend` Dart interface (`push`/`pull`/`subscribe`, `SyncRecord`, `SyncTombstone`, `SyncDelta`, `SyncEntityType`) parallel to `AssetStorageProvider`. No caller wired yet. → `lib/core/sync/sync_backend.dart` (analyzer clean; additive, touches no data path).
-- [ ] 1.2 Author the Convex schema + queries/mutations mapped from the Drift metadata tables (`moves`, `combos`/`combo_moves`, `reviews`, `fsrs_cards`, `decks`/`deck_moves`), each with `updatedAt` + local-row id; video pointer only.
+- [x] 1.2 Author the Convex schema + queries/mutations mapped from the Drift metadata tables (`moves`, `combos`/`combo_moves`, `reviews`, `fsrs_cards`, `decks`/`deck_moves`), each with `updatedAt` + local-row id; video pointer only. → `convex/schema.ts` (descriptive envelope + append-only `reviewEvents` + derived `fsrsCards`), `convex/sync.ts` (LWW `pushRecords`/`pullRecords`), `convex/reviews.ts` (idempotent `appendReviewEvents`), `convex/fsrs.ts` (event-read + card-pull halves for the 2.4 reduce). All 15 indexes + functions verified deploy-valid (local backend, zero TS errors). FSRS scheduler math deferred to 2.4 per Decision 7 — not stubbed/faked.
 - [ ] 1.3 Implement the **Convex** `SyncBackend` (community `convex_flutter` client; isolate it so the HTTP API is a drop-in fallback per design Decision 6).
 - [ ] 1.4 Implement **non-destructive backfill** (read local Drift → write Convex shadow); assert zero local deletions/mutations. Run against a **copy** of real data first.
 
