@@ -165,7 +165,7 @@ class ConvexSyncBackend implements SyncBackend {
   // --- Unmarshalling: Convex query value -> Dart contract types -------------
 
   SyncDelta _decodeDelta(final SyncEntityType type, final Object? value) {
-    final map = (value as Map).cast<String, dynamic>();
+    final map = (value! as Map).cast<String, dynamic>();
     final upserts = (map['upserts'] as List? ?? const [])
         .map(
           (final e) => _decodeRecord(type, (e as Map).cast<String, dynamic>()),

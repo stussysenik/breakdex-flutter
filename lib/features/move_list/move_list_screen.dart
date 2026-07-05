@@ -1,3 +1,6 @@
+// H.8 lint triage — discarded_futures: intentional fire-and-forget (UI/provider side effects); the rule still guards new sync/codec files.
+// ignore_for_file: discarded_futures
+
 import 'dart:async';
 import 'dart:io';
 import 'package:flutter/material.dart';
@@ -376,7 +379,7 @@ class MoveListScreen extends ConsumerWidget {
       if (!context.mounted) return;
       unawaited(HapticFeedback.mediumImpact());
       CelebrationOverlay.show(context, title: result.name);
-    } catch (error) {
+    } on Object catch (error) {
       if (!context.mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(

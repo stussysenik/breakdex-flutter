@@ -1,3 +1,6 @@
+// H.8 lint triage — discarded_futures: intentional fire-and-forget (UI/provider side effects); the rule still guards new sync/codec files.
+// ignore_for_file: discarded_futures
+
 import 'dart:async';
 
 import 'package:flutter/material.dart';
@@ -292,7 +295,7 @@ class _MoveAnalysisScreenState extends ConsumerState<MoveAnalysisScreen> {
           _stopLivePose();
         },
       );
-    } catch (e) {
+    } on Object catch (e) {
       debugPrint('[MoveAnalysis] Failed to start live pose: $e');
     }
   }
@@ -305,6 +308,6 @@ class _MoveAnalysisScreenState extends ConsumerState<MoveAnalysisScreen> {
     try {
       ref.read(visionMLProvider).stopLivePose();
       ref.read(livePoseActiveProvider.notifier).state = false;
-    } catch (_) {}
+    } on Object catch (_) {}
   }
 }

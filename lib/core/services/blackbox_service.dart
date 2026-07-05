@@ -1,3 +1,6 @@
+// H.8 lint triage — avoid_slow_async_io: async filesystem stat is intentional (avoids blocking the UI isolate); sync alternatives would block.
+// ignore_for_file: avoid_slow_async_io
+
 import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:path/path.dart' as p;
@@ -25,7 +28,7 @@ class BlackboxService {
       final entry = '[$timestamp] $action | $entityType | $entityId$dataStr\n';
       
       await file.writeAsString(entry, mode: FileMode.append, flush: true);
-    } catch (e) {
+    } on Object catch (e) {
       // Safety log failure should not crash the app, but we print it
       debugPrint('[Blackbox] Logging failed: $e');
     }

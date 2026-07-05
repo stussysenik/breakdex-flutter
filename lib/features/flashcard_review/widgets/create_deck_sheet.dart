@@ -1,3 +1,6 @@
+// H.8 lint triage — discarded_futures: intentional fire-and-forget (UI/provider side effects); the rule still guards new sync/codec files.
+// ignore_for_file: discarded_futures
+
 import 'package:drift/drift.dart' hide Column;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -65,7 +68,7 @@ class _CreateDeckSheetState extends ConsumerState<CreateDeckSheet> {
           _selectedCategories.addAll(filter.categories);
           _selectedStates.addAll(filter.fsrsStates);
           _dueOnly = filter.dueOnly;
-        } catch (_) {}
+        } on Object catch (_) {}
       } else if (!_isSmart) {
         // Load manual moves
         ref.read(deckMovesProvider(deck.id).future).then((final List<Move> moves) {

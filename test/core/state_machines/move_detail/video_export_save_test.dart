@@ -1,3 +1,6 @@
+// H.8 lint triage — avoid_slow_async_io: async filesystem stat is intentional (avoids blocking the UI isolate); sync alternatives would block.  discarded_futures: intentional fire-and-forget (UI/provider side effects); the rule still guards new sync/codec files.
+// ignore_for_file: avoid_slow_async_io, discarded_futures
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:drift/drift.dart' show Value;
@@ -81,7 +84,7 @@ void main() {
   tearDown(() {
     try {
       Directory(tempDir).deleteSync(recursive: true);
-    } catch (_) {}
+    } on Object catch (_) {}
     db.close();
     container.dispose();
   });

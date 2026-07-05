@@ -317,7 +317,7 @@ class ManagedAlbumReconciliationService {
         ),
       );
       return true;
-    } catch (_) {
+    } on Object catch (_) {
       await _moveRepository.update(
         MovesCompanion(
           id: Value(move.id),

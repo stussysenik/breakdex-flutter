@@ -182,7 +182,7 @@ void main() {
     await db.close();
     try {
       tempDir.deleteSync(recursive: true);
-    } catch (_) {}
+    } on Object catch (_) {}
   });
 
   group('operation routing', () {

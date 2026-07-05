@@ -48,7 +48,7 @@ class AssetHashService {
     try {
       final actual = await computeHash(filePath);
       return actual == expectedHash;
-    } catch (_) {
+    } on Object catch (_) {
       return false;
     }
   }

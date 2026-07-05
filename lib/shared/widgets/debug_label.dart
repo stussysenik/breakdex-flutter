@@ -17,7 +17,7 @@ class TaggedBuilder extends StatelessWidget {
     late final Widget child;
     try {
       child = builder(context);
-    } catch (_) {
+    } on Object catch (_) {
       child = defaultWidget ?? const SizedBox.shrink();
     }
     return _TaggedWidget(tag: tag, child: child);

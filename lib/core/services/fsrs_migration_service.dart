@@ -60,7 +60,7 @@ class FsrsMigrationService {
       }
 
       await prefs.setBool(_migrationKey, true);
-    } catch (e) {
+    } on Object catch (e) {
       debugPrint('FSRS migration failed (non-fatal): $e');
     }
   }
@@ -101,7 +101,7 @@ class FsrsMigrationService {
       }
 
       await prefs.setBool(_comboMigrationKey, true);
-    } catch (e) {
+    } on Object catch (e) {
       debugPrint('FSRS combo migration failed (non-fatal): $e');
     }
   }
@@ -200,7 +200,7 @@ class FsrsMigrationService {
       }
 
       return created;
-    } catch (e) {
+    } on Object catch (e) {
       debugPrint('FSRS integrity check failed (non-fatal): $e');
       return 0;
     }

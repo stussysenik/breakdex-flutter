@@ -63,7 +63,7 @@ class CustomLearningStatesNotifier extends Notifier<List<CustomLearningState>> {
       return list
           .map((final e) => CustomLearningState.fromJson(e as Map<String, dynamic>))
           .toList();
-    } catch (_) {
+    } on Object catch (_) {
       return [];
     }
   }
@@ -124,7 +124,7 @@ class LearningStateLabelsNotifier extends Notifier<Map<LearningState, String>> {
         }
       }
       return labels;
-    } catch (_) {
+    } on Object catch (_) {
       return Map<LearningState, String>.from(defaultLearningStateLabels);
     }
   }

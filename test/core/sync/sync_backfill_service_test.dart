@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:breakdex/core/database/database.dart';
 import 'package:breakdex/core/sync/backfill/sync_backfill_service.dart';
+import 'package:breakdex/core/sync/codecs/move_codec.dart';
 import 'package:breakdex/core/sync/sync_backend.dart';
 import 'package:drift/drift.dart' hide isNotNull, isNull;
 import 'package:drift/native.dart';

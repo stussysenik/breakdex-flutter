@@ -1,3 +1,6 @@
+// H.8 lint triage — avoid_slow_async_io: async filesystem stat is intentional (avoids blocking the UI isolate); sync alternatives would block.  discarded_futures: intentional fire-and-forget (UI/provider side effects); the rule still guards new sync/codec files.
+// ignore_for_file: avoid_slow_async_io, discarded_futures
+
 import 'dart:async';
 import 'dart:io';
 import 'package:file_picker/file_picker.dart';
@@ -524,7 +527,7 @@ class SettingsScreen extends ConsumerWidget {
             SnackBar(content: Text('Pre-clear backup saved to ${backupFile.path.split('/').last}')),
           );
         }
-      } catch (e) {
+      } on Object catch (e) {
         debugPrint('Pre-clear backup failed: $e');
       }
 
@@ -642,7 +645,7 @@ class SettingsScreen extends ConsumerWidget {
           '${importResult.movesWithMissingVideos.isNotEmpty ? ' (${importResult.movesWithMissingVideos.length} moves need video re-linking)' : ''}';
 
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg)));
-    } catch (e) {
+    } on Object catch (e) {
       if (!context.mounted) return;
       Navigator.pop(context); // dismiss loading
       ScaffoldMessenger.of(
@@ -1272,7 +1275,7 @@ class _DataActionTileAsyncState extends State<_DataActionTileAsync> {
                 if (widget.showResultSnackBar && msg != null && mounted) {
                   messenger.showSnackBar(SnackBar(content: Text(msg)));
                 }
-              } catch (e) {
+              } on Object catch (e) {
                 if (mounted) {
                   messenger.showSnackBar(SnackBar(content: Text('Error: $e')));
                 }

@@ -1,3 +1,6 @@
+// H.8 lint triage — avoid_slow_async_io: async filesystem stat is intentional (avoids blocking the UI isolate); sync alternatives would block.  discarded_futures: intentional fire-and-forget (UI/provider side effects); the rule still guards new sync/codec files.
+// ignore_for_file: avoid_slow_async_io, discarded_futures
+
 import 'dart:async';
 import 'dart:io';
 import 'dart:ui';
@@ -251,7 +254,7 @@ class _SimplifiedVideoEditorViewState extends ConsumerState<SimplifiedVideoEdito
       });
       _loadingController.send(LoadingEvent.complete(null));
       unawaited(_generateThumbnails());
-    } catch (error) {
+    } on Object catch (error) {
       if (!mounted || loadToken != _loadToken) return;
       _loadingController.send(LoadingEvent.fail(
         error is TimeoutException
@@ -271,7 +274,7 @@ class _SimplifiedVideoEditorViewState extends ConsumerState<SimplifiedVideoEdito
     try {
       await controller.initialize().timeout(_kVideoInitTimeout);
       return controller;
-    } catch (e) {
+    } on Object catch (_) {
       await controller.dispose();
       await Future<void>.delayed(_kVideoInitRetryDelay);
       final c2 = VideoPlayerController.file(f);
@@ -1066,7 +1069,7 @@ class _SimplifiedVideoEditorViewState extends ConsumerState<SimplifiedVideoEdito
       
       unawaited(HapticFeedback.heavyImpact());
       if (mounted) context.pop(resultPath);
-    } catch (e) {
+    } on Object catch (e) {
       if (tempPath != null) {
         final f = File(tempPath);
         if (await f.exists()) await f.delete();
@@ -1204,7 +1207,7 @@ class _TrimTimelineState extends State<_TrimTimeline> {
   }
 
   void _handleDragStart(final DragStartDetails details) {
-    final box = context.findRenderObject() as RenderBox;
+    final box = context.findRenderObject()! as RenderBox;
     final localX = box.globalToLocal(details.globalPosition).dx;
     final width = box.size.width;
 
@@ -1238,7 +1241,7 @@ class _TrimTimelineState extends State<_TrimTimeline> {
 
   void _handleDragUpdate(final DragUpdateDetails details) {
     if (_activeHandle == null) return;
-    final box = context.findRenderObject() as RenderBox;
+    final box = context.findRenderObject()! as RenderBox;
     final width = box.size.width;
     final delta = details.delta.dx / width;
 

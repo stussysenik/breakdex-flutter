@@ -20,7 +20,7 @@ class ViewNamesNotifier extends Notifier<Map<String, String>> {
     try {
       final decoded = jsonDecode(json) as Map<String, dynamic>;
       return decoded.map((final k, final v) => MapEntry(k, v as String));
-    } catch (_) {
+    } on Object catch (_) {
       return Map.from(_defaultViewNames);
     }
   }

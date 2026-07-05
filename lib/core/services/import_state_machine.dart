@@ -1,3 +1,6 @@
+// H.8 lint triage — avoid_slow_async_io: async filesystem stat is intentional (avoids blocking the UI isolate); sync alternatives would block.  discarded_futures: intentional fire-and-forget (UI/provider side effects); the rule still guards new sync/codec files.
+// ignore_for_file: avoid_slow_async_io, discarded_futures
+
 import 'dart:async';
 import 'dart:io';
 

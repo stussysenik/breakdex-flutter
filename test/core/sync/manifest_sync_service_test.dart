@@ -121,6 +121,9 @@ class _FakeCloudProvider extends CloudProvider {
     final CancellationToken? cancel,
   }) async {
     uploadCalls += 1;
+    // Fake rethrows the caller-supplied error object verbatim to simulate an
+    // upload failure.
+    // ignore: only_throw_errors
     if (uploadError != null) throw uploadError!;
     return RemoteAsset(remotePath: remotePath, sizeBytes: 0);
   }

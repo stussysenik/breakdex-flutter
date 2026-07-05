@@ -1,3 +1,6 @@
+// H.8 lint triage — avoid_slow_async_io: async filesystem stat is intentional (avoids blocking the UI isolate); sync alternatives would block.
+// ignore_for_file: avoid_slow_async_io
+
 import 'dart:io';
 
 import 'package:path/path.dart' as p;
@@ -99,7 +102,7 @@ abstract final class DeepLinkResolver {
       log.stage('noMatch');
       log.complete();
       return null;
-    } catch (e, stack) {
+    } on Object catch (e, stack) {
       log.fail(e, stack);
       return null;
     }

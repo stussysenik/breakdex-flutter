@@ -1,3 +1,6 @@
+// H.8 lint triage — avoid_slow_async_io: async filesystem stat is intentional (avoids blocking the UI isolate); sync alternatives would block.
+// ignore_for_file: avoid_slow_async_io
+
 import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:path/path.dart' as p;
@@ -167,7 +170,7 @@ class StorageOrchestrator {
           await _mergeDirectories(entity, Directory(p.join(rootMoves, canonicalName)));
         }
       }
-    } catch (e) {
+    } on Object catch (e) {
       DiagnosticsLog.warn('StorageOrchestrator', 'Duplicate guard failed: $e');
     }
   }
@@ -193,7 +196,7 @@ class StorageOrchestrator {
     }
     try {
       await source.delete();
-    } catch (_) {}
+    } on Object catch (_) {}
   }
 
   /// Update a move's category and physically move its video file.
@@ -275,7 +278,7 @@ class StorageOrchestrator {
     try {
       await cleanupMedia(move);
       log.stage('mediaCleaned');
-    } catch (e) {
+    } on Object catch (e) {
       log.stage('mediaCleanupFailed', {'error': '$e'});
     }
 
@@ -305,7 +308,7 @@ class StorageOrchestrator {
           debugPrint('[StorageOrchestrator] Cleaned up empty category dir: $safeCategory');
         }
       }
-    } catch (e) {
+    } on Object catch (e) {
       debugPrint('[StorageOrchestrator] Cleanup failed (non-fatal): $e');
     }
   }

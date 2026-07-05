@@ -159,7 +159,7 @@ class CloudSyncSection extends ConsumerWidget {
           ),
         ),
       );
-    } catch (e) {
+    } on Object catch (e) {
       if (!context.mounted) return;
       messenger.hideCurrentSnackBar();
       messenger.showSnackBar(

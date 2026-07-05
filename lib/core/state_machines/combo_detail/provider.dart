@@ -1,3 +1,6 @@
+// H.8 lint triage — discarded_futures: intentional fire-and-forget (UI/provider side effects); the rule still guards new sync/codec files.
+// ignore_for_file: discarded_futures
+
 import 'dart:async';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -105,7 +108,7 @@ class ComboDetailNotifier extends FamilyNotifier<ComboDetailState, String> {
         return;
       }
       log.complete();
-    } catch (e, stack) {
+    } on Object catch (e, stack) {
       log.fail(e, stack);
       if (_saveGeneration == generation) {
         send(SaveFailed(e.toString()));
@@ -126,7 +129,7 @@ class ComboDetailNotifier extends FamilyNotifier<ComboDetailState, String> {
       log.stage('dbDeleted');
       send(DeleteSucceeded());
       log.complete();
-    } catch (e, stack) {
+    } on Object catch (e, stack) {
       log.fail(e, stack);
       send(DeleteFailed(e.toString()));
     }
@@ -138,7 +141,7 @@ class ComboDetailNotifier extends FamilyNotifier<ComboDetailState, String> {
       final dao = ref.read(comboNoteEntriesDaoProvider);
       await dao.addEntry(id: const Uuid().v4(), comboId: combo.id, body: body);
       send(SaveSucceeded(combo));
-    } catch (e) {
+    } on Object catch (e) {
       send(SaveFailed('$e'));
     }
   }
@@ -149,7 +152,7 @@ class ComboDetailNotifier extends FamilyNotifier<ComboDetailState, String> {
       final dao = ref.read(comboNoteEntriesDaoProvider);
       await dao.deleteEntry(entryId);
       send(SaveSucceeded(combo));
-    } catch (e) {
+    } on Object catch (e) {
       send(SaveFailed('$e'));
     }
   }

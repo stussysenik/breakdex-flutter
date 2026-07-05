@@ -62,7 +62,7 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
         ref.invalidate(reviewRepositoryProvider);
         context.pop();
       }
-    } catch (e) {
+    } on Object catch (e) {
       setState(() => _error = e.toString().replaceAll('ClientException: ', ''));
     } finally {
       if (mounted) setState(() => _loading = false);

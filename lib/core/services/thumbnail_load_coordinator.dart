@@ -1,3 +1,6 @@
+// H.8 lint triage — discarded_futures: intentional fire-and-forget (UI/provider side effects); the rule still guards new sync/codec files.
+// ignore_for_file: discarded_futures
+
 import 'dart:async';
 import 'dart:collection';
 import 'package:flutter/widgets.dart';
@@ -99,7 +102,7 @@ class ThumbnailLoadCoordinator {
         load.videoPath,
         maxWidth: load.maxWidth,
       );
-    } catch (_) {
+    } on Object catch (_) {
       return null;
     }
   }

@@ -1,3 +1,6 @@
+// H.8 lint triage — avoid_slow_async_io: async filesystem stat is intentional (avoids blocking the UI isolate); sync alternatives would block.
+// ignore_for_file: avoid_slow_async_io
+
 part of '../providers.dart';
 
 final canonicalFolderServiceProvider = Provider<CanonicalFolderService>((final ref) {
@@ -61,7 +64,7 @@ final canonicalStorageSizeProvider = FutureProvider<int>((final ref) async {
     try {
       final stat = await file.stat();
       total += stat.size;
-    } catch (_) {}
+    } on Object catch (_) {}
   }
   return total;
 });

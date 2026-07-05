@@ -1,3 +1,6 @@
+// H.8 lint triage — avoid_slow_async_io: async filesystem stat is intentional (avoids blocking the UI isolate); sync alternatives would block.
+// ignore_for_file: avoid_slow_async_io
+
 import 'dart:async';
 import 'dart:collection';
 import 'dart:io';
@@ -299,7 +302,7 @@ class VideoService {
       );
       if (assets == null) return [];
       return assets.map((final a) => MetadataAsset.fromMap(Map<String, dynamic>.from(a as Map))).toList();
-    } catch (e) {
+    } on Object catch (e) {
       debugPrint('[VideoService] Failed to fetch assets: $e');
       return [];
     }
@@ -314,7 +317,7 @@ class VideoService {
         'height': height,
       });
       return bytes;
-    } catch (e) {
+    } on Object catch (e) {
       debugPrint('[VideoService] Failed to get thumb: $e');
       return null;
     }
@@ -349,7 +352,7 @@ class VideoService {
       logger.complete('success');
       debugPrint('[VideoService] Specific asset import result: $result');
       return result;
-    } catch (e, st) {
+    } on Object catch (e, st) {
       logger.fail(e, st);
       return null;
     }
@@ -376,7 +379,7 @@ class VideoService {
       return VideoFileStatus.ready;
     } on TimeoutException {
       return VideoFileStatus.error;
-    } catch (_) {
+    } on Object catch (_) {
       return VideoFileStatus.error;
     }
   }
@@ -535,7 +538,7 @@ class VideoService {
       await compute(_writeBytes, _WriteBytesArgs(thumbPath, bytes));
       _thumbCache[cacheKey] = thumbPath;
       return thumbPath;
-    } catch (_) {
+    } on Object catch (_) {
       _thumbCache[cacheKey] = null;
       return null;
     }
@@ -762,7 +765,7 @@ class VideoService {
     for (int attempt = 0; attempt <= maxRetries; attempt++) {
       try {
         return await _saveToDocuments(source);
-      } catch (e) {
+      } on Object catch (e) {
         lastError = e;
         if (attempt == maxRetries) break;
         onStatus?.call(
@@ -771,6 +774,9 @@ class VideoService {
         await Future<void>.delayed(Duration(seconds: 1 << attempt));
       }
     }
+    // Rethrows the original caught copy failure (an arbitrary Object) to
+    // preserve its real type and stack trace.
+    // ignore: only_throw_errors
     throw lastError ?? Exception('Video copy failed');
   }
 

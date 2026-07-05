@@ -66,7 +66,7 @@ class CategoriesNotifier extends Notifier<List<Category>> {
     try {
       final list = jsonDecode(json) as List;
       return list.map((final e) => Category.fromJson(e as Map<String, dynamic>)).toList();
-    } catch (_) {
+    } on Object catch (_) {
       return List.from(_defaultCategories);
     }
   }

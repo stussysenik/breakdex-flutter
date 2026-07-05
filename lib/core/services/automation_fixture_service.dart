@@ -116,7 +116,7 @@ class AutomationFixtureService {
       }
 
       return _reviewFixtureVideos;
-    } catch (error) {
+    } on Object catch (error) {
       debugPrint(
         '[AutomationFixtureService] Skipping review fixture media seed: $error',
       );

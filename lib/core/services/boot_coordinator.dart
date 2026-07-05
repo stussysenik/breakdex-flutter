@@ -160,7 +160,7 @@ class BootCoordinator extends Notifier<BootState> {
       final prefs = ref.read(sharedPreferencesProvider);
       final ms = prefs.getInt(_expectedReadyKey);
       if (ms != null && ms > 0) expected = Duration(milliseconds: ms);
-    } catch (_) {
+    } on Object catch (_) {
       // Prefs unavailable (e.g. unit tests) — fall back to discrete progress.
     }
     return BootState.initial().copyWith(expectedReady: expected);
@@ -206,7 +206,7 @@ class BootCoordinator extends Notifier<BootState> {
           ? elapsedMs
           : (0.3 * elapsedMs + 0.7 * prevMs).round();
       unawaited(prefs.setInt(_expectedReadyKey, blended));
-    } catch (_) {
+    } on Object catch (_) {
       // Calibration is best-effort; never block boot on it.
     }
   }

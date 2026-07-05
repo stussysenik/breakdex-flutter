@@ -1,3 +1,6 @@
+// H.8 lint triage — avoid_slow_async_io: async filesystem stat is intentional (avoids blocking the UI isolate); sync alternatives would block.
+// ignore_for_file: avoid_slow_async_io
+
 import 'dart:io';
 import 'package:firebase_storage/firebase_storage.dart';
 import '../cloud_provider.dart';
@@ -103,7 +106,7 @@ class FirebaseStorageProvider implements CloudProvider {
       if (expectedHash != null && metadata.md5Hash != expectedHash) return false;
       
       return true;
-    } catch (_) {
+    } on Object catch (_) {
       return false;
     }
   }

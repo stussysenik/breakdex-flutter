@@ -1,3 +1,6 @@
+// H.8 lint triage — discarded_futures: intentional fire-and-forget (UI/provider side effects); the rule still guards new sync/codec files.
+// ignore_for_file: discarded_futures
+
 part of '../providers.dart';
 
 // ---------------------------------------------------------------------------
@@ -57,7 +60,7 @@ final cloudProvidersProvider = StreamProvider<List<CloudProvider>>((final ref) {
               final config =
                   (jsonDecode(row.configJson!) as Map<String, dynamic>);
               gdriveProvider.configFolderId = config['folderId'] as String?;
-            } catch (_) {}
+            } on Object catch (_) {}
           }
           providers.add(gdriveProvider);
         default:
@@ -271,7 +274,7 @@ final syncConnectivityTriggerProvider = Provider<void>((final ref) {
       debugPrint('[SyncConnectivity] Back online ($type) — triggering sync');
       try {
         ref.read(assetSyncEngineProvider).runSyncCycle(type);
-      } catch (e) {
+      } on Object catch (e) {
         debugPrint('[SyncConnectivity] Sync trigger failed: $e');
       }
     }

@@ -1,3 +1,5 @@
+// Asserts on decoded-JSON maps (dynamic by construction).
+// ignore_for_file: avoid_dynamic_calls
 import 'dart:convert';
 
 import 'package:breakdex/core/database/database.dart';

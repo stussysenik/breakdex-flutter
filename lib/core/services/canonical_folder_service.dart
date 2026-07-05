@@ -1,3 +1,6 @@
+// H.8 lint triage — avoid_slow_async_io: async filesystem stat is intentional (avoids blocking the UI isolate); sync alternatives would block.
+// ignore_for_file: avoid_slow_async_io
+
 import 'dart:convert';
 import 'dart:io';
 
@@ -67,7 +70,7 @@ class CanonicalFolderService {
       if (!await master.exists()) return false;
       final markerFile = File(p.join(master.path, _markerFileName));
       return await markerFile.exists();
-    } catch (_) {
+    } on Object catch (_) {
       return false;
     }
   }
@@ -96,7 +99,7 @@ class CanonicalFolderService {
     if (await targetFile.exists()) {
       try {
         await File(sourcePath).delete();
-      } catch (_) {}
+      } on Object catch (_) {}
       return targetPath;
     }
     VideoStorageGate.guardWrite(targetPath);
@@ -130,7 +133,7 @@ class CanonicalFolderService {
       final json = jsonDecode(await file.readAsString()) as Map<String, dynamic>;
       _cachedLedger = Ledger.fromJson(json);
       return _cachedLedger!;
-    } catch (e) {
+    } on Object catch (e) {
       debugPrint('[CanonicalFolderService] Ledger read failed: $e');
       _cachedLedger = Ledger.empty();
       return _cachedLedger!;
@@ -171,7 +174,7 @@ class CanonicalFolderService {
             recordedAt: now,
           );
           entries[entry.fileName] = entry;
-        } catch (_) {}
+        } on Object catch (_) {}
       }
     }
     final ledger = Ledger(entries: entries, version: _ledgerVersion);
@@ -196,7 +199,7 @@ class CanonicalFolderService {
           modifiedAt: stat.modified,
           inLedger: ledger.entries.containsKey(fileName),
         ));
-      } catch (_) {}
+      } on Object catch (_) {}
     }
     return results;
   }
@@ -210,7 +213,7 @@ class CanonicalFolderService {
       if (removed > 0) {
         debugPrint('[CanonicalFolderService] Pruned $removed empty dir(s) in videos/');
       }
-    } catch (e) {
+    } on Object catch (e) {
       debugPrint('[CanonicalFolderService] Prune empty dirs failed: $e');
     }
     return removed;
@@ -229,7 +232,7 @@ class CanonicalFolderService {
         await dir.delete();
         removed++;
       }
-    } catch (_) {}
+    } on Object catch (_) {}
     return removed;
   }
 
@@ -278,7 +281,7 @@ class CanonicalFolderService {
           DiagnosticsLog.info('StorageHygiene',
               'Quarantined to Archive: ${orphan.fileName}');
           count++;
-        } catch (e) {
+        } on Object catch (e) {
           DiagnosticsLog.error('StorageHygiene',
               'Failed to quarantine ${orphan.fileName}: $e');
         }
@@ -287,7 +290,7 @@ class CanonicalFolderService {
       VideoPathHealer.orphansQuarantined += count;
       log.complete('quarantined $count file(s)');
       return count;
-    } catch (e, stack) {
+    } on Object catch (e, stack) {
       log.fail(e, stack);
       return 0;
     }

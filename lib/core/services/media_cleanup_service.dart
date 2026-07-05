@@ -100,7 +100,7 @@ class MediaCleanupService {
         DiagnosticsLog.debug('MediaCleanup', 'DELETING local video: $pathForCleanup');
         await _videoService.deleteVideo(pathForCleanup);
         DiagnosticsLog.debug('MediaCleanup', 'Local video DELETED: $pathForCleanup');
-      } catch (error) {
+      } on Object catch (error) {
         DiagnosticsLog.warn('MediaCleanup', 'Local video cleanup FAILED for "$title": $error');
       }
 
@@ -109,7 +109,7 @@ class MediaCleanupService {
           DiagnosticsLog.debug('MediaCleanup', 'Deleting album copy for "$title" assetId=$managedAlbumAssetId');
           await _videoAlbum.deleteExactManagedCopy(managedAlbumAssetId.trim());
           DiagnosticsLog.debug('MediaCleanup', 'Album copy deleted for "$title"');
-        } catch (error) {
+        } on Object catch (error) {
           DiagnosticsLog.warn('MediaCleanup', 'Album cleanup FAILED for "$title": $error');
         }
       }

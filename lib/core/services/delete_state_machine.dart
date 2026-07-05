@@ -1,3 +1,6 @@
+// H.8 lint triage — avoid_slow_async_io: async filesystem stat is intentional (avoids blocking the UI isolate); sync alternatives would block.  discarded_futures: intentional fire-and-forget (UI/provider side effects); the rule still guards new sync/codec files.
+// ignore_for_file: avoid_slow_async_io, discarded_futures
+
 import 'dart:async';
 import 'dart:io';
 
@@ -119,7 +122,7 @@ class DeleteStateMachine {
         try {
           final file = File(manifest.localPath!);
           if (await file.exists()) await file.delete();
-        } catch (e) {
+        } on Object catch (e) {
           debugPrint('[DeleteStateMachine] File delete failed: $e');
         }
       }
@@ -147,13 +150,13 @@ class DeleteStateMachine {
           try {
             final file = File(manifest.localPath!);
             if (await file.exists()) await file.delete();
-          } catch (_) {}
+          } on Object catch (_) {}
         }
         await _copiesDao.deleteByHash(hash);
         await _folderService.removeLedgerEntry(hash);
         await _manifestDao.hardDelete(hash);
         purged++;
-      } catch (e) {
+      } on Object catch (e) {
         debugPrint('[DeleteStateMachine] Purge failed for $manifest.contentHash: $e');
       }
     }

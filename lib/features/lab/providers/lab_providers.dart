@@ -73,7 +73,7 @@ final labDetailProvider =
   yield* dao.watchAll().map((final labs) {
     try {
       return labs.firstWhere((final l) => l.id == labId);
-    } catch (_) {
+    } on Object catch (_) {
       return null;
     }
   });

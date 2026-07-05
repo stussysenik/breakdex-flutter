@@ -98,7 +98,7 @@ class ManifestSyncService {
               _providerUnavailableCooldown,
             );
             debugPrint('[ManifestSync] ${e.provider} unavailable: ${e.reason}');
-          } catch (e) {
+          } on Object catch (e) {
             debugPrint(
               '[ManifestSync] Upload to ${provider.displayName} failed: $e',
             );
@@ -107,9 +107,9 @@ class ManifestSyncService {
       } finally {
         try {
           await tempDir.delete(recursive: true);
-        } catch (_) {}
+        } on Object catch (_) {}
       }
-    } catch (e) {
+    } on Object catch (e) {
       debugPrint('[ManifestSync] Serialization failed: $e');
     } finally {
       _uploading = false;
@@ -143,7 +143,7 @@ class ManifestSyncService {
           _providerUnavailableCooldown,
         );
         debugPrint('[ManifestSync] ${e.provider} unavailable: ${e.reason}');
-      } catch (e) {
+      } on Object catch (e) {
         debugPrint(
           '[ManifestSync] Auth check for ${provider.displayName} failed: $e',
         );

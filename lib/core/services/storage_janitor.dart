@@ -1,3 +1,6 @@
+// H.8 lint triage — avoid_slow_async_io: async filesystem stat is intentional (avoids blocking the UI isolate); sync alternatives would block.
+// ignore_for_file: avoid_slow_async_io
+
 import 'dart:io';
 import 'package:path/path.dart' as p;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -73,7 +76,7 @@ class StorageJanitor {
       purged = await _pruneEmptyRecursive(movesDir);
 
       DiagnosticsLog.info('Janitor', '[COMPLETE] ${stopwatch.elapsedMilliseconds}ms | Archived: $archived | Pruned Dirs: $purged');
-    } catch (e) {
+    } on Object catch (e) {
       DiagnosticsLog.error('Janitor', 'Reconciliation failed: $e');
     }
   }
@@ -95,7 +98,7 @@ class StorageJanitor {
         await dir.delete();
         removed++;
       }
-    } catch (_) {}
+    } on Object catch (_) {}
     return removed;
   }
 }

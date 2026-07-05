@@ -1,3 +1,6 @@
+// H.8 lint triage — discarded_futures: intentional fire-and-forget (UI/provider side effects); the rule still guards new sync/codec files.
+// ignore_for_file: discarded_futures
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
@@ -1998,7 +2001,7 @@ class _ShareButtonState extends State<_ShareButton> {
         text: summary,
         sharePositionOrigin: origin,
       );
-    } catch (error) {
+    } on Object catch (error) {
       if (mounted) {
         ScaffoldMessenger.of(
           context,

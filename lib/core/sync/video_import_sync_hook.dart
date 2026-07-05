@@ -1,3 +1,6 @@
+// H.8 lint triage — avoid_slow_async_io: async filesystem stat is intentional (avoids blocking the UI isolate); sync alternatives would block.
+// ignore_for_file: avoid_slow_async_io
+
 import 'dart:async';
 import 'dart:io';
 
@@ -110,7 +113,7 @@ class VideoImportSyncHook {
       final connectionType = _connectivityService.currentType;
       unawaited(_syncEngine.runSyncCycle(connectionType));
       debugPrint('[VideoImportSyncHook] Sync cycle triggered');
-    } catch (e, stack) {
+    } on Object catch (e, stack) {
       // Non-fatal — video is saved locally, sync will catch up later
       debugPrint('[VideoImportSyncHook] Failed: $e\n$stack');
     }

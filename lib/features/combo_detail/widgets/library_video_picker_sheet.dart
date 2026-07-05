@@ -203,7 +203,7 @@ String _fileSizeMb(final String? relativePath) {
     if (!file.existsSync()) return '';
     final mb = file.lengthSync() / (1024 * 1024);
     return '${mb.toStringAsFixed(1)} MB';
-  } catch (_) {
+  } on Object catch (_) {
     return '';
   }
 }

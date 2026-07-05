@@ -1,3 +1,6 @@
+// H.8 lint triage — avoid_slow_async_io: async filesystem stat is intentional (avoids blocking the UI isolate); sync alternatives would block.
+// ignore_for_file: avoid_slow_async_io
+
 import 'dart:io';
 
 import 'package:flutter/foundation.dart';
@@ -96,7 +99,7 @@ class TombstoneCleaner {
           try {
             await provider.delete(remotePath: copy.remotePath!);
             remoteDeleted++;
-          } catch (e) {
+          } on Object catch (e) {
             debugPrint(
               'Failed to delete remote copy ${copy.id} '
               'from ${copy.provider}: $e',
@@ -109,7 +112,7 @@ class TombstoneCleaner {
         await _copiesDao.deleteByHash(asset.contentHash);
         await _opsDao.deleteByHash(asset.contentHash);
         await _manifestDao.hardDelete(asset.contentHash);
-      } catch (e) {
+      } on Object catch (e) {
         debugPrint(
           'Tombstone cleanup failed for ${asset.contentHash}: $e',
         );

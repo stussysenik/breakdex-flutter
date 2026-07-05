@@ -1,3 +1,6 @@
+// H.8 lint triage — discarded_futures: intentional fire-and-forget (UI/provider side effects); the rule still guards new sync/codec files.
+// ignore_for_file: discarded_futures
+
 
 import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';
@@ -50,7 +53,7 @@ class _RobustTrimTimelineState extends State<RobustTrimTimeline> {
   static const double _kFineScrubIndicatorLiftPx = 32.0;
 
   void _handleDragStart(final DragStartDetails details) {
-    final box = context.findRenderObject() as RenderBox;
+    final box = context.findRenderObject()! as RenderBox;
     final width = box.size.width;
     final localX = box.globalToLocal(details.globalPosition).dx;
 
@@ -92,7 +95,7 @@ class _RobustTrimTimelineState extends State<RobustTrimTimeline> {
 
   void _handleDragUpdate(final DragUpdateDetails details) {
     if (_activeHandle == null) return;
-    final box = context.findRenderObject() as RenderBox;
+    final box = context.findRenderObject()! as RenderBox;
     final width = box.size.width;
 
     if (_activeHandle == 'start' || _activeHandle == 'end') {

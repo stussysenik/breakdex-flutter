@@ -56,7 +56,7 @@ Future<void> _backupDatabaseIfNeeded(
     if (lastBackupSchema < currentSchema) {
       await prefs.setInt('last_backup_schema', currentSchema);
     }
-  } catch (error) {
+  } on Object catch (error) {
     unawaited(
       provenanceJournal.log(
         scope: 'database_recovery',
@@ -97,7 +97,7 @@ Future<AppDatabase> _openDatabaseSafely(
       message: 'Primary database opened successfully.',
     );
     return db;
-  } catch (e) {
+  } on Object catch (e) {
     debugPrint('DB init failed ($e) — attempting backup recovery');
     await provenanceJournal.log(
       scope: 'database_recovery',
@@ -131,7 +131,7 @@ Future<AppDatabase> _openDatabaseSafely(
             message: 'Database restored from backup successfully.',
           );
           return db;
-        } catch (backupError) {
+        } on Object catch (backupError) {
           debugPrint(
             'Backup restore failed for ${p.basename(backup.path)}: $backupError',
           );
@@ -146,7 +146,7 @@ Future<AppDatabase> _openDatabaseSafely(
           await recoveryService.deletePrimaryDatabase();
         }
       }
-    } catch (_) {}
+    } on Object catch (_) {}
     debugPrint('No readable backup found — creating fresh database');
     await provenanceJournal.log(
       scope: 'database_recovery',
@@ -181,7 +181,7 @@ Future<void> _runMigrations(final AppDatabase db, final SharedPreferences prefs)
       combosDao: db.combosDao,
       prefs: prefs,
     );
-  } catch (e) {
+  } on Object catch (e) {
     debugPrint('Post-frame migration failed: $e');
   }
 }
@@ -293,7 +293,7 @@ void main() async {
     try {
       await _runMigrations(db, sharedPrefs);
       boot.completeGate(BootGate.migrations);
-    } catch (e) {
+    } on Object catch (e) {
       debugPrint('FSRS migration failed: $e');
     }
 
@@ -301,7 +301,7 @@ void main() async {
     try {
       await container.read(storageJanitorProvider).reconcile();
       boot.completeGate(BootGate.healing);
-    } catch (e) {
+    } on Object catch (e) {
       debugPrint('Storage reconciliation failed: $e');
     }
 
@@ -323,7 +323,7 @@ void main() async {
         }
       }
       boot.completeGate(BootGate.legacyMigration);
-    } catch (e) {
+    } on Object catch (e) {
       debugPrint('Legacy asset migration failed: $e');
     }
     

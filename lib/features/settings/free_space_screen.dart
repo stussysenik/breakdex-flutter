@@ -245,7 +245,7 @@ class _FreeSpaceScreenState extends ConsumerState<FreeSpaceScreen> {
         ref.invalidate(spaceAnalysisProvider);
         await HapticFeedback.heavyImpact();
       }
-    } catch (e) {
+    } on Object catch (e) {
       if (mounted) {
         setState(() => _freeing = false);
         ScaffoldMessenger.of(context).showSnackBar(

@@ -1,3 +1,6 @@
+// H.8 lint triage — discarded_futures: intentional fire-and-forget (UI/provider side effects); the rule still guards new sync/codec files.
+// ignore_for_file: discarded_futures
+
 import 'dart:async';
 import 'dart:io';
 import 'dart:ui';
@@ -184,7 +187,7 @@ class VideoEditorController extends ChangeNotifier {
       notifyListeners();
 
       unawaited(_generateThumbnails());
-    } catch (e) {
+    } on Object catch (e) {
       DiagnosticsLog.error('VideoEditor', 'Initialization failed: $e');
       _status = EditorError(e.toString());
       notifyListeners();
@@ -360,7 +363,7 @@ class VideoEditorController extends ChangeNotifier {
           quality: 50,
         );
         thumbs.add(data);
-      } catch (_) {
+      } on Object catch (_) {
         thumbs.add(null);
       }
     }
@@ -438,7 +441,7 @@ class VideoEditorController extends ChangeNotifier {
       _status = originalStatus; // Return to editing or wait for pop
       notifyListeners();
       return result;
-    } catch (e, stack) {
+    } on Object catch (e, stack) {
       log.fail(e, stack);
       _status = EditorError('Export failed: $e');
       notifyListeners();

@@ -136,7 +136,7 @@ class _TrashedAssetRow extends ConsumerWidget {
           ));
       if (!context.mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Asset restored.')));
-    } catch (error) {
+    } on Object catch (error) {
       if (!context.mounted) return;
       ScaffoldMessenger.of(context)
           .showSnackBar(SnackBar(content: Text('Restore failed: $error')));
@@ -166,7 +166,7 @@ class _TrashedAssetRow extends ConsumerWidget {
       if (!context.mounted) return;
       ScaffoldMessenger.of(context)
           .showSnackBar(const SnackBar(content: Text('Asset deleted permanently.')));
-    } catch (error) {
+    } on Object catch (error) {
       if (!context.mounted) return;
       ScaffoldMessenger.of(context)
           .showSnackBar(SnackBar(content: Text('Delete failed: $error')));

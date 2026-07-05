@@ -157,7 +157,7 @@ class _MoveRow extends ConsumerWidget {
           duration: const Duration(seconds: 5),
         ),
       );
-    } catch (e, stack) {
+    } on Object catch (e, stack) {
       debugPrint('[MoveRow] Archive FAILED: $e\n$stack');
     }
   }
@@ -168,7 +168,7 @@ class _MoveRow extends ConsumerWidget {
       final repo = ref.read(moveRepositoryProvider);
       await repo.restore(move.id);
       debugPrint('[MoveRow] Move RESTORED: id=${move.id}');
-    } catch (e, stack) {
+    } on Object catch (e, stack) {
       debugPrint('[MoveRow] Restore FAILED: $e\n$stack');
     }
   }

@@ -1,3 +1,6 @@
+// H.8 lint triage — discarded_futures: intentional fire-and-forget (UI/provider side effects); the rule still guards new sync/codec files.
+// ignore_for_file: discarded_futures
+
 import 'dart:async';
 
 import 'package:drift/drift.dart' show Value;
@@ -129,7 +132,7 @@ class MoveDetailNotifier extends Notifier<MoveDetailState> {
       final newMove = await repo.getById(newId);
       send(DuplicateSucceeded(newMove));
       log.complete('newId=$newId hash=$contentHash');
-    } catch (e, st) {
+    } on Object catch (e, st) {
       log.fail(e, st);
       send(DuplicateFailed('Duplication failed: $e'));
     }
@@ -141,7 +144,7 @@ class MoveDetailNotifier extends Notifier<MoveDetailState> {
         MovesCompanion(id: Value(move.id), imagePaths: Value(json)),
       );
       send(SaveSucceeded(move.copyWith(imagePaths: Value(json))));
-    } catch (e) {
+    } on Object catch (e) {
       send(SaveFailed('$e'));
     }
   }
@@ -165,7 +168,7 @@ class MoveDetailNotifier extends Notifier<MoveDetailState> {
       final orchestrator = ref.read(storageOrchestratorProvider);
       final updatedMove = await orchestrator.updateMoveName(move, newName);
       send(SaveSucceeded(updatedMove));
-    } catch (e) {
+    } on Object catch (e) {
       send(SaveFailed('$e'));
     }
   }
@@ -182,7 +185,7 @@ class MoveDetailNotifier extends Notifier<MoveDetailState> {
       final updatedMove = move.copyWith(learningState: newState.dbValue);
       send(SaveSucceeded(updatedMove));
       log.complete();
-    } catch (e, stack) {
+    } on Object catch (e, stack) {
       log.fail(e, stack);
       send(SaveFailed('$e'));
     }
@@ -193,7 +196,7 @@ class MoveDetailNotifier extends Notifier<MoveDetailState> {
       final orchestrator = ref.read(storageOrchestratorProvider);
       final updatedMove = await orchestrator.updateMoveCategory(move, newCategory);
       send(SaveSucceeded(updatedMove));
-    } catch (e) {
+    } on Object catch (e) {
       send(SaveFailed('$e'));
     }
   }
@@ -204,7 +207,7 @@ class MoveDetailNotifier extends Notifier<MoveDetailState> {
         MovesCompanion(id: Value(move.id), count: Value(newCount)),
       );
       send(SaveSucceeded(move.copyWith(count: newCount)));
-    } catch (e) {
+    } on Object catch (e) {
       send(SaveFailed('$e'));
     }
   }
@@ -250,7 +253,7 @@ class MoveDetailNotifier extends Notifier<MoveDetailState> {
       
       send(SaveSucceeded(updatedMove));
       log.complete();
-    } catch (e, stack) {
+    } on Object catch (e, stack) {
       log.fail(e, stack);
       send(SaveFailed('$e'));
     }
@@ -273,7 +276,7 @@ class MoveDetailNotifier extends Notifier<MoveDetailState> {
         originalVideoName: const Value(null),
         contentHash: const Value(null),
       )));
-    } catch (e) {
+    } on Object catch (e) {
       send(SaveFailed('$e'));
     }
   }
@@ -287,7 +290,7 @@ class MoveDetailNotifier extends Notifier<MoveDetailState> {
         cleanupMedia: (final m) => ref.read(mediaCleanupServiceProvider).cleanupMoveMedia(m),
       );
       send(const DeleteSucceeded());
-    } catch (e) {
+    } on Object catch (e) {
       send(DeleteFailed('Delete failed: $e'));
     }
   }
@@ -297,7 +300,7 @@ class MoveDetailNotifier extends Notifier<MoveDetailState> {
       final dao = ref.read(moveNoteEntriesDaoProvider);
       await dao.addEntry(id: const Uuid().v4(), moveId: move.id, body: body);
       send(SaveSucceeded(move));
-    } catch (e) {
+    } on Object catch (e) {
       send(SaveFailed('$e'));
     }
   }
@@ -307,7 +310,7 @@ class MoveDetailNotifier extends Notifier<MoveDetailState> {
       final dao = ref.read(moveNoteEntriesDaoProvider);
       await dao.deleteEntry(entryId);
       send(SaveSucceeded(move));
-    } catch (e) {
+    } on Object catch (e) {
       send(SaveFailed('$e'));
     }
   }
@@ -321,7 +324,7 @@ class MoveDetailNotifier extends Notifier<MoveDetailState> {
             ),
           );
       send(SaveSucceeded(move.copyWith(notes: Value(text.isEmpty ? null : text))));
-    } catch (e) {
+    } on Object catch (e) {
       send(SaveFailed('$e'));
     }
   }

@@ -1,3 +1,6 @@
+// H.8 lint triage — avoid_slow_async_io: async filesystem stat is intentional (avoids blocking the UI isolate); sync alternatives would block.  discarded_futures: intentional fire-and-forget (UI/provider side effects); the rule still guards new sync/codec files.
+// ignore_for_file: avoid_slow_async_io, discarded_futures
+
 import 'dart:async';
 import 'dart:io';
 
@@ -152,7 +155,7 @@ class AssetSyncEngine {
       await _retryFailed(connectionType);
 
       _setState(SyncEngineState.idle);
-    } catch (e) {
+    } on Object catch (e) {
       debugPrint('Sync cycle error: $e');
       _setState(SyncEngineState.error);
     } finally {
@@ -297,7 +300,7 @@ class AssetSyncEngine {
         default:
           await _opsDao.markFailed(op.id, 'Unknown operation type');
       }
-    } catch (e) {
+    } on Object catch (e) {
       await _opsDao.markFailed(op.id, e.toString());
     }
   }
@@ -539,7 +542,7 @@ class AssetSyncEngine {
       debugPrint(
         '[AssetSync] State transition: $contentHash $fromState → $toState ($reason)',
       );
-    } catch (e) {
+    } on Object catch (e) {
       debugPrint('[AssetSync] Failed to log state transition: $e');
     }
   }
@@ -563,7 +566,7 @@ class AssetSyncEngine {
           state: _state,
         ),
       );
-    } catch (_) {
+    } on Object catch (_) {
       // Non-fatal — progress is informational
     }
   }

@@ -1,3 +1,6 @@
+// H.8 lint triage — avoid_slow_async_io: async filesystem stat is intentional (avoids blocking the UI isolate); sync alternatives would block.
+// ignore_for_file: avoid_slow_async_io
+
 import 'dart:io';
 
 import 'package:flutter/foundation.dart';
@@ -96,7 +99,7 @@ abstract final class FileSystemUtils {
       // Fast path: Atomic rename (0% -> 100% instantly)
       await source.rename(targetPath);
       yield 1.0;
-    } catch (_) {
+    } on Object catch (_) {
       // Slow path: Partition crossing copy-delete
       final total = await source.length();
       var processed = 0;
@@ -137,7 +140,7 @@ void _moveIsolate(final _TransferArgs args) {
   Directory(p.dirname(args.target)).createSync(recursive: true);
   try {
     s.renameSync(args.target);
-  } catch (_) {
+  } on Object catch (_) {
     s.copySync(args.target);
     s.deleteSync();
   }

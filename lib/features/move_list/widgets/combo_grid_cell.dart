@@ -1,3 +1,6 @@
+// H.8 lint triage — discarded_futures: intentional fire-and-forget (UI/provider side effects); the rule still guards new sync/codec files.
+// ignore_for_file: discarded_futures
+
 part of '../move_list_screen.dart';
 
 /// Grid layout for combos — mirrors `_MoveGrid` but uses a styled placeholder

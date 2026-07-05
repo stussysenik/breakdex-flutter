@@ -1,6 +1,10 @@
 include: package:flutter_lints/flutter.yaml
 
 analyzer:
+  exclude:
+    # Root-level scratch/repro files — not part of the app or test suite.
+    - repro.dart
+    - test_bug.dart
   plugins:
     - custom_lint
   errors:
@@ -10,6 +14,11 @@ analyzer:
     always_declare_return_types: error
     parameter_assignments: error
     avoid_positional_boolean_parameters: error
+    # H.8: enabled repo-wide but held at `info` (non-blocking) while the
+    # pre-existing backlog is triaged, so they never break the analyze gate
+    # mid-migration. Promote to `warning`/`error` once the backlog is zero.
+    discarded_futures: info
+    avoid_void_async: info
   language:
     strict-casts: true
     strict-raw-types: true
@@ -47,6 +56,18 @@ linter:
     cancel_subscriptions: true
     close_sinks: true
     unawaited_futures: true
+
+    # H.8 — async & type-safety hardening (targets the sync-bug classes the
+    # 2026-07-05 audit found: fire-and-forget futures, blind dynamic casts,
+    # catch-all clauses that swallow typed failures, non-Error throws).
+    discarded_futures: true
+    avoid_void_async: true
+    avoid_slow_async_io: true
+    avoid_dynamic_calls: true
+    cast_nullable_to_non_nullable: true
+    avoid_catches_without_on_clauses: true
+    only_throw_errors: true
+    unnecessary_statements: true
     
     # Style — The MTS Way
     lines_longer_than_80_chars: false # We prefer readable code over strict LOC limits

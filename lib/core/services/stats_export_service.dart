@@ -161,7 +161,7 @@ ${topMoves.isNotEmpty ? 'Most Practiced:\n$topMoves' : 'No moves practiced yet.'
       try {
         final list = jsonDecode(catJson) as List;
         categoriesJson = list.cast<Map<String, dynamic>>();
-      } catch (_) {}
+      } on Object catch (_) {}
     }
 
     final data = {
@@ -361,7 +361,7 @@ ${topMoves.isNotEmpty ? 'Most Practiced:\n$topMoves' : 'No moves practiced yet.'
         battleResultCount: battleResults.length,
         categoryCount: categories.length,
       );
-    } catch (e) {
+    } on Object catch (e) {
       return ImportValidation(valid: false, error: 'Invalid JSON: $e');
     }
   }

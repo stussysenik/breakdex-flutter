@@ -81,6 +81,9 @@ class LogsSection extends ConsumerWidget {
               separatorBuilder: (_, _) => const SizedBox(height: AppSpacing.md),
               itemBuilder: (final context, final index) {
                 final log = logs[index];
+                // `log` is a polymorphic note-entry row (move- or combo-scoped);
+                // both variants expose createdAt/body/id but share no supertype.
+                // ignore_for_file: avoid_dynamic_calls
                 final DateTime date = log.createdAt as DateTime;
                 final String body = log.body as String;
                 final String id = log.id as String;

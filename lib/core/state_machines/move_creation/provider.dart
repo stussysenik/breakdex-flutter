@@ -1,3 +1,6 @@
+// H.8 lint triage — discarded_futures: intentional fire-and-forget (UI/provider side effects); the rule still guards new sync/codec files.
+// ignore_for_file: discarded_futures
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../models/move_creation.dart';
 import '../../providers.dart';
@@ -43,7 +46,7 @@ class MoveCreationNotifier extends Notifier<MoveCreationState> {
       final service = ref.read(moveCreationServiceProvider);
       final result = await service.createMove(request);
       _send(CreationSuccess(result));
-    } catch (e) {
+    } on Object catch (e) {
       _send(CreationError(e.toString()));
     } finally {
       await subscription.cancel();

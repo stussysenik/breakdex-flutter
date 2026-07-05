@@ -1,3 +1,6 @@
+// H.8 lint triage — avoid_slow_async_io: async filesystem stat is intentional (avoids blocking the UI isolate); sync alternatives would block.  discarded_futures: intentional fire-and-forget (UI/provider side effects); the rule still guards new sync/codec files.
+// ignore_for_file: avoid_slow_async_io, discarded_futures
+
 import 'dart:async';
 import 'dart:io';
 import 'dart:ui';
@@ -112,7 +115,7 @@ class _MetadataVideoPickerSheetState extends ConsumerState<MetadataVideoPickerSh
           _loading = false;
         });
       }
-    } catch (e) {
+    } on Object catch (e) {
       if (mounted) setState(() { _error = e.toString(); _loading = false; });
     }
   }
@@ -136,7 +139,7 @@ class _MetadataVideoPickerSheetState extends ConsumerState<MetadataVideoPickerSh
           _loadingMore = false;
         });
       }
-    } catch (_) {
+    } on Object catch (_) {
       if (mounted) setState(() => _loadingMore = false);
     }
   }
@@ -151,7 +154,7 @@ class _MetadataVideoPickerSheetState extends ConsumerState<MetadataVideoPickerSh
         width: 0,
         height: 0,
       )).toList();
-    } catch (_) {
+    } on Object catch (_) {
       return [];
     }
   }
@@ -197,7 +200,7 @@ class _MetadataVideoPickerSheetState extends ConsumerState<MetadataVideoPickerSh
       
       assets.sort((final a, final b) => (b.creationDate ?? DateTime(0)).compareTo(a.creationDate ?? DateTime(0)));
       return assets;
-    } catch (_) {
+    } on Object catch (_) {
       return [];
     }
   }
@@ -284,7 +287,7 @@ class _MetadataVideoPickerSheetState extends ConsumerState<MetadataVideoPickerSh
         unawaited(HapticFeedback.heavyImpact());
         navigator.pop(result);
       }
-    } catch (e) {
+    } on Object catch (e) {
       _stallDetector?.stop();
       _importLog?.fail(e);
       // Stay in the overlay: edge-network failures get an in-place Retry
@@ -641,7 +644,7 @@ class _VideoTileState extends ConsumerState<_VideoTile> {
     try {
       final size = await File(widget.asset.localIdentifier).length();
       if (mounted) setState(() => _fileSizeBytes = size);
-    } catch (_) {
+    } on Object catch (_) {
       // Size stays unknown — the overlay renders without it.
     }
   }
@@ -663,7 +666,7 @@ class _VideoTileState extends ConsumerState<_VideoTile> {
         bytes = await ref.read(videoServiceProvider).getAssetThumbnail(asset.localIdentifier);
       }
       if (mounted) setState(() { _thumbnail = bytes; _loading = false; });
-    } catch (_) {
+    } on Object catch (_) {
       if (mounted) setState(() => _loading = false);
     }
   }

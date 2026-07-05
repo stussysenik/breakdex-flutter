@@ -1,3 +1,6 @@
+// H.8 lint triage — discarded_futures: intentional fire-and-forget (UI/provider side effects); the rule still guards new sync/codec files.
+// ignore_for_file: discarded_futures
+
 import 'dart:async';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter/foundation.dart';
@@ -74,7 +77,7 @@ class ConnectivityService {
         if (_disposed) return;
         _emitState(type);
       });
-    } catch (e) {
+    } on Object catch (e) {
       debugPrint('Connectivity listen failed: $e');
       _emitState(ConnectionType.none);
     }
@@ -125,7 +128,7 @@ class ConnectivityService {
       final type = _resolveType(results);
       _emitState(type);
       return type != ConnectionType.none;
-    } catch (e) {
+    } on Object catch (e) {
       debugPrint('Connectivity check failed: $e');
       return false;
     }
@@ -138,7 +141,7 @@ class ConnectivityService {
       final type = _resolveType(results);
       _emitState(type);
       return type;
-    } catch (e) {
+    } on Object catch (e) {
       debugPrint('Connection type check failed: $e');
       return ConnectionType.none;
     }

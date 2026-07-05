@@ -1,3 +1,6 @@
+// H.8 lint triage — discarded_futures: intentional fire-and-forget (UI/provider side effects); the rule still guards new sync/codec files.
+// ignore_for_file: discarded_futures
+
 import 'dart:async';
 import 'dart:collection';
 
@@ -480,7 +483,7 @@ class VideoRetrievalController {
         table: 'asset_manifest',
         action: action,
       );
-    } catch (_) {
+    } on Object catch (_) {
       // Retrieval audit logs are helpful but not critical to user flows.
     }
   }
@@ -506,7 +509,7 @@ class VideoRetrievalController {
         localPath: localPath,
         message: message,
       );
-    } catch (_) {
+    } on Object catch (_) {
       // Provenance improves debuggability but should never block playback.
     }
   }

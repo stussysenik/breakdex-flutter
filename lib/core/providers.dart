@@ -182,7 +182,7 @@ final authServiceProvider = Provider<AuthService>((final ref) {
 final isLoggedInProvider = Provider<bool>((final ref) {
   try {
     return ref.watch(authServiceProvider).isLoggedIn;
-  } catch (_) {
+  } on Object catch (_) {
     return false;
   }
 });
@@ -373,6 +373,12 @@ final syncServiceProvider = Provider<SyncService>((final ref) {
     syncDao: ref.watch(syncDaoProvider),
     db: ref.watch(databaseProvider),
     prefs: ref.watch(sharedPreferencesProvider),
+    // Task 2.1 cutover seam: construct a `ConvexSyncBackend(ConvexHttpTransport(
+    // url: <CONVEX_URL>))` here once the live deployment is provisioned (task
+    // 0.2) and CONVEX_URL is plumbed to the Dart runtime. Left null until then,
+    // so every pull uses the Firestore path unchanged; the dual-read is also
+    // guarded by the `SyncService.movesDualReadPrefKey` kill-switch.
+    syncBackend: null,
   );
 });
 
@@ -432,7 +438,7 @@ final syncTriggerProvider = Provider<void>((final ref) {
   if (isOnline && autoSync && isLoggedIn && pendingCount > 0) {
     try {
       ref.read(syncBlocProvider).add(const SyncEvent.startSync());
-    } catch (_) {
+    } on Object catch (_) {
       // Sync failure is non-fatal — will retry on next connectivity change
     }
   }

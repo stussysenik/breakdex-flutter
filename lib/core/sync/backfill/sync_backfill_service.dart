@@ -1,5 +1,5 @@
 import '../../database/daos/moves_dao.dart';
-import '../../database/database.dart';
+import '../codecs/move_codec.dart';
 import '../sync_backend.dart';
 
 /// Non-destructive backfill of local Drift metadata into a [SyncBackend] shadow
@@ -67,42 +67,3 @@ class BackfillReport {
   final int recordCount;
   final int batchCount;
 }
-
-/// Project a [Move] onto its provider-neutral [SyncRecord].
-///
-/// The payload is JSON-safe by construction (the HTTP transport `jsonEncode`s
-/// it): every field is a String / num / bool / null. In particular
-/// [Move.videoFileSize] is a `BigInt` — not JSON-encodable and lossy past 2^53
-/// as a JS number — so it is carried as a lossless decimal string, and every
-/// [DateTime] is carried as ms-since-epoch. Video *bytes* never appear here;
-/// `videoPath`/`contentHash` are pointers.
-SyncRecord moveToSyncRecord(final Move m) => SyncRecord(
-  id: m.id,
-  type: SyncEntityType.move,
-  json: moveToSyncJson(m),
-  // Post-v23 every row has updatedAt; fall back to createdAt defensively so a
-  // pre-migration row can never push a null clock.
-  updatedAt: m.updatedAt ?? m.createdAt,
-  clientOpId: 'backfill:move:${m.id}',
-);
-
-/// The JSON-safe descriptive payload for a move (see [moveToSyncRecord]).
-Map<String, Object?> moveToSyncJson(final Move m) => {
-  'name': m.name,
-  'learningState': m.learningState,
-  'category': m.category,
-  'videoPath': m.videoPath,
-  'originalVideoName': m.originalVideoName,
-  'managedAlbumAssetId': m.managedAlbumAssetId,
-  'managedAlbumFilename': m.managedAlbumFilename,
-  'managedAlbumName': m.managedAlbumName,
-  'notes': m.notes,
-  'imagePaths': m.imagePaths,
-  'contentHash': m.contentHash,
-  'count': m.count,
-  'videoFileSize': m.videoFileSize?.toString(),
-  'archivedAt': m.archivedAt?.millisecondsSinceEpoch,
-  'archiveReason': m.archiveReason,
-  'videoCreationDate': m.videoCreationDate?.millisecondsSinceEpoch,
-  'createdAt': m.createdAt.millisecondsSinceEpoch,
-};

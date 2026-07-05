@@ -180,7 +180,7 @@ class _ArchivedMoveRow extends ConsumerWidget {
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(const SnackBar(content: Text('Move restored.')));
-    } catch (error) {
+    } on Object catch (error) {
       if (!context.mounted) return;
       ScaffoldMessenger.of(
         context,

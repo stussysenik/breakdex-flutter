@@ -1,3 +1,6 @@
+// H.8 lint triage — avoid_slow_async_io: async filesystem stat is intentional (avoids blocking the UI isolate); sync alternatives would block.
+// ignore_for_file: avoid_slow_async_io
+
 import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:drift/drift.dart';
@@ -13,6 +16,8 @@ import '../database/daos/sync_dao.dart';
 import 'auth_service.dart';
 import 'video_path_resolver.dart';
 import '../domain/failures/failure.dart';
+import '../sync/sync_backend.dart';
+import '../sync/codecs/move_codec.dart';
 
 class SyncService {
   final AuthService authService;
@@ -20,12 +25,36 @@ class SyncService {
   final AppDatabase db;
   final SharedPreferences prefs;
 
+  /// Canonical metadata backend (Convex) for the strangler-fig dual-read.
+  /// Nullable: until the live deployment is provisioned (task 0.2) and wired,
+  /// this stays `null` and every pull uses the Firestore path unchanged.
+  final SyncBackend? syncBackend;
+
   SyncService({
     required this.authService,
     required this.syncDao,
     required this.db,
     required this.prefs,
+    this.syncBackend,
   });
+
+  /// Kill-switch for the `moves` dual-read (task 2.1). Off by default, so the
+  /// live read path is byte-identical to Firestore-only until the owner flips
+  /// it on after verifying two-way reconcile against real data. Flipping it
+  /// back off is the instant rollback.
+  ///
+  /// **Prerequisite:** enabling this is only safe once `moves` dual-*write*
+  /// (task 4.2) is live. Reading from a shadow that no local flush writes to
+  /// would serve permanently-stale data; the strangler-fig order is
+  /// dual-write → dual-read, never the reverse (audit A1).
+  static const String movesDualReadPrefKey = 'sync.moves.dualRead.enabled';
+
+  /// Pref holding the `moves` backend high-water cursor (ms since epoch),
+  /// advanced from [SyncDelta.cursor] after each successful pull (H.1).
+  /// Deliberately independent of Firestore's shared `last_sync_at` (audit A2):
+  /// the two backends have different clocks and delete horizons, so sharing a
+  /// cursor would silently skip records. A missing cursor means "full pull".
+  static const String movesBackendCursorPrefKey = 'sync.moves.backend.cursor';
 
   TaskEither<AppFailure, Unit> authenticate() {
     return authService.refreshAuth().mapLeft((final f) => AppFailure.sync('Authentication failed: ${f.message}'));
@@ -57,7 +86,7 @@ class SyncService {
                   final storagePath = '$userId/$table/${entry.entityId}.mp4';
                   try {
                     await FirebaseStorage.instance.ref('videos/$storagePath').delete();
-                  } catch (_) {}
+                  } on Object catch (_) {}
                 }
                 batch.delete(docRef);
               } else {
@@ -69,7 +98,7 @@ class SyncService {
                 }
               }
               syncedEntries.add(entry);
-            } catch (e) {
+            } on Object catch (e) {
               debugPrint('[SyncService] Failed to prepare batch entry: $e');
             }
           }
@@ -125,7 +154,7 @@ class SyncService {
 
             await FirebaseStorage.instance.ref('videos/$storagePath').putFile(file);
             await syncDao.markVideoSynced(entry.entityId, entry.entityTable);
-          } catch (_) {}
+          } on Object catch (_) {}
         }
         return unit;
       },
@@ -144,6 +173,20 @@ class SyncService {
           'moves', 'combos', 'combo_moves', 'reviews', 'fsrs_cards', 'battle_results',
         ]) {
           try {
+            // Strangler-fig dual-read (task 2.1): serve `moves` from the
+            // canonical backend first; on any failure fall through to the
+            // Firestore path below so a backend hiccup never blocks a pull. The
+            // backend path owns its own cursor (H.1), independent of the
+            // Firestore `since` used for the other tables.
+            if (table == 'moves') {
+              try {
+                final result = await pullMovesFromBackend();
+                if (result != null) continue;
+              } on Object catch (e) {
+                debugPrint('[SyncService] moves dual-read failed, falling back to Firestore: $e');
+              }
+            }
+
             var query = FirebaseFirestore.instance.collection(table).where('user_id', isEqualTo: userId);
             if (since != null) {
               query = query.where('updated_at', isGreaterThan: since.toUtc().toIso8601String());
@@ -155,7 +198,7 @@ class SyncService {
             for (final record in records) {
               await _mergeRemoteRecord(table, record);
             }
-          } catch (_) {}
+          } on Object catch (_) {}
         }
         return unit;
       },
@@ -193,6 +236,13 @@ class SyncService {
     return TaskEither.tryCatch(
       () async {
         final userId = authService.userId;
+        // Stream downloads straight to disk (H.6): `getData()` caps at 10 MB by
+        // default and threw on larger clips — swallowed by the old `catch (_)`,
+        // so big videos silently never downloaded. `writeToFile` has no cap.
+        // Resolve the docs dir once, not once per file.
+        final docsDir = await getApplicationDocumentsDirectory();
+        final movesDir = Directory(p.join(docsDir.path, 'Moves'));
+        final combosDir = Directory(p.join(docsDir.path, 'Combos'));
 
         // Download moves
         final moveVideosRef = FirebaseStorage.instance.ref('videos/$userId/moves');
@@ -208,7 +258,7 @@ class SyncService {
             } else if (!await File(VideoPathResolver.toAbsolute(localMove.videoPath!)).exists()) {
               toDownloadMoves.add(fileObj);
             }
-          } catch (_) {}
+          } on Object catch (_) {}
         }
 
         for (var i = 0; i < toDownloadMoves.length; i++) {
@@ -217,20 +267,17 @@ class SyncService {
           onProgress(i + 1, toDownloadMoves.length, moveId);
 
           try {
-            final bytes = await fileObj.getData();
-            if (bytes == null) continue;
-
-            final dir = await getApplicationDocumentsDirectory();
-            final movesDir = Directory(p.join(dir.path, 'Moves'));
             if (!await movesDir.exists()) await movesDir.create(recursive: true);
             final localPath = p.join(movesDir.path, '$moveId.mp4');
 
-            await File(localPath).writeAsBytes(bytes);
+            await fileObj.writeToFile(File(localPath));
 
             await (db.update(db.moves)..where((final t) => t.id.equals(moveId))).write(
               MovesCompanion(videoPath: Value(VideoPathResolver.toRelative(localPath))),
             );
-          } catch (_) {}
+          } on Object catch (e) {
+            debugPrint('[SyncService] move video download failed for $moveId: $e');
+          }
         }
 
         // Download combos
@@ -247,7 +294,7 @@ class SyncService {
             } else if (!await File(VideoPathResolver.toAbsolute(localCombo.activeVideoPath!)).exists()) {
               toDownloadCombos.add(fileObj);
             }
-          } catch (_) {}
+          } on Object catch (_) {}
         }
 
         for (var i = 0; i < toDownloadCombos.length; i++) {
@@ -256,20 +303,17 @@ class SyncService {
           onProgress(i + 1, toDownloadCombos.length, comboId);
 
           try {
-            final bytes = await fileObj.getData();
-            if (bytes == null) continue;
-
-            final dir = await getApplicationDocumentsDirectory();
-            final combosDir = Directory(p.join(dir.path, 'Combos'));
             if (!await combosDir.exists()) await combosDir.create(recursive: true);
             final localPath = p.join(combosDir.path, '$comboId.mp4');
 
-            await File(localPath).writeAsBytes(bytes);
+            await fileObj.writeToFile(File(localPath));
 
             await (db.update(db.combos)..where((final t) => t.id.equals(comboId))).write(
               CombosCompanion(activeVideoPath: Value(VideoPathResolver.toRelative(localPath))),
             );
-          } catch (_) {}
+          } on Object catch (e) {
+            debugPrint('[SyncService] combo video download failed for $comboId: $e');
+          }
         }
 
         return unit;
@@ -287,6 +331,88 @@ class SyncService {
       },
       (final error, final stackTrace) => AppFailure.sync('Reconciling albums failed: $error'),
     );
+  }
+
+  /// Dual-read for `moves` (task 2.1): pull the moves delta from the canonical
+  /// [SyncBackend] using this entity's own persisted cursor (H.1) and merge each
+  /// upsert into Drift under last-writer-wins — isolated per-record (H.3) and
+  /// inside a single transaction (H.4).
+  ///
+  /// Returns `(applied, failed)` counts, or `null` when dual-read is disabled
+  /// (no [syncBackend] wired, or the [movesDualReadPrefKey] kill-switch is off)
+  /// — the caller then falls back to Firestore, preserving today's behavior. A
+  /// backend-pull failure **rethrows** (the caller falls back for that cycle)
+  /// and leaves the cursor untouched, so nothing is skipped on the next retry.
+  ///
+  /// Deletes (tombstones) are intentionally **not** applied here: propagating a
+  /// hard-delete across the boundary is the destructive step gated behind task
+  /// 2.6, so this dual-read only ever upserts. Nothing here removes a local row.
+  Future<({int applied, int failed})?> pullMovesFromBackend() async {
+    final backend = syncBackend;
+    if (backend == null || !(prefs.getBool(movesDualReadPrefKey) ?? false)) {
+      return null;
+    }
+
+    final cursorMs = prefs.getInt(movesBackendCursorPrefKey);
+    final since = cursorMs == null
+        ? null
+        : DateTime.fromMillisecondsSinceEpoch(cursorMs, isUtc: true);
+
+    final delta = await backend.pull(SyncEntityType.move, since: since);
+
+    var applied = 0;
+    var failed = 0;
+    await db.transaction(() async {
+      for (final record in delta.upserts) {
+        try {
+          if (await _mergeMoveRecordLww(record)) applied++;
+        } on Object catch (e) {
+          // A single malformed record is skipped and counted — never aborts the
+          // batch (which would degrade moves to the blind Firestore path). H.3.
+          failed++;
+          debugPrint('[SyncService] skipped malformed move ${record.id}: $e');
+        }
+      }
+    });
+
+    // Advance the cursor only after the merge commits: a mid-cycle backend
+    // failure re-pulls from the same high-water mark next time (lossless, A2).
+    final cursor = delta.cursor;
+    if (cursor != null) {
+      await prefs.setInt(
+        movesBackendCursorPrefKey,
+        cursor.millisecondsSinceEpoch,
+      );
+    }
+
+    return (applied: applied, failed: failed);
+  }
+
+  /// Merge one remote move [record] iff it does not clobber a newer local edit.
+  ///
+  /// Drift persists DateTimes as whole Unix seconds while backend records carry
+  /// milliseconds (H.2/audit A3), so the LWW clocks are compared at second
+  /// granularity — otherwise a truncated local (always `.000`) would look stale
+  /// against any same-second remote. Ties, and any sub-second race that is
+  /// unresolvable once local is truncated, keep the on-device row: a remote must
+  /// be a **strictly-newer whole second** to win. That is the data-safety
+  /// default — never clobber a local edit we cannot prove is older.
+  ///
+  /// Writes go straight to Drift, bypassing the sync-aware decorator, so a
+  /// remote-origin merge is never re-enqueued as a local change. Returns whether
+  /// the row was written.
+  Future<bool> _mergeMoveRecordLww(final SyncRecord record) async {
+    final existing = await (db.select(db.moves)
+          ..where((final t) => t.id.equals(record.id)))
+        .getSingleOrNull();
+    if (existing != null) {
+      final localClock = existing.updatedAt ?? existing.createdAt;
+      final localSec = localClock.millisecondsSinceEpoch ~/ 1000;
+      final remoteSec = record.updatedAt.millisecondsSinceEpoch ~/ 1000;
+      if (localSec >= remoteSec) return false;
+    }
+    await db.into(db.moves).insertOnConflictUpdate(moveFromSyncRecord(record));
+    return true;
   }
 
   // --- Private Helpers ---
@@ -370,7 +496,7 @@ class SyncService {
         default:
           return null;
       }
-    } catch (_) {
+    } on Object catch (_) {
       return null;
     }
   }
@@ -453,7 +579,7 @@ class SyncService {
           await db.into(db.battleResults).insertOnConflictUpdate(companion);
           break;
       }
-    } catch (_) {}
+    } on Object catch (_) {}
   }
 
   String _learningStateFromFsrs(final int fsrsState) => switch (fsrsState) {

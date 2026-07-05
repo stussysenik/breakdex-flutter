@@ -1,3 +1,6 @@
+// H.8 lint triage — discarded_futures: intentional fire-and-forget (UI/provider side effects); the rule still guards new sync/codec files.
+// ignore_for_file: discarded_futures
+
 import 'dart:async';
 
 import 'package:flutter/cupertino.dart';
@@ -283,7 +286,7 @@ class _ComboDetailScreenState extends ConsumerState<ComboDetailScreen> {
         subject: move.name,
         sharePositionOrigin: sharePositionOrigin(context),
       );
-    } catch (e) {
+    } on Object catch (e) {
       DiagnosticsLog.error('ComboDetail', '_shareVideo failed: $e');
     }
   }
@@ -303,7 +306,7 @@ class _ComboDetailScreenState extends ConsumerState<ComboDetailScreen> {
           SnackBar(content: Text('Saved "${move.name}" to Photos')),
         );
       }
-    } catch (e) {
+    } on Object catch (e) {
       DiagnosticsLog.error('ComboDetail', '_saveToAlbum failed: $e');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(

@@ -1,3 +1,6 @@
+// H.8 lint triage — avoid_slow_async_io: async filesystem stat is intentional (avoids blocking the UI isolate); sync alternatives would block.
+// ignore_for_file: avoid_slow_async_io
+
 // Scratch debug script — not part of the app.
 // ignore_for_file: avoid_print, unused_local_variable
 import 'dart:io';
@@ -27,7 +30,7 @@ void main() async {
       print('BUG DETECTED: moveToSemanticPath swallowed the error and returned the temporary absolute path!');
       exit(1);
     }
-  } catch (e) {
+  } on Object catch (e) {
     print('SUCCESS: Error correctly rethrown! The DB will no longer store invalid temporary paths. $e');
     exit(0);
   }

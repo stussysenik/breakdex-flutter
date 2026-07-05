@@ -150,7 +150,7 @@ class IntegrityVerifier {
       String actualHash;
       try {
         actualHash = await _hashService.computeHash(localPath);
-      } catch (e) {
+      } on Object catch (e) {
         debugPrint('Integrity check error for ${asset.contentHash}: $e');
         issues.add(IntegrityIssue(
           kind: IntegrityIssueKind.unreadable,

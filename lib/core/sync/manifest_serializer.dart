@@ -66,7 +66,7 @@ class ManifestSerializer {
       try {
         final list = jsonDecode(catJson) as List;
         categoriesJson = list.cast<Map<String, dynamic>>();
-      } catch (_) {}
+      } on Object catch (_) {}
     }
 
     final manifest = LibraryManifest(

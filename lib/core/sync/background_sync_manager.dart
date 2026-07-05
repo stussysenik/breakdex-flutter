@@ -66,7 +66,7 @@ class BackgroundSyncManager {
   }) async {
     try {
       await syncCallback();
-    } catch (e) {
+    } on Object catch (e) {
       debugPrint('[BackgroundSync] Immediate sync failed: $e');
     }
   }

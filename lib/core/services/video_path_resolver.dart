@@ -1,3 +1,6 @@
+// H.8 lint triage — avoid_slow_async_io: async filesystem stat is intentional (avoids blocking the UI isolate); sync alternatives would block.
+// ignore_for_file: avoid_slow_async_io
+
 import 'dart:io';
 
 import 'package:drift/drift.dart';
@@ -225,7 +228,7 @@ abstract final class VideoPathHealer {
       try {
         await _autoCleanFileSystem(db);
         await prefs.setInt(_cleanupRunAtKey, now);
-      } catch (e) {
+      } on Object catch (e) {
         debugPrint('[VideoPathHealer] Cleanup failed: $e');
       }
     }
@@ -234,7 +237,7 @@ abstract final class VideoPathHealer {
       try {
         await _healDatabasePaths(db);
         await prefs.setBool(_prefsKey, true);
-      } catch (e) {
+      } on Object catch (e) {
         debugPrint('[VideoPathHealer] DB healing failed: $e');
       }
     }
@@ -257,7 +260,7 @@ abstract final class VideoPathHealer {
       await pruneStaleExportDirs();
       log.stage('staleExportsPruned');
       log.complete('done');
-    } catch (e, stack) {
+    } on Object catch (e, stack) {
       log.fail(e, stack);
     }
   }
@@ -305,7 +308,7 @@ abstract final class VideoPathHealer {
                   'Legacy video migrated: $filename → ${match.videoPath}');
             }
           }
-        } catch (_) {}
+        } on Object catch (_) {}
       }
       mutations += migrated;
 
@@ -324,7 +327,7 @@ abstract final class VideoPathHealer {
 
       log.complete('$mutations mutation(s)');
       return mutations;
-    } catch (e, stack) {
+    } on Object catch (e, stack) {
       log.fail(e, stack);
       return mutations;
     }
@@ -361,13 +364,13 @@ abstract final class VideoPathHealer {
             await entity.delete(recursive: true);
             removed++;
           }
-        } catch (_) {}
+        } on Object catch (_) {}
       }
 
       staleFoldersRemoved += removed;
       log.complete('removed $removed stale export dir(s)');
       return removed;
-    } catch (e, stack) {
+    } on Object catch (e, stack) {
       log.fail(e, stack);
       return removed;
     }
@@ -416,7 +419,7 @@ abstract final class VideoPathHealer {
           }
         }
       }
-    } catch (e) {
+    } on Object catch (e) {
       debugPrint('[VideoPathHealer] Boot merge failed: $e');
     }
   }
@@ -442,7 +445,7 @@ abstract final class VideoPathHealer {
     }
     try {
       await source.delete();
-    } catch (_) {}
+    } on Object catch (_) {}
   }
 
   /// Recursively walk the Moves/ directory tree and delete any empty
@@ -458,7 +461,7 @@ abstract final class VideoPathHealer {
       if (removed > 0) {
         debugPrint('[VideoPathHealer] Pruned $removed empty dir(s) in Moves/');
       }
-    } catch (e) {
+    } on Object catch (e) {
       debugPrint('[VideoPathHealer] Prune empty dirs failed: $e');
     }
   }
@@ -476,7 +479,7 @@ abstract final class VideoPathHealer {
         await dir.delete();
         removed++;
       }
-    } catch (_) {}
+    } on Object catch (_) {}
     return removed;
   }
 
@@ -507,7 +510,7 @@ abstract final class VideoPathHealer {
           }
         }
       }
-    } catch (e) {
+    } on Object catch (e) {
       debugPrint('[VideoPathHealer] Root cleanup failed: $e');
     }
   }

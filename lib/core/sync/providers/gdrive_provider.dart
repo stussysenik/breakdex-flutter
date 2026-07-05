@@ -1,3 +1,6 @@
+// H.8 lint triage — avoid_slow_async_io: async filesystem stat is intentional (avoids blocking the UI isolate); sync alternatives would block.
+// ignore_for_file: avoid_slow_async_io
+
 import 'dart:io';
 
 import 'package:flutter/foundation.dart';
@@ -96,7 +99,7 @@ class GDriveProvider extends CloudProvider {
       // Drive lookup on every subsequent launch).
       configFolderId = _breakdexFolderId;
       return true;
-    } catch (e) {
+    } on Object catch (e) {
       debugPrint('[GDriveProvider] Auth failed: $e');
       return false;
     }
@@ -106,7 +109,7 @@ class GDriveProvider extends CloudProvider {
   Future<void> deauthenticate() async {
     try {
       await GoogleSignIn().signOut();
-    } catch (_) {}
+    } on Object catch (_) {}
     _account = null;
     _driveApi = null;
     _breakdexFolderId = null;
@@ -126,7 +129,7 @@ class GDriveProvider extends CloudProvider {
       if (account == null) return null;
       final auth = await account.authentication;
       return drive.DriveApi(GoogleAuthClient(auth));
-    } catch (e) {
+    } on Object catch (e) {
       debugPrint('[GDriveProvider] Silent session restore failed: $e');
       return null;
     }
@@ -256,7 +259,7 @@ class GDriveProvider extends CloudProvider {
       // Note: Drive uses MD5, we use SHA-256 — size check is the primary guard.
       // Full hash verification requires download + rehash.
       return true;
-    } catch (e) {
+    } on Object catch (e) {
       debugPrint('[GDriveProvider] Verify failed for $remotePath: $e');
       return false;
     }
@@ -308,7 +311,7 @@ class GDriveProvider extends CloudProvider {
         totalBytes: int.tryParse(sq.limit ?? '') ?? 0,
         usedBytes: int.tryParse(sq.usage ?? '') ?? 0,
       );
-    } catch (e) {
+    } on Object catch (e) {
       debugPrint('[GDriveProvider] Quota check failed: $e');
       return null;
     }

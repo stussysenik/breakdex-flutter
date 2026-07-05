@@ -62,7 +62,7 @@ class _JotComposerState extends ConsumerState<JotComposer> {
       log.stage('completionsStamped');
       _controller.clear();
       log.complete();
-    } catch (e, stack) {
+    } on Object catch (e, stack) {
       log.fail(e, stack);
       _showError("Couldn't save your jot. Try again.");
     }
@@ -103,7 +103,7 @@ class _JotComposerState extends ConsumerState<JotComposer> {
           _controller.clear();
           unawaited(HapticFeedback.mediumImpact());
           log.complete();
-        } catch (e, stack) {
+        } on Object catch (e, stack) {
           log.fail(e, stack);
           _showError("Couldn't link the video. Try again.");
         }

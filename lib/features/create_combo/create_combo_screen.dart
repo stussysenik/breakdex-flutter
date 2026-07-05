@@ -1,3 +1,6 @@
+// H.8 lint triage — discarded_futures: intentional fire-and-forget (UI/provider side effects); the rule still guards new sync/codec files.
+// ignore_for_file: discarded_futures
+
 import 'dart:async';
 
 import 'package:drift/drift.dart' show Value;
@@ -270,12 +273,12 @@ class _CreateComboScreenState extends ConsumerState<CreateComboScreen> {
           _isLoadingExisting = false;
         });
       }
-    } catch (e) {
+    } on Object catch (_) {
       if (mounted) setState(() => _isLoadingExisting = false);
     }
   }
 
-  void _showMovePicker() async {
+  Future<void> _showMovePicker() async {
     final result = await showModalBottomSheet<List<Move>>(
       context: context,
       isScrollControlled: true,
@@ -385,7 +388,7 @@ class _CreateComboScreenState extends ConsumerState<CreateComboScreen> {
           if (mounted) context.pop();
         }
       }
-    } catch (e, stack) {
+    } on Object catch (e, stack) {
       log.fail(e, stack);
       if (mounted) {
         setState(() => _screenState = _ScreenState.editing);
@@ -451,7 +454,7 @@ class _CreateComboScreenState extends ConsumerState<CreateComboScreen> {
     await planComboFlow(context, ref, comboId: comboId);
   }
 
-  void _renameCombo() async {
+  Future<void> _renameCombo() async {
     final name = await _promptForName();
     if (name != null && name.isNotEmpty && mounted) {
       setState(() => _comboName = name);

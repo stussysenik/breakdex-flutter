@@ -1,3 +1,6 @@
+// H.8 lint triage — avoid_slow_async_io: async filesystem stat is intentional (avoids blocking the UI isolate); sync alternatives would block.  discarded_futures: intentional fire-and-forget (UI/provider side effects); the rule still guards new sync/codec files.
+// ignore_for_file: avoid_slow_async_io, discarded_futures
+
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
@@ -47,7 +50,7 @@ class _MovePhotosSectionState extends State<MovePhotosSection> {
     try {
       final decoded = jsonDecode(widget.imagePaths!) as List<dynamic>;
       return decoded.cast<String>();
-    } catch (_) {
+    } on Object catch (_) {
       return [];
     }
   }
@@ -110,7 +113,7 @@ class _MovePhotosSectionState extends State<MovePhotosSection> {
       final updated = [..._paths, filename];
       widget.onChanged(jsonEncode(updated));
       unawaited(HapticFeedback.mediumImpact());
-    } catch (e) {
+    } on Object catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Failed to add photo: $e')),

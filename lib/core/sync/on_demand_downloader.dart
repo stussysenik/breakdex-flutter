@@ -1,3 +1,6 @@
+// H.8 lint triage — avoid_slow_async_io: async filesystem stat is intentional (avoids blocking the UI isolate); sync alternatives would block.
+// ignore_for_file: avoid_slow_async_io
+
 import 'dart:io';
 
 import 'package:drift/drift.dart';
@@ -156,14 +159,14 @@ class OnDemandDownloader implements LocalAssetRetriever {
             table: 'asset_manifest',
             action: 'download_restored',
           );
-        } catch (_) {
+        } on Object catch (_) {
           // Non-fatal — logging is informational
         }
       }
 
       debugPrint('[OnDemandDownloader] Downloaded to $localPath');
       return localPath;
-    } catch (e) {
+    } on Object catch (e) {
       debugPrint('[OnDemandDownloader] Download failed: $e');
       return null;
     }
