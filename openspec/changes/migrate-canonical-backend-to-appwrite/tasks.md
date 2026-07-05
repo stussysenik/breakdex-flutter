@@ -1,0 +1,199 @@
+# Tasks — Migrate Canonical Backend to Appwrite
+
+> Master execution plan. Sequenced strictly by risk: harden → provision → shadow → identity →
+> per-entity cutover → retire → web studio → post-launch. Additive, reversible, kill-switched.
+> Drift stays canonical on-device until each entity is proven. Executor: read `proposal.md` and
+> `design.md` first; verify every Appwrite API shape against current official docs at
+> implementation time; `flutter analyze` + `flutter test` green at every task boundary; stop and
+> surface at owner-gated steps.
+
+## Phase H: Harden the migration template (no Appwrite needed; do FIRST; audit 2026-07-05)
+
+- [ ] H.1 **Dedicated backend pull cursor (audit A2).** In `SyncService.pullMovesFromBackend`,
+  persist `delta.cursor` to a new pref (`sync.moves.backend.cursor`) and pass it as `since` on
+  the next pull; never derive the backend `since` from the shared Firestore `last_sync_at`.
+  Red/green: test that (a) the cursor advances from `SyncDelta.cursor`, (b) disabling dual-read
+  then re-enabling re-pulls from the backend cursor, not the Firestore clock, (c) a null cursor
+  falls back to full pull. Files: `lib/core/services/sync_service.dart`,
+  `test/core/services/sync_service_dual_read_test.dart`.
+- [ ] H.2 **LWW precision normalization (audit A3).** Drift persists DateTimes as Unix seconds;
+  backend records carry milliseconds. In `_mergeMoveRecordLww`, compare
+  `millisecondsSinceEpoch ~/ 1000` on both sides; document + test the tie policy (equal clocks →
+  remote wins). Red/green: failing test where a local edit at T.900 must NOT lose to a remote
+  record at T.500 of the same second.
+- [ ] H.3 **Per-record fault isolation (audit A4).** Wrap the merge loop body in try/catch: a
+  malformed record is skipped and counted, never aborts the batch (which today degrades moves to
+  the blind non-LWW Firestore `_mergeRemoteRecord` path). Return applied+failed counts; debugPrint
+  failures. Test: batch of [good, malformed, good] applies 2.
+- [ ] H.4 **Transactional merge (audit A5).** Wrap the per-pull merge loop in `db.transaction`.
+- [ ] H.5 **Codec extraction (audit A7).** Move `moveToSyncRecord`/`moveToSyncJson`/
+  `moveFromSyncRecord` from `backfill/sync_backfill_service.dart` into
+  `lib/core/sync/codecs/move_codec.dart`. Pure move, no behavior change; this is the layout
+  combos/reviews/decks will replicate. Keep the BigInt round-trip test with the codec.
+- [ ] H.6 **Fix `downloadVideos` silent >10 MB skip (pre-existing prod bug, audit B2).** Replace
+  `Reference.getData()` (default 10,485,760-byte cap, throws → swallowed by `catch (_)`) with
+  streamed `writeToFile()`; hoist `getApplicationDocumentsDirectory()` out of the loops; log the
+  catch. Red/green with a mocked >10 MB ref if practical, else prove via manual verification note.
+- [ ] H.7 **Test gaps (audit A6).** Add: backend `pull` throws → `pullMovesFromBackend` propagates
+  and partial application stops cleanly; equal-clock tie → remote wins.
+- [ ] H.8 **Lint posture.** Add to `analysis_options.yaml`: `discarded_futures`,
+  `avoid_void_async`, `avoid_slow_async_io`, `avoid_dynamic_calls`,
+  `cast_nullable_to_non_nullable`, `avoid_catches_without_on_clauses`, `only_throw_errors`,
+  `unnecessary_statements` (first two as `warning` in `analyzer.errors` until existing hits are
+  triaged). Triage every new hit — fix or explicitly `// ignore:` with a reason; drive to zero.
+- [ ] H.9 **Commit the in-flight dual-read work** (currently uncommitted: `providers.dart`,
+  `sync_service.dart`, `sync_backfill_service.dart`, dual-read test) folded with H.1–H.4 so the
+  template lands correct in one atomic series. Document on `movesDualReadPrefKey` that enabling
+  requires dual-write (task 4.2) to be live first.
+
+## Phase 0: Provisioning (owner-run; executor supplies exact steps and stops)
+
+- [ ] 0.1 Create the Appwrite Cloud project (free tier; record current tier limits in the task
+  note). Capture `APPWRITE_ENDPOINT` / `APPWRITE_PROJECT_ID` / `APPWRITE_API_KEY` into gitignored
+  `.env.local` per the D2 block (self-host keys as empty placeholders alongside).
+- [ ] 0.2 Configure the Google OAuth2 provider in the Appwrite console: reuse/extend the existing
+  GCP OAuth clients (iOS + Web) with Appwrite's redirect URIs; register the Flutter callback
+  scheme (`appwrite-callback-<PROJECT_ID>`) in both iOS plists (NOTE: debug builds use
+  `Info-DebugProfile.plist`) and AndroidManifest.
+- [ ] 0.3 Install/verify the Appwrite CLI; `appwrite init` against the project so schema and
+  Functions deploy headlessly from the repo (`appwrite/` config directory, committed; no secrets).
+- [ ] 0.4 Decommission the unused Convex Cloud project (`brilliant-mongoose-46`) and remove
+  `CONVEX_URL`/`CONVEX_SITE_URL` from `.env.local`. Nothing was deployed; nothing to migrate.
+
+## Phase 1: Appwrite schema + server functions (additive; shadow only)
+
+- [ ] 1.1 Author the database schema (Appwrite CLI config, committed): tables mirroring the
+  Convex schema's envelope — `moves`, `combos`, `comboMoves`, `reviewEvents` (append-only),
+  `fsrsCards` (derived), `decks`, `deckMoves`, plus `legacyIdentities` (D3) and `tombstones`.
+  Every descriptive table carries: local-row `id`, `userId`, `updatedAt` (ms since epoch, int),
+  `clientOpId`, payload JSON, video-pointer fields only (Drive file id + content hash — never
+  bytes). Row-level permissions: owner-only read/write via user role. Indexes on
+  `(userId, updatedAt)` per table.
+- [ ] 1.2 Implement the **`sync-push` Function (Dart runtime)**: accepts a batched
+  upserts+tombstones payload, enforces server-side LWW per record (skip if stored `updatedAt` is
+  strictly newer), enforces `clientOpId` idempotency (replay never double-applies), writes
+  tombstones instead of deletes, rejects `fsrsCard` pushes and `reviewEvent` deletes. Port the
+  semantics of `convex/sync.ts` exactly; parity-test against the same fixtures the Convex unit
+  tests used.
+- [ ] 1.3 Implement the **`sync-pull` Function**: returns upserts + tombstones changed since the
+  provided cursor for one entity type, plus a **server-time high-water cursor** (D9/H.1 depends
+  on this shape).
+- [ ] 1.4 Implement **`reviews-append`** (idempotent append-only event ingestion) and the
+  **FSRS derive Function on the Dart runtime importing `fsrs: ^2.0.1`** — reduce a
+  (entityId, entityType)'s event log to card state, matching the client's scheduler math.
+  Executor benchmarks event-triggered vs pull-time derivation and implements the simpler one that
+  satisfies "clients pull, never push, fsrsCard". Include the UTC + State-enum gotchas from repo
+  memory (learning=1; DB uses 0 as custom "new").
+- [ ] 1.5 Deploy schema + Functions via CLI to the Cloud project; smoke-test each Function with
+  curl/CLI fixtures. Owner-gated only if a key is missing.
+
+## Phase 2: AppwriteSyncBackend behind the existing seam (additive; no caller wired)
+
+- [ ] 2.1 `lib/core/sync/backends/appwrite_transport.dart`: seam interface + typed
+  `AppwriteException` wrapper mirroring `ConvexTransport`'s shape (auth header injection,
+  Function-execution call, JSON decode).
+- [ ] 2.2 `lib/core/sync/backends/appwrite_sync_backend.dart`: maps the `SyncBackend` contract
+  onto `sync-push`/`sync-pull`/`reviews-append`/fsrs pulls. `subscribe` uses **Appwrite Realtime
+  channels** (row-level events per table) with a documented poll fallback; every loop iteration
+  must observe stream cancellation (audit B1 — do NOT replicate the Convex poller leak; test
+  cancellation stops all I/O).
+- [ ] 2.3 Port the 9 Convex transport marshalling tests to the Appwrite backend (same fixtures,
+  same round-trip guarantees incl. BigInt→string, DateTime→ms). This is the parity gate.
+- [ ] 2.4 **Delete** `convex/`, the three Convex Dart files, and their tests in the same commit
+  that lands 2.3 green (git history preserves them). Update `providers.dart`'s seam comment to
+  name `AppwriteSyncBackend` + env plumbing (`--dart-define`) instead.
+
+## Phase 3: Unified identity (Appwrite Account everywhere; Firebase Auth untouched until Phase 5)
+
+- [ ] 3.1 `lib/core/services/appwrite_auth_service.dart`: OAuth2 session create/refresh/logout,
+  current-user stream, exposed via Riverpod. Verify SDK call shapes against pub.dev `appwrite`
+  docs at implementation time. Session persistence across app restarts proven by test/manual note.
+- [ ] 3.2 **Login screen (Flutter)**: match the app design system (`AppColors`/`AppSpacing`/
+  `AppTypography`, 8pt grid) — app mark, one "Continue with Google" action, error/retry states,
+  loading state; no additional providers. Gate: analyzer clean + widget test for the three states.
+- [ ] 3.3 Auth wiring: app requires an Appwrite session; `google_sign_in` demoted to Drive-token
+  minting only (its identity role removed). Existing users must experience this as a single
+  familiar Google consent, not a new account.
+- [ ] 3.4 `legacyIdentities` claim flow (D3): on first Appwrite login, map Firebase uid ↔ Appwrite
+  userId via verified Google email; all backend reads/writes key on Appwrite userId; backfill
+  (4.1) stamps records through this map. Test: same Google account on two installs resolves to one
+  Appwrite identity and sees one dataset.
+- [ ] 3.5 Web (`web-mirror/`): replace Firebase auth with Appwrite web SDK OAuth login, requesting
+  the Drive readonly scope at session creation; store nothing beyond the Appwrite session; Drive
+  playback uses the session's provider access token (verify current API shape in docs). Retire the
+  Firebase web config.
+
+## Phase 4: Strangler-fig per entity (backfill → dual-WRITE → dual-read → verify → cut; D8 order)
+
+- [ ] 4.1 `moves` backfill → Appwrite shadow using the existing `SyncBackfillService` +
+  `move_codec` against `AppwriteSyncBackend`. Re-run the byte-identical local-snapshot proof.
+  Run against a copy of real data first (owner-gated).
+- [ ] 4.2 `moves` **dual-write**: every local flush pushes to Firestore AND Appwrite
+  (idempotent via `clientOpId`; failures logged, never block the Firestore path). Pref-gated
+  (`sync.moves.dualWrite.enabled`). This precedes any read cutover (audit A1).
+- [ ] 4.3 `moves` **dual-read** live: enable the hardened `pullMovesFromBackend` path
+  (H.1–H.4) with Appwrite first / Firestore fallback. Soak with both prefs on; verify two-way
+  reconcile on real data across two devices; then cut reads over (Firestore moves reads skipped).
+  Rollback at any point = flip prefs off.
+- [ ] 4.4 `combos` + `combo_moves`: add their `updatedAt` LWW clocks (additive schema migration,
+  backfilled from `created_at`, mirroring v23), codecs, then 4.1→4.3 for the pair.
+- [ ] 4.5 `reviews` → append-only `reviewEvents` (idempotent `clientOpId`); dual-write → verify →
+  cut. Reviews never LWW-merge; they only append.
+- [ ] 4.6 `fsrs_cards`: derived server-side (1.4). Verify derived state matches local scheduler
+  output on a copy of real data (tolerance: exact — same package, same math); then clients pull
+  cards from Appwrite. Never pushed.
+- [ ] 4.7 `decks` + `deck_moves`: clocks + codecs + 4.1→4.3.
+- [ ] 4.8 **Tombstones end-to-end**: delete on device A → tombstone in Appwrite → device B hides
+  the row locally without hard-deleting videos/rows; web studio DELETE=TOMBSTONE verified against
+  the same table. Only after this task may any cutover be called complete.
+
+## Phase 5: Retire Firestore + Firebase Auth; safety nets; self-host runbook
+
+- [ ] 5.1 Remove Firestore metadata read/write paths (all entities green + soaked). Firebase
+  Storage video-download path (H.6) remains until the video plane no longer references it.
+- [ ] 5.2 Retire Firebase Auth (identity fully on Appwrite since Phase 3; this removes the dead
+  dependency). App builds without `firebase_auth`/`cloud_firestore`.
+- [ ] 5.3 Periodic **JSON export of all metadata to the user's Drive** (data-ownership safety
+  net): all entities + tombstones, versioned schema, restorable; scheduled + manual trigger.
+- [ ] 5.4 **Self-host cutover runbook** (`DOCS/appwrite-selfhost.md`): Hetzner + Docker Compose
+  install, Appwrite cloud→self migration procedure, `mariadb-dump` + offsite backup schedule,
+  restore drill checklist, `.env` swap. Document-only; no provisioning yet.
+
+## Phase 6: Web authoring studio on the new substrate (after Flutter cutover; owner priority order)
+
+> Capabilities per `add-web-authoring-and-lifecycle-studio` (FULL-BIDIRECTIONAL-FIRST,
+> DELETE=TOMBSTONE, combo+set builders) — retargeted onto Appwrite, not respecified. Executor
+> reads that change's specs before each task.
+
+- [ ] 6.1 Re-platform `web-mirror/` data layer: manifest-reader retained for Drive video
+  discovery; metadata now read from Appwrite tables (user-scoped); Realtime subscription updates
+  views live. Phase-0-of-studio goal honored: **show all videos**, with locality badges
+  (device-only videos visibly absent-but-listed via metadata).
+- [ ] 6.2 Library views: moves + combos browse/search/filter, video playback via Drive provider
+  token, FSRS/stats read views.
+- [ ] 6.3 Write path: metadata edit + tombstone-delete from web through the same `sync-push`
+  Function (same LWW, same `clientOpId` idempotency); mobile sees web edits via pull/Realtime,
+  web sees mobile edits live. This is the bidirectional proof.
+- [ ] 6.4 Combo builder + set builder per the studio spec; move lifecycle management.
+- [ ] 6.5 Web quality gate: `next lint` + `vitest` green; Playwright smoke E2E (login → browse →
+  edit → tombstone → live update on second session); oxlint pass per repo standard.
+
+## Phase 7: Post-launch, flagged (do not start before Phase 6 ships)
+
+- [ ] 7.1 Appwrite Storage as an **additional** sink via `CloudProvider` fan-out: thumbnails/
+  preview stills first; evaluate full-video mirroring only on real demand + cost check (D4).
+- [ ] 7.2 Video-locality UI in Flutter (badge + filter for device-only/cloud/both) matching 6.1's
+  web treatment.
+- [ ] 7.3 Self-host warm standby on Hetzner (D2's rejected-for-day-1 option, revisited).
+
+## Validation
+
+- [ ] V.1 Phase H red/green suite green; all backfill snapshot proofs byte-identical; parity
+  tests (2.3) green; identity claim-flow test green.
+- [ ] V.2 `flutter analyze` clean (with H.8 rules), `flutter test` green, iOS + Android builds;
+  `web-mirror` lint + tests green.
+- [ ] V.3 Manual soak: edit on phone → web updates live; edit on web → phone updates on pull;
+  offline edits flush idempotently on reconnect; tombstone crosses without data loss; kill-switch
+  rollback restores Firestore-only behavior byte-identically.
+- [ ] V.4 `openspec validate migrate-canonical-backend-to-appwrite --strict --no-interactive`
+  passes; `add-convex-sync-backend` archived as superseded.
