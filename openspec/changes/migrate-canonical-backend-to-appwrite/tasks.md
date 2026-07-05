@@ -9,39 +9,49 @@
 
 ## Phase H: Harden the migration template (no Appwrite needed; do FIRST; audit 2026-07-05)
 
-- [ ] H.1 **Dedicated backend pull cursor (audit A2).** In `SyncService.pullMovesFromBackend`,
+> DONE 2026-07-05 on branch `phase-h-hardening` (commit 8e301a1). `flutter analyze`
+> 0/0/0 with all H.8 rules on; sync suite 30/30 green; the 15 pre-existing
+> full-suite failures verified unchanged against a stashed baseline. **Deviations:**
+> H.2 tie policy is **local-wins** (a remote must be a strictly-newer whole second),
+> resolving an internal contradiction between the task's parenthetical and its own
+> red/green test — the red/green won. H.6 verified by inspection (no DI seam on
+> `FirebaseStorage.instance` for a unit test). H.8 done as chosen: full repo-wide
+> triage to zero (bare `catch` → `on Object catch`; async-stat / fire-and-forget →
+> documented `ignore_for_file`; small rules real-fixed).
+
+- [x] H.1 **Dedicated backend pull cursor (audit A2).** In `SyncService.pullMovesFromBackend`,
   persist `delta.cursor` to a new pref (`sync.moves.backend.cursor`) and pass it as `since` on
   the next pull; never derive the backend `since` from the shared Firestore `last_sync_at`.
   Red/green: test that (a) the cursor advances from `SyncDelta.cursor`, (b) disabling dual-read
   then re-enabling re-pulls from the backend cursor, not the Firestore clock, (c) a null cursor
   falls back to full pull. Files: `lib/core/services/sync_service.dart`,
   `test/core/services/sync_service_dual_read_test.dart`.
-- [ ] H.2 **LWW precision normalization (audit A3).** Drift persists DateTimes as Unix seconds;
+- [x] H.2 **LWW precision normalization (audit A3).** Drift persists DateTimes as Unix seconds;
   backend records carry milliseconds. In `_mergeMoveRecordLww`, compare
   `millisecondsSinceEpoch ~/ 1000` on both sides; document + test the tie policy (equal clocks →
   remote wins). Red/green: failing test where a local edit at T.900 must NOT lose to a remote
   record at T.500 of the same second.
-- [ ] H.3 **Per-record fault isolation (audit A4).** Wrap the merge loop body in try/catch: a
+- [x] H.3 **Per-record fault isolation (audit A4).** Wrap the merge loop body in try/catch: a
   malformed record is skipped and counted, never aborts the batch (which today degrades moves to
   the blind non-LWW Firestore `_mergeRemoteRecord` path). Return applied+failed counts; debugPrint
   failures. Test: batch of [good, malformed, good] applies 2.
-- [ ] H.4 **Transactional merge (audit A5).** Wrap the per-pull merge loop in `db.transaction`.
-- [ ] H.5 **Codec extraction (audit A7).** Move `moveToSyncRecord`/`moveToSyncJson`/
+- [x] H.4 **Transactional merge (audit A5).** Wrap the per-pull merge loop in `db.transaction`.
+- [x] H.5 **Codec extraction (audit A7).** Move `moveToSyncRecord`/`moveToSyncJson`/
   `moveFromSyncRecord` from `backfill/sync_backfill_service.dart` into
   `lib/core/sync/codecs/move_codec.dart`. Pure move, no behavior change; this is the layout
   combos/reviews/decks will replicate. Keep the BigInt round-trip test with the codec.
-- [ ] H.6 **Fix `downloadVideos` silent >10 MB skip (pre-existing prod bug, audit B2).** Replace
+- [x] H.6 **Fix `downloadVideos` silent >10 MB skip (pre-existing prod bug, audit B2).** Replace
   `Reference.getData()` (default 10,485,760-byte cap, throws → swallowed by `catch (_)`) with
   streamed `writeToFile()`; hoist `getApplicationDocumentsDirectory()` out of the loops; log the
   catch. Red/green with a mocked >10 MB ref if practical, else prove via manual verification note.
-- [ ] H.7 **Test gaps (audit A6).** Add: backend `pull` throws → `pullMovesFromBackend` propagates
+- [x] H.7 **Test gaps (audit A6).** Add: backend `pull` throws → `pullMovesFromBackend` propagates
   and partial application stops cleanly; equal-clock tie → remote wins.
-- [ ] H.8 **Lint posture.** Add to `analysis_options.yaml`: `discarded_futures`,
+- [x] H.8 **Lint posture.** Add to `analysis_options.yaml`: `discarded_futures`,
   `avoid_void_async`, `avoid_slow_async_io`, `avoid_dynamic_calls`,
   `cast_nullable_to_non_nullable`, `avoid_catches_without_on_clauses`, `only_throw_errors`,
   `unnecessary_statements` (first two as `warning` in `analyzer.errors` until existing hits are
   triaged). Triage every new hit — fix or explicitly `// ignore:` with a reason; drive to zero.
-- [ ] H.9 **Commit the in-flight dual-read work** (currently uncommitted: `providers.dart`,
+- [x] H.9 **Commit the in-flight dual-read work** (currently uncommitted: `providers.dart`,
   `sync_service.dart`, `sync_backfill_service.dart`, dual-read test) folded with H.1–H.4 so the
   template lands correct in one atomic series. Document on `movesDualReadPrefKey` that enabling
   requires dual-write (task 4.2) to be live first.
