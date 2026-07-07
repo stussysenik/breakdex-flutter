@@ -1,8 +1,81 @@
 # Breakdex — Roadmap & Backlog
 
-> Single source of truth for the work-in-flight. Captures decisions, what already
-> exists in the code, the remaining delta, and a recommended sequence toward launch.
-> Last consolidated: 2026-06-16.
+> **The single roadmap.** (`docs/ROADMAP.MD` and `docs/PROGRESS.MD` were folded in here and
+> removed, 2026-07-06.) Captures decisions, what already exists in the code, the remaining
+> delta, and a recommended sequence toward launch.
+> Last consolidated: 2026-07-06.
+
+> ⚠️ **Backend decision updated (2026-07-05).** The "Firebase (Firestore)" rows in the
+> LOCKED table and workstreams below are **superseded**. The canonical backend is now
+> **Appwrite** (open-source, self-hostable; decided after grilling, reversal was free —
+> nothing was deployed). The provider-agnostic `SyncBackend` contract, LWW clock,
+> non-destructive backfill, and dual-read cutover all carry over. See the root `CLAUDE.md`
+> and `openspec/changes/migrate-canonical-backend-to-appwrite`. Read anything below that
+> says "Firestore" as "the canonical sync backend, now Appwrite."
+
+---
+
+## Backlog — OpenSpec change order (D8, canonical)
+
+Priority order for pending OpenSpec changes, top first. This is the authoritative sequencing
+(align-cross-client-foundations D8); the risk-ordered workstream narrative further down is the
+older intra-app view and is kept for context.
+
+1. **`migrate-canonical-backend-to-appwrite`** — the backend spine. Phase H done
+   (`phase-h-hardening`); **Phase 0 provisioning is NEXT and owner-gated** (Appwrite Cloud
+   project + Google OAuth).
+2. **`add-web-authoring-and-lifecycle-studio`** — web = trustworthy system-of-record +
+   authoring studio; targeted by Appwrite Phase 6.
+3. **`evolve-web-mirror-to-crud-platform`** — ⚑ **FLAG (do not decide unilaterally):** likely
+   superseded by the studio spec above; needs an explicit supersession ruling from the owner
+   before it is either archived or re-scoped as the studio's substrate.
+4. **`align-cross-client-foundations`** — this change (gap-filler: multi-user sync model,
+   security posture, tokens, notes dirty-guard, web state machines, ledger hygiene). Wave 1
+   lands now with no Appwrite dependency; Waves 2–3 ride Appwrite Phases 4/6.
+5. Nearly-done finishing passes: `foundation-data-resilience` (59/64),
+   `tighten-combo-journey-and-review-polish` (33/36), `repo-organization-and-readme-refresh`
+   (12/15), `add-historical-photos-bootstrap` (7/9), `add-web-mirror-player` (19/26).
+6. **`state-machine-crud`** — kept open as the tracker for genuinely unshipped residual work
+   (TrashMachine, MoveListMachine, AppMachine, notes/log overlays); the `Machine<S,E>`
+   framework + move-detail vertical already shipped (see its `tasks.md` Residual header).
+7. Everything else parked (labs, provenance/beam ingestion, research workbench, photo archive
+   recovery, etc.).
+
+**Recently reconciled (2026-07-06 ledger audit):** archived `add-convex-sync-backend`
+(superseded by Appwrite), `add-discovery-graph-interface` (26/26 shipped), and
+`add-silent-video-mode-and-accessible-drill-launcher` (duplicate of the 2026-06-16
+silent-playback change). `add-quiet-playback-and-senior-drill-ui` re-scoped to its unshipped
+settings-dedup Phase 4 only.
+
+---
+
+## Product steering (folded from docs/ROADMAP.MD + docs/PROGRESS.MD, 2026-07-06)
+
+Product-lane view — what to stabilize now, what expands the practice loop next, what is
+deferred. (Backend-sync lanes now mean **Appwrite**, per the banner above.)
+
+| Horizon | Lane | Goal | Status |
+| --- | --- | --- | --- |
+| Now | Review-loop clarity | Calmer, more controllable, more trustworthy sessions. | Active |
+| Now | Progress ergonomics | Parent-first navigation + immediate graph entry; less random analytics. | Active |
+| Now | Flow truthfulness | Honest move-first graph before richer entities. | Active |
+| Now | Native media reliability | Keep import/album/export stable on iOS. | Active |
+| Next | Combo & set graphing | Graph beyond move-only nodes without overstating what is live. | Planned |
+| Next | Planning surfaces | Make Lab / sprint tools genuinely useful prep boards. | Planned |
+| Next | Stronger analytics | Calendar, heat-map, retention around real coaching decisions. | Planned |
+| Next | Sync hardening | Tighten migration, conflict, cloud consistency (Appwrite). | Planned |
+| Later | Cross-platform parity | Keep iOS quality while validating broader device support. | Deferred |
+| Later | Research feedback loop | Feed scientific-workbench findings back into scheduling. | Ongoing |
+| Later | Coach & team workflows | Shared practice intelligence after the solo loop is stable. | Deferred |
+
+**Current product shape:** Arsenal (moves/combos/source video), Review (FSRS spaced
+repetition), Flow (move-transition graph + set building), Stats (review history → progress
+signals), Settings (theme/color/sync/export). Active WIP: Progress (parent-first + secondary
+superfan analytics), Lab (marked unfinished in nav), Flow (honest move-first graph), Review
+(instrument-panel controls, color-state customization, quieter playback tightening).
+
+**Release snapshot:** `v1.3.0` (`1.3.0+5`), released 2026-04-28. Release/provenance metadata
+is generated by `scripts/update_release_metadata.cjs`.
 
 ---
 

@@ -1,3 +1,11 @@
+> **SUPERSEDED (2026-07-06).** Convex is no longer the canonical backend. This change is
+> superseded by **`migrate-canonical-backend-to-appwrite`** (decided 2026-07-05 after
+> grilling; reversal was free because nothing was deployed). The provider-agnostic
+> `SyncBackend` contract, the LWW clock, the non-destructive backfill, and the dual-read
+> cutover posture all **carry over** to the Appwrite spec — only the concrete backend
+> implementation changed. Archived unshipped (specs not applied to main). See
+> `openspec/changes/migrate-canonical-backend-to-appwrite`.
+
 # Adopt Convex as the Canonical Backend via a Provider-Agnostic SyncBackend
 
 ## Summary

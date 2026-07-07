@@ -1,3 +1,16 @@
+> **RE-SCOPED (2026-07-06 audit).** The three product capabilities in this change — quiet
+> playback (`video_player_widget.dart` `mixWithOthers`/`setVolume(0)`), the count-badge
+> replacing progress dots (`review_position_badge.dart`), and the senior-friendly drill
+> launcher (`mastery_prescreen.dart`) — **already shipped** via the archived
+> `2026-06-16-add-silent-playback-and-accessible-review-launcher`. The sibling change
+> `add-silent-video-mode-and-accessible-drill-launcher` is a pure duplicate and is archived.
+> **The only genuinely unshipped work here is Phase 4 (Settings Cleanup):** consolidate the
+> separate "Quiet Mode" + "Review View Composer" settings panels into one, and delete the
+> **dead-duplicate** `silentPracticePlaybackProvider` toggle (the video wrapper reads only
+> `quietModeEnabledProvider`; the second provider is not wired into playback). Rescope this
+> change to that settings-dedup cleanup, or drop it. Kept OPEN (not archived) so the dedup
+> is tracked.
+
 # Add Quiet Playback And Senior-Friendly Drill UI
 
 ## Summary

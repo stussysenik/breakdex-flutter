@@ -75,7 +75,7 @@ Project-based training organization. Track sets, milestones, and daily practice 
 Card counts by learning state, response quality distribution, timeline history, and retention curves. Calendar and heat-map planning surfaces.
 
 ### Sync
-Supabase-powered cloud backup with connectivity-aware sync. Asset manifest tracking, integrity verification, and offline-first operation.
+Cloud backup via a provider-agnostic `SyncBackend` contract with offline-first operation, connectivity-aware sync, and record-level LWW reconciliation. Backend direction is **Appwrite** (open-source, self-hostable) — the sync layer is additive over local-first operation.
 
 ### Battle
 Head-to-head practice mode for comparing moves and combos side by side.
@@ -206,25 +206,21 @@ This layered cleanup ensures the filesystem never accumulates ghost directories.
 
 **Known gap:** No batch "export all to Photos" exists. Currently one-at-a-time only.
 
-### Architecture & The Progression of Ideas
+### Architecture
 
-As Breakdex grew in complexity (spanning local SQLite storage, native iOS Swift bridging, FSRS spaced-repetition, and cloud backup orchestration), we hit the limits of standard Flutter patterns. Implicit `try/catch` exceptions were leading to unpredictable edge cases, and our background tasks were becoming difficult to trace. 
-
-To solve this and guarantee mathematical safety, we evolved our tooling. We drew heavy inspiration from the bleeding-edge modern web ecosystem (specifically the rigorous typings of **TypeScript, Effect.ts, and XState**) and mapped those concepts natively to Dart. 
-
-The application now strictly adheres to **CLEAN Architecture** principles powered by a functional, state-machine driven stack:
+Breakdex follows **CLEAN Architecture** principles with a local-first, state-machine-driven stack:
 
 | Paradigm | Technology | Purpose |
 |-------|-----------|---------|
-| **Domain** | `freezed` (Algebraic Data Types) | Defines pure entities and strict `Failure` hierarchies. No side-effects exist here. |
-| **Application** | `flutter_bloc` + `bloc_state_machine` | Replicates **XState**. We use strict Finite State Machines (FSMs) to orchestrate business logic. Impossible states are made impossible. |
-| **Infrastructure** | `fpdart` (`TaskEither`) | Replicates **Effect.ts**. Wraps all Firebase, Drift, and Native calls into pure `TaskEither`s. Errors are explicitly declared in the return type, forcing the caller to handle them via `.match()`. |
-| **Presentation** | `mix` + `riverpod` | "Dumb" UI layer. Applies **CVA (Class Variance Authority)** style variant styling via `mix` and merely renders current FSM states. |
-| **Storage** | Drift (SQLite) | Versioned local-first data layer. |
-| **Sync** | Supabase | Cloud backup with connectivity-aware sync engine. |
+| **Domain** | `freezed` (Algebraic Data Types) | Pure entities and strict `Failure` hierarchies — no side effects. |
+| **Application** | `Machine<S,E>` (custom sealed-class framework) + `flutter_bloc` (legacy) | State machines orchestrate business logic; impossible states are made impossible at the type level. |
+| **Infrastructure** | `fpdart` (`TaskEither`) | Wraps I/O (Drift, platform channels, network) into pure `TaskEither`s; errors declared in return types. |
+| **Presentation** | `mix` + `flutter_riverpod` | "Dumb" UI — renders current state; applies CVA-style variant styling via `mix`. |
+| **Storage** | Drift (SQLite) | Versioned local-first data layer — the source of truth. |
+| **Sync** | Appwrite (direction; provider-agnostic `SyncBackend` contract) | Additive cloud sync over local-first; LWW + tombstones + dirty-guard. |
 | **Scheduling** | FSRS 2.0 | Spaced-repetition algorithm. |
 
-This progression from imperative code to functional purity means that our tests run with 100% confidence, and our core algorithms (like syncing and file orchestration) are structurally immune to unhandled crashes.
+**Web mirror** (`web-mirror/`): Next.js 15 app with XState v5 machines mirroring their Flutter counterparts 1:1. Not yet wired to production data.
 
 ---
 

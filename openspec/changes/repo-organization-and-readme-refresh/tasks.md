@@ -9,9 +9,9 @@
 - [x] Remove stale `scripts/science_doctor.sh`
 - [x] Remove `science:*` scripts from `package.json`
 - [x] Update `.maestro/review-launcher-design.yaml` screenshot reference
-- [ ] Remove `clojuredart/` — full ClojureDart project erroneously nested in Flutter repo
-- [ ] Remove `openspec/changes/add-clojuredart-edn-hiccup-design-system/` — stale migration proposal
-- [ ] Reorganize README.md from first principles:
+- [x] Remove `clojuredart/` — full ClojureDart project erroneously nested in Flutter repo
+- [x] Remove `openspec/changes/add-clojuredart-edn-hiccup-design-system/` — stale migration proposal (already removed prior; kept openspec content per contract)
+- [x] Reorganize README.md from first principles:
    - Flowdeck CLI commands (`flowdeck run`, `flowdeck test`, `flowdeck simulator` for iOS platform dev)
    - Flutter release mode commands (`flutter run --release`, `flutter build apk --release`, `flutter build ios --release`, `flutter build appbundle --release`)
    - Reorder sections: Quick Start → Features → Screenshots → Architecture → Development → Release → License
