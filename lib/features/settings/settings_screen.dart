@@ -27,6 +27,7 @@ import '../../core/utils/share_sheet.dart';
 import 'widgets/accent_color_section.dart';
 import 'widgets/rating_colors_section.dart';
 import 'widgets/review_card_display_section.dart';
+import 'widgets/review_fill_color_section.dart';
 import 'widgets/review_states_section.dart';
 import '../../core/services/stats_export_service.dart';
 import '../../shared/widgets/action_tile.dart';
@@ -296,6 +297,20 @@ class SettingsScreen extends ConsumerWidget {
                                   child: const Text('Reset'),
                                 ),
                                 child: const RatingColorsSection(),
+                              ),
+                              const SizedBox(height: AppSpacing.md),
+                              _SettingsSubPanel(
+                                title: 'Review Card Fill',
+                                action: TextButton(
+                                  onPressed: () async {
+                                    await HapticFeedback.mediumImpact();
+                                    await ref
+                                        .read(reviewFillColorProvider.notifier)
+                                        .reset();
+                                  },
+                                  child: const Text('Reset'),
+                                ),
+                                child: const ReviewFillColorSection(),
                               ),
                             ],
                           ),

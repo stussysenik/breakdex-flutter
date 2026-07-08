@@ -97,18 +97,40 @@ Decisions (owner, 2026-07-08):
 
 ## Phase 5: Review WYSIWYG
 
-- [ ] 5.1 Re-layout the review card as a fixed viewport budget (media, prompt, rating row);
-  long notes collapse behind an expand affordance; no default scroll view.
-- [ ] 5.2 Move review surfaces to `AppRadius.xxs`; raw radii remain only on thin bars.
-- [ ] 5.3 Wire card fill to the arbitrary-color mechanism from
-  `clarify-review-loop-and-media-cleanup` (do not duplicate the color editor).
-- [ ] 5.4 Tests: no-scroll on reference viewports (small phone + tablet), overflow affordance,
-  live fill application.
+Decisions (owner, 2026-07-08):
+- **The dependency already ships.** `clarify-review-loop-and-media-cleanup` task 3.1 ("reusable
+  arbitrary color editor") is ledger-drift — unchecked but already built as
+  `showColorEditorDialog` (hex + HSV spectrum + RGB + opacity + presets) in
+  `lib/shared/widgets/color_setting_tile.dart`, already used by accent color. Phase 5.3
+  **reuses** it (no duplication), satisfying the spec's "mechanism defined in clarify".
+- **"Card fill" = the Instax frame color** (was a hardcoded `Colors.white`). It's a Settings
+  preference, not per-move data → **no schema change**. New nullable `reviewFillColorProvider`
+  (null = default white), persisted as ARGB under `review_fill_color`, watched by the card.
+- **No-scroll already held** — the card is `Expanded` video + min-size instrument panel, no
+  scroll view. The notes-overflow requirement is met by an additive collapsible notes reveal.
+
+- [x] 5.1 Verified the review card is a fixed viewport budget (no scroll view); added a
+  collapsed-by-default notes reveal to `InstrumentPanel` with a tap-to-expand affordance
+  (one line → full text), threaded via `ReviewCard.notes` (`item.move?.notes`; combo uses the
+  active step's notes). Empty notes render nothing.
+- [x] 5.2 Review card surfaces moved to `AppRadius.xxs` (frame `xs`→`xxs`; inner video raw
+  `2`→`xxs`).
+- [x] 5.3 Frame fill reads `reviewFillColorProvider` live (no restart); a new `ReviewFillColorSection`
+  in Settings (with Reset) reuses `showColorEditorDialog` rather than duplicating a picker.
+- [x] 5.4 Tests: `review_card_layout_test` (no `Scrollable` on small-phone + tablet viewports;
+  live fill applied from the persisted setting), `instrument_panel_notes_test` (collapsed →
+  expand affordance; empty = nothing), `review_fill_color_test` (persist/restart/reset). 9/9 green.
 
 ## Verification
 
-- [ ] V.1 `dart analyze` + `flutter test` green; goldens updated deliberately.
-- [ ] V.2 Patrol journey: open library → cycle 3 modes → pick device video already in
-  Breakdex → land on existing move → run one review card without scrolling (iOS + Android).
-- [ ] V.3 Token conformance: grep evidence that review radii and motion literals resolve from
-  tokens; TOKENS.md updated in the same commit as 1.1.
+- [x] V.1 `dart analyze` clean on all touched files. `flutter test`: every test for this change's
+  scope is green (Phases 2–5). The full suite has **pre-existing** failures in unrelated areas
+  (semantic video-path scheme, FSRS due-counts, renamed state labels, stats copy) — verified by
+  re-running with this change stashed: identical failures, so no regression introduced. No image
+  goldens exist in the repo; verification is via widget/unit tests (recorded per phase).
+- [ ] V.2 Patrol journey (open library → cycle 3 modes → pick device video already in Breakdex →
+  land on existing move → run one review card without scrolling; iOS + Android). **Deferred** —
+  requires real devices/simulators; cannot run headless. Owner to run before archiving.
+- [ ] V.3 Token conformance sweep + TOKENS.md sign-off (radii/motion literals resolve from tokens).
+  Review radii now resolve from `AppRadius.xxs` (5.2); full-repo grep + TOKENS.md is a Phase-1
+  (1.1) close-out item, tracked there.

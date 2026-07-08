@@ -32,6 +32,7 @@ class InstrumentPanel extends StatelessWidget {
     required this.state,
     required this.displaySettings,
     this.category,
+    this.notes,
     this.canEditState = true,
     this.showMetadata = true,
     this.onStatePillTap,
@@ -60,6 +61,11 @@ class InstrumentPanel extends StatelessWidget {
   /// Optional category label (e.g. "POWER MOVES"). Hidden when null or
   /// equal to `'default'` to avoid visual noise.
   final String? category;
+
+  /// Learner's own notes. Rendered collapsed (one line) behind an explicit
+  /// expand affordance so a long note never breaks the card's one-screen budget.
+  /// Empty/null renders nothing.
+  final String? notes;
 
   /// Whether the state pill is tappable (opens the state picker sheet).
   final bool canEditState;
@@ -124,13 +130,16 @@ class InstrumentPanel extends StatelessWidget {
     final showActiveStepLabel =
         _isCombo && displaySettings.showComboStepName && activeStep != null;
     final showPlaybackControls = displaySettings.showPlaybackControls;
+    final trimmedNotes = notes?.trim() ?? '';
+    final hasNotes = trimmedNotes.isNotEmpty;
 
     if (!(showTitle ||
         showState ||
         showCategory ||
         showComboTimeline ||
         showActiveStepLabel ||
-        showPlaybackControls)) {
+        showPlaybackControls ||
+        hasNotes)) {
       return const SizedBox.shrink();
     }
 
@@ -256,8 +265,71 @@ class InstrumentPanel extends StatelessWidget {
                   ],
                 ],
               ),
+
+            // ── Notes: collapsed by default, expand on demand ────────────
+            if (hasNotes) ...[
+              const SizedBox(height: AppSpacing.xs),
+              _CollapsibleNotes(notes: trimmedNotes),
+            ],
           ],
         ),
+      ),
+    );
+  }
+}
+
+/// A one-line notes preview with a tap-to-expand affordance. Collapsed by
+/// default so a long note never pushes the review card past one screen; the
+/// learner opts in to the full text. Keeps the card recall-first.
+class _CollapsibleNotes extends StatefulWidget {
+  const _CollapsibleNotes({required this.notes});
+
+  final String notes;
+
+  @override
+  State<_CollapsibleNotes> createState() => _CollapsibleNotesState();
+}
+
+class _CollapsibleNotesState extends State<_CollapsibleNotes> {
+  bool _expanded = false;
+
+  @override
+  Widget build(final BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTap: () {
+        HapticFeedback.selectionClick();
+        setState(() => _expanded = !_expanded);
+      },
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(
+            Icons.notes_rounded,
+            size: 14,
+            color: colorScheme.secondary.withValues(alpha: 0.7),
+          ),
+          const SizedBox(width: AppSpacing.xs),
+          Expanded(
+            child: Text(
+              widget.notes,
+              style: AppTypography.bodySmall.copyWith(
+                color: colorScheme.secondary,
+              ),
+              maxLines: _expanded ? null : 1,
+              overflow: _expanded ? null : TextOverflow.ellipsis,
+            ),
+          ),
+          const SizedBox(width: AppSpacing.xs),
+          Icon(
+            _expanded
+                ? Icons.expand_less_rounded
+                : Icons.expand_more_rounded,
+            size: 16,
+            color: colorScheme.secondary.withValues(alpha: 0.7),
+          ),
+        ],
       ),
     );
   }

@@ -179,6 +179,39 @@ class RatingColorsNotifier extends Notifier<RatingColors> {
   }
 }
 
+// ---------------------------------------------------------------------------
+// Review card fill — user-customizable Instax-frame color for the review card.
+// Nullable: null means "use the default frame" (classic white). Persisted as an
+// ARGB int under `review_fill_color`; the review card watches it so a change in
+// Settings applies live without a restart.
+// ---------------------------------------------------------------------------
+
+final reviewFillColorProvider =
+    NotifierProvider<ReviewFillColorNotifier, Color?>(
+      ReviewFillColorNotifier.new,
+    );
+
+class ReviewFillColorNotifier extends Notifier<Color?> {
+  static const _key = 'review_fill_color';
+
+  @override
+  Color? build() {
+    final prefs = ref.watch(sharedPreferencesProvider);
+    final value = prefs.getInt(_key);
+    return value != null ? Color(value) : null;
+  }
+
+  Future<void> set(final Color color) async {
+    await _writeColor(ref, _key, color);
+    state = color;
+  }
+
+  Future<void> reset() async {
+    await _removeColor(ref, _key);
+    state = null;
+  }
+}
+
 Color _readColor(final Ref ref, final String key, final Color fallback) {
   final prefs = ref.read(sharedPreferencesProvider);
   final value = prefs.getInt(key);

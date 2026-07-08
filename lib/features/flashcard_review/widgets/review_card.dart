@@ -26,6 +26,7 @@ class ReviewCard extends ConsumerWidget {
     this.videoPath,
     this.originalVideoName,
     this.contentHash,
+    this.notes,
     this.canEditState = true,
     this.onRepick,
     this.combo,
@@ -47,6 +48,10 @@ class ReviewCard extends ConsumerWidget {
   final String? videoPath;
   final String? originalVideoName;
   final String? contentHash;
+
+  /// Learner's own notes for the move (collapsed behind an expand affordance in
+  /// the instrument panel). For combos the active step's notes are used instead.
+  final String? notes;
   final bool canEditState;
   final VoidCallback onStatePillTap;
   final VoidCallback? onRepick;
@@ -99,14 +104,19 @@ class ReviewCard extends ConsumerWidget {
 
   @override
   Widget build(final BuildContext context, final WidgetRef ref) {
+    // Live-customizable frame fill (null → classic white), applied without restart.
+    final fill = ref.watch(reviewFillColorProvider) ?? Colors.white;
+
     if (combo == null) {
       final hasVideo = videoPath != null && videoPath!.trim().isNotEmpty;
       return _buildCard(
         context,
+        fill: fill,
         videoPath: hasVideo ? videoPath : null,
         originalVideoName: originalVideoName,
         title: title,
         category: category,
+        notes: notes,
       );
     }
 
@@ -128,10 +138,12 @@ class ReviewCard extends ConsumerWidget {
 
         return _buildCard(
           context,
+          fill: fill,
           videoPath: stepVideoPath,
           originalVideoName: currentStep?.originalVideoName,
           title: currentStep?.name ?? title,
           category: category ?? currentStep?.category,
+          notes: currentStep?.notes,
           comboMoves: comboMoves,
           activeComboStepIndex: safeIndex,
           activeStep: currentStep,
@@ -142,10 +154,12 @@ class ReviewCard extends ConsumerWidget {
 
   Widget _buildCard(
     final BuildContext context, {
+    required final Color fill,
     required final String? videoPath,
     required final String? originalVideoName,
     required final String title,
     required final String? category,
+    final String? notes,
     final List<ComboMoveWithDetail> comboMoves = const [],
     final int activeComboStepIndex = 0,
     final Move? activeStep,
@@ -164,8 +178,8 @@ class ReviewCard extends ConsumerWidget {
                 aspectRatio: 0.75, // Physical Instax Mini aspect ratio (3:4)
                 child: Container(
                   decoration: BoxDecoration(
-                    color: Colors.white, // Classic Instax Frame
-                    borderRadius: BorderRadius.circular(AppRadius.xs),
+                    color: fill, // Instax frame — user-customizable, default white
+                    borderRadius: BorderRadius.circular(AppRadius.xxs),
                     boxShadow: [
                       BoxShadow(
                         color: Colors.black.withValues(alpha: 0.12),
@@ -179,7 +193,7 @@ class ReviewCard extends ConsumerWidget {
                     clipBehavior: Clip.antiAlias,
                     decoration: BoxDecoration(
                       color: AppColors.darkFill,
-                      borderRadius: BorderRadius.circular(2),
+                      borderRadius: BorderRadius.circular(AppRadius.xxs),
                     ),
                     child: Stack(
                       children: [
@@ -293,6 +307,7 @@ class ReviewCard extends ConsumerWidget {
           state: state,
           displaySettings: displaySettings,
           category: category,
+          notes: notes,
           canEditState: canEditState,
           showMetadata: showMetadataPanel,
           onStatePillTap: onStatePillTap,

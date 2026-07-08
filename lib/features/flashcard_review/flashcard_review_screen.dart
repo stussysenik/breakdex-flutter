@@ -411,6 +411,7 @@ class _FlashcardReviewScreenState extends ConsumerState<FlashcardReviewScreen>
                       videoPath: item.videoPath,
                       originalVideoName: item.originalVideoName,
                       contentHash: item.move?.contentHash,
+                      notes: item.move?.notes,
                       canEditState: item.isMove,
                       combo: item.combo,
                       currentIndex: _currentIndex,
