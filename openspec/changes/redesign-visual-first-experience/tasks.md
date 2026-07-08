@@ -31,13 +31,25 @@ Ledger rule: tick each box in the same commit that lands the work.
 
 ## Phase 2: Media grid membership + 4-slot tile
 
-- [ ] 2.1 Membership lookup: index device-asset `contentHash` against moves (lazy per visible
-  tile, cached per sheet-open) in `metadata_video_picker_sheet.dart`.
-- [ ] 2.2 Rebuild `_VideoTile` as the 4-slot layout (thumbnail+duration, name, one secondary
-  fact, membership mark); missing facts omitted, never padded with text.
-- [ ] 2.3 Selecting an in-Breakdex tile offers "Open existing move" (route to move detail)
-  vs "Import again" — never a silent duplicate.
-- [ ] 2.4 Tests: membership match/miss, tile slot cap, duplicate-selection affordance.
+Decision (owner, 2026-07-08): **exact-identity membership only.** The spec's literal
+"`contentHash` per visible tile" is infeasible for the photo-library tab — a PHAsset has no
+file path, so hashing it means downloading the full video from iCloud per tile, and the source
+PHAsset id is never persisted on the move. So membership resolves by exact identity: managed
+tab by `managedAlbumAssetId`, app-storage tab by content hash of the local file, and
+camera-roll is an honest miss (unmarked) — never a false mark, never a byte download to test
+membership. Spec delta (`visual-first-surfaces`) reconciled to match.
+
+- [x] 2.1 Membership index: `MoveMembershipIndex` built once per sheet-open from
+  `MovesDao.getAll()` (keyed by `managedAlbumAssetId` + `contentHash`); local-file hashes
+  memoized per sheet-open in `metadata_video_picker_sheet.dart`.
+- [x] 2.2 Rebuilt `_VideoTile` as the 4-slot layout (thumbnail+duration badge, name, one
+  secondary fact via `formatTileSecondaryFact`, `bookmark_added_rounded` membership mark);
+  missing facts omitted, never padded with text.
+- [x] 2.3 Importing an in-Breakdex tile opens a choice sheet — "Open existing move" (routes to
+  `/breakdex/move/:id`) vs "Import again" — never a silent duplicate.
+- [x] 2.4 Tests: membership match/miss (`MoveMembershipIndex`), tile slot cap (fact helpers),
+  duplicate-selection affordance (managed asset → mark + choice sheet), honest photo-library
+  miss. 13/13 green.
 
 ## Phase 3: Add flow de-text
 

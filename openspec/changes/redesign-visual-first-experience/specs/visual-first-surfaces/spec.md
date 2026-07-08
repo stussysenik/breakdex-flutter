@@ -25,15 +25,26 @@ settings only.
 
 The media picker SHALL render one grid covering the whole device video library, and every
 tile SHALL carry exactly four information slots: thumbnail with duration badge, display name,
-one secondary fact (file size or capture date), and membership state. A video whose
-`contentHash` matches an existing move SHALL be visibly marked as already in Breakdex.
+one secondary fact (file size or capture date), and membership state. A video that resolves to
+an existing move by **exact identity** — a managed-album asset id, or a content-hash match on a
+locally-available file — SHALL be visibly marked as already in Breakdex. Membership is resolved
+from an index built once per picker-open. A camera-roll asset that exposes neither a stored
+identity nor a local path to hash is an honest miss (left unmarked), never a false mark — the
+picker never downloads bytes solely to test membership.
 
 #### Scenario: Device video already added
 
-- **GIVEN** a device video whose content hash matches an existing move
+- **GIVEN** a device video that resolves to an existing move by exact identity (managed-album
+  id, or a content-hash match on a local file)
 - **WHEN** the picker renders its tile
 - **THEN** the tile shows an "in Breakdex" membership mark
 - **AND** selecting it offers opening the existing move instead of silently creating a duplicate
+
+#### Scenario: Camera-roll video with no cheap identity is an honest miss
+
+- **GIVEN** a photo-library video with no managed-album id and no local path to hash
+- **WHEN** the picker renders its tile
+- **THEN** the tile is left unmarked rather than downloaded-and-hashed or falsely marked
 
 #### Scenario: Tile information is capped at four slots
 

@@ -8,13 +8,15 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
+import '../../core/database/database.dart';
 import '../../core/design/spacing.dart';
 import '../../core/design/typography.dart';
 import '../../core/providers.dart';
 import '../../core/services/video_service.dart';
-import '../../core/services/storage_action_machine.dart';
+import '../../core/services/storage_action_machine.dart' hide assetHashServiceProvider;
 import '../../core/services/video_path_resolver.dart';
 import '../../core/utils/app_clock.dart';
 import '../../core/utils/diagnostics.dart';
@@ -53,6 +55,12 @@ class _MetadataVideoPickerSheetState extends ConsumerState<MetadataVideoPickerSh
   String? _error;
 
   final Set<String> _selectedIds = {};
+
+  // Which device videos are already moves. Built once per sheet-open from the
+  // moves table; a best-effort overlay, so a DB hiccup leaves it empty rather
+  // than breaking the picker. Local-file hashes are memoized per sheet-open.
+  MoveMembershipIndex _membership = MoveMembershipIndex.empty;
+  final Map<String, String> _hashByPath = {};
 
   MetadataAsset? _importingAsset;
   String? _importError;
@@ -115,9 +123,48 @@ class _MetadataVideoPickerSheetState extends ConsumerState<MetadataVideoPickerSh
           _loading = false;
         });
       }
+      unawaited(_loadMembership());
     } on Object catch (e) {
       if (mounted) setState(() { _error = e.toString(); _loading = false; });
     }
+  }
+
+  /// Best-effort: build the membership index from the moves table. Never throws
+  /// into the picker — an unreadable DB just leaves every tile unmarked.
+  Future<void> _loadMembership() async {
+    try {
+      final moves = await ref.read(movesDaoProvider).getAll();
+      if (mounted) setState(() => _membership = MoveMembershipIndex.fromMoves(moves));
+    } on Object catch (_) {
+      // Overlay stays empty — the picker still imports.
+    }
+  }
+
+  /// SHA-256 of a local file, memoized per sheet-open. Photo-library assets
+  /// have no path, so they never reach here — an honest membership miss.
+  Future<String?> _contentHashForLocal(final String path) async {
+    final cached = _hashByPath[path];
+    if (cached != null) return cached;
+    try {
+      final hash = await ref.read(assetHashServiceProvider).computeHash(path);
+      _hashByPath[path] = hash;
+      return hash;
+    } on Object catch (_) {
+      return null;
+    }
+  }
+
+  /// The owning move id if [asset] is already in Breakdex, else null. Managed
+  /// assets match by exact PHAsset id (cheap); local files match by content
+  /// hash; photo-library assets never match (no path to hash).
+  Future<String?> _resolveMembership(final MetadataAsset asset) async {
+    final byManaged = _membership.memberMoveId(asset);
+    if (byManaged != null) return byManaged;
+    if (asset.isLocal) {
+      final hash = await _contentHashForLocal(asset.localIdentifier);
+      if (hash != null) return _membership.memberMoveId(asset, contentHash: hash);
+    }
+    return null;
   }
 
   Future<void> _loadMore() async {
@@ -222,13 +269,63 @@ class _MetadataVideoPickerSheetState extends ConsumerState<MetadataVideoPickerSh
 
   Future<void> _handleImport() async {
     if (_selectedIds.isEmpty) return;
-    
+
     final id = _selectedIds.first;
     final asset = _libraryAssets
         .followedBy(_managedAssets)
         .followedBy(_appAssets ?? [])
         .firstWhere((final a) => a.localIdentifier == id);
 
+    // Already-in-Breakdex videos never import silently: offer the existing move
+    // or a deliberate re-import (2.3). Photo-library assets resolve to null here
+    // and import straight through.
+    final memberMoveId = await _resolveMembership(asset);
+    if (!mounted) return;
+    if (memberMoveId != null) {
+      final choice = await _showMembershipChoice();
+      if (!mounted || choice == null) return;
+      if (choice == _MemberChoice.openExisting) {
+        final router = GoRouter.of(context);
+        Navigator.of(context).pop();
+        unawaited(router.push('/breakdex/move/$memberMoveId'));
+        return;
+      }
+      // _MemberChoice.importAgain falls through to a normal import.
+    }
+
+    await _performImport(asset);
+  }
+
+  Future<_MemberChoice?> _showMembershipChoice() {
+    return showModalBottomSheet<_MemberChoice>(
+      context: context,
+      builder: (final ctx) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const ListTile(
+              leading: Icon(Icons.video_library_rounded),
+              title: Text('Already in Breakdex'),
+              subtitle: Text('This video is already a move.'),
+            ),
+            const Divider(height: 1),
+            ListTile(
+              leading: const Icon(Icons.open_in_new_rounded),
+              title: const Text('Open existing move'),
+              onTap: () => Navigator.pop(ctx, _MemberChoice.openExisting),
+            ),
+            ListTile(
+              leading: const Icon(Icons.file_copy_rounded),
+              title: const Text('Import again'),
+              onTap: () => Navigator.pop(ctx, _MemberChoice.importAgain),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<void> _performImport(final MetadataAsset asset) async {
     setState(() {
       _importingAsset = asset;
       _importError = null;
@@ -465,6 +562,8 @@ class _MetadataVideoPickerSheetState extends ConsumerState<MetadataVideoPickerSh
         return _VideoTile(
           asset: asset,
           isSelected: isSelected,
+          membership: _membership,
+          hashResolver: _contentHashForLocal,
           onSelect: (final a, final _) => _toggleSelection(a.localIdentifier),
         );
       },
@@ -506,7 +605,9 @@ class _MetadataVideoPickerSheetState extends ConsumerState<MetadataVideoPickerSh
                   ),
                   const SizedBox(height: AppSpacing.xl),
                   ElevatedButton(
-                    onPressed: _handleImport,
+                    onPressed: _importingAsset != null
+                        ? () => _performImport(_importingAsset!)
+                        : null,
                     style: ElevatedButton.styleFrom(
                       backgroundColor: colorScheme.primary,
                       foregroundColor: colorScheme.onPrimary,
@@ -589,28 +690,27 @@ class _MetadataVideoPickerSheetState extends ConsumerState<MetadataVideoPickerSh
   }
 }
 
-/// "0:12 · 48 MB · Jun 8" — duration/size first (what distinguishes
-/// takes), date second. Unknown parts are simply omitted.
+/// Slot 1's `mm:ss` duration badge. Empty when unknown — the badge is then
+/// omitted rather than shown as `0:00`.
 @visibleForTesting
-String formatVideoFactsLine({
-  required final double durationSeconds,
-  final int? sizeBytes,
-  final DateTime? date,
-}) {
-  final parts = <String>[];
-  if (durationSeconds > 0) {
-    final mins = durationSeconds ~/ 60;
-    final secs = (durationSeconds % 60).round().toString().padLeft(2, '0');
-    parts.add('$mins:$secs');
-  }
+String formatDurationBadge(final double seconds) {
+  if (seconds <= 0) return '';
+  final mins = seconds ~/ 60;
+  final secs = (seconds % 60).round().toString().padLeft(2, '0');
+  return '$mins:$secs';
+}
+
+/// Slot 3's single secondary fact under the name — size preferred (it
+/// distinguishes takes), else capture date. Empty when neither is known: a
+/// missing fact is omitted, never padded with substitute text.
+@visibleForTesting
+String formatTileSecondaryFact({final int? sizeBytes, final DateTime? date}) {
   if (sizeBytes != null && sizeBytes > 0) {
     final mb = sizeBytes / (1024 * 1024);
-    parts.add(mb >= 100 ? '${mb.round()} MB' : '${mb.toStringAsFixed(1)} MB');
+    return mb >= 100 ? '${mb.round()} MB' : '${mb.toStringAsFixed(1)} MB';
   }
-  if (date != null) {
-    parts.add('${_monthNames[date.month - 1]} ${date.day}');
-  }
-  return parts.join(' · ');
+  if (date != null) return '${_monthNames[date.month - 1]} ${date.day}';
+  return '';
 }
 
 const _monthNames = [
@@ -618,14 +718,67 @@ const _monthNames = [
   'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
 ];
 
+/// The user's choice when a picked video already exists as a move.
+enum _MemberChoice { openExisting, importAgain }
+
+/// Exact-identity membership of a device asset against existing moves, built
+/// once per sheet-open. Two cheap keys only — the managed-album PHAsset id and
+/// the content hash. A camera-roll asset has no local path to hash and its
+/// source id is never persisted, so an unmatched photo-library tile is an
+/// honest miss, never a false "already in Breakdex" mark.
+@immutable
+class MoveMembershipIndex {
+  const MoveMembershipIndex({
+    required this.moveIdByManagedAssetId,
+    required this.moveIdByContentHash,
+  });
+
+  factory MoveMembershipIndex.fromMoves(final List<Move> moves) {
+    final byManaged = <String, String>{};
+    final byHash = <String, String>{};
+    for (final m in moves) {
+      final managed = m.managedAlbumAssetId;
+      if (managed != null && managed.isNotEmpty) byManaged[managed] = m.id;
+      final hash = m.contentHash;
+      if (hash != null && hash.isNotEmpty) byHash[hash] = m.id;
+    }
+    return MoveMembershipIndex(
+      moveIdByManagedAssetId: byManaged,
+      moveIdByContentHash: byHash,
+    );
+  }
+
+  static const empty = MoveMembershipIndex(
+    moveIdByManagedAssetId: <String, String>{},
+    moveIdByContentHash: <String, String>{},
+  );
+
+  final Map<String, String> moveIdByManagedAssetId;
+  final Map<String, String> moveIdByContentHash;
+
+  /// The owning move id if [asset] is already in Breakdex, else null.
+  /// [contentHash] is supplied only for local-file assets; photo-library
+  /// assets pass null and so can only match by managed-album id.
+  String? memberMoveId(final MetadataAsset asset, {final String? contentHash}) {
+    final byManaged = moveIdByManagedAssetId[asset.localIdentifier];
+    if (byManaged != null) return byManaged;
+    if (contentHash != null) return moveIdByContentHash[contentHash];
+    return null;
+  }
+}
+
 class _VideoTile extends ConsumerStatefulWidget {
   final MetadataAsset asset;
   final bool isSelected;
+  final MoveMembershipIndex membership;
+  final Future<String?> Function(String path) hashResolver;
   final void Function(MetadataAsset, Uint8List?) onSelect;
 
   const _VideoTile({
     required this.asset,
     required this.isSelected,
+    required this.membership,
+    required this.hashResolver,
     required this.onSelect,
   });
 
@@ -637,12 +790,50 @@ class _VideoTileState extends ConsumerState<_VideoTile> {
   Uint8List? _thumbnail;
   bool _loading = true;
   int? _fileSizeBytes;
+  String? _memberMoveId;
+  bool _localResolving = false;
 
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
     if (_thumbnail == null && _loading) _loadThumbnail();
     if (_fileSizeBytes == null && widget.asset.isLocal) _loadFileSize();
+    _resolveMembership();
+  }
+
+  @override
+  void didUpdateWidget(covariant final _VideoTile old) {
+    super.didUpdateWidget(old);
+    // The index loads a beat after the tiles first mount — re-resolve when it
+    // (or the asset) changes so a late-arriving match still marks the tile.
+    if (!identical(widget.membership, old.membership) ||
+        widget.asset.localIdentifier != old.asset.localIdentifier) {
+      _resolveMembership();
+    }
+  }
+
+  /// Managed assets match by exact id (synchronous); local files fall back to
+  /// a content-hash lookup; photo-library assets never match. Called only from
+  /// lifecycle hooks that a build always follows, so the managed path assigns
+  /// the field directly; the async hash path uses setState.
+  void _resolveMembership() {
+    final byManaged = widget.membership.memberMoveId(widget.asset);
+    if (byManaged != null) {
+      _memberMoveId = byManaged;
+      return;
+    }
+    if (widget.asset.isLocal && _memberMoveId == null && !_localResolving) {
+      _localResolving = true;
+      unawaited(_resolveLocalMembership());
+    }
+  }
+
+  Future<void> _resolveLocalMembership() async {
+    final hash = await widget.hashResolver(widget.asset.localIdentifier);
+    _localResolving = false;
+    if (hash == null || !mounted) return;
+    final id = widget.membership.memberMoveId(widget.asset, contentHash: hash);
+    if (id != null && mounted) setState(() => _memberMoveId = id);
   }
 
   Future<void> _loadFileSize() async {
@@ -654,8 +845,7 @@ class _VideoTileState extends ConsumerState<_VideoTile> {
     }
   }
 
-  String get _factsLine => formatVideoFactsLine(
-        durationSeconds: widget.asset.duration,
+  String get _secondaryFact => formatTileSecondaryFact(
         sizeBytes: _fileSizeBytes,
         date: widget.asset.creationDate,
       );
@@ -679,6 +869,7 @@ class _VideoTileState extends ConsumerState<_VideoTile> {
   @override
   Widget build(final BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
+    final durationBadge = formatDurationBadge(widget.asset.duration);
     return GestureDetector(
       onTap: () => widget.onSelect(widget.asset, _thumbnail),
       child: AnimatedContainer(
@@ -699,14 +890,57 @@ class _VideoTileState extends ConsumerState<_VideoTile> {
             else if (_loading) const Center(child: SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 1))),
             
             if (widget.isSelected) Container(color: colorScheme.primary.withValues(alpha: 0.2)),
-            
-            // Metadata Overlay
+
+            // Slot 4 — membership mark: already-in-Breakdex, top-left, tinted
+            // distinctly from the primary selection check so the two never read
+            // as one badge.
+            if (_memberMoveId != null)
+              Positioned(
+                top: 4, left: 4,
+                child: Semantics(
+                  label: 'Already in Breakdex',
+                  child: Container(
+                    padding: const EdgeInsets.all(3),
+                    decoration: BoxDecoration(
+                      color: colorScheme.tertiary,
+                      shape: BoxShape.circle,
+                    ),
+                    child: Icon(Icons.bookmark_added_rounded,
+                        size: 11, color: colorScheme.onTertiary),
+                  ),
+                ),
+              ),
+
+            // Slot 1 pair — duration badge riding the thumbnail, bottom-right.
+            if (durationBadge.isNotEmpty)
+              Positioned(
+                bottom: 4, right: 4,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
+                  decoration: BoxDecoration(
+                    color: Colors.black.withValues(alpha: 0.6),
+                    borderRadius: BorderRadius.circular(3),
+                  ),
+                  child: Text(
+                    durationBadge,
+                    style: AppTypography.labelSmall.copyWith(
+                      color: Colors.white,
+                      fontSize: 9,
+                      fontWeight: FontWeight.w800,
+                      fontFeatures: [const FontFeature.tabularFigures()],
+                    ),
+                  ),
+                ),
+              ),
+
+            // Slots 2 & 3 — name over one secondary fact, bottom-left. The name
+            // reserves right space so it never runs under the duration badge.
             Positioned(
               bottom: 0,
               left: 0,
               right: 0,
               child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+                padding: const EdgeInsets.fromLTRB(4, 6, 4, 3),
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
                     begin: Alignment.topCenter,
@@ -721,9 +955,9 @@ class _VideoTileState extends ConsumerState<_VideoTile> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    if (_factsLine.isNotEmpty)
+                    if (_secondaryFact.isNotEmpty)
                       Text(
-                        _factsLine,
+                        _secondaryFact,
                         style: AppTypography.labelSmall.copyWith(
                           color: Colors.white,
                           fontSize: 9,
@@ -732,15 +966,18 @@ class _VideoTileState extends ConsumerState<_VideoTile> {
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                       ),
-                    Text(
-                      widget.asset.originalFileName,
-                      style: AppTypography.labelSmall.copyWith(
-                        color: Colors.white.withValues(alpha: 0.75),
-                        fontSize: 8,
-                        fontWeight: FontWeight.w500,
+                    Padding(
+                      padding: EdgeInsets.only(right: durationBadge.isNotEmpty ? 34 : 0),
+                      child: Text(
+                        widget.asset.originalFileName,
+                        style: AppTypography.labelSmall.copyWith(
+                          color: Colors.white.withValues(alpha: 0.75),
+                          fontSize: 8,
+                          fontWeight: FontWeight.w500,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                       ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
                     ),
                   ],
                 ),
