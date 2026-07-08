@@ -28,32 +28,22 @@ class AddScreen extends ConsumerWidget {
           SliverAppBar.large(
             title: const Text('Add Content'),
             floating: true,
-            actions: [
-              IconButton(
-                icon: const Icon(Icons.help_outline),
-                onPressed: () {},
-              ),
-            ],
           ),
           SliverFillRemaining(
             hasScrollBody: false,
             child: Padding(
               padding: const EdgeInsets.all(AppSpacing.screenEdge),
-              child: Column(
+              child: Row(
                 children: [
                   _ChoiceCard(
                     emoji: '🤸',
-                    title: 'New Move',
-                    subtitle:
-                        'Capture or import a single move to track and review',
+                    label: 'Move',
                     onTap: () => _startClipFlow(context, ref),
                   ),
-                  const SizedBox(height: AppSpacing.md),
+                  const SizedBox(width: AppSpacing.md),
                   _ChoiceCard(
                     emoji: '✨',
-                    title: 'New Combo',
-                    subtitle:
-                        'Build a sequence of moves with a visual beat grid to see your composition',
+                    label: 'Combo',
                     onTap: () => context.push<String>('/create-combo'),
                   ),
                 ],
@@ -107,50 +97,35 @@ class AddScreen extends ConsumerWidget {
 class _ChoiceCard extends StatelessWidget {
   const _ChoiceCard({
     required this.emoji,
-    required this.title,
-    required this.subtitle,
+    required this.label,
     required this.onTap,
   });
 
   final String emoji;
-  final String title;
-  final String subtitle;
+  final String label;
   final VoidCallback onTap;
 
   @override
   Widget build(final BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(AppRadius.lg),
-      child: Container(
-        padding: const EdgeInsets.all(AppSpacing.lg),
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(AppRadius.lg),
-          color: colorScheme.surfaceContainerHighest,
-        ),
-        child: Row(
-          children: [
-            Text(
-              emoji,
-              style: const TextStyle(fontSize: 48),
-            ),
-            const SizedBox(width: AppSpacing.lg),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(title, style: AppTypography.titleMedium),
-                  const SizedBox(height: AppSpacing.xs),
-                  Text(
-                    subtitle,
-                    style: AppTypography.bodySmall
-                        .copyWith(color: colorScheme.secondary),
-                  ),
-                ],
-              ),
-            ),
-          ],
+    return Expanded(
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(AppRadius.lg),
+        child: Container(
+          padding: const EdgeInsets.all(AppSpacing.lg),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(AppRadius.lg),
+            color: colorScheme.surfaceContainerHighest,
+          ),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Text(emoji, style: const TextStyle(fontSize: 64)),
+              const SizedBox(height: AppSpacing.md),
+              Text(label, style: AppTypography.titleMedium),
+            ],
+          ),
         ),
       ),
     );

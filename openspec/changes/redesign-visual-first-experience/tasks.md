@@ -53,9 +53,18 @@ membership. Spec delta (`visual-first-surfaces`) reconciled to match.
 
 ## Phase 3: Add flow de-text
 
-- [ ] 3.1 Replace helper copy on `add_screen.dart` with visual anchors (Move / Combo) —
-  iconography + single labels; net-negative LOC expected.
-- [ ] 3.2 Golden test: Add tab renders with no paragraph-style text nodes.
+Decision (owner, 2026-07-08): **task 3.2 is a widget test, not an image golden.** The repo
+has no golden-file infrastructure, and a pixel golden freezes appearance without verifying the
+actual requirement ("no paragraph-style helper text"). The widget test asserts the semantic
+rule directly — every rendered `Text` node on the Add surface is a short label/anchor — which
+is both the stronger check and net-cheaper than standing up golden tooling for one screen.
+
+- [x] 3.1 De-texted `add_screen.dart`: dropped the two paragraph subtitles and the dead no-op
+  help button; `_ChoiceCard` is now a full-height anchor tile (64px emoji + single label,
+  "Move" / "Combo") laid out side-by-side. Metadata form keeps its input labels (text-for-input
+  is exempt per the spec). Net −25 LOC.
+- [x] 3.2 Widget test `test/features/add/add_screen_test.dart`: asserts both anchor labels
+  render and no `Text` node exceeds the paragraph threshold. Green.
 
 ## Phase 4: Three view modes
 
