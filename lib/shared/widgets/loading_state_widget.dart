@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 
 import '../../core/design/spacing.dart';
 import '../../core/utils/loading_state_machine.dart';
+import 'app_loader.dart';
 
 /// Renders a visual representation of a [LoadingStateMachine] state.
 ///
@@ -242,11 +243,7 @@ class _RetryingWidget extends StatelessWidget {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          const SizedBox(
-            width: 24,
-            height: 24,
-            child: CircularProgressIndicator(strokeWidth: 2.5),
-          ),
+          const AppLoader(semanticLabel: 'Retrying'),
           const SizedBox(height: 8),
           Text(
             'Retrying... ($attempt/$maxAttempts)',

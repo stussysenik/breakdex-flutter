@@ -100,8 +100,10 @@ surface are review violations.
 | **Morph** | `morph` (= `springGentle`) | `moderate02` | size/shape/position continuity | state changes of one persistent element |
 
 **Delight budget** — overshoot curves (`expressive`, `springBouncy`) require a
-justified call-site comment. **Ambient** durations (`shimmerLoop`, `celebrate`) sit
-outside the two transition families (loops / one-shot celebrations).
+justified call-site comment. **Ambient** durations (`shimmerLoop`, `loaderLoop`,
+`celebrate`) sit outside the two transition families (loops / one-shot celebrations).
+The signature two-dot loader (`AppLoader`) is the canonical Fluid-family loading motif:
+two dots translate in opposite phase on the `fluid` curve and cross at center.
 
 ### Durations
 
@@ -113,6 +115,7 @@ outside the two transition families (loops / one-shot celebrations).
 | `moderate02` | 240 | `AppMotion.moderate02` | `--dur-moderate-02` (planned) | Panel expand/collapse, Morph |
 | `slow01` | 400 | `AppMotion.slow01` | `--dur-slow-01` (planned) | Page transitions, entrance |
 | `shimmerLoop` | 1200 | `AppMotion.shimmerLoop` | `--dur-shimmer` (planned) | Ambient: skeleton/shimmer loops |
+| `loaderLoop` | 800 | `AppMotion.loaderLoop` | `--dur-loader` (planned) | Ambient: signature two-dot loader half-sweep |
 | `celebrate` | 1500 | `AppMotion.celebrate` | `--dur-celebrate` (planned) | Ambient: one-shot celebration overlay |
 
 ### Curves

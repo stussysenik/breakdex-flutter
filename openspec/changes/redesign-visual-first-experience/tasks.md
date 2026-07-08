@@ -16,6 +16,17 @@ Ledger rule: tick each box in the same commit that lands the work.
   review checklist (`openspec/AGENTS.md` Non-negotiables); grep-verify zero raw motion literals
   on product surfaces (`rg 'Curves\.' lib/` → 0 outside the token definition; evidence in
   commit).
+- [x] 1.4 Signature two-dot loader: build `AppLoader` (`lib/shared/widgets/app_loader.dart`) —
+  two dots that slide in opposite phase and cross paths at center, composed from the Fluid
+  family (`AppMotion.fluid` + new ambient `AppMotion.loaderLoop` token, documented in
+  TOKENS.md). Wire it into the canonical loading surface (`loading_state_widget.dart`
+  `_RetryingWidget`), replacing the stock `CircularProgressIndicator`. Widget test covers the
+  two-dot invariant, semantics label, and clean dispose.
+- [ ] 1.5 Rolling sweep: replace bare `CircularProgressIndicator` with `AppLoader` across the
+  remaining ~49 product surfaces (see `rg -l CircularProgressIndicator lib/`) so the loading
+  motif is one connected system app-wide. Per-directory, additive, no behavior change —
+  intentionally NOT done in the 1.4 commit to avoid a 50-file drive-by; each surface ticks as
+  it lands.
 
 ## Phase 2: Media grid membership + 4-slot tile
 

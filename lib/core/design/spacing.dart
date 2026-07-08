@@ -75,6 +75,10 @@ abstract final class AppMotion {
   /// Repeating shimmer/skeleton loop.
   static const shimmerLoop = Duration(milliseconds: 1200);
 
+  /// One half-sweep of the signature two-dot loader (dots slide and cross,
+  /// then return — a full cross-and-return is two of these). Ambient loop.
+  static const loaderLoop = Duration(milliseconds: 800);
+
   /// Sequenced one-shot celebration overlay.
   static const celebrate = Duration(milliseconds: 1500);
 }
