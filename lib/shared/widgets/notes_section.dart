@@ -346,7 +346,9 @@ class _ConstrainedMarkdownState extends ConsumerState<_ConstrainedMarkdown> {
         ),
         // Visible constrained copy
         AnimatedContainer(
-          duration: const Duration(milliseconds: 200),
+          // Morph: the notes box grows/shrinks as one identity.
+          duration: AppMotion.moderate02,
+          curve: AppMotion.morph,
           clipBehavior: Clip.hardEdge,
           constraints: BoxConstraints(
             maxHeight: widget.expanded ? double.infinity : _collapsedHeight,

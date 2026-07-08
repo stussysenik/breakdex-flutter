@@ -5,6 +5,7 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 
 import '../../core/design/colors.dart';
+import '../../core/design/spacing.dart';
 import '../../core/design/typography.dart';
 
 /// Full-screen particle celebration overlay.
@@ -56,17 +57,18 @@ class _CelebrationOverlayState extends State<CelebrationOverlay>
     super.initState();
     _controller = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 1500),
+      duration: AppMotion.celebrate,
     );
 
+    // Delight budget: the title pop is the one place this overlay earns overshoot.
     _titleScale = CurvedAnimation(
       parent: _controller,
-      curve: const Interval(0, 0.3, curve: Curves.elasticOut),
+      curve: Interval(0, 0.3, curve: AppMotion.springBouncy),
     );
 
     _fade = CurvedAnimation(
       parent: _controller,
-      curve: const Interval(0.7, 1.0, curve: Curves.easeOut),
+      curve: const Interval(0.7, 1.0, curve: AppMotion.entrance),
     );
 
     _particles = List.generate(_particleCount, (_) => _Particle(_random));

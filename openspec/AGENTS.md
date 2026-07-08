@@ -53,7 +53,9 @@ openspec/changes/<verb-led-id>/
   one-way and tested; verify on a real build before claiming done.
 - Data safety: original video bytes are truth (never transcode); tombstones over hard
   deletes; a stored user preference is never overridden by a new default.
-- Tokens: `docs/design/TOKENS.md` is the single design source; motion composes from
-  `AppMotion` family tokens (Fluid/Morph doctrine).
+- Tokens: `docs/design/TOKENS.md` is the single design source. **Review checklist:**
+  motion composes from `AppMotion` family tokens (Fluid/Morph doctrine) — raw
+  `Curve`/`Duration` literals driving visible motion on a product surface are
+  violations; every `AnimationController` is disposed with its owning widget.
 - Every deployment (web/iOS/Android) is the same standardized brick: one codebase, one
   config surface (remote config + cohorts), platform gaps degrade visibly.

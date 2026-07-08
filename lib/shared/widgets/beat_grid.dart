@@ -186,7 +186,7 @@ class _BeatBlock extends StatelessWidget {
           behavior: HitTestBehavior.opaque,
           child: AnimatedContainer(
             duration: AppMotion.fast02,
-            curve: Curves.easeOut,
+            curve: AppMotion.entrance,
             margin: const EdgeInsets.symmetric(horizontal: 1),
             padding: const EdgeInsets.symmetric(horizontal: 4),
             decoration: BoxDecoration(

@@ -142,7 +142,7 @@ class _RobustVideoEditorViewState extends State<RobustVideoEditorView> {
               children: [
                 // Top Bar
                 AnimatedContainer(
-                  duration: const Duration(milliseconds: 200),
+                  duration: AppMotion.moderate02,
                   height: _isPreviewMode ? 0 : null,
                   decoration: const BoxDecoration(),
                   clipBehavior: Clip.antiAlias,
@@ -219,8 +219,8 @@ class _RobustVideoEditorViewState extends State<RobustVideoEditorView> {
                               _scheduleViewportSync(viewport);
 
                               return AnimatedContainer(
-                                duration: const Duration(milliseconds: 300),
-                                curve: Curves.easeInOutCubic,
+                                duration: AppMotion.moderate02,
+                                curve: AppMotion.fluid,
                                 width: viewport.size.width,
                                 height: viewport.size.height,
                                 decoration: BoxDecoration(
@@ -309,7 +309,7 @@ class _RobustVideoEditorViewState extends State<RobustVideoEditorView> {
 
                 // Controls Area
                 AnimatedContainer(
-                  duration: const Duration(milliseconds: 200),
+                  duration: AppMotion.moderate02,
                   height: _isPreviewMode ? 0 : null,
                   decoration: const BoxDecoration(),
                   clipBehavior: Clip.antiAlias,

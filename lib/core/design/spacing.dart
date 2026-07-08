@@ -25,15 +25,18 @@ abstract final class AppRadius {
 
 /// IBM Carbon–inspired motion scale for consistent, purposeful animation.
 ///
-/// Two curve families:
-/// - **Productive**: used for transitions that move the user through a flow
-///   (page changes, expanding panels). [Curves.easeInOutCubic] gives a
-///   symmetrical acceleration/deceleration that feels efficient.
-/// - **Expressive**: used for feedback & delight (success checkmarks, FAB
-///   entrance). [Curves.easeOutBack] overshoots slightly then settles,
-///   producing a playful "pop."
-/// - **Entrance**: used for elements appearing on screen (fade-ins, slide-ups).
-///   [Curves.easeOut] decelerates smoothly into rest position.
+/// **Motion doctrine — exactly two families** (redesign-visual-first-experience):
+/// - **Fluid** — the default. Opacity + translation only. Flow transitions ride
+///   [fluid] ([productive]); appearances ride [entrance]. Durations live in the
+///   `fast01`–`moderate02` band.
+/// - **Morph** — continuity of one persistent identity (size/shape/position).
+///   Reserved for state changes of a single element; rides [morph]
+///   ([springGentle]).
+///
+/// Delight overshoot ([expressive], [springBouncy]) is a budget: allowed only
+/// with a justified call-site comment. Ambient loops and sequenced celebrations
+/// fall outside the two transition families; their durations are named here
+/// ([shimmerLoop], [celebrate]) so no raw literal escapes onto a product surface.
 abstract final class AppMotion {
   static const fast01 = Duration(milliseconds: 70);
   static const fast02 = Duration(milliseconds: 110);
@@ -55,6 +58,25 @@ abstract final class AppMotion {
   static final Curve springBouncy = _SpringCurve(
     const SpringDescription(mass: 1, stiffness: 150, damping: 10),
   );
+
+  // --- Motion families (doctrine) ---
+  // Reference these aliases so the family a call site belongs to is legible.
+
+  /// **Fluid** default curve — flow transitions (opacity/translation). Alias
+  /// of [productive]; appearances use [entrance] instead.
+  static const Curve fluid = productive;
+
+  /// **Morph** curve — continuity of one persistent identity. Alias of
+  /// [springGentle].
+  static final Curve morph = springGentle;
+
+  // --- Ambient durations (outside the two transition families) ---
+
+  /// Repeating shimmer/skeleton loop.
+  static const shimmerLoop = Duration(milliseconds: 1200);
+
+  /// Sequenced one-shot celebration overlay.
+  static const celebrate = Duration(milliseconds: 1500);
 }
 
 /// Maps a [SpringSimulation] onto the 0→1 Curve contract.

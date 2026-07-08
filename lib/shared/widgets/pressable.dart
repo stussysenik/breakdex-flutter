@@ -65,9 +65,9 @@ class _PressableState extends State<Pressable>
       end: widget.scaleEnd,
     ).animate(CurvedAnimation(
       parent: _controller,
-      // Quick press-in, springy release
-      curve: Curves.easeInQuad,
-      reverseCurve: Curves.easeOutBack,
+      // Fluid press-in; springy release on the delight budget (expressive).
+      curve: AppMotion.fluid,
+      reverseCurve: AppMotion.expressive,
     ));
   }
 

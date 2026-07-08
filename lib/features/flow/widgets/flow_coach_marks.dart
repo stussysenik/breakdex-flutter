@@ -147,11 +147,11 @@ class _CoachTooltipOverlayState extends State<_CoachTooltipOverlay>
       vsync: this,
       // Total duration covers both fade-in and a hold.
       // Fade-out is triggered manually via reverse.
-      duration: const Duration(milliseconds: 200),
+      duration: AppMotion.moderate02,
     );
     _fadeIn = CurvedAnimation(
       parent: _controller,
-      curve: Curves.easeOut,
+      curve: AppMotion.entrance,
     );
     _controller.forward();
   }

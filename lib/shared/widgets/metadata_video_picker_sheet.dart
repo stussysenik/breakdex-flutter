@@ -368,7 +368,12 @@ class _MetadataVideoPickerSheetState extends ConsumerState<MetadataVideoPickerSh
                           child: const Text('IMPORT VIDEO'),
                         ),
                       ),
-                    ).animate().slideY(begin: 1, end: 0, curve: Curves.easeOutCubic),
+                    ).animate().slideY(
+                          begin: 1,
+                          end: 0,
+                          duration: AppMotion.moderate02,
+                          curve: AppMotion.entrance,
+                        ),
                   )
                 : null,
           ),

@@ -3,6 +3,7 @@
 
 import 'package:flutter/material.dart';
 
+import '../../core/design/spacing.dart';
 import '../../core/utils/loading_state_machine.dart';
 
 /// Renders a visual representation of a [LoadingStateMachine] state.
@@ -69,7 +70,7 @@ class _LoadingShimmerState extends State<_LoadingShimmer>
     super.initState();
     _controller = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 1200),
+      duration: AppMotion.shimmerLoop,
     )..repeat(reverse: true);
     _animation = Tween<double>(begin: 0.3, end: 0.7).animate(_controller);
   }

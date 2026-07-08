@@ -90,8 +90,8 @@ class _ComboStepLineState extends State<ComboStepLine> {
           (nodeWidth / 2);
       _scrollController.animateTo(
         targetOffset.clamp(0.0, _scrollController.position.maxScrollExtent),
-        duration: const Duration(milliseconds: 300),
-        curve: Curves.easeOutCubic,
+        duration: AppMotion.moderate02,
+        curve: AppMotion.entrance,
       );
     });
   }
@@ -128,6 +128,7 @@ class _ComboStepLineState extends State<ComboStepLine> {
                 child: AnimatedScale(
                   scale: _pressedIndex == index ? 0.88 : 1,
                   duration: AppMotion.fast02,
+                  // Delight budget: press-pop overshoot on tap feedback.
                   curve: AppMotion.expressive,
                   child: TimelineNode(
                     index: index + 1,
@@ -161,6 +162,7 @@ class _ComboStepLineState extends State<ComboStepLine> {
                 child: AnimatedScale(
                   scale: _pressedIndex == widget.stepCount ? 0.88 : 1,
                   duration: AppMotion.fast02,
+                  // Delight budget: press-pop overshoot on tap feedback.
                   curve: AppMotion.expressive,
                   child: TimelineNode(
                     index: 0,

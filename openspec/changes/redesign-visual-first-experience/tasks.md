@@ -4,15 +4,18 @@ Ledger rule: tick each box in the same commit that lands the work.
 
 ## Phase 1: Motion doctrine (foundation — other phases build on it)
 
-- [ ] 1.1 Add Fluid/Morph family aliases to `AppMotion` (`lib/core/design/spacing.dart`) and
+- [x] 1.1 Add Fluid/Morph family aliases to `AppMotion` (`lib/core/design/spacing.dart`) and
   document both families in `docs/design/TOKENS.md` (single source rule).
-- [ ] 1.2 Sweep shared widgets with raw controllers (pressable, celebration_overlay,
+- [x] 1.2 Sweep shared widgets with raw controllers (pressable, celebration_overlay,
   combo_step_line, notes_section, app_segmented_control, beat_grid, video_player_widget,
   metadata_video_picker_sheet, loading_state_widget) onto family tokens; fix any missing
-  `dispose()` found during the sweep.
-- [ ] 1.3 Add "motion composes from AppMotion family tokens; controllers disposed" to the
-  review checklist; grep-verify zero raw motion literals on product surfaces
-  (`ast-grep`/`rg` evidence in the commit message).
+  `dispose()` found during the sweep. (All targets already disposed correctly — no leaks
+  found. Sweep extended to the only 3 other files with raw literals — flow_coach_marks,
+  party_screen, robust_video_editor_view, flashcard breath — so the grep is zero app-wide.)
+- [x] 1.3 Add "motion composes from AppMotion family tokens; controllers disposed" to the
+  review checklist (`openspec/AGENTS.md` Non-negotiables); grep-verify zero raw motion literals
+  on product surfaces (`rg 'Curves\.' lib/` → 0 outside the token definition; evidence in
+  commit).
 
 ## Phase 2: Media grid membership + 4-slot tile
 

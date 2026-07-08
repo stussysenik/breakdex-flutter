@@ -383,7 +383,7 @@ class _FlashcardReviewScreenState extends ConsumerState<FlashcardReviewScreen>
                   ? 1.0
                   : 1.0 +
                         (0.006 *
-                            Curves.easeInOut.transform(
+                            AppMotion.fluid.transform(
                               _breathController.value,
                             ));
               return Transform.scale(

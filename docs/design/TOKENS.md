@@ -88,6 +88,21 @@
 
 ## Motion
 
+### Families — the doctrine
+
+Every product animation belongs to **exactly two families**, both composed from the
+tokens below. Raw `Curve`/`Duration` literals driving visible motion on a product
+surface are review violations.
+
+| Family | Curve | Durations | What it does | Reserved for |
+|--------|-------|-----------|--------------|--------------|
+| **Fluid** (default) | `fluid` (= `productive`) for flow; `entrance` for appearances | `fast01`–`moderate02` | opacity + translation | everything by default |
+| **Morph** | `morph` (= `springGentle`) | `moderate02` | size/shape/position continuity | state changes of one persistent element |
+
+**Delight budget** — overshoot curves (`expressive`, `springBouncy`) require a
+justified call-site comment. **Ambient** durations (`shimmerLoop`, `celebrate`) sit
+outside the two transition families (loops / one-shot celebrations).
+
 ### Durations
 
 | Token | Value (ms) | Dart Constant | CSS Property | Consumers |
@@ -95,18 +110,22 @@
 | `fast01` | 70 | `AppMotion.fast01` | `--dur-fast-01` (planned) | Micro-interactions, state changes |
 | `fast02` | 110 | `AppMotion.fast02` | `--dur-fast-02` (planned) | Subtle transitions |
 | `moderate01` | 150 | `AppMotion.moderate01` | `--dur-moderate-01` (planned) | Button feedback |
-| `moderate02` | 240 | `AppMotion.moderate02` | `--dur-moderate-02` (planned) | Panel expand/collapse |
+| `moderate02` | 240 | `AppMotion.moderate02` | `--dur-moderate-02` (planned) | Panel expand/collapse, Morph |
 | `slow01` | 400 | `AppMotion.slow01` | `--dur-slow-01` (planned) | Page transitions, entrance |
+| `shimmerLoop` | 1200 | `AppMotion.shimmerLoop` | `--dur-shimmer` (planned) | Ambient: skeleton/shimmer loops |
+| `celebrate` | 1500 | `AppMotion.celebrate` | `--dur-celebrate` (planned) | Ambient: one-shot celebration overlay |
 
 ### Curves
 
 | Token | Value | Dart Constant | CSS Property | Consumers |
 |-------|-------|---------------|-------------|----------|
+| `fluid` | `easeInOutCubic` (alias of `productive`) | `AppMotion.fluid` | `--ease-fluid` (planned) | **Fluid** default — flow transitions |
+| `morph` | `springGentle` (alias) | `AppMotion.morph` | `--ease-morph` (planned) | **Morph** — layout/shape continuity |
 | `productive` | `easeInOutCubic` | `AppMotion.productive` | `--ease-productive` (planned) | Flow transitions (page changes, panels) |
-| `expressive` | `easeOutBack` | `AppMotion.expressive` | `--ease-expressive` (planned) | Delight moments (checkmarks, FAB) |
-| `entrance` | `easeOut` | `AppMotion.entrance` | `--ease-entrance` (planned) | Element appearance (fade-ins, slide-ups) |
+| `expressive` | `easeOutBack` | `AppMotion.expressive` | `--ease-expressive` (planned) | Delight budget (checkmarks, FAB) |
+| `entrance` | `easeOut` | `AppMotion.entrance` | `--ease-entrance` (planned) | Fluid appearance (fade-ins, slide-ups) |
 | `springGentle` | mass:1, stiffness:200, damping:15 | `AppMotion.springGentle` | `--spring-gentle` (planned) | Layout transitions (panels, reorder) |
-| `springBouncy` | mass:1, stiffness:150, damping:10 | `AppMotion.springBouncy` | `--spring-bouncy` (planned) | Delight (FAB entrance, card flip) |
+| `springBouncy` | mass:1, stiffness:150, damping:10 | `AppMotion.springBouncy` | `--spring-bouncy` (planned) | Delight budget (FAB entrance, card flip) |
 
 ---
 

@@ -60,11 +60,12 @@ class _PartyScreenState extends ConsumerState<PartyScreen>
     );
     _revealController = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 500),
+      duration: AppMotion.slow01,
     );
     _revealScaleY = CurvedAnimation(
       parent: _revealController,
-      curve: Curves.easeOutBack,
+      // Delight budget: the shake-reveal earns overshoot.
+      curve: AppMotion.expressive,
     );
 
     final tabIndex = ref.read(currentTabIndexProvider);
@@ -604,7 +605,7 @@ class _PartyScreenState extends ConsumerState<PartyScreen>
           ),
           const SizedBox(height: AppSpacing.xl),
           AnimatedSwitcher(
-            duration: const Duration(milliseconds: 60),
+            duration: AppMotion.fast01,
             child: Text(
               name.toUpperCase(),
               key: key,
