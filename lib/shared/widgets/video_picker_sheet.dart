@@ -9,6 +9,7 @@ import '../../core/design/spacing.dart';
 import '../../core/design/typography.dart';
 import '../../core/services/video_service.dart';
 import '../../core/utils/loading_state_machine.dart';
+import 'app_loader.dart';
 import 'metadata_video_picker_sheet.dart';
 
 /// Bottom sheet with 3 video source options: Camera, Photo Library, Files (iCloud).
@@ -268,14 +269,7 @@ class _LoadingOverlayContent extends StatelessWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const SizedBox(
-              width: 48,
-              height: 48,
-              child: CircularProgressIndicator(
-                strokeWidth: 3,
-                color: Colors.white,
-              ),
-            ),
+            const AppLoader(size: 10, color: Colors.white),
             const SizedBox(height: 16),
             if (progress != null)
               Text(

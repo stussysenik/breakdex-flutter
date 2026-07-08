@@ -14,6 +14,7 @@ import 'package:uuid/uuid.dart';
 import '../../core/design/spacing.dart';
 import '../../core/design/typography.dart';
 import '../../core/services/app_storage_paths.dart';
+import 'app_loader.dart';
 
 Future<String> _photoDirectory() async {
   final docs = await AppStoragePaths.documentsDirectory();
@@ -245,13 +246,7 @@ class _AddPhotoButton extends StatelessWidget {
           ),
         ),
         child: loading
-            ? const Center(
-                child: SizedBox(
-                  width: 24,
-                  height: 24,
-                  child: CircularProgressIndicator(strokeWidth: 2),
-                ),
-              )
+            ? const Center(child: AppLoader(size: 6))
             : Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [

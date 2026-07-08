@@ -23,10 +23,11 @@ Ledger rule: tick each box in the same commit that lands the work.
   `_RetryingWidget`), replacing the stock `CircularProgressIndicator`. Widget test covers the
   two-dot invariant, semantics label, and clean dispose.
 - [ ] 1.5 Rolling sweep: replace bare `CircularProgressIndicator` with `AppLoader` across the
-  remaining ~49 product surfaces (see `rg -l CircularProgressIndicator lib/`) so the loading
-  motif is one connected system app-wide. Per-directory, additive, no behavior change —
-  intentionally NOT done in the 1.4 commit to avoid a 50-file drive-by; each surface ticks as
-  it lands.
+  remaining product surfaces (`rg -l CircularProgressIndicator lib/`) so the loading motif is
+  one connected system app-wide. Per-directory, additive, no behavior change — intentionally
+  NOT done in the 1.4 commit to avoid a 50-file drive-by; each cluster ticks as it lands.
+  Progress: `lib/shared/widgets/` cluster done (video_player_widget, quick_video_viewer,
+  video_picker_sheet, move_photos_section) — 50→46 files. Remaining: features/* surfaces.
 
 ## Phase 2: Media grid membership + 4-slot tile
 

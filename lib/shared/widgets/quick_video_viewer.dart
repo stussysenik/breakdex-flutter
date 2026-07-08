@@ -13,6 +13,7 @@ import '../../core/design/typography.dart';
 import '../../core/navigation/app_route_observer.dart';
 import '../../core/services/media_playback_coordinator.dart';
 import '../../core/utils/diagnostics.dart';
+import 'app_loader.dart';
 
 class QuickVideoViewer extends ConsumerStatefulWidget {
   const QuickVideoViewer({super.key, required this.videoPath, this.title});
@@ -115,13 +116,7 @@ class _QuickVideoViewerState extends ConsumerState<QuickVideoViewer>
           if (_hasError)
             _buildError()
           else if (!_initialized)
-            const Center(
-              child: SizedBox(
-                width: 48,
-                height: 48,
-                child: CircularProgressIndicator(color: Colors.white, strokeWidth: 3),
-              ),
-            )
+            const Center(child: AppLoader(size: 10, color: Colors.white))
           else
             GestureDetector(
               onTap: () => setState(() => _showControls = !_showControls),

@@ -17,6 +17,7 @@ import '../../core/services/settings_service.dart';
 import '../../core/services/video_path_resolver.dart';
 import '../../core/services/video_service.dart';
 import '../../core/utils/loading_state_machine.dart';
+import 'app_loader.dart';
 
 /// Skip amount for forward/backward navigation.
 /// 5 seconds suits short breakdancing clips (typically 5–30s).
@@ -350,15 +351,8 @@ class _VideoPlayerWidgetState extends ConsumerState<VideoPlayerWidget>
                   Container(color: Colors.black26),
                   Center(
                     child: widget.minimal
-                        ? const SizedBox(
-                            width: 48,
-                            height: 48,
-                            child: CircularProgressIndicator(
-                              color: Colors.white,
-                              strokeWidth: 3,
-                            ),
-                          )
-                        : CircularProgressIndicator(color: colorScheme.primary),
+                        ? const AppLoader(size: 10, color: Colors.white)
+                        : AppLoader(color: colorScheme.primary),
                   ),
                 ],
               )
@@ -1036,14 +1030,7 @@ class _RobustVideoPlayerState extends ConsumerState<RobustVideoPlayer> {
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   if (showSpinner)
-                    SizedBox(
-                      width: 32,
-                      height: 32,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2,
-                        color: Theme.of(context).colorScheme.primary,
-                      ),
-                    )
+                    AppLoader(color: Theme.of(context).colorScheme.primary)
                   else
                     Icon(icon, color: colorScheme.secondary, size: 48),
                   const SizedBox(height: AppSpacing.sm),
