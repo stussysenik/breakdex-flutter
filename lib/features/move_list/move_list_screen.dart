@@ -31,16 +31,42 @@ import '../../shared/widgets/celebration_overlay.dart';
 import '../../shared/widgets/pressable.dart';
 import '../../shared/widgets/state_pill.dart';
 import '../../shared/widgets/video_picker_sheet.dart';
+import '../../shared/widgets/video_player_widget.dart';
 import '../sync_onboarding/sync_onboarding_card.dart';
 
 part 'widgets/move_grid_cell.dart';
 part 'widgets/combo_grid_cell.dart';
 part 'widgets/move_row.dart';
 part 'widgets/combo_row.dart';
+part 'widgets/study_card.dart';
 
 // -- Providers ---------------------------------------------------------------
 
-enum ViewMode { list, grid }
+/// Three view modes ordered easiest → hardest way of seeing (design.md):
+/// Glance (media-first gallery), Scan (dense list), Study (rich cards). The
+/// declaration order IS the fixed cycle order the toggle presents.
+enum ViewMode { glance, scan, study }
+
+/// Resolves the persisted `arsenal_view_mode` value to a [ViewMode], migrating
+/// legacy names so no prior choice is lost (`grid` → Glance, `list` → Scan).
+/// Unknown/absent values default to Glance — the lowest-cognitive-load mode and
+/// the visual-first doctrine's natural landing.
+ViewMode viewModeFromStored(final String? raw) => switch (raw) {
+  'grid' || 'glance' => ViewMode.glance,
+  'list' || 'scan' => ViewMode.scan,
+  'study' => ViewMode.study,
+  _ => ViewMode.glance,
+};
+
+/// Legacy stored values that must be re-persisted under their new name on first
+/// read so the old string never lingers in preferences.
+bool isLegacyViewModeValue(final String? raw) => raw == 'grid' || raw == 'list';
+
+String _defaultViewModeLabel(final ViewMode mode) => switch (mode) {
+  ViewMode.glance => 'Glance',
+  ViewMode.scan => 'Scan',
+  ViewMode.study => 'Study',
+};
 
 enum ArsenalSegment { moves, combos }
 
@@ -90,9 +116,13 @@ class _ViewModeNotifier extends Notifier<ViewMode> {
   @override
   ViewMode build() {
     final prefs = ref.watch(sharedPreferencesProvider);
-    final value = prefs.getString(_key);
-    if (value == 'grid') return ViewMode.grid;
-    return ViewMode.list;
+    final raw = prefs.getString(_key);
+    final mode = viewModeFromStored(raw);
+    if (isLegacyViewModeValue(raw)) {
+      // Re-persist the migrated value so the legacy string doesn't linger.
+      unawaited(prefs.setString(_key, mode.name));
+    }
+    return mode;
   }
 
   Future<void> set(final ViewMode mode) async {
@@ -232,8 +262,9 @@ class MoveListScreen extends ConsumerWidget {
                         }
 
                         return switch (viewMode) {
-                          ViewMode.grid => _MoveGridSliver(moves: filtered),
-                          ViewMode.list => _MoveListSliver(moves: filtered),
+                          ViewMode.glance => _MoveGridSliver(moves: filtered),
+                          ViewMode.scan => _MoveListSliver(moves: filtered),
+                          ViewMode.study => _MoveStudySliver(moves: filtered),
                         };
                       },
                     )
@@ -265,10 +296,11 @@ class MoveListScreen extends ConsumerWidget {
                         }
 
                         return switch (viewMode) {
-                          ViewMode.grid => _ComboGridSliver(combos: filtered),
-                          ViewMode.list => _CombosContentSliver(
+                          ViewMode.glance => _ComboGridSliver(combos: filtered),
+                          ViewMode.scan => _CombosContentSliver(
                             combos: filtered,
                           ),
+                          ViewMode.study => _ComboStudySliver(combos: filtered),
                         };
                       },
                     ),
@@ -862,15 +894,11 @@ class _ViewModeToggle extends ConsumerWidget {
       items: ViewMode.values,
       selected: viewMode,
       iconOf: (final m) => switch (m) {
-        ViewMode.list => Icons.view_list_rounded,
-        ViewMode.grid => Icons.grid_view_rounded,
+        ViewMode.glance => Icons.grid_view_rounded,
+        ViewMode.scan => Icons.view_list_rounded,
+        ViewMode.study => Icons.view_agenda_rounded,
       },
-      labelOf: (final m) =>
-          viewNames[m.name] ??
-          switch (m) {
-            ViewMode.list => 'List',
-            ViewMode.grid => 'Gallery',
-          },
+      labelOf: (final m) => viewNames[m.name] ?? _defaultViewModeLabel(m),
       onSelected: (final m) {
         HapticFeedback.selectionClick();
         ref.read(_viewModeProvider.notifier).set(m);
@@ -885,12 +913,7 @@ class _ViewModeToggle extends ConsumerWidget {
     final ViewMode mode,
   ) async {
     final controller = TextEditingController(
-      text:
-          viewNames[mode.name] ??
-          switch (mode) {
-            ViewMode.list => 'List',
-            ViewMode.grid => 'Gallery',
-          },
+      text: viewNames[mode.name] ?? _defaultViewModeLabel(mode),
     );
 
     final newName = await showDialog<String>(

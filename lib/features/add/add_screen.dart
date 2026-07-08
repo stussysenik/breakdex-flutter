@@ -25,8 +25,8 @@ class AddScreen extends ConsumerWidget {
     return Scaffold(
       body: CustomScrollView(
         slivers: [
-          SliverAppBar.large(
-            title: const Text('Add Content'),
+          const SliverAppBar.large(
+            title: Text('Add Content'),
             floating: true,
           ),
           SliverFillRemaining(

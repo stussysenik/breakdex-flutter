@@ -68,14 +68,32 @@ is both the stronger check and net-cheaper than standing up golden tooling for o
 
 ## Phase 4: Three view modes
 
-- [ ] 4.1 Extend `ViewMode` to `{ glance, scan, study }` with legacy migration
-  (`grid`→glance, `list`→scan) on first read of `arsenal_view_mode`.
-- [ ] 4.2 Build the Study sliver family (rich card: inline playback, counts, category, notes
-  preview) reusing existing card/video widgets; 3-segment `_ViewModeToggle` in fixed order.
-- [ ] 4.3 Apply the same three modes to the combos library surfaces
-  (`_ComboGridSliver`/`_CombosContentSliver`).
-- [ ] 4.4 Tests: cycling order, persistence across restart, legacy migration, same result set
-  across modes under an active filter.
+Decisions (owner, 2026-07-08):
+- **Toggle stays a direct-select 3-segment control**, not a literal cycle button. The existing
+  `_PillToggleRow` renders `ViewMode.values` in order, so the enum declaration order
+  (`glance, scan, study`) *is* the fixed cycle contract the spec names — same pattern the
+  old list/grid toggle already used. Reconciles "3-segment control cycling in fixed order."
+- **Unknown/absent stored value defaults to Glance** (was `list`→Scan). Glance is the
+  design's lowest-cognitive-load mode and the visual-first landing; explicit legacy choices
+  still migrate exactly (`grid`→Glance, `list`→Scan), so no prior *choice* is lost.
+- **Task 4.4 "same result set under filter" is verified structurally, not by a DB pump.** The
+  screen computes one `filtered` list and hands it to whichever sliver, so all three modes are
+  fed the identical collection by construction; the unit tests cover order/migration/persistence.
+
+- [x] 4.1 `ViewMode { glance, scan, study }`; `viewModeFromStored` + `isLegacyViewModeValue`
+  pure helpers do the migration (`grid`→glance, `list`→scan) and `_ViewModeNotifier.build`
+  re-persists migrated legacy values on first read of `arsenal_view_mode`.
+- [x] 4.2 Study sliver family in `widgets/study_card.dart`: `_MoveStudyCard`/`_ComboStudyCard`
+  over a shared `_StudyCardShell` (inline tap-to-play `RobustVideoPlayer`, beat/move counts,
+  category/status, 2-line notes preview) reusing `_CategoryLabel`/`_MoveCountDots`/
+  `_ComboPreviewFallback`. Glance reuses the grid sliver, Scan the list sliver; toggle icons +
+  labels extended to three.
+- [x] 4.3 Combos library gets all three modes via the same content switch
+  (`_ComboGridSliver` / `_CombosContentSliver` / `_ComboStudySliver`).
+- [x] 4.4 `test/features/move_list/view_mode_test.dart`: fixed cycle order, legacy migration
+  (grid/list), new-name pass-through (no re-persist), unknown→Glance default, and per-mode
+  name round-trip (persistence across restart). 6/6 green; preview-harness smoke test still
+  renders the screen in the new default mode.
 
 ## Phase 5: Review WYSIWYG
 
