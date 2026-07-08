@@ -36,11 +36,15 @@ that want to be combined."
 
 ## Relationship to existing changes
 
-- **Depends on** `evolve-web-mirror-to-crud-platform` — specifically its `shared-source-of-truth`
-  (canonical backend = truth; clients are caches) and `web-library-crud` (write-through pattern,
-  optimistic UI, sync status). The owner chose **full bidirectional first**: composition writes go
-  through canonical truth so the phone sees web-built combos immediately. This change does **not**
-  introduce a parallel write path or an overlay store.
+- **Supersedes** `evolve-web-mirror-to-crud-platform` (owner ruling 2026-07-08). Its
+  shared-truth/identity layers are owned by `migrate-canonical-backend-to-appwrite`
+  (`metadata-sync-backend`, `unified-identity`); its unshipped write-scope work migrated here as
+  Phases 4–6 with the `web-library-crud` and `media-governance` spec deltas. The owner chose
+  **full bidirectional first**: composition writes go through canonical truth so the phone sees
+  web-built combos immediately. This change does **not** introduce a parallel write path or an
+  overlay store.
+- **Depends on** `migrate-canonical-backend-to-appwrite` — the canonical backend (truth) and
+  write-through/sync-status primitives this studio consumes (Appwrite Phase 6 targets this change).
 - **Completes** `add-discovery-graph-interface`'s `combination-discovery`: that capability defines a
   candidate's "promote into a real combo through the existing, guarded flow." This change *is* that
   guarded flow on the web (the `/combo-builder` seeded with the candidate's moves).
@@ -79,16 +83,20 @@ that want to be combined."
 - **`web-authoring-studio`:** the `/combo-builder` and `/set-builder` tools, **seeded by
   `neverCombinedCandidates()`** suggestions and lightweight composition analysis; serves as the
   guarded promotion target for `combination-discovery`.
+- **`developer-docs` (added 2026-07-08):** an MDX docs surface inside `web-mirror/` (Next.js
+  native MDX) documenting the load-bearing seams — `SyncBackend`, `Machine<S,E>`, design
+  tokens, sync/LWW model — plus operational runbooks (release, provisioning, diagnostics
+  export triage). The studio is the dev utility; its docs live with it and build in CI.
 
 ### Out of scope
-- Standing up the canonical backend itself — owned by `shared-source-of-truth` in
-  `evolve-web-mirror-to-crud-platform`; this change consumes it.
+- Standing up the canonical backend itself — owned by `migrate-canonical-backend-to-appwrite`
+  (`metadata-sync-backend`); this change consumes it.
 - Real-time collaborative / CRDT multi-writer editing (single-writer-at-a-time assumed).
 - The provenance *ledger engine* (mobile/backend ingestion) — owned by the provenance changes; here
   we render its history as a web view.
-- Media swap-out / export governance — owned by `media-governance`.
 
 ## Impact
-- **New web capabilities:** `move-lifecycle-archive`, `combo-set-composition`, `web-authoring-studio`.
-- **Depends on:** `shared-source-of-truth`, `web-library-crud` (must land first).
+- **New web capabilities:** `move-lifecycle-archive`, `combo-set-composition`, `web-authoring-studio`,
+  plus `web-library-crud` and `media-governance` (migrated in from the superseded CRUD change).
+- **Depends on:** `migrate-canonical-backend-to-appwrite` (canonical truth + write-through must land first).
 - **Reuses:** the entire read-only mirror as the Phase 0 read surface + offline cache.

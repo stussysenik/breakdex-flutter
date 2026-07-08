@@ -23,23 +23,50 @@ older intra-app view and is kept for context.
 
 1. **`migrate-canonical-backend-to-appwrite`** — the backend spine. Phase H done
    (`phase-h-hardening`); **Phase 0 provisioning is NEXT and owner-gated** (Appwrite Cloud
-   project + Google OAuth).
-2. **`add-web-authoring-and-lifecycle-studio`** — web = trustworthy system-of-record +
-   authoring studio; targeted by Appwrite Phase 6.
-3. **`evolve-web-mirror-to-crud-platform`** — ⚑ **FLAG (do not decide unilaterally):** likely
-   superseded by the studio spec above; needs an explicit supersession ruling from the owner
-   before it is either archived or re-scoped as the studio's substrate.
-4. **`align-cross-client-foundations`** — this change (gap-filler: multi-user sync model,
+   project + Google OAuth; owner confirmed ready 2026-07-08). Now also carries **Phase 1R
+   remote config** (flags, kill-switches, min-version gate, cohort profiles) and the flagged
+   Shorebird code-push evaluation (7.4).
+2. **`add-web-first-release-and-monetization`** — ⭐ NEW (2026-07-08 grilling): web-first
+   private release of the product itself. Flutter Web bring-up (Phase 1, startable NOW),
+   invite codes + entitlements + $4.20–$9.99 offerings (gated on Appwrite Phases 0–3/1R),
+   GUIDE.md + release hygiene, then iOS TestFlight → App Store → Android after the web soak.
+3. **`add-web-authoring-and-lifecycle-studio`** — web = trustworthy system-of-record +
+   authoring studio; targeted by Appwrite Phase 6. **Supersedes
+   `evolve-web-mirror-to-crud-platform` (owner ruling 2026-07-08; archived):** absorbed its
+   unshipped write scope as Phases 4–6 plus the `web-library-crud` + `media-governance`
+   deltas. Now also carries **Phase 7 MDX developer docs** (seam docs + runbooks live with
+   the studio, build in CI).
+4. **`redesign-visual-first-experience`** — ⭐ NEW (2026-07-08 product-finish): visual
+   anchors over text (Add flow de-text, media-grid membership + 4-slot tiles), 3 view modes
+   (Glance → Scan → Study), review WYSIWYG (one screen, `xxs` radius, customizable fill),
+   Fluid/Morph motion doctrine. **Release-blocking for wave-1 invites**; no backend
+   dependency — parallel with Appwrite phases.
+5. **`harden-marathon-reliability`** — ⭐ NEW (2026-07-08): 8-hour soak bar, startup budgets
+   (≤2.5s mobile / ≤5s web), **device-diagnostics status page** (deterministic per-device
+   checks + redacted JSON export), 3-platform E2E matrix (Patrol/Maestro/Playwright) — the
+   matrix IS the wave-1 invite gate. Phases 1–3 independent; startable now.
+6. **`add-personalization-and-accessibility`** — NEW (2026-07-08): parametric naming of the
+   Moves/Combos data-banks, add-flow order preference (edit-while-adding), party default ON
+   (fresh installs only; stored prefs untouched), settings IA + live self-confirming
+   customization, color-blind + monochrome themes, i18n foundation (gen-l10n + ARB).
+7. **`add-capture-and-pro-metadata`** — NEW (2026-07-08): Record entry (system camera path
+   already in `video_service.dart`), fps/resolution/codec probe + additive migration,
+   bytes/names-preserved invariant + NLE JSON sidecar (DaVinci/Blackmagic interop),
+   open-with-Breakdex (iOS/Android/web), deck/set annotations.
+8. **`align-cross-client-foundations`** — this change (gap-filler: multi-user sync model,
    security posture, tokens, notes dirty-guard, web state machines, ledger hygiene). Wave 1
    lands now with no Appwrite dependency; Waves 2–3 ride Appwrite Phases 4/6.
-5. Nearly-done finishing passes: `foundation-data-resilience` (59/64),
-   `tighten-combo-journey-and-review-polish` (33/36), `repo-organization-and-readme-refresh`
-   (12/15), `add-historical-photos-bootstrap` (7/9), `add-web-mirror-player` (19/26).
-6. **`state-machine-crud`** — kept open as the tracker for genuinely unshipped residual work
-   (TrashMachine, MoveListMachine, AppMachine, notes/log overlays); the `Machine<S,E>`
-   framework + move-detail vertical already shipped (see its `tasks.md` Residual header).
-7. Everything else parked (labs, provenance/beam ingestion, research workbench, photo archive
-   recovery, etc.).
+9. **`harden-code-ownership-and-config-purge`** — NEW (2026-07-08): per-directory purge +
+   justify sweep (zero behavior change, pure deletions, git history = undo). Rolling: a
+   directory sweeps only after its migration lands; gate before invites go broad.
+10. Nearly-done finishing passes: `foundation-data-resilience` (59/64),
+    `tighten-combo-journey-and-review-polish` (33/36), `repo-organization-and-readme-refresh`
+    (12/15), `add-historical-photos-bootstrap` (7/9), `add-web-mirror-player` (19/26).
+11. **`state-machine-crud`** — kept open as the tracker for genuinely unshipped residual work
+    (TrashMachine, MoveListMachine, AppMachine, notes/log overlays); the `Machine<S,E>`
+    framework + move-detail vertical already shipped (see its `tasks.md` Residual header).
+12. Everything else parked (labs, provenance/beam ingestion, research workbench, photo
+    archive recovery, etc.).
 
 **Recently reconciled (2026-07-06 ledger audit):** archived `add-convex-sync-backend`
 (superseded by Appwrite), `add-discovery-graph-interface` (26/26 shipped), and

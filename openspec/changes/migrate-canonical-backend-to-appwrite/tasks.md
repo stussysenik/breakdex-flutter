@@ -97,6 +97,22 @@
 - [ ] 1.5 Deploy schema + Functions via CLI to the Cloud project; smoke-test each Function with
   curl/CLI fixtures. Owner-gated only if a key is missing.
 
+## Phase 1R: Remote config channel (rides Phase 1 provisioning; owner ruling 2026-07-08 — config-first, code-push deferred to 7.4)
+
+- [ ] 1R.1 `appConfig` collection (singleton document, versioned): `minSupportedBuild`,
+  `latestBuild`, `updateMessage` (feeds the "please update / reinstall" UX and links `GUIDE.md`),
+  `featureFlags` (map), `killSwitches` (map — subsumes the sync kill-switch flag surface), and
+  `cohortProfiles` (map keyed by invite-cohort — the "my own versions" mechanism: same binary,
+  per-cohort flag profiles). Read: any authenticated user; write: owner only.
+- [ ] 1R.2 Flutter client: typed immutable `RemoteConfig` model + Riverpod provider; fetch at
+  launch, Realtime subscribe for live updates, fall back to last-cached then compiled defaults
+  when offline. No behavior change while all flags are at defaults.
+- [ ] 1R.3 Min-version gate: config-driven update prompt (soft nag vs hard block per config),
+  messaging text from `updateMessage`. Tested with a fixture config; never triggerable while
+  `minSupportedBuild` ≤ current build.
+- [ ] 1R.4 Validation: unit tests for model/fallback ordering; manual proof that flipping a flag
+  in Appwrite console reaches a running client without redeploy.
+
 ## Phase 2: AppwriteSyncBackend behind the existing seam (additive; no caller wired)
 
 - [ ] 2.1 `lib/core/sync/backends/appwrite_transport.dart`: seam interface + typed
@@ -195,6 +211,9 @@
 - [ ] 7.2 Video-locality UI in Flutter (badge + filter for device-only/cloud/both) matching 6.1's
   web treatment.
 - [ ] 7.3 Self-host warm standby on Hetzner (D2's rejected-for-day-1 option, revisited).
+- [ ] 7.4 Evaluate **Shorebird code-push** for OTA Dart updates (owner ruling 2026-07-08:
+  remote config first, code-push only once release cadence exists; weigh vendor cost + iOS
+  store-policy constraints; do not adopt without a fresh owner decision).
 
 ## Validation
 

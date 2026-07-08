@@ -1,5 +1,14 @@
 # Evolve the Web Mirror into a Read-Write Breakdex Platform
 
+> **SUPERSEDED (2026-07-08, owner ruling).** The web spec is now
+> **`add-web-authoring-and-lifecycle-studio`**; the shared-truth and identity layers are owned by
+> **`migrate-canonical-backend-to-appwrite`** (`metadata-sync-backend`, `unified-identity`).
+> Unshipped keepers (journal/metadata write-through, media governance, deploy) migrated into the
+> studio change as Phases 4–6 together with the `web-library-crud` and `media-governance` spec
+> deltas. Phase 4 (enterprise web shell) shipped before archival; `shared-source-of-truth` and
+> `identity-centralization` deltas are retained here unapplied (superseded by the Appwrite specs).
+> Archived without applying specs to main.
+
 ## Summary
 
 Supersede the **read-only** `add-web-mirror-player` direction with a **read-write** web app

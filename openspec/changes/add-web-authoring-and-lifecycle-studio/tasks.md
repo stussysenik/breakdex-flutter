@@ -35,6 +35,34 @@ Risk-ordered. Phase 0 ships first (display only); writes wait on `shared-source-
 - [ ] 3.6 Tests: builder save path, suggestion seeding, promotion-opens-seeded-builder, no-write-until-save
 - [ ] 3.7 `next build` green + browser smoke of both builders end to end
 
+## Phase 4 — Entity metadata & journal authoring (migrated from `evolve-web-mirror-to-crud-platform` 2.2/2.3, 2026-07-08 supersession ruling)
+- [ ] 4.1 Journal/notes create + edit write-through with optimistic UI and per-edit sync status
+- [ ] 4.2 Rename moves/combos and edit metadata as write-through; media blobs untouched
+- [ ] 4.3 Validation: round-trip a desktop edit → phone reconcile; conflicting-edit test resolves deterministically (LWW) and retains lifecycle history
+
+## Phase 5 — Media governance: swap-out, export, GC (migrated from `evolve-web-mirror-to-crud-platform` Phase 3; `media-governance` spec delta lives here now)
+- [ ] 5.1 Video swap-out: upload new content-addressed blob → update index → mark old orphaned only after confirm
+- [ ] 5.2 Export with explicit scope selection; read-only w.r.t. truth
+- [ ] 5.3 Audited GC for orphaned blobs as a distinct, non-inline step (never inline with a user action)
+- [ ] 5.4 Validation: failed swap leaves original intact; export mutates nothing; GC only touches confirmed orphans
+
+## Phase 6 — Deploy & verify (migrated from `evolve-web-mirror-to-crud-platform` Phase 5)
+- [ ] 6.1 Vercel env for Appwrite + auth; deploy a **preview**; validate sign-in + CRUD + media swap against the owner's real Drive/backend
+- [ ] 6.2 Confirm non-owner rejection and that no flow hard-deletes user state
+- [ ] 6.3 Promote to production; record the URL
+- [ ] 6.4 Mark `add-web-mirror-player` superseded for write scope; update `add-beam-web-architecture-foundation` `web-access-foundation` (first read-write slice shipped)
+
+## Phase 7 — Developer docs (MDX, added 2026-07-08)
+- [ ] 7.1 Wire MDX into the studio's Next.js build (`@next/mdx`); docs route + nav; broken
+  docs fail `next build`
+- [ ] 7.2 Author the seam docs: `SyncBackend` contract, `Machine<S,E>` architecture, design
+  tokens (pointing at `docs/design/TOKENS.md`), sync/LWW + dirty-guard model
+- [ ] 7.3 Author the runbooks: release (GUIDE.md-linked), Appwrite provisioning, device
+  diagnostics-export triage (maps each check in `harden-marathon-reliability` to its
+  subsystem)
+- [ ] 7.4 Adopt the same-change doc rule: a diff that alters a documented seam updates its
+  MDX page in the same change
+
 ## Validation
 - [ ] V.1 `openspec validate add-web-authoring-and-lifecycle-studio --strict --no-interactive`
 - [ ] V.2 Full web test suite (`npm test`) green
