@@ -1,0 +1,29 @@
+{
+  "@@locale": "en",
+
+  "appTitle": "Breakdex",
+  "@appTitle": {
+    "description": "Application title shown to the OS (task switcher, window chrome)."
+  },
+
+  "emptyLibraryTitle": "No {itemPlural} yet",
+  "@emptyLibraryTitle": {
+    "description": "Empty-state heading. Composes the user's parametric plural noun (see entityNamesProvider) via a placeholder so localization and the custom-noun setting cooperate.",
+    "placeholders": {
+      "itemPlural": {
+        "type": "String",
+        "example": "Moves"
+      }
+    }
+  },
+
+  "itemCount": "{count, plural, =0{No {itemPlural}} =1{1 {itemSingular}} other{{count} {itemPlural}}}",
+  "@itemCount": {
+    "description": "Count label that respects grammatical number and the user's parametric nouns. Proves the ICU-plural + placeholder pipeline is wired.",
+    "placeholders": {
+      "count": { "type": "int", "example": "3" },
+      "itemSingular": { "type": "String", "example": "Move" },
+      "itemPlural": { "type": "String", "example": "Moves" }
+    }
+  }
+}

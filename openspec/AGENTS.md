@@ -57,5 +57,12 @@ openspec/changes/<verb-led-id>/
   motion composes from `AppMotion` family tokens (Fluid/Morph doctrine) — raw
   `Curve`/`Duration` literals driving visible motion on a product surface are
   violations; every `AnimationController` is disposed with its owning widget.
+- Localization: user-facing copy is resolved through `AppLocalizations` (ARB in
+  `lib/l10n/`, generated `lib/l10n/gen/` committed & CI-verified via
+  `scripts/check_l10n.sh`). **Review checklist:** no *new* hard-coded user-facing
+  string literals in widgets — grep gate `rg "Text\('" lib/` on the diff should
+  surface only pre-existing sites, not additions; parametric nouns
+  (`entityNamesProvider`) compose into localized templates via placeholders, never
+  by string concatenation.
 - Every deployment (web/iOS/Android) is the same standardized brick: one codebase, one
   config surface (remote config + cohorts), platform gaps degrade visibly.

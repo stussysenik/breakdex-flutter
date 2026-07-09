@@ -1,0 +1,23 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches-ignore: [main]
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.x'
+
+      - run: flutter pub get
+
+      # Phase 5.1: generated localizations must be committed and current.
+      - run: ./scripts/check_l10n.sh
+
+      - run: flutter analyze

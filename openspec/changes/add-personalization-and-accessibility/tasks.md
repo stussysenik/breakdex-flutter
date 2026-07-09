@@ -78,12 +78,28 @@ Ledger rule: tick each box in the same commit that lands the work.
 
 ## Phase 5: i18n foundation
 
-- [ ] 5.1 Wire `flutter_localizations` + `l10n.yaml` + `app_en.arb` + generated delegates
+- [x] 5.1 Wire `flutter_localizations` + `l10n.yaml` + `app_en.arb` + generated delegates
   into the shell; CI check that `flutter gen-l10n` output is committed and current.
+  Added `flutter_localizations` + `generate: true` (pubspec), `l10n.yaml` (committed
+  output at `lib/l10n/gen/`, `synthetic-package` dropped — dead in Flutter 3.41),
+  `lib/l10n/app_en.arb`, and threaded `AppLocalizations.localizationsDelegates` +
+  `supportedLocales` + `onGenerateTitle` through `MaterialApp.router`. Generated
+  `lib/l10n/gen/*` committed. CI gate: `scripts/check_l10n.sh` regenerates and fails on
+  drift; new `.github/workflows/ci.yml` runs it + `flutter analyze` on PRs.
+  `l10n_foundation_test.dart` green (4 cases: supported-locale, appTitle, parametric
+  plural composition, ICU-plural + parametric nouns).
 - [ ] 5.2 Extract shell + top five screens (library, add, review, settings, move detail)
   (~250 strings); parametric nouns compose via placeholders.
-- [ ] 5.3 Adopt the no-new-hardcoded-strings review rule; add a grep gate note to the review
-  checklist.
+  Contract established & test-proven in 5.1: the ARB carries the parametric-noun
+  placeholder pattern (`emptyLibraryTitle`, `itemCount` — noun passed in from
+  `entityNamesProvider`, never concatenated). The remaining per-screen extraction (~250
+  strings × 5 screens) is a separate budgeted unit — NOT landed here; deliberately left
+  unticked per the same-commit ledger rule.
+- [x] 5.3 Adopt the no-new-hardcoded-strings review rule; add a grep gate note to the review
+  checklist. Added a "Localization" non-negotiable to `openspec/AGENTS.md` review
+  checklist: user-facing copy resolves through `AppLocalizations`; grep gate
+  `rg "Text\('" lib/` on the diff must surface only pre-existing sites; parametric nouns
+  compose via placeholders, never concatenation.
 
 ## Verification
 

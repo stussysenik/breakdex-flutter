@@ -11,6 +11,7 @@ import 'firebase_options.dart';
 
 import 'core/database/database.dart';
 import 'core/design/theme.dart';
+import 'l10n/gen/app_localizations.dart';
 import 'core/navigation/app_router.dart';
 import 'core/providers.dart';
 import 'core/services/automation_fixture_service.dart';
@@ -360,8 +361,10 @@ class BreakdexApp extends ConsumerWidget {
     final palette = ref.watch(accessiblePaletteProvider);
 
     return MaterialApp.router(
-      title: 'Breakdex',
+      onGenerateTitle: (final context) => AppLocalizations.of(context).appTitle,
       debugShowCheckedModeBanner: false,
+      localizationsDelegates: AppLocalizations.localizationsDelegates,
+      supportedLocales: AppLocalizations.supportedLocales,
       scaffoldMessengerKey: _rootScaffoldMessengerKey,
       theme: AppTheme.light(
         family: fontFamily,
