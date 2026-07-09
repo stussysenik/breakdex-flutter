@@ -12,6 +12,7 @@ import 'package:path/path.dart' as p;
 import '../../core/database/database.dart';
 import '../../core/design/colors.dart';
 import '../../core/design/spacing.dart';
+import '../../core/design/theme.dart';
 import '../../core/design/typography.dart';
 import '../../core/app_metadata.dart';
 import '../../core/models/add_flow_order.dart';
@@ -32,6 +33,8 @@ import 'widgets/review_fill_color_section.dart';
 import 'widgets/review_states_section.dart';
 import '../../core/services/stats_export_service.dart';
 import '../../shared/widgets/app_loader.dart';
+import '../../shared/widgets/state_pill.dart';
+import '../flashcard_review/widgets/rating_button_row.dart';
 import '../../shared/widgets/action_tile.dart';
 import '../../core/services/view_names_service.dart';
 import '../../core/services/entity_names_service.dart';
@@ -67,6 +70,7 @@ class SettingsScreen extends ConsumerWidget {
     final colorScheme = Theme.of(context).colorScheme;
     final viewNames = ref.watch(viewNamesProvider);
     final entityNames = ref.watch(entityNamesProvider);
+    final palette = ref.watch(accessiblePaletteProvider);
     final categoryUsage = <String, int>{};
     for (final move in moves) {
       categoryUsage[move.category] = (categoryUsage[move.category] ?? 0) + 1;
@@ -216,6 +220,34 @@ class SettingsScreen extends ConsumerWidget {
                             labelOf: (final t) => t.displayName,
                             onChanged: (final t) =>
                                 ref.read(themeSettingProvider.notifier).set(t),
+                          ),
+                        ),
+                      ),
+                      SizedBox(
+                        width: panelWidth,
+                        child: _SettingsPanel(
+                          title: 'Accessibility',
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                            children: [
+                              _SegmentedPicker<AccessiblePalette>(
+                                values: AccessiblePalette.values,
+                                selected: palette,
+                                labelOf: (final p) => p.displayName,
+                                onChanged: (final p) => ref
+                                    .read(accessiblePaletteProvider.notifier)
+                                    .set(p),
+                              ),
+                              const SizedBox(height: AppSpacing.sm),
+                              Text(
+                                palette.description,
+                                style: AppTypography.caption.copyWith(
+                                  color: colorScheme.secondary,
+                                ),
+                              ),
+                              const SizedBox(height: AppSpacing.md),
+                              const _AccessiblePalettePreview(),
+                            ],
                           ),
                         ),
                       ),
@@ -1126,6 +1158,85 @@ class SettingsScreen extends ConsumerWidget {
     }
 
     return true;
+  }
+}
+
+/// Live preview of how the color-carried signals (learning states + review
+/// ratings) render under the currently-selected accessible palette. Because
+/// the palette rebuilds the whole app theme, these widgets recolor in place as
+/// soon as a new palette is chosen — no restart, no navigation.
+class _AccessiblePalettePreview extends StatelessWidget {
+  const _AccessiblePalettePreview();
+
+  @override
+  Widget build(final BuildContext context) {
+    final semantic = AppSemanticTheme.of(context);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Wrap(
+          spacing: AppSpacing.xs,
+          runSpacing: AppSpacing.xs,
+          children: [
+            for (final state in LearningState.values) StatePill(state: state),
+          ],
+        ),
+        const SizedBox(height: AppSpacing.sm),
+        Wrap(
+          spacing: AppSpacing.xs,
+          runSpacing: AppSpacing.xs,
+          children: [
+            for (final rating in ReviewRating.values)
+              _RatingPreviewChip(
+                icon: RatingButtonRow.iconForRating(rating),
+                label: rating.displayText,
+                color: semantic.colorForRating(rating),
+              ),
+          ],
+        ),
+      ],
+    );
+  }
+}
+
+class _RatingPreviewChip extends StatelessWidget {
+  const _RatingPreviewChip({
+    required this.icon,
+    required this.label,
+    required this.color,
+  });
+
+  final IconData icon;
+  final String label;
+  final Color color;
+
+  @override
+  Widget build(final BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.xs,
+        vertical: AppSpacing.xxs,
+      ),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.10),
+        borderRadius: BorderRadius.circular(AppRadius.sm),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 14, color: color),
+          const SizedBox(width: AppSpacing.xxs),
+          Text(
+            label,
+            style: AppTypography.caption.copyWith(
+              color: color,
+              fontWeight: FontWeight.w600,
+              letterSpacing: 0.5,
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }
 

@@ -52,6 +52,39 @@
 | `actionGood` | `#1F7A4F` | `AppColors.actionGood` | `--color-action-good` (planned) | Good rating button |
 | `actionEasy` | `#0D9F9A` | `AppColors.actionEasy` | `--color-action-easy` (planned) | Easy rating button |
 
+### Accessible Palettes
+
+An orthogonal axis over theme/brightness/viewing-mode, selected by
+`AccessiblePalette` (`standard` · `deuteranopia` · `monochrome`). Selection is
+non-destructive — the user's accent/state/rating colors stay in prefs and return
+exactly when the palette is set back to `standard`.
+
+**Deuteranopia-safe ramp** — the Okabe–Ito palette, whose members stay mutually
+distinguishable under red-green color-vision deficiency. Applied to the
+app-controlled semantic signals (learning states + review ratings) only;
+surfaces and accent are left untouched.
+
+| Token | Value | Dart Constant | Consumers |
+|-------|-------|---------------|----------|
+| `deuterStateNew` | `#E69F00` | `AppColors.deuterStateNew` | New state (deuteranopia) |
+| `deuterStateLearning` | `#0072B2` | `AppColors.deuterStateLearning` | Learning state (deuteranopia) |
+| `deuterStateMastery` | `#009E73` | `AppColors.deuterStateMastery` | Mastery state (deuteranopia) |
+| `deuterActionAgain` | `#D55E00` | `AppColors.deuterActionAgain` | Again rating (deuteranopia) |
+| `deuterActionHard` | `#E69F00` | `AppColors.deuterActionHard` | Hard rating (deuteranopia) |
+| `deuterActionGood` | `#009E73` | `AppColors.deuterActionGood` | Good rating (deuteranopia) |
+| `deuterActionEasy` | `#0072B2` | `AppColors.deuterActionEasy` | Easy rating (deuteranopia) |
+
+**Monochrome (non-stimulating)** — reuses the existing grayscale surface ramp
+(`monoLight*` / `monoDark*`) for surfaces and collapses the semantic ramp + accent
+to ink (`AppSemanticTheme.ink`). Distinct from the `monoOutline` "marker" render
+style: surfaces stay **filled** (`isMonoOutline: false`), only color is removed.
+Meaning survives via the icon/shape/label pairing on every color-carried signal
+(rating icons + state/rating labels).
+
+Color is never carried alone in any palette: rating buttons pair color with a
+distinct icon **and** label (WCAG 1.4.1), state pills pair color with a label,
+and category chips always render alongside the category name.
+
 ---
 
 ## Spacing

@@ -6,9 +6,11 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/design/spacing.dart';
+import '../../../core/design/theme.dart';
 import '../../../core/design/typography.dart';
 import '../../../core/models/learning_state.dart';
 import '../../../core/providers.dart';
+import '../../../core/services/settings_service.dart';
 
 /// The AGAIN / HARD / GOOD / EASY rating buttons styled as subtle tinted pills.
 ///
@@ -39,7 +41,7 @@ class RatingButtonRow extends ConsumerWidget {
 
   /// Distinct icon per rating for color-blind accessibility.
   /// Shape + color = double encoding (WCAG 1.4.1 Use of Color).
-  static IconData _iconForRating(final ReviewRating rating) => switch (rating) {
+  static IconData iconForRating(final ReviewRating rating) => switch (rating) {
         ReviewRating.again => Icons.close_rounded,    // X shape — "wrong"
         ReviewRating.hard  => Icons.trending_flat_rounded, // Wave — "struggled"
         ReviewRating.good  => Icons.check_rounded,    // Checkmark — "got it"
@@ -58,7 +60,20 @@ class RatingButtonRow extends ConsumerWidget {
   @override
   Widget build(final BuildContext context, final WidgetRef ref) {
     final colorScheme = Theme.of(context).colorScheme;
-    final rc = ref.watch(ratingColorsProvider);
+    // Under an accessible palette the rating colors follow the theme's semantic
+    // ramp (deuteranopia-safe or grayscale ink) rather than the user's custom
+    // rating colors; the icon+label double-encoding keeps ratings legible either
+    // way. Standard palette keeps the user's configured colors.
+    final palette = ref.watch(accessiblePaletteProvider);
+    final semantic = AppSemanticTheme.of(context);
+    final rc = palette == AccessiblePalette.standard
+        ? ref.watch(ratingColorsProvider)
+        : RatingColors(
+            again: semantic.actionAgain,
+            hard: semantic.actionHard,
+            good: semantic.actionGood,
+            easy: semantic.actionEasy,
+          );
 
     return Row(
       children: [
@@ -69,7 +84,7 @@ class RatingButtonRow extends ConsumerWidget {
             child: compact
                 ? _CompactRatingButton(
                     rating: rating,
-                    icon: _iconForRating(rating),
+                    icon: iconForRating(rating),
                     color: _colorForRating(rating, rc),
                     onRate: onRate,
                     intervalLabel: _formatInterval(intervalPreviews?[rating]),
@@ -79,7 +94,7 @@ class RatingButtonRow extends ConsumerWidget {
                     children: [
                       _TintedPillButton(
                         rating: rating,
-                        icon: _iconForRating(rating),
+                        icon: iconForRating(rating),
                         color: _colorForRating(rating, rc),
                         onRate: onRate,
                       ),

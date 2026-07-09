@@ -42,4 +42,17 @@ abstract final class AppColors {
   static const actionHard = Color(0xFFB7791F);
   static const actionGood = Color(0xFF1F7A4F);
   static const actionEasy = Color(0xFF0D9F9A);
+
+  // Deuteranopia-safe semantic ramp — Okabe–Ito palette, whose members stay
+  // mutually distinguishable under red-green color-vision deficiency. Applied
+  // to the app-controlled semantic signals (learning states + review ratings)
+  // when AccessiblePalette.deuteranopia is active. Surfaces/accent are left
+  // untouched — only the meaning-by-color signals swap.
+  static const deuterStateNew = Color(0xFFE69F00); // amber
+  static const deuterStateLearning = Color(0xFF0072B2); // blue
+  static const deuterStateMastery = Color(0xFF009E73); // bluish green
+  static const deuterActionAgain = Color(0xFFD55E00); // vermillion
+  static const deuterActionHard = Color(0xFFE69F00); // amber
+  static const deuterActionGood = Color(0xFF009E73); // bluish green
+  static const deuterActionEasy = Color(0xFF0072B2); // blue
 }

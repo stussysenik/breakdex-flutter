@@ -9,6 +9,20 @@ enum ThemeSetting { system, dark, light }
 
 enum ViewingMode { standard, monoOutline }
 
+/// Accessible palette mode — an orthogonal axis over theme/brightness/viewing
+/// mode. Swaps the app-controlled semantic ramp (learning states + review
+/// ratings) for a color-vision-safe alternative, or desaturates the whole UI.
+///
+/// - [standard]: the configured accent + user/default semantic colors.
+/// - [deuteranopia]: an Okabe–Ito ramp distinguishable under red-green CVD.
+/// - [monochrome]: a non-stimulating grayscale UI (distinct from the
+///   [ViewingMode.monoOutline] "marker" render style — this keeps filled
+///   surfaces, it just removes color).
+///
+/// Selection is non-destructive: the user's accent/state/rating colors stay in
+/// prefs and return exactly when the palette is set back to [standard].
+enum AccessiblePalette { standard, deuteranopia, monochrome }
+
 final sharedPreferencesProvider = Provider<SharedPreferences>((final ref) {
   throw UnimplementedError('Override in main');
 });
@@ -80,6 +94,47 @@ extension ViewingModeX on ViewingMode {
   String get displayName => switch (this) {
     ViewingMode.standard => 'Blue',
     ViewingMode.monoOutline => 'Marker',
+  };
+}
+
+final accessiblePaletteProvider =
+    NotifierProvider<AccessiblePaletteNotifier, AccessiblePalette>(
+      AccessiblePaletteNotifier.new,
+    );
+
+class AccessiblePaletteNotifier extends Notifier<AccessiblePalette> {
+  static const _key = 'accessible_palette';
+
+  @override
+  AccessiblePalette build() {
+    final prefs = ref.watch(sharedPreferencesProvider);
+    final value = prefs.getString(_key) ?? AccessiblePalette.standard.name;
+    return AccessiblePalette.values.firstWhere(
+      (final e) => e.name == value,
+      orElse: () => AccessiblePalette.standard,
+    );
+  }
+
+  Future<void> set(final AccessiblePalette palette) async {
+    final prefs = ref.read(sharedPreferencesProvider);
+    await prefs.setString(_key, palette.name);
+    state = palette;
+  }
+}
+
+extension AccessiblePaletteX on AccessiblePalette {
+  String get displayName => switch (this) {
+    AccessiblePalette.standard => 'Standard',
+    AccessiblePalette.deuteranopia => 'Color-blind safe',
+    AccessiblePalette.monochrome => 'Monochrome',
+  };
+
+  String get description => switch (this) {
+    AccessiblePalette.standard => 'Your configured accent and semantic colors.',
+    AccessiblePalette.deuteranopia =>
+      'A ramp that stays distinguishable under red-green color vision.',
+    AccessiblePalette.monochrome =>
+      'A calm, fully grayscale interface — meaning stays clear via labels and icons.',
   };
 }
 

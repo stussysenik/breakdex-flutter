@@ -183,17 +183,49 @@ class AppSemanticTheme extends ThemeExtension<AppSemanticTheme> {
   static AppSemanticTheme of(final BuildContext context) {
     final extension = Theme.of(context).extension<AppSemanticTheme>();
     if (extension != null) return extension;
-    return const AppSemanticTheme(
-      isMonoOutline: false,
-      stateNew: AppColors.stateNew,
-      stateLearning: AppColors.stateLearning,
-      stateMastery: AppColors.stateMastery,
-      actionAgain: AppColors.actionAgain,
-      actionHard: AppColors.actionHard,
-      actionGood: AppColors.actionGood,
-      actionEasy: AppColors.actionEasy,
-    );
+    return defaults;
   }
+
+  /// The standard semantic ramp (default states + review actions).
+  static const defaults = AppSemanticTheme(
+    isMonoOutline: false,
+    stateNew: AppColors.stateNew,
+    stateLearning: AppColors.stateLearning,
+    stateMastery: AppColors.stateMastery,
+    actionAgain: AppColors.actionAgain,
+    actionHard: AppColors.actionHard,
+    actionGood: AppColors.actionGood,
+    actionEasy: AppColors.actionEasy,
+  );
+
+  /// The Okabe–Ito deuteranopia-safe ramp (AccessiblePalette.deuteranopia).
+  static const deuteranopia = AppSemanticTheme(
+    isMonoOutline: false,
+    stateNew: AppColors.deuterStateNew,
+    stateLearning: AppColors.deuterStateLearning,
+    stateMastery: AppColors.deuterStateMastery,
+    actionAgain: AppColors.deuterActionAgain,
+    actionHard: AppColors.deuterActionHard,
+    actionGood: AppColors.deuterActionGood,
+    actionEasy: AppColors.deuterActionEasy,
+  );
+
+  /// A single-ink ramp — every semantic signal collapses to [ink]. Used for the
+  /// monoOutline "marker" style and the monochrome accessible palette;
+  /// distinguishability is carried by the paired icons/labels, not color.
+  factory AppSemanticTheme.ink(
+    final Color ink, {
+    final bool isMonoOutline = false,
+  }) => AppSemanticTheme(
+    isMonoOutline: isMonoOutline,
+    stateNew: ink,
+    stateLearning: ink,
+    stateMastery: ink,
+    actionAgain: ink,
+    actionHard: ink,
+    actionGood: ink,
+    actionEasy: ink,
+  );
 
   @override
   AppSemanticTheme copyWith({
@@ -248,62 +280,53 @@ abstract final class AppTheme {
     final Color accent = AppColors.accent,
     final LearningStateColors stateColors = LearningStateColors.defaults,
     final ViewingMode viewingMode = ViewingMode.standard,
-  }) => _build(
-    brightness: Brightness.light,
-    bg: viewingMode == ViewingMode.monoOutline
-        ? AppColors.monoLightBg
-        : AppColors.lightBg,
-    card: viewingMode == ViewingMode.monoOutline
-        ? AppColors.monoLightCard
-        : AppColors.lightCard,
-    fill: viewingMode == ViewingMode.monoOutline
-        ? AppColors.monoLightFill
-        : AppColors.lightFill,
-    text: viewingMode == ViewingMode.monoOutline
-        ? AppColors.monoLightText
-        : AppColors.lightText,
-    secondary: viewingMode == ViewingMode.monoOutline
-        ? AppColors.monoLightSecondary
-        : AppColors.lightSecondary,
-    separator: viewingMode == ViewingMode.monoOutline
-        ? AppColors.monoLightSeparator
-        : AppColors.lightSeparator,
-    family: family,
-    accent: accent,
-    stateColors: stateColors,
-    viewingMode: viewingMode,
-  );
+    final AccessiblePalette palette = AccessiblePalette.standard,
+  }) {
+    // monoOutline and monochrome both render on the grayscale surface ramp.
+    final gray =
+        viewingMode == ViewingMode.monoOutline ||
+        palette == AccessiblePalette.monochrome;
+    return _build(
+      brightness: Brightness.light,
+      bg: gray ? AppColors.monoLightBg : AppColors.lightBg,
+      card: gray ? AppColors.monoLightCard : AppColors.lightCard,
+      fill: gray ? AppColors.monoLightFill : AppColors.lightFill,
+      text: gray ? AppColors.monoLightText : AppColors.lightText,
+      secondary: gray ? AppColors.monoLightSecondary : AppColors.lightSecondary,
+      separator: gray ? AppColors.monoLightSeparator : AppColors.lightSeparator,
+      family: family,
+      accent: accent,
+      stateColors: stateColors,
+      viewingMode: viewingMode,
+      palette: palette,
+    );
+  }
 
   static ThemeData dark({
     final AppFontFamily family = AppFontFamily.inter,
     final Color accent = AppColors.accent,
     final LearningStateColors stateColors = LearningStateColors.defaults,
     final ViewingMode viewingMode = ViewingMode.standard,
-  }) => _build(
-    brightness: Brightness.dark,
-    bg: viewingMode == ViewingMode.monoOutline
-        ? AppColors.monoDarkBg
-        : AppColors.darkBg,
-    card: viewingMode == ViewingMode.monoOutline
-        ? AppColors.monoDarkCard
-        : AppColors.darkCard,
-    fill: viewingMode == ViewingMode.monoOutline
-        ? AppColors.monoDarkFill
-        : AppColors.darkFill,
-    text: viewingMode == ViewingMode.monoOutline
-        ? AppColors.monoDarkText
-        : AppColors.darkText,
-    secondary: viewingMode == ViewingMode.monoOutline
-        ? AppColors.monoDarkSecondary
-        : AppColors.darkSecondary,
-    separator: viewingMode == ViewingMode.monoOutline
-        ? AppColors.monoDarkSeparator
-        : AppColors.darkSeparator,
-    family: family,
-    accent: accent,
-    stateColors: stateColors,
-    viewingMode: viewingMode,
-  );
+    final AccessiblePalette palette = AccessiblePalette.standard,
+  }) {
+    final gray =
+        viewingMode == ViewingMode.monoOutline ||
+        palette == AccessiblePalette.monochrome;
+    return _build(
+      brightness: Brightness.dark,
+      bg: gray ? AppColors.monoDarkBg : AppColors.darkBg,
+      card: gray ? AppColors.monoDarkCard : AppColors.darkCard,
+      fill: gray ? AppColors.monoDarkFill : AppColors.darkFill,
+      text: gray ? AppColors.monoDarkText : AppColors.darkText,
+      secondary: gray ? AppColors.monoDarkSecondary : AppColors.darkSecondary,
+      separator: gray ? AppColors.monoDarkSeparator : AppColors.darkSeparator,
+      family: family,
+      accent: accent,
+      stateColors: stateColors,
+      viewingMode: viewingMode,
+      palette: palette,
+    );
+  }
 
   static ThemeData _build({
     required final Brightness brightness,
@@ -317,40 +340,30 @@ abstract final class AppTheme {
     required final Color accent,
     required final LearningStateColors stateColors,
     required final ViewingMode viewingMode,
+    required final AccessiblePalette palette,
   }) {
-    final effectiveAccent = viewingMode == ViewingMode.monoOutline
-        ? text
-        : accent;
-    final semanticTheme = viewingMode == ViewingMode.monoOutline
-        ? AppSemanticTheme(
-            isMonoOutline: true,
-            stateNew: text,
-            stateLearning: text,
-            stateMastery: text,
-            actionAgain: text,
-            actionHard: text,
-            actionGood: text,
-            actionEasy: text,
-          )
-        : const AppSemanticTheme(
-            isMonoOutline: false,
-            stateNew: AppColors.stateNew,
-            stateLearning: AppColors.stateLearning,
-            stateMastery: AppColors.stateMastery,
-            actionAgain: AppColors.actionAgain,
-            actionHard: AppColors.actionHard,
-            actionGood: AppColors.actionGood,
-            actionEasy: AppColors.actionEasy,
-          ).copyWith(
-            stateNew: stateColors.newState,
-            stateLearning: stateColors.learning,
-            stateMastery: stateColors.mastery,
-          );
+    final isMonoOutline = viewingMode == ViewingMode.monoOutline;
+    // Any grayscale mode (marker outline or monochrome palette) tones the accent
+    // to ink so no color survives; the deuteranopia palette keeps the accent.
+    final grayscale = isMonoOutline || palette == AccessiblePalette.monochrome;
+    final effectiveAccent = grayscale ? text : accent;
+    final semanticTheme = switch ((isMonoOutline, palette)) {
+      // Marker outline keeps its distinctive outline flag + ink ramp.
+      (true, _) => AppSemanticTheme.ink(text, isMonoOutline: true),
+      // Monochrome: ink ramp, but filled surfaces (isMonoOutline stays false).
+      (false, AccessiblePalette.monochrome) => AppSemanticTheme.ink(text),
+      (false, AccessiblePalette.deuteranopia) => AppSemanticTheme.deuteranopia,
+      (false, AccessiblePalette.standard) => AppSemanticTheme.defaults.copyWith(
+        stateNew: stateColors.newState,
+        stateLearning: stateColors.learning,
+        stateMastery: stateColors.mastery,
+      ),
+    };
     final textTheme = AppTypography.textTheme(text, secondary, family: family);
     final colorScheme = ColorScheme(
       brightness: brightness,
       primary: effectiveAccent,
-      onPrimary: viewingMode == ViewingMode.monoOutline ? bg : Colors.white,
+      onPrimary: grayscale ? bg : Colors.white,
       secondary: secondary,
       onSecondary: text,
       surface: card,
@@ -396,7 +409,9 @@ abstract final class AppTheme {
           elevation: 0,
           shadowColor: Colors.transparent,
           backgroundColor: effectiveAccent,
-          foregroundColor: Colors.white,
+          // Match onPrimary so an ink accent (grayscale modes) stays legible in
+          // dark mode, where a hardcoded white would vanish on a near-white fill.
+          foregroundColor: grayscale ? bg : Colors.white,
           padding: const EdgeInsets.symmetric(vertical: 16),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(AppRadius.lg),

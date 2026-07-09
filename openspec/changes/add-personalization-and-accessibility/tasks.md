@@ -49,12 +49,32 @@ Ledger rule: tick each box in the same commit that lands the work.
 
 ## Phase 4: Accessible themes
 
-- [ ] 4.1 Define deuteranopia-safe and grayscale ramps as tokens (`colors.dart` +
+- [x] 4.1 Define deuteranopia-safe and grayscale ramps as tokens (`colors.dart` +
   `TOKENS.md` same-commit); build the two theme variants in `theme.dart`.
-- [ ] 4.2 Pair every color-carried signal (ratings, states, categories) with icon/shape/label;
+  Added the Okabe–Ito `deuter*` semantic tokens (7) to `colors.dart`; monochrome reuses
+  the existing `mono*` grayscale surface ramp + `AppSemanticTheme.ink`. New
+  `AccessiblePalette { standard, deuteranopia, monochrome }` axis (orthogonal to
+  theme/brightness/viewingMode) threads through `AppTheme.light/dark/_build` and is
+  persisted by `accessiblePaletteProvider`. TOKENS.md documents both ramps same-commit.
+- [x] 4.2 Pair every color-carried signal (ratings, states, categories) with icon/shape/label;
   golden test under a grayscale filter.
-- [ ] 4.3 Settings exposure in Appearance with live preview; modes compose with existing
+  Double-encoding was already present and is now proven: rating buttons pair color+icon+label
+  (WCAG 1.4.1), state pills pair color+label, category chips render with their name. Ratings
+  are made palette-aware (follow the theme semantic ramp under an accessible palette). Scope
+  call: the ramp swap applies to the app-controlled semantic signals (states + ratings); user-
+  authored category colors are NOT non-destructively remapped (lossy + data-safety) — their
+  name label already means "color is never alone". Verification uses a structural grayscale
+  test (`accessible_palette_test.dart`: monochrome + `ColorFilter.matrix` grayscale → asserts
+  4 distinct rating icons + 4 labels survive) rather than a pixel golden — no golden infra
+  exists in-repo and goldens are font/platform-flaky; the structural assertion proves the
+  actual requirement (non-color encodings survive color loss) more reliably.
+- [x] 4.3 Settings exposure in Appearance with live preview; modes compose with existing
   theme + restore exactly on toggle-off.
+  Added an "Accessibility" panel to Settings → Visuals & Style (segmented `AccessiblePalette`
+  picker + description + `_AccessiblePalettePreview` showing live state pills + rating chips —
+  selecting a palette rebuilds the app theme so the preview recolors in place, no restart).
+  Compose/restore proven in test: `standard` theme is byte-identical to the baseline (surfaces,
+  accent, semantic ramp, and user-customized state colors all return exactly on toggle-off).
 
 ## Phase 5: i18n foundation
 

@@ -357,6 +357,7 @@ class BreakdexApp extends ConsumerWidget {
     final fontFamily = ref.watch(fontFamilyProvider);
     final accent = ref.watch(accentColorProvider);
     final stateColors = ref.watch(learningStateColorsProvider);
+    final palette = ref.watch(accessiblePaletteProvider);
 
     return MaterialApp.router(
       title: 'Breakdex',
@@ -367,12 +368,14 @@ class BreakdexApp extends ConsumerWidget {
         accent: accent,
         stateColors: stateColors,
         viewingMode: viewingMode,
+        palette: palette,
       ),
       darkTheme: AppTheme.dark(
         family: fontFamily,
         accent: accent,
         stateColors: stateColors,
         viewingMode: viewingMode,
+        palette: palette,
       ),
       themeMode: themeSetting.themeMode,
       routerConfig: appRouter,
