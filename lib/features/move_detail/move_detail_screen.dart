@@ -157,6 +157,18 @@ class _MoveDetailScreenState extends ConsumerState<MoveDetailScreen> {
                           ),
                         ),
                       ],
+                      // App-managed Photos album filename (derived from the
+                      // semantic naming scheme used at album export).
+                      if (move.managedAlbumFilename != null) ...[
+                        const SizedBox(height: 2),
+                        Text(
+                          'Album · ${move.managedAlbumFilename}',
+                          style: AppTypography.caption.copyWith(
+                            color: colorScheme.secondary,
+                            fontFamily: 'monospace',
+                          ),
+                        ),
+                      ],
 
                       const SizedBox(height: AppSpacing.lg),
 
