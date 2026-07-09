@@ -25,6 +25,7 @@ import '../../core/providers.dart';
 import '../../core/services/fsrs_service.dart';
 import '../../core/services/native_video_album.dart';
 import '../../core/services/video_path_resolver.dart';
+import '../../shared/widgets/app_loader.dart';
 import '../../shared/widgets/beat_grid.dart';
 import '../../shared/widgets/primary_button.dart';
 import 'providers/deck_providers.dart';
@@ -334,7 +335,7 @@ class _FlashcardReviewScreenState extends ConsumerState<FlashcardReviewScreen>
     });
 
     return itemsAsync.when(
-      loading: () => const Center(child: CircularProgressIndicator()),
+      loading: () => const Center(child: AppLoader()),
       error: (final e, _) => Center(child: Text('Error: $e')),
       data: (final items) {
         // First load — also start shake listener for the active session

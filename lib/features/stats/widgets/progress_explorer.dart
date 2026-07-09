@@ -13,6 +13,7 @@ import '../../../core/design/typography.dart';
 import '../../../core/services/native_share_sheet.dart';
 import '../../../core/services/stats_export_service.dart';
 import '../../../core/utils/share_sheet.dart';
+import '../../../shared/widgets/app_loader.dart';
 import '../../../shared/widgets/app_segmented_control.dart';
 import '../../../shared/widgets/wip_badge.dart';
 import '../providers/stats_providers.dart';
@@ -2021,7 +2022,7 @@ class _ShareButtonState extends State<_ShareButton> {
           ? const SizedBox(
               width: 18,
               height: 18,
-              child: CircularProgressIndicator(strokeWidth: 2),
+              child: AppLoader(size: 6),
             )
           : const Icon(Icons.ios_share, size: 22),
       tooltip: 'Share progress',

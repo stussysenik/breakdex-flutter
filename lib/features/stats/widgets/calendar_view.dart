@@ -7,6 +7,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../shared/widgets/app_loader.dart';
 import '../../../core/design/colors.dart';
 import '../../../core/design/spacing.dart';
 import '../../../core/design/theme.dart';
@@ -505,7 +506,7 @@ class _DayDetailSheet extends ConsumerWidget {
               Expanded(
                 child: dayDataAsync.when(
                   loading: () =>
-                      const Center(child: CircularProgressIndicator()),
+                      const Center(child: AppLoader()),
                   error: (final e, _) => Center(child: Text('Error: $e')),
                   data: (final data) {
                     if (data.isEmpty) {

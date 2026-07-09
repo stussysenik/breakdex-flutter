@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 import '../../../core/database/database.dart';
 import '../../../core/design/spacing.dart';
 import '../../../core/design/typography.dart';
+import '../../../shared/widgets/app_loader.dart';
 import '../providers/lab_providers.dart';
 import 'lab_card.dart';
 
@@ -33,7 +34,7 @@ class LabListView extends ConsumerWidget {
 
     return labsAsync.when(
       loading: () => const SliverFillRemaining(
-        child: Center(child: CircularProgressIndicator()),
+        child: Center(child: AppLoader()),
       ),
       error: (final e, _) => SliverFillRemaining(
         child: Center(child: Text('Error: $e')),

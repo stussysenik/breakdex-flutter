@@ -10,6 +10,7 @@ import '../../../core/providers.dart';
 import '../../../core/sync/gdrive_setup_service.dart';
 import '../../../core/sync/icloud_setup_service.dart';
 import '../../../shared/widgets/action_tile.dart';
+import '../../../shared/widgets/app_loader.dart';
 
 class CloudSyncSection extends ConsumerWidget {
   const CloudSyncSection({super.key});
@@ -352,7 +353,7 @@ class SyncProviderRow extends StatelessWidget {
         return const SizedBox(
           width: 16,
           height: 16,
-          child: CircularProgressIndicator(strokeWidth: 2),
+          child: AppLoader(size: 6),
         );
     }
   }

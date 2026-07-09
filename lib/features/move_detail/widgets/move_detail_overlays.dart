@@ -11,6 +11,7 @@ import '../../../core/design/spacing.dart';
 import '../../../core/design/typography.dart';
 import '../../../core/models/learning_state.dart';
 import '../../../core/services/categories_service.dart';
+import '../../../shared/widgets/app_loader.dart';
 import '../../../shared/widgets/color_setting_tile.dart';
 import '../../flashcard_review/widgets/state_picker_sheet.dart';
 
@@ -509,7 +510,7 @@ class SavingOverlay extends StatelessWidget {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const CircularProgressIndicator(),
+              const AppLoader(),
               const SizedBox(height: AppSpacing.lg),
               Text(message, style: AppTypography.bodyMedium),
             ],

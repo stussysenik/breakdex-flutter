@@ -13,6 +13,7 @@ import '../../../core/database/database.dart';
 import '../../../core/design/colors.dart';
 import '../../../core/design/spacing.dart';
 import '../../../core/design/typography.dart';
+import '../../../shared/widgets/app_loader.dart';
 import '../providers/lab_providers.dart';
 
 /// Vertical list of milestones for a lab, with inline creation.
@@ -125,7 +126,7 @@ class _MilestoneListState extends ConsumerState<MilestoneList> {
         milestonesAsync.when(
           loading: () => const Padding(
             padding: EdgeInsets.all(AppSpacing.md),
-            child: Center(child: CircularProgressIndicator()),
+            child: Center(child: AppLoader()),
           ),
           error: (final e, _) => Padding(
             padding: const EdgeInsets.symmetric(

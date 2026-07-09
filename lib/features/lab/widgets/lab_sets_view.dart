@@ -8,6 +8,7 @@ import '../../../core/utils/time_format.dart';
 import '../../../core/design/spacing.dart';
 import '../../../core/design/theme.dart';
 import '../../../core/design/typography.dart';
+import '../../../shared/widgets/app_loader.dart';
 import '../providers/lab_providers.dart';
 
 /// Sets view — shows labs filtered to labType='set' only.
@@ -27,7 +28,7 @@ class LabSetsView extends ConsumerWidget {
 
     return setsAsync.when(
       loading: () => const SliverFillRemaining(
-        child: Center(child: CircularProgressIndicator()),
+        child: Center(child: AppLoader()),
       ),
       error: (final e, _) => SliverFillRemaining(
         child: Center(child: Text('Error: $e')),

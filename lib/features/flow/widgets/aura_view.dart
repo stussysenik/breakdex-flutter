@@ -8,6 +8,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../shared/widgets/app_loader.dart';
 import '../../../core/database/database.dart';
 import '../../../core/design/spacing.dart';
 import '../../../core/design/theme.dart';
@@ -184,7 +185,7 @@ class _MoveGrid extends ConsumerWidget {
 
     return movesAsync.when(
       loading: () => const SliverToBoxAdapter(
-        child: Center(child: CircularProgressIndicator()),
+        child: Center(child: AppLoader()),
       ),
       error: (final e, _) => SliverToBoxAdapter(
         child: Center(child: Text('Error loading moves: $e')),
@@ -413,7 +414,7 @@ class _ConnectionPanel extends ConsumerWidget {
             linksAsync.when(
               loading: () => const Padding(
                 padding: EdgeInsets.all(AppSpacing.lg),
-                child: Center(child: CircularProgressIndicator()),
+                child: Center(child: AppLoader()),
               ),
               error: (final e, _) => Text('Error: $e'),
               data: (final links) {
@@ -598,7 +599,7 @@ class _AddConnectionSheetState extends ConsumerState<_AddConnectionSheet> {
               Expanded(
                 child: movesAsync.when(
                   loading: () =>
-                      const Center(child: CircularProgressIndicator()),
+                      const Center(child: AppLoader()),
                   error: (final e, _) => Center(child: Text('Error: $e')),
                   data: (final moves) {
                     // Exclude the source move and already-linked moves.

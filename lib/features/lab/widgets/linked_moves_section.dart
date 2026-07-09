@@ -11,6 +11,7 @@ import '../../../core/design/colors.dart';
 import '../../../core/design/spacing.dart';
 import '../../../core/design/theme.dart';
 import '../../../core/design/typography.dart';
+import '../../../shared/widgets/app_loader.dart';
 import '../providers/lab_providers.dart';
 
 /// Horizontal scroll of move cards linked to a lab.
@@ -71,7 +72,7 @@ class LinkedMovesSection extends ConsumerWidget {
               child: labMovesAsync.when(
                 loading: () => const SizedBox(
                   height: 80,
-                  child: Center(child: CircularProgressIndicator()),
+                  child: Center(child: AppLoader()),
                 ),
                 error: (final e, _) => Padding(
                   padding: const EdgeInsets.symmetric(

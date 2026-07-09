@@ -15,6 +15,7 @@ import '../../core/providers.dart';
 import '../../shared/widgets/video_player_widget.dart'
     show RobustVideoPlayer, VideoPlaceholder;
 import 'providers/analysis_providers.dart';
+import '../../shared/widgets/app_loader.dart';
 import 'widgets/analysis_toolbar.dart';
 import 'widgets/pose_overlay.dart';
 import 'widgets/skeleton_3d_panel.dart';
@@ -229,8 +230,8 @@ class _MoveAnalysisScreenState extends ConsumerState<MoveAnalysisScreen> {
               const SizedBox(
                 width: 14,
                 height: 14,
-                child: CircularProgressIndicator(
-                  strokeWidth: 2,
+                child: AppLoader(
+                  size: 6,
                   color: Colors.white,
                 ),
               )

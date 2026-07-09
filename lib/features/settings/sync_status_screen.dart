@@ -12,6 +12,7 @@ import '../../core/design/typography.dart';
 import '../../core/providers.dart';
 import '../../core/sync/asset_sync_engine.dart';
 import '../../core/sync/integrity_verifier.dart';
+import '../../shared/widgets/app_loader.dart';
 
 /// Sync status dashboard showing overall progress, active transfers,
 /// and monthly data usage.
@@ -120,7 +121,7 @@ Future<void> _runIntegrityCheck(
   unawaited(showDialog<void>(
     context: context,
     barrierDismissible: false,
-    builder: (final _) => const Center(child: CircularProgressIndicator()),
+    builder: (final _) => const Center(child: AppLoader()),
   ));
 
   IntegrityReport report;

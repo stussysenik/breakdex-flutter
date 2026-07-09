@@ -4,6 +4,7 @@ import '../../core/services/boot_coordinator.dart';
 import '../../core/services/video_path_resolver.dart';
 import '../../core/design/spacing.dart';
 import '../../core/design/typography.dart';
+import '../../shared/widgets/app_loader.dart';
 
 class SystemStatusScreen extends ConsumerWidget {
   const SystemStatusScreen({super.key});
@@ -136,7 +137,7 @@ class _GatesList extends StatelessWidget {
                 const SizedBox(
                   width: 12,
                   height: 12,
-                  child: CircularProgressIndicator(strokeWidth: 2),
+                  child: AppLoader(size: 6),
                 ),
             ],
           ),

@@ -12,6 +12,7 @@ import '../../../core/design/theme.dart';
 import '../../../core/design/typography.dart';
 import '../../../core/models/learning_state.dart';
 import '../../../core/providers.dart';
+import '../../../shared/widgets/app_loader.dart';
 import '../../../shared/widgets/app_segmented_control.dart';
 import '../providers/deck_providers.dart';
 import '../providers/review_providers.dart';
@@ -73,7 +74,7 @@ class _StateModeSection extends ConsumerWidget {
     return matrixAsync.when(
       loading: () => const Padding(
         padding: EdgeInsets.symmetric(vertical: AppSpacing.xl),
-        child: Center(child: CircularProgressIndicator()),
+        child: Center(child: AppLoader()),
       ),
       error: (final e, _) => Padding(
         padding: const EdgeInsets.symmetric(vertical: AppSpacing.xl),
@@ -318,7 +319,7 @@ class _DecksSection extends ConsumerWidget {
         ),
         const SizedBox(height: AppSpacing.sm),
         decksAsync.when(
-          loading: () => const Center(child: CircularProgressIndicator()),
+          loading: () => const Center(child: AppLoader()),
           error: (final e, _) => Text('Error loading decks: $e'),
           data: (final decks) {
             if (decks.isEmpty) {

@@ -35,6 +35,7 @@ import '../lab/widgets/move_aura_section.dart';
 import '../../shared/widgets/video_picker_sheet.dart';
 import '../../core/services/categories_service.dart';
 import '../../core/sync/video_retrieval_controller.dart';
+import '../../shared/widgets/app_loader.dart';
 
 import 'widgets/move_detail_overlays.dart';
 
@@ -78,7 +79,7 @@ class _MoveDetailScreenState extends ConsumerState<MoveDetailScreen> {
       Future.microtask(() {
         if (mounted) this.context.pop();
       });
-      return const Scaffold(body: Center(child: CircularProgressIndicator()));
+      return const Scaffold(body: Center(child: AppLoader()));
     }
 
     final move = machineState.move;

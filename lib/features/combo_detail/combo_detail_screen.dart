@@ -29,6 +29,7 @@ import '../../shared/widgets/video_player_widget.dart'
 
 import '../../core/state_machines/combo_detail/machine.dart' as sm;
 import '../../core/state_machines/combo_detail/provider.dart';
+import '../../shared/widgets/app_loader.dart';
 import 'widgets/status_tag.dart';
 import 'widgets/journal_list.dart';
 import 'widgets/jot_composer.dart';
@@ -160,7 +161,7 @@ class _ComboDetailScreenState extends ConsumerState<ComboDetailScreen> {
       body: Stack(
         children: [
           combo == null || comboMoves == null
-              ? const Center(child: CircularProgressIndicator())
+              ? const Center(child: AppLoader())
               : _ComboDetailBody(
                   combo: combo,
                   comboMoves: comboMoves,
@@ -496,7 +497,7 @@ class _SmOverlay extends ConsumerWidget {
               : const Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    CircularProgressIndicator(color: Colors.white),
+                    AppLoader(color: Colors.white),
                     SizedBox(height: AppSpacing.md),
                     Text('Working...', style: TextStyle(color: Colors.white70)),
                   ],

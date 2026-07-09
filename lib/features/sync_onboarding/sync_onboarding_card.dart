@@ -10,6 +10,7 @@ import '../../core/design/spacing.dart';
 import '../../core/design/typography.dart';
 import '../../core/providers.dart';
 import '../../core/services/settings_service.dart';
+import '../../shared/widgets/app_loader.dart';
 import '../../core/sync/icloud_setup_service.dart';
 
 /// First-launch card prompting iCloud backup with one-tap enable.
@@ -102,8 +103,8 @@ class _OnboardingCardContentState
                         ? const SizedBox(
                             width: 18,
                             height: 18,
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2,
+                            child: AppLoader(
+                              size: 6,
                               color: Colors.white,
                             ),
                           )

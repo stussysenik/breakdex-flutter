@@ -27,6 +27,7 @@ import '../../features/settings/sync_providers_screen.dart';
 import '../../features/settings/sync_status_screen.dart';
 import '../../features/settings/help/asset_sync_help_screen.dart';
 import '../../features/settings/system_status_screen.dart';
+import '../../shared/widgets/app_loader.dart';
 import '../../shared/widgets/bottom_nav_shell.dart';
 import '../../shared/widgets/quick_video_viewer.dart';
 import '../../core/models/app_mode.dart';
@@ -258,7 +259,7 @@ class _RedirectToHomeState extends State<_RedirectToHome> {
   Widget build(final BuildContext context) {
     return const Scaffold(
       body: Center(
-        child: CircularProgressIndicator(),
+        child: AppLoader(),
       ),
     );
   }

@@ -16,6 +16,7 @@ import '../../core/design/theme.dart';
 import '../../core/design/typography.dart';
 import '../../core/providers.dart';
 import '../../core/utils/time_format.dart';
+import '../../shared/widgets/app_loader.dart';
 import '../../shared/widgets/app_segmented_control.dart';
 import '../combo_detail/widgets/status_tag.dart';
 import 'plan_combo_flow.dart';
@@ -145,7 +146,7 @@ class ComboLibraryView extends ConsumerWidget {
     final colorScheme = Theme.of(context).colorScheme;
 
     return rowsAsync.when(
-      loading: () => const Center(child: CircularProgressIndicator()),
+      loading: () => const Center(child: AppLoader()),
       error: (final e, _) => Center(
         child: Text('Error loading combos', style: TextStyle(color: colorScheme.error)),
       ),

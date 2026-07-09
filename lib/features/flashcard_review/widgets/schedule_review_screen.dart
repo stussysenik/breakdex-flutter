@@ -3,6 +3,7 @@ import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../shared/widgets/app_loader.dart';
 import '../../../core/design/colors.dart';
 import '../../../core/design/spacing.dart';
 import '../../../core/design/theme.dart';
@@ -51,7 +52,7 @@ class ScheduleReviewScreen extends ConsumerWidget {
                 child: SizedBox(
                   width: 20,
                   height: 20,
-                  child: CircularProgressIndicator(strokeWidth: 2),
+                  child: AppLoader(size: 6),
                 ),
               ),
               error: (_, _) => const SizedBox.shrink(),
@@ -137,7 +138,7 @@ class ScheduleReviewScreen extends ConsumerWidget {
         // Items list
         itemsAsync.when(
           loading: () => const SliverToBoxAdapter(
-            child: Center(child: CircularProgressIndicator()),
+            child: Center(child: AppLoader()),
           ),
           error: (final e, _) =>
               SliverToBoxAdapter(child: Center(child: Text('Error: $e'))),

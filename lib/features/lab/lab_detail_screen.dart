@@ -16,6 +16,7 @@ import '../../core/design/theme.dart';
 import '../../core/design/typography.dart';
 import '../../core/providers.dart';
 import '../flow/providers/aura_providers.dart';
+import '../../shared/widgets/app_loader.dart';
 import '../../shared/widgets/notes_section.dart';
 import 'providers/lab_providers.dart';
 import 'widgets/lab_timeline.dart';
@@ -196,7 +197,7 @@ class _LabDetailScreenState extends ConsumerState<LabDetailScreen> {
     return Scaffold(
       body: SafeArea(
         child: labAsync.when(
-          loading: () => const Center(child: CircularProgressIndicator()),
+          loading: () => const Center(child: AppLoader()),
           error: (final e, _) => Center(
             child: Text(
               'Error loading lab: $e',
@@ -626,7 +627,7 @@ class _MovePickerSheetState extends ConsumerState<_MovePickerSheet> {
                 future: ref.read(moveRepositoryProvider).getAll(),
                 builder: (final context, final snapshot) {
                   if (!snapshot.hasData) {
-                    return const Center(child: CircularProgressIndicator());
+                    return const Center(child: AppLoader());
                   }
 
                   final allMoves = snapshot.data!;

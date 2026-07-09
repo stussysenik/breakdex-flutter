@@ -30,6 +30,7 @@ import 'widgets/review_card_display_section.dart';
 import 'widgets/review_fill_color_section.dart';
 import 'widgets/review_states_section.dart';
 import '../../core/services/stats_export_service.dart';
+import '../../shared/widgets/app_loader.dart';
 import '../../shared/widgets/action_tile.dart';
 import '../../core/services/view_names_service.dart';
 import '../../shared/widgets/color_setting_tile.dart';
@@ -634,7 +635,7 @@ class SettingsScreen extends ConsumerWidget {
       showDialog(
         context: context,
         barrierDismissible: false,
-        builder: (_) => const Center(child: CircularProgressIndicator()),
+        builder: (_) => const Center(child: AppLoader()),
       ),
     );
 
@@ -1326,7 +1327,7 @@ class _DataActionTileAsyncState extends State<_DataActionTileAsync> {
               const SizedBox(
                 width: 18,
                 height: 18,
-                child: CircularProgressIndicator(strokeWidth: 2),
+                child: AppLoader(size: 6),
               )
             else
               Icon(Icons.chevron_right, color: colorScheme.secondary, size: 20),
@@ -1385,7 +1386,7 @@ class _PhotosAccessTile extends ConsumerWidget {
               leading: SizedBox(
                 width: 20,
                 height: 20,
-                child: CircularProgressIndicator(strokeWidth: 2),
+                child: AppLoader(size: 6),
               ),
             ),
           ],

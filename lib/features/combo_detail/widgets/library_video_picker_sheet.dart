@@ -9,6 +9,7 @@ import '../../../core/design/spacing.dart';
 import '../../../core/design/typography.dart';
 import '../../../core/providers.dart';
 import '../../../core/services/video_path_resolver.dart';
+import '../../../shared/widgets/app_loader.dart';
 import '../../../shared/widgets/metadata_video_picker_sheet.dart';
 
 /// A video picker that lists library-referenced videos first:
@@ -73,7 +74,7 @@ class LibraryVideoPickerSheet extends ConsumerWidget {
           const SizedBox(height: AppSpacing.lg),
           // Section: This Combo's Moves
           comboVideos.when(
-            loading: () => const Center(child: CircularProgressIndicator()),
+            loading: () => const Center(child: AppLoader()),
             error: (final e, _) => Text('Error: $e'),
             data: (final videos) {
               if (videos.isEmpty) return const SizedBox.shrink();

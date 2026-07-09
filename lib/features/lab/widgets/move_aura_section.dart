@@ -14,6 +14,7 @@ import '../../../core/design/theme.dart';
 import '../../../core/design/typography.dart';
 import '../../../core/providers.dart';
 import '../../../core/utils/diagnostics.dart';
+import '../../../shared/widgets/app_loader.dart';
 import '../../flow/providers/aura_providers.dart';
 import '../../flow/widgets/aura_link_tile.dart' show AuraAffinity;
 
@@ -504,7 +505,7 @@ class _QuickAddSheetState extends ConsumerState<_QuickAddSheet> {
               Expanded(
                 child: movesAsync.when(
                   loading: () =>
-                      const Center(child: CircularProgressIndicator()),
+                      const Center(child: AppLoader()),
                   error: (final e, _) => Center(child: Text('Error: $e')),
                   data: (final moves) {
                     // Build set of already-linked IDs to exclude.

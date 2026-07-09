@@ -12,6 +12,7 @@ import '../../core/design/spacing.dart';
 import '../../core/design/typography.dart';
 import '../../core/models/canonical_asset.dart';
 import '../../core/providers.dart';
+import '../../shared/widgets/app_loader.dart';
 import '../../shared/widgets/settings_list_group.dart';
 import '../../shared/widgets/source_origin_badge.dart';
 
@@ -69,7 +70,7 @@ class CanonicalTrashScreen extends ConsumerWidget {
                       ],
                     );
                   },
-                  loading: () => const Center(child: CircularProgressIndicator()),
+                  loading: () => const Center(child: AppLoader()),
                   error: (final error, _) => Center(
                     child: Text('Could not load trashed assets.',
                         style: AppTypography.bodyMedium.copyWith(color: colorScheme.secondary)),

@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../shared/widgets/app_loader.dart';
 import '../../../core/design/colors.dart';
 import '../../../core/design/spacing.dart';
 import '../../../core/design/theme.dart';
@@ -136,7 +137,7 @@ class ItemScheduleDetailSheet extends ConsumerWidget {
                 child: SizedBox(
                   width: 20,
                   height: 20,
-                  child: CircularProgressIndicator(strokeWidth: 2),
+                  child: AppLoader(size: 6),
                 ),
               ),
               error: (final error, final stackTrace) => const SizedBox.shrink(),
@@ -170,7 +171,7 @@ class ItemScheduleDetailSheet extends ConsumerWidget {
                       child: SizedBox(
                         width: 20,
                         height: 20,
-                        child: CircularProgressIndicator(strokeWidth: 2),
+                        child: AppLoader(size: 6),
                       ),
                     ),
                     error: (final error, final stackTrace) => const SizedBox.shrink(),

@@ -10,6 +10,7 @@ import '../../core/database/database.dart';
 import '../../core/design/colors.dart';
 import '../../core/design/spacing.dart';
 import '../../core/design/typography.dart';
+import '../../shared/widgets/app_loader.dart';
 import '../../core/providers.dart';
 import '../../core/sync/cloud_provider.dart';
 import '../../core/sync/gdrive_setup_service.dart';
@@ -44,7 +45,7 @@ class SyncProvidersScreen extends ConsumerWidget {
         elevation: 0,
       ),
       body: providersAsync.when(
-        loading: () => const Center(child: CircularProgressIndicator()),
+        loading: () => const Center(child: AppLoader()),
         error: (final e, _) => Center(child: Text('Error: $e')),
         data: (final providers) => ListView(
           padding: const EdgeInsets.all(AppSpacing.screenEdge),

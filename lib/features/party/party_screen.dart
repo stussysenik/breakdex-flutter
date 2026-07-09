@@ -18,6 +18,7 @@ import '../../core/models/reviewable_item.dart' show MoveVideoPath;
 import '../../core/providers.dart';
 import '../../core/services/settings_service.dart';
 import '../../core/services/video_path_resolver.dart';
+import '../../shared/widgets/app_loader.dart';
 import '../../shared/widgets/combo_step_line.dart';
 import '../../shared/widgets/state_pill.dart';
 import '../../shared/widgets/video_player_widget.dart' show RobustVideoPlayer;
@@ -257,7 +258,7 @@ class _PartyScreenState extends ConsumerState<PartyScreen>
       },
       child: movesAsync.when(
         loading: () => const Scaffold(
-          body: Center(child: CircularProgressIndicator()),
+          body: Center(child: AppLoader()),
         ),
         error: (final e, _) => Scaffold(
           body: Center(child: Text('Error: $e')),
@@ -305,7 +306,7 @@ class _PartyScreenState extends ConsumerState<PartyScreen>
       },
       child: combosAsync.when(
         loading: () => const Scaffold(
-          body: Center(child: CircularProgressIndicator()),
+          body: Center(child: AppLoader()),
         ),
         error: (final e, _) => Scaffold(
           body: Center(child: Text('Error: $e')),
@@ -1030,8 +1031,8 @@ class _PhaseIndicator extends StatelessWidget {
       return SizedBox(
         width: 16,
         height: 16,
-        child: CircularProgressIndicator(
-          strokeWidth: 2,
+        child: AppLoader(
+          size: 6,
           color: colorScheme.primary.withValues(alpha: 0.5),
         ),
       );

@@ -18,6 +18,7 @@ import '../../core/utils/diagnostics.dart';
 import '../../shared/widgets/beat_grid.dart';
 import '../../shared/widgets/combo_step_line.dart';
 import '../combos/plan_combo_flow.dart';
+import '../../shared/widgets/app_loader.dart';
 import '../../shared/widgets/secondary_button.dart';
 import '../../shared/widgets/video_player_widget.dart'
     show RobustVideoPlayer, VideoPlaceholder;
@@ -94,7 +95,7 @@ class _CreateComboScreenState extends ConsumerState<CreateComboScreen> {
           ),
       body: SafeArea(
         child: _isLoadingExisting
-            ? const Center(child: CircularProgressIndicator())
+            ? const Center(child: AppLoader())
             : ListView(
                 padding: const EdgeInsets.symmetric(horizontal: AppSpacing.screenEdge),
                 children: [
@@ -248,7 +249,7 @@ class _CreateComboScreenState extends ConsumerState<CreateComboScreen> {
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    CircularProgressIndicator(color: Colors.white),
+                    AppLoader(color: Colors.white),
                     SizedBox(height: AppSpacing.md),
                     Text('Saving combo...', style: TextStyle(color: Colors.white70, fontSize: 16)),
                   ],
@@ -639,7 +640,7 @@ class _MovePickerSheetState extends ConsumerState<_MovePickerSheet> {
                     },
                   );
                 },
-                loading: () => const Center(child: CircularProgressIndicator()),
+                loading: () => const Center(child: AppLoader()),
                 error: (final e, _) => Center(child: Text('Error: $e')),
               ),
             ),

@@ -22,12 +22,16 @@ Ledger rule: tick each box in the same commit that lands the work.
   TOKENS.md). Wire it into the canonical loading surface (`loading_state_widget.dart`
   `_RetryingWidget`), replacing the stock `CircularProgressIndicator`. Widget test covers the
   two-dot invariant, semantics label, and clean dispose.
-- [ ] 1.5 Rolling sweep: replace bare `CircularProgressIndicator` with `AppLoader` across the
+- [x] 1.5 Rolling sweep: replace bare `CircularProgressIndicator` with `AppLoader` across the
   remaining product surfaces (`rg -l CircularProgressIndicator lib/`) so the loading motif is
   one connected system app-wide. Per-directory, additive, no behavior change — intentionally
   NOT done in the 1.4 commit to avoid a 50-file drive-by; each cluster ticks as it lands.
-  Progress: `lib/shared/widgets/` cluster done (video_player_widget, quick_video_viewer,
-  video_picker_sheet, move_photos_section) — 50→46 files. Remaining: features/* surfaces.
+  DONE: swept all remaining indeterminate spinners → `AppLoader` across 44 files (lab, settings +
+  shell, review + stats, combos/moves/video). The **4 determinate progress bars** (`main.dart`
+  app-boot migration, two video-export screens, move-detail cloud-download) are intentionally
+  left as `CircularProgressIndicator` — they show a percentage `AppLoader` can't. `flutter analyze`
+  clean (only a pre-existing `discarded_futures` info in the 1.4 `app_loader.dart`); `app_loader_test`
+  + `review_card_layout_test` green.
 
 ## Phase 2: Media grid membership + 4-slot tile
 

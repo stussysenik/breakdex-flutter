@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../shared/widgets/app_loader.dart';
 import '../../../core/design/spacing.dart';
 import '../../../core/design/typography.dart';
 import '../providers/stats_providers.dart';
@@ -51,7 +52,7 @@ class _PracticeCalendarViewState extends ConsumerState<PracticeCalendarView> {
     final statsAsync = ref.watch(statsBundleProvider);
 
     return statsAsync.when(
-      loading: () => const SizedBox(height: 300, child: Center(child: CircularProgressIndicator())),
+      loading: () => const SizedBox(height: 300, child: Center(child: AppLoader())),
       error: (final e, _) => Center(child: Text('Error: $e')),
       data: (final stats) {
         return Column(

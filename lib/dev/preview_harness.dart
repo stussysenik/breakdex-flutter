@@ -8,6 +8,7 @@ import '../core/database/database.dart';
 import '../core/design/theme.dart';
 import '../core/providers.dart';
 import '../core/services/settings_service.dart';
+import '../shared/widgets/app_loader.dart';
 
 /// Shared widget-preview harness for the whole app.
 ///
@@ -195,7 +196,7 @@ class _PreviewHostState extends State<_PreviewHost> {
         }
         if (!snapshot.hasData) {
           return shell(
-            const Scaffold(body: Center(child: CircularProgressIndicator())),
+            const Scaffold(body: Center(child: AppLoader())),
           );
         }
         final backend = snapshot.data!;

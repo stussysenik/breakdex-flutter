@@ -11,6 +11,7 @@ import '../../../core/utils/time_format.dart';
 import '../../../core/design/colors.dart';
 import '../../../core/design/spacing.dart';
 import '../../../core/design/typography.dart';
+import '../../../shared/widgets/app_loader.dart';
 import '../providers/lab_providers.dart';
 
 /// Vertical timeline showing lab entries and milestones interleaved
@@ -118,7 +119,7 @@ class _LabTimelineState extends ConsumerState<LabTimeline> {
         entriesAsync.when(
           loading: () => const Padding(
             padding: EdgeInsets.all(AppSpacing.md),
-            child: Center(child: CircularProgressIndicator()),
+            child: Center(child: AppLoader()),
           ),
           error: (final e, _) => Padding(
             padding: const EdgeInsets.symmetric(

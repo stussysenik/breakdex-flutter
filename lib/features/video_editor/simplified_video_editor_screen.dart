@@ -26,6 +26,7 @@ import '../../core/services/video_service.dart';
 import '../../core/utils/loading_state_machine.dart';
 import '../../core/utils/pid_controller.dart';
 import '../../core/utils/diagnostics.dart';
+import '../../shared/widgets/app_loader.dart';
 import 'video_edit_geometry.dart';
 
 class SimplifiedVideoEditorView extends ConsumerStatefulWidget {
@@ -706,7 +707,7 @@ class _SimplifiedVideoEditorViewState extends ConsumerState<SimplifiedVideoEdito
           mainAxisSize: MainAxisSize.min,
           children: [
             if (showSpinner)
-              CircularProgressIndicator(
+              AppLoader(
                 color: Theme.of(context).colorScheme.primary,
               )
             else if (icon != null)

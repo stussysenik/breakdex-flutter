@@ -19,6 +19,7 @@ import '../../core/services/video_service.dart';
 import '../../core/services/storage_action_machine.dart' hide assetHashServiceProvider;
 import '../../core/services/video_path_resolver.dart';
 import '../../core/utils/app_clock.dart';
+import 'app_loader.dart';
 import '../../core/utils/diagnostics.dart';
 import '../../core/utils/stall_detector.dart';
 
@@ -521,7 +522,7 @@ class _MetadataVideoPickerSheetState extends ConsumerState<MetadataVideoPickerSh
 
   Widget _buildGrid(final List<MetadataAsset>? assets, final String sourceLabel, {required final bool isLibrary}) {
     if (_loading && isLibrary) {
-      return const Center(child: CircularProgressIndicator());
+      return const Center(child: AppLoader());
     }
 
     if (_error != null && isLibrary) {
@@ -553,7 +554,7 @@ class _MetadataVideoPickerSheetState extends ConsumerState<MetadataVideoPickerSh
       itemCount: assets.length + (isLibrary && _hasMore ? 1 : 0),
       itemBuilder: (final context, final index) {
         if (isLibrary && index == assets.length) {
-          return const Center(child: Padding(padding: EdgeInsets.all(16), child: CircularProgressIndicator(strokeWidth: 2)));
+          return const Center(child: Padding(padding: EdgeInsets.all(16), child: AppLoader()));
         }
         
         final asset = assets[index];
@@ -887,7 +888,7 @@ class _VideoTileState extends ConsumerState<_VideoTile> {
           fit: StackFit.expand,
           children: [
             if (_thumbnail != null) Image.memory(_thumbnail!, fit: BoxFit.cover)
-            else if (_loading) const Center(child: SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 1))),
+            else if (_loading) const Center(child: SizedBox(width: 20, height: 20, child: AppLoader(size: 6))),
             
             if (widget.isSelected) Container(color: colorScheme.primary.withValues(alpha: 0.2)),
 

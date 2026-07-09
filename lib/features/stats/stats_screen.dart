@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../shared/widgets/app_loader.dart';
 import '../../core/design/spacing.dart';
 import '../../core/design/typography.dart';
 import 'providers/stats_providers.dart';
@@ -19,7 +20,7 @@ class StatsScreen extends ConsumerWidget {
     return Scaffold(
       backgroundColor: colorScheme.surface,
       body: statsAsync.when(
-        loading: () => const Center(child: CircularProgressIndicator()),
+        loading: () => const Center(child: AppLoader()),
         error: (final error, _) => Center(child: Text('Error: $error')),
         data: (final stats) {
           final activeDays = stats.dailyBreakdown

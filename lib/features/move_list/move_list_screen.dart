@@ -30,6 +30,7 @@ import '../../core/services/view_names_service.dart';
 import '../../shared/widgets/celebration_overlay.dart';
 import '../../shared/widgets/pressable.dart';
 import '../../shared/widgets/state_pill.dart';
+import '../../shared/widgets/app_loader.dart';
 import '../../shared/widgets/video_picker_sheet.dart';
 import '../../shared/widgets/video_player_widget.dart';
 import '../sync_onboarding/sync_onboarding_card.dart';
@@ -236,7 +237,7 @@ class MoveListScreen extends ConsumerWidget {
               segment == ArsenalSegment.moves
                   ? movesAsync.when(
                       loading: () => const SliverFillRemaining(
-                        child: Center(child: CircularProgressIndicator()),
+                        child: Center(child: AppLoader()),
                       ),
                       error: (final e, _) => SliverFillRemaining(
                         child: Center(child: Text('Error: $e')),
@@ -270,7 +271,7 @@ class MoveListScreen extends ConsumerWidget {
                     )
                   : combosAsync.when(
                       loading: () => const SliverFillRemaining(
-                        child: Center(child: CircularProgressIndicator()),
+                        child: Center(child: AppLoader()),
                       ),
                       error: (final e, _) => SliverFillRemaining(
                         child: Center(child: Text('Error: $e')),

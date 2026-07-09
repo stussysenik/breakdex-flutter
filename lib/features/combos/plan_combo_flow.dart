@@ -13,6 +13,7 @@ import '../../core/database/database.dart';
 import '../../core/design/spacing.dart';
 import '../../core/design/typography.dart';
 import '../../core/providers.dart';
+import '../../shared/widgets/app_loader.dart';
 import '../combo_detail/widgets/status_tag.dart';
 
 final allCombosProvider = StreamProvider<List<Combo>>((final ref) {
@@ -88,7 +89,7 @@ class _PlanPickerSheet extends ConsumerWidget {
             ),
             const SizedBox(height: AppSpacing.md),
             combosAsync.when(
-              loading: () => const Center(child: CircularProgressIndicator()),
+              loading: () => const Center(child: AppLoader()),
               error: (final e, _) => Text('Error: $e'),
               data: (final combos) {
                 if (combos.isEmpty) {

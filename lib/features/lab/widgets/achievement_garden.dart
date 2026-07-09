@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/design/spacing.dart';
 import '../../../core/design/typography.dart';
+import '../../../shared/widgets/app_loader.dart';
 import '../providers/achievement_providers.dart';
 import 'achievement_tile.dart';
 
@@ -22,7 +23,7 @@ class AchievementGarden extends ConsumerWidget {
     final gardenAsync = ref.watch(achievementGardenProvider);
 
     return gardenAsync.when(
-      loading: () => const Center(child: CircularProgressIndicator()),
+      loading: () => const Center(child: AppLoader()),
       error: (final e, _) => Center(
         child: Text('Error loading garden: $e',
             style: AppTypography.bodySmall),

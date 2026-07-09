@@ -8,6 +8,7 @@ import '../../core/design/spacing.dart';
 import '../../core/design/typography.dart';
 import '../../core/providers.dart';
 import '../../core/sync/space_manager.dart';
+import '../../shared/widgets/app_loader.dart';
 
 /// Provider for space analysis — refreshes when this screen is opened.
 final spaceAnalysisProvider = FutureProvider<SpaceAnalysis>((final ref) {
@@ -46,7 +47,7 @@ class _FreeSpaceScreenState extends ConsumerState<FreeSpaceScreen> {
         elevation: 0,
       ),
       body: analysis.when(
-        loading: () => const Center(child: CircularProgressIndicator()),
+        loading: () => const Center(child: AppLoader()),
         error: (final e, _) => Center(
           child: Text(
             'Could not analyze storage: $e',
@@ -186,10 +187,7 @@ class _FreeSpaceScreenState extends ConsumerState<FreeSpaceScreen> {
                   ? const SizedBox(
                       width: 20,
                       height: 20,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2,
-                        color: Colors.white,
-                      ),
+                      child: AppLoader(size: 6, color: Colors.white),
                     )
                   : Text(
                       'Free $freeableMb MB',

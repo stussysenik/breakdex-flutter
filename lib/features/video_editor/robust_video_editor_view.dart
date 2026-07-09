@@ -9,6 +9,7 @@ import 'package:video_player/video_player.dart';
 import '../../core/design/spacing.dart';
 import '../../core/design/typography.dart';
 import '../../core/utils/diagnostics.dart';
+import '../../shared/widgets/app_loader.dart';
 import 'robust_trim_timeline.dart';
 import 'video_edit_geometry.dart';
 import 'video_editor_controller.dart';
@@ -130,7 +131,7 @@ class _RobustVideoEditorViewState extends State<RobustVideoEditorView> {
         }
 
         if (status is EditorInitializing || controller.playerController == null) {
-          return const Center(child: CircularProgressIndicator());
+          return const Center(child: AppLoader());
         }
 
         final videoValue = controller.playerController!.value;

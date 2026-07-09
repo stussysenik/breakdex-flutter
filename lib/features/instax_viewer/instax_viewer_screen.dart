@@ -13,6 +13,7 @@ import '../../core/services/media_playback_coordinator.dart';
 import '../../core/design/colors.dart';
 import '../../core/design/spacing.dart';
 import '../../core/design/typography.dart';
+import '../../shared/widgets/app_loader.dart';
 import '../../core/providers.dart';
 import 'instax_video_card.dart';
 
@@ -89,7 +90,7 @@ class _InstaxViewerScreenState extends ConsumerState<InstaxViewerScreen>
           category: widget.category,
         ),
         loading: () => const Center(
-          child: CircularProgressIndicator(),
+          child: AppLoader(),
         ),
         error: (final err, _) => const Center(
           child: Text('Failed to load moves', style: TextStyle(color: Colors.white38)),

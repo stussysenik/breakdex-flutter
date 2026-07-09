@@ -11,6 +11,7 @@ import '../../core/design/spacing.dart';
 import '../../core/design/typography.dart';
 import '../../core/models/move_archive_reason.dart';
 import '../../core/providers.dart';
+import '../../shared/widgets/app_loader.dart';
 import '../../shared/widgets/settings_list_group.dart';
 
 final archivedMovesProvider = StreamProvider<List<Move>>((final ref) {
@@ -98,7 +99,7 @@ class RecentlyDeletedScreen extends ConsumerWidget {
                     );
                   },
                   loading: () =>
-                      const Center(child: CircularProgressIndicator()),
+                      const Center(child: AppLoader()),
                   error: (final error, final stackTrace) => Center(
                     child: Text(
                       'Recently Deleted could not be loaded.',
