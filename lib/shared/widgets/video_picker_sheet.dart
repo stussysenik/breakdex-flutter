@@ -375,7 +375,7 @@ class _GhostCard extends StatelessWidget {
             width: 48, height: 48,
             decoration: BoxDecoration(
               color: colorScheme.surfaceContainerHighest,
-              borderRadius: BorderRadius.circular(4),
+              borderRadius: BorderRadius.circular(AppRadius.xxs),
             ),
             clipBehavior: Clip.antiAlias,
             child: thumbnailPath != null

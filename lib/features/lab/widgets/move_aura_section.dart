@@ -624,7 +624,7 @@ class _QuickMoveRow extends StatelessWidget {
                     ),
                     decoration: BoxDecoration(
                       color: affinity.color(context).withValues(alpha: 0.12),
-                      borderRadius: BorderRadius.circular(8),
+                      borderRadius: BorderRadius.circular(AppRadius.xs),
                     ),
                     child: Text(
                       affinity.label.toUpperCase(),

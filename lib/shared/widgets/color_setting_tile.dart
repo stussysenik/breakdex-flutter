@@ -80,7 +80,7 @@ class ColorSettingTile extends StatelessWidget {
                 height: 28,
                 decoration: BoxDecoration(
                   color: color,
-                  borderRadius: BorderRadius.circular(8),
+                  borderRadius: BorderRadius.circular(AppRadius.xs),
                   border: Border.all(
                     color: colorScheme.outline.withValues(alpha: 0.18),
                   ),
@@ -579,7 +579,7 @@ class _GradientChannelSlider extends StatelessWidget {
                     child: Container(
                       height: 12,
                       decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(999),
+                        borderRadius: BorderRadius.circular(AppRadius.pill),
                         gradient: LinearGradient(colors: gradientColors),
                         border: Border.all(
                           color: colorScheme.outline.withValues(alpha: 0.12),

@@ -287,7 +287,7 @@ class _RobustTrimTimelineState extends State<RobustTrimTimeline> {
                               width: 6,
                               decoration: BoxDecoration(
                                 color: colorScheme.primary.withValues(alpha: isActive ? 0.3 : 0.15),
-                                borderRadius: BorderRadius.circular(4),
+                                borderRadius: BorderRadius.circular(AppRadius.xxs),
                               ),
                             ),
                             // 2. Medium precision guide
@@ -355,7 +355,7 @@ class _RobustTrimTimelineState extends State<RobustTrimTimeline> {
                         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                         decoration: BoxDecoration(
                           color: colorScheme.primary,
-                          borderRadius: BorderRadius.circular(12),
+                          borderRadius: BorderRadius.circular(AppRadius.sm),
                         ),
                         child: Text(
                           'FINE SCRUBBING',
@@ -381,7 +381,7 @@ class _RobustTrimTimelineState extends State<RobustTrimTimeline> {
       width: _kHandleVisualWidth,
       child: IgnorePointer(
         child: AnimatedContainer(
-          duration: const Duration(milliseconds: 150),
+          duration: AppMotion.moderate01,
           decoration: BoxDecoration(
             color: isActive ? Colors.white : colorScheme.primary,
             borderRadius: isStart 

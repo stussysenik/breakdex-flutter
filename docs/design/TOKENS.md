@@ -84,6 +84,11 @@
 | `xl` | 32 | `AppRadius.xl` | `--radius-xl` (planned) | Hero elements |
 | `pill` | 500 | `AppRadius.pill` | `--radius-pill` (planned) | Fully rounded (pills, FABs) |
 
+A raw `BorderRadius.circular(N)` whose `N` equals a token value is a review violation —
+resolve it from the named token (the fully-round idiom `circular(999)` → `AppRadius.pill`).
+Off-scale bespoke radii that no token expresses are the exception; snapping them to the grid
+is a design decision, not a mechanical conformance swap.
+
 ---
 
 ## Motion

@@ -1245,7 +1245,7 @@ class _GraphParentChip extends StatelessWidget {
       label: '$label, $subtitle',
       hint: 'Focus this parent in the graph',
       child: InkWell(
-        borderRadius: BorderRadius.circular(999),
+        borderRadius: BorderRadius.circular(AppRadius.pill),
         onTap: onTap,
         child: AnimatedContainer(
           duration: AppMotion.moderate01,
@@ -1254,7 +1254,7 @@ class _GraphParentChip extends StatelessWidget {
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
           decoration: BoxDecoration(
             color: accent.withValues(alpha: selected ? 0.14 : 0.08),
-            borderRadius: BorderRadius.circular(999),
+            borderRadius: BorderRadius.circular(AppRadius.pill),
             border: Border.all(color: accent.withValues(alpha: 0.24)),
           ),
           child: Column(
@@ -1445,14 +1445,14 @@ class _ParentNode extends StatelessWidget {
       label: label,
       hint: onTap == null ? null : 'Open parent details',
       child: InkWell(
-        borderRadius: BorderRadius.circular(999),
+        borderRadius: BorderRadius.circular(AppRadius.pill),
         onTap: onTap,
         child: Container(
           constraints: const BoxConstraints(minHeight: 44),
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
           decoration: BoxDecoration(
             color: accent.withValues(alpha: 0.12),
-            borderRadius: BorderRadius.circular(999),
+            borderRadius: BorderRadius.circular(AppRadius.pill),
             border: Border.all(color: accent.withValues(alpha: 0.24)),
           ),
           child: Text(
@@ -1623,7 +1623,7 @@ class _MetaPill extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
         color: tone.withValues(alpha: 0.1),
-        borderRadius: BorderRadius.circular(999),
+        borderRadius: BorderRadius.circular(AppRadius.pill),
       ),
       child: Text(
         label,

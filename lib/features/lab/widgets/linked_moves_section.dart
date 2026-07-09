@@ -207,7 +207,7 @@ class _LinkedMoveCardState extends State<_LinkedMoveCard> {
                         decoration: BoxDecoration(
                           color:
                               colorScheme.surfaceContainerHighest,
-                          borderRadius: BorderRadius.circular(8),
+                          borderRadius: BorderRadius.circular(AppRadius.xs),
                         ),
                         child: Text(
                           widget.move.category,

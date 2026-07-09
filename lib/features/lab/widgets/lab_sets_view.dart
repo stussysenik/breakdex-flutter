@@ -131,7 +131,7 @@ class _SetCard extends ConsumerWidget {
                   ),
                   decoration: BoxDecoration(
                     color: colorScheme.primary.withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: BorderRadius.circular(AppRadius.sm),
                   ),
                   child: Text(
                     '${moves.length} move${moves.length == 1 ? '' : 's'}',

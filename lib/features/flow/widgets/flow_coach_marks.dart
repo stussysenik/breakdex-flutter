@@ -169,7 +169,7 @@ class _CoachTooltipOverlayState extends State<_CoachTooltipOverlay>
     _dismissing = true;
 
     // Fade out over 150ms
-    _controller.duration = const Duration(milliseconds: 150);
+    _controller.duration = AppMotion.moderate01;
     await _controller.reverse();
     widget.onDismiss();
   }
@@ -226,7 +226,7 @@ class _CoachTooltipOverlayState extends State<_CoachTooltipOverlay>
           ),
           decoration: BoxDecoration(
             color: AppColors.accent.withValues(alpha: 0.95),
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(AppRadius.sm),
             boxShadow: [
               BoxShadow(
                 color: AppColors.accent.withValues(alpha: 0.3),
@@ -255,7 +255,7 @@ class _CoachTooltipOverlayState extends State<_CoachTooltipOverlay>
                   ),
                   decoration: BoxDecoration(
                     color: Colors.white.withValues(alpha: 0.20),
-                    borderRadius: BorderRadius.circular(8),
+                    borderRadius: BorderRadius.circular(AppRadius.xs),
                   ),
                   child: Text(
                     widget.buttonLabel,

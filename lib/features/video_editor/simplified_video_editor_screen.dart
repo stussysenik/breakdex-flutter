@@ -1296,7 +1296,7 @@ class _TrimTimelineState extends State<_TrimTimeline> {
                     clipBehavior: Clip.antiAlias,
                     decoration: BoxDecoration(
                       color: AppColors.darkFill,
-                      borderRadius: BorderRadius.circular(4),
+                      borderRadius: BorderRadius.circular(AppRadius.xxs),
                     ),
                     child: (i < widget.thumbnails.length && widget.thumbnails[i] != null)
                         ? Opacity(

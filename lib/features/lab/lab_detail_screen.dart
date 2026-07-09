@@ -749,7 +749,7 @@ class _MovePickerSheetState extends ConsumerState<_MovePickerSheet> {
           color: isLinked
               ? colorScheme.surfaceContainerHighest
               : accent.withValues(alpha: 0.12),
-          borderRadius: BorderRadius.circular(8),
+          borderRadius: BorderRadius.circular(AppRadius.xs),
         ),
         child: Center(
           child: Text(

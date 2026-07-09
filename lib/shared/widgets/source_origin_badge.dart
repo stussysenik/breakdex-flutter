@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../core/design/spacing.dart';
 import '../../core/design/typography.dart';
 import '../../core/models/canonical_asset.dart';
 
@@ -12,7 +13,7 @@ class SourceOriginBadge extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
       decoration: BoxDecoration(
         color: _badgeColor.withValues(alpha: 0.12),
-        borderRadius: BorderRadius.circular(4),
+        borderRadius: BorderRadius.circular(AppRadius.xxs),
       ),
       child: Text(source.label,
           style: AppTypography.caption.copyWith(

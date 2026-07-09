@@ -369,7 +369,7 @@ class _StatusCard extends StatelessWidget {
           if (!isIdle) ...[
             const SizedBox(height: AppSpacing.md),
             ClipRRect(
-              borderRadius: BorderRadius.circular(4),
+              borderRadius: BorderRadius.circular(AppRadius.xxs),
               child: LinearProgressIndicator(
                 value: syncProgress.fraction,
                 backgroundColor:
@@ -496,7 +496,7 @@ class _DataUsageCard extends StatelessWidget {
           ),
           const SizedBox(height: AppSpacing.sm),
           ClipRRect(
-            borderRadius: BorderRadius.circular(4),
+            borderRadius: BorderRadius.circular(AppRadius.xxs),
             child: LinearProgressIndicator(
               value: fraction,
               backgroundColor:

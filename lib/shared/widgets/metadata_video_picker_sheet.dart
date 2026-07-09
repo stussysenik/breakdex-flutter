@@ -460,7 +460,7 @@ class _MetadataVideoPickerSheetState extends ConsumerState<MetadataVideoPickerSh
                           style: ElevatedButton.styleFrom(
                             backgroundColor: colorScheme.primary,
                             foregroundColor: colorScheme.onPrimary,
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppRadius.md)),
                             elevation: 0,
                           ),
                           child: const Text('IMPORT VIDEO'),
@@ -634,7 +634,7 @@ class _MetadataVideoPickerSheetState extends ConsumerState<MetadataVideoPickerSh
                   height: 120,
                   decoration: BoxDecoration(
                     color: colorScheme.surfaceContainerHighest,
-                    borderRadius: BorderRadius.circular(24),
+                    borderRadius: BorderRadius.circular(AppRadius.lg),
                     boxShadow: [
                       BoxShadow(
                         color: colorScheme.primary.withValues(alpha: 0.2),
@@ -877,7 +877,7 @@ class _VideoTileState extends ConsumerState<_VideoTile> {
         duration: 200.ms,
         decoration: BoxDecoration(
           color: colorScheme.surfaceContainerHighest,
-          borderRadius: BorderRadius.circular(4),
+          borderRadius: BorderRadius.circular(AppRadius.xxs),
           border: Border.all(
             color: widget.isSelected ? colorScheme.primary : Colors.transparent,
             width: 2,

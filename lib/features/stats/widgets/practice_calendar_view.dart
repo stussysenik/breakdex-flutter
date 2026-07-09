@@ -266,7 +266,7 @@ class _DayCell extends StatelessWidget {
         margin: const EdgeInsets.all(2),
         decoration: BoxDecoration(
           color: bgColor,
-          borderRadius: BorderRadius.circular(4),
+          borderRadius: BorderRadius.circular(AppRadius.xxs),
           border: Border.all(
             color: isSelected 
                 ? colorScheme.primary 

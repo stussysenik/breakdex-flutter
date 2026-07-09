@@ -247,7 +247,7 @@ class _StateBadge extends ConsumerWidget {
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
       decoration: BoxDecoration(
         color: color.withValues(alpha: 0.12),
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(AppRadius.xs),
         border: Border.all(color: color.withValues(alpha: 0.3)),
       ),
       child: Text(

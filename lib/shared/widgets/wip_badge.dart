@@ -21,7 +21,7 @@ class WipBadge extends StatelessWidget {
       ),
       decoration: BoxDecoration(
         color: _badgeColor.withValues(alpha: 0.14),
-        borderRadius: BorderRadius.circular(999),
+        borderRadius: BorderRadius.circular(AppRadius.pill),
         border: Border.all(color: _badgeColor.withValues(alpha: 0.28)),
       ),
       child: Text(

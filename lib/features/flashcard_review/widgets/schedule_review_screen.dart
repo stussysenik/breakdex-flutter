@@ -319,7 +319,7 @@ class _ScheduleEmptyState extends StatelessWidget {
                               .animate()
                               .fadeIn(
                                 duration: AppMotion.moderate02,
-                                delay: const Duration(milliseconds: 240),
+                                delay: AppMotion.moderate02,
                               )
                               .slideY(begin: 0.1),
                         ],

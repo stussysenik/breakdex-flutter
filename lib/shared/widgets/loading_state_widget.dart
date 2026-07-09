@@ -97,7 +97,7 @@ class _LoadingShimmerState extends State<_LoadingShimmer>
                       .colorScheme
                       .onSurface
                       .withValues(alpha: 0.08),
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(AppRadius.sm),
                 ),
               ),
         );
@@ -149,7 +149,7 @@ class _TimeoutCard extends StatelessWidget {
       margin: const EdgeInsets.all(8),
       decoration: BoxDecoration(
         color: Colors.amber.withValues(alpha: 0.1),
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(AppRadius.sm),
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
@@ -192,7 +192,7 @@ class _ErrorCard extends StatelessWidget {
       margin: const EdgeInsets.all(8),
       decoration: BoxDecoration(
         color: Theme.of(context).colorScheme.error.withValues(alpha: 0.08),
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(AppRadius.sm),
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,

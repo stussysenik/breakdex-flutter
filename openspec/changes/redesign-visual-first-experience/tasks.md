@@ -135,6 +135,17 @@ Decisions (owner, 2026-07-08):
 - [ ] V.2 Patrol journey (open library → cycle 3 modes → pick device video already in Breakdex →
   land on existing move → run one review card without scrolling; iOS + Android). **Deferred** —
   requires real devices/simulators; cannot run headless. Owner to run before archiving.
-- [ ] V.3 Token conformance sweep + TOKENS.md sign-off (radii/motion literals resolve from tokens).
-  Review radii now resolve from `AppRadius.xxs` (5.2); full-repo grep + TOKENS.md is a Phase-1
-  (1.1) close-out item, tracked there.
+- [x] V.3 Token conformance sweep + TOKENS.md sign-off (radii/motion literals resolve from tokens).
+  Curves already 0 raw app-wide (1.3). Swept every **exact-token-match** literal onto its token:
+  36 radii (`circular(4|8|12|16|24)`→`AppRadius.xxs|xs|sm|md|lg`; the `circular(999)` "fully-round"
+  idiom → `AppRadius.pill`, identical rendering since both clamp to half the shorter side) + 3
+  motion durations (`150`→`moderate01` ×2 on a fade controller & `AnimatedContainer`; a `240`
+  stagger `delay:`→`moderate02`). All 39 are **zero-visual-change** aliases (value-preserving);
+  `dart analyze` clean, `app_loader_test`+`review_card_layout_test` green. TOKENS.md Radius section
+  gained the "raw literals are review violations" rule (mirrors the motion doctrine) — sign-off.
+  **Deliberately left raw (owner design decision, NOT ledger drift):** 43 *off-scale* radii
+  (`circular(1|2|3|6|10|14|20)`) and off-token durations (`200`/`600`/`2400`ms motion; all
+  `Future.delayed`/timeout/snackbar `seconds:` — not visible motion). These have **no** token
+  equivalent, so snapping them would *change pixels/feel* — that is a scale-extension vs
+  snap-to-grid aesthetic call for the owner, not a value-preserving conformance win. Enumerated
+  so the boundary is explicit and reviewable.
