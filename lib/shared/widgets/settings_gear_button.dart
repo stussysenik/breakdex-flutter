@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../core/providers.dart';
+import '../../l10n/gen/app_localizations.dart';
 
 /// Gear icon button for accessing Settings from any screen's header.
 ///
@@ -18,10 +19,11 @@ class SettingsGearButton extends ConsumerWidget {
         ref.watch(pendingChangesCountProvider).valueOrNull ?? 0;
     final isLoggedIn = ref.watch(isLoggedInProvider);
     final colorScheme = Theme.of(context).colorScheme;
+    final l10n = AppLocalizations.of(context);
 
     return Semantics(
       identifier: 'settings-gear',
-      label: 'Settings',
+      label: l10n.navSettings,
       button: true,
       child: GestureDetector(
         onTap: () => context.push('/settings-panel'),

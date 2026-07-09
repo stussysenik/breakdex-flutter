@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 
 import '../../core/design/spacing.dart';
 import '../../core/design/typography.dart';
+import '../../l10n/gen/app_localizations.dart';
 
 String formatColorHex(final Color color) {
   return '#${color.toARGB32().toRadixString(16).padLeft(8, '0').toUpperCase()}';
@@ -23,7 +24,7 @@ Color? tryParseColorHex(final String input) {
 Future<Color?> showColorEditorDialog(
   final BuildContext context, {
   required final Color initialColor,
-  final String title = 'Choose Color',
+  final String? title,
   final String? subtitle,
   final List<Color> presets = const [],
 }) {
@@ -137,7 +138,7 @@ class _ColorEditorDialog extends StatefulWidget {
   });
 
   final Color initialColor;
-  final String title;
+  final String? title;
   final String? subtitle;
   final List<Color> presets;
 
@@ -195,6 +196,7 @@ class _ColorEditorDialogState extends State<_ColorEditorDialog> {
 
   @override
   Widget build(final BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final colorScheme = Theme.of(context).colorScheme;
     final hsv = HSVColor.fromColor(_color);
     final previewFg =
@@ -216,7 +218,7 @@ class _ColorEditorDialogState extends State<_ColorEditorDialog> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                widget.title,
+                widget.title ?? l10n.setColorPickerDefaultTitle,
                 style: AppTypography.titleMedium.copyWith(
                   color: colorScheme.onSurface,
                   fontWeight: FontWeight.w700,
@@ -276,7 +278,7 @@ class _ColorEditorDialogState extends State<_ColorEditorDialog> {
               ),
               const SizedBox(height: AppSpacing.lg),
               Text(
-                'Hex',
+                l10n.setColorHexLabel,
                 style: AppTypography.caption.copyWith(
                   color: colorScheme.secondary,
                   fontWeight: FontWeight.w600,
@@ -289,10 +291,10 @@ class _ColorEditorDialogState extends State<_ColorEditorDialog> {
                 inputFormatters: [
                   FilteringTextInputFormatter.allow(RegExp(r'[#0-9a-fA-F]')),
                 ],
-                decoration: const InputDecoration(
+                decoration: InputDecoration(
                   hintText: '#AARRGGBB',
-                  helperText: 'RRGGBB or AARRGGBB',
-                  prefixIcon: Icon(Icons.tag_rounded),
+                  helperText: l10n.setColorHexHelper,
+                  prefixIcon: const Icon(Icons.tag_rounded),
                 ),
                 onSubmitted: _applyHex,
                 onChanged: (final value) {
@@ -304,7 +306,7 @@ class _ColorEditorDialogState extends State<_ColorEditorDialog> {
               ),
               const SizedBox(height: AppSpacing.lg),
               Text(
-                'Spectrum',
+                l10n.setColorSpectrumLabel,
                 style: AppTypography.caption.copyWith(
                   color: colorScheme.secondary,
                   fontWeight: FontWeight.w600,
@@ -312,7 +314,7 @@ class _ColorEditorDialogState extends State<_ColorEditorDialog> {
               ),
               const SizedBox(height: AppSpacing.sm),
               _GradientChannelSlider(
-                label: 'Hue',
+                label: l10n.setColorHueLabel,
                 value: hsv.hue,
                 min: 0,
                 max: 360,
@@ -330,7 +332,7 @@ class _ColorEditorDialogState extends State<_ColorEditorDialog> {
                 onChanged: (final value) => _updateFromHsv(hue: value),
               ),
               _GradientChannelSlider(
-                label: 'Saturation',
+                label: l10n.setColorSaturationLabel,
                 value: hsv.saturation * 100,
                 min: 0,
                 max: 100,
@@ -343,7 +345,7 @@ class _ColorEditorDialogState extends State<_ColorEditorDialog> {
                 onChanged: (final value) => _updateFromHsv(saturation: value / 100),
               ),
               _GradientChannelSlider(
-                label: 'Value',
+                label: l10n.setColorValueLabel,
                 value: hsv.value * 100,
                 min: 0,
                 max: 100,
@@ -359,7 +361,7 @@ class _ColorEditorDialogState extends State<_ColorEditorDialog> {
               if (widget.presets.isNotEmpty) ...[
                 const SizedBox(height: AppSpacing.lg),
                 Text(
-                  'Quick picks',
+                  l10n.setColorQuickPicksLabel,
                   style: AppTypography.caption.copyWith(
                     color: colorScheme.secondary,
                     fontWeight: FontWeight.w600,
@@ -401,7 +403,7 @@ class _ColorEditorDialogState extends State<_ColorEditorDialog> {
               ],
               const SizedBox(height: AppSpacing.lg),
               _ChannelSlider(
-                label: 'Opacity',
+                label: l10n.setColorOpacityLabel,
                 value: (_color.a * 255).roundToDouble(),
                 min: 0,
                 max: 255,
@@ -409,7 +411,7 @@ class _ColorEditorDialogState extends State<_ColorEditorDialog> {
                 onChanged: (final value) => _updateFromHsv(alpha: value / 255),
               ),
               _ChannelSlider(
-                label: 'Red',
+                label: l10n.setColorRedLabel,
                 value: (_color.r * 255).roundToDouble(),
                 min: 0,
                 max: 255,
@@ -417,7 +419,7 @@ class _ColorEditorDialogState extends State<_ColorEditorDialog> {
                 onChanged: (final value) => _setColor(_color.withRed(value.round())),
               ),
               _ChannelSlider(
-                label: 'Green',
+                label: l10n.setColorGreenLabel,
                 value: (_color.g * 255).roundToDouble(),
                 min: 0,
                 max: 255,
@@ -426,7 +428,7 @@ class _ColorEditorDialogState extends State<_ColorEditorDialog> {
                     _setColor(_color.withGreen(value.round())),
               ),
               _ChannelSlider(
-                label: 'Blue',
+                label: l10n.setColorBlueLabel,
                 value: (_color.b * 255).roundToDouble(),
                 min: 0,
                 max: 255,
@@ -439,12 +441,12 @@ class _ColorEditorDialogState extends State<_ColorEditorDialog> {
                 children: [
                   TextButton(
                     onPressed: () => Navigator.pop(context),
-                    child: const Text('Cancel'),
+                    child: Text(l10n.setColorCancelButton),
                   ),
                   const SizedBox(width: AppSpacing.sm),
                   FilledButton(
                     onPressed: () => Navigator.pop(context, _color),
-                    child: const Text('Save'),
+                    child: Text(l10n.setColorSaveButton),
                   ),
                 ],
               ),

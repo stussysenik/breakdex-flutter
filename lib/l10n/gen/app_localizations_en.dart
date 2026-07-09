@@ -615,4 +615,697 @@ class AppLocalizationsEn extends AppLocalizations {
   String revErrorLoadingDecks(String error) {
     return 'Error loading decks: $error';
   }
+
+  @override
+  String get setBack => 'Back';
+
+  @override
+  String get setReset => 'Reset';
+
+  @override
+  String get setAdd => 'Add';
+
+  @override
+  String get setCancel => 'Cancel';
+
+  @override
+  String get setSave => 'Save';
+
+  @override
+  String get setOk => 'OK';
+
+  @override
+  String setSecondsSuffix(String seconds) {
+    return '${seconds}s';
+  }
+
+  @override
+  String get setSectionPractice => 'Practice & Review';
+
+  @override
+  String get setSectionPracticeSubtitle =>
+      'Learning engine, view composer, and session controls.';
+
+  @override
+  String get setSectionVisuals => 'Visuals & Style';
+
+  @override
+  String get setSectionVisualsSubtitle =>
+      'Theme, typography, colors, and global labels.';
+
+  @override
+  String get setSectionLibrary => 'Library & Data';
+
+  @override
+  String get setSectionLibrarySubtitle =>
+      'Categories, backups, and photo library access.';
+
+  @override
+  String get setPanelAppMode => 'App Mode';
+
+  @override
+  String get setPanelLearningEngine => 'Learning Engine';
+
+  @override
+  String get setPanelQuietMode => 'Quiet Mode';
+
+  @override
+  String get setPanelViewComposer => 'Review View Composer';
+
+  @override
+  String get setPanelPartyMode => 'Party Mode';
+
+  @override
+  String get setPanelVideoEditor => 'Video Editor';
+
+  @override
+  String get setPanelAddFlow => 'Add Flow';
+
+  @override
+  String get setPanelStatsTab => 'Stats Tab';
+
+  @override
+  String get setPanelAppTheme => 'App Theme';
+
+  @override
+  String get setPanelAccessibility => 'Accessibility';
+
+  @override
+  String get setPanelTypography => 'Typography';
+
+  @override
+  String get setPanelReviewStates => 'Review States';
+
+  @override
+  String get setPanelColors => 'Colors';
+
+  @override
+  String get setPanelGlobalLabels => 'Global Labels';
+
+  @override
+  String get setPanelMoveCategories => 'Move Categories';
+
+  @override
+  String get setPanelBackupReset => 'Backup & Reset';
+
+  @override
+  String get setPanelPhotoLibrary => 'Photo Library';
+
+  @override
+  String get setAccentColorLabel => 'Accent Color';
+
+  @override
+  String get setRatingColorsLabel => 'Rating Colors';
+
+  @override
+  String get setReviewCardFillLabel => 'Review Card Fill';
+
+  @override
+  String setLabelArsenalTitle(String name) {
+    return 'Arsenal Title: $name';
+  }
+
+  @override
+  String setLabelMovesDataBank(String name) {
+    return 'Moves data-bank: $name';
+  }
+
+  @override
+  String setLabelCombosDataBank(String name) {
+    return 'Combos data-bank: $name';
+  }
+
+  @override
+  String get setActionExportStats => 'Export Stats Summary';
+
+  @override
+  String get setActionExportJson => 'Export Full JSON Backup';
+
+  @override
+  String setExportedRecords(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Exported $count records',
+      one: 'Exported 1 record',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get setActionImportJson => 'Import from JSON';
+
+  @override
+  String setActionRecentlyDeleted(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Recently Deleted ($count)',
+      zero: 'Recently Deleted',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get setActionSystemStatus => 'System Status & Logs';
+
+  @override
+  String get setActionClearData => 'Clear All Data';
+
+  @override
+  String get setClearTitle => 'Clear All Data?';
+
+  @override
+  String get setClearBody =>
+      'This permanently deletes all moves, reviews, combos, and battle results. A backup will be created automatically before clearing.';
+
+  @override
+  String get setClearConfirmPrompt => 'Type DELETE to confirm:';
+
+  @override
+  String get setClearConfirmButton => 'Clear Everything';
+
+  @override
+  String setClearBackupSaved(String file) {
+    return 'Pre-clear backup saved to $file';
+  }
+
+  @override
+  String get setImportInvalid => 'Invalid backup file';
+
+  @override
+  String get setImportTitle => 'Import Backup';
+
+  @override
+  String setImportSummary(
+    int moves,
+    int reviews,
+    int combos,
+    int battles,
+    String categories,
+  ) {
+    return 'Found $moves moves, $reviews reviews, $combos combos, $battles battle results$categories.';
+  }
+
+  @override
+  String setImportSummaryCategories(int count) {
+    return ', $count categories';
+  }
+
+  @override
+  String get setImportModeLabel => 'Import mode:';
+
+  @override
+  String get setImportModeReplace =>
+      'Replace All (overwrite existing, keep extras)';
+
+  @override
+  String get setImportModeMerge => 'Merge (skip duplicates, keep everything)';
+
+  @override
+  String setImported(int count, String relink) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Imported $count records$relink',
+      one: 'Imported 1 record$relink',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String setImportedRelink(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: ' ($count moves need video re-linking)',
+      one: ' (1 move needs video re-linking)',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String setImportFailed(String error) {
+    return 'Import failed: $error';
+  }
+
+  @override
+  String get setCategoryEdit => 'Edit category';
+
+  @override
+  String get setCategoryDelete => 'Delete category';
+
+  @override
+  String get setRenameCategoryTitle => 'Rename Category';
+
+  @override
+  String get setCategoryNameHint => 'Category name';
+
+  @override
+  String get setCategoryColorTile => 'Category color';
+
+  @override
+  String get setCategoryColorEditorTitle => 'Category Color';
+
+  @override
+  String get setCategoryColorEditorSubtitle =>
+      'Pick any color for this category label.';
+
+  @override
+  String get setCategoryNameEmpty => 'Category name cannot be empty.';
+
+  @override
+  String setCategoryExists(String name) {
+    return '\"$name\" already exists.';
+  }
+
+  @override
+  String get setNewCategoryTitle => 'New Category';
+
+  @override
+  String get setCategoryInUseTitle => 'Category In Use';
+
+  @override
+  String setCategoryInUseBody(int count, String name) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Reassign the $count moves in \"$name\" before deleting it.',
+      one: 'Reassign the 1 move in \"$name\" before deleting it.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get setRenamePageTitle => 'Rename Page Title';
+
+  @override
+  String get setPageTitleHint => 'Page title';
+
+  @override
+  String get setRenameDataBankTitle => 'Rename data-bank';
+
+  @override
+  String get setSingularLabel => 'Singular';
+
+  @override
+  String get setSingularHint => 'e.g. Move';
+
+  @override
+  String get setPluralLabel => 'Plural';
+
+  @override
+  String get setPluralHint => 'e.g. Moves';
+
+  @override
+  String get setDataBankHelp =>
+      'Display only — leave a field blank to restore its default. Your saved videos are never renamed.';
+
+  @override
+  String setRenameStateTitle(String label) {
+    return 'Rename $label';
+  }
+
+  @override
+  String get setCategoryDefault => 'Default';
+
+  @override
+  String get setCategoryUnused => 'Unused';
+
+  @override
+  String setCategoryMoveCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count moves',
+      one: '1 move',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get setPhotoStatusNotDetermined => 'Not Determined';
+
+  @override
+  String get setPhotoStatusRestricted => 'Restricted';
+
+  @override
+  String get setPhotoStatusDenied => 'Denied';
+
+  @override
+  String get setPhotoStatusFullAccess => 'Full Access';
+
+  @override
+  String get setPhotoStatusLimited => 'Limited Access';
+
+  @override
+  String get setPhotoStatusUnknown => 'Unknown';
+
+  @override
+  String get setPhotoDescNotDetermined => 'Tap to request access';
+
+  @override
+  String get setPhotoDescOpenSettings => 'Tap to open Settings';
+
+  @override
+  String get setPhotoDescAuthorized => 'All photos available';
+
+  @override
+  String get setPhotoDescLimited => 'Some photos may be unavailable';
+
+  @override
+  String get setPhotoDescUnknown => 'Could not determine access';
+
+  @override
+  String get setPhotoChecking => 'Checking access…';
+
+  @override
+  String get setPhotoUnableCheck => 'Unable to check access';
+
+  @override
+  String get setShakeCycleDuration => 'Shake cycle duration';
+
+  @override
+  String get setComboModeTitle => 'Combo mode';
+
+  @override
+  String get setComboModeDesc =>
+      'Shake to discover random combos instead of moves';
+
+  @override
+  String get setSimplifiedEditorTitle => 'Use simplified editor';
+
+  @override
+  String get setSimplifiedEditorDesc =>
+      'Switch to the legacy editor if the robust editor is unstable.';
+
+  @override
+  String get setFsrsTitle => 'FSRS (Spaced Repetition)';
+
+  @override
+  String get setFsrsEnabledDesc => 'Smart scheduling enabled';
+
+  @override
+  String get setFsrsDisabledDesc => 'Manual progression only';
+
+  @override
+  String get setShakeDiscoverTitle => 'Shake to Discover';
+
+  @override
+  String get setShakeDiscoverDesc =>
+      'Shake your device to shuffle items in Party mode.';
+
+  @override
+  String get setQuietModeTitle => 'Keep music playing';
+
+  @override
+  String get setQuietModeDesc =>
+      'Videos will start muted to avoid interrupting your music.';
+
+  @override
+  String get setStatsTabTitle => 'Show Stats Tab';
+
+  @override
+  String get setStatsTabDesc =>
+      'Enable the insights tab in the bottom navigation.';
+
+  @override
+  String get setAccentEditorSubtitle =>
+      'Choose any accent color for the app chrome.';
+
+  @override
+  String get setFillDefault => 'Default (white)';
+
+  @override
+  String get setFillEditorSubtitle =>
+      'Tint the review card frame. Applies to your next card.';
+
+  @override
+  String get setRatingAgain => 'AGAIN';
+
+  @override
+  String get setRatingHard => 'HARD';
+
+  @override
+  String get setRatingGood => 'GOOD';
+
+  @override
+  String get setRatingEasy => 'EASY';
+
+  @override
+  String setRatingColorTitle(String label) {
+    return '$label Color';
+  }
+
+  @override
+  String setRatingColorSubtitle(String label) {
+    return 'Choose any color for the $label rating button.';
+  }
+
+  @override
+  String get setViewComposerTitle => 'REVIEW VIEW COMPOSER';
+
+  @override
+  String get setViewComposerSubtitle =>
+      'Modular layout — toggle elements to create your ideal practice view.';
+
+  @override
+  String get setViewKeepMusicTitle => 'Keep music playing';
+
+  @override
+  String get setViewKeepMusicSubtitle =>
+      'Keep Breakdex clips muted so your music can keep playing.';
+
+  @override
+  String get setViewTitleTitle => 'Title';
+
+  @override
+  String get setViewTitleSubtitle => 'Show the move or combo name on the card.';
+
+  @override
+  String get setViewStatePillTitle => 'State pill';
+
+  @override
+  String get setViewStatePillSubtitle =>
+      'Show the current NEW / LEARNING / MASTERY pill.';
+
+  @override
+  String get setViewCategoryTitle => 'Category';
+
+  @override
+  String get setViewCategorySubtitle =>
+      'Show move categories like TOPROCK or FOOTWORK.';
+
+  @override
+  String get setViewComboTimelineTitle => 'Combo timeline';
+
+  @override
+  String get setViewComboTimelineSubtitle =>
+      'Show step navigation when reviewing combos.';
+
+  @override
+  String get setViewStepLabelTitle => 'Step label';
+
+  @override
+  String get setViewStepLabelSubtitle =>
+      'Show the active combo step name under the timeline.';
+
+  @override
+  String get setViewPlaybackControlsTitle => 'Speed + loop controls';
+
+  @override
+  String get setViewPlaybackControlsSubtitle =>
+      'Show loop and speed controls on the card.';
+
+  @override
+  String get setStatesModeDefault => 'Default';
+
+  @override
+  String get setStatesModeCustom => 'Custom';
+
+  @override
+  String get setStatesCustomStateSubtitle => 'Custom state';
+
+  @override
+  String get setStatesAddTitle => 'Add Custom State';
+
+  @override
+  String get setStatesAddSubtitle => 'Create a new learning category';
+
+  @override
+  String setStatesDefaultLabel(String label) {
+    return 'Default: $label';
+  }
+
+  @override
+  String setStatesColorTitle(String label) {
+    return '$label Color';
+  }
+
+  @override
+  String setStatesColorSubtitle(String label) {
+    return 'Choose any color for $label. Quick picks, spectrum tuning, hex, and RGBA sliders stay in sync.';
+  }
+
+  @override
+  String get setStatesNewTitle => 'New Custom State';
+
+  @override
+  String get setStatesNameHint => 'State name';
+
+  @override
+  String get setStatesColorTileTitle => 'State color';
+
+  @override
+  String get setStatesCustomColorTitle => 'Custom State Color';
+
+  @override
+  String get setStatesCustomColorSubtitle => 'Pick any color.';
+
+  @override
+  String get setStatesCancel => 'Cancel';
+
+  @override
+  String get setStatesAdd => 'Add';
+
+  @override
+  String get setStatesEditTitle => 'Edit Custom State';
+
+  @override
+  String get setStatesSave => 'Save';
+
+  @override
+  String get setColorPickerDefaultTitle => 'Choose Color';
+
+  @override
+  String get setColorHexLabel => 'Hex';
+
+  @override
+  String get setColorHexHelper => 'RRGGBB or AARRGGBB';
+
+  @override
+  String get setColorSpectrumLabel => 'Spectrum';
+
+  @override
+  String get setColorHueLabel => 'Hue';
+
+  @override
+  String get setColorSaturationLabel => 'Saturation';
+
+  @override
+  String get setColorValueLabel => 'Value';
+
+  @override
+  String get setColorQuickPicksLabel => 'Quick picks';
+
+  @override
+  String get setColorOpacityLabel => 'Opacity';
+
+  @override
+  String get setColorRedLabel => 'Red';
+
+  @override
+  String get setColorGreenLabel => 'Green';
+
+  @override
+  String get setColorBlueLabel => 'Blue';
+
+  @override
+  String get setColorCancelButton => 'Cancel';
+
+  @override
+  String get setColorSaveButton => 'Save';
+
+  @override
+  String get setSyncSectionHeader => 'VIDEO BACKUP';
+
+  @override
+  String get setSyncProviderIcloudTitle => 'iCloud Drive';
+
+  @override
+  String get setSyncProviderGdriveTitle => 'Google Drive';
+
+  @override
+  String get setSyncProviderS3Title => 'S3 Compatible';
+
+  @override
+  String get setSyncReuploadTile => 'Re-upload library now';
+
+  @override
+  String get setSyncStatusTile => 'Sync Status';
+
+  @override
+  String get setSyncFreeSpaceTile => 'Free Up Space';
+
+  @override
+  String get setSyncHelpTile => 'How Backup Works';
+
+  @override
+  String get setSyncReuploading => 'Re-uploading library…';
+
+  @override
+  String get setSyncReuploadSuccess =>
+      'Library re-uploaded — refresh the web mirror';
+
+  @override
+  String get setSyncReuploadNoProvider =>
+      'No cloud provider connected to upload to';
+
+  @override
+  String setSyncReuploadFailed(String error) {
+    return 'Re-upload failed: $error';
+  }
+
+  @override
+  String get setSyncGdriveConnected => 'Google Drive connected';
+
+  @override
+  String get setSyncGdriveAlreadyConnected =>
+      'Google Drive is already connected';
+
+  @override
+  String get setSyncGdriveCancelled => 'Google sign-in was cancelled';
+
+  @override
+  String get setSyncDisconnectTitle => 'Disconnect Google Drive?';
+
+  @override
+  String get setSyncDisconnectBody =>
+      'Videos already backed up to Drive stay there. New videos won’t back up until you reconnect and sign in again.';
+
+  @override
+  String get setSyncDisconnectCancel => 'Cancel';
+
+  @override
+  String get setSyncDisconnectConfirm => 'Disconnect';
+
+  @override
+  String get setSyncGdriveDisconnected => 'Google Drive disconnected';
+
+  @override
+  String get setSyncIcloudEnabled => 'iCloud Drive enabled';
+
+  @override
+  String get setSyncIcloudAlreadyEnabled => 'iCloud Drive is already enabled';
+
+  @override
+  String get setSyncIcloudNotAvailable =>
+      'Enable iCloud Drive in iOS Settings > [your name] > iCloud';
+
+  @override
+  String get setSyncStatusConnected => 'Connected';
+
+  @override
+  String get setSyncStatusTapToEnable => 'Tap to enable';
+
+  @override
+  String get setSyncStatusNotAvailable => 'Not available';
+
+  @override
+  String get setSyncStatusComingSoon => 'Coming soon';
+
+  @override
+  String setError(String error) {
+    return 'Error: $error';
+  }
 }

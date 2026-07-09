@@ -9,6 +9,7 @@ import '../../../core/design/typography.dart';
 import '../../../core/providers.dart';
 import '../../../core/sync/gdrive_setup_service.dart';
 import '../../../core/sync/icloud_setup_service.dart';
+import '../../../l10n/gen/app_localizations.dart';
 import '../../../shared/widgets/action_tile.dart';
 import '../../../shared/widgets/app_loader.dart';
 
@@ -17,6 +18,7 @@ class CloudSyncSection extends ConsumerWidget {
 
   @override
   Widget build(final BuildContext context, final WidgetRef ref) {
+    final l10n = AppLocalizations.of(context);
     final colorScheme = Theme.of(context).colorScheme;
     final iCloudAvailable = ref.watch(iCloudAvailableProvider);
     final configuredProviders = ref.watch(cloudProvidersProvider);
@@ -44,7 +46,7 @@ class CloudSyncSection extends ConsumerWidget {
         Row(
           children: [
             Text(
-              'VIDEO BACKUP',
+              l10n.setSyncSectionHeader,
               style: AppTypography.sectionHeader.copyWith(
                 color: colorScheme.secondary,
               ),
@@ -67,7 +69,7 @@ class CloudSyncSection extends ConsumerWidget {
         // iCloud row
         SyncProviderRow(
           icon: Icons.cloud_outlined,
-          title: 'iCloud Drive',
+          title: l10n.setSyncProviderIcloudTitle,
           status: iCloudConnected
               ? ProviderStatus.connected
               : iCloudAvailable.when(
@@ -86,7 +88,7 @@ class CloudSyncSection extends ConsumerWidget {
         // Google Drive
         SyncProviderRow(
           icon: Icons.add_to_drive_outlined,
-          title: 'Google Drive',
+          title: l10n.setSyncProviderGdriveTitle,
           status: gDriveConnected
               ? ProviderStatus.connected
               : ProviderStatus.available,
@@ -97,9 +99,9 @@ class CloudSyncSection extends ConsumerWidget {
         const SizedBox(height: AppSpacing.sm),
 
         // S3 — coming soon
-        const SyncProviderRow(
+        SyncProviderRow(
           icon: Icons.storage_outlined,
-          title: 'S3 Compatible',
+          title: l10n.setSyncProviderS3Title,
           status: ProviderStatus.comingSoon,
           onTap: null,
         ),
@@ -110,7 +112,7 @@ class CloudSyncSection extends ConsumerWidget {
         if (iCloudConnected || gDriveConnected) ...[
           ActionTile(
             icon: Icons.cloud_upload_outlined,
-            label: 'Re-upload library now',
+            label: l10n.setSyncReuploadTile,
             onTap: () => _reuploadManifest(context, ref),
           ),
           const SizedBox(height: AppSpacing.sm),
@@ -119,19 +121,19 @@ class CloudSyncSection extends ConsumerWidget {
         // Links to sync screens
         ActionTile(
           icon: Icons.sync,
-          label: 'Sync Status',
+          label: l10n.setSyncStatusTile,
           onTap: () => context.push('/settings-panel/sync-status'),
         ),
         const SizedBox(height: AppSpacing.sm),
         ActionTile(
           icon: Icons.cleaning_services_outlined,
-          label: 'Free Up Space',
+          label: l10n.setSyncFreeSpaceTile,
           onTap: () => context.push('/settings-panel/free-space'),
         ),
         const SizedBox(height: AppSpacing.sm),
         ActionTile(
           icon: Icons.help_outline,
-          label: 'How Backup Works',
+          label: l10n.setSyncHelpTile,
           onTap: () => context.push('/settings-panel/sync-help'),
         ),
       ],
@@ -142,10 +144,11 @@ class CloudSyncSection extends ConsumerWidget {
     final BuildContext context,
     final WidgetRef ref,
   ) async {
+    final l10n = AppLocalizations.of(context);
     final messenger = ScaffoldMessenger.of(context);
     await HapticFeedback.mediumImpact();
     messenger.showSnackBar(
-      const SnackBar(content: Text('Re-uploading library…')),
+      SnackBar(content: Text(l10n.setSyncReuploading)),
     );
     try {
       final count = await ref.read(manifestSyncServiceProvider).syncNow();
@@ -155,8 +158,8 @@ class CloudSyncSection extends ConsumerWidget {
         SnackBar(
           content: Text(
             count > 0
-                ? 'Library re-uploaded — refresh the web mirror'
-                : 'No cloud provider connected to upload to',
+                ? l10n.setSyncReuploadSuccess
+                : l10n.setSyncReuploadNoProvider,
           ),
         ),
       );
@@ -164,7 +167,7 @@ class CloudSyncSection extends ConsumerWidget {
       if (!context.mounted) return;
       messenger.hideCurrentSnackBar();
       messenger.showSnackBar(
-        SnackBar(content: Text('Re-upload failed: $e')),
+        SnackBar(content: Text(l10n.setSyncReuploadFailed(e.toString()))),
       );
     }
   }
@@ -173,21 +176,22 @@ class CloudSyncSection extends ConsumerWidget {
     await HapticFeedback.mediumImpact();
     final result = await ref.read(gDriveSetupProvider).enable();
     if (!context.mounted) return;
+    final l10n = AppLocalizations.of(context);
 
     switch (result) {
       case GDriveSetupResult.enabled:
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Google Drive connected')),
+          SnackBar(content: Text(l10n.setSyncGdriveConnected)),
         );
       case GDriveSetupResult.alreadyEnabled:
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Google Drive is already connected'),
+          SnackBar(
+            content: Text(l10n.setSyncGdriveAlreadyConnected),
           ),
         );
       case GDriveSetupResult.cancelled:
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Google sign-in was cancelled')),
+          SnackBar(content: Text(l10n.setSyncGdriveCancelled)),
         );
     }
   }
@@ -196,22 +200,20 @@ class CloudSyncSection extends ConsumerWidget {
     final BuildContext context,
     final WidgetRef ref,
   ) async {
+    final l10n = AppLocalizations.of(context);
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (final ctx) => AlertDialog(
-        title: const Text('Disconnect Google Drive?'),
-        content: const Text(
-          'Videos already backed up to Drive stay there. New videos won’t '
-          'back up until you reconnect and sign in again.',
-        ),
+        title: Text(l10n.setSyncDisconnectTitle),
+        content: Text(l10n.setSyncDisconnectBody),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('Cancel'),
+            child: Text(l10n.setSyncDisconnectCancel),
           ),
           TextButton(
             onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('Disconnect'),
+            child: Text(l10n.setSyncDisconnectConfirm),
           ),
         ],
       ),
@@ -221,7 +223,7 @@ class CloudSyncSection extends ConsumerWidget {
     await ref.read(gDriveSetupProvider).disconnect();
     if (!context.mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Google Drive disconnected')),
+      SnackBar(content: Text(l10n.setSyncGdriveDisconnected)),
     );
   }
 
@@ -229,23 +231,22 @@ class CloudSyncSection extends ConsumerWidget {
     await HapticFeedback.mediumImpact();
     final result = await ref.read(iCloudSetupProvider).enable();
     if (!context.mounted) return;
+    final l10n = AppLocalizations.of(context);
 
     switch (result) {
       case ICloudSetupResult.enabled:
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('iCloud Drive enabled')),
+          SnackBar(content: Text(l10n.setSyncIcloudEnabled)),
         );
       case ICloudSetupResult.alreadyEnabled:
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('iCloud Drive is already enabled')),
+          SnackBar(content: Text(l10n.setSyncIcloudAlreadyEnabled)),
         );
       case ICloudSetupResult.notAvailable:
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text(
-              'Enable iCloud Drive in iOS Settings > [your name] > iCloud',
-            ),
-            duration: Duration(seconds: 4),
+          SnackBar(
+            content: Text(l10n.setSyncIcloudNotAvailable),
+            duration: const Duration(seconds: 4),
           ),
         );
     }
@@ -270,6 +271,7 @@ class SyncProviderRow extends StatelessWidget {
 
   @override
   Widget build(final BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final colorScheme = Theme.of(context).colorScheme;
     final isDisabled =
         status == ProviderStatus.comingSoon ||
@@ -311,18 +313,21 @@ class SyncProviderRow extends StatelessWidget {
                 ),
               ),
             ),
-            _statusLabel(colorScheme),
+            _statusLabel(l10n, colorScheme),
           ],
         ),
       ),
     );
   }
 
-  Widget _statusLabel(final ColorScheme colorScheme) {
+  Widget _statusLabel(
+    final AppLocalizations l10n,
+    final ColorScheme colorScheme,
+  ) {
     switch (status) {
       case ProviderStatus.connected:
         return Text(
-          'Connected',
+          l10n.setSyncStatusConnected,
           style: AppTypography.caption.copyWith(
             color: AppColors.stateMastery,
             fontWeight: FontWeight.w600,
@@ -330,21 +335,21 @@ class SyncProviderRow extends StatelessWidget {
         );
       case ProviderStatus.available:
         return Text(
-          'Tap to enable',
+          l10n.setSyncStatusTapToEnable,
           style: AppTypography.caption.copyWith(
             color: AppColors.accent,
           ),
         );
       case ProviderStatus.unavailable:
         return Text(
-          'Not available',
+          l10n.setSyncStatusNotAvailable,
           style: AppTypography.caption.copyWith(
             color: colorScheme.onSurface.withValues(alpha: 0.3),
           ),
         );
       case ProviderStatus.comingSoon:
         return Text(
-          'Coming soon',
+          l10n.setSyncStatusComingSoon,
           style: AppTypography.caption.copyWith(
             color: colorScheme.onSurface.withValues(alpha: 0.3),
           ),

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/providers.dart';
+import '../../../l10n/gen/app_localizations.dart';
 import '../../../shared/widgets/color_setting_tile.dart';
 
 /// A few card-fill starting points; the editor still allows any ARGB value.
@@ -26,17 +27,18 @@ class ReviewFillColorSection extends ConsumerWidget {
   Widget build(final BuildContext context, final WidgetRef ref) {
     final fill = ref.watch(reviewFillColorProvider);
     final effective = fill ?? _defaultReviewFill;
+    final l10n = AppLocalizations.of(context);
 
     return ColorSettingTile(
-      title: 'Review Card Fill',
-      subtitle: fill == null ? 'Default (white)' : formatColorHex(fill),
+      title: l10n.setReviewCardFillLabel,
+      subtitle: fill == null ? l10n.setFillDefault : formatColorHex(fill),
       color: effective,
       onTap: () async {
         final selected = await showColorEditorDialog(
           context,
           initialColor: effective,
-          title: 'Review Card Fill',
-          subtitle: 'Tint the review card frame. Applies to your next card.',
+          title: l10n.setReviewCardFillLabel,
+          subtitle: l10n.setFillEditorSubtitle,
           presets: _reviewFillPresets,
         );
         if (selected != null) {

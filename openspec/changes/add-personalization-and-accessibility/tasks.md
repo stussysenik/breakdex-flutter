@@ -102,10 +102,25 @@ Ledger rule: tick each box in the same commit that lands the work.
   is reused across add + category-create. Four widgets promoted Stateless/Stateful →
   Consumer variants to reach `entityNamesProvider` (`_VideoMissingCard`, `RenameOverlay`,
   `_ReviewEmptyState`, `_ScheduleEmptyState`). `dart analyze` clean on the touched tree.
-- [ ] 5.2b Extract the settings screen (the fifth of the top-five); parametric nouns compose
-  via placeholders. Deferred to its own budgeted slice — settings has the densest string
-  surface (appearance/accessibility panels, mode pickers) and is left unticked per the
-  same-commit ledger rule.
+- [x] 5.2b Extract the settings screen (the fifth of the top-five); parametric nouns compose
+  via placeholders. Landed: `settings_screen` + its section widgets (`accent_color_section`,
+  `rating_colors_section`, `review_fill_color_section`, `review_card_display_section`,
+  `review_states_section`, `cloud_sync_section`), the shared `color_setting_tile` picker, and
+  `settings_gear_button`. Added 193 keys (`set*`) to `app_en.arb` — panels/sections/dialogs,
+  photo-access status, party/toggle copy, backup+import flows. Parametric composition via
+  placeholders: data-bank labels (`setLabelMovesDataBank`, `setLabelCombosDataBank`) pull the
+  user's nouns from `entityNamesProvider`; ICU plurals for `setExportedRecords`,
+  `setActionRecentlyDeleted`, `setImported`(+`setImportedRelink`), `setCategoryMoveCount`,
+  `setCategoryInUseBody`; `setImportSummary` composes an optional categories clause via a
+  String placeholder (never concatenated). Reused existing `navSettings` for the header + gear
+  a11y label. Static `_statusDisplayName`/`_statusDescription` refactored to take
+  `AppLocalizations`. `color_setting_tile` default title made nullable →
+  `l10n.setColorPickerDefaultTitle` (all 9 callers already pass an explicit title). Regenerated
+  + committed `lib/l10n/gen/*`; `flutter analyze` clean (0 errors), `l10n_foundation_test`
+  green. Deliberate boundary: enum `.displayName`/`.description`/`.displayText` getters
+  (theme / app-mode / accessible-palette / font-family / rating) stay model-owned for a
+  separate pass, and the `DELETE` confirm token stays untranslated by design (it is a typed
+  control word). Runtime UI eyeball pending (same as 5.2a — verified separately).
 - [x] 5.3 Adopt the no-new-hardcoded-strings review rule; add a grep gate note to the review
   checklist. Added a "Localization" non-negotiable to `openspec/AGENTS.md` review
   checklist: user-facing copy resolves through `AppLocalizations`; grep gate

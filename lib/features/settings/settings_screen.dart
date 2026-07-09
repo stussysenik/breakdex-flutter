@@ -9,6 +9,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:path/path.dart' as p;
+import '../../l10n/gen/app_localizations.dart';
 import '../../core/database/database.dart';
 import '../../core/design/colors.dart';
 import '../../core/design/spacing.dart';
@@ -60,6 +61,7 @@ class SettingsScreen extends ConsumerWidget {
 
   @override
   Widget build(final BuildContext context, final WidgetRef ref) {
+    final l10n = AppLocalizations.of(context);
     final theme = ref.watch(themeSettingProvider);
     final fontFamily = ref.watch(fontFamilyProvider);
     final categories = ref.watch(categoriesProvider);
@@ -84,7 +86,7 @@ class SettingsScreen extends ConsumerWidget {
             if (!isTab)
               Semantics(
                 identifier: 'settings-back',
-                label: 'Back',
+                label: l10n.setBack,
                 button: true,
                 child: GestureDetector(
                   behavior: HitTestBehavior.opaque,
@@ -99,7 +101,7 @@ class SettingsScreen extends ConsumerWidget {
                           size: 20,
                         ),
                         Text(
-                          'Back',
+                          l10n.setBack,
                           style: AppTypography.bodyMedium.copyWith(
                             color: colorScheme.secondary,
                           ),
@@ -113,7 +115,7 @@ class SettingsScreen extends ConsumerWidget {
             Semantics(
               header: true,
               child: Text(
-                'Settings',
+                l10n.navSettings,
                 style: AppTypography.titleLarge.copyWith(
                   color: colorScheme.onSurface,
                 ),
@@ -123,12 +125,12 @@ class SettingsScreen extends ConsumerWidget {
 
             // ── PRACTICE & REVIEW ──────────────────────────────────────────
             _SettingsSection(
-              title: 'Practice & Review',
-              subtitle: 'Learning engine, view composer, and session controls.',
+              title: l10n.setSectionPractice,
+              subtitle: l10n.setSectionPracticeSubtitle,
               child: Column(
                 children: [
                   _SettingsPanel(
-                    title: 'App Mode',
+                    title: l10n.setPanelAppMode,
                     child: _SegmentedPicker<AppMode>(
                       values: AppMode.values,
                       selected: ref.watch(appModeProvider),
@@ -140,23 +142,23 @@ class SettingsScreen extends ConsumerWidget {
                     ),
                   ),
                   const SizedBox(height: AppSpacing.md),
-                  const _SettingsPanel(
-                    title: 'Learning Engine',
-                    child: _FsrsToggle(),
-                  ),
-                  const SizedBox(height: AppSpacing.md),
-                  const _SettingsPanel(
-                    title: 'Quiet Mode',
-                    child: _QuietModeToggle(),
-                  ),
-                  const SizedBox(height: AppSpacing.md),
-                  const _SettingsPanel(
-                    title: 'Review View Composer',
-                    child: ReviewCardDisplaySection(),
+                  _SettingsPanel(
+                    title: l10n.setPanelLearningEngine,
+                    child: const _FsrsToggle(),
                   ),
                   const SizedBox(height: AppSpacing.md),
                   _SettingsPanel(
-                    title: 'Party Mode',
+                    title: l10n.setPanelQuietMode,
+                    child: const _QuietModeToggle(),
+                  ),
+                  const SizedBox(height: AppSpacing.md),
+                  _SettingsPanel(
+                    title: l10n.setPanelViewComposer,
+                    child: const ReviewCardDisplaySection(),
+                  ),
+                  const SizedBox(height: AppSpacing.md),
+                  _SettingsPanel(
+                    title: l10n.setPanelPartyMode,
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
@@ -169,13 +171,13 @@ class SettingsScreen extends ConsumerWidget {
                     ),
                   ),
                   const SizedBox(height: AppSpacing.md),
-                  const _SettingsPanel(
-                    title: 'Video Editor',
-                    child: _VideoEditorToggle(),
+                  _SettingsPanel(
+                    title: l10n.setPanelVideoEditor,
+                    child: const _VideoEditorToggle(),
                   ),
                   const SizedBox(height: AppSpacing.md),
                   _SettingsPanel(
-                    title: 'Add Flow',
+                    title: l10n.setPanelAddFlow,
                     child: _SegmentedPicker<AddFlowOrder>(
                       values: AddFlowOrder.values,
                       selected: ref.watch(addFlowOrderProvider),
@@ -187,9 +189,9 @@ class SettingsScreen extends ConsumerWidget {
                     ),
                   ),
                   const SizedBox(height: AppSpacing.md),
-                  const _SettingsPanel(
-                    title: 'Stats Tab',
-                    child: _StatsTabToggle(),
+                  _SettingsPanel(
+                    title: l10n.setPanelStatsTab,
+                    child: const _StatsTabToggle(),
                   ),
                 ],
               ),
@@ -198,8 +200,8 @@ class SettingsScreen extends ConsumerWidget {
 
             // ── VISUALS & STYLE ───────────────────────────────────────────
             _SettingsSection(
-              title: 'Visuals & Style',
-              subtitle: 'Theme, typography, colors, and global labels.',
+              title: l10n.setSectionVisuals,
+              subtitle: l10n.setSectionVisualsSubtitle,
               child: LayoutBuilder(
                 builder: (final context, final constraints) {
                   final isTwoColumn = constraints.maxWidth >= 640;
@@ -213,7 +215,7 @@ class SettingsScreen extends ConsumerWidget {
                       SizedBox(
                         width: panelWidth,
                         child: _SettingsPanel(
-                          title: 'App Theme',
+                          title: l10n.setPanelAppTheme,
                           child: _SegmentedPicker<ThemeSetting>(
                             values: ThemeSetting.values,
                             selected: theme,
@@ -226,7 +228,7 @@ class SettingsScreen extends ConsumerWidget {
                       SizedBox(
                         width: panelWidth,
                         child: _SettingsPanel(
-                          title: 'Accessibility',
+                          title: l10n.setPanelAccessibility,
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.stretch,
                             children: [
@@ -254,7 +256,7 @@ class SettingsScreen extends ConsumerWidget {
                       SizedBox(
                         width: panelWidth,
                         child: _SettingsPanel(
-                          title: 'Typography',
+                          title: l10n.setPanelTypography,
                           child: Wrap(
                             spacing: AppSpacing.sm,
                             runSpacing: AppSpacing.sm,
@@ -298,14 +300,14 @@ class SettingsScreen extends ConsumerWidget {
                       SizedBox(
                         width: panelWidth,
                         child: _SettingsPanel(
-                          title: 'Review States',
+                          title: l10n.setPanelReviewStates,
                           action: TextButton(
                             onPressed: () async {
                               await HapticFeedback.mediumImpact();
                               await ref.read(learningStateLabelsProvider.notifier).reset();
                               await ref.read(learningStateColorsProvider.notifier).resetAll();
                             },
-                            child: const Text('Reset'),
+                            child: Text(l10n.setReset),
                           ),
                           child: ReviewStatesSection(
                             onRename: (final state, final currentLabel) =>
@@ -321,35 +323,35 @@ class SettingsScreen extends ConsumerWidget {
                       SizedBox(
                         width: panelWidth,
                         child: _SettingsPanel(
-                          title: 'Colors',
+                          title: l10n.setPanelColors,
                           child: Column(
                             children: [
                               _SettingsSubPanel(
-                                title: 'Accent Color',
+                                title: l10n.setAccentColorLabel,
                                 action: TextButton(
                                   onPressed: () async {
                                     await HapticFeedback.mediumImpact();
                                     await ref.read(accentColorProvider.notifier).reset();
                                   },
-                                  child: const Text('Reset'),
+                                  child: Text(l10n.setReset),
                                 ),
                                 child: const AccentColorSection(),
                               ),
                               const SizedBox(height: AppSpacing.md),
                               _SettingsSubPanel(
-                                title: 'Rating Colors',
+                                title: l10n.setRatingColorsLabel,
                                 action: TextButton(
                                   onPressed: () async {
                                     await HapticFeedback.mediumImpact();
                                     await ref.read(ratingColorsProvider.notifier).resetAll();
                                   },
-                                  child: const Text('Reset'),
+                                  child: Text(l10n.setReset),
                                 ),
                                 child: const RatingColorsSection(),
                               ),
                               const SizedBox(height: AppSpacing.md),
                               _SettingsSubPanel(
-                                title: 'Review Card Fill',
+                                title: l10n.setReviewCardFillLabel,
                                 action: TextButton(
                                   onPressed: () async {
                                     await HapticFeedback.mediumImpact();
@@ -357,7 +359,7 @@ class SettingsScreen extends ConsumerWidget {
                                         .read(reviewFillColorProvider.notifier)
                                         .reset();
                                   },
-                                  child: const Text('Reset'),
+                                  child: Text(l10n.setReset),
                                 ),
                                 child: const ReviewFillColorSection(),
                               ),
@@ -368,13 +370,14 @@ class SettingsScreen extends ConsumerWidget {
                       SizedBox(
                         width: panelWidth,
                         child: _SettingsPanel(
-                          title: 'Global Labels',
+                          title: l10n.setPanelGlobalLabels,
                           child: SettingsListGroup(
                             children: [
                               ActionTile(
                                 icon: Icons.title,
-                                label:
-                                    'Arsenal Title: ${viewNames['title'] ?? 'Arsenal'}',
+                                label: l10n.setLabelArsenalTitle(
+                                  viewNames['title'] ?? 'Arsenal',
+                                ),
                                 onTap: () => _showRenameArsenalDialog(
                                   context,
                                   ref,
@@ -383,8 +386,9 @@ class SettingsScreen extends ConsumerWidget {
                               ),
                               ActionTile(
                                 icon: Icons.sports_martial_arts,
-                                label:
-                                    'Moves data-bank: ${entityNames.movePlural}',
+                                label: l10n.setLabelMovesDataBank(
+                                  entityNames.movePlural,
+                                ),
                                 onTap: () => _showRenameEntityDialog(
                                   context,
                                   ref,
@@ -395,8 +399,9 @@ class SettingsScreen extends ConsumerWidget {
                               ),
                               ActionTile(
                                 icon: Icons.link,
-                                label:
-                                    'Combos data-bank: ${entityNames.comboPlural}',
+                                label: l10n.setLabelCombosDataBank(
+                                  entityNames.comboPlural,
+                                ),
                                 onTap: () => _showRenameEntityDialog(
                                   context,
                                   ref,
@@ -418,16 +423,16 @@ class SettingsScreen extends ConsumerWidget {
 
             // ── LIBRARY & DATA ─────────────────────────────────────────────
             _SettingsSection(
-              title: 'Library & Data',
-              subtitle: 'Categories, backups, and photo library access.',
+              title: l10n.setSectionLibrary,
+              subtitle: l10n.setSectionLibrarySubtitle,
               child: Column(
                 children: [
                   _SettingsPanel(
-                    title: 'Move Categories',
+                    title: l10n.setPanelMoveCategories,
                     action: TextButton.icon(
                       onPressed: () => _showAddCategoryDialog(context, ref),
                       icon: const Icon(Icons.add, size: 16),
-                      label: const Text('Add'),
+                      label: Text(l10n.setAdd),
                     ),
                     child: SettingsListGroup(
                       children: [
@@ -455,12 +460,12 @@ class SettingsScreen extends ConsumerWidget {
                   const CloudSyncSection(),
                   const SizedBox(height: AppSpacing.md),
                   _SettingsPanel(
-                    title: 'Backup & Reset',
+                    title: l10n.setPanelBackupReset,
                     child: Column(
                       children: [
                         _DataActionTileAsync(
                           icon: Icons.ios_share,
-                          label: 'Export Stats Summary',
+                          label: l10n.setActionExportStats,
                           onTap: (final tileContext) async {
                             final origin = sharePositionOrigin(tileContext);
                             final stats = await ref.read(statsBundleProvider.future);
@@ -472,7 +477,7 @@ class SettingsScreen extends ConsumerWidget {
                         const SizedBox(height: AppSpacing.sm),
                         _DataActionTileAsync(
                           icon: Icons.file_download_outlined,
-                          label: 'Export Full JSON Backup',
+                          label: l10n.setActionExportJson,
                           onTap: (final tileContext) async {
                             final origin = sharePositionOrigin(tileContext);
                             final db = ref.read(databaseProvider);
@@ -484,14 +489,14 @@ class SettingsScreen extends ConsumerWidget {
                             final file = File(p.join(exportsDir.path, StatsExportService.exportFilename));
                             await file.writeAsString(result.json, flush: true);
                             await NativeShareSheet.shareFiles(filePaths: [file.path], sharePositionOrigin: origin);
-                            return 'Exported ${result.totalRecords} records';
+                            return l10n.setExportedRecords(result.totalRecords);
                           },
                           showResultSnackBar: true,
                         ),
                         const SizedBox(height: AppSpacing.sm),
                         _DataActionTileAsync(
                           icon: Icons.file_upload_outlined,
-                          label: 'Import from JSON',
+                          label: l10n.setActionImportJson,
                           onTap: (_) async {
                             await _showImportFlow(context, ref);
                             return null;
@@ -500,19 +505,19 @@ class SettingsScreen extends ConsumerWidget {
                         const SizedBox(height: AppSpacing.sm),
                         ActionTile(
                           icon: Icons.restore_from_trash_outlined,
-                          label: archivedMoveCount == 0 ? 'Recently Deleted' : 'Recently Deleted ($archivedMoveCount)',
+                          label: l10n.setActionRecentlyDeleted(archivedMoveCount),
                           onTap: () => context.push('/settings-panel/recently-deleted'),
                         ),
                         const SizedBox(height: AppSpacing.sm),
                         ActionTile(
                           icon: Icons.terminal_rounded,
-                          label: 'System Status & Logs',
+                          label: l10n.setActionSystemStatus,
                           onTap: () => context.push('/settings-panel/system-status'),
                         ),
                         const SizedBox(height: AppSpacing.sm),
                         ActionTile(
                           icon: Icons.delete_forever,
-                          label: 'Clear All Data',
+                          label: l10n.setActionClearData,
                           destructive: true,
                           onTap: () => _showClearDataDialog(context, ref),
                         ),
@@ -541,6 +546,7 @@ class SettingsScreen extends ConsumerWidget {
   }
 
   void _showClearDataDialog(final BuildContext context, final WidgetRef ref) {
+    final l10n = AppLocalizations.of(context);
     showDialog<bool>(
       context: context,
       builder: (final ctx) => StatefulBuilder(
@@ -548,17 +554,17 @@ class SettingsScreen extends ConsumerWidget {
           final controller = TextEditingController();
           var canConfirm = false;
           return AlertDialog(
-            title: const Text('Clear All Data?'),
+            title: Text(l10n.setClearTitle),
             content: Column(
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
-                  'This permanently deletes all moves, reviews, combos, and battle results. A backup will be created automatically before clearing.',
+                Text(
+                  l10n.setClearBody,
                 ),
                 const SizedBox(height: AppSpacing.lg),
                 Text(
-                  'Type DELETE to confirm:',
+                  l10n.setClearConfirmPrompt,
                   style: AppTypography.caption.copyWith(
                     color: Theme.of(context).colorScheme.secondary,
                   ),
@@ -582,15 +588,15 @@ class SettingsScreen extends ConsumerWidget {
             actions: [
               TextButton(
                 onPressed: () => Navigator.pop(ctx),
-                child: const Text('Cancel'),
+                child: Text(l10n.setCancel),
               ),
               TextButton(
                 onPressed: canConfirm
                     ? () => Navigator.pop(ctx, true)
                     : null,
-                child: const Text(
-                  'Clear Everything',
-                  style: TextStyle(color: AppColors.actionAgain),
+                child: Text(
+                  l10n.setClearConfirmButton,
+                  style: const TextStyle(color: AppColors.actionAgain),
                 ),
               ),
             ],
@@ -617,7 +623,7 @@ class SettingsScreen extends ConsumerWidget {
         await backupFile.writeAsString(backup.json, flush: true);
         if (context.mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Pre-clear backup saved to ${backupFile.path.split('/').last}')),
+            SnackBar(content: Text(l10n.setClearBackupSaved(backupFile.path.split('/').last))),
           );
         }
       } on Object catch (e) {
@@ -647,6 +653,7 @@ class SettingsScreen extends ConsumerWidget {
   }
 
   Future<void> _showImportFlow(final BuildContext context, final WidgetRef ref) async {
+    final l10n = AppLocalizations.of(context);
     final result = await FilePicker.platform.pickFiles(
       type: FileType.custom,
       allowedExtensions: ['json'],
@@ -661,7 +668,7 @@ class SettingsScreen extends ConsumerWidget {
     if (!validation.valid) {
       if (!context.mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(validation.error ?? 'Invalid backup file')),
+        SnackBar(content: Text(validation.error ?? l10n.setImportInvalid)),
       );
       return;
     }
@@ -672,34 +679,40 @@ class SettingsScreen extends ConsumerWidget {
     final mode = await showDialog<ImportMode>(
       context: context,
       builder: (final ctx) => AlertDialog(
-        title: const Text('Import Backup'),
+        title: Text(l10n.setImportTitle),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'Found ${validation.moveCount} moves, ${validation.reviewCount} reviews, '
-              '${validation.comboCount} combos, ${validation.battleResultCount} battle results'
-              '${validation.categoryCount > 0 ? ', ${validation.categoryCount} categories' : ''}.',
+              l10n.setImportSummary(
+                validation.moveCount,
+                validation.reviewCount,
+                validation.comboCount,
+                validation.battleResultCount,
+                validation.categoryCount > 0
+                    ? l10n.setImportSummaryCategories(validation.categoryCount)
+                    : '',
+              ),
               style: AppTypography.bodySmall,
             ),
             const SizedBox(height: AppSpacing.lg),
-            const Text('Import mode:'),
+            Text(l10n.setImportModeLabel),
             const SizedBox(height: AppSpacing.sm),
             TextButton(
               onPressed: () => Navigator.pop(ctx, ImportMode.replaceAll),
-              child: const Text('Replace All (overwrite existing, keep extras)'),
+              child: Text(l10n.setImportModeReplace),
             ),
             TextButton(
               onPressed: () => Navigator.pop(ctx, ImportMode.merge),
-              child: const Text('Merge (skip duplicates, keep everything)'),
+              child: Text(l10n.setImportModeMerge),
             ),
           ],
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
-            child: const Text('Cancel'),
+            child: Text(l10n.setCancel),
           ),
         ],
       ),
@@ -733,9 +746,12 @@ class SettingsScreen extends ConsumerWidget {
       ref.invalidate(statsBundleProvider);
       ref.invalidate(categoriesProvider);
 
-      final msg =
-          'Imported ${importResult.totalImported} records'
-          '${importResult.movesWithMissingVideos.isNotEmpty ? ' (${importResult.movesWithMissingVideos.length} moves need video re-linking)' : ''}';
+      final msg = l10n.setImported(
+        importResult.totalImported,
+        importResult.movesWithMissingVideos.isNotEmpty
+            ? l10n.setImportedRelink(importResult.movesWithMissingVideos.length)
+            : '',
+      );
 
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg)));
     } on Object catch (e) {
@@ -743,7 +759,7 @@ class SettingsScreen extends ConsumerWidget {
       Navigator.pop(context); // dismiss loading
       ScaffoldMessenger.of(
         context,
-      ).showSnackBar(SnackBar(content: Text('Import failed: $e')));
+      ).showSnackBar(SnackBar(content: Text(l10n.setImportFailed('$e'))));
     }
   }
 
@@ -753,6 +769,7 @@ class SettingsScreen extends ConsumerWidget {
     final Category category, {
     required final int usageCount,
   }) async {
+    final l10n = AppLocalizations.of(context);
     final action = await showModalBottomSheet<_CategorySheetAction>(
       context: context,
       backgroundColor: Theme.of(context).colorScheme.surface,
@@ -782,7 +799,7 @@ class SettingsScreen extends ConsumerWidget {
               ListTile(
                 contentPadding: EdgeInsets.zero,
                 leading: const Icon(Icons.edit_outlined),
-                title: const Text('Edit category'),
+                title: Text(l10n.setCategoryEdit),
                 onTap: () =>
                     Navigator.pop(context, _CategorySheetAction.rename),
               ),
@@ -793,9 +810,9 @@ class SettingsScreen extends ConsumerWidget {
                     Icons.delete_outline,
                     color: AppColors.actionAgain,
                   ),
-                  title: const Text(
-                    'Delete category',
-                    style: TextStyle(color: AppColors.actionAgain),
+                  title: Text(
+                    l10n.setCategoryDelete,
+                    style: const TextStyle(color: AppColors.actionAgain),
                   ),
                   onTap: () =>
                       Navigator.pop(context, _CategorySheetAction.delete),
@@ -832,6 +849,7 @@ class SettingsScreen extends ConsumerWidget {
     final WidgetRef ref,
     final Category cat,
   ) {
+    final l10n = AppLocalizations.of(context);
     showDialog<void>(
       context: context,
       builder: (final context) {
@@ -839,26 +857,26 @@ class SettingsScreen extends ConsumerWidget {
         Color selectedColor = cat.color;
         return StatefulBuilder(
           builder: (final context, final setDialogState) => AlertDialog(
-            title: const Text('Rename Category'),
+            title: Text(l10n.setRenameCategoryTitle),
             content: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
                 TextField(
                   controller: controller,
                   autofocus: true,
-                  decoration: const InputDecoration(hintText: 'Category name'),
+                  decoration: InputDecoration(hintText: l10n.setCategoryNameHint),
                 ),
                 const SizedBox(height: AppSpacing.md),
                 ColorSettingTile(
-                  title: 'Category color',
+                  title: l10n.setCategoryColorTile,
                   subtitle: formatColorHex(selectedColor),
                   color: selectedColor,
                   onTap: () async {
                     final nextColor = await showColorEditorDialog(
                       context,
                       initialColor: selectedColor,
-                      title: 'Category Color',
-                      subtitle: 'Pick any color for this category label.',
+                      title: l10n.setCategoryColorEditorTitle,
+                      subtitle: l10n.setCategoryColorEditorSubtitle,
                       presets: categoryPresetColors,
                     );
                     if (nextColor == null || !context.mounted) return;
@@ -870,15 +888,15 @@ class SettingsScreen extends ConsumerWidget {
             actions: [
               TextButton(
                 onPressed: () => Navigator.pop(context),
-                child: const Text('Cancel'),
+                child: Text(l10n.setCancel),
               ),
               TextButton(
                 onPressed: () {
                   final newName = controller.text.trim();
                   if (newName.isEmpty) {
                     ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('Category name cannot be empty.'),
+                      SnackBar(
+                        content: Text(l10n.setCategoryNameEmpty),
                       ),
                     );
                     return;
@@ -891,7 +909,7 @@ class SettingsScreen extends ConsumerWidget {
                       );
                   if (exists) {
                     ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text('"$newName" already exists.')),
+                      SnackBar(content: Text(l10n.setCategoryExists(newName))),
                     );
                     return;
                   }
@@ -906,7 +924,7 @@ class SettingsScreen extends ConsumerWidget {
                   HapticFeedback.mediumImpact();
                   Navigator.pop(context);
                 },
-                child: const Text('Save'),
+                child: Text(l10n.setSave),
               ),
             ],
           ),
@@ -920,20 +938,21 @@ class SettingsScreen extends ConsumerWidget {
     final WidgetRef ref,
     final String current,
   ) {
+    final l10n = AppLocalizations.of(context);
     final controller = TextEditingController(text: current);
     showDialog<void>(
       context: context,
       builder: (final ctx) => AlertDialog(
-        title: const Text('Rename Page Title'),
+        title: Text(l10n.setRenamePageTitle),
         content: TextField(
           controller: controller,
           autofocus: true,
-          decoration: const InputDecoration(hintText: 'Page title'),
+          decoration: InputDecoration(hintText: l10n.setPageTitleHint),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
-            child: const Text('Cancel'),
+            child: Text(l10n.setCancel),
           ),
           TextButton(
             onPressed: () {
@@ -944,7 +963,7 @@ class SettingsScreen extends ConsumerWidget {
               }
               Navigator.pop(ctx);
             },
-            child: const Text('Save'),
+            child: Text(l10n.setSave),
           ),
         ],
       ),
@@ -958,13 +977,14 @@ class SettingsScreen extends ConsumerWidget {
     required final EntityNameField singularField,
     required final EntityNameField pluralField,
   }) {
+    final l10n = AppLocalizations.of(context);
     final singular =
         TextEditingController(text: current.forField(singularField));
     final plural = TextEditingController(text: current.forField(pluralField));
     showDialog<void>(
       context: context,
       builder: (final ctx) => AlertDialog(
-        title: const Text('Rename data-bank'),
+        title: Text(l10n.setRenameDataBankTitle),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -972,24 +992,23 @@ class SettingsScreen extends ConsumerWidget {
               controller: singular,
               autofocus: true,
               textCapitalization: TextCapitalization.words,
-              decoration: const InputDecoration(
-                labelText: 'Singular',
-                hintText: 'e.g. Move',
+              decoration: InputDecoration(
+                labelText: l10n.setSingularLabel,
+                hintText: l10n.setSingularHint,
               ),
             ),
             const SizedBox(height: AppSpacing.sm),
             TextField(
               controller: plural,
               textCapitalization: TextCapitalization.words,
-              decoration: const InputDecoration(
-                labelText: 'Plural',
-                hintText: 'e.g. Moves',
+              decoration: InputDecoration(
+                labelText: l10n.setPluralLabel,
+                hintText: l10n.setPluralHint,
               ),
             ),
             const SizedBox(height: AppSpacing.sm),
             Text(
-              'Display only — leave a field blank to restore its default. '
-              'Your saved videos are never renamed.',
+              l10n.setDataBankHelp,
               style: Theme.of(context).textTheme.bodySmall,
             ),
           ],
@@ -997,7 +1016,7 @@ class SettingsScreen extends ConsumerWidget {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
-            child: const Text('Cancel'),
+            child: Text(l10n.setCancel),
           ),
           TextButton(
             onPressed: () async {
@@ -1007,7 +1026,7 @@ class SettingsScreen extends ConsumerWidget {
               await HapticFeedback.mediumImpact();
               if (ctx.mounted) Navigator.pop(ctx);
             },
-            child: const Text('Save'),
+            child: Text(l10n.setSave),
           ),
         ],
       ),
@@ -1020,11 +1039,12 @@ class SettingsScreen extends ConsumerWidget {
     final LearningState state,
     final String current,
   ) {
+    final l10n = AppLocalizations.of(context);
     final controller = TextEditingController(text: current);
     showDialog<void>(
       context: context,
       builder: (final ctx) => AlertDialog(
-        title: Text('Rename ${defaultLearningStateLabels[state]}'),
+        title: Text(l10n.setRenameStateTitle(defaultLearningStateLabels[state]!)),
         content: TextField(
           controller: controller,
           autofocus: true,
@@ -1035,7 +1055,7 @@ class SettingsScreen extends ConsumerWidget {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
-            child: const Text('Cancel'),
+            child: Text(l10n.setCancel),
           ),
           TextButton(
             onPressed: () {
@@ -1048,7 +1068,7 @@ class SettingsScreen extends ConsumerWidget {
               }
               Navigator.pop(ctx);
             },
-            child: const Text('Save'),
+            child: Text(l10n.setSave),
           ),
         ],
       ),
@@ -1056,6 +1076,7 @@ class SettingsScreen extends ConsumerWidget {
   }
 
   void _showAddCategoryDialog(final BuildContext context, final WidgetRef ref) {
+    final l10n = AppLocalizations.of(context);
     showDialog<void>(
       context: context,
       builder: (final context) {
@@ -1063,26 +1084,26 @@ class SettingsScreen extends ConsumerWidget {
         Color selectedColor = categoryPresetColors[0];
         return StatefulBuilder(
           builder: (final context, final setDialogState) => AlertDialog(
-            title: const Text('New Category'),
+            title: Text(l10n.setNewCategoryTitle),
             content: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
                 TextField(
                   controller: controller,
                   autofocus: true,
-                  decoration: const InputDecoration(hintText: 'Category name'),
+                  decoration: InputDecoration(hintText: l10n.setCategoryNameHint),
                 ),
                 const SizedBox(height: AppSpacing.md),
                 ColorSettingTile(
-                  title: 'Category color',
+                  title: l10n.setCategoryColorTile,
                   subtitle: formatColorHex(selectedColor),
                   color: selectedColor,
                   onTap: () async {
                     final nextColor = await showColorEditorDialog(
                       context,
                       initialColor: selectedColor,
-                      title: 'Category Color',
-                      subtitle: 'Pick any color for this category label.',
+                      title: l10n.setCategoryColorEditorTitle,
+                      subtitle: l10n.setCategoryColorEditorSubtitle,
                       presets: categoryPresetColors,
                     );
                     if (nextColor == null || !context.mounted) return;
@@ -1094,15 +1115,15 @@ class SettingsScreen extends ConsumerWidget {
             actions: [
               TextButton(
                 onPressed: () => Navigator.pop(context),
-                child: const Text('Cancel'),
+                child: Text(l10n.setCancel),
               ),
               TextButton(
                 onPressed: () {
                   final name = controller.text.trim();
                   if (name.isEmpty) {
                     ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('Category name cannot be empty.'),
+                      SnackBar(
+                        content: Text(l10n.setCategoryNameEmpty),
                       ),
                     );
                     return;
@@ -1113,7 +1134,7 @@ class SettingsScreen extends ConsumerWidget {
                       .any((final item) => item.name == name);
                   if (exists) {
                     ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text('"$name" already exists.')),
+                      SnackBar(content: Text(l10n.setCategoryExists(name))),
                     );
                     return;
                   }
@@ -1124,7 +1145,7 @@ class SettingsScreen extends ConsumerWidget {
                   HapticFeedback.mediumImpact();
                   Navigator.pop(context);
                 },
-                child: const Text('Add'),
+                child: Text(l10n.setAdd),
               ),
             ],
           ),
@@ -1138,18 +1159,19 @@ class SettingsScreen extends ConsumerWidget {
     final Category category, {
     required final int usageCount,
   }) async {
+    final l10n = AppLocalizations.of(context);
     if (usageCount > 0) {
       await showDialog<void>(
         context: context,
         builder: (final ctx) => AlertDialog(
-          title: const Text('Category In Use'),
+          title: Text(l10n.setCategoryInUseTitle),
           content: Text(
-            'Reassign the $usageCount move${usageCount == 1 ? '' : 's'} in "${category.name}" before deleting it.',
+            l10n.setCategoryInUseBody(usageCount, category.name),
           ),
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(ctx),
-              child: const Text('OK'),
+              child: Text(l10n.setOk),
             ),
           ],
         ),
@@ -1331,10 +1353,11 @@ class _CategoryRow extends StatelessWidget {
 
   @override
   Widget build(final BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final colorScheme = Theme.of(context).colorScheme;
     final meta = [
-      if (isDefault) 'Default',
-      usageCount == 0 ? 'Unused' : '$usageCount moves',
+      if (isDefault) l10n.setCategoryDefault,
+      usageCount == 0 ? l10n.setCategoryUnused : l10n.setCategoryMoveCount(usageCount),
     ].join(' · ');
 
     return SettingsListRow(
@@ -1500,6 +1523,7 @@ class _DataActionTileAsyncState extends State<_DataActionTileAsync> {
   Widget build(final BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
     final messenger = ScaffoldMessenger.of(context);
+    final l10n = AppLocalizations.of(context);
     return InkWell(
       onTap: _loading
           ? null
@@ -1512,7 +1536,7 @@ class _DataActionTileAsyncState extends State<_DataActionTileAsync> {
                 }
               } on Object catch (e) {
                 if (mounted) {
-                  messenger.showSnackBar(SnackBar(content: Text('Error: $e')));
+                  messenger.showSnackBar(SnackBar(content: Text(l10n.setError('$e'))));
                 }
               } finally {
                 if (mounted) setState(() => _loading = false);
@@ -1562,17 +1586,18 @@ class _PhotosAccessTile extends ConsumerWidget {
 
   @override
   Widget build(final BuildContext context, final WidgetRef ref) {
+    final l10n = AppLocalizations.of(context);
     final status = ref.watch(photoLibraryAccessStatusProvider);
     final colorScheme = Theme.of(context).colorScheme;
 
     return _SettingsPanel(
-      title: 'Photo Library',
+      title: l10n.setPanelPhotoLibrary,
       child: status.when(
         data: (final access) => SettingsListGroup(
           children: [
             SettingsListRow(
-              title: _statusDisplayName(access),
-              subtitle: _statusDescription(access),
+              title: _statusDisplayName(l10n, access),
+              subtitle: _statusDescription(l10n, access),
               leading: Icon(
                 _statusIcon(access),
                 size: 20,
@@ -1597,12 +1622,12 @@ class _PhotosAccessTile extends ConsumerWidget {
             ),
           ],
         ),
-        loading: () => const SettingsListGroup(
+        loading: () => SettingsListGroup(
           children: [
             SettingsListRow(
-              title: 'Photo Library',
-              subtitle: 'Checking access…',
-              leading: SizedBox(
+              title: l10n.setPanelPhotoLibrary,
+              subtitle: l10n.setPhotoChecking,
+              leading: const SizedBox(
                 width: 20,
                 height: 20,
                 child: AppLoader(size: 6),
@@ -1610,12 +1635,12 @@ class _PhotosAccessTile extends ConsumerWidget {
             ),
           ],
         ),
-        error: (_, _) => const SettingsListGroup(
+        error: (_, _) => SettingsListGroup(
           children: [
             SettingsListRow(
-              title: 'Photo Library',
-              subtitle: 'Unable to check access',
-              leading: Icon(Icons.error_outline, size: 20),
+              title: l10n.setPanelPhotoLibrary,
+              subtitle: l10n.setPhotoUnableCheck,
+              leading: const Icon(Icons.error_outline, size: 20),
             ),
           ],
         ),
@@ -1623,25 +1648,31 @@ class _PhotosAccessTile extends ConsumerWidget {
     );
   }
 
-  static String _statusDisplayName(final PhotoLibraryAccessStatus status) {
+  static String _statusDisplayName(
+    final AppLocalizations l10n,
+    final PhotoLibraryAccessStatus status,
+  ) {
     return switch (status) {
-      PhotoLibraryAccessStatus.notDetermined => 'Not Determined',
-      PhotoLibraryAccessStatus.restricted => 'Restricted',
-      PhotoLibraryAccessStatus.denied => 'Denied',
-      PhotoLibraryAccessStatus.authorized => 'Full Access',
-      PhotoLibraryAccessStatus.limited => 'Limited Access',
-      PhotoLibraryAccessStatus.unknown => 'Unknown',
+      PhotoLibraryAccessStatus.notDetermined => l10n.setPhotoStatusNotDetermined,
+      PhotoLibraryAccessStatus.restricted => l10n.setPhotoStatusRestricted,
+      PhotoLibraryAccessStatus.denied => l10n.setPhotoStatusDenied,
+      PhotoLibraryAccessStatus.authorized => l10n.setPhotoStatusFullAccess,
+      PhotoLibraryAccessStatus.limited => l10n.setPhotoStatusLimited,
+      PhotoLibraryAccessStatus.unknown => l10n.setPhotoStatusUnknown,
     };
   }
 
-  static String _statusDescription(final PhotoLibraryAccessStatus status) {
+  static String _statusDescription(
+    final AppLocalizations l10n,
+    final PhotoLibraryAccessStatus status,
+  ) {
     return switch (status) {
-      PhotoLibraryAccessStatus.notDetermined => 'Tap to request access',
-      PhotoLibraryAccessStatus.restricted => 'Tap to open Settings',
-      PhotoLibraryAccessStatus.denied => 'Tap to open Settings',
-      PhotoLibraryAccessStatus.authorized => 'All photos available',
-      PhotoLibraryAccessStatus.limited => 'Some photos may be unavailable',
-      PhotoLibraryAccessStatus.unknown => 'Could not determine access',
+      PhotoLibraryAccessStatus.notDetermined => l10n.setPhotoDescNotDetermined,
+      PhotoLibraryAccessStatus.restricted => l10n.setPhotoDescOpenSettings,
+      PhotoLibraryAccessStatus.denied => l10n.setPhotoDescOpenSettings,
+      PhotoLibraryAccessStatus.authorized => l10n.setPhotoDescAuthorized,
+      PhotoLibraryAccessStatus.limited => l10n.setPhotoDescLimited,
+      PhotoLibraryAccessStatus.unknown => l10n.setPhotoDescUnknown,
     };
   }
 
@@ -1663,6 +1694,7 @@ class _PartyCycleDurationSlider extends ConsumerWidget {
 
   @override
   Widget build(final BuildContext context, final WidgetRef ref) {
+    final l10n = AppLocalizations.of(context);
     final durationMs = ref.watch(partyCycleDurationMsProvider);
     final colorScheme = Theme.of(context).colorScheme;
 
@@ -1670,7 +1702,7 @@ class _PartyCycleDurationSlider extends ConsumerWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'Shake cycle duration',
+          l10n.setShakeCycleDuration,
           style: AppTypography.caption.copyWith(
             color: colorScheme.secondary,
             fontWeight: FontWeight.w600,
@@ -1696,7 +1728,7 @@ class _PartyCycleDurationSlider extends ConsumerWidget {
             SizedBox(
               width: 64,
               child: Text(
-                '${(durationMs / 1000).toStringAsFixed(1)}s',
+                l10n.setSecondsSuffix((durationMs / 1000).toStringAsFixed(1)),
                 style: AppTypography.bodySmall.copyWith(
                   color: colorScheme.onSurface,
                   fontWeight: FontWeight.w600,
@@ -1710,13 +1742,13 @@ class _PartyCycleDurationSlider extends ConsumerWidget {
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             Text(
-              '${(_minMs / 1000).toStringAsFixed(1)}s',
+              l10n.setSecondsSuffix((_minMs / 1000).toStringAsFixed(1)),
               style: AppTypography.caption.copyWith(
                 color: colorScheme.secondary,
               ),
             ),
             Text(
-              '${(_maxMs / 1000).toStringAsFixed(1)}s',
+              l10n.setSecondsSuffix((_maxMs / 1000).toStringAsFixed(1)),
               style: AppTypography.caption.copyWith(
                 color: colorScheme.secondary,
               ),
@@ -1731,6 +1763,7 @@ class _PartyCycleDurationSlider extends ConsumerWidget {
 class _PartyComboModeToggle extends ConsumerWidget {
   @override
   Widget build(final BuildContext context, final WidgetRef ref) {
+    final l10n = AppLocalizations.of(context);
     final isEnabled = ref.watch(partyComboModeProvider);
     final colorScheme = Theme.of(context).colorScheme;
 
@@ -1742,7 +1775,7 @@ class _PartyComboModeToggle extends ConsumerWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                'Combo mode',
+                l10n.setComboModeTitle,
                 style: AppTypography.caption.copyWith(
                   color: colorScheme.secondary,
                   fontWeight: FontWeight.w600,
@@ -1750,7 +1783,7 @@ class _PartyComboModeToggle extends ConsumerWidget {
               ),
               const SizedBox(height: 4),
               Text(
-                'Shake to discover random combos instead of moves',
+                l10n.setComboModeDesc,
                 style: AppTypography.caption.copyWith(
                   color: colorScheme.secondary.withValues(alpha: 0.6),
                   fontSize: 11,
@@ -1777,6 +1810,7 @@ class _VideoEditorToggle extends ConsumerWidget {
 
   @override
   Widget build(final BuildContext context, final WidgetRef ref) {
+    final l10n = AppLocalizations.of(context);
     final useSimplified = ref.watch(useSimplifiedVideoEditorProvider);
     final colorScheme = Theme.of(context).colorScheme;
 
@@ -1788,7 +1822,7 @@ class _VideoEditorToggle extends ConsumerWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                'Use simplified editor',
+                l10n.setSimplifiedEditorTitle,
                 style: AppTypography.caption.copyWith(
                   color: colorScheme.secondary,
                   fontWeight: FontWeight.w600,
@@ -1796,7 +1830,7 @@ class _VideoEditorToggle extends ConsumerWidget {
               ),
               const SizedBox(height: 4),
               Text(
-                'Switch to the legacy editor if the robust editor is unstable.',
+                l10n.setSimplifiedEditorDesc,
                 style: AppTypography.caption.copyWith(
                   color: colorScheme.secondary.withValues(alpha: 0.6),
                   fontSize: 11,
@@ -1823,6 +1857,7 @@ class _FsrsToggle extends ConsumerWidget {
 
   @override
   Widget build(final BuildContext context, final WidgetRef ref) {
+    final l10n = AppLocalizations.of(context);
     final isEnabled = ref.watch(fsrsEnabledProvider);
     final colorScheme = Theme.of(context).colorScheme;
 
@@ -1834,7 +1869,7 @@ class _FsrsToggle extends ConsumerWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                'FSRS (Spaced Repetition)',
+                l10n.setFsrsTitle,
                 style: AppTypography.caption.copyWith(
                   color: colorScheme.secondary,
                   fontWeight: FontWeight.w600,
@@ -1843,8 +1878,8 @@ class _FsrsToggle extends ConsumerWidget {
               const SizedBox(height: 4),
               Text(
                 isEnabled
-                    ? 'Smart scheduling enabled'
-                    : 'Manual progression only',
+                    ? l10n.setFsrsEnabledDesc
+                    : l10n.setFsrsDisabledDesc,
                 style: AppTypography.caption.copyWith(
                   color: colorScheme.secondary.withValues(alpha: 0.6),
                   fontSize: 11,
@@ -1871,6 +1906,7 @@ class _ShakeDiscoveryToggle extends ConsumerWidget {
 
   @override
   Widget build(final BuildContext context, final WidgetRef ref) {
+    final l10n = AppLocalizations.of(context);
     final isEnabled = ref.watch(shakeEnabledProvider);
     final colorScheme = Theme.of(context).colorScheme;
 
@@ -1882,7 +1918,7 @@ class _ShakeDiscoveryToggle extends ConsumerWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                'Shake to Discover',
+                l10n.setShakeDiscoverTitle,
                 style: AppTypography.caption.copyWith(
                   color: colorScheme.secondary,
                   fontWeight: FontWeight.w600,
@@ -1890,7 +1926,7 @@ class _ShakeDiscoveryToggle extends ConsumerWidget {
               ),
               const SizedBox(height: 4),
               Text(
-                'Shake your device to shuffle items in Party mode.',
+                l10n.setShakeDiscoverDesc,
                 style: AppTypography.caption.copyWith(
                   color: colorScheme.secondary.withValues(alpha: 0.6),
                   fontSize: 11,
@@ -1917,6 +1953,7 @@ class _QuietModeToggle extends ConsumerWidget {
 
   @override
   Widget build(final BuildContext context, final WidgetRef ref) {
+    final l10n = AppLocalizations.of(context);
     final isEnabled = ref.watch(quietModeEnabledProvider);
     final colorScheme = Theme.of(context).colorScheme;
 
@@ -1928,7 +1965,7 @@ class _QuietModeToggle extends ConsumerWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                'Keep music playing',
+                l10n.setQuietModeTitle,
                 style: AppTypography.caption.copyWith(
                   color: colorScheme.secondary,
                   fontWeight: FontWeight.w600,
@@ -1936,7 +1973,7 @@ class _QuietModeToggle extends ConsumerWidget {
               ),
               const SizedBox(height: 4),
               Text(
-                'Videos will start muted to avoid interrupting your music.',
+                l10n.setQuietModeDesc,
                 style: AppTypography.caption.copyWith(
                   color: colorScheme.secondary.withValues(alpha: 0.6),
                   fontSize: 11,
@@ -1963,6 +2000,7 @@ class _StatsTabToggle extends ConsumerWidget {
 
   @override
   Widget build(final BuildContext context, final WidgetRef ref) {
+    final l10n = AppLocalizations.of(context);
     final isEnabled = ref.watch(showStatsTabProvider);
     final colorScheme = Theme.of(context).colorScheme;
 
@@ -1974,7 +2012,7 @@ class _StatsTabToggle extends ConsumerWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                'Show Stats Tab',
+                l10n.setStatsTabTitle,
                 style: AppTypography.caption.copyWith(
                   color: colorScheme.secondary,
                   fontWeight: FontWeight.w600,
@@ -1982,7 +2020,7 @@ class _StatsTabToggle extends ConsumerWidget {
               ),
               const SizedBox(height: 4),
               Text(
-                'Enable the insights tab in the bottom navigation.',
+                l10n.setStatsTabDesc,
                 style: AppTypography.caption.copyWith(
                   color: colorScheme.secondary.withValues(alpha: 0.6),
                   fontSize: 11,

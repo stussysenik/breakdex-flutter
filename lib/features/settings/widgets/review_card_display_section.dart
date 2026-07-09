@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/design/spacing.dart';
 import '../../../core/design/typography.dart';
 import '../../../core/providers.dart';
+import '../../../l10n/gen/app_localizations.dart';
 import '../../../shared/widgets/settings_list_group.dart';
 
 class ReviewCardDisplaySection extends ConsumerWidget {
@@ -20,47 +21,48 @@ class ReviewCardDisplaySection extends ConsumerWidget {
       silentPracticePlaybackProvider.notifier,
     );
     final colorScheme = Theme.of(context).colorScheme;
+    final l10n = AppLocalizations.of(context);
 
     final entries = [
       _ReviewCardToggle(
-        title: 'Keep music playing',
-        subtitle: 'Keep Breakdex clips muted so your music can keep playing.',
+        title: l10n.setViewKeepMusicTitle,
+        subtitle: l10n.setViewKeepMusicSubtitle,
         value: silentPractice,
         onChanged: ({required final value}) => silentPracticeNotifier.setEnabled(value: value),
       ),
       _ReviewCardToggle(
-        title: 'Title',
-        subtitle: 'Show the move or combo name on the card.',
+        title: l10n.setViewTitleTitle,
+        subtitle: l10n.setViewTitleSubtitle,
         value: settings.showTitle,
         onChanged: ({required final value}) => notifier.setShowTitle(value: value),
       ),
       _ReviewCardToggle(
-        title: 'State pill',
-        subtitle: 'Show the current NEW / LEARNING / MASTERY pill.',
+        title: l10n.setViewStatePillTitle,
+        subtitle: l10n.setViewStatePillSubtitle,
         value: settings.showState,
         onChanged: ({required final value}) => notifier.setShowState(value: value),
       ),
       _ReviewCardToggle(
-        title: 'Category',
-        subtitle: 'Show move categories like TOPROCK or FOOTWORK.',
+        title: l10n.setViewCategoryTitle,
+        subtitle: l10n.setViewCategorySubtitle,
         value: settings.showCategory,
         onChanged: ({required final value}) => notifier.setShowCategory(value: value),
       ),
       _ReviewCardToggle(
-        title: 'Combo timeline',
-        subtitle: 'Show step navigation when reviewing combos.',
+        title: l10n.setViewComboTimelineTitle,
+        subtitle: l10n.setViewComboTimelineSubtitle,
         value: settings.showComboTimeline,
         onChanged: ({required final value}) => notifier.setShowComboTimeline(value: value),
       ),
       _ReviewCardToggle(
-        title: 'Step label',
-        subtitle: 'Show the active combo step name under the timeline.',
+        title: l10n.setViewStepLabelTitle,
+        subtitle: l10n.setViewStepLabelSubtitle,
         value: settings.showComboStepName,
         onChanged: ({required final value}) => notifier.setShowComboStepName(value: value),
       ),
       _ReviewCardToggle(
-        title: 'Speed + loop controls',
-        subtitle: 'Show loop and speed controls on the card.',
+        title: l10n.setViewPlaybackControlsTitle,
+        subtitle: l10n.setViewPlaybackControlsSubtitle,
         value: settings.showPlaybackControls,
         onChanged: ({required final value}) =>
             notifier.setShowPlaybackControls(value: value),
@@ -76,7 +78,7 @@ class ReviewCardDisplaySection extends ConsumerWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                'REVIEW VIEW COMPOSER',
+                l10n.setViewComposerTitle,
                 style: AppTypography.caption.copyWith(
                   fontWeight: FontWeight.w800,
                   letterSpacing: 1.2,
@@ -85,7 +87,7 @@ class ReviewCardDisplaySection extends ConsumerWidget {
               ),
               const SizedBox(height: 4),
               Text(
-                'Modular layout — toggle elements to create your ideal practice view.',
+                l10n.setViewComposerSubtitle,
                 style: AppTypography.caption.copyWith(
                   color: colorScheme.secondary.withValues(alpha: 0.6),
                 ),

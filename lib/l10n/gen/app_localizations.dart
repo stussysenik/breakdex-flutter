@@ -1094,6 +1094,1170 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Error loading decks: {error}'**
   String revErrorLoadingDecks(String error);
+
+  /// Settings: back affordance in the header (screen-reader label + visible text) when settings is pushed (not a tab).
+  ///
+  /// In en, this message translates to:
+  /// **'Back'**
+  String get setBack;
+
+  /// Settings: generic reset button that restores a personalization panel to its defaults (accent, rating colors, card fill, review states).
+  ///
+  /// In en, this message translates to:
+  /// **'Reset'**
+  String get setReset;
+
+  /// Settings: generic add/confirm button for creating a move category.
+  ///
+  /// In en, this message translates to:
+  /// **'Add'**
+  String get setAdd;
+
+  /// Settings: generic cancel button that dismisses a dialog without saving.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel'**
+  String get setCancel;
+
+  /// Settings: generic save button that commits a rename/edit dialog.
+  ///
+  /// In en, this message translates to:
+  /// **'Save'**
+  String get setSave;
+
+  /// Settings: acknowledge button dismissing an informational dialog.
+  ///
+  /// In en, this message translates to:
+  /// **'OK'**
+  String get setOk;
+
+  /// Settings: compact seconds readout for the party shake-cycle slider (value already formatted, e.g. '3.5').
+  ///
+  /// In en, this message translates to:
+  /// **'{seconds}s'**
+  String setSecondsSuffix(String seconds);
+
+  /// Settings section header (rendered upper-cased) for practice/review controls.
+  ///
+  /// In en, this message translates to:
+  /// **'Practice & Review'**
+  String get setSectionPractice;
+
+  /// Settings: subtitle under the Practice & Review section header.
+  ///
+  /// In en, this message translates to:
+  /// **'Learning engine, view composer, and session controls.'**
+  String get setSectionPracticeSubtitle;
+
+  /// Settings section header (rendered upper-cased) for appearance controls.
+  ///
+  /// In en, this message translates to:
+  /// **'Visuals & Style'**
+  String get setSectionVisuals;
+
+  /// Settings: subtitle under the Visuals & Style section header.
+  ///
+  /// In en, this message translates to:
+  /// **'Theme, typography, colors, and global labels.'**
+  String get setSectionVisualsSubtitle;
+
+  /// Settings section header (rendered upper-cased) for library/data controls.
+  ///
+  /// In en, this message translates to:
+  /// **'Library & Data'**
+  String get setSectionLibrary;
+
+  /// Settings: subtitle under the Library & Data section header.
+  ///
+  /// In en, this message translates to:
+  /// **'Categories, backups, and photo library access.'**
+  String get setSectionLibrarySubtitle;
+
+  /// Settings panel title: app-mode segmented picker.
+  ///
+  /// In en, this message translates to:
+  /// **'App Mode'**
+  String get setPanelAppMode;
+
+  /// Settings panel title: FSRS learning-engine toggle.
+  ///
+  /// In en, this message translates to:
+  /// **'Learning Engine'**
+  String get setPanelLearningEngine;
+
+  /// Settings panel title: quiet-mode (mute videos) toggle.
+  ///
+  /// In en, this message translates to:
+  /// **'Quiet Mode'**
+  String get setPanelQuietMode;
+
+  /// Settings panel title wrapping the review-card display composer.
+  ///
+  /// In en, this message translates to:
+  /// **'Review View Composer'**
+  String get setPanelViewComposer;
+
+  /// Settings panel title: party-mode shake/cycle controls.
+  ///
+  /// In en, this message translates to:
+  /// **'Party Mode'**
+  String get setPanelPartyMode;
+
+  /// Settings panel title: video-editor selection toggle.
+  ///
+  /// In en, this message translates to:
+  /// **'Video Editor'**
+  String get setPanelVideoEditor;
+
+  /// Settings panel title: add-flow order segmented picker.
+  ///
+  /// In en, this message translates to:
+  /// **'Add Flow'**
+  String get setPanelAddFlow;
+
+  /// Settings panel title: show/hide the stats tab toggle.
+  ///
+  /// In en, this message translates to:
+  /// **'Stats Tab'**
+  String get setPanelStatsTab;
+
+  /// Settings panel title: light/dark/system theme picker.
+  ///
+  /// In en, this message translates to:
+  /// **'App Theme'**
+  String get setPanelAppTheme;
+
+  /// Settings panel title: accessible-palette picker.
+  ///
+  /// In en, this message translates to:
+  /// **'Accessibility'**
+  String get setPanelAccessibility;
+
+  /// Settings panel title: font-family chooser.
+  ///
+  /// In en, this message translates to:
+  /// **'Typography'**
+  String get setPanelTypography;
+
+  /// Settings panel title: learning-state labels/colors editor.
+  ///
+  /// In en, this message translates to:
+  /// **'Review States'**
+  String get setPanelReviewStates;
+
+  /// Settings panel title grouping accent/rating/fill color editors.
+  ///
+  /// In en, this message translates to:
+  /// **'Colors'**
+  String get setPanelColors;
+
+  /// Settings panel title: page-title and data-bank name customization.
+  ///
+  /// In en, this message translates to:
+  /// **'Global Labels'**
+  String get setPanelGlobalLabels;
+
+  /// Settings panel title: move-category management.
+  ///
+  /// In en, this message translates to:
+  /// **'Move Categories'**
+  String get setPanelMoveCategories;
+
+  /// Settings panel title: export/import/clear data actions.
+  ///
+  /// In en, this message translates to:
+  /// **'Backup & Reset'**
+  String get setPanelBackupReset;
+
+  /// Settings panel title: photo-library access status.
+  ///
+  /// In en, this message translates to:
+  /// **'Photo Library'**
+  String get setPanelPhotoLibrary;
+
+  /// Settings: label for the global accent-color editor (sub-panel title and the color tile/dialog title).
+  ///
+  /// In en, this message translates to:
+  /// **'Accent Color'**
+  String get setAccentColorLabel;
+
+  /// Settings: sub-panel title for the review rating-color editors.
+  ///
+  /// In en, this message translates to:
+  /// **'Rating Colors'**
+  String get setRatingColorsLabel;
+
+  /// Settings: label for the review-card frame fill editor (sub-panel title and the color tile/dialog title).
+  ///
+  /// In en, this message translates to:
+  /// **'Review Card Fill'**
+  String get setReviewCardFillLabel;
+
+  /// Settings Global Labels: action-tile showing the current customizable library page title.
+  ///
+  /// In en, this message translates to:
+  /// **'Arsenal Title: {name}'**
+  String setLabelArsenalTitle(String name);
+
+  /// Settings Global Labels: action-tile showing the user's custom plural noun for moves.
+  ///
+  /// In en, this message translates to:
+  /// **'Moves data-bank: {name}'**
+  String setLabelMovesDataBank(String name);
+
+  /// Settings Global Labels: action-tile showing the user's custom plural noun for combos.
+  ///
+  /// In en, this message translates to:
+  /// **'Combos data-bank: {name}'**
+  String setLabelCombosDataBank(String name);
+
+  /// Settings Backup & Reset: share a plain-text stats summary.
+  ///
+  /// In en, this message translates to:
+  /// **'Export Stats Summary'**
+  String get setActionExportStats;
+
+  /// Settings Backup & Reset: export the full library as a JSON backup file.
+  ///
+  /// In en, this message translates to:
+  /// **'Export Full JSON Backup'**
+  String get setActionExportJson;
+
+  /// Settings Backup & Reset: snackbar confirming a JSON export, with the record count.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{Exported 1 record} other{Exported {count} records}}'**
+  String setExportedRecords(int count);
+
+  /// Settings Backup & Reset: import a JSON backup file.
+  ///
+  /// In en, this message translates to:
+  /// **'Import from JSON'**
+  String get setActionImportJson;
+
+  /// Settings Backup & Reset: open the recently-deleted archive; shows a count badge when non-zero.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =0{Recently Deleted} other{Recently Deleted ({count})}}'**
+  String setActionRecentlyDeleted(int count);
+
+  /// Settings Backup & Reset: open the system-status and logs screen.
+  ///
+  /// In en, this message translates to:
+  /// **'System Status & Logs'**
+  String get setActionSystemStatus;
+
+  /// Settings Backup & Reset: destructive action opening the clear-all-data confirmation.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear All Data'**
+  String get setActionClearData;
+
+  /// Settings: clear-all-data confirmation dialog title.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear All Data?'**
+  String get setClearTitle;
+
+  /// Settings: clear-all-data dialog body explaining the deletion and the automatic pre-clear backup.
+  ///
+  /// In en, this message translates to:
+  /// **'This permanently deletes all moves, reviews, combos, and battle results. A backup will be created automatically before clearing.'**
+  String get setClearBody;
+
+  /// Settings: clear-all-data dialog prompt asking the user to type the literal control word DELETE (which stays untranslated) to enable the confirm button.
+  ///
+  /// In en, this message translates to:
+  /// **'Type DELETE to confirm:'**
+  String get setClearConfirmPrompt;
+
+  /// Settings: destructive confirm button in the clear-all-data dialog.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear Everything'**
+  String get setClearConfirmButton;
+
+  /// Settings: snackbar naming the auto-backup file written before data is cleared.
+  ///
+  /// In en, this message translates to:
+  /// **'Pre-clear backup saved to {file}'**
+  String setClearBackupSaved(String file);
+
+  /// Settings import: fallback snackbar when a chosen file fails validation and carries no specific error.
+  ///
+  /// In en, this message translates to:
+  /// **'Invalid backup file'**
+  String get setImportInvalid;
+
+  /// Settings import: mode-selection dialog title.
+  ///
+  /// In en, this message translates to:
+  /// **'Import Backup'**
+  String get setImportTitle;
+
+  /// Settings import: dialog line summarizing the record counts found in the backup; the categories clause is appended only when present.
+  ///
+  /// In en, this message translates to:
+  /// **'Found {moves} moves, {reviews} reviews, {combos} combos, {battles} battle results{categories}.'**
+  String setImportSummary(
+    int moves,
+    int reviews,
+    int combos,
+    int battles,
+    String categories,
+  );
+
+  /// Settings import: optional trailing clause appended to the import summary when the backup includes categories.
+  ///
+  /// In en, this message translates to:
+  /// **', {count} categories'**
+  String setImportSummaryCategories(int count);
+
+  /// Settings import: label above the replace/merge mode buttons.
+  ///
+  /// In en, this message translates to:
+  /// **'Import mode:'**
+  String get setImportModeLabel;
+
+  /// Settings import: replace-all mode button.
+  ///
+  /// In en, this message translates to:
+  /// **'Replace All (overwrite existing, keep extras)'**
+  String get setImportModeReplace;
+
+  /// Settings import: merge mode button.
+  ///
+  /// In en, this message translates to:
+  /// **'Merge (skip duplicates, keep everything)'**
+  String get setImportModeMerge;
+
+  /// Settings import: success snackbar with imported record count; the relink clause is appended when some moves need their video re-linked.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{Imported 1 record{relink}} other{Imported {count} records{relink}}}'**
+  String setImported(int count, String relink);
+
+  /// Settings import: optional trailing clause noting how many imported moves are missing their video and need re-linking.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{ (1 move needs video re-linking)} other{ ({count} moves need video re-linking)}}'**
+  String setImportedRelink(int count);
+
+  /// Settings import: error snackbar with the raw error text.
+  ///
+  /// In en, this message translates to:
+  /// **'Import failed: {error}'**
+  String setImportFailed(String error);
+
+  /// Settings: category action-sheet option to rename/edit a category.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit category'**
+  String get setCategoryEdit;
+
+  /// Settings: category action-sheet option to delete a non-default category.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete category'**
+  String get setCategoryDelete;
+
+  /// Settings: rename-category dialog title.
+  ///
+  /// In en, this message translates to:
+  /// **'Rename Category'**
+  String get setRenameCategoryTitle;
+
+  /// Settings: hint text in the category-name text field (rename and add dialogs).
+  ///
+  /// In en, this message translates to:
+  /// **'Category name'**
+  String get setCategoryNameHint;
+
+  /// Settings: color-tile title inside the category rename/add dialog.
+  ///
+  /// In en, this message translates to:
+  /// **'Category color'**
+  String get setCategoryColorTile;
+
+  /// Settings: title of the color-editor dialog opened for a category.
+  ///
+  /// In en, this message translates to:
+  /// **'Category Color'**
+  String get setCategoryColorEditorTitle;
+
+  /// Settings: subtitle in the category color-editor dialog.
+  ///
+  /// In en, this message translates to:
+  /// **'Pick any color for this category label.'**
+  String get setCategoryColorEditorSubtitle;
+
+  /// Settings: validation snackbar when a category name is blank.
+  ///
+  /// In en, this message translates to:
+  /// **'Category name cannot be empty.'**
+  String get setCategoryNameEmpty;
+
+  /// Settings: validation snackbar when a category name collides with an existing one.
+  ///
+  /// In en, this message translates to:
+  /// **'\"{name}\" already exists.'**
+  String setCategoryExists(String name);
+
+  /// Settings: add-category dialog title.
+  ///
+  /// In en, this message translates to:
+  /// **'New Category'**
+  String get setNewCategoryTitle;
+
+  /// Settings: dialog title shown when trying to delete a category that still has moves.
+  ///
+  /// In en, this message translates to:
+  /// **'Category In Use'**
+  String get setCategoryInUseTitle;
+
+  /// Settings: dialog body asking the user to reassign the moves still in a category before it can be deleted.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{Reassign the 1 move in \"{name}\" before deleting it.} other{Reassign the {count} moves in \"{name}\" before deleting it.}}'**
+  String setCategoryInUseBody(int count, String name);
+
+  /// Settings Global Labels: rename-page-title dialog title.
+  ///
+  /// In en, this message translates to:
+  /// **'Rename Page Title'**
+  String get setRenamePageTitle;
+
+  /// Settings Global Labels: hint text in the page-title field.
+  ///
+  /// In en, this message translates to:
+  /// **'Page title'**
+  String get setPageTitleHint;
+
+  /// Settings Global Labels: rename-data-bank dialog title (edits the custom singular/plural nouns).
+  ///
+  /// In en, this message translates to:
+  /// **'Rename data-bank'**
+  String get setRenameDataBankTitle;
+
+  /// Settings Global Labels: label for the singular-noun field.
+  ///
+  /// In en, this message translates to:
+  /// **'Singular'**
+  String get setSingularLabel;
+
+  /// Settings Global Labels: example hint for the singular-noun field.
+  ///
+  /// In en, this message translates to:
+  /// **'e.g. Move'**
+  String get setSingularHint;
+
+  /// Settings Global Labels: label for the plural-noun field.
+  ///
+  /// In en, this message translates to:
+  /// **'Plural'**
+  String get setPluralLabel;
+
+  /// Settings Global Labels: example hint for the plural-noun field.
+  ///
+  /// In en, this message translates to:
+  /// **'e.g. Moves'**
+  String get setPluralHint;
+
+  /// Settings Global Labels: helper text clarifying that renaming nouns is display-only and never touches saved videos.
+  ///
+  /// In en, this message translates to:
+  /// **'Display only — leave a field blank to restore its default. Your saved videos are never renamed.'**
+  String get setDataBankHelp;
+
+  /// Settings Review States: rename-learning-state dialog title, composing the state's default label.
+  ///
+  /// In en, this message translates to:
+  /// **'Rename {label}'**
+  String setRenameStateTitle(String label);
+
+  /// Settings: category-row meta tag marking the built-in default category.
+  ///
+  /// In en, this message translates to:
+  /// **'Default'**
+  String get setCategoryDefault;
+
+  /// Settings: category-row meta tag when no moves use the category.
+  ///
+  /// In en, this message translates to:
+  /// **'Unused'**
+  String get setCategoryUnused;
+
+  /// Settings: category-row meta showing how many moves use the category.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 move} other{{count} moves}}'**
+  String setCategoryMoveCount(int count);
+
+  /// Settings Photo Library: access status when permission has not been requested yet.
+  ///
+  /// In en, this message translates to:
+  /// **'Not Determined'**
+  String get setPhotoStatusNotDetermined;
+
+  /// Settings Photo Library: access status when restricted by device policy.
+  ///
+  /// In en, this message translates to:
+  /// **'Restricted'**
+  String get setPhotoStatusRestricted;
+
+  /// Settings Photo Library: access status when the user denied access.
+  ///
+  /// In en, this message translates to:
+  /// **'Denied'**
+  String get setPhotoStatusDenied;
+
+  /// Settings Photo Library: access status when full library access is granted.
+  ///
+  /// In en, this message translates to:
+  /// **'Full Access'**
+  String get setPhotoStatusFullAccess;
+
+  /// Settings Photo Library: access status when only a limited selection is granted.
+  ///
+  /// In en, this message translates to:
+  /// **'Limited Access'**
+  String get setPhotoStatusLimited;
+
+  /// Settings Photo Library: access status when it cannot be determined.
+  ///
+  /// In en, this message translates to:
+  /// **'Unknown'**
+  String get setPhotoStatusUnknown;
+
+  /// Settings Photo Library: subtitle prompting the user to grant access.
+  ///
+  /// In en, this message translates to:
+  /// **'Tap to request access'**
+  String get setPhotoDescNotDetermined;
+
+  /// Settings Photo Library: subtitle prompting the user to open OS settings (denied/restricted).
+  ///
+  /// In en, this message translates to:
+  /// **'Tap to open Settings'**
+  String get setPhotoDescOpenSettings;
+
+  /// Settings Photo Library: subtitle when full access is granted.
+  ///
+  /// In en, this message translates to:
+  /// **'All photos available'**
+  String get setPhotoDescAuthorized;
+
+  /// Settings Photo Library: subtitle when access is limited to a selection.
+  ///
+  /// In en, this message translates to:
+  /// **'Some photos may be unavailable'**
+  String get setPhotoDescLimited;
+
+  /// Settings Photo Library: subtitle when access status is unknown.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not determine access'**
+  String get setPhotoDescUnknown;
+
+  /// Settings Photo Library: subtitle while the access status is loading.
+  ///
+  /// In en, this message translates to:
+  /// **'Checking access…'**
+  String get setPhotoChecking;
+
+  /// Settings Photo Library: subtitle when the access-status check errors.
+  ///
+  /// In en, this message translates to:
+  /// **'Unable to check access'**
+  String get setPhotoUnableCheck;
+
+  /// Settings Party Mode: label for the shake-cycle duration slider.
+  ///
+  /// In en, this message translates to:
+  /// **'Shake cycle duration'**
+  String get setShakeCycleDuration;
+
+  /// Settings Party Mode: title for the combo-mode toggle.
+  ///
+  /// In en, this message translates to:
+  /// **'Combo mode'**
+  String get setComboModeTitle;
+
+  /// Settings Party Mode: description for the combo-mode toggle.
+  ///
+  /// In en, this message translates to:
+  /// **'Shake to discover random combos instead of moves'**
+  String get setComboModeDesc;
+
+  /// Settings Video Editor: title for the simplified-editor toggle.
+  ///
+  /// In en, this message translates to:
+  /// **'Use simplified editor'**
+  String get setSimplifiedEditorTitle;
+
+  /// Settings Video Editor: description for the simplified-editor toggle.
+  ///
+  /// In en, this message translates to:
+  /// **'Switch to the legacy editor if the robust editor is unstable.'**
+  String get setSimplifiedEditorDesc;
+
+  /// Settings Learning Engine: title for the FSRS toggle.
+  ///
+  /// In en, this message translates to:
+  /// **'FSRS (Spaced Repetition)'**
+  String get setFsrsTitle;
+
+  /// Settings Learning Engine: description when FSRS smart scheduling is on.
+  ///
+  /// In en, this message translates to:
+  /// **'Smart scheduling enabled'**
+  String get setFsrsEnabledDesc;
+
+  /// Settings Learning Engine: description when FSRS is off (manual progression).
+  ///
+  /// In en, this message translates to:
+  /// **'Manual progression only'**
+  String get setFsrsDisabledDesc;
+
+  /// Settings Party Mode: title for the shake-to-discover toggle.
+  ///
+  /// In en, this message translates to:
+  /// **'Shake to Discover'**
+  String get setShakeDiscoverTitle;
+
+  /// Settings Party Mode: description for the shake-to-discover toggle.
+  ///
+  /// In en, this message translates to:
+  /// **'Shake your device to shuffle items in Party mode.'**
+  String get setShakeDiscoverDesc;
+
+  /// Settings Quiet Mode: title for the keep-music-playing toggle.
+  ///
+  /// In en, this message translates to:
+  /// **'Keep music playing'**
+  String get setQuietModeTitle;
+
+  /// Settings Quiet Mode: description for the keep-music-playing toggle.
+  ///
+  /// In en, this message translates to:
+  /// **'Videos will start muted to avoid interrupting your music.'**
+  String get setQuietModeDesc;
+
+  /// Settings Stats Tab: title for the show-stats-tab toggle.
+  ///
+  /// In en, this message translates to:
+  /// **'Show Stats Tab'**
+  String get setStatsTabTitle;
+
+  /// Settings Stats Tab: description for the show-stats-tab toggle.
+  ///
+  /// In en, this message translates to:
+  /// **'Enable the insights tab in the bottom navigation.'**
+  String get setStatsTabDesc;
+
+  /// Settings: subtitle in the accent-color editor dialog.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose any accent color for the app chrome.'**
+  String get setAccentEditorSubtitle;
+
+  /// Settings: review-card fill subtitle when no custom color is set (default white).
+  ///
+  /// In en, this message translates to:
+  /// **'Default (white)'**
+  String get setFillDefault;
+
+  /// Settings: subtitle in the review-card fill color-editor dialog.
+  ///
+  /// In en, this message translates to:
+  /// **'Tint the review card frame. Applies to your next card.'**
+  String get setFillEditorSubtitle;
+
+  /// Settings Rating Colors: label for the 'again' rating row (upper-cased).
+  ///
+  /// In en, this message translates to:
+  /// **'AGAIN'**
+  String get setRatingAgain;
+
+  /// Settings Rating Colors: label for the 'hard' rating row (upper-cased).
+  ///
+  /// In en, this message translates to:
+  /// **'HARD'**
+  String get setRatingHard;
+
+  /// Settings Rating Colors: label for the 'good' rating row (upper-cased).
+  ///
+  /// In en, this message translates to:
+  /// **'GOOD'**
+  String get setRatingGood;
+
+  /// Settings Rating Colors: label for the 'easy' rating row (upper-cased).
+  ///
+  /// In en, this message translates to:
+  /// **'EASY'**
+  String get setRatingEasy;
+
+  /// Settings Rating Colors: color-editor dialog title, composing the rating label.
+  ///
+  /// In en, this message translates to:
+  /// **'{label} Color'**
+  String setRatingColorTitle(String label);
+
+  /// Settings Rating Colors: color-editor dialog subtitle, composing the rating label.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose any color for the {label} rating button.'**
+  String setRatingColorSubtitle(String label);
+
+  /// All-caps section header for the review card display composer settings group.
+  ///
+  /// In en, this message translates to:
+  /// **'REVIEW VIEW COMPOSER'**
+  String get setViewComposerTitle;
+
+  /// Subtitle under the review view composer header explaining that toggles customize the practice view layout.
+  ///
+  /// In en, this message translates to:
+  /// **'Modular layout — toggle elements to create your ideal practice view.'**
+  String get setViewComposerSubtitle;
+
+  /// Title for the toggle that mutes Breakdex clips so the user's own music keeps playing.
+  ///
+  /// In en, this message translates to:
+  /// **'Keep music playing'**
+  String get setViewKeepMusicTitle;
+
+  /// Subtitle explaining the keep-music-playing toggle mutes app video clips.
+  ///
+  /// In en, this message translates to:
+  /// **'Keep Breakdex clips muted so your music can keep playing.'**
+  String get setViewKeepMusicSubtitle;
+
+  /// Title for the toggle that shows the move or combo name on the review card.
+  ///
+  /// In en, this message translates to:
+  /// **'Title'**
+  String get setViewTitleTitle;
+
+  /// Subtitle explaining the title toggle displays the move or combo name on the review card.
+  ///
+  /// In en, this message translates to:
+  /// **'Show the move or combo name on the card.'**
+  String get setViewTitleSubtitle;
+
+  /// Title for the toggle that shows the learning-state pill on the review card.
+  ///
+  /// In en, this message translates to:
+  /// **'State pill'**
+  String get setViewStatePillTitle;
+
+  /// Subtitle explaining the state pill toggle shows the current NEW, LEARNING, or MASTERY status pill.
+  ///
+  /// In en, this message translates to:
+  /// **'Show the current NEW / LEARNING / MASTERY pill.'**
+  String get setViewStatePillSubtitle;
+
+  /// Title for the toggle that shows move category labels on the review card.
+  ///
+  /// In en, this message translates to:
+  /// **'Category'**
+  String get setViewCategoryTitle;
+
+  /// Subtitle explaining the category toggle shows move category labels such as TOPROCK or FOOTWORK.
+  ///
+  /// In en, this message translates to:
+  /// **'Show move categories like TOPROCK or FOOTWORK.'**
+  String get setViewCategorySubtitle;
+
+  /// Title for the toggle that shows the step-navigation timeline when reviewing combos.
+  ///
+  /// In en, this message translates to:
+  /// **'Combo timeline'**
+  String get setViewComboTimelineTitle;
+
+  /// Subtitle explaining the combo timeline toggle shows step navigation while reviewing combos.
+  ///
+  /// In en, this message translates to:
+  /// **'Show step navigation when reviewing combos.'**
+  String get setViewComboTimelineSubtitle;
+
+  /// Title for the toggle that shows the active combo step name under the timeline.
+  ///
+  /// In en, this message translates to:
+  /// **'Step label'**
+  String get setViewStepLabelTitle;
+
+  /// Subtitle explaining the step label toggle shows the active combo step name beneath the timeline.
+  ///
+  /// In en, this message translates to:
+  /// **'Show the active combo step name under the timeline.'**
+  String get setViewStepLabelSubtitle;
+
+  /// Title for the toggle that shows playback speed and loop controls on the review card.
+  ///
+  /// In en, this message translates to:
+  /// **'Speed + loop controls'**
+  String get setViewPlaybackControlsTitle;
+
+  /// Subtitle explaining the playback controls toggle shows loop and speed controls on the review card.
+  ///
+  /// In en, this message translates to:
+  /// **'Show loop and speed controls on the card.'**
+  String get setViewPlaybackControlsSubtitle;
+
+  /// Learning-mode toggle label for the built-in default set of learning states (as opposed to the user's custom set).
+  ///
+  /// In en, this message translates to:
+  /// **'Default'**
+  String get setStatesModeDefault;
+
+  /// Learning-mode toggle label that switches the review states section to the user's custom learning states.
+  ///
+  /// In en, this message translates to:
+  /// **'Custom'**
+  String get setStatesModeCustom;
+
+  /// Subtitle under a user-created learning-state row, marking it as a custom (non-default) state.
+  ///
+  /// In en, this message translates to:
+  /// **'Custom state'**
+  String get setStatesCustomStateSubtitle;
+
+  /// Title of the list row that opens the dialog for creating a new custom learning state.
+  ///
+  /// In en, this message translates to:
+  /// **'Add Custom State'**
+  String get setStatesAddTitle;
+
+  /// Subtitle under the 'Add Custom State' row explaining that it creates a new learning category.
+  ///
+  /// In en, this message translates to:
+  /// **'Create a new learning category'**
+  String get setStatesAddSubtitle;
+
+  /// Subtitle shown under a renamed learning state, reminding the user of the state's original built-in label.
+  ///
+  /// In en, this message translates to:
+  /// **'Default: {label}'**
+  String setStatesDefaultLabel(String label);
+
+  /// Title of the color-editor dialog for a learning state, composing the state's current label.
+  ///
+  /// In en, this message translates to:
+  /// **'{label} Color'**
+  String setStatesColorTitle(String label);
+
+  /// Explanatory subtitle in the learning-state color-editor dialog, naming the state whose color is being edited.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose any color for {label}. Quick picks, spectrum tuning, hex, and RGBA sliders stay in sync.'**
+  String setStatesColorSubtitle(String label);
+
+  /// Title of the dialog for creating a brand-new custom learning state.
+  ///
+  /// In en, this message translates to:
+  /// **'New Custom State'**
+  String get setStatesNewTitle;
+
+  /// Placeholder hint text in the text field where the user types a custom learning state's name.
+  ///
+  /// In en, this message translates to:
+  /// **'State name'**
+  String get setStatesNameHint;
+
+  /// Title of the color-picker tile inside the custom-state create/edit dialog.
+  ///
+  /// In en, this message translates to:
+  /// **'State color'**
+  String get setStatesColorTileTitle;
+
+  /// Title of the color-editor dialog opened from the custom-state create/edit dialog.
+  ///
+  /// In en, this message translates to:
+  /// **'Custom State Color'**
+  String get setStatesCustomColorTitle;
+
+  /// Short subtitle in the custom-state color-editor dialog inviting the user to pick any color.
+  ///
+  /// In en, this message translates to:
+  /// **'Pick any color.'**
+  String get setStatesCustomColorSubtitle;
+
+  /// Button that dismisses the custom-state create or edit dialog without saving.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel'**
+  String get setStatesCancel;
+
+  /// Confirm button that creates the new custom learning state in the create dialog.
+  ///
+  /// In en, this message translates to:
+  /// **'Add'**
+  String get setStatesAdd;
+
+  /// Title of the dialog for editing an existing custom learning state.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit Custom State'**
+  String get setStatesEditTitle;
+
+  /// Confirm button that saves changes to an existing custom learning state in the edit dialog.
+  ///
+  /// In en, this message translates to:
+  /// **'Save'**
+  String get setStatesSave;
+
+  /// Default title for the color-picker dialog, used when a caller does not supply its own title.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose Color'**
+  String get setColorPickerDefaultTitle;
+
+  /// Section label above the hex color code text field in the color-picker dialog.
+  ///
+  /// In en, this message translates to:
+  /// **'Hex'**
+  String get setColorHexLabel;
+
+  /// Helper text under the hex field telling the user which hex formats are accepted (6-digit RGB or 8-digit alpha-RGB).
+  ///
+  /// In en, this message translates to:
+  /// **'RRGGBB or AARRGGBB'**
+  String get setColorHexHelper;
+
+  /// Section label above the hue/saturation/value gradient sliders in the color-picker dialog.
+  ///
+  /// In en, this message translates to:
+  /// **'Spectrum'**
+  String get setColorSpectrumLabel;
+
+  /// Accessibility and display label for the hue slider in the color-picker dialog.
+  ///
+  /// In en, this message translates to:
+  /// **'Hue'**
+  String get setColorHueLabel;
+
+  /// Accessibility and display label for the saturation slider in the color-picker dialog.
+  ///
+  /// In en, this message translates to:
+  /// **'Saturation'**
+  String get setColorSaturationLabel;
+
+  /// Accessibility and display label for the brightness/value slider in the color-picker dialog.
+  ///
+  /// In en, this message translates to:
+  /// **'Value'**
+  String get setColorValueLabel;
+
+  /// Section label above the preset color swatches in the color-picker dialog.
+  ///
+  /// In en, this message translates to:
+  /// **'Quick picks'**
+  String get setColorQuickPicksLabel;
+
+  /// Accessibility and display label for the opacity (alpha) slider in the color-picker dialog.
+  ///
+  /// In en, this message translates to:
+  /// **'Opacity'**
+  String get setColorOpacityLabel;
+
+  /// Accessibility and display label for the red RGB channel slider in the color-picker dialog.
+  ///
+  /// In en, this message translates to:
+  /// **'Red'**
+  String get setColorRedLabel;
+
+  /// Accessibility and display label for the green RGB channel slider in the color-picker dialog.
+  ///
+  /// In en, this message translates to:
+  /// **'Green'**
+  String get setColorGreenLabel;
+
+  /// Accessibility and display label for the blue RGB channel slider in the color-picker dialog.
+  ///
+  /// In en, this message translates to:
+  /// **'Blue'**
+  String get setColorBlueLabel;
+
+  /// Label for the button that dismisses the color-picker dialog without saving.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel'**
+  String get setColorCancelButton;
+
+  /// Label for the button that confirms and returns the chosen color from the color-picker dialog.
+  ///
+  /// In en, this message translates to:
+  /// **'Save'**
+  String get setColorSaveButton;
+
+  /// Cloud-sync settings panel: section header above the backup-provider list.
+  ///
+  /// In en, this message translates to:
+  /// **'VIDEO BACKUP'**
+  String get setSyncSectionHeader;
+
+  /// Cloud-sync settings: row title for the iCloud Drive backup provider.
+  ///
+  /// In en, this message translates to:
+  /// **'iCloud Drive'**
+  String get setSyncProviderIcloudTitle;
+
+  /// Cloud-sync settings: row title for the Google Drive backup provider.
+  ///
+  /// In en, this message translates to:
+  /// **'Google Drive'**
+  String get setSyncProviderGdriveTitle;
+
+  /// Cloud-sync settings: row title for the S3-compatible backup provider (coming soon).
+  ///
+  /// In en, this message translates to:
+  /// **'S3 Compatible'**
+  String get setSyncProviderS3Title;
+
+  /// Cloud-sync settings: action tile that forces a fresh manifest push to the connected cloud provider.
+  ///
+  /// In en, this message translates to:
+  /// **'Re-upload library now'**
+  String get setSyncReuploadTile;
+
+  /// Cloud-sync settings: action tile that opens the sync-status screen.
+  ///
+  /// In en, this message translates to:
+  /// **'Sync Status'**
+  String get setSyncStatusTile;
+
+  /// Cloud-sync settings: action tile that opens the free-up-space screen.
+  ///
+  /// In en, this message translates to:
+  /// **'Free Up Space'**
+  String get setSyncFreeSpaceTile;
+
+  /// Cloud-sync settings: action tile that opens the backup help/explainer screen.
+  ///
+  /// In en, this message translates to:
+  /// **'How Backup Works'**
+  String get setSyncHelpTile;
+
+  /// Cloud-sync settings: transient snackbar shown while the library manifest is being re-uploaded.
+  ///
+  /// In en, this message translates to:
+  /// **'Re-uploading library…'**
+  String get setSyncReuploading;
+
+  /// Cloud-sync settings: snackbar confirming the library manifest was re-uploaded successfully.
+  ///
+  /// In en, this message translates to:
+  /// **'Library re-uploaded — refresh the web mirror'**
+  String get setSyncReuploadSuccess;
+
+  /// Cloud-sync settings: snackbar shown when re-upload is attempted but no cloud provider is connected.
+  ///
+  /// In en, this message translates to:
+  /// **'No cloud provider connected to upload to'**
+  String get setSyncReuploadNoProvider;
+
+  /// Cloud-sync settings: snackbar shown when the library re-upload throws; includes the raw error text.
+  ///
+  /// In en, this message translates to:
+  /// **'Re-upload failed: {error}'**
+  String setSyncReuploadFailed(String error);
+
+  /// Cloud-sync settings: snackbar confirming Google Drive was newly connected.
+  ///
+  /// In en, this message translates to:
+  /// **'Google Drive connected'**
+  String get setSyncGdriveConnected;
+
+  /// Cloud-sync settings: snackbar shown when Google Drive is tapped to enable but was already connected.
+  ///
+  /// In en, this message translates to:
+  /// **'Google Drive is already connected'**
+  String get setSyncGdriveAlreadyConnected;
+
+  /// Cloud-sync settings: snackbar shown when the user cancels the Google sign-in flow while enabling Drive.
+  ///
+  /// In en, this message translates to:
+  /// **'Google sign-in was cancelled'**
+  String get setSyncGdriveCancelled;
+
+  /// Cloud-sync settings: title of the confirmation dialog for disconnecting Google Drive.
+  ///
+  /// In en, this message translates to:
+  /// **'Disconnect Google Drive?'**
+  String get setSyncDisconnectTitle;
+
+  /// Cloud-sync settings: body of the disconnect-Google-Drive confirmation dialog explaining what happens to existing and future backups.
+  ///
+  /// In en, this message translates to:
+  /// **'Videos already backed up to Drive stay there. New videos won’t back up until you reconnect and sign in again.'**
+  String get setSyncDisconnectBody;
+
+  /// Cloud-sync settings: cancel button in the disconnect-Google-Drive confirmation dialog.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel'**
+  String get setSyncDisconnectCancel;
+
+  /// Cloud-sync settings: confirm button in the disconnect-Google-Drive confirmation dialog.
+  ///
+  /// In en, this message translates to:
+  /// **'Disconnect'**
+  String get setSyncDisconnectConfirm;
+
+  /// Cloud-sync settings: snackbar confirming Google Drive was disconnected.
+  ///
+  /// In en, this message translates to:
+  /// **'Google Drive disconnected'**
+  String get setSyncGdriveDisconnected;
+
+  /// Cloud-sync settings: snackbar confirming iCloud Drive was newly enabled.
+  ///
+  /// In en, this message translates to:
+  /// **'iCloud Drive enabled'**
+  String get setSyncIcloudEnabled;
+
+  /// Cloud-sync settings: snackbar shown when iCloud is tapped to enable but was already enabled.
+  ///
+  /// In en, this message translates to:
+  /// **'iCloud Drive is already enabled'**
+  String get setSyncIcloudAlreadyEnabled;
+
+  /// Cloud-sync settings: snackbar instructing the user how to turn on iCloud Drive at the OS level when it is unavailable.
+  ///
+  /// In en, this message translates to:
+  /// **'Enable iCloud Drive in iOS Settings > [your name] > iCloud'**
+  String get setSyncIcloudNotAvailable;
+
+  /// Cloud-sync settings: trailing status label on a provider row that is connected.
+  ///
+  /// In en, this message translates to:
+  /// **'Connected'**
+  String get setSyncStatusConnected;
+
+  /// Cloud-sync settings: trailing status label on a provider row that is available to enable.
+  ///
+  /// In en, this message translates to:
+  /// **'Tap to enable'**
+  String get setSyncStatusTapToEnable;
+
+  /// Cloud-sync settings: trailing status label on a provider row that is unavailable on this device.
+  ///
+  /// In en, this message translates to:
+  /// **'Not available'**
+  String get setSyncStatusNotAvailable;
+
+  /// Cloud-sync settings: trailing status label on a provider row that is not yet supported (e.g. S3).
+  ///
+  /// In en, this message translates to:
+  /// **'Coming soon'**
+  String get setSyncStatusComingSoon;
+
+  /// Settings Backup & Reset: generic error snackbar when an async data action throws.
+  ///
+  /// In en, this message translates to:
+  /// **'Error: {error}'**
+  String setError(String error);
 }
 
 class _AppLocalizationsDelegate

@@ -8,6 +8,7 @@ import '../../../core/design/spacing.dart';
 import '../../../core/design/typography.dart';
 import '../../../core/models/learning_state.dart';
 import '../../../core/providers.dart';
+import '../../../l10n/gen/app_localizations.dart';
 import '../../../shared/widgets/color_setting_tile.dart';
 import '../../../shared/widgets/settings_list_group.dart';
 
@@ -36,6 +37,7 @@ class ReviewStatesSection extends ConsumerWidget {
     final mode = ref.watch(learningModeProvider);
     final customStates = ref.watch(customLearningStatesProvider);
     final colorScheme = Theme.of(context).colorScheme;
+    final l10n = AppLocalizations.of(context);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -57,7 +59,7 @@ class ReviewStatesSection extends ConsumerWidget {
                   child: Padding(
                     padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm),
                     child: Text(
-                      'Default',
+                      l10n.setStatesModeDefault,
                       textAlign: TextAlign.center,
                       style: AppTypography.caption.copyWith(
                         color: mode == LearningMode.defaultMode
@@ -79,7 +81,7 @@ class ReviewStatesSection extends ConsumerWidget {
                   child: Padding(
                     padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm),
                     child: Text(
-                      'Custom',
+                      l10n.setStatesModeCustom,
                       textAlign: TextAlign.center,
                       style: AppTypography.caption.copyWith(
                         color: mode == LearningMode.custom
@@ -105,7 +107,7 @@ class ReviewStatesSection extends ConsumerWidget {
                     onRename(state, resolveLearningStateLabel(labels, state)),
                 leading: _StateSwatch(color: colors.forState(state)),
                 title: resolveLearningStateLabel(labels, state),
-                subtitle: _subtitleFor(labels, state),
+                subtitle: _subtitleFor(l10n, labels, state),
                 trailing: _StateRowTrailing(
                   hex: formatColorHex(colors.forState(state)),
                   onColorTap: () => _showColorPicker(context, ref, state),
@@ -117,7 +119,7 @@ class ReviewStatesSection extends ConsumerWidget {
                   onTap: () => _editCustomState(context, ref, custom),
                   leading: _StateSwatch(color: custom.color),
                   title: custom.label,
-                  subtitle: 'Custom state',
+                  subtitle: l10n.setStatesCustomStateSubtitle,
                   trailing: GestureDetector(
                     onTap: () => ref
                         .read(customLearningStatesProvider.notifier)
@@ -136,8 +138,8 @@ class ReviewStatesSection extends ConsumerWidget {
                   size: 18,
                   color: colorScheme.primary,
                 ),
-                title: 'Add Custom State',
-                subtitle: 'Create a new learning category',
+                title: l10n.setStatesAddTitle,
+                subtitle: l10n.setStatesAddSubtitle,
               ),
             ],
           ],
@@ -146,11 +148,15 @@ class ReviewStatesSection extends ConsumerWidget {
     );
   }
 
-  String? _subtitleFor(final Map<LearningState, String> labels, final LearningState state) {
+  String? _subtitleFor(
+    final AppLocalizations l10n,
+    final Map<LearningState, String> labels,
+    final LearningState state,
+  ) {
     final current = resolveLearningStateLabel(labels, state);
     final original = defaultLearningStateLabels[state] ?? state.displayText;
     if (current == original) return null;
-    return 'Default: $original';
+    return l10n.setStatesDefaultLabel(original);
   }
 
   Future<void> _showColorPicker(
@@ -158,6 +164,7 @@ class ReviewStatesSection extends ConsumerWidget {
     final WidgetRef ref,
     final LearningState state,
   ) async {
+    final l10n = AppLocalizations.of(context);
     final label = resolveLearningStateLabel(
       ref.read(learningStateLabelsProvider),
       state,
@@ -166,9 +173,8 @@ class ReviewStatesSection extends ConsumerWidget {
     final selected = await showColorEditorDialog(
       context,
       initialColor: currentColor,
-      title: '$label Color',
-      subtitle:
-          'Choose any color for $label. Quick picks, spectrum tuning, hex, and RGBA sliders stay in sync.',
+      title: l10n.setStatesColorTitle(label),
+      subtitle: l10n.setStatesColorSubtitle(label),
       presets: reviewStatePresetColors,
     );
     if (selected == null) return;
@@ -179,35 +185,36 @@ class ReviewStatesSection extends ConsumerWidget {
   }
 
   Future<void> _addCustomState(final BuildContext context, final WidgetRef ref) async {
+    final l10n = AppLocalizations.of(context);
     final controller = TextEditingController();
     Color selectedColor = reviewStatePresetColors[0];
     final result = await showDialog<CustomLearningState>(
       context: context,
       builder: (final ctx) => StatefulBuilder(
         builder: (final ctx, final setDialogState) => AlertDialog(
-          title: const Text('New Custom State'),
+          title: Text(l10n.setStatesNewTitle),
           content: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
               TextField(
                 controller: controller,
                 autofocus: true,
-                decoration: const InputDecoration(
-                  hintText: 'State name',
-                  border: OutlineInputBorder(),
+                decoration: InputDecoration(
+                  hintText: l10n.setStatesNameHint,
+                  border: const OutlineInputBorder(),
                 ),
               ),
               const SizedBox(height: AppSpacing.md),
               ColorSettingTile(
-                title: 'State color',
+                title: l10n.setStatesColorTileTitle,
                 subtitle: formatColorHex(selectedColor),
                 color: selectedColor,
                 onTap: () async {
                   final nextColor = await showColorEditorDialog(
                     ctx,
                     initialColor: selectedColor,
-                    title: 'Custom State Color',
-                    subtitle: 'Pick any color.',
+                    title: l10n.setStatesCustomColorTitle,
+                    subtitle: l10n.setStatesCustomColorSubtitle,
                     presets: reviewStatePresetColors,
                   );
                   if (nextColor != null) {
@@ -220,7 +227,7 @@ class ReviewStatesSection extends ConsumerWidget {
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(ctx),
-              child: const Text('Cancel'),
+              child: Text(l10n.setStatesCancel),
             ),
             TextButton(
               onPressed: () {
@@ -235,7 +242,7 @@ class ReviewStatesSection extends ConsumerWidget {
                 );
                 Navigator.pop(ctx, custom);
               },
-              child: const Text('Add'),
+              child: Text(l10n.setStatesAdd),
             ),
           ],
         ),
@@ -250,34 +257,35 @@ class ReviewStatesSection extends ConsumerWidget {
     final WidgetRef ref,
     final CustomLearningState custom,
   ) async {
+    final l10n = AppLocalizations.of(context);
     final controller = TextEditingController(text: custom.label);
     Color selectedColor = custom.color;
     final result = await showDialog<CustomLearningState>(
       context: context,
       builder: (final ctx) => StatefulBuilder(
         builder: (final ctx, final setDialogState) => AlertDialog(
-          title: const Text('Edit Custom State'),
+          title: Text(l10n.setStatesEditTitle),
           content: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
               TextField(
                 controller: controller,
-                decoration: const InputDecoration(
-                  hintText: 'State name',
-                  border: OutlineInputBorder(),
+                decoration: InputDecoration(
+                  hintText: l10n.setStatesNameHint,
+                  border: const OutlineInputBorder(),
                 ),
               ),
               const SizedBox(height: AppSpacing.md),
               ColorSettingTile(
-                title: 'State color',
+                title: l10n.setStatesColorTileTitle,
                 subtitle: formatColorHex(selectedColor),
                 color: selectedColor,
                 onTap: () async {
                   final nextColor = await showColorEditorDialog(
                     ctx,
                     initialColor: selectedColor,
-                    title: 'Custom State Color',
-                    subtitle: 'Pick any color.',
+                    title: l10n.setStatesCustomColorTitle,
+                    subtitle: l10n.setStatesCustomColorSubtitle,
                     presets: reviewStatePresetColors,
                   );
                   if (nextColor != null) {
@@ -290,7 +298,7 @@ class ReviewStatesSection extends ConsumerWidget {
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(ctx),
-              child: const Text('Cancel'),
+              child: Text(l10n.setStatesCancel),
             ),
             TextButton(
               onPressed: () {
@@ -306,7 +314,7 @@ class ReviewStatesSection extends ConsumerWidget {
                   ),
                 );
               },
-              child: const Text('Save'),
+              child: Text(l10n.setStatesSave),
             ),
           ],
         ),

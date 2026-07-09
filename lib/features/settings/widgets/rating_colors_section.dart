@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/providers.dart';
+import '../../../l10n/gen/app_localizations.dart';
 import '../../../shared/widgets/color_setting_tile.dart';
 
 /// Preset palette for rating color customization.
@@ -22,12 +23,13 @@ class RatingColorsSection extends ConsumerWidget {
   @override
   Widget build(final BuildContext context, final WidgetRef ref) {
     final rc = ref.watch(ratingColorsProvider);
+    final l10n = AppLocalizations.of(context);
 
     final entries = [
-      ('AGAIN', 'again', rc.again, Icons.close_rounded),
-      ('HARD', 'hard', rc.hard, Icons.remove_rounded),
-      ('GOOD', 'good', rc.good, Icons.check_rounded),
-      ('EASY', 'easy', rc.easy, Icons.star_rounded),
+      (l10n.setRatingAgain, 'again', rc.again, Icons.close_rounded),
+      (l10n.setRatingHard, 'hard', rc.hard, Icons.remove_rounded),
+      (l10n.setRatingGood, 'good', rc.good, Icons.check_rounded),
+      (l10n.setRatingEasy, 'easy', rc.easy, Icons.star_rounded),
     ];
 
     return Column(
@@ -73,11 +75,12 @@ class RatingColorRow extends ConsumerWidget {
   }
 
   Future<void> _showColorPicker(final BuildContext context, final WidgetRef ref) async {
+    final l10n = AppLocalizations.of(context);
     final selected = await showColorEditorDialog(
       context,
       initialColor: currentColor,
-      title: '$label Color',
-      subtitle: 'Choose any color for the $label rating button.',
+      title: l10n.setRatingColorTitle(label),
+      subtitle: l10n.setRatingColorSubtitle(label),
       presets: ratingPresetColors,
     );
     if (selected == null) return;

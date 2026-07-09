@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/providers.dart';
+import '../../../l10n/gen/app_localizations.dart';
 import '../../../shared/widgets/color_setting_tile.dart';
 
 /// Curated accent color palette for global UI personalization.
@@ -26,17 +27,18 @@ class AccentColorSection extends ConsumerWidget {
   @override
   Widget build(final BuildContext context, final WidgetRef ref) {
     final accent = ref.watch(accentColorProvider);
+    final l10n = AppLocalizations.of(context);
 
     return ColorSettingTile(
-      title: 'Accent Color',
+      title: l10n.setAccentColorLabel,
       subtitle: formatColorHex(accent),
       color: accent,
       onTap: () async {
         final selected = await showColorEditorDialog(
           context,
           initialColor: accent,
-          title: 'Accent Color',
-          subtitle: 'Choose any accent color for the app chrome.',
+          title: l10n.setAccentColorLabel,
+          subtitle: l10n.setAccentEditorSubtitle,
           presets: accentPresetColors,
         );
         if (selected != null) {
