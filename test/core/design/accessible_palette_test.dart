@@ -3,6 +3,7 @@ import 'package:breakdex/core/design/theme.dart';
 import 'package:breakdex/core/models/learning_state_colors.dart';
 import 'package:breakdex/core/services/settings_service.dart';
 import 'package:breakdex/features/flashcard_review/widgets/rating_button_row.dart';
+import 'package:breakdex/l10n/gen/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -144,6 +145,9 @@ void main() {
             builder: (final context, final ref, final _) {
               final palette = ref.watch(accessiblePaletteProvider);
               return MaterialApp(
+                localizationsDelegates:
+                    AppLocalizations.localizationsDelegates,
+                supportedLocales: AppLocalizations.supportedLocales,
                 theme: AppTheme.light(palette: palette),
                 home: Scaffold(
                   body: ColorFiltered(

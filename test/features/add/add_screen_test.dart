@@ -5,6 +5,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:breakdex/core/services/settings_service.dart';
 import 'package:breakdex/features/add/add_screen.dart';
+import 'package:breakdex/l10n/gen/app_localizations.dart';
 
 /// Any text node longer than this reads as a helper/instructional sentence
 /// rather than an interface label. The Add surface is chrome — its choices
@@ -20,7 +21,11 @@ void main() {
       await tester.pumpWidget(
         ProviderScope(
           overrides: [sharedPreferencesProvider.overrideWithValue(prefs)],
-          child: const MaterialApp(home: AddScreen()),
+          child: const MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: AddScreen(),
+          ),
         ),
       );
 

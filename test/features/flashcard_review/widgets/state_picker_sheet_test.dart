@@ -7,6 +7,7 @@ import 'package:breakdex/core/design/theme.dart';
 import 'package:breakdex/core/models/learning_state.dart';
 import 'package:breakdex/core/services/settings_service.dart';
 import 'package:breakdex/features/flashcard_review/widgets/state_picker_sheet.dart';
+import 'package:breakdex/l10n/gen/app_localizations.dart';
 
 Widget buildTestApp({
   required final LearningState currentState,
@@ -19,6 +20,8 @@ Widget buildTestApp({
       sharedPreferencesProvider.overrideWithValue(prefs),
     ],
     child: MaterialApp(
+      localizationsDelegates: AppLocalizations.localizationsDelegates,
+      supportedLocales: AppLocalizations.supportedLocales,
       theme: ThemeData(
         extensions: const [
           AppSemanticTheme(
@@ -61,7 +64,7 @@ void main() {
     ));
     await tester.pumpAndSettle();
 
-    await tester.tap(find.text('Practicing'));
+    await tester.tap(find.text('PRACTICING'));
     await tester.pumpAndSettle();
 
     expect(captured, LearningState.learning);
@@ -78,7 +81,7 @@ void main() {
     ));
     await tester.pumpAndSettle();
 
-    await tester.tap(find.text('Strong'));
+    await tester.tap(find.text('STRONG'));
     await tester.pumpAndSettle();
 
     expect(captured, LearningState.mastery);
@@ -95,7 +98,7 @@ void main() {
     ));
     await tester.pumpAndSettle();
 
-    await tester.tap(find.text('New'));
+    await tester.tap(find.text('NEW'));
     await tester.pumpAndSettle();
 
     expect(captured, LearningState.newState);
@@ -111,9 +114,9 @@ void main() {
     ));
     await tester.pumpAndSettle();
 
-    expect(find.text('New'), findsOneWidget);
-    expect(find.text('Practicing'), findsOneWidget);
-    expect(find.text('Strong'), findsOneWidget);
+    expect(find.text('NEW'), findsOneWidget);
+    expect(find.text('PRACTICING'), findsOneWidget);
+    expect(find.text('STRONG'), findsOneWidget);
   });
 
   testWidgets('current state shows a check circle indicator', (final tester) async {
@@ -126,8 +129,8 @@ void main() {
     ));
     await tester.pumpAndSettle();
 
-    final checkIcons = find.byIcon(Icons.check_circle);
-    expect(checkIcons, findsOneWidget);
+    // Current state is marked by a "CURRENT" badge (revCurrent), not an icon.
+    expect(find.text('CURRENT'), findsOneWidget);
   });
 
   testWidgets('modal path uses Navigator.pop when onSelected is null',
@@ -145,6 +148,8 @@ void main() {
         sharedPreferencesProvider.overrideWithValue(prefs),
       ],
       child: MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
         theme: ThemeData(
           extensions: const [
             AppSemanticTheme(
@@ -178,7 +183,7 @@ void main() {
     await tester.tap(find.text('Open'));
     await tester.pumpAndSettle();
 
-    await tester.tap(find.text('Practicing'));
+    await tester.tap(find.text('PRACTICING'));
     await tester.pumpAndSettle();
 
     expect(result, LearningState.learning);

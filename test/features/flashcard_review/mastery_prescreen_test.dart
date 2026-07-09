@@ -3,6 +3,7 @@ import 'package:breakdex/core/models/learning_state.dart';
 import 'package:breakdex/core/services/settings_service.dart';
 import 'package:breakdex/features/flashcard_review/providers/review_providers.dart';
 import 'package:breakdex/features/flashcard_review/widgets/mastery_prescreen.dart';
+import 'package:breakdex/l10n/gen/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -60,6 +61,8 @@ void main() {
           ),
         ],
         child: MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
           theme: AppTheme.light(),
           home: const Scaffold(
             body: MasteryPrescreen(source: ReviewSessionSource.stateBased),
@@ -76,6 +79,6 @@ void main() {
     expect(find.text('Short intervals'), findsNothing);
     expect(find.text('Long intervals'), findsNothing);
     expect(find.text('Tap to start this state'), findsNothing);
-    expect(find.text('Review all'), findsOneWidget);
+    expect(find.text('REVIEW ALL DUE'), findsOneWidget);
   });
 }

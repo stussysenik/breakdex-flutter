@@ -3,6 +3,7 @@ import 'package:breakdex/core/models/learning_state.dart';
 import 'package:breakdex/core/providers.dart';
 import 'package:breakdex/core/services/settings_service.dart';
 import 'package:breakdex/features/settings/widgets/review_states_section.dart';
+import 'package:breakdex/l10n/gen/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -31,6 +32,9 @@ void main() {
             builder: (final context, final ref, _) {
               final stateColors = ref.watch(learningStateColorsProvider);
               return MaterialApp(
+                localizationsDelegates:
+                    AppLocalizations.localizationsDelegates,
+                supportedLocales: AppLocalizations.supportedLocales,
                 theme: AppTheme.light(stateColors: stateColors),
                 home: Scaffold(
                   body: ReviewStatesSection(

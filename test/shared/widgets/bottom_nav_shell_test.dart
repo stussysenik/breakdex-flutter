@@ -6,6 +6,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:breakdex/shared/widgets/bottom_nav_shell.dart';
 import 'package:breakdex/core/providers.dart';
 import 'package:breakdex/core/services/settings_service.dart';
+import 'package:breakdex/l10n/gen/app_localizations.dart';
 
 void main() {
   testWidgets('BottomNavShell does not throw Riverpod modification error on build', (final tester) async {
@@ -49,6 +50,8 @@ void main() {
 
     await tester.pumpWidget(
       MaterialApp.router(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
         routerConfig: router,
       ),
     );
