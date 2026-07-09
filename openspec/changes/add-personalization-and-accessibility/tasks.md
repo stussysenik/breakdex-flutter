@@ -23,10 +23,18 @@ Ledger rule: tick each box in the same commit that lands the work.
 
 ## Phase 2: Flow-order + party default
 
-- [ ] 2.1 Add the add-flow order preference (after-metadata | edit-while-adding) and branch
+- [x] 2.1 Add the add-flow order preference (after-metadata | edit-while-adding) and branch
   the flow routing; both orders converge on identical move records (test proves equivalence).
-- [ ] 2.2 Flip the fresh-install default to `AppMode.party` in `app_mode.dart` fallback ONLY
-  for absent keys; test that a stored `anki` survives the update (data-safety).
+  Built `AddFlowOrder` enum + pure `resolveAddFlowVideoPath` (the whole behavioural delta),
+  `addFlowOrderProvider` (SharedPreferences, mirrors `appModeProvider`), branched `_startClipFlow`
+  (trim-first routes the picked clip through `/video-editor` before metadata; cancel falls back to
+  the picked path → unchanged record), and a Settings → Practice "Add Flow" segmented picker.
+  `add_flow_order_test.dart` proves record equivalence when no crop is applied + pointer-only
+  divergence on a deliberate crop.
+- [x] 2.2 Flip the fresh-install default to `AppMode.party` in `app_mode.dart` fallback ONLY
+  for absent keys; test that a stored `anki` survives the update (data-safety). Added an explicit
+  `'anki' => anki` case so only absent/unknown keys resolve to party; `app_mode_test.dart` proves
+  fresh-install → party and stored-`anki` → anki (upgrade path).
 
 ## Phase 3: Settings IA + live feedback
 

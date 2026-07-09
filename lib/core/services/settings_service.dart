@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../models/add_flow_order.dart';
 import '../models/app_mode.dart';
 
 enum ThemeSetting { system, dark, light }
@@ -99,6 +100,27 @@ class AppModeNotifier extends Notifier<AppMode> {
     final prefs = ref.read(sharedPreferencesProvider);
     await prefs.setString(_key, mode.name);
     state = mode;
+  }
+}
+
+final addFlowOrderProvider =
+    NotifierProvider<AddFlowOrderNotifier, AddFlowOrder>(
+      AddFlowOrderNotifier.new,
+    );
+
+class AddFlowOrderNotifier extends Notifier<AddFlowOrder> {
+  static const _key = 'add_flow_order';
+
+  @override
+  AddFlowOrder build() {
+    final prefs = ref.watch(sharedPreferencesProvider);
+    return AddFlowOrder.fromString(prefs.getString(_key));
+  }
+
+  Future<void> set(final AddFlowOrder order) async {
+    final prefs = ref.read(sharedPreferencesProvider);
+    await prefs.setString(_key, order.name);
+    state = order;
   }
 }
 

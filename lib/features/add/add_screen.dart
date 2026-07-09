@@ -9,11 +9,13 @@ import 'package:path/path.dart' as p;
 import '../../core/design/spacing.dart';
 import '../../core/services/entity_names_service.dart';
 import '../../core/design/typography.dart';
+import '../../core/models/add_flow_order.dart';
 import '../../core/models/learning_state.dart';
 import '../../core/models/move_creation.dart';
 import '../../core/providers.dart';
 import '../../core/state_machines/move_creation/provider.dart';
 import '../../core/services/categories_service.dart';
+import '../../core/services/settings_service.dart';
 import '../../core/services/video_service.dart';
 import '../../shared/widgets/video_picker_sheet.dart';
 import '../../shared/widgets/video_player_widget.dart';
@@ -61,6 +63,19 @@ class AddScreen extends ConsumerWidget {
     final pickResult = await VideoPickerSheet.show(context);
     if (pickResult == null || !context.mounted) return;
 
+    final order = ref.read(addFlowOrderProvider);
+
+    // Trim-first: route straight into the editor from the picker. Cancelling the
+    // editor falls back to the picked clip, so the record shape is unchanged.
+    String? editedPath;
+    if (order == AddFlowOrder.editWhileAdding) {
+      editedPath = await context.push<String>(
+        '/video-editor',
+        extra: {'videoPath': pickResult.localPath},
+      );
+      if (!context.mounted) return;
+    }
+
     final metadata = await _showMetadataSheet(context, ref, pickResult);
     if (metadata == null || !context.mounted) return;
 
@@ -69,7 +84,11 @@ class AddScreen extends ConsumerWidget {
       CreateMoveRequest(
         name: metadata.name,
         category: metadata.category,
-        localVideoPath: pickResult.localPath,
+        localVideoPath: resolveAddFlowVideoPath(
+          order: order,
+          pickedPath: pickResult.localPath,
+          editedPath: editedPath,
+        ),
         originalVideoName: pickResult.originalFileName,
         videoFileSize: pickResult.fileSize,
         videoCreationDate: pickResult.creationDate,

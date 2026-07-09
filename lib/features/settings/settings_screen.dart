@@ -14,6 +14,7 @@ import '../../core/design/colors.dart';
 import '../../core/design/spacing.dart';
 import '../../core/design/typography.dart';
 import '../../core/app_metadata.dart';
+import '../../core/models/add_flow_order.dart';
 import '../../core/models/app_mode.dart';
 import '../../core/models/learning_state.dart';
 import '../../core/providers.dart';
@@ -167,6 +168,19 @@ class SettingsScreen extends ConsumerWidget {
                   const _SettingsPanel(
                     title: 'Video Editor',
                     child: _VideoEditorToggle(),
+                  ),
+                  const SizedBox(height: AppSpacing.md),
+                  _SettingsPanel(
+                    title: 'Add Flow',
+                    child: _SegmentedPicker<AddFlowOrder>(
+                      values: AddFlowOrder.values,
+                      selected: ref.watch(addFlowOrderProvider),
+                      labelOf: (final o) => o.displayName,
+                      onChanged: (final o) {
+                        HapticFeedback.selectionClick();
+                        ref.read(addFlowOrderProvider.notifier).set(o);
+                      },
+                    ),
                   ),
                   const SizedBox(height: AppSpacing.md),
                   const _SettingsPanel(
