@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../../core/design/spacing.dart';
 import '../../core/design/typography.dart';
 import '../../core/services/entity_names_service.dart';
+import '../../l10n/gen/app_localizations.dart';
 
 class BreakdexScreen extends ConsumerWidget {
   const BreakdexScreen({super.key});
@@ -17,7 +18,7 @@ class BreakdexScreen extends ConsumerWidget {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Breakdex'),
+        title: Text(AppLocalizations.of(context).appTitle),
       ),
       body: Center(
         child: Column(

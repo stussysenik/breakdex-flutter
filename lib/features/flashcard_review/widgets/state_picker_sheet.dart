@@ -10,6 +10,8 @@ import '../../../core/design/theme.dart';
 import '../../../core/design/typography.dart';
 import '../../../core/models/learning_state.dart';
 import '../../../core/providers.dart';
+import '../../../core/services/entity_names_service.dart';
+import '../../../l10n/gen/app_localizations.dart';
 
 /// Bottom sheet for manually overriding a move's learning state.
 ///
@@ -46,6 +48,8 @@ class StatePickerSheet extends ConsumerWidget {
   @override
   Widget build(final BuildContext context, final WidgetRef ref) {
     final colorScheme = Theme.of(context).colorScheme;
+    final l10n = AppLocalizations.of(context);
+    final entityNames = ref.watch(entityNamesProvider);
     final labels = ref.watch(learningStateLabelsProvider);
     final mode = ref.watch(learningModeProvider);
     final customStates = ref.watch(customLearningStatesProvider);
@@ -66,7 +70,7 @@ class StatePickerSheet extends ConsumerWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'MOVE STATE'.toUpperCase(),
+                  l10n.revMoveState(entityNames.moveSingular.toUpperCase()),
                   style: AppTypography.caption.copyWith(
                     color: colorScheme.secondary,
                     fontWeight: FontWeight.w800,
@@ -148,6 +152,7 @@ class _StateOption extends StatelessWidget {
   Widget build(final BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
     final stateColor = customColor ?? context.stateColor(state);
+    final l10n = AppLocalizations.of(context);
 
     return InkWell(
       onTap: onTap,
@@ -191,7 +196,7 @@ class _StateOption extends StatelessWidget {
                   borderRadius: BorderRadius.zero,
                 ),
                 child: Text(
-                  'CURRENT',
+                  l10n.revCurrent,
                   style: AppTypography.bodySmall.copyWith(
                     fontWeight: FontWeight.w900,
                     fontFamily: 'Menlo',

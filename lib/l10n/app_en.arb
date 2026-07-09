@@ -25,5 +25,482 @@
       "itemSingular": { "type": "String", "example": "Move" },
       "itemPlural": { "type": "String", "example": "Moves" }
     }
+  },
+
+  "navBreakdex": "Breakdex",
+  "@navBreakdex": { "description": "Bottom-nav tab: the Breakdex library home." },
+  "navAdd": "Add",
+  "@navAdd": { "description": "Bottom-nav tab: add content." },
+  "navReview": "Review",
+  "@navReview": { "description": "Bottom-nav tab: review/practice." },
+  "navStats": "Stats",
+  "@navStats": { "description": "Bottom-nav tab: statistics." },
+  "navSettings": "Settings",
+  "@navSettings": { "description": "Bottom-nav tab: settings." },
+
+  "addContentTitle": "Add Content",
+  "@addContentTitle": { "description": "Add screen large app-bar title." },
+  "fieldNameLabel": "NAME",
+  "@fieldNameLabel": { "description": "Form field label: the item's name." },
+  "addNameHint": "e.g. Flare, Windmill...",
+  "@addNameHint": { "description": "Placeholder text in the name field on the add sheet." },
+  "fieldCategoryLabel": "CATEGORY",
+  "@fieldCategoryLabel": { "description": "Form field label: category." },
+  "fieldBeatCountLabel": "BEAT COUNT",
+  "@fieldBeatCountLabel": { "description": "Form field label: beat count." },
+  "fieldStatusLabel": "STATUS",
+  "@fieldStatusLabel": { "description": "Form field label: learning status." },
+  "saveEntityButton": "SAVE {entity}",
+  "@saveEntityButton": {
+    "description": "Primary save button on the add sheet. Composes the user's parametric noun (moveSingular, upper-cased by the caller) via a placeholder rather than concatenation.",
+    "placeholders": { "entity": { "type": "String", "example": "MOVE" } }
+  },
+  "nameTakenError": "\"{name}\" already exists.",
+  "@nameTakenError": {
+    "description": "Validation error when the chosen name collides with an existing move or combo.",
+    "placeholders": { "name": { "type": "String", "example": "Windmill" } }
+  },
+
+  "mdAlbumLabel": "Album · {filename}",
+  "@mdAlbumLabel": {
+    "description": "Move-detail caption showing the app-managed album filename for the move's clip.",
+    "placeholders": { "filename": { "type": "String", "example": "windmill_2024.mp4" } }
+  },
+  "mdVideoInfoHeader": "VIDEO INFO",
+  "@mdVideoInfoHeader": { "description": "Section header above the clip's technical metadata." },
+  "mdMetaRecorded": "Recorded",
+  "@mdMetaRecorded": { "description": "Metadata row label: when the clip was recorded." },
+  "mdMetaFileSize": "File Size",
+  "@mdMetaFileSize": { "description": "Metadata row label: the clip's file size." },
+  "mdMetaOriginalName": "Original Name",
+  "@mdMetaOriginalName": { "description": "Metadata row label: the clip's original filename." },
+  "mdMetaDuration": "Duration",
+  "@mdMetaDuration": { "description": "Metadata row label: the clip's duration." },
+  "mdMetaResolution": "Resolution",
+  "@mdMetaResolution": { "description": "Metadata row label: the clip's pixel resolution." },
+  "mdActionsHeader": "ACTIONS",
+  "@mdActionsHeader": { "description": "Section header above the move's action tiles." },
+  "mdActionEditVideo": "Edit Video",
+  "@mdActionEditVideo": { "description": "Action tile: open the video editor." },
+  "mdActionShareVideo": "Share Video",
+  "@mdActionShareVideo": { "description": "Action tile: share the clip." },
+  "mdActionRemoveVideo": "Remove Video",
+  "@mdActionRemoveVideo": { "description": "Action tile: remove the clip from this move." },
+  "mdActionAddVideo": "Add Video",
+  "@mdActionAddVideo": { "description": "Action tile: attach a clip when none exists." },
+  "mdRenameEntity": "Rename {entity}",
+  "@mdRenameEntity": {
+    "description": "Action tile / rename-overlay title. Composes the user's parametric singular noun.",
+    "placeholders": { "entity": { "type": "String", "example": "Move" } }
+  },
+  "mdDuplicateEntity": "Duplicate {entity}",
+  "@mdDuplicateEntity": {
+    "description": "Action tile: duplicate the current item. Composes the parametric singular noun.",
+    "placeholders": { "entity": { "type": "String", "example": "Move" } }
+  },
+  "mdDeleteEntity": "Delete {entity}",
+  "@mdDeleteEntity": {
+    "description": "Action tile / destructive link to delete the item. Composes the parametric singular noun; the caller controls casing.",
+    "placeholders": { "entity": { "type": "String", "example": "Move" } }
+  },
+  "mdOverlayDeleting": "Deleting...",
+  "@mdOverlayDeleting": { "description": "Progress overlay while the item is being deleted." },
+  "mdOverlayRenaming": "Renaming...",
+  "@mdOverlayRenaming": { "description": "Progress overlay while the item is being renamed." },
+  "mdOverlayUpdatingState": "Updating state...",
+  "@mdOverlayUpdatingState": { "description": "Progress overlay while the learning state is saved." },
+  "mdOverlayUpdatingCategory": "Updating category...",
+  "@mdOverlayUpdatingCategory": { "description": "Progress overlay while the category is saved." },
+  "mdOverlayUpdatingCount": "Updating count...",
+  "@mdOverlayUpdatingCount": { "description": "Progress overlay while the beat count is saved." },
+  "mdOverlaySavingNotes": "Saving notes...",
+  "@mdOverlaySavingNotes": { "description": "Progress overlay while notes are saved." },
+  "mdOverlayUpdatingPhotos": "Updating photos...",
+  "@mdOverlayUpdatingPhotos": { "description": "Progress overlay while photos are saved." },
+  "mdOverlayDuplicatingEntity": "Duplicating {entity}...",
+  "@mdOverlayDuplicatingEntity": {
+    "description": "Progress overlay while duplicating. Composes the parametric noun (caller lower-cases it).",
+    "placeholders": { "entity": { "type": "String", "example": "move" } }
+  },
+  "mdDeleteUsedInCombos": "This {entity} is currently used in {count} {comboPlural} (e.g. {comboName}). Deleting it will permanently delete this {entity}, its video, and remove it from those {comboPlural}!",
+  "@mdDeleteUsedInCombos": {
+    "description": "Delete-confirmation body when the move belongs to combos. Composes parametric nouns and the combo count/example.",
+    "placeholders": {
+      "entity": { "type": "String", "example": "move" },
+      "count": { "type": "int", "example": "3" },
+      "comboPlural": { "type": "String", "example": "combos" },
+      "comboName": { "type": "String", "example": "Windmill Flow" }
+    }
+  },
+  "mdDeleteConfirmBody": "This will permanently delete this {entity} and its video.",
+  "@mdDeleteConfirmBody": {
+    "description": "Delete-confirmation body when the move is not used in any combo.",
+    "placeholders": { "entity": { "type": "String", "example": "move" } }
+  },
+  "mdDeleteConfirmTitle": "Delete {entity}?",
+  "@mdDeleteConfirmTitle": {
+    "description": "Delete-confirmation overlay title. Composes the parametric singular noun.",
+    "placeholders": { "entity": { "type": "String", "example": "Move" } }
+  },
+  "mdConfirmDelete": "Delete",
+  "@mdConfirmDelete": { "description": "Confirm button on the delete overlay." },
+  "mdConfirmOk": "OK",
+  "@mdConfirmOk": { "description": "Acknowledge button on informational overlays." },
+  "mdConfirmRemove": "Remove",
+  "@mdConfirmRemove": { "description": "Confirm button on the remove-video overlay." },
+  "mdErrorTitle": "Error",
+  "@mdErrorTitle": { "description": "Title of the generic error overlay." },
+  "mdAlbumSyncFailedTitle": "Album Sync Failed",
+  "@mdAlbumSyncFailedTitle": { "description": "Title shown when syncing the clip to the device album fails." },
+  "mdRemoveVideoTitle": "Remove Video?",
+  "@mdRemoveVideoTitle": { "description": "Remove-video confirmation overlay title." },
+  "mdRemoveVideoBody": "The video will be removed from this {entity} but kept in your local storage.",
+  "@mdRemoveVideoBody": {
+    "description": "Remove-video confirmation body. Composes the parametric noun (caller lower-cases it).",
+    "placeholders": { "entity": { "type": "String", "example": "move" } }
+  },
+  "mdSemanticChangeCategory": "Change category from {category}",
+  "@mdSemanticChangeCategory": {
+    "description": "Accessibility label for the category badge button.",
+    "placeholders": { "category": { "type": "String", "example": "Power" } }
+  },
+  "mdSemanticChangeCount": "Change count from {count}",
+  "@mdSemanticChangeCount": {
+    "description": "Accessibility label for the beat-count badge button.",
+    "placeholders": { "count": { "type": "int", "example": "8" } }
+  },
+  "mdCountsSuffix": " counts",
+  "@mdCountsSuffix": { "description": "Suffix after the numeric beat count (note the leading space)." },
+  "mdVideoMissingTitle": "Video Missing",
+  "@mdVideoMissingTitle": { "description": "Card title when the move's original video file cannot be found." },
+  "mdVideoMissingBody": "The original video couldn't be found.",
+  "@mdVideoMissingBody": { "description": "Card body when the move's original video file cannot be found." },
+  "mdMissingReRecord": "Re-record",
+  "@mdMissingReRecord": { "description": "Video-missing card action: record a new clip." },
+  "mdMissingImport": "Import",
+  "@mdMissingImport": { "description": "Video-missing card action: import a clip from the library." },
+  "mdCloudTapToDownload": "Tap to download and play",
+  "@mdCloudTapToDownload": { "description": "Cloud-clip placeholder detail line when idle." },
+  "mdCloudStalled": "Stalled — retrying…",
+  "@mdCloudStalled": { "description": "Cloud-clip placeholder detail line when a download has stalled." },
+  "mdCloudPreparing": "Preparing…",
+  "@mdCloudPreparing": { "description": "Cloud-clip placeholder detail line while a download is being prepared." },
+  "mdCloudDownloading": "Downloading…",
+  "@mdCloudDownloading": { "description": "Cloud-clip placeholder headline fallback while downloading." },
+  "mdCloudStored": "Video stored in cloud",
+  "@mdCloudStored": { "description": "Cloud-clip placeholder headline when the clip is stored remotely and idle." },
+  "mdCancel": "Cancel",
+  "@mdCancel": { "description": "Cancel button shared across move-detail overlays." },
+  "mdMoveCategoryTitle": "{entity} Category",
+  "@mdMoveCategoryTitle": {
+    "description": "Category picker overlay title. Composes the parametric singular noun.",
+    "placeholders": { "entity": { "type": "String", "example": "Move" } }
+  },
+  "mdAddNew": "Add New",
+  "@mdAddNew": { "description": "Category picker: create a new category." },
+  "mdNewCategoryTitle": "New Category",
+  "@mdNewCategoryTitle": { "description": "New-category dialog title." },
+  "mdCategoryNameHint": "Category name",
+  "@mdCategoryNameHint": { "description": "New-category dialog: name field hint." },
+  "mdCategoryColorTile": "Category color",
+  "@mdCategoryColorTile": { "description": "New-category dialog: color picker tile title." },
+  "mdCategoryColorDialogTitle": "Category Color",
+  "@mdCategoryColorDialogTitle": { "description": "Color editor dialog title for a category color." },
+  "mdCategoryColorDialogSubtitle": "Pick any color for this category label.",
+  "@mdCategoryColorDialogSubtitle": { "description": "Color editor dialog subtitle for a category color." },
+  "mdCategoryNameEmpty": "Category name cannot be empty.",
+  "@mdCategoryNameEmpty": { "description": "Validation error when the category name is blank." },
+  "mdAdd": "Add",
+  "@mdAdd": { "description": "Confirm button on the new-category dialog." },
+  "mdUpdateCountTitle": "Update Count",
+  "@mdUpdateCountTitle": { "description": "Beat-count editor overlay title." },
+  "mdSave": "Save",
+  "@mdSave": { "description": "Save button shared across move-detail overlays." },
+  "mdNameConflictTitle": "Name Conflict",
+  "@mdNameConflictTitle": { "description": "Rename overlay title when the chosen name collides." },
+  "mdNameConflictBody": "The name \"{name}\" is already taken by another {move} or {combo}.",
+  "@mdNameConflictBody": {
+    "description": "Rename overlay body explaining the name collision. Composes the parametric nouns (caller lower-cases them).",
+    "placeholders": {
+      "name": { "type": "String", "example": "Windmill" },
+      "move": { "type": "String", "example": "move" },
+      "combo": { "type": "String", "example": "combo" }
+    }
+  },
+  "mdRenameHint": "Enter new name",
+  "@mdRenameHint": { "description": "Rename overlay: name field hint." },
+
+  "revEndSessionTitle": "End session?",
+  "@revEndSessionTitle": { "description": "Confirmation sheet title when leaving a review session mid-way." },
+  "revReviewedOfCards": "You've reviewed {reviewed} of {total} cards.",
+  "@revReviewedOfCards": {
+    "description": "Progress line in the end-session confirmation sheet.",
+    "placeholders": {
+      "reviewed": { "type": "int", "example": "4" },
+      "total": { "type": "int", "example": "12" }
+    }
+  },
+  "revContinue": "Continue",
+  "@revContinue": { "description": "End-session sheet: keep reviewing." },
+  "revEnd": "End",
+  "@revEnd": { "description": "End-session sheet: end the session." },
+  "revDrill": "Drill",
+  "@revDrill": { "description": "Review tab header." },
+  "revReviewSegment": "Review",
+  "@revReviewSegment": { "description": "Review-mode segmented control: spaced-repetition review." },
+  "revDeckSegment": "Deck",
+  "@revDeckSegment": { "description": "Review-mode segmented control: custom decks." },
+  "revError": "Error: {error}",
+  "@revError": {
+    "description": "Inline error message when review data fails to load.",
+    "placeholders": { "error": { "type": "String", "example": "network unavailable" } }
+  },
+  "revWatchClip": "Watch the clip, then move to assessment.",
+  "@revWatchClip": { "description": "Prompt on the review card's watch stage." },
+  "revAssess": "Assess",
+  "@revAssess": { "description": "Button to advance from watching to assessment." },
+  "revEntityNoLongerAvailable": "That {entity} is no longer available",
+  "@revEntityNoLongerAvailable": {
+    "description": "Empty-state message when a targeted item was deleted. Composes the parametric noun (caller lower-cases it).",
+    "placeholders": { "entity": { "type": "String", "example": "move" } }
+  },
+  "revBack": "Back",
+  "@revBack": { "description": "Return to the review list from an empty targeted session." },
+  "revBreakdexEmpty": "Your breakdex is empty",
+  "@revBreakdexEmpty": { "description": "Empty-state heading when the library has no items to review." },
+  "revAddFromArsenal": "Add {items} from the Arsenal tab to start reviewing",
+  "@revAddFromArsenal": {
+    "description": "Empty-state hint pointing at the Arsenal tab. Composes the parametric plural noun (caller lower-cases it).",
+    "placeholders": { "items": { "type": "String", "example": "moves" } }
+  },
+  "revAddEntity": "Add a {entity}",
+  "@revAddEntity": {
+    "description": "Empty-state CTA to add the first item. Composes the parametric singular noun.",
+    "placeholders": { "entity": { "type": "String", "example": "Move" } }
+  },
+  "revPickDeck": "Pick a deck to start a review session",
+  "@revPickDeck": { "description": "Empty-state message when no deck is selected." },
+  "revDeckNoMatchingCards": "\"{deckName}\" has no matching cards",
+  "@revDeckNoMatchingCards": {
+    "description": "Empty-state message when the selected deck matches no cards.",
+    "placeholders": { "deckName": { "type": "String", "example": "Power Moves" } }
+  },
+  "revNoStateCardsAvailable": "No {stateLabel} {kind} cards available",
+  "@revNoStateCardsAvailable": {
+    "description": "Empty-state message for a state-filtered session. Composes the state label and the parametric singular noun (caller lower-cases the noun).",
+    "placeholders": {
+      "stateLabel": { "type": "String", "example": "learning" },
+      "kind": { "type": "String", "example": "move" }
+    }
+  },
+  "revNoDueCardsAvailable": "No due {kind} cards available for this session",
+  "@revNoDueCardsAvailable": {
+    "description": "Empty-state message when nothing is due. Composes the parametric singular noun (caller lower-cases it).",
+    "placeholders": { "kind": { "type": "String", "example": "move" } }
+  },
+  "revBackToReview": "Back to Review",
+  "@revBackToReview": { "description": "Return to the review dashboard." },
+  "revGreatWork": "Great work!",
+  "@revGreatWork": { "description": "Session-complete celebration heading." },
+  "revAllCardsReviewed": "All {count} cards reviewed",
+  "@revAllCardsReviewed": {
+    "description": "Session-complete summary of how many cards were reviewed.",
+    "placeholders": { "count": { "type": "int", "example": "12" } }
+  },
+  "revReviewAgain": "Review Again",
+  "@revReviewAgain": { "description": "Restart the same review session." },
+  "revTierSprouting": "🌱 {name} is sprouting!",
+  "@revTierSprouting": {
+    "description": "Celebration when a move advances to the 'sprouting' mastery tier.",
+    "placeholders": { "name": { "type": "String", "example": "Windmill" } }
+  },
+  "revTierGrowing": "🌿 {name} is growing!",
+  "@revTierGrowing": {
+    "description": "Celebration when a move advances to the 'growing' mastery tier.",
+    "placeholders": { "name": { "type": "String", "example": "Windmill" } }
+  },
+  "revTierMastered": "💎 {name} mastered!",
+  "@revTierMastered": {
+    "description": "Celebration when a move reaches the 'mastered' mastery tier.",
+    "placeholders": { "name": { "type": "String", "example": "Windmill" } }
+  },
+  "revTierLeveledUp": "{name} leveled up!",
+  "@revTierLeveledUp": {
+    "description": "Generic celebration when a move advances a mastery tier.",
+    "placeholders": { "name": { "type": "String", "example": "Windmill" } }
+  },
+  "revStep": "Step {step} · {name}",
+  "@revStep": {
+    "description": "Combo assessment label anchoring the active step and move name.",
+    "placeholders": {
+      "step": { "type": "int", "example": "2" },
+      "name": { "type": "String", "example": "Baby Freeze" }
+    }
+  },
+  "revCreateDeck": "Create Deck",
+  "@revCreateDeck": { "description": "Create-deck sheet title / create button." },
+  "revEditDeck": "Edit Deck",
+  "@revEditDeck": { "description": "Edit-deck sheet title / menu action." },
+  "revDeckNameHint": "Deck name",
+  "@revDeckNameHint": { "description": "Create-deck sheet: name field hint." },
+  "revSmart": "Smart",
+  "@revSmart": { "description": "Deck type chip: auto-populated smart deck." },
+  "revManual": "Manual",
+  "@revManual": { "description": "Deck type chip: hand-picked manual deck." },
+  "revCategories": "Categories",
+  "@revCategories": { "description": "Smart-deck filter section: category filter." },
+  "revCardStates": "Card States",
+  "@revCardStates": { "description": "Smart-deck filter section: FSRS card-state filter." },
+  "revDueOnly": "Due only",
+  "@revDueOnly": { "description": "Smart-deck toggle: limit to cards that are due." },
+  "revSelectEntity": "Select {items}",
+  "@revSelectEntity": {
+    "description": "Manual-deck section header to pick items. Composes the parametric plural noun.",
+    "placeholders": { "items": { "type": "String", "example": "Moves" } }
+  },
+  "revSessionSize": "Session Size",
+  "@revSessionSize": { "description": "Create-deck section header: cards per session." },
+  "revAll": "All",
+  "@revAll": { "description": "Session-size chip meaning no limit." },
+  "revSaveChanges": "Save Changes",
+  "@revSaveChanges": { "description": "Save button when editing an existing deck." },
+  "revNoEntityAvailable": "No {items} available",
+  "@revNoEntityAvailable": {
+    "description": "Manual-deck selector empty state. Composes the parametric plural noun (caller lower-cases it).",
+    "placeholders": { "items": { "type": "String", "example": "moves" } }
+  },
+  "revUpcomingSchedule": "Upcoming Schedule",
+  "@revUpcomingSchedule": { "description": "Item schedule detail: rating-preview section header." },
+  "revAdvancedStats": "Advanced Algorithm Stats",
+  "@revAdvancedStats": { "description": "Item schedule detail: expandable FSRS stats header." },
+  "revReviewNow": "Review Now",
+  "@revReviewNow": { "description": "Item schedule detail: start reviewing this item immediately." },
+  "revComboSessionsScheduleOnly": "{entity} sessions still open in the schedule view only.",
+  "@revComboSessionsScheduleOnly": {
+    "description": "Item schedule detail note that combo review is schedule-only. Composes the parametric singular noun.",
+    "placeholders": { "entity": { "type": "String", "example": "Combo" } }
+  },
+  "revStability": "Stability",
+  "@revStability": { "description": "FSRS coefficient bar label: stability." },
+  "revDifficulty": "Difficulty",
+  "@revDifficulty": { "description": "FSRS coefficient bar label: difficulty." },
+  "revRetrievability": "Retrievability",
+  "@revRetrievability": { "description": "FSRS coefficient bar label: retrievability." },
+  "revReps": "Reps",
+  "@revReps": { "description": "FSRS stat chip: repetitions." },
+  "revLapses": "Lapses",
+  "@revLapses": { "description": "FSRS stat chip: lapses." },
+  "revInterval": "Interval",
+  "@revInterval": { "description": "FSRS stat chip: current interval." },
+  "revBasicPractice": "BASIC PRACTICE",
+  "@revBasicPractice": { "description": "Mastery prescreen: basic-practice toggle title." },
+  "revBypassingFsrs": "BYPASSING FSRS (MATH)",
+  "@revBypassingFsrs": { "description": "Basic-practice toggle subtitle when enabled." },
+  "revFsrsActive": "FSRS ACTIVE (DUE ONLY)",
+  "@revFsrsActive": { "description": "Basic-practice toggle subtitle when disabled." },
+  "revArsenalEmpty": "Your Arsenal is empty",
+  "@revArsenalEmpty": { "description": "Mastery prescreen empty-state heading." },
+  "revAddToStartJourney": "Add {items} to start your practice journey.",
+  "@revAddToStartJourney": {
+    "description": "Mastery prescreen empty-state hint. Composes the parametric plural noun (caller lower-cases it).",
+    "placeholders": { "items": { "type": "String", "example": "moves" } }
+  },
+  "revCustomDecks": "CUSTOM DECKS",
+  "@revCustomDecks": { "description": "Mastery prescreen: custom decks section header." },
+  "revDeleteDeck": "Delete Deck",
+  "@revDeleteDeck": { "description": "Deck context menu: delete the deck." },
+  "revNoCustomDecks": "No custom decks yet",
+  "@revNoCustomDecks": { "description": "Empty state when the user has no custom decks." },
+  "revCreateFirstDeck": "CREATE FIRST DECK",
+  "@revCreateFirstDeck": { "description": "CTA to create the first custom deck." },
+  "revAllEntityBasicPractice": "ALL {items} (BASIC PRACTICE)",
+  "@revAllEntityBasicPractice": {
+    "description": "Review dashboard header in basic-practice mode. Composes the parametric plural noun (caller upper-cases it).",
+    "placeholders": { "items": { "type": "String", "example": "MOVES" } }
+  },
+  "revEntityBoxes": "{items} BOXES",
+  "@revEntityBoxes": {
+    "description": "Review dashboard header for the box breakdown. Composes the parametric plural noun (caller upper-cases it).",
+    "placeholders": { "items": { "type": "String", "example": "MOVES" } }
+  },
+  "revTotalDue": "TOTAL DUE",
+  "@revTotalDue": { "description": "Review dashboard: total-due row label." },
+  "revAllBoxesEmpty": "ALL BOXES EMPTY",
+  "@revAllBoxesEmpty": { "description": "Review dashboard CTA when nothing is due." },
+  "revStartBasicPractice": "START BASIC PRACTICE",
+  "@revStartBasicPractice": { "description": "Review dashboard CTA to start basic practice." },
+  "revReviewAllDue": "REVIEW ALL DUE",
+  "@revReviewAllDue": { "description": "Review dashboard CTA to review all due cards." },
+  "revRate": "Rate {rating}",
+  "@revRate": {
+    "description": "Accessibility label for a rating button (Again/Hard/Good/Easy).",
+    "placeholders": { "rating": { "type": "String", "example": "Good" } }
+  },
+  "revAllCaughtUp": "All caught up",
+  "@revAllCaughtUp": { "description": "Schedule view summary when nothing is due today." },
+  "revDueTodayCount": "{count} due today",
+  "@revDueTodayCount": {
+    "description": "Schedule view summary of how many items are due today.",
+    "placeholders": { "count": { "type": "int", "example": "5" } }
+  },
+  "revDueTodayHeader": "Due Today",
+  "@revDueTodayHeader": { "description": "Schedule view section header for today's items." },
+  "revDueDate": "Due {date}",
+  "@revDueDate": {
+    "description": "Schedule view section header for a specific date.",
+    "placeholders": { "date": { "type": "String", "example": "Mar 14" } }
+  },
+  "revItemCount": "{count, plural, =1{1 item} other{{count} items}}",
+  "@revItemCount": {
+    "description": "Count of items due on the selected date.",
+    "placeholders": { "count": { "type": "int", "example": "3" } }
+  },
+  "revNoItemsDueToday": "No items due today",
+  "@revNoItemsDueToday": { "description": "Schedule view empty state for today." },
+  "revNoItemsDueOnDate": "No items due on this date",
+  "@revNoItemsDueOnDate": { "description": "Schedule view empty state for a non-today date." },
+  "revAddToStartTraining": "Add {items} to start training",
+  "@revAddToStartTraining": {
+    "description": "Schedule empty-state heading. Composes the parametric plural noun (caller lower-cases it).",
+    "placeholders": { "items": { "type": "String", "example": "moves" } }
+  },
+  "revRecordMoves": "Record your breakdancing {items}, then review with spaced repetition.",
+  "@revRecordMoves": {
+    "description": "Schedule empty-state body. Composes the parametric plural noun (caller lower-cases it).",
+    "placeholders": { "items": { "type": "String", "example": "moves" } }
+  },
+  "revGoToArsenal": "Go to Arsenal",
+  "@revGoToArsenal": { "description": "Schedule empty-state CTA to the Arsenal tab." },
+  "revFsrsParameters": "FSRS Parameters",
+  "@revFsrsParameters": { "description": "SRS parameters card header." },
+  "revReset": "Reset",
+  "@revReset": { "description": "SRS parameters card: reset to defaults." },
+  "revRetention": "Retention",
+  "@revRetention": { "description": "SRS parameter label: desired retention." },
+  "revRetentionHint": "Higher = more frequent reviews, tighter recall.",
+  "@revRetentionHint": { "description": "SRS parameter hint for the retention slider." },
+  "revMaxInterval": "Max interval",
+  "@revMaxInterval": { "description": "SRS parameter label: maximum interval." },
+  "revFuzzing": "Fuzzing",
+  "@revFuzzing": { "description": "SRS parameter label: interval fuzzing toggle." },
+  "revLearning": "Learning",
+  "@revLearning": { "description": "SRS parameter label: learning step presets." },
+  "revRelearning": "Relearning",
+  "@revRelearning": { "description": "SRS parameter label: relearning step presets." },
+  "revForgettingCurve": "Forgetting curve",
+  "@revForgettingCurve": { "description": "SRS parameters card: forgetting-curve section header." },
+  "revForgettingCurveLegend": "t = days elapsed, S = stability",
+  "@revForgettingCurveLegend": { "description": "Legend for the forgetting-curve formula." },
+  "revMoveState": "{entity} STATE",
+  "@revMoveState": {
+    "description": "State picker sheet header. Composes the parametric singular noun (caller upper-cases it).",
+    "placeholders": { "entity": { "type": "String", "example": "MOVE" } }
+  },
+  "revCurrent": "CURRENT",
+  "@revCurrent": { "description": "Badge marking the item's current learning state in the state picker." },
+  "revErrorLoadingDecks": "Error loading decks: {error}",
+  "@revErrorLoadingDecks": {
+    "description": "Inline error when the decks list fails to load.",
+    "placeholders": { "error": { "type": "String", "example": "network unavailable" } }
   }
 }

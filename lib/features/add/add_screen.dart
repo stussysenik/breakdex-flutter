@@ -19,6 +19,7 @@ import '../../core/services/settings_service.dart';
 import '../../core/services/video_service.dart';
 import '../../shared/widgets/video_picker_sheet.dart';
 import '../../shared/widgets/video_player_widget.dart';
+import '../../l10n/gen/app_localizations.dart';
 
 class AddScreen extends ConsumerWidget {
   const AddScreen({super.key});
@@ -29,8 +30,8 @@ class AddScreen extends ConsumerWidget {
     return Scaffold(
       body: CustomScrollView(
         slivers: [
-          const SliverAppBar.large(
-            title: Text('Add Content'),
+          SliverAppBar.large(
+            title: Text(AppLocalizations.of(context).addContentTitle),
             floating: true,
           ),
           SliverFillRemaining(
@@ -206,13 +207,14 @@ class _ClipMetadataFormState extends ConsumerState<_ClipMetadataForm> {
     final name = _nameController.text.trim();
     if (name.isEmpty || _selectedCategory == null) return;
 
+    final l10n = AppLocalizations.of(context);
     final naming = ref.read(reviewableNamingServiceProvider);
     final normalized = naming.normalize(name);
     final isTaken = await naming.isNameTaken(normalized);
     if (!mounted) return;
 
     if (isTaken) {
-      setState(() => _errorText = '"$normalized" already exists.');
+      setState(() => _errorText = l10n.nameTakenError(normalized));
       unawaited(HapticFeedback.heavyImpact());
       return;
     }
@@ -239,6 +241,8 @@ class _ClipMetadataFormState extends ConsumerState<_ClipMetadataForm> {
   @override
   Widget build(final BuildContext context) {
     final categories = ref.watch(categoriesProvider);
+    final entityNames = ref.watch(entityNamesProvider);
+    final l10n = AppLocalizations.of(context);
     final colorScheme = Theme.of(context).colorScheme;
 
     final selectedCategory = categories.any((final cat) => cat.name == _selectedCategory)
@@ -289,13 +293,13 @@ class _ClipMetadataFormState extends ConsumerState<_ClipMetadataForm> {
               ),
               const SizedBox(height: AppSpacing.lg),
 
-              Text('NAME', style: AppTypography.labelLarge.copyWith(color: colorScheme.secondary, letterSpacing: 1.5)),
+              Text(l10n.fieldNameLabel, style: AppTypography.labelLarge.copyWith(color: colorScheme.secondary, letterSpacing: 1.5)),
               TextField(
                 controller: _nameController,
                 autofocus: true,
                 style: AppTypography.titleLarge,
                 decoration: InputDecoration(
-                  hintText: 'e.g. Flare, Windmill...',
+                  hintText: l10n.addNameHint,
                   errorText: _errorText,
                   border: InputBorder.none,
                   hintStyle: AppTypography.titleLarge.copyWith(color: colorScheme.outline),
@@ -303,7 +307,7 @@ class _ClipMetadataFormState extends ConsumerState<_ClipMetadataForm> {
                 textCapitalization: TextCapitalization.words,
               ),
               const SizedBox(height: AppSpacing.xl),
-              Text('CATEGORY', style: AppTypography.labelLarge.copyWith(color: colorScheme.secondary, letterSpacing: 1.5)),
+              Text(l10n.fieldCategoryLabel, style: AppTypography.labelLarge.copyWith(color: colorScheme.secondary, letterSpacing: 1.5)),
               const SizedBox(height: AppSpacing.md),
               Wrap(
                 spacing: AppSpacing.sm,
@@ -326,7 +330,7 @@ class _ClipMetadataFormState extends ConsumerState<_ClipMetadataForm> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text('BEAT COUNT', style: AppTypography.labelLarge.copyWith(color: colorScheme.secondary, letterSpacing: 1.5)),
+                        Text(l10n.fieldBeatCountLabel, style: AppTypography.labelLarge.copyWith(color: colorScheme.secondary, letterSpacing: 1.5)),
                         const SizedBox(height: AppSpacing.md),
                         Row(
                           children: [
@@ -355,7 +359,7 @@ class _ClipMetadataFormState extends ConsumerState<_ClipMetadataForm> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text('STATUS', style: AppTypography.labelLarge.copyWith(color: colorScheme.secondary, letterSpacing: 1.5)),
+                        Text(l10n.fieldStatusLabel, style: AppTypography.labelLarge.copyWith(color: colorScheme.secondary, letterSpacing: 1.5)),
                         const SizedBox(height: AppSpacing.md),
                         DropdownButton<LearningState>(
                           value: _selectedState,
@@ -384,7 +388,7 @@ class _ClipMetadataFormState extends ConsumerState<_ClipMetadataForm> {
                     disabledForegroundColor: colorScheme.onSurface.withValues(alpha: 0.3),
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppRadius.sm)),
                   ),
-                  child: const Text('SAVE MOVE'),
+                  child: Text(l10n.saveEntityButton(entityNames.moveSingular.toUpperCase())),
                 ),
               ),
             ],

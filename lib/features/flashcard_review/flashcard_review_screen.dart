@@ -22,6 +22,7 @@ import '../../core/models/learning_state.dart';
 import '../../core/models/reviewable_item.dart';
 import '../../core/navigation/app_route_observer.dart';
 import '../../core/providers.dart';
+import '../../core/services/entity_names_service.dart';
 import '../../core/services/fsrs_service.dart';
 import '../../core/services/native_video_album.dart';
 import '../../core/services/video_path_resolver.dart';
@@ -38,6 +39,7 @@ import '../../shared/widgets/app_segmented_control.dart';
 import '../../shared/widgets/celebration_overlay.dart';
 import '../../shared/widgets/video_picker_sheet.dart';
 import '../lab/providers/achievement_providers.dart';
+import '../../l10n/gen/app_localizations.dart';
 import 'review_session_state.dart';
 
 class FlashcardReviewScreen extends ConsumerStatefulWidget {
@@ -164,6 +166,7 @@ class _FlashcardReviewScreenState extends ConsumerState<FlashcardReviewScreen>
       context: context,
       builder: (final context) {
         final colorScheme = Theme.of(context).colorScheme;
+        final l10n = AppLocalizations.of(context);
         return SafeArea(
           child: Padding(
             padding: const EdgeInsets.all(AppSpacing.screenEdge),
@@ -171,7 +174,7 @@ class _FlashcardReviewScreenState extends ConsumerState<FlashcardReviewScreen>
               mainAxisSize: MainAxisSize.min,
               children: [
                 Text(
-                  'End session?',
+                  l10n.revEndSessionTitle,
                   style: AppTypography.titleSmall.copyWith(
                     color: colorScheme.onSurface,
                     fontWeight: FontWeight.w700,
@@ -179,7 +182,7 @@ class _FlashcardReviewScreenState extends ConsumerState<FlashcardReviewScreen>
                 ),
                 const SizedBox(height: AppSpacing.sm),
                 Text(
-                  "You've reviewed $reviewed of $total cards.",
+                  l10n.revReviewedOfCards(reviewed, total),
                   style: AppTypography.bodySmall.copyWith(
                     color: colorScheme.secondary,
                   ),
@@ -190,7 +193,7 @@ class _FlashcardReviewScreenState extends ConsumerState<FlashcardReviewScreen>
                     Expanded(
                       child: OutlinedButton(
                         onPressed: () => Navigator.of(context).pop(),
-                        child: const Text('Continue'),
+                        child: Text(l10n.revContinue),
                       ),
                     ),
                     const SizedBox(width: AppSpacing.md),
@@ -204,7 +207,7 @@ class _FlashcardReviewScreenState extends ConsumerState<FlashcardReviewScreen>
                           backgroundColor: colorScheme.error,
                           foregroundColor: colorScheme.onError,
                         ),
-                        child: const Text('End'),
+                        child: Text(l10n.revEnd),
                       ),
                     ),
                   ],
@@ -254,6 +257,7 @@ class _FlashcardReviewScreenState extends ConsumerState<FlashcardReviewScreen>
   @override
   Widget build(final BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
+    final l10n = AppLocalizations.of(context);
     final reviewMode = ref.watch(reviewModeProvider);
     final sessionActive = ref.watch(reviewSessionActiveProvider);
 
@@ -280,7 +284,7 @@ class _FlashcardReviewScreenState extends ConsumerState<FlashcardReviewScreen>
                 horizontal: AppSpacing.screenEdge,
               ),
               child: Text(
-                'Drill',
+                l10n.revDrill,
                 style: AppTypography.titleLarge.copyWith(
                   color: colorScheme.onSurface,
                 ),
@@ -293,16 +297,16 @@ class _FlashcardReviewScreenState extends ConsumerState<FlashcardReviewScreen>
                 horizontal: AppSpacing.screenEdge,
               ),
               child: AppSegmentedControl<ReviewMode>(
-                items: const [
+                items: [
                   AppSegmentedControlItem(
                     value: ReviewMode.review,
                     icon: Icons.grid_view_rounded,
-                    label: 'Review',
+                    label: l10n.revReviewSegment,
                   ),
                   AppSegmentedControlItem(
                     value: ReviewMode.deck,
                     icon: Icons.layers_rounded,
-                    label: 'Deck',
+                    label: l10n.revDeckSegment,
                   ),
                 ],
                 selectedValue: reviewMode,
@@ -336,7 +340,8 @@ class _FlashcardReviewScreenState extends ConsumerState<FlashcardReviewScreen>
 
     return itemsAsync.when(
       loading: () => const Center(child: AppLoader()),
-      error: (final e, _) => Center(child: Text('Error: $e')),
+      error: (final e, _) =>
+          Center(child: Text(AppLocalizations.of(context).revError('$e'))),
       data: (final items) {
         // First load — also start shake listener for the active session
         if (!_initialized) {
@@ -361,6 +366,7 @@ class _FlashcardReviewScreenState extends ConsumerState<FlashcardReviewScreen>
   Widget _buildReviewContent() {
     final item = _items[_currentIndex];
     final colorScheme = Theme.of(context).colorScheme;
+    final l10n = AppLocalizations.of(context);
     final displaySettings = ref.watch(reviewCardDisplaySettingsProvider);
     final intervalsAsync = ref.watch(
       intervalPreviewProvider((
@@ -500,7 +506,7 @@ class _FlashcardReviewScreenState extends ConsumerState<FlashcardReviewScreen>
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       Text(
-                        'Watch the clip, then move to assessment.',
+                        l10n.revWatchClip,
                         textAlign: TextAlign.center,
                         style: AppTypography.bodySmall.copyWith(
                           color: colorScheme.secondary,
@@ -510,7 +516,7 @@ class _FlashcardReviewScreenState extends ConsumerState<FlashcardReviewScreen>
                       SizedBox(
                         width: double.infinity,
                         child: PrimaryButton(
-                          label: 'Assess',
+                          label: l10n.revAssess,
                           onPressed: _showAssessmentStage,
                           color: colorScheme.primary,
                         ),
@@ -524,6 +530,8 @@ class _FlashcardReviewScreenState extends ConsumerState<FlashcardReviewScreen>
   }
 
   Widget _buildEmpty(final ColorScheme colorScheme) {
+    final l10n = AppLocalizations.of(context);
+    final entityNames = ref.watch(entityNamesProvider);
     final stateFilter = ref.watch(reviewStateFilterProvider);
     final selectedDeck = ref.watch(selectedDeckProvider);
     final targetMoveIds = ref.watch(reviewSessionTargetMoveIdsProvider);
@@ -545,7 +553,9 @@ class _FlashcardReviewScreenState extends ConsumerState<FlashcardReviewScreen>
             ),
             const SizedBox(height: AppSpacing.md),
             Text(
-              'That move is no longer available',
+              l10n.revEntityNoLongerAvailable(
+                entityNames.moveSingular.toLowerCase(),
+              ),
               style: AppTypography.bodyMedium.copyWith(
                 color: colorScheme.secondary,
               ),
@@ -554,7 +564,7 @@ class _FlashcardReviewScreenState extends ConsumerState<FlashcardReviewScreen>
             OutlinedButton.icon(
               onPressed: _confirmEndSession,
               icon: const Icon(Icons.arrow_back_rounded, size: 18),
-              label: const Text('Back'),
+              label: Text(l10n.revBack),
             ),
           ],
         ),
@@ -573,14 +583,14 @@ class _FlashcardReviewScreenState extends ConsumerState<FlashcardReviewScreen>
             ),
             const SizedBox(height: AppSpacing.md),
             Text(
-              'Your breakdex is empty',
+              l10n.revBreakdexEmpty,
               style: AppTypography.bodyMedium.copyWith(
                 color: colorScheme.secondary,
               ),
             ),
             const SizedBox(height: AppSpacing.sm),
             Text(
-              'Add moves from the Arsenal tab to start reviewing',
+              l10n.revAddFromArsenal(entityNames.movePlural.toLowerCase()),
               style: AppTypography.bodySmall.copyWith(
                 color: colorScheme.secondary,
               ),
@@ -589,7 +599,7 @@ class _FlashcardReviewScreenState extends ConsumerState<FlashcardReviewScreen>
             ElevatedButton.icon(
               onPressed: () => context.go('/moves'),
               icon: const Icon(Icons.add),
-              label: const Text('Add a Move'),
+              label: Text(l10n.revAddEntity(entityNames.moveSingular)),
               style: ElevatedButton.styleFrom(
                 backgroundColor: colorScheme.primary,
                 foregroundColor: Colors.white,
@@ -604,15 +614,18 @@ class _FlashcardReviewScreenState extends ConsumerState<FlashcardReviewScreen>
         ? resolveLearningStateLabel(stateLabels, stateFilter)
         : 'due';
 
+    final kindNoun = entityKind == ReviewEntityKind.moves
+        ? entityNames.moveSingular.toLowerCase()
+        : entityNames.comboSingular.toLowerCase();
     final message = switch (reviewSource) {
       ReviewSessionSource.deck =>
         selectedDeck == null
-            ? 'Pick a deck to start a review session'
-            : '"${selectedDeck.name}" has no matching cards',
+            ? l10n.revPickDeck
+            : l10n.revDeckNoMatchingCards(selectedDeck.name),
       ReviewSessionSource.stateBased when stateFilter != null =>
-        'No $stateLabel ${entityKind == ReviewEntityKind.moves ? 'move cards' : 'combo cards'} available',
+        l10n.revNoStateCardsAvailable(stateLabel, kindNoun),
       ReviewSessionSource.stateBased =>
-        'No due ${entityKind == ReviewEntityKind.moves ? 'move cards' : 'combo cards'} available for this session',
+        l10n.revNoDueCardsAvailable(kindNoun),
     };
 
     return Center(
@@ -631,7 +644,7 @@ class _FlashcardReviewScreenState extends ConsumerState<FlashcardReviewScreen>
           OutlinedButton.icon(
             onPressed: _endSession,
             icon: const Icon(Icons.arrow_back_rounded, size: 18),
-            label: const Text('Back to Review'),
+            label: Text(l10n.revBackToReview),
           ),
         ],
       ),
@@ -639,6 +652,7 @@ class _FlashcardReviewScreenState extends ConsumerState<FlashcardReviewScreen>
   }
 
   Widget _buildCompleted(final ColorScheme colorScheme) {
+    final l10n = AppLocalizations.of(context);
     return Center(
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: AppSpacing.screenEdge),
@@ -676,7 +690,7 @@ class _FlashcardReviewScreenState extends ConsumerState<FlashcardReviewScreen>
                 ),
                 const SizedBox(height: AppSpacing.lg),
                 Text(
-                  'Great work!',
+                  l10n.revGreatWork,
                   style: AppTypography.titleLarge.copyWith(
                     color: colorScheme.onSurface,
                     fontWeight: FontWeight.w700,
@@ -685,7 +699,7 @@ class _FlashcardReviewScreenState extends ConsumerState<FlashcardReviewScreen>
                 ),
                 const SizedBox(height: AppSpacing.sm),
                 Text(
-                  'All ${_items.length} cards reviewed',
+                  l10n.revAllCardsReviewed(_items.length),
                   style: AppTypography.bodyMedium.copyWith(
                     color: colorScheme.secondary,
                   ),
@@ -693,7 +707,7 @@ class _FlashcardReviewScreenState extends ConsumerState<FlashcardReviewScreen>
                 ),
                 const SizedBox(height: AppSpacing.xl),
                 PrimaryButton(
-                  label: 'Review Again',
+                  label: l10n.revReviewAgain,
                   onPressed: () {
                     setState(() {
                       _resetSessionState();
@@ -712,7 +726,7 @@ class _FlashcardReviewScreenState extends ConsumerState<FlashcardReviewScreen>
                       fontWeight: FontWeight.w600,
                     ),
                   ),
-                  child: const Text('Back to Review'),
+                  child: Text(l10n.revBackToReview),
                 ),
               ],
             ),
@@ -1016,11 +1030,12 @@ class _FlashcardReviewScreenState extends ConsumerState<FlashcardReviewScreen>
     final service = ref.read(achievementServiceProvider);
     service.checkAndAdvanceTier(moveId).then((final newTier) {
       if (newTier != null && mounted) {
+        final l10n = AppLocalizations.of(context);
         final label = switch (newTier) {
-          'sprouting' => '\u{1F331} $moveName is sprouting!',
-          'growing' => '\u{1F33F} $moveName is growing!',
-          'mastered' => '\u{1F48E} $moveName mastered!',
-          _ => '$moveName leveled up!',
+          'sprouting' => l10n.revTierSprouting(moveName),
+          'growing' => l10n.revTierGrowing(moveName),
+          'mastered' => l10n.revTierMastered(moveName),
+          _ => l10n.revTierLeveledUp(moveName),
         };
         CelebrationOverlay.show(context, title: label);
       }
@@ -1100,6 +1115,7 @@ class _ComboBeatAssessment extends ConsumerWidget {
   Widget build(final BuildContext context, final WidgetRef ref) {
     final movesStream = ref.watch(comboRepositoryProvider).watchComboMoves(combo.id);
     final colorScheme = Theme.of(context).colorScheme;
+    final l10n = AppLocalizations.of(context);
 
     return StreamBuilder<List<ComboMoveWithDetail>>(
       stream: movesStream,
@@ -1133,7 +1149,7 @@ class _ComboBeatAssessment extends ConsumerWidget {
               // What's being rated: combo name anchors the rating; the
               // active step is context the learner can change above.
               Text(
-                'Step ${safeIndex + 1} · ${activeMove.name}',
+                l10n.revStep(safeIndex + 1, activeMove.name),
                 style: AppTypography.caption.copyWith(
                   color: colorScheme.secondary,
                   fontWeight: FontWeight.w600,

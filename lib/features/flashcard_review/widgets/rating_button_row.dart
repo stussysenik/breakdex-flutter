@@ -11,6 +11,7 @@ import '../../../core/design/typography.dart';
 import '../../../core/models/learning_state.dart';
 import '../../../core/providers.dart';
 import '../../../core/services/settings_service.dart';
+import '../../../l10n/gen/app_localizations.dart';
 
 /// The AGAIN / HARD / GOOD / EASY rating buttons styled as subtle tinted pills.
 ///
@@ -158,7 +159,7 @@ class _CompactRatingButton extends StatelessWidget {
   @override
   Widget build(final BuildContext context) {
     return Semantics(
-      label: 'Rate ${rating.displayText}',
+      label: AppLocalizations.of(context).revRate(rating.displayText),
       button: true,
       child: Material(
         color: color.withValues(alpha: 0.10),
@@ -232,7 +233,7 @@ class _TintedPillButton extends StatelessWidget {
   @override
   Widget build(final BuildContext context) {
     return Semantics(
-      label: 'Rate ${rating.displayText}',
+      label: AppLocalizations.of(context).revRate(rating.displayText),
       button: true,
       child: Material(
         color: color.withValues(alpha: 0.10),

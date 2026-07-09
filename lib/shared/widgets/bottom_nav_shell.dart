@@ -10,6 +10,7 @@ import '../../core/services/media_playback_coordinator.dart';
 import '../../core/models/app_mode.dart';
 import '../../core/services/settings_service.dart';
 import '../../core/utils/diagnostics.dart';
+import '../../l10n/gen/app_localizations.dart';
 import 'shake_detector.dart';
 import 'sync_progress_bar.dart';
 
@@ -21,6 +22,7 @@ class BottomNavShell extends ConsumerWidget {
   @override
   Widget build(final BuildContext context, final WidgetRef ref) {
     final showStats = ref.watch(showStatsTabProvider);
+    final l10n = AppLocalizations.of(context);
 
     // Only update tab index in post-frame — avoids side effects during build
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -96,14 +98,14 @@ class BottomNavShell extends ConsumerWidget {
                     identifier: 'breakdex-tab',
                     child: const Icon(Icons.grid_view_rounded),
                   ),
-                  label: 'Breakdex',
+                  label: l10n.navBreakdex,
                 ),
                 BottomNavigationBarItem(
                   icon: Semantics(
                     identifier: 'add-tab',
                     child: const Icon(Icons.add_circle_outline),
                   ),
-                  label: 'Add',
+                  label: l10n.navAdd,
                 ),
                 BottomNavigationBarItem(
                   icon: Semantics(
@@ -119,7 +121,7 @@ class BottomNavShell extends ConsumerWidget {
                       },
                     ),
                   ),
-                  label: 'Review',
+                  label: l10n.navReview,
                 ),
                 if (showStats)
                   BottomNavigationBarItem(
@@ -127,14 +129,14 @@ class BottomNavShell extends ConsumerWidget {
                       identifier: 'stats-tab',
                       child: const Icon(Icons.insights_rounded),
                     ),
-                    label: 'Stats',
+                    label: l10n.navStats,
                   ),
                 BottomNavigationBarItem(
                   icon: Semantics(
                     identifier: 'settings-tab',
                     child: const Icon(Icons.settings_outlined),
                   ),
-                  label: 'Settings',
+                  label: l10n.navSettings,
                 ),
               ],
             ),

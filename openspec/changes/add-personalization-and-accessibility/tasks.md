@@ -88,13 +88,24 @@ Ledger rule: tick each box in the same commit that lands the work.
   drift; new `.github/workflows/ci.yml` runs it + `flutter analyze` on PRs.
   `l10n_foundation_test.dart` green (4 cases: supported-locale, appTitle, parametric
   plural composition, ICU-plural + parametric nouns).
-- [ ] 5.2 Extract shell + top five screens (library, add, review, settings, move detail)
-  (~250 strings); parametric nouns compose via placeholders.
-  Contract established & test-proven in 5.1: the ARB carries the parametric-noun
-  placeholder pattern (`emptyLibraryTitle`, `itemCount` — noun passed in from
-  `entityNamesProvider`, never concatenated). The remaining per-screen extraction (~250
-  strings × 5 screens) is a separate budgeted unit — NOT landed here; deliberately left
-  unticked per the same-commit ledger rule.
+- [x] 5.2a Extract shell + library + add + review + move-detail screens (~230 strings);
+  parametric nouns compose via placeholders.
+  Landed: `bottom_nav_shell` (5 tab labels), `breakdex_screen` (title), `add_screen`
+  (6 form strings + parametric SAVE button + name-collision error), the flashcard-review
+  surface (`flashcard_review_screen` + `create_deck_sheet`, `item_schedule_detail_sheet`,
+  `mastery_prescreen`, `rating_button_row`, `schedule_review_screen`, `srs_parameters_card`,
+  `state_picker_sheet`), and move detail (`move_detail_screen` + `move_detail_overlays`).
+  Added 150 keys to `app_en.arb` (60 `md*`, 90 `rev*`); regenerated + committed
+  `lib/l10n/gen/*`. Parametric nouns (move/combo singular+plural) compose via placeholders
+  from `entityNamesProvider`, never concatenated (`mdRenameEntity`, `revEntityBoxes`,
+  `mdDeleteUsedInCombos`, …); ICU plural for `revItemCount`; the pre-existing `nameTakenError`
+  is reused across add + category-create. Four widgets promoted Stateless/Stateful →
+  Consumer variants to reach `entityNamesProvider` (`_VideoMissingCard`, `RenameOverlay`,
+  `_ReviewEmptyState`, `_ScheduleEmptyState`). `dart analyze` clean on the touched tree.
+- [ ] 5.2b Extract the settings screen (the fifth of the top-five); parametric nouns compose
+  via placeholders. Deferred to its own budgeted slice — settings has the densest string
+  surface (appearance/accessibility panels, mode pickers) and is left unticked per the
+  same-commit ledger rule.
 - [x] 5.3 Adopt the no-new-hardcoded-strings review rule; add a grep gate note to the review
   checklist. Added a "Localization" non-negotiable to `openspec/AGENTS.md` review
   checklist: user-facing copy resolves through `AppLocalizations`; grep gate

@@ -15,6 +15,8 @@ import '../../../core/models/learning_state.dart';
 import '../../../core/providers.dart';
 import '../../../core/services/categories_service.dart';
 import '../../../core/services/deck_service.dart';
+import '../../../core/services/entity_names_service.dart';
+import '../../../l10n/gen/app_localizations.dart';
 import '../providers/deck_providers.dart';
 
 /// Bottom sheet for creating a new smart or manual deck.
@@ -92,6 +94,8 @@ class _CreateDeckSheetState extends ConsumerState<CreateDeckSheet> {
   Widget build(final BuildContext context) {
     final categories = ref.watch(categoriesProvider);
     final colorScheme = Theme.of(context).colorScheme;
+    final l10n = AppLocalizations.of(context);
+    final entityNames = ref.watch(entityNamesProvider);
     final stateLabels = ref.watch(learningStateLabelsProvider);
 
     return Padding(
@@ -107,7 +111,7 @@ class _CreateDeckSheetState extends ConsumerState<CreateDeckSheet> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              widget.deck == null ? 'Create Deck' : 'Edit Deck',
+              widget.deck == null ? l10n.revCreateDeck : l10n.revEditDeck,
               style: AppTypography.titleMedium.copyWith(
                 color: colorScheme.onSurface,
               ),
@@ -118,7 +122,7 @@ class _CreateDeckSheetState extends ConsumerState<CreateDeckSheet> {
             TextField(
               controller: _nameController,
               autofocus: true,
-              decoration: const InputDecoration(hintText: 'Deck name'),
+              decoration: InputDecoration(hintText: l10n.revDeckNameHint),
             ),
             const SizedBox(height: AppSpacing.md),
 
@@ -127,7 +131,7 @@ class _CreateDeckSheetState extends ConsumerState<CreateDeckSheet> {
               children: [
                 Expanded(
                   child: _TypeChip(
-                    label: 'Smart',
+                    label: l10n.revSmart,
                     icon: Icons.auto_awesome,
                     isSelected: _isSmart,
                     onTap: () => setState(() => _isSmart = true),
@@ -136,7 +140,7 @@ class _CreateDeckSheetState extends ConsumerState<CreateDeckSheet> {
                 const SizedBox(width: AppSpacing.sm),
                 Expanded(
                   child: _TypeChip(
-                    label: 'Manual',
+                    label: l10n.revManual,
                     icon: Icons.playlist_add_check,
                     isSelected: !_isSmart,
                     onTap: () => setState(() => _isSmart = false),
@@ -149,7 +153,7 @@ class _CreateDeckSheetState extends ConsumerState<CreateDeckSheet> {
             if (_isSmart) ...[
               // Category filter
               Text(
-                'Categories',
+                l10n.revCategories,
                 style: AppTypography.caption.copyWith(
                   color: colorScheme.secondary,
                   fontWeight: FontWeight.w600,
@@ -179,7 +183,7 @@ class _CreateDeckSheetState extends ConsumerState<CreateDeckSheet> {
 
               // FSRS state filter
               Text(
-                'Card States',
+                l10n.revCardStates,
                 style: AppTypography.caption.copyWith(
                   color: colorScheme.secondary,
                   fontWeight: FontWeight.w600,
@@ -241,7 +245,7 @@ class _CreateDeckSheetState extends ConsumerState<CreateDeckSheet> {
                   ),
                   const SizedBox(width: AppSpacing.sm),
                   Text(
-                    'Due only',
+                    l10n.revDueOnly,
                     style: AppTypography.bodySmall.copyWith(
                       color: colorScheme.onSurface,
                     ),
@@ -251,7 +255,7 @@ class _CreateDeckSheetState extends ConsumerState<CreateDeckSheet> {
             ] else ...[
               // Manual deck: move selection
               Text(
-                'Select Moves',
+                l10n.revSelectEntity(entityNames.movePlural),
                 style: AppTypography.caption.copyWith(
                   color: colorScheme.secondary,
                   fontWeight: FontWeight.w600,
@@ -273,7 +277,7 @@ class _CreateDeckSheetState extends ConsumerState<CreateDeckSheet> {
 
             // Session size
             Text(
-              'Session Size',
+              l10n.revSessionSize,
               style: AppTypography.caption.copyWith(
                 color: colorScheme.secondary,
                 fontWeight: FontWeight.w600,
@@ -286,7 +290,7 @@ class _CreateDeckSheetState extends ConsumerState<CreateDeckSheet> {
               children: [
                 for (final size in [5, 10, 15, null])
                   _FilterChip(
-                    label: size?.toString() ?? 'All',
+                    label: size?.toString() ?? l10n.revAll,
                     isSelected: _sessionSize == size,
                     onTap: () => setState(() => _sessionSize = size),
                   ),
@@ -307,7 +311,9 @@ class _CreateDeckSheetState extends ConsumerState<CreateDeckSheet> {
                     context,
                   ).colorScheme.primary.withValues(alpha: 0.3),
                 ),
-                child: Text(widget.deck == null ? 'Create Deck' : 'Save Changes'),
+                child: Text(
+                  widget.deck == null ? l10n.revCreateDeck : l10n.revSaveChanges,
+                ),
               ),
             ),
           ],
@@ -520,6 +526,8 @@ class _ManualMoveSelector extends ConsumerWidget {
   Widget build(final BuildContext context, final WidgetRef ref) {
     final movesAsync = ref.watch(moveRepositoryProvider).watchAll();
     final colorScheme = Theme.of(context).colorScheme;
+    final l10n = AppLocalizations.of(context);
+    final entityNames = ref.watch(entityNamesProvider);
 
     return StreamBuilder<List<Move>>(
       stream: movesAsync,
@@ -527,7 +535,7 @@ class _ManualMoveSelector extends ConsumerWidget {
         final moves = snapshot.data ?? [];
         if (moves.isEmpty) {
           return Text(
-            'No moves available',
+            l10n.revNoEntityAvailable(entityNames.movePlural.toLowerCase()),
             style: AppTypography.caption.copyWith(color: colorScheme.secondary),
           );
         }

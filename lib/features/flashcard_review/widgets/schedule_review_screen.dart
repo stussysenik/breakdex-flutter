@@ -9,6 +9,8 @@ import '../../../core/design/spacing.dart';
 import '../../../core/design/theme.dart';
 import '../../../core/design/typography.dart';
 import '../../../core/models/learning_state.dart';
+import '../../../core/services/entity_names_service.dart';
+import '../../../l10n/gen/app_localizations.dart';
 import '../providers/review_providers.dart';
 import 'item_schedule_detail_sheet.dart';
 import 'schedule_calendar.dart';
@@ -38,6 +40,7 @@ class ScheduleReviewScreen extends ConsumerWidget {
     final selectedDate = ref.watch(reviewCalendarSelectedDateProvider);
     final itemsAsync = ref.watch(itemsDueOnSelectedDateProvider);
     final colorScheme = Theme.of(context).colorScheme;
+    final l10n = AppLocalizations.of(context);
 
     return CustomScrollView(
       slivers: [
@@ -61,8 +64,8 @@ class ScheduleReviewScreen extends ConsumerWidget {
                   padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm),
                   child: Text(
                     summary.totalDueNow == 0
-                        ? 'All caught up'
-                        : '${summary.totalDueNow} due today',
+                        ? l10n.revAllCaughtUp
+                        : l10n.revDueTodayCount(summary.totalDueNow),
                     style: AppTypography.bodyMedium.copyWith(
                       color: summary.totalDueNow == 0
                           ? colorScheme.secondary
@@ -111,8 +114,8 @@ class ScheduleReviewScreen extends ConsumerWidget {
               children: [
                 Text(
                   _isToday(selectedDate)
-                      ? 'Due Today'
-                      : 'Due ${_fmtDate(selectedDate)}',
+                      ? l10n.revDueTodayHeader
+                      : l10n.revDueDate(_fmtDate(selectedDate)),
                   style: AppTypography.bodyMedium.copyWith(
                     color: colorScheme.onSurface,
                     fontWeight: FontWeight.w600,
@@ -123,7 +126,7 @@ class ScheduleReviewScreen extends ConsumerWidget {
                   loading: () => const SizedBox.shrink(),
                   error: (_, _) => const SizedBox.shrink(),
                   data: (final items) => Text(
-                    '${items.length} item${items.length == 1 ? '' : 's'}',
+                    l10n.revItemCount(items.length),
                     style: AppTypography.caption.copyWith(
                       color: colorScheme.secondary,
                     ),
@@ -140,8 +143,9 @@ class ScheduleReviewScreen extends ConsumerWidget {
           loading: () => const SliverToBoxAdapter(
             child: Center(child: AppLoader()),
           ),
-          error: (final e, _) =>
-              SliverToBoxAdapter(child: Center(child: Text('Error: $e'))),
+          error: (final e, _) => SliverToBoxAdapter(
+            child: Center(child: Text(l10n.revError('$e'))),
+          ),
           data: (final items) {
             if (items.isEmpty) {
               return SliverToBoxAdapter(
@@ -161,8 +165,8 @@ class ScheduleReviewScreen extends ConsumerWidget {
                         const SizedBox(height: AppSpacing.sm),
                         Text(
                           _isToday(selectedDate)
-                              ? 'No items due today'
-                              : 'No items due on this date',
+                              ? l10n.revNoItemsDueToday
+                              : l10n.revNoItemsDueOnDate,
                           style: AppTypography.bodySmall.copyWith(
                             color: colorScheme.secondary,
                           ),
@@ -227,12 +231,14 @@ class ScheduleReviewScreen extends ConsumerWidget {
 // -- Schedule Empty State ----------------------------------------------------
 
 /// Shown when the user has zero moves — same design as mastery empty state.
-class _ScheduleEmptyState extends StatelessWidget {
+class _ScheduleEmptyState extends ConsumerWidget {
   const _ScheduleEmptyState();
 
   @override
-  Widget build(final BuildContext context) {
+  Widget build(final BuildContext context, final WidgetRef ref) {
     final colorScheme = Theme.of(context).colorScheme;
+    final l10n = AppLocalizations.of(context);
+    final entityNames = ref.watch(entityNamesProvider);
 
     return LayoutBuilder(
       builder: (final context, final constraints) {
@@ -327,7 +333,9 @@ class _ScheduleEmptyState extends StatelessWidget {
                     ),
                     const SizedBox(height: AppSpacing.xl),
                     Text(
-                      'Add moves to start training',
+                      l10n.revAddToStartTraining(
+                        entityNames.movePlural.toLowerCase(),
+                      ),
                       style: AppTypography.titleMedium.copyWith(
                         color: colorScheme.onSurface,
                         fontWeight: FontWeight.w700,
@@ -336,7 +344,7 @@ class _ScheduleEmptyState extends StatelessWidget {
                     ),
                     const SizedBox(height: AppSpacing.md),
                     Text(
-                      'Record your breakdancing moves, then review with spaced repetition.',
+                      l10n.revRecordMoves(entityNames.movePlural.toLowerCase()),
                       style: AppTypography.bodyMedium.copyWith(
                         color: colorScheme.secondary,
                         height: 1.45,
@@ -355,7 +363,7 @@ class _ScheduleEmptyState extends StatelessWidget {
                         ),
                       ),
                       child: Text(
-                        'Go to Arsenal',
+                        l10n.revGoToArsenal,
                         style: AppTypography.bodyMedium.copyWith(
                           color: Colors.white,
                           fontWeight: FontWeight.w700,

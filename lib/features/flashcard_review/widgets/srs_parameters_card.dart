@@ -8,6 +8,7 @@ import '../../../core/design/spacing.dart';
 import '../../../core/design/typography.dart';
 import '../../../core/models/fsrs_settings.dart';
 import '../../../core/providers.dart';
+import '../../../l10n/gen/app_localizations.dart';
 
 /// Editable FSRS scheduling controls.
 ///
@@ -49,6 +50,7 @@ class _SrsParametersCardState extends ConsumerState<SrsParametersCard> {
     final config = ref.watch(fsrsConfigProvider);
     final notifier = ref.read(fsrsSettingsProvider.notifier);
     final colorScheme = Theme.of(context).colorScheme;
+    final l10n = AppLocalizations.of(context);
 
     final retention = _retentionDraft ?? config.desiredRetention;
 
@@ -67,7 +69,7 @@ class _SrsParametersCardState extends ConsumerState<SrsParametersCard> {
               Icon(Icons.tune, size: 16, color: colorScheme.primary),
               const SizedBox(width: 6),
               Text(
-                'FSRS Parameters',
+                l10n.revFsrsParameters,
                 style: AppTypography.caption.copyWith(
                   color: colorScheme.primary,
                   fontWeight: FontWeight.w700,
@@ -87,7 +89,7 @@ class _SrsParametersCardState extends ConsumerState<SrsParametersCard> {
                   tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                 ),
                 child: Text(
-                  'Reset',
+                  l10n.revReset,
                   style: AppTypography.caption.copyWith(
                     color: colorScheme.secondary,
                     fontWeight: FontWeight.w600,
@@ -101,7 +103,7 @@ class _SrsParametersCardState extends ConsumerState<SrsParametersCard> {
           // Retention — the highest-leverage knob.
           _ControlLabel(
             icon: Icons.psychology,
-            label: 'Retention',
+            label: l10n.revRetention,
             value: '${(retention * 100).round()}%',
           ),
           Slider(
@@ -122,7 +124,7 @@ class _SrsParametersCardState extends ConsumerState<SrsParametersCard> {
             },
           ),
           Text(
-            'Higher = more frequent reviews, tighter recall.',
+            l10n.revRetentionHint,
             style: AppTypography.caption.copyWith(
               color: colorScheme.secondary,
               fontSize: 10,
@@ -133,7 +135,7 @@ class _SrsParametersCardState extends ConsumerState<SrsParametersCard> {
           // Maximum interval presets.
           _ControlLabel(
             icon: Icons.calendar_month,
-            label: 'Max interval',
+            label: l10n.revMaxInterval,
             value: _formatMaxInterval(config.maximumInterval),
           ),
           const SizedBox(height: 4),
@@ -156,7 +158,7 @@ class _SrsParametersCardState extends ConsumerState<SrsParametersCard> {
               const SizedBox(width: 8),
               Expanded(
                 child: Text(
-                  'Fuzzing',
+                  l10n.revFuzzing,
                   style: AppTypography.caption.copyWith(
                     color: colorScheme.secondary,
                   ),
@@ -173,7 +175,7 @@ class _SrsParametersCardState extends ConsumerState<SrsParametersCard> {
           // Learning / relearning step presets.
           _StepPresetRow(
             icon: Icons.school,
-            label: 'Learning',
+            label: l10n.revLearning,
             presets: _stepPresets,
             current: config.learningSteps,
             onSelected: notifier.setLearningSteps,
@@ -181,7 +183,7 @@ class _SrsParametersCardState extends ConsumerState<SrsParametersCard> {
           const SizedBox(height: AppSpacing.xs),
           _StepPresetRow(
             icon: Icons.replay,
-            label: 'Relearning',
+            label: l10n.revRelearning,
             presets: _stepPresets,
             current: config.relearningSteps,
             onSelected: notifier.setRelearningSteps,
@@ -193,7 +195,7 @@ class _SrsParametersCardState extends ConsumerState<SrsParametersCard> {
 
           // Forgetting curve formula (unchanged — explanatory).
           Text(
-            'Forgetting curve',
+            l10n.revForgettingCurve,
             style: AppTypography.caption.copyWith(
               color: colorScheme.secondary,
               fontWeight: FontWeight.w600,
@@ -225,7 +227,7 @@ class _SrsParametersCardState extends ConsumerState<SrsParametersCard> {
           ),
           const SizedBox(height: 4),
           Text(
-            't = days elapsed, S = stability',
+            l10n.revForgettingCurveLegend,
             style: AppTypography.caption.copyWith(
               color: colorScheme.secondary,
               fontSize: 10,

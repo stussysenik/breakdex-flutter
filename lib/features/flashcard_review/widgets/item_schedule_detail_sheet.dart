@@ -13,7 +13,9 @@ import '../../../core/design/typography.dart';
 import '../../../core/models/learning_state.dart';
 import '../../../core/models/reviewable_item.dart';
 import '../../../core/providers.dart';
+import '../../../core/services/entity_names_service.dart';
 import '../../../core/services/fsrs_service.dart';
+import '../../../l10n/gen/app_localizations.dart';
 import '../providers/deck_providers.dart';
 import '../providers/review_providers.dart';
 
@@ -43,6 +45,8 @@ class ItemScheduleDetailSheet extends ConsumerWidget {
   @override
   Widget build(final BuildContext context, final WidgetRef ref) {
     final colorScheme = Theme.of(context).colorScheme;
+    final l10n = AppLocalizations.of(context);
+    final entityNames = ref.watch(entityNamesProvider);
     final canReviewNow = item.item is ReviewableMove;
     final coefficientsAsync = ref.watch(
       srsCoefficientsProvider((
@@ -125,7 +129,7 @@ class ItemScheduleDetailSheet extends ConsumerWidget {
 
             // Rating previews (Practical dates)
             Text(
-              'Upcoming Schedule',
+              l10n.revUpcomingSchedule,
               style: AppTypography.caption.copyWith(
                 color: colorScheme.secondary,
                 fontWeight: FontWeight.w600,
@@ -154,7 +158,7 @@ class ItemScheduleDetailSheet extends ConsumerWidget {
               ),
               child: ExpansionTile(
                 title: Text(
-                  'Advanced Algorithm Stats',
+                  l10n.revAdvancedStats,
                   style: AppTypography.caption.copyWith(
                     color: colorScheme.secondary,
                     fontWeight: FontWeight.w600,
@@ -215,12 +219,12 @@ class ItemScheduleDetailSheet extends ConsumerWidget {
                       borderRadius: BorderRadius.circular(AppRadius.lg),
                     ),
                   ),
-                  child: const Text('Review Now'),
+                  child: Text(l10n.revReviewNow),
                 ),
               ),
             if (!canReviewNow)
               Text(
-                'Combo sessions still open in the schedule view only.',
+                l10n.revComboSessionsScheduleOnly(entityNames.comboSingular),
                 style: AppTypography.caption.copyWith(
                   color: colorScheme.secondary,
                 ),
@@ -269,6 +273,7 @@ class _CoefficientDisplay extends StatelessWidget {
   @override
   Widget build(final BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
+    final l10n = AppLocalizations.of(context);
     final retPct = (coeff.retrievability * 100).round();
 
     return Column(
@@ -276,7 +281,7 @@ class _CoefficientDisplay extends StatelessWidget {
       children: [
         // Stability bar
         _CoeffBar(
-          label: 'Stability',
+          label: l10n.revStability,
           value: coeff.stabilityFormatted,
           fraction: (coeff.stability / 365).clamp(0, 1),
           color: AppColors.stateMastery,
@@ -285,7 +290,7 @@ class _CoefficientDisplay extends StatelessWidget {
 
         // Difficulty bar
         _CoeffBar(
-          label: 'Difficulty',
+          label: l10n.revDifficulty,
           value: coeff.difficulty.toStringAsFixed(1),
           fraction: coeff.difficulty / 10,
           color: AppColors.actionHard,
@@ -294,7 +299,7 @@ class _CoefficientDisplay extends StatelessWidget {
 
         // Retrievability bar
         _CoeffBar(
-          label: 'Retrievability',
+          label: l10n.revRetrievability,
           value: '$retPct%',
           fraction: coeff.retrievability,
           color: coeff.retrievability > 0.85
@@ -309,19 +314,19 @@ class _CoefficientDisplay extends StatelessWidget {
         Row(
           children: [
             _StatChip(
-              label: 'Reps',
+              label: l10n.revReps,
               value: '${coeff.reps}',
               color: AppColors.actionGood,
             ),
             const SizedBox(width: AppSpacing.sm),
             _StatChip(
-              label: 'Lapses',
+              label: l10n.revLapses,
               value: '${coeff.lapses}',
               color: AppColors.actionAgain,
             ),
             const SizedBox(width: AppSpacing.sm),
             _StatChip(
-              label: 'Interval',
+              label: l10n.revInterval,
               value: _fmtDuration(coeff.interval),
               color: colorScheme.secondary,
             ),

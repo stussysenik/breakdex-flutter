@@ -34,8 +34,10 @@ import '../../shared/widgets/move_photos_section.dart';
 import '../lab/widgets/move_aura_section.dart';
 import '../../shared/widgets/video_picker_sheet.dart';
 import '../../core/services/categories_service.dart';
+import '../../core/services/entity_names_service.dart';
 import '../../core/sync/video_retrieval_controller.dart';
 import '../../shared/widgets/app_loader.dart';
+import '../../l10n/gen/app_localizations.dart';
 
 import 'widgets/move_detail_overlays.dart';
 
@@ -73,6 +75,8 @@ class _MoveDetailScreenState extends ConsumerState<MoveDetailScreen> {
   Widget build(final BuildContext context) {
     final machineState = ref.watch(moveDetailProvider);
     final colorScheme = Theme.of(context).colorScheme;
+    final l10n = AppLocalizations.of(context);
+    final entityNames = ref.watch(entityNamesProvider);
 
     // Handle terminal states
     if (machineState is Gone) {
@@ -162,7 +166,7 @@ class _MoveDetailScreenState extends ConsumerState<MoveDetailScreen> {
                       if (move.managedAlbumFilename != null) ...[
                         const SizedBox(height: 2),
                         Text(
-                          'Album · ${move.managedAlbumFilename}',
+                          l10n.mdAlbumLabel(move.managedAlbumFilename!),
                           style: AppTypography.caption.copyWith(
                             color: colorScheme.secondary,
                             fontFamily: 'monospace',
@@ -231,7 +235,7 @@ class _MoveDetailScreenState extends ConsumerState<MoveDetailScreen> {
                       if (move.videoPath != null) ...[
                         const SizedBox(height: AppSpacing.lg),
                         Text(
-                          'VIDEO INFO',
+                          l10n.mdVideoInfoHeader,
                           style: AppTypography.sectionHeader.copyWith(
                             color: colorScheme.secondary,
                           ),
@@ -250,19 +254,19 @@ class _MoveDetailScreenState extends ConsumerState<MoveDetailScreen> {
                             children: [
                               if (move.videoCreationDate != null)
                                 _MetadataRow(
-                                  label: 'Recorded',
+                                  label: l10n.mdMetaRecorded,
                                   value: DateFormat('MMM d, yyyy · HH:mm').format(move.videoCreationDate!),
                                   icon: Icons.calendar_today_rounded,
                                 ),
                               if (move.videoFileSize != null)
                                 _MetadataRow(
-                                  label: 'File Size',
+                                  label: l10n.mdMetaFileSize,
                                   value: _formatFileSize(move.videoFileSize!.toInt()),
                                   icon: Icons.data_usage_rounded,
                                 ),
                               if (move.originalVideoName != null)
                                 _MetadataRow(
-                                  label: 'Original Name',
+                                  label: l10n.mdMetaOriginalName,
                                   value: move.originalVideoName!,
                                   icon: Icons.insert_drive_file_rounded,
                                 ),
@@ -284,7 +288,7 @@ class _MoveDetailScreenState extends ConsumerState<MoveDetailScreen> {
 
                       // Actions
                       Text(
-                        'ACTIONS',
+                        l10n.mdActionsHeader,
                         style: AppTypography.sectionHeader.copyWith(
                           color: colorScheme.secondary,
                         ),
@@ -294,19 +298,19 @@ class _MoveDetailScreenState extends ConsumerState<MoveDetailScreen> {
                       if (move.videoPath != null) ...[
                         ActionTile(
                           icon: Icons.edit,
-                          label: 'Edit Video',
+                          label: l10n.mdActionEditVideo,
                           onTap: () => _editVideo(context, ref, move),
                         ),
                         const SizedBox(height: AppSpacing.sm),
                         ActionTile(
                           icon: Icons.ios_share,
-                          label: 'Share Video',
+                          label: l10n.mdActionShareVideo,
                           onTap: () => _shareVideo(context, move),
                         ),
                         const SizedBox(height: AppSpacing.sm),
                         ActionTile(
                           icon: Icons.delete_outline,
-                          label: 'Remove Video',
+                          label: l10n.mdActionRemoveVideo,
                           destructive: true,
                           onTap: () => ref
                               .read(moveDetailProvider.notifier)
@@ -315,13 +319,13 @@ class _MoveDetailScreenState extends ConsumerState<MoveDetailScreen> {
                       ] else
                         ActionTile(
                           icon: Icons.videocam,
-                          label: 'Add Video',
+                          label: l10n.mdActionAddVideo,
                           onTap: () => _addOrReplaceVideo(context, ref, move),
                         ),
                       const SizedBox(height: AppSpacing.sm),
                       ActionTile(
                         icon: Icons.text_fields,
-                        label: 'Rename Move',
+                        label: l10n.mdRenameEntity(entityNames.moveSingular),
                         onTap: () => ref
                             .read(moveDetailProvider.notifier)
                             .send(const TapRename()),
@@ -329,13 +333,13 @@ class _MoveDetailScreenState extends ConsumerState<MoveDetailScreen> {
                       const SizedBox(height: AppSpacing.sm),
                       ActionTile(
                         icon: Icons.copy_rounded,
-                        label: 'Duplicate Move',
+                        label: l10n.mdDuplicateEntity(entityNames.moveSingular),
                         onTap: () => ref.read(moveDetailProvider.notifier).send(const TapDuplicate()),
                       ),
                       const SizedBox(height: AppSpacing.sm),
                       ActionTile(
                         icon: Icons.delete_forever,
-                        label: 'Delete Move',
+                        label: l10n.mdDeleteEntity(entityNames.moveSingular),
                         destructive: true,
                         onTap: () async {
                           final combosDao = ref.read(databaseProvider).combosDao;
@@ -361,6 +365,8 @@ class _MoveDetailScreenState extends ConsumerState<MoveDetailScreen> {
     debugPrint('[MoveDetailScreen] _buildOverlays state=${state.runtimeType}');
     final overlays = <Widget>[];
     final notifier = ref.read(moveDetailProvider.notifier);
+    final l10n = AppLocalizations.of(context);
+    final entityNames = ref.watch(entityNamesProvider);
 
     if (state is Renaming) {
       overlays.add(RenameOverlay(
@@ -382,14 +388,14 @@ class _MoveDetailScreenState extends ConsumerState<MoveDetailScreen> {
       ));
     }
 
-    if (state is Deleting) overlays.add(const SavingOverlay(message: 'Deleting...'));
-    if (state is SavingName) overlays.add(const SavingOverlay(message: 'Renaming...'));
-    if (state is SavingState) overlays.add(const SavingOverlay(message: 'Updating state...'));
-    if (state is SavingCategory) overlays.add(const SavingOverlay(message: 'Updating category...'));
-    if (state is SavingCount) overlays.add(const SavingOverlay(message: 'Updating count...'));
-    if (state is SavingNotes) overlays.add(const SavingOverlay(message: 'Saving notes...'));
-    if (state is SavingPhotos) overlays.add(const SavingOverlay(message: 'Updating photos...'));
-    if (state is Duplicating) overlays.add(const SavingOverlay(message: 'Duplicating move...'));
+    if (state is Deleting) overlays.add(SavingOverlay(message: l10n.mdOverlayDeleting));
+    if (state is SavingName) overlays.add(SavingOverlay(message: l10n.mdOverlayRenaming));
+    if (state is SavingState) overlays.add(SavingOverlay(message: l10n.mdOverlayUpdatingState));
+    if (state is SavingCategory) overlays.add(SavingOverlay(message: l10n.mdOverlayUpdatingCategory));
+    if (state is SavingCount) overlays.add(SavingOverlay(message: l10n.mdOverlayUpdatingCount));
+    if (state is SavingNotes) overlays.add(SavingOverlay(message: l10n.mdOverlaySavingNotes));
+    if (state is SavingPhotos) overlays.add(SavingOverlay(message: l10n.mdOverlayUpdatingPhotos));
+    if (state is Duplicating) overlays.add(SavingOverlay(message: l10n.mdOverlayDuplicatingEntity(entityNames.moveSingular.toLowerCase())));
     // Removed SavingVideo overlay to make video import non-blocking
 
     if (state is ChangingState) {
@@ -420,13 +426,18 @@ class _MoveDetailScreenState extends ConsumerState<MoveDetailScreen> {
     if (state is ConfirmingDelete) {
       final combos = state.combos;
       final content = combos.isNotEmpty
-          ? 'This move is currently used in ${combos.length} combo(s) (e.g. ${combos.first.name}). Deleting it will permanently delete this move, its video, and remove it from those combos!'
-          : 'This will permanently delete this move and its video.';
+          ? l10n.mdDeleteUsedInCombos(
+              entityNames.moveSingular.toLowerCase(),
+              combos.length,
+              entityNames.comboPlural.toLowerCase(),
+              combos.first.name,
+            )
+          : l10n.mdDeleteConfirmBody(entityNames.moveSingular.toLowerCase());
 
       overlays.add(ConfirmActionOverlay(
-        title: 'Delete Move?',
+        title: l10n.mdDeleteConfirmTitle(entityNames.moveSingular),
         content: content,
-        confirmLabel: 'Delete',
+        confirmLabel: l10n.mdConfirmDelete,
         isDestructive: true,
         onCancel: () => notifier.send(const Cancel()),
         onConfirm: () => notifier.send(const Confirm()),
@@ -435,9 +446,9 @@ class _MoveDetailScreenState extends ConsumerState<MoveDetailScreen> {
 
     if (state is ErrorState) {
       overlays.add(ConfirmActionOverlay(
-        title: 'Error',
+        title: l10n.mdErrorTitle,
         content: state.message,
-        confirmLabel: 'OK',
+        confirmLabel: l10n.mdConfirmOk,
         isDestructive: false,
         onCancel: () => notifier.send(const Cancel()),
         onConfirm: () => notifier.send(const Cancel()),
@@ -446,9 +457,9 @@ class _MoveDetailScreenState extends ConsumerState<MoveDetailScreen> {
 
     if (state is AlbumSyncFailed) {
       overlays.add(ConfirmActionOverlay(
-        title: 'Album Sync Failed',
+        title: l10n.mdAlbumSyncFailedTitle,
         content: state.message,
-        confirmLabel: 'OK',
+        confirmLabel: l10n.mdConfirmOk,
         isDestructive: false,
         onCancel: () => notifier.send(const Cancel()),
         onConfirm: () => notifier.send(const Cancel()),
@@ -457,9 +468,9 @@ class _MoveDetailScreenState extends ConsumerState<MoveDetailScreen> {
 
     if (state is ConfirmingRemoveVideo) {
       overlays.add(ConfirmActionOverlay(
-        title: 'Remove Video?',
-        content: 'The video will be removed from this move but kept in your local storage.',
-        confirmLabel: 'Remove',
+        title: l10n.mdRemoveVideoTitle,
+        content: l10n.mdRemoveVideoBody(entityNames.moveSingular.toLowerCase()),
+        confirmLabel: l10n.mdConfirmRemove,
         isDestructive: true,
         onCancel: () => notifier.send(const Cancel()),
         onConfirm: () => notifier.send(const Confirm()),
@@ -599,19 +610,20 @@ class _VideoTechInfoRowsState extends State<_VideoTechInfoRows> {
   @override
   Widget build(final BuildContext context) {
     if (_failed) return const SizedBox.shrink();
+    final l10n = AppLocalizations.of(context);
     final resolution = _resolution;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         if (_duration != null)
           _MetadataRow(
-            label: 'Duration',
+            label: l10n.mdMetaDuration,
             value: _formatDuration(_duration!),
             icon: Icons.timer_outlined,
           ),
         if (resolution != null && resolution.width > 0)
           _MetadataRow(
-            label: 'Resolution',
+            label: l10n.mdMetaResolution,
             value: '${resolution.width.toInt()} × ${resolution.height.toInt()}',
             icon: Icons.aspect_ratio_rounded,
           ),
@@ -629,12 +641,13 @@ class _CategoryBadge extends ConsumerWidget {
   Widget build(final BuildContext context, final WidgetRef ref) {
     final colorScheme = Theme.of(context).colorScheme;
     final categories = ref.watch(categoriesProvider);
+    final l10n = AppLocalizations.of(context);
     final match = categories.where((final item) => item.name == category).firstOrNull;
     final dotColor = match?.color ?? colorScheme.secondary;
 
     return Semantics(
       button: true,
-      label: 'Change category from $category',
+      label: l10n.mdSemanticChangeCategory(category),
       child: Material(
         color: Colors.transparent,
         child: InkWell(
@@ -670,10 +683,11 @@ class _CountBadge extends StatelessWidget {
   @override
   Widget build(final BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
+    final l10n = AppLocalizations.of(context);
 
     return Semantics(
       button: true,
-      label: 'Change count from $count',
+      label: l10n.mdSemanticChangeCount(count),
       child: Material(
         color: Colors.transparent,
         child: InkWell(
@@ -691,7 +705,7 @@ class _CountBadge extends StatelessWidget {
                 Icon(Icons.music_note_rounded, size: 14, color: colorScheme.primary.withValues(alpha: 0.7)),
                 const SizedBox(width: 4),
                 Text('$count', style: AppTypography.caption.copyWith(color: colorScheme.onSurface, fontWeight: FontWeight.w600)),
-                Text(' counts', style: AppTypography.caption.copyWith(color: colorScheme.secondary, fontWeight: FontWeight.w400)),
+                Text(l10n.mdCountsSuffix, style: AppTypography.caption.copyWith(color: colorScheme.secondary, fontWeight: FontWeight.w400)),
                 if (onTap != null) ...[const SizedBox(width: 4), Icon(Icons.expand_more, size: 14, color: colorScheme.secondary)],
               ],
             ),
@@ -702,7 +716,7 @@ class _CountBadge extends StatelessWidget {
   }
 }
 
-class _VideoMissingCard extends StatelessWidget {
+class _VideoMissingCard extends ConsumerWidget {
   final Move move;
   final VoidCallback onReRecord;
   final VoidCallback onImport;
@@ -710,8 +724,10 @@ class _VideoMissingCard extends StatelessWidget {
   const _VideoMissingCard({required this.move, required this.onReRecord, required this.onImport, required this.onDelete});
 
   @override
-  Widget build(final BuildContext context) {
+  Widget build(final BuildContext context, final WidgetRef ref) {
     final colorScheme = Theme.of(context).colorScheme;
+    final l10n = AppLocalizations.of(context);
+    final entityNames = ref.watch(entityNamesProvider);
     return Container(
       padding: const EdgeInsets.all(AppSpacing.lg),
       decoration: BoxDecoration(
@@ -723,19 +739,19 @@ class _VideoMissingCard extends StatelessWidget {
         children: [
           Icon(Icons.videocam_off_outlined, size: 48, color: colorScheme.onSurface.withValues(alpha: 0.3)),
           const SizedBox(height: AppSpacing.md),
-          Text('Video Missing', style: AppTypography.bodySmall.copyWith(color: colorScheme.onSurface, fontWeight: FontWeight.w600)),
+          Text(l10n.mdVideoMissingTitle, style: AppTypography.bodySmall.copyWith(color: colorScheme.onSurface, fontWeight: FontWeight.w600)),
           const SizedBox(height: 4),
-          Text('The original video couldn\'t be found.', style: AppTypography.caption.copyWith(color: colorScheme.onSurface.withValues(alpha: 0.5)), textAlign: TextAlign.center),
+          Text(l10n.mdVideoMissingBody, style: AppTypography.caption.copyWith(color: colorScheme.onSurface.withValues(alpha: 0.5)), textAlign: TextAlign.center),
           const SizedBox(height: AppSpacing.lg),
           Row(
             children: [
-              Expanded(child: _MissingActionButton(icon: Icons.videocam, label: 'Re-record', onTap: onReRecord)),
+              Expanded(child: _MissingActionButton(icon: Icons.videocam, label: l10n.mdMissingReRecord, onTap: onReRecord)),
               const SizedBox(width: AppSpacing.sm),
-              Expanded(child: _MissingActionButton(icon: Icons.photo_library_outlined, label: 'Import', onTap: onImport)),
+              Expanded(child: _MissingActionButton(icon: Icons.photo_library_outlined, label: l10n.mdMissingImport, onTap: onImport)),
             ],
           ),
           const SizedBox(height: AppSpacing.sm),
-          GestureDetector(onTap: onDelete, child: Text('Delete move', style: AppTypography.caption.copyWith(color: AppColors.actionAgain.withValues(alpha: 0.7)))),
+          GestureDetector(onTap: onDelete, child: Text(l10n.mdDeleteEntity(entityNames.moveSingular.toLowerCase()), style: AppTypography.caption.copyWith(color: AppColors.actionAgain.withValues(alpha: 0.7)))),
         ],
       ),
     );
@@ -799,6 +815,7 @@ class _CloudVideoPlaceholderState extends ConsumerState<_CloudVideoPlaceholder> 
     });
 
     final colorScheme = Theme.of(context).colorScheme;
+    final l10n = AppLocalizations.of(context);
     final isBusy = retrieval.state == VideoRetrievalState.queued || retrieval.state == VideoRetrievalState.downloading;
     final isDownloading = retrieval.state == VideoRetrievalState.downloading;
     final eta = retrieval.etaRemaining;
@@ -806,9 +823,9 @@ class _CloudVideoPlaceholderState extends ConsumerState<_CloudVideoPlaceholder> 
 
     final String detailLine;
     if (!isBusy) {
-      detailLine = 'Tap to download and play';
+      detailLine = l10n.mdCloudTapToDownload;
     } else if (retrieval.isStalled) {
-      detailLine = 'Stalled — retrying…';
+      detailLine = l10n.mdCloudStalled;
     } else if (isDownloading) {
       detailLine = <String>[
         '${(retrieval.progress * 100).round()}%',
@@ -816,7 +833,7 @@ class _CloudVideoPlaceholderState extends ConsumerState<_CloudVideoPlaceholder> 
         if (rate != null && rate > 0) formatTransferRate(rate),
       ].join(' · ');
     } else {
-      detailLine = 'Preparing…';
+      detailLine = l10n.mdCloudPreparing;
     }
 
     return Container(
@@ -838,7 +855,7 @@ class _CloudVideoPlaceholderState extends ConsumerState<_CloudVideoPlaceholder> 
                 const Icon(Icons.cloud_download_outlined, size: 48, color: AppColors.accent),
               const SizedBox(height: AppSpacing.md),
               Text(
-                isBusy ? (retrieval.message ?? 'Downloading…') : 'Video stored in cloud',
+                isBusy ? (retrieval.message ?? l10n.mdCloudDownloading) : l10n.mdCloudStored,
                 style: AppTypography.bodySmall.copyWith(fontWeight: FontWeight.w600),
               ),
               const SizedBox(height: 4),

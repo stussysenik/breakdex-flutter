@@ -13,6 +13,7 @@ import '../../../core/design/theme.dart';
 import '../../../core/design/typography.dart';
 import '../../../core/models/learning_state.dart';
 import '../../../core/providers.dart';
+import '../../../l10n/gen/app_localizations.dart';
 import '../../../shared/widgets/app_loader.dart';
 import '../../../shared/widgets/app_segmented_control.dart';
 import '../providers/deck_providers.dart';
@@ -69,6 +70,7 @@ class _StateModeSection extends ConsumerWidget {
     final matrixAsync = ref.watch(reviewStateMatrixProvider);
     final stateLabels = ref.watch(learningStateLabelsProvider);
     final entityNames = ref.watch(entityNamesProvider);
+    final l10n = AppLocalizations.of(context);
     final title =
         isMoves ? entityNames.movePlural : entityNames.comboPlural;
 
@@ -81,7 +83,7 @@ class _StateModeSection extends ConsumerWidget {
       ),
       error: (final e, _) => Padding(
         padding: const EdgeInsets.symmetric(vertical: AppSpacing.xl),
-        child: Center(child: Text('Error: $e')),
+        child: Center(child: Text(l10n.revError('$e'))),
       ),
       data: (final matrix) {
         final counts = matrix.countsFor(selectedKind);
@@ -178,6 +180,7 @@ class _BasicPracticeToggle extends StatelessWidget {
   @override
   Widget build(final BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
+    final l10n = AppLocalizations.of(context);
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: 8),
       decoration: BoxDecoration(
@@ -198,7 +201,7 @@ class _BasicPracticeToggle extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'BASIC PRACTICE'.toUpperCase(),
+                  l10n.revBasicPractice,
                   style: AppTypography.bodySmall.copyWith(
                     fontWeight: FontWeight.w900,
                     fontFamily: 'Menlo',
@@ -206,7 +209,7 @@ class _BasicPracticeToggle extends StatelessWidget {
                   ),
                 ),
                 Text(
-                  isEnabled ? 'BYPASSING FSRS (MATH)' : 'FSRS ACTIVE (DUE ONLY)',
+                  isEnabled ? l10n.revBypassingFsrs : l10n.revFsrsActive,
                   style: AppTypography.caption.copyWith(
                     fontFamily: 'Menlo',
                     fontSize: 10,
@@ -259,12 +262,14 @@ class _ReviewLaneToggle extends ConsumerWidget {
   }
 }
 
-class _ReviewEmptyState extends StatelessWidget {
+class _ReviewEmptyState extends ConsumerWidget {
   const _ReviewEmptyState();
 
   @override
-  Widget build(final BuildContext context) {
+  Widget build(final BuildContext context, final WidgetRef ref) {
     final colorScheme = Theme.of(context).colorScheme;
+    final l10n = AppLocalizations.of(context);
+    final entityNames = ref.watch(entityNamesProvider);
     return Center(
       child: Column(
         mainAxisSize: MainAxisSize.min,
@@ -272,7 +277,7 @@ class _ReviewEmptyState extends StatelessWidget {
           Icon(Icons.auto_awesome_outlined, size: 64, color: colorScheme.secondary),
           const SizedBox(height: AppSpacing.md),
           Text(
-            'Your Arsenal is empty',
+            l10n.revArsenalEmpty,
             style: AppTypography.titleMedium.copyWith(
               color: colorScheme.onSurface,
               fontWeight: FontWeight.w700,
@@ -280,7 +285,7 @@ class _ReviewEmptyState extends StatelessWidget {
           ),
           const SizedBox(height: AppSpacing.xs),
           Text(
-            'Add moves to start your practice journey.',
+            l10n.revAddToStartJourney(entityNames.movePlural.toLowerCase()),
             style: AppTypography.bodySmall.copyWith(
               color: colorScheme.secondary,
             ),
@@ -298,6 +303,7 @@ class _DecksSection extends ConsumerWidget {
   Widget build(final BuildContext context, final WidgetRef ref) {
     final decksAsync = ref.watch(decksListProvider);
     final colorScheme = Theme.of(context).colorScheme;
+    final l10n = AppLocalizations.of(context);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -306,7 +312,7 @@ class _DecksSection extends ConsumerWidget {
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             Text(
-              'CUSTOM DECKS',
+              l10n.revCustomDecks,
               style: AppTypography.caption.copyWith(
                 color: colorScheme.secondary,
                 fontWeight: FontWeight.w800,
@@ -317,14 +323,14 @@ class _DecksSection extends ConsumerWidget {
             IconButton(
               icon: const Icon(Icons.add_rounded, size: 24),
               onPressed: () => CreateDeckSheet.show(context),
-              tooltip: 'Create Deck',
+              tooltip: l10n.revCreateDeck,
             ),
           ],
         ),
         const SizedBox(height: AppSpacing.sm),
         decksAsync.when(
           loading: () => const Center(child: AppLoader()),
-          error: (final e, _) => Text('Error loading decks: $e'),
+          error: (final e, _) => Text(l10n.revErrorLoadingDecks('$e')),
           data: (final decks) {
             if (decks.isEmpty) {
               return _EmptyDeckState();
@@ -372,7 +378,7 @@ class _DecksSection extends ConsumerWidget {
           children: [
             ListTile(
               leading: const Icon(Icons.edit_rounded),
-              title: const Text('Edit Deck'),
+              title: Text(AppLocalizations.of(context).revEditDeck),
               onTap: () {
                 Navigator.pop(context);
                 unawaited(CreateDeckSheet.show(context, deck: deck));
@@ -380,7 +386,10 @@ class _DecksSection extends ConsumerWidget {
             ),
             ListTile(
               leading: const Icon(Icons.delete_outline_rounded, color: Colors.red),
-              title: const Text('Delete Deck', style: TextStyle(color: Colors.red)),
+              title: Text(
+                AppLocalizations.of(context).revDeleteDeck,
+                style: const TextStyle(color: Colors.red),
+              ),
               onTap: () async {
                 Navigator.pop(context);
                 unawaited(ref.read(decksDaoProvider).deleteDeck(deck.id));
@@ -398,6 +407,7 @@ class _EmptyDeckState extends StatelessWidget {
   @override
   Widget build(final BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
+    final l10n = AppLocalizations.of(context);
     return Container(
       padding: const EdgeInsets.all(AppSpacing.xl),
       decoration: BoxDecoration(
@@ -409,13 +419,13 @@ class _EmptyDeckState extends StatelessWidget {
           Icon(Icons.layers_outlined, size: 48, color: colorScheme.secondary.withValues(alpha: 0.4)),
           const SizedBox(height: AppSpacing.md),
           Text(
-            'No custom decks yet',
+            l10n.revNoCustomDecks,
             style: AppTypography.bodyMedium.copyWith(color: colorScheme.secondary),
           ),
           const SizedBox(height: AppSpacing.md),
           OutlinedButton(
             onPressed: () => CreateDeckSheet.show(context),
-            child: const Text('CREATE FIRST DECK'),
+            child: Text(l10n.revCreateFirstDeck),
           ),
         ],
       ),
@@ -516,6 +526,7 @@ class _ReviewListDashboard extends ConsumerWidget {
   @override
   Widget build(final BuildContext context, final WidgetRef ref) {
     final colorScheme = Theme.of(context).colorScheme;
+    final l10n = AppLocalizations.of(context);
     final int total = counts.values.fold(0, (final sum, final value) => sum + value) +
         customCounts.values.fold(0, (final sum, final value) => sum + value);
     
@@ -527,7 +538,9 @@ class _ReviewListDashboard extends ConsumerWidget {
         Padding(
           padding: const EdgeInsets.only(left: 4, bottom: AppSpacing.sm),
           child: Text(
-            isBasicPractice ? 'ALL $title (BASIC PRACTICE)'.toUpperCase() : '$title BOXES'.toUpperCase(),
+            isBasicPractice
+                ? l10n.revAllEntityBasicPractice(title.toUpperCase())
+                : l10n.revEntityBoxes(title.toUpperCase()),
             style: AppTypography.caption.copyWith(
               color: isBasicPractice ? colorScheme.primary : colorScheme.secondary,
               fontWeight: FontWeight.w800,
@@ -555,7 +568,7 @@ class _ReviewListDashboard extends ConsumerWidget {
             ),
         
         _ReviewStateRow(
-          label: 'TOTAL DUE',
+          label: l10n.revTotalDue,
           count: total,
           isTotal: true,
           onTap: total > 0 ? onStartAll : null,
@@ -582,7 +595,11 @@ class _ReviewListDashboard extends ConsumerWidget {
                 if (total > 0) const Icon(Icons.play_arrow_rounded, size: 24),
                 if (total > 0) const SizedBox(width: AppSpacing.sm),
                 Text(
-                  (total == 0 ? 'ALL BOXES EMPTY' : (isBasicPractice ? 'START BASIC PRACTICE' : 'REVIEW ALL DUE')).toUpperCase(),
+                  total == 0
+                      ? l10n.revAllBoxesEmpty
+                      : (isBasicPractice
+                            ? l10n.revStartBasicPractice
+                            : l10n.revReviewAllDue),
                   style: AppTypography.titleSmall.copyWith(
                     fontWeight: FontWeight.w900,
                     letterSpacing: 1.0,

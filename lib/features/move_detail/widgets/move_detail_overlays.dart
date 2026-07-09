@@ -11,9 +11,11 @@ import '../../../core/design/spacing.dart';
 import '../../../core/design/typography.dart';
 import '../../../core/models/learning_state.dart';
 import '../../../core/services/categories_service.dart';
+import '../../../core/services/entity_names_service.dart';
 import '../../../shared/widgets/app_loader.dart';
 import '../../../shared/widgets/color_setting_tile.dart';
 import '../../flashcard_review/widgets/state_picker_sheet.dart';
+import '../../../l10n/gen/app_localizations.dart';
 
 class StatePickerOverlay extends StatelessWidget {
   const StatePickerOverlay({
@@ -31,6 +33,7 @@ class StatePickerOverlay extends StatelessWidget {
 
   @override
   Widget build(final BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     return Container(
       color: Colors.black54,
       child: Center(
@@ -61,7 +64,7 @@ class StatePickerOverlay extends StatelessWidget {
                   children: [
                     TextButton(
                       onPressed: onCancel,
-                      child: const Text('Cancel'),
+                      child: Text(l10n.mdCancel),
                     ),
                   ],
                 ),
@@ -90,6 +93,8 @@ class CategoryPickerOverlay extends ConsumerWidget {
   Widget build(final BuildContext context, final WidgetRef ref) {
     final categories = ref.watch(categoriesProvider);
     final cs = Theme.of(context).colorScheme;
+    final l10n = AppLocalizations.of(context);
+    final entityNames = ref.watch(entityNamesProvider);
 
     return Container(
       color: Colors.black54,
@@ -107,7 +112,7 @@ class CategoryPickerOverlay extends ConsumerWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                'Move Category',
+                l10n.mdMoveCategoryTitle(entityNames.moveSingular),
                 style: AppTypography.titleSmall.copyWith(
                   color: cs.onSurface,
                   fontWeight: FontWeight.w700,
@@ -138,11 +143,11 @@ class CategoryPickerOverlay extends ConsumerWidget {
                       if (created != null) onSave(created);
                     },
                     icon: const Icon(Icons.add, size: 18),
-                    label: const Text('Add New'),
+                    label: Text(l10n.mdAddNew),
                   ),
                   TextButton(
                     onPressed: onCancel,
-                    child: const Text('Cancel'),
+                    child: Text(l10n.mdCancel),
                   ),
                 ],
               ),
@@ -157,12 +162,13 @@ class CategoryPickerOverlay extends ConsumerWidget {
     return showDialog<String>(
       context: context,
       builder: (final context) {
+        final l10n = AppLocalizations.of(context);
         final controller = TextEditingController();
         Color selectedColor = categoryPresetColors[0];
         String? errorText;
         return StatefulBuilder(
           builder: (final context, final setDialogState) => AlertDialog(
-            title: const Text('New Category'),
+            title: Text(l10n.mdNewCategoryTitle),
             content: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
@@ -170,7 +176,7 @@ class CategoryPickerOverlay extends ConsumerWidget {
                   controller: controller,
                   autofocus: true,
                   decoration: InputDecoration(
-                    hintText: 'Category name',
+                    hintText: l10n.mdCategoryNameHint,
                     errorText: errorText,
                   ),
                   onChanged: (_) {
@@ -181,15 +187,15 @@ class CategoryPickerOverlay extends ConsumerWidget {
                 ),
                 const SizedBox(height: AppSpacing.md),
                 ColorSettingTile(
-                  title: 'Category color',
+                  title: l10n.mdCategoryColorTile,
                   subtitle: formatColorHex(selectedColor),
                   color: selectedColor,
                   onTap: () async {
                     final nextColor = await showColorEditorDialog(
                       context,
                       initialColor: selectedColor,
-                      title: 'Category Color',
-                      subtitle: 'Pick any color for this category label.',
+                      title: l10n.mdCategoryColorDialogTitle,
+                      subtitle: l10n.mdCategoryColorDialogSubtitle,
                       presets: categoryPresetColors,
                     );
                     if (nextColor == null || !context.mounted) return;
@@ -201,14 +207,14 @@ class CategoryPickerOverlay extends ConsumerWidget {
             actions: [
               TextButton(
                 onPressed: () => Navigator.pop(context),
-                child: const Text('Cancel'),
+                child: Text(l10n.mdCancel),
               ),
               TextButton(
                 onPressed: () async {
                   final name = controller.text.trim();
                   if (name.isEmpty) {
                     setDialogState(
-                      () => errorText = 'Category name cannot be empty.',
+                      () => errorText = l10n.mdCategoryNameEmpty,
                     );
                     return;
                   }
@@ -216,7 +222,7 @@ class CategoryPickerOverlay extends ConsumerWidget {
                       .read(categoriesProvider)
                       .any((final item) => item.name == name);
                   if (exists) {
-                    setDialogState(() => errorText = '"$name" already exists.');
+                    setDialogState(() => errorText = l10n.nameTakenError(name));
                     unawaited(HapticFeedback.heavyImpact());
                     return;
                   }
@@ -228,7 +234,7 @@ class CategoryPickerOverlay extends ConsumerWidget {
                   unawaited(HapticFeedback.mediumImpact());
                   Navigator.pop(context, name);
                 },
-                child: const Text('Add'),
+                child: Text(l10n.mdAdd),
               ),
             ],
           ),
@@ -266,6 +272,7 @@ class _CountEditorOverlayState extends State<CountEditorOverlay> {
   @override
   Widget build(final BuildContext context) {
     final cs = Theme.of(context).colorScheme;
+    final l10n = AppLocalizations.of(context);
     return Container(
       color: Colors.black54,
       child: Center(
@@ -279,7 +286,7 @@ class _CountEditorOverlayState extends State<CountEditorOverlay> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Text('Update Count', style: AppTypography.titleSmall),
+              Text(l10n.mdUpdateCountTitle, style: AppTypography.titleSmall),
               const SizedBox(height: AppSpacing.lg),
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
@@ -307,11 +314,11 @@ class _CountEditorOverlayState extends State<CountEditorOverlay> {
               Row(
                 mainAxisAlignment: MainAxisAlignment.end,
                 children: [
-                  TextButton(onPressed: widget.onCancel, child: const Text('Cancel')),
+                  TextButton(onPressed: widget.onCancel, child: Text(l10n.mdCancel)),
                   const SizedBox(width: AppSpacing.sm),
                   FilledButton(
                     onPressed: () => widget.onSave(_count),
-                    child: const Text('Save'),
+                    child: Text(l10n.mdSave),
                   ),
                 ],
               ),
@@ -344,6 +351,7 @@ class ConfirmActionOverlay extends StatelessWidget {
   @override
   Widget build(final BuildContext context) {
     final cs = Theme.of(context).colorScheme;
+    final l10n = AppLocalizations.of(context);
     return Container(
       color: Colors.black54,
       child: Center(
@@ -368,7 +376,7 @@ class ConfirmActionOverlay extends StatelessWidget {
               Row(
                 mainAxisAlignment: MainAxisAlignment.end,
                 children: [
-                  TextButton(onPressed: onCancel, child: const Text('Cancel')),
+                  TextButton(onPressed: onCancel, child: Text(l10n.mdCancel)),
                   const SizedBox(width: AppSpacing.sm),
                   FilledButton(
                     onPressed: onConfirm,
@@ -390,7 +398,7 @@ class ConfirmActionOverlay extends StatelessWidget {
   }
 }
 
-class RenameOverlay extends StatefulWidget {
+class RenameOverlay extends ConsumerStatefulWidget {
   const RenameOverlay({
     super.key,
     required this.draftName,
@@ -409,10 +417,10 @@ class RenameOverlay extends StatefulWidget {
   final String? conflictName;
 
   @override
-  State<RenameOverlay> createState() => _RenameOverlayState();
+  ConsumerState<RenameOverlay> createState() => _RenameOverlayState();
 }
 
-class _RenameOverlayState extends State<RenameOverlay> {
+class _RenameOverlayState extends ConsumerState<RenameOverlay> {
   late final TextEditingController _controller;
 
   @override
@@ -430,6 +438,8 @@ class _RenameOverlayState extends State<RenameOverlay> {
   @override
   Widget build(final BuildContext context) {
     final cs = Theme.of(context).colorScheme;
+    final l10n = AppLocalizations.of(context);
+    final entityNames = ref.watch(entityNamesProvider);
     return Container(
       color: Colors.black54,
       child: Center(
@@ -445,7 +455,9 @@ class _RenameOverlayState extends State<RenameOverlay> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                widget.isConflict ? 'Name Conflict' : 'Rename Move',
+                widget.isConflict
+                    ? l10n.mdNameConflictTitle
+                    : l10n.mdRenameEntity(entityNames.moveSingular),
                 style: AppTypography.titleSmall,
               ),
               const SizedBox(height: AppSpacing.md),
@@ -453,7 +465,11 @@ class _RenameOverlayState extends State<RenameOverlay> {
                 Padding(
                   padding: const EdgeInsets.only(bottom: AppSpacing.md),
                   child: Text(
-                    'The name "${widget.conflictName}" is already taken by another move or combo.',
+                    l10n.mdNameConflictBody(
+                      widget.conflictName ?? '',
+                      entityNames.moveSingular.toLowerCase(),
+                      entityNames.comboSingular.toLowerCase(),
+                    ),
                     style: AppTypography.caption.copyWith(color: AppColors.actionAgain),
                   ),
                 ),
@@ -461,8 +477,8 @@ class _RenameOverlayState extends State<RenameOverlay> {
                 controller: _controller,
                 autofocus: true,
                 style: AppTypography.bodyLarge,
-                decoration: const InputDecoration(
-                  hintText: 'Enter new name',
+                decoration: InputDecoration(
+                  hintText: l10n.mdRenameHint,
                 ),
                 onChanged: widget.onDraftChanged,
                 onSubmitted: (final val) {
@@ -473,14 +489,14 @@ class _RenameOverlayState extends State<RenameOverlay> {
               Row(
                 mainAxisAlignment: MainAxisAlignment.end,
                 children: [
-                  TextButton(onPressed: widget.onCancel, child: const Text('Cancel')),
+                  TextButton(onPressed: widget.onCancel, child: Text(l10n.mdCancel)),
                   const SizedBox(width: AppSpacing.sm),
                   FilledButton(
                     onPressed: () {
                       final val = _controller.text.trim();
                       if (val.isNotEmpty) widget.onSave(val);
                     },
-                    child: const Text('Save'),
+                    child: Text(l10n.mdSave),
                   ),
                 ],
               ),
