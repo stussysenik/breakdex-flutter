@@ -12,6 +12,7 @@ import 'package:intl/intl.dart';
 import 'package:uuid/uuid.dart';
 
 import '../../core/database/database.dart';
+import '../../core/services/entity_names_service.dart';
 import '../../core/database/daos/combo_plans_dao.dart';
 import '../../core/database/daos/combos_dao.dart';
 import '../../core/design/spacing.dart';
@@ -78,7 +79,7 @@ class _ComboDetailScreenState extends ConsumerState<ComboDetailScreen> {
             children: [
               Icon(Icons.chevron_left, color: colorScheme.secondary, size: 20),
               Text(
-                'Combos',
+                ref.watch(entityNamesProvider).comboPlural,
                 style: AppTypography.sectionHeader.copyWith(
                   color: colorScheme.secondary,
                 ),

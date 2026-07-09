@@ -8,6 +8,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../core/design/spacing.dart';
+import '../../core/services/entity_names_service.dart';
 import '../../core/design/theme.dart';
 import '../../core/design/typography.dart';
 import '../../core/services/categories_service.dart';
@@ -239,14 +240,14 @@ class _FlowModeDescription {
   };
 }
 
-class _FlowModePanel extends StatelessWidget {
+class _FlowModePanel extends ConsumerWidget {
   const _FlowModePanel({required this.description, required this.summary});
 
   final _FlowModeDescription description;
   final FlowGraphSummary summary;
 
   @override
-  Widget build(final BuildContext context) {
+  Widget build(final BuildContext context, final WidgetRef ref) {
     final colorScheme = Theme.of(context).colorScheme;
 
     return Container(
@@ -303,7 +304,7 @@ class _FlowModePanel extends StatelessWidget {
             children: [
               _MetricChip(
                 icon: CupertinoIcons.circle_grid_3x3_fill,
-                label: 'Moves',
+                label: ref.watch(entityNamesProvider).movePlural,
                 value: '${summary.nodeCount}',
               ),
               _MetricChip(

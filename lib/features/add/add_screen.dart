@@ -7,6 +7,7 @@ import 'package:go_router/go_router.dart';
 import 'package:path/path.dart' as p;
 
 import '../../core/design/spacing.dart';
+import '../../core/services/entity_names_service.dart';
 import '../../core/design/typography.dart';
 import '../../core/models/learning_state.dart';
 import '../../core/models/move_creation.dart';
@@ -22,6 +23,7 @@ class AddScreen extends ConsumerWidget {
 
   @override
   Widget build(final BuildContext context, final WidgetRef ref) {
+    final entityNames = ref.watch(entityNamesProvider);
     return Scaffold(
       body: CustomScrollView(
         slivers: [
@@ -37,13 +39,13 @@ class AddScreen extends ConsumerWidget {
                 children: [
                   _ChoiceCard(
                     emoji: '🤸',
-                    label: 'Move',
+                    label: entityNames.moveSingular,
                     onTap: () => _startClipFlow(context, ref),
                   ),
                   const SizedBox(width: AppSpacing.md),
                   _ChoiceCard(
                     emoji: '✨',
-                    label: 'Combo',
+                    label: entityNames.comboSingular,
                     onTap: () => context.push<String>('/create-combo'),
                   ),
                 ],

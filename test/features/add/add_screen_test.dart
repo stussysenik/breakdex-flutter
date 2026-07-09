@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
+import 'package:breakdex/core/services/settings_service.dart';
 import 'package:breakdex/features/add/add_screen.dart';
 
 /// Any text node longer than this reads as a helper/instructional sentence
@@ -13,9 +15,12 @@ void main() {
   testWidgets(
     'Add tab presents visual anchors with no paragraph-style helper text',
     (final tester) async {
+      SharedPreferences.setMockInitialValues({});
+      final prefs = await SharedPreferences.getInstance();
       await tester.pumpWidget(
-        const ProviderScope(
-          child: MaterialApp(home: AddScreen()),
+        ProviderScope(
+          overrides: [sharedPreferencesProvider.overrideWithValue(prefs)],
+          child: const MaterialApp(home: AddScreen()),
         ),
       );
 

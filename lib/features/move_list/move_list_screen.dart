@@ -27,6 +27,7 @@ import '../../core/services/thumbnail_load_coordinator.dart';
 import '../../core/services/video_service.dart';
 import '../../core/utils/diagnostics.dart';
 import '../../core/services/view_names_service.dart';
+import '../../core/services/entity_names_service.dart';
 import '../../shared/widgets/celebration_overlay.dart';
 import '../../shared/widgets/pressable.dart';
 import '../../shared/widgets/state_pill.dart';
@@ -159,7 +160,7 @@ class MoveListScreen extends ConsumerWidget {
     final segment = ref.watch(_arsenalSegmentProvider);
     final colorScheme = Theme.of(context).colorScheme;
 
-    final title = viewNames['title'] ?? 'Moves';
+    final title = viewNames['title'] ?? ref.watch(entityNamesProvider).movePlural;
 
     return Scaffold(
       body: ThumbnailCoordinatorScope(
@@ -965,8 +966,8 @@ class _ArsenalSegmentControl extends ConsumerWidget {
         ArsenalSegment.combos => Icons.linear_scale_rounded,
       },
       labelOf: (final s) => switch (s) {
-        ArsenalSegment.moves => 'Moves',
-        ArsenalSegment.combos => 'Combos',
+        ArsenalSegment.moves => ref.watch(entityNamesProvider).movePlural,
+        ArsenalSegment.combos => ref.watch(entityNamesProvider).comboPlural,
       },
       onSelected: (final s) {
         HapticFeedback.selectionClick();

@@ -6,7 +6,10 @@ import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+
 import '../../../core/design/colors.dart';
+import '../../../core/services/entity_names_service.dart';
 import '../../../core/design/spacing.dart';
 import '../../../core/design/theme.dart';
 import '../../../core/design/typography.dart';
@@ -439,7 +442,7 @@ class _QueueChip extends StatelessWidget {
   }
 }
 
-class _ExplorerControls extends StatelessWidget {
+class _ExplorerControls extends ConsumerWidget {
   const _ExplorerControls({
     required this.subjectMode,
     required this.structureMode,
@@ -453,8 +456,9 @@ class _ExplorerControls extends StatelessWidget {
   final ValueChanged<_ProgressStructureMode> onStructureChanged;
 
   @override
-  Widget build(final BuildContext context) {
+  Widget build(final BuildContext context, final WidgetRef ref) {
     final colorScheme = Theme.of(context).colorScheme;
+    final entityNames = ref.watch(entityNamesProvider);
 
     return Container(
       padding: const EdgeInsets.all(AppSpacing.md),
@@ -478,16 +482,16 @@ class _ExplorerControls extends StatelessWidget {
           LayoutBuilder(
             builder: (final context, final constraints) {
               final stacked = constraints.maxWidth < 560;
-              const subjectItems = [
+              final subjectItems = [
                 AppSegmentedControlItem(
                   value: _ProgressSubjectMode.moves,
                   icon: Icons.sports_martial_arts_rounded,
-                  label: 'Moves',
+                  label: entityNames.movePlural,
                 ),
                 AppSegmentedControlItem(
                   value: _ProgressSubjectMode.combos,
                   icon: Icons.linear_scale_rounded,
-                  label: 'Combos',
+                  label: entityNames.comboPlural,
                 ),
               ];
               const structureItems = [

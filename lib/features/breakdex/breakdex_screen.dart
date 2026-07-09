@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../core/design/spacing.dart';
 import '../../core/design/typography.dart';
+import '../../core/services/entity_names_service.dart';
 
 class BreakdexScreen extends ConsumerWidget {
   const BreakdexScreen({super.key});
@@ -12,6 +13,7 @@ class BreakdexScreen extends ConsumerWidget {
   Widget build(final BuildContext context, final WidgetRef ref) {
     final colorScheme = Theme.of(context).colorScheme;
     final textColor = colorScheme.onSurface;
+    final entityNames = ref.watch(entityNamesProvider);
 
     return Scaffold(
       appBar: AppBar(
@@ -24,7 +26,7 @@ class BreakdexScreen extends ConsumerWidget {
             Semantics(
               identifier: 'moves-tile',
               child: _HeroNavTile(
-                label: 'Moves',
+                label: entityNames.movePlural,
                 onTap: () => context.go('/breakdex/moves'),
                 color: textColor,
               ),
@@ -33,7 +35,7 @@ class BreakdexScreen extends ConsumerWidget {
             Semantics(
               identifier: 'combos-tile',
               child: _HeroNavTile(
-                label: 'Combos',
+                label: entityNames.comboPlural,
                 onTap: () => context.go('/breakdex/combos'),
                 color: textColor,
               ),

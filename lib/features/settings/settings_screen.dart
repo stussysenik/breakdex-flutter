@@ -33,6 +33,7 @@ import '../../core/services/stats_export_service.dart';
 import '../../shared/widgets/app_loader.dart';
 import '../../shared/widgets/action_tile.dart';
 import '../../core/services/view_names_service.dart';
+import '../../core/services/entity_names_service.dart';
 import '../../shared/widgets/color_setting_tile.dart';
 import '../../shared/widgets/settings_list_group.dart';
 import 'widgets/cloud_sync_section.dart';
@@ -64,6 +65,7 @@ class SettingsScreen extends ConsumerWidget {
         ref.watch(archivedMovesCountProvider).valueOrNull ?? 0;
     final colorScheme = Theme.of(context).colorScheme;
     final viewNames = ref.watch(viewNamesProvider);
+    final entityNames = ref.watch(entityNamesProvider);
     final categoryUsage = <String, int>{};
     for (final move in moves) {
       categoryUsage[move.category] = (categoryUsage[move.category] ?? 0) + 1;
@@ -321,14 +323,43 @@ class SettingsScreen extends ConsumerWidget {
                         width: panelWidth,
                         child: _SettingsPanel(
                           title: 'Global Labels',
-                          child: ActionTile(
-                            icon: Icons.title,
-                            label: 'Arsenal Title: ${viewNames['title'] ?? 'Arsenal'}',
-                            onTap: () => _showRenameArsenalDialog(
-                              context,
-                              ref,
-                              viewNames['title'] ?? 'Arsenal',
-                            ),
+                          child: SettingsListGroup(
+                            children: [
+                              ActionTile(
+                                icon: Icons.title,
+                                label:
+                                    'Arsenal Title: ${viewNames['title'] ?? 'Arsenal'}',
+                                onTap: () => _showRenameArsenalDialog(
+                                  context,
+                                  ref,
+                                  viewNames['title'] ?? 'Arsenal',
+                                ),
+                              ),
+                              ActionTile(
+                                icon: Icons.sports_martial_arts,
+                                label:
+                                    'Moves data-bank: ${entityNames.movePlural}',
+                                onTap: () => _showRenameEntityDialog(
+                                  context,
+                                  ref,
+                                  current: entityNames,
+                                  singularField: EntityNameField.moveSingular,
+                                  pluralField: EntityNameField.movePlural,
+                                ),
+                              ),
+                              ActionTile(
+                                icon: Icons.link,
+                                label:
+                                    'Combos data-bank: ${entityNames.comboPlural}',
+                                onTap: () => _showRenameEntityDialog(
+                                  context,
+                                  ref,
+                                  current: entityNames,
+                                  singularField: EntityNameField.comboSingular,
+                                  pluralField: EntityNameField.comboPlural,
+                                ),
+                              ),
+                            ],
                           ),
                         ),
                       ),
@@ -866,6 +897,69 @@ class SettingsScreen extends ConsumerWidget {
                 HapticFeedback.mediumImpact();
               }
               Navigator.pop(ctx);
+            },
+            child: const Text('Save'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showRenameEntityDialog(
+    final BuildContext context,
+    final WidgetRef ref, {
+    required final EntityNames current,
+    required final EntityNameField singularField,
+    required final EntityNameField pluralField,
+  }) {
+    final singular =
+        TextEditingController(text: current.forField(singularField));
+    final plural = TextEditingController(text: current.forField(pluralField));
+    showDialog<void>(
+      context: context,
+      builder: (final ctx) => AlertDialog(
+        title: const Text('Rename data-bank'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextField(
+              controller: singular,
+              autofocus: true,
+              textCapitalization: TextCapitalization.words,
+              decoration: const InputDecoration(
+                labelText: 'Singular',
+                hintText: 'e.g. Move',
+              ),
+            ),
+            const SizedBox(height: AppSpacing.sm),
+            TextField(
+              controller: plural,
+              textCapitalization: TextCapitalization.words,
+              decoration: const InputDecoration(
+                labelText: 'Plural',
+                hintText: 'e.g. Moves',
+              ),
+            ),
+            const SizedBox(height: AppSpacing.sm),
+            Text(
+              'Display only — leave a field blank to restore its default. '
+              'Your saved videos are never renamed.',
+              style: Theme.of(context).textTheme.bodySmall,
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () async {
+              final notifier = ref.read(entityNamesProvider.notifier);
+              await notifier.rename(singularField, singular.text);
+              await notifier.rename(pluralField, plural.text);
+              await HapticFeedback.mediumImpact();
+              if (ctx.mounted) Navigator.pop(ctx);
             },
             child: const Text('Save'),
           ),

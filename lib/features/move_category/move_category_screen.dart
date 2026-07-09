@@ -9,6 +9,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../core/database/database.dart';
+import '../../core/services/entity_names_service.dart';
 import '../../core/design/colors.dart';
 import '../../core/design/spacing.dart';
 import '../../core/design/theme.dart';
@@ -69,7 +70,7 @@ class MoveCategoryScreen extends ConsumerWidget {
             ),
           ),
         ),
-        title: const Text('Moves'),
+        title: Text(ref.watch(entityNamesProvider).movePlural),
       ),
       body: ListView(
         padding: const EdgeInsets.all(AppSpacing.screenEdge),

@@ -4,13 +4,22 @@ Ledger rule: tick each box in the same commit that lands the work.
 
 ## Phase 1: Parametric naming
 
-- [ ] 1.1 Audit render sites of the default nouns ("Moves"/"Move", "Combos"/"Combo") —
-  `rg` sweep, expect ~25 call sites; record the list in the commit.
-- [ ] 1.2 Extend the Global Labels setting (Settings → Visuals & Style) to both data-banks;
-  a label provider resolves custom noun → default; clearing resets.
-- [ ] 1.3 Route all audited call sites through the provider (tabs, titles, empty states,
+- [x] 1.1 Audit render sites of the default nouns ("Moves"/"Move", "Combos"/"Combo") —
+  `rg` sweep. Actual: ~15 display sites (fewer than the ~25 estimate; the rest were
+  filesystem-path literals in `lib/core/services/*`, which are a storage contract and
+  intentionally NOT routed). Display sites: breakdex tabs (×2), combos title,
+  move_list Arsenal title fallback + segment labels (×2), mastery_prescreen title +
+  lane toggle (×2), move_category title, combo_detail breadcrumb, progress_explorer
+  subject segments (×2), flow node metric, add-flow choice cards (×2).
+- [x] 1.2 Extend the Global Labels setting (Settings → Visuals & Style) to both data-banks;
+  a label provider resolves custom noun → default; clearing resets. Built dedicated typed
+  `entityNamesProvider` (`entity_names_service.dart`, singular+plural per bank) + two
+  rename tiles with singular/plural dialogs (blank field = restore default).
+- [x] 1.3 Route all audited call sites through the provider (tabs, titles, empty states,
   dialogs). Long-name layout resilience rides `tighten-athlete-controls-and-stats-clarity`.
-- [ ] 1.4 Tests: rename renders app-wide, reset restores defaults, no stored-data mutation.
+- [x] 1.4 Tests: rename renders app-wide, reset restores defaults, no stored-data mutation.
+  `entity_names_test.dart` (6 cases: defaults, rename+restart, blank-clears, default-writes-
+  no-override, reset, unrelated-key-untouched). `add_screen_test` updated to supply prefs.
 
 ## Phase 2: Flow-order + party default
 

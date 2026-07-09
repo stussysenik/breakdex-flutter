@@ -7,6 +7,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/database/database.dart';
+import '../../../core/services/entity_names_service.dart';
 import '../../../core/design/spacing.dart';
 import '../../../core/design/theme.dart';
 import '../../../core/design/typography.dart';
@@ -67,7 +68,9 @@ class _StateModeSection extends ConsumerWidget {
     
     final matrixAsync = ref.watch(reviewStateMatrixProvider);
     final stateLabels = ref.watch(learningStateLabelsProvider);
-    final title = isMoves ? 'Moves' : 'Combos';
+    final entityNames = ref.watch(entityNamesProvider);
+    final title =
+        isMoves ? entityNames.movePlural : entityNames.comboPlural;
 
     final practiceAll = ref.watch(_practiceAllModeProvider);
 
@@ -225,7 +228,7 @@ class _BasicPracticeToggle extends StatelessWidget {
   }
 }
 
-class _ReviewLaneToggle extends StatelessWidget {
+class _ReviewLaneToggle extends ConsumerWidget {
   const _ReviewLaneToggle({
     required this.selectedKind,
     required this.onChanged,
@@ -235,18 +238,19 @@ class _ReviewLaneToggle extends StatelessWidget {
   final ValueChanged<ReviewEntityKind> onChanged;
 
   @override
-  Widget build(final BuildContext context) {
+  Widget build(final BuildContext context, final WidgetRef ref) {
+    final entityNames = ref.watch(entityNamesProvider);
     return AppSegmentedControl<ReviewEntityKind>(
-      items: const [
+      items: [
         AppSegmentedControlItem(
           value: ReviewEntityKind.moves,
           icon: Icons.trip_origin_rounded,
-          label: 'Moves',
+          label: entityNames.movePlural,
         ),
         AppSegmentedControlItem(
           value: ReviewEntityKind.combos,
           icon: Icons.timeline_rounded,
-          label: 'Combos',
+          label: entityNames.comboPlural,
         ),
       ],
       selectedValue: selectedKind,

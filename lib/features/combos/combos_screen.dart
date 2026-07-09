@@ -9,6 +9,7 @@ import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 
 import '../../core/database/daos/combo_plans_dao.dart';
+import '../../core/services/entity_names_service.dart';
 import '../../core/database/daos/combos_dao.dart';
 import '../../core/database/database.dart' show ComboPlansCompanion;
 import '../../core/design/spacing.dart';
@@ -62,10 +63,11 @@ class _CombosScreenState extends ConsumerState<CombosScreen> {
   @override
   Widget build(final BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
+    final comboPlural = ref.watch(entityNamesProvider).comboPlural;
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Combos'),
+        title: Text(comboPlural),
         bottom: PreferredSize(
           preferredSize: const Size.fromHeight(60),
           child: Padding(
