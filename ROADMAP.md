@@ -22,12 +22,18 @@
 > same commit**. Nothing else starts until this block says so.
 
 - **Change:** `migrate-canonical-backend-to-appwrite`
-- **Next task:** `1.2` — implement the **`sync-push` Appwrite Function (Dart runtime)**: batched
-  upserts+tombstones, server-side per-record LWW (skip if stored `updatedAt` strictly newer),
-  `clientOpId` idempotency, tombstones-not-deletes, reject `fsrsCard` pushes / `reviewEvent`
-  deletes. Port `convex/sync.ts` semantics; parity-test against the same fixtures. No owner gate.
-- **Then:** 1.3 (`sync-pull` + server cursor) → 1.4 (`reviews-append` + FSRS derive) → 1.5 (deploy)
-- **State notes (updated 2026-07-10):** 0.1 + 0.3 DONE. **1.1 DONE** — `appwrite.config.json` now
+- **Next task:** `1.3` — implement the **`sync-pull` Appwrite Function (Dart runtime)**: returns
+  upserts + tombstones changed since the provided cursor for one entity type, plus a
+  **server-time high-water cursor** (D9/H.1 depends on this shape). Port `convex/sync.ts`
+  `pullRecords`; reads live rows from the descriptive table + deletes from the `tombstones` table
+  (two-table model, per 1.2), unions them on the same cursor clock. No owner gate.
+- **Then:** 1.4 (`reviews-append` + FSRS derive) → 1.5 (deploy schema + Functions, curl smoke)
+- **State notes (updated 2026-07-10):** 0.1 + 0.3 DONE. **1.2 DONE** — `functions/sync-push/`
+  (Dart runtime `dart-3.11`): pure `reconcile.dart` (LWW + tombstones + idempotency ported from
+  `convex/sync.ts`, two-table model) + `main.dart` IO glue (`TablesDbSyncStore` over
+  `dart_appwrite` 25.1.0, owner-only per-row perms, trusted `x-appwrite-user-id`). `dart analyze`
+  clean, `dart test` 19/19 green; `functions` block passes CLI `ConfigSchema`. Live deploy is 1.5.
+  **1.1 DONE** — `appwrite.config.json` now
   holds database `breakdex` + 9 tables (5 descriptive + reviewEvents/fsrsCards/legacyIdentities/
   tombstones), TablesDB model, `rowSecurity` owner-only, video pointer inside the `payload` JSON
   column (contract-faithful, not separate columns); passes the CLI's strict `ConfigSchema`

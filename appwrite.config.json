@@ -178,5 +178,19 @@
                 { "key": "by_user_deletedAt", "type": "key", "columns": ["userId", "deletedAt"] }
             ]
         }
+    ],
+    "functions": [
+        {
+            "$id": "sync-push",
+            "name": "sync-push",
+            "runtime": "dart-3.11",
+            "execute": ["users"],
+            "events": [],
+            "scopes": ["tables.read", "rows.read", "rows.write"],
+            "path": "functions/sync-push",
+            "entrypoint": "lib/main.dart",
+            "commands": "dart pub get",
+            "enabled": true
+        }
     ]
 }

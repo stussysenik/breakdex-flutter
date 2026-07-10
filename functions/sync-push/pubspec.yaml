@@ -1,0 +1,15 @@
+name: sync_push
+description: >-
+  Appwrite Function (Dart runtime) — server-side last-writer-wins sync push for
+  Breakdex descriptive tables. Ports convex/sync.ts pushRecords semantics.
+publish_to: none
+version: 1.0.0
+
+environment:
+  sdk: ^3.11.0
+
+dependencies:
+  dart_appwrite: ^25.1.0
+
+dev_dependencies:
+  test: ^1.25.0

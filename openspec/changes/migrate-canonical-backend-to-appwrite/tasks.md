@@ -123,12 +123,61 @@
   (6) Every `required: true` column carries an explicit `default: null` (CLI `ConfigSchema` rule).
   **Verified (binary truth):** config passes the CLI's own strict `ConfigSchema.safeParse` — the
   exact validator `appwrite push` runs — 0 issues. Live deploy is 1.5 (not run here; author-only).
-- [ ] 1.2 Implement the **`sync-push` Function (Dart runtime)**: accepts a batched
+- [x] 1.2 Implement the **`sync-push` Function (Dart runtime)**: accepts a batched
   upserts+tombstones payload, enforces server-side LWW per record (skip if stored `updatedAt` is
   strictly newer), enforces `clientOpId` idempotency (replay never double-applies), writes
   tombstones instead of deletes, rejects `fsrsCard` pushes and `reviewEvent` deletes. Port the
   semantics of `convex/sync.ts` exactly; parity-test against the same fixtures the Convex unit
   tests used.
+  **Done 2026-07-10.** New standalone Dart package `functions/sync-push/` (Appwrite Cloud runtime
+  `dart-3.11`, entrypoint `lib/main.dart`), split for testability:
+  (1) **`lib/reconcile.dart` — pure core, imports nothing from `dart_appwrite`** so the exact
+  semantics are unit-testable with no live backend. `applyPush()` ports `pushRecords`
+  (`convex/sync.ts`) arm-for-arm.
+  (2) **`lib/main.dart` — thin IO glue**: `main(context)` authenticates, wires
+  `TablesDbSyncStore` (backed by `dart_appwrite` `TablesDB`), marshals the JSON response.
+  **Decisions / deviations (all faithful to the ported semantics):**
+  (a) **Two-table storage** (schema 1.1 has no `deletedAt` column on descriptive tables; deletes
+  go to the shared `tombstones` table). Convex used in-row soft-delete. Preserved 1:1 by modeling
+  a logical record `(userId, id)` as being in **exactly one** state — live (descriptive row,
+  clock=`updatedAt`) or deleted (`tombstones` row, clock=`deletedAt`); the LWW clock is
+  `_maxClock` of whichever is present. A fresh upsert **un-tombstones** (write live + delete
+  tombstone); a delete removes the live row + writes a tombstone (never a hard delete).
+  (b) **LWW is `>=`** — an op applies unless the stored clock is *strictly newer* (equal → incoming
+  applies), exactly matching `rec.updatedAt >= existing.updatedAt`. Ties → incoming (server-push
+  policy; distinct from the client pull-merge's local-wins H.2, which is the other direction).
+  (c) **Idempotency for descriptive tables is by `(id, clock)`** (Convex has no clientOpId
+  uniqueness check here either): replaying an op re-applies identical state at equal clock — a
+  no-op by outcome, one row, never doubled. Tested.
+  (d) **Rejections** (`validatePushTable`, throws `PushRejection`→HTTP 400 *before* touching the
+  store): `fsrsCards` push forbidden; `reviewEvents` deletes forbidden (append-only) **and** its
+  upserts routed away to `reviews-append` (1.4); any non-descriptive table rejected — matching
+  Convex's `descriptiveTable` union `{moves,combos,comboMoves,decks,deckMoves}`, which would
+  reject all three identically.
+  (e) **`userId` from the trusted `x-appwrite-user-id` header, never the payload** (401 if
+  absent); writes stamp **owner-only per-row perms** (`Permission.read/update/delete(Role.user)`)
+  — the per-user isolation the empty table `$permissions` + `rowSecurity:true` design requires.
+  (f) **Per-record store-fault isolation** (aligns hardened-template H.3): each op is applied in a
+  try/catch; a transient write fault increments `failed` and never aborts the batch. Response is
+  `{applied, skipped, failed}`. Malformed request body → 400 (a client push is a trusted-shape
+  contract).
+  **Wire shape** mirrors `sync:pushRecords` exactly — `{table, upserts:[{localId,json,updatedAt,
+  clientOpId}], deletes:[{localId,deletedAt,clientOpId}]}`, ms-epoch ints — so the D6 client
+  `AppwriteTransport` (Phase 2) marshals to it unchanged; a body-parsing test asserts this shape
+  against the same fixture the Convex marshalling test used.
+  **Verified (binary truth):** `dart analyze` → *No issues found!*; `dart test` → **19/19 green**
+  (LWW skip/tie/newer, idempotent replay, un-tombstone both directions, tombstone-not-delete, all
+  four rejections, all five descriptive tables, H.3 fault isolation, wire parsing). Config:
+  `functions` block added to root `appwrite.config.json`; passes the CLI's own
+  `ConfigSchema.safeParse` (0 issues). All `dart_appwrite` **25.1.0** API shapes verified against
+  the resolved package in pub-cache (`TablesDB.{listRows,createRow,updateRow,deleteRow}`,
+  `Row.$id`/`Row.data`, `RowList.rows`, `Query.equal/limit`, `Permission.*`, `Role.user`,
+  `ID.unique`), per the executor mandate — not from memory. **Not done here (deferred):** live
+  deploy + curl smoke is **1.5**; `scopes` (`tables.read`/`rows.read`/`rows.write`) to confirm
+  against the live project at deploy. Root `flutter analyze` shows **2 pre-existing errors**
+  (`Platform`/`File` in `sync_providers.dart`/`move_grid_cell.dart`) from the parallel
+  web-compile seam (`0b30585`, zero-diff from HEAD) — **not** 1.2; `functions/**` is excluded from
+  the app analyzer since Functions are standalone packages with their own analysis.
 - [ ] 1.3 Implement the **`sync-pull` Function**: returns upserts + tombstones changed since the
   provided cursor for one entity type, plus a **server-time high-water cursor** (D9/H.1 depends
   on this shape).

@@ -5,6 +5,9 @@ analyzer:
     # Root-level scratch/repro files — not part of the app or test suite.
     - repro.dart
     - test_bug.dart
+    # Appwrite server Functions are standalone Dart packages with their own
+    # pubspec + analysis_options (verified via `dart analyze` in-package).
+    - functions/**
   plugins:
     - custom_lint
   errors:
