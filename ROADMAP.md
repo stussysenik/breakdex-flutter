@@ -22,12 +22,17 @@
 > same commit**. Nothing else starts until this block says so.
 
 - **Change:** `migrate-canonical-backend-to-appwrite`
-- **Next task:** `0.3` — Appwrite CLI init → committed `appwrite/` config dir (no secrets)
-- **Then:** 0.4 (Convex decommission) → 1.1 (schema) → 1.2–1.5 (sync Functions + deploy)
-- **State notes (verified 2026-07-10):** Cloud project is LIVE and reachable, API key in
-  `.env.local` works — but 0 databases, 0 functions deployed. 0.1 is effectively done
-  (tick with a verification note when 0.3 lands). **0.2 (Google OAuth console setup) is
-  owner-gated** but does NOT block 0.3–1.5 — only Phase 3 identity needs it.
+- **Next task:** `0.4` — decommission the unused Convex Cloud project (`brilliant-mongoose-46`)
+  and remove `CONVEX_URL`/`CONVEX_SITE_URL` from `.env.local` (nothing deployed → nothing to
+  migrate; the console-delete step is owner-gated, the `.env.local` cleanup is not).
+- **Then:** 1.1 (schema authored into `appwrite.config.json`) → 1.2–1.5 (sync Functions + deploy)
+- **State notes (updated 2026-07-10):** 0.1 + 0.3 DONE. Appwrite CLI v22.6.1 installed; root
+  `appwrite.config.json` committed (projectId + projectName, no secrets); headless deploy proven
+  via API key (`appwrite push tables|functions` reach the live project — 0 tables/functions, ready
+  for 1.1). Cloud project LIVE, key works, 0 databases/functions. **0.2 (Google OAuth console
+  setup) is owner-gated** but does NOT block 0.4–1.5 — only Phase 3 identity needs it. Env naming
+  drift (`APPWRITE_SECRET`/`APPWRITE_API_ENDPOINT` vs D2's `APPWRITE_API_KEY`/`APPWRITE_ENDPOINT`)
+  to reconcile in the Phase 2 client-plumbing task.
 - **Parallel-allowed track (no Appwrite dependency):** `add-web-first-release-and-monetization`
   Phase 1.0 (web Drift 1.0.2 → plugin audit 1.0.3 → `flutter build web` gate 1.0.5).
 

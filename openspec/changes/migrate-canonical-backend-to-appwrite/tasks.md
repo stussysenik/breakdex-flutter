@@ -58,15 +58,28 @@
 
 ## Phase 0: Provisioning (owner-run; executor supplies exact steps and stops)
 
-- [ ] 0.1 Create the Appwrite Cloud project (free tier; record current tier limits in the task
+- [x] 0.1 Create the Appwrite Cloud project (free tier; record current tier limits in the task
   note). Capture `APPWRITE_ENDPOINT` / `APPWRITE_PROJECT_ID` / `APPWRITE_API_KEY` into gitignored
   `.env.local` per the D2 block (self-host keys as empty placeholders alongside).
+  **Done (verified 2026-07-10 via 0.3):** project `6a50f25b…` LIVE (`appwrite health get` → pass),
+  API key works, `appwrite databases list` → 0. Naming drift to reconcile: `.env.local` uses
+  `APPWRITE_SECRET`/`APPWRITE_API_ENDPOINT`, D2 specifies `APPWRITE_API_KEY`/`APPWRITE_ENDPOINT`;
+  self-host placeholders not yet added. Fold both into the Phase 2 client-plumbing task.
 - [ ] 0.2 Configure the Google OAuth2 provider in the Appwrite console: reuse/extend the existing
   GCP OAuth clients (iOS + Web) with Appwrite's redirect URIs; register the Flutter callback
   scheme (`appwrite-callback-<PROJECT_ID>`) in both iOS plists (NOTE: debug builds use
   `Info-DebugProfile.plist`) and AndroidManifest.
-- [ ] 0.3 Install/verify the Appwrite CLI; `appwrite init` against the project so schema and
+- [x] 0.3 Install/verify the Appwrite CLI; `appwrite init` against the project so schema and
   Functions deploy headlessly from the repo (`appwrite/` config directory, committed; no secrets).
+  **Done 2026-07-10.** CLI v22.6.1 (`npm i -g appwrite-cli`). **Deviations (CLI v22 shape):**
+  (1) config lives at root `appwrite.config.json` — CLI v22 uses `{projectId,...}` at root plus
+  per-function dirs (created in 1.2), not an `appwrite/` subdir. (2) `appwrite init project` needs
+  an interactive console **login session** (owner-gated), which is the wrong tool for headless
+  deploy — the headless path authenticates with the **API key** via `appwrite client -e/-p/-k`
+  (stored in `~/.appwrite`, outside the repo). Proven: `appwrite push tables|functions` run
+  against the live project with the API key (no session error) — empty config → "No tables/
+  functions found", i.e. ready for Phase 1.1 to author schema into `appwrite.config.json`.
+  Committed artifact: `appwrite.config.json` (projectId + projectName only; secret-scanned clean).
 - [ ] 0.4 Decommission the unused Convex Cloud project (`brilliant-mongoose-46`) and remove
   `CONVEX_URL`/`CONVEX_SITE_URL` from `.env.local`. Nothing was deployed; nothing to migrate.
 

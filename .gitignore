@@ -59,5 +59,6 @@ node_modules/
 .superpowers/
 .env.local
 .env.lcoal
+.appwrite/
 verify-*.png
 review-launcher-design.png
