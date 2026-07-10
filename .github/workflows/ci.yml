@@ -10,6 +10,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0   # docs ledger diffs each chapter's verified..HEAD; needs full history
 
       - uses: subosito/flutter-action@v2
         with:
@@ -19,5 +21,8 @@ jobs:
 
       # Phase 5.1: generated localizations must be committed and current.
       - run: ./scripts/check_l10n.sh
+
+      # Engineering-manual chapters must stay current with the code they document.
+      - run: node scripts/docs_ledger_check
 
       - run: flutter analyze

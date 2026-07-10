@@ -48,12 +48,12 @@
 
 ## 4. Docs ledger tooling
 
-- [ ] 4.1 Drift-check script (git-plumbing diff of `verified..HEAD` per chapter's
+- [x] 4.1 Drift-check script (git-plumbing diff of `verified..HEAD` per chapter's
       `watches`; exit 0/non-zero per spec). Validate red/green: stale stub → non-zero;
       after `verified` bump → zero.
-- [ ] 4.2 `--json` work-order output (`chapter, watches, verified, changed_files,
+- [x] 4.2 `--json` work-order output (`chapter, watches, verified, changed_files,
       diff_stat`). Validate against a synthetic stale chapter.
-- [ ] 4.3 Wire drift check into CI alongside existing gates.
+- [x] 4.3 Wire drift check into CI alongside existing gates.
 
 ## 5. Student priming bundle
 

@@ -65,16 +65,19 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with: { fetch-depth: 0 }        # full history — the docs ledger diffs verified..HEAD
       - uses: subosito/flutter-action@v2
         with: { flutter-version: '3.x' }
       - run: flutter pub get
       - run: ./scripts/check_l10n.sh   # generated l10n must be committed + current
+      - run: node scripts/docs_ledger_check   # manual chapters current with their watched code
       - run: flutter analyze
 ```
 
-Three gates, and only three: dependency resolution, **l10n freshness**, and **static analysis**.
+Four gates: dependency resolution, **l10n freshness**, **docs-ledger freshness**, and **static analysis**.
 
 - `scripts/check_l10n.sh` runs `flutter gen-l10n` and fails (`exit 1`) if `lib/l10n/gen` has any diff — i.e. the committed generated localizations must match the ARB sources ([Localization](./06-localization.mdx)).
+- `scripts/docs_ledger_check` diffs each verified manual chapter's `verified..HEAD` restricted to its `watches` globs (git plumbing only) and fails if a watched path changed without the chapter being re-verified ([Manual Meta](./12-meta.mdx)). This is why `checkout` needs `fetch-depth: 0` — a shallow clone can't reach a chapter's `verified` commit.
 - `flutter analyze` is the static gate. It must report `No issues found` — the `analysis_options.yaml` ruleset ([Standards](./09-standards.mdx)) is the real teeth here.
 
 **CI does NOT run `flutter test`, and does NOT build any artifact.** The 110-file suite is *not* enforced on push or PR. This is a deliberately honest statement of the current floor: green CI proves the code analyzes and l10n is current — it does **not** prove the tests pass. Running `flutter test` before handoff is a manual discipline (§9), not something the machine does for you. Do not read a green CI check as "tests pass."
