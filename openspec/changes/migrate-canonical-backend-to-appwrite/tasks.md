@@ -217,8 +217,27 @@
   parsing + rejections). Registered in `appwrite.config.json` (3 functions; valid JSON, full
   key/schema parity with the two entries the CLI already accepted). Live deploy + CLI
   `Validating functions` + curl smoke is **1.5**.
-- [ ] 1.5 Deploy schema + Functions via CLI to the Cloud project; smoke-test each Function with
-  curl/CLI fixtures. Owner-gated only if a key is missing.
+- [x] 1.5 Deploy schema + Functions via CLI to the Cloud project; smoke-test each Function with
+  curl/CLI fixtures. Owner-gated only if a key is missing. **Done (verified live 2026-07-10):** key
+  present (0.1's `eaI` key), so not owner-gated. `appwrite push tables` → database `breakdex`
+  (`type tablesdb`, `status ready`) + all **9 tables** created (columns + indexes), verified via
+  `tables-db list`. `appwrite push functions --activate` → all **3 Functions** built on the live
+  `dart-3.11` runtime, deployments reach `status: ready`, activated. Live **`scopes` confirmed to
+  match config exactly**: `sync-push`/`reviews-append` = `[tables.read, rows.read, rows.write]`,
+  `sync-pull` = `[tables.read, rows.read]` (read-only); `execute: ['users']` on all three.
+  **Seam bug caught by live smoke (the value of 1.5):** `main.dart` IO glue called
+  `context.res.json(body, statusCode: N)` with a **named** arg, but the open-runtimes Dart
+  `RuntimeResponse.json` takes `statusCode` **positionally** — every error path 500'd with
+  `NoSuchMethodError`. The pure-core unit tests (18/18 etc.) never exercised `main.dart`, so only a
+  live invocation could surface it. Fixed to positional in all three entrypoints (`dart analyze`
+  clean); redeployed. **Curl smoke: 14/14 assertions green** (invoked with a real user JWT so
+  Appwrite stamps `x-appwrite-user-id` — custom `x-appwrite-*` forward-headers are blocked by the
+  platform, confirming the trusted-header design): sync-push apply + LWW stale-skip; sync-pull
+  full-pull delta + high-water cursor + the `fsrsCards` "derived server-side, not sync-pull"
+  rejection; reviews-append append + **server-side FSRS derive** (`derived:1`, card persisted with
+  owner-only perms and real S/D/state/due) + idempotent replay skip. Smoke data (rows + `smoke-user`
+  account) deleted afterward — backend left pristine for the Phase 2 cutover. Script:
+  `scratchpad/smoke.sh` (repeatable, per-run tagged; retries transient Cloud empties).
 
 ## Phase 1R: Remote config channel (rides Phase 1 provisioning; owner ruling 2026-07-08 — config-first, code-push deferred to 7.4)
 

@@ -22,11 +22,22 @@
 > same commit**. Nothing else starts until this block says so.
 
 - **Change:** `migrate-canonical-backend-to-appwrite`
-- **Next task:** `1.5` — deploy schema + Functions via CLI to the Cloud project; smoke-test each
-  Function (`sync-push`, `sync-pull`, `reviews-append`) with curl/CLI fixtures, and confirm each
-  Function's `scopes` against the live project. Owner-gated only if a deploy key is missing.
-- **Then:** Phase 1R (remote config channel) / Phase 2 client plumbing per D8.
-- **State notes (updated 2026-07-10):** 0.1 + 0.3 DONE. **1.4 DONE** — `functions/reviews-append/`
+- **Next task:** `1R.1` — provision the `appConfig` collection (singleton versioned doc:
+  `minSupportedBuild`, `latestBuild`, `updateMessage`, `featureFlags`, `killSwitches`,
+  `cohortProfiles`; read=any authed user, write=owner) into `appwrite.config.json` and deploy via
+  the now-proven `push tables` path. Not owner-gated (schema-only, no OAuth). Parallel-allowed:
+  Phase 2.1 client plumbing (`AppwriteSyncBackend` behind the seam) also unblocked now that the
+  live substrate exists.
+- **Then:** Phase 2 client plumbing (2.1→…) per D8; Phase 3 identity remains gated on `0.2`
+  (Google OAuth, owner-run).
+- **State notes (updated 2026-07-10):** 0.1 + 0.3 DONE. **Phase 1 COMPLETE — 1.5 DONE (live):**
+  schema (`breakdex` TablesDB + 9 tables, `status ready`) + all 3 Functions (`sync-push`,
+  `sync-pull`, `reviews-append`) deployed & built on `dart-3.11`, live `scopes` match config,
+  **14/14 curl smoke green** against Cloud (real-JWT invocations). Live smoke caught + fixed a
+  `main.dart` seam bug the pure-core tests couldn't reach: `context.res.json(…, statusCode: N)` used
+  a **named** arg where the runtime's `res.json` takes `statusCode` **positionally** (every error
+  path 500'd) — now positional in all three, redeployed. Smoke data purged; backend pristine.
+  **1.4 DONE** — `functions/reviews-append/`
   (Dart runtime `dart-3.11`): pure `append.dart` (idempotent ingest ported from
   `convex/reviews.ts` `appendReviewEvents` — skip by `clientOpId`, collect touched
   `(entityType, entityId)`, event-triggered derive) + pure `derive.dart` (folds each entity's

@@ -32,7 +32,7 @@ Future<dynamic> main(final dynamic context) async {
   if (userId.isEmpty) {
     return context.res.json(
       <String, dynamic>{'error': 'unauthenticated: missing x-appwrite-user-id'},
-      statusCode: 401,
+      401,
     );
   }
 
@@ -48,7 +48,7 @@ Future<dynamic> main(final dynamic context) async {
   } on AppendRejection catch (e) {
     return context.res.json(
       <String, dynamic>{'error': e.message},
-      statusCode: 400,
+      400,
     );
   }
 
