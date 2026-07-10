@@ -1,0 +1,130 @@
+#!/usr/bin/env node
+// docs_bundle — export the engineering manual as one priming context artifact.
+//
+// Concatenates the manual index plus selected chapters into a single, deterministic
+// plain-text bundle, prefixed with a generated table of contents and per-chapter
+// token estimates (chars/4). Built so a fresh session — a Claude executor, or cheap
+// hosted inference (NVIDIA NIM, Cerebras) — can be primed with exactly the chapters
+// a task needs. See docs/manual/12-meta.mdx.
+//
+//   node scripts/docs_bundle --all                 # whole book + token totals
+//   node scripts/docs_bundle --chapters sync        # standards preamble + sync only
+//   node scripts/docs_bundle --chapters state,data   # comma-separated names or numbers
+//
+// Output is deterministic for a given tree (no timestamps). Subset bundles always
+// include the standards chapter so the rules travel with any subset.
+
+'use strict';
+const fs = require('fs');
+const path = require('path');
+
+const MANUAL_DIR = 'docs/manual';
+const PREAMBLE = 'standards';   // always included in a subset so rules stand alone
+
+function parseFrontmatter(text) {
+  const m = text.match(/^---\n([\s\S]*?)\n---\n([\s\S]*)$/);
+  if (!m) return null;
+  const fm = {};
+  for (const raw of m[1].split('\n')) {
+    const kv = raw.match(/^([A-Za-z_]+):\s*(.*)$/);
+    if (kv && kv[1] !== 'watches') {
+      const v = kv[2].trim();
+      fm[kv[1]] = v === 'null' || v === '' ? null : v.replace(/^["']|["']$/g, '');
+    }
+  }
+  return { fm, body: m[2] };
+}
+
+const estTokens = (s) => Math.ceil(s.length / 4);
+
+function loadChapters() {
+  return fs.readdirSync(MANUAL_DIR)
+    .filter((f) => f.endsWith('.mdx'))
+    .map((f) => {
+      const file = path.join(MANUAL_DIR, f);
+      const raw = fs.readFileSync(file, 'utf8');
+      const p = parseFrontmatter(raw);
+      if (!p) return null;
+      return {
+        base: f,
+        file,
+        raw,
+        name: p.fm.name || f.replace(/\.mdx$/, ''),
+        title: p.fm.title || p.fm.name || f,
+        order: Number.isFinite(+p.fm.order) ? +p.fm.order : 999,
+        status: p.fm.status,
+      };
+    })
+    .filter(Boolean)
+    .sort((a, b) => a.order - b.order);
+}
+
+function parseArgs(argv) {
+  const args = argv.slice(2);
+  if (args.includes('--all')) return { all: true, chapters: null };
+  const i = args.indexOf('--chapters');
+  if (i !== -1 && args[i + 1]) {
+    return { all: false, chapters: args[i + 1].split(',').map((s) => s.trim()).filter(Boolean) };
+  }
+  return null;
+}
+
+function main() {
+  const parsed = parseArgs(process.argv);
+  if (!parsed) {
+    process.stderr.write('usage: docs_bundle --all | --chapters <name[,name...]>\n');
+    process.exit(2);
+  }
+  const all = loadChapters();
+  const byName = new Map(all.map((c) => [c.name, c]));
+  const index = all.find((c) => c.name === 'index');
+  const bodyChapters = all.filter((c) => c.name !== 'index');
+
+  let selected;
+  if (parsed.all) {
+    selected = bodyChapters;
+  } else {
+    const want = new Set(parsed.chapters);
+    // resolve by name or numeric order (e.g. "4" -> sync)
+    const resolve = (tok) => byName.get(tok) || all.find((c) => String(c.order) === tok);
+    const picked = [];
+    for (const tok of parsed.chapters) {
+      const c = resolve(tok);
+      if (!c) { process.stderr.write(`unknown chapter: ${tok}\n`); process.exit(2); }
+      picked.push(c);
+    }
+    // always include the standards preamble
+    if (!picked.some((c) => c.name === PREAMBLE) && byName.has(PREAMBLE)) picked.push(byName.get(PREAMBLE));
+    const seen = new Set();
+    selected = picked
+      .filter((c) => c.name !== 'index' && !seen.has(c.name) && seen.add(c.name))
+      .sort((a, b) => a.order - b.order);
+  }
+
+  const parts = index ? [index, ...selected] : selected;
+  const rows = parts.map((c) => ({ c, tokens: estTokens(c.raw) }));
+  const total = rows.reduce((n, r) => n + r.tokens, 0);
+
+  const out = [];
+  out.push('# Breakdex Engineering Manual — Priming Bundle');
+  out.push('');
+  out.push(parsed.all ? '_Scope: --all (whole manual)_' : `_Scope: --chapters ${parsed.chapters.join(',')} (+ standards preamble)_`);
+  out.push('');
+  out.push(`## Contents (${rows.length} sections, ~${total} tokens)`);
+  out.push('');
+  out.push('| # | name | title | ~tokens |');
+  out.push('| --- | --- | --- | --- |');
+  for (const r of rows) out.push(`| ${r.c.order} | ${r.c.name} | ${r.c.title} | ${r.tokens} |`);
+  out.push(`| | | **total** | **${total}** |`);
+  out.push('');
+  for (const r of rows) {
+    out.push('');
+    out.push(`===== ${r.c.name} — ${r.c.title} (${r.c.file}, ~${r.tokens} tokens) =====`);
+    out.push('');
+    out.push(r.c.raw.trimEnd());
+    out.push('');
+  }
+  process.stdout.write(out.join('\n') + '\n');
+}
+
+main();

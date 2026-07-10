@@ -2,8 +2,8 @@
 title: Manual Meta & Calibration
 name: meta
 order: 12
-status: stub
-verified: null
+status: verified
+verified: d58d309
 watches:
   - scripts/docs_ledger_check
   - scripts/docs_bundle
@@ -11,24 +11,95 @@ watches:
 
 # Manual Meta & Calibration
 
-> **Status: stub.** Scope outline below; authored in Phases 4–5.
+How the manual stays honest, how it primes a fresh session, and the record of what it can be
+trusted to delegate. Two scripts implement this chapter; both are git-plumbing / string
+concatenation with no network and no model.
 
-How the manual stays honest, and the record of what it can be trusted to delegate.
+## Primitives
 
-## Will cover
+**The ledger frontmatter.** Every chapter declares three fields the tooling reads:
 
-- **The docs ledger:** the `watches` / `verified` / `status` frontmatter contract, and
-  `scripts/docs_ledger_check` (git-plumbing drift detection + `--json` work orders).
-- **The priming bundle:** `scripts/docs_bundle` (`--all` / `--chapters`, deterministic
-  output, TOC + token estimates, standards preamble always included).
-- **Priming dry-run record:** the calibration table — for each dry-run, the task, model
-  used, bundle subset, token weight, and outcome — so future delegation decisions are
-  grounded in evidence, not optimism.
+```yaml
+watches:            # path globs the chapter is truth about
+  - lib/core/sync/**
+verified: d58d309   # the commit the chapter was last checked against
+status: verified    # stub | draft | verified
+```
+
+`watches` is the set of code a chapter claims to describe. `verified` is the baseline commit its
+claims were checked against (binary truth — [`#test-1`](./09-standards.mdx#test-1)). `status`
+gates the check: only `verified` chapters with a non-null `verified` and non-empty `watches` are
+candidates for drift.
+
+**Stale.** A verified chapter is *stale* when any `watches` path changed in `verified..HEAD`.
+Staleness is mechanical and total — it says "watched code moved since you last checked," not
+"the chapter is wrong." The response is to re-check the chapter against HEAD and bump `verified`
+(in the same commit as the code change — [`#ledger-2`](./09-standards.mdx#ledger-2)).
+
+**Work order.** The machine-readable description of one stale chapter:
+`{chapter, watches, verified, changed_files, diff_stat}` — everything an executor needs to update
+the chapter and bump `verified` without repo-wide search.
+
+**Priming bundle.** A deterministic plain-text concatenation of the index plus selected chapters,
+prefixed with a TOC and per-chapter token estimates — the context you load a fresh session with.
+
+## `scripts/docs_ledger_check` — the drift gate
+
+```
+node scripts/docs_ledger_check          # human report; exit 1 if any chapter stale
+node scripts/docs_ledger_check --json    # {stale:[work orders], errors:[]}
+```
+
+For each candidate chapter it runs `git diff --name-only <verified> HEAD -- <watches>` using
+`:(glob)` pathspecs (so `**`/`*` behave like shell globs), and reports any chapter with a
+non-empty diff. It runs in CI ([Testing → What CI actually gates](./08-testing-and-verification.mdx));
+`checkout` uses `fetch-depth: 0` so a chapter's `verified` commit is reachable.
+
+**The detect → work order → execute pipeline.** Detection is this script. A work order (`--json`)
+is model-agnostic: mechanical drift (a renamed file, a new enum case) can be handed to cheap
+hosted inference primed with the bundle; conceptual drift (a seam changed meaning) goes to the
+teacher/executor pipeline. That routing is a per-order human decision — automating it is a
+non-goal until the ledger has produced real work orders to calibrate against.
+
+> **First-run provenance.** The check's first real run caught genuine drift: two Appwrite Function
+> commits landed concurrently, so `appwrite.config.json`/`ROADMAP.md` had moved since the
+> chapters' `ea237a1` baseline. The [Sync](./04-sync.mdx) chapter was updated (the Functions now
+> exist in `functions/`) and re-verified in the same commit — the pipeline working end to end on
+> day one.
+
+## `scripts/docs_bundle` — the priming export
+
+```
+node scripts/docs_bundle --all                 # whole manual + token totals
+node scripts/docs_bundle --chapters sync        # standards preamble + sync only
+node scripts/docs_bundle --chapters state,data   # comma-separated names (or numbers)
+```
+
+It concatenates the index + selected chapters into one artifact with a generated TOC and
+per-chapter token estimates (chars/4 — a budgeting estimate, not a billing count). Two properties
+are load-bearing:
+
+- **Deterministic.** No timestamps; two runs on the same tree are byte-identical. (Verified:
+  `--all` produces identical output across runs — ~33k tokens, ~131 KB.)
+- **Standards travel with every subset.** A `--chapters` bundle always appends the
+  [standards](./09-standards.mdx) chapter, so the rules a review cites are never missing from a
+  primed context.
+
+Subsetting exists because cheap-model contexts are small: prime with exactly the chapters a task
+touches. No embeddings, no RAG, no server — if that is ever needed it is a new change.
 
 ## Calibration log
 
-_(populated by the Phase 5.2 dry-run)_
+Each row records a real priming dry-run: prime a fresh session with a bundle subset **only**, give
+it a small real seam task, and record whether the bundle was sufficient. This is the evidence base
+for future delegation decisions — grounded, not optimistic.
 
-| Date | Task | Model | Bundle subset | Token weight | Outcome |
-| --- | --- | --- | --- | --- | --- |
-| — | — | — | — | — | — |
+| Date | Task | Model | Bundle subset (~tokens) | Outcome |
+| --- | --- | --- | --- | --- |
+| 2026-07-10 | Plan adding a `TapArchive` event to the MoveDetail machine (state/event/transition/effect + governing standards), plan-only, no repo access | Claude (Opus 4.8) subagent | `state` (~6.7k) | **State-layer plan correct & convention-matching (~90% self-rated).** Cited the right standards (`state-1..4`, `async-1/2`, `data-4`, web-mirror, `ledger-1/2`). Overall confidence ~62%: correctly identified the gap — the `state` subset omits the [Data Layer](./03-data-layer.mdx) chapter, so archive *persistence* (new column + migration vs. existing flag) was unknowable. **Finding: cross-seam tasks (state + data) must prime `--chapters state,data`, not `state` alone.** The bundle was sufficient for the layer it covered and honest about the layer it didn't. |
+
+**Calibration takeaways (update as rows accrue):**
+- A single-chapter subset is sufficient for a task confined to that seam; it under-serves a task
+  that crosses seams. Prime the union of the seams a task touches.
+- The manual made the primed session *cite the right standards and refuse to guess* the data layer
+  it hadn't been given — the desired failure mode (honest gap, not confident error).

@@ -57,10 +57,10 @@
 
 ## 5. Student priming bundle
 
-- [ ] 5.1 Bundle script (`--all` / `--chapters`, TOC + token estimates, deterministic
+- [x] 5.1 Bundle script (`--all` / `--chapters`, TOC + token estimates, deterministic
       output, standards preamble always included). Validate: two runs byte-identical;
       subset bundle reports totals.
-- [ ] 5.2 Priming dry-run: fresh session + bundle only + one small real seam task; record
+- [x] 5.2 Priming dry-run: fresh session + bundle only + one small real seam task; record
       task, model, subset, token weight, outcome in the manual meta chapter.
 
 ## 6. Close-out
