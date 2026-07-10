@@ -92,13 +92,37 @@
 
 ## Phase 1: Appwrite schema + server functions (additive; shadow only)
 
-- [ ] 1.1 Author the database schema (Appwrite CLI config, committed): tables mirroring the
+- [x] 1.1 Author the database schema (Appwrite CLI config, committed): tables mirroring the
   Convex schema's envelope — `moves`, `combos`, `comboMoves`, `reviewEvents` (append-only),
   `fsrsCards` (derived), `decks`, `deckMoves`, plus `legacyIdentities` (D3) and `tombstones`.
   Every descriptive table carries: local-row `id`, `userId`, `updatedAt` (ms since epoch, int),
   `clientOpId`, payload JSON, video-pointer fields only (Drive file id + content hash — never
   bytes). Row-level permissions: owner-only read/write via user role. Indexes on
   `(userId, updatedAt)` per table.
+  **Done 2026-07-10.** Authored into root `appwrite.config.json`: database `breakdex` + 9 tables
+  (5 descriptive: moves/combos/comboMoves/decks/deckMoves; reviewEvents; fsrsCards;
+  legacyIdentities; tombstones). **Decisions (deviations documented):**
+  (1) **TablesDB model** (`tablesDB`+`tables`+`columns`+`rowSecurity`), not legacy
+  `databases`/`collections`/`attributes` — matches the 0.3-proven headless path (`appwrite push
+  tables`) and CLI-v22 canonical naming.
+  (2) **Video pointer stays INSIDE the `payload` JSON column**, not promoted to separate typed
+  `driveFileId`/`contentHash` columns. D4 says Appwrite stores pointers "exactly as the
+  `SyncBackend` contract models" — and `SyncRecord.json` (mirroring Convex `v.any()`) carries the
+  Drive pointer inside the payload. Separate columns would dual-write the same data and break the
+  1:1 contract mapping the ported parity tests (D6) gate on. "video-pointer fields only, never
+  bytes" is honored as the payload constraint. Descriptive envelope = `id`/`userId`/`updatedAt`/
+  `clientOpId`/`payload`.
+  (3) `updatedAt`/`reviewedAt`/`deletedAt`/`due` = `integer` with min/max omitted → Appwrite's
+  default integer range (64-bit) covers ms-epoch; avoids JSON precision loss from spelling an
+  INT64 max literal.
+  (4) Added a **`by_user_id`** index per descriptive table (beyond the spec's `(userId,
+  updatedAt)`) — sync-push's per-record LWW (1.2) must look up the stored row by `(userId, id)`;
+  load-bearing, not scope creep. reviewEvents also indexes `(userId, clientOpId)` for idempotency.
+  (5) **Owner-only per-row perms**: `rowSecurity: true` + empty table-level `$permissions`; the
+  sync-push Function (API key) stamps `read/update/delete` for `user:<userId>` at write time.
+  (6) Every `required: true` column carries an explicit `default: null` (CLI `ConfigSchema` rule).
+  **Verified (binary truth):** config passes the CLI's own strict `ConfigSchema.safeParse` — the
+  exact validator `appwrite push` runs — 0 issues. Live deploy is 1.5 (not run here; author-only).
 - [ ] 1.2 Implement the **`sync-push` Function (Dart runtime)**: accepts a batched
   upserts+tombstones payload, enforces server-side LWW per record (skip if stored `updatedAt` is
   strictly newer), enforces `clientOpId` idempotency (replay never double-applies), writes

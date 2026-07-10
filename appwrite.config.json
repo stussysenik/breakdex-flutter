@@ -1,4 +1,182 @@
 {
     "projectId": "6a50f25b000e15631ad0",
-    "projectName": "Breakdex"
+    "projectName": "Breakdex",
+    "tablesDB": [
+        {
+            "$id": "breakdex",
+            "name": "Breakdex",
+            "enabled": true
+        }
+    ],
+    "tables": [
+        {
+            "$id": "moves",
+            "databaseId": "breakdex",
+            "name": "moves",
+            "$permissions": [],
+            "rowSecurity": true,
+            "columns": [
+                { "key": "id", "type": "string", "size": 128, "required": true, "default": null },
+                { "key": "userId", "type": "string", "size": 64, "required": true, "default": null },
+                { "key": "updatedAt", "type": "integer", "required": true, "default": null },
+                { "key": "clientOpId", "type": "string", "size": 128, "required": true, "default": null },
+                { "key": "payload", "type": "string", "size": 1000000, "required": true, "default": null }
+            ],
+            "indexes": [
+                { "key": "by_user_id", "type": "key", "columns": ["userId", "id"] },
+                { "key": "by_user_updatedAt", "type": "key", "columns": ["userId", "updatedAt"] }
+            ]
+        },
+        {
+            "$id": "combos",
+            "databaseId": "breakdex",
+            "name": "combos",
+            "$permissions": [],
+            "rowSecurity": true,
+            "columns": [
+                { "key": "id", "type": "string", "size": 128, "required": true, "default": null },
+                { "key": "userId", "type": "string", "size": 64, "required": true, "default": null },
+                { "key": "updatedAt", "type": "integer", "required": true, "default": null },
+                { "key": "clientOpId", "type": "string", "size": 128, "required": true, "default": null },
+                { "key": "payload", "type": "string", "size": 1000000, "required": true, "default": null }
+            ],
+            "indexes": [
+                { "key": "by_user_id", "type": "key", "columns": ["userId", "id"] },
+                { "key": "by_user_updatedAt", "type": "key", "columns": ["userId", "updatedAt"] }
+            ]
+        },
+        {
+            "$id": "comboMoves",
+            "databaseId": "breakdex",
+            "name": "comboMoves",
+            "$permissions": [],
+            "rowSecurity": true,
+            "columns": [
+                { "key": "id", "type": "string", "size": 128, "required": true, "default": null },
+                { "key": "userId", "type": "string", "size": 64, "required": true, "default": null },
+                { "key": "updatedAt", "type": "integer", "required": true, "default": null },
+                { "key": "clientOpId", "type": "string", "size": 128, "required": true, "default": null },
+                { "key": "payload", "type": "string", "size": 1000000, "required": true, "default": null }
+            ],
+            "indexes": [
+                { "key": "by_user_id", "type": "key", "columns": ["userId", "id"] },
+                { "key": "by_user_updatedAt", "type": "key", "columns": ["userId", "updatedAt"] }
+            ]
+        },
+        {
+            "$id": "decks",
+            "databaseId": "breakdex",
+            "name": "decks",
+            "$permissions": [],
+            "rowSecurity": true,
+            "columns": [
+                { "key": "id", "type": "string", "size": 128, "required": true, "default": null },
+                { "key": "userId", "type": "string", "size": 64, "required": true, "default": null },
+                { "key": "updatedAt", "type": "integer", "required": true, "default": null },
+                { "key": "clientOpId", "type": "string", "size": 128, "required": true, "default": null },
+                { "key": "payload", "type": "string", "size": 1000000, "required": true, "default": null }
+            ],
+            "indexes": [
+                { "key": "by_user_id", "type": "key", "columns": ["userId", "id"] },
+                { "key": "by_user_updatedAt", "type": "key", "columns": ["userId", "updatedAt"] }
+            ]
+        },
+        {
+            "$id": "deckMoves",
+            "databaseId": "breakdex",
+            "name": "deckMoves",
+            "$permissions": [],
+            "rowSecurity": true,
+            "columns": [
+                { "key": "id", "type": "string", "size": 128, "required": true, "default": null },
+                { "key": "userId", "type": "string", "size": 64, "required": true, "default": null },
+                { "key": "updatedAt", "type": "integer", "required": true, "default": null },
+                { "key": "clientOpId", "type": "string", "size": 128, "required": true, "default": null },
+                { "key": "payload", "type": "string", "size": 1000000, "required": true, "default": null }
+            ],
+            "indexes": [
+                { "key": "by_user_id", "type": "key", "columns": ["userId", "id"] },
+                { "key": "by_user_updatedAt", "type": "key", "columns": ["userId", "updatedAt"] }
+            ]
+        },
+        {
+            "$id": "reviewEvents",
+            "databaseId": "breakdex",
+            "name": "reviewEvents",
+            "$permissions": [],
+            "rowSecurity": true,
+            "columns": [
+                { "key": "id", "type": "string", "size": 128, "required": true, "default": null },
+                { "key": "userId", "type": "string", "size": 64, "required": true, "default": null },
+                { "key": "entityId", "type": "string", "size": 128, "required": true, "default": null },
+                { "key": "entityType", "type": "string", "size": 32, "required": true, "default": null },
+                { "key": "rating", "type": "integer", "required": true, "default": null, "min": 0, "max": 3 },
+                { "key": "reviewedAt", "type": "integer", "required": true, "default": null },
+                { "key": "clientOpId", "type": "string", "size": 128, "required": true, "default": null }
+            ],
+            "indexes": [
+                { "key": "by_user_entity", "type": "key", "columns": ["userId", "entityType", "entityId", "reviewedAt"] },
+                { "key": "by_user_clientOpId", "type": "key", "columns": ["userId", "clientOpId"] },
+                { "key": "by_user_reviewedAt", "type": "key", "columns": ["userId", "reviewedAt"] }
+            ]
+        },
+        {
+            "$id": "fsrsCards",
+            "databaseId": "breakdex",
+            "name": "fsrsCards",
+            "$permissions": [],
+            "rowSecurity": true,
+            "columns": [
+                { "key": "entityId", "type": "string", "size": 128, "required": true, "default": null },
+                { "key": "entityType", "type": "string", "size": 32, "required": true, "default": null },
+                { "key": "userId", "type": "string", "size": 64, "required": true, "default": null },
+                { "key": "stability", "type": "double", "required": false },
+                { "key": "difficulty", "type": "double", "required": false },
+                { "key": "due", "type": "integer", "required": true, "default": null },
+                { "key": "state", "type": "integer", "required": true, "default": null, "min": 0, "max": 3 },
+                { "key": "lastEventOpId", "type": "string", "size": 128, "required": false },
+                { "key": "updatedAt", "type": "integer", "required": true, "default": null }
+            ],
+            "indexes": [
+                { "key": "by_user_entity", "type": "key", "columns": ["userId", "entityType", "entityId"] },
+                { "key": "by_user_updatedAt", "type": "key", "columns": ["userId", "updatedAt"] }
+            ]
+        },
+        {
+            "$id": "legacyIdentities",
+            "databaseId": "breakdex",
+            "name": "legacyIdentities",
+            "$permissions": [],
+            "rowSecurity": true,
+            "columns": [
+                { "key": "firebaseUid", "type": "string", "size": 128, "required": true, "default": null },
+                { "key": "appwriteUserId", "type": "string", "size": 64, "required": true, "default": null },
+                { "key": "email", "type": "string", "size": 320, "required": true, "default": null },
+                { "key": "createdAt", "type": "integer", "required": false }
+            ],
+            "indexes": [
+                { "key": "by_firebaseUid", "type": "key", "columns": ["firebaseUid"] },
+                { "key": "by_appwriteUserId", "type": "key", "columns": ["appwriteUserId"] },
+                { "key": "by_email", "type": "key", "columns": ["email"] }
+            ]
+        },
+        {
+            "$id": "tombstones",
+            "databaseId": "breakdex",
+            "name": "tombstones",
+            "$permissions": [],
+            "rowSecurity": true,
+            "columns": [
+                { "key": "id", "type": "string", "size": 128, "required": true, "default": null },
+                { "key": "entityType", "type": "string", "size": 32, "required": true, "default": null },
+                { "key": "userId", "type": "string", "size": 64, "required": true, "default": null },
+                { "key": "deletedAt", "type": "integer", "required": true, "default": null },
+                { "key": "clientOpId", "type": "string", "size": 128, "required": true, "default": null }
+            ],
+            "indexes": [
+                { "key": "by_user_entity_deletedAt", "type": "key", "columns": ["userId", "entityType", "deletedAt"] },
+                { "key": "by_user_deletedAt", "type": "key", "columns": ["userId", "deletedAt"] }
+            ]
+        }
+    ]
 }

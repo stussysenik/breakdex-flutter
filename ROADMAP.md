@@ -22,11 +22,16 @@
 > same commit**. Nothing else starts until this block says so.
 
 - **Change:** `migrate-canonical-backend-to-appwrite`
-- **Next task:** `1.1` — author the Appwrite database schema into the committed
-  `appwrite.config.json` (tables mirroring the Convex envelope: `moves`, `combos`, `comboMoves`,
-  `reviewEvents` append-only, + LWW clock/tombstone fields). Pure repo work; no owner gate.
-- **Then:** 1.2–1.5 (sync Functions + `appwrite push` deploy)
-- **State notes (updated 2026-07-10):** 0.1 + 0.3 DONE. **0.4 repo-half DONE** — Convex stanza
+- **Next task:** `1.2` — implement the **`sync-push` Appwrite Function (Dart runtime)**: batched
+  upserts+tombstones, server-side per-record LWW (skip if stored `updatedAt` strictly newer),
+  `clientOpId` idempotency, tombstones-not-deletes, reject `fsrsCard` pushes / `reviewEvent`
+  deletes. Port `convex/sync.ts` semantics; parity-test against the same fixtures. No owner gate.
+- **Then:** 1.3 (`sync-pull` + server cursor) → 1.4 (`reviews-append` + FSRS derive) → 1.5 (deploy)
+- **State notes (updated 2026-07-10):** 0.1 + 0.3 DONE. **1.1 DONE** — `appwrite.config.json` now
+  holds database `breakdex` + 9 tables (5 descriptive + reviewEvents/fsrsCards/legacyIdentities/
+  tombstones), TablesDB model, `rowSecurity` owner-only, video pointer inside the `payload` JSON
+  column (contract-faithful, not separate columns); passes the CLI's strict `ConfigSchema`
+  validator (binary truth); live deploy deferred to 1.5. **0.4 repo-half DONE** — Convex stanza
   (`CONVEX_URL`/`CONVEX_SITE_URL` + deploy comments) removed from gitignored `.env.local`, no live
   code depends on them; only residual is the owner console-delete of the *empty* Convex project
   `brilliant-mongoose-46` (nothing deployed → zero risk), so 0.4's box stays `[ ]` on that click
