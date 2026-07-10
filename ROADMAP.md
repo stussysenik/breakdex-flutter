@@ -22,17 +22,18 @@
 > same commit**. Nothing else starts until this block says so.
 
 - **Change:** `migrate-canonical-backend-to-appwrite`
-- **Next task:** `1R.3` — Min-version gate: config-driven update prompt (soft nag vs hard block
-  per config), messaging from `RemoteConfig.updateMessage`; test with a fixture config; never
-  triggerable while `minSupportedBuild ≤ current build`. Reads `remoteConfigProvider` (1R.2) +
-  the app's current build number (`package_info_plus` is already a dep). Not owner-gated.
-  Parallel-allowed: Phase 2.1 client plumbing (`AppwriteSyncBackend` behind the seam) — the
-  live substrate + shared `appwriteClientProvider` (from 1R.2) both exist now.
-- **Then:** 1R.4 validation (unit-test half largely met by 1R.2's suite; the "flip a flag in
-  console → running client" **manual proof is session-gated** — needs Phase 3 identity since
-  `appConfig` perm is `read("users")`, so a session-less client currently degrades to compiled
-  defaults, which is correct); Phase 2 client plumbing (2.1→…) per D8; Phase 3 identity remains
-  gated on `0.2` (Google OAuth, owner-run).
+- **Next task:** `1R.4` — Validation: unit tests for model/fallback ordering (**largely met** by
+  1R.2's + 1R.3's suites; add any residual gap) + the **manual** proof that flipping a flag in the
+  Appwrite console reaches a running client with no redeploy. The manual half is **session-gated**:
+  `appConfig` perm is `read("users")`, so a session-less pre-Phase-3 client degrades to compiled
+  defaults (correct) — real console→client proof needs Phase 3 identity. Owner action still open:
+  create the singleton row `current` in the `appConfig` table (console). Not owner-gated for the
+  unit half. Parallel-allowed: **Phase 2.1** client plumbing (`AppwriteSyncBackend` behind the
+  seam) — the live substrate + shared `appwriteClientProvider` (from 1R.2) both exist now.
+- **Then:** Phase 2 client plumbing (2.1→…) per D8; Phase 3 identity remains gated on `0.2`
+  (Google OAuth, owner-run). Once the `dart:io`-seam WIP lands (app builds again), **wire
+  `UpdateGatePrompt` at the app root** (3-line wrap of the navigator child) — deferred from 1R.3
+  because a wired overlay can't be device-verified while the app doesn't build.
 - **⚠ Ops hazard (learned 1R.1):** do **NOT** run `appwrite push tables --all` against the live
   `breakdex` project. This CLI (22.6.1) diffs omitted-`array` (config) vs `array:false` (deployed)
   as a change and **recreates existing columns** — it deleted all of `moves`'s attributes mid-run
@@ -53,7 +54,17 @@
   + `remoteConfigProvider`). `appwrite ^25.2.0` added; 9/9 unit tests green; analyze clean; no
   caller wired. **Owner action for 1R.4 live proof:** create row `current` in the `appConfig`
   table (console) — one row, per-cohort variance via `cohortProfiles`.
-  0.1 + 0.3 DONE. **Phase 1 COMPLETE — 1.5 DONE (live):**
+  **1R.3 DONE (2026-07-10):** pure sealed `UpdateGate` (`None`/`SoftNag`/`HardBlock`) +
+  `UpdateGate.evaluate({config, currentBuild})` (hard-block iff `current < minSupportedBuild`
+  [strict — **never blocks while `min ≤ current`**]; soft-nag iff supported & `latestBuild >
+  current`; message = `updateMessage`→blank falls back to compiled copy) + `updateGateProvider`
+  (over `remoteConfigProvider.valueOrNull ?? defaults` + `currentBuildProvider`) + `UpdateGatePrompt`
+  root wrapper (none→passthrough, soft→dismissible strip, hard→keyed non-dismissible barrier).
+  Build source = **`AppMetadata.buildNumber`** — the roadmap's "`package_info_plus` is already a
+  dep" was **wrong** (it isn't); gated on the repo's existing build identity behind a
+  test-overridable seam, non-numeric ⇒ 0 ⇒ un-fireable. `flutter test test/core/config/` **22/22
+  green**; analyze clean; inert at defaults (build 3 vs min0/latest0 ⇒ none); **unwired** (see NOW
+  "Then"). 0.1 + 0.3 DONE. **Phase 1 COMPLETE — 1.5 DONE (live):**
   schema (`breakdex` TablesDB + 9 tables, `status ready`) + all 3 Functions (`sync-push`,
   `sync-pull`, `reviews-append`) deployed & built on `dart-3.11`, live `scopes` match config,
   **14/14 curl smoke green** against Cloud (real-JWT invocations). Live smoke caught + fixed a

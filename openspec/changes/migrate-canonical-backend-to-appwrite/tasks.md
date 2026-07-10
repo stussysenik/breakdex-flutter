@@ -264,9 +264,26 @@
   `test/core/config/remote_config_test.dart` **9/9 green** (decode/coerce/cohort/malformed/
   defaults/cache-roundtrip + all 4 fallback-ladder cases + realtime delivery). No caller wired,
   no behavior change at defaults.
-- [ ] 1R.3 Min-version gate: config-driven update prompt (soft nag vs hard block per config),
+- [x] 1R.3 Min-version gate: config-driven update prompt (soft nag vs hard block per config),
   messaging text from `updateMessage`. Tested with a fixture config; never triggerable while
   `minSupportedBuild` ≤ current build.
+  DONE 2026-07-10: `lib/core/config/` — `update_gate.dart` (pure sealed `UpdateGate` =
+  `None`/`SoftNag`/`HardBlock` + `UpdateGate.evaluate({config, currentBuild})`: hard-block iff
+  `currentBuild < minSupportedBuild` [strict `<` ⇒ **never blocks while `min ≤ current`**], soft-nag
+  iff supported and `latestBuild > currentBuild`, else none; message resolves `updateMessage`→blank
+  falls back to compiled copy, trimmed), `update_gate_providers.dart` (`currentBuildProvider` from
+  `AppMetadata.buildNumber` [repo's build identity — **`package_info_plus` is NOT a dep**; seam is
+  test-overridable & later swappable to a platform read; non-numeric ⇒ `0` ⇒ gate un-fireable,
+  fail-open] + `updateGateProvider` combining `remoteConfigProvider.valueOrNull ?? defaults`),
+  `widgets/update_gate_prompt.dart` (root wrapper: none→child verbatim, soft→dismissible bottom
+  strip [`secondaryContainer`], hard→keyed non-dismissible `ModalBarrier` + centered "Update
+  required" card; tokens via `colorScheme`/`AppSpacing`/`AppTypography`). Inert at defaults
+  (min=0,latest=0 vs build 3 ⇒ none). `dart analyze` clean; `flutter test test/core/config/`
+  **22/22 green** (10 gate-logic incl. boundary-equality + precedence + blank/trim messaging; 3
+  widget: none-passthrough, soft dismiss, hard non-dismissible). **Not wired at app root** (matches
+  1R.2 discipline + app doesn't build at HEAD from the unrelated `dart:io`-seam WIP, so a wired
+  overlay can't be device-verified). Wiring = 3 lines wrapping the navigator child once the seam
+  lands; live-fetch proof is 1R.4 (session-gated).
 - [ ] 1R.4 Validation: unit tests for model/fallback ordering; manual proof that flipping a flag
   in Appwrite console reaches a running client without redeploy.
 
