@@ -22,17 +22,20 @@
 > same commit**. Nothing else starts until this block says so.
 
 - **Change:** `migrate-canonical-backend-to-appwrite`
-- **Next task:** `0.4` — decommission the unused Convex Cloud project (`brilliant-mongoose-46`)
-  and remove `CONVEX_URL`/`CONVEX_SITE_URL` from `.env.local` (nothing deployed → nothing to
-  migrate; the console-delete step is owner-gated, the `.env.local` cleanup is not).
-- **Then:** 1.1 (schema authored into `appwrite.config.json`) → 1.2–1.5 (sync Functions + deploy)
-- **State notes (updated 2026-07-10):** 0.1 + 0.3 DONE. Appwrite CLI v22.6.1 installed; root
+- **Next task:** `1.1` — author the Appwrite database schema into the committed
+  `appwrite.config.json` (tables mirroring the Convex envelope: `moves`, `combos`, `comboMoves`,
+  `reviewEvents` append-only, + LWW clock/tombstone fields). Pure repo work; no owner gate.
+- **Then:** 1.2–1.5 (sync Functions + `appwrite push` deploy)
+- **State notes (updated 2026-07-10):** 0.1 + 0.3 DONE. **0.4 repo-half DONE** — Convex stanza
+  (`CONVEX_URL`/`CONVEX_SITE_URL` + deploy comments) removed from gitignored `.env.local`, no live
+  code depends on them; only residual is the owner console-delete of the *empty* Convex project
+  `brilliant-mongoose-46` (nothing deployed → zero risk), so 0.4's box stays `[ ]` on that click
+  alone — no repo work left, does not block 1.1+. Appwrite CLI v22.6.1 installed; root
   `appwrite.config.json` committed (projectId + projectName, no secrets); headless deploy proven
   via API key (`appwrite push tables|functions` reach the live project — 0 tables/functions, ready
-  for 1.1). Cloud project LIVE, key works, 0 databases/functions. **0.2 (Google OAuth console
-  setup) is owner-gated** but does NOT block 0.4–1.5 — only Phase 3 identity needs it. Env naming
-  drift (`APPWRITE_SECRET`/`APPWRITE_API_ENDPOINT` vs D2's `APPWRITE_API_KEY`/`APPWRITE_ENDPOINT`)
-  to reconcile in the Phase 2 client-plumbing task.
+  for 1.1). **0.2 (Google OAuth console setup) is owner-gated** but does NOT block 1.1–1.5 — only
+  Phase 3 identity needs it. Env naming drift (`APPWRITE_SECRET`/`APPWRITE_API_ENDPOINT` vs D2's
+  `APPWRITE_API_KEY`/`APPWRITE_ENDPOINT`) to reconcile in the Phase 2 client-plumbing task.
 - **Parallel-allowed track (no Appwrite dependency):** `add-web-first-release-and-monetization`
   Phase 1.0 (web Drift 1.0.2 → plugin audit 1.0.3 → `flutter build web` gate 1.0.5).
 

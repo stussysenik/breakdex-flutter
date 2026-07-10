@@ -82,6 +82,13 @@
   Committed artifact: `appwrite.config.json` (projectId + projectName only; secret-scanned clean).
 - [ ] 0.4 Decommission the unused Convex Cloud project (`brilliant-mongoose-46`) and remove
   `CONVEX_URL`/`CONVEX_SITE_URL` from `.env.local`. Nothing was deployed; nothing to migrate.
+  **Repo-half done 2026-07-10:** removed the Convex stanza (`CONVEX_URL`/`CONVEX_SITE_URL` +
+  deploy-key/deployment comments) from gitignored `.env.local`; verified no live code depends on
+  them (only stale docstring/TODO mentions in `convex_http_transport.dart` +`providers.dart`,
+  which belong to the still-carried SyncBackend transport, out of Phase 0 scope). **Residual is
+  owner-gated:** the console-delete of `brilliant-mongoose-46` needs a Convex dashboard login I
+  don't hold — but the project is empty (nothing deployed → zero data/migration risk), so box
+  stays `[ ]` only on that click; no repo work remains.
 
 ## Phase 1: Appwrite schema + server functions (additive; shadow only)
 
