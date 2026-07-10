@@ -1,0 +1,208 @@
+---
+title: Design System
+name: design-system
+order: 5
+status: verified
+verified: ea237a1
+watches:
+  - lib/core/design/**
+  - docs/design/TOKENS.md
+---
+
+# Design System
+
+`docs/design/TOKENS.md` is the single source of truth for every design token in this
+codebase. This chapter does not restate those values — it **indexes** that file and adds only
+what the source table cannot express: the conformance contract between the token file and its
+consumers, and the **motion doctrine** that constrains which tokens a product surface may
+touch. Read `../design/TOKENS.md` first; read this for the rules around it.
+
+The runtime tokens live in `lib/core/design/` — five files, all `abstract final class`
+namespaces of `static const` (or `static final`) members:
+
+| File | Namespace(s) |
+| --- | --- |
+| `colors.dart` | `AppColors` |
+| `spacing.dart` | `AppSpacing`, `AppRadius`, **`AppMotion`** |
+| `typography.dart` | `AppFontFamily` (enum), `AppTypography` |
+| `depth.dart` | `AppDepth` |
+| `theme.dart` | `AppShadows`, `AppSemanticTheme` (the `ThemeExtension`) |
+
+## Primitives
+
+**Token.** A single named design decision — a color, a length, a duration, a curve, a type
+style — exposed as one `static` member of an `AppX` namespace. A token is *canonical*: the
+Dart constant **is** the value, not a copy of one. `AppSpacing.md` is `16.0`; there is no
+prior authority it derives from. `TOKENS.md` is the human-readable registry of these
+constants, not their origin.
+
+**The grid.** All spatial tokens (`AppSpacing`, `AppRadius`) are logical-pixel multiples of an
+**8pt base** with a **4pt half-step**. The ladder is `4, 8, 12, 16, 24, 32, 48, 64`
+(`AppSpacing.xxs … xxxl`), plus `screenEdge = 24`. Every gap, pad, and inset a product surface
+uses resolves to one of these — a raw numeric literal that equals a token value is a
+conformance violation, not a shortcut.
+
+**Type.** **Inter** is the default family. The static `AppTypography` scale
+(`titleLarge … labelSmall`) hardcodes `fontFamily: 'Inter'` and follows the IBM Carbon
+productive ramp (`12/14/16/20/24/32`). `AppFontFamily` is the user-selectable axis
+(`inter · outfit · poppins · spaceMono · jetBrainsMono · system`); `AppTypography.textTheme(...)`
+rebuilds the whole `TextTheme` for a chosen family, while the static getters stay Inter for
+call sites that render before the theme resolves.
+
+**Motion family.** Every visible product animation belongs to **exactly one of two
+families**, and both are composed from `AppMotion` tokens:
+
+- **Fluid** — the default. Animates **opacity and translation only**. Flow transitions ride
+  `AppMotion.fluid` (an alias of `productive` = `Curves.easeInOutCubic`); appearances ride
+  `AppMotion.entrance` (`easeOut`). Durations sit in the `fast01`–`moderate02` band.
+- **Morph** — continuity of **one persistent identity** as its size/shape/position changes.
+  Reserved for the state change of a *single* element (a panel expanding, a card reordering).
+  Rides `AppMotion.morph`, an alias of `springGentle`, over `moderate02`.
+
+**`AppMotion`.** The motion namespace (in `spacing.dart` — see gotcha below). It holds the
+duration ladder (`fast01 = 70ms … slow01 = 400ms`), the named curves, the two spring curves,
+the two family aliases, and the three **ambient** durations that sit *outside* the two
+families (`shimmerLoop`, `loaderLoop`, `celebrate` — loops and one-shot celebrations, not
+transitions).
+
+## Reasoning from the primitives
+
+Four invariants follow directly:
+
+1. **One value, one authority.** Because the Dart constant *is* the token, there is no drift
+   between "the spec" and "the runtime" for Dart consumers — the spec is generated *from* the
+   constants. `TOKENS.md`'s Dart column is therefore normative; its CSS column is aspirational
+   (see invariant 4).
+2. **Grid conformance is decidable.** A spatial literal is legal iff it is off-scale by intent
+   or resolves to a token. `EdgeInsets.all(16)` is a violation (it equals `AppSpacing.md`);
+   `EdgeInsets.all(15)` is a design decision to justify or snap. Reviews decide this
+   mechanically for the on-scale case ([`#grid-1`](./09-standards.mdx#grid-1)).
+3. **A raw `Curve`/`Duration` on a product surface names its own family — badly.** The two
+   families exist so that motion is *legible from the call site*: reading `AppMotion.morph`
+   tells a reviewer "this is shape continuity of one element." A bare `Duration(milliseconds:
+   240)` or `Curves.easeInOutCubic` erases that classification and is a review violation
+   ([`#motion-1`](./09-standards.mdx#motion-1)).
+4. **CSS conformance is a contract, not a fact.** `web-mirror/`'s `tokens.css` is **planned,
+   not present** — every CSS-property cell in `TOKENS.md` reads `(planned)`, and no
+   `tokens.css` file exists in the repo today. When it lands it must mirror the Dart constants
+   1:1 (the same relationship the XState web machines have to Flutter machines — [State
+   Architecture](./02-state-architecture.mdx#the-web-mirror-rule)). Until then, "both conform
+   to `TOKENS.md`" describes the intended invariant, not the current tree.
+
+## The motion doctrine, encoded
+
+The doctrine is not a convention note — it is compiled into the token surface. From
+`lib/core/design/spacing.dart`:
+
+```dart
+// --- Motion families (doctrine) ---
+// Reference these aliases so the family a call site belongs to is legible.
+
+/// **Fluid** default curve — flow transitions (opacity/translation). Alias
+/// of [productive]; appearances use [entrance] instead.
+static const Curve fluid = productive;
+
+/// **Morph** curve — continuity of one persistent identity. Alias of
+/// [springGentle].
+static final Curve morph = springGentle;
+```
+
+The aliases carry no new numeric value; they exist purely to make the *family* readable at the
+call site. `fluid` and `morph` point at `productive` (`easeInOutCubic`) and `springGentle`
+respectively, so choosing a family and choosing a curve are the same keystroke.
+
+**The delight budget.** Overshoot curves — `AppMotion.expressive` (`easeOutBack`) and
+`AppMotion.springBouncy` — sit outside the two families. They are permitted *only* with a
+justified call-site comment ([`#motion-2`](./09-standards.mdx#motion-2)); they are for
+checkmarks, FAB entrances, card flips — moments that earn a "pop," never default flow.
+
+**Ambient durations.** `shimmerLoop` (1200ms), `loaderLoop` (800ms), and `celebrate` (1500ms)
+are named in `AppMotion` precisely so that loops and celebrations — which are neither Fluid nor
+Morph transitions — still never introduce a raw literal onto a product surface. The signature
+two-dot `AppLoader` is the canonical Fluid-family loading motif: two dots translate in opposite
+phase on `fluid` and cross at center, one `loaderLoop` per half-sweep.
+
+**The springs are real physics.** `springGentle`/`springBouncy` are not eased Béziers — they
+wrap a `SpringSimulation` mapped onto Flutter's `0→1` `Curve` contract:
+
+```dart
+class _SpringCurve extends Curve {
+  _SpringCurve(final SpringDescription spring)
+      : _simulation = SpringSimulation(spring, 0, 1, 0);
+  final SpringSimulation _simulation;
+
+  @override
+  double transformInternal(final double t) =>
+      _simulation.x(t * 3).clamp(0.0, 1.0); // 0→1 curve param treated as 0→3s
+}
+```
+
+The curve parameter `0→1` is stretched to `0→3` seconds (long enough for any reasonable spring
+to settle) and the output is clamped to `[0, 1]` — the clamped overshoot is the visible bounce.
+
+## Radius conformance and the pill idiom
+
+`AppRadius` shares the grid (`4, 8, 12, 16, 24, 32`) plus `pill = 500` (fully round). A
+`BorderRadius.circular(N)` whose `N` equals a token is a violation, resolved from the named
+token; the fully-round idiom `circular(999)` maps to `AppRadius.pill`. Off-scale bespoke radii
+that no token expresses are the exception — snapping them to the grid is a design decision, not
+a mechanical swap ([`#token-1`](./09-standards.mdx#token-1)).
+
+## Accessible palettes are an orthogonal axis
+
+Color is selected on three independent axes: theme brightness (light/dark), viewing mode
+(`mono*` grayscale), and `AccessiblePalette` (`standard · deuteranopia · monochrome`). The
+deuteranopia ramp is Okabe–Ito, applied to app-controlled semantic signals (learning states +
+review ratings) only; surfaces and accent are untouched. Selection is **non-destructive** — a
+user's accent/state/rating colors survive in prefs and return exactly when the palette is set
+back to `standard`. Critically, **color is never the sole carrier of meaning**: rating buttons
+pair color with a distinct icon *and* label (WCAG 1.4.1), state pills pair color with a label.
+Full ramps are in `../design/TOKENS.md#accessible-palettes` — not duplicated here.
+
+## Gotchas
+
+- **`AppMotion` lives in `spacing.dart`, not a `motion.dart`.** There is no `motion.dart`.
+  Grepping for the motion tokens by filename misses; grep the symbol `AppMotion`. It is
+  co-located with `AppSpacing`/`AppRadius` for historical reasons.
+- **`springGentle`/`springBouncy`/`morph` are `static final`, not `const`.** They construct a
+  `_SpringCurve` (which builds a `SpringSimulation`) at first access, so they cannot be
+  `const`. Everything else in `AppMotion` is `const`. Do not "fix" them to `const`.
+- **The static `AppTypography` getters are Inter-locked.** They hardcode `'Inter'` and ignore
+  the user's `AppFontFamily`. Only `AppTypography.textTheme(...)` (what `AppTheme` feeds
+  Material) honors the selection. A widget reaching for `AppTypography.titleLarge` directly
+  renders Inter regardless of the user's font preference — usually correct, occasionally a bug.
+- **The CSS column is a promise.** `tokens.css` does not exist yet; treat any web-side token
+  claim as unverified until the file lands and is checked against the Dart constants.
+- **Shadows and depth are functions, not constants.** `AppShadows.soft(brightness)` and the
+  `AppDepth` levels vary by brightness/elevation and inline their own `Color(0x…)` shadow
+  alphas — these ARGB shadow colors are *not* on the grid and are not `AppColors` tokens; do
+  not flag them as color-token violations.
+
+## Standards this chapter enforces
+
+- No raw `Curve`/`Duration` literal drives visible motion on a product surface; use an
+  `AppMotion` token and let the alias name its family (Fluid or Morph).
+  ([`#motion-1`](./09-standards.mdx#motion-1))
+- Overshoot curves (`expressive`, `springBouncy`) require a justified call-site comment; they
+  are outside the two families. ([`#motion-2`](./09-standards.mdx#motion-2))
+- Every visible transition is classifiable as **Fluid** (opacity/translation, default) or
+  **Morph** (one element's shape/layout continuity); nothing else is a transition.
+  ([`#motion-3`](./09-standards.mdx#motion-3))
+- A spatial or radius literal equal to a token value resolves to the named token; off-scale
+  values are justified, not silently inlined. ([`#grid-1`](./09-standards.mdx#grid-1),
+  [`#token-1`](./09-standards.mdx#token-1))
+- Product text uses the `AppTypography` scale (Inter default); ad-hoc `TextStyle`
+  sizes/weights that duplicate a scale step are violations. ([`#type-1`](./09-standards.mdx#type-1))
+- Color never carries meaning alone — pair it with icon/shape/label on every semantic signal.
+  ([`#token-2`](./09-standards.mdx#token-2))
+
+## Indexes
+
+- `docs/design/TOKENS.md` — **the** token source of truth; all values live there, never here.
+- `lib/core/design/spacing.dart` — `AppSpacing`, `AppRadius`, and `AppMotion` (the motion
+  doctrine + `_SpringCurve`).
+- `lib/core/design/typography.dart` — `AppTypography` scale + `AppFontFamily` enum.
+- `lib/core/design/colors.dart` — `AppColors` (incl. deuteranopia ramp).
+- `lib/core/design/theme.dart` — `AppShadows`, `AppSemanticTheme` (the `ThemeExtension` that
+  wires tokens into `BuildContext`).
+- root `CLAUDE.md` — the "Design tokens" and "Motion doctrine" locked rulings.

@@ -1,0 +1,186 @@
+---
+title: Localization
+name: l10n
+order: 6
+status: verified
+verified: ea237a1
+watches:
+  - lib/l10n/**
+  - scripts/check_l10n.sh
+  - l10n.yaml
+  - lib/core/services/entity_names_service.dart
+  - .github/workflows/ci.yml
+---
+
+# Localization
+
+Every user-facing string in this app is a lookup, not a literal. The source of truth is one **ARB file** (`lib/l10n/app_en.arb`); the Flutter toolchain compiles it into a typed Dart class (`lib/l10n/gen/`); a shell gate (`scripts/check_l10n.sh`) fails CI if the compiled output drifts from the source. This chapter defines those primitives, then reasons up from them: the "no hardcoded strings" discipline, the drift gate, and the parametric-noun composition rule are all consequences of the same design — copy is *data*, resolved at render time, never spliced from fragments.
+
+## Primitives
+
+**ARB file (`lib/l10n/app_en.arb`).** Application Resource Bundle — a flat JSON map from a *message key* to its English template, with a parallel `@key` metadata object carrying a human `description` and typed `placeholders`. It is the single authored artifact; `@@locale` at the top declares it the `en` template. There is exactly one ARB (`ls lib/l10n/*.arb` → only `app_en.arb`) — this app ships one locale today, but every string already flows through the mechanism, so adding `app_es.arb` is additive, not a rewrite.
+
+```jsonc
+"saveEntityButton": "SAVE {entity}",
+"@saveEntityButton": {
+  "description": "Primary save button on the add sheet. Composes the user's parametric noun …",
+  "placeholders": { "entity": { "type": "String", "example": "MOVE" } }
+}
+```
+
+A message is one of three shapes: a **literal** (`"navReview": "Review"`), a **placeholder template** (`"SAVE {entity}"`, one or more typed holes), or an **ICU plural** (`"{count, plural, =0{No {itemPlural}} =1{1 {itemSingular}} other{{count} {itemPlural}}}"`). The placeholder `type` (`String` / `int`) is load-bearing: it becomes the Dart parameter type.
+
+**Generated localizations (`lib/l10n/gen/`).** The compiled output — two committed Dart files:
+
+- `app_localizations.dart` — the abstract `AppLocalizations` class. Each message becomes either a getter (literals) or a method (templates/plurals) whose signature is derived from the placeholders:
+  ```dart
+  String emptyLibraryTitle(String itemPlural);
+  String itemCount(int count, String itemSingular, String itemPlural);
+  String saveEntityButton(String entity);
+  String mdRenameEntity(String entity);
+  ```
+- `app_localizations_en.dart` — the `en` subclass, where a plural message becomes an `intl.Intl.pluralLogic(...)` call, not string surgery.
+
+Because the placeholders are typed, `l10n.itemCount("3", ...)` **does not compile** — the count hole is `int`. The type checker is the first localization gate.
+
+**The l10n gate (`scripts/check_l10n.sh`).** A CI step (`set -euo pipefail`) that proves the committed `gen/` is current with the ARB. It regenerates, then diffs:
+
+```bash
+flutter gen-l10n >/dev/null
+if ! git diff --quiet -- lib/l10n/gen; then
+  echo "❌ lib/l10n/gen is out of date. Run 'flutter gen-l10n' and commit the result:" >&2
+  git --no-pager diff --stat -- lib/l10n/gen >&2
+  exit 1
+fi
+echo "✅ lib/l10n/gen is up to date."
+```
+
+Read it literally: it enforces **exactly one invariant — the generated output on disk equals what the current ARB would produce.** Nothing else. It does not scan widgets for hardcoded strings, and it does not verify translation completeness across locales (there is only one locale). Those are separate disciplines, covered below and marked honestly.
+
+## The pipeline: ARB → `lib/l10n/gen/`
+
+Generation is declared in `l10n.yaml` at repo root and wired into `pubspec.yaml`:
+
+```yaml
+# l10n.yaml
+arb-dir: lib/l10n
+template-arb-file: app_en.arb
+output-dir: lib/l10n/gen
+output-localization-file: app_localizations.dart
+output-class: AppLocalizations
+nullable-getter: false
+```
+
+```yaml
+# pubspec.yaml
+flutter:
+  generate: true            # enables the gen-l10n build step
+```
+
+`nullable-getter: false` means `AppLocalizations.of(context)` returns a non-nullable instance — call sites write `AppLocalizations.of(context).appTitle`, never `...?.appTitle`. The delegate is registered in `main.dart` (`onGenerateTitle: (ctx) => AppLocalizations.of(ctx).appTitle`), and widgets resolve copy through a locally-bound `final l10n = AppLocalizations.of(context)`.
+
+The generator is invoked two ways, and this is the crux of the gate:
+
+1. **Implicitly**, by `flutter run` / `flutter build`, because `generate: true`. During local development the `gen/` files are refreshed on every build — so a developer *sees* their new string without thinking about generation.
+2. **Explicitly**, by `flutter gen-l10n`, which is what `check_l10n.sh` runs.
+
+The generated files are **committed to git** (not `.gitignore`d), unusually for generated output. The reason is the gate: CI (`.github/workflows/ci.yml`) does `flutter pub get` → `./scripts/check_l10n.sh` → `flutter analyze`, and the check only means something if there is a committed baseline to diff against. Committing `gen/` turns "did you regenerate?" into a mechanical `git diff` rather than a trust exercise.
+
+```
+edit app_en.arb  ─►  flutter gen-l10n  ─►  lib/l10n/gen/*.dart  ─►  git commit (both)
+                                                    ▲
+                        CI regenerates ─────────────┘  and fails if the diff is non-empty
+```
+
+## The gate is a drift check, not a lint
+
+The single most common misread of this system: assuming `check_l10n.sh` forbids hardcoded strings. **It does not.** Trace its four lines — it regenerates and diffs `lib/l10n/gen`. A widget full of `Text('Delete')` literals passes it cleanly, because that widget never touches the ARB and never perturbs `gen/`.
+
+The "no new hardcoded user-facing strings" rule lives one layer up, in `openspec/AGENTS.md` as a **review checklist item**, enforced by human/agent review with a grep aid, not by the script:
+
+> no *new* hard-coded user-facing string literals in widgets — grep gate `rg "Text('" lib/` on the diff should surface only pre-existing sites, not additions
+
+So the enforcement split is:
+
+| Concern | Enforced by | Automated? |
+| --- | --- | --- |
+| `gen/` is current with the ARB | `scripts/check_l10n.sh` in CI | **Yes** — hard fail |
+| Placeholder types match call sites | `flutter analyze` (typed getters/methods) | **Yes** — hard fail |
+| No new hardcoded literals in widgets | `openspec/AGENTS.md` review checklist + `rg` on the diff | **No** — review discipline |
+| Noun composition via placeholders, not concat | same review checklist | **No** — review discipline |
+
+Stating this precisely matters: an agent that "makes CI green" has proven staleness is absent, *not* that its copy is localized. The second and fourth rows are the reviewer's job.
+
+## Parametric noun composition
+
+The app lets the user rename the two core nouns — "Moves"/"Combos" become "Tricks"/"Flows" if they wish. That customization is **display-only**: the on-disk `Moves/` and `Combos/` directories are a storage contract untouched by renaming (`entity_names_service.dart` doc comment; see [Sync](./04-sync.mdx) for the storage layout). The four forms live in an immutable value type resolved from `SharedPreferences`:
+
+```dart
+// lib/core/services/entity_names_service.dart
+class EntityNames {
+  final String moveSingular, movePlural, comboSingular, comboPlural;
+  static const defaults = EntityNames(
+    moveSingular: 'Move', movePlural: 'Moves',
+    comboSingular: 'Combo', comboPlural: 'Combos');
+}
+final entityNamesProvider = NotifierProvider<EntityNamesNotifier, EntityNames>(...);
+```
+
+The composition rule is the payoff of the whole ARB design: **a localized string that mentions a user noun takes that noun as a placeholder; it never concatenates.** The ARB carries the sentence *shape*, the runtime supplies the noun.
+
+```dart
+// lib/features/flashcard_review/flashcard_review_screen.dart
+final entityNames = ref.watch(entityNamesProvider);
+Text(l10n.revAddEntity(entityNames.moveSingular));            // "Add a Move"
+Text(l10n.revAddFromArsenal(entityNames.movePlural.toLowerCase()));
+```
+
+with the ARB templates:
+
+```jsonc
+"revAddEntity":       "Add a {entity}",
+"saveEntityButton":   "SAVE {entity}",
+"mdRenameEntity":     "Rename {entity}",
+"mdDeleteUsedInCombos":
+  "This {entity} is currently used in {count} {comboPlural} (e.g. {comboName}). …",
+```
+
+Two properties follow, and they are exactly why concatenation is banned:
+
+1. **Word order is the translator's to choose.** `"Add a {entity}"` can reorder the noun in another language; `'Add a ' + noun` cannot. The hole is a joint the ARB can bend.
+2. **Casing is the caller's, not the string's.** The ARB templates are casing-neutral; call sites apply `.toLowerCase()` / `.toUpperCase()` (`revAddFromArsenal` lower-cases, `saveEntityButton` expects the caller to upper-case). Each `@key` description records the expected casing, e.g. *"Composes the parametric singular noun (caller upper-cases it)."*
+
+Grammatical number is handled by the **same placeholder mechanism composed with ICU plural** — `itemCount` takes both the `int count` *and* the singular/plural noun forms, so "No Moves" / "1 Move" / "3 Moves" is one message, not three concatenations:
+
+```jsonc
+"itemCount": "{count, plural, =0{No {itemPlural}} =1{1 {itemSingular}} other{{count} {itemPlural}}}"
+```
+
+This is the intent the ARB descriptions repeatedly assert ("Composes … via a placeholder rather than concatenation"). Note the honest boundary: this rule is **enforced by review, not by tooling** — `check_l10n.sh` cannot tell `l10n.revAddEntity(noun)` from `'Add a ' + noun` if a developer wrote the latter. The ARB is *designed* so the correct path is the easy path; the reviewer holds the line.
+
+## Gotchas
+
+- **Editing the ARB without regenerating and committing `gen/` breaks CI, not your local run.** Your `flutter run` refreshes `gen/` implicitly (`generate: true`), so it works on your machine; CI regenerates from scratch and the diff fails. Run `flutter gen-l10n` and commit *both* `gen/` files with the ARB change.
+- **A new placeholder is a breaking signature change.** Adding `{count}` to a message turns a getter into a method (or adds a parameter); every call site must update or `flutter analyze` fails. This is a feature — the type checker finds every caller.
+- **The gate passing ≠ copy is localized.** Green CI proves `gen/` is fresh. It says nothing about hardcoded `Text('…')` literals a diff may have introduced. Grep the diff (`rg "Text\('" lib/`).
+- **`nullable-getter: false` — never write `AppLocalizations.of(context)?`.** The getter is non-nullable by config; a `?.` is a smell that misunderstands the setup.
+- **Leading/trailing space in a literal is intentional data.** `"mdCountsSuffix": " counts"` carries a leading space by design (the `@` description says so). Don't "clean" ARB whitespace.
+- **The `DELETE` control word stays untranslated.** `setClearConfirmPrompt` asks the user to type the literal `DELETE`; its description flags that the control word does not localize even though the sentence around it does.
+
+## Standards this chapter enforces
+
+- User-facing copy is resolved through `AppLocalizations`; no new hardcoded string literals in widgets. ([`#l10n-1`](./09-standards.mdx#l10n-1))
+- `lib/l10n/gen/` is committed and kept current; `scripts/check_l10n.sh` must pass in CI. ([`#l10n-2`](./09-standards.mdx#l10n-2))
+- Parametric nouns (`entityNamesProvider`) compose into localized templates via typed placeholders, never by string concatenation; casing is applied at the call site. ([`#l10n-3`](./09-standards.mdx#l10n-3))
+- Every ARB message carries an `@key` `description`; placeholders are typed (`String`/`int`). ([`#l10n-4`](./09-standards.mdx#l10n-4))
+
+## Indexes
+
+- `lib/l10n/app_en.arb` — the authored source of every string (the template ARB).
+- `lib/l10n/gen/app_localizations.dart` — generated abstract `AppLocalizations` (typed getters/methods).
+- `lib/l10n/gen/app_localizations_en.dart` — generated `en` implementation (ICU plural logic).
+- [`../../scripts/check_l10n.sh`](../../scripts/check_l10n.sh) — the drift gate (read in full; four lines).
+- `l10n.yaml` — generator config (arb-dir, output-dir, class name, non-nullable getter).
+- `lib/core/services/entity_names_service.dart` — the parametric-noun value type + provider.
+- `openspec/AGENTS.md` — the review checklist rows for hardcoded strings and noun composition.
+- `.github/workflows/ci.yml` — where the gate runs (`pub get` → `check_l10n.sh` → `analyze`).

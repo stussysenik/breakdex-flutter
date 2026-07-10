@@ -1,0 +1,183 @@
+---
+title: State Architecture
+name: state
+order: 2
+status: verified
+verified: ea237a1
+watches:
+  - lib/core/state_machines/**
+---
+
+# State Architecture
+
+`Machine<S,E>` is the state primitive for every screen in this codebase — a zero-dependency,
+sealed-class state framework, the local equivalent of Swift's TCA. Source:
+`lib/core/state_machines/machine.dart` (~114 lines; read it in full). It is **locked**: screen
+state is not routed around it, and it is not replaced by a package.
+
+This chapter defines the primitives, then reasons up from them: everything the framework
+guarantees is a consequence of these four definitions.
+
+## Primitives
+
+**State (`S`).** A sealed hierarchy of immutable value types. Each concrete state is a
+`final class` with a `const` constructor carrying exactly the fields that state needs, and
+nothing more. There is no shared mutable base state — data a state doesn't need, a state
+doesn't hold.
+
+**Event (`E`).** A sealed hierarchy of immutable value types naming every stimulus the
+machine can receive. Events fall into four kinds, all in one `E`:
+user intents (`TapRename`), dialog interactions (`Confirm`, `Cancel`, `UpdateDraft`), async
+results (`SaveSucceeded`, `SaveFailed`, `NameTaken`), and inbound data (`StreamUpdate`).
+
+**Transition.** The single pure function that defines the machine:
+
+```dart
+S? transition(S state, E event);
+```
+
+Total over `(S, E)`. Returns the next state, or `null` when the event is not defined for the
+current state. `null` is an *identity transition*: logged in debug, otherwise ignored. It
+performs no I/O — reading it tells you the entire legal state graph and nothing else.
+
+**Entry action.** An impure procedure keyed to a *destination* state, run after the machine
+enters it. This is the only place side effects (DB writes, album sync, navigation) occur. An
+async entry action does not block; it feeds its result back as an `E` when it completes.
+
+From these four, the machine's operating loop is forced:
+
+```
+intent E → transition (pure) → new state → entry action (impure) → result E → transition → …
+```
+
+The machine never `await`s. Asynchrony is modelled as a pair: a "…ing" state you transition
+*into*, and a result event you transition *out* on. `SavingName` is a state, not a suspended
+call.
+
+## Reasoning from the primitives
+
+Three properties follow directly, with no extra machinery:
+
+1. **Impossible states are unreachable.** A state exists only if some transition constructs
+   it. To forbid a situation, you omit its transition; there is no runtime guard to get
+   wrong. (See the dirty-guard below — it is *pure omission*.)
+2. **The UI is a total function of `S`.** Because states are disjoint `final class`es, the
+   render layer is an exhaustive `switch` on `S` — the compiler proves every state is
+   handled. A spinner belongs to `SavingName`, a conflict banner to `NameConflict`; the UI
+   holds no state of its own.
+3. **The transition table is the spec.** `transition` is pure and total, so the `switch` in
+   `machine.dart` *is* the legal state graph — auditable without running anything. This is
+   what lets the web mirror (below) be verified against it line-for-line.
+
+## Anatomy: the four-file machine
+
+The canonical production machine is `move_detail/` (the move-detail CRUD surface). Every
+machine ships the same four files:
+
+| File | Defines |
+| --- | --- |
+| `state.dart` | the sealed `S` — `Idle`, `Renaming`, `ValidatingName`, `SavingName`, `NameConflict`, `ConfirmingDelete`, `Gone`, … |
+| `event.dart` | the sealed `E` — `TapRename`, `SaveName`, `NameAvailable`/`NameTaken`, `SaveSucceeded`/`SaveFailed`, `StreamUpdate`, … |
+| `machine.dart` | the pure `transition` — one `switch` over the record pattern `(s, e)` |
+| `provider.dart` | the Riverpod binding + the entry actions |
+
+The transition is a `switch` on `(s, e)` and reads as a literal transition table. A save flow
+is a chain of distinct states:
+
+```dart
+MoveDetailState? transition(MoveDetailState s, MoveDetailEvent e) => switch ((s, e)) {
+  (Idle(),        TapRename())             => Renaming(s.move, draftName: s.move.name),
+  (Renaming(),    SaveName(name: final n)) => ValidatingName(s.move, candidateName: n),
+  (ValidatingName(candidateName: final cn), NameAvailable()) => SavingName(s.move, newName: cn),
+  (ValidatingName(candidateName: final cn), NameTaken())     => NameConflict(s.move, conflictingName: cn),
+  (SavingName(),  SaveSucceeded(move: final m)) => Idle(m),
+  (SavingName(),  SaveFailed())                 => Idle(s.move),
+  // …
+  _ => null, // undefined (state, event) → identity → ignored
+};
+```
+
+Read top to bottom: `Idle → Renaming → ValidatingName → {SavingName | NameConflict} → Idle`.
+Every intermediate is a state the UI can render precisely.
+
+## Entry actions: the two effect paths — a precise distinction
+
+The base `Machine` provides `onEntry(S)` / `onExit(S)` hooks and a `send(E)` that runs
+`transition`, swaps state, fires the hooks, and offers events to child machines first. That is
+the framework's built-in effect model.
+
+**Screen machines do not use `Machine.send`.** They wrap the machine in a Riverpod `Notifier`
+that re-runs the transition and dispatches effects itself, because effects need `ref`. From
+`move_detail/provider.dart`:
+
+```dart
+void send(MoveDetailEvent event) {
+  final next = _machine.transition(state, event);
+  if (next != null) {
+    state = next;                 // Riverpod's state := the machine's next state
+    _executeEntryActions(next);   // effects keyed off the entered state
+  }
+}
+```
+
+`_executeEntryActions` is a `switch` on the destination: `SavingName → _saveName`,
+`Deleting → _deleteMove`, `Duplicating → _duplicateMove`. Each does its I/O and then calls
+`send(SaveSucceeded(...))` / `send(SaveFailed(...))`, re-entering the loop.
+
+> **The rule that resolves the ambiguity:** effects that need `ref` (every screen machine)
+> live in the Notifier's `_executeEntryActions`. `Machine.onEntry` is for self-contained or
+> child machines with no Riverpod dependency. Do not put screen I/O in `onEntry`.
+
+`provider.dart` opens with `// ignore_for_file: discarded_futures` — the entry actions are
+deliberate fire-and-forget from the UI layer. That suppression is **scoped to providers**; new
+sync/codec files still get the lint ([`#async-1`](./09-standards.mdx#async-1)).
+
+## The dirty-guard is pure omission
+
+The sync layer holds inbound realtime updates while a record is being edited, so keystrokes are
+never clobbered ([Sync](./04-sync.mdx)). At the state layer this is **not a boolean** — it is a
+missing row. Inbound data is the `StreamUpdate` event, and the table accepts it only from
+`Idle`:
+
+```dart
+(Idle(), StreamUpdate(move: final m)) => Idle(m),   // accepted
+// no (Renaming(), StreamUpdate) row; no (SavingName(), StreamUpdate) row → returns null → dropped
+```
+
+In any editing/saving state, `StreamUpdate` matches nothing, `transition` returns `null`, and
+the remote update is discarded while the draft survives. The guard is the *absence* of
+transitions — which is precisely why "remote overwrite mid-rename" is not a representable
+state (property 1, above).
+
+## Child machines
+
+`registerChild` composes machines: a child sees events before the parent. In `send`, each
+child's `transition` is offered the event first; if one returns non-null, the child transitions
+and the parent never sees it. Use this for a nested sub-flow owning a slice of events (e.g. an
+embedded storage-action machine). Do not use it to share mutable state between machines — the
+only channel between a child and a parent is the event stream.
+
+## The web-mirror rule
+
+The web studio (`web-mirror/`, Next.js 15) re-implements each machine in **XState v5, 1:1**:
+same states, same events, same guards — different runtime, identical transition table. Because
+`transition` is a pure, auditable graph (property 3), the two encodings are checkable against
+each other. Adding a state/event to a mirrored Flutter machine without updating its XState
+counterpart is client drift, and a review violation.
+
+## Standards this chapter enforces
+
+- Every concrete `S` is an immutable `final class` with a `const` constructor.
+  ([`#state-1`](./09-standards.mdx#state-1))
+- No `await` inside `transition`; async is a "…ing" state + a result event.
+  ([`#state-2`](./09-standards.mdx#state-2))
+- Forbid situations by omitting transitions, never by a runtime flag.
+  ([`#state-3`](./09-standards.mdx#state-3))
+- Screen effects live in the Notifier's entry-action switch, not `Machine.onEntry`.
+  ([`#state-4`](./09-standards.mdx#state-4))
+
+## Indexes
+
+- `lib/core/state_machines/machine.dart` — the framework (short; read in full).
+- `lib/core/state_machines/move_detail/` — the canonical four-file production machine.
+- root `CLAUDE.md` — the "`Machine<S,E>` is locked" ruling.

@@ -1,0 +1,97 @@
+---
+title: Product Doctrine
+name: product-doctrine
+order: 1
+status: verified
+verified: ea237a1
+watches:
+  - lib/core/models/**
+  - lib/core/domain/**
+---
+
+# Product Doctrine
+
+Breakdex's moat is not a feature list — it is an opinionated *composition model*. Every
+surface in the app is built from three atoms and the metadata that rides them. This chapter
+defines those atoms and the doctrine that keeps the product one coherent thing. It is the
+"why" the rest of the manual encodes; a feature that does not compose from these atoms does
+not belong.
+
+## Primitives: the atom model
+
+The product is `move → combo → set`, three atoms of increasing composition. Each is a
+first-class persisted entity (Drift data classes `Move`, `Combo`, `BreakdexSet`; see
+[Data Layer](./03-data-layer.mdx)).
+
+**Move.** The irreducible atom — one technique. Carries identity (`id`, `name`), a
+`category`, a `learningState`, a `count`, and an optional video pointer. A move is the unit of
+review and the unit of practice.
+
+**Combo.** An *ordered* composition of moves — "move-after-move." A combo is not a set of
+moves; it is a **sequence**, persisted as a join (`combo_moves`) that preserves order. The
+combo is where the product's opinion lives: transitions between moves are the craft, so the
+transition itself (`fromMove → toMove`) is modelled data, not an accident of ordering.
+
+**Set.** The top composition — an ordered arrangement of combos/moves into a performable
+whole (a round, a routine). `BreakdexSet` exists as its own table; a set composes combos the
+way a combo composes moves.
+
+**Beat/count metadata.** Beats and counts are **pre-planned metadata on the atoms**, not a
+separate timeline object. The beat grid *rides* the `count` field: a move's `count` is how
+many beats it occupies, and the grid falls out of summing counts along a combo. This is
+deliberate — there is no free-floating "timing track" to keep in sync with the moves, because
+timing *is* an attribute of the atoms.
+
+### Reasoning from the atoms
+
+Two invariants follow, and they are load-bearing across the codebase:
+
+1. **Everything reviewable is a move or a combo.** The review/practice engine operates on
+   `ReviewableItem`, a sealed type with exactly two cases — `ReviewableMove` and
+   `ReviewableCombo` (`lib/core/models/reviewable_item.dart`). Because it is sealed, every
+   consumer `switch`es exhaustively; adding a reviewable kind is a type-system event, not a
+   scattered `if`. FSRS scheduling is therefore polymorphic over `(entityId, entityType)`
+   rather than move-only (see [Data Layer](./03-data-layer.mdx)).
+2. **Composition is ordered and explicit.** A combo's meaning depends on order; a set's on the
+   order of combos. Ordering is stored (join tables with position), never inferred. Any feature
+   that treats a combo as an unordered bag of moves is wrong by construction.
+
+## Interface language: visual-first
+
+The chrome communicates through **visual anchors; text is for input and settings.** This is a
+doctrine, not a theme: a view mode, a membership control, or a review surface should read
+without prose. When you reach for a text label to explain a control, first ask whether a visual
+anchor (the move's own media, a positional cue, a color from the learning-state palette) can
+carry the meaning instead. The details and the three view modes live in the
+`redesign-visual-first-experience` spec; the standard the manual enforces is: **on product
+surfaces, prefer a visual anchor over a text label.**
+
+## Non-goals are doctrine, not omissions
+
+These were each considered and rejected on purpose. They are recorded so no future session
+re-derives them as "obvious missing features." (Full rationale: root `CLAUDE.md` → Non-goals.)
+
+| Rejected | Why it stays rejected |
+| --- | --- |
+| **E2EE** | Server-derived FSRS (an Appwrite Function) and web-studio rendering need server-readable plaintext. Posture is transport + secrets hygiene + per-user document permissions — see [Sync](./04-sync.mdx). |
+| **CRDTs** | Single-user private spaces; record-level LWW + tombstones is sufficient. Re-affirmed rejected. |
+| **Temporal / durable-workflow engine** | Idempotent LWW ops, cursors with rollback (Phase H), the upload spool, and Appwrite Functions already cover durability. |
+| **Shared / collaborative state** (crews, coaches, cross-user sharing) | Deferred entirely. The user model is private per-user sync; the owner is just user #1. |
+
+Reaching for any of these is a design regression. If a task seems to require one, that is the
+signal to escalate ([Executor Onboarding](./11-executor-onboarding.mdx)), not to build it.
+
+## Standards this chapter enforces
+
+- Every feature composes from `move → combo → set`; no parallel content model.
+  ([`#product-1`](./09-standards.mdx#product-1))
+- Composition order is persisted, never inferred. ([`#product-2`](./09-standards.mdx#product-2))
+- On product surfaces, prefer a visual anchor over a text label.
+  ([`#product-3`](./09-standards.mdx#product-3))
+
+## Indexes
+
+- `lib/core/models/reviewable_item.dart` — the sealed `ReviewableItem` (move | combo).
+- `docs/TECHSTACK.MD` — stack inventory.
+- root `CLAUDE.md` — the canonical-stack ruling table and the Non-goals list.
+- `docs/VISION.MD`, `docs/PRD.md` — product framing (out of manual scope; linked for context).

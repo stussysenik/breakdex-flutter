@@ -1,5 +1,8 @@
 # Tech Stack
 
+> **Manual:** Indexed by the [Breakdex Engineering Manual](manual/index.mdx) →
+> [Product Doctrine](manual/01-product-doctrine.mdx). This file stays the stack inventory.
+
 Breakdex is split into a product runtime, native bridges, release tooling, and a separate scientific workbench.
 
 ## Product Runtime

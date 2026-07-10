@@ -1,5 +1,8 @@
 # Hyperdata Ledger
 
+> **Manual:** Indexed by the [Breakdex Engineering Manual](manual/index.mdx) →
+> [Sync](manual/04-sync.mdx). The manual links here for backfill/ledger detail.
+
 ## Purpose
 
 This ledger records what Breakdex is trying to be at the system level: a move library, a practice engine, a transition map, and an analytics surface that all point toward better long-term learning.

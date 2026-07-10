@@ -1,0 +1,180 @@
+---
+title: Sync
+name: sync
+order: 4
+status: verified
+verified: ea237a1
+watches:
+  - lib/core/sync/**
+  - lib/core/services/sync_service.dart
+  - appwrite.config.json
+---
+
+# Sync
+
+Breakdex is **local-first**: Drift/SQLite on the device is the authoritative store, and a backend is a *shadow copy per entity* until that entity's two-way reconcile is verified. Sync never deletes or mutates a local row — it upserts records and propagates deletes as tombstones. Two disjoint planes cross the wire: **records** (moves, combos, reviews, decks — the metadata) travel through the `SyncBackend` contract; **blobs** (video bytes) travel through the `AssetStorageProvider`/`CloudProvider` contract and live on each user's own Google Drive. A record carries only a *pointer* to its bytes, never the bytes.
+
+The backend is **provider-agnostic by contract**. Appwrite is the canonical target (root `CLAUDE.md`); the codebase is mid-migration under a strangler-fig, and the concrete adapter that ships today is Convex's — see [Migration state](#migration-state-honest) for exactly what is wired versus specified. Everything in the Primitives section is provider-neutral and survives the vendor swap; that is the point of the seam.
+
+This chapter defines the primitives, then reasons up from them.
+
+## Primitives
+
+**`SyncBackend`.** The single, storage-agnostic door to the canonical metadata backend. Source: `lib/core/sync/sync_backend.dart` (read it in full — ~126 lines). An `abstract interface class` with exactly four members:
+
+```dart
+abstract interface class SyncBackend {
+  String get providerType;                          // e.g. 'convex', 'appwrite'
+  Future<void> push(SyncEntityType type, {          // client-authored changes
+    List<SyncRecord> upserts, List<SyncTombstone> deletes });
+  Future<SyncDelta> pull(SyncEntityType type, { DateTime? since });   // catch-up
+  Stream<SyncDelta> subscribe(SyncEntityType type); // eventual-realtime
+}
+```
+
+Implementations are the *only* code that touches a concrete vendor client. Callers (the `SyncService`, the backfill) depend on this interface, never on the vendor. Swapping Convex Cloud for self-hosted Appwrite changes only the implementation.
+
+**`SyncEntityType`.** The closed set of metadata entities that sync: `move`, `combo`, `comboMove`, `reviewEvent`, `deck`, `deckMove` — plus two with special algebra:
+- `reviewEvent` is **append-only** (each rating is an immutable event; it has no deletes).
+- `fsrsCard` is **derived server-side** by reducing the review-event log. Clients pull/subscribe it but **must never `push` it** — its scheduling state cannot be last-writer-wins overwritten, or the FSRS math skews. `push(fsrsCard, …)` throws `StateError`.
+
+**`SyncRecord`.** The immutable upsert payload for one record. DOP: the record's data is a plain, provider-neutral `Map<String, dynamic>`, not hidden inside an opaque object.
+
+```dart
+class SyncRecord {
+  final String id;                 // stable local row id — identity crosses the boundary
+  final SyncEntityType type;
+  final Map<String, dynamic> json; // JSON-safe payload (String/num/bool/null only)
+  final DateTime updatedAt;        // the LWW clock (lives OUTSIDE json)
+  final String clientOpId;         // idempotency key: same key ⇒ at-most-once apply
+}
+```
+
+Identity (`id`) and the LWW clock (`updatedAt`) are split *out* of `json` deliberately — the codec (`lib/core/sync/codecs/move_codec.dart`) reconstructs them positionally, and the merge preserves `updatedAt` verbatim rather than re-stamping it.
+
+**`SyncTombstone`.** An immutable soft-delete marker — `id`, `type`, `deletedAt`, `clientOpId`. A removal is *always* a tombstone, never a hard-delete, so user state stays recoverable and reconcilable. Backfill never fabricates one; a tombstone means a real user delete.
+
+**`SyncDelta` and the cursor.** A batch of changes for one entity type, returned by `pull` and emitted by `subscribe`:
+
+```dart
+class SyncDelta {
+  final List<SyncRecord> upserts;
+  final List<SyncTombstone> deletes;
+  final DateTime? cursor;          // high-water mark → feed to the next pull(since:)
+}
+```
+
+The **cursor** is the entity's own high-water mark, persisted per-entity so the next `pull` fetches only what changed. It is deliberately *not* the shared legacy `last_sync_at` — different backends have different clocks and delete horizons, so a shared cursor would silently skip records (audit A2). A missing cursor means "full pull".
+
+**LWW clock.** `updatedAt` on the record. Conflict resolution is **record-level last-writer-wins** on this field: a remote record replaces a local one only when it is *strictly newer*. Comparison is normalized to **whole seconds** (see [The LWW merge](#the-lww-merge)), because Drift stores `DateTime` as whole Unix seconds while backend records carry milliseconds.
+
+**Tombstone (the horizon).** A soft-delete has a **30-day grace period** before physical bytes are reclaimed. `TombstoneCleaner` (`lib/core/sync/tombstone_cleaner.dart`) hard-deletes local files, remote blob copies, and manifest rows only for assets tombstoned before `now − 30d`, and refuses to touch any asset still holding a non-deleted status (defense-in-depth).
+
+**Dirty-guard.** The rule that inbound realtime updates never clobber a keystroke mid-edit. It has two layers, one shipped, one specified — see [The dirty-guard](#the-dirty-guard).
+
+**Upload spool.** The durable, crash-recoverable queue of blob transfers (`sync_operations` table + `AssetSyncEngine`). This is the *video* plane, not the record plane — see [The upload spool](#the-upload-spool).
+
+**Drive pointer.** A record's reference to its video bytes: `videoPath` + `contentHash` (content-addressable). The bytes live on the user's own Google Drive quota; the backend holds the pointer and hash only — see [The Drive pointer model](#the-drive-pointer-model).
+
+## Reasoning from the primitives
+
+These invariants follow directly from the definitions above:
+
+1. **Drift is authoritative; the backend is a shadow.** Nothing in `SyncBackend`, the backfill, or the merge mutates or deletes a local row on the backend's behalf. The backfill service is *read-only against Drift* — it calls only query methods, never insert/update/delete (`lib/core/sync/backfill/sync_backfill_service.dart`). This is what makes running against real data safe.
+2. **Every mutation is idempotent.** `clientOpId` makes a push at-most-once: replaying the same op never double-applies. Re-running the backfill pushes the same deterministic `clientOpId`s and reconciles LWW, so a replay is a no-op ([`#sync-2`](./09-standards.mdx#sync-2)).
+3. **The two planes never cross.** Records carry pointers (`videoPath`/`contentHash`); bytes move only through `AssetStorageProvider`. `moveToSyncJson` is JSON-safe by construction, and its doc is explicit: *"Video bytes never appear here."* ([`#sync-1`](./09-standards.mdx#sync-1)).
+4. **Delete is recoverable.** A removal is a `SyncTombstone`, applied as a soft-delete, physically reclaimed only after the 30-day grace ([`#sync-3`](./09-standards.mdx#sync-3)).
+5. **Provider-agnostic.** Callers depend on `SyncBackend`; only the adapter knows the vendor (`providerType`). Vendor migration is an adapter swap, proven by the parity tests carrying across ([`#sync-5`](./09-standards.mdx#sync-5)).
+6. **Derived state is pull-only.** `fsrsCard` is computed server-side from `reviewEvent`s and is never pushed ([`#sync-6`](./09-standards.mdx#sync-6)).
+
+## The LWW merge
+
+The shipped merge is `SyncService._mergeMoveRecordLww` (`lib/core/services/sync_service.dart`). It is the template combos/reviews/decks replicate. Read the clock comparison precisely:
+
+```dart
+final localClock = existing.updatedAt ?? existing.createdAt;
+final localSec  = localClock.millisecondsSinceEpoch ~/ 1000;
+final remoteSec = record.updatedAt.millisecondsSinceEpoch ~/ 1000;
+if (localSec >= remoteSec) return false;   // keep local; drop remote
+await db.into(db.moves).insertOnConflictUpdate(moveFromSyncRecord(record));
+```
+
+Three subtleties, each load-bearing:
+
+- **Whole-second granularity.** Drift persists `DateTime` as whole Unix seconds; backend records carry milliseconds. Comparing at millisecond precision would make a truncated local row (always `.000`) look stale against any same-second remote. So both sides are floored to seconds before comparison (audit A3/H.2).
+- **Tie policy — the shipped client rule keeps local.** `localSec >= remoteSec` drops the remote, so **a remote must be a strictly-newer whole second to win.** This is the data-safety default: never clobber a local edit we cannot *prove* is older. **Subtlety worth flagging:** the server-side LWW policy specified for the Appwrite `sync-push` Function (design D5/A6c) is the opposite — *equal clocks → remote wins.* These are two different layers (a server reducing concurrent pushes vs. a client refusing to overwrite its own device) and the divergence is intentional, but it is a divergence — do not assume one tie rule holds end-to-end.
+- **No echo loop.** The merge writes straight to Drift via `insertOnConflictUpdate`, bypassing the sync-aware repository decorator, and preserves the remote `updatedAt` verbatim (`moveFromSyncRecord` sets `updatedAt: Value(record.updatedAt)`). A remote-origin write must never be re-stamped to `now()` or re-enqueued as a local change — either would loop the record back out. The whole merge loop runs inside one `db.transaction`, with per-record fault isolation: one malformed record is skipped and counted, never aborting the batch (H.3/H.4).
+
+## The dirty-guard
+
+The guard exists so realtime updates never overwrite a field the user is editing. It operates in two layers:
+
+**State layer — shipped, and it is pure omission.** Inbound data reaches a screen machine as a `StreamUpdate` event, and the transition table accepts it *only from `Idle`*. In any editing/saving state there is no matching row, `transition` returns `null`, and the remote update is dropped while the draft survives. This is not a boolean flag — it is a missing transition, which is why "remote overwrite mid-rename" is not a representable state. Full treatment in [State Architecture → The dirty-guard](./02-state-architecture.mdx) (the `(Idle(), StreamUpdate())` row and the deliberately-absent editing-state rows).
+
+**Sync-apply layer — specified, not yet shipped.** The refinement in `align-cross-client-foundations` (D6, tasks 4.1–4.2, currently unticked) upgrades *drop* to *hold*: the apply path consults the record's machine state and, for a dirty record, holds the inbound update in a **latest-wins queue of one**, applying it on save or discard rather than discarding it. Today's behavior is the simpler drop-not-hold: the merge writes to Drift, Drift's watch stream feeds the machine a `StreamUpdate`, and the state-layer guard drops it if the machine is not `Idle` — the keystroke is protected, but the dropped update is re-fetched on the next pull rather than replayed from a queue. Treat the held-queue semantics as the design target, not the current runtime.
+
+## Tombstones and the delete horizon
+
+Deletes are the last thing to cross any boundary. In the strangler-fig ordering, tombstone propagation is task-gated to the very end (D8, step 5), and the shipped dual-read explicitly **does not** apply deletes — it only ever upserts, because propagating a hard-delete across the boundary is the one destructive step. `TombstoneCleaner` runs inside the background sync cycle and enforces the 30-day grace before any physical reclamation, with a status re-check that refuses to clean an asset whose manifest is not actually soft-deleted.
+
+## The upload spool
+
+The blob plane is a durable operation queue, entirely separate from the record `SyncBackend`. `AssetSyncEngine` (`lib/core/sync/asset_sync_engine.dart`) drives it:
+
+- **Queue as rows.** `queueUpload`/`queueDownload` insert `SyncOperation` rows (`sync_operations` table) — deduplicated via `operationExists`, so a burst never enqueues the same transfer twice.
+- **Crash recovery.** Each cycle begins with `_recoverStaleOps`: operations stuck `in_progress` from a crashed session are re-queued. Durability comes from the row lifecycle (`queued → in_progress → completed | failed`), not an in-memory list.
+- **Exponential backoff.** `_retryFailed` retries with `min(2^retryCount · 5s, 300s)` — 5s, 10s, 20s, … capped at 5 minutes — and only once enough time has elapsed since the failure timestamp.
+- **Network-policy gating.** Every transfer consults `NetworkPolicy` (`canTransfer`, `maxConcurrentUploads`); large clips wait for WiFi. The provider owns *how* to transfer (chunking, resumable uploads); the engine owns *when*.
+- **Two-copy minimum, multi-sink.** `_uploadUnderprotected` pushes any asset below the copy-count minimum to every enabled `CloudProvider` (Drive, iCloud, S3), so bytes are never bet on a single sink.
+
+Note `BackgroundSyncManager` is a scheduling **stub** — the engine is fully functional, but periodic background execution (WorkManager/BGTaskScheduler) is TODO; today sync runs on app launch, on import, and on connectivity change via `triggerImmediate`.
+
+## The Drive pointer model
+
+Video bytes are canonical on **each user's own Google Drive quota** (design D4). This is the cheapest structure at scale — cost to the operator scales toward zero, and users already own their data. `GDriveProvider` (`lib/core/sync/providers/gdrive_provider.dart`) uses `DriveApi.driveFileScope` (file-level, not the broad `drive` scope — the security posture in root `CLAUDE.md`), storing videos content-addressable under `Breakdex/<contentHash>.mp4` so the web studio can play them with the user's own OAuth token.
+
+The backend stores **metadata + Drive pointers + content hashes only**, exactly as `SyncRecord` models. Locality is a first-class product concept: every video has a visible `device-only` / `cloud` / `both` state driven by the manifest and on-demand downloader. Appwrite Storage is an *additive-later* sink (thumbnails first, behind a flag, through the existing `CloudProvider` fan-out) — never the primary store.
+
+## Appwrite topology and env conventions
+
+The canonical backend schema is authored declaratively in root **`appwrite.config.json`** (Appwrite CLI headless deploy). Topology:
+
+- **One database** `breakdex`, **nine tables**: `moves`, `combos`, `comboMoves`, `decks`, `deckMoves`, `reviewEvents`, `fsrsCards`, `legacyIdentities`, `tombstones`.
+- **Uniform row shape.** Each descriptive table carries `id`, `userId`, `updatedAt` (integer ms — the LWW clock), `clientOpId`, and an opaque `payload` string (the JSON-safe record body, up to 1 MB). Indexes: `by_user_id (userId, id)` and `by_user_updatedAt (userId, updatedAt)` — the second is the cursor/high-water pull index.
+- **Per-user permissions.** `rowSecurity: true` on every table; a row is scoped to its owner via a trusted `x-appwrite-user-id`. This is the private-per-user model — no cross-user sharing, and the reason E2EE is a non-goal (server-derived FSRS needs readable plaintext; posture is transport + per-document permissions).
+- **Functions (Dart runtime `dart-3.11`).** `sync-push` performs server-side LWW + idempotency and applies N records atomically in one execution (working around Appwrite's lack of batched row mutations); `sync-pull` returns a `SyncDelta` plus a server cursor; the FSRS-derive Function imports the identical `fsrs: ^2.0.1` package the client uses, so scheduling math cannot skew.
+- **Env conventions.** Runtime config, never hard-coded: `APPWRITE_ENDPOINT`, `APPWRITE_PROJECT_ID`, `APPWRITE_API_KEY` (server/CLI only — never bundled into a client), with an `APPWRITE_SELFHOST_*` standby block so a cloud→self-host cutover is a config swap. Web reads endpoint+project via `NEXT_PUBLIC_*`. (There is a known naming drift to reconcile: the live `.env.local` uses `APPWRITE_SECRET`/`APPWRITE_API_ENDPOINT` where the design specifies `APPWRITE_API_KEY`/`APPWRITE_ENDPOINT`.)
+
+Locked rulings behind this topology (root `CLAUDE.md`): record-level LWW + tombstones + dirty-guard; provider-agnostic `SyncBackend`; Appwrite canonical; **no CRDTs, no E2EE, no Temporal/durable-workflow engine** — idempotent LWW ops, per-entity cursors, the upload spool, and Functions already cover durability.
+
+## Migration state (honest)
+
+Sync is a **strangler-fig in progress**; do not read the contract's shipped state as its target state.
+
+- The **contract, codec, backfill, dual-read merge, per-entity cursor, and whole-second LWW** are shipped and provider-neutral.
+- The **only concrete `SyncBackend` adapter in `lib/`** is `ConvexSyncBackend` (`lib/core/sync/backends/`). Convex was **superseded by Appwrite** (design D1) but its adapter code remains until the Appwrite adapter reaches parity. `AppwriteTransport`/`AppwriteSyncBackend` (design D6) are **not yet implemented in `lib/`** — the Appwrite side that exists today is the declarative schema (`appwrite.config.json`, Phase 1.1) and provisioning tasks.
+- The **live metadata path is still Firestore.** `SyncService` imports `cloud_firestore`/`firebase_storage`; the `SyncBackend` seam is wired for `moves` dual-read only, behind the `sync.moves.dualRead.enabled` kill-switch (off by default), and `syncBackend` is effectively `null` until provisioning lands. Per-entity order: `moves → combos/comboMoves → reviewEvents → fsrsCards (derived) → decks/deckMoves`; per step: backfill → dual-write → dual-read → verify → tombstone, each rolled back by flipping the pref off.
+
+Backfill and ledger detail — snapshot-equality proofs, release provenance, entity sequencing — live in [`../hyperdata-ledger.md`](../hyperdata-ledger.md); this chapter does not duplicate them.
+
+## Standards this chapter enforces
+
+- Records carry Drive pointers + content hash, never video bytes. ([`#sync-1`](./09-standards.mdx#sync-1))
+- Every mutation is idempotent via `clientOpId`; replay is a no-op. ([`#sync-2`](./09-standards.mdx#sync-2))
+- Deletes are `SyncTombstone`s (soft-delete + 30-day grace), never hard-deletes. ([`#sync-3`](./09-standards.mdx#sync-3))
+- LWW compares at whole-second precision; a remote must be *strictly newer* to win — never clobber a local edit you cannot prove is older. ([`#sync-4`](./09-standards.mdx#sync-4))
+- Callers depend on `SyncBackend`, never a concrete vendor client; new sync/codec files keep the `discarded_futures` lint. ([`#sync-5`](./09-standards.mdx#sync-5))
+- `fsrsCard` is derived and pull-only; pushing it is a `StateError`. ([`#sync-6`](./09-standards.mdx#sync-6))
+
+## Indexes
+
+- `lib/core/sync/sync_backend.dart` — the provider-agnostic contract (short; read in full).
+- `lib/core/services/sync_service.dart` — dual-read merge, whole-second LWW, per-entity cursor.
+- `lib/core/sync/codecs/move_codec.dart` — the record ⇄ `SyncRecord` codec template.
+- `lib/core/sync/backfill/sync_backfill_service.dart` — non-destructive shadow backfill.
+- `lib/core/sync/asset_sync_engine.dart` — the upload spool (blob plane).
+- `lib/core/sync/tombstone_cleaner.dart` — the 30-day delete horizon.
+- `lib/core/sync/backends/` — the concrete adapter (Convex today; Appwrite planned, D6).
+- `appwrite.config.json` — the canonical TablesDB schema (9 tables, per-user row security).
+- [`../hyperdata-ledger.md`](../hyperdata-ledger.md) — backfill/ledger detail.
+- root `CLAUDE.md` — the sync-model, canonical-backend, and non-goal rulings.

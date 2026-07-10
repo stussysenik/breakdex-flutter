@@ -1,5 +1,8 @@
 # Breakdex Architecture
 
+> **Manual:** Indexed by the [Breakdex Engineering Manual](manual/index.mdx) →
+> [Data Layer](manual/03-data-layer.mdx). This file stays the canonical ERD.
+
 ## Entity Relationship Diagram
 
 ```mermaid

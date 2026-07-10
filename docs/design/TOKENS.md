@@ -1,5 +1,9 @@
 # Breakdex Design Tokens
 
+> **Manual:** Indexed by the [Breakdex Engineering Manual](../manual/index.mdx) →
+> [Design System](../manual/05-design-system.mdx). The manual links here and adds standards
+> around these tokens; it never duplicates them. This file stays the single source.
+
 > Single source of truth for design tokens. Dart constants in `lib/core/design/*.dart`
 > are the canonical runtime values. CSS custom properties are planned for `web-mirror/`.
 

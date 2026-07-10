@@ -1,0 +1,138 @@
+---
+title: Testing & Verification
+name: testing
+order: 8
+status: verified
+verified: ea237a1
+watches:
+  - test/**
+  - .github/workflows/ci.yml
+  - .github/workflows/release.yml
+  - scripts/check_l10n.sh
+  - pubspec.yaml
+---
+
+# Testing & Verification
+
+Verification in this repo is governed by one axiom from root `CLAUDE.md` §9 — **Binary Truth** — and the honest fact that the automated gate enforces only a slice of it. This chapter defines the verification primitives, then reasons up from them: what counts as proof, where proof can actually be produced, and which failures are proof of nothing.
+
+## Primitives
+
+**Binary truth (confidence 0/1).** A claim about the code is either terminally proven or it is unproven — there is no 0.8. "It compiles," "the analyzer is clean," "the request returned 200" are all *0*: they are necessary, not sufficient. Proof is a terminal-observed result — a green test, a rendered DOM node, a screenshot, a log free of the error class in question. No success claim ships without it (root `CLAUDE.md` §9).
+
+**Terminal-verified proof.** The observable output of *running the thing*: an `exit 0` from the relevant test, `flutter analyze` reporting `No issues found`, or a boot log line that proves a runtime invariant. Proof is a captured artifact you can point at, not an inference from "the diff looks right."
+
+**Runtime verification target.** The one execution environment where a change can actually be *seen* running. This repo has exactly one reliable local target — the iOS simulator. The two "quick" targets (macOS desktop, Chrome/web) do not boot for reasons unrelated to any given change (below). Naming the target is load-bearing: a claim of "verified at runtime" is only meaningful against a target that boots.
+
+**Red/green discipline.** The proof protocol for a bug fix: a failing repro *first* (`exit 1`), then the smallest precise fix, then the *same* repro green (`exit 0`). The red run proves the test can fail — i.e. that it tests the bug — before the green run proves the fix. A green-only test proves nothing about the bug it claims to cover.
+
+From these four, everything below is forced: the CI gate is a *floor* (it proves cheap things cheaply), runtime proof requires the named target, and any test result that is neither red-then-green nor a known-baseline failure is not yet proof.
+
+## The test suite
+
+110 `*_test.dart` files under `test/`, split by layer:
+
+| Dir | Files | Covers |
+| --- | --- | --- |
+| `test/core/` | 76 | database + DAOs, state machines, sync, providers, models, design, utils |
+| `test/features/` | 25 | screen-level widget tests (move_list, flashcard_review, stats, add, flow, video_editor, party, …) |
+| `test/shared/` | 6 | shared widgets |
+| `test/helpers/` | — | `test_data.dart`, `test_database.dart` (in-memory Drift fixtures) |
+
+Test dependencies (`pubspec.yaml`, dev-dependencies):
+
+```yaml
+flutter_test:      { sdk: flutter }   # unit + widget tests — the workhorse
+integration_test:  { sdk: flutter }   # provisioned
+patrol: ^4.6.1                        # native E2E driver — provisioned, not yet exercised
+```
+
+`patrol` is configured (`patrol:` block names `app_name: "Breakdex"`, bundle id `com.breakdex.breakdex`), but there is **no `integration_test/` directory** yet — no native E2E flow has been authored. Patrol is the intended Flutter-native E2E path (UIAutomator/XCUITest for permission dialogs, WebView/OAuth); today the suite is `flutter_test` unit + widget tests only. Treat E2E coverage as a stated gap, not a live gate.
+
+The canonical machine's tests live at `test/core/state_machines/` — `machine_test.dart` (the framework), `move_detail_machine_test.dart`, and the `move_detail/` sub-flows. Because `transition` is pure and total ([State](./02-state-architecture.mdx)), these are fast, deterministic table tests with no I/O — the easiest surface in the repo to hold at 1.
+
+## What CI actually gates
+
+`.github/workflows/ci.yml` — read it literally, do not assume it does more than it does:
+
+```yaml
+on:
+  pull_request:
+  push:
+    branches-ignore: [main]      # CI runs on branches + PRs, never on main
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with: { flutter-version: '3.x' }
+      - run: flutter pub get
+      - run: ./scripts/check_l10n.sh   # generated l10n must be committed + current
+      - run: flutter analyze
+```
+
+Three gates, and only three: dependency resolution, **l10n freshness**, and **static analysis**.
+
+- `scripts/check_l10n.sh` runs `flutter gen-l10n` and fails (`exit 1`) if `lib/l10n/gen` has any diff — i.e. the committed generated localizations must match the ARB sources ([Localization](./06-localization.mdx)).
+- `flutter analyze` is the static gate. It must report `No issues found` — the `analysis_options.yaml` ruleset ([Standards](./09-standards.mdx)) is the real teeth here.
+
+**CI does NOT run `flutter test`, and does NOT build any artifact.** The 110-file suite is *not* enforced on push or PR. This is a deliberately honest statement of the current floor: green CI proves the code analyzes and l10n is current — it does **not** prove the tests pass. Running `flutter test` before handoff is a manual discipline (§9), not something the machine does for you. Do not read a green CI check as "tests pass."
+
+`release.yml` is separate: it fires only on `push` to `main`, runs `npx semantic-release` (Node 20) for monotonic versioning + CHANGELOG. It is a publishing pipeline, not a verification gate — it presumes the branch already earned its way to `main`.
+
+> **The rule that resolves the ambiguity:** the CI check being green is a *floor* (analyze + l10n), never a ceiling. Terminal-verified proof for anything the analyzer can't see — behavior, rendering, migrations — is on you, produced locally against the runtime target, before you claim done.
+
+## Runtime verification targets — one works, two are dead ends
+
+For any claim that requires *seeing the app run* (a screen renders, a flow completes, a migration applies), the target matters because two of the three obvious ones do not boot — and their failure is infrastructural, unrelated to your change:
+
+- **macOS desktop — dead end.** No `macos/` runner exists. `flutter run -d macos` → `"No macOS desktop project configured"`, exit 1.
+- **Chrome / Flutter web — dead end (today).** Compile fails inside `sqlite3-2.9.4/.../ffi/generated/*.dart`: `"Only JS interop members may be 'external'"`. The Drift-on-WASM/OPFS path the repo contract calls for is not yet wired into the default web entrypoint, so a plain `flutter run -d chrome` never compiles. This is a tracked web-infra gap ([Platform Seams](./07-platform-seams.mdx)), not something a feature diff broke.
+- **iOS simulator — the working target.** Boot via `flowdeck` + `flutter run -d <udid>`; capture the accessibility tree + image with `flowdeck ui simulator screen --screenshot`.
+
+Practicals for the iOS-sim path (these are the difference between verifying and hanging):
+
+- **First debug build is slow (~275s Xcode build).** `dart mcp launch_app` times out at 90s. Run `flutter run` in the background under a captured log and poll the log — do not sit on a foreground call that will time out.
+- **Fresh sim = empty DB + no videos.** No moves/combos seeded, and the sim photo library shows `"NO VIDEOS FOUND"` in the picker, so you cannot reach move-detail by importing. To exercise data-backed screens, inject a video first (`simctl addmedia` / seed). Empty-state + chrome surfaces (nav, Review "Party" empty state, Add flow, picker) verify without seeding.
+- **`App startup completed` in the boot log, with no `MissingResource`/`LocalizationsDelegate` hits, proves the whole l10n key set resolves** for the active locale — the delegate loads all keys eagerly, so a clean startup is a terminal proof of localization coverage ([Localization](./06-localization.mdx)).
+
+## Red/green in practice
+
+For a bug fix, the protocol is not "write a test that passes." It is:
+
+1. **Red.** Write the repro as a `flutter_test` case that encodes the wrong behavior. Run it; confirm `exit 1`. If it passes on the unfixed code, it is not testing the bug — rewrite it.
+2. **Fix.** The smallest precise change that the red test demands — no drive-by refactor (root `CLAUDE.md` §1).
+3. **Green.** Re-run the *same* test unchanged; confirm `exit 0`.
+
+The red step is the load-bearing one: it is the only thing that proves the test has teeth. This is the state-machine layer's natural mode — a `(state, event) → expected` row is a repro that either matches the transition table or does not.
+
+Brownfield amplifies this: the repo is late-stage production with real user data ([Data Layer](./03-data-layer.mdx)). Changes are additive over invasive, migrations are one-way and must be tested, and a claim of done requires verification on a **real build**, not a passing unit test alone (root `CLAUDE.md`, brownfield row). A migration proven only by a green unit test is *not* proven — it is proven when the iOS-sim build boots against a populated DB without data loss.
+
+## Known-pre-existing-failures policy
+
+Not every red test is your bug. The suite currently carries a documented set of failures that belong to a **test-ahead** change (`clarify-review-loop-and-media-cleanup`) — tests written before the implementation they describe. They were confirmed **not regressions** by stash-and-rerun (stash your diff, run the suite, observe the same failures on clean `HEAD`). The recorded set:
+
+- `rename_magic` / `video_export_save` — assert the future path scheme `Moves/Cat/Name/<hash>.mp4` vs the shipped `Moves/Cat/Name - <hash>.mp4`.
+- `card_count_sync` — FSRS due-only counts.
+- `state_picker_sheet` — renamed labels ("Practicing" / "Strong").
+- `mastery_prescreen` / `stats_screen` — copy changes.
+- `party_screen` — timer timeouts.
+
+**The policy:** documented pre-existing failures are recorded and **not chased** while working an unrelated change. Before assuming a red test is pre-existing, *re-baseline*: stash-and-rerun to confirm it fails on clean `HEAD` too. A failure that is red on your branch but green on clean `HEAD` is your regression — that one you own. The discipline is what keeps binary truth honest: "the suite has failures" is not license to ignore *new* red, only known-baseline red.
+
+## Standards this chapter enforces
+
+- No success claim without terminal-verified proof; "compiles" / "analyzes" / "200" is not "works". ([`#test-1`](./09-standards.mdx#test-1))
+- Bug fixes follow red/green: failing repro (`exit 1`) → smallest fix → same repro green (`exit 0`). ([`#test-2`](./09-standards.mdx#test-2))
+- Runtime/visual verification runs on the iOS simulator; macOS and Chrome are non-targets until their infra gaps close. ([`#test-3`](./09-standards.mdx#test-3))
+- Pre-existing failures are re-baselined by stash-and-rerun and left unchased; new red on your branch is yours. ([`#test-4`](./09-standards.mdx#test-4))
+
+## Indexes
+
+- `.github/workflows/ci.yml` — the actual gate: `pub get` → `check_l10n.sh` → `flutter analyze`. No `flutter test`, no build.
+- `.github/workflows/release.yml` — `semantic-release` on `main` only; publishing, not verification.
+- `scripts/check_l10n.sh` — the l10n-freshness gate (`flutter gen-l10n` + `git diff` on `lib/l10n/gen`).
+- `test/` — 110 `*_test.dart` files; `test/helpers/` for in-memory Drift fixtures.
+- `pubspec.yaml` — `flutter_test` / `integration_test` / `patrol ^4.6.1` (patrol provisioned, no `integration_test/` flows yet).
+- root `CLAUDE.md` — §9 Binary Truth and the brownfield "verify on a real build" ruling.

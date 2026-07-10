@@ -1,0 +1,268 @@
+---
+title: Engineering Standards
+name: standards
+order: 9
+status: verified
+verified: ea237a1
+watches: []
+---
+
+# Engineering Standards
+
+This is the rulebook. Each rule has a stable id token (e.g. `state-3`) that reviews and other
+chapters **cite instead of restating**. The manual is grep-first: to resolve a citation like
+`09-standards.mdx#async-1`, search this file for `async-1` — it is both the heading's anchor
+slug and a greppable token.
+
+These rules are normative doctrine, derived from the codebase's axioms (root `CLAUDE.md`,
+`~/.claude/CLAUDE.md`) and the chapters that ground them — hence empty `watches`; they govern
+all code, not one path. The pre-merge subset is collected in the
+[Review Checklist](./10-review-checklist.mdx), which points back here by id.
+
+> **The axiom above all rules.** Code is a sacred liability; LOC is debt. The smallest precise
+> expression of clear thinking wins — minimal is a consequence of essentialism, not a cap.
+> Every rule below is that axiom made specific.
+
+## Product
+
+### product-1
+**Atom composition.** Every feature composes from the `move → combo → set` atoms; there is no
+parallel content model. ([Product Doctrine](./01-product-doctrine.mdx))
+
+### product-2
+**Order is persisted.** Composition order (moves in a combo, combos in a set) is stored in join
+tables with position, never inferred from insertion order.
+
+### product-3
+**Visual-first.** On product surfaces, prefer a visual anchor over a text label; text is for
+input and settings.
+
+## State
+
+### state-1
+**Immutable states.** Every concrete state is a `final class` with a `const` constructor,
+holding only the fields that state needs. ([State Architecture](./02-state-architecture.mdx))
+
+### state-2
+**No await in transition.** `transition` is pure; async is modelled as a "…ing" state entered
+now plus a result event that transitions out later.
+
+### state-3
+**Impossible states are unrepresentable.** Forbid a situation by omitting its transition, never
+by a runtime boolean. (The dirty-guard is pure omission.)
+
+### state-4
+**Effects in the Notifier.** Screen side effects live in the Riverpod Notifier's entry-action
+`switch`, not in `Machine.onEntry` (which is for `ref`-free self-contained/child machines).
+
+## Rebuilds
+
+### rebuild-1
+**Nothing heavy in `build()`.** `build` composes widgets from state; computation lives in the
+machine/repository.
+
+### rebuild-2
+**Scope the watch.** Watch the narrowest provider/selector a widget needs; never rebuild a
+subtree on state it does not read.
+
+### rebuild-3
+**`const` where invariant.** `const` constructors are free rebuild elision, not decoration.
+
+## Async
+
+### async-1
+**Fire-and-forget is scoped.** Allowed only at the UI/provider layer where `discarded_futures`
+is deliberately, locally suppressed (see `move_detail/provider.dart`). New sync/codec files keep
+the lint; an unhandled future there is a defect.
+
+### async-2
+**Guard continuations.** An `async` continuation that touches UI/state checks liveness
+(`mounted` / provider still alive) before writing; never write state after disposal.
+
+### async-3
+**Cancel on dispose.** Long-running/awaitable work is cancellable and cancelled on dispose.
+
+## Disposal
+
+### dispose-1
+**Everything is disposed.** Every controller, subscription, timer, and stream is disposed by the
+object that created it. A `StreamSubscription` with no matching `cancel` is a leak.
+
+## Diff discipline
+
+### diff-1
+**Surgical strike.** Touch only what the task requires; no drive-by refactors, no cleanup of
+code orthogonal to the change.
+
+### diff-2
+**Additive, style-matched.** Prefer additive over invasive; match surrounding style with
+obsessive precision.
+
+### diff-3
+**Decompose, don't compress.** The `<100 LOC` atomic-batching target is a signal to decompose
+into verifiable steps when exceeded — never to compress logic to save lines.
+
+## Data
+
+### data-1
+**Forward-only migrations.** Every schema change bumps `schemaVersion` by one and adds a matching
+`if (from < N)` block; migrations walk legacy DBs forward, never backward.
+([Data Layer](./03-data-layer.mdx))
+
+### data-2
+**Safe `ADD COLUMN`.** Never use a non-constant default; add the column nullable, then backfill
+with `UPDATE`. Guard legacy adds with `_columnNames`/`PRAGMA table_info`.
+
+### data-3
+**Regenerate after schema edits.** Run `dart run build_runner build` after any table/DAO change;
+a stale `.g.dart` is a build failure. Never hand-edit generated output.
+
+### data-4
+**SQL only in DAOs.** SQL lives in DAOs; screens depend on the abstract repository interface,
+never on Drift or a DAO directly.
+
+### data-5
+**Reactive reads are streams.** Reactive reads return `.watch()` streams; never surface a
+`Future` snapshot where the UI must re-render on change.
+
+### data-6
+**UTC + FSRS offset.** All persisted/compared timestamps go through `AppClock.nowUtc()` /
+`.toUtc()`. The FSRS state offset (`0 = New`, package `learning = 1`) is honored on both encode
+and decode.
+
+## Sync
+
+### sync-1
+**Pointers, not bytes.** Records carry Drive pointers + content hash, never video bytes. The
+record plane and the blob plane never cross. ([Sync](./04-sync.mdx))
+
+### sync-2
+**Idempotent mutations.** Every push is at-most-once via `clientOpId`; replaying an op is a
+no-op, so backfill/replay is safe.
+
+### sync-3
+**Tombstone deletes.** A removal is a `SyncTombstone` (soft-delete + 30-day grace), never a
+hard-delete; user state stays recoverable.
+
+### sync-4
+**Strictly-newer LWW.** Conflict resolution is record-level last-writer-wins compared at
+whole-second precision; a remote must be *strictly newer* to win. Never clobber a local edit you
+cannot prove is older.
+
+### sync-5
+**Provider-agnostic.** Callers depend on the `SyncBackend` contract, never a concrete vendor
+client. New sync/codec files keep the `discarded_futures` lint.
+
+### sync-6
+**Derived state is pull-only.** `fsrsCard` is derived server-side from review events and is never
+pushed; `push(fsrsCard, …)` is a `StateError`.
+
+## Platform
+
+### platform-1
+**No bare `dart:io` in the web graph.** No `import 'dart:io'` / `dart:ffi` in `lib/` except a
+`_native.dart` seam file; all platform access routes through a facade. The exclusion grep
+(`grep -rl "import 'dart:io'" lib/ | grep -v _native.dart`) must return empty.
+([Platform Seams](./07-platform-seams.mdx))
+
+### platform-2
+**Honest degradation.** A web stub degrades to the most honest of {compute, truthful answer, loud
+throw}; never a silent no-op that fakes success.
+
+### platform-3
+**Compile-time seam.** Platform selection is a compile-time conditional import keyed on
+`dart.library.js_interop` (Wasm-safe), not a runtime `kIsWeb` branch, whenever the capability is
+compile-time resolvable.
+
+### platform-4
+**Unwired throws loudly.** A web capability that isn't wired yet throws (as
+`open_connection_web.dart` does), never returns an empty/degraded success.
+
+## Testing
+
+### test-1
+**Binary truth.** No success claim without terminal-verified proof; "compiles" / "analyzes" /
+"200" is not "works". ([Testing & Verification](./08-testing-and-verification.mdx))
+
+### test-2
+**Red then green.** Bug fixes follow red/green: a failing repro (`exit 1`) first, the smallest
+fix, then the *same* repro green (`exit 0`).
+
+### test-3
+**Verify on iOS sim.** Runtime/visual verification runs on the iOS simulator; macOS and Chrome
+are non-targets until their infra gaps close.
+
+### test-4
+**Re-baseline before ignoring red.** Pre-existing failures are re-baselined by stash-and-rerun
+and left unchased; new red on your branch is yours to fix.
+
+## Motion
+
+### motion-1
+**No raw motion literals.** No raw `Curve`/`Duration` drives visible motion on a product surface;
+use an `AppMotion` token and let the alias name its family. ([Design System](./05-design-system.mdx))
+
+### motion-2
+**Overshoot is justified.** Overshoot curves (`expressive`, `springBouncy`) sit outside the two
+families and require a justified call-site comment.
+
+### motion-3
+**Two families only.** Every visible transition is classifiable as **Fluid** (opacity/translation,
+default) or **Morph** (one element's shape/layout continuity); nothing else is a transition.
+
+## Design tokens
+
+### grid-1
+**Snap spatial literals.** A spacing/inset literal equal to a token value resolves to the named
+`AppSpacing` token; off-scale values are justified, not silently inlined.
+
+### token-1
+**Snap radius literals.** A radius literal equal to a token value resolves to the named
+`AppRadius` token (the fully-round idiom → `pill`); off-scale radii are justified.
+
+### token-2
+**Color is never alone.** Color never carries meaning by itself — pair it with an icon, shape, or
+label on every semantic signal (WCAG 1.4.1).
+
+### type-1
+**Use the type scale.** Product text uses the `AppTypography` scale (Inter default); ad-hoc
+`TextStyle` sizes/weights that duplicate a scale step are violations.
+
+## Localization
+
+### l10n-1
+**No hardcoded copy.** User-facing copy resolves through `AppLocalizations`; no new hardcoded
+string literals in widgets (review-enforced via `rg` on the diff). ([Localization](./06-localization.mdx))
+
+### l10n-2
+**Committed, current `gen/`.** `lib/l10n/gen/` is committed and kept current; `scripts/check_l10n.sh`
+must pass in CI.
+
+### l10n-3
+**Compose nouns parametrically.** Parametric nouns compose into localized templates via typed
+placeholders, never string concatenation; casing is applied at the call site.
+
+### l10n-4
+**Describe + type every message.** Every ARB message carries an `@key` `description`; placeholders
+are typed (`String`/`int`).
+
+## Brownfield
+
+### brownfield-1
+**Risk-ordered, additive.** Late-stage production with real users and data — sequence work by
+risk; additive over invasive.
+
+### brownfield-2
+**Never orphan user state.** Never delete or orphan user state; migrations are one-way and tested,
+verified on a real build.
+
+## Ledger
+
+### ledger-1
+**Same-commit task ticking.** `tasks.md` checkboxes tick in the **same commit** that lands the
+work.
+
+### ledger-2
+**Same-commit chapter updates.** A change altering a documented seam updates that manual chapter's
+body **and** its `verified:` frontmatter in the same commit, or the docs-ledger drift check fails
+CI. ([Manual Meta](./12-meta.mdx))

@@ -1,0 +1,93 @@
+---
+title: Executor Onboarding
+name: onboarding
+order: 11
+status: verified
+verified: ea237a1
+watches:
+  - openspec/AGENTS.md
+  - ROADMAP.md
+  - CLAUDE.md
+---
+
+# Executor Onboarding
+
+This chapter is for a fresh session — the student executor — about to touch this repo. It
+defines the session-start protocol and the boundary of what you may change without escalating.
+The rest of the manual tells you *how the code works*; this tells you *how to work here*.
+
+## Primitives
+
+**The NOW block.** The single source of "what to do next." Root `ROADMAP.md` has a `## NOW`
+section naming the ONE active change and its next unticked task. It exists so you never re-derive
+priorities from the 30+ open changes. The NOW block is authoritative over your judgement about
+what "seems important."
+
+**A change.** An `openspec/changes/<id>/` directory: `proposal.md` (why/what), optional
+`design.md` (rulings), `tasks.md` (the ordered checklist), and `specs/` deltas. Non-trivial work
+is driven through a change ([`openspec/AGENTS.md`](../../openspec/AGENTS.md)).
+
+**The same-commit ledger.** Work and its `tasks.md` checkbox land in one commit
+([`#ledger-1`](./09-standards.mdx#ledger-1)). A pending change whose tasks contradict shipped
+code is a review violation to reconcile before building on it.
+
+**Teacher vs. student.** The teacher owns sequencing, scope, and the locked stack; the student
+executes the next task exactly. This split only works because the manual lets the student locate
+every seam without archaeology — which is why the manual exists.
+
+## The session-start protocol
+
+Do this before anything else, every session:
+
+1. **Read `ROADMAP.md` → `## NOW`.** It names the active change and the next unticked task. That
+   is your work. Do not pick a different task because it looks easier or more interesting.
+2. **Open that change's `tasks.md`.** Execute exactly the next unticked task, per
+   `openspec/AGENTS.md` (binary truth, ledger rule).
+3. **Tick the box AND advance `## NOW`** in the *same commit* that lands the work
+   ([`#ledger-1`](./09-standards.mdx#ledger-1)).
+4. **If the task is owner-gated, stop and surface it** — then work only the parallel-allowed
+   track the NOW block names, nothing else.
+
+Grounding for the task's subject matter comes from this manual: the chapter whose `watches` cover
+the files you're touching is your reference. If your change alters a documented seam, update that
+chapter's body and `verified:` frontmatter in the same commit
+([`#ledger-2`](./09-standards.mdx#ledger-2)).
+
+## What a student may and may not touch
+
+**Freely, within the current task:**
+
+- Implement the next unticked task's code, additively, matching surrounding style
+  ([`#diff-1`](./09-standards.mdx#diff-1), [`#diff-2`](./09-standards.mdx#diff-2)).
+- Write and run tests; verify on the iOS-sim target ([`#test-3`](./09-standards.mdx#test-3)).
+- Update the manual chapter for a seam you changed, and tick your `tasks.md` boxes.
+
+**Only with teacher/owner escalation — stop and surface, do not proceed:**
+
+- **Reordering the queue** or starting a different change. Only the owner reorders.
+- **Touching the locked stack** (root `CLAUDE.md` "Canonical stack — LOCKED": Appwrite backend,
+  Drift canonical, `Machine<S,E>`, XState-v5 web mirror, token source, motion doctrine). These
+  are decided; re-litigating one is a teacher decision.
+- **Building a non-goal** (E2EE, CRDTs, Temporal, shared/collaborative state). If a task seems to
+  require one, that is the signal to escalate ([Product Doctrine](./01-product-doctrine.mdx)).
+- **Destructive data operations** — deleting/orphaning user state, non-additive migrations. The
+  repo is late-stage production ([`#brownfield-1`](./09-standards.mdx#brownfield-1),
+  [`#brownfield-2`](./09-standards.mdx#brownfield-2)).
+
+## Reasoning from the primitives
+
+- **You cannot be lost about priorities.** There is exactly one NOW block; if it and your
+  instinct disagree, the NOW block wins or you escalate.
+- **You cannot silently drift the ledger.** Because ticking rides the work commit, a reviewer can
+  trust that a ticked box means shipped code — and an unticked-but-shipped state is itself the
+  bug to fix ([`#ledger-1`](./09-standards.mdx#ledger-1)).
+- **You cannot quietly expand scope.** Anything outside the current task's files is either a
+  surgical necessity you name, or an escalation — never a drive-by.
+
+## Indexes
+
+- root `ROADMAP.md` — the ONE roadmap and the `## NOW` queue head.
+- [`../../openspec/AGENTS.md`](../../openspec/AGENTS.md) — OpenSpec conventions, teacher/student
+  split, the ledger rule.
+- root `CLAUDE.md` — the agent contract and the locked canonical stack.
+- [Engineering Standards](./09-standards.mdx) — the rules your work is reviewed against.

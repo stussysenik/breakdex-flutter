@@ -1,0 +1,118 @@
+---
+title: The Breakdex Engineering Manual
+name: index
+order: 0
+status: draft
+verified: null
+watches: []
+---
+
+# The Breakdex Engineering Manual
+
+This is the codebase's reference book and its codified IP — the atom-model moat, the
+`Machine<S,E>` state framework, the sync doctrine, and the staff-level standards a review
+cites by number. It is written in a language-reference register (think *The Swift
+Programming Language*): normative, example-grounded, and meant to be **read straight
+through once, then grepped forever**.
+
+> **This manual is agent-facing first.** Its primary reader is a fresh session — a Claude
+> executor, or cheap hosted inference (NVIDIA NIM, Cerebras) — that must locate every
+> load-bearing seam and standard *without re-deriving intent from source archaeology*.
+> If you are that reader, start here.
+
+## How to use this as an agent
+
+1. **Orient with the queue, not the manual.** Your *task* comes from `ROADMAP.md` → the
+   `## NOW` block → the named change's `tasks.md`. The manual tells you *how the code
+   works and what the standards are*; it never reorders your queue. See
+   [Executor Onboarding](./11-executor-onboarding.mdx).
+2. **Find the seam you're touching.** Every chapter's frontmatter carries a `watches:`
+   list of the code globs it is truth about. To learn "what owns `lib/core/sync/`", grep
+   the manual for the glob, not the whole tree.
+3. **Cite standards by anchor, don't restate them.** Reviews reference
+   [Standards](./09-standards.mdx) and the [Review Checklist](./10-review-checklist.mdx)
+   by stable anchor (e.g. `09-standards.mdx#state-3`). When you flag or fix something,
+   cite the rule.
+4. **Same-commit ledger applies to the manual too.** If your change alters a documented
+   seam, update that chapter's body **and** its `verified:` frontmatter in the *same
+   commit* that lands the code. The docs-ledger drift check ([Docs Ledger](#the-docs-ledger))
+   fails CI otherwise.
+5. **Prime with a bundle when context is scarce.** `scripts/docs_bundle --chapters sync`
+   emits a self-standing, token-budgeted context artifact (standards preamble always
+   included). See [Student Priming](#student-priming).
+
+## Reading order
+
+The chapters build on each other; this is the once-through order. Each is independently
+greppable afterward.
+
+| # | Chapter | Covers |
+| --- | --- | --- |
+| 1 | [Product Doctrine](./01-product-doctrine.mdx) | The atom model (move → combo → set), visual-first interface language, the non-goals |
+| 2 | [State Architecture](./02-state-architecture.mdx) | `Machine<S,E>` sealed-class framework; the XState-v5 web-mirror rule |
+| 3 | [Data Layer](./03-data-layer.mdx) | Drift/SQLite schema, DAOs + build_runner, three-layer repositories, FSRS |
+| 4 | [Sync](./04-sync.mdx) | `SyncBackend` contract, record-level LWW + tombstones, dirty-guard, upload spool, Drive pointers, Appwrite topology |
+| 5 | [Design System](./05-design-system.mdx) | Token source of truth, 8pt/4pt grid, Fluid/Morph motion doctrine |
+| 6 | [Localization](./06-localization.mdx) | ARB pipeline, the l10n grep gate, parametric noun composition |
+| 7 | [Platform Seams & Web](./07-platform-seams.mdx) | `dart:io` platform seam, Drift on WASM/OPFS, visible-degradation policy |
+| 8 | [Testing & Verification](./08-testing-and-verification.mdx) | Binary-truth standard, runtime targets, red/green discipline |
+| 9 | [Engineering Standards](./09-standards.mdx) | Numbered, citable staff-level mobile rules |
+| 10 | [Review Checklist](./10-review-checklist.mdx) | Consolidated pre-merge checklist with stable anchors |
+| 11 | [Executor Onboarding](./11-executor-onboarding.mdx) | Session-start protocol; what a student may/may-not touch |
+| 12 | [Manual Meta & Calibration](./12-meta.mdx) | The ledger/bundle mechanics and priming dry-run record |
+
+## The docs ledger
+
+Each chapter is a claim about the code as of a commit. Its frontmatter declares:
+
+```yaml
+watches:                      # code this chapter is truth about (path globs)
+  - lib/core/state_machines/**
+verified: 98c195f             # the commit the chapter was last checked against
+status: verified              # stub | draft | verified
+```
+
+`scripts/docs_ledger_check` diffs `verified..HEAD` restricted to each chapter's `watches`
+using **git plumbing only** — no model, no network. Any watched path that changed since a
+chapter's `verified` commit marks that chapter *stale*; the check exits non-zero in CI and,
+with `--json`, emits a work order (`{chapter, watches, verified, changed_files, diff_stat}`)
+that any executor can act on. See [Manual Meta](./12-meta.mdx).
+
+## Student priming
+
+`scripts/docs_bundle` concatenates the index + selected chapters into one deterministic
+plain-text artifact prefixed with a TOC and per-chapter token estimates (chars/4). It
+exists so a fresh session with a small context window can be primed with *exactly* the
+chapters a task needs:
+
+```
+scripts/docs_bundle --all                 # the whole book, with token totals
+scripts/docs_bundle --chapters sync        # standards preamble + sync chapter only
+```
+
+Whether a given drift repair is cheap-inference work or needs real intellect is a per-work-
+order *teacher* decision — the bundle and work orders are model-agnostic artifacts.
+
+## Absorb-or-index audit
+
+The manual **never duplicates a canonical source.** Where a topic already has an
+authoritative doc, the chapter *indexes* it (links + states only what it adds) rather than
+copying normative content. This table is the map.
+
+| Existing doc | Disposition | Owning chapter |
+| --- | --- | --- |
+| `docs/design/TOKENS.md` | **Indexed** — remains the single source of truth for tokens | [Design System](./05-design-system.mdx) |
+| `docs/architecture.md` (ERD) | **Indexed** — the canonical entity diagram | [Data Layer](./03-data-layer.mdx) |
+| `docs/hyperdata-ledger.md` | **Indexed** — sync/backfill ledger detail | [Sync](./04-sync.mdx) |
+| `docs/TECHSTACK.MD` | **Indexed** — stack inventory | [Product Doctrine](./01-product-doctrine.mdx) |
+| `openspec/AGENTS.md` | **Indexed** — OpenSpec conventions, teacher/student split | [Executor Onboarding](./11-executor-onboarding.mdx) |
+| root `CLAUDE.md` | **Indexed** — the locked-stack agent contract | [Executor Onboarding](./11-executor-onboarding.mdx) |
+| root `ROADMAP.md` | **Indexed** — the ONE roadmap, `## NOW` queue head | [Executor Onboarding](./11-executor-onboarding.mdx) |
+| `docs/VISION.MD` | **Out of scope** — product vision, not an engineering reference | — |
+| `docs/PRD.md` | **Out of scope** — product requirements | — |
+| `docs/CHANGELOG.md` | **Out of scope** — release hygiene (GUIDE.md territory) | — |
+| root `README.md`, `SESSION.md` | **Out of scope** — onboarding/session scratch | — |
+
+**The rule:** when a chapter needs a token, schema version, or file path that a canonical
+doc already defines, it links there. It writes down only the *context and standards* the
+canonical doc omits.

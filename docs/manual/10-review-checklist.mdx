@@ -1,0 +1,77 @@
+---
+title: Review Checklist
+name: review-checklist
+order: 10
+status: verified
+verified: ea237a1
+watches: []
+---
+
+# Review Checklist
+
+The pre-merge gate. This is not a second rulebook — it is the subset of
+[Engineering Standards](./09-standards.mdx) a reviewer walks before approving a diff, each item
+linking the rule it enforces. Cite the rule id in a finding; don't restate the rule.
+
+Run it against the diff, not the whole tree. An item that doesn't apply to the change is
+skipped, not argued.
+
+## Correctness & state
+
+- [ ] New/changed state is immutable `final class` + `const`; async is a "…ing" state, not an
+      `await` in `transition`. ([`#state-1`](./09-standards.mdx#state-1),
+      [`#state-2`](./09-standards.mdx#state-2))
+- [ ] Impossible situations are omitted transitions, not runtime flags.
+      ([`#state-3`](./09-standards.mdx#state-3))
+- [ ] Screen effects are in the Notifier entry-action switch, not `Machine.onEntry`.
+      ([`#state-4`](./09-standards.mdx#state-4))
+- [ ] `async` continuations guard liveness; controllers/subscriptions/streams are disposed.
+      ([`#async-2`](./09-standards.mdx#async-2), [`#dispose-1`](./09-standards.mdx#dispose-1))
+
+## Data & sync
+
+- [ ] Schema change bumps `schemaVersion` + adds an `if (from < N)` block; `ADD COLUMN` is
+      nullable-then-backfill; `build_runner` ran and `.g.dart` is committed.
+      ([`#data-1`](./09-standards.mdx#data-1), [`#data-2`](./09-standards.mdx#data-2),
+      [`#data-3`](./09-standards.mdx#data-3))
+- [ ] SQL stays in DAOs; reactive reads are `.watch()` streams; timestamps go through
+      `AppClock`/`.toUtc()`. ([`#data-4`](./09-standards.mdx#data-4),
+      [`#data-5`](./09-standards.mdx#data-5), [`#data-6`](./09-standards.mdx#data-6))
+- [ ] Sync records carry pointers not bytes; mutations idempotent (`clientOpId`); deletes are
+      tombstones; LWW is strictly-newer-wins; callers depend on `SyncBackend`.
+      ([`#sync-1`](./09-standards.mdx#sync-1)…[`#sync-6`](./09-standards.mdx#sync-6))
+
+## Platform
+
+- [ ] No bare `dart:io`/`dart:ffi` outside a `_native.dart` seam (exclusion grep empty); web
+      stubs degrade honestly; unwired web capability throws.
+      ([`#platform-1`](./09-standards.mdx#platform-1)…[`#platform-4`](./09-standards.mdx#platform-4))
+
+## Design & motion
+
+- [ ] No raw `Curve`/`Duration` on a product surface; motion is Fluid or Morph via `AppMotion`;
+      overshoot is justified. ([`#motion-1`](./09-standards.mdx#motion-1),
+      [`#motion-2`](./09-standards.mdx#motion-2), [`#motion-3`](./09-standards.mdx#motion-3))
+- [ ] Spacing/radius literals snap to tokens; type uses the `AppTypography` scale; color is
+      paired with icon/shape/label. ([`#grid-1`](./09-standards.mdx#grid-1),
+      [`#token-1`](./09-standards.mdx#token-1), [`#token-2`](./09-standards.mdx#token-2),
+      [`#type-1`](./09-standards.mdx#type-1))
+
+## Localization
+
+- [ ] No new hardcoded user-facing strings (grep the diff); `check_l10n.sh` green; nouns compose
+      via placeholders; every ARB message is described + typed.
+      ([`#l10n-1`](./09-standards.mdx#l10n-1)…[`#l10n-4`](./09-standards.mdx#l10n-4))
+
+## Safety & process
+
+- [ ] Diff is surgical and additive; no drive-by refactors; over-target size means decompose.
+      ([`#diff-1`](./09-standards.mdx#diff-1)…[`#diff-3`](./09-standards.mdx#diff-3))
+- [ ] No user state deleted/orphaned; migration one-way and tested; verified on a real build.
+      ([`#brownfield-1`](./09-standards.mdx#brownfield-1),
+      [`#brownfield-2`](./09-standards.mdx#brownfield-2))
+- [ ] Behavior claims backed by terminal-verified proof (red/green for fixes); pre-existing red
+      re-baselined. ([`#test-1`](./09-standards.mdx#test-1)…[`#test-4`](./09-standards.mdx#test-4))
+- [ ] `tasks.md` boxes ticked in this commit; any documented seam touched → its manual chapter +
+      `verified:` frontmatter updated in this commit.
+      ([`#ledger-1`](./09-standards.mdx#ledger-1), [`#ledger-2`](./09-standards.mdx#ledger-2))
