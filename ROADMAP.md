@@ -22,13 +22,17 @@
 > same commit**. Nothing else starts until this block says so.
 
 - **Change:** `migrate-canonical-backend-to-appwrite`
-- **Next task:** `1R.2` — Flutter client: typed immutable `RemoteConfig` model + Riverpod
-  provider; fetch `appConfig` at launch, Realtime-subscribe for live updates, fall back
-  last-cached → compiled defaults offline; no behavior change while flags are at defaults.
-  Not owner-gated. Parallel-allowed: Phase 2.1 client plumbing (`AppwriteSyncBackend` behind
-  the seam), also unblocked now that the live substrate exists.
-- **Then:** 1R.3 min-version gate → 1R.4 validation; Phase 2 client plumbing (2.1→…) per D8;
-  Phase 3 identity remains gated on `0.2` (Google OAuth, owner-run).
+- **Next task:** `1R.3` — Min-version gate: config-driven update prompt (soft nag vs hard block
+  per config), messaging from `RemoteConfig.updateMessage`; test with a fixture config; never
+  triggerable while `minSupportedBuild ≤ current build`. Reads `remoteConfigProvider` (1R.2) +
+  the app's current build number (`package_info_plus` is already a dep). Not owner-gated.
+  Parallel-allowed: Phase 2.1 client plumbing (`AppwriteSyncBackend` behind the seam) — the
+  live substrate + shared `appwriteClientProvider` (from 1R.2) both exist now.
+- **Then:** 1R.4 validation (unit-test half largely met by 1R.2's suite; the "flip a flag in
+  console → running client" **manual proof is session-gated** — needs Phase 3 identity since
+  `appConfig` perm is `read("users")`, so a session-less client currently degrades to compiled
+  defaults, which is correct); Phase 2 client plumbing (2.1→…) per D8; Phase 3 identity remains
+  gated on `0.2` (Google OAuth, owner-run).
 - **⚠ Ops hazard (learned 1R.1):** do **NOT** run `appwrite push tables --all` against the live
   `breakdex` project. This CLI (22.6.1) diffs omitted-`array` (config) vs `array:false` (deployed)
   as a change and **recreates existing columns** — it deleted all of `moves`'s attributes mid-run
@@ -42,6 +46,13 @@
   `updateMessage` opt, `featureFlags/killSwitches/cohortProfiles` opt-string default `"{}"`,
   `updatedAt` req-int; `rowSecurity:false`, table perm `read("users")`, owner writes via
   console/server-key — no client write role). Live parity re-verified: 10/10 tables green.
+  **1R.2 DONE (2026-07-10):** Flutter `lib/core/config/` — immutable `RemoteConfig` +
+  `RemoteConfigSource` seam + `RemoteConfigService` (fallback ladder remote → last-cached →
+  compiled defaults; 401/offline both degrade to defaults) + Appwrite source (`TablesDB.getRow`
+  + Realtime on singleton row **`current`**) + Riverpod (`appwriteClientProvider` [Phase-2 reuse]
+  + `remoteConfigProvider`). `appwrite ^25.2.0` added; 9/9 unit tests green; analyze clean; no
+  caller wired. **Owner action for 1R.4 live proof:** create row `current` in the `appConfig`
+  table (console) — one row, per-cohort variance via `cohortProfiles`.
   0.1 + 0.3 DONE. **Phase 1 COMPLETE — 1.5 DONE (live):**
   schema (`breakdex` TablesDB + 9 tables, `status ready`) + all 3 Functions (`sync-push`,
   `sync-pull`, `reviews-append`) deployed & built on `dart-3.11`, live `scopes` match config,

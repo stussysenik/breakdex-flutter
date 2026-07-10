@@ -52,6 +52,8 @@ dependencies:
   mix: ^2.0.3
   cached_query_flutter: ^3.0.3
   flutter_bloc: ^9.1.1
+  appwrite: ^25.2.0
+  meta: ^1.17.0
 
 dev_dependencies:
   flutter_test:

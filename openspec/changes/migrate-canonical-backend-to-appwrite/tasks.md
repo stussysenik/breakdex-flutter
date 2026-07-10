@@ -246,9 +246,24 @@
   `featureFlags` (map), `killSwitches` (map — subsumes the sync kill-switch flag surface), and
   `cohortProfiles` (map keyed by invite-cohort — the "my own versions" mechanism: same binary,
   per-cohort flag profiles). Read: any authenticated user; write: owner only.
-- [ ] 1R.2 Flutter client: typed immutable `RemoteConfig` model + Riverpod provider; fetch at
+- [x] 1R.2 Flutter client: typed immutable `RemoteConfig` model + Riverpod provider; fetch at
   launch, Realtime subscribe for live updates, fall back to last-cached then compiled defaults
   when offline. No behavior change while all flags are at defaults.
+  DONE 2026-07-10: `lib/core/config/` — `appwrite_env.dart` (public endpoint/projectId via
+  `--dart-define`, live defaults; db/table ids; **singleton row id `current`**),
+  `remote_config.dart` (immutable model + `RemoteConfigSource` seam; JSON-string map columns
+  decoded defensively → empty on malformed, never throws; `flag(key,{cohort,orElse})` with
+  cohort-override, `isKilled`; `RemoteConfig.defaults()` inert = gate-off + no flags),
+  `remote_config_service.dart` (fallback ladder **remote → last-cached → compiled defaults**;
+  fetch/subscribe errors swallowed so a 401 from a session-less pre-Phase-3 client degrades
+  exactly like offline; successful reads persisted to SharedPreferences),
+  `appwrite_remote_config_source.dart` (only Appwrite-touching file: `TablesDB.getRow` + Realtime
+  on `Channel.tablesdb().table().row()`, closes socket on cancel), `remote_config_providers.dart`
+  (`appwriteClientProvider` — reused by Phase 2 — + `remoteConfigProvider` StreamProvider).
+  Added `appwrite: ^25.2.0` + `meta` direct dep. `dart analyze lib/core/config` clean;
+  `test/core/config/remote_config_test.dart` **9/9 green** (decode/coerce/cohort/malformed/
+  defaults/cache-roundtrip + all 4 fallback-ladder cases + realtime delivery). No caller wired,
+  no behavior change at defaults.
 - [ ] 1R.3 Min-version gate: config-driven update prompt (soft nag vs hard block per config),
   messaging text from `updateMessage`. Tested with a fixture config; never triggerable while
   `minSupportedBuild` ≤ current build.
