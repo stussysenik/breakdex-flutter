@@ -191,6 +191,18 @@
             "entrypoint": "lib/main.dart",
             "commands": "dart pub get",
             "enabled": true
+        },
+        {
+            "$id": "sync-pull",
+            "name": "sync-pull",
+            "runtime": "dart-3.11",
+            "execute": ["users"],
+            "events": [],
+            "scopes": ["tables.read", "rows.read"],
+            "path": "functions/sync-pull",
+            "entrypoint": "lib/main.dart",
+            "commands": "dart pub get",
+            "enabled": true
         }
     ]
 }

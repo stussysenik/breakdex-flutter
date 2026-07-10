@@ -1,0 +1,16 @@
+name: sync_pull
+description: >-
+  Appwrite Function (Dart runtime) — server-side sync pull for Breakdex
+  descriptive tables. Ports convex/sync.ts pullRecords semantics, unioning live
+  rows with tombstones on a single high-water cursor (two-table storage model).
+publish_to: none
+version: 1.0.0
+
+environment:
+  sdk: ^3.11.0
+
+dependencies:
+  dart_appwrite: ^25.1.0
+
+dev_dependencies:
+  test: ^1.25.0

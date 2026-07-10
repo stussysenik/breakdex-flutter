@@ -178,9 +178,15 @@
   (`Platform`/`File` in `sync_providers.dart`/`move_grid_cell.dart`) from the parallel
   web-compile seam (`0b30585`, zero-diff from HEAD) — **not** 1.2; `functions/**` is excluded from
   the app analyzer since Functions are standalone packages with their own analysis.
-- [ ] 1.3 Implement the **`sync-pull` Function**: returns upserts + tombstones changed since the
+- [x] 1.3 Implement the **`sync-pull` Function**: returns upserts + tombstones changed since the
   provided cursor for one entity type, plus a **server-time high-water cursor** (D9/H.1 depends
-  on this shape).
+  on this shape). — `functions/sync-pull/` (Dart runtime `dart-3.11`): pure `pull.dart`
+  (`pullRecords` port; unions live rows + tombstones on one high-water clock, two-table model;
+  cursor = max clock across the delta, else untouched `since`; null on empty full pull) + `main.dart`
+  IO glue (`TablesDbPullStore` over `dart_appwrite` 25.1.0, cursor-paginated reads via
+  `by_user_updatedAt` / `by_user_entity_deletedAt`, trusted `x-appwrite-user-id`, read-only scopes).
+  `dart analyze` clean, `dart test` 21/21 green; registered in `appwrite.config.json` (passes CLI
+  `Validating functions`). Live deploy is 1.5.
 - [ ] 1.4 Implement **`reviews-append`** (idempotent append-only event ingestion) and the
   **FSRS derive Function on the Dart runtime importing `fsrs: ^2.0.1`** — reduce a
   (entityId, entityType)'s event log to card state, matching the client's scheduler math.

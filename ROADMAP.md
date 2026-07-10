@@ -22,13 +22,21 @@
 > same commit**. Nothing else starts until this block says so.
 
 - **Change:** `migrate-canonical-backend-to-appwrite`
-- **Next task:** `1.3` — implement the **`sync-pull` Appwrite Function (Dart runtime)**: returns
-  upserts + tombstones changed since the provided cursor for one entity type, plus a
-  **server-time high-water cursor** (D9/H.1 depends on this shape). Port `convex/sync.ts`
-  `pullRecords`; reads live rows from the descriptive table + deletes from the `tombstones` table
-  (two-table model, per 1.2), unions them on the same cursor clock. No owner gate.
-- **Then:** 1.4 (`reviews-append` + FSRS derive) → 1.5 (deploy schema + Functions, curl smoke)
-- **State notes (updated 2026-07-10):** 0.1 + 0.3 DONE. **1.2 DONE** — `functions/sync-push/`
+- **Next task:** `1.4` — implement **`reviews-append`** (idempotent append-only event ingestion via
+  `clientOpId`) **and the FSRS derive Function on the Dart runtime importing `fsrs: ^2.0.1`** —
+  reduce a `(entityId, entityType)`'s reviewEvents log to card state, matching the client's
+  scheduler math. Executor benchmarks event-triggered vs pull-time derivation and implements the
+  simpler one satisfying "clients pull, never push, fsrsCard". Include the UTC + State-enum
+  gotchas (learning=1; DB uses 0 as custom "new"). No owner gate.
+- **Then:** 1.5 (deploy schema + Functions via CLI, curl smoke each Function)
+- **State notes (updated 2026-07-10):** 0.1 + 0.3 DONE. **1.3 DONE** — `functions/sync-pull/`
+  (Dart runtime `dart-3.11`): pure `pull.dart` (`convex/sync.ts` `pullRecords` port — unions live
+  descriptive rows + `tombstones` on one high-water clock, two-table model; cursor = max clock
+  across the delta else untouched `since`; `null` on empty full pull) + `main.dart` IO glue
+  (`TablesDbPullStore` over `dart_appwrite` 25.1.0, cursor-paginated reads on `by_user_updatedAt`
+  / `by_user_entity_deletedAt`, read-only scopes, trusted `x-appwrite-user-id`). `dart analyze`
+  clean, `dart test` 21/21 green; registered in `appwrite.config.json` (2 functions; passes CLI
+  `Validating functions`). Live deploy is 1.5. **1.2 DONE** — `functions/sync-push/`
   (Dart runtime `dart-3.11`): pure `reconcile.dart` (LWW + tombstones + idempotency ported from
   `convex/sync.ts`, two-table model) + `main.dart` IO glue (`TablesDbSyncStore` over
   `dart_appwrite` 25.1.0, owner-only per-row perms, trusted `x-appwrite-user-id`). `dart analyze`
