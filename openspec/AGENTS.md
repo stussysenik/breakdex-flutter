@@ -45,7 +45,9 @@ openspec/changes/<verb-led-id>/
 - Extend existing changes over new umbrellas; supersession is explicit (archive with a
   dated header, move keepers, name the ruling) — see
   `archive/2026-07-08-evolve-web-mirror-to-crud-platform` for the precedent.
-- Sequencing authority: root `ROADMAP.md` → "Backlog — OpenSpec change order (D8)".
+- Sequencing authority: root `ROADMAP.md` → **`## NOW`** (queue head — the one live task;
+  sessions start there) → "Backlog — OpenSpec change order (D8)" for everything behind it.
+  Ticking a task advances the NOW block in the same commit (the ledger rule extends to it).
 
 ## Non-negotiables (inherited, restated for executors)
 

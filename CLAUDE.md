@@ -4,6 +4,16 @@ Canonical, load-bearing rulings for any agent working in this repo. Read this fi
 the decided stack so you don't re-derive ground truth every session. Global craft mandate
 (`~/.claude/CLAUDE.md`, `~/CLAUDE.md`) still applies and takes precedence where it conflicts.
 
+## Session start — do this before anything else
+
+1. Read root `ROADMAP.md` → **`## NOW`** block. It names the ONE active change and the next
+   unticked task. That is your work; do not re-derive priorities from the 30+ open changes.
+2. Open that change's `tasks.md`; execute exactly the next unticked task per
+   `openspec/AGENTS.md` (binary truth, ledger rule).
+3. Tick the box AND advance the `## NOW` block **in the same commit** that lands the work.
+4. Only the owner reorders the queue. If a task is owner-gated, stop and surface it — then
+   work the parallel-allowed track named in the NOW block, nothing else.
+
 ## Canonical stack — LOCKED
 
 | Concern | Ruling | Notes |

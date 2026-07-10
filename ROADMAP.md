@@ -15,6 +15,22 @@
 
 ---
 
+## NOW — the single active task (queue head; every session starts here)
+
+> Any session, human or agent: read this block, open the named change's `tasks.md`, do
+> exactly the next unticked task, verify (binary truth), tick + update this block **in the
+> same commit**. Nothing else starts until this block says so.
+
+- **Change:** `migrate-canonical-backend-to-appwrite`
+- **Next task:** `0.3` — Appwrite CLI init → committed `appwrite/` config dir (no secrets)
+- **Then:** 0.4 (Convex decommission) → 1.1 (schema) → 1.2–1.5 (sync Functions + deploy)
+- **State notes (verified 2026-07-10):** Cloud project is LIVE and reachable, API key in
+  `.env.local` works — but 0 databases, 0 functions deployed. 0.1 is effectively done
+  (tick with a verification note when 0.3 lands). **0.2 (Google OAuth console setup) is
+  owner-gated** but does NOT block 0.3–1.5 — only Phase 3 identity needs it.
+- **Parallel-allowed track (no Appwrite dependency):** `add-web-first-release-and-monetization`
+  Phase 1.0 (web Drift 1.0.2 → plugin audit 1.0.3 → `flutter build web` gate 1.0.5).
+
 ## Backlog — OpenSpec change order (D8, canonical)
 
 Priority order for pending OpenSpec changes, top first. This is the authoritative sequencing
