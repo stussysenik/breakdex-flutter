@@ -1,0 +1,19 @@
+name: reviews_append
+description: >-
+  Appwrite Function (Dart runtime) — idempotent append-only review-event
+  ingestion plus event-triggered server-side FSRS derivation for Breakdex. Ports
+  convex/reviews.ts appendReviewEvents and reduces each entity's reviewEvents log
+  to card state with the same fsrs package the client runs (fuzzing off for
+  deterministic, exact-matching derivation).
+publish_to: none
+version: 1.0.0
+
+environment:
+  sdk: ^3.11.0
+
+dependencies:
+  dart_appwrite: ^25.1.0
+  fsrs: ^2.0.1
+
+dev_dependencies:
+  test: ^1.25.0

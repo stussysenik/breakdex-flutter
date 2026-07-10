@@ -187,12 +187,36 @@
   `by_user_updatedAt` / `by_user_entity_deletedAt`, trusted `x-appwrite-user-id`, read-only scopes).
   `dart analyze` clean, `dart test` 21/21 green; registered in `appwrite.config.json` (passes CLI
   `Validating functions`). Live deploy is 1.5.
-- [ ] 1.4 Implement **`reviews-append`** (idempotent append-only event ingestion) and the
+- [x] 1.4 Implement **`reviews-append`** (idempotent append-only event ingestion) and the
   **FSRS derive Function on the Dart runtime importing `fsrs: ^2.0.1`** — reduce a
   (entityId, entityType)'s event log to card state, matching the client's scheduler math.
   Executor benchmarks event-triggered vs pull-time derivation and implements the simpler one that
   satisfies "clients pull, never push, fsrsCard". Include the UTC + State-enum gotchas from repo
-  memory (learning=1; DB uses 0 as custom "new").
+  memory (learning=1; DB uses 0 as custom "new"). — `functions/reviews-append/` (Dart runtime
+  `dart-3.11`): pure `append.dart` (idempotent ingest ported from `convex/reviews.ts`
+  `appendReviewEvents` — skip by `clientOpId`, collect touched `(entityType, entityId)`, then
+  event-triggered derive) + pure `derive.dart` (folds each entity's ordered `reviewEvents` log
+  through the **same `fsrs: ^2.0.1`** the client runs, reconstructing the card between events
+  exactly as the client's `FsrsService._dbToFsrs`) + `main.dart` IO glue (`TablesDbAppendStore` over
+  `dart_appwrite` 25.1.0, cursor-paginated per-entity log read via `by_user_entity`, owner-only
+  writes, trusted `x-appwrite-user-id`, `rows.write` scope). **Benchmark → event-triggered:**
+  derive right after append for only the batch's touched entities (bounded), so FSRS math lives in
+  one place and the card pull collapses to a plain `fsrsCards` delta — vs pull-time, which either
+  recomputes every card from the whole log per pull (O(all events), breaks the incremental cursor)
+  or races concurrent derive-on-read writes. **Determinism:** the client scheduler defaults to
+  `enableFuzzing:true`, whose fuzz draws an *unseeded* `math.Random()` on Review-state intervals
+  ≥2.5d — irreproducible; the derive forces **`enableFuzzing:false`**, the only choice under which
+  re-deriving an unchanged log is idempotent (no cursor churn) and 4.6's "tolerance: exact — same
+  math" is meaningful (S/D/state match exactly; `due` = the canonical *unfuzzed* interval). Gotchas
+  honored: fold passes `reviewDateTime = reviewedAt.toUtc()` (UTC assert); a derived card's `state`
+  is always 1–3 (never the DB-only `0`=new). `updatedAt` = newest `reviewedAt` (deterministic pull
+  clock); `lastEventOpId` = last folded `clientOpId` (watermark). `dart analyze` clean, `dart test`
+  **18/18 green** (derive matches an independent transcription of the client fold on single +
+  mixed again/hard/good/easy sequences; determinism; empty-log→null; state∈1..3; idempotent replay
+  skips + no re-derive; per-entity collapse; per-user scoping; H.3 derive-fault isolation; wire
+  parsing + rejections). Registered in `appwrite.config.json` (3 functions; valid JSON, full
+  key/schema parity with the two entries the CLI already accepted). Live deploy + CLI
+  `Validating functions` + curl smoke is **1.5**.
 - [ ] 1.5 Deploy schema + Functions via CLI to the Cloud project; smoke-test each Function with
   curl/CLI fixtures. Owner-gated only if a key is missing.
 

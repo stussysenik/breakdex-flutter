@@ -203,6 +203,18 @@
             "entrypoint": "lib/main.dart",
             "commands": "dart pub get",
             "enabled": true
+        },
+        {
+            "$id": "reviews-append",
+            "name": "reviews-append",
+            "runtime": "dart-3.11",
+            "execute": ["users"],
+            "events": [],
+            "scopes": ["tables.read", "rows.read", "rows.write"],
+            "path": "functions/reviews-append",
+            "entrypoint": "lib/main.dart",
+            "commands": "dart pub get",
+            "enabled": true
         }
     ]
 }

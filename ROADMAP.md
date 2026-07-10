@@ -22,14 +22,26 @@
 > same commit**. Nothing else starts until this block says so.
 
 - **Change:** `migrate-canonical-backend-to-appwrite`
-- **Next task:** `1.4` — implement **`reviews-append`** (idempotent append-only event ingestion via
-  `clientOpId`) **and the FSRS derive Function on the Dart runtime importing `fsrs: ^2.0.1`** —
-  reduce a `(entityId, entityType)`'s reviewEvents log to card state, matching the client's
-  scheduler math. Executor benchmarks event-triggered vs pull-time derivation and implements the
-  simpler one satisfying "clients pull, never push, fsrsCard". Include the UTC + State-enum
-  gotchas (learning=1; DB uses 0 as custom "new"). No owner gate.
-- **Then:** 1.5 (deploy schema + Functions via CLI, curl smoke each Function)
-- **State notes (updated 2026-07-10):** 0.1 + 0.3 DONE. **1.3 DONE** — `functions/sync-pull/`
+- **Next task:** `1.5` — deploy schema + Functions via CLI to the Cloud project; smoke-test each
+  Function (`sync-push`, `sync-pull`, `reviews-append`) with curl/CLI fixtures, and confirm each
+  Function's `scopes` against the live project. Owner-gated only if a deploy key is missing.
+- **Then:** Phase 1R (remote config channel) / Phase 2 client plumbing per D8.
+- **State notes (updated 2026-07-10):** 0.1 + 0.3 DONE. **1.4 DONE** — `functions/reviews-append/`
+  (Dart runtime `dart-3.11`): pure `append.dart` (idempotent ingest ported from
+  `convex/reviews.ts` `appendReviewEvents` — skip by `clientOpId`, collect touched
+  `(entityType, entityId)`, event-triggered derive) + pure `derive.dart` (folds each entity's
+  ordered `reviewEvents` log through the **same `fsrs: ^2.0.1`** the client runs, reconstructing
+  the card between events exactly as the client's `FsrsService._dbToFsrs`) + `main.dart` IO glue
+  (`TablesDbAppendStore` over `dart_appwrite` 25.1.0, cursor-paginated per-entity read via
+  `by_user_entity`, owner-only writes, trusted `x-appwrite-user-id`, `rows.write` scope).
+  **Benchmark → event-triggered** (derive only the batch's touched entities; FSRS math in one
+  place; card pull collapses to a plain `fsrsCards` delta — vs pull-time recompute-everything /
+  derive-on-read races). **Determinism:** derive forces `enableFuzzing:false` (client default is
+  `true`, whose fuzz is an unseeded `Random()` on Review intervals ≥2.5d — irreproducible), so
+  re-derive is idempotent and 4.6's "exact" is meaningful (S/D/state exact; `due` = canonical
+  unfuzzed interval). `dart analyze` clean, `dart test` **18/18 green**; registered in
+  `appwrite.config.json` (3 functions; valid JSON + full key/schema parity with the accepted
+  entries). Live deploy is 1.5. **1.3 DONE** — `functions/sync-pull/`
   (Dart runtime `dart-3.11`): pure `pull.dart` (`convex/sync.ts` `pullRecords` port — unions live
   descriptive rows + `tombstones` on one high-water clock, two-table model; cursor = max clock
   across the delta else untouched `since`; `null` on empty full pull) + `main.dart` IO glue
