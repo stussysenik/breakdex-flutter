@@ -6,8 +6,8 @@ import 'package:flutter/widgets.dart';
 import '../../dev/preview_harness.dart';
 import 'add_screen.dart';
 
-@Preview(name: 'AddScreen · light', group: 'add', wrapper: PreviewHarness.wrapLight)
+@Preview(name: 'AddScreen · light', group: 'add', wrapper: wrapLight)
 Widget addScreenLight() => const AddScreen();
 
-@Preview(name: 'AddScreen · dark', group: 'add', wrapper: PreviewHarness.wrapDark)
+@Preview(name: 'AddScreen · dark', group: 'add', wrapper: wrapDark)
 Widget addScreenDark() => const AddScreen();

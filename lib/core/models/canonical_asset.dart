@@ -1,4 +1,4 @@
-import 'dart:io';
+import '../platform/io.dart';
 
 sealed class CanonicalAsset {
   final String hash;

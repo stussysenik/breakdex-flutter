@@ -3,7 +3,7 @@
 
 import 'dart:async';
 import 'dart:collection';
-import 'dart:io';
+import '../platform/io.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';

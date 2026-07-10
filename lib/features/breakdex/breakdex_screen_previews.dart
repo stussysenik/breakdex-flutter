@@ -6,8 +6,8 @@ import 'package:flutter/widgets.dart';
 import '../../dev/preview_harness.dart';
 import 'breakdex_screen.dart';
 
-@Preview(name: 'BreakdexScreen · light', group: 'breakdex', wrapper: PreviewHarness.wrapLight)
+@Preview(name: 'BreakdexScreen · light', group: 'breakdex', wrapper: wrapLight)
 Widget breakdexScreenLight() => const BreakdexScreen();
 
-@Preview(name: 'BreakdexScreen · dark', group: 'breakdex', wrapper: PreviewHarness.wrapDark)
+@Preview(name: 'BreakdexScreen · dark', group: 'breakdex', wrapper: wrapDark)
 Widget breakdexScreenDark() => const BreakdexScreen();

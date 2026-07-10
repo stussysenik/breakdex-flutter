@@ -2,7 +2,7 @@
 // ignore_for_file: avoid_slow_async_io, discarded_futures
 
 import 'dart:async';
-import 'dart:io';
+import '../platform/io.dart';
 
 import 'package:drift/drift.dart';
 import 'package:flutter/foundation.dart';

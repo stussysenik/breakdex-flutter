@@ -16,6 +16,10 @@ dependencies:
   flutter_riverpod: ^2.6.1
   drift: ^2.22.1
   sqlite3_flutter_libs: ^0.5.28
+  # Pinned so the (freshly-resolved) widget-preview scaffold inherits the same
+  # sqlite3 as the app, keeping web/sqlite3.wasm ABI-matched. Bump in lockstep
+  # with web/sqlite3.wasm (simolus3/sqlite3.dart release sqlite3-<version>).
+  sqlite3: 2.9.4
   go_router: ^14.8.1
   video_player: ^2.9.3
   image_picker: ^1.1.2
@@ -57,7 +61,6 @@ dev_dependencies:
   flutter_lints: ^6.0.0
   drift_dev: ^2.22.1
   build_runner: ^2.15.0
-  sqlite3: ^2.4.6
   freezed: ^3.2.5
   patrol: ^4.6.1
 
@@ -70,6 +73,10 @@ flutter:
     - assets/fixtures-blue-beat.mp4
     - assets/fixtures-red-beat.mp4
     - assets/fixtures-green-beat.mp4
+    # sqlite3 WASM for the widget-preview harness only (Drift-on-web, in-memory).
+    # Loaded via rootBundle in lib/dev/preview_db_web.dart. ABI-matched to the
+    # pinned `sqlite3` version above; bump both together.
+    - assets/sqlite3.wasm
 
   fonts:
     - family: Inter

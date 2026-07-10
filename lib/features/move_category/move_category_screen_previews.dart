@@ -6,8 +6,8 @@ import 'package:flutter/widgets.dart';
 import '../../dev/preview_harness.dart';
 import 'move_category_screen.dart';
 
-@Preview(name: 'MoveCategoryScreen · light', group: 'move_category', wrapper: PreviewHarness.wrapLight)
+@Preview(name: 'MoveCategoryScreen · light', group: 'move_category', wrapper: wrapLight)
 Widget moveCategoryScreenLight() => const MoveCategoryScreen();
 
-@Preview(name: 'MoveCategoryScreen · dark', group: 'move_category', wrapper: PreviewHarness.wrapDark)
+@Preview(name: 'MoveCategoryScreen · dark', group: 'move_category', wrapper: wrapDark)
 Widget moveCategoryScreenDark() => const MoveCategoryScreen();

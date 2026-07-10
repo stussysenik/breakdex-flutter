@@ -6,8 +6,8 @@ import 'package:flutter/widgets.dart';
 import '../../dev/preview_harness.dart';
 import 'battle_screen.dart';
 
-@Preview(name: 'BattleScreen · light', group: 'battle', wrapper: PreviewHarness.wrapLight)
+@Preview(name: 'BattleScreen · light', group: 'battle', wrapper: wrapLight)
 Widget battleScreenLight() => const BattleScreen();
 
-@Preview(name: 'BattleScreen · dark', group: 'battle', wrapper: PreviewHarness.wrapDark)
+@Preview(name: 'BattleScreen · dark', group: 'battle', wrapper: wrapDark)
 Widget battleScreenDark() => const BattleScreen();

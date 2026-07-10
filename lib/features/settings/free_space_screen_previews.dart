@@ -6,8 +6,8 @@ import 'package:flutter/widgets.dart';
 import '../../dev/preview_harness.dart';
 import 'free_space_screen.dart';
 
-@Preview(name: 'FreeSpaceScreen · light', group: 'settings', wrapper: PreviewHarness.wrapLight)
+@Preview(name: 'FreeSpaceScreen · light', group: 'settings', wrapper: wrapLight)
 Widget freeSpaceScreenLight() => const FreeSpaceScreen();
 
-@Preview(name: 'FreeSpaceScreen · dark', group: 'settings', wrapper: PreviewHarness.wrapDark)
+@Preview(name: 'FreeSpaceScreen · dark', group: 'settings', wrapper: wrapDark)
 Widget freeSpaceScreenDark() => const FreeSpaceScreen();

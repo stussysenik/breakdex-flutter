@@ -6,8 +6,8 @@ import 'package:flutter/widgets.dart';
 import '../../dev/preview_harness.dart';
 import 'sync_status_screen.dart';
 
-@Preview(name: 'SyncStatusScreen · light', group: 'settings', wrapper: PreviewHarness.wrapLight)
+@Preview(name: 'SyncStatusScreen · light', group: 'settings', wrapper: wrapLight)
 Widget syncStatusScreenLight() => const SyncStatusScreen();
 
-@Preview(name: 'SyncStatusScreen · dark', group: 'settings', wrapper: PreviewHarness.wrapDark)
+@Preview(name: 'SyncStatusScreen · dark', group: 'settings', wrapper: wrapDark)
 Widget syncStatusScreenDark() => const SyncStatusScreen();

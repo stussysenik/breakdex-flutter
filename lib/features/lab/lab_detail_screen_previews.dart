@@ -6,8 +6,8 @@ import 'package:flutter/widgets.dart';
 import '../../dev/preview_harness.dart';
 import 'lab_detail_screen.dart';
 
-@Preview(name: 'LabDetailScreen · light', group: 'lab', wrapper: PreviewHarness.wrapLight)
+@Preview(name: 'LabDetailScreen · light', group: 'lab', wrapper: wrapLight)
 Widget labDetailScreenLight() => const LabDetailScreen(labId: PreviewSeed.labId);
 
-@Preview(name: 'LabDetailScreen · dark', group: 'lab', wrapper: PreviewHarness.wrapDark)
+@Preview(name: 'LabDetailScreen · dark', group: 'lab', wrapper: wrapDark)
 Widget labDetailScreenDark() => const LabDetailScreen(labId: PreviewSeed.labId);

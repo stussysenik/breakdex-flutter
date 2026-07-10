@@ -2,7 +2,7 @@
 // ignore_for_file: avoid_slow_async_io, discarded_futures
 
 import 'dart:async';
-import 'dart:io';
+import '../../core/platform/io.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';

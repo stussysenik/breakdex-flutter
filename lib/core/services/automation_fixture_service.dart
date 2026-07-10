@@ -1,4 +1,4 @@
-import 'dart:io';
+import '../platform/io.dart';
 import 'dart:math';
 
 import 'package:drift/drift.dart' show Value;

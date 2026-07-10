@@ -6,8 +6,8 @@ import 'package:flutter/widgets.dart';
 import '../../dev/preview_harness.dart';
 import 'flow_screen.dart';
 
-@Preview(name: 'FlowScreen · light', group: 'flow', wrapper: PreviewHarness.wrapLight)
+@Preview(name: 'FlowScreen · light', group: 'flow', wrapper: wrapLight)
 Widget flowScreenLight() => const FlowScreen();
 
-@Preview(name: 'FlowScreen · dark', group: 'flow', wrapper: PreviewHarness.wrapDark)
+@Preview(name: 'FlowScreen · dark', group: 'flow', wrapper: wrapDark)
 Widget flowScreenDark() => const FlowScreen();

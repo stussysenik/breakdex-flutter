@@ -1,7 +1,7 @@
 // H.8 lint triage — discarded_futures: intentional fire-and-forget (UI/provider side effects); the rule still guards new sync/codec files.
 // ignore_for_file: discarded_futures
 
-import 'dart:io';
+import '../../../core/platform/io.dart';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';

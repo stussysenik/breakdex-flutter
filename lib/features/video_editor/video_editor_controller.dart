@@ -2,7 +2,7 @@
 // ignore_for_file: discarded_futures
 
 import 'dart:async';
-import 'dart:io';
+import '../../core/platform/io.dart';
 import 'dart:ui';
 import 'package:flutter/foundation.dart';
 import 'package:uuid/uuid.dart';

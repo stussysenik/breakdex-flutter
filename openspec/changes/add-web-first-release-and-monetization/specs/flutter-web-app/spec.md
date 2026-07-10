@@ -26,3 +26,19 @@ platform gap SHALL never be a silent no-op or a crash.
 #### Scenario: iOS-only feature on web
 - **WHEN** a web user reaches a flow whose implementation is iOS-only
 - **THEN** the UI either omits the affordance or labels it unavailable on this platform, and the surrounding flow remains usable
+
+### Requirement: The shared compile graph is platform-neutral
+
+Every Dart library reachable from `main.dart` OR from any `@Preview` SHALL NOT import `dart:io` or
+`dart:ffi` directly. Platform-specific I/O (filesystem, native SQLite via FFI) SHALL sit behind a
+conditional-import seam (`x.dart` facade selecting `x_native.dart` / `x_web.dart`) so the web
+target compiles cleanly. As a consequence, `flutter widget-preview` — which renders **only** on
+web — SHALL compile and render the project's previews in Chrome against an in-memory WASM database.
+
+#### Scenario: Web compile has no native leak
+- **WHEN** `flutter build web` (or the widget-preview scaffold) compiles the app
+- **THEN** no `dart:io` / `Only JS interop members may be 'external'` (FFI) errors occur, because all such usage is behind native-only conditional seams
+
+#### Scenario: Widget previews render on web
+- **WHEN** a developer runs `flutter widget-preview start`
+- **THEN** the previews render in Chrome, each screen backed by a fresh in-memory WASM SQLite database seeded by the preview harness

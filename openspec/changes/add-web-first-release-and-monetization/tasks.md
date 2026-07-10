@@ -19,6 +19,72 @@
 
 ## Phase 1: Flutter Web bring-up (additive; no released gate yet; can start NOW)
 
+> **Session 2026-07-10 progress (branch `phase-h-hardening`, UNCOMMITTED working tree).**
+> Foundation slices for 1.1/1.2 plus the widget-preview DX landed in the working tree while
+> chasing `flutter widget-preview` (web-only renderer) → this proved the whole app must be
+> web-compilable. Native build is unaffected — every new import is behind a conditional seam.
+> **Nothing ticked yet** (ledger rule: commit + binary-truth verify first). Landed:
+> - `web/` scaffold created (`flutter create --platforms=web`). **Not yet owned** — icons /
+>   manifest / index.html are still scaffold boilerplate (→ 1.1, ties to
+>   `harden-code-ownership-and-config-purge`).
+> - `sqlite3` pinned to `2.9.4` in **main** deps (moved out of dev) + `assets/sqlite3.wasm`
+>   (ABI-matched, declared as a package asset) so the freshly-resolved widget-preview scaffold
+>   inherits the same sqlite3 as the app (the scaffold re-resolves deps and had floated to
+>   sqlite3 3.3.4, mismatching the wasm — pinning fixes it).
+> - Drift connection split behind conditional import — `lib/core/database/connection/`
+>   (`open_connection.dart` facade → `open_connection_native.dart` FFI /
+>   `open_connection_web.dart` throws-until-wired). `lib/core/database/database.dart` no longer
+>   imports `dart:io`/`drift/native.dart`.
+> - Preview-harness DB split — `lib/dev/preview_db.dart` facade → `_native.dart` (FFI in-memory) /
+>   `_web.dart` (WASM in-memory via `WasmSqlite3.load` + `WasmDatabase.inMemory`, wasm from
+>   `rootBundle`). `lib/dev/preview_harness.dart` uses it.
+> - Widget-preview wrappers fixed — `wrapLight`/`wrapDark` are now **top-level functions** (the
+>   scaffold codegen references a `wrapper:` as a top-level tear-off; `Class.staticMethod`
+>   produced `Undefined name '_i5.wrapLight'`). 29 `*_previews.dart` + the smoke test updated.
+> - **`dart:io` platform seam landed (1.0.1).** New `lib/core/platform/io.dart` facade →
+>   `io_native.dart` (`export 'dart:io';`, byte-identical native — the `_native.dart` suffix is
+>   what the done-criterion grep excludes) / `io_web.dart` (hand-rolled stubs: pure-path members
+>   work, existence queries answer `false`, real I/O throws `UnsupportedError`). Inventory was
+>   **45** files (not 46): **43** had their `import 'dart:io';` swapped to the seam (depth-correct
+>   relative paths), **2** (`lib/core/providers.dart`, `lib/features/move_list/move_list_screen.dart`)
+>   had a **dead** `dart:io` import removed. Done-criterion met:
+>   `grep -rl "import 'dart:io'" lib/ | grep -v _native.dart` is **empty**. No new runtime dep.
+>
+> **Verified this session:** `wrapLight`/`wrapDark` errors gone; `dart analyze` **clean** across
+> the platform seam + all 43 swapped dirs + the 2 dead-import files (only pre-existing info-level
+> `discarded_futures` in the untouched `app_loader.dart`). Native semantics are guaranteed by
+> `export 'dart:io'`. **Remaining before web renders (all Phase 1.0, still unticked per the 1.0.5
+> gate "no box ticks until it passes on a committed tree"):** (a) **1.0.2** real web Drift
+> (`open_connection_web.dart` still throws) — needed for `AppDatabase()` on web; (b) **1.0.3**
+> native-plugin web-compat audit (`video_player`, `google_sign_in`, `firebase_*`, `path_provider`,
+> etc.); (c) **1.0.5** the binary-truth gate itself — `flutter build web` (which is what confirms
+> the `io_web` stub covers every call site under web compilation) + Chrome render via
+> chrome-devtools MCP. These are best done together next pass, where the web build's compile
+> errors drive any `io_web` stub gaps. **This commit lands 1.0.1 + the foundation (native-safe,
+> additive); boxes stay unticked until 1.0.5 is green.**
+
+### Phase 1.0: Web-compile foundation (no Appwrite; unblocks 1.1–1.6 AND widget previews)
+
+- [ ] 1.0.1 **`dart:io` seam audit + conditionalization.** Inventory (2026-07-10, `grep -rl "import
+  'dart:io'" lib/`): **46 files**. For each, move `File`/`Directory`/`Platform` access behind a
+  conditional-import seam (`x.dart` + `x_native.dart`/`x_web.dart`) or a capability interface; web
+  impls degrade visibly per the "Platform gaps degrade visibly" requirement. Priority: app-wide
+  `lib/core/providers.dart` and the previewed screens first, then `lib/core/services/*` and
+  `lib/core/sync/*`. **Done ⇒** `grep -rl "import 'dart:io'" lib/ | grep -v _native.dart` is empty.
+- [ ] 1.0.2 **Real web Drift connection.** Replace the `throw UnsupportedError` in
+  `lib/core/database/connection/open_connection_web.dart` with a persistent `WasmDatabase`
+  (OPFS + drift worker + `sqlite3.wasm`), proving schema v8 migrations run on web — this IS
+  task 1.2's implementation.
+- [ ] 1.0.3 **Native plugin web-compat audit.** For each native plugin in the app/preview graph
+  (`firebase_*`, `video_player`, `google_sign_in`, `sensors_plus`, `flutter_secure_storage`,
+  `path_provider`, `share_plus`, `image_picker`, `file_picker`), confirm a web implementation
+  exists or route it through a 1.3 visibly-degrading seam.
+- [ ] 1.0.4 **Widget-preview wrapper contract** (implementation landed 2026-07-10 — see progress
+  note). Top-level `wrapLight`/`wrapDark`; harness DB → in-memory WASM on web. **Tick on commit.**
+- [ ] 1.0.5 **Verify (binary truth).** `flutter widget-preview start` compiles the full preview set
+  and renders in Chrome (screenshot via chrome-devtools MCP); then `flutter build web` succeeds
+  (the early half of 1.6). No box in Phase 1.0 ticks until this passes on a committed tree.
+
 - [ ] 1.1 Enable the `web/` target (`flutter create --platforms web .`); commit the scaffold
   then immediately own it (icons, manifest, index.html title/meta — no scaffold boilerplate
   survives; ties into `harden-code-ownership-and-config-purge`).

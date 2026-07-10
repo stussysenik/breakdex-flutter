@@ -6,8 +6,8 @@ import 'package:flutter/widgets.dart';
 import '../../dev/preview_harness.dart';
 import 'auth_screen.dart';
 
-@Preview(name: 'AuthScreen · light', group: 'auth', wrapper: PreviewHarness.wrapLight)
+@Preview(name: 'AuthScreen · light', group: 'auth', wrapper: wrapLight)
 Widget authScreenLight() => const AuthScreen();
 
-@Preview(name: 'AuthScreen · dark', group: 'auth', wrapper: PreviewHarness.wrapDark)
+@Preview(name: 'AuthScreen · dark', group: 'auth', wrapper: wrapDark)
 Widget authScreenDark() => const AuthScreen();

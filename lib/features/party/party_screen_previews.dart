@@ -6,8 +6,8 @@ import 'package:flutter/widgets.dart';
 import '../../dev/preview_harness.dart';
 import 'party_screen.dart';
 
-@Preview(name: 'PartyScreen · light', group: 'party', wrapper: PreviewHarness.wrapLight)
+@Preview(name: 'PartyScreen · light', group: 'party', wrapper: wrapLight)
 Widget partyScreenLight() => const PartyScreen();
 
-@Preview(name: 'PartyScreen · dark', group: 'party', wrapper: PreviewHarness.wrapDark)
+@Preview(name: 'PartyScreen · dark', group: 'party', wrapper: wrapDark)
 Widget partyScreenDark() => const PartyScreen();

@@ -6,7 +6,7 @@ import 'package:flutter_test/flutter_test.dart';
 void main() {
   testWidgets('preview harness renders a data-driven screen with seed data',
       (final tester) async {
-    await tester.pumpWidget(PreviewHarness.wrapLight(MoveListScreen()));
+    await tester.pumpWidget(wrapLight(MoveListScreen()));
     // Let the in-memory DB seed and the reactive streams emit.
     await tester.pump(const Duration(milliseconds: 100));
     await tester.pump(const Duration(milliseconds: 400));

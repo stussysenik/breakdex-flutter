@@ -60,6 +60,11 @@ instantly (pairs with `remote-config`), enforce invites trivially, and take paym
 
 ## Impact
 - **New capabilities:** `flutter-web-app`, `monetized-invites`, `release-hygiene`.
+- **Web-compile footprint (grounded 2026-07-10):** the shared graph must go platform-neutral —
+  **46 `lib/` files import `dart:io` directly** today (`grep -rl "import 'dart:io'" lib/`) and must
+  move behind conditional seams (Phase 1.0). Landed this session: `web/` scaffold, `sqlite3` pin +
+  `assets/sqlite3.wasm`, and the Drift + preview-harness connection splits (native FFI ⇄ web WASM);
+  widget previews are the early web-compilability proof.
 - **Depends on:** `migrate-canonical-backend-to-appwrite` (identity, sync, remote-config).
 - **New surfaces:** `web/` Flutter target, invite/entitlement collections + redeem Function,
   payments webhook Function, `GUIDE.md`, release CI.

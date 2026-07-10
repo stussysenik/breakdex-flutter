@@ -6,8 +6,8 @@ import 'package:flutter/widgets.dart';
 import '../../dev/preview_harness.dart';
 import 'instax_viewer_screen.dart';
 
-@Preview(name: 'InstaxViewerScreen · light', group: 'instax_viewer', wrapper: PreviewHarness.wrapLight)
+@Preview(name: 'InstaxViewerScreen · light', group: 'instax_viewer', wrapper: wrapLight)
 Widget instaxViewerScreenLight() => const InstaxViewerScreen(category: PreviewSeed.category);
 
-@Preview(name: 'InstaxViewerScreen · dark', group: 'instax_viewer', wrapper: PreviewHarness.wrapDark)
+@Preview(name: 'InstaxViewerScreen · dark', group: 'instax_viewer', wrapper: wrapDark)
 Widget instaxViewerScreenDark() => const InstaxViewerScreen(category: PreviewSeed.category);

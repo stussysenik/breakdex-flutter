@@ -2,7 +2,7 @@
 // ignore_for_file: avoid_slow_async_io
 
 import 'dart:async';
-import 'dart:io';
+import '../platform/io.dart';
 
 import 'package:flutter/widgets.dart';
 import 'package:path/path.dart' as p;

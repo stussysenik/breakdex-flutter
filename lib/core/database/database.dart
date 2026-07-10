@@ -1,9 +1,6 @@
-import 'dart:io';
 import 'package:drift/drift.dart';
-import 'package:drift/native.dart';
-import 'package:path/path.dart' as p;
 
-import '../services/app_storage_paths.dart';
+import 'connection/open_connection.dart';
 import 'tables/moves.dart';
 import 'tables/combos.dart';
 import 'tables/combo_moves.dart';
@@ -102,7 +99,7 @@ part 'database.g.dart';
   ],
 )
 class AppDatabase extends _$AppDatabase {
-  AppDatabase() : super(_openConnection());
+  AppDatabase() : super(openConnection());
 
   AppDatabase.forTesting(super.e);
 
@@ -634,10 +631,3 @@ class AppDatabase extends _$AppDatabase {
   );
 }
 
-LazyDatabase _openConnection() {
-  return LazyDatabase(() async {
-    final dir = await AppStoragePaths.documentsDirectory();
-    final file = File(p.join(dir.path, 'breakdex.db'));
-    return NativeDatabase.createInBackground(file);
-  });
-}

@@ -1,5 +1,4 @@
 import 'package:drift/drift.dart' show Value;
-import 'package:drift/native.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -9,6 +8,7 @@ import '../core/design/theme.dart';
 import '../core/providers.dart';
 import '../core/services/settings_service.dart';
 import '../shared/widgets/app_loader.dart';
+import 'preview_db.dart';
 
 /// Shared widget-preview harness for the whole app.
 ///
@@ -21,7 +21,7 @@ import '../shared/widgets/app_loader.dart';
 /// the screen you're iterating on:
 ///
 /// ```dart
-/// @Preview(name: 'Settings', wrapper: PreviewHarness.wrapLight)
+/// @Preview(name: 'Settings', wrapper: wrapLight)
 /// Widget settingsPreview() => const SettingsScreen();
 /// ```
 ///
@@ -29,15 +29,16 @@ import '../shared/widgets/app_loader.dart';
 /// is shared across every preview, so the sample data below is the same
 /// everywhere. The known seeded ids are exported as [PreviewSeed] for screens
 /// that take a `moveId` / `comboId` / `categoryName` constructor argument.
-abstract final class PreviewHarness {
-  /// Wraps [child] in the seeded app environment with the light theme.
-  static Widget wrapLight(final Widget child) =>
-      _PreviewHost(themeMode: ThemeMode.light, child: child);
+///
+/// The wrappers are top-level functions (not static methods): the widget-preview
+/// code generator references a `wrapper:` as a top-level tear-off, so a
+/// `Class.staticMethod` form generates `Undefined name` errors in the scaffold.
+Widget wrapLight(final Widget child) =>
+    _PreviewHost(themeMode: ThemeMode.light, child: child);
 
-  /// Wraps [child] in the seeded app environment with the dark theme.
-  static Widget wrapDark(final Widget child) =>
-      _PreviewHost(themeMode: ThemeMode.dark, child: child);
-}
+/// Wraps [child] in the seeded app environment with the dark theme.
+Widget wrapDark(final Widget child) =>
+    _PreviewHost(themeMode: ThemeMode.dark, child: child);
 
 /// Stable identifiers for the seeded sample data, for screens that need an
 /// argument (e.g. `MoveDetailScreen(moveId: PreviewSeed.moveId)`).
@@ -64,7 +65,7 @@ Future<_Backend> _buildBackend() async {
   // ignore: invalid_use_of_visible_for_testing_member
   SharedPreferences.setMockInitialValues(<String, Object>{});
   final prefs = await SharedPreferences.getInstance();
-  final db = AppDatabase.forTesting(NativeDatabase.memory());
+  final db = AppDatabase.forTesting(await openPreviewExecutor());
   await _seed(db);
   return _Backend(db, prefs);
 }

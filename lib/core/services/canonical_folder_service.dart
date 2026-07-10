@@ -2,7 +2,7 @@
 // ignore_for_file: avoid_slow_async_io
 
 import 'dart:convert';
-import 'dart:io';
+import '../platform/io.dart';
 
 import 'package:flutter/foundation.dart';
 import 'package:path/path.dart' as p;

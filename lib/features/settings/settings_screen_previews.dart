@@ -6,8 +6,8 @@ import 'package:flutter/widgets.dart';
 import '../../dev/preview_harness.dart';
 import 'settings_screen.dart';
 
-@Preview(name: 'SettingsScreen · light', group: 'settings', wrapper: PreviewHarness.wrapLight)
+@Preview(name: 'SettingsScreen · light', group: 'settings', wrapper: wrapLight)
 Widget settingsScreenLight() => const SettingsScreen();
 
-@Preview(name: 'SettingsScreen · dark', group: 'settings', wrapper: PreviewHarness.wrapDark)
+@Preview(name: 'SettingsScreen · dark', group: 'settings', wrapper: wrapDark)
 Widget settingsScreenDark() => const SettingsScreen();

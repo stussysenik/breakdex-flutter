@@ -6,8 +6,8 @@ import 'package:flutter/widgets.dart';
 import '../../dev/preview_harness.dart';
 import 'combos_screen.dart';
 
-@Preview(name: 'CombosScreen · light', group: 'combos', wrapper: PreviewHarness.wrapLight)
+@Preview(name: 'CombosScreen · light', group: 'combos', wrapper: wrapLight)
 Widget combosScreenLight() => const CombosScreen();
 
-@Preview(name: 'CombosScreen · dark', group: 'combos', wrapper: PreviewHarness.wrapDark)
+@Preview(name: 'CombosScreen · dark', group: 'combos', wrapper: wrapDark)
 Widget combosScreenDark() => const CombosScreen();

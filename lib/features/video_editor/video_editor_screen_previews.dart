@@ -6,8 +6,8 @@ import 'package:flutter/widgets.dart';
 import '../../dev/preview_harness.dart';
 import 'video_editor_screen.dart';
 
-@Preview(name: 'VideoEditorScreen · light', group: 'video_editor', wrapper: PreviewHarness.wrapLight)
+@Preview(name: 'VideoEditorScreen · light', group: 'video_editor', wrapper: wrapLight)
 Widget videoEditorScreenLight() => const VideoEditorScreen(videoPath: PreviewSeed.videoPath);
 
-@Preview(name: 'VideoEditorScreen · dark', group: 'video_editor', wrapper: PreviewHarness.wrapDark)
+@Preview(name: 'VideoEditorScreen · dark', group: 'video_editor', wrapper: wrapDark)
 Widget videoEditorScreenDark() => const VideoEditorScreen(videoPath: PreviewSeed.videoPath);

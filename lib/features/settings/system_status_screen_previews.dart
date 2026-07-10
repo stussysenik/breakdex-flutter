@@ -6,8 +6,8 @@ import 'package:flutter/widgets.dart';
 import '../../dev/preview_harness.dart';
 import 'system_status_screen.dart';
 
-@Preview(name: 'SystemStatusScreen · light', group: 'settings', wrapper: PreviewHarness.wrapLight)
+@Preview(name: 'SystemStatusScreen · light', group: 'settings', wrapper: wrapLight)
 Widget systemStatusScreenLight() => const SystemStatusScreen();
 
-@Preview(name: 'SystemStatusScreen · dark', group: 'settings', wrapper: PreviewHarness.wrapDark)
+@Preview(name: 'SystemStatusScreen · dark', group: 'settings', wrapper: wrapDark)
 Widget systemStatusScreenDark() => const SystemStatusScreen();

@@ -2,7 +2,7 @@
 // ignore_for_file: avoid_slow_async_io, discarded_futures
 
 import 'dart:async';
-import 'dart:io';
+import '../platform/io.dart';
 import 'package:flutter/services.dart';
 import 'package:path/path.dart' as p;
 import 'package:flutter_riverpod/flutter_riverpod.dart';

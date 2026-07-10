@@ -6,8 +6,8 @@ import 'package:flutter/widgets.dart';
 import '../../dev/preview_harness.dart';
 import 'canonical_trash_screen.dart';
 
-@Preview(name: 'CanonicalTrashScreen · light', group: 'settings', wrapper: PreviewHarness.wrapLight)
+@Preview(name: 'CanonicalTrashScreen · light', group: 'settings', wrapper: wrapLight)
 Widget canonicalTrashScreenLight() => const CanonicalTrashScreen();
 
-@Preview(name: 'CanonicalTrashScreen · dark', group: 'settings', wrapper: PreviewHarness.wrapDark)
+@Preview(name: 'CanonicalTrashScreen · dark', group: 'settings', wrapper: wrapDark)
 Widget canonicalTrashScreenDark() => const CanonicalTrashScreen();

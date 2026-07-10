@@ -6,8 +6,8 @@ import 'package:flutter/widgets.dart';
 import '../../dev/preview_harness.dart';
 import 'flashcard_review_screen.dart';
 
-@Preview(name: 'FlashcardReviewScreen · light', group: 'flashcard_review', wrapper: PreviewHarness.wrapLight)
+@Preview(name: 'FlashcardReviewScreen · light', group: 'flashcard_review', wrapper: wrapLight)
 Widget flashcardReviewScreenLight() => const FlashcardReviewScreen();
 
-@Preview(name: 'FlashcardReviewScreen · dark', group: 'flashcard_review', wrapper: PreviewHarness.wrapDark)
+@Preview(name: 'FlashcardReviewScreen · dark', group: 'flashcard_review', wrapper: wrapDark)
 Widget flashcardReviewScreenDark() => const FlashcardReviewScreen();

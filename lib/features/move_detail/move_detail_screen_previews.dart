@@ -6,8 +6,8 @@ import 'package:flutter/widgets.dart';
 import '../../dev/preview_harness.dart';
 import 'move_detail_screen.dart';
 
-@Preview(name: 'MoveDetailScreen · light', group: 'move_detail', wrapper: PreviewHarness.wrapLight)
+@Preview(name: 'MoveDetailScreen · light', group: 'move_detail', wrapper: wrapLight)
 Widget moveDetailScreenLight() => const MoveDetailScreen(moveId: PreviewSeed.moveId);
 
-@Preview(name: 'MoveDetailScreen · dark', group: 'move_detail', wrapper: PreviewHarness.wrapDark)
+@Preview(name: 'MoveDetailScreen · dark', group: 'move_detail', wrapper: wrapDark)
 Widget moveDetailScreenDark() => const MoveDetailScreen(moveId: PreviewSeed.moveId);

@@ -1,4 +1,4 @@
-import 'dart:io';
+import '../platform/io.dart';
 import 'dart:isolate';
 
 import 'package:crypto/crypto.dart';
