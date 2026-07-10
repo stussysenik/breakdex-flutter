@@ -177,6 +177,24 @@
                 { "key": "by_user_entity_deletedAt", "type": "key", "columns": ["userId", "entityType", "deletedAt"] },
                 { "key": "by_user_deletedAt", "type": "key", "columns": ["userId", "deletedAt"] }
             ]
+        },
+        {
+            "$id": "appConfig",
+            "databaseId": "breakdex",
+            "name": "appConfig",
+            "$permissions": ["read(\"users\")"],
+            "rowSecurity": false,
+            "columns": [
+                { "key": "version", "type": "integer", "required": true, "default": null, "min": 0 },
+                { "key": "minSupportedBuild", "type": "integer", "required": true, "default": null, "min": 0 },
+                { "key": "latestBuild", "type": "integer", "required": true, "default": null, "min": 0 },
+                { "key": "updateMessage", "type": "string", "size": 4000, "required": false },
+                { "key": "featureFlags", "type": "string", "size": 100000, "required": false, "default": "{}" },
+                { "key": "killSwitches", "type": "string", "size": 100000, "required": false, "default": "{}" },
+                { "key": "cohortProfiles", "type": "string", "size": 100000, "required": false, "default": "{}" },
+                { "key": "updatedAt", "type": "integer", "required": true, "default": null }
+            ],
+            "indexes": []
         }
     ],
     "functions": [

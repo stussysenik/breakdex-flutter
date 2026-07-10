@@ -241,7 +241,7 @@
 
 ## Phase 1R: Remote config channel (rides Phase 1 provisioning; owner ruling 2026-07-08 — config-first, code-push deferred to 7.4)
 
-- [ ] 1R.1 `appConfig` collection (singleton document, versioned): `minSupportedBuild`,
+- [x] 1R.1 `appConfig` collection (singleton document, versioned): `minSupportedBuild`,
   `latestBuild`, `updateMessage` (feeds the "please update / reinstall" UX and links `GUIDE.md`),
   `featureFlags` (map), `killSwitches` (map — subsumes the sync kill-switch flag surface), and
   `cohortProfiles` (map keyed by invite-cohort — the "my own versions" mechanism: same binary,

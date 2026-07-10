@@ -22,15 +22,27 @@
 > same commit**. Nothing else starts until this block says so.
 
 - **Change:** `migrate-canonical-backend-to-appwrite`
-- **Next task:** `1R.1` — provision the `appConfig` collection (singleton versioned doc:
-  `minSupportedBuild`, `latestBuild`, `updateMessage`, `featureFlags`, `killSwitches`,
-  `cohortProfiles`; read=any authed user, write=owner) into `appwrite.config.json` and deploy via
-  the now-proven `push tables` path. Not owner-gated (schema-only, no OAuth). Parallel-allowed:
-  Phase 2.1 client plumbing (`AppwriteSyncBackend` behind the seam) also unblocked now that the
-  live substrate exists.
-- **Then:** Phase 2 client plumbing (2.1→…) per D8; Phase 3 identity remains gated on `0.2`
-  (Google OAuth, owner-run).
-- **State notes (updated 2026-07-10):** 0.1 + 0.3 DONE. **Phase 1 COMPLETE — 1.5 DONE (live):**
+- **Next task:** `1R.2` — Flutter client: typed immutable `RemoteConfig` model + Riverpod
+  provider; fetch `appConfig` at launch, Realtime-subscribe for live updates, fall back
+  last-cached → compiled defaults offline; no behavior change while flags are at defaults.
+  Not owner-gated. Parallel-allowed: Phase 2.1 client plumbing (`AppwriteSyncBackend` behind
+  the seam), also unblocked now that the live substrate exists.
+- **Then:** 1R.3 min-version gate → 1R.4 validation; Phase 2 client plumbing (2.1→…) per D8;
+  Phase 3 identity remains gated on `0.2` (Google OAuth, owner-run).
+- **⚠ Ops hazard (learned 1R.1):** do **NOT** run `appwrite push tables --all` against the live
+  `breakdex` project. This CLI (22.6.1) diffs omitted-`array` (config) vs `array:false` (deployed)
+  as a change and **recreates existing columns** — it deleted all of `moves`'s attributes mid-run
+  and left dangling `stuck` indexes (unrepairable via `delete-index`; only a table drop+recreate
+  cleared them). `moves` was rebuilt from config (0-row, pre-cutover → no data loss) and all 10
+  tables re-verified green. Provision NEW tables via **targeted** `tables-db create-*-column` /
+  `create-index` calls (auth: `set -a; source .env.local` → export `APPWRITE_ENDPOINT/PROJECT_ID/
+  KEY` — the CLI prefs `current` points at throwaway `6a51…` projects, not `breakdex 6a50f25b…`).
+- **State notes (updated 2026-07-10):** 0.1 + 0.3 DONE. **1R.1 DONE (live):** `appConfig` table
+  provisioned into `breakdex` (8 cols — `version/minSupportedBuild/latestBuild` req-int min0,
+  `updateMessage` opt, `featureFlags/killSwitches/cohortProfiles` opt-string default `"{}"`,
+  `updatedAt` req-int; `rowSecurity:false`, table perm `read("users")`, owner writes via
+  console/server-key — no client write role). Live parity re-verified: 10/10 tables green.
+  0.1 + 0.3 DONE. **Phase 1 COMPLETE — 1.5 DONE (live):**
   schema (`breakdex` TablesDB + 9 tables, `status ready`) + all 3 Functions (`sync-push`,
   `sync-pull`, `reviews-append`) deployed & built on `dart-3.11`, live `scopes` match config,
   **14/14 curl smoke green** against Cloud (real-JWT invocations). Live smoke caught + fixed a
