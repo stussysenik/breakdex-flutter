@@ -22,14 +22,17 @@
 > same commit**. Nothing else starts until this block says so.
 
 - **Change:** `migrate-canonical-backend-to-appwrite`
-- **Next task:** `1R.4` — Validation: unit tests for model/fallback ordering (**largely met** by
-  1R.2's + 1R.3's suites; add any residual gap) + the **manual** proof that flipping a flag in the
-  Appwrite console reaches a running client with no redeploy. The manual half is **session-gated**:
+- **Next task:** `2.2` — `AppwriteSyncBackend` maps the `SyncBackend` contract onto
+  `sync-push`/`sync-pull`/`reviews-append` executions (via the 2.1 transport seam) + `subscribe`
+  over **Appwrite Realtime channels** with a documented poll fallback (audit B1: every loop
+  iteration observes cancellation; test that cancellation stops all I/O). Then 2.3 (port the 9
+  Convex marshalling tests — the parity gate) and 2.4 (delete `convex/` + the 3 Convex Dart files
+  in the same commit 2.3 lands green). **Not owner-gated** — the live substrate + shared
+  `appwriteClientProvider` (1R.2) exist now; this is the live track.
+- **Blocked (not the head):** `1R.4`'s **manual** console→client proof is **session-gated** —
   `appConfig` perm is `read("users")`, so a session-less pre-Phase-3 client degrades to compiled
-  defaults (correct) — real console→client proof needs Phase 3 identity. Owner action still open:
-  create the singleton row `current` in the `appConfig` table (console). Not owner-gated for the
-  unit half. Parallel-allowed: **Phase 2.1** client plumbing (`AppwriteSyncBackend` behind the
-  seam) — the live substrate + shared `appwriteClientProvider` (from 1R.2) both exist now.
+  defaults (correct); real proof needs Phase 3 identity. Its unit half is met by 1R.2/1R.3 suites.
+  Owner action still open: create the singleton row `current` in the `appConfig` table (console).
 - **Then:** Phase 2 client plumbing (2.1→…) per D8; Phase 3 identity remains gated on `0.2`
   (Google OAuth, owner-run). Once the `dart:io`-seam WIP lands (app builds again), **wire
   `UpdateGatePrompt` at the app root** (3-line wrap of the navigator child) — deferred from 1R.3
@@ -42,7 +45,11 @@
   tables re-verified green. Provision NEW tables via **targeted** `tables-db create-*-column` /
   `create-index` calls (auth: `set -a; source .env.local` → export `APPWRITE_ENDPOINT/PROJECT_ID/
   KEY` — the CLI prefs `current` points at throwaway `6a51…` projects, not `breakdex 6a50f25b…`).
-- **State notes (updated 2026-07-10):** 0.1 + 0.3 DONE. **1R.1 DONE (live):** `appConfig` table
+- **State notes (updated 2026-07-11):** **2.1 DONE (2026-07-11):** `lib/core/sync/backends/`
+  transport seam — pure `AppwriteTransport` (`execute(functionId, body)`) + `AppwriteException` +
+  pure `decodeExecutionResult` (failed→`errors`; ≥400→Function `{error}` envelope else `HTTP …`) +
+  concrete `AppwriteFunctionsTransport` over the SDK `Functions.createExecution`; 12/12 unit tests
+  green, analyze clean, no caller wired. 0.1 + 0.3 DONE. **1R.1 DONE (live):** `appConfig` table
   provisioned into `breakdex` (8 cols — `version/minSupportedBuild/latestBuild` req-int min0,
   `updateMessage` opt, `featureFlags/killSwitches/cohortProfiles` opt-string default `"{}"`,
   `updatedAt` req-int; `rowSecurity:false`, table perm `read("users")`, owner writes via

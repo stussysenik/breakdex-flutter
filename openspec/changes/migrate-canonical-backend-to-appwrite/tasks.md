@@ -289,9 +289,18 @@
 
 ## Phase 2: AppwriteSyncBackend behind the existing seam (additive; no caller wired)
 
-- [ ] 2.1 `lib/core/sync/backends/appwrite_transport.dart`: seam interface + typed
+- [x] 2.1 `lib/core/sync/backends/appwrite_transport.dart`: seam interface + typed
   `AppwriteException` wrapper mirroring `ConvexTransport`'s shape (auth header injection,
   Function-execution call, JSON decode).
+  DONE 2026-07-11: pure `AppwriteTransport` (single `execute(functionId, body)` door — Appwrite
+  has no query/mutation split; push/pull/append are all Function executions) + `AppwriteException`
+  (mirrors `ConvexException`; SDK's own `AppwriteException` prefixed away in the concrete file) +
+  pure `decodeExecutionResult` (failed-status → `errors`; `responseStatusCode >= 400` → the
+  Function's `{error}` envelope, else `HTTP <code>: <body>`; empty/malformed body → null). Concrete
+  `appwrite_functions_transport.dart` over the SDK `Functions.createExecution` (POST, JSON body);
+  auth rides the injected `Client`'s session (Phase-3 stamps the trusted `x-appwrite-user-id`), never
+  a client-passed id. Seam stays dep-free & unit-testable in pure Dart (Convex's 2-file split).
+  12/12 unit tests green; analyze clean. Realtime `subscribe` + `SyncBackend` mapping = 2.2.
 - [ ] 2.2 `lib/core/sync/backends/appwrite_sync_backend.dart`: maps the `SyncBackend` contract
   onto `sync-push`/`sync-pull`/`reviews-append`/fsrs pulls. `subscribe` uses **Appwrite Realtime
   channels** (row-level events per table) with a documented poll fallback; every loop iteration
