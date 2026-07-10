@@ -65,6 +65,6 @@
 
 ## 6. Close-out
 
-- [ ] 6.1 All chapters `status: verified`, drift check green in CI, cross-reference note
+- [x] 6.1 All chapters `status: verified`, drift check green in CI, cross-reference note
       added to `add-web-authoring-and-lifecycle-studio` proposal (hosting ↔ content
       split), `openspec validate` strict pass, archive-readiness review.

@@ -87,6 +87,11 @@ that want to be combined."
   native MDX) documenting the load-bearing seams — `SyncBackend`, `Machine<S,E>`, design
   tokens, sync/LWW model — plus operational runbooks (release, provisioning, diagnostics
   export triage). The studio is the dev utility; its docs live with it and build in CI.
+  - **Content ↔ hosting split (`add-engineering-manual-and-docs-ledger`, 2026-07-10):** the
+    manual *content* now lives at repo-root `docs/manual/` (grep-first, agent-facing), authored
+    and owned by that change. This capability keeps **rendering/hosting only** — the studio
+    mounts `docs/manual/` and the broken-MDX-fails-`next build` gate still applies; it no longer
+    owns the words. See that change's `specs/developer-docs/spec.md` (D1).
 
 ### Out of scope
 - Standing up the canonical backend itself — owned by `migrate-canonical-backend-to-appwrite`
