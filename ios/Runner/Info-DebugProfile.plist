@@ -48,6 +48,16 @@
 				<string>com.googleusercontent.apps.499240019967-sdv5ar5fs5pm12h947jfjvsjmqu2o20q</string>
 			</array>
 		</dict>
+		<dict>
+			<key>CFBundleTypeRole</key>
+			<string>Editor</string>
+			<key>CFBundleURLName</key>
+			<string>io.appwrite.oauth</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>appwrite-callback-6a50f25b000e15631ad0</string>
+			</array>
+		</dict>
 	</array>
 	<key>CFBundleVersion</key>
 	<string>$(FLUTTER_BUILD_NUMBER)</string>

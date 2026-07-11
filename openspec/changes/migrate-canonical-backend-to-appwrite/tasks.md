@@ -69,6 +69,14 @@
   GCP OAuth clients (iOS + Web) with Appwrite's redirect URIs; register the Flutter callback
   scheme (`appwrite-callback-<PROJECT_ID>`) in both iOS plists (NOTE: debug builds use
   `Info-DebugProfile.plist`) and AndroidManifest.
+  **Repo-half done (2026-07-11):** callback scheme `appwrite-callback-6a50f25b000e15631ad0`
+  registered in `Info.plist` + `Info-DebugProfile.plist` (2nd `CFBundleURLTypes` entry) and
+  `AndroidManifest.xml` (`com.linusu.flutter_web_auth_2.CallbackActivity`, the handler for
+  `appwrite ^25.2.0` → `flutter_web_auth_2 5.0.3`, `taskAffinity=""`). `plutil -lint` OK on both
+  plists; manifest is valid XML; inert until an OAuth2 session is first created (Phase 3). **Owner
+  console-half still open** (box stays `[ ]`): Google **Web** OAuth client + redirect URI, enable
+  the Appwrite Google provider, register iOS/Android/web platforms. **Exact step-by-step:
+  `DOCS/appwrite-oauth-provisioning.md`.**
 - [x] 0.3 Install/verify the Appwrite CLI; `appwrite init` against the project so schema and
   Functions deploy headlessly from the repo (`appwrite/` config directory, committed; no secrets).
   **Done 2026-07-10.** CLI v22.6.1 (`npm i -g appwrite-cli`). **Deviations (CLI v22 shape):**
@@ -355,9 +363,36 @@
 - [ ] 3.1 `lib/core/services/appwrite_auth_service.dart`: OAuth2 session create/refresh/logout,
   current-user stream, exposed via Riverpod. Verify SDK call shapes against pub.dev `appwrite`
   docs at implementation time. Session persistence across app restarts proven by test/manual note.
+  **Repo-half done (2026-07-11):** built ahead of the 0.2 gate, mirroring the transport seam split.
+  Pure SDK-free `appwrite_auth_service.dart` (`AuthUser` immutable value + `AuthException` +
+  `AppwriteAccountGateway` seam + `AppwriteAuthService`: `refresh`/`signInWithGoogle`/`signOut` +
+  broadcast `userStream`) — unit-testable with no backend. Concrete `appwrite_account_gateway.dart`
+  is the ONLY SDK-touching file (`Account.createOAuth2Session(provider: OAuthProvider.google)` —
+  `success` left null so the SDK auto-derives the `appwrite-callback-<projectId>` scheme 0.2
+  registered; `Account.get()`→`AuthUser`, 401⇒null [no-session, not fault]; `deleteSession('current')`,
+  401-idempotent). API shapes verified against resolved `appwrite 25.2.0` in pub-cache (not memory):
+  `createOAuth2Session` sig, `OAuthProvider.google` [in `package:appwrite/enums.dart`, not top-level],
+  `User.$id/email/name`, `AppwriteException(message,code,...)`, `client.webAuth` callback-scheme
+  default. `appwrite_auth_providers.dart` — `appwriteAuthServiceProvider` (reuses `appwriteClientProvider`)
+  + `currentAppwriteUserProvider` StreamProvider (seeds via `refresh()`, then `userStream`; no discarded
+  future). `flutter analyze` clean; `appwrite_auth_service_test.dart` **8/8 green** (refresh live/no-session
+  + emit, signIn create/scopes/provider-error/no-session-guard, signOut delete+emit-null, `AuthUser`
+  equality). **Box stays `[ ]`:** cross-restart *live* persistence proof needs a real session ⇒ 0.2-gated
+  (the SDK cookie/keychain store is unit-proven via `refresh()` re-read; live proof lands with 3.3).
+  **Unwired** into providers.dart/routing until 3.3.
 - [ ] 3.2 **Login screen (Flutter)**: match the app design system (`AppColors`/`AppSpacing`/
   `AppTypography`, 8pt grid) — app mark, one "Continue with Google" action, error/retry states,
   loading state; no additional providers. Gate: analyzer clean + widget test for the three states.
+  **Done — code + gate met (2026-07-11):** `lib/features/auth/appwrite_login_screen.dart` — centered
+  Breakdex "B" monogram mark (accent `#1F5EFF`, Inter-800, matching `web/`), single "Continue with
+  Google" control that collapses the three states (idle → prompt, loading → spinner + disabled, error →
+  message + "Try again"). Design-system only (`AppColors.accent/actionAgain`, `AppSpacing`,
+  `AppTypography`, `AppRadius.lg`, `AppShadows.raised`, 8pt grid); consumes only
+  `appwriteAuthServiceProvider` (no new providers). `onSignedIn` callback is the seam 3.3 fills for
+  routing. `flutter analyze` clean; `appwrite_login_screen_test.dart` **3/3 green** (idle/loading/error
+  via a controllable fake gateway + provider override). **Box stays `[ ]`** only because 3.x is one
+  owner-gated phase (0.2) — the task's own gate (analyzer + 3-state widget test) is fully met; **unwired**
+  into routing until 3.3.
 - [ ] 3.3 Auth wiring: app requires an Appwrite session; `google_sign_in` demoted to Drive-token
   minting only (its identity role removed). Existing users must experience this as a single
   familiar Google consent, not a new account.
