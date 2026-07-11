@@ -10,6 +10,42 @@ import 'package:flutter_test/flutter_test.dart';
 /// Functions (`sync-push`/`sync-pull`/`reviews-append`) and TablesDB rows emit —
 /// so this proves the Dart marshalling + routing + subscribe cancellation, not a
 /// live deployment.
+// --- Parity gate (task 2.3) ------------------------------------------------
+// This suite is the formal parity mirror of `convex_sync_backend_test.dart`:
+// every one of the 9 Convex marshalling behaviours has a mirror here on the
+// same fixtures, so 2.4 can delete the Convex substrate on a checkable basis.
+//
+//   Convex test                          →  Appwrite mirror (this file)
+//   1 providerType is convex             →  'providerType is appwrite'
+//   2 descriptive push ms epochs         →  'descriptive upsert + tombstone → sync-push …' (byte-identical body)
+//   3 empty descriptive push no-op       →  'empty descriptive push is a no-op'
+//   4 reviewEvent → append, flatten json →  'reviewEvent → reviews-append flattening json fields'
+//   5 reviewEvent rejects deletes        →  'reviewEvent rejects deletes (append-only)'
+//   6 fsrsCard push forbidden            →  'fsrsCard push is forbidden (derived state)'
+//   7 descriptive pull decodes delta     →  'descriptive pull decodes upserts, tombstones, cursor'
+//   8 full pull (since null) omits since →  'full descriptive pull (since null) omits the since key'  [ADAPTED ↓]
+//   9 fsrsCard pull routing              →  'fsrsCard pull synthesizes composite id + lastEventOpId key'  [ADAPTED ↓]
+//
+// Two adaptations, forced by the routing split (2.2): Convex pulls every entity
+// through a Function; Appwrite pulls reviewEvent/fsrsCard via direct TablesDB
+// reads (no pull Function exists — the log is append-only, the card derived).
+//   • #8 — Convex asserted "omits since" on the reviewEvent *Function* pull.
+//     Here that assertion moves to a descriptive type (combo), still on the
+//     Function path; reviewEvent's direct read gets its own fold test.
+//   • #9 — Convex asserted fsrsCard routes to `fsrs:pullCards`. Here there is no
+//     such Function, so the mirror asserts the direct-read convention instead:
+//     the `entityType:entityId` composite id + `lastEventOpId` idempotency key.
+//
+// Round-trip guarantee under test: DateTime → ms (`millisecondsSinceEpoch`),
+// exercised on every clock field. The task line also names "BigInt → string",
+// but neither backend's Dart marshalling performs that conversion (clocks are
+// ints, `json` passes through untouched) — there is no such Dart behaviour to
+// mirror, so no test asserts one.
+//
+// Beyond the 9, this file adds the 2.2-specific rigor with no Convex twin:
+// reviewEvent direct-read fold, empty-direct-pull cursor semantics, and the
+// four subscribe tests (Realtime trigger, channel set, poll fallback, audit B1).
+
 class _FakeTransport implements AppwriteTransport {
   final List<({String functionId, Map<String, Object?> body})> executions = [];
   final List<({String table, String orderField, int? since})> reads = [];

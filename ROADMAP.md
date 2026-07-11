@@ -22,14 +22,14 @@
 > same commit**. Nothing else starts until this block says so.
 
 - **Change:** `migrate-canonical-backend-to-appwrite`
-- **Next task:** `2.3` — port the 9 Convex marshalling tests to `AppwriteSyncBackend` as the
-  formal **parity gate** (same fixtures; the reviewEvent/fsrsCard pull assertions adapt to the
-  direct-read path, since no pull Function exists there). Then `2.4` — **delete** `convex/` + the
-  three Convex Dart files + their test in the same commit 2.3 lands green, and repoint
-  `providers.dart`'s seam comment to `AppwriteSyncBackend` + `--dart-define` env plumbing.
-  (`2.1` seam + `2.2` `AppwriteSyncBackend` done 2026-07-11 — routing/marshalling/direct-reads +
-  audit-B1 cancellation, 15/15 green, unwired.) **Not owner-gated** — the live substrate + shared
-  `appwriteClientProvider` (1R.2) exist now; this is the live track.
+- **Next task:** `2.4` — **delete** `convex/` + the three Convex Dart files (`convex_sync_backend`,
+  `convex_transport`, `convex_http_transport`) + `convex_sync_backend_test.dart` in one commit (git
+  history preserves them), and repoint `providers.dart`'s seam comment to `AppwriteSyncBackend` +
+  `--dart-define` env plumbing. Safe basis: `2.3`'s formal parity ledger proves the Appwrite suite
+  mirrors all 9 Convex behaviours. (`2.1` seam + `2.2` `AppwriteSyncBackend` + `2.3` parity gate
+  done 2026-07-11 — routing/marshalling/direct-reads + audit-B1 cancellation, 24/24 green, unwired.)
+  **Not owner-gated** — the live substrate + shared `appwriteClientProvider` (1R.2) exist now; this
+  is the live track.
 - **Blocked (not the head):** `1R.4`'s **manual** console→client proof is **session-gated** —
   `appConfig` perm is `read("users")`, so a session-less pre-Phase-3 client degrades to compiled
   defaults (correct); real proof needs Phase 3 identity. Its unit half is met by 1R.2/1R.3 suites.

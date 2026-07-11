@@ -322,8 +322,18 @@
   `Realtime`) on `AppwriteFunctionsTransport`; the pure marshalling is unit-tested through the fake.
   15/15 tests green (`appwrite_sync_backend_test.dart`), analyze clean. Unwired (no caller). 2.3 = port
   the 9 Convex marshalling tests as the formal parity gate; 2.4 = delete `convex/`.
-- [ ] 2.3 Port the 9 Convex transport marshalling tests to the Appwrite backend (same fixtures,
+- [x] 2.3 Port the 9 Convex transport marshalling tests to the Appwrite backend (same fixtures,
   same round-trip guarantees incl. BigInt→string, DateTime→ms). This is the parity gate.
+  DONE 2026-07-11: the 2.2 suite already mirrors all 9 Convex behaviours on the same fixtures; 2.3
+  makes the gate **formal** — an auditable parity ledger atop `appwrite_sync_backend_test.dart` maps
+  each Convex test → its Appwrite mirror and documents the two direct-read adaptations forced by the
+  routing split: #8 "omits since" moves to a descriptive type (combo, still on the Function path)
+  since reviewEvent pull is now a direct read; #9 fsrsCard "routes to `fsrs:pullCards`" becomes the
+  direct-read convention (composite `entityType:entityId` id + `lastEventOpId` key). Round-trip
+  guarantee actually exercised = DateTime→ms; **BigInt→string is not a Dart-layer conversion in
+  either backend** (clocks are ints, `json` passes through) — no such behaviour exists to mirror, so
+  none is asserted (binary truth over a phantom guarantee). 24/24 green (15 Appwrite + 9 Convex),
+  analyze clean. 2.4 = delete the Convex substrate on this documented basis.
 - [ ] 2.4 **Delete** `convex/`, the three Convex Dart files, and their tests in the same commit
   that lands 2.3 green (git history preserves them). Update `providers.dart`'s seam comment to
   name `AppwriteSyncBackend` + env plumbing (`--dart-define`) instead.
