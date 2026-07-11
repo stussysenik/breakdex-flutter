@@ -26,3 +26,9 @@ jobs:
       - run: node scripts/docs_ledger_check
 
       - run: flutter analyze
+
+      # Web release target must keep compiling (1.6 CI half). Guards the
+      # dart:io/native-plugin seams — a native-only import leaking past a seam
+      # fails the web compile here rather than in a browser. (Browser-driven
+      # core-flow smoke + first-load perf sanity are the remaining 1.6 halves.)
+      - run: flutter build web

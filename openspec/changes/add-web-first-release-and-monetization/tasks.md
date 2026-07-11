@@ -160,6 +160,10 @@
 >   degradation — "Photo Library — Unable to check access", iCloud "Not available"); console clean
 >   (only the boot log); `test/core/config` 22/22. Remaining Phase 1: 1.3 (more visible-affordance
 >   seams — pickers/haptics/export), 1.4 (video on web), 1.6 (CI web gate); 1.5 stays Appwrite-gated.
+> - **1.6 CI-build half landed.** `.github/workflows/ci.yml` now runs `flutter build web` after
+>   `flutter analyze`, so a native-only import leaking past a `dart:io`/plugin seam fails the web
+>   compile in CI rather than in a browser. **Not ticking 1.6** — its browser-driven core-flow smoke
+>   (create move → attach video → review) + first-load perf sanity still need a CI browser driver.
 
 ### Phase 1.0: Web-compile foundation (no Appwrite; unblocks 1.1–1.6 AND widget previews)
 
