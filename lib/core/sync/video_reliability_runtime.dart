@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:drift/drift.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/widgets.dart';
 
 import '../data/repositories.dart';
@@ -157,6 +158,9 @@ class VideoReliabilityRuntime with WidgetsBindingObserver {
   VideoReliabilityReport? get latestReport => _latestReport;
 
   void start() {
+    // Self-healing operates on local on-disk video copies, which do not exist on
+    // web; the sweep calls native file/path APIs that throw. No-op visibly on web.
+    if (kIsWeb) return;
     if (_started) return;
     _started = true;
     WidgetsBinding.instance.addObserver(this);

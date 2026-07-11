@@ -4,6 +4,7 @@
 import 'dart:async';
 import '../platform/io.dart';
 
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/widgets.dart';
 import 'package:path/path.dart' as p;
 
@@ -170,6 +171,9 @@ class AutomaticDatabaseBackupController with WidgetsBindingObserver {
   Future<void>? _runningBackup;
 
   void start() {
+    // Web has no on-disk SQLite file to back up (the DB lives in OPFS); the
+    // rolling backup calls native file APIs that throw. No-op visibly on web.
+    if (kIsWeb) return;
     WidgetsBinding.instance.addObserver(this);
     unawaited(_backupIfNeeded());
   }

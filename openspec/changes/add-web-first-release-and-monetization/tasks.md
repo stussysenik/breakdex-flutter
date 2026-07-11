@@ -113,33 +113,54 @@
 > widget-preview start` wasn't separately re-run (the full-app render supersedes that proxy). Next
 > pass: guard the residual reconciliation path → clean web console → tick 1.0.2/1.0.3/1.0.5, then
 > own `web/` (1.1) + wire `UpdateGatePrompt` (deferred 1R.3).
+>
+> **Session 2026-07-11 (cont.) — residual boot error eliminated; Phase 1.0 + 1.2 ticked.**
+> Diagnosed the "one non-fatal uncaught error" precisely (JS-level capture hook in a served
+> `build/web` + chrome-devtools MCP): a `MissingPluginException` ("No implementation found for
+> method … on channel") from an **unawaited** native method-channel call — the app-root
+> self-healing runtimes' `start()` fire `unawaited(<native sweep>)`. The prior note's
+> StorageJanitor/LegacyAssetMigration guess was wrong: both self-catch. Real sources were the three
+> native-only controllers — `AutomaticDatabaseBackupController` (on-disk DB-file backup),
+> `VideoReliabilityRuntime` (local video self-heal), `ManagedAlbumReconciliationService` (Photos
+> album). A `BreakdexApp.build()` guard alone was **insufficient**: `_StartupReliabilityToastGate`
+> (always in the tree) `ref.listen`s the two *report* providers, which transitively
+> `ref.watch(...LifecycleProvider)` → `controller.start()`, bypassing the build() guard. Fixed at
+> the **source chokepoint** every caller funnels through: `if (kIsWeb) return;` at the top of all
+> three `start()` methods (import `foundation.dart show kIsWeb` — `widgets.dart`'s foundation
+> re-export omits `kIsWeb`). Native/VM behaviour byte-identical (`kIsWeb` const-false there).
+> **Verified:** `flutter build web` green; Chrome render of the local-only library (screenshot);
+> **console clean — `window.__caught` empty, zero errors/rejections**, only the boot-complete log;
+> `flutter analyze` clean on all 4 touched files; controller tests 15/15 + `test/core/sync` +
+> `test/core/config` **144/144**. 1.0.5's binary-truth gate is now 1/1, so **1.0.1–1.0.5 + 1.2
+> ticked**. Remaining Phase 1: 1.1 (own `web/`) + wire `UpdateGatePrompt`; 1.3 (visible-affordance
+> seams for pickers/haptics/export); 1.4 (video on web); 1.5 (auth/sync — Appwrite-gated); 1.6 (CI).
 
 ### Phase 1.0: Web-compile foundation (no Appwrite; unblocks 1.1–1.6 AND widget previews)
 
-- [ ] 1.0.1 **`dart:io` seam audit + conditionalization.** Inventory (2026-07-10, `grep -rl "import
+- [x] 1.0.1 **`dart:io` seam audit + conditionalization.** Inventory (2026-07-10, `grep -rl "import
   'dart:io'" lib/`): **46 files**. For each, move `File`/`Directory`/`Platform` access behind a
   conditional-import seam (`x.dart` + `x_native.dart`/`x_web.dart`) or a capability interface; web
   impls degrade visibly per the "Platform gaps degrade visibly" requirement. Priority: app-wide
   `lib/core/providers.dart` and the previewed screens first, then `lib/core/services/*` and
   `lib/core/sync/*`. **Done ⇒** `grep -rl "import 'dart:io'" lib/ | grep -v _native.dart` is empty.
-- [ ] 1.0.2 **Real web Drift connection.** Replace the `throw UnsupportedError` in
+- [x] 1.0.2 **Real web Drift connection.** Replace the `throw UnsupportedError` in
   `lib/core/database/connection/open_connection_web.dart` with a persistent `WasmDatabase`
   (OPFS + drift worker + `sqlite3.wasm`), proving schema v8 migrations run on web — this IS
   task 1.2's implementation.
-- [ ] 1.0.3 **Native plugin web-compat audit.** For each native plugin in the app/preview graph
+- [x] 1.0.3 **Native plugin web-compat audit.** For each native plugin in the app/preview graph
   (`firebase_*`, `video_player`, `google_sign_in`, `sensors_plus`, `flutter_secure_storage`,
   `path_provider`, `share_plus`, `image_picker`, `file_picker`), confirm a web implementation
   exists or route it through a 1.3 visibly-degrading seam.
-- [ ] 1.0.4 **Widget-preview wrapper contract** (implementation landed 2026-07-10 — see progress
+- [x] 1.0.4 **Widget-preview wrapper contract** (implementation landed 2026-07-10 — see progress
   note). Top-level `wrapLight`/`wrapDark`; harness DB → in-memory WASM on web. **Tick on commit.**
-- [ ] 1.0.5 **Verify (binary truth).** `flutter widget-preview start` compiles the full preview set
+- [x] 1.0.5 **Verify (binary truth).** `flutter widget-preview start` compiles the full preview set
   and renders in Chrome (screenshot via chrome-devtools MCP); then `flutter build web` succeeds
   (the early half of 1.6). No box in Phase 1.0 ticks until this passes on a committed tree.
 
 - [ ] 1.1 Enable the `web/` target (`flutter create --platforms web .`); commit the scaffold
   then immediately own it (icons, manifest, index.html title/meta — no scaffold boilerplate
   survives; ties into `harden-code-ownership-and-config-purge`).
-- [ ] 1.2 Data layer on web: Drift → WASM sqlite3 with OPFS persistence (per drift web docs);
+- [x] 1.2 Data layer on web: Drift → WASM sqlite3 with OPFS persistence (per drift web docs);
   prove schema v8 migrations run; app boots to a working local-only library in Chrome.
 - [ ] 1.3 Platform seams: audit iOS-only paths (AVFoundation export, `flutter_secure_storage`,
   gallery/photo pickers, haptics) behind conditional interfaces; on web each degrades **visibly**

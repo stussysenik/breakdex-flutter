@@ -30,11 +30,16 @@
   2026-07-11 — routing/marshalling/direct-reads + audit-B1 cancellation, 24→15/15 green after the
   Convex test was retired; `AppwriteSyncBackend` is the sole `lib/` adapter, unwired at `providers.dart`
   until Phase 3).
-- **Parallel-allowed track (not owner-gated):** the web-first release WIP — `1.0.2` web Drift
-  (WASM/OPFS) + `1.0.3` plugin audit + `1.0.5` build web/Chrome (spec
-  `add-web-first-release-and-monetization`). Once that `dart:io`-seam WIP makes the app build again,
-  **wire `UpdateGatePrompt` at the app root** (deferred from 1R.3). Work this, nothing else, while
-  3.x waits on the owner.
+- **Parallel-allowed track (not owner-gated):** the web-first release (spec
+  `add-web-first-release-and-monetization`). **Phase 1.0 web-compile foundation is COMPLETE +
+  ticked** (`1.0.1–1.0.5` + `1.2`, done 2026-07-11): `flutter build web` green, the local-only
+  library renders in Chrome, and the boot **console is clean** (the residual unawaited
+  `MissingPluginException` from the native self-healing controllers is guarded at each `start()`
+  with `kIsWeb`). **Next unticked here:** `1.1` own `web/` (icons/manifest/index.html — no scaffold
+  boilerplate; ties to `harden-code-ownership-and-config-purge`) **and wire `UpdateGatePrompt` at
+  the app root** (deferred from 1R.3 — now unblocked since the app builds). Then `1.3` visible
+  degradation for pickers/haptics/export, `1.4` video on web, `1.6` CI web gate. `1.5` (web
+  auth/sync) stays Appwrite-gated. Work this track, nothing else, while 3.x waits on the owner.
 - **Blocked (not the head):** `1R.4`'s **manual** console→client proof is **session-gated** —
   `appConfig` perm is `read("users")`, so a session-less pre-Phase-3 client degrades to compiled
   defaults (correct); real proof needs Phase 3 identity. Its unit half is met by 1R.2/1R.3 suites.

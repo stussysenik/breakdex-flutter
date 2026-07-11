@@ -372,6 +372,11 @@ class BreakdexApp extends ConsumerWidget {
     ref.watch(videoReliabilityLifecycleProvider);
 
     // Keep a rolling local DB backup so a regenerated sandbox can self-heal.
+    // These three self-healing runtimes are native-only; their start() no-ops on
+    // web (no Photos library, no on-disk SQLite file, no local video copies), so
+    // watching them here is inert on web — the guard lives at the source in each
+    // controller's start(), which is the chokepoint every caller funnels through
+    // (BreakdexApp plus the report providers the startup-toast gate listens to).
     ref.watch(automaticDatabaseBackupLifecycleProvider);
 
     final themeSetting = ref.watch(themeSettingProvider);

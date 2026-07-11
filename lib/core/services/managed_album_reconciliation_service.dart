@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:drift/drift.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/widgets.dart';
 
 import '../data/repositories.dart';
@@ -351,6 +352,10 @@ class ManagedAlbumLifecycleController with WidgetsBindingObserver {
   ManagedAlbumReconcileReport? get latestReport => _latestReport;
 
   void start() {
+    // The managed Photos album is an iOS/native concept; web has no photo
+    // library and the reconcile sweep calls native channels that throw. No-op
+    // visibly on web.
+    if (kIsWeb) return;
     WidgetsBinding.instance.addObserver(this);
     unawaited(_ensureObservationAndSweep());
   }
