@@ -134,6 +134,32 @@
 > `test/core/config` **144/144**. 1.0.5's binary-truth gate is now 1/1, so **1.0.1–1.0.5 + 1.2
 > ticked**. Remaining Phase 1: 1.1 (own `web/`) + wire `UpdateGatePrompt`; 1.3 (visible-affordance
 > seams for pickers/haptics/export); 1.4 (video on web); 1.5 (auth/sync — Appwrite-gated); 1.6 (CI).
+>
+> **Session 2026-07-11 (cont. 2) — UpdateGatePrompt wired + `web/` owned (1.1 ticked).**
+> - **UpdateGatePrompt wired** at the app root (`MaterialApp.router` builder, inside the boot
+>   overlay). Inert at compiled defaults (build 3 vs min0/latest0 ⇒ `UpdateGateNone` ⇒ passthrough).
+>   Runtime web verification surfaced a real defect unit tests couldn't: activating
+>   `remoteConfigProvider` fired the Appwrite source eagerly and — session-less (every client
+>   pre-Phase-3; `appConfig` is `read("users")`) — CORS-failed the fetch **and spun a Realtime
+>   reconnect loop + uncaught error**. Gated the live path behind `kRemoteConfigLiveEnabled`
+>   (`bool.fromEnvironment REMOTE_CONFIG_LIVE`, default **false**; flip in Phase 3):
+>   `AppwriteRemoteConfigSource.fetch()` throws "unavailable" (service keeps cache-or-defaults) and
+>   `subscribe()` returns `Stream.empty()` (no socket). Console clean again.
+> - **`web/` owned (1.1).** Every icon (`favicon.png`, `Icon-192/512`, `Icon-maskable-192/512`) was
+>   the **default Flutter logo** (so is the iOS AppIcon — app-wide, tracked separately under
+>   `harden-code-ownership-and-config-purge`, out of this task's web scope). Replaced with an
+>   **engineering-owned Breakdex monogram** — white Inter-Bold "B" (the design-system typeface) on
+>   the brand accent `#1F5EFF`, squircle standard + full-bleed maskable, supersampled PNGs.
+>   `manifest.json` de-scaffolded (name `Breakdex`, real description, `background_color #F8FAFC`,
+>   `theme_color #1F5EFF`). `index.html` owned: `lang="en"`, `<title>Breakdex</title>`, real
+>   description, theme-aware `theme-color` (light `#F8FAFC`/dark `#090B10`), anti-flash load
+>   background, trimmed scaffold comments; kept `$FLUTTER_BASE_HREF` + `flutter_bootstrap.js`. **⚠ The
+>   "B" mark is a functional owned placeholder — the owner should drop in final brand art (which
+>   should also replace the iOS AppIcon).** **Verified:** `flutter build web` green; Chrome shows tab
+>   title "Breakdex", the monogram favicon, and deep screens render (Settings shows visible web
+>   degradation — "Photo Library — Unable to check access", iCloud "Not available"); console clean
+>   (only the boot log); `test/core/config` 22/22. Remaining Phase 1: 1.3 (more visible-affordance
+>   seams — pickers/haptics/export), 1.4 (video on web), 1.6 (CI web gate); 1.5 stays Appwrite-gated.
 
 ### Phase 1.0: Web-compile foundation (no Appwrite; unblocks 1.1–1.6 AND widget previews)
 
@@ -157,7 +183,7 @@
   and renders in Chrome (screenshot via chrome-devtools MCP); then `flutter build web` succeeds
   (the early half of 1.6). No box in Phase 1.0 ticks until this passes on a committed tree.
 
-- [ ] 1.1 Enable the `web/` target (`flutter create --platforms web .`); commit the scaffold
+- [x] 1.1 Enable the `web/` target (`flutter create --platforms web .`); commit the scaffold
   then immediately own it (icons, manifest, index.html title/meta — no scaffold boilerplate
   survives; ties into `harden-code-ownership-and-config-purge`).
 - [x] 1.2 Data layer on web: Drift → WASM sqlite3 with OPFS persistence (per drift web docs);

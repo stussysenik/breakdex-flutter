@@ -35,11 +35,16 @@
   ticked** (`1.0.1–1.0.5` + `1.2`, done 2026-07-11): `flutter build web` green, the local-only
   library renders in Chrome, and the boot **console is clean** (the residual unawaited
   `MissingPluginException` from the native self-healing controllers is guarded at each `start()`
-  with `kIsWeb`). **Next unticked here:** `1.1` own `web/` (icons/manifest/index.html — no scaffold
-  boilerplate; ties to `harden-code-ownership-and-config-purge`) **and wire `UpdateGatePrompt` at
-  the app root** (deferred from 1R.3 — now unblocked since the app builds). Then `1.3` visible
-  degradation for pickers/haptics/export, `1.4` video on web, `1.6` CI web gate. `1.5` (web
-  auth/sync) stays Appwrite-gated. Work this track, nothing else, while 3.x waits on the owner.
+  with `kIsWeb`). **`1.1` (own `web/`) is also DONE + ticked** — Flutter-logo icons replaced with an
+  engineering-owned Breakdex "B" monogram (accent `#1F5EFF`, Inter-Bold), `manifest.json` +
+  `index.html` de-scaffolded (title/description/theme-color/lang/anti-flash bg). **`UpdateGatePrompt`
+  is wired** at the app root and inert at defaults; activating it exposed that the live remote-config
+  path reconnect-loops session-less, so it is gated behind `kRemoteConfigLiveEnabled` (default off,
+  flip in Phase 3). **⚠ The "B" mark is an owned placeholder — owner drops in final brand art (also
+  replaces the still-Flutter-default iOS AppIcon, tracked under `harden-code-ownership-and-config-purge`).**
+  **Next unticked here:** `1.3` visible-affordance seams (pickers/haptics/export), `1.4` video on
+  web, `1.6` CI web gate. `1.5` (web auth/sync) stays Appwrite-gated. Work this track, nothing else,
+  while 3.x waits on the owner.
 - **Blocked (not the head):** `1R.4`'s **manual** console→client proof is **session-gated** —
   `appConfig` perm is `read("users")`, so a session-less pre-Phase-3 client degrades to compiled
   defaults (correct); real proof needs Phase 3 identity. Its unit half is met by 1R.2/1R.3 suites.
