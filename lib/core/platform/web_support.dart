@@ -18,6 +18,14 @@ import 'package:flutter/foundation.dart' show kIsWeb;
 /// equivalent is planned — web consumes already-exported videos.
 bool get supportsNativeVideoExport => !kIsWeb;
 
+/// Playing a video from a **local file** (`VideoPlayerController.file`, the only
+/// playback path in the app today) is native-only — `move.videoPath` is a
+/// relative on-disk path with no meaning on web. Web playback needs a *URL*
+/// source (authenticated Drive media), which is blocked on web auth (task 1.5,
+/// Appwrite-gated); until then the player degrades to a visible "coming to web"
+/// card rather than throwing the file controller's [UnsupportedError].
+bool get supportsLocalVideoPlayback => !kIsWeb;
+
 /// Capturing (camera) or importing (gallery/files) a video into local storage
 /// depends on `dart:io` file writes, which throw on web. Deferred to task 1.4.
 bool get supportsVideoCaptureAndImport => !kIsWeb;

@@ -3,6 +3,7 @@
 
 import 'dart:async';
 import '../../core/platform/native_media.dart';
+import '../../core/platform/web_support.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter/services.dart';
@@ -887,7 +888,10 @@ class _RobustVideoPlayerState extends ConsumerState<RobustVideoPlayer> {
     _stateSub = _loadingController.stream.listen((final state) {
       if (mounted) setState(() => _loadingState = state);
     });
-    _checkFile();
+    // On web there is no local file to check (the check itself runs dart:io) and
+    // no local-file playback — build() renders a visible "coming to web" card
+    // instead, so skip the file probe entirely. See supportsLocalVideoPlayback.
+    if (supportsLocalVideoPlayback) _checkFile();
   }
 
   @override
@@ -931,6 +935,17 @@ class _RobustVideoPlayerState extends ConsumerState<RobustVideoPlayer> {
   Widget build(final BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
     final quietMode = ref.watch(quietModeEnabledProvider);
+
+    // Web can't play a local-file video (the only playback path today). Degrade
+    // visibly to a status card rather than constructing VideoPlayerWidget, whose
+    // fileVideoController throws UnsupportedError synchronously on web (1.4).
+    if (!supportsLocalVideoPlayback) {
+      return _buildStatusCard(
+        icon: Icons.movie_outlined,
+        message: 'Video playback is coming to web',
+        colorScheme: colorScheme,
+      );
+    }
 
     return _loadingState.map(
       idle: (_) => const SizedBox.shrink(),
