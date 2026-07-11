@@ -2,6 +2,7 @@
 // ignore_for_file: avoid_slow_async_io
 
 import '../platform/io.dart';
+import '../platform/native_file_transfer.dart';
 import 'package:flutter/foundation.dart';
 import 'package:drift/drift.dart';
 import 'package:path_provider/path_provider.dart';
@@ -152,7 +153,10 @@ class SyncService {
 
             final storagePath = '$userId/${entry.entityTable}/${entry.entityId}.mp4';
 
-            await FirebaseStorage.instance.ref('videos/$storagePath').putFile(file);
+            await putFileTask(
+              FirebaseStorage.instance.ref('videos/$storagePath'),
+              absolutePath,
+            );
             await syncDao.markVideoSynced(entry.entityId, entry.entityTable);
           } on Object catch (_) {}
         }
@@ -270,7 +274,7 @@ class SyncService {
             if (!await movesDir.exists()) await movesDir.create(recursive: true);
             final localPath = p.join(movesDir.path, '$moveId.mp4');
 
-            await fileObj.writeToFile(File(localPath));
+            await writeToFileTask(fileObj, localPath);
 
             await (db.update(db.moves)..where((final t) => t.id.equals(moveId))).write(
               MovesCompanion(videoPath: Value(VideoPathResolver.toRelative(localPath))),
@@ -306,7 +310,7 @@ class SyncService {
             if (!await combosDir.exists()) await combosDir.create(recursive: true);
             final localPath = p.join(combosDir.path, '$comboId.mp4');
 
-            await fileObj.writeToFile(File(localPath));
+            await writeToFileTask(fileObj, localPath);
 
             await (db.update(db.combos)..where((final t) => t.id.equals(comboId))).write(
               CombosCompanion(activeVideoPath: Value(VideoPathResolver.toRelative(localPath))),

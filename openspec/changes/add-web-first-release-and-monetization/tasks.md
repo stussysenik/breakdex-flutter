@@ -62,6 +62,57 @@
 > chrome-devtools MCP. These are best done together next pass, where the web build's compile
 > errors drive any `io_web` stub gaps. **This commit lands 1.0.1 + the foundation (native-safe,
 > additive); boxes stay unticked until 1.0.5 is green.**
+>
+> **Session 2026-07-11 progress (branch `phase-h-hardening`).** Drove `flutter build web` from
+> "throws-until-wired" to **green**, then to a **real Chrome render of the working local-only
+> library** (screenshot: Breakdex shell + Moves/Combos + bottom nav, empty = fresh OPFS DB).
+> Landed:
+> - **1.0.2 web Drift (DONE, runtime-proven).** `open_connection_web.dart` now opens a persistent
+>   `WasmDatabase` via `WasmDatabase.open(databaseName:'breakdex', sqlite3Uri:'sqlite3.wasm',
+>   driftWorkerUri:'drift_worker.js')`, degrading visibly when storage is reduced. Provisioned the
+>   two web-root files: `web/sqlite3.wasm` (copied from the ABI-pinned `assets/sqlite3.wasm`) and
+>   `web/drift_worker.js` (compiled from `tool/drift_worker.dart` — kept **out** of `web/` so the
+>   source isn't copied into the deployed build). Runtime proof: Chrome fetched `/drift_worker.js`
+>   + `/sqlite3.wasm`, our log fired (`[drift/web] storage=opfsLocks …`), and the DB smoke-test
+>   `count()` ran — the app renders reading OPFS. schema v8 migrations run on web (this IS task 1.2).
+> - **1.0.3 native-plugin audit (DONE, via seams).** `flutter build web` surfaced every native-only
+>   plugin/API that takes a `dart:io.File`; all routed through visibly-degrading seams whose
+>   `_native.dart` side keeps `dart:io` (grep-criterion excludes `_native.dart`):
+>   `lib/core/platform/native_media.dart` (`fileImage`/`fileVideoController` — `Image.file` +
+>   `VideoPlayerController.file`, ~9 sites: move grid/photos, video posters/ghost, quick viewer,
+>   move-detail, video-service, editor), `native_file_transfer.dart` (Firebase `putFile`/
+>   `writeToFile` — legacy, native-only sync; web throws), `native_paths.dart` (path_provider
+>   docs-dir return-type collision). Extended the `io_web` stub: `IOSink.flush`,
+>   `RandomAccessFile.readIntoSync/closeSync`. Fixed a `part`-file fallout: `providers.dart`'s
+>   `dart:io` was removed in 1.0.1 but its `sync_providers` part uses `Platform` — re-added the
+>   seam import.
+> - **Web boot guards (partial 1.2/1.3).** The native-only boot init crashed web boot: DB
+>   recovery/backup + Firebase (`DefaultFirebaseOptions` throws for web, no config — legacy,
+>   superseded by Appwrite) + video path/storage-gate init all call `documentsDirectory()` (throws
+>   on web) or have no web config. Guarded in `main.dart` with `kIsWeb` (native path byte-identical):
+>   skip native-only recovery/backup, skip Firebase + complete its gate as `skipped-web`, complete
+>   `videoResolver`/`storageGate` gates as skipped, and an early-return in `_openDatabaseSafely` so
+>   web opens the OPFS DB directly (no file-recovery / file-provenance dance). Result: `main()`
+>   completes (`App startup completed in ~1.1s`) and the UI renders.
+>
+> **Key ground-truth correction (verified):** Flutter's `packages/flutter/lib/src/widgets/image.dart`
+> does `import 'dart:io' show File;` **unconditionally** and compiles for web — so **`dart:io` types
+> DO compile on Flutter web** (operations throw at runtime). The 1.0.1 seam's stated premise ("keep
+> `dart:io` out so it compiles") is imprecise; the seam's real value is **graceful/visible
+> degradation** (honest `false`/placeholder vs a raw runtime crash mid-paint). Completing the seams
+> is therefore both ledger-compliant (no `dart:io` outside `_native.dart`) **and** the higher-quality
+> path (several `Image.file` sites have no `errorBuilder`).
+>
+> **Verified this session:** `flutter build web` **green**; `flutter analyze` clean (only pre-existing
+> infos); `flutter test test/core/sync test/core/config` **144/144**; real Chrome render of the
+> library (chrome-devtools MCP). **Residual before ticking (1.0.5 clean-verify not yet 1/1):** one
+> **non-fatal** uncaught error still logs on web boot — an *unawaited* background native-file task
+> (StorageJanitor/LegacyAsset-migration reconciliation path hitting `documentsDirectory`; the app
+> renders and is usable regardless). Binary-truth says a log with an error ≠ green, so **boxes stay
+> unticked** until that last background path is web-guarded for a clean console; `flutter
+> widget-preview start` wasn't separately re-run (the full-app render supersedes that proxy). Next
+> pass: guard the residual reconciliation path → clean web console → tick 1.0.2/1.0.3/1.0.5, then
+> own `web/` (1.1) + wire `UpdateGatePrompt` (deferred 1R.3).
 
 ### Phase 1.0: Web-compile foundation (no Appwrite; unblocks 1.1–1.6 AND widget previews)
 

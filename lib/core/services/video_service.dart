@@ -4,6 +4,7 @@
 import 'dart:async';
 import 'dart:collection';
 import '../platform/io.dart';
+import '../platform/native_media.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
@@ -12,7 +13,6 @@ import 'package:path_provider/path_provider.dart';
 import 'package:path/path.dart' as p;
 import '../utils/diagnostics.dart';
 import 'package:uuid/uuid.dart';
-import 'package:video_player/video_player.dart';
 import 'package:video_thumbnail/video_thumbnail.dart';
 import 'package:fpdart/fpdart.dart';
 
@@ -456,7 +456,7 @@ class VideoService {
       throw StateError('The exported video file is not ready yet.');
     }
 
-    final controller = VideoPlayerController.file(File(path));
+    final controller = fileVideoController(path);
     try {
       await controller.initialize().timeout(initializeTimeout);
       final value = controller.value;

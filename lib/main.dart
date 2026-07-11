@@ -87,6 +87,13 @@ Future<AppDatabase> _openDatabaseSafely(
     }
   }
 
+  // On web the database is OPFS-backed (WasmDatabase); the on-disk backup/
+  // restore recovery and the file-based provenance journal are native-only, so
+  // open directly and skip them (visible degradation — no fake backups).
+  if (kIsWeb) {
+    return openAndSmokeTest();
+  }
+
   try {
     final db = await openAndSmokeTest();
     await provenanceJournal.log(
@@ -208,11 +215,16 @@ void main() async {
   final provenanceJournal = ProvenanceJournalService();
   final recoveryService = DatabaseRecoveryService();
 
-  // 2. Open database with recovery logic
-  final restoredPrimary = await recoveryService
-      .restoreLatestBackupIfPrimaryUnavailable();
-  
-  await _backupDatabaseIfNeeded(sharedPrefs, recoveryService, provenanceJournal);
+  // 2. Open database with recovery logic.
+  // The rolling-backup + restore machinery reads and writes the on-disk SQLite
+  // file and is native-only; on web the database lives in OPFS (WasmDatabase)
+  // with no file to back up, so these steps are skipped (visible degradation).
+  var restoredPrimary = false;
+  if (!kIsWeb) {
+    restoredPrimary =
+        await recoveryService.restoreLatestBackupIfPrimaryUnavailable();
+    await _backupDatabaseIfNeeded(sharedPrefs, recoveryService, provenanceJournal);
+  }
   final db = await _openDatabaseSafely(recoveryService, provenanceJournal);
 
   // 3. Create THE container with all final instances
@@ -230,13 +242,22 @@ void main() async {
   boot.completeGate(BootGate.recovery, detail: restoredPrimary ? 'restored' : 'skipped');
   boot.completeGate(BootGate.preferences);
 
-  // 4. Initialize async plugins in parallel
-  unawaited(Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform)
-      .then((_) => boot.completeGate(BootGate.firebase)));
-  unawaited(VideoPathResolver.initialize()
-      .then((_) => boot.completeGate(BootGate.videoResolver)));
-  unawaited(VideoStorageGate.initialize()
-      .then((_) => boot.completeGate(BootGate.storageGate)));
+  // 4. Initialize async plugins in parallel. Firebase (legacy, superseded by
+  // Appwrite — no web config) and the on-disk video path/storage services are
+  // native-only; on web their gates complete immediately as skipped so the UI
+  // becomes ready without them.
+  if (kIsWeb) {
+    boot.completeGate(BootGate.firebase, detail: 'skipped-web');
+    boot.completeGate(BootGate.videoResolver, detail: 'skipped-web');
+    boot.completeGate(BootGate.storageGate, detail: 'skipped-web');
+  } else {
+    unawaited(Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform)
+        .then((_) => boot.completeGate(BootGate.firebase)));
+    unawaited(VideoPathResolver.initialize()
+        .then((_) => boot.completeGate(BootGate.videoResolver)));
+    unawaited(VideoStorageGate.initialize()
+        .then((_) => boot.completeGate(BootGate.storageGate)));
+  }
 
   await AutomationFixtureService().seedIfRequested(db, prefs: sharedPrefs);
 

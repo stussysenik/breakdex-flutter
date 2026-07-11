@@ -2,7 +2,7 @@
 // ignore_for_file: discarded_futures
 
 import 'dart:async';
-import '../../core/platform/io.dart';
+import '../../core/platform/native_media.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../../core/design/spacing.dart';
@@ -379,7 +379,7 @@ class _GhostCard extends StatelessWidget {
             ),
             clipBehavior: Clip.antiAlias,
             child: thumbnailPath != null
-                ? Image.file(File(thumbnailPath!), fit: BoxFit.cover)
+                ? fileImage(thumbnailPath!, fit: BoxFit.cover)
                 : const Icon(Icons.movie, size: 20),
           ),
           const SizedBox(width: AppSpacing.md),

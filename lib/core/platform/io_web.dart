@@ -91,11 +91,14 @@ abstract class FileSystemEvent {
 abstract class IOSink implements StreamSink<List<int>>, StringSink {
   Encoding get encoding;
   set encoding(Encoding value);
+  Future<dynamic> flush();
 }
 
 /// Handle returned by [File.open]; every operation throws.
 abstract class RandomAccessFile {
   String get path;
+  int readIntoSync(List<int> buffer, [int start = 0, int? end]);
+  void closeSync();
 }
 
 /// Base of [File] and [Directory]; shared pure-path + throwing I/O surface.

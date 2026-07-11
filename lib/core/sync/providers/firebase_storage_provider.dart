@@ -2,6 +2,7 @@
 // ignore_for_file: avoid_slow_async_io
 
 import '../../platform/io.dart';
+import '../../platform/native_file_transfer.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import '../cloud_provider.dart';
 
@@ -43,7 +44,7 @@ class FirebaseStorageProvider implements CloudProvider {
     final CancellationToken? cancel,
   }) async {
     final ref = FirebaseStorage.instance.ref(remotePath);
-    final task = ref.putFile(File(localPath));
+    final task = putFileTask(ref, localPath);
 
     if (onProgress != null) {
       task.snapshotEvents.listen((final snapshot) {
@@ -80,8 +81,8 @@ class FirebaseStorageProvider implements CloudProvider {
     if (!await file.parent.exists()) {
       await file.parent.create(recursive: true);
     }
-    
-    final task = ref.writeToFile(file);
+
+    final task = writeToFileTask(ref, localPath);
 
     if (onProgress != null) {
       task.snapshotEvents.listen((final snapshot) {

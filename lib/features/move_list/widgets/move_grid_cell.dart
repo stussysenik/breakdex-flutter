@@ -144,8 +144,8 @@ class _GridThumbnailState extends State<_GridThumbnail> {
   Widget build(final BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
     if (_loaded && _thumbPath != null) {
-      return Image.file(
-        File(_thumbPath!),
+      return fileImage(
+        _thumbPath!,
         fit: BoxFit.cover,
         filterQuality: FilterQuality.high,
         gaplessPlayback: true,

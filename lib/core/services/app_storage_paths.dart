@@ -2,10 +2,10 @@
 // ignore_for_file: avoid_slow_async_io
 
 import '../platform/io.dart';
+import '../platform/native_paths.dart';
 
 import 'package:flutter/services.dart';
 import 'package:path/path.dart' as p;
-import 'package:path_provider/path_provider.dart';
 
 abstract final class AppStoragePaths {
   static const MethodChannel _channel = MethodChannel('com.breakdex/app_paths');
@@ -32,6 +32,6 @@ abstract final class AppStoragePaths {
       }
     }
 
-    return getApplicationDocumentsDirectory();
+    return appDocumentsDirectory();
   }
 }

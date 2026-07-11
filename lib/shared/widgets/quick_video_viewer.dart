@@ -2,7 +2,7 @@
 // ignore_for_file: discarded_futures
 
 import 'dart:async';
-import '../../core/platform/io.dart';
+import '../../core/platform/native_media.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -39,7 +39,7 @@ class _QuickVideoViewerState extends ConsumerState<QuickVideoViewer>
     super.initState();
     DiagnosticsLog.info('QuickVideoViewer', '_init videoPath=${widget.videoPath}');
     WidgetsBinding.instance.addObserver(this);
-    _controller = VideoPlayerController.file(File(widget.videoPath))
+    _controller = fileVideoController(widget.videoPath)
       ..setLooping(true)
       ..initialize()
           .timeout(

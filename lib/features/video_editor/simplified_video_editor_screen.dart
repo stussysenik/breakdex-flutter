@@ -3,6 +3,7 @@
 
 import 'dart:async';
 import '../../core/platform/io.dart';
+import '../../core/platform/native_media.dart';
 import 'dart:ui';
 
 import 'package:flutter/foundation.dart';
@@ -269,8 +270,7 @@ class _SimplifiedVideoEditorViewState extends ConsumerState<SimplifiedVideoEdito
   Future<VideoPlayerController> _initializeControllerWithRetry(
     final String path,
   ) async {
-    final f = File(path);
-    final controller = VideoPlayerController.file(f);
+    final controller = fileVideoController(path);
 
     try {
       await controller.initialize().timeout(_kVideoInitTimeout);
@@ -278,7 +278,7 @@ class _SimplifiedVideoEditorViewState extends ConsumerState<SimplifiedVideoEdito
     } on Object catch (_) {
       await controller.dispose();
       await Future<void>.delayed(_kVideoInitRetryDelay);
-      final c2 = VideoPlayerController.file(f);
+      final c2 = fileVideoController(path);
       await c2.initialize().timeout(_kVideoInitTimeout);
       return c2;
     }

@@ -4,6 +4,7 @@
 import 'dart:async';
 import 'dart:convert';
 import '../../core/platform/io.dart';
+import '../../core/platform/native_media.dart';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -135,8 +136,8 @@ class _MovePhotosSectionState extends State<MovePhotosSection> {
           fit: StackFit.expand,
           children: [
             InteractiveViewer(
-              child: Image.file(
-                File(fullPath),
+              child: fileImage(
+                fullPath,
                 fit: BoxFit.contain,
               ),
             ),
@@ -315,8 +316,8 @@ class _PhotoThumbnailState extends State<_PhotoThumbnail> {
         child: SizedBox(
           width: 120,
           height: 120,
-          child: Image.file(
-            File(_absolutePath!),
+          child: fileImage(
+            _absolutePath!,
             fit: BoxFit.cover,
             errorBuilder: (_, _, _) => const _PhotoPlaceholder(),
           ),

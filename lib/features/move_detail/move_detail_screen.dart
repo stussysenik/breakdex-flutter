@@ -2,14 +2,13 @@
 // ignore_for_file: discarded_futures
 
 import 'dart:async';
-import '../../core/platform/io.dart';
+import '../../core/platform/native_media.dart';
 import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:video_player/video_player.dart';
 
 import '../../core/database/database.dart';
 import '../../core/design/colors.dart';
@@ -580,7 +579,7 @@ class _VideoTechInfoRowsState extends State<_VideoTechInfoRows> {
   }
 
   Future<void> _probe() async {
-    final controller = VideoPlayerController.file(File(widget.videoPath));
+    final controller = fileVideoController(widget.videoPath);
     try {
       await controller.setVolume(0);
       await controller

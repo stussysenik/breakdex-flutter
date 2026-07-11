@@ -1,15 +1,30 @@
 import 'package:drift/drift.dart';
+import 'package:drift/wasm.dart';
+import 'package:flutter/foundation.dart';
 
-/// The consumer web app's persistent connection is not wired yet: the
-/// widget-preview harness constructs its database via [AppDatabase.forTesting]
-/// with an in-memory WASM executor, so this path is never reached today.
+/// Opens the persistent web SQLite database backed by `sqlite3.wasm`.
 ///
-/// Implement it (WasmDatabase + OPFS/IndexedDB persistence) as part of the
-/// Flutter-Web release before shipping a web build that constructs
-/// `AppDatabase()` directly.
+/// Drift probes the browser and picks the best available storage — OPFS
+/// (durable, multi-tab) when supported, falling back to IndexedDB. Both
+/// `web/sqlite3.wasm` and `web/drift_worker.js` are served from the web root
+/// (see `web/`); the wasm is ABI-pinned to the `sqlite3` version in
+/// `pubspec.yaml` (bump both in lockstep).
+///
+/// Any reduced-durability fallback is surfaced (not silently swallowed) per the
+/// web release's "platform gaps degrade visibly" contract.
 QueryExecutor openPlatformConnection() {
-  throw UnsupportedError(
-    'Web AppDatabase connection is not implemented yet. Previews use '
-    'AppDatabase.forTesting; wire WasmDatabase for the web release.',
-  );
+  return LazyDatabase(() async {
+    final result = await WasmDatabase.open(
+      databaseName: 'breakdex',
+      sqlite3Uri: Uri.parse('sqlite3.wasm'),
+      driftWorkerUri: Uri.parse('drift_worker.js'),
+    );
+    if (result.missingFeatures.isNotEmpty) {
+      debugPrint(
+        '[drift/web] storage=${result.chosenImplementation.name} '
+        'degraded — missing ${result.missingFeatures.map((f) => f.name).join(', ')}',
+      );
+    }
+    return result.resolvedExecutor;
+  });
 }

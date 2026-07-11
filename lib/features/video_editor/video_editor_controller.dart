@@ -2,7 +2,7 @@
 // ignore_for_file: discarded_futures
 
 import 'dart:async';
-import '../../core/platform/io.dart';
+import '../../core/platform/native_media.dart';
 import 'dart:ui';
 import 'package:flutter/foundation.dart';
 import 'package:uuid/uuid.dart';
@@ -172,7 +172,7 @@ class VideoEditorController extends ChangeNotifier {
         return;
       }
 
-      _playerController = VideoPlayerController.file(File(videoPath));
+      _playerController = fileVideoController(videoPath);
       await _playerController!.initialize();
       videoDuration = _playerController!.value.duration;
       await _playerController!.setLooping(false);

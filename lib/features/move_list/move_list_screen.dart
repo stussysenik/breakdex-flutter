@@ -19,6 +19,7 @@ import '../../core/models/move_creation.dart';
 import '../../core/models/reviewable_item.dart'
     show ComboVideoPath, MoveVideoPath;
 import '../../core/providers.dart';
+import '../../core/platform/native_media.dart';
 import '../../core/services/categories_service.dart';
 import '../../core/services/settings_service.dart';
 import '../../core/services/media_playback_coordinator.dart';

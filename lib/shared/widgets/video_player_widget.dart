@@ -2,7 +2,7 @@
 // ignore_for_file: discarded_futures
 
 import 'dart:async';
-import '../../core/platform/io.dart';
+import '../../core/platform/native_media.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter/services.dart';
@@ -207,8 +207,8 @@ class _VideoPlayerWidgetState extends ConsumerState<VideoPlayerWidget>
 
     final quietMode = ref.read(quietModeEnabledProvider);
 
-    _controller = VideoPlayerController.file(
-      File(widget.videoPath),
+    _controller = fileVideoController(
+      widget.videoPath,
       videoPlayerOptions: VideoPlayerOptions(mixWithOthers: quietMode),
     )
       ..setLooping(widget.looping)
@@ -347,7 +347,7 @@ class _VideoPlayerWidgetState extends ConsumerState<VideoPlayerWidget>
                 fit: StackFit.expand,
                 children: [
                   if (_posterPath != null)
-                    Image.file(File(_posterPath!), fit: BoxFit.cover),
+                    fileImage(_posterPath!, fit: BoxFit.cover),
                   Container(color: Colors.black26),
                   Center(
                     child: widget.minimal
@@ -1014,8 +1014,8 @@ class _RobustVideoPlayerState extends ConsumerState<RobustVideoPlayer> {
             if (showGhost && widget.ghostThumbnailPath != null)
               Opacity(
                 opacity: 0.15,
-                child: Image.file(
-                  File(widget.ghostThumbnailPath!),
+                child: fileImage(
+                  widget.ghostThumbnailPath!,
                   fit: BoxFit.cover,
                   errorBuilder: (_, _, _) => const SizedBox.shrink(),
                 ),
