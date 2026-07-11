@@ -301,11 +301,27 @@
   auth rides the injected `Client`'s session (Phase-3 stamps the trusted `x-appwrite-user-id`), never
   a client-passed id. Seam stays dep-free & unit-testable in pure Dart (Convex's 2-file split).
   12/12 unit tests green; analyze clean. Realtime `subscribe` + `SyncBackend` mapping = 2.2.
-- [ ] 2.2 `lib/core/sync/backends/appwrite_sync_backend.dart`: maps the `SyncBackend` contract
+- [x] 2.2 `lib/core/sync/backends/appwrite_sync_backend.dart`: maps the `SyncBackend` contract
   onto `sync-push`/`sync-pull`/`reviews-append`/fsrs pulls. `subscribe` uses **Appwrite Realtime
   channels** (row-level events per table) with a documented poll fallback; every loop iteration
   must observe stream cancellation (audit B1 — do NOT replicate the Convex poller leak; test
   cancellation stops all I/O).
+  DONE 2026-07-11: `AppwriteSyncBackend` (`providerType == 'appwrite'`). Routing splits three ways
+  where Convex had one door: descriptive push/pull → `execute('sync-push'/'sync-pull')` (byte-identical
+  `{table,upserts,deletes}` / `{table,since?}` marshalling — the Functions accept the Convex wire
+  shapes); `reviewEvent` push → `execute('reviews-append')`; `reviewEvent`/`fsrsCard` **pull** →
+  `AppwriteTransport.listRows` **direct reads** (no pull Function exists — the log is append-only, the
+  card server-derived; the client reads its own rows, scoped by row-level perms). `fsrsCards` has no
+  local id/clientOpId, so its `entityType:entityId` composite is the `SyncRecord.id` and `lastEventOpId`
+  the idempotency key. `subscribe` = one cursor-advancing re-pull loop (`_watch`) driven by a Realtime
+  trigger (`channelEvents` → `databases.breakdex.tables.<t>.rows`; descriptive also watches `tombstones`)
+  with a `Timer`-interval poll fallback when `channelEvents` returns null. **Audit B1:** cancellation is
+  observed after every await via a `cancelled` flag; onCancel tears down the trigger sub + poll timer +
+  closes the controller — proven by `cancellation stops all I/O` (Realtime) and `poll fallback … stops on
+  cancel` (`fakeAsync`) tests. Seam grew two SDK-glue doors (`listRows` via `TablesDB`, `channelEvents` via
+  `Realtime`) on `AppwriteFunctionsTransport`; the pure marshalling is unit-tested through the fake.
+  15/15 tests green (`appwrite_sync_backend_test.dart`), analyze clean. Unwired (no caller). 2.3 = port
+  the 9 Convex marshalling tests as the formal parity gate; 2.4 = delete `convex/`.
 - [ ] 2.3 Port the 9 Convex transport marshalling tests to the Appwrite backend (same fixtures,
   same round-trip guarantees incl. BigInt→string, DateTime→ms). This is the parity gate.
 - [ ] 2.4 **Delete** `convex/`, the three Convex Dart files, and their tests in the same commit

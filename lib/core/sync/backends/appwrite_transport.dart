@@ -37,7 +37,19 @@ class AppwriteException implements Exception {
 }
 
 /// A minimal, provider-neutral view of an Appwrite deployment: execute a named
-/// Function with a JSON body and return its decoded response.
+/// Function, read a table directly, and (optionally) subscribe to Realtime.
+///
+/// Three primitives, because Appwrite splits the work three ways (unlike Convex,
+/// where every op was a query or a mutation):
+///   * [execute] — Function invocation. Backs descriptive push/pull (`sync-push`
+///     / `sync-pull`) and the append-only review push (`reviews-append`).
+///   * [listRows] — direct per-user table read. Backs the pull of the entities
+///     that have **no** server pull Function: `reviewEvent` (append-only log) and
+///     `fsrsCard` (server-derived). Row-level permissions scope the read to the
+///     session's own rows — there is no client-passed user id.
+///   * [channelEvents] — a Realtime trigger. Backs [SyncBackend.subscribe]; when
+///     the transport cannot subscribe it returns `null` and the backend falls
+///     back to interval polling.
 abstract interface class AppwriteTransport {
   /// Execute the Function [functionId] with [body] (JSON-encoded as the request
   /// body) and return its decoded response value. Throws [AppwriteException] on
@@ -46,6 +58,25 @@ abstract interface class AppwriteTransport {
     final String functionId, {
     final Map<String, Object?> body = const {},
   });
+
+  /// Read every row of [table] the current session may see, keeping only rows
+  /// whose [orderField] is `> since` when [since] (ms since epoch) is non-null,
+  /// ordered ascending on [orderField], paged to completion. Returns each row's
+  /// decoded `data` map. Backs the direct-read pull of `reviewEvent` / `fsrsCard`
+  /// (the entities with no `sync-pull`-style Function); per-user isolation is the
+  /// deployment's row-level permissions, never a query filter the client asserts.
+  Future<List<Map<String, Object?>>> listRows(
+    final String table, {
+    required final String orderField,
+    final int? since,
+  });
+
+  /// A Realtime trigger for the given Appwrite [channels]: emits once per
+  /// server-side row event so [SyncBackend.subscribe] can re-pull the delta (an
+  /// event coalesces into a cursor-advancing pull, not a hand-decoded row).
+  /// Returns `null` when this transport cannot subscribe — the backend then falls
+  /// back to interval polling (the documented `subscribe` fallback).
+  Stream<void>? channelEvents(final List<String> channels) => null;
 }
 
 /// Interpret one Appwrite Function execution result into its decoded value, or
