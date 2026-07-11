@@ -192,7 +192,7 @@
   survives; ties into `harden-code-ownership-and-config-purge`).
 - [x] 1.2 Data layer on web: Drift → WASM sqlite3 with OPFS persistence (per drift web docs);
   prove schema v8 migrations run; app boots to a working local-only library in Chrome.
-- [ ] 1.3 Platform seams: audit iOS-only paths (AVFoundation export, `flutter_secure_storage`,
+- [x] 1.3 Platform seams: audit iOS-only paths (AVFoundation export, `flutter_secure_storage`,
   gallery/photo pickers, haptics) behind conditional interfaces; on web each degrades **visibly**
   (affordance hidden or labeled unavailable) — never a silent no-op or crash.
 - [ ] 1.4 Video on web: playback via HTML video (Drive-sourced URLs), upload/import path for web

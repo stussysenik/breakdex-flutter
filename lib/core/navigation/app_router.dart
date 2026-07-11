@@ -1,8 +1,11 @@
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import '../design/spacing.dart';
+import '../design/typography.dart';
 import 'app_route_observer.dart';
 import '../../features/move_detail/move_detail_screen.dart';
 import '../../features/flashcard_review/flashcard_review_screen.dart';
@@ -145,6 +148,10 @@ final appRouter = GoRouter(
       path: '/video-editor',
       parentNavigatorKey: _rootNavigatorKey,
       builder: (final context, final state) {
+        // The editor drives the iOS-only AVFoundation export/playback seams.
+        // `/video-editor` is an addressable URL on web, so guard the route
+        // itself — a deep-link degrades visibly instead of crashing (1.3).
+        if (kIsWeb) return const _EditorUnavailableOnWeb();
         final extras = state.extra as Map<String, dynamic>?;
         return VideoEditorScreen(
           videoPath: extras?['videoPath'] as String? ?? '',
@@ -260,6 +267,45 @@ class _RedirectToHomeState extends State<_RedirectToHome> {
     return const Scaffold(
       body: Center(
         child: AppLoader(),
+      ),
+    );
+  }
+}
+
+/// Shown when `/video-editor` is reached on web (e.g. a deep-link). The editor
+/// depends on iOS-only AVFoundation, so it degrades to a plain explanation
+/// instead of building a screen that would crash on the native seam (1.3).
+class _EditorUnavailableOnWeb extends StatelessWidget {
+  const _EditorUnavailableOnWeb();
+
+  @override
+  Widget build(final BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    return Scaffold(
+      appBar: AppBar(),
+      body: Center(
+        child: Padding(
+          padding: const EdgeInsets.all(AppSpacing.xl),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(Icons.movie_creation_outlined, size: 48, color: colorScheme.secondary),
+              const SizedBox(height: AppSpacing.lg),
+              Text(
+                'Video editing isn’t available on web',
+                style: AppTypography.titleMedium.copyWith(color: colorScheme.onSurface),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: AppSpacing.sm),
+              Text(
+                'Trim, crop, and speed edits run on the mobile app. Web plays '
+                'videos but can’t edit them.',
+                style: AppTypography.bodySmall.copyWith(color: colorScheme.secondary),
+                textAlign: TextAlign.center,
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }

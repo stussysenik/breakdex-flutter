@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/services.dart';
 
 /// Progress update from native AVFoundation export.
@@ -59,6 +60,10 @@ class NativeVideoExport {
 
   /// Stream of real-time export progress.
   static Stream<ExportProgress> get progressStream {
+    // Web has no AVFoundation export, so no progress is ever emitted. Return an
+    // empty stream — a session on web must not surface the platform channel's
+    // MissingPluginException as an uncaught stream error (task 1.3).
+    if (kIsWeb) return const Stream<ExportProgress>.empty();
     return _events.receiveBroadcastStream().map((final event) {
       final map = Map<String, dynamic>.from(event as Map);
       return ExportProgress(
@@ -89,6 +94,14 @@ class NativeVideoExport {
     final String? aspectRatio,
     final Rect? cropRect,
   }) async {
+    if (kIsWeb) {
+      // Honest failure instead of an opaque MissingPluginException. The video
+      // editor's export affordance is hidden on web (task 1.3), so this is
+      // defense-in-depth for any path that reaches the seam anyway.
+      throw UnsupportedError(
+        'Video export is unavailable on web — AVFoundation is iOS-only.',
+      );
+    }
     final args = <String, dynamic>{
       'inputPath': inputPath,
       'outputPath': outputPath,
@@ -112,6 +125,7 @@ class NativeVideoExport {
 
   /// Cancel an in-progress export.
   static Future<void> cancel() async {
+    if (kIsWeb) return;
     await _method.invokeMethod('cancelExport');
   }
 }

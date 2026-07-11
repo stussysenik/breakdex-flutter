@@ -42,9 +42,17 @@
   path reconnect-loops session-less, so it is gated behind `kRemoteConfigLiveEnabled` (default off,
   flip in Phase 3). **⚠ The "B" mark is an owned placeholder — owner drops in final brand art (also
   replaces the still-Flutter-default iOS AppIcon, tracked under `harden-code-ownership-and-config-purge`).**
-  **Next unticked here:** `1.3` visible-affordance seams (pickers/haptics/export), `1.4` video on
-  web, `1.6` CI web gate. `1.5` (web auth/sync) stays Appwrite-gated. Work this track, nothing else,
-  while 3.x waits on the owner.
+  **`1.3` (visible-affordance seams) is DONE + ticked** (2026-07-11): `NativeVideoExport`
+  `kIsWeb`-guards all three entry points (progress stream → empty, `export()` → honest
+  `UnsupportedError`, `cancel()` → no-op); the shared `VideoPickerSheet` dims all three source
+  tiles + shows a "coming soon" notice on web; the move-detail "Edit Video" tile degrades to
+  dimmed/inert via a composed wrapper; and `/video-editor` deep-links render an unavailable
+  screen instead of crashing. New `lib/core/platform/web_support.dart` holds the capability
+  flags. `flutter build web` green, `analyze` clean on all touched files. (Haptics audited →
+  already a silent web no-op, no affordance to hide; `flutter_secure_storage` not in the repo.)
+  **Next unticked here:** `1.4` video on web (playback via HTML video from Drive URLs + web
+  import path — flips `supportsVideoCaptureAndImport`), then `1.6` CI web gate. `1.5` (web
+  auth/sync) stays Appwrite-gated. Work this track, nothing else, while 3.x waits on the owner.
 - **Blocked (not the head):** `1R.4`'s **manual** console→client proof is **session-gated** —
   `appConfig` perm is `read("users")`, so a session-less pre-Phase-3 client degrades to compiled
   defaults (correct); real proof needs Phase 3 identity. Its unit half is met by 1R.2/1R.3 suites.

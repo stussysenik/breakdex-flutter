@@ -3,6 +3,7 @@
 
 import 'dart:async';
 import '../../core/platform/native_media.dart';
+import '../../core/platform/web_support.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../../core/design/spacing.dart';
@@ -162,6 +163,10 @@ class _VideoPickerSheetState extends State<VideoPickerSheet> {
   Widget build(final BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
     final isLoading = _loadState is Loading || _loadState is Downloading;
+    // Every source below writes the picked file to local storage via dart:io,
+    // which throws on web. Disable the tiles and say so plainly rather than
+    // opening a picker that fails — real web import lands in task 1.4.
+    final canImport = supportsVideoCaptureAndImport;
 
     return Stack(
       children: [
@@ -186,25 +191,29 @@ class _VideoPickerSheetState extends State<VideoPickerSheet> {
                   ),
                 ],
                 const SizedBox(height: AppSpacing.lg),
+                if (!canImport) ...[
+                  const _WebUnavailableNotice(),
+                  const SizedBox(height: AppSpacing.md),
+                ],
                 _SourceTile(
                   icon: Icons.photo_library,
                   label: 'Photo Library',
                   subtitle: 'Includes iCloud Photos',
-                  onTap: isLoading ? null : _pickFromPhotos,
+                  onTap: isLoading || !canImport ? null : _pickFromPhotos,
                 ),
                 const SizedBox(height: AppSpacing.sm),
                 _SourceTile(
                   icon: Icons.folder,
                   label: 'Files',
                   subtitle: 'iCloud Drive, Dropbox, local files',
-                  onTap: isLoading ? null : _pickFromFiles,
+                  onTap: isLoading || !canImport ? null : _pickFromFiles,
                 ),
                 const SizedBox(height: AppSpacing.sm),
                 _SourceTile(
                   icon: Icons.videocam,
                   label: 'Camera',
                   subtitle: 'Record a new video',
-                  onTap: isLoading ? null : _recordVideo,
+                  onTap: isLoading || !canImport ? null : _recordVideo,
                 ),
                 const SizedBox(height: AppSpacing.md),
               ],
@@ -394,6 +403,37 @@ class _GhostCard extends StatelessWidget {
             ),
           ),
           Icon(Icons.history, color: colorScheme.secondary, size: 18),
+        ],
+      ),
+    );
+  }
+}
+
+class _WebUnavailableNotice extends StatelessWidget {
+  const _WebUnavailableNotice();
+
+  @override
+  Widget build(final BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    return Container(
+      padding: const EdgeInsets.all(AppSpacing.md),
+      decoration: BoxDecoration(
+        color: colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
+        borderRadius: BorderRadius.circular(AppRadius.md),
+        border: Border.all(color: colorScheme.outlineVariant),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(Icons.info_outline_rounded, size: 20, color: colorScheme.secondary),
+          const SizedBox(width: AppSpacing.md),
+          Expanded(
+            child: Text(
+              "Video import isn't available on web yet — add videos from the "
+              'mobile app. Web import is coming soon.',
+              style: AppTypography.bodySmall.copyWith(color: colorScheme.secondary),
+            ),
+          ),
         ],
       ),
     );

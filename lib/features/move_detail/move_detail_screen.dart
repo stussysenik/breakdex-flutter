@@ -3,6 +3,7 @@
 
 import 'dart:async';
 import '../../core/platform/native_media.dart';
+import '../../core/platform/web_support.dart';
 import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -295,11 +296,26 @@ class _MoveDetailScreenState extends ConsumerState<MoveDetailScreen> {
                       const SizedBox(height: AppSpacing.md),
 
                       if (move.videoPath != null) ...[
-                        ActionTile(
-                          icon: Icons.edit,
-                          label: l10n.mdActionEditVideo,
-                          onTap: () => _editVideo(context, ref, move),
-                        ),
+                        // Editing runs the AVFoundation export seam, which is
+                        // iOS-only. On web the tile stays visible but dimmed and
+                        // inert, labeled unavailable rather than crashing (1.3).
+                        if (supportsNativeVideoExport)
+                          ActionTile(
+                            icon: Icons.edit,
+                            label: l10n.mdActionEditVideo,
+                            onTap: () => _editVideo(context, ref, move),
+                          )
+                        else
+                          Opacity(
+                            opacity: 0.5,
+                            child: IgnorePointer(
+                              child: ActionTile(
+                                icon: Icons.edit,
+                                label: '${l10n.mdActionEditVideo} — unavailable on web',
+                                onTap: () {},
+                              ),
+                            ),
+                          ),
                         const SizedBox(height: AppSpacing.sm),
                         ActionTile(
                           icon: Icons.ios_share,
