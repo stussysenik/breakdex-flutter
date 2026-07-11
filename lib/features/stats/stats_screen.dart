@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../shared/widgets/app_loader.dart';
 import '../../core/design/spacing.dart';
+import '../../core/design/theme.dart';
 import '../../core/design/typography.dart';
 import 'providers/stats_providers.dart';
 import 'widgets/practice_calendar_view.dart';
@@ -168,11 +169,12 @@ class _BrutalistReactionTile extends StatelessWidget {
   @override
   Widget build(final BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
+    final semantic = AppSemanticTheme.of(context);
     final ratingColor = switch (entry.rating) {
-      'AGAIN' => const Color(0xFFC23B2A),
-      'HARD' => const Color(0xFFB7791F),
-      'GOOD' => const Color(0xFF1F7A4F),
-      'EASY' => const Color(0xFF0D9F9A),
+      'AGAIN' => semantic.actionAgain,
+      'HARD' => semantic.actionHard,
+      'GOOD' => semantic.actionGood,
+      'EASY' => semantic.actionEasy,
       _ => colorScheme.secondary,
     };
 
