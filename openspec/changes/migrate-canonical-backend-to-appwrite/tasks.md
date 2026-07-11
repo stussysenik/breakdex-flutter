@@ -334,9 +334,21 @@
   either backend** (clocks are ints, `json` passes through) — no such behaviour exists to mirror, so
   none is asserted (binary truth over a phantom guarantee). 24/24 green (15 Appwrite + 9 Convex),
   analyze clean. 2.4 = delete the Convex substrate on this documented basis.
-- [ ] 2.4 **Delete** `convex/`, the three Convex Dart files, and their tests in the same commit
+- [x] 2.4 **Delete** `convex/`, the three Convex Dart files, and their tests in the same commit
   that lands 2.3 green (git history preserves them). Update `providers.dart`'s seam comment to
   name `AppwriteSyncBackend` + env plumbing (`--dart-define`) instead.
+  DONE 2026-07-11: removed `convex/` (5 `_generated` + `fsrs/reviews/schema/sync.ts` + `tsconfig`),
+  `convex_sync_backend.dart` / `convex_transport.dart` / `convex_http_transport.dart`, and
+  `convex_sync_backend_test.dart` — verified no `lib/` import, build-tooling ref, or manual `watches`
+  glob depended on any of them (only design-lineage prose in `appwrite_*`/`remote_config.dart`, left
+  intact per line-87 scope). `providers.dart` seam comment repointed to
+  `AppwriteSyncBackend(AppwriteFunctionsTransport(client))` + `--dart-define`
+  `APPWRITE_ENDPOINT`/`APPWRITE_PROJECT_ID` (Phase-3/0.2-gated); `syncBackend: null` unchanged.
+  Reconciled the two now-false claims in `04-sync.mdx` (§intro + §Migration-state) that this deletion
+  falsified — Appwrite is the sole `lib/` adapter. 122/122 sync-dir tests green, analyze clean.
+  **Ledger note:** `04-sync`/`08-testing`/`11-onboarding` chapters already carried pre-existing
+  `verified:` drift from Phases 1R/2.1/2.2 (never bumped); their hash bump is a separate ledger-
+  reconciliation pass, not part of 2.4 (bumping asserts a full re-audit not done here).
 
 ## Phase 3: Unified identity (Appwrite Account everywhere; Firebase Auth untouched until Phase 5)
 

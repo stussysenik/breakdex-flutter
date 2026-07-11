@@ -22,22 +22,28 @@
 > same commit**. Nothing else starts until this block says so.
 
 - **Change:** `migrate-canonical-backend-to-appwrite`
-- **Next task:** `2.4` — **delete** `convex/` + the three Convex Dart files (`convex_sync_backend`,
-  `convex_transport`, `convex_http_transport`) + `convex_sync_backend_test.dart` in one commit (git
-  history preserves them), and repoint `providers.dart`'s seam comment to `AppwriteSyncBackend` +
-  `--dart-define` env plumbing. Safe basis: `2.3`'s formal parity ledger proves the Appwrite suite
-  mirrors all 9 Convex behaviours. (`2.1` seam + `2.2` `AppwriteSyncBackend` + `2.3` parity gate
-  done 2026-07-11 — routing/marshalling/direct-reads + audit-B1 cancellation, 24/24 green, unwired.)
-  **Not owner-gated** — the live substrate + shared `appwriteClientProvider` (1R.2) exist now; this
-  is the live track.
+- **Next task (⛔ OWNER-GATED):** `3.1` — `lib/core/services/appwrite_auth_service.dart`: OAuth2
+  session create/refresh/logout + current-user stream via Riverpod. **Blocked on `0.2`** (Google
+  OAuth provider configured in the Appwrite console — owner-run). Do not start until the owner lands
+  0.2; a client cannot exercise a session that no provider issues. **Phase 2 is COMPLETE** (`2.1`
+  seam + `2.2` `AppwriteSyncBackend` + `2.3` parity gate + `2.4` Convex substrate deleted, all done
+  2026-07-11 — routing/marshalling/direct-reads + audit-B1 cancellation, 24→15/15 green after the
+  Convex test was retired; `AppwriteSyncBackend` is the sole `lib/` adapter, unwired at `providers.dart`
+  until Phase 3).
+- **Parallel-allowed track (not owner-gated):** the web-first release WIP — `1.0.2` web Drift
+  (WASM/OPFS) + `1.0.3` plugin audit + `1.0.5` build web/Chrome (spec
+  `add-web-first-release-and-monetization`). Once that `dart:io`-seam WIP makes the app build again,
+  **wire `UpdateGatePrompt` at the app root** (deferred from 1R.3). Work this, nothing else, while
+  3.x waits on the owner.
 - **Blocked (not the head):** `1R.4`'s **manual** console→client proof is **session-gated** —
   `appConfig` perm is `read("users")`, so a session-less pre-Phase-3 client degrades to compiled
   defaults (correct); real proof needs Phase 3 identity. Its unit half is met by 1R.2/1R.3 suites.
   Owner action still open: create the singleton row `current` in the `appConfig` table (console).
-- **Then:** Phase 2 client plumbing (2.1→…) per D8; Phase 3 identity remains gated on `0.2`
-  (Google OAuth, owner-run). Once the `dart:io`-seam WIP lands (app builds again), **wire
-  `UpdateGatePrompt` at the app root** (3-line wrap of the navigator child) — deferred from 1R.3
-  because a wired overlay can't be device-verified while the app doesn't build.
+- **Then (after 0.2 unblocks Phase 3):** `3.2→` unified identity, then Phase 4 strangler-fig per
+  entity (backfill → dual-write → dual-read → verify → cut, D8 order) where `AppwriteSyncBackend`
+  finally gets wired into `providers.dart`. The `UpdateGatePrompt` root wrap stays deferred from 1R.3
+  until the `dart:io`-seam WIP makes the app build again (a wired overlay can't be device-verified
+  while the app doesn't build).
 - **⚠ Ops hazard (learned 1R.1):** do **NOT** run `appwrite push tables --all` against the live
   `breakdex` project. This CLI (22.6.1) diffs omitted-`array` (config) vs `array:false` (deployed)
   as a change and **recreates existing columns** — it deleted all of `moves`'s attributes mid-run
