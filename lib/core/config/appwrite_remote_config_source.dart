@@ -22,6 +22,12 @@ class AppwriteRemoteConfigSource implements RemoteConfigSource {
 
   @override
   Future<Map<String, Object?>> fetch() async {
+    // Session-less clients cannot read the `read("users")` row; signal
+    // "unavailable" so the service keeps its cache-or-defaults fallback without
+    // issuing a doomed (CORS-failing) network request. See kRemoteConfigLiveEnabled.
+    if (!kRemoteConfigLiveEnabled) {
+      throw StateError('Remote-config live path disabled until Phase 3 session.');
+    }
     final row = await _tables.getRow(
       databaseId: kAppwriteDatabaseId,
       tableId: kAppConfigTableId,
@@ -32,6 +38,10 @@ class AppwriteRemoteConfigSource implements RemoteConfigSource {
 
   @override
   Stream<Map<String, Object?>> subscribe() {
+    // No session ⇒ the Realtime socket would only reconnect-loop against a
+    // channel this client can't read. Stay inert until Phase 3. See
+    // kRemoteConfigLiveEnabled.
+    if (!kRemoteConfigLiveEnabled) return const Stream.empty();
     final channel = Channel.tablesdb(
       kAppwriteDatabaseId,
     ).table(kAppConfigTableId).row(kAppConfigRowId);

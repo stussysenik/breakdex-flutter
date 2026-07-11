@@ -9,6 +9,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'firebase_options.dart';
 
+import 'core/config/widgets/update_gate_prompt.dart';
 import 'core/database/database.dart';
 import 'core/design/theme.dart';
 import 'l10n/gen/app_localizations.dart';
@@ -409,8 +410,14 @@ class BreakdexApp extends ConsumerWidget {
       themeMode: themeSetting.themeMode,
       routerConfig: appRouter,
       builder: (final context, final child) {
+        // Config-driven update prompt, wired once at the app root. Inert at the
+        // compiled defaults (running build vs min0/latest0 ⇒ UpdateGateNone), so
+        // it is behaviour-safe until the owner publishes a minSupportedBuild /
+        // latestBuild above the running build via remote config.
         return _BootGateOverlay(
-          child: _StartupReliabilityToastGate(child: child),
+          child: UpdateGatePrompt(
+            child: _StartupReliabilityToastGate(child: child),
+          ),
         );
       },
     );

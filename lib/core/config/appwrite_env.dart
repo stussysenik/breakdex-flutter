@@ -29,3 +29,17 @@ const String kAppConfigTableId = 'appConfig';
 /// one config row; the owner creates/updates row `current` in the `appConfig`
 /// table (per-cohort variance rides `cohortProfiles`, not extra rows).
 const String kAppConfigRowId = 'current';
+
+/// Whether the **live** remote-config path (Appwrite row fetch + Realtime socket)
+/// is active. The `appConfig` row is readable only by the `users` role, so a
+/// session-less client — which is *every* client until Phase 3 identity lands —
+/// can only ever degrade to compiled defaults. Firing the live path anyway just
+/// CORS-fails the fetch and spins a futile Realtime reconnect loop (console
+/// noise + wasted sockets). Kept off until Phase 3 wires a real session (and
+/// Phase 0 registers the web origin as an Appwrite platform for CORS); flip to
+/// `true` there. Until then [AppwriteRemoteConfigSource] is inert and config
+/// resolves to cache-or-defaults. Overridable via `--dart-define` for testing.
+const bool kRemoteConfigLiveEnabled = bool.fromEnvironment(
+  'REMOTE_CONFIG_LIVE',
+  defaultValue: false,
+);
