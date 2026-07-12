@@ -58,7 +58,9 @@ reconcile is verified against real data.
    Flutter login screen + auth logic; `google_sign_in` retained solely to mint Drive-scope tokens
    on mobile; legacy Firebase-uid mapping so existing records are claimed, never orphaned.
 6. Strangler-fig cutover per entity (moves → combos → reviews → fsrs_cards → decks), dual-read
-   **and dual-write**, per-entity kill-switches, tombstone verification.
+   **and dual-write**, per-entity kill-switches, tombstone verification; note entries
+   (`MoveNoteEntries`/`ComboNoteEntries`) join as Appwrite-only synced entities (wave
+   2026-07-12, D11 / task 4.9).
 7. Firestore + Firebase Auth retirement, Drive JSON-export safety net, self-host cutover runbook.
 8. Web studio enablement: evolve the in-repo `web-mirror/` (Next.js 15) onto Appwrite (auth, data,
    realtime) as the substrate for the full authoring studio; the studio's own capabilities remain

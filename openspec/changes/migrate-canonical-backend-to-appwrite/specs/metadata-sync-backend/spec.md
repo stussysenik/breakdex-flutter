@@ -111,3 +111,20 @@ JSON to the user's Google Drive, restorable independently of any backend vendor.
 #### Scenario: Vendor-independent recovery
 - **WHEN** the Appwrite deployment becomes unavailable or is decommissioned
 - **THEN** the latest Drive JSON export suffices to reconstruct all metadata
+
+### Requirement: Note entries are synced entities
+
+The system SHALL sync move and combo note entries (`MoveNoteEntries`/`ComboNoteEntries`) through
+the same `SyncBackend` contract as other descriptive entities (added 2026-07-12, overnight
+wave, D11 — the multi-entry note tables were device-only until this delta) — per-record LWW on `updatedAt`,
+tombstone deletes, `clientOpId` idempotency — with Appwrite as their only backend (they have no
+legacy Firestore path, so no dual-write ladder applies). The single `notes` column on parent
+entities SHALL continue to travel inside the entity payload.
+
+#### Scenario: Note entry crosses surfaces
+- **WHEN** a note entry is added to a move on one signed-in client
+- **THEN** other clients of the same user receive it via pull/Realtime
+
+#### Scenario: Note-entry delete is a tombstone
+- **WHEN** a note entry is deleted on one client
+- **THEN** a tombstone (never a hard delete) propagates and other clients hide the entry without touching parent-entity state

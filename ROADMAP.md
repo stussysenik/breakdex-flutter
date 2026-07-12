@@ -21,47 +21,19 @@
 > exactly the next unticked task, verify (binary truth), tick + update this block **in the
 > same commit**. Nothing else starts until this block says so.
 
-- **Change:** `migrate-canonical-backend-to-appwrite`
-- **Next task (⛔ OWNER-GATED):** `3.1` — `lib/core/services/appwrite_auth_service.dart`: OAuth2
-  session create/refresh/logout + current-user stream via Riverpod. **Blocked on `0.2`** (Google
-  OAuth provider configured in the Appwrite console — owner-run). Do not start until the owner lands
-  0.2; a client cannot exercise a session that no provider issues. **Phase 2 is COMPLETE** (`2.1`
-  seam + `2.2` `AppwriteSyncBackend` + `2.3` parity gate + `2.4` Convex substrate deleted, all done
-  2026-07-11 — routing/marshalling/direct-reads + audit-B1 cancellation, 24→15/15 green after the
-  Convex test was retired; `AppwriteSyncBackend` is the sole `lib/` adapter, unwired at `providers.dart`
-  until Phase 3).
-- **Parallel-allowed track (not owner-gated):** the web-first release (spec
-  `add-web-first-release-and-monetization`). **Phase 1.0 web-compile foundation is COMPLETE +
-  ticked** (`1.0.1–1.0.5` + `1.2`, done 2026-07-11): `flutter build web` green, the local-only
-  library renders in Chrome, and the boot **console is clean** (the residual unawaited
-  `MissingPluginException` from the native self-healing controllers is guarded at each `start()`
-  with `kIsWeb`). **`1.1` (own `web/`) is also DONE + ticked** — Flutter-logo icons replaced with an
-  engineering-owned Breakdex "B" monogram (accent `#1F5EFF`, Inter-Bold), `manifest.json` +
-  `index.html` de-scaffolded (title/description/theme-color/lang/anti-flash bg). **`UpdateGatePrompt`
-  is wired** at the app root and inert at defaults; activating it exposed that the live remote-config
-  path reconnect-loops session-less, so it is gated behind `kRemoteConfigLiveEnabled` (default off,
-  flip in Phase 3). **⚠ The "B" mark is an owned placeholder — owner drops in final brand art (also
-  replaces the still-Flutter-default iOS AppIcon, tracked under `harden-code-ownership-and-config-purge`).**
-  **`1.3` (visible-affordance seams) is DONE + ticked** (2026-07-11): `NativeVideoExport`
-  `kIsWeb`-guards all three entry points (progress stream → empty, `export()` → honest
-  `UnsupportedError`, `cancel()` → no-op); the shared `VideoPickerSheet` dims all three source
-  tiles + shows a "coming soon" notice on web; the move-detail "Edit Video" tile degrades to
-  dimmed/inert via a composed wrapper; and `/video-editor` deep-links render an unavailable
-  screen instead of crashing. New `lib/core/platform/web_support.dart` holds the capability
-  flags. `flutter build web` green, `analyze` clean on all touched files. (Haptics audited →
-  already a silent web no-op, no affordance to hide; `flutter_secure_storage` not in the repo.)
-  **Next unticked here:** `1.4` video on web (playback via HTML video from Drive URLs + web
-  import path — flips `supportsVideoCaptureAndImport`), then `1.6` CI web gate. `1.5` (web
-  auth/sync) stays Appwrite-gated. Work this track, nothing else, while 3.x waits on the owner.
-- **Blocked (not the head):** `1R.4`'s **manual** console→client proof is **session-gated** —
-  `appConfig` perm is `read("users")`, so a session-less pre-Phase-3 client degrades to compiled
-  defaults (correct); real proof needs Phase 3 identity. Its unit half is met by 1R.2/1R.3 suites.
-  Owner action still open: create the singleton row `current` in the `appConfig` table (console).
-- **Then (after 0.2 unblocks Phase 3):** `3.2→` unified identity, then Phase 4 strangler-fig per
-  entity (backfill → dual-write → dual-read → verify → cut, D8 order) where `AppwriteSyncBackend`
-  finally gets wired into `providers.dart`. The `UpdateGatePrompt` root wrap stays deferred from 1R.3
-  until the `dart:io`-seam WIP makes the app build again (a wired overlay can't be device-verified
-  while the app doesn't build).
+- **Change:** `migrate-canonical-backend-to-appwrite` — **⚡ Overnight wave (owner ruling
+  2026-07-12).** Read that `tasks.md`'s wave preamble FIRST (it sets the order and converts
+  tonight's owner-gates), then `design.md` **D11**. `main` is the merged single source of truth
+  (`main` == `phase-h-hardening` == `f87f4fc`, pushed); commit the wave on `main`.
+- **Next task:** `0.5` — headless verification of the owner's "0.2 is done" claim. Then, in
+  wave order: `3.3` auth wiring → `3.4` legacy-identity claim → `4.1–4.8` per-entity cutover
+  (converted gates) → `4.9` note-entry sync → web-first `1.4`/`1.5` (cross-change ticks) →
+  `V.1`/`V.2` sweep + wave report appended to the wave preamble. **Phase M (morning 2026-07-13,
+  owner on the physical device)** holds every owner-in-the-loop proof: live Google login (M.2),
+  real-data backfill (M.3), two-surface soak (M.4), config flip 1R.4 (M.5), web login (M.6).
+- **Owner-gated residue (parked, does not block the wave):** 0.4's Convex console delete; final
+  brand art (`harden-code-ownership-and-config-purge`); web-first Phase 0 rulings
+  (payments/domain/invites).
 - **⚠ Ops hazard (learned 1R.1):** do **NOT** run `appwrite push tables --all` against the live
   `breakdex` project. This CLI (22.6.1) diffs omitted-`array` (config) vs `array:false` (deployed)
   as a change and **recreates existing columns** — it deleted all of `moves`'s attributes mid-run
@@ -70,82 +42,10 @@
   tables re-verified green. Provision NEW tables via **targeted** `tables-db create-*-column` /
   `create-index` calls (auth: `set -a; source .env.local` → export `APPWRITE_ENDPOINT/PROJECT_ID/
   KEY` — the CLI prefs `current` points at throwaway `6a51…` projects, not `breakdex 6a50f25b…`).
-- **State notes (updated 2026-07-11):** **2.1 DONE (2026-07-11):** `lib/core/sync/backends/`
-  transport seam — pure `AppwriteTransport` (`execute(functionId, body)`) + `AppwriteException` +
-  pure `decodeExecutionResult` (failed→`errors`; ≥400→Function `{error}` envelope else `HTTP …`) +
-  concrete `AppwriteFunctionsTransport` over the SDK `Functions.createExecution`; 12/12 unit tests
-  green, analyze clean, no caller wired. 0.1 + 0.3 DONE. **1R.1 DONE (live):** `appConfig` table
-  provisioned into `breakdex` (8 cols — `version/minSupportedBuild/latestBuild` req-int min0,
-  `updateMessage` opt, `featureFlags/killSwitches/cohortProfiles` opt-string default `"{}"`,
-  `updatedAt` req-int; `rowSecurity:false`, table perm `read("users")`, owner writes via
-  console/server-key — no client write role). Live parity re-verified: 10/10 tables green.
-  **1R.2 DONE (2026-07-10):** Flutter `lib/core/config/` — immutable `RemoteConfig` +
-  `RemoteConfigSource` seam + `RemoteConfigService` (fallback ladder remote → last-cached →
-  compiled defaults; 401/offline both degrade to defaults) + Appwrite source (`TablesDB.getRow`
-  + Realtime on singleton row **`current`**) + Riverpod (`appwriteClientProvider` [Phase-2 reuse]
-  + `remoteConfigProvider`). `appwrite ^25.2.0` added; 9/9 unit tests green; analyze clean; no
-  caller wired. **Owner action for 1R.4 live proof:** create row `current` in the `appConfig`
-  table (console) — one row, per-cohort variance via `cohortProfiles`.
-  **1R.3 DONE (2026-07-10):** pure sealed `UpdateGate` (`None`/`SoftNag`/`HardBlock`) +
-  `UpdateGate.evaluate({config, currentBuild})` (hard-block iff `current < minSupportedBuild`
-  [strict — **never blocks while `min ≤ current`**]; soft-nag iff supported & `latestBuild >
-  current`; message = `updateMessage`→blank falls back to compiled copy) + `updateGateProvider`
-  (over `remoteConfigProvider.valueOrNull ?? defaults` + `currentBuildProvider`) + `UpdateGatePrompt`
-  root wrapper (none→passthrough, soft→dismissible strip, hard→keyed non-dismissible barrier).
-  Build source = **`AppMetadata.buildNumber`** — the roadmap's "`package_info_plus` is already a
-  dep" was **wrong** (it isn't); gated on the repo's existing build identity behind a
-  test-overridable seam, non-numeric ⇒ 0 ⇒ un-fireable. `flutter test test/core/config/` **22/22
-  green**; analyze clean; inert at defaults (build 3 vs min0/latest0 ⇒ none); **unwired** (see NOW
-  "Then"). 0.1 + 0.3 DONE. **Phase 1 COMPLETE — 1.5 DONE (live):**
-  schema (`breakdex` TablesDB + 9 tables, `status ready`) + all 3 Functions (`sync-push`,
-  `sync-pull`, `reviews-append`) deployed & built on `dart-3.11`, live `scopes` match config,
-  **14/14 curl smoke green** against Cloud (real-JWT invocations). Live smoke caught + fixed a
-  `main.dart` seam bug the pure-core tests couldn't reach: `context.res.json(…, statusCode: N)` used
-  a **named** arg where the runtime's `res.json` takes `statusCode` **positionally** (every error
-  path 500'd) — now positional in all three, redeployed. Smoke data purged; backend pristine.
-  **1.4 DONE** — `functions/reviews-append/`
-  (Dart runtime `dart-3.11`): pure `append.dart` (idempotent ingest ported from
-  `convex/reviews.ts` `appendReviewEvents` — skip by `clientOpId`, collect touched
-  `(entityType, entityId)`, event-triggered derive) + pure `derive.dart` (folds each entity's
-  ordered `reviewEvents` log through the **same `fsrs: ^2.0.1`** the client runs, reconstructing
-  the card between events exactly as the client's `FsrsService._dbToFsrs`) + `main.dart` IO glue
-  (`TablesDbAppendStore` over `dart_appwrite` 25.1.0, cursor-paginated per-entity read via
-  `by_user_entity`, owner-only writes, trusted `x-appwrite-user-id`, `rows.write` scope).
-  **Benchmark → event-triggered** (derive only the batch's touched entities; FSRS math in one
-  place; card pull collapses to a plain `fsrsCards` delta — vs pull-time recompute-everything /
-  derive-on-read races). **Determinism:** derive forces `enableFuzzing:false` (client default is
-  `true`, whose fuzz is an unseeded `Random()` on Review intervals ≥2.5d — irreproducible), so
-  re-derive is idempotent and 4.6's "exact" is meaningful (S/D/state exact; `due` = canonical
-  unfuzzed interval). `dart analyze` clean, `dart test` **18/18 green**; registered in
-  `appwrite.config.json` (3 functions; valid JSON + full key/schema parity with the accepted
-  entries). Live deploy is 1.5. **1.3 DONE** — `functions/sync-pull/`
-  (Dart runtime `dart-3.11`): pure `pull.dart` (`convex/sync.ts` `pullRecords` port — unions live
-  descriptive rows + `tombstones` on one high-water clock, two-table model; cursor = max clock
-  across the delta else untouched `since`; `null` on empty full pull) + `main.dart` IO glue
-  (`TablesDbPullStore` over `dart_appwrite` 25.1.0, cursor-paginated reads on `by_user_updatedAt`
-  / `by_user_entity_deletedAt`, read-only scopes, trusted `x-appwrite-user-id`). `dart analyze`
-  clean, `dart test` 21/21 green; registered in `appwrite.config.json` (2 functions; passes CLI
-  `Validating functions`). Live deploy is 1.5. **1.2 DONE** — `functions/sync-push/`
-  (Dart runtime `dart-3.11`): pure `reconcile.dart` (LWW + tombstones + idempotency ported from
-  `convex/sync.ts`, two-table model) + `main.dart` IO glue (`TablesDbSyncStore` over
-  `dart_appwrite` 25.1.0, owner-only per-row perms, trusted `x-appwrite-user-id`). `dart analyze`
-  clean, `dart test` 19/19 green; `functions` block passes CLI `ConfigSchema`. Live deploy is 1.5.
-  **1.1 DONE** — `appwrite.config.json` now
-  holds database `breakdex` + 9 tables (5 descriptive + reviewEvents/fsrsCards/legacyIdentities/
-  tombstones), TablesDB model, `rowSecurity` owner-only, video pointer inside the `payload` JSON
-  column (contract-faithful, not separate columns); passes the CLI's strict `ConfigSchema`
-  validator (binary truth); live deploy deferred to 1.5. **0.4 repo-half DONE** — Convex stanza
-  (`CONVEX_URL`/`CONVEX_SITE_URL` + deploy comments) removed from gitignored `.env.local`, no live
-  code depends on them; only residual is the owner console-delete of the *empty* Convex project
-  `brilliant-mongoose-46` (nothing deployed → zero risk), so 0.4's box stays `[ ]` on that click
-  alone — no repo work left, does not block 1.1+. Appwrite CLI v22.6.1 installed; root
-  `appwrite.config.json` committed (projectId + projectName, no secrets); headless deploy proven
-  via API key (`appwrite push tables|functions` reach the live project — 0 tables/functions, ready
-  for 1.1). **0.2 (Google OAuth console setup) is owner-gated** but does NOT block 1.1–1.5 — only
-  Phase 3 identity needs it. Env naming drift (`APPWRITE_SECRET`/`APPWRITE_API_ENDPOINT` vs D2's
-  `APPWRITE_API_KEY`/`APPWRITE_ENDPOINT`) to reconcile in the Phase 2 client-plumbing task.
-- **Parallel-allowed track (no Appwrite dependency):** `add-web-first-release-and-monetization`
-  Phase 1.0 (web Drift 1.0.2 → plugin audit 1.0.3 → `flutter build web` gate 1.0.5).
+- **State pointer:** per-phase progress notes live in the ledgers (each change's `tasks.md`
+  task notes), not here — this block stays a pointer. Shipped so far: master phases H, 0 (minus
+  the 0.2-verify + 0.4 console click), 1, 1R (minus 1R.4), 2 complete; 3.1/3.2 built seam-only
+  and unwired; web-first 1.0–1.3 done + the CI web-build half of 1.6.
 
 ## Backlog — OpenSpec change order (D8, canonical)
 

@@ -7,6 +7,52 @@
 > implementation time; `flutter analyze` + `flutter test` green at every task boundary; stop and
 > surface at owner-gated steps.
 
+## ⚡ Overnight wave — owner ruling 2026-07-12 (executor entrypoint; read before any phase)
+
+> **Owner ruling (2026-07-12):** `main` is the single source of truth (verified merged + pushed:
+> `main` == `phase-h-hardening` == `f87f4fc`); the owner believes the 0.2 console-half is already
+> handled — VERIFY it, don't wait on it; autonomous overnight execution is authorized under the
+> converted gates below; on the morning of 2026-07-13 the owner tests on the physical device
+> (Phase M). **Goal:** Breakdex behaves like a product — sign in with Google on iOS and Flutter
+> Web, and CRUD + notes + video pointers sync everywhere through Appwrite; any surface picks up
+> the latest state. Design rulings for this wave: `design.md` **D11**.
+
+**Wave order** (each item = the named task's checkbox; tick in the owning ledger, same commit;
+commit the wave on `main`):
+
+1. `0.5` — headlessly verify the owner's 0.2 claim (new task below).
+2. `3.3` — wire Appwrite auth into the app shell (see the 3.3 wave note).
+3. `3.4` — `legacyIdentities` claim flow.
+4. `4.1 → 4.3` moves, `4.4` combos, `4.5` reviews, `4.6` fsrs, `4.7` decks, `4.8` tombstones —
+   under the converted gates below.
+5. `4.9` — note entries become synced entities (new task below; new scope from this ruling).
+6. `add-web-first-release-and-monetization` `1.4` (video on web) then `1.5` (web auth + sync) —
+   cross-change: tick BOTH ledgers in the landing commit.
+7. `V.1`/`V.2` sweep + a **wave report** appended to this section (what's proven, what waits
+   for Phase M).
+
+**Converted gates (owner ruling; for tonight these override the per-task "owner-gated" markers):**
+
+- **0.2:** verify via 0.5's probe. If the provider is NOT actually configured: record exactly
+  what is missing in `DOCS/appwrite-oauth-provisioning.md` (add a dated status section), then
+  continue — everything except live Google-login proof still lands.
+- **Live data-plane proof without Google OAuth:** the 1.5 smoke precedent (server-created smoke
+  user + JWT exercised all three Functions; that script lived in a session scratchpad and is
+  gone — re-derive it from the 1.5 ledger note). Use the same pattern to live-verify every 4.x
+  step against the deployed backend; purge smoke rows + the smoke user after each run so the
+  backend stays pristine.
+- **4.1 "copy of real data" / 4.3 "two devices" / 3.1 cross-restart session / 1R.4 console
+  flip:** real data and live Google sessions exist only on the owner's device → overnight =
+  fixture + smoke-user live proof; the real-data/real-device halves move to Phase M. A box whose
+  only remaining proof is M-scoped ticks ONLY if its note names the M task carrying the residue.
+- **Brownfield rule unchanged:** nothing deletes/alters legacy Firestore paths (Phase 5 stays
+  untouched); no task mutates local user state; `flutter analyze` + `flutter test` green at
+  every task boundary.
+
+**Stop conditions (surface, never improvise):** a migration that would mutate existing user
+rows; any need for `appwrite push tables --all` (destructive — see the ops hazard in ROADMAP
+`## NOW`); anything that would require committing a secret.
+
 ## Phase H: Harden the migration template (no Appwrite needed; do FIRST; audit 2026-07-05)
 
 > DONE 2026-07-05 on branch `phase-h-hardening` (commit 8e301a1). `flutter analyze`
@@ -97,6 +143,17 @@
   owner-gated:** the console-delete of `brilliant-mongoose-46` needs a Convex dashboard login I
   don't hold — but the project is empty (nothing deployed → zero data/migration risk), so box
   stays `[ ]` only on that click; no repo work remains.
+- [ ] 0.5 **Verify 0.2's console-half headlessly (wave 2026-07-12).** The owner believes 0.2 is
+  done — prove it, don't assume either way. (a) OAuth-provider probe: request
+  `$APPWRITE_ENDPOINT/account/sessions/oauth2/google?project=$APPWRITE_PROJECT_ID&…` (verify the
+  exact current URL shape + required `success`/`failure` params against Appwrite docs first) — a
+  3xx `Location:` into Google's consent flow proves the provider is enabled; a JSON
+  provider-disabled error proves it isn't. (b) Platform registration (iOS bundle id, Android
+  package, web origins incl. localhost): the console API needs a console session, so if it is
+  unreachable headlessly, record that (a) is the only half proven and let M.2/M.6 carry the
+  rest. Record the result in 0.2's note; tick 0.2 iff fully proven. While here: reconcile the
+  `.env.local` naming drift to D2 (`APPWRITE_ENDPOINT`/`APPWRITE_API_KEY`; keep the old names as
+  duplicate aliases until scripts are swept — never break a working key).
 
 ## Phase 1: Appwrite schema + server functions (additive; shadow only)
 
@@ -396,6 +453,20 @@
 - [ ] 3.3 Auth wiring: app requires an Appwrite session; `google_sign_in` demoted to Drive-token
   minting only (its identity role removed). Existing users must experience this as a single
   familiar Google consent, not a new account.
+  **Wave note (2026-07-12) — the concrete wiring surface:** identity today is the
+  SharedPreferences-backed legacy `AuthService` (`authServiceProvider`/`isLoggedInProvider`,
+  `lib/core/providers.dart:177-188`), which flips repos into their `SyncAware*` decorators.
+  Wire: derive the logged-in truth from `currentAppwriteUserProvider`
+  (`appwrite_auth_providers.dart`); route `AppwriteLoginScreen` as the sign-in surface (fill its
+  `onSignedIn` seam); delete `lib/main_auth_smoke.dart` (its DELETE-after-proof condition
+  fires). **Sign-in stays optional** (D11; locked user model — local-only users untouched): no
+  session ⇒ local-only mode, never a login wall; a session is required only for sync/identity
+  features — "requires a session" scopes to those features, not app entry. Make the live
+  remote-config path **session-aware at runtime** instead of blindly flipping
+  `kRemoteConfigLiveEnabled`'s compile default: fetch/subscribe only while a session exists (the
+  1R.3 session-less Realtime reconnect loop must not return; a signed-out boot with a clean
+  console is the regression gate). `syncBackend: null` (`providers.dart:370-384`) stays null
+  until 4.2 wires it behind its pref.
 - [ ] 3.4 `legacyIdentities` claim flow (D3): on first Appwrite login, map Firebase uid ↔ Appwrite
   userId via verified Google email; all backend reads/writes key on Appwrite userId; backfill
   (4.1) stamps records through this map. Test: same Google account on two installs resolves to one
@@ -410,6 +481,9 @@
 - [ ] 4.1 `moves` backfill → Appwrite shadow using the existing `SyncBackfillService` +
   `move_codec` against `AppwriteSyncBackend`. Re-run the byte-identical local-snapshot proof.
   Run against a copy of real data first (owner-gated).
+  **Wave conversion (2026-07-12):** overnight = fixture-DB backfill + byte-identical snapshot
+  proof + live smoke-user push against the deployed Functions (re-derive the 1.5 JWT smoke
+  pattern); the owner-device real-data run is **M.3**.
 - [ ] 4.2 `moves` **dual-write**: every local flush pushes to Firestore AND Appwrite
   (idempotent via `clientOpId`; failures logged, never block the Firestore path). Pref-gated
   (`sync.moves.dualWrite.enabled`). This precedes any read cutover (audit A1).
@@ -417,6 +491,9 @@
   (H.1–H.4) with Appwrite first / Firestore fallback. Soak with both prefs on; verify two-way
   reconcile on real data across two devices; then cut reads over (Firestore moves reads skipped).
   Rollback at any point = flip prefs off.
+  **Wave conversion (2026-07-12):** overnight = wire + pref-gate + fixture/smoke-user
+  cross-client verification; the real two-device soak is **M.4**. Reads may NOT cut over before
+  M.4 passes — leave Appwrite-first + Firestore-fallback enabled.
 - [ ] 4.4 `combos` + `combo_moves`: add their `updatedAt` LWW clocks (additive schema migration,
   backfilled from `created_at`, mirroring v23), codecs, then 4.1→4.3 for the pair.
 - [ ] 4.5 `reviews` → append-only `reviewEvents` (idempotent `clientOpId`); dual-write → verify →
@@ -428,6 +505,26 @@
 - [ ] 4.8 **Tombstones end-to-end**: delete on device A → tombstone in Appwrite → device B hides
   the row locally without hard-deleting videos/rows; web studio DELETE=TOMBSTONE verified against
   the same table. Only after this task may any cutover be called complete.
+- [ ] 4.9 **Note entries become synced entities (wave scope 2026-07-12 — "notes work
+  everywhere").** `MoveNoteEntries`/`ComboNoteEntries`
+  (`lib/core/database/tables/{move,combo}_note_entries.dart`, DAOs at `providers.dart:315-321`)
+  are device-only today: absent from `SyncEntityType`, no Appwrite tables, no codecs. (The
+  single `notes` COLUMN on moves/combos already rides inside the entity payload — this task is
+  the multi-entry tables.) They are **Appwrite-only**: no Firestore legacy exists, so the
+  dual-write ladder does not apply (D11); still pref-gated with the same kill-switch pattern.
+  (a) Additive Drift migration (v8→v9): `updatedAt` LWW clock on both tables, backfilled from
+  `createdAt` (mirror 4.4's pattern; one-way, tested). (b) `SyncEntityType.moveNoteEntry`/
+  `comboNoteEntry` + codecs in `lib/core/sync/codecs/` (round-trip tested). (c) Author
+  `moveNoteEntries`/`comboNoteEntries` into `appwrite.config.json` (descriptive envelope:
+  `id`/`userId`/`updatedAt`/`clientOpId`/`payload`; `by_user_id` + `by_user_updatedAt` indexes;
+  `rowSecurity: true`) and provision live via **targeted** `tables-db create-table/
+  create-*-column/create-index` calls — NEVER `push tables --all` (ops hazard). (d) Extend the
+  `sync-push`/`sync-pull` Functions' descriptive-table allowlist + their tests; redeploy via
+  `appwrite push functions --activate` (function-scoped, safe). (e) Dirty-tracking: note-entry
+  writes flow into `sync_log` like the other entities (their DAOs bypass the `SyncAware*`
+  repository layer today — add the equivalent hook, matching the existing pattern). (f) Verify:
+  codec round-trip, LWW, tombstone-delete, idempotent replay (unit) + smoke-user live e2e;
+  cross-device note visibility rides M.4's list.
 
 ## Phase 5: Retire Firestore + Firebase Auth; safety nets; self-host runbook
 
@@ -470,6 +567,24 @@
 - [ ] 7.4 Evaluate **Shorebird code-push** for OTA Dart updates (owner ruling 2026-07-08:
   remote config first, code-push only once release cadence exists; weigh vendor cost + iOS
   store-policy constraints; do not adopt without a fresh owner decision).
+
+## Phase M: Morning proof — 2026-07-13 (owner + agent, physical device; the wave's live half)
+
+- [ ] M.1 Device build + install (flowdeck-managed). Existing local library intact, boot clean —
+  the brownfield gate for everything the wave landed.
+- [ ] M.2 **Live Google sign-in on iOS**: single familiar consent (3.3); kill + relaunch ⇒ still
+  signed in (3.1's cross-restart proof — tick 3.1 here). If 0.5 left 0.2 unproven, this is where
+  it resolves; failures route to `DOCS/appwrite-oauth-provisioning.md`.
+- [ ] M.3 **Real-data backfill** on the owner's device (4.1's gated half): flagged run,
+  byte-identical local snapshot, rows visible in the Appwrite console.
+- [ ] M.4 **Cross-surface soak** (V.3 subset): edit on phone → web sees it live; edit on web →
+  phone picks it up; offline edit flushes idempotently; a tombstone crosses without data loss;
+  note entries + video pointers included; Drive playback works on web.
+- [ ] M.5 **Remote-config live flip (1R.4):** owner changes `updateMessage`/a flag in the
+  console → running clients update without redeploy; tick 1R.4.
+- [ ] M.6 **Web login:** Google OAuth on Flutter Web from a registered origin; session survives
+  reload; storage posture recorded per D11 (httpOnly cookie vs fallback). This is web-first
+  1.5's live half.
 
 ## Validation
 

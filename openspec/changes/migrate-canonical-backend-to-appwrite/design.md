@@ -182,6 +182,44 @@ whole files in RAM) is fixed with streamed `writeToFile()`.
 - The multi-sink video plane (Drive + optional future Appwrite Storage + PocketBase local backup
   per the standing project principle) is unaffected by this change.
 
+## D11 — Overnight wave (owner ruling 2026-07-12): finish it like a product; proof split overnight/morning
+
+**Ruling.** Merge to `main` is done (single source of truth; `main` == `f87f4fc`, pushed). The
+owner believes 0.2's console half is handled — verify (task 0.5), don't wait. An autonomous
+overnight executor lands the wave (see the tasks.md preamble for order + converted gates); the
+owner live-proves on the physical device the next morning (Phase M).
+
+- **"Web" = the Flutter Web product** (locked stack: the released consumer app). The
+  `web-mirror/` studio (D7, Phase 6, task 3.5) is NOT in the wave — it stays queued behind the
+  Flutter cutover. The wave's web surface is `add-web-first-release-and-monetization` 1.4/1.5.
+- **Sign-in stays optional.** 3.3's "app requires an Appwrite session" is scoped: a session is
+  required to *sync* (and for any identity-keyed feature), never to use the app. Local-only
+  users boot, work, and see a clean console with no session — the locked private-per-user model.
+- **Session storage = the Appwrite SDK's own store** for this wave. `flutter_secure_storage` is
+  not in the repo; introducing a new native dependency hours before a device test is a worse
+  risk than the SDK default. Executor verifies at implementation time where the SDK persists
+  the session on iOS/web and records it here; if iOS lands outside the Keychain, schedule the
+  hardening as a follow-up task — do not block the wave.
+- **Web cookie posture, honestly:** the security contract says httpOnly session cookies on web.
+  Against Appwrite Cloud on a third-party origin the web SDK may fall back to localStorage.
+  Executor verifies against current docs; if httpOnly requires a custom domain, wire the
+  fallback, record the deviation here, and queue the custom-domain fix — the private release
+  does not widen before the posture is met.
+- **Dual-write scope, honestly:** the Firestore half of 4.2 rides the legacy Firebase session,
+  which exists on the owner's device but NOT on fresh installs signing in via Appwrite only.
+  Fresh installs are Appwrite-primary with nothing to fall back to — acceptable: they also have
+  no Firestore data to lose. The kill-switch story protects exactly the data that predates the
+  wave.
+- **Note entries join sync** (task 4.9): the actual notes feature is the multi-entry tables
+  (`MoveNoteEntries`/`ComboNoteEntries`), absent from the contract until now (the `notes`
+  column already rides in entity payloads). Appwrite-only — no Firestore legacy ⇒ no strangler
+  ladder — with the same LWW + tombstone + `clientOpId` semantics and kill-switch pattern.
+- **Overnight/morning proof split:** overnight owns everything provable headlessly — analyzer +
+  tests, live data-plane via the smoke-user JWT pattern (1.5 precedent), web build + browser
+  smoke, sim boot to the login screen. Morning (Phase M) owns what needs the owner: live Google
+  consent, cross-restart session on the device, real-data backfill, two-surface soak, the
+  console config flip. A checkbox whose residue is morning-only says so explicitly.
+
 ## Execution note — this spec is the master plan for a delegated executor
 
 The owner runs low on interactive usage; an Opus-class executor implements from this change

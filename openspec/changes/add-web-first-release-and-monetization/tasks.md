@@ -195,6 +195,11 @@
 - [x] 1.3 Platform seams: audit iOS-only paths (AVFoundation export, `flutter_secure_storage`,
   gallery/photo pickers, haptics) behind conditional interfaces; on web each degrades **visibly**
   (affordance hidden or labeled unavailable) — never a silent no-op or crash.
+> **Overnight wave (2026-07-12):** 1.4 + 1.5 execute as part of the
+> `migrate-canonical-backend-to-appwrite` overnight wave — read that change's tasks.md wave
+> preamble + design D11 first. Cross-change rule: tick here in the same commit that lands the
+> work there. 1.5's live login proof is that wave's M.6.
+
 - [ ] 1.4 Video on web: playback via HTML video (Drive-sourced URLs), upload/import path for web
   users; document what is deferred (recording, native editor) as visible gaps.
 - [ ] 1.5 Auth + sync on web: Appwrite web OAuth session (httpOnly cookie posture per repo
