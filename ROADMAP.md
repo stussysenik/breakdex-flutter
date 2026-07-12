@@ -25,13 +25,15 @@
   2026-07-12).** Read that `tasks.md`'s wave preamble FIRST (it sets the order and converts
   tonight's owner-gates), then `design.md` **D11**. `main` is the merged single source of truth
   (`main` == `phase-h-hardening` == `f87f4fc`, pushed); commit the wave on `main`.
-- **Next task:** `4.5` — `reviews` → append-only `reviewEvents` (idempotent `clientOpId`);
-  dual-write → verify → cut. Reviews never LWW-merge; they only append (different shape from the
-  moves/combos LWW template — see the 4.5 task). **Done in the wave so far:** `0.5` → `0.2` →
-  `3.3` → `3.4` → `4.1`–`4.3` (moves cutover template complete) → **`4.4` (combos + combo_moves:
-  schema v24 LWW clocks, `combo_codec`, DAO stamping, backfill, dual-write + dual-read via shared
-  engines, pair kill-switches + independent cursors, all pref-OFF; 23/23 new tests green, 0
-  regressions).** Remaining wave order: `4.5` reviews → `4.6` fsrs → `4.7` decks → `4.8`
+- **Next task:** `4.6` — `fsrs_cards` derived server-side (1.4); verify derived state matches the
+  local scheduler on a copy of real data (tolerance: exact — same package, same math), then clients
+  pull cards from Appwrite (never pushed). **Done in the wave so far:** `0.5` → `0.2` → `3.3` →
+  `3.4` → `4.1`–`4.3` (moves cutover template complete) → `4.4` (combos + combo_moves: schema v24
+  LWW clocks, `combo_codec`, DAO stamping, backfill, dual-write + dual-read via shared engines, pair
+  kill-switches + independent cursors; 23/23 green) → **`4.5` (reviews → append-only `reviewEvents`:
+  a different shape — no schema migration, no tombstones, insert-if-absent merge; `review_codec`,
+  `dualWriteReviews`/`pullReviewsFromBackend`, `backfillReviews`, own kill-switches, all pref-OFF;
+  18/18 new tests green, 0 regressions).** Remaining wave order: `4.6` fsrs → `4.7` decks → `4.8`
   tombstones → `4.9` note-entry sync → web-first `1.4`/`1.5` (cross-change) → `V.1`/`V.2` sweep +
   wave report. **Phase M (morning 2026-07-13,
   owner on the physical device)** holds every owner-in-the-loop proof: live Google login (M.2),

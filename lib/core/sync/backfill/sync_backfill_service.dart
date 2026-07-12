@@ -1,7 +1,9 @@
 import '../../database/daos/combos_dao.dart';
 import '../../database/daos/moves_dao.dart';
+import '../../database/daos/reviews_dao.dart';
 import '../codecs/combo_codec.dart';
 import '../codecs/move_codec.dart';
+import '../codecs/review_codec.dart';
 import '../sync_backend.dart';
 
 /// Non-destructive backfill of local Drift metadata into a [SyncBackend] shadow
@@ -14,25 +16,28 @@ import '../sync_backend.dart';
 /// That invariant is what makes running against real data safe — proven by the
 /// snapshot-equality tests in `sync_backfill_service_test.dart`.
 ///
-/// [SyncEntityType.move] (task 4.1) and [SyncEntityType.combo] /
-/// [SyncEntityType.comboMove] (task 4.4) are wired — each is an entity whose
-/// last-writer-wins clock (`*.updatedAt`) exists. The remaining descriptive
-/// entities gain their own `updatedAt` and a `backfillX()` here as the
-/// strangler-fig advances. Each `backfillX()` requires its DAO, so a caller
-/// supplies only the DAOs for the entities it backfills.
+/// [SyncEntityType.move] (task 4.1), [SyncEntityType.combo] /
+/// [SyncEntityType.comboMove] (task 4.4) — each an LWW entity whose
+/// `*.updatedAt` clock exists — and the **append-only** [SyncEntityType.reviewEvent]
+/// (task 4.5) are wired. The remaining descriptive entities gain a `backfillX()`
+/// here as the strangler-fig advances. Each `backfillX()` requires its DAO, so a
+/// caller supplies only the DAOs for the entities it backfills.
 class SyncBackfillService {
   SyncBackfillService(
     this._backend,
     this._movesDao, {
     final CombosDao? combosDao,
+    final ReviewsDao? reviewsDao,
     final int batchSize = 200,
   }) : assert(batchSize > 0, 'batchSize must be positive'),
        _combosDao = combosDao,
+       _reviewsDao = reviewsDao,
        _batchSize = batchSize;
 
   final SyncBackend _backend;
   final MovesDao _movesDao;
   final CombosDao? _combosDao;
+  final ReviewsDao? _reviewsDao;
   final int _batchSize;
 
   /// Read every local move (including archived) and upsert it into the backend
@@ -84,6 +89,22 @@ class SyncBackfillService {
       SyncEntityType.comboMove,
       steps.map(comboMoveToSyncRecord).toList(growable: false),
     );
+  }
+
+  /// Read every local review and upsert it into the backend shadow as an
+  /// append-only `reviewEvent` (task 4.5). Same non-destructive, idempotent
+  /// posture as [backfillMoves] — the review's own id is the `clientOpId`, so a
+  /// replay is deduped server-side. A legacy row whose reviewed entity can no
+  /// longer be identified encodes to `null` and is skipped (see `review_codec`).
+  Future<BackfillReport> backfillReviews() async {
+    final dao = _reviewsDao;
+    assert(dao != null, 'backfillReviews requires a ReviewsDao');
+    final reviews = await dao!.getAllOrdered();
+    final records = reviews
+        .map(reviewToSyncRecord)
+        .whereType<SyncRecord>()
+        .toList(growable: false);
+    return _pushInBatches(SyncEntityType.reviewEvent, records);
   }
 
   /// Push [records] for [type] in [_batchSize] chunks; returns the report.

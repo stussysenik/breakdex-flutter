@@ -605,8 +605,34 @@ rows; any need for `appwrite push tables --all` (destructive — see the ops haz
   swallow-on-fail, LWW both directions, independent cursors, malformed isolation). Full suite:
   **0 regressions** (the 9 reds are pre-existing on clean HEAD — verified by stash-baseline).
   Live smoke-user + real-data + two-device soak ride **M.3/M.4**.
-- [ ] 4.5 `reviews` → append-only `reviewEvents` (idempotent `clientOpId`); dual-write → verify →
-  cut. Reviews never LWW-merge; they only append.
+- [x] 4.5 `reviews` → append-only `reviewEvents` (idempotent `clientOpId`); dual-write → verify →
+  cut. Reviews never LWW-merge; they only append. **Done (wave 2026-07-12).** A *different shape*
+  from the moves/combos LWW template — no schema migration (a review is immutable; `reviewedAt`
+  IS the clock and the review's own id IS the `clientOpId`), no tombstones (append-only), and the
+  merge is insert-if-absent, never LWW. The backend seam was already complete (Phase 2: push →
+  `reviews-append` + server-side FSRS derive; pull → direct `reviewEvents` read), so 4.5 is purely
+  the client wiring. (a) **Codec** (`sync/codecs/review_codec.dart`): `reviewToSyncRecord` →
+  `{entityId, entityType, rating}` + `reviewedAt` clock + id-as-`clientOpId`, returning **null**
+  for a legacy row whose entity can't be identified; the reviewed entity is taken from the
+  delete-survivable snapshot (`entityIdSnapshot`/`entityType`) with an FK fallback (`moveId`/
+  `comboId` are `onDelete: setNull`), and the rating crosses as its DB index (0=again…3=easy).
+  `reviewFromSyncRecord` is the inverse; it leaves the FK columns null (the pulled entity may not
+  have arrived under its own cursor yet — no FK to violate). (b) **Dual-write** (`sync_service.dart`
+  `dualWriteReviews`): **upserts only** (delete entries ignored — `reviewEvent` has no deletes),
+  unencodable rows skipped, pref-gated + non-throwing (A1). (c) **Dual-read** (`pullReviewsFromBackend`):
+  reuses the generic upsert-only `_pullEntity` engine with an insert-if-absent merge
+  (`_mergeReviewRecordAppend` — a re-seen id is a no-op), own cursor `reviewsBackendCursorPrefKey`.
+  (d) **Backfill** (`SyncBackfillService.backfillReviews` + `reviewsBackfillServiceProvider`):
+  filters unencodable rows, pushes via the shared `_pushInBatches`. Wired into `pushMetadata`/
+  `pullRemote` after the combos pair; own kill-switches (`reviews.dualWrite`/`dualRead.enabled`),
+  all **OFF** by default (Firestore path byte-identical until the owner flips post-**M.4**).
+  **Verified:** `dart analyze` (lib/core + new tests) clean; **18/18** new tests green —
+  `review_codec_test` (snapshot-vs-FK source, rating↔index, null-when-unencodable, inverse,
+  round-trip), `reviews_backfill_appwrite_test` (byte-identical `reviews-append` wire, unencodable
+  skipped, non-destructive), `sync_service_reviews_dual_test` (pref gating, upserts-only/no-tombstone,
+  unencodable skip, swallow-on-fail, insert-if-absent idempotency, own cursor, malformed isolation).
+  Full suite: **0 regressions** (the same 9 reds fail on clean HEAD — verified by stash-baseline).
+  Live smoke-user + real-data backfill + two-device soak ride **M.3/M.4**.
 - [ ] 4.6 `fsrs_cards`: derived server-side (1.4). Verify derived state matches local scheduler
   output on a copy of real data (tolerance: exact — same package, same math); then clients pull
   cards from Appwrite. Never pushed.

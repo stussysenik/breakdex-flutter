@@ -20,6 +20,7 @@ import '../domain/failures/failure.dart';
 import '../sync/sync_backend.dart';
 import '../sync/codecs/move_codec.dart';
 import '../sync/codecs/combo_codec.dart';
+import '../sync/codecs/review_codec.dart';
 
 class SyncService {
   final AuthService authService;
@@ -78,6 +79,18 @@ class SyncService {
   static const String combosBackendCursorPrefKey = 'sync.combos.backend.cursor';
   static const String comboMovesBackendCursorPrefKey =
       'sync.comboMoves.backend.cursor';
+
+  /// Kill-switches + cursor for `reviews` (task 4.5). Reviews are **append-only**
+  /// `reviewEvents`, not an LWW record: a flush only ever pushes new events
+  /// (idempotent by the review's own id, deduped server-side by `clientOpId`),
+  /// and a pull inserts any event not already present locally — it never merges
+  /// or clobbers. Same strangler order as the LWW entities (dual-write must be
+  /// live before dual-read so the shadow is never read while stale, audit A1);
+  /// both off by default, flipping off is the instant rollback.
+  static const String reviewsDualWritePrefKey = 'sync.reviews.dualWrite.enabled';
+  static const String reviewsDualReadPrefKey = 'sync.reviews.dualRead.enabled';
+  static const String reviewsBackendCursorPrefKey =
+      'sync.reviews.backend.cursor';
 
   TaskEither<AppFailure, Unit> authenticate() {
     return authService.refreshAuth().mapLeft((final f) => AppFailure.sync('Authentication failed: ${f.message}'));
@@ -146,6 +159,11 @@ class SyncService {
         await dualWriteCombos(pending.where((final e) => e.entityTable == 'combos'));
         await dualWriteComboMoves(
           pending.where((final e) => e.entityTable == 'combo_moves'),
+        );
+        // Append-only `reviewEvents` (task 4.5): only ever new events, never
+        // deletes — same strangler order (dual-write before any read cutover).
+        await dualWriteReviews(
+          pending.where((final e) => e.entityTable == 'reviews'),
         );
         return unit;
       },
@@ -238,6 +256,15 @@ class SyncService {
                 if (result != null) continue;
               } on Object catch (e) {
                 debugPrint('[SyncService] combo_moves dual-read failed, falling back to Firestore: $e');
+              }
+            }
+            // Append-only reviews (task 4.5): pull new events from the shadow.
+            if (table == 'reviews') {
+              try {
+                final result = await pullReviewsFromBackend();
+                if (result != null) continue;
+              } on Object catch (e) {
+                debugPrint('[SyncService] reviews dual-read failed, falling back to Firestore: $e');
               }
             }
 
@@ -691,6 +718,77 @@ class SyncService {
     await db
         .into(db.comboMoves)
         .insertOnConflictUpdate(comboMoveFromSyncRecord(record));
+    return true;
+  }
+
+  // --- reviews: append-only (task 4.5) ---
+  //
+  // Reviews are *not* an LWW record, so they do not use the shared strangler
+  // engines: a review is an immutable event that only ever appends. Dual-write
+  // therefore emits **upserts only** (never a tombstone — `reviewEvent` has no
+  // deletes), and dual-read merges **insert-if-absent** (an already-present event
+  // is never re-applied), keyed by the review's own id.
+
+  /// Dual-write `reviews` to the Appwrite shadow as append-only `reviewEvents`
+  /// (task 4.5). Pref-gated, non-throwing (audit A1): a no-op when the
+  /// [reviewsDualWritePrefKey] kill-switch is off or no [syncBackend] is wired,
+  /// and any per-row or push failure is logged and swallowed so it never blocks
+  /// the Firestore flush. Only `create`/`update` entries project to an event via
+  /// `review_codec`; a review with no identifiable entity is skipped, and there
+  /// are no deletes to cross.
+  Future<void> dualWriteReviews(final Iterable<SyncLogData> entries) async {
+    final backend = syncBackend;
+    if (backend == null || !(prefs.getBool(reviewsDualWritePrefKey) ?? false)) {
+      return;
+    }
+
+    final upserts = <SyncRecord>[];
+    for (final entry in entries) {
+      if (entry.action == 'delete') continue; // append-only: nothing to delete
+      try {
+        final rows = await (db.select(db.reviews)
+              ..where((final t) => t.id.equals(entry.entityId)))
+            .get();
+        if (rows.isEmpty) continue;
+        final record = reviewToSyncRecord(rows.first);
+        if (record != null) upserts.add(record);
+      } on Object catch (e) {
+        debugPrint('[SyncService] dual-write skipped review ${entry.entityId}: $e');
+      }
+    }
+
+    if (upserts.isEmpty) return;
+    try {
+      await backend.push(SyncEntityType.reviewEvent, upserts: upserts);
+    } on Object catch (e) {
+      debugPrint('[SyncService] reviews dual-write push failed: $e');
+    }
+  }
+
+  /// Dual-read `reviews` (task 4.5): pull the `reviewEvent` delta from this
+  /// entity's own cursor and append each new event locally. Reuses the generic
+  /// upsert-only [_pullEntity] engine (H.3 fault isolation, H.4 one transaction,
+  /// A2 lossless cursor); the merge is insert-if-absent, not LWW. Returns `null`
+  /// when disabled so the caller falls back to Firestore.
+  Future<({int applied, int failed})?> pullReviewsFromBackend() => _pullEntity(
+        type: SyncEntityType.reviewEvent,
+        prefKey: reviewsDualReadPrefKey,
+        cursorKey: reviewsBackendCursorPrefKey,
+        label: 'review',
+        merge: _mergeReviewRecordAppend,
+      );
+
+  /// Append one pulled review [record] iff its id is not already present — a
+  /// review event is immutable, so a re-seen id is a no-op (idempotent by id,
+  /// mirroring the server-side `clientOpId` dedup). Writes straight to Drift,
+  /// bypassing the sync-aware decorator, so a remote-origin event is never
+  /// re-enqueued as a local change. Returns whether a row was written.
+  Future<bool> _mergeReviewRecordAppend(final SyncRecord record) async {
+    final existing = await (db.select(db.reviews)
+          ..where((final t) => t.id.equals(record.id)))
+        .getSingleOrNull();
+    if (existing != null) return false;
+    await db.into(db.reviews).insert(reviewFromSyncRecord(record));
     return true;
   }
 

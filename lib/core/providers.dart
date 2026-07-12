@@ -416,6 +416,18 @@ final combosBackfillServiceProvider = Provider<SyncBackfillService>((final ref) 
   );
 });
 
+/// `reviews` shadow backfill (task 4.5): pushes every local review into the
+/// Appwrite shadow as an append-only `reviewEvent` via `review_codec`, with the
+/// same non-destructive, idempotent posture as [movesBackfillServiceProvider].
+/// Invoked explicitly (a gated flow / the M.3 real-data run), never at boot.
+final reviewsBackfillServiceProvider = Provider<SyncBackfillService>((final ref) {
+  return SyncBackfillService(
+    ref.watch(appwriteSyncBackendProvider),
+    ref.watch(movesDaoProvider),
+    reviewsDao: ref.watch(reviewsDaoProvider),
+  );
+});
+
 final syncServiceProvider = Provider<SyncService>((final ref) {
   return SyncService(
     authService: ref.watch(authServiceProvider),
