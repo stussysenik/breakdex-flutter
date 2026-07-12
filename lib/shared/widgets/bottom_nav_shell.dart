@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../core/providers.dart';
 import '../../core/design/theme.dart';
+import '../../core/services/legacy_identity_providers.dart';
 import '../../core/services/media_playback_coordinator.dart';
 import '../../core/models/app_mode.dart';
 import '../../core/services/settings_service.dart';
@@ -56,6 +57,9 @@ class BottomNavShell extends ConsumerWidget {
             Consumer(
               builder: (final context, final ref, _) {
                 ref.watch(syncTriggerProvider);
+                // D3 legacy-identity claim on first Appwrite login (task 3.4);
+                // no-op until a session exists, idempotent thereafter.
+                ref.watch(legacyIdentityClaimTriggerProvider);
                 return const SyncProgressBar();
               },
             ),

@@ -25,6 +25,10 @@ const String kAppwriteDatabaseId = 'breakdex';
 /// `appConfig` table id (remote-config surface: flags, kill-switches, version).
 const String kAppConfigTableId = 'appConfig';
 
+/// `legacyIdentities` table id (D3 claim map: `firebaseUid → appwriteUserId`,
+/// matched by verified Google email; written on first Appwrite login — task 3.4).
+const String kLegacyIdentitiesTableId = 'legacyIdentities';
+
 /// Canonical **singleton** row id for the versioned app config. There is exactly
 /// one config row; the owner creates/updates row `current` in the `appConfig`
 /// table (per-cohort variance rides `cohortProfiles`, not extra rows).

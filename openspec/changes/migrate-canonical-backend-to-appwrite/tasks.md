@@ -495,10 +495,29 @@ rows; any need for `appwrite push tables --all` (destructive — see the ops haz
   1R.3 session-less Realtime reconnect loop must not return; a signed-out boot with a clean
   console is the regression gate). `syncBackend: null` (`providers.dart:370-384`) stays null
   until 4.2 wires it behind its pref.
-- [ ] 3.4 `legacyIdentities` claim flow (D3): on first Appwrite login, map Firebase uid ↔ Appwrite
+- [x] 3.4 `legacyIdentities` claim flow (D3): on first Appwrite login, map Firebase uid ↔ Appwrite
   userId via verified Google email; all backend reads/writes key on Appwrite userId; backfill
   (4.1) stamps records through this map. Test: same Google account on two installs resolves to one
   Appwrite identity and sees one dataset.
+  **Done (wave 2026-07-12).** Mirrors the auth/transport seam split (pure + concrete gateway):
+  (1) `legacy_identity_service.dart` — pure `LegacyIdentity` value + `LegacyIdentityGateway` seam
+  (`resolveByFirebaseUid`, `put`) + `LegacyIdentityClaimService.claimOnLogin` returning an explicit
+  `LegacyClaimOutcome` (noLegacyIdentity / claimed / alreadyClaimed / conflict / failed). Additive +
+  idempotent (writes only when the uid is unclaimed) + never clobbers a conflicting mapping + never
+  throws (a failed write is logged, retried next login). Key fact: Appwrite Account (Google OAuth2)
+  already resolves one Google account to **one stable `appwriteUserId`** across installs, so this map
+  only links the *old* `firebaseUid` to it. (2) `legacy_identity_gateway.dart` — the only SDK file:
+  `TablesDB.listRows` (indexed `by_firebaseUid`) + `createRow` with owner-only row perms
+  (`Permission.read/write(Role.user(id))`), matching the table's `rowSecurity:true` + empty
+  `$permissions`. SDK shapes verified against resolved `appwrite 25.2.0`. (3) `legacy_identity_providers.dart`
+  + wired `legacyIdentityClaimTriggerProvider` at the shell root (`bottom_nav_shell.dart`, next to
+  `syncTriggerProvider`): fires the claim once a session exists, reading the device's legacy Firebase
+  uid from `AuthService.userId` (empty on fresh installs ⇒ no-op). Added `kLegacyIdentitiesTableId`.
+  **Verified:** `flutter analyze` clean (3 pre-existing infos); `legacy_identity_service_test.dart`
+  5/5 (fresh-install no-op, first-claim single write, idempotent re-login, conflict-untouched,
+  fail-safe). **Live half = Phase M (M.2/M.4):** the real two-install → one-dataset proof + the live
+  `legacyIdentities` write (whose table `create` perm the owner provisions if not already) — the
+  trigger is inert until then, so it can't break app entry.
 - [ ] 3.5 Web (`web-mirror/`): replace Firebase auth with Appwrite web SDK OAuth login, requesting
   the Drive readonly scope at session creation; store nothing beyond the Appwrite session; Drive
   playback uses the session's provider access token (verify current API shape in docs). Retire the

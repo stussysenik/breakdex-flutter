@@ -25,13 +25,12 @@
   2026-07-12).** Read that `tasks.md`'s wave preamble FIRST (it sets the order and converts
   tonight's owner-gates), then `design.md` **D11**. `main` is the merged single source of truth
   (`main` == `phase-h-hardening` == `f87f4fc`, pushed); commit the wave on `main`.
-- **Next task:** `3.4` — `legacyIdentities` claim flow. **Done in the wave so far:** `0.5`
-  (OAuth provider VERIFIED enabled) → `0.2` ticked → `3.3` (auth wired into the shell, sign-in
-  optional; `isLoggedInProvider` ← Appwrite session, `/auth` → `AppwriteLoginScreen`, settings
-  Account row, session-aware remote config, smoke file deleted; analyze + tests green). Remaining
-  wave order: `3.4` legacy-identity claim → `4.1–4.8` per-entity cutover (converted gates) →
-  `4.9` note-entry sync → web-first `1.4`/`1.5` (cross-change ticks) → `V.1`/`V.2` sweep + wave
-  report appended to the wave preamble. **Phase M (morning 2026-07-13,
+- **Next task:** `4.1` — `moves` backfill → Appwrite shadow (converted gate: fixture backfill +
+  byte-identical snapshot + smoke-user live proof; real-data run = M.3). **Done in the wave so
+  far:** `0.5` → `0.2` → `3.3` (auth wired, sign-in optional) → `3.4` (legacy-identity D3 claim:
+  pure service + SDK gateway + login trigger, idempotent/non-throwing; live two-install proof =
+  M.2/M.4). Remaining wave order: `4.1–4.8` per-entity cutover (converted gates) → `4.9`
+  note-entry sync → web-first `1.4`/`1.5` (cross-change ticks) → `V.1`/`V.2` sweep + wave report. **Phase M (morning 2026-07-13,
   owner on the physical device)** holds every owner-in-the-loop proof: live Google login (M.2),
   real-data backfill (M.3), two-surface soak (M.4), config flip 1R.4 (M.5), web login (M.6).
 - **Owner-gated residue (parked, does not block the wave):** 0.4's Convex console delete; final
