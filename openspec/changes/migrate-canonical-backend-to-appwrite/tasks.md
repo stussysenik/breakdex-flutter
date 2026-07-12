@@ -111,11 +111,18 @@ rows; any need for `appwrite push tables --all` (destructive — see the ops haz
   API key works, `appwrite databases list` → 0. Naming drift to reconcile: `.env.local` uses
   `APPWRITE_SECRET`/`APPWRITE_API_ENDPOINT`, D2 specifies `APPWRITE_API_KEY`/`APPWRITE_ENDPOINT`;
   self-host placeholders not yet added. Fold both into the Phase 2 client-plumbing task.
-- [ ] 0.2 Configure the Google OAuth2 provider in the Appwrite console: reuse/extend the existing
+- [x] 0.2 Configure the Google OAuth2 provider in the Appwrite console: reuse/extend the existing
   GCP OAuth clients (iOS + Web) with Appwrite's redirect URIs; register the Flutter callback
   scheme (`appwrite-callback-<PROJECT_ID>`) in both iOS plists (NOTE: debug builds use
   `Info-DebugProfile.plist`) and AndroidManifest.
-  **Repo-half done (2026-07-11):** callback scheme `appwrite-callback-6a50f25b000e15631ad0`
+  **✅ Provider VERIFIED enabled (0.5, 2026-07-12):** live probe returns `HTTP 301` →
+  `accounts.google.com` with the **Web** `client_id` (`…jpou873pt…`, ≠ iOS Drive client) and the
+  exact runbook `redirect_uri` (`…/oauth2/callback/google/6a50f25b000e15631ad0`); web `localhost`
+  platform proven registered (CORS echo vs 403 for an unregistered origin). Native iOS/Android
+  platform allow-listing + prod web domain are the only unproven halves → **M.2 / M.6** carry
+  them (native OAuth rides the callback scheme, not a browser origin, so they don't block the
+  wave). Full evidence + reproduce command in `DOCS/appwrite-oauth-provisioning.md` (status
+  section). **Repo-half done (2026-07-11):** callback scheme `appwrite-callback-6a50f25b000e15631ad0`
   registered in `Info.plist` + `Info-DebugProfile.plist` (2nd `CFBundleURLTypes` entry) and
   `AndroidManifest.xml` (`com.linusu.flutter_web_auth_2.CallbackActivity`, the handler for
   `appwrite ^25.2.0` → `flutter_web_auth_2 5.0.3`, `taskAffinity=""`). `plutil -lint` OK on both
@@ -143,7 +150,7 @@ rows; any need for `appwrite push tables --all` (destructive — see the ops haz
   owner-gated:** the console-delete of `brilliant-mongoose-46` needs a Convex dashboard login I
   don't hold — but the project is empty (nothing deployed → zero data/migration risk), so box
   stays `[ ]` only on that click; no repo work remains.
-- [ ] 0.5 **Verify 0.2's console-half headlessly (wave 2026-07-12).** The owner believes 0.2 is
+- [x] 0.5 **Verify 0.2's console-half headlessly (wave 2026-07-12).** The owner believes 0.2 is
   done — prove it, don't assume either way. (a) OAuth-provider probe: request
   `$APPWRITE_ENDPOINT/account/sessions/oauth2/google?project=$APPWRITE_PROJECT_ID&…` (verify the
   exact current URL shape + required `success`/`failure` params against Appwrite docs first) — a

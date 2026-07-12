@@ -1,7 +1,47 @@
 # Appwrite Google OAuth Provisioning — Task 0.2 Runbook
 
 **Change:** `migrate-canonical-backend-to-appwrite` · **Task:** `0.2` (owner-run) ·
-**Status:** repo-half landed (native callback scheme); **console-half open (owner).**
+**Status:** ✅ **provider VERIFIED enabled** (task 0.5, 2026-07-12) — see the status section below.
+
+---
+
+## Status — 0.5 headless verification (2026-07-12, overnight wave)
+
+The owner believed 0.2 was handled. Task 0.5 **proved it headlessly** against the live Cloud
+project (`6a50f25b000e15631ad0`, `https://fra.cloud.appwrite.io/v1`):
+
+- **Google OAuth2 provider = ENABLED (Parts A + B done).** `GET /account/sessions/oauth2/google`
+  (project header, no redirect follow) returns **`HTTP 301`** →
+  `Location: https://accounts.google.com/o/oauth2/v2/auth?client_id=499240019967-jpou873pt715ubmacg9fjho3rm9nau3h.apps.googleusercontent.com&redirect_uri=…%2Foauth2%2Fcallback%2Fgoogle%2F6a50f25b000e15631ad0&scope=…email…profile+openid&response_type=code`.
+  The `client_id` is the **Web** client (matches `.env.local` `GOOGLE_WEB_OAUTH_KEYS`, distinct
+  from the iOS Drive client), and the `redirect_uri` matches this runbook's Part A/B URI
+  character-for-character. A disabled provider would return a JSON `provider_disabled` error, not
+  a Google 301. → **Provider proven.**
+- **Web platform `localhost` = REGISTERED (Part C, web half).** With `Origin: http://localhost:3000`
+  the API echoes `access-control-allow-origin: http://localhost:3000`; an unregistered origin
+  (`evil.example.com`) is **CORS-blocked (403)**. → localhost web platform proven; this is also
+  what lets `kRemoteConfigLiveEnabled` be flipped without the reconnect-loop.
+- **Not headlessly provable (rides Phase M, does NOT block the wave):** iOS bundle / Android
+  package native platform allow-listing (Part C, native half) and the production web domain
+  (not chosen yet). Native OAuth uses the callback scheme, not a browser origin, so it can only
+  be confirmed on the device: **M.2** (iOS live consent) resolves the iOS half, **M.6** the web
+  origin. If either fails, the failure routes back into this doc.
+
+**Ruling:** the actual gate — the provider issuing Google sessions — is proven, plus the
+web-localhost origin. 0.2 is ticked on that basis; the native/prod-domain platform confirmations
+are explicitly Phase-M residue (M.2 / M.6), consistent with the wave's proof split (D11).
+
+Reproduce (auth from `.env.local`):
+```bash
+set -a; source .env.local; set +a
+curl -sS -i -H "X-Appwrite-Project: $APPWRITE_PROJECT_ID" \
+  "https://fra.cloud.appwrite.io/v1/account/sessions/oauth2/google?success=…&failure=…" | sed -n '1p;/^location:/Ip'
+# expect: HTTP/2 301  +  location: https://accounts.google.com/...
+```
+
+---
+
+**Original runbook (owner procedure, retained for reference):**
 
 This is the single gate for the entire cross-device sync chain. Until the Google OAuth2
 provider issues Appwrite sessions, no client can open a session, so Phase 3 (identity) and
@@ -104,9 +144,9 @@ Verified: `plutil -lint` OK on both plists; manifest parses as valid XML.
 
 ## Definition of done for 0.2
 
-- [ ] Google **Web** OAuth client exists with the Appwrite redirect URI (Part A).
-- [ ] Appwrite Google provider enabled with that client's ID + secret (Part B).
-- [ ] iOS + Android + web platforms registered in Appwrite (Part C).
+- [x] Google **Web** OAuth client exists with the Appwrite redirect URI (Part A). *(0.5: proven — the 301's `client_id`+`redirect_uri`.)*
+- [x] Appwrite Google provider enabled with that client's ID + secret (Part B). *(0.5: proven — 301 into Google.)*
+- [x] web `localhost` platform registered (Part C, web half). *(0.5: proven — CORS echo.)* · [ ] iOS/Android native + prod web domain (Part C, native/prod half — rides M.2/M.6).
 - [x] Native callback scheme registered in both plists + Android manifest (Part D).
 
 **Live smoke (after Parts A–C):** once `3.1` (`appwrite_auth_service.dart`) exists, calling
