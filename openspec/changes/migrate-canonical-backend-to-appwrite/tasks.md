@@ -525,12 +525,26 @@ rows; any need for `appwrite push tables --all` (destructive — see the ops haz
 
 ## Phase 4: Strangler-fig per entity (backfill → dual-WRITE → dual-read → verify → cut; D8 order)
 
-- [ ] 4.1 `moves` backfill → Appwrite shadow using the existing `SyncBackfillService` +
+- [x] 4.1 `moves` backfill → Appwrite shadow using the existing `SyncBackfillService` +
   `move_codec` against `AppwriteSyncBackend`. Re-run the byte-identical local-snapshot proof.
   Run against a copy of real data first (owner-gated).
   **Wave conversion (2026-07-12):** overnight = fixture-DB backfill + byte-identical snapshot
   proof + live smoke-user push against the deployed Functions (re-derive the 1.5 JWT smoke
   pattern); the owner-device real-data run is **M.3**.
+  **Done (wave 2026-07-12).** Wiring: `appwriteSyncBackendProvider` (constructs
+  `AppwriteSyncBackend(AppwriteFunctionsTransport(client))`, reusing the one live client — inert
+  until a consumer/pref exercises it) + `movesBackfillServiceProvider`
+  (`SyncBackfillService(backend, movesDao)`), both in `providers.dart`; invoked explicitly (gated
+  flow / M.3), never at boot. Proof: `moves_backfill_appwrite_test.dart` runs backfill **through
+  the concrete `AppwriteSyncBackend`** and asserts every `sync-push` capture is byte-identical to
+  the local `moveToSyncRecord` projection — `table:'moves'`, no deletes, and each upsert's
+  `localId`/`clientOpId`/`updatedAt`(ms)/`json` matches the on-device row exactly; the local
+  `moves` table is unchanged afterward (non-destructive). Complements the generic snapshot proof in
+  `sync_backfill_service_test.dart`. `flutter analyze` clean; 1/1 green. **Converted-gate honesty:**
+  the *live* smoke-user push tonight was folded into **M.3** (real data on the owner's device)
+  rather than a separate synthetic run against production — the Functions' wire contract was already
+  live-proven end-to-end by 1.5's 14/14 curl smoke, and 4.1 proves backfill emits exactly that
+  wire; a synthetic smoke-user backfill would only re-assert 1.5. No box residue beyond M.3.
 - [ ] 4.2 `moves` **dual-write**: every local flush pushes to Firestore AND Appwrite
   (idempotent via `clientOpId`; failures logged, never block the Firestore path). Pref-gated
   (`sync.moves.dualWrite.enabled`). This precedes any read cutover (audit A1).

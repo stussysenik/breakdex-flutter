@@ -28,8 +28,12 @@ import 'models/learning_state_colors.dart';
 import 'models/provenance_report.dart';
 import 'models/review_card_display_settings.dart';
 import 'models/reviewable_item.dart';
+import 'config/remote_config_providers.dart' show appwriteClientProvider;
 import 'services/appwrite_auth_providers.dart';
 import 'services/auth_service.dart';
+import 'sync/backends/appwrite_functions_transport.dart';
+import 'sync/backends/appwrite_sync_backend.dart';
+import 'sync/backfill/sync_backfill_service.dart';
 import 'services/settings_service.dart';
 import 'services/video_service.dart';
 import 'services/media_cleanup_service.dart';
@@ -378,6 +382,29 @@ final moveCreationServiceProvider = Provider<MoveCreationService>((final ref) {
 });
 
 // Sync
+//
+// The canonical Appwrite metadata backend (Phase 2), reusing the one live
+// client. Constructed eagerly but **inert** until a caller exercises it — the
+// backfill (4.1) and the pref-gated dual-write/dual-read (4.2/4.3) are the only
+// consumers, and each stays off until its own pref/flow runs. Requires a session
+// for the Functions to stamp the trusted user id (identity landed in 3.3).
+final appwriteSyncBackendProvider = Provider<AppwriteSyncBackend>((final ref) {
+  return AppwriteSyncBackend(
+    AppwriteFunctionsTransport(ref.watch(appwriteClientProvider)),
+  );
+});
+
+/// `moves` shadow backfill (task 4.1): pushes every local move into the Appwrite
+/// shadow via the existing [SyncBackfillService] + `move_codec`, non-destructive
+/// and idempotent (deterministic `clientOpId`s reconcile LWW on replay). Invoked
+/// explicitly (a gated flow / the M.3 real-data run), never at boot.
+final movesBackfillServiceProvider = Provider<SyncBackfillService>((final ref) {
+  return SyncBackfillService(
+    ref.watch(appwriteSyncBackendProvider),
+    ref.watch(movesDaoProvider),
+  );
+});
+
 final syncServiceProvider = Provider<SyncService>((final ref) {
   return SyncService(
     authService: ref.watch(authServiceProvider),
