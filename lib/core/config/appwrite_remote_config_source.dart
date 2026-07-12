@@ -13,20 +13,34 @@ import 'remote_config.dart';
 /// [Channel] builder so it stays correct across SDK versions). The subscription
 /// closes its socket on cancel, so a disposed provider leaks nothing.
 class AppwriteRemoteConfigSource implements RemoteConfigSource {
-  AppwriteRemoteConfigSource({required final Client client})
-    : _tables = TablesDB(client),
-      _realtime = Realtime(client);
+  AppwriteRemoteConfigSource({
+    required final Client client,
+    final bool sessionActive = false,
+  }) : _tables = TablesDB(client),
+       _realtime = Realtime(client),
+       _sessionActive = sessionActive;
 
   final TablesDB _tables;
   final Realtime _realtime;
 
+  /// Whether an Appwrite identity session is currently active (wave task 3.3).
+  /// The `appConfig` row is readable only by the `users` role, so the live path
+  /// is only viable with a session. Injected per-build by the provider from the
+  /// auth state — see [remoteConfigSourceProvider].
+  final bool _sessionActive;
+
+  /// The live path fires only when a session exists (or a build-time override is
+  /// set for testing). Without a session it would CORS-fail the fetch and spin a
+  /// futile Realtime reconnect loop — the regression a signed-out boot must never
+  /// hit (1R.3). Session presence now drives it, not the compile default.
+  bool get _live => _sessionActive || kRemoteConfigLiveEnabled;
+
   @override
   Future<Map<String, Object?>> fetch() async {
-    // Session-less clients cannot read the `read("users")` row; signal
-    // "unavailable" so the service keeps its cache-or-defaults fallback without
-    // issuing a doomed (CORS-failing) network request. See kRemoteConfigLiveEnabled.
-    if (!kRemoteConfigLiveEnabled) {
-      throw StateError('Remote-config live path disabled until Phase 3 session.');
+    // No session ⇒ signal "unavailable" so the service keeps its
+    // cache-or-defaults fallback without a doomed network request.
+    if (!_live) {
+      throw StateError('Remote-config live path inactive (no Appwrite session).');
     }
     final row = await _tables.getRow(
       databaseId: kAppwriteDatabaseId,
@@ -39,9 +53,8 @@ class AppwriteRemoteConfigSource implements RemoteConfigSource {
   @override
   Stream<Map<String, Object?>> subscribe() {
     // No session ⇒ the Realtime socket would only reconnect-loop against a
-    // channel this client can't read. Stay inert until Phase 3. See
-    // kRemoteConfigLiveEnabled.
-    if (!kRemoteConfigLiveEnabled) return const Stream.empty();
+    // channel this client can't read. Stay inert until a session exists.
+    if (!_live) return const Stream.empty();
     final channel = Channel.tablesdb(
       kAppwriteDatabaseId,
     ).table(kAppConfigTableId).row(kAppConfigRowId);

@@ -7,6 +7,8 @@ import '../../../core/design/colors.dart';
 import '../../../core/design/spacing.dart';
 import '../../../core/design/typography.dart';
 import '../../../core/providers.dart';
+import '../../../core/services/appwrite_auth_providers.dart';
+import '../../../core/services/appwrite_auth_service.dart';
 import '../../../core/sync/gdrive_setup_service.dart';
 import '../../../core/sync/icloud_setup_service.dart';
 import '../../../l10n/gen/app_localizations.dart';
@@ -65,6 +67,11 @@ class CloudSyncSection extends ConsumerWidget {
           ),
         ],
         const SizedBox(height: AppSpacing.md),
+
+        // Appwrite identity account (wave task 3.3). Optional: signing in unlocks
+        // cross-device sync; local-only users can ignore it entirely.
+        const _AccountRow(),
+        const SizedBox(height: AppSpacing.sm),
 
         // iCloud row
         SyncProviderRow(
@@ -249,6 +256,68 @@ class CloudSyncSection extends ConsumerWidget {
             duration: const Duration(seconds: 4),
           ),
         );
+    }
+  }
+}
+
+/// The Appwrite identity account row (wave task 3.3).
+///
+/// Signed out → "Sign in with Google" → routes to [AppwriteLoginScreen] (`/auth`).
+/// Signed in → shows the account email + a "Sign out" affordance. Reactive to
+/// [currentAppwriteUserProvider], so it flips the moment a session lands or ends.
+/// Copy is inline English, matching the login screen's own hardcoded strings.
+class _AccountRow extends ConsumerWidget {
+  const _AccountRow();
+
+  @override
+  Widget build(final BuildContext context, final WidgetRef ref) {
+    final user = ref.watch(currentAppwriteUserProvider).valueOrNull;
+    if (user == null) {
+      return SyncProviderRow(
+        icon: Icons.account_circle_outlined,
+        title: 'Sign in with Google',
+        status: ProviderStatus.available,
+        onTap: () => context.push('/auth'),
+      );
+    }
+    return SyncProviderRow(
+      icon: Icons.account_circle,
+      title: user.email.isNotEmpty ? user.email : 'Signed in',
+      status: ProviderStatus.connected,
+      onTap: () => _signOut(context, ref),
+    );
+  }
+
+  Future<void> _signOut(final BuildContext context, final WidgetRef ref) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (final ctx) => AlertDialog(
+        title: const Text('Sign out?'),
+        content: const Text(
+          'Your local library stays on this device. You can sign back in any '
+          'time to resume syncing.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Sign out'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true) return;
+    await HapticFeedback.mediumImpact();
+    try {
+      await ref.read(appwriteAuthServiceProvider).signOut();
+    } on AuthException catch (e) {
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(e.message)),
+      );
     }
   }
 }

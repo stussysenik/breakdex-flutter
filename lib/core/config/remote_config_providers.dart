@@ -1,6 +1,7 @@
 import 'package:appwrite/appwrite.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../services/appwrite_auth_providers.dart' show currentAppwriteUserProvider;
 import '../services/settings_service.dart' show sharedPreferencesProvider;
 import 'appwrite_env.dart';
 import 'appwrite_remote_config_source.dart';
@@ -16,7 +17,17 @@ final appwriteClientProvider = Provider<Client>((final ref) {
 });
 
 final remoteConfigSourceProvider = Provider<RemoteConfigSource>((final ref) {
-  return AppwriteRemoteConfigSource(client: ref.watch(appwriteClientProvider));
+  // Session-aware (wave task 3.3): the live fetch/subscribe path fires only
+  // while an Appwrite session exists. Watching the auth stream rebuilds this
+  // provider (and the service + stream below) on sign-in/out — sign-out tears
+  // the Realtime socket down via the source's onCancel, so the session-less
+  // reconnect loop can never return.
+  final sessionActive =
+      ref.watch(currentAppwriteUserProvider).valueOrNull != null;
+  return AppwriteRemoteConfigSource(
+    client: ref.watch(appwriteClientProvider),
+    sessionActive: sessionActive,
+  );
 });
 
 final remoteConfigServiceProvider = Provider<RemoteConfigService>((final ref) {

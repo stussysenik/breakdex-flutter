@@ -28,6 +28,7 @@ import 'models/learning_state_colors.dart';
 import 'models/provenance_report.dart';
 import 'models/review_card_display_settings.dart';
 import 'models/reviewable_item.dart';
+import 'services/appwrite_auth_providers.dart';
 import 'services/auth_service.dart';
 import 'services/settings_service.dart';
 import 'services/video_service.dart';
@@ -174,17 +175,27 @@ final deckServiceProvider = Provider<DeckService>((final ref) {
 });
 
 // Auth
+//
+// The legacy [AuthService] (SharedPreferences email/password mock) is retained
+// ONLY as the Firestore-side identity `SyncService` still reads (its identity
+// role is retired in Phase 5). Since the wave (task 3.3), the app's logged-in
+// truth is the **Appwrite session**, not this service.
 final authServiceProvider = Provider<AuthService>((final ref) {
   final prefs = ref.watch(sharedPreferencesProvider);
   return AuthService(prefs);
 });
 
+/// Whether an **Appwrite identity session** is active (wave task 3.3).
+///
+/// Sign-in stays OPTIONAL (locked user model, D11): a `null` session is
+/// local-only mode — plain repos, no auto-sync, no login wall. A session flips
+/// the repos below into their `SyncAware*` decorators (change-logging) and makes
+/// the account eligible for auto-sync. Derived from [currentAppwriteUserProvider]
+/// (a `StreamProvider<AuthUser?>`), so it reacts to sign-in / sign-out live;
+/// `valueOrNull` is `null` while the launch session-check is still loading, which
+/// correctly reads as "not yet signed in" (fail-safe to local-only).
 final isLoggedInProvider = Provider<bool>((final ref) {
-  try {
-    return ref.watch(authServiceProvider).isLoggedIn;
-  } on Object catch (_) {
-    return false;
-  }
+  return ref.watch(currentAppwriteUserProvider).valueOrNull != null;
 });
 
 // Repository providers (public API — use these in screens)

@@ -457,9 +457,30 @@ rows; any need for `appwrite push tables --all` (destructive — see the ops haz
   via a controllable fake gateway + provider override). **Box stays `[ ]`** only because 3.x is one
   owner-gated phase (0.2) — the task's own gate (analyzer + 3-state widget test) is fully met; **unwired**
   into routing until 3.3.
-- [ ] 3.3 Auth wiring: app requires an Appwrite session; `google_sign_in` demoted to Drive-token
+- [x] 3.3 Auth wiring: app requires an Appwrite session; `google_sign_in` demoted to Drive-token
   minting only (its identity role removed). Existing users must experience this as a single
   familiar Google consent, not a new account.
+  **Done (wave 2026-07-12).** Wired the built-but-unwired 3.1/3.2 seam into the shell, sign-in
+  **optional** per D11: (1) `isLoggedInProvider` (`providers.dart`) now derives from
+  `currentAppwriteUserProvider` (`.valueOrNull != null`), not the legacy SharedPreferences
+  `AuthService` — a `null` session = local-only (plain repos, no auto-sync, **no login wall**), a
+  session flips repos into `SyncAware*` + enables auto-sync. Legacy `authServiceProvider` kept only
+  for the Firestore-side `SyncService` identity (retired Phase 5). (2) The `/auth` route
+  (`app_router.dart`) now builds `AppwriteLoginScreen` (was the orphaned legacy `AuthScreen`, which
+  had **no in-app entry** — the app ran local-only); `onSignedIn` pops back (the session stream
+  drives the rest reactively). (3) Reachable entry: an `_AccountRow` at the top of `CloudSyncSection`
+  — signed-out → "Sign in with Google" → `/auth`; signed-in → email + confirm "Sign out"
+  (`appwriteAuthServiceProvider.signOut`). (4) **Session-aware remote config** (kills the 1R.3
+  reconnect-loop regression *at runtime*, not via the compile flag): `AppwriteRemoteConfigSource`
+  takes `sessionActive`; live fetch/subscribe fire only when `sessionActive || kRemoteConfigLiveEnabled`.
+  `remoteConfigSourceProvider` injects it from the same auth stream, so sign-out rebuilds the chain
+  and tears the Realtime socket down (onCancel) — a signed-out boot stays inert (clean console). (5)
+  Deleted `lib/main_auth_smoke.dart` (its DELETE-after-proof condition fired: 0.5 proved the
+  provider). `syncBackend: null` unchanged (4.2 wires it). **Verified:** `flutter analyze` clean (3
+  pre-existing infos only); `appwrite_auth_wiring_test.dart` 2/2 (isLoggedIn follows the session both
+  ways); existing `appwrite_auth_service_test` 8/8 + `flow_screen_test` + `remote_config_test` still
+  green. **Live half = Phase M:** the real single-consent Google login + cross-restart session is
+  **M.2** (also ticks 3.1); the console config-flip reaching a running client is **M.5** (1R.4).
   **Wave note (2026-07-12) — the concrete wiring surface:** identity today is the
   SharedPreferences-backed legacy `AuthService` (`authServiceProvider`/`isLoggedInProvider`,
   `lib/core/providers.dart:177-188`), which flips repos into their `SyncAware*` decorators.

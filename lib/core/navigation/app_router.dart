@@ -24,7 +24,7 @@ import '../../features/add/add_screen.dart';
 import '../../features/party/party_screen.dart';
 import '../../features/party/bloc/party_bloc.dart';
 import '../../features/stats/stats_screen.dart';
-import '../../features/auth/auth_screen.dart';
+import '../../features/auth/appwrite_login_screen.dart';
 import '../../features/settings/free_space_screen.dart';
 import '../../features/settings/sync_providers_screen.dart';
 import '../../features/settings/sync_status_screen.dart';
@@ -170,9 +170,21 @@ final appRouter = GoRouter(
       },
     ),
     GoRoute(
+      // The Appwrite Google sign-in surface (wave task 3.3). Optional entry:
+      // reached from Settings → Sync, never a login wall. On success the session
+      // stream drives `isLoggedInProvider`, so we just pop back to where the user
+      // opened it from (falling back to home if this is the only route).
       path: '/auth',
       parentNavigatorKey: _rootNavigatorKey,
-      builder: (final context, final state) => const AuthScreen(),
+      builder: (final context, final state) => AppwriteLoginScreen(
+        onSignedIn: () {
+          if (context.canPop()) {
+            context.pop();
+          } else {
+            context.go('/');
+          }
+        },
+      ),
     ),
     GoRoute(
       path: '/settings-panel',
