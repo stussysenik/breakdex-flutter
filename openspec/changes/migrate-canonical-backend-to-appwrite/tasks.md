@@ -545,9 +545,38 @@ rows; any need for `appwrite push tables --all` (destructive — see the ops haz
   rather than a separate synthetic run against production — the Functions' wire contract was already
   live-proven end-to-end by 1.5's 14/14 curl smoke, and 4.1 proves backfill emits exactly that
   wire; a synthetic smoke-user backfill would only re-assert 1.5. No box residue beyond M.3.
-- [ ] 4.2 `moves` **dual-write**: every local flush pushes to Firestore AND Appwrite
+- [x] 4.2 `moves` **dual-write**: every local flush pushes to Firestore AND Appwrite
   (idempotent via `clientOpId`; failures logged, never block the Firestore path). Pref-gated
   (`sync.moves.dualWrite.enabled`). This precedes any read cutover (audit A1).
+  **Done (wave 2026-07-12).** Added `SyncService.movesDualWritePrefKey` (off by default) +
+  `dualWriteMoves(Iterable<SyncLogData>)`, **extracted** from `pushMetadata` (which touches
+  `FirebaseFirestore.instance` and so can't be unit-tested) so the projection + routing are
+  provable offline. Called at the END of `pushMetadata`'s success path (Firestore already
+  committed) with the flush's `moves` entries: upserts reuse `move_codec`'s deterministic
+  `clientOpId`s (replay reconciles LWW to a no-op), a `delete` crosses as a **tombstone**
+  (never hard-delete), the whole thing is a no-op when the pref is off / no backend, and any
+  backend failure is swallowed (never blocks Firestore — audit A1). Wired `syncBackend:
+  ref.watch(appwriteSyncBackendProvider)` into `syncServiceProvider` (was `null`) — inert until
+  a kill-switch flips. **Verified:** `flutter analyze` clean; `sync_service_dual_write_test.dart`
+  5/5 (pref-off no-op, null-backend no-op, byte-identical upsert, delete→tombstone, push-failure
+  swallowed); all 137 sync-dir + dual-read tests still green. Live smoke-user + real-data dual-write
+  ride **M.3/M.4**.
+- [x] 4.3 `moves` **dual-read** live: enable the hardened `pullMovesFromBackend` path
+  (H.1–H.4) with Appwrite first / Firestore fallback. Soak with both prefs on; verify two-way
+  reconcile on real data across two devices; then cut reads over (Firestore moves reads skipped).
+  Rollback at any point = flip prefs off.
+  **Wave conversion (2026-07-12):** overnight = wire + pref-gate + fixture/smoke-user
+  cross-client verification; the real two-device soak is **M.4**. Reads may NOT cut over before
+  M.4 passes — leave Appwrite-first + Firestore-fallback enabled.
+  **Done (wave 2026-07-12).** The hardened dual-read path (`pullMovesFromBackend`, H.1–H.4) is now
+  **live-wired**: `syncBackend` is non-null (4.2), and the `pullRemoteMetadata` caller already runs
+  `moves` Appwrite-first with a Firestore fallback on null/throw (`sync_service.dart:199-206`),
+  gated solely by `movesDualReadPrefKey`. Left **OFF** (default) so every pull is byte-identical to
+  Firestore-only; the read cutover (`continue` skipping Firestore) fires only when the owner flips
+  the pref after **M.4**. Fully covered by the existing `sync_service_dual_read_test.dart` (28
+  cases): null when backend absent / kill-switch off, LWW both directions + tie + malformed
+  isolation + never-apply-tombstone, cursor full-pull/advance/resume/lossless-retry, error
+  propagation. No new code beyond 4.2's wiring; the real two-device soak is **M.4**.
 - [ ] 4.3 `moves` **dual-read** live: enable the hardened `pullMovesFromBackend` path
   (H.1–H.4) with Appwrite first / Firestore fallback. Soak with both prefs on; verify two-way
   reconcile on real data across two devices; then cut reads over (Firestore moves reads skipped).

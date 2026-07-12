@@ -411,13 +411,12 @@ final syncServiceProvider = Provider<SyncService>((final ref) {
     syncDao: ref.watch(syncDaoProvider),
     db: ref.watch(databaseProvider),
     prefs: ref.watch(sharedPreferencesProvider),
-    // Phase 2 cutover seam: construct `AppwriteSyncBackend(AppwriteFunctionsTransport(
-    // client))` here once identity lands (Phase 3, gated on task 0.2 Google OAuth)
-    // and the Appwrite endpoint/project are plumbed via `--dart-define`
-    // (`APPWRITE_ENDPOINT`/`APPWRITE_PROJECT_ID`). Left null until then, so every
-    // pull uses the Firestore path unchanged; the dual-read is also guarded by the
-    // `SyncService.movesDualReadPrefKey` kill-switch.
-    syncBackend: null,
+    // Identity landed (Phase 3), so the Appwrite backend is now wired (tasks
+    // 4.2/4.3). It stays fully **inert** until a kill-switch flips: dual-write
+    // is gated by `SyncService.movesDualWritePrefKey`, dual-read by
+    // `movesDualReadPrefKey` (both off by default) — so every flush/pull is
+    // byte-identical to Firestore-only until the owner turns them on.
+    syncBackend: ref.watch(appwriteSyncBackendProvider),
   );
 });
 

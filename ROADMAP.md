@@ -25,16 +25,15 @@
   2026-07-12).** Read that `tasks.md`'s wave preamble FIRST (it sets the order and converts
   tonight's owner-gates), then `design.md` **D11**. `main` is the merged single source of truth
   (`main` == `phase-h-hardening` == `f87f4fc`, pushed); commit the wave on `main`.
-- **Next task:** `4.2` — `moves` **dual-write** (Firestore AND Appwrite, pref-gated
-  `sync.moves.dualWrite.enabled`, idempotent via `clientOpId`, failures never block Firestore).
-  This is the first sync-engine-touching cutover step (`pushMetadata` in `sync_service.dart`) —
-  brownfield-critical, needs red/green around the push path. `appwriteSyncBackendProvider` already
-  exists (4.1). Then `4.3` wires `syncBackend` into `SyncService` + flips the read pref. **Done in
-  the wave so far:** `0.5` → `0.2` → `3.3` (auth wired, sign-in optional) → `3.4` (legacy-identity
-  D3 claim) → `4.1` (moves backfill → Appwrite shadow: backend+backfill providers, byte-identical
-  proof through the concrete backend; live push folded into M.3). Remaining wave order: `4.2`/`4.3`
-  moves cutover → `4.4–4.8` other entities → `4.9` note-entry sync → web-first `1.4`/`1.5`
-  (cross-change) → `V.1`/`V.2` sweep + wave report. **Phase M (morning 2026-07-13,
+- **Next task:** `4.4` — `combos` + `combo_moves`: add their `updatedAt` LWW clocks (additive
+  Drift migration, backfilled from `created_at`, mirroring v23), codecs, then replicate 4.1→4.3
+  for the pair. **Done in the wave so far:** `0.5` → `0.2` → `3.3` → `3.4` → `4.1` (moves backfill)
+  → `4.2` (moves dual-write: extracted `dualWriteMoves`, pref-gated, tombstone-for-delete,
+  non-throwing; `syncBackend` wired into `SyncService`) → `4.3` (moves dual-read live-wired +
+  pref-gated OFF, Firestore-fallback intact, read cutover deferred to M.4). The **moves cutover
+  template (4.1–4.3) is complete** — 4.4/4.7 replicate it per entity. Remaining wave order:
+  `4.4–4.8` other entities → `4.9` note-entry sync → web-first `1.4`/`1.5` (cross-change) →
+  `V.1`/`V.2` sweep + wave report. **Phase M (morning 2026-07-13,
   owner on the physical device)** holds every owner-in-the-loop proof: live Google login (M.2),
   real-data backfill (M.3), two-surface soak (M.4), config flip 1R.4 (M.5), web login (M.6).
 - **Owner-gated residue (parked, does not block the wave):** 0.4's Convex console delete; final

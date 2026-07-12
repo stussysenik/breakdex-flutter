@@ -50,6 +50,14 @@ class SyncService {
   /// dual-write → dual-read, never the reverse (audit A1).
   static const String movesDualReadPrefKey = 'sync.moves.dualRead.enabled';
 
+  /// Kill-switch for the `moves` dual-*write* (task 4.2). Off by default, so a
+  /// flush is byte-identical to Firestore-only until the owner turns it on. When
+  /// on (and [syncBackend] is wired), every local `moves` flush also pushes to
+  /// the Appwrite shadow — idempotent via `clientOpId`, failures swallowed, never
+  /// blocking the Firestore write. This must be live BEFORE dual-read
+  /// ([movesDualReadPrefKey]) so the shadow is never read while stale (audit A1).
+  static const String movesDualWritePrefKey = 'sync.moves.dualWrite.enabled';
+
   /// Pref holding the `moves` backend high-water cursor (ms since epoch),
   /// advanced from [SyncDelta.cursor] after each successful pull (H.1).
   /// Deliberately independent of Firestore's shared `last_sync_at` (audit A2):
@@ -114,6 +122,12 @@ class SyncService {
             rethrow;
           }
         }
+
+        // Dual-write `moves` to the Appwrite shadow AFTER Firestore is the source
+        // of truth for this flush (task 4.2, strangler order: dual-write precedes
+        // any read cutover, audit A1). Pref-gated + non-throwing, so it never
+        // blocks or fails the Firestore path.
+        await dualWriteMoves(pending.where((final e) => e.entityTable == 'moves'));
         return unit;
       },
       (final error, final stackTrace) => AppFailure.sync('Pushing metadata failed: $error'),
@@ -335,6 +349,56 @@ class SyncService {
       },
       (final error, final stackTrace) => AppFailure.sync('Reconciling albums failed: $error'),
     );
+  }
+
+  /// Dual-write `moves` to the Appwrite shadow (task 4.2). Idempotent and
+  /// **non-throwing**: a no-op when the [movesDualWritePrefKey] kill-switch is
+  /// off or no [syncBackend] is wired, and any backend failure is logged and
+  /// swallowed so it never blocks or fails the Firestore flush that already
+  /// committed. Extracted from `pushMetadata` (which touches
+  /// `FirebaseFirestore.instance` and so can't be unit-tested) precisely so the
+  /// dual-write projection + routing are provable in isolation.
+  ///
+  /// Upserts reuse `move_codec` (`moveToSyncRecord`) — the same deterministic
+  /// `clientOpId`s the backfill uses, so a replay reconciles LWW to a no-op. A
+  /// `delete` entry crosses as a **tombstone**, never a hard-delete.
+  Future<void> dualWriteMoves(final Iterable<SyncLogData> movesEntries) async {
+    final backend = syncBackend;
+    if (backend == null || !(prefs.getBool(movesDualWritePrefKey) ?? false)) {
+      return;
+    }
+
+    final upserts = <SyncRecord>[];
+    final deletes = <SyncTombstone>[];
+    final now = DateTime.now().toUtc();
+    for (final entry in movesEntries) {
+      try {
+        if (entry.action == 'delete') {
+          deletes.add(SyncTombstone(
+            id: entry.entityId,
+            type: SyncEntityType.move,
+            deletedAt: now,
+            clientOpId: 'dualwrite:move:delete:${entry.entityId}',
+          ));
+        } else {
+          final move = await db.movesDao.getById(entry.entityId);
+          upserts.add(moveToSyncRecord(move));
+        }
+      } on Object catch (e) {
+        // A missing row (e.g. deleted between flush and here) is skipped, never
+        // fatal — the shadow is additive.
+        debugPrint('[SyncService] dual-write skipped move ${entry.entityId}: $e');
+      }
+    }
+
+    if (upserts.isEmpty && deletes.isEmpty) return;
+    try {
+      await backend.push(SyncEntityType.move, upserts: upserts, deletes: deletes);
+    } on Object catch (e) {
+      // Never block the Firestore path (audit A1); the shadow reconciles on the
+      // next flush or the backfill.
+      debugPrint('[SyncService] moves dual-write push failed: $e');
+    }
   }
 
   /// Dual-read for `moves` (task 2.1): pull the moves delta from the canonical
