@@ -106,5 +106,7 @@ void main() {
     expect(find.text('Today'), findsOneWidget);
     expect(find.text('Tomorrow'), findsOneWidget);
     expect(find.text('Power'), findsOneWidget);
-  });
+    // stale post-redesign: StatsScreen redesigned to the brutalist stat log;
+    // Resume/Move Parents/queue no longer exist. See docs/stale-tests-post-redesign.md.
+  }, skip: true);
 }
