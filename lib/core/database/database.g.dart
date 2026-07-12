@@ -1203,6 +1203,17 @@ class $CombosTable extends Combos with TableInfo<$CombosTable, Combo> {
     requiredDuringInsert: false,
     defaultValue: currentDateAndTime,
   );
+  static const VerificationMeta _updatedAtMeta = const VerificationMeta(
+    'updatedAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> updatedAt = GeneratedColumn<DateTime>(
+    'updated_at',
+    aliasedName,
+    true,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+  );
   @override
   List<GeneratedColumn> get $columns => [
     id,
@@ -1212,6 +1223,7 @@ class $CombosTable extends Combos with TableInfo<$CombosTable, Combo> {
     contentHash,
     status,
     createdAt,
+    updatedAt,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -1274,6 +1286,12 @@ class $CombosTable extends Combos with TableInfo<$CombosTable, Combo> {
         createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta),
       );
     }
+    if (data.containsKey('updated_at')) {
+      context.handle(
+        _updatedAtMeta,
+        updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta),
+      );
+    }
     return context;
   }
 
@@ -1311,6 +1329,10 @@ class $CombosTable extends Combos with TableInfo<$CombosTable, Combo> {
         DriftSqlType.dateTime,
         data['${effectivePrefix}created_at'],
       )!,
+      updatedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}updated_at'],
+      ),
     );
   }
 
@@ -1330,6 +1352,11 @@ class Combo extends DataClass implements Insertable<Combo> {
   /// 'idea', 'attempting', 'landed', or 'clean' — same vocabulary as labs.
   final String status;
   final DateTime createdAt;
+
+  /// Last-writer-wins clock for backend sync (task 4.4). Nullable so the
+  /// additive v24 migration can backfill it from [createdAt]; the DAO stamps it
+  /// on every local mutation, mirroring `moves.updatedAt`.
+  final DateTime? updatedAt;
   const Combo({
     required this.id,
     required this.name,
@@ -1338,6 +1365,7 @@ class Combo extends DataClass implements Insertable<Combo> {
     this.contentHash,
     required this.status,
     required this.createdAt,
+    this.updatedAt,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -1355,6 +1383,9 @@ class Combo extends DataClass implements Insertable<Combo> {
     }
     map['status'] = Variable<String>(status);
     map['created_at'] = Variable<DateTime>(createdAt);
+    if (!nullToAbsent || updatedAt != null) {
+      map['updated_at'] = Variable<DateTime>(updatedAt);
+    }
     return map;
   }
 
@@ -1373,6 +1404,9 @@ class Combo extends DataClass implements Insertable<Combo> {
           : Value(contentHash),
       status: Value(status),
       createdAt: Value(createdAt),
+      updatedAt: updatedAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(updatedAt),
     );
   }
 
@@ -1389,6 +1423,7 @@ class Combo extends DataClass implements Insertable<Combo> {
       contentHash: serializer.fromJson<String?>(json['contentHash']),
       status: serializer.fromJson<String>(json['status']),
       createdAt: serializer.fromJson<DateTime>(json['createdAt']),
+      updatedAt: serializer.fromJson<DateTime?>(json['updatedAt']),
     );
   }
   @override
@@ -1402,6 +1437,7 @@ class Combo extends DataClass implements Insertable<Combo> {
       'contentHash': serializer.toJson<String?>(contentHash),
       'status': serializer.toJson<String>(status),
       'createdAt': serializer.toJson<DateTime>(createdAt),
+      'updatedAt': serializer.toJson<DateTime?>(updatedAt),
     };
   }
 
@@ -1413,6 +1449,7 @@ class Combo extends DataClass implements Insertable<Combo> {
     Value<String?> contentHash = const Value.absent(),
     String? status,
     DateTime? createdAt,
+    Value<DateTime?> updatedAt = const Value.absent(),
   }) => Combo(
     id: id ?? this.id,
     name: name ?? this.name,
@@ -1423,6 +1460,7 @@ class Combo extends DataClass implements Insertable<Combo> {
     contentHash: contentHash.present ? contentHash.value : this.contentHash,
     status: status ?? this.status,
     createdAt: createdAt ?? this.createdAt,
+    updatedAt: updatedAt.present ? updatedAt.value : this.updatedAt,
   );
   Combo copyWithCompanion(CombosCompanion data) {
     return Combo(
@@ -1437,6 +1475,7 @@ class Combo extends DataClass implements Insertable<Combo> {
           : this.contentHash,
       status: data.status.present ? data.status.value : this.status,
       createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+      updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
     );
   }
 
@@ -1449,7 +1488,8 @@ class Combo extends DataClass implements Insertable<Combo> {
           ..write('activeVideoPath: $activeVideoPath, ')
           ..write('contentHash: $contentHash, ')
           ..write('status: $status, ')
-          ..write('createdAt: $createdAt')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt')
           ..write(')'))
         .toString();
   }
@@ -1463,6 +1503,7 @@ class Combo extends DataClass implements Insertable<Combo> {
     contentHash,
     status,
     createdAt,
+    updatedAt,
   );
   @override
   bool operator ==(Object other) =>
@@ -1474,7 +1515,8 @@ class Combo extends DataClass implements Insertable<Combo> {
           other.activeVideoPath == this.activeVideoPath &&
           other.contentHash == this.contentHash &&
           other.status == this.status &&
-          other.createdAt == this.createdAt);
+          other.createdAt == this.createdAt &&
+          other.updatedAt == this.updatedAt);
 }
 
 class CombosCompanion extends UpdateCompanion<Combo> {
@@ -1485,6 +1527,7 @@ class CombosCompanion extends UpdateCompanion<Combo> {
   final Value<String?> contentHash;
   final Value<String> status;
   final Value<DateTime> createdAt;
+  final Value<DateTime?> updatedAt;
   final Value<int> rowid;
   const CombosCompanion({
     this.id = const Value.absent(),
@@ -1494,6 +1537,7 @@ class CombosCompanion extends UpdateCompanion<Combo> {
     this.contentHash = const Value.absent(),
     this.status = const Value.absent(),
     this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
     this.rowid = const Value.absent(),
   });
   CombosCompanion.insert({
@@ -1504,6 +1548,7 @@ class CombosCompanion extends UpdateCompanion<Combo> {
     this.contentHash = const Value.absent(),
     this.status = const Value.absent(),
     this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
     this.rowid = const Value.absent(),
   }) : id = Value(id),
        name = Value(name);
@@ -1515,6 +1560,7 @@ class CombosCompanion extends UpdateCompanion<Combo> {
     Expression<String>? contentHash,
     Expression<String>? status,
     Expression<DateTime>? createdAt,
+    Expression<DateTime>? updatedAt,
     Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
@@ -1525,6 +1571,7 @@ class CombosCompanion extends UpdateCompanion<Combo> {
       if (contentHash != null) 'content_hash': contentHash,
       if (status != null) 'status': status,
       if (createdAt != null) 'created_at': createdAt,
+      if (updatedAt != null) 'updated_at': updatedAt,
       if (rowid != null) 'rowid': rowid,
     });
   }
@@ -1537,6 +1584,7 @@ class CombosCompanion extends UpdateCompanion<Combo> {
     Value<String?>? contentHash,
     Value<String>? status,
     Value<DateTime>? createdAt,
+    Value<DateTime?>? updatedAt,
     Value<int>? rowid,
   }) {
     return CombosCompanion(
@@ -1547,6 +1595,7 @@ class CombosCompanion extends UpdateCompanion<Combo> {
       contentHash: contentHash ?? this.contentHash,
       status: status ?? this.status,
       createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
       rowid: rowid ?? this.rowid,
     );
   }
@@ -1575,6 +1624,9 @@ class CombosCompanion extends UpdateCompanion<Combo> {
     if (createdAt.present) {
       map['created_at'] = Variable<DateTime>(createdAt.value);
     }
+    if (updatedAt.present) {
+      map['updated_at'] = Variable<DateTime>(updatedAt.value);
+    }
     if (rowid.present) {
       map['rowid'] = Variable<int>(rowid.value);
     }
@@ -1591,6 +1643,7 @@ class CombosCompanion extends UpdateCompanion<Combo> {
           ..write('contentHash: $contentHash, ')
           ..write('status: $status, ')
           ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt, ')
           ..write('rowid: $rowid')
           ..write(')'))
         .toString();
@@ -1659,6 +1712,17 @@ class $ComboMovesTable extends ComboMoves
     requiredDuringInsert: false,
     defaultValue: const Constant(1),
   );
+  static const VerificationMeta _updatedAtMeta = const VerificationMeta(
+    'updatedAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> updatedAt = GeneratedColumn<DateTime>(
+    'updated_at',
+    aliasedName,
+    true,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+  );
   @override
   List<GeneratedColumn> get $columns => [
     id,
@@ -1666,6 +1730,7 @@ class $ComboMovesTable extends ComboMoves
     comboId,
     moveId,
     count,
+    updatedAt,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -1717,6 +1782,12 @@ class $ComboMovesTable extends ComboMoves
         count.isAcceptableOrUnknown(data['count']!, _countMeta),
       );
     }
+    if (data.containsKey('updated_at')) {
+      context.handle(
+        _updatedAtMeta,
+        updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta),
+      );
+    }
     return context;
   }
 
@@ -1746,6 +1817,10 @@ class $ComboMovesTable extends ComboMoves
         DriftSqlType.int,
         data['${effectivePrefix}count'],
       )!,
+      updatedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}updated_at'],
+      ),
     );
   }
 
@@ -1761,12 +1836,19 @@ class ComboMove extends DataClass implements Insertable<ComboMove> {
   final String comboId;
   final String moveId;
   final int count;
+
+  /// Last-writer-wins clock for backend sync (task 4.4). Nullable so the
+  /// additive v24 migration can backfill it (this table has no `createdAt`, so
+  /// existing rows are seeded from the parent combo's `createdAt`); the DAO
+  /// stamps it on every insert/update, so new rows always carry a real clock.
+  final DateTime? updatedAt;
   const ComboMove({
     required this.id,
     required this.sequenceIndex,
     required this.comboId,
     required this.moveId,
     required this.count,
+    this.updatedAt,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -1776,6 +1858,9 @@ class ComboMove extends DataClass implements Insertable<ComboMove> {
     map['combo_id'] = Variable<String>(comboId);
     map['move_id'] = Variable<String>(moveId);
     map['count'] = Variable<int>(count);
+    if (!nullToAbsent || updatedAt != null) {
+      map['updated_at'] = Variable<DateTime>(updatedAt);
+    }
     return map;
   }
 
@@ -1786,6 +1871,9 @@ class ComboMove extends DataClass implements Insertable<ComboMove> {
       comboId: Value(comboId),
       moveId: Value(moveId),
       count: Value(count),
+      updatedAt: updatedAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(updatedAt),
     );
   }
 
@@ -1800,6 +1888,7 @@ class ComboMove extends DataClass implements Insertable<ComboMove> {
       comboId: serializer.fromJson<String>(json['comboId']),
       moveId: serializer.fromJson<String>(json['moveId']),
       count: serializer.fromJson<int>(json['count']),
+      updatedAt: serializer.fromJson<DateTime?>(json['updatedAt']),
     );
   }
   @override
@@ -1811,6 +1900,7 @@ class ComboMove extends DataClass implements Insertable<ComboMove> {
       'comboId': serializer.toJson<String>(comboId),
       'moveId': serializer.toJson<String>(moveId),
       'count': serializer.toJson<int>(count),
+      'updatedAt': serializer.toJson<DateTime?>(updatedAt),
     };
   }
 
@@ -1820,12 +1910,14 @@ class ComboMove extends DataClass implements Insertable<ComboMove> {
     String? comboId,
     String? moveId,
     int? count,
+    Value<DateTime?> updatedAt = const Value.absent(),
   }) => ComboMove(
     id: id ?? this.id,
     sequenceIndex: sequenceIndex ?? this.sequenceIndex,
     comboId: comboId ?? this.comboId,
     moveId: moveId ?? this.moveId,
     count: count ?? this.count,
+    updatedAt: updatedAt.present ? updatedAt.value : this.updatedAt,
   );
   ComboMove copyWithCompanion(ComboMovesCompanion data) {
     return ComboMove(
@@ -1836,6 +1928,7 @@ class ComboMove extends DataClass implements Insertable<ComboMove> {
       comboId: data.comboId.present ? data.comboId.value : this.comboId,
       moveId: data.moveId.present ? data.moveId.value : this.moveId,
       count: data.count.present ? data.count.value : this.count,
+      updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
     );
   }
 
@@ -1846,13 +1939,15 @@ class ComboMove extends DataClass implements Insertable<ComboMove> {
           ..write('sequenceIndex: $sequenceIndex, ')
           ..write('comboId: $comboId, ')
           ..write('moveId: $moveId, ')
-          ..write('count: $count')
+          ..write('count: $count, ')
+          ..write('updatedAt: $updatedAt')
           ..write(')'))
         .toString();
   }
 
   @override
-  int get hashCode => Object.hash(id, sequenceIndex, comboId, moveId, count);
+  int get hashCode =>
+      Object.hash(id, sequenceIndex, comboId, moveId, count, updatedAt);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -1861,7 +1956,8 @@ class ComboMove extends DataClass implements Insertable<ComboMove> {
           other.sequenceIndex == this.sequenceIndex &&
           other.comboId == this.comboId &&
           other.moveId == this.moveId &&
-          other.count == this.count);
+          other.count == this.count &&
+          other.updatedAt == this.updatedAt);
 }
 
 class ComboMovesCompanion extends UpdateCompanion<ComboMove> {
@@ -1870,6 +1966,7 @@ class ComboMovesCompanion extends UpdateCompanion<ComboMove> {
   final Value<String> comboId;
   final Value<String> moveId;
   final Value<int> count;
+  final Value<DateTime?> updatedAt;
   final Value<int> rowid;
   const ComboMovesCompanion({
     this.id = const Value.absent(),
@@ -1877,6 +1974,7 @@ class ComboMovesCompanion extends UpdateCompanion<ComboMove> {
     this.comboId = const Value.absent(),
     this.moveId = const Value.absent(),
     this.count = const Value.absent(),
+    this.updatedAt = const Value.absent(),
     this.rowid = const Value.absent(),
   });
   ComboMovesCompanion.insert({
@@ -1885,6 +1983,7 @@ class ComboMovesCompanion extends UpdateCompanion<ComboMove> {
     required String comboId,
     required String moveId,
     this.count = const Value.absent(),
+    this.updatedAt = const Value.absent(),
     this.rowid = const Value.absent(),
   }) : id = Value(id),
        sequenceIndex = Value(sequenceIndex),
@@ -1896,6 +1995,7 @@ class ComboMovesCompanion extends UpdateCompanion<ComboMove> {
     Expression<String>? comboId,
     Expression<String>? moveId,
     Expression<int>? count,
+    Expression<DateTime>? updatedAt,
     Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
@@ -1904,6 +2004,7 @@ class ComboMovesCompanion extends UpdateCompanion<ComboMove> {
       if (comboId != null) 'combo_id': comboId,
       if (moveId != null) 'move_id': moveId,
       if (count != null) 'count': count,
+      if (updatedAt != null) 'updated_at': updatedAt,
       if (rowid != null) 'rowid': rowid,
     });
   }
@@ -1914,6 +2015,7 @@ class ComboMovesCompanion extends UpdateCompanion<ComboMove> {
     Value<String>? comboId,
     Value<String>? moveId,
     Value<int>? count,
+    Value<DateTime?>? updatedAt,
     Value<int>? rowid,
   }) {
     return ComboMovesCompanion(
@@ -1922,6 +2024,7 @@ class ComboMovesCompanion extends UpdateCompanion<ComboMove> {
       comboId: comboId ?? this.comboId,
       moveId: moveId ?? this.moveId,
       count: count ?? this.count,
+      updatedAt: updatedAt ?? this.updatedAt,
       rowid: rowid ?? this.rowid,
     );
   }
@@ -1944,6 +2047,9 @@ class ComboMovesCompanion extends UpdateCompanion<ComboMove> {
     if (count.present) {
       map['count'] = Variable<int>(count.value);
     }
+    if (updatedAt.present) {
+      map['updated_at'] = Variable<DateTime>(updatedAt.value);
+    }
     if (rowid.present) {
       map['rowid'] = Variable<int>(rowid.value);
     }
@@ -1958,6 +2064,7 @@ class ComboMovesCompanion extends UpdateCompanion<ComboMove> {
           ..write('comboId: $comboId, ')
           ..write('moveId: $moveId, ')
           ..write('count: $count, ')
+          ..write('updatedAt: $updatedAt, ')
           ..write('rowid: $rowid')
           ..write(')'))
         .toString();
@@ -14475,6 +14582,7 @@ typedef $$CombosTableCreateCompanionBuilder =
       Value<String?> contentHash,
       Value<String> status,
       Value<DateTime> createdAt,
+      Value<DateTime?> updatedAt,
       Value<int> rowid,
     });
 typedef $$CombosTableUpdateCompanionBuilder =
@@ -14486,6 +14594,7 @@ typedef $$CombosTableUpdateCompanionBuilder =
       Value<String?> contentHash,
       Value<String> status,
       Value<DateTime> createdAt,
+      Value<DateTime?> updatedAt,
       Value<int> rowid,
     });
 
@@ -14610,6 +14719,11 @@ class $$CombosTableFilterComposer
 
   ColumnFilters<DateTime> get createdAt => $composableBuilder(
     column: $table.createdAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -14757,6 +14871,11 @@ class $$CombosTableOrderingComposer
     column: $table.createdAt,
     builder: (column) => ColumnOrderings(column),
   );
+
+  ColumnOrderings<DateTime> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
 }
 
 class $$CombosTableAnnotationComposer
@@ -14792,6 +14911,9 @@ class $$CombosTableAnnotationComposer
 
   GeneratedColumn<DateTime> get createdAt =>
       $composableBuilder(column: $table.createdAt, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get updatedAt =>
+      $composableBuilder(column: $table.updatedAt, builder: (column) => column);
 
   Expression<T> comboMovesRefs<T extends Object>(
     Expression<T> Function($$ComboMovesTableAnnotationComposer a) f,
@@ -14934,6 +15056,7 @@ class $$CombosTableTableManager
                 Value<String?> contentHash = const Value.absent(),
                 Value<String> status = const Value.absent(),
                 Value<DateTime> createdAt = const Value.absent(),
+                Value<DateTime?> updatedAt = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => CombosCompanion(
                 id: id,
@@ -14943,6 +15066,7 @@ class $$CombosTableTableManager
                 contentHash: contentHash,
                 status: status,
                 createdAt: createdAt,
+                updatedAt: updatedAt,
                 rowid: rowid,
               ),
           createCompanionCallback:
@@ -14954,6 +15078,7 @@ class $$CombosTableTableManager
                 Value<String?> contentHash = const Value.absent(),
                 Value<String> status = const Value.absent(),
                 Value<DateTime> createdAt = const Value.absent(),
+                Value<DateTime?> updatedAt = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => CombosCompanion.insert(
                 id: id,
@@ -14963,6 +15088,7 @@ class $$CombosTableTableManager
                 contentHash: contentHash,
                 status: status,
                 createdAt: createdAt,
+                updatedAt: updatedAt,
                 rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0
@@ -15103,6 +15229,7 @@ typedef $$ComboMovesTableCreateCompanionBuilder =
       required String comboId,
       required String moveId,
       Value<int> count,
+      Value<DateTime?> updatedAt,
       Value<int> rowid,
     });
 typedef $$ComboMovesTableUpdateCompanionBuilder =
@@ -15112,6 +15239,7 @@ typedef $$ComboMovesTableUpdateCompanionBuilder =
       Value<String> comboId,
       Value<String> moveId,
       Value<int> count,
+      Value<DateTime?> updatedAt,
       Value<int> rowid,
     });
 
@@ -15177,6 +15305,11 @@ class $$ComboMovesTableFilterComposer
 
   ColumnFilters<int> get count => $composableBuilder(
     column: $table.count,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -15251,6 +15384,11 @@ class $$ComboMovesTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<DateTime> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   $$CombosTableOrderingComposer get comboId {
     final $$CombosTableOrderingComposer composer = $composerBuilder(
       composer: this,
@@ -15317,6 +15455,9 @@ class $$ComboMovesTableAnnotationComposer
 
   GeneratedColumn<int> get count =>
       $composableBuilder(column: $table.count, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get updatedAt =>
+      $composableBuilder(column: $table.updatedAt, builder: (column) => column);
 
   $$CombosTableAnnotationComposer get comboId {
     final $$CombosTableAnnotationComposer composer = $composerBuilder(
@@ -15398,6 +15539,7 @@ class $$ComboMovesTableTableManager
                 Value<String> comboId = const Value.absent(),
                 Value<String> moveId = const Value.absent(),
                 Value<int> count = const Value.absent(),
+                Value<DateTime?> updatedAt = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => ComboMovesCompanion(
                 id: id,
@@ -15405,6 +15547,7 @@ class $$ComboMovesTableTableManager
                 comboId: comboId,
                 moveId: moveId,
                 count: count,
+                updatedAt: updatedAt,
                 rowid: rowid,
               ),
           createCompanionCallback:
@@ -15414,6 +15557,7 @@ class $$ComboMovesTableTableManager
                 required String comboId,
                 required String moveId,
                 Value<int> count = const Value.absent(),
+                Value<DateTime?> updatedAt = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => ComboMovesCompanion.insert(
                 id: id,
@@ -15421,6 +15565,7 @@ class $$ComboMovesTableTableManager
                 comboId: comboId,
                 moveId: moveId,
                 count: count,
+                updatedAt: updatedAt,
                 rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0

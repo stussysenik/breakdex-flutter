@@ -11,6 +11,12 @@ class ComboMoves extends Table {
       text().references(Moves, #id, onDelete: KeyAction.cascade)();
   IntColumn get count => integer().withDefault(const Constant(1))();
 
+  /// Last-writer-wins clock for backend sync (task 4.4). Nullable so the
+  /// additive v24 migration can backfill it (this table has no `createdAt`, so
+  /// existing rows are seeded from the parent combo's `createdAt`); the DAO
+  /// stamps it on every insert/update, so new rows always carry a real clock.
+  DateTimeColumn get updatedAt => dateTime().nullable()();
+
   @override
   Set<Column> get primaryKey => {id};
 }

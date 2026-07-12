@@ -116,6 +116,9 @@ class CombosDao extends DatabaseAccessor<AppDatabase> with _$CombosDaoMixin {
 
   Future<List<Combo>> getAll() => select(combos).get();
 
+  /// Every combo-step row, unordered — the read side of the task 4.4 backfill.
+  Future<List<ComboMove>> getAllComboMoves() => select(comboMoves).get();
+
   Future<Combo> getById(final String id) =>
       (select(combos)..where((final t) => t.id.equals(id))).getSingle();
 
@@ -156,15 +159,31 @@ class CombosDao extends DatabaseAccessor<AppDatabase> with _$CombosDaoMixin {
         .toList());
   }
 
+  /// Stamp [Combos.updatedAt] with the local mutation time for last-writer-wins
+  /// sync (task 4.4), unless the caller already set it — the reconcile path
+  /// passes a remote timestamp that must be preserved, not clobbered with now().
+  /// Mirrors `MovesDao._stampUpdatedAt`.
+  CombosCompanion _stampCombo(final CombosCompanion entry) =>
+      entry.updatedAt.present
+      ? entry
+      : entry.copyWith(updatedAt: Value(DateTime.now().toUtc()));
+
+  /// As [_stampCombo], for `combo_moves`. This table has no `createdAt`, so
+  /// stamping on insert is what guarantees every step carries a non-null clock.
+  ComboMovesCompanion _stampComboMove(final ComboMovesCompanion entry) =>
+      entry.updatedAt.present
+      ? entry
+      : entry.copyWith(updatedAt: Value(DateTime.now().toUtc()));
+
   Future<void> insertCombo(final CombosCompanion entry) =>
-      into(combos).insert(entry);
+      into(combos).insert(_stampCombo(entry));
 
   Future<void> addMoveToCombo(final ComboMovesCompanion entry) =>
-      into(comboMoves).insert(entry);
+      into(comboMoves).insert(_stampComboMove(entry));
 
   Future<void> updateCombo(final CombosCompanion entry) =>
       (update(combos)..where((final t) => t.id.equals(entry.id.value)))
-          .write(entry);
+          .write(_stampCombo(entry));
 
   Future<void> deleteCombo(final String id) {
     debugPrint('[CombosDao] deleteCombo id=$id');
@@ -260,7 +279,7 @@ class CombosDao extends DatabaseAccessor<AppDatabase> with _$CombosDaoMixin {
       if (combo.status == newStatus) return;
 
       await (update(combos)..where((final t) => t.id.equals(comboId)))
-          .write(CombosCompanion(status: Value(newStatus)));
+          .write(_stampCombo(CombosCompanion(status: Value(newStatus))));
 
       await into(comboNoteEntries).insert(
         ComboNoteEntriesCompanion.insert(
@@ -291,24 +310,24 @@ class CombosDao extends DatabaseAccessor<AppDatabase> with _$CombosDaoMixin {
           .get();
 
       await into(combos).insert(
-        CombosCompanion.insert(
+        _stampCombo(CombosCompanion.insert(
           id: newComboId,
           name: newName,
           notes: Value(source.notes),
           activeVideoPath: Value(source.activeVideoPath),
           status: const Value('idea'),
-        ),
+        )),
       );
 
       for (final cm in sourceMoves) {
         await into(comboMoves).insert(
-          ComboMovesCompanion.insert(
+          _stampComboMove(ComboMovesCompanion.insert(
             id: comboMoveIdFactory(),
             comboId: newComboId,
             moveId: cm.moveId,
             sequenceIndex: cm.sequenceIndex,
             count: Value(cm.count),
-          ),
+          )),
         );
       }
 

@@ -19,6 +19,7 @@ import 'video_path_resolver.dart';
 import '../domain/failures/failure.dart';
 import '../sync/sync_backend.dart';
 import '../sync/codecs/move_codec.dart';
+import '../sync/codecs/combo_codec.dart';
 
 class SyncService {
   final AuthService authService;
@@ -64,6 +65,19 @@ class SyncService {
   /// the two backends have different clocks and delete horizons, so sharing a
   /// cursor would silently skip records. A missing cursor means "full pull".
   static const String movesBackendCursorPrefKey = 'sync.moves.backend.cursor';
+
+  /// Kill-switches + cursors for the `combos` + `comboMoves` **pair** (task 4.4),
+  /// which replicate the `moves` strangler-fig (4.1→4.3). The pair shares one
+  /// dual-write and one dual-read switch (they cut over together), but each
+  /// entity pulls with its **own** cursor — they are distinct backend tables
+  /// with independent high-water marks (audit A2, as for moves). Off by default;
+  /// flipping a switch off is the instant rollback. Dual-write must precede
+  /// dual-read so the shadow is never read while stale (audit A1).
+  static const String combosDualWritePrefKey = 'sync.combos.dualWrite.enabled';
+  static const String combosDualReadPrefKey = 'sync.combos.dualRead.enabled';
+  static const String combosBackendCursorPrefKey = 'sync.combos.backend.cursor';
+  static const String comboMovesBackendCursorPrefKey =
+      'sync.comboMoves.backend.cursor';
 
   TaskEither<AppFailure, Unit> authenticate() {
     return authService.refreshAuth().mapLeft((final f) => AppFailure.sync('Authentication failed: ${f.message}'));
@@ -128,6 +142,11 @@ class SyncService {
         // any read cutover, audit A1). Pref-gated + non-throwing, so it never
         // blocks or fails the Firestore path.
         await dualWriteMoves(pending.where((final e) => e.entityTable == 'moves'));
+        // Same strangler order for the combos + combo_moves pair (task 4.4).
+        await dualWriteCombos(pending.where((final e) => e.entityTable == 'combos'));
+        await dualWriteComboMoves(
+          pending.where((final e) => e.entityTable == 'combo_moves'),
+        );
         return unit;
       },
       (final error, final stackTrace) => AppFailure.sync('Pushing metadata failed: $error'),
@@ -202,6 +221,23 @@ class SyncService {
                 if (result != null) continue;
               } on Object catch (e) {
                 debugPrint('[SyncService] moves dual-read failed, falling back to Firestore: $e');
+              }
+            }
+            // The combos + combo_moves pair (task 4.4), each with its own cursor.
+            if (table == 'combos') {
+              try {
+                final result = await pullCombosFromBackend();
+                if (result != null) continue;
+              } on Object catch (e) {
+                debugPrint('[SyncService] combos dual-read failed, falling back to Firestore: $e');
+              }
+            }
+            if (table == 'combo_moves') {
+              try {
+                final result = await pullComboMovesFromBackend();
+                if (result != null) continue;
+              } on Object catch (e) {
+                debugPrint('[SyncService] combo_moves dual-read failed, falling back to Firestore: $e');
               }
             }
 
@@ -480,6 +516,181 @@ class SyncService {
       if (localSec >= remoteSec) return false;
     }
     await db.into(db.moves).insertOnConflictUpdate(moveFromSyncRecord(record));
+    return true;
+  }
+
+  // --- combos + combo_moves pair (task 4.4) ---
+  //
+  // The pair replicates the moves strangler-fig via two shared engines so the
+  // per-entity methods carry only what differs (type, codec, pref/cursor keys):
+  // [_dualWriteEntity] projects a flush's entries into the backend (pref-gated,
+  // non-throwing, tombstone-for-delete — audit A1), and [_pullEntity] pulls a
+  // delta under this entity's own cursor and merges each upsert LWW (H.1–H.4).
+
+  /// Dual-write `combos` to the Appwrite shadow (task 4.4). See [dualWriteMoves].
+  Future<void> dualWriteCombos(final Iterable<SyncLogData> entries) =>
+      _dualWriteEntity(
+        type: SyncEntityType.combo,
+        prefKey: combosDualWritePrefKey,
+        label: 'combo',
+        entries: entries,
+        recordFor: (final id) async =>
+            comboToSyncRecord(await db.combosDao.getById(id)),
+      );
+
+  /// Dual-write `combo_moves` to the Appwrite shadow (task 4.4). Shares the
+  /// pair's kill-switch with [dualWriteCombos].
+  Future<void> dualWriteComboMoves(final Iterable<SyncLogData> entries) =>
+      _dualWriteEntity(
+        type: SyncEntityType.comboMove,
+        prefKey: combosDualWritePrefKey,
+        label: 'comboMove',
+        entries: entries,
+        recordFor: (final id) async => comboMoveToSyncRecord(
+          await (db.select(db.comboMoves)..where((final t) => t.id.equals(id)))
+              .getSingle(),
+        ),
+      );
+
+  /// Generic dual-write engine (task 4.4): pref-gated, idempotent, non-throwing.
+  /// An `insert`/`update` entry becomes an upsert via [recordFor]; a `delete`
+  /// crosses as a tombstone, never a hard-delete. Any per-row or push failure is
+  /// logged and swallowed so it never blocks the Firestore flush (audit A1).
+  Future<void> _dualWriteEntity({
+    required final SyncEntityType type,
+    required final String prefKey,
+    required final String label,
+    required final Iterable<SyncLogData> entries,
+    required final Future<SyncRecord> Function(String id) recordFor,
+  }) async {
+    final backend = syncBackend;
+    if (backend == null || !(prefs.getBool(prefKey) ?? false)) return;
+
+    final upserts = <SyncRecord>[];
+    final deletes = <SyncTombstone>[];
+    final now = DateTime.now().toUtc();
+    for (final entry in entries) {
+      try {
+        if (entry.action == 'delete') {
+          deletes.add(SyncTombstone(
+            id: entry.entityId,
+            type: type,
+            deletedAt: now,
+            clientOpId: 'dualwrite:$label:delete:${entry.entityId}',
+          ));
+        } else {
+          upserts.add(await recordFor(entry.entityId));
+        }
+      } on Object catch (e) {
+        debugPrint('[SyncService] dual-write skipped $label ${entry.entityId}: $e');
+      }
+    }
+
+    if (upserts.isEmpty && deletes.isEmpty) return;
+    try {
+      await backend.push(type, upserts: upserts, deletes: deletes);
+    } on Object catch (e) {
+      debugPrint('[SyncService] $label dual-write push failed: $e');
+    }
+  }
+
+  /// Dual-read `combos` (task 4.4). See [pullMovesFromBackend].
+  Future<({int applied, int failed})?> pullCombosFromBackend() => _pullEntity(
+        type: SyncEntityType.combo,
+        prefKey: combosDualReadPrefKey,
+        cursorKey: combosBackendCursorPrefKey,
+        label: 'combo',
+        merge: _mergeComboRecordLww,
+      );
+
+  /// Dual-read `combo_moves` (task 4.4). Shares the pair's read kill-switch but
+  /// keeps its own cursor (distinct backend table, independent high-water mark).
+  Future<({int applied, int failed})?> pullComboMovesFromBackend() =>
+      _pullEntity(
+        type: SyncEntityType.comboMove,
+        prefKey: combosDualReadPrefKey,
+        cursorKey: comboMovesBackendCursorPrefKey,
+        label: 'comboMove',
+        merge: _mergeComboMoveRecordLww,
+      );
+
+  /// Generic dual-read engine (task 4.4): pull [type]'s delta from this entity's
+  /// own cursor and merge each upsert under [merge] — per-record fault isolated
+  /// (H.3), in one transaction (H.4), advancing the cursor only after the merge
+  /// commits (lossless retry, A2). Tombstones are not applied (upsert-only).
+  /// Returns `null` when disabled so the caller falls back to Firestore.
+  Future<({int applied, int failed})?> _pullEntity({
+    required final SyncEntityType type,
+    required final String prefKey,
+    required final String cursorKey,
+    required final String label,
+    required final Future<bool> Function(SyncRecord) merge,
+  }) async {
+    final backend = syncBackend;
+    if (backend == null || !(prefs.getBool(prefKey) ?? false)) return null;
+
+    final cursorMs = prefs.getInt(cursorKey);
+    final since = cursorMs == null
+        ? null
+        : DateTime.fromMillisecondsSinceEpoch(cursorMs, isUtc: true);
+
+    final delta = await backend.pull(type, since: since);
+
+    var applied = 0;
+    var failed = 0;
+    await db.transaction(() async {
+      for (final record in delta.upserts) {
+        try {
+          if (await merge(record)) applied++;
+        } on Object catch (e) {
+          failed++;
+          debugPrint('[SyncService] skipped malformed $label ${record.id}: $e');
+        }
+      }
+    });
+
+    final cursor = delta.cursor;
+    if (cursor != null) {
+      await prefs.setInt(cursorKey, cursor.millisecondsSinceEpoch);
+    }
+    return (applied: applied, failed: failed);
+  }
+
+  /// Merge one remote combo [record] iff it does not clobber a newer local edit
+  /// — LWW compared at whole-second granularity (H.2/audit A3), as for moves.
+  Future<bool> _mergeComboRecordLww(final SyncRecord record) async {
+    final existing = await (db.select(db.combos)
+          ..where((final t) => t.id.equals(record.id)))
+        .getSingleOrNull();
+    if (existing != null) {
+      final localClock = existing.updatedAt ?? existing.createdAt;
+      if (localClock.millisecondsSinceEpoch ~/ 1000 >=
+          record.updatedAt.millisecondsSinceEpoch ~/ 1000) {
+        return false;
+      }
+    }
+    await db.into(db.combos).insertOnConflictUpdate(comboFromSyncRecord(record));
+    return true;
+  }
+
+  /// Merge one remote combo-step [record] under LWW. combo_moves has no
+  /// `createdAt`, so a (post-migration unreachable) null local clock is treated
+  /// as epoch-0 — oldest-possible, never wins — matching the codec's guard.
+  Future<bool> _mergeComboMoveRecordLww(final SyncRecord record) async {
+    final existing = await (db.select(db.comboMoves)
+          ..where((final t) => t.id.equals(record.id)))
+        .getSingleOrNull();
+    if (existing != null) {
+      final localClock = existing.updatedAt ??
+          DateTime.fromMillisecondsSinceEpoch(0, isUtc: true);
+      if (localClock.millisecondsSinceEpoch ~/ 1000 >=
+          record.updatedAt.millisecondsSinceEpoch ~/ 1000) {
+        return false;
+      }
+    }
+    await db
+        .into(db.comboMoves)
+        .insertOnConflictUpdate(comboMoveFromSyncRecord(record));
     return true;
   }
 

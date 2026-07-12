@@ -104,7 +104,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.forTesting(super.e);
 
   @override
-  int get schemaVersion => 23;
+  int get schemaVersion => 24;
 
   /// Column names currently present on [table] — used to keep migrations
   /// idempotent across legacy databases and tables created mid-upgrade
@@ -623,6 +623,40 @@ class AppDatabase extends _$AppDatabase {
         await customStatement(
           'UPDATE moves SET updated_at = created_at WHERE updated_at IS NULL',
         );
+      }
+
+      if (from < 24) {
+        // --- Schema v24: combos.updated_at + combo_moves.updated_at LWW clocks
+        // for the Appwrite strangler-fig (task 4.4) ---
+        //
+        // Additive + backfilled, mirroring v23. `combos` seeds its clock from
+        // its own `created_at`. `combo_moves` has no `created_at`, so each row
+        // is seeded from its parent combo's `created_at` (the best available
+        // proxy for when the step was authored); the FK guarantees a parent, so
+        // no residual NULL survives under intact data.
+        final comboCols = await _columnNames('combos');
+        if (!comboCols.contains('updated_at')) {
+          await customStatement(
+            'ALTER TABLE combos ADD COLUMN updated_at INTEGER',
+          );
+        }
+        await customStatement(
+          'UPDATE combos SET updated_at = created_at WHERE updated_at IS NULL',
+        );
+
+        final comboMoveCols = await _columnNames('combo_moves');
+        if (!comboMoveCols.contains('updated_at')) {
+          await customStatement(
+            'ALTER TABLE combo_moves ADD COLUMN updated_at INTEGER',
+          );
+        }
+        await customStatement('''
+          UPDATE combo_moves
+          SET updated_at = (
+            SELECT c.created_at FROM combos c WHERE c.id = combo_moves.combo_id
+          )
+          WHERE updated_at IS NULL
+        ''');
       }
 
       await _backfillReviewSnapshots();

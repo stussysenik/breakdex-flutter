@@ -1,4 +1,6 @@
+import '../../database/daos/combos_dao.dart';
 import '../../database/daos/moves_dao.dart';
+import '../codecs/combo_codec.dart';
 import '../codecs/move_codec.dart';
 import '../sync_backend.dart';
 
@@ -12,20 +14,25 @@ import '../sync_backend.dart';
 /// That invariant is what makes running against real data safe — proven by the
 /// snapshot-equality tests in `sync_backfill_service_test.dart`.
 ///
-/// Only [SyncEntityType.move] is wired today — it is the one entity whose
-/// last-writer-wins clock (`moves.updatedAt`) exists. The remaining descriptive
+/// [SyncEntityType.move] (task 4.1) and [SyncEntityType.combo] /
+/// [SyncEntityType.comboMove] (task 4.4) are wired — each is an entity whose
+/// last-writer-wins clock (`*.updatedAt`) exists. The remaining descriptive
 /// entities gain their own `updatedAt` and a `backfillX()` here as the
-/// strangler-fig advances (tasks 2.2–2.5).
+/// strangler-fig advances. Each `backfillX()` requires its DAO, so a caller
+/// supplies only the DAOs for the entities it backfills.
 class SyncBackfillService {
   SyncBackfillService(
     this._backend,
     this._movesDao, {
+    final CombosDao? combosDao,
     final int batchSize = 200,
   }) : assert(batchSize > 0, 'batchSize must be positive'),
+       _combosDao = combosDao,
        _batchSize = batchSize;
 
   final SyncBackend _backend;
   final MovesDao _movesDao;
+  final CombosDao? _combosDao;
   final int _batchSize;
 
   /// Read every local move (including archived) and upsert it into the backend
@@ -49,6 +56,49 @@ class SyncBackfillService {
 
     return BackfillReport(
       entityType: SyncEntityType.move,
+      recordCount: records.length,
+      batchCount: batches,
+    );
+  }
+
+  /// Read every local combo and upsert it into the backend shadow (task 4.4),
+  /// with the same idempotent, non-destructive posture as [backfillMoves].
+  Future<BackfillReport> backfillCombos() async {
+    final dao = _combosDao;
+    assert(dao != null, 'backfillCombos requires a CombosDao');
+    final combos = await dao!.getAll();
+    return _pushInBatches(
+      SyncEntityType.combo,
+      combos.map(comboToSyncRecord).toList(growable: false),
+    );
+  }
+
+  /// Read every local combo step and upsert it into the backend shadow
+  /// (task 4.4). Combo steps are structural rows keyed by their own id — a real
+  /// delete crosses as a tombstone via the dual-write path, never here.
+  Future<BackfillReport> backfillComboMoves() async {
+    final dao = _combosDao;
+    assert(dao != null, 'backfillComboMoves requires a CombosDao');
+    final steps = await dao!.getAllComboMoves();
+    return _pushInBatches(
+      SyncEntityType.comboMove,
+      steps.map(comboMoveToSyncRecord).toList(growable: false),
+    );
+  }
+
+  /// Push [records] for [type] in [_batchSize] chunks; returns the report.
+  Future<BackfillReport> _pushInBatches(
+    final SyncEntityType type,
+    final List<SyncRecord> records,
+  ) async {
+    var batches = 0;
+    for (var i = 0; i < records.length; i += _batchSize) {
+      final end = (i + _batchSize < records.length) ? i + _batchSize : records.length;
+      await _backend.push(type, upserts: records.sublist(i, end));
+      batches++;
+    }
+    return BackfillReport(
+      entityType: type,
       recordCount: records.length,
       batchCount: batches,
     );

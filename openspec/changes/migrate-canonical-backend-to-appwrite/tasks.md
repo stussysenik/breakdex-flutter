@@ -577,15 +577,34 @@ rows; any need for `appwrite push tables --all` (destructive — see the ops haz
   cases): null when backend absent / kill-switch off, LWW both directions + tie + malformed
   isolation + never-apply-tombstone, cursor full-pull/advance/resume/lossless-retry, error
   propagation. No new code beyond 4.2's wiring; the real two-device soak is **M.4**.
-- [ ] 4.3 `moves` **dual-read** live: enable the hardened `pullMovesFromBackend` path
-  (H.1–H.4) with Appwrite first / Firestore fallback. Soak with both prefs on; verify two-way
-  reconcile on real data across two devices; then cut reads over (Firestore moves reads skipped).
-  Rollback at any point = flip prefs off.
-  **Wave conversion (2026-07-12):** overnight = wire + pref-gate + fixture/smoke-user
-  cross-client verification; the real two-device soak is **M.4**. Reads may NOT cut over before
-  M.4 passes — leave Appwrite-first + Firestore-fallback enabled.
-- [ ] 4.4 `combos` + `combo_moves`: add their `updatedAt` LWW clocks (additive schema migration,
+- [x] 4.4 `combos` + `combo_moves`: add their `updatedAt` LWW clocks (additive schema migration,
   backfilled from `created_at`, mirroring v23), codecs, then 4.1→4.3 for the pair.
+  **Done (wave 2026-07-12).** The pair replicates the moves cutover template end-to-end.
+  (a) **Schema v24** (`database.dart`): additive nullable `combos.updated_at` +
+  `combo_moves.updated_at`, backfilled — `combos` from its own `created_at`, `combo_moves` from
+  its **parent combo's** `created_at` (this table has no `created_at`; the FK guarantees a
+  parent, so no residual NULL). (b) **Codecs** (`sync/codecs/combo_codec.dart`): `combo` +
+  `comboMove` encode/decode inverses, id + LWW clock split out of `json`; a never-null-clock
+  guard (`createdAt` fallback for combos, epoch-0 for combo_moves). (c) **DAO stamping**
+  (`combos_dao.dart`): `_stampCombo`/`_stampComboMove` on insert + update (mirrors `MovesDao`),
+  so every mutation bumps the clock — combo_moves is stamped on insert since it has no
+  `createdAt` fallback. (d) **Backfill** (`SyncBackfillService.backfillCombos`/`backfillComboMoves`
+  via a shared `_pushInBatches`; new `combosBackfillServiceProvider`). (e) **Dual-write + dual-read**
+  (`sync_service.dart`): shared `_dualWriteEntity`/`_pullEntity` engines drive
+  `dualWriteCombos`/`dualWriteComboMoves` + `pullCombosFromBackend`/`pullComboMovesFromBackend`,
+  wired into `pushMetadata`/`pullRemote`. One **pair** kill-switch each for write
+  (`sync.combos.dualWrite.enabled`) and read (`sync.combos.dualRead.enabled`), but **two
+  independent cursors** (`combos`/`comboMoves` are distinct backend tables, audit A2). All
+  **OFF** by default; Firestore path byte-identical until the owner flips post-**M.4**. No
+  backend change needed — the `combos`/`comboMoves` Appwrite tables were provisioned in Phase 1R
+  and the `sync-push`/`sync-pull` Functions handle tables generically. **Verified:** `flutter
+  analyze` (lib/core + tests) clean; **23/23** new tests green — `migration_v24_test` (add +
+  backfill both clocks, DAO stamping, no-clobber), `combo_codec_test` (round-trip both entities +
+  guards), `combos_backfill_appwrite_test` (byte-identical wire proof, non-destructive),
+  `sync_service_combos_dual_test` (pref gating, byte-identical upserts, tombstone-for-delete,
+  swallow-on-fail, LWW both directions, independent cursors, malformed isolation). Full suite:
+  **0 regressions** (the 9 reds are pre-existing on clean HEAD — verified by stash-baseline).
+  Live smoke-user + real-data + two-device soak ride **M.3/M.4**.
 - [ ] 4.5 `reviews` → append-only `reviewEvents` (idempotent `clientOpId`); dual-write → verify →
   cut. Reviews never LWW-merge; they only append.
 - [ ] 4.6 `fsrs_cards`: derived server-side (1.4). Verify derived state matches local scheduler

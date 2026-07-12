@@ -25,15 +25,15 @@
   2026-07-12).** Read that `tasks.md`'s wave preamble FIRST (it sets the order and converts
   tonight's owner-gates), then `design.md` **D11**. `main` is the merged single source of truth
   (`main` == `phase-h-hardening` == `f87f4fc`, pushed); commit the wave on `main`.
-- **Next task:** `4.4` — `combos` + `combo_moves`: add their `updatedAt` LWW clocks (additive
-  Drift migration, backfilled from `created_at`, mirroring v23), codecs, then replicate 4.1→4.3
-  for the pair. **Done in the wave so far:** `0.5` → `0.2` → `3.3` → `3.4` → `4.1` (moves backfill)
-  → `4.2` (moves dual-write: extracted `dualWriteMoves`, pref-gated, tombstone-for-delete,
-  non-throwing; `syncBackend` wired into `SyncService`) → `4.3` (moves dual-read live-wired +
-  pref-gated OFF, Firestore-fallback intact, read cutover deferred to M.4). The **moves cutover
-  template (4.1–4.3) is complete** — 4.4/4.7 replicate it per entity. Remaining wave order:
-  `4.4–4.8` other entities → `4.9` note-entry sync → web-first `1.4`/`1.5` (cross-change) →
-  `V.1`/`V.2` sweep + wave report. **Phase M (morning 2026-07-13,
+- **Next task:** `4.5` — `reviews` → append-only `reviewEvents` (idempotent `clientOpId`);
+  dual-write → verify → cut. Reviews never LWW-merge; they only append (different shape from the
+  moves/combos LWW template — see the 4.5 task). **Done in the wave so far:** `0.5` → `0.2` →
+  `3.3` → `3.4` → `4.1`–`4.3` (moves cutover template complete) → **`4.4` (combos + combo_moves:
+  schema v24 LWW clocks, `combo_codec`, DAO stamping, backfill, dual-write + dual-read via shared
+  engines, pair kill-switches + independent cursors, all pref-OFF; 23/23 new tests green, 0
+  regressions).** Remaining wave order: `4.5` reviews → `4.6` fsrs → `4.7` decks → `4.8`
+  tombstones → `4.9` note-entry sync → web-first `1.4`/`1.5` (cross-change) → `V.1`/`V.2` sweep +
+  wave report. **Phase M (morning 2026-07-13,
   owner on the physical device)** holds every owner-in-the-loop proof: live Google login (M.2),
   real-data backfill (M.3), two-surface soak (M.4), config flip 1R.4 (M.5), web login (M.6).
 - **Owner-gated residue (parked, does not block the wave):** 0.4's Convex console delete; final

@@ -405,6 +405,17 @@ final movesBackfillServiceProvider = Provider<SyncBackfillService>((final ref) {
   );
 });
 
+/// `combos` + `combo_moves` shadow backfill (task 4.4): same non-destructive,
+/// idempotent posture as [movesBackfillServiceProvider], via `combo_codec`.
+/// Invoked explicitly (a gated flow / the M.3 real-data run), never at boot.
+final combosBackfillServiceProvider = Provider<SyncBackfillService>((final ref) {
+  return SyncBackfillService(
+    ref.watch(appwriteSyncBackendProvider),
+    ref.watch(movesDaoProvider),
+    combosDao: ref.watch(combosDaoProvider),
+  );
+});
+
 final syncServiceProvider = Provider<SyncService>((final ref) {
   return SyncService(
     authService: ref.watch(authServiceProvider),

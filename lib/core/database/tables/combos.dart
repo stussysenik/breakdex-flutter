@@ -13,6 +13,11 @@ class Combos extends Table {
   DateTimeColumn get createdAt =>
       dateTime().withDefault(currentDateAndTime)();
 
+  /// Last-writer-wins clock for backend sync (task 4.4). Nullable so the
+  /// additive v24 migration can backfill it from [createdAt]; the DAO stamps it
+  /// on every local mutation, mirroring `moves.updatedAt`.
+  DateTimeColumn get updatedAt => dateTime().nullable()();
+
   @override
   Set<Column> get primaryKey => {id};
 }
