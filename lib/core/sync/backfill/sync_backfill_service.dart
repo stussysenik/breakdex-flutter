@@ -1,10 +1,13 @@
+import '../../database/daos/combo_note_entries_dao.dart';
 import '../../database/daos/combos_dao.dart';
 import '../../database/daos/decks_dao.dart';
+import '../../database/daos/move_note_entries_dao.dart';
 import '../../database/daos/moves_dao.dart';
 import '../../database/daos/reviews_dao.dart';
 import '../codecs/combo_codec.dart';
 import '../codecs/deck_codec.dart';
 import '../codecs/move_codec.dart';
+import '../codecs/note_entry_codec.dart';
 import '../codecs/review_codec.dart';
 import '../sync_backend.dart';
 
@@ -31,11 +34,15 @@ class SyncBackfillService {
     final CombosDao? combosDao,
     final ReviewsDao? reviewsDao,
     final DecksDao? decksDao,
+    final MoveNoteEntriesDao? moveNoteEntriesDao,
+    final ComboNoteEntriesDao? comboNoteEntriesDao,
     final int batchSize = 200,
   }) : assert(batchSize > 0, 'batchSize must be positive'),
        _combosDao = combosDao,
        _reviewsDao = reviewsDao,
        _decksDao = decksDao,
+       _moveNoteEntriesDao = moveNoteEntriesDao,
+       _comboNoteEntriesDao = comboNoteEntriesDao,
        _batchSize = batchSize;
 
   final SyncBackend _backend;
@@ -43,6 +50,8 @@ class SyncBackfillService {
   final CombosDao? _combosDao;
   final ReviewsDao? _reviewsDao;
   final DecksDao? _decksDao;
+  final MoveNoteEntriesDao? _moveNoteEntriesDao;
+  final ComboNoteEntriesDao? _comboNoteEntriesDao;
   final int _batchSize;
 
   /// Read every local move (including archived) and upsert it into the backend
@@ -134,6 +143,33 @@ class SyncBackfillService {
     return _pushInBatches(
       SyncEntityType.deckMove,
       joins.map(deckMoveToSyncRecord).toList(growable: false),
+    );
+  }
+
+  /// Read every live move note entry and upsert it into the backend shadow
+  /// (task 4.9), with the same idempotent, non-destructive posture as
+  /// [backfillMoves]. Soft-hidden rows are excluded (`getAll` filters them), so
+  /// a backfill never resurrects a note deleted elsewhere.
+  Future<BackfillReport> backfillMoveNoteEntries() async {
+    final dao = _moveNoteEntriesDao;
+    assert(dao != null, 'backfillMoveNoteEntries requires a MoveNoteEntriesDao');
+    final entries = await dao!.getAll();
+    return _pushInBatches(
+      SyncEntityType.moveNoteEntry,
+      entries.map(moveNoteEntryToSyncRecord).toList(growable: false),
+    );
+  }
+
+  /// Read every live combo note entry and upsert it into the backend shadow
+  /// (task 4.9). Same posture as [backfillMoveNoteEntries].
+  Future<BackfillReport> backfillComboNoteEntries() async {
+    final dao = _comboNoteEntriesDao;
+    assert(
+        dao != null, 'backfillComboNoteEntries requires a ComboNoteEntriesDao');
+    final entries = await dao!.getAll();
+    return _pushInBatches(
+      SyncEntityType.comboNoteEntry,
+      entries.map(comboNoteEntryToSyncRecord).toList(growable: false),
     );
   }
 

@@ -100,6 +100,42 @@
             ]
         },
         {
+            "$id": "moveNoteEntries",
+            "databaseId": "breakdex",
+            "name": "moveNoteEntries",
+            "$permissions": [],
+            "rowSecurity": true,
+            "columns": [
+                { "key": "id", "type": "string", "size": 128, "required": true, "default": null },
+                { "key": "userId", "type": "string", "size": 64, "required": true, "default": null },
+                { "key": "updatedAt", "type": "integer", "required": true, "default": null },
+                { "key": "clientOpId", "type": "string", "size": 128, "required": true, "default": null },
+                { "key": "payload", "type": "string", "size": 1000000, "required": true, "default": null }
+            ],
+            "indexes": [
+                { "key": "by_user_id", "type": "key", "columns": ["userId", "id"] },
+                { "key": "by_user_updatedAt", "type": "key", "columns": ["userId", "updatedAt"] }
+            ]
+        },
+        {
+            "$id": "comboNoteEntries",
+            "databaseId": "breakdex",
+            "name": "comboNoteEntries",
+            "$permissions": [],
+            "rowSecurity": true,
+            "columns": [
+                { "key": "id", "type": "string", "size": 128, "required": true, "default": null },
+                { "key": "userId", "type": "string", "size": 64, "required": true, "default": null },
+                { "key": "updatedAt", "type": "integer", "required": true, "default": null },
+                { "key": "clientOpId", "type": "string", "size": 128, "required": true, "default": null },
+                { "key": "payload", "type": "string", "size": 1000000, "required": true, "default": null }
+            ],
+            "indexes": [
+                { "key": "by_user_id", "type": "key", "columns": ["userId", "id"] },
+                { "key": "by_user_updatedAt", "type": "key", "columns": ["userId", "updatedAt"] }
+            ]
+        },
+        {
             "$id": "reviewEvents",
             "databaseId": "breakdex",
             "name": "reviewEvents",

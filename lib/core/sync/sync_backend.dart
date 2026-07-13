@@ -29,6 +29,8 @@ enum SyncEntityType {
   fsrsCard,
   deck,
   deckMove,
+  moveNoteEntry,
+  comboNoteEntry,
 }
 
 /// An immutable upsert payload for one record.

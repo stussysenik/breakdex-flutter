@@ -12329,8 +12329,37 @@ class $MoveNoteEntriesTable extends MoveNoteEntries
     requiredDuringInsert: false,
     defaultValue: currentDateAndTime,
   );
+  static const VerificationMeta _updatedAtMeta = const VerificationMeta(
+    'updatedAt',
+  );
   @override
-  List<GeneratedColumn> get $columns => [id, moveId, body, createdAt];
+  late final GeneratedColumn<DateTime> updatedAt = GeneratedColumn<DateTime>(
+    'updated_at',
+    aliasedName,
+    true,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _deletedAtMeta = const VerificationMeta(
+    'deletedAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> deletedAt = GeneratedColumn<DateTime>(
+    'deleted_at',
+    aliasedName,
+    true,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    moveId,
+    body,
+    createdAt,
+    updatedAt,
+    deletedAt,
+  ];
   @override
   String get aliasedName => _alias ?? actualTableName;
   @override
@@ -12370,6 +12399,18 @@ class $MoveNoteEntriesTable extends MoveNoteEntries
         createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta),
       );
     }
+    if (data.containsKey('updated_at')) {
+      context.handle(
+        _updatedAtMeta,
+        updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta),
+      );
+    }
+    if (data.containsKey('deleted_at')) {
+      context.handle(
+        _deletedAtMeta,
+        deletedAt.isAcceptableOrUnknown(data['deleted_at']!, _deletedAtMeta),
+      );
+    }
     return context;
   }
 
@@ -12395,6 +12436,14 @@ class $MoveNoteEntriesTable extends MoveNoteEntries
         DriftSqlType.dateTime,
         data['${effectivePrefix}created_at'],
       )!,
+      updatedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}updated_at'],
+      ),
+      deletedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}deleted_at'],
+      ),
     );
   }
 
@@ -12409,11 +12458,21 @@ class MoveNoteEntry extends DataClass implements Insertable<MoveNoteEntry> {
   final String moveId;
   final String body;
   final DateTime createdAt;
+
+  /// Last-writer-wins clock for Appwrite sync (task 4.9). Nullable + backfilled
+  /// from [createdAt] in the v27 migration; stamped on every write by the DAO.
+  final DateTime? updatedAt;
+
+  /// Reversible soft-hide for an inbound sync tombstone (task 4.9). NULL = live;
+  /// a remote delete stamps it instead of hard-deleting (never orphan state).
+  final DateTime? deletedAt;
   const MoveNoteEntry({
     required this.id,
     required this.moveId,
     required this.body,
     required this.createdAt,
+    this.updatedAt,
+    this.deletedAt,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -12422,6 +12481,12 @@ class MoveNoteEntry extends DataClass implements Insertable<MoveNoteEntry> {
     map['move_id'] = Variable<String>(moveId);
     map['body'] = Variable<String>(body);
     map['created_at'] = Variable<DateTime>(createdAt);
+    if (!nullToAbsent || updatedAt != null) {
+      map['updated_at'] = Variable<DateTime>(updatedAt);
+    }
+    if (!nullToAbsent || deletedAt != null) {
+      map['deleted_at'] = Variable<DateTime>(deletedAt);
+    }
     return map;
   }
 
@@ -12431,6 +12496,12 @@ class MoveNoteEntry extends DataClass implements Insertable<MoveNoteEntry> {
       moveId: Value(moveId),
       body: Value(body),
       createdAt: Value(createdAt),
+      updatedAt: updatedAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(updatedAt),
+      deletedAt: deletedAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(deletedAt),
     );
   }
 
@@ -12444,6 +12515,8 @@ class MoveNoteEntry extends DataClass implements Insertable<MoveNoteEntry> {
       moveId: serializer.fromJson<String>(json['moveId']),
       body: serializer.fromJson<String>(json['body']),
       createdAt: serializer.fromJson<DateTime>(json['createdAt']),
+      updatedAt: serializer.fromJson<DateTime?>(json['updatedAt']),
+      deletedAt: serializer.fromJson<DateTime?>(json['deletedAt']),
     );
   }
   @override
@@ -12454,6 +12527,8 @@ class MoveNoteEntry extends DataClass implements Insertable<MoveNoteEntry> {
       'moveId': serializer.toJson<String>(moveId),
       'body': serializer.toJson<String>(body),
       'createdAt': serializer.toJson<DateTime>(createdAt),
+      'updatedAt': serializer.toJson<DateTime?>(updatedAt),
+      'deletedAt': serializer.toJson<DateTime?>(deletedAt),
     };
   }
 
@@ -12462,11 +12537,15 @@ class MoveNoteEntry extends DataClass implements Insertable<MoveNoteEntry> {
     String? moveId,
     String? body,
     DateTime? createdAt,
+    Value<DateTime?> updatedAt = const Value.absent(),
+    Value<DateTime?> deletedAt = const Value.absent(),
   }) => MoveNoteEntry(
     id: id ?? this.id,
     moveId: moveId ?? this.moveId,
     body: body ?? this.body,
     createdAt: createdAt ?? this.createdAt,
+    updatedAt: updatedAt.present ? updatedAt.value : this.updatedAt,
+    deletedAt: deletedAt.present ? deletedAt.value : this.deletedAt,
   );
   MoveNoteEntry copyWithCompanion(MoveNoteEntriesCompanion data) {
     return MoveNoteEntry(
@@ -12474,6 +12553,8 @@ class MoveNoteEntry extends DataClass implements Insertable<MoveNoteEntry> {
       moveId: data.moveId.present ? data.moveId.value : this.moveId,
       body: data.body.present ? data.body.value : this.body,
       createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+      updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
+      deletedAt: data.deletedAt.present ? data.deletedAt.value : this.deletedAt,
     );
   }
 
@@ -12483,13 +12564,16 @@ class MoveNoteEntry extends DataClass implements Insertable<MoveNoteEntry> {
           ..write('id: $id, ')
           ..write('moveId: $moveId, ')
           ..write('body: $body, ')
-          ..write('createdAt: $createdAt')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('deletedAt: $deletedAt')
           ..write(')'))
         .toString();
   }
 
   @override
-  int get hashCode => Object.hash(id, moveId, body, createdAt);
+  int get hashCode =>
+      Object.hash(id, moveId, body, createdAt, updatedAt, deletedAt);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -12497,7 +12581,9 @@ class MoveNoteEntry extends DataClass implements Insertable<MoveNoteEntry> {
           other.id == this.id &&
           other.moveId == this.moveId &&
           other.body == this.body &&
-          other.createdAt == this.createdAt);
+          other.createdAt == this.createdAt &&
+          other.updatedAt == this.updatedAt &&
+          other.deletedAt == this.deletedAt);
 }
 
 class MoveNoteEntriesCompanion extends UpdateCompanion<MoveNoteEntry> {
@@ -12505,12 +12591,16 @@ class MoveNoteEntriesCompanion extends UpdateCompanion<MoveNoteEntry> {
   final Value<String> moveId;
   final Value<String> body;
   final Value<DateTime> createdAt;
+  final Value<DateTime?> updatedAt;
+  final Value<DateTime?> deletedAt;
   final Value<int> rowid;
   const MoveNoteEntriesCompanion({
     this.id = const Value.absent(),
     this.moveId = const Value.absent(),
     this.body = const Value.absent(),
     this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.deletedAt = const Value.absent(),
     this.rowid = const Value.absent(),
   });
   MoveNoteEntriesCompanion.insert({
@@ -12518,6 +12608,8 @@ class MoveNoteEntriesCompanion extends UpdateCompanion<MoveNoteEntry> {
     required String moveId,
     required String body,
     this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.deletedAt = const Value.absent(),
     this.rowid = const Value.absent(),
   }) : id = Value(id),
        moveId = Value(moveId),
@@ -12527,6 +12619,8 @@ class MoveNoteEntriesCompanion extends UpdateCompanion<MoveNoteEntry> {
     Expression<String>? moveId,
     Expression<String>? body,
     Expression<DateTime>? createdAt,
+    Expression<DateTime>? updatedAt,
+    Expression<DateTime>? deletedAt,
     Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
@@ -12534,6 +12628,8 @@ class MoveNoteEntriesCompanion extends UpdateCompanion<MoveNoteEntry> {
       if (moveId != null) 'move_id': moveId,
       if (body != null) 'body': body,
       if (createdAt != null) 'created_at': createdAt,
+      if (updatedAt != null) 'updated_at': updatedAt,
+      if (deletedAt != null) 'deleted_at': deletedAt,
       if (rowid != null) 'rowid': rowid,
     });
   }
@@ -12543,6 +12639,8 @@ class MoveNoteEntriesCompanion extends UpdateCompanion<MoveNoteEntry> {
     Value<String>? moveId,
     Value<String>? body,
     Value<DateTime>? createdAt,
+    Value<DateTime?>? updatedAt,
+    Value<DateTime?>? deletedAt,
     Value<int>? rowid,
   }) {
     return MoveNoteEntriesCompanion(
@@ -12550,6 +12648,8 @@ class MoveNoteEntriesCompanion extends UpdateCompanion<MoveNoteEntry> {
       moveId: moveId ?? this.moveId,
       body: body ?? this.body,
       createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
+      deletedAt: deletedAt ?? this.deletedAt,
       rowid: rowid ?? this.rowid,
     );
   }
@@ -12569,6 +12669,12 @@ class MoveNoteEntriesCompanion extends UpdateCompanion<MoveNoteEntry> {
     if (createdAt.present) {
       map['created_at'] = Variable<DateTime>(createdAt.value);
     }
+    if (updatedAt.present) {
+      map['updated_at'] = Variable<DateTime>(updatedAt.value);
+    }
+    if (deletedAt.present) {
+      map['deleted_at'] = Variable<DateTime>(deletedAt.value);
+    }
     if (rowid.present) {
       map['rowid'] = Variable<int>(rowid.value);
     }
@@ -12582,6 +12688,8 @@ class MoveNoteEntriesCompanion extends UpdateCompanion<MoveNoteEntry> {
           ..write('moveId: $moveId, ')
           ..write('body: $body, ')
           ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('deletedAt: $deletedAt, ')
           ..write('rowid: $rowid')
           ..write(')'))
         .toString();
@@ -12670,6 +12778,28 @@ class $ComboNoteEntriesTable extends ComboNoteEntries
     requiredDuringInsert: false,
     defaultValue: currentDateAndTime,
   );
+  static const VerificationMeta _updatedAtMeta = const VerificationMeta(
+    'updatedAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> updatedAt = GeneratedColumn<DateTime>(
+    'updated_at',
+    aliasedName,
+    true,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _deletedAtMeta = const VerificationMeta(
+    'deletedAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> deletedAt = GeneratedColumn<DateTime>(
+    'deleted_at',
+    aliasedName,
+    true,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+  );
   @override
   List<GeneratedColumn> get $columns => [
     id,
@@ -12679,6 +12809,8 @@ class $ComboNoteEntriesTable extends ComboNoteEntries
     videoPath,
     videoHash,
     createdAt,
+    updatedAt,
+    deletedAt,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -12737,6 +12869,18 @@ class $ComboNoteEntriesTable extends ComboNoteEntries
         createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta),
       );
     }
+    if (data.containsKey('updated_at')) {
+      context.handle(
+        _updatedAtMeta,
+        updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta),
+      );
+    }
+    if (data.containsKey('deleted_at')) {
+      context.handle(
+        _deletedAtMeta,
+        deletedAt.isAcceptableOrUnknown(data['deleted_at']!, _deletedAtMeta),
+      );
+    }
     return context;
   }
 
@@ -12774,6 +12918,14 @@ class $ComboNoteEntriesTable extends ComboNoteEntries
         DriftSqlType.dateTime,
         data['${effectivePrefix}created_at'],
       )!,
+      updatedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}updated_at'],
+      ),
+      deletedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}deleted_at'],
+      ),
     );
   }
 
@@ -12797,6 +12949,14 @@ class ComboNoteEntry extends DataClass implements Insertable<ComboNoteEntry> {
   /// Content hash into the content-addressable master, when known.
   final String? videoHash;
   final DateTime createdAt;
+
+  /// Last-writer-wins clock for Appwrite sync (task 4.9). Nullable + backfilled
+  /// from [createdAt] in the v27 migration; stamped on every write by the DAO.
+  final DateTime? updatedAt;
+
+  /// Reversible soft-hide for an inbound sync tombstone (task 4.9). NULL = live;
+  /// a remote delete stamps it instead of hard-deleting (never orphan state).
+  final DateTime? deletedAt;
   const ComboNoteEntry({
     required this.id,
     required this.comboId,
@@ -12805,6 +12965,8 @@ class ComboNoteEntry extends DataClass implements Insertable<ComboNoteEntry> {
     this.videoPath,
     this.videoHash,
     required this.createdAt,
+    this.updatedAt,
+    this.deletedAt,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -12820,6 +12982,12 @@ class ComboNoteEntry extends DataClass implements Insertable<ComboNoteEntry> {
       map['video_hash'] = Variable<String>(videoHash);
     }
     map['created_at'] = Variable<DateTime>(createdAt);
+    if (!nullToAbsent || updatedAt != null) {
+      map['updated_at'] = Variable<DateTime>(updatedAt);
+    }
+    if (!nullToAbsent || deletedAt != null) {
+      map['deleted_at'] = Variable<DateTime>(deletedAt);
+    }
     return map;
   }
 
@@ -12836,6 +13004,12 @@ class ComboNoteEntry extends DataClass implements Insertable<ComboNoteEntry> {
           ? const Value.absent()
           : Value(videoHash),
       createdAt: Value(createdAt),
+      updatedAt: updatedAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(updatedAt),
+      deletedAt: deletedAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(deletedAt),
     );
   }
 
@@ -12852,6 +13026,8 @@ class ComboNoteEntry extends DataClass implements Insertable<ComboNoteEntry> {
       videoPath: serializer.fromJson<String?>(json['videoPath']),
       videoHash: serializer.fromJson<String?>(json['videoHash']),
       createdAt: serializer.fromJson<DateTime>(json['createdAt']),
+      updatedAt: serializer.fromJson<DateTime?>(json['updatedAt']),
+      deletedAt: serializer.fromJson<DateTime?>(json['deletedAt']),
     );
   }
   @override
@@ -12865,6 +13041,8 @@ class ComboNoteEntry extends DataClass implements Insertable<ComboNoteEntry> {
       'videoPath': serializer.toJson<String?>(videoPath),
       'videoHash': serializer.toJson<String?>(videoHash),
       'createdAt': serializer.toJson<DateTime>(createdAt),
+      'updatedAt': serializer.toJson<DateTime?>(updatedAt),
+      'deletedAt': serializer.toJson<DateTime?>(deletedAt),
     };
   }
 
@@ -12876,6 +13054,8 @@ class ComboNoteEntry extends DataClass implements Insertable<ComboNoteEntry> {
     Value<String?> videoPath = const Value.absent(),
     Value<String?> videoHash = const Value.absent(),
     DateTime? createdAt,
+    Value<DateTime?> updatedAt = const Value.absent(),
+    Value<DateTime?> deletedAt = const Value.absent(),
   }) => ComboNoteEntry(
     id: id ?? this.id,
     comboId: comboId ?? this.comboId,
@@ -12884,6 +13064,8 @@ class ComboNoteEntry extends DataClass implements Insertable<ComboNoteEntry> {
     videoPath: videoPath.present ? videoPath.value : this.videoPath,
     videoHash: videoHash.present ? videoHash.value : this.videoHash,
     createdAt: createdAt ?? this.createdAt,
+    updatedAt: updatedAt.present ? updatedAt.value : this.updatedAt,
+    deletedAt: deletedAt.present ? deletedAt.value : this.deletedAt,
   );
   ComboNoteEntry copyWithCompanion(ComboNoteEntriesCompanion data) {
     return ComboNoteEntry(
@@ -12894,6 +13076,8 @@ class ComboNoteEntry extends DataClass implements Insertable<ComboNoteEntry> {
       videoPath: data.videoPath.present ? data.videoPath.value : this.videoPath,
       videoHash: data.videoHash.present ? data.videoHash.value : this.videoHash,
       createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+      updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
+      deletedAt: data.deletedAt.present ? data.deletedAt.value : this.deletedAt,
     );
   }
 
@@ -12906,14 +13090,25 @@ class ComboNoteEntry extends DataClass implements Insertable<ComboNoteEntry> {
           ..write('kind: $kind, ')
           ..write('videoPath: $videoPath, ')
           ..write('videoHash: $videoHash, ')
-          ..write('createdAt: $createdAt')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('deletedAt: $deletedAt')
           ..write(')'))
         .toString();
   }
 
   @override
-  int get hashCode =>
-      Object.hash(id, comboId, body, kind, videoPath, videoHash, createdAt);
+  int get hashCode => Object.hash(
+    id,
+    comboId,
+    body,
+    kind,
+    videoPath,
+    videoHash,
+    createdAt,
+    updatedAt,
+    deletedAt,
+  );
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -12924,7 +13119,9 @@ class ComboNoteEntry extends DataClass implements Insertable<ComboNoteEntry> {
           other.kind == this.kind &&
           other.videoPath == this.videoPath &&
           other.videoHash == this.videoHash &&
-          other.createdAt == this.createdAt);
+          other.createdAt == this.createdAt &&
+          other.updatedAt == this.updatedAt &&
+          other.deletedAt == this.deletedAt);
 }
 
 class ComboNoteEntriesCompanion extends UpdateCompanion<ComboNoteEntry> {
@@ -12935,6 +13132,8 @@ class ComboNoteEntriesCompanion extends UpdateCompanion<ComboNoteEntry> {
   final Value<String?> videoPath;
   final Value<String?> videoHash;
   final Value<DateTime> createdAt;
+  final Value<DateTime?> updatedAt;
+  final Value<DateTime?> deletedAt;
   final Value<int> rowid;
   const ComboNoteEntriesCompanion({
     this.id = const Value.absent(),
@@ -12944,6 +13143,8 @@ class ComboNoteEntriesCompanion extends UpdateCompanion<ComboNoteEntry> {
     this.videoPath = const Value.absent(),
     this.videoHash = const Value.absent(),
     this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.deletedAt = const Value.absent(),
     this.rowid = const Value.absent(),
   });
   ComboNoteEntriesCompanion.insert({
@@ -12954,6 +13155,8 @@ class ComboNoteEntriesCompanion extends UpdateCompanion<ComboNoteEntry> {
     this.videoPath = const Value.absent(),
     this.videoHash = const Value.absent(),
     this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.deletedAt = const Value.absent(),
     this.rowid = const Value.absent(),
   }) : id = Value(id),
        comboId = Value(comboId),
@@ -12966,6 +13169,8 @@ class ComboNoteEntriesCompanion extends UpdateCompanion<ComboNoteEntry> {
     Expression<String>? videoPath,
     Expression<String>? videoHash,
     Expression<DateTime>? createdAt,
+    Expression<DateTime>? updatedAt,
+    Expression<DateTime>? deletedAt,
     Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
@@ -12976,6 +13181,8 @@ class ComboNoteEntriesCompanion extends UpdateCompanion<ComboNoteEntry> {
       if (videoPath != null) 'video_path': videoPath,
       if (videoHash != null) 'video_hash': videoHash,
       if (createdAt != null) 'created_at': createdAt,
+      if (updatedAt != null) 'updated_at': updatedAt,
+      if (deletedAt != null) 'deleted_at': deletedAt,
       if (rowid != null) 'rowid': rowid,
     });
   }
@@ -12988,6 +13195,8 @@ class ComboNoteEntriesCompanion extends UpdateCompanion<ComboNoteEntry> {
     Value<String?>? videoPath,
     Value<String?>? videoHash,
     Value<DateTime>? createdAt,
+    Value<DateTime?>? updatedAt,
+    Value<DateTime?>? deletedAt,
     Value<int>? rowid,
   }) {
     return ComboNoteEntriesCompanion(
@@ -12998,6 +13207,8 @@ class ComboNoteEntriesCompanion extends UpdateCompanion<ComboNoteEntry> {
       videoPath: videoPath ?? this.videoPath,
       videoHash: videoHash ?? this.videoHash,
       createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
+      deletedAt: deletedAt ?? this.deletedAt,
       rowid: rowid ?? this.rowid,
     );
   }
@@ -13026,6 +13237,12 @@ class ComboNoteEntriesCompanion extends UpdateCompanion<ComboNoteEntry> {
     if (createdAt.present) {
       map['created_at'] = Variable<DateTime>(createdAt.value);
     }
+    if (updatedAt.present) {
+      map['updated_at'] = Variable<DateTime>(updatedAt.value);
+    }
+    if (deletedAt.present) {
+      map['deleted_at'] = Variable<DateTime>(deletedAt.value);
+    }
     if (rowid.present) {
       map['rowid'] = Variable<int>(rowid.value);
     }
@@ -13042,6 +13259,8 @@ class ComboNoteEntriesCompanion extends UpdateCompanion<ComboNoteEntry> {
           ..write('videoPath: $videoPath, ')
           ..write('videoHash: $videoHash, ')
           ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('deletedAt: $deletedAt, ')
           ..write('rowid: $rowid')
           ..write(')'))
         .toString();
@@ -23085,6 +23304,8 @@ typedef $$MoveNoteEntriesTableCreateCompanionBuilder =
       required String moveId,
       required String body,
       Value<DateTime> createdAt,
+      Value<DateTime?> updatedAt,
+      Value<DateTime?> deletedAt,
       Value<int> rowid,
     });
 typedef $$MoveNoteEntriesTableUpdateCompanionBuilder =
@@ -23093,6 +23314,8 @@ typedef $$MoveNoteEntriesTableUpdateCompanionBuilder =
       Value<String> moveId,
       Value<String> body,
       Value<DateTime> createdAt,
+      Value<DateTime?> updatedAt,
+      Value<DateTime?> deletedAt,
       Value<int> rowid,
     });
 
@@ -23148,6 +23371,16 @@ class $$MoveNoteEntriesTableFilterComposer
     builder: (column) => ColumnFilters(column),
   );
 
+  ColumnFilters<DateTime> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get deletedAt => $composableBuilder(
+    column: $table.deletedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
   $$MovesTableFilterComposer get moveId {
     final $$MovesTableFilterComposer composer = $composerBuilder(
       composer: this,
@@ -23196,6 +23429,16 @@ class $$MoveNoteEntriesTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<DateTime> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get deletedAt => $composableBuilder(
+    column: $table.deletedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   $$MovesTableOrderingComposer get moveId {
     final $$MovesTableOrderingComposer composer = $composerBuilder(
       composer: this,
@@ -23237,6 +23480,12 @@ class $$MoveNoteEntriesTableAnnotationComposer
 
   GeneratedColumn<DateTime> get createdAt =>
       $composableBuilder(column: $table.createdAt, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get updatedAt =>
+      $composableBuilder(column: $table.updatedAt, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get deletedAt =>
+      $composableBuilder(column: $table.deletedAt, builder: (column) => column);
 
   $$MovesTableAnnotationComposer get moveId {
     final $$MovesTableAnnotationComposer composer = $composerBuilder(
@@ -23296,12 +23545,16 @@ class $$MoveNoteEntriesTableTableManager
                 Value<String> moveId = const Value.absent(),
                 Value<String> body = const Value.absent(),
                 Value<DateTime> createdAt = const Value.absent(),
+                Value<DateTime?> updatedAt = const Value.absent(),
+                Value<DateTime?> deletedAt = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => MoveNoteEntriesCompanion(
                 id: id,
                 moveId: moveId,
                 body: body,
                 createdAt: createdAt,
+                updatedAt: updatedAt,
+                deletedAt: deletedAt,
                 rowid: rowid,
               ),
           createCompanionCallback:
@@ -23310,12 +23563,16 @@ class $$MoveNoteEntriesTableTableManager
                 required String moveId,
                 required String body,
                 Value<DateTime> createdAt = const Value.absent(),
+                Value<DateTime?> updatedAt = const Value.absent(),
+                Value<DateTime?> deletedAt = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => MoveNoteEntriesCompanion.insert(
                 id: id,
                 moveId: moveId,
                 body: body,
                 createdAt: createdAt,
+                updatedAt: updatedAt,
+                deletedAt: deletedAt,
                 rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0
@@ -23396,6 +23653,8 @@ typedef $$ComboNoteEntriesTableCreateCompanionBuilder =
       Value<String?> videoPath,
       Value<String?> videoHash,
       Value<DateTime> createdAt,
+      Value<DateTime?> updatedAt,
+      Value<DateTime?> deletedAt,
       Value<int> rowid,
     });
 typedef $$ComboNoteEntriesTableUpdateCompanionBuilder =
@@ -23407,6 +23666,8 @@ typedef $$ComboNoteEntriesTableUpdateCompanionBuilder =
       Value<String?> videoPath,
       Value<String?> videoHash,
       Value<DateTime> createdAt,
+      Value<DateTime?> updatedAt,
+      Value<DateTime?> deletedAt,
       Value<int> rowid,
     });
 
@@ -23477,6 +23738,16 @@ class $$ComboNoteEntriesTableFilterComposer
     builder: (column) => ColumnFilters(column),
   );
 
+  ColumnFilters<DateTime> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get deletedAt => $composableBuilder(
+    column: $table.deletedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
   $$CombosTableFilterComposer get comboId {
     final $$CombosTableFilterComposer composer = $composerBuilder(
       composer: this,
@@ -23540,6 +23811,16 @@ class $$ComboNoteEntriesTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<DateTime> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get deletedAt => $composableBuilder(
+    column: $table.deletedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   $$CombosTableOrderingComposer get comboId {
     final $$CombosTableOrderingComposer composer = $composerBuilder(
       composer: this,
@@ -23590,6 +23871,12 @@ class $$ComboNoteEntriesTableAnnotationComposer
 
   GeneratedColumn<DateTime> get createdAt =>
       $composableBuilder(column: $table.createdAt, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get updatedAt =>
+      $composableBuilder(column: $table.updatedAt, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get deletedAt =>
+      $composableBuilder(column: $table.deletedAt, builder: (column) => column);
 
   $$CombosTableAnnotationComposer get comboId {
     final $$CombosTableAnnotationComposer composer = $composerBuilder(
@@ -23652,6 +23939,8 @@ class $$ComboNoteEntriesTableTableManager
                 Value<String?> videoPath = const Value.absent(),
                 Value<String?> videoHash = const Value.absent(),
                 Value<DateTime> createdAt = const Value.absent(),
+                Value<DateTime?> updatedAt = const Value.absent(),
+                Value<DateTime?> deletedAt = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => ComboNoteEntriesCompanion(
                 id: id,
@@ -23661,6 +23950,8 @@ class $$ComboNoteEntriesTableTableManager
                 videoPath: videoPath,
                 videoHash: videoHash,
                 createdAt: createdAt,
+                updatedAt: updatedAt,
+                deletedAt: deletedAt,
                 rowid: rowid,
               ),
           createCompanionCallback:
@@ -23672,6 +23963,8 @@ class $$ComboNoteEntriesTableTableManager
                 Value<String?> videoPath = const Value.absent(),
                 Value<String?> videoHash = const Value.absent(),
                 Value<DateTime> createdAt = const Value.absent(),
+                Value<DateTime?> updatedAt = const Value.absent(),
+                Value<DateTime?> deletedAt = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => ComboNoteEntriesCompanion.insert(
                 id: id,
@@ -23681,6 +23974,8 @@ class $$ComboNoteEntriesTableTableManager
                 videoPath: videoPath,
                 videoHash: videoHash,
                 createdAt: createdAt,
+                updatedAt: updatedAt,
+                deletedAt: deletedAt,
                 rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0

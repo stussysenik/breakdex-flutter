@@ -104,7 +104,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.forTesting(super.e);
 
   @override
-  int get schemaVersion => 26;
+  int get schemaVersion => 27;
 
   /// Column names currently present on [table] — used to keep migrations
   /// idempotent across legacy databases and tables created mid-upgrade
@@ -702,6 +702,33 @@ class AppDatabase extends _$AppDatabase {
           'deck_moves',
         ]) {
           final cols = await _columnNames(table);
+          if (!cols.contains('deleted_at')) {
+            await customStatement(
+              'ALTER TABLE $table ADD COLUMN deleted_at INTEGER',
+            );
+          }
+        }
+      }
+
+      if (from < 27) {
+        // --- Schema v27: note-entry LWW clocks + soft-hide for the Appwrite
+        // strangler-fig (task 4.9) ---
+        //
+        // MoveNoteEntries/ComboNoteEntries become Appwrite-only synced entities.
+        // Additive + backfilled, mirroring v23 (seed `updated_at` from
+        // `created_at`, the best proxy for last-modified) and v26 (nullable
+        // `deleted_at`; NULL = live, the correct default for every existing row,
+        // so no backfill). Idempotent across legacy DBs via the presence guard.
+        for (final table in const ['move_note_entries', 'combo_note_entries']) {
+          final cols = await _columnNames(table);
+          if (!cols.contains('updated_at')) {
+            await customStatement(
+              'ALTER TABLE $table ADD COLUMN updated_at INTEGER',
+            );
+          }
+          await customStatement(
+            'UPDATE $table SET updated_at = created_at WHERE updated_at IS NULL',
+          );
           if (!cols.contains('deleted_at')) {
             await customStatement(
               'ALTER TABLE $table ADD COLUMN deleted_at INTEGER',

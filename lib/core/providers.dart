@@ -440,6 +440,20 @@ final decksBackfillServiceProvider = Provider<SyncBackfillService>((final ref) {
   );
 });
 
+/// `moveNoteEntries` + `comboNoteEntries` shadow backfill (task 4.9): Appwrite-only
+/// (no Firestore leg), same non-destructive, idempotent posture as
+/// [movesBackfillServiceProvider], via `note_entry_codec`. Invoked explicitly (a
+/// gated flow / the M.3 real-data run), never at boot.
+final noteEntriesBackfillServiceProvider =
+    Provider<SyncBackfillService>((final ref) {
+  return SyncBackfillService(
+    ref.watch(appwriteSyncBackendProvider),
+    ref.watch(movesDaoProvider),
+    moveNoteEntriesDao: ref.watch(moveNoteEntriesDaoProvider),
+    comboNoteEntriesDao: ref.watch(comboNoteEntriesDaoProvider),
+  );
+});
+
 final syncServiceProvider = Provider<SyncService>((final ref) {
   return SyncService(
     authService: ref.watch(authServiceProvider),

@@ -36,7 +36,9 @@ class _FakeStore implements PullStore {
 
 void main() {
   group('validatePullTable', () {
-    test('accepts every descriptive table', () {
+    test('accepts every descriptive table (incl. note entries, task 4.9)', () {
+      expect(descriptiveTables,
+          containsAll(<String>['moveNoteEntries', 'comboNoteEntries']));
       for (final t in descriptiveTables) {
         expect(() => validatePullTable(t), returnsNormally);
       }

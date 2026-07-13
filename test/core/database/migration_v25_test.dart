@@ -145,6 +145,28 @@ NativeDatabase v24Database() {
         "INSERT INTO deck_moves (deck_id, move_id) VALUES ('d1', 'm2')",
       );
 
+      // Note-entry tables exist from v18/v19 (+ kind/video from v22); the v27
+      // migration adds their updated_at/deleted_at, so they must be present here.
+      rawDb.execute('''
+        CREATE TABLE move_note_entries (
+          id TEXT PRIMARY KEY,
+          move_id TEXT NOT NULL,
+          body TEXT NOT NULL,
+          created_at INTEGER NOT NULL DEFAULT (strftime('%s', 'now'))
+        )
+      ''');
+      rawDb.execute('''
+        CREATE TABLE combo_note_entries (
+          id TEXT PRIMARY KEY,
+          combo_id TEXT NOT NULL,
+          body TEXT NOT NULL,
+          kind TEXT NOT NULL DEFAULT 'jot',
+          video_path TEXT,
+          video_hash TEXT,
+          created_at INTEGER NOT NULL DEFAULT (strftime('%s', 'now'))
+        )
+      ''');
+
       rawDb.execute('PRAGMA user_version = 24');
     },
   );

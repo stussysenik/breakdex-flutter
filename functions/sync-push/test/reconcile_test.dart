@@ -338,7 +338,11 @@ void main() {
       );
     });
 
-    test('all five descriptive tables are accepted', () async {
+    test('all descriptive tables are accepted (incl. note entries, task 4.9)',
+        () async {
+      // Sanity: the note-entry tables (4.9) are part of the allowlist.
+      expect(descriptiveTables,
+          containsAll(<String>['moveNoteEntries', 'comboNoteEntries']));
       for (final t in descriptiveTables) {
         final r = await applyPush(
           store,

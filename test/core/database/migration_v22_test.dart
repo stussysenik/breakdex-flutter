@@ -61,6 +61,16 @@ NativeDatabase v21Database({final bool legacyCreatedAt = false}) {
           created_at INTEGER NOT NULL DEFAULT (strftime('%s', 'now'))
         )
       ''');
+      // move_note_entries exists from v18; the v27 migration adds its
+      // updated_at/deleted_at, so it must be present in this v21 fixture too.
+      rawDb.execute('''
+        CREATE TABLE move_note_entries (
+          id TEXT PRIMARY KEY,
+          move_id TEXT NOT NULL,
+          body TEXT NOT NULL,
+          created_at INTEGER NOT NULL DEFAULT (strftime('%s', 'now'))
+        )
+      ''');
 
       rawDb.execute('''
         CREATE TABLE reviews (

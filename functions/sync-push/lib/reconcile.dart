@@ -20,15 +20,19 @@
 /// a client-supplied field — every store key is scoped to it (per-user rows).
 library;
 
-/// The five descriptive last-writer-wins tables `sync-push` serves — the exact
-/// `descriptiveTable` union from `convex/sync.ts`. `reviewEvents` (append-only)
-/// and `fsrsCards` (server-derived) are handled elsewhere and rejected here.
+/// The descriptive last-writer-wins tables `sync-push` serves — the
+/// `descriptiveTable` union from `convex/sync.ts` plus the two Appwrite-only
+/// note-entry tables (task 4.9; never in the Convex era). `reviewEvents`
+/// (append-only) and `fsrsCards` (server-derived) are handled elsewhere and
+/// rejected here.
 const Set<String> descriptiveTables = {
   'moves',
   'combos',
   'comboMoves',
   'decks',
   'deckMoves',
+  'moveNoteEntries',
+  'comboNoteEntries',
 };
 
 /// A client-authored upsert for one descriptive record. Wire shape mirrors

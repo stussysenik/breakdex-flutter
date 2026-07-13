@@ -733,7 +733,7 @@ rows; any need for `appwrite push tables --all` (destructive — see the ops haz
   soft-hide contract; all 124 database/migration + 45 sync-service tests green; full suite **0
   regressions** (same 9 pre-existing reds — Riverpod/timer, unrelated). Live cross-device delete
   soak rides **M.4**. Cutovers may now be called complete (pref still OFF until M.4).
-- [ ] 4.9 **Note entries become synced entities (wave scope 2026-07-12 — "notes work
+- [x] 4.9 **Note entries become synced entities (wave scope 2026-07-12 — "notes work
   everywhere").** `MoveNoteEntries`/`ComboNoteEntries`
   (`lib/core/database/tables/{move,combo}_note_entries.dart`, DAOs at `providers.dart:315-321`)
   are device-only today: absent from `SyncEntityType`, no Appwrite tables, no codecs. (The
@@ -753,6 +753,46 @@ rows; any need for `appwrite push tables --all` (destructive — see the ops haz
   repository layer today — add the equivalent hook, matching the existing pattern). (f) Verify:
   codec round-trip, LWW, tombstone-delete, idempotent replay (unit) + smoke-user live e2e;
   cross-device note visibility rides M.4's list.
+  **Done (wave 2026-07-13).** The pair replicates the decks strangler (4.7) — **Appwrite-only
+  (D11)**: note entries never had a Firestore leg, so no dual-write ladder, only LWW + tombstone
+  + `clientOpId`. Both tables carry a synthetic `id`, so the wire identity is that id (simpler
+  than decks' composite key). (a) **Schema v27** (`database.dart`; the migration comment's
+  "v8→v9" was stale — v26 was the tip): additive nullable `updated_at` (backfilled from
+  `created_at`, mirroring v23) + `deleted_at` (v26-style soft-hide, NULL = live) on both note
+  tables; presence-guarded/idempotent. (b) **Codecs** (`sync/codecs/note_entry_codec.dart`):
+  `moveNoteEntry`/`comboNoteEntry` encode/decode inverses, id + clock split out of `json`,
+  createdAt-fallback clock guard; combo notes carry `kind`/`videoPath`/`videoHash`. Added
+  `SyncEntityType.moveNoteEntry`/`comboNoteEntry` + the `AppwriteSyncBackend._descriptiveTable`
+  map + both push/pull switch arms. (c) **`appwrite.config.json`**: `moveNoteEntries` +
+  `comboNoteEntries` descriptive tables authored (envelope + `by_user_id`/`by_user_updatedAt`
+  indexes, `rowSecurity: true`) — **live provisioning via targeted `tables-db create-*` rides
+  M** (matches how 4.1's live push folded into M.3; no `push tables --all`, ops hazard). (d)
+  Functions' `descriptiveTables` allowlist (`sync-push/lib/reconcile.dart`,
+  `sync-pull/lib/pull.dart`) extended to 7 + their tests (`containsAll` the two note tables);
+  `dart test` 19/19 + 21/21 green. **Live Function redeploy (`push functions --activate`) rides
+  M** (deployed contract already 1.5-proven; note-entry sync is pref-OFF until M.4). (e)
+  **DAO dirty-tracking** (`{move,combo}_note_entries_dao.dart`): `_stamp` updatedAt on write +
+  `_sync.logChange` create/update/delete (note DAOs bypass `SyncAware*`, so the hook lives here,
+  matching decks) + `deleted_at IS NULL` read-filters on every feed (`getBy*`/`watchBy*`/
+  `watchRecentTakeRefs`) + `getAll`/`getById`. (f) **Dual-write + dual-read + tombstone-apply**
+  (`sync_service.dart`): shared `_dualWriteEntity`/`_pullEntity` engines drive
+  `dualWriteMoveNoteEntries`/`dualWriteComboNoteEntries` + `pull*FromBackend` +
+  `_apply{Move,Combo}NoteEntryTombstone`, wired into `pushMetadata`/`pullRemote`. One **pair**
+  kill-switch each for write (`sync.noteEntries.dualWrite.enabled`) and read
+  (`sync.noteEntries.dualRead.enabled`), **two independent cursors**; backfill via
+  `SyncBackfillService.backfill{Move,Combo}NoteEntries` + `noteEntriesBackfillServiceProvider`.
+  All **OFF** by default (device-only behavior byte-identical until the owner flips post-M.4).
+  **Verified:** `flutter analyze` (lib + test) clean; **24/24** new tests green —
+  `note_entry_codec_test` (round-trip both + guards), `migration_v27_test` (add + backfill both
+  clocks + soft-hide, DAO stamp, sync-log hook, no-clobber), `note_entries_backfill_appwrite_test`
+  (byte-identical wire, soft-hidden excluded, non-destructive),
+  `sync_service_note_entries_dual_test` (DAO hook, pref gating, byte-identical upsert, kind/video
+  carried, tombstone-for-delete, swallow-on-fail, LWW both directions, **inbound tombstone
+  soft-hide + idempotent replay + LWW guard**, independent cursors, malformed isolation).
+  Patched the v22/v23/v24/v25 migration harnesses to carry the note tables (the v27 block's
+  `ALTER` now runs through them). Full `test/core` suite: **789 green, 0 regressions** (the ~9
+  known reds are outside core). Live smoke-user e2e + provisioning + Function redeploy + real
+  two-device note soak ride **M**.
 
 ## Phase 5: Retire Firestore + Firebase Auth; safety nets; self-host runbook
 

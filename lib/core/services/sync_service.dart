@@ -23,6 +23,7 @@ import '../sync/codecs/combo_codec.dart';
 import '../sync/codecs/review_codec.dart';
 import '../sync/codecs/fsrs_card_codec.dart';
 import '../sync/codecs/deck_codec.dart';
+import '../sync/codecs/note_entry_codec.dart';
 
 class SyncService {
   final AuthService authService;
@@ -120,6 +121,20 @@ class SyncService {
   static const String deckMovesBackendCursorPrefKey =
       'sync.deckMoves.backend.cursor';
 
+  /// Kill-switches + cursors for the note-entry **pair** (task 4.9),
+  /// **Appwrite-only** (D11): note entries never had a Firestore leg. Mirrors the
+  /// decks pair — one shared write + one shared read switch, but two independent
+  /// cursors (`moveNoteEntries`/`comboNoteEntries` are distinct backend tables).
+  /// Off by default; flipping a switch off is the instant rollback.
+  static const String noteEntriesDualWritePrefKey =
+      'sync.noteEntries.dualWrite.enabled';
+  static const String noteEntriesDualReadPrefKey =
+      'sync.noteEntries.dualRead.enabled';
+  static const String moveNoteEntriesBackendCursorPrefKey =
+      'sync.moveNoteEntries.backend.cursor';
+  static const String comboNoteEntriesBackendCursorPrefKey =
+      'sync.comboNoteEntries.backend.cursor';
+
   TaskEither<AppFailure, Unit> authenticate() {
     return authService.refreshAuth().mapLeft((final f) => AppFailure.sync('Authentication failed: ${f.message}'));
   }
@@ -200,6 +215,14 @@ class SyncService {
         );
         await dualWriteDeckMoves(
           pending.where((final e) => e.entityTable == 'deck_moves'),
+        );
+        // Appwrite-only note-entry pair (task 4.9): no Firestore leg, so these
+        // entries no-op through the loop above and are shadowed here only.
+        await dualWriteMoveNoteEntries(
+          pending.where((final e) => e.entityTable == 'move_note_entries'),
+        );
+        await dualWriteComboNoteEntries(
+          pending.where((final e) => e.entityTable == 'combo_note_entries'),
         );
         return unit;
       },
@@ -341,6 +364,19 @@ class SyncService {
           await pullDeckMovesFromBackend();
         } on Object catch (e) {
           debugPrint('[SyncService] deck_moves dual-read failed: $e');
+        }
+        // Appwrite-only note-entry pair (task 4.9): pull explicitly (no Firestore
+        // table to iterate). No-op when the read kill-switch is off; a hiccup is
+        // swallowed so it never blocks the rest of the pull.
+        try {
+          await pullMoveNoteEntriesFromBackend();
+        } on Object catch (e) {
+          debugPrint('[SyncService] move_note_entries dual-read failed: $e');
+        }
+        try {
+          await pullComboNoteEntriesFromBackend();
+        } on Object catch (e) {
+          debugPrint('[SyncService] combo_note_entries dual-read failed: $e');
         }
         return unit;
       },
@@ -862,6 +898,32 @@ class SyncService {
     return true;
   }
 
+  Future<bool> _applyMoveNoteEntryTombstone(final SyncTombstone t) async {
+    final existing = await (db.select(db.moveNoteEntries)
+          ..where((final r) => r.id.equals(t.id)))
+        .getSingleOrNull();
+    if (existing == null || existing.deletedAt != null) return false;
+    if (!_tombstoneWins(existing.updatedAt ?? existing.createdAt, t.deletedAt)) {
+      return false;
+    }
+    await (db.update(db.moveNoteEntries)..where((final r) => r.id.equals(t.id)))
+        .write(MoveNoteEntriesCompanion(deletedAt: Value(t.deletedAt)));
+    return true;
+  }
+
+  Future<bool> _applyComboNoteEntryTombstone(final SyncTombstone t) async {
+    final existing = await (db.select(db.comboNoteEntries)
+          ..where((final r) => r.id.equals(t.id)))
+        .getSingleOrNull();
+    if (existing == null || existing.deletedAt != null) return false;
+    if (!_tombstoneWins(existing.updatedAt ?? existing.createdAt, t.deletedAt)) {
+      return false;
+    }
+    await (db.update(db.comboNoteEntries)..where((final r) => r.id.equals(t.id)))
+        .write(ComboNoteEntriesCompanion(deletedAt: Value(t.deletedAt)));
+    return true;
+  }
+
   /// Merge one remote combo [record] iff it does not clobber a newer local edit
   /// — LWW compared at whole-second granularity (H.2/audit A3), as for moves.
   Future<bool> _mergeComboRecordLww(final SyncRecord record) async {
@@ -1122,6 +1184,101 @@ class SyncService {
     await db
         .into(db.deckMoves)
         .insertOnConflictUpdate(deckMoveFromSyncRecord(record));
+    return true;
+  }
+
+  // --- note-entry pair (task 4.9; Appwrite-only per D11) ---
+  //
+  // MoveNoteEntries/ComboNoteEntries never had a Firestore leg, so a flush's
+  // note entries no-op through the Firestore push loop and are shadowed only via
+  // these Appwrite dual-writes, driven by the same shared [_dualWriteEntity] /
+  // [_pullEntity] engines as the decks pair. Both tables carry a synthetic id,
+  // so the wire identity is that id (no composite key).
+
+  /// Dual-write `moveNoteEntries` to the Appwrite shadow (task 4.9).
+  Future<void> dualWriteMoveNoteEntries(final Iterable<SyncLogData> entries) =>
+      _dualWriteEntity(
+        type: SyncEntityType.moveNoteEntry,
+        prefKey: noteEntriesDualWritePrefKey,
+        label: 'moveNoteEntry',
+        entries: entries,
+        recordFor: (final id) async => moveNoteEntryToSyncRecord(
+          (await db.moveNoteEntriesDao.getById(id))!,
+        ),
+      );
+
+  /// Dual-write `comboNoteEntries` to the Appwrite shadow (task 4.9). Shares the
+  /// pair's write kill-switch with [dualWriteMoveNoteEntries].
+  Future<void> dualWriteComboNoteEntries(final Iterable<SyncLogData> entries) =>
+      _dualWriteEntity(
+        type: SyncEntityType.comboNoteEntry,
+        prefKey: noteEntriesDualWritePrefKey,
+        label: 'comboNoteEntry',
+        entries: entries,
+        recordFor: (final id) async => comboNoteEntryToSyncRecord(
+          (await db.comboNoteEntriesDao.getById(id))!,
+        ),
+      );
+
+  /// Dual-read `moveNoteEntries` (task 4.9). See [pullDecksFromBackend].
+  Future<({int applied, int failed})?> pullMoveNoteEntriesFromBackend() =>
+      _pullEntity(
+        type: SyncEntityType.moveNoteEntry,
+        prefKey: noteEntriesDualReadPrefKey,
+        cursorKey: moveNoteEntriesBackendCursorPrefKey,
+        label: 'moveNoteEntry',
+        merge: _mergeMoveNoteEntryRecordLww,
+        applyDelete: _applyMoveNoteEntryTombstone,
+      );
+
+  /// Dual-read `comboNoteEntries` (task 4.9). Shares the pair's read kill-switch
+  /// but keeps its own cursor (distinct backend table).
+  Future<({int applied, int failed})?> pullComboNoteEntriesFromBackend() =>
+      _pullEntity(
+        type: SyncEntityType.comboNoteEntry,
+        prefKey: noteEntriesDualReadPrefKey,
+        cursorKey: comboNoteEntriesBackendCursorPrefKey,
+        label: 'comboNoteEntry',
+        merge: _mergeComboNoteEntryRecordLww,
+        applyDelete: _applyComboNoteEntryTombstone,
+      );
+
+  /// Merge one remote move note [record] under LWW at whole-second granularity
+  /// (H.2/A3). A (post-v27-migration unreachable) null local clock falls back to
+  /// `createdAt`, matching the codec's guard.
+  Future<bool> _mergeMoveNoteEntryRecordLww(final SyncRecord record) async {
+    final existing = await (db.select(db.moveNoteEntries)
+          ..where((final t) => t.id.equals(record.id)))
+        .getSingleOrNull();
+    if (existing != null) {
+      final localClock = existing.updatedAt ?? existing.createdAt;
+      if (localClock.millisecondsSinceEpoch ~/ 1000 >=
+          record.updatedAt.millisecondsSinceEpoch ~/ 1000) {
+        return false;
+      }
+    }
+    await db
+        .into(db.moveNoteEntries)
+        .insertOnConflictUpdate(moveNoteEntryFromSyncRecord(record));
+    return true;
+  }
+
+  /// Merge one remote combo note [record] under LWW. See
+  /// [_mergeMoveNoteEntryRecordLww].
+  Future<bool> _mergeComboNoteEntryRecordLww(final SyncRecord record) async {
+    final existing = await (db.select(db.comboNoteEntries)
+          ..where((final t) => t.id.equals(record.id)))
+        .getSingleOrNull();
+    if (existing != null) {
+      final localClock = existing.updatedAt ?? existing.createdAt;
+      if (localClock.millisecondsSinceEpoch ~/ 1000 >=
+          record.updatedAt.millisecondsSinceEpoch ~/ 1000) {
+        return false;
+      }
+    }
+    await db
+        .into(db.comboNoteEntries)
+        .insertOnConflictUpdate(comboNoteEntryFromSyncRecord(record));
     return true;
   }
 

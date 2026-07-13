@@ -25,15 +25,18 @@
 /// a client-supplied field — every store read is scoped to it (per-user rows).
 library;
 
-/// The five descriptive tables `sync-pull` serves — the exact `descriptiveTable`
-/// union from `convex/sync.ts`. `reviewEvents` (append-only) and `fsrsCards`
-/// (server-derived) are pulled via their own Functions and rejected here.
+/// The descriptive tables `sync-pull` serves — the `descriptiveTable` union from
+/// `convex/sync.ts` plus the two Appwrite-only note-entry tables (task 4.9).
+/// `reviewEvents` (append-only) and `fsrsCards` (server-derived) are pulled via
+/// their own Functions and rejected here.
 const Set<String> descriptiveTables = {
   'moves',
   'combos',
   'comboMoves',
   'decks',
   'deckMoves',
+  'moveNoteEntries',
+  'comboNoteEntries',
 };
 
 /// A live descriptive record, already decoded (the stored `payload` JSON string

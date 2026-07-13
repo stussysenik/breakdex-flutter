@@ -44,14 +44,17 @@ class AppwriteSyncBackend implements SyncBackend {
   @override
   String get providerType => 'appwrite';
 
-  /// The five descriptive tables served by the shared `sync-push` / `sync-pull`
-  /// Functions — the exact `descriptiveTable` union the Functions accept.
+  /// The descriptive tables served by the shared `sync-push` / `sync-pull`
+  /// Functions — the exact `descriptiveTable` union the Functions accept
+  /// (including the Appwrite-only note-entry tables, task 4.9).
   static const Map<SyncEntityType, String> _descriptiveTable = {
     SyncEntityType.move: 'moves',
     SyncEntityType.combo: 'combos',
     SyncEntityType.comboMove: 'comboMoves',
     SyncEntityType.deck: 'decks',
     SyncEntityType.deckMove: 'deckMoves',
+    SyncEntityType.moveNoteEntry: 'moveNoteEntries',
+    SyncEntityType.comboNoteEntry: 'comboNoteEntries',
   };
 
   bool _isDescriptive(final SyncEntityType type) =>
@@ -83,6 +86,8 @@ class AppwriteSyncBackend implements SyncBackend {
       case SyncEntityType.comboMove:
       case SyncEntityType.deck:
       case SyncEntityType.deckMove:
+      case SyncEntityType.moveNoteEntry:
+      case SyncEntityType.comboNoteEntry:
         if (upserts.isEmpty && deletes.isEmpty) return;
         await _transport.execute(
           'sync-push',
@@ -120,6 +125,8 @@ class AppwriteSyncBackend implements SyncBackend {
       case SyncEntityType.comboMove:
       case SyncEntityType.deck:
       case SyncEntityType.deckMove:
+      case SyncEntityType.moveNoteEntry:
+      case SyncEntityType.comboNoteEntry:
         final value = await _transport.execute(
           'sync-pull',
           body: {
