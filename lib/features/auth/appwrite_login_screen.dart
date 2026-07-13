@@ -12,6 +12,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../core/config/appwrite_env.dart';
 import '../../core/design/colors.dart';
 import '../../core/design/spacing.dart';
 import '../../core/design/theme.dart';
@@ -110,10 +111,141 @@ class _AppwriteLoginScreenState extends ConsumerState<AppwriteLoginScreen> {
                 hasError: _error != null,
                 onPressed: _loading ? null : _signIn,
               ),
+              // Dev-only email/password path (task 1.3). Flag OFF ⇒ this subtree
+              // is never constructed, so release builds tree-shake it away and
+              // stay byte-identical (design D2). No registration affordance —
+              // user #0 is minted owner-side (design D1).
+              if (kDevEmailAuthEnabled) ...[
+                const SizedBox(height: AppSpacing.lg),
+                _DevEmailForm(onSignedIn: widget.onSignedIn),
+              ],
             ],
           ),
         ),
       ),
+    );
+  }
+}
+
+/// Flag-gated dev sign-in form ([kDevEmailAuthEnabled]) — a minimal
+/// email/password pair wired to [AppwriteAuthService.signInWithEmailPassword].
+/// Manages its own loading/error so the primary Google flow above is untouched.
+/// Design-system only; plain Fluid defaults (a dev surface earns no bespoke
+/// motion). Sign-in only: no "create account" control (design D1).
+class _DevEmailForm extends ConsumerStatefulWidget {
+  const _DevEmailForm({this.onSignedIn});
+
+  final VoidCallback? onSignedIn;
+
+  @override
+  ConsumerState<_DevEmailForm> createState() => _DevEmailFormState();
+}
+
+class _DevEmailFormState extends ConsumerState<_DevEmailForm> {
+  final _email = TextEditingController();
+  final _password = TextEditingController();
+  bool _loading = false;
+  String? _error;
+
+  @override
+  void dispose() {
+    _email.dispose();
+    _password.dispose();
+    super.dispose();
+  }
+
+  Future<void> _submit() async {
+    setState(() {
+      _loading = true;
+      _error = null;
+    });
+    try {
+      await ref.read(appwriteAuthServiceProvider).signInWithEmailPassword(
+            email: _email.text.trim(),
+            password: _password.text,
+          );
+      unawaited(HapticFeedback.mediumImpact());
+      if (mounted) widget.onSignedIn?.call();
+    } on AuthException catch (e) {
+      if (mounted) setState(() => _error = e.message);
+    } on Object catch (_) {
+      if (mounted) setState(() => _error = 'Dev sign-in failed. Please try again.');
+    } finally {
+      if (mounted) setState(() => _loading = false);
+    }
+  }
+
+  @override
+  Widget build(final BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final semantic = AppSemanticTheme.of(context);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Text(
+          'Dev sign-in (user #0)',
+          style: AppTypography.caption.copyWith(color: colorScheme.secondary),
+        ),
+        const SizedBox(height: AppSpacing.sm),
+        TextField(
+          key: const ValueKey('dev-email-field'),
+          controller: _email,
+          enabled: !_loading,
+          autocorrect: false,
+          keyboardType: TextInputType.emailAddress,
+          textInputAction: TextInputAction.next,
+          decoration: const InputDecoration(
+            labelText: 'Email',
+            border: OutlineInputBorder(),
+          ),
+        ),
+        const SizedBox(height: AppSpacing.sm),
+        TextField(
+          key: const ValueKey('dev-password-field'),
+          controller: _password,
+          enabled: !_loading,
+          obscureText: true,
+          textInputAction: TextInputAction.done,
+          onSubmitted: (_) => _loading ? null : _submit(),
+          decoration: const InputDecoration(
+            labelText: 'Password',
+            border: OutlineInputBorder(),
+          ),
+        ),
+        if (_error != null) ...[
+          const SizedBox(height: AppSpacing.sm),
+          Text(
+            _error!,
+            style: AppTypography.bodySmall.copyWith(color: semantic.actionAgain),
+          ),
+        ],
+        const SizedBox(height: AppSpacing.sm),
+        SizedBox(
+          height: 50,
+          child: ElevatedButton(
+            key: const ValueKey('dev-email-submit'),
+            onPressed: _loading ? null : _submit,
+            style: ElevatedButton.styleFrom(
+              backgroundColor: colorScheme.surfaceContainerHighest,
+              foregroundColor: colorScheme.onSurface,
+              elevation: 0,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(AppRadius.lg),
+              ),
+              textStyle:
+                  AppTypography.bodyMedium.copyWith(fontWeight: FontWeight.w700),
+            ),
+            child: _loading
+                ? const SizedBox(
+                    key: ValueKey('dev-email-spinner'),
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
+                : const Text('Sign in with email'),
+          ),
+        ),
+      ],
     );
   }
 }

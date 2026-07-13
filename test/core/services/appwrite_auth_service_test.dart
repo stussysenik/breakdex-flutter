@@ -13,11 +13,17 @@ class _FakeGateway implements AppwriteAccountGateway {
   /// When set, [createGoogleSession] throws it (OAuth cancel / provider error).
   AuthException? signInError;
 
+  /// When set, [createEmailPasswordSession] throws it (bad credentials).
+  AuthException? emailSignInError;
+
   int createCalls = 0;
+  int emailCreateCalls = 0;
   int deleteCalls = 0;
   List<String> lastScopes = const [];
   String? lastSuccessUrl;
   String? lastFailureUrl;
+  String? lastEmail;
+  String? lastPassword;
 
   @override
   Future<void> createGoogleSession({
@@ -32,6 +38,19 @@ class _FakeGateway implements AppwriteAccountGateway {
     if (signInError != null) throw signInError!;
     // A successful OAuth flow attaches the session ⇒ a subsequent get() works.
     user = const AuthUser(id: 'u1', email: 'me@example.com', name: 'Me');
+  }
+
+  @override
+  Future<void> createEmailPasswordSession({
+    required final String email,
+    required final String password,
+  }) async {
+    emailCreateCalls++;
+    lastEmail = email;
+    lastPassword = password;
+    if (emailSignInError != null) throw emailSignInError!;
+    // A successful session ⇒ a subsequent get() returns the dev account.
+    user = AuthUser(id: 'dev0', email: email, name: 'Dev0');
   }
 
   @override
@@ -178,6 +197,83 @@ void main() {
       expect(gw.lastSuccessUrl, isNull);
       expect(gw.lastFailureUrl, isNull);
     });
+
+    test('signInWithEmailPassword() creates a session and emits the account',
+        () async {
+      final gw = _FakeGateway();
+      final service = AppwriteAuthService(gw);
+      addTearDown(service.dispose);
+
+      final emissions = <AuthUser?>[];
+      service.userStream.listen(emissions.add);
+
+      final user = await service.signInWithEmailPassword(
+        email: 'dev0@example.com',
+        password: 'hunter2',
+      );
+
+      expect(gw.emailCreateCalls, 1);
+      expect(gw.lastEmail, 'dev0@example.com');
+      expect(gw.lastPassword, 'hunter2');
+      expect(user.id, 'dev0');
+      expect(service.isSignedIn, isTrue);
+      await Future<void>.delayed(Duration.zero);
+      expect(emissions, [isA<AuthUser>()]);
+    });
+
+    test('signInWithEmailPassword() is redirect-free on web (no redirect URLs)',
+        () async {
+      // The email path never routes through _webRedirects — even on web it
+      // resolves in-place (design D4), so the gateway is called with no URLs.
+      final gw = _FakeGateway();
+      final service = AppwriteAuthService(
+        gw,
+        isWeb: true,
+        baseUri: () => Uri.parse('https://app.breakdex.io/library'),
+      );
+      addTearDown(service.dispose);
+
+      await service.signInWithEmailPassword(
+        email: 'dev0@example.com',
+        password: 'hunter2',
+      );
+
+      expect(gw.emailCreateCalls, 1);
+      expect(gw.createCalls, 0); // never touched the Google/OAuth door
+      expect(gw.lastSuccessUrl, isNull);
+      expect(gw.lastFailureUrl, isNull);
+    });
+
+    test('signInWithEmailPassword() surfaces bad credentials as AuthException',
+        () async {
+      final gw = _FakeGateway()
+        ..emailSignInError = const AuthException('Invalid credentials');
+      final service = AppwriteAuthService(gw);
+      addTearDown(service.dispose);
+
+      await expectLater(
+        () => service.signInWithEmailPassword(
+          email: 'dev0@example.com',
+          password: 'wrong',
+        ),
+        throwsA(isA<AuthException>()),
+      );
+      expect(service.isSignedIn, isFalse);
+    });
+
+    test('signInWithEmailPassword() throws when the flow leaves no session',
+        () async {
+      final service = AppwriteAuthService(_NoSessionGateway());
+      addTearDown(service.dispose);
+
+      await expectLater(
+        () => service.signInWithEmailPassword(
+          email: 'dev0@example.com',
+          password: 'hunter2',
+        ),
+        throwsA(isA<AuthException>()),
+      );
+    });
   });
 }
 
@@ -189,6 +285,12 @@ class _NoSessionGateway implements AppwriteAccountGateway {
     final List<String> scopes = const [],
     final String? successUrl,
     final String? failureUrl,
+  }) async {}
+
+  @override
+  Future<void> createEmailPasswordSession({
+    required final String email,
+    required final String password,
   }) async {}
 
   @override

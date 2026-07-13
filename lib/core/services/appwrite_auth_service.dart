@@ -79,6 +79,18 @@ abstract interface class AppwriteAccountGateway {
     final String? failureUrl,
   });
 
+  /// Establish a session from email/password (the dev path — task 1.2, gated by
+  /// [kDevEmailAuthEnabled]). Unlike [createGoogleSession] this resolves
+  /// **in-place** on every surface — `account.createEmailPasswordSession` needs
+  /// no redirect or callback scheme (design D4) — so the service reads
+  /// [currentUser] immediately after. Throws [AuthException] on bad credentials
+  /// (mirror of the Google mapping). **Sign-in only:** there is deliberately no
+  /// `createAccount` door — dev accounts are minted owner-side.
+  Future<void> createEmailPasswordSession({
+    required final String email,
+    required final String password,
+  });
+
   Future<AuthUser?> currentUser();
 
   Future<void> deleteCurrentSession();
@@ -144,6 +156,25 @@ class AppwriteAuthService {
       successUrl: success,
       failureUrl: failure,
     );
+    final user = await _gateway.currentUser();
+    if (user == null) {
+      throw const AuthException('Sign-in completed without creating a session.');
+    }
+    _emit(user);
+    return user;
+  }
+
+  /// Sign in a dev account via email/password and return the resulting account
+  /// (task 1.2, gated by [kDevEmailAuthEnabled]). Redirect-free on every surface
+  /// (design D4): create the session, re-read the account, emit. Throws
+  /// [AuthException] on bad credentials, and — matching [signInWithGoogle]'s
+  /// contract — if a *successful* session create still yields no account (a 401
+  /// on the immediate [currentUser] read is a fault here, not "no session").
+  Future<AuthUser> signInWithEmailPassword({
+    required final String email,
+    required final String password,
+  }) async {
+    await _gateway.createEmailPasswordSession(email: email, password: password);
     final user = await _gateway.currentUser();
     if (user == null) {
       throw const AuthException('Sign-in completed without creating a session.');

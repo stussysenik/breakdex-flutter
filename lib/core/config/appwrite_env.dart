@@ -68,6 +68,22 @@ const bool kEntitlementGateEnabled = bool.fromEnvironment(
   defaultValue: false,
 );
 
+/// Whether the **dev** email/password sign-in path is built. **Off by default**
+/// → the auth screen shows only Google and no email/password code path is
+/// constructed, so a release build is byte-identical to a pre-change binary
+/// (tree-shaking drops the flag-gated subtree — the same guarantee
+/// [kEntitlementGateEnabled] relies on). Flipped on **only** per-build via
+/// `--dart-define=DEV_EMAIL_AUTH=true` for the sync rehearsal (a dedicated dev
+/// user #0 signs in without the Google OAuth device dance). Sign-in only — the
+/// client never calls `account.create`; dev accounts are minted owner-side via
+/// the server-key CLI (`appwrite users create`). Deliberately compile-time, not
+/// runtime/remote: a dev auth surface must be *impossible* to enable in a
+/// shipped binary, not merely toggled off.
+const bool kDevEmailAuthEnabled = bool.fromEnvironment(
+  'DEV_EMAIL_AUTH',
+  defaultValue: false,
+);
+
 /// The owner account's email. When set (via `--dart-define=OWNER_EMAIL=...`) the
 /// signed-in owner is never entitlement-gated (owner is user #1, never a
 /// customer). Empty by default so no address is baked into the open-source repo.

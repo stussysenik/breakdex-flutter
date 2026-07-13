@@ -41,6 +41,21 @@ class AppwriteAccountSdkGateway implements AppwriteAccountGateway {
   }
 
   @override
+  Future<void> createEmailPasswordSession({
+    required final String email,
+    required final String password,
+  }) async {
+    try {
+      // Resolves in-place — no OAuth redirect, no callback scheme (design D4).
+      // A wrong password / unknown account surfaces as an AppwriteException,
+      // mapped to AuthException so callers only ever see the one wrapper.
+      await _account.createEmailPasswordSession(email: email, password: password);
+    } on AppwriteException catch (e) {
+      throw AuthException(e.message ?? 'Email sign-in failed.');
+    }
+  }
+
+  @override
   Future<AuthUser?> currentUser() async {
     try {
       final models.User user = await _account.get();

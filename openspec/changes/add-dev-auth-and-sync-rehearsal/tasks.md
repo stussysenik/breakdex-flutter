@@ -11,11 +11,11 @@
 
 ## Phase 1 — dev email/password auth seam (flag-OFF)
 
-- [ ] 1.1 Add `kDevEmailAuthEnabled` to `lib/core/config/appwrite_env.dart`
+- [x] 1.1 Add `kDevEmailAuthEnabled` to `lib/core/config/appwrite_env.dart`
   (`bool.fromEnvironment('DEV_EMAIL_AUTH', defaultValue: false)`), doc comment matching the
   `kEntitlementGateEnabled` idiom: what it gates, why OFF, how to flip (`--dart-define`).
   Verify: `flutter analyze` clean.
-- [ ] 1.2 Extend the identity seam: add
+- [x] 1.2 Extend the identity seam: add
   `Future<void> createEmailPasswordSession({required String email, required String password})`
   to `AppwriteAccountGateway` (in `lib/core/services/appwrite_auth_service.dart`) and implement
   it in `AppwriteAccountSdkGateway` (`appwrite_account_gateway.dart`) via
@@ -24,12 +24,12 @@
   `Future<AuthUser> signInWithEmailPassword({required String email, required String password})`
   to `AppwriteAuthService`: gateway call → `currentUser()` → throw `AuthException` if null →
   `_emit` (no web-redirect branch — design D4). Verify: `flutter analyze` clean.
-- [ ] 1.3 Auth screen: when `kDevEmailAuthEnabled`, render a minimal email/password form under
+- [x] 1.3 Auth screen: when `kDevEmailAuthEnabled`, render a minimal email/password form under
   the Google button (grep `AppwriteLoginScreen` / `signInWithGoogle` call sites to find it);
   wire to `signInWithEmailPassword`; surface `AuthException.message` inline. Flag OFF ⇒ the
   subtree is not constructed. Match existing screen idiom + TOKENS (no new motion; this is a
   dev surface — plain Fluid defaults). **No registration affordance** (design D1).
-- [ ] 1.4 Tests: service happy/wrong-creds/null-session paths via the existing fake-gateway
+- [x] 1.4 Tests: service happy/wrong-creds/null-session paths via the existing fake-gateway
   pattern (`test/core/services/appwrite_auth_service_test.dart`); login-screen pair — flag OFF
   ⇒ form absent, flag ON ⇒ submits and emits (extend
   `test/features/auth/appwrite_login_screen_test.dart`). Verify: targeted `flutter test` green
