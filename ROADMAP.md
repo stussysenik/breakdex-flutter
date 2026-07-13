@@ -21,6 +21,20 @@
 > exactly the next unticked task, verify (binary truth), tick + update this block **in the
 > same commit**. Nothing else starts until this block says so.
 
+- **Change (active):** `add-dev-auth-and-sync-rehearsal` — de-risks the owner's Phase-M pass
+  by letting a dev **user #0** rehearse the whole sync ladder without Google OAuth. **Agent
+  wave DONE 2026-07-14** (owner greenlit; slots ahead of Phase M). Committed on `main`
+  (UNPUSHED): proposal (`8da0253`) → **Phase 1** dev email/password auth seam (flag
+  `DEV_EMAIL_AUTH`, OFF) → **Phase 2** runtime sync-cutover panel (flag `DEV_SYNC_PANEL`, OFF;
+  the missing on-device switch-hand for `migrate-canonical-backend-to-appwrite` M.4) → **3.4**
+  `docs/sync-rehearsal-runbook.md` (R1–R7 ledger + D7 fence). Binary truth: `flutter analyze`
+  clean, `flutter test` green both flag configs, `flutter build web` green flags-OFF
+  (byte-identical). **Owner-gated remainder (fenced, next):** 3.1/3.2 live provisioning + mint
+  `dev0` (phase-m-runbook §A–D), 3.3 `argent init` + device smoke, **Phase 4** the live R1–R7
+  ladder on sim + web. Then the real **Phase M** device pass (`docs/phase-m-runbook.md`) — the
+  rehearsal raises its confidence but its M boxes stay the owner's. Prior queue head
+  (`add-web-first-release-and-monetization`, launch wave L1–L6) is **DONE** — history below.
+
 - **Change:** `add-web-first-release-and-monetization` — **🚀 Launch wave (owner ruling
   2026-07-13; launching today).** A fresh Opus 4.8 session executes it: read that `tasks.md`'s
   **"🚀 Launch wave — executor entrypoint"** preamble FIRST — it sets the order (L1 GUIDE.md →
