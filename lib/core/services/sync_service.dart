@@ -22,6 +22,7 @@ import '../sync/codecs/move_codec.dart';
 import '../sync/codecs/combo_codec.dart';
 import '../sync/codecs/review_codec.dart';
 import '../sync/codecs/fsrs_card_codec.dart';
+import '../sync/codecs/deck_codec.dart';
 
 class SyncService {
   final AuthService authService;
@@ -105,6 +106,20 @@ class SyncService {
   static const String fsrsCardsBackendCursorPrefKey =
       'sync.fsrsCards.backend.cursor';
 
+  /// Kill-switches + cursors for the `decks` + `deck_moves` **pair** (task 4.7),
+  /// replicating the combos-pair strangler (4.4). These are **Appwrite-only**
+  /// (D11): decks never had a Firestore leg, so a flush's deck entries no-op
+  /// through the Firestore push and only the Appwrite dual-write shadows them.
+  /// The pair shares one write and one read switch but pulls with two
+  /// independent cursors (distinct backend tables). Off by default; flipping a
+  /// switch off is the instant rollback. Dual-write precedes dual-read so the
+  /// shadow is never read while stale (audit A1).
+  static const String decksDualWritePrefKey = 'sync.decks.dualWrite.enabled';
+  static const String decksDualReadPrefKey = 'sync.decks.dualRead.enabled';
+  static const String decksBackendCursorPrefKey = 'sync.decks.backend.cursor';
+  static const String deckMovesBackendCursorPrefKey =
+      'sync.deckMoves.backend.cursor';
+
   TaskEither<AppFailure, Unit> authenticate() {
     return authService.refreshAuth().mapLeft((final f) => AppFailure.sync('Authentication failed: ${f.message}'));
   }
@@ -177,6 +192,14 @@ class SyncService {
         // deletes — same strangler order (dual-write before any read cutover).
         await dualWriteReviews(
           pending.where((final e) => e.entityTable == 'reviews'),
+        );
+        // Appwrite-only decks + deck_moves pair (task 4.7): no Firestore leg, so
+        // these entries no-op through the loop above and are shadowed here only.
+        await dualWriteDecks(
+          pending.where((final e) => e.entityTable == 'decks'),
+        );
+        await dualWriteDeckMoves(
+          pending.where((final e) => e.entityTable == 'deck_moves'),
         );
         return unit;
       },
@@ -303,6 +326,21 @@ class SyncService {
               await _mergeRemoteRecord(table, record);
             }
           } on Object catch (_) {}
+        }
+
+        // Appwrite-only decks + deck_moves pair (task 4.7): no Firestore table to
+        // iterate, so pull them explicitly. No-op (returns null) when the read
+        // kill-switch is off; a backend hiccup is swallowed so it never blocks
+        // the rest of the pull.
+        try {
+          await pullDecksFromBackend();
+        } on Object catch (e) {
+          debugPrint('[SyncService] decks dual-read failed: $e');
+        }
+        try {
+          await pullDeckMovesFromBackend();
+        } on Object catch (e) {
+          debugPrint('[SyncService] deck_moves dual-read failed: $e');
         }
         return unit;
       },
@@ -863,6 +901,107 @@ class SyncService {
     await db
         .into(db.fsrsCards)
         .insertOnConflictUpdate(fsrsCardFromSyncRecord(record));
+    return true;
+  }
+
+  // --- decks + deck_moves pair (task 4.7; Appwrite-only per D11) ---
+  //
+  // Decks have no Firestore leg, so a flush's deck entries no-op through the
+  // Firestore push loop (`_getLocalRecordBody` returns null for these tables)
+  // and are shadowed to Appwrite only by these dual-writes — reusing the same
+  // shared [_dualWriteEntity] / [_pullEntity] engines as the combos pair. The
+  // pair shares its kill-switches but keeps two independent cursors.
+
+  /// Dual-write `decks` to the Appwrite shadow (task 4.7). See [dualWriteCombos].
+  Future<void> dualWriteDecks(final Iterable<SyncLogData> entries) =>
+      _dualWriteEntity(
+        type: SyncEntityType.deck,
+        prefKey: decksDualWritePrefKey,
+        label: 'deck',
+        entries: entries,
+        recordFor: (final id) async =>
+            deckToSyncRecord((await db.decksDao.getById(id))!),
+      );
+
+  /// Dual-write `deck_moves` to the Appwrite shadow (task 4.7). The sync-log
+  /// `entityId` is the composite `'$deckId:$moveId'` (the join has no synthetic
+  /// id), split here to fetch the row.
+  Future<void> dualWriteDeckMoves(final Iterable<SyncLogData> entries) =>
+      _dualWriteEntity(
+        type: SyncEntityType.deckMove,
+        prefKey: decksDualWritePrefKey,
+        label: 'deckMove',
+        entries: entries,
+        recordFor: (final id) async {
+          final sep = id.indexOf(':');
+          final deckId = id.substring(0, sep);
+          final moveId = id.substring(sep + 1);
+          return deckMoveToSyncRecord(
+            await (db.select(db.deckMoves)
+                  ..where((final t) =>
+                      t.deckId.equals(deckId) & t.moveId.equals(moveId)))
+                .getSingle(),
+          );
+        },
+      );
+
+  /// Dual-read `decks` (task 4.7). See [pullCombosFromBackend].
+  Future<({int applied, int failed})?> pullDecksFromBackend() => _pullEntity(
+        type: SyncEntityType.deck,
+        prefKey: decksDualReadPrefKey,
+        cursorKey: decksBackendCursorPrefKey,
+        label: 'deck',
+        merge: _mergeDeckRecordLww,
+      );
+
+  /// Dual-read `deck_moves` (task 4.7). Shares the pair's read kill-switch but
+  /// keeps its own cursor (distinct backend table).
+  Future<({int applied, int failed})?> pullDeckMovesFromBackend() =>
+      _pullEntity(
+        type: SyncEntityType.deckMove,
+        prefKey: decksDualReadPrefKey,
+        cursorKey: deckMovesBackendCursorPrefKey,
+        label: 'deckMove',
+        merge: _mergeDeckMoveRecordLww,
+      );
+
+  /// Merge one remote deck [record] under LWW at whole-second granularity
+  /// (H.2/A3). `decks.updatedAt` is non-null, so no epoch fallback is needed.
+  Future<bool> _mergeDeckRecordLww(final SyncRecord record) async {
+    final existing = await (db.select(db.decks)
+          ..where((final t) => t.id.equals(record.id)))
+        .getSingleOrNull();
+    if (existing != null) {
+      if (existing.updatedAt.millisecondsSinceEpoch ~/ 1000 >=
+          record.updatedAt.millisecondsSinceEpoch ~/ 1000) {
+        return false;
+      }
+    }
+    await db.into(db.decks).insertOnConflictUpdate(deckFromSyncRecord(record));
+    return true;
+  }
+
+  /// Merge one remote deck-move [record] under LWW. `deck_moves` has no
+  /// `createdAt`, so a (post-migration unreachable) null local clock is epoch-0
+  /// — matching the codec's guard. Keyed on the composite `(deckId, moveId)`.
+  Future<bool> _mergeDeckMoveRecordLww(final SyncRecord record) async {
+    final deckId = record.json['deckId'] as String;
+    final moveId = record.json['moveId'] as String;
+    final existing = await (db.select(db.deckMoves)
+          ..where((final t) =>
+              t.deckId.equals(deckId) & t.moveId.equals(moveId)))
+        .getSingleOrNull();
+    if (existing != null) {
+      final localClock = existing.updatedAt ??
+          DateTime.fromMillisecondsSinceEpoch(0, isUtc: true);
+      if (localClock.millisecondsSinceEpoch ~/ 1000 >=
+          record.updatedAt.millisecondsSinceEpoch ~/ 1000) {
+        return false;
+      }
+    }
+    await db
+        .into(db.deckMoves)
+        .insertOnConflictUpdate(deckMoveFromSyncRecord(record));
     return true;
   }
 

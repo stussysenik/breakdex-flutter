@@ -1,7 +1,9 @@
 import '../../database/daos/combos_dao.dart';
+import '../../database/daos/decks_dao.dart';
 import '../../database/daos/moves_dao.dart';
 import '../../database/daos/reviews_dao.dart';
 import '../codecs/combo_codec.dart';
+import '../codecs/deck_codec.dart';
 import '../codecs/move_codec.dart';
 import '../codecs/review_codec.dart';
 import '../sync_backend.dart';
@@ -28,16 +30,19 @@ class SyncBackfillService {
     this._movesDao, {
     final CombosDao? combosDao,
     final ReviewsDao? reviewsDao,
+    final DecksDao? decksDao,
     final int batchSize = 200,
   }) : assert(batchSize > 0, 'batchSize must be positive'),
        _combosDao = combosDao,
        _reviewsDao = reviewsDao,
+       _decksDao = decksDao,
        _batchSize = batchSize;
 
   final SyncBackend _backend;
   final MovesDao _movesDao;
   final CombosDao? _combosDao;
   final ReviewsDao? _reviewsDao;
+  final DecksDao? _decksDao;
   final int _batchSize;
 
   /// Read every local move (including archived) and upsert it into the backend
@@ -105,6 +110,31 @@ class SyncBackfillService {
         .whereType<SyncRecord>()
         .toList(growable: false);
     return _pushInBatches(SyncEntityType.reviewEvent, records);
+  }
+
+  /// Read every local deck and upsert it into the backend shadow (task 4.7),
+  /// with the same idempotent, non-destructive posture as [backfillMoves].
+  Future<BackfillReport> backfillDecks() async {
+    final dao = _decksDao;
+    assert(dao != null, 'backfillDecks requires a DecksDao');
+    final decks = await dao!.getAll();
+    return _pushInBatches(
+      SyncEntityType.deck,
+      decks.map(deckToSyncRecord).toList(growable: false),
+    );
+  }
+
+  /// Read every local deck-move join and upsert it into the backend shadow
+  /// (task 4.7). Structural rows keyed by the composite `(deckId, moveId)` — a
+  /// real delete crosses as a tombstone via the dual-write path, never here.
+  Future<BackfillReport> backfillDeckMoves() async {
+    final dao = _decksDao;
+    assert(dao != null, 'backfillDeckMoves requires a DecksDao');
+    final joins = await dao!.getAllDeckMoves();
+    return _pushInBatches(
+      SyncEntityType.deckMove,
+      joins.map(deckMoveToSyncRecord).toList(growable: false),
+    );
   }
 
   /// Push [records] for [type] in [_batchSize] chunks; returns the report.

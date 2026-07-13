@@ -104,7 +104,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.forTesting(super.e);
 
   @override
-  int get schemaVersion => 24;
+  int get schemaVersion => 25;
 
   /// Column names currently present on [table] — used to keep migrations
   /// idempotent across legacy databases and tables created mid-upgrade
@@ -654,6 +654,30 @@ class AppDatabase extends _$AppDatabase {
           UPDATE combo_moves
           SET updated_at = (
             SELECT c.created_at FROM combos c WHERE c.id = combo_moves.combo_id
+          )
+          WHERE updated_at IS NULL
+        ''');
+      }
+
+      if (from < 25) {
+        // --- Schema v25: deck_moves.updated_at LWW clock for the Appwrite
+        // strangler-fig (task 4.7) ---
+        //
+        // `decks` already carries `updated_at` (non-null, defaulted) from its
+        // original schema, so only the `deck_moves` join needs a clock. Additive
+        // + backfilled, mirroring combo_moves in v24: this table has no
+        // `created_at`, so each row is seeded from its parent deck's `updated_at`
+        // (the FK guarantees a parent, so no residual NULL survives intact data).
+        final deckMoveCols = await _columnNames('deck_moves');
+        if (!deckMoveCols.contains('updated_at')) {
+          await customStatement(
+            'ALTER TABLE deck_moves ADD COLUMN updated_at INTEGER',
+          );
+        }
+        await customStatement('''
+          UPDATE deck_moves
+          SET updated_at = (
+            SELECT d.updated_at FROM decks d WHERE d.id = deck_moves.deck_id
           )
           WHERE updated_at IS NULL
         ''');

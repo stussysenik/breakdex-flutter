@@ -124,6 +124,25 @@ NativeDatabase v22Database() {
         "VALUES ('r1', 'm1', 'good', 1700000500)",
       );
 
+      rawDb.execute('''
+        CREATE TABLE IF NOT EXISTS decks (
+          id TEXT PRIMARY KEY,
+          name TEXT NOT NULL,
+          deck_type TEXT NOT NULL DEFAULT 'smart',
+          filter_criteria TEXT,
+          session_size INTEGER,
+          created_at INTEGER NOT NULL DEFAULT (strftime('%s', 'now')),
+          updated_at INTEGER NOT NULL DEFAULT (strftime('%s', 'now'))
+        )
+      ''');
+      rawDb.execute('''
+        CREATE TABLE IF NOT EXISTS deck_moves (
+          deck_id TEXT NOT NULL,
+          move_id TEXT NOT NULL,
+          PRIMARY KEY (deck_id, move_id)
+        )
+      ''');
+
       rawDb.execute('PRAGMA user_version = 22');
     },
   );

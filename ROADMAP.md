@@ -25,17 +25,20 @@
   2026-07-12).** Read that `tasks.md`'s wave preamble FIRST (it sets the order and converts
   tonight's owner-gates), then `design.md` **D11**. `main` is the merged single source of truth
   (`main` == `phase-h-hardening` == `f87f4fc`, pushed); commit the wave on `main`.
-- **Next task:** `4.7` — `decks` + `deck_moves`: their `updatedAt` LWW clocks + codecs + the full
-  4.1→4.3 strangler (backfill → dual-write → dual-read), mirroring the 4.4 combos-pair template.
+- **Next task:** `4.8` — **Tombstones end-to-end**: delete on device A → tombstone in Appwrite →
+  device B hides the row locally without hard-deleting videos/rows; web-studio DELETE=TOMBSTONE
+  verified against the same table. Only after this task may any cutover be called complete. (The
+  dual-write tombstone *emission* already exists per-entity from 4.2–4.7; 4.8 proves the full
+  round-trip + local-hide-on-pull.)
   **Done in the wave so far:** `0.5` → `0.2` → `3.3` → `3.4` → `4.1`–`4.3` (moves cutover template
-  complete) → `4.4` (combos + combo_moves: schema v24 LWW clocks, `combo_codec`, DAO stamping,
-  backfill, dual-write + dual-read via shared engines, pair kill-switches + independent cursors;
-  23/23 green) → `4.5` (reviews → append-only `reviewEvents`: no schema migration, no tombstones,
-  insert-if-absent merge; 18/18 green) → **`4.6` (fsrs_cards → pull-only, server-derived: no
-  dual-write/backfill; decode-only `fsrs_card_codec`, `pullFsrsCardsFromBackend` reusing the generic
-  `_pullEntity` engine with an LWW guard keyed on `lastReview`; read kill-switch only, pref-OFF;
-  13/13 new tests green, 0 regressions).** Remaining wave order: `4.7` decks → `4.8` tombstones →
-  `4.9` note-entry sync → web-first `1.4`/`1.5` (cross-change) → `V.1`/`V.2` sweep + wave report. **Phase M (morning 2026-07-13,
+  complete) → `4.4` (combos + combo_moves; 23/23) → `4.5` (reviews append-only; 18/18) → `4.6`
+  (fsrs_cards pull-only server-derived; 13/13) → **`4.7` (decks + deck_moves: Appwrite-only per D11 —
+  no Firestore leg, so no dual-write ladder; schema v25 adds `deck_moves.updated_at`, `deck_codec`
+  with a composite `deckId:moveId` wire id, DAO stamping + a new `sync_log` dirty-tracking hook
+  (decks bypass SyncAware), backfill, dual-write + dual-read via shared engines, pair kill-switches +
+  independent cursors, pref-OFF; 24/24 new tests + 16 patched migration harnesses, 0 regressions).**
+  Remaining wave order: `4.8` tombstones → `4.9` note-entry sync → web-first `1.4`/`1.5`
+  (cross-change) → `V.1`/`V.2` sweep + wave report. **Phase M (morning 2026-07-13,
   owner on the physical device)** holds every owner-in-the-loop proof: live Google login (M.2),
   real-data backfill (M.3), two-surface soak (M.4), config flip 1R.4 (M.5), web login (M.6).
 - **Owner-gated residue (parked, does not block the wave):** 0.4's Convex console delete; final

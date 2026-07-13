@@ -4910,8 +4910,19 @@ class $DeckMovesTable extends DeckMoves
       'REFERENCES moves (id) ON DELETE CASCADE',
     ),
   );
+  static const VerificationMeta _updatedAtMeta = const VerificationMeta(
+    'updatedAt',
+  );
   @override
-  List<GeneratedColumn> get $columns => [deckId, moveId];
+  late final GeneratedColumn<DateTime> updatedAt = GeneratedColumn<DateTime>(
+    'updated_at',
+    aliasedName,
+    true,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [deckId, moveId, updatedAt];
   @override
   String get aliasedName => _alias ?? actualTableName;
   @override
@@ -4940,6 +4951,12 @@ class $DeckMovesTable extends DeckMoves
     } else if (isInserting) {
       context.missing(_moveIdMeta);
     }
+    if (data.containsKey('updated_at')) {
+      context.handle(
+        _updatedAtMeta,
+        updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta),
+      );
+    }
     return context;
   }
 
@@ -4957,6 +4974,10 @@ class $DeckMovesTable extends DeckMoves
         DriftSqlType.string,
         data['${effectivePrefix}move_id'],
       )!,
+      updatedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}updated_at'],
+      ),
     );
   }
 
@@ -4969,17 +4990,32 @@ class $DeckMovesTable extends DeckMoves
 class DeckMove extends DataClass implements Insertable<DeckMove> {
   final String deckId;
   final String moveId;
-  const DeckMove({required this.deckId, required this.moveId});
+
+  /// Last-writer-wins clock for backend sync (task 4.7). Nullable so the additive
+  /// v25 migration can backfill it (this table has no `createdAt`, so existing
+  /// rows are seeded from the parent deck's `updatedAt`); the DAO stamps it on
+  /// every insert, so new rows always carry a real clock.
+  final DateTime? updatedAt;
+  const DeckMove({required this.deckId, required this.moveId, this.updatedAt});
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
     map['deck_id'] = Variable<String>(deckId);
     map['move_id'] = Variable<String>(moveId);
+    if (!nullToAbsent || updatedAt != null) {
+      map['updated_at'] = Variable<DateTime>(updatedAt);
+    }
     return map;
   }
 
   DeckMovesCompanion toCompanion(bool nullToAbsent) {
-    return DeckMovesCompanion(deckId: Value(deckId), moveId: Value(moveId));
+    return DeckMovesCompanion(
+      deckId: Value(deckId),
+      moveId: Value(moveId),
+      updatedAt: updatedAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(updatedAt),
+    );
   }
 
   factory DeckMove.fromJson(
@@ -4990,6 +5026,7 @@ class DeckMove extends DataClass implements Insertable<DeckMove> {
     return DeckMove(
       deckId: serializer.fromJson<String>(json['deckId']),
       moveId: serializer.fromJson<String>(json['moveId']),
+      updatedAt: serializer.fromJson<DateTime?>(json['updatedAt']),
     );
   }
   @override
@@ -4998,15 +5035,24 @@ class DeckMove extends DataClass implements Insertable<DeckMove> {
     return <String, dynamic>{
       'deckId': serializer.toJson<String>(deckId),
       'moveId': serializer.toJson<String>(moveId),
+      'updatedAt': serializer.toJson<DateTime?>(updatedAt),
     };
   }
 
-  DeckMove copyWith({String? deckId, String? moveId}) =>
-      DeckMove(deckId: deckId ?? this.deckId, moveId: moveId ?? this.moveId);
+  DeckMove copyWith({
+    String? deckId,
+    String? moveId,
+    Value<DateTime?> updatedAt = const Value.absent(),
+  }) => DeckMove(
+    deckId: deckId ?? this.deckId,
+    moveId: moveId ?? this.moveId,
+    updatedAt: updatedAt.present ? updatedAt.value : this.updatedAt,
+  );
   DeckMove copyWithCompanion(DeckMovesCompanion data) {
     return DeckMove(
       deckId: data.deckId.present ? data.deckId.value : this.deckId,
       moveId: data.moveId.present ? data.moveId.value : this.moveId,
+      updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
     );
   }
 
@@ -5014,44 +5060,51 @@ class DeckMove extends DataClass implements Insertable<DeckMove> {
   String toString() {
     return (StringBuffer('DeckMove(')
           ..write('deckId: $deckId, ')
-          ..write('moveId: $moveId')
+          ..write('moveId: $moveId, ')
+          ..write('updatedAt: $updatedAt')
           ..write(')'))
         .toString();
   }
 
   @override
-  int get hashCode => Object.hash(deckId, moveId);
+  int get hashCode => Object.hash(deckId, moveId, updatedAt);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
       (other is DeckMove &&
           other.deckId == this.deckId &&
-          other.moveId == this.moveId);
+          other.moveId == this.moveId &&
+          other.updatedAt == this.updatedAt);
 }
 
 class DeckMovesCompanion extends UpdateCompanion<DeckMove> {
   final Value<String> deckId;
   final Value<String> moveId;
+  final Value<DateTime?> updatedAt;
   final Value<int> rowid;
   const DeckMovesCompanion({
     this.deckId = const Value.absent(),
     this.moveId = const Value.absent(),
+    this.updatedAt = const Value.absent(),
     this.rowid = const Value.absent(),
   });
   DeckMovesCompanion.insert({
     required String deckId,
     required String moveId,
+    this.updatedAt = const Value.absent(),
     this.rowid = const Value.absent(),
   }) : deckId = Value(deckId),
        moveId = Value(moveId);
   static Insertable<DeckMove> custom({
     Expression<String>? deckId,
     Expression<String>? moveId,
+    Expression<DateTime>? updatedAt,
     Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
       if (deckId != null) 'deck_id': deckId,
       if (moveId != null) 'move_id': moveId,
+      if (updatedAt != null) 'updated_at': updatedAt,
       if (rowid != null) 'rowid': rowid,
     });
   }
@@ -5059,11 +5112,13 @@ class DeckMovesCompanion extends UpdateCompanion<DeckMove> {
   DeckMovesCompanion copyWith({
     Value<String>? deckId,
     Value<String>? moveId,
+    Value<DateTime?>? updatedAt,
     Value<int>? rowid,
   }) {
     return DeckMovesCompanion(
       deckId: deckId ?? this.deckId,
       moveId: moveId ?? this.moveId,
+      updatedAt: updatedAt ?? this.updatedAt,
       rowid: rowid ?? this.rowid,
     );
   }
@@ -5077,6 +5132,9 @@ class DeckMovesCompanion extends UpdateCompanion<DeckMove> {
     if (moveId.present) {
       map['move_id'] = Variable<String>(moveId.value);
     }
+    if (updatedAt.present) {
+      map['updated_at'] = Variable<DateTime>(updatedAt.value);
+    }
     if (rowid.present) {
       map['rowid'] = Variable<int>(rowid.value);
     }
@@ -5088,6 +5146,7 @@ class DeckMovesCompanion extends UpdateCompanion<DeckMove> {
     return (StringBuffer('DeckMovesCompanion(')
           ..write('deckId: $deckId, ')
           ..write('moveId: $moveId, ')
+          ..write('updatedAt: $updatedAt, ')
           ..write('rowid: $rowid')
           ..write(')'))
         .toString();
@@ -17318,12 +17377,14 @@ typedef $$DeckMovesTableCreateCompanionBuilder =
     DeckMovesCompanion Function({
       required String deckId,
       required String moveId,
+      Value<DateTime?> updatedAt,
       Value<int> rowid,
     });
 typedef $$DeckMovesTableUpdateCompanionBuilder =
     DeckMovesCompanion Function({
       Value<String> deckId,
       Value<String> moveId,
+      Value<DateTime?> updatedAt,
       Value<int> rowid,
     });
 
@@ -17377,6 +17438,11 @@ class $$DeckMovesTableFilterComposer
     super.$addJoinBuilderToRootComposer,
     super.$removeJoinBuilderFromRootComposer,
   });
+  ColumnFilters<DateTime> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
   $$DecksTableFilterComposer get deckId {
     final $$DecksTableFilterComposer composer = $composerBuilder(
       composer: this,
@@ -17433,6 +17499,11 @@ class $$DeckMovesTableOrderingComposer
     super.$addJoinBuilderToRootComposer,
     super.$removeJoinBuilderFromRootComposer,
   });
+  ColumnOrderings<DateTime> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   $$DecksTableOrderingComposer get deckId {
     final $$DecksTableOrderingComposer composer = $composerBuilder(
       composer: this,
@@ -17489,6 +17560,9 @@ class $$DeckMovesTableAnnotationComposer
     super.$addJoinBuilderToRootComposer,
     super.$removeJoinBuilderFromRootComposer,
   });
+  GeneratedColumn<DateTime> get updatedAt =>
+      $composableBuilder(column: $table.updatedAt, builder: (column) => column);
+
   $$DecksTableAnnotationComposer get deckId {
     final $$DecksTableAnnotationComposer composer = $composerBuilder(
       composer: this,
@@ -17566,20 +17640,24 @@ class $$DeckMovesTableTableManager
               ({
                 Value<String> deckId = const Value.absent(),
                 Value<String> moveId = const Value.absent(),
+                Value<DateTime?> updatedAt = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => DeckMovesCompanion(
                 deckId: deckId,
                 moveId: moveId,
+                updatedAt: updatedAt,
                 rowid: rowid,
               ),
           createCompanionCallback:
               ({
                 required String deckId,
                 required String moveId,
+                Value<DateTime?> updatedAt = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => DeckMovesCompanion.insert(
                 deckId: deckId,
                 moveId: moveId,
+                updatedAt: updatedAt,
                 rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0

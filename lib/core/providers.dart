@@ -428,6 +428,18 @@ final reviewsBackfillServiceProvider = Provider<SyncBackfillService>((final ref)
   );
 });
 
+/// `decks` + `deck_moves` shadow backfill (task 4.7): Appwrite-only (no Firestore
+/// leg), same non-destructive, idempotent posture as
+/// [movesBackfillServiceProvider], via `deck_codec`. Invoked explicitly (a gated
+/// flow / the M.3 real-data run), never at boot.
+final decksBackfillServiceProvider = Provider<SyncBackfillService>((final ref) {
+  return SyncBackfillService(
+    ref.watch(appwriteSyncBackendProvider),
+    ref.watch(movesDaoProvider),
+    decksDao: ref.watch(decksDaoProvider),
+  );
+});
+
 final syncServiceProvider = Provider<SyncService>((final ref) {
   return SyncService(
     authService: ref.watch(authServiceProvider),

@@ -663,7 +663,48 @@ rows; any need for `appwrite push tables --all` (destructive — see the ops haz
   epoch-0, own cursor, malformed isolation). Full suite: **0 regressions** (same 9 reds on clean
   HEAD). The "copy of real data / tolerance-exact" half is the derive's determinism, already proven
   in 1.4's fold-parity suite + 1.5's live derive; the real-device pull soak rides **M.4**.
-- [ ] 4.7 `decks` + `deck_moves`: clocks + codecs + 4.1→4.3.
+- [x] 4.7 `decks` + `deck_moves`: clocks + codecs + 4.1→4.3.
+  **Done (wave 2026-07-12).** The pair replicates the combos-pair strangler (4.4), but is
+  **Appwrite-only (D11)**: decks never had a Firestore leg (absent from `pushMetadata`/`pullRemote`/
+  `_mergeRemoteRecord` — they only ever fed the on-device Drive manifest), so there is no dual-write
+  *ladder* to reconcile — the same shape D11 sets for note entries (4.9). `SyncEntityType.deck`/
+  `deckMove` + their backend table mappings already existed (Phase 1/1R); the generic `sync-push`/
+  `sync-pull` seam handles them, so no backend change. (a) **Schema v25** (`database.dart`): only
+  `deck_moves` needed a clock — `decks.updatedAt` has existed (non-null, defaulted) since the
+  original schema. Additive nullable `deck_moves.updated_at`, backfilled from its **parent deck's**
+  `updated_at` (this join has no `created_at`; the FK guarantees a parent → no residual NULL),
+  mirroring combo_moves in v24. (b) **Codecs** (`sync/codecs/deck_codec.dart`): `deck` + `deckMove`
+  encode/decode inverses. `deck_moves` has **no synthetic id** (composite PK `(deckId, moveId)`), so
+  its wire identity is the composite `'$deckId:$moveId'` (`deckMoveWireId`; deck/move ids are
+  UUIDv4 → colon-free), while decode reads deckId/moveId from `json` — the backend id stays opaque
+  to reconstruction. (c) **DAO stamping + dirty-tracking hook** (`decks_dao.dart`): `_stampDeck`/
+  `_stampDeckMove` (mirror `CombosDao`), and — because decks bypass the `SyncAware*` repository
+  layer — every user-initiated mutation now logs to `sync_log` (`insertDeck`/`updateDeck`/
+  `deleteDeck`/`addMoveToDeck`/`removeMoveFromDeck`), the equivalent hook 4.9 also needs; the bulk
+  `clearDeckMoves` is not per-row logged, matching `CombosDao.clearMoves`. Remote-origin merges write
+  straight to Drift (not via the DAO), so a pulled row is never re-enqueued. (d) **Backfill**
+  (`SyncBackfillService.backfillDecks`/`backfillDeckMoves` + `getAllDeckMoves()` +
+  `decksBackfillServiceProvider`). (e) **Dual-write + dual-read** (`sync_service.dart`): reuses the
+  shared `_dualWriteEntity`/`_pullEntity` engines → `dualWriteDecks`/`dualWriteDeckMoves` +
+  `pullDecksFromBackend`/`pullDeckMovesFromBackend`. Because decks have no Firestore leg, their
+  `sync_log` entries **no-op through** the Firestore push loop (`_getLocalRecordBody` returns null →
+  skipped; delete is a Firestore no-op) and get `markSynced` there, exactly like moves, while the
+  Appwrite dual-write (reading the pre-`markSynced` `pending`) is the real shadow write — so the
+  cutover order (backfill → dual-write flip → dual-read flip) has no gap. One **pair** kill-switch
+  each for write (`sync.decks.dualWrite.enabled`) / read (`sync.decks.dualRead.enabled`), **two
+  independent cursors** (`decks`/`deckMoves` distinct tables, audit A2). deck_moves dual-write splits
+  the composite `entityId` to fetch the row; delete → tombstone. Reads wired **explicitly** in
+  `pullRemote` (outside the Firestore-table loop, since there is no `decks` Firestore table). All
+  **OFF** by default (byte-identical to today — decks currently sync nowhere — until the owner flips
+  post-**M.4**). **Verified:** `dart analyze` (lib/core + tests) clean; **24/24** new tests green —
+  `migration_v25_test` (add + backfill deck_moves clock, DAO stamping both tables, no-clobber),
+  `deck_codec_test` (round-trip both entities, composite-id split, epoch guard, null filter/session),
+  `decks_backfill_appwrite_test` (byte-identical wire proof for both, non-destructive),
+  `sync_service_decks_dual_test` (DAO sync-log hook, pref gating, byte-identical upserts,
+  tombstone-for-delete, composite-id fetch, swallow-on-fail, LWW both directions, insert-when-absent,
+  independent cursors, malformed isolation). Also patched the v22/v23/v24 migration harnesses to
+  carry `decks`/`deck_moves` (the v25 block now touches them). Full suite: **0 regressions** (same 9
+  pre-existing reds on clean HEAD). Live smoke-user + real-data + cross-device soak ride **M.3/M.4**.
 - [ ] 4.8 **Tombstones end-to-end**: delete on device A → tombstone in Appwrite → device B hides
   the row locally without hard-deleting videos/rows; web studio DELETE=TOMBSTONE verified against
   the same table. Only after this task may any cutover be called complete.
