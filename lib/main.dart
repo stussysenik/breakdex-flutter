@@ -9,6 +9,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'firebase_options.dart';
 
+import 'core/config/widgets/entitlement_gate_prompt.dart';
 import 'core/config/widgets/update_gate_prompt.dart';
 import 'core/database/database.dart';
 import 'core/design/theme.dart';
@@ -420,8 +421,10 @@ class BreakdexApp extends ConsumerWidget {
         // it is behaviour-safe until the owner publishes a minSupportedBuild /
         // latestBuild above the running build via remote config.
         return _BootGateOverlay(
-          child: UpdateGatePrompt(
-            child: _StartupReliabilityToastGate(child: child),
+          child: EntitlementGatePrompt(
+            child: UpdateGatePrompt(
+              child: _StartupReliabilityToastGate(child: child),
+            ),
           ),
         );
       },

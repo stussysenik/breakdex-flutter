@@ -47,3 +47,31 @@ const bool kRemoteConfigLiveEnabled = bool.fromEnvironment(
   'REMOTE_CONFIG_LIVE',
   defaultValue: false,
 );
+
+/// `invites` / `entitlements` table ids (authored in task 2.1) and the
+/// `invites-redeem` Function id (task 2.2). Owner-minted invites map a code to a
+/// cohort + entitlement tier; a redeem writes the caller's per-user entitlement.
+const String kInvitesTableId = 'invites';
+const String kEntitlementsTableId = 'entitlements';
+const String kInvitesRedeemFunctionId = 'invites-redeem';
+
+/// Whether released builds require an entitlement (invite code) to pass the app
+/// gate. **Off by default** — the entire gate is inert, no Appwrite entitlement
+/// read fires, and behaviour is byte-identical to a pre-gate build. Flipped on
+/// only once the owner provisions the `invites`/`entitlements` tables live and
+/// mints the first codes (Phase 2 live provisioning + wave 1). Even when on, the
+/// gate never blocks the owner account, non-release/dev builds, existing device
+/// users (grandfathered by a non-empty local library), or an already-entitled
+/// user — see [EntitlementGate.evaluate]. Overridable via `--dart-define`.
+const bool kEntitlementGateEnabled = bool.fromEnvironment(
+  'ENTITLEMENT_GATE',
+  defaultValue: false,
+);
+
+/// The owner account's email. When set (via `--dart-define=OWNER_EMAIL=...`) the
+/// signed-in owner is never entitlement-gated (owner is user #1, never a
+/// customer). Empty by default so no address is baked into the open-source repo.
+const String kOwnerEmail = String.fromEnvironment(
+  'OWNER_EMAIL',
+  defaultValue: '',
+);

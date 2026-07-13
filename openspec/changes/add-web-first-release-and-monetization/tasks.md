@@ -323,19 +323,55 @@
 
 ## Phase 2: Invites + entitlements (Appwrite; gated on Appwrite Phase 3 identity)
 
-- [ ] 2.1 Collections: `invites` (code, cohort, entitlementTier, maxUses, uses, expiresAt) and
+- [x] 2.1 Collections: `invites` (code, cohort, entitlementTier, maxUses, uses, expiresAt) and
   `entitlements` (userId, tier, cohort, source, grantedAt). Owner-only writes; user reads own
   entitlement.
-- [ ] 2.2 `invite-redeem` Function (Dart): atomic redeem — validates code, increments uses,
+  <br/>**L5 done 2026-07-13 (config-only; live provisioning owner-gated).** Both tables authored in
+  `appwrite.config.json` in the tablesDB idiom (`$permissions: []` + `rowSecurity: true` — rows carry
+  owner-only perms). `invites`: code/cohort/entitlementTier/maxUses/uses/expiresAt?/createdAt, index
+  `by_code`. `entitlements`: userId/tier/cohort/source/code?/grantedAt, indexes `by_user_code`
+  (idempotency) + `by_user`. Surgical 50-line insert (0 deletions). **Live provisioning rides the
+  owner: targeted `tables-db create-*` only — NEVER `push tables --all`** (documented hazard).
+- [x] 2.2 `invite-redeem` Function (Dart): atomic redeem — validates code, increments uses,
   writes the user's entitlement + cohort binding; idempotent per (user, code); expired/exhausted
   codes rejected with typed errors.
-- [ ] 2.3 Client gate: released builds require an entitlement; first-run shows invite-code entry
+  <br/>**L5 done 2026-07-13.** `functions/invites-redeem/` (registered `invites-redeem`, dart-3.11,
+  scopes tables/rows read+write), built on the `reviews-append` template: pure core `lib/redeem.dart`
+  (no `dart_appwrite` import) + thin `lib/main.dart` IO glue + TablesDB store. `redeemInvite`:
+  idempotency guard on `(userId, code)` → replay returns `alreadyEntitled` **without re-counting**
+  (the "double-submit = one use" guarantee), else invalid/expired/exhausted are typed `RedeemStatus`
+  (→ HTTP 409), grant writes the entitlement under owner-only perms + consumes one use (→ 200).
+  Trusted `x-appwrite-user-id`, dynamic `x-appwrite-key`. `now` injected for deterministic tests.
+  Binary truth: `dart analyze` clean, **`dart test` 10/10** (grant, idempotent replay, distinct-user
+  use, invalid, expired, exhausted, unexpired-future, malformed-body).
+- [x] 2.3 Client gate: released builds require an entitlement; first-run shows invite-code entry
   (design-system styled). Local-only/dev builds and the owner account are never gated. Existing
   device users are grandfathered (their local data implies access) — brownfield rule.
-- [ ] 2.4 Cohort → `remote-config` profile binding proven end to end (redeem `crew` code → crew
+  <br/>**L5 done 2026-07-13 (flag-OFF, inert by default).** `EntitlementGate` sealed pair +
+  pure `evaluate` (`lib/core/config/entitlement.dart`) mirroring `UpdateGate`: lets through on ANY
+  exemption — flag off, `!kReleaseMode`, owner (`kOwnerEmail`), grandfathered (non-empty local
+  library via `hasLocalLibraryProvider`), or already-entitled. `EntitlementGatePrompt`
+  (`widgets/`) nests at the app root beside `UpdateGatePrompt`; `EntitlementRequired` → a
+  design-system invite-entry card (TextField + Redeem → calls the Function → invalidates the
+  entitlement read → gate lifts). Flags `kEntitlementGateEnabled`/`kOwnerEmail` in `appwrite_env.dart`,
+  **default OFF** — `entitlementProvider` short-circuits to null with no Appwrite call, so default
+  builds are byte-identical. Binary truth: full `flutter analyze` 0 errors, gate logic 11/11 +
+  prompt widget 2/2 green, `flutter build web` green (root-builder change web-safe).
+- [x] 2.4 Cohort → `remote-config` profile binding proven end to end (redeem `crew` code → crew
   flags active). This is the "my own versions" proof.
-- [ ] 2.5 Tests: redeem atomicity (double-submit = one use), expiry/exhaustion rejection, gate
+  <br/>**L5 done 2026-07-13.** The cohort seam already existed (`RemoteConfig.cohortProfiles` +
+  `flag(key, cohort:)` — a cohort override wins over the base flag) but had no per-user resolver. Added
+  `userCohortProvider` — the redeemed entitlement's `cohort` — which callers thread into
+  `flag(cohort:)`. Proven by a test: base `flag('newDrillUi')` → false, `flag('newDrillUi',
+  cohort: 'crew')` with `cohortProfiles: {crew: {newDrillUi: true}}` → true; an un-profiled cohort
+  falls back to base. Live end-to-end (real redeem → live `appConfig` cohort profile) rides the
+  owner's provisioning + `1R.4`/`M.5` config flip.
+- [x] 2.5 Tests: redeem atomicity (double-submit = one use), expiry/exhaustion rejection, gate
   never blocks owner/grandfathered users.
+  <br/>**L5 done 2026-07-13.** Function `dart test` 10/10 (atomicity/idempotency, expiry, exhaustion,
+  invalid, malformed body). Client `flutter test` 13/13: gate `evaluate` never blocks owner /
+  grandfathered / dev-build / flag-off / entitled (11) + the prompt overlay blocks-when-required /
+  passes-when-granted (2). Cohort binding proven (2.4). 0 regressions; full `flutter analyze` 0 errors.
 
 ## Phase 3: Payments + offerings (web checkout; gated on Phase 2)
 

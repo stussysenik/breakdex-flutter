@@ -231,6 +231,44 @@
                 { "key": "updatedAt", "type": "integer", "required": true, "default": null }
             ],
             "indexes": []
+        },
+        {
+            "$id": "invites",
+            "databaseId": "breakdex",
+            "name": "invites",
+            "$permissions": [],
+            "rowSecurity": true,
+            "columns": [
+                { "key": "code", "type": "string", "size": 32, "required": true, "default": null },
+                { "key": "cohort", "type": "string", "size": 32, "required": true, "default": null },
+                { "key": "entitlementTier", "type": "string", "size": 32, "required": true, "default": null },
+                { "key": "maxUses", "type": "integer", "required": true, "default": null, "min": 0 },
+                { "key": "uses", "type": "integer", "required": true, "default": null, "min": 0 },
+                { "key": "expiresAt", "type": "integer", "required": false },
+                { "key": "createdAt", "type": "integer", "required": true, "default": null }
+            ],
+            "indexes": [
+                { "key": "by_code", "type": "key", "columns": ["code"] }
+            ]
+        },
+        {
+            "$id": "entitlements",
+            "databaseId": "breakdex",
+            "name": "entitlements",
+            "$permissions": [],
+            "rowSecurity": true,
+            "columns": [
+                { "key": "userId", "type": "string", "size": 64, "required": true, "default": null },
+                { "key": "tier", "type": "string", "size": 32, "required": true, "default": null },
+                { "key": "cohort", "type": "string", "size": 32, "required": true, "default": null },
+                { "key": "source", "type": "string", "size": 32, "required": true, "default": null },
+                { "key": "code", "type": "string", "size": 32, "required": false },
+                { "key": "grantedAt", "type": "integer", "required": true, "default": null }
+            ],
+            "indexes": [
+                { "key": "by_user_code", "type": "key", "columns": ["userId", "code"] },
+                { "key": "by_user", "type": "key", "columns": ["userId"] }
+            ]
         }
     ],
     "functions": [
@@ -266,6 +304,18 @@
             "events": [],
             "scopes": ["tables.read", "rows.read", "rows.write"],
             "path": "functions/reviews-append",
+            "entrypoint": "lib/main.dart",
+            "commands": "dart pub get",
+            "enabled": true
+        },
+        {
+            "$id": "invites-redeem",
+            "name": "invites-redeem",
+            "runtime": "dart-3.11",
+            "execute": ["users"],
+            "events": [],
+            "scopes": ["tables.read", "rows.read", "rows.write"],
+            "path": "functions/invites-redeem",
             "entrypoint": "lib/main.dart",
             "commands": "dart pub get",
             "enabled": true

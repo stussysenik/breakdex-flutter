@@ -45,7 +45,14 @@
   (sidesteps the GITHUB_TOKEN tag-trigger gotcha); `web/vercel.json` SPA + no-cache entry files,
   **no COEP** (keeps Drive video + OAuth working); rollback = dispatch on a prior tag / Vercel
   Instant Rollback; `docs/web-deploy.md` has the owner OAuth setup (3 secrets); self-skips until
-  wired. **Next = L5 (Phase 2 invites, flag-OFF).** Then L6 Lemon Squeezy payments seam.
+  wired. **L5 (Phase 2 invites + entitlements, flag-OFF) DONE** — `invites`/`entitlements` tables
+  authored in `appwrite.config.json`; `invites-redeem` Dart Function (idempotent per (user,code),
+  typed invalid/expired/exhausted, `dart test` 10/10); `EntitlementGate` sealed pure gate +
+  `EntitlementGatePrompt` at root (flag `kEntitlementGateEnabled` **OFF** by default → inert, no
+  Appwrite call, builds byte-identical); `userCohortProvider` binds a redeemed cohort into
+  `RemoteConfig.flag(cohort:)`; client tests 13/13; full analyze 0 errors; web build green. Live
+  provisioning (targeted `tables-db create-*` + `push functions`) + first mint ride the owner.
+  **Next = L6 (Phase 3 Lemon Squeezy payments seam).** That is the last agent-runnable launch item.
 - **Prior change:** `migrate-canonical-backend-to-appwrite` — **⚡ Overnight wave (owner ruling
   2026-07-12), COMPLETE + maximally advanced pre-soak.** Its wave preamble + `design.md` D11
   remain the reference. `main` is the merged single source of truth; the wave commits sit local
