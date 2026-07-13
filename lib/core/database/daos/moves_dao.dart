@@ -9,8 +9,15 @@ part 'moves_dao.g.dart';
 class MovesDao extends DatabaseAccessor<AppDatabase> with _$MovesDaoMixin {
   MovesDao(super.db);
 
-  Expression<bool> _isActive(final $MovesTable t) => t.archivedAt.isNull();
-  Expression<bool> _isArchived(final $MovesTable t) => t.archivedAt.isNotNull();
+  // A remote-delete tombstone (task 4.8) hides a move on secondary devices via
+  // [Moves.deletedAt]; it must vanish from BOTH the active and the archived
+  // feeds — it is neither, it is deleted-elsewhere. So both predicates require
+  // `deletedAt IS NULL` on top of their archive test.
+  Expression<bool> _notDeleted(final $MovesTable t) => t.deletedAt.isNull();
+  Expression<bool> _isActive(final $MovesTable t) =>
+      t.archivedAt.isNull() & _notDeleted(t);
+  Expression<bool> _isArchived(final $MovesTable t) =>
+      t.archivedAt.isNotNull() & _notDeleted(t);
 
   String _normalizeName(final String value) =>
       value.trim().toLowerCase().replaceAll(RegExp(r'\s+'), ' ');

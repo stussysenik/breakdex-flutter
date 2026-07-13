@@ -26,6 +26,13 @@ class Moves extends Table {
   /// Nullable so the additive v23 migration can backfill it to [createdAt].
   DateTimeColumn get updatedAt => dateTime().nullable()();
 
+  /// Set when an inbound sync tombstone hides this row on a *secondary* device
+  /// (task 4.8) — distinct from user [archivedAt]. Never populated by a local
+  /// delete (which hard-deletes on the originating device); it is a reversible
+  /// soft-hide so a remote delete never destroys videos/rows. Read paths filter
+  /// `deletedAt IS NULL`; `archivedAt` and `deletedAt` hide independently.
+  DateTimeColumn get deletedAt => dateTime().nullable()();
+
   @override
   Set<Column> get primaryKey => {id};
 }

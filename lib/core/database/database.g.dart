@@ -216,6 +216,17 @@ class $MovesTable extends Moves with TableInfo<$MovesTable, Move> {
     type: DriftSqlType.dateTime,
     requiredDuringInsert: false,
   );
+  static const VerificationMeta _deletedAtMeta = const VerificationMeta(
+    'deletedAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> deletedAt = GeneratedColumn<DateTime>(
+    'deleted_at',
+    aliasedName,
+    true,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+  );
   @override
   List<GeneratedColumn> get $columns => [
     id,
@@ -237,6 +248,7 @@ class $MovesTable extends Moves with TableInfo<$MovesTable, Move> {
     videoCreationDate,
     createdAt,
     updatedAt,
+    deletedAt,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -392,6 +404,12 @@ class $MovesTable extends Moves with TableInfo<$MovesTable, Move> {
         updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta),
       );
     }
+    if (data.containsKey('deleted_at')) {
+      context.handle(
+        _deletedAtMeta,
+        deletedAt.isAcceptableOrUnknown(data['deleted_at']!, _deletedAtMeta),
+      );
+    }
     return context;
   }
 
@@ -477,6 +495,10 @@ class $MovesTable extends Moves with TableInfo<$MovesTable, Move> {
         DriftSqlType.dateTime,
         data['${effectivePrefix}updated_at'],
       ),
+      deletedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}deleted_at'],
+      ),
     );
   }
 
@@ -511,6 +533,13 @@ class Move extends DataClass implements Insertable<Move> {
   /// user edit; a reconcile write preserves the remote timestamp instead.
   /// Nullable so the additive v23 migration can backfill it to [createdAt].
   final DateTime? updatedAt;
+
+  /// Set when an inbound sync tombstone hides this row on a *secondary* device
+  /// (task 4.8) — distinct from user [archivedAt]. Never populated by a local
+  /// delete (which hard-deletes on the originating device); it is a reversible
+  /// soft-hide so a remote delete never destroys videos/rows. Read paths filter
+  /// `deletedAt IS NULL`; `archivedAt` and `deletedAt` hide independently.
+  final DateTime? deletedAt;
   const Move({
     required this.id,
     required this.name,
@@ -531,6 +560,7 @@ class Move extends DataClass implements Insertable<Move> {
     this.videoCreationDate,
     required this.createdAt,
     this.updatedAt,
+    this.deletedAt,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -579,6 +609,9 @@ class Move extends DataClass implements Insertable<Move> {
     map['created_at'] = Variable<DateTime>(createdAt);
     if (!nullToAbsent || updatedAt != null) {
       map['updated_at'] = Variable<DateTime>(updatedAt);
+    }
+    if (!nullToAbsent || deletedAt != null) {
+      map['deleted_at'] = Variable<DateTime>(deletedAt);
     }
     return map;
   }
@@ -630,6 +663,9 @@ class Move extends DataClass implements Insertable<Move> {
       updatedAt: updatedAt == null && nullToAbsent
           ? const Value.absent()
           : Value(updatedAt),
+      deletedAt: deletedAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(deletedAt),
     );
   }
 
@@ -666,6 +702,7 @@ class Move extends DataClass implements Insertable<Move> {
       ),
       createdAt: serializer.fromJson<DateTime>(json['createdAt']),
       updatedAt: serializer.fromJson<DateTime?>(json['updatedAt']),
+      deletedAt: serializer.fromJson<DateTime?>(json['deletedAt']),
     );
   }
   @override
@@ -691,6 +728,7 @@ class Move extends DataClass implements Insertable<Move> {
       'videoCreationDate': serializer.toJson<DateTime?>(videoCreationDate),
       'createdAt': serializer.toJson<DateTime>(createdAt),
       'updatedAt': serializer.toJson<DateTime?>(updatedAt),
+      'deletedAt': serializer.toJson<DateTime?>(deletedAt),
     };
   }
 
@@ -714,6 +752,7 @@ class Move extends DataClass implements Insertable<Move> {
     Value<DateTime?> videoCreationDate = const Value.absent(),
     DateTime? createdAt,
     Value<DateTime?> updatedAt = const Value.absent(),
+    Value<DateTime?> deletedAt = const Value.absent(),
   }) => Move(
     id: id ?? this.id,
     name: name ?? this.name,
@@ -748,6 +787,7 @@ class Move extends DataClass implements Insertable<Move> {
         : this.videoCreationDate,
     createdAt: createdAt ?? this.createdAt,
     updatedAt: updatedAt.present ? updatedAt.value : this.updatedAt,
+    deletedAt: deletedAt.present ? deletedAt.value : this.deletedAt,
   );
   Move copyWithCompanion(MovesCompanion data) {
     return Move(
@@ -792,6 +832,7 @@ class Move extends DataClass implements Insertable<Move> {
           : this.videoCreationDate,
       createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
       updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
+      deletedAt: data.deletedAt.present ? data.deletedAt.value : this.deletedAt,
     );
   }
 
@@ -816,7 +857,8 @@ class Move extends DataClass implements Insertable<Move> {
           ..write('videoFileSize: $videoFileSize, ')
           ..write('videoCreationDate: $videoCreationDate, ')
           ..write('createdAt: $createdAt, ')
-          ..write('updatedAt: $updatedAt')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('deletedAt: $deletedAt')
           ..write(')'))
         .toString();
   }
@@ -842,6 +884,7 @@ class Move extends DataClass implements Insertable<Move> {
     videoCreationDate,
     createdAt,
     updatedAt,
+    deletedAt,
   );
   @override
   bool operator ==(Object other) =>
@@ -865,7 +908,8 @@ class Move extends DataClass implements Insertable<Move> {
           other.videoFileSize == this.videoFileSize &&
           other.videoCreationDate == this.videoCreationDate &&
           other.createdAt == this.createdAt &&
-          other.updatedAt == this.updatedAt);
+          other.updatedAt == this.updatedAt &&
+          other.deletedAt == this.deletedAt);
 }
 
 class MovesCompanion extends UpdateCompanion<Move> {
@@ -888,6 +932,7 @@ class MovesCompanion extends UpdateCompanion<Move> {
   final Value<DateTime?> videoCreationDate;
   final Value<DateTime> createdAt;
   final Value<DateTime?> updatedAt;
+  final Value<DateTime?> deletedAt;
   final Value<int> rowid;
   const MovesCompanion({
     this.id = const Value.absent(),
@@ -909,6 +954,7 @@ class MovesCompanion extends UpdateCompanion<Move> {
     this.videoCreationDate = const Value.absent(),
     this.createdAt = const Value.absent(),
     this.updatedAt = const Value.absent(),
+    this.deletedAt = const Value.absent(),
     this.rowid = const Value.absent(),
   });
   MovesCompanion.insert({
@@ -931,6 +977,7 @@ class MovesCompanion extends UpdateCompanion<Move> {
     this.videoCreationDate = const Value.absent(),
     this.createdAt = const Value.absent(),
     this.updatedAt = const Value.absent(),
+    this.deletedAt = const Value.absent(),
     this.rowid = const Value.absent(),
   }) : id = Value(id),
        name = Value(name);
@@ -954,6 +1001,7 @@ class MovesCompanion extends UpdateCompanion<Move> {
     Expression<DateTime>? videoCreationDate,
     Expression<DateTime>? createdAt,
     Expression<DateTime>? updatedAt,
+    Expression<DateTime>? deletedAt,
     Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
@@ -978,6 +1026,7 @@ class MovesCompanion extends UpdateCompanion<Move> {
       if (videoCreationDate != null) 'video_creation_date': videoCreationDate,
       if (createdAt != null) 'created_at': createdAt,
       if (updatedAt != null) 'updated_at': updatedAt,
+      if (deletedAt != null) 'deleted_at': deletedAt,
       if (rowid != null) 'rowid': rowid,
     });
   }
@@ -1002,6 +1051,7 @@ class MovesCompanion extends UpdateCompanion<Move> {
     Value<DateTime?>? videoCreationDate,
     Value<DateTime>? createdAt,
     Value<DateTime?>? updatedAt,
+    Value<DateTime?>? deletedAt,
     Value<int>? rowid,
   }) {
     return MovesCompanion(
@@ -1024,6 +1074,7 @@ class MovesCompanion extends UpdateCompanion<Move> {
       videoCreationDate: videoCreationDate ?? this.videoCreationDate,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
+      deletedAt: deletedAt ?? this.deletedAt,
       rowid: rowid ?? this.rowid,
     );
   }
@@ -1092,6 +1143,9 @@ class MovesCompanion extends UpdateCompanion<Move> {
     if (updatedAt.present) {
       map['updated_at'] = Variable<DateTime>(updatedAt.value);
     }
+    if (deletedAt.present) {
+      map['deleted_at'] = Variable<DateTime>(deletedAt.value);
+    }
     if (rowid.present) {
       map['rowid'] = Variable<int>(rowid.value);
     }
@@ -1120,6 +1174,7 @@ class MovesCompanion extends UpdateCompanion<Move> {
           ..write('videoCreationDate: $videoCreationDate, ')
           ..write('createdAt: $createdAt, ')
           ..write('updatedAt: $updatedAt, ')
+          ..write('deletedAt: $deletedAt, ')
           ..write('rowid: $rowid')
           ..write(')'))
         .toString();
@@ -1214,6 +1269,17 @@ class $CombosTable extends Combos with TableInfo<$CombosTable, Combo> {
     type: DriftSqlType.dateTime,
     requiredDuringInsert: false,
   );
+  static const VerificationMeta _deletedAtMeta = const VerificationMeta(
+    'deletedAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> deletedAt = GeneratedColumn<DateTime>(
+    'deleted_at',
+    aliasedName,
+    true,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+  );
   @override
   List<GeneratedColumn> get $columns => [
     id,
@@ -1224,6 +1290,7 @@ class $CombosTable extends Combos with TableInfo<$CombosTable, Combo> {
     status,
     createdAt,
     updatedAt,
+    deletedAt,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -1292,6 +1359,12 @@ class $CombosTable extends Combos with TableInfo<$CombosTable, Combo> {
         updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta),
       );
     }
+    if (data.containsKey('deleted_at')) {
+      context.handle(
+        _deletedAtMeta,
+        deletedAt.isAcceptableOrUnknown(data['deleted_at']!, _deletedAtMeta),
+      );
+    }
     return context;
   }
 
@@ -1333,6 +1406,10 @@ class $CombosTable extends Combos with TableInfo<$CombosTable, Combo> {
         DriftSqlType.dateTime,
         data['${effectivePrefix}updated_at'],
       ),
+      deletedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}deleted_at'],
+      ),
     );
   }
 
@@ -1357,6 +1434,12 @@ class Combo extends DataClass implements Insertable<Combo> {
   /// additive v24 migration can backfill it from [createdAt]; the DAO stamps it
   /// on every local mutation, mirroring `moves.updatedAt`.
   final DateTime? updatedAt;
+
+  /// Reversible soft-hide set when an inbound sync tombstone applies a remote
+  /// delete on a secondary device (task 4.8). A local delete still hard-deletes
+  /// on its origin device; this only ever fires on the *pull* side so a delete
+  /// elsewhere never destroys rows here. Read paths filter `deletedAt IS NULL`.
+  final DateTime? deletedAt;
   const Combo({
     required this.id,
     required this.name,
@@ -1366,6 +1449,7 @@ class Combo extends DataClass implements Insertable<Combo> {
     required this.status,
     required this.createdAt,
     this.updatedAt,
+    this.deletedAt,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -1385,6 +1469,9 @@ class Combo extends DataClass implements Insertable<Combo> {
     map['created_at'] = Variable<DateTime>(createdAt);
     if (!nullToAbsent || updatedAt != null) {
       map['updated_at'] = Variable<DateTime>(updatedAt);
+    }
+    if (!nullToAbsent || deletedAt != null) {
+      map['deleted_at'] = Variable<DateTime>(deletedAt);
     }
     return map;
   }
@@ -1407,6 +1494,9 @@ class Combo extends DataClass implements Insertable<Combo> {
       updatedAt: updatedAt == null && nullToAbsent
           ? const Value.absent()
           : Value(updatedAt),
+      deletedAt: deletedAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(deletedAt),
     );
   }
 
@@ -1424,6 +1514,7 @@ class Combo extends DataClass implements Insertable<Combo> {
       status: serializer.fromJson<String>(json['status']),
       createdAt: serializer.fromJson<DateTime>(json['createdAt']),
       updatedAt: serializer.fromJson<DateTime?>(json['updatedAt']),
+      deletedAt: serializer.fromJson<DateTime?>(json['deletedAt']),
     );
   }
   @override
@@ -1438,6 +1529,7 @@ class Combo extends DataClass implements Insertable<Combo> {
       'status': serializer.toJson<String>(status),
       'createdAt': serializer.toJson<DateTime>(createdAt),
       'updatedAt': serializer.toJson<DateTime?>(updatedAt),
+      'deletedAt': serializer.toJson<DateTime?>(deletedAt),
     };
   }
 
@@ -1450,6 +1542,7 @@ class Combo extends DataClass implements Insertable<Combo> {
     String? status,
     DateTime? createdAt,
     Value<DateTime?> updatedAt = const Value.absent(),
+    Value<DateTime?> deletedAt = const Value.absent(),
   }) => Combo(
     id: id ?? this.id,
     name: name ?? this.name,
@@ -1461,6 +1554,7 @@ class Combo extends DataClass implements Insertable<Combo> {
     status: status ?? this.status,
     createdAt: createdAt ?? this.createdAt,
     updatedAt: updatedAt.present ? updatedAt.value : this.updatedAt,
+    deletedAt: deletedAt.present ? deletedAt.value : this.deletedAt,
   );
   Combo copyWithCompanion(CombosCompanion data) {
     return Combo(
@@ -1476,6 +1570,7 @@ class Combo extends DataClass implements Insertable<Combo> {
       status: data.status.present ? data.status.value : this.status,
       createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
       updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
+      deletedAt: data.deletedAt.present ? data.deletedAt.value : this.deletedAt,
     );
   }
 
@@ -1489,7 +1584,8 @@ class Combo extends DataClass implements Insertable<Combo> {
           ..write('contentHash: $contentHash, ')
           ..write('status: $status, ')
           ..write('createdAt: $createdAt, ')
-          ..write('updatedAt: $updatedAt')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('deletedAt: $deletedAt')
           ..write(')'))
         .toString();
   }
@@ -1504,6 +1600,7 @@ class Combo extends DataClass implements Insertable<Combo> {
     status,
     createdAt,
     updatedAt,
+    deletedAt,
   );
   @override
   bool operator ==(Object other) =>
@@ -1516,7 +1613,8 @@ class Combo extends DataClass implements Insertable<Combo> {
           other.contentHash == this.contentHash &&
           other.status == this.status &&
           other.createdAt == this.createdAt &&
-          other.updatedAt == this.updatedAt);
+          other.updatedAt == this.updatedAt &&
+          other.deletedAt == this.deletedAt);
 }
 
 class CombosCompanion extends UpdateCompanion<Combo> {
@@ -1528,6 +1626,7 @@ class CombosCompanion extends UpdateCompanion<Combo> {
   final Value<String> status;
   final Value<DateTime> createdAt;
   final Value<DateTime?> updatedAt;
+  final Value<DateTime?> deletedAt;
   final Value<int> rowid;
   const CombosCompanion({
     this.id = const Value.absent(),
@@ -1538,6 +1637,7 @@ class CombosCompanion extends UpdateCompanion<Combo> {
     this.status = const Value.absent(),
     this.createdAt = const Value.absent(),
     this.updatedAt = const Value.absent(),
+    this.deletedAt = const Value.absent(),
     this.rowid = const Value.absent(),
   });
   CombosCompanion.insert({
@@ -1549,6 +1649,7 @@ class CombosCompanion extends UpdateCompanion<Combo> {
     this.status = const Value.absent(),
     this.createdAt = const Value.absent(),
     this.updatedAt = const Value.absent(),
+    this.deletedAt = const Value.absent(),
     this.rowid = const Value.absent(),
   }) : id = Value(id),
        name = Value(name);
@@ -1561,6 +1662,7 @@ class CombosCompanion extends UpdateCompanion<Combo> {
     Expression<String>? status,
     Expression<DateTime>? createdAt,
     Expression<DateTime>? updatedAt,
+    Expression<DateTime>? deletedAt,
     Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
@@ -1572,6 +1674,7 @@ class CombosCompanion extends UpdateCompanion<Combo> {
       if (status != null) 'status': status,
       if (createdAt != null) 'created_at': createdAt,
       if (updatedAt != null) 'updated_at': updatedAt,
+      if (deletedAt != null) 'deleted_at': deletedAt,
       if (rowid != null) 'rowid': rowid,
     });
   }
@@ -1585,6 +1688,7 @@ class CombosCompanion extends UpdateCompanion<Combo> {
     Value<String>? status,
     Value<DateTime>? createdAt,
     Value<DateTime?>? updatedAt,
+    Value<DateTime?>? deletedAt,
     Value<int>? rowid,
   }) {
     return CombosCompanion(
@@ -1596,6 +1700,7 @@ class CombosCompanion extends UpdateCompanion<Combo> {
       status: status ?? this.status,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
+      deletedAt: deletedAt ?? this.deletedAt,
       rowid: rowid ?? this.rowid,
     );
   }
@@ -1627,6 +1732,9 @@ class CombosCompanion extends UpdateCompanion<Combo> {
     if (updatedAt.present) {
       map['updated_at'] = Variable<DateTime>(updatedAt.value);
     }
+    if (deletedAt.present) {
+      map['deleted_at'] = Variable<DateTime>(deletedAt.value);
+    }
     if (rowid.present) {
       map['rowid'] = Variable<int>(rowid.value);
     }
@@ -1644,6 +1752,7 @@ class CombosCompanion extends UpdateCompanion<Combo> {
           ..write('status: $status, ')
           ..write('createdAt: $createdAt, ')
           ..write('updatedAt: $updatedAt, ')
+          ..write('deletedAt: $deletedAt, ')
           ..write('rowid: $rowid')
           ..write(')'))
         .toString();
@@ -1723,6 +1832,17 @@ class $ComboMovesTable extends ComboMoves
     type: DriftSqlType.dateTime,
     requiredDuringInsert: false,
   );
+  static const VerificationMeta _deletedAtMeta = const VerificationMeta(
+    'deletedAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> deletedAt = GeneratedColumn<DateTime>(
+    'deleted_at',
+    aliasedName,
+    true,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+  );
   @override
   List<GeneratedColumn> get $columns => [
     id,
@@ -1731,6 +1851,7 @@ class $ComboMovesTable extends ComboMoves
     moveId,
     count,
     updatedAt,
+    deletedAt,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -1788,6 +1909,12 @@ class $ComboMovesTable extends ComboMoves
         updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta),
       );
     }
+    if (data.containsKey('deleted_at')) {
+      context.handle(
+        _deletedAtMeta,
+        deletedAt.isAcceptableOrUnknown(data['deleted_at']!, _deletedAtMeta),
+      );
+    }
     return context;
   }
 
@@ -1821,6 +1948,10 @@ class $ComboMovesTable extends ComboMoves
         DriftSqlType.dateTime,
         data['${effectivePrefix}updated_at'],
       ),
+      deletedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}deleted_at'],
+      ),
     );
   }
 
@@ -1842,6 +1973,11 @@ class ComboMove extends DataClass implements Insertable<ComboMove> {
   /// existing rows are seeded from the parent combo's `createdAt`); the DAO
   /// stamps it on every insert/update, so new rows always carry a real clock.
   final DateTime? updatedAt;
+
+  /// Reversible soft-hide for an inbound tombstone on a secondary device (task
+  /// 4.8) — e.g. a step removed on another device. Pull-side only; read paths
+  /// filter `deletedAt IS NULL`.
+  final DateTime? deletedAt;
   const ComboMove({
     required this.id,
     required this.sequenceIndex,
@@ -1849,6 +1985,7 @@ class ComboMove extends DataClass implements Insertable<ComboMove> {
     required this.moveId,
     required this.count,
     this.updatedAt,
+    this.deletedAt,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -1860,6 +1997,9 @@ class ComboMove extends DataClass implements Insertable<ComboMove> {
     map['count'] = Variable<int>(count);
     if (!nullToAbsent || updatedAt != null) {
       map['updated_at'] = Variable<DateTime>(updatedAt);
+    }
+    if (!nullToAbsent || deletedAt != null) {
+      map['deleted_at'] = Variable<DateTime>(deletedAt);
     }
     return map;
   }
@@ -1874,6 +2014,9 @@ class ComboMove extends DataClass implements Insertable<ComboMove> {
       updatedAt: updatedAt == null && nullToAbsent
           ? const Value.absent()
           : Value(updatedAt),
+      deletedAt: deletedAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(deletedAt),
     );
   }
 
@@ -1889,6 +2032,7 @@ class ComboMove extends DataClass implements Insertable<ComboMove> {
       moveId: serializer.fromJson<String>(json['moveId']),
       count: serializer.fromJson<int>(json['count']),
       updatedAt: serializer.fromJson<DateTime?>(json['updatedAt']),
+      deletedAt: serializer.fromJson<DateTime?>(json['deletedAt']),
     );
   }
   @override
@@ -1901,6 +2045,7 @@ class ComboMove extends DataClass implements Insertable<ComboMove> {
       'moveId': serializer.toJson<String>(moveId),
       'count': serializer.toJson<int>(count),
       'updatedAt': serializer.toJson<DateTime?>(updatedAt),
+      'deletedAt': serializer.toJson<DateTime?>(deletedAt),
     };
   }
 
@@ -1911,6 +2056,7 @@ class ComboMove extends DataClass implements Insertable<ComboMove> {
     String? moveId,
     int? count,
     Value<DateTime?> updatedAt = const Value.absent(),
+    Value<DateTime?> deletedAt = const Value.absent(),
   }) => ComboMove(
     id: id ?? this.id,
     sequenceIndex: sequenceIndex ?? this.sequenceIndex,
@@ -1918,6 +2064,7 @@ class ComboMove extends DataClass implements Insertable<ComboMove> {
     moveId: moveId ?? this.moveId,
     count: count ?? this.count,
     updatedAt: updatedAt.present ? updatedAt.value : this.updatedAt,
+    deletedAt: deletedAt.present ? deletedAt.value : this.deletedAt,
   );
   ComboMove copyWithCompanion(ComboMovesCompanion data) {
     return ComboMove(
@@ -1929,6 +2076,7 @@ class ComboMove extends DataClass implements Insertable<ComboMove> {
       moveId: data.moveId.present ? data.moveId.value : this.moveId,
       count: data.count.present ? data.count.value : this.count,
       updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
+      deletedAt: data.deletedAt.present ? data.deletedAt.value : this.deletedAt,
     );
   }
 
@@ -1940,14 +2088,22 @@ class ComboMove extends DataClass implements Insertable<ComboMove> {
           ..write('comboId: $comboId, ')
           ..write('moveId: $moveId, ')
           ..write('count: $count, ')
-          ..write('updatedAt: $updatedAt')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('deletedAt: $deletedAt')
           ..write(')'))
         .toString();
   }
 
   @override
-  int get hashCode =>
-      Object.hash(id, sequenceIndex, comboId, moveId, count, updatedAt);
+  int get hashCode => Object.hash(
+    id,
+    sequenceIndex,
+    comboId,
+    moveId,
+    count,
+    updatedAt,
+    deletedAt,
+  );
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -1957,7 +2113,8 @@ class ComboMove extends DataClass implements Insertable<ComboMove> {
           other.comboId == this.comboId &&
           other.moveId == this.moveId &&
           other.count == this.count &&
-          other.updatedAt == this.updatedAt);
+          other.updatedAt == this.updatedAt &&
+          other.deletedAt == this.deletedAt);
 }
 
 class ComboMovesCompanion extends UpdateCompanion<ComboMove> {
@@ -1967,6 +2124,7 @@ class ComboMovesCompanion extends UpdateCompanion<ComboMove> {
   final Value<String> moveId;
   final Value<int> count;
   final Value<DateTime?> updatedAt;
+  final Value<DateTime?> deletedAt;
   final Value<int> rowid;
   const ComboMovesCompanion({
     this.id = const Value.absent(),
@@ -1975,6 +2133,7 @@ class ComboMovesCompanion extends UpdateCompanion<ComboMove> {
     this.moveId = const Value.absent(),
     this.count = const Value.absent(),
     this.updatedAt = const Value.absent(),
+    this.deletedAt = const Value.absent(),
     this.rowid = const Value.absent(),
   });
   ComboMovesCompanion.insert({
@@ -1984,6 +2143,7 @@ class ComboMovesCompanion extends UpdateCompanion<ComboMove> {
     required String moveId,
     this.count = const Value.absent(),
     this.updatedAt = const Value.absent(),
+    this.deletedAt = const Value.absent(),
     this.rowid = const Value.absent(),
   }) : id = Value(id),
        sequenceIndex = Value(sequenceIndex),
@@ -1996,6 +2156,7 @@ class ComboMovesCompanion extends UpdateCompanion<ComboMove> {
     Expression<String>? moveId,
     Expression<int>? count,
     Expression<DateTime>? updatedAt,
+    Expression<DateTime>? deletedAt,
     Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
@@ -2005,6 +2166,7 @@ class ComboMovesCompanion extends UpdateCompanion<ComboMove> {
       if (moveId != null) 'move_id': moveId,
       if (count != null) 'count': count,
       if (updatedAt != null) 'updated_at': updatedAt,
+      if (deletedAt != null) 'deleted_at': deletedAt,
       if (rowid != null) 'rowid': rowid,
     });
   }
@@ -2016,6 +2178,7 @@ class ComboMovesCompanion extends UpdateCompanion<ComboMove> {
     Value<String>? moveId,
     Value<int>? count,
     Value<DateTime?>? updatedAt,
+    Value<DateTime?>? deletedAt,
     Value<int>? rowid,
   }) {
     return ComboMovesCompanion(
@@ -2025,6 +2188,7 @@ class ComboMovesCompanion extends UpdateCompanion<ComboMove> {
       moveId: moveId ?? this.moveId,
       count: count ?? this.count,
       updatedAt: updatedAt ?? this.updatedAt,
+      deletedAt: deletedAt ?? this.deletedAt,
       rowid: rowid ?? this.rowid,
     );
   }
@@ -2050,6 +2214,9 @@ class ComboMovesCompanion extends UpdateCompanion<ComboMove> {
     if (updatedAt.present) {
       map['updated_at'] = Variable<DateTime>(updatedAt.value);
     }
+    if (deletedAt.present) {
+      map['deleted_at'] = Variable<DateTime>(deletedAt.value);
+    }
     if (rowid.present) {
       map['rowid'] = Variable<int>(rowid.value);
     }
@@ -2065,6 +2232,7 @@ class ComboMovesCompanion extends UpdateCompanion<ComboMove> {
           ..write('moveId: $moveId, ')
           ..write('count: $count, ')
           ..write('updatedAt: $updatedAt, ')
+          ..write('deletedAt: $deletedAt, ')
           ..write('rowid: $rowid')
           ..write(')'))
         .toString();
@@ -4484,6 +4652,17 @@ class $DecksTable extends Decks with TableInfo<$DecksTable, Deck> {
     requiredDuringInsert: false,
     defaultValue: currentDateAndTime,
   );
+  static const VerificationMeta _deletedAtMeta = const VerificationMeta(
+    'deletedAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> deletedAt = GeneratedColumn<DateTime>(
+    'deleted_at',
+    aliasedName,
+    true,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+  );
   @override
   List<GeneratedColumn> get $columns => [
     id,
@@ -4493,6 +4672,7 @@ class $DecksTable extends Decks with TableInfo<$DecksTable, Deck> {
     sessionSize,
     createdAt,
     updatedAt,
+    deletedAt,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -4555,6 +4735,12 @@ class $DecksTable extends Decks with TableInfo<$DecksTable, Deck> {
         updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta),
       );
     }
+    if (data.containsKey('deleted_at')) {
+      context.handle(
+        _deletedAtMeta,
+        deletedAt.isAcceptableOrUnknown(data['deleted_at']!, _deletedAtMeta),
+      );
+    }
     return context;
   }
 
@@ -4592,6 +4778,10 @@ class $DecksTable extends Decks with TableInfo<$DecksTable, Deck> {
         DriftSqlType.dateTime,
         data['${effectivePrefix}updated_at'],
       )!,
+      deletedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}deleted_at'],
+      ),
     );
   }
 
@@ -4617,6 +4807,12 @@ class Deck extends DataClass implements Insertable<Deck> {
   final int? sessionSize;
   final DateTime createdAt;
   final DateTime updatedAt;
+
+  /// Reversible soft-hide set when an inbound sync tombstone applies a remote
+  /// deck delete on a secondary device (task 4.8). Pull-side only — a local
+  /// delete still hard-deletes on its origin device. Read paths filter
+  /// `deletedAt IS NULL`.
+  final DateTime? deletedAt;
   const Deck({
     required this.id,
     required this.name,
@@ -4625,6 +4821,7 @@ class Deck extends DataClass implements Insertable<Deck> {
     this.sessionSize,
     required this.createdAt,
     required this.updatedAt,
+    this.deletedAt,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -4640,6 +4837,9 @@ class Deck extends DataClass implements Insertable<Deck> {
     }
     map['created_at'] = Variable<DateTime>(createdAt);
     map['updated_at'] = Variable<DateTime>(updatedAt);
+    if (!nullToAbsent || deletedAt != null) {
+      map['deleted_at'] = Variable<DateTime>(deletedAt);
+    }
     return map;
   }
 
@@ -4656,6 +4856,9 @@ class Deck extends DataClass implements Insertable<Deck> {
           : Value(sessionSize),
       createdAt: Value(createdAt),
       updatedAt: Value(updatedAt),
+      deletedAt: deletedAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(deletedAt),
     );
   }
 
@@ -4672,6 +4875,7 @@ class Deck extends DataClass implements Insertable<Deck> {
       sessionSize: serializer.fromJson<int?>(json['sessionSize']),
       createdAt: serializer.fromJson<DateTime>(json['createdAt']),
       updatedAt: serializer.fromJson<DateTime>(json['updatedAt']),
+      deletedAt: serializer.fromJson<DateTime?>(json['deletedAt']),
     );
   }
   @override
@@ -4685,6 +4889,7 @@ class Deck extends DataClass implements Insertable<Deck> {
       'sessionSize': serializer.toJson<int?>(sessionSize),
       'createdAt': serializer.toJson<DateTime>(createdAt),
       'updatedAt': serializer.toJson<DateTime>(updatedAt),
+      'deletedAt': serializer.toJson<DateTime?>(deletedAt),
     };
   }
 
@@ -4696,6 +4901,7 @@ class Deck extends DataClass implements Insertable<Deck> {
     Value<int?> sessionSize = const Value.absent(),
     DateTime? createdAt,
     DateTime? updatedAt,
+    Value<DateTime?> deletedAt = const Value.absent(),
   }) => Deck(
     id: id ?? this.id,
     name: name ?? this.name,
@@ -4706,6 +4912,7 @@ class Deck extends DataClass implements Insertable<Deck> {
     sessionSize: sessionSize.present ? sessionSize.value : this.sessionSize,
     createdAt: createdAt ?? this.createdAt,
     updatedAt: updatedAt ?? this.updatedAt,
+    deletedAt: deletedAt.present ? deletedAt.value : this.deletedAt,
   );
   Deck copyWithCompanion(DecksCompanion data) {
     return Deck(
@@ -4720,6 +4927,7 @@ class Deck extends DataClass implements Insertable<Deck> {
           : this.sessionSize,
       createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
       updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
+      deletedAt: data.deletedAt.present ? data.deletedAt.value : this.deletedAt,
     );
   }
 
@@ -4732,7 +4940,8 @@ class Deck extends DataClass implements Insertable<Deck> {
           ..write('filterCriteria: $filterCriteria, ')
           ..write('sessionSize: $sessionSize, ')
           ..write('createdAt: $createdAt, ')
-          ..write('updatedAt: $updatedAt')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('deletedAt: $deletedAt')
           ..write(')'))
         .toString();
   }
@@ -4746,6 +4955,7 @@ class Deck extends DataClass implements Insertable<Deck> {
     sessionSize,
     createdAt,
     updatedAt,
+    deletedAt,
   );
   @override
   bool operator ==(Object other) =>
@@ -4757,7 +4967,8 @@ class Deck extends DataClass implements Insertable<Deck> {
           other.filterCriteria == this.filterCriteria &&
           other.sessionSize == this.sessionSize &&
           other.createdAt == this.createdAt &&
-          other.updatedAt == this.updatedAt);
+          other.updatedAt == this.updatedAt &&
+          other.deletedAt == this.deletedAt);
 }
 
 class DecksCompanion extends UpdateCompanion<Deck> {
@@ -4768,6 +4979,7 @@ class DecksCompanion extends UpdateCompanion<Deck> {
   final Value<int?> sessionSize;
   final Value<DateTime> createdAt;
   final Value<DateTime> updatedAt;
+  final Value<DateTime?> deletedAt;
   final Value<int> rowid;
   const DecksCompanion({
     this.id = const Value.absent(),
@@ -4777,6 +4989,7 @@ class DecksCompanion extends UpdateCompanion<Deck> {
     this.sessionSize = const Value.absent(),
     this.createdAt = const Value.absent(),
     this.updatedAt = const Value.absent(),
+    this.deletedAt = const Value.absent(),
     this.rowid = const Value.absent(),
   });
   DecksCompanion.insert({
@@ -4787,6 +5000,7 @@ class DecksCompanion extends UpdateCompanion<Deck> {
     this.sessionSize = const Value.absent(),
     this.createdAt = const Value.absent(),
     this.updatedAt = const Value.absent(),
+    this.deletedAt = const Value.absent(),
     this.rowid = const Value.absent(),
   }) : id = Value(id),
        name = Value(name);
@@ -4798,6 +5012,7 @@ class DecksCompanion extends UpdateCompanion<Deck> {
     Expression<int>? sessionSize,
     Expression<DateTime>? createdAt,
     Expression<DateTime>? updatedAt,
+    Expression<DateTime>? deletedAt,
     Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
@@ -4808,6 +5023,7 @@ class DecksCompanion extends UpdateCompanion<Deck> {
       if (sessionSize != null) 'session_size': sessionSize,
       if (createdAt != null) 'created_at': createdAt,
       if (updatedAt != null) 'updated_at': updatedAt,
+      if (deletedAt != null) 'deleted_at': deletedAt,
       if (rowid != null) 'rowid': rowid,
     });
   }
@@ -4820,6 +5036,7 @@ class DecksCompanion extends UpdateCompanion<Deck> {
     Value<int?>? sessionSize,
     Value<DateTime>? createdAt,
     Value<DateTime>? updatedAt,
+    Value<DateTime?>? deletedAt,
     Value<int>? rowid,
   }) {
     return DecksCompanion(
@@ -4830,6 +5047,7 @@ class DecksCompanion extends UpdateCompanion<Deck> {
       sessionSize: sessionSize ?? this.sessionSize,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
+      deletedAt: deletedAt ?? this.deletedAt,
       rowid: rowid ?? this.rowid,
     );
   }
@@ -4858,6 +5076,9 @@ class DecksCompanion extends UpdateCompanion<Deck> {
     if (updatedAt.present) {
       map['updated_at'] = Variable<DateTime>(updatedAt.value);
     }
+    if (deletedAt.present) {
+      map['deleted_at'] = Variable<DateTime>(deletedAt.value);
+    }
     if (rowid.present) {
       map['rowid'] = Variable<int>(rowid.value);
     }
@@ -4874,6 +5095,7 @@ class DecksCompanion extends UpdateCompanion<Deck> {
           ..write('sessionSize: $sessionSize, ')
           ..write('createdAt: $createdAt, ')
           ..write('updatedAt: $updatedAt, ')
+          ..write('deletedAt: $deletedAt, ')
           ..write('rowid: $rowid')
           ..write(')'))
         .toString();
@@ -4921,8 +5143,19 @@ class $DeckMovesTable extends DeckMoves
     type: DriftSqlType.dateTime,
     requiredDuringInsert: false,
   );
+  static const VerificationMeta _deletedAtMeta = const VerificationMeta(
+    'deletedAt',
+  );
   @override
-  List<GeneratedColumn> get $columns => [deckId, moveId, updatedAt];
+  late final GeneratedColumn<DateTime> deletedAt = GeneratedColumn<DateTime>(
+    'deleted_at',
+    aliasedName,
+    true,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [deckId, moveId, updatedAt, deletedAt];
   @override
   String get aliasedName => _alias ?? actualTableName;
   @override
@@ -4957,6 +5190,12 @@ class $DeckMovesTable extends DeckMoves
         updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta),
       );
     }
+    if (data.containsKey('deleted_at')) {
+      context.handle(
+        _deletedAtMeta,
+        deletedAt.isAcceptableOrUnknown(data['deleted_at']!, _deletedAtMeta),
+      );
+    }
     return context;
   }
 
@@ -4978,6 +5217,10 @@ class $DeckMovesTable extends DeckMoves
         DriftSqlType.dateTime,
         data['${effectivePrefix}updated_at'],
       ),
+      deletedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}deleted_at'],
+      ),
     );
   }
 
@@ -4996,7 +5239,17 @@ class DeckMove extends DataClass implements Insertable<DeckMove> {
   /// rows are seeded from the parent deck's `updatedAt`); the DAO stamps it on
   /// every insert, so new rows always carry a real clock.
   final DateTime? updatedAt;
-  const DeckMove({required this.deckId, required this.moveId, this.updatedAt});
+
+  /// Reversible soft-hide for an inbound tombstone on a secondary device (task
+  /// 4.8) — e.g. a move removed from a deck on another device. Pull-side only;
+  /// read paths filter `deletedAt IS NULL`.
+  final DateTime? deletedAt;
+  const DeckMove({
+    required this.deckId,
+    required this.moveId,
+    this.updatedAt,
+    this.deletedAt,
+  });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
@@ -5004,6 +5257,9 @@ class DeckMove extends DataClass implements Insertable<DeckMove> {
     map['move_id'] = Variable<String>(moveId);
     if (!nullToAbsent || updatedAt != null) {
       map['updated_at'] = Variable<DateTime>(updatedAt);
+    }
+    if (!nullToAbsent || deletedAt != null) {
+      map['deleted_at'] = Variable<DateTime>(deletedAt);
     }
     return map;
   }
@@ -5015,6 +5271,9 @@ class DeckMove extends DataClass implements Insertable<DeckMove> {
       updatedAt: updatedAt == null && nullToAbsent
           ? const Value.absent()
           : Value(updatedAt),
+      deletedAt: deletedAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(deletedAt),
     );
   }
 
@@ -5027,6 +5286,7 @@ class DeckMove extends DataClass implements Insertable<DeckMove> {
       deckId: serializer.fromJson<String>(json['deckId']),
       moveId: serializer.fromJson<String>(json['moveId']),
       updatedAt: serializer.fromJson<DateTime?>(json['updatedAt']),
+      deletedAt: serializer.fromJson<DateTime?>(json['deletedAt']),
     );
   }
   @override
@@ -5036,6 +5296,7 @@ class DeckMove extends DataClass implements Insertable<DeckMove> {
       'deckId': serializer.toJson<String>(deckId),
       'moveId': serializer.toJson<String>(moveId),
       'updatedAt': serializer.toJson<DateTime?>(updatedAt),
+      'deletedAt': serializer.toJson<DateTime?>(deletedAt),
     };
   }
 
@@ -5043,16 +5304,19 @@ class DeckMove extends DataClass implements Insertable<DeckMove> {
     String? deckId,
     String? moveId,
     Value<DateTime?> updatedAt = const Value.absent(),
+    Value<DateTime?> deletedAt = const Value.absent(),
   }) => DeckMove(
     deckId: deckId ?? this.deckId,
     moveId: moveId ?? this.moveId,
     updatedAt: updatedAt.present ? updatedAt.value : this.updatedAt,
+    deletedAt: deletedAt.present ? deletedAt.value : this.deletedAt,
   );
   DeckMove copyWithCompanion(DeckMovesCompanion data) {
     return DeckMove(
       deckId: data.deckId.present ? data.deckId.value : this.deckId,
       moveId: data.moveId.present ? data.moveId.value : this.moveId,
       updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
+      deletedAt: data.deletedAt.present ? data.deletedAt.value : this.deletedAt,
     );
   }
 
@@ -5061,37 +5325,42 @@ class DeckMove extends DataClass implements Insertable<DeckMove> {
     return (StringBuffer('DeckMove(')
           ..write('deckId: $deckId, ')
           ..write('moveId: $moveId, ')
-          ..write('updatedAt: $updatedAt')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('deletedAt: $deletedAt')
           ..write(')'))
         .toString();
   }
 
   @override
-  int get hashCode => Object.hash(deckId, moveId, updatedAt);
+  int get hashCode => Object.hash(deckId, moveId, updatedAt, deletedAt);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
       (other is DeckMove &&
           other.deckId == this.deckId &&
           other.moveId == this.moveId &&
-          other.updatedAt == this.updatedAt);
+          other.updatedAt == this.updatedAt &&
+          other.deletedAt == this.deletedAt);
 }
 
 class DeckMovesCompanion extends UpdateCompanion<DeckMove> {
   final Value<String> deckId;
   final Value<String> moveId;
   final Value<DateTime?> updatedAt;
+  final Value<DateTime?> deletedAt;
   final Value<int> rowid;
   const DeckMovesCompanion({
     this.deckId = const Value.absent(),
     this.moveId = const Value.absent(),
     this.updatedAt = const Value.absent(),
+    this.deletedAt = const Value.absent(),
     this.rowid = const Value.absent(),
   });
   DeckMovesCompanion.insert({
     required String deckId,
     required String moveId,
     this.updatedAt = const Value.absent(),
+    this.deletedAt = const Value.absent(),
     this.rowid = const Value.absent(),
   }) : deckId = Value(deckId),
        moveId = Value(moveId);
@@ -5099,12 +5368,14 @@ class DeckMovesCompanion extends UpdateCompanion<DeckMove> {
     Expression<String>? deckId,
     Expression<String>? moveId,
     Expression<DateTime>? updatedAt,
+    Expression<DateTime>? deletedAt,
     Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
       if (deckId != null) 'deck_id': deckId,
       if (moveId != null) 'move_id': moveId,
       if (updatedAt != null) 'updated_at': updatedAt,
+      if (deletedAt != null) 'deleted_at': deletedAt,
       if (rowid != null) 'rowid': rowid,
     });
   }
@@ -5113,12 +5384,14 @@ class DeckMovesCompanion extends UpdateCompanion<DeckMove> {
     Value<String>? deckId,
     Value<String>? moveId,
     Value<DateTime?>? updatedAt,
+    Value<DateTime?>? deletedAt,
     Value<int>? rowid,
   }) {
     return DeckMovesCompanion(
       deckId: deckId ?? this.deckId,
       moveId: moveId ?? this.moveId,
       updatedAt: updatedAt ?? this.updatedAt,
+      deletedAt: deletedAt ?? this.deletedAt,
       rowid: rowid ?? this.rowid,
     );
   }
@@ -5135,6 +5408,9 @@ class DeckMovesCompanion extends UpdateCompanion<DeckMove> {
     if (updatedAt.present) {
       map['updated_at'] = Variable<DateTime>(updatedAt.value);
     }
+    if (deletedAt.present) {
+      map['deleted_at'] = Variable<DateTime>(deletedAt.value);
+    }
     if (rowid.present) {
       map['rowid'] = Variable<int>(rowid.value);
     }
@@ -5147,6 +5423,7 @@ class DeckMovesCompanion extends UpdateCompanion<DeckMove> {
           ..write('deckId: $deckId, ')
           ..write('moveId: $moveId, ')
           ..write('updatedAt: $updatedAt, ')
+          ..write('deletedAt: $deletedAt, ')
           ..write('rowid: $rowid')
           ..write(')'))
         .toString();
@@ -13429,6 +13706,7 @@ typedef $$MovesTableCreateCompanionBuilder =
       Value<DateTime?> videoCreationDate,
       Value<DateTime> createdAt,
       Value<DateTime?> updatedAt,
+      Value<DateTime?> deletedAt,
       Value<int> rowid,
     });
 typedef $$MovesTableUpdateCompanionBuilder =
@@ -13452,6 +13730,7 @@ typedef $$MovesTableUpdateCompanionBuilder =
       Value<DateTime?> videoCreationDate,
       Value<DateTime> createdAt,
       Value<DateTime?> updatedAt,
+      Value<DateTime?> deletedAt,
       Value<int> rowid,
     });
 
@@ -13708,6 +13987,11 @@ class $$MovesTableFilterComposer extends Composer<_$AppDatabase, $MovesTable> {
 
   ColumnFilters<DateTime> get updatedAt => $composableBuilder(
     column: $table.updatedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get deletedAt => $composableBuilder(
+    column: $table.deletedAt,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -14015,6 +14299,11 @@ class $$MovesTableOrderingComposer
     column: $table.updatedAt,
     builder: (column) => ColumnOrderings(column),
   );
+
+  ColumnOrderings<DateTime> get deletedAt => $composableBuilder(
+    column: $table.deletedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
 }
 
 class $$MovesTableAnnotationComposer
@@ -14104,6 +14393,9 @@ class $$MovesTableAnnotationComposer
 
   GeneratedColumn<DateTime> get updatedAt =>
       $composableBuilder(column: $table.updatedAt, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get deletedAt =>
+      $composableBuilder(column: $table.deletedAt, builder: (column) => column);
 
   Expression<T> comboMovesRefs<T extends Object>(
     Expression<T> Function($$ComboMovesTableAnnotationComposer a) f,
@@ -14362,6 +14654,7 @@ class $$MovesTableTableManager
                 Value<DateTime?> videoCreationDate = const Value.absent(),
                 Value<DateTime> createdAt = const Value.absent(),
                 Value<DateTime?> updatedAt = const Value.absent(),
+                Value<DateTime?> deletedAt = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => MovesCompanion(
                 id: id,
@@ -14383,6 +14676,7 @@ class $$MovesTableTableManager
                 videoCreationDate: videoCreationDate,
                 createdAt: createdAt,
                 updatedAt: updatedAt,
+                deletedAt: deletedAt,
                 rowid: rowid,
               ),
           createCompanionCallback:
@@ -14406,6 +14700,7 @@ class $$MovesTableTableManager
                 Value<DateTime?> videoCreationDate = const Value.absent(),
                 Value<DateTime> createdAt = const Value.absent(),
                 Value<DateTime?> updatedAt = const Value.absent(),
+                Value<DateTime?> deletedAt = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => MovesCompanion.insert(
                 id: id,
@@ -14427,6 +14722,7 @@ class $$MovesTableTableManager
                 videoCreationDate: videoCreationDate,
                 createdAt: createdAt,
                 updatedAt: updatedAt,
+                deletedAt: deletedAt,
                 rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0
@@ -14642,6 +14938,7 @@ typedef $$CombosTableCreateCompanionBuilder =
       Value<String> status,
       Value<DateTime> createdAt,
       Value<DateTime?> updatedAt,
+      Value<DateTime?> deletedAt,
       Value<int> rowid,
     });
 typedef $$CombosTableUpdateCompanionBuilder =
@@ -14654,6 +14951,7 @@ typedef $$CombosTableUpdateCompanionBuilder =
       Value<String> status,
       Value<DateTime> createdAt,
       Value<DateTime?> updatedAt,
+      Value<DateTime?> deletedAt,
       Value<int> rowid,
     });
 
@@ -14783,6 +15081,11 @@ class $$CombosTableFilterComposer
 
   ColumnFilters<DateTime> get updatedAt => $composableBuilder(
     column: $table.updatedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get deletedAt => $composableBuilder(
+    column: $table.deletedAt,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -14935,6 +15238,11 @@ class $$CombosTableOrderingComposer
     column: $table.updatedAt,
     builder: (column) => ColumnOrderings(column),
   );
+
+  ColumnOrderings<DateTime> get deletedAt => $composableBuilder(
+    column: $table.deletedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
 }
 
 class $$CombosTableAnnotationComposer
@@ -14973,6 +15281,9 @@ class $$CombosTableAnnotationComposer
 
   GeneratedColumn<DateTime> get updatedAt =>
       $composableBuilder(column: $table.updatedAt, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get deletedAt =>
+      $composableBuilder(column: $table.deletedAt, builder: (column) => column);
 
   Expression<T> comboMovesRefs<T extends Object>(
     Expression<T> Function($$ComboMovesTableAnnotationComposer a) f,
@@ -15116,6 +15427,7 @@ class $$CombosTableTableManager
                 Value<String> status = const Value.absent(),
                 Value<DateTime> createdAt = const Value.absent(),
                 Value<DateTime?> updatedAt = const Value.absent(),
+                Value<DateTime?> deletedAt = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => CombosCompanion(
                 id: id,
@@ -15126,6 +15438,7 @@ class $$CombosTableTableManager
                 status: status,
                 createdAt: createdAt,
                 updatedAt: updatedAt,
+                deletedAt: deletedAt,
                 rowid: rowid,
               ),
           createCompanionCallback:
@@ -15138,6 +15451,7 @@ class $$CombosTableTableManager
                 Value<String> status = const Value.absent(),
                 Value<DateTime> createdAt = const Value.absent(),
                 Value<DateTime?> updatedAt = const Value.absent(),
+                Value<DateTime?> deletedAt = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => CombosCompanion.insert(
                 id: id,
@@ -15148,6 +15462,7 @@ class $$CombosTableTableManager
                 status: status,
                 createdAt: createdAt,
                 updatedAt: updatedAt,
+                deletedAt: deletedAt,
                 rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0
@@ -15289,6 +15604,7 @@ typedef $$ComboMovesTableCreateCompanionBuilder =
       required String moveId,
       Value<int> count,
       Value<DateTime?> updatedAt,
+      Value<DateTime?> deletedAt,
       Value<int> rowid,
     });
 typedef $$ComboMovesTableUpdateCompanionBuilder =
@@ -15299,6 +15615,7 @@ typedef $$ComboMovesTableUpdateCompanionBuilder =
       Value<String> moveId,
       Value<int> count,
       Value<DateTime?> updatedAt,
+      Value<DateTime?> deletedAt,
       Value<int> rowid,
     });
 
@@ -15369,6 +15686,11 @@ class $$ComboMovesTableFilterComposer
 
   ColumnFilters<DateTime> get updatedAt => $composableBuilder(
     column: $table.updatedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get deletedAt => $composableBuilder(
+    column: $table.deletedAt,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -15448,6 +15770,11 @@ class $$ComboMovesTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<DateTime> get deletedAt => $composableBuilder(
+    column: $table.deletedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   $$CombosTableOrderingComposer get comboId {
     final $$CombosTableOrderingComposer composer = $composerBuilder(
       composer: this,
@@ -15517,6 +15844,9 @@ class $$ComboMovesTableAnnotationComposer
 
   GeneratedColumn<DateTime> get updatedAt =>
       $composableBuilder(column: $table.updatedAt, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get deletedAt =>
+      $composableBuilder(column: $table.deletedAt, builder: (column) => column);
 
   $$CombosTableAnnotationComposer get comboId {
     final $$CombosTableAnnotationComposer composer = $composerBuilder(
@@ -15599,6 +15929,7 @@ class $$ComboMovesTableTableManager
                 Value<String> moveId = const Value.absent(),
                 Value<int> count = const Value.absent(),
                 Value<DateTime?> updatedAt = const Value.absent(),
+                Value<DateTime?> deletedAt = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => ComboMovesCompanion(
                 id: id,
@@ -15607,6 +15938,7 @@ class $$ComboMovesTableTableManager
                 moveId: moveId,
                 count: count,
                 updatedAt: updatedAt,
+                deletedAt: deletedAt,
                 rowid: rowid,
               ),
           createCompanionCallback:
@@ -15617,6 +15949,7 @@ class $$ComboMovesTableTableManager
                 required String moveId,
                 Value<int> count = const Value.absent(),
                 Value<DateTime?> updatedAt = const Value.absent(),
+                Value<DateTime?> deletedAt = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => ComboMovesCompanion.insert(
                 id: id,
@@ -15625,6 +15958,7 @@ class $$ComboMovesTableTableManager
                 moveId: moveId,
                 count: count,
                 updatedAt: updatedAt,
+                deletedAt: deletedAt,
                 rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0
@@ -17050,6 +17384,7 @@ typedef $$DecksTableCreateCompanionBuilder =
       Value<int?> sessionSize,
       Value<DateTime> createdAt,
       Value<DateTime> updatedAt,
+      Value<DateTime?> deletedAt,
       Value<int> rowid,
     });
 typedef $$DecksTableUpdateCompanionBuilder =
@@ -17061,6 +17396,7 @@ typedef $$DecksTableUpdateCompanionBuilder =
       Value<int?> sessionSize,
       Value<DateTime> createdAt,
       Value<DateTime> updatedAt,
+      Value<DateTime?> deletedAt,
       Value<int> rowid,
     });
 
@@ -17127,6 +17463,11 @@ class $$DecksTableFilterComposer extends Composer<_$AppDatabase, $DecksTable> {
 
   ColumnFilters<DateTime> get updatedAt => $composableBuilder(
     column: $table.updatedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get deletedAt => $composableBuilder(
+    column: $table.deletedAt,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -17199,6 +17540,11 @@ class $$DecksTableOrderingComposer
     column: $table.updatedAt,
     builder: (column) => ColumnOrderings(column),
   );
+
+  ColumnOrderings<DateTime> get deletedAt => $composableBuilder(
+    column: $table.deletedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
 }
 
 class $$DecksTableAnnotationComposer
@@ -17234,6 +17580,9 @@ class $$DecksTableAnnotationComposer
 
   GeneratedColumn<DateTime> get updatedAt =>
       $composableBuilder(column: $table.updatedAt, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get deletedAt =>
+      $composableBuilder(column: $table.deletedAt, builder: (column) => column);
 
   Expression<T> deckMovesRefs<T extends Object>(
     Expression<T> Function($$DeckMovesTableAnnotationComposer a) f,
@@ -17296,6 +17645,7 @@ class $$DecksTableTableManager
                 Value<int?> sessionSize = const Value.absent(),
                 Value<DateTime> createdAt = const Value.absent(),
                 Value<DateTime> updatedAt = const Value.absent(),
+                Value<DateTime?> deletedAt = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => DecksCompanion(
                 id: id,
@@ -17305,6 +17655,7 @@ class $$DecksTableTableManager
                 sessionSize: sessionSize,
                 createdAt: createdAt,
                 updatedAt: updatedAt,
+                deletedAt: deletedAt,
                 rowid: rowid,
               ),
           createCompanionCallback:
@@ -17316,6 +17667,7 @@ class $$DecksTableTableManager
                 Value<int?> sessionSize = const Value.absent(),
                 Value<DateTime> createdAt = const Value.absent(),
                 Value<DateTime> updatedAt = const Value.absent(),
+                Value<DateTime?> deletedAt = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => DecksCompanion.insert(
                 id: id,
@@ -17325,6 +17677,7 @@ class $$DecksTableTableManager
                 sessionSize: sessionSize,
                 createdAt: createdAt,
                 updatedAt: updatedAt,
+                deletedAt: deletedAt,
                 rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0
@@ -17378,6 +17731,7 @@ typedef $$DeckMovesTableCreateCompanionBuilder =
       required String deckId,
       required String moveId,
       Value<DateTime?> updatedAt,
+      Value<DateTime?> deletedAt,
       Value<int> rowid,
     });
 typedef $$DeckMovesTableUpdateCompanionBuilder =
@@ -17385,6 +17739,7 @@ typedef $$DeckMovesTableUpdateCompanionBuilder =
       Value<String> deckId,
       Value<String> moveId,
       Value<DateTime?> updatedAt,
+      Value<DateTime?> deletedAt,
       Value<int> rowid,
     });
 
@@ -17440,6 +17795,11 @@ class $$DeckMovesTableFilterComposer
   });
   ColumnFilters<DateTime> get updatedAt => $composableBuilder(
     column: $table.updatedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get deletedAt => $composableBuilder(
+    column: $table.deletedAt,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -17504,6 +17864,11 @@ class $$DeckMovesTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<DateTime> get deletedAt => $composableBuilder(
+    column: $table.deletedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   $$DecksTableOrderingComposer get deckId {
     final $$DecksTableOrderingComposer composer = $composerBuilder(
       composer: this,
@@ -17562,6 +17927,9 @@ class $$DeckMovesTableAnnotationComposer
   });
   GeneratedColumn<DateTime> get updatedAt =>
       $composableBuilder(column: $table.updatedAt, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get deletedAt =>
+      $composableBuilder(column: $table.deletedAt, builder: (column) => column);
 
   $$DecksTableAnnotationComposer get deckId {
     final $$DecksTableAnnotationComposer composer = $composerBuilder(
@@ -17641,11 +18009,13 @@ class $$DeckMovesTableTableManager
                 Value<String> deckId = const Value.absent(),
                 Value<String> moveId = const Value.absent(),
                 Value<DateTime?> updatedAt = const Value.absent(),
+                Value<DateTime?> deletedAt = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => DeckMovesCompanion(
                 deckId: deckId,
                 moveId: moveId,
                 updatedAt: updatedAt,
+                deletedAt: deletedAt,
                 rowid: rowid,
               ),
           createCompanionCallback:
@@ -17653,11 +18023,13 @@ class $$DeckMovesTableTableManager
                 required String deckId,
                 required String moveId,
                 Value<DateTime?> updatedAt = const Value.absent(),
+                Value<DateTime?> deletedAt = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => DeckMovesCompanion.insert(
                 deckId: deckId,
                 moveId: moveId,
                 updatedAt: updatedAt,
+                deletedAt: deletedAt,
                 rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0

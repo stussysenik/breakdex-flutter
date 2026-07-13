@@ -705,9 +705,34 @@ rows; any need for `appwrite push tables --all` (destructive — see the ops haz
   independent cursors, malformed isolation). Also patched the v22/v23/v24 migration harnesses to
   carry `decks`/`deck_moves` (the v25 block now touches them). Full suite: **0 regressions** (same 9
   pre-existing reds on clean HEAD). Live smoke-user + real-data + cross-device soak ride **M.3/M.4**.
-- [ ] 4.8 **Tombstones end-to-end**: delete on device A → tombstone in Appwrite → device B hides
+- [x] 4.8 **Tombstones end-to-end**: delete on device A → tombstone in Appwrite → device B hides
   the row locally without hard-deleting videos/rows; web studio DELETE=TOMBSTONE verified against
   the same table. Only after this task may any cutover be called complete.
+  **Done (2026-07-13):** the pull side already *delivered* tombstones (`appwrite_sync_backend`
+  `_decodeDelta`/`_decodeTombstone`) for all 5 delete-bearing entities (move/combo/comboMove/deck/
+  deckMove) but `_pullEntity` threw them away (upsert-only). 4.8 adds the *apply* side as a
+  **reversible soft-hide**, never a hard-delete (brownfield: never orphan user state):
+  (a) additive schema **v25→v26** — nullable `deleted_at` on `moves`/`combos`/`combo_moves`/`decks`/
+  `deck_moves` (one guarded ALTER loop, no backfill: NULL = "not deleted" = correct default; a
+  *dedicated* column, distinct from `moves.archivedAt`, so a remote-delete never surfaces in the
+  Archived view). (b) `_pullEntity` grows an `applyDelete` callback + a bespoke loop in
+  `pullMovesFromBackend`; upserts merge first so a create+delete in one delta ends hidden;
+  five per-entity `_apply*Tombstone` hides + a shared `_tombstoneWins` LWW guard (whole-second,
+  strictly-newer delete wins, tie keeps local — mirrors the upsert LWW; write bypasses the DAO so
+  it is never re-enqueued and touches only `deleted_at`). deckMove splits its composite `deckId:moveId`
+  wire id. (c) every browse/list read path filters `deleted_at IS NULL` — moves via `_isActive`/
+  `_isArchived`, combos across DSL + raw-SQL feeds (left-join step filter rides the ON clause so a
+  combo whose only steps are hidden still lists; stats EXISTS-subqueries scoped too), decks + both
+  junctions. (d) **Web parity:** the shared `sync-push` Function already proves delete→tombstone
+  never-hard-delete (`functions/sync-push/test/reconcile_test.dart` `'delete → tombstone'` group)
+  and the web studio contract mandates tombstone-preservation (`web-mirror/.../sync/contract.ts`) —
+  same Function, same shared tombstones table both clients read via `_decodeDelta`. **Verify:** new
+  `sync_service_tombstone_test.dart` (9/9 — hide-not-delete + video/row preserved, feeds exclude,
+  idempotent replay, LWW-keep, absent no-op, create+delete-in-one-delta, all 5 entities);
+  `sync_service_dual_read_test`'s stale "never applies tombstones" test rewritten to the new
+  soft-hide contract; all 124 database/migration + 45 sync-service tests green; full suite **0
+  regressions** (same 9 pre-existing reds — Riverpod/timer, unrelated). Live cross-device delete
+  soak rides **M.4**. Cutovers may now be called complete (pref still OFF until M.4).
 - [ ] 4.9 **Note entries become synced entities (wave scope 2026-07-12 — "notes work
   everywhere").** `MoveNoteEntries`/`ComboNoteEntries`
   (`lib/core/database/tables/{move,combo}_note_entries.dart`, DAOs at `providers.dart:315-321`)

@@ -256,7 +256,8 @@ void main() {
       expect((await db.movesDao.getById('g2')).name, 'Good Two');
     });
 
-    test('never applies tombstones — a delete does not remove a local row', () async {
+    test('applies a tombstone as a reversible soft-hide, never a hard-delete '
+        '(task 4.8)', () async {
       await _insertMove(db, id: 'keep-1', name: 'Keep', updatedAt: DateTime.utc(2026));
       backend.pullResult = SyncDelta(
         upserts: const [],
@@ -264,15 +265,20 @@ void main() {
           SyncTombstone(
             id: 'keep-1',
             type: SyncEntityType.move,
-            deletedAt: DateTime.utc(2027),
+            deletedAt: DateTime.utc(2027), // newer than the local edit → wins
             clientOpId: 'del:keep-1',
           ),
         ],
       );
       final result = await service(withBackend: backend).pullMovesFromBackend();
 
-      expect(result?.applied, 0);
-      expect(await db.movesDao.getById('keep-1'), isNotNull);
+      expect(result?.applied, 1);
+      // Hidden from every browse feed …
+      expect(await db.movesDao.getAll(), isEmpty);
+      // … but never hard-deleted — the row (and its video bytes) survive on
+      // disk, only flagged `deletedAt`. A delete elsewhere never destroys data.
+      final row = await db.movesDao.getById('keep-1');
+      expect(row.deletedAt, isNotNull);
     });
   });
 

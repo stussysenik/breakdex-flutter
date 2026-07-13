@@ -27,6 +27,12 @@ class Decks extends Table {
   DateTimeColumn get updatedAt =>
       dateTime().withDefault(currentDateAndTime)();
 
+  /// Reversible soft-hide set when an inbound sync tombstone applies a remote
+  /// deck delete on a secondary device (task 4.8). Pull-side only — a local
+  /// delete still hard-deletes on its origin device. Read paths filter
+  /// `deletedAt IS NULL`.
+  DateTimeColumn get deletedAt => dateTime().nullable()();
+
   @override
   Set<Column> get primaryKey => {id};
 }

@@ -18,6 +18,11 @@ class DeckMoves extends Table {
   /// every insert, so new rows always carry a real clock.
   DateTimeColumn get updatedAt => dateTime().nullable()();
 
+  /// Reversible soft-hide for an inbound tombstone on a secondary device (task
+  /// 4.8) — e.g. a move removed from a deck on another device. Pull-side only;
+  /// read paths filter `deletedAt IS NULL`.
+  DateTimeColumn get deletedAt => dateTime().nullable()();
+
   @override
   Set<Column> get primaryKey => {deckId, moveId};
 }

@@ -84,13 +84,24 @@ class CombosDao extends DatabaseAccessor<AppDatabase> with _$CombosDaoMixin {
   String _normalizeName(final String value) =>
       value.trim().toLowerCase().replaceAll(RegExp(r'\s+'), ' ');
 
-  Stream<List<Combo>> watchAll() => select(combos).watch();
+  // Rows hidden by an inbound sync tombstone (task 4.8) carry a non-null
+  // `deletedAt`; every browse/list feed filters them out. For left-joins the
+  // step predicate rides the ON clause so a combo whose only steps are hidden
+  // still lists (it is not itself deleted) — moving it to WHERE would drop the
+  // combo entirely.
+  Stream<List<Combo>> watchAll() =>
+      (select(combos)..where((final t) => t.deletedAt.isNull())).watch();
 
   Stream<List<ComboWithMoves>> watchAllCombosWithMoves() {
     final query = select(combos).join([
-      leftOuterJoin(comboMoves, comboMoves.comboId.equalsExp(combos.id)),
+      leftOuterJoin(
+        comboMoves,
+        comboMoves.comboId.equalsExp(combos.id) & comboMoves.deletedAt.isNull(),
+      ),
       leftOuterJoin(moves, moves.id.equalsExp(comboMoves.moveId)),
-    ])..orderBy([OrderingTerm.asc(comboMoves.sequenceIndex)]);
+    ])
+      ..where(combos.deletedAt.isNull())
+      ..orderBy([OrderingTerm.asc(comboMoves.sequenceIndex)]);
 
     return query.watch().map((final rows) {
       final map = <String, ComboWithMoves>{};
@@ -114,7 +125,8 @@ class CombosDao extends DatabaseAccessor<AppDatabase> with _$CombosDaoMixin {
     });
   }
 
-  Future<List<Combo>> getAll() => select(combos).get();
+  Future<List<Combo>> getAll() =>
+      (select(combos)..where((final t) => t.deletedAt.isNull())).get();
 
   /// Every combo-step row, unordered — the read side of the task 4.4 backfill.
   Future<List<ComboMove>> getAllComboMoves() => select(comboMoves).get();
@@ -144,7 +156,7 @@ class CombosDao extends DatabaseAccessor<AppDatabase> with _$CombosDaoMixin {
     final query = select(comboMoves).join([
       innerJoin(moves, moves.id.equalsExp(comboMoves.moveId)),
     ])
-      ..where(comboMoves.comboId.equals(comboId))
+      ..where(comboMoves.comboId.equals(comboId) & comboMoves.deletedAt.isNull())
       ..orderBy([OrderingTerm.asc(comboMoves.sequenceIndex)]);
 
     return query.watch().map((final rows) => rows
@@ -214,6 +226,7 @@ class CombosDao extends DatabaseAccessor<AppDatabase> with _$CombosDaoMixin {
     final query = select(comboMoves).join([
       innerJoin(moves, moves.id.equalsExp(comboMoves.moveId)),
     ])
+      ..where(comboMoves.deletedAt.isNull())
       ..orderBy([OrderingTerm.asc(comboMoves.sequenceIndex)]);
 
     final rows = await query.get();
@@ -234,9 +247,13 @@ class CombosDao extends DatabaseAccessor<AppDatabase> with _$CombosDaoMixin {
   Stream<List<(Combo, int)>> watchAllWithMoveCounts() {
     final countExpr = comboMoves.id.count();
     final query = select(combos).join([
-      leftOuterJoin(comboMoves, comboMoves.comboId.equalsExp(combos.id)),
+      leftOuterJoin(
+        comboMoves,
+        comboMoves.comboId.equalsExp(combos.id) & comboMoves.deletedAt.isNull(),
+      ),
     ])
       ..addColumns([countExpr])
+      ..where(combos.deletedAt.isNull())
       ..groupBy([combos.id]);
 
     return query.watch().map((final rows) {
@@ -261,7 +278,9 @@ class CombosDao extends DatabaseAccessor<AppDatabase> with _$CombosDaoMixin {
   Future<List<Combo>> getCombosUsingMove(final String moveId) async {
     final query = select(combos).join([
       innerJoin(comboMoves, comboMoves.comboId.equalsExp(combos.id)),
-    ])..where(comboMoves.moveId.equals(moveId));
+    ])..where(comboMoves.moveId.equals(moveId) &
+        comboMoves.deletedAt.isNull() &
+        combos.deletedAt.isNull());
 
     final rows = await query.get();
     return rows.map((final row) => row.readTable(combos)).toSet().toList();
@@ -350,7 +369,7 @@ class CombosDao extends DatabaseAccessor<AppDatabase> with _$CombosDaoMixin {
       SELECT c.id, c.name, c.notes, c.active_video_path, c.content_hash,
              c.status, c.created_at,
         (SELECT COUNT(*) FROM combo_moves cm
-          WHERE cm.combo_id = c.id) AS move_count,
+          WHERE cm.combo_id = c.id AND cm.deleted_at IS NULL) AS move_count,
         (SELECT COUNT(*) FROM combo_note_entries e
           WHERE e.combo_id = c.id AND e.kind = 'jot') AS jot_count,
         (SELECT e.body FROM combo_note_entries e
@@ -362,6 +381,7 @@ class CombosDao extends DatabaseAccessor<AppDatabase> with _$CombosDaoMixin {
         (SELECT MAX(e.created_at) FROM combo_note_entries e
           WHERE e.combo_id = c.id) AS last_entry_at
       FROM combos c
+      WHERE c.deleted_at IS NULL
       ORDER BY c.created_at DESC, c.name ASC
       ''',
       readsFrom: {combos, comboMoves, comboNoteEntries},
@@ -403,7 +423,8 @@ class CombosDao extends DatabaseAccessor<AppDatabase> with _$CombosDaoMixin {
               AND (video_path IS NOT NULL OR video_hash IS NOT NULL)
             THEN 1 ELSE 0 END) AS take_count
       FROM combo_note_entries e
-      WHERE EXISTS (SELECT 1 FROM combos c WHERE c.id = e.combo_id)
+      WHERE EXISTS (SELECT 1 FROM combos c
+        WHERE c.id = e.combo_id AND c.deleted_at IS NULL)
       GROUP BY day
       ORDER BY day ASC
       ''',
@@ -429,10 +450,10 @@ class CombosDao extends DatabaseAccessor<AppDatabase> with _$CombosDaoMixin {
         (SELECT GROUP_CONCAT(m.name, ' → ')
          FROM combo_moves cm
          JOIN moves m ON m.id = cm.move_id
-         WHERE cm.combo_id = c.id
+         WHERE cm.combo_id = c.id AND cm.deleted_at IS NULL
          ORDER BY cm.sequence_index) AS transition_chain,
         (SELECT COUNT(*) FROM combo_moves cm
-          WHERE cm.combo_id = c.id) AS move_count,
+          WHERE cm.combo_id = c.id AND cm.deleted_at IS NULL) AS move_count,
         (SELECT COUNT(*) FROM combo_note_entries e
           WHERE e.combo_id = c.id AND e.kind = 'jot') AS jot_count,
         (SELECT e.body FROM combo_note_entries e
@@ -441,6 +462,7 @@ class CombosDao extends DatabaseAccessor<AppDatabase> with _$CombosDaoMixin {
         (SELECT MAX(e.created_at) FROM combo_note_entries e
           WHERE e.combo_id = c.id) AS last_entry_at
       FROM combos c
+      WHERE c.deleted_at IS NULL
       ORDER BY c.created_at DESC, c.name ASC
       ''',
       readsFrom: {combos, comboMoves, moves, comboNoteEntries},
@@ -502,7 +524,8 @@ class CombosDao extends DatabaseAccessor<AppDatabase> with _$CombosDaoMixin {
           WHERE completed_at IS NOT NULL) AS landed_count,
         (SELECT COUNT(DISTINCT e.combo_id) FROM combo_note_entries e
           WHERE e.kind = 'jot'
-            AND EXISTS (SELECT 1 FROM combos c WHERE c.id = e.combo_id))
+            AND EXISTS (SELECT 1 FROM combos c
+              WHERE c.id = e.combo_id AND c.deleted_at IS NULL))
             AS practiced_count,
         (SELECT COUNT(*) FROM combo_plans) AS total_plans_count
       ''',
@@ -525,7 +548,7 @@ class CombosDao extends DatabaseAccessor<AppDatabase> with _$CombosDaoMixin {
     final query = select(comboMoves).join([
       innerJoin(moves, moves.id.equalsExp(comboMoves.moveId)),
     ])
-      ..where(comboMoves.comboId.equals(comboId))
+      ..where(comboMoves.comboId.equals(comboId) & comboMoves.deletedAt.isNull())
       ..where(moves.videoPath.isNotNull())
       ..orderBy([OrderingTerm.asc(comboMoves.sequenceIndex)]);
 

@@ -32,12 +32,15 @@ class DecksDao extends DatabaseAccessor<AppDatabase> with _$DecksDaoMixin {
           ? entry
           : entry.copyWith(updatedAt: Value(DateTime.now().toUtc()));
 
-  /// Watch all decks ordered by creation date.
-  Stream<List<Deck>> watchAll() =>
-      (select(decks)..orderBy([(final t) => OrderingTerm.desc(t.createdAt)]))
-          .watch();
+  /// Watch all decks ordered by creation date. Excludes rows hidden by an
+  /// inbound sync tombstone (task 4.8).
+  Stream<List<Deck>> watchAll() => (select(decks)
+        ..where((final t) => t.deletedAt.isNull())
+        ..orderBy([(final t) => OrderingTerm.desc(t.createdAt)]))
+      .watch();
 
-  Future<List<Deck>> getAll() => select(decks).get();
+  Future<List<Deck>> getAll() =>
+      (select(decks)..where((final t) => t.deletedAt.isNull())).get();
 
   /// Every deck-move join row — read-only, for the non-destructive backfill.
   Future<List<DeckMove>> getAllDeckMoves() => select(deckMoves).get();
@@ -71,7 +74,7 @@ class DecksDao extends DatabaseAccessor<AppDatabase> with _$DecksDaoMixin {
   /// Get all move IDs in a manual deck.
   Future<List<String>> getMoveIdsForDeck(final String deckId) async {
     final rows = await (select(deckMoves)
-          ..where((final t) => t.deckId.equals(deckId)))
+          ..where((final t) => t.deckId.equals(deckId) & t.deletedAt.isNull()))
         .get();
     return rows.map((final r) => r.moveId).toList();
   }
@@ -112,7 +115,7 @@ class DecksDao extends DatabaseAccessor<AppDatabase> with _$DecksDaoMixin {
     final query = select(moves).join([
       innerJoin(deckMoves, deckMoves.moveId.equalsExp(moves.id)),
     ])
-      ..where(deckMoves.deckId.equals(deckId));
+      ..where(deckMoves.deckId.equals(deckId) & deckMoves.deletedAt.isNull());
 
     final rows = await query.get();
     return rows.map((final r) => r.readTable(moves)).toList();

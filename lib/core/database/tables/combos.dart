@@ -18,6 +18,12 @@ class Combos extends Table {
   /// on every local mutation, mirroring `moves.updatedAt`.
   DateTimeColumn get updatedAt => dateTime().nullable()();
 
+  /// Reversible soft-hide set when an inbound sync tombstone applies a remote
+  /// delete on a secondary device (task 4.8). A local delete still hard-deletes
+  /// on its origin device; this only ever fires on the *pull* side so a delete
+  /// elsewhere never destroys rows here. Read paths filter `deletedAt IS NULL`.
+  DateTimeColumn get deletedAt => dateTime().nullable()();
+
   @override
   Set<Column> get primaryKey => {id};
 }

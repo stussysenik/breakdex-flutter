@@ -536,9 +536,11 @@ class SyncService {
   /// backend-pull failure **rethrows** (the caller falls back for that cycle)
   /// and leaves the cursor untouched, so nothing is skipped on the next retry.
   ///
-  /// Deletes (tombstones) are intentionally **not** applied here: propagating a
-  /// hard-delete across the boundary is the destructive step gated behind task
-  /// 2.6, so this dual-read only ever upserts. Nothing here removes a local row.
+  /// Inbound tombstones are applied as a reversible soft-hide (task 4.8): a
+  /// delete on another device sets `deletedAt` via [_applyMoveTombstone] — the
+  /// row and its video bytes are preserved, only hidden from every read path.
+  /// Upserts merge first so a create+delete in one delta ends hidden. No hard
+  /// delete ever crosses the boundary.
   Future<({int applied, int failed})?> pullMovesFromBackend() async {
     final backend = syncBackend;
     if (backend == null || !(prefs.getBool(movesDualReadPrefKey) ?? false)) {
@@ -563,6 +565,14 @@ class SyncService {
           // batch (which would degrade moves to the blind Firestore path). H.3.
           failed++;
           debugPrint('[SyncService] skipped malformed move ${record.id}: $e');
+        }
+      }
+      for (final tombstone in delta.deletes) {
+        try {
+          if (await _applyMoveTombstone(tombstone)) applied++;
+        } on Object catch (e) {
+          failed++;
+          debugPrint('[SyncService] skipped tombstone move ${tombstone.id}: $e');
         }
       }
     });
@@ -689,6 +699,7 @@ class SyncService {
         cursorKey: combosBackendCursorPrefKey,
         label: 'combo',
         merge: _mergeComboRecordLww,
+        applyDelete: _applyComboTombstone,
       );
 
   /// Dual-read `combo_moves` (task 4.4). Shares the pair's read kill-switch but
@@ -700,12 +711,16 @@ class SyncService {
         cursorKey: comboMovesBackendCursorPrefKey,
         label: 'comboMove',
         merge: _mergeComboMoveRecordLww,
+        applyDelete: _applyComboMoveTombstone,
       );
 
   /// Generic dual-read engine (task 4.4): pull [type]'s delta from this entity's
   /// own cursor and merge each upsert under [merge] — per-record fault isolated
   /// (H.3), in one transaction (H.4), advancing the cursor only after the merge
-  /// commits (lossless retry, A2). Tombstones are not applied (upsert-only).
+  /// commits (lossless retry, A2). Inbound tombstones are applied via
+  /// [applyDelete] (task 4.8) as a reversible soft-hide, never a hard-delete;
+  /// upserts merge first so a create+delete in the same delta ends hidden. When
+  /// [applyDelete] is null the entity ignores deletes (upsert-only).
   /// Returns `null` when disabled so the caller falls back to Firestore.
   Future<({int applied, int failed})?> _pullEntity({
     required final SyncEntityType type,
@@ -713,6 +728,7 @@ class SyncService {
     required final String cursorKey,
     required final String label,
     required final Future<bool> Function(SyncRecord) merge,
+    final Future<bool> Function(SyncTombstone)? applyDelete,
   }) async {
     final backend = syncBackend;
     if (backend == null || !(prefs.getBool(prefKey) ?? false)) return null;
@@ -735,6 +751,17 @@ class SyncService {
           debugPrint('[SyncService] skipped malformed $label ${record.id}: $e');
         }
       }
+      if (applyDelete != null) {
+        for (final tombstone in delta.deletes) {
+          try {
+            if (await applyDelete(tombstone)) applied++;
+          } on Object catch (e) {
+            failed++;
+            debugPrint(
+                '[SyncService] skipped tombstone $label ${tombstone.id}: $e');
+          }
+        }
+      }
     });
 
     final cursor = delta.cursor;
@@ -742,6 +769,97 @@ class SyncService {
       await prefs.setInt(cursorKey, cursor.millisecondsSinceEpoch);
     }
     return (applied: applied, failed: failed);
+  }
+
+  // --- Inbound tombstone application (task 4.8) ---
+  //
+  // A delete on device A crosses as a [SyncTombstone]; device B applies it as a
+  // reversible soft-hide (set `deletedAt`), never a hard-delete, so a delete
+  // elsewhere never destroys videos/rows (brownfield: never orphan user state).
+  // Each apply writes straight to Drift — bypassing the sync-aware DAO — so a
+  // remote-origin hide is never re-enqueued as a local change, and touches only
+  // `deletedAt` so the LWW clock is preserved. All are no-ops (return false) on
+  // an absent, already-hidden (idempotent replay), or LWW-losing row.
+
+  /// True when a tombstone dated [remoteDeletedAt] should hide a local row whose
+  /// LWW clock is [localClock]. Mirrors the upsert LWW (H.2/A3): whole-second
+  /// granularity, delete wins only when *strictly newer*, so a same-second or
+  /// later local re-edit keeps the row visible — never destroy on a tie, the
+  /// data-safety default. A null local clock is epoch-old, so the delete wins.
+  bool _tombstoneWins(
+    final DateTime? localClock,
+    final DateTime remoteDeletedAt,
+  ) {
+    final localSec = (localClock?.millisecondsSinceEpoch ?? 0) ~/ 1000;
+    final remoteSec = remoteDeletedAt.millisecondsSinceEpoch ~/ 1000;
+    return remoteSec > localSec;
+  }
+
+  Future<bool> _applyMoveTombstone(final SyncTombstone t) async {
+    final existing = await (db.select(db.moves)
+          ..where((final r) => r.id.equals(t.id)))
+        .getSingleOrNull();
+    if (existing == null || existing.deletedAt != null) return false;
+    if (!_tombstoneWins(existing.updatedAt ?? existing.createdAt, t.deletedAt)) {
+      return false;
+    }
+    await (db.update(db.moves)..where((final r) => r.id.equals(t.id)))
+        .write(MovesCompanion(deletedAt: Value(t.deletedAt)));
+    return true;
+  }
+
+  Future<bool> _applyComboTombstone(final SyncTombstone t) async {
+    final existing = await (db.select(db.combos)
+          ..where((final r) => r.id.equals(t.id)))
+        .getSingleOrNull();
+    if (existing == null || existing.deletedAt != null) return false;
+    if (!_tombstoneWins(existing.updatedAt ?? existing.createdAt, t.deletedAt)) {
+      return false;
+    }
+    await (db.update(db.combos)..where((final r) => r.id.equals(t.id)))
+        .write(CombosCompanion(deletedAt: Value(t.deletedAt)));
+    return true;
+  }
+
+  Future<bool> _applyComboMoveTombstone(final SyncTombstone t) async {
+    final existing = await (db.select(db.comboMoves)
+          ..where((final r) => r.id.equals(t.id)))
+        .getSingleOrNull();
+    if (existing == null || existing.deletedAt != null) return false;
+    if (!_tombstoneWins(existing.updatedAt, t.deletedAt)) return false;
+    await (db.update(db.comboMoves)..where((final r) => r.id.equals(t.id)))
+        .write(ComboMovesCompanion(deletedAt: Value(t.deletedAt)));
+    return true;
+  }
+
+  Future<bool> _applyDeckTombstone(final SyncTombstone t) async {
+    final existing = await (db.select(db.decks)
+          ..where((final r) => r.id.equals(t.id)))
+        .getSingleOrNull();
+    if (existing == null || existing.deletedAt != null) return false;
+    if (!_tombstoneWins(existing.updatedAt, t.deletedAt)) return false;
+    await (db.update(db.decks)..where((final r) => r.id.equals(t.id)))
+        .write(DecksCompanion(deletedAt: Value(t.deletedAt)));
+    return true;
+  }
+
+  Future<bool> _applyDeckMoveTombstone(final SyncTombstone t) async {
+    // Composite wire id 'deckId:moveId' (UUIDs are colon-free — unambiguous).
+    final parts = t.id.split(':');
+    if (parts.length != 2) return false;
+    final deckId = parts[0];
+    final moveId = parts[1];
+    final existing = await (db.select(db.deckMoves)
+          ..where(
+              (final r) => r.deckId.equals(deckId) & r.moveId.equals(moveId)))
+        .getSingleOrNull();
+    if (existing == null || existing.deletedAt != null) return false;
+    if (!_tombstoneWins(existing.updatedAt, t.deletedAt)) return false;
+    await (db.update(db.deckMoves)
+          ..where(
+              (final r) => r.deckId.equals(deckId) & r.moveId.equals(moveId)))
+        .write(DeckMovesCompanion(deletedAt: Value(t.deletedAt)));
+    return true;
   }
 
   /// Merge one remote combo [record] iff it does not clobber a newer local edit
@@ -952,6 +1070,7 @@ class SyncService {
         cursorKey: decksBackendCursorPrefKey,
         label: 'deck',
         merge: _mergeDeckRecordLww,
+        applyDelete: _applyDeckTombstone,
       );
 
   /// Dual-read `deck_moves` (task 4.7). Shares the pair's read kill-switch but
@@ -963,6 +1082,7 @@ class SyncService {
         cursorKey: deckMovesBackendCursorPrefKey,
         label: 'deckMove',
         merge: _mergeDeckMoveRecordLww,
+        applyDelete: _applyDeckMoveTombstone,
       );
 
   /// Merge one remote deck [record] under LWW at whole-second granularity

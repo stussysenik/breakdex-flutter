@@ -104,7 +104,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.forTesting(super.e);
 
   @override
-  int get schemaVersion => 25;
+  int get schemaVersion => 26;
 
   /// Column names currently present on [table] — used to keep migrations
   /// idempotent across legacy databases and tables created mid-upgrade
@@ -681,6 +681,33 @@ class AppDatabase extends _$AppDatabase {
           )
           WHERE updated_at IS NULL
         ''');
+      }
+
+      if (from < 26) {
+        // --- Schema v26: `deleted_at` reversible soft-hide for inbound sync
+        // tombstones (task 4.8) ---
+        //
+        // A delete on device A propagates as a SyncTombstone; device B applies
+        // it by stamping this column instead of hard-deleting, so a remote
+        // delete never destroys videos/rows (brownfield: never orphan user
+        // state). Purely additive and nullable — NULL means "not deleted", the
+        // correct default for every existing row, so there is no backfill. Read
+        // paths filter `deleted_at IS NULL`. Idempotent across legacy DBs via
+        // the column-presence guard.
+        for (final table in const [
+          'moves',
+          'combos',
+          'combo_moves',
+          'decks',
+          'deck_moves',
+        ]) {
+          final cols = await _columnNames(table);
+          if (!cols.contains('deleted_at')) {
+            await customStatement(
+              'ALTER TABLE $table ADD COLUMN deleted_at INTEGER',
+            );
+          }
+        }
       }
 
       await _backfillReviewSnapshots();
