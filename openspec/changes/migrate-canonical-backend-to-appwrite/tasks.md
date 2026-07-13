@@ -935,5 +935,11 @@ pre-wave until the owner flips each kill-switch after the Phase M soak.
 - [ ] V.3 Manual soak: edit on phone → web updates live; edit on web → phone updates on pull;
   offline edits flush idempotently on reconnect; tombstone crosses without data loss; kill-switch
   rollback restores Firestore-only behavior byte-identically.
-- [ ] V.4 `openspec validate migrate-canonical-backend-to-appwrite --strict --no-interactive`
+- [x] V.4 `openspec validate migrate-canonical-backend-to-appwrite --strict --no-interactive`
   passes; `add-convex-sync-backend` archived as superseded.
+  <br/>**Done 2026-07-13 (both clauses proven, no device needed).** (a) `openspec validate
+  migrate-canonical-backend-to-appwrite --strict --no-interactive` → **"Change
+  'migrate-canonical-backend-to-appwrite' is valid"** (0 errors). (b) `add-convex-sync-backend`
+  is already archived as superseded at `openspec/changes/archive/2026-07-06-add-convex-sync-backend`
+  (Appwrite superseded Convex 2026-07-05, grilled; reversal was free — nothing deployed). Ledger
+  drift closed: the work was true, the box was stale.
