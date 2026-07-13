@@ -4,13 +4,15 @@ const {execSync} = require('node:child_process');
 
 const repoRoot = process.cwd();
 const pubspecPath = path.join(repoRoot, 'pubspec.yaml');
-const changelogPath = path.join(repoRoot, 'CHANGELOG.md');
+const changelogPath = path.join(repoRoot, 'docs', 'CHANGELOG.md');
+// Only files that still carry the release:* marker blocks. The 2026-07-06 docs
+// consolidation moved VISION/TECHSTACK into docs/, removed PROGRESS.MD, and
+// dropped the markers from README/ROADMAP — the old root paths would ENOENT (or
+// miss markers) and crash the release on CI. Keep this list in lockstep with the
+// files that opt in via <!-- release:meta:start --> blocks.
 const targets = [
-  path.join(repoRoot, 'README.md'),
-  path.join(repoRoot, 'VISION.MD'),
-  path.join(repoRoot, 'ROADMAP.MD'),
-  path.join(repoRoot, 'TECHSTACK.MD'),
-  path.join(repoRoot, 'PROGRESS.MD'),
+  path.join(repoRoot, 'docs', 'VISION.MD'),
+  path.join(repoRoot, 'docs', 'TECHSTACK.MD'),
   path.join(repoRoot, 'docs', 'hyperdata-ledger.md'),
 ];
 
@@ -49,7 +51,7 @@ const provenanceBlock = [
   `- Source commit: \`${gitCommit}\``,
   `- Source describe: \`${gitDescribe}\``,
   '- Generator: `scripts/update_release_metadata.cjs`',
-  '- Inputs: `CHANGELOG.md`, `pubspec.yaml`, and local git metadata',
+  '- Inputs: `docs/CHANGELOG.md`, `pubspec.yaml`, and local git metadata',
   '<!-- release:provenance:end -->',
 ].join('\n');
 

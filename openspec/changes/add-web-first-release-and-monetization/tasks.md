@@ -347,9 +347,24 @@
   "on". **In-app link deferred** (no `url_launcher` dep; adding it + a settings entry exceeds the
   preamble's "pure writing, zero gates" scope — the doc is web-reachable in-repo and the link
   rides the next help-section touch).
-- [ ] 4.2 Versioning: single monotonic build number across platforms (`pubspec.yaml` +
+- [x] 4.2 Versioning: single monotonic build number across platforms (`pubspec.yaml` +
   `--build-number` in CI); human version `MAJOR.MINOR.PATCH`; `CHANGELOG.md` entry per release —
   release notes are the user-visible face of the ledger rule.
+  <br/>**L2 done 2026-07-13.** Convention documented in `GUIDE.md` ("Versions and release notes":
+  `MAJOR.MINOR.PATCH` + one monotonic build number across web/iOS/Android + `docs/CHANGELOG.md`
+  per release). **Verified the release pipeline bumps both** — and repaired latent rot the verify
+  surfaced: `semantic-release-pub` (`cli: flutter`, `updateBuildNumber: true`) bumps pubspec
+  version+build ✓; but `@semantic-release/changelog` defaulted to root `CHANGELOG.md` while the
+  populated log is `docs/CHANGELOG.md`, and `update_release_metadata.cjs`'s `targets` still pointed
+  at root `VISION.MD`/`TECHSTACK.MD`/`PROGRESS.MD`/`README.md`/`ROADMAP.MD` — all moved to `docs/`,
+  deleted, or stripped of their `release:*` markers in the 2026-07-06 consolidation. On CI
+  (`ubuntu-latest`, case-sensitive) the next `feat`/`fix` push would `ENOENT`/miss-markers and
+  **crash the release** (latent since v1.3.0/April — `docs`/`chore` commits don't trigger a
+  release, and the wave is unpushed). Fix: `changelogFile: docs/CHANGELOG.md`; git `assets` +
+  script `targets` trimmed to the real marked set (`docs/{CHANGELOG,VISION.MD,TECHSTACK.MD,
+  hyperdata-ledger.md}`). Binary truth: `node scripts/update_release_metadata.cjs 1.4.0 v1.4.0`
+  → exit 0, touches only the 3 marked docs (reverted — real values are CI's to write); `.releaserc.yml`
+  parses. The `--build-number` CI half rides L4.
 - [ ] 4.3 Deploy pipeline: CI builds `flutter build web` on tag → deploys to the 0.3 host;
   rollback = redeploy previous tag. Documented in GUIDE.md's "how updates arrive".
 - [ ] 4.4 **Wave 1**: mint invite codes for the 0.4 list, send invites, owner walks the invitee

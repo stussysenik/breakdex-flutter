@@ -3,7 +3,8 @@ tagFormat: v${version}
 plugins:
   - "@semantic-release/commit-analyzer"
   - "@semantic-release/release-notes-generator"
-  - "@semantic-release/changelog"
+  - - "@semantic-release/changelog"
+    - changelogFile: docs/CHANGELOG.md
   - - "semantic-release-pub"
     - cli: flutter
       publishPub: false
@@ -13,12 +14,9 @@ plugins:
   - - "@semantic-release/git"
     - assets:
         [
-          "CHANGELOG.md",
-          "README.md",
-          "VISION.MD",
-          "ROADMAP.MD",
-          "TECHSTACK.MD",
-          "PROGRESS.MD",
+          "docs/CHANGELOG.md",
+          "docs/VISION.MD",
+          "docs/TECHSTACK.MD",
           "docs/hyperdata-ledger.md",
           "pubspec.yaml",
           "package.json",
