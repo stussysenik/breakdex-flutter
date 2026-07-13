@@ -3,6 +3,7 @@
 
 import 'dart:async';
 import '../../core/platform/io.dart';
+import '../../core/config/appwrite_env.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -42,6 +43,7 @@ import '../../core/services/entity_names_service.dart';
 import '../../shared/widgets/color_setting_tile.dart';
 import '../../shared/widgets/settings_list_group.dart';
 import 'widgets/cloud_sync_section.dart';
+import '../dev/sync_cutover_panel.dart';
 import '../../shared/widgets/shake_detector.dart';
 import '../stats/providers/stats_providers.dart';
 import 'recently_deleted_screen.dart';
@@ -515,6 +517,22 @@ class SettingsScreen extends ConsumerWidget {
                           onTap: () => context.push('/settings-panel/system-status'),
                         ),
                         const SizedBox(height: AppSpacing.sm),
+                        // Dev-only sync-cutover panel (task 2.2). Flag OFF ⇒ this
+                        // tile is never built, so it tree-shakes away and release
+                        // builds stay byte-identical (design D2). Pushed via a
+                        // MaterialPageRoute so no app router config is touched.
+                        if (kDevSyncPanelEnabled) ...[
+                          ActionTile(
+                            icon: Icons.sync_alt_rounded,
+                            label: 'Sync cutover (dev)',
+                            onTap: () => Navigator.of(context).push(
+                              MaterialPageRoute<void>(
+                                builder: (_) => const SyncCutoverPanel(),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(height: AppSpacing.sm),
+                        ],
                         ActionTile(
                           icon: Icons.delete_forever,
                           label: l10n.setActionClearData,

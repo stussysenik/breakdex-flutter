@@ -37,9 +37,9 @@
 
 ## Phase 2 — dev sync-cutover panel (flag-OFF)
 
-- [ ] 2.1 Add `kDevSyncPanelEnabled` to `appwrite_env.dart`
+- [x] 2.1 Add `kDevSyncPanelEnabled` to `appwrite_env.dart`
   (`bool.fromEnvironment('DEV_SYNC_PANEL', defaultValue: false)`), same idiom as 1.1.
-- [ ] 2.2 New `lib/features/dev/sync_cutover_panel.dart`: enumerate every per-entity
+- [x] 2.2 New `lib/features/dev/sync_cutover_panel.dart`: enumerate every per-entity
   dual-write **and** dual-read pref key from `SyncService`'s constants (never re-type the
   strings — import them; entities: moves, combos, reviews, decks, noteEntries — confirm the
   full set by reading `lib/core/services/sync_service.dart` §pref keys), one toggle per key
@@ -47,7 +47,7 @@
   signed-in user id/email (from `AppwriteAuthService.currentUser`) so the operator always
   knows whose space they're mutating. Entry point: flag-gated tile on the settings surface
   (grep for the settings screen; match its list idiom). Flag OFF ⇒ absent.
-- [ ] 2.3 Widget tests: flag OFF ⇒ panel/tile absent; toggle flips the exact pref key;
+- [x] 2.3 Widget tests: flag OFF ⇒ panel/tile absent; toggle flips the exact pref key;
   re-open shows persisted state. Verify: targeted `flutter test` green, `flutter analyze`
   clean, `flutter build web` green (both flags OFF — byte-identical guarantee holds).
 

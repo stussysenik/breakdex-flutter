@@ -84,6 +84,21 @@ const bool kDevEmailAuthEnabled = bool.fromEnvironment(
   defaultValue: false,
 );
 
+/// Whether the **dev** sync-cutover panel is built. **Off by default** → no
+/// panel and no settings entry point exist anywhere in the UI, so a release
+/// build is byte-identical to a pre-change binary (design D2, same tree-shake
+/// guarantee as [kDevEmailAuthEnabled]). Flipped on per-build via
+/// `--dart-define=DEV_SYNC_PANEL=true`. The panel is the missing runtime writer
+/// for the per-entity dual-write / dual-read cutover prefs (`SyncService`
+/// constants) — today only tests flip them, so even the owner's real Phase-M
+/// M.4 pass has no on-device switch (design D5). Compile-time, not runtime: a
+/// surface that mutates live sync behaviour must be impossible to reach in a
+/// shipped binary.
+const bool kDevSyncPanelEnabled = bool.fromEnvironment(
+  'DEV_SYNC_PANEL',
+  defaultValue: false,
+);
+
 /// The owner account's email. When set (via `--dart-define=OWNER_EMAIL=...`) the
 /// signed-in owner is never entitlement-gated (owner is user #1, never a
 /// customer). Empty by default so no address is baked into the open-source repo.
