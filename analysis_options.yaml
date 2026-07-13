@@ -2,9 +2,8 @@ include: package:flutter_lints/flutter.yaml
 
 analyzer:
   exclude:
-    # Root-level scratch/repro files — not part of the app or test suite.
-    - repro.dart
-    - test_bug.dart
+    # Scratch/repro files — not part of the app or test suite (see scratch/README.md).
+    - scratch/**
     # Appwrite server Functions are standalone Dart packages with their own
     # pubspec + analysis_options (verified via `dart analyze` in-package).
     - functions/**

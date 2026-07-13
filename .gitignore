@@ -62,3 +62,4 @@ node_modules/
 .appwrite/
 verify-*.png
 review-launcher-design.png
+*.iml
