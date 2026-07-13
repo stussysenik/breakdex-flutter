@@ -333,10 +333,20 @@
 
 ## Phase 4: Release hygiene + private web release (the first invite wave)
 
-- [ ] 4.1 **`GUIDE.md`** (user-facing, linked from the app and update prompts): what Breakdex is,
+- [x] 4.1 **`GUIDE.md`** (user-facing, linked from the app and update prompts): what Breakdex is,
   install/open per platform (web now; TestFlight/Play sections land in Phase 5), how updates
   arrive, when a reinstall or data migration is needed, how to export/back up data, how to leave
   (data ownership). Written for bboys, not engineers.
+  <br/>**L1 done 2026-07-13 (`GUIDE.md` at repo root).** Rider-facing, grounded in shipped
+  surface: the real 5-tab shell (Breakdex/Add/Review/Stats/Settings — verified against
+  `bottom_nav_shell.dart`, not the old planned rebrand), move→combo→set atom model, the real
+  Settings→Backup&Reset actions (Export Full JSON Backup / Import replace-merge / Export Stats
+  Summary / auto pre-clear backup), config-driven update prompt (soft-nag/hard-block per
+  `update_gate_prompt.dart`), private per-user Drive sync + local-only path, MAJOR.MINOR.PATCH +
+  monotonic build + `docs/CHANGELOG.md`. Drive auto-backup written as "arriving" (flag-OFF), not
+  "on". **In-app link deferred** (no `url_launcher` dep; adding it + a settings entry exceeds the
+  preamble's "pure writing, zero gates" scope — the doc is web-reachable in-repo and the link
+  rides the next help-section touch).
 - [ ] 4.2 Versioning: single monotonic build number across platforms (`pubspec.yaml` +
   `--build-number` in CI); human version `MAJOR.MINOR.PATCH`; `CHANGELOG.md` entry per release —
   release notes are the user-visible face of the ledger rule.

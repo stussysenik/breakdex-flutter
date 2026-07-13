@@ -30,6 +30,11 @@
   owner's Phase M device pass** (`docs/phase-m-runbook.md`, `migrate-canonical-backend-to-appwrite`) —
   neither blocks the other; nothing in the launch wave needs the soak, and nothing destructive
   (Appwrite 5.1/5.2, Phases 6–7) starts until the soak passes.
+- **Launch-wave progress (2026-07-13, in flight):** **L1 (4.1 `GUIDE.md`) DONE** — rider-facing
+  guide at repo root, grounded in the shipped 5-tab shell + real Backup&Reset export/import + the
+  config-driven update prompt (in-app link deferred, no `url_launcher` dep). **Next = L2 (4.2
+  versioning convention).** Then L3 web smoke (argent) → L4 Vercel pipeline → L5 invites flag-OFF →
+  L6 Lemon Squeezy payments seam.
 - **Prior change:** `migrate-canonical-backend-to-appwrite` — **⚡ Overnight wave (owner ruling
   2026-07-12), COMPLETE + maximally advanced pre-soak.** Its wave preamble + `design.md` D11
   remain the reference. `main` is the merged single source of truth; the wave commits sit local
