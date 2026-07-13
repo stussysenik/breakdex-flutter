@@ -25,12 +25,14 @@
   2026-07-12).** Read that `tasks.md`'s wave preamble FIRST (it sets the order and converts
   tonight's owner-gates), then `design.md` **D11**. `main` is the merged single source of truth
   (`main` == `phase-h-hardening` == `f87f4fc`, pushed); commit the wave on `main`.
-- **Phase 5 advance (owner-directed 2026-07-13):** `5.3` (Drive metadata safety-net export) landed
-  code-complete + flag-OFF — export codec is now tombstone-safe v10 (adds `moveNoteEntries` +
-  `updatedAt`/`deletedAt`, reads tombstone-inclusive) and `MetadataBackupService` gives manual +
-  scheduled Drive backup gated `kMetadataDriveBackupEnabled` (default OFF). See its `tasks.md` note.
-  **Next unblocked Phase-5 task: `5.4`** (self-host runbook, docs-only). `5.1`/`5.2` (destructive
-  Firestore/Firebase removal) stay **gated on the Phase M soak** — do not start pre-soak.
+- **Phase 5 advance (owner-directed 2026-07-13):** both unblocked Phase-5 tasks landed —
+  `5.3` (Drive metadata safety-net export; code-complete + flag-OFF: tombstone-safe v10 codec +
+  `MetadataBackupService`, gated `kMetadataDriveBackupEnabled` default OFF, commit `9e1748e`) and
+  `5.4` (self-host runbook `docs/appwrite-selfhost.md`, commit `4b65df6`). **Phase 5 is now
+  maximally advanced pre-soak.** Everything left in Phases 5–7 is hard-gated on the owner's
+  Phase M device soak: `5.1`/`5.2` (destructive Firestore/Firebase removal) need "all entities
+  green + soaked"; Phase 6 (web studio on new substrate) needs the Flutter cutover live; Phase 7
+  is flagged "do not start before Phase 6 ships". Do not start any of them pre-soak.
 - **Next task:** ✅ **Overnight wave COMPLETE** (2026-07-13). All items 1–7 landed on `main`
   (9 local commits `46abea0..` the V.1/V.2 commit, **not pushed** — owner-gated). `flutter analyze`
   0 errors; `flutter test` 916 green / 9 pre-existing reds / **0 regressions**; `flutter build web`
