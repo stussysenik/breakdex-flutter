@@ -5,17 +5,73 @@
 > soaked with real invitees. Brownfield rule holds throughout: existing iOS users' local data
 > is never touched by any release task.
 
+## 🚀 Launch wave — executor entrypoint (owner ruling 2026-07-13; written for Opus 4.8, fresh session)
+
+> **You are the executor.** This preamble sets the order for everything in this change that an
+> agent can land without the owner's device. Read `openspec/AGENTS.md` conventions first, then
+> work the L-items below strictly in order — each rides on the one before it. Same discipline as
+> the Appwrite overnight wave: **ledger rule** (tick + evidence note in the same commit as the
+> work), **flag-OFF cutovers** (nothing changes released behavior until the owner flips it),
+> **binary truth** (`flutter analyze` 0 errors + suite 0 regressions before every tick),
+> **brownfield** (never touch existing users' local data), ≤300k tokens/session — decompose,
+> don't balloon.
+>
+> **Ground truth (2026-07-13):** web-first `1.0`–`1.5` done + the CI web-build half of `1.6`
+> (`flutter build web` green). The Appwrite change is maximally advanced pre-soak (its Phase M
+> device pass is the owner's, scripted in `docs/phase-m-runbook.md` — **not yours**; do not
+> block on it, and do not start anything that needs its soak). Phase 0 rulings below are
+> **decided and ticked** — build against them, don't re-litigate.
+>
+> **Execution order (agent-runnable):**
+> 1. **L1 = 4.1** `GUIDE.md` — pure writing, zero gates. Describe only what exists (the settings
+>    Backup & Reset export is real; the Drive auto-backup ships flag-OFF — say "arriving", not "on").
+> 2. **L2 = 4.2** versioning — pubspec `1.3.0+5` monotonic format + `docs/CHANGELOG.md`
+>    (semantic-release) already exist; document the convention in GUIDE.md, verify the release
+>    workflow bumps both. The CI `--build-number` half rides L4's pipeline.
+> 3. **L3 = 1.6** core-flow web smoke, agent-driven via **argent** (`npx @swmansion/argent init`;
+>    verified 2026-07-13: `software-mansion/argent` v0.15.0, MCP agentic toolkit driving
+>    Chromium/web + iOS sims + Android — the agent runs the smoke itself). Fallback:
+>    chrome-devtools MCP as the task originally named. Record the perf baseline numbers in the tick.
+> 4. **L4 = 4.3** deploy pipeline → **Vercel** (0.3 ruling: `breakdex.vercel.app` subdomain today,
+>    custom domain later): CI `flutter build web` on tag → deploy; rollback = redeploy previous
+>    tag. First `vercel link` may need the owner's OAuth — surface it and continue with the CI
+>    wiring; don't stall.
+> 5. **L5 = Phase 2** invites (`2.1`–`2.5`), built **flag-OFF** exactly like Appwrite 4.x:
+>    author `invites`/`entitlements` tables in `appwrite.config.json` (provision live via
+>    **targeted `tables-db create-*` only — NEVER `push tables --all`**, hazard documented in
+>    ROADMAP + `docs/phase-m-runbook.md`), `invite-redeem` Function + atomicity/expiry/gate
+>    tests. Live provisioning + first mint ride the owner.
+> 6. **L6 = Phase 3** payments (`3.1`–`3.4`) against **Lemon Squeezy** (0.1 ruling): checkout
+>    links for the three 0.2 offerings, `payments-webhook` Function (signature verify, idempotent
+>    replay, downgrade-preserves-data) + tests. LS account creation + live keys are owner-gated;
+>    build the seam + tests against LS's documented webhook shapes.
+>
+> **Owner-gated — do NOT start:** `4.4` (wave-1 send), `4.5` (soak bar exit), all of Phase 5
+> (mobile), `V.2` (real-invitee proof), and everything in the Appwrite change's Phase M.
+> Testing beyond L3's smoke lives in the M gates and `docs/phase-m-runbook.md` — its dedicated
+> place; do not bolt new test frameworks onto this wave.
+
 ## Phase 0: Owner decisions (executor supplies options and stops)
 
-- [ ] 0.1 **Payments provider** — recommend a merchant-of-record (Lemon Squeezy or Paddle) over
+- [x] 0.1 **Payments provider** — recommend a merchant-of-record (Lemon Squeezy or Paddle) over
   raw Stripe so global tax is handled; owner picks and creates the account.
-- [ ] 0.2 **Offering tiers** — map the $4.20–$9.99 band to concrete offerings (e.g. supporter
+  <br/>**Ruled 2026-07-13: Lemon Squeezy** (merchant-of-record; global tax handled). Account
+  creation + live keys remain owner-gated at L6; build the webhook seam against LS docs.
+- [x] 0.2 **Offering tiers** — map the $4.20–$9.99 band to concrete offerings (e.g. supporter
   $4.20 / standard $6.99 / patron $9.99 — one-time vs yearly is the owner's call); record the
   ruling here and in the provider dashboard.
-- [ ] 0.3 **Domain + hosting for the released web app** (Vercel static hosting alongside
+  <br/>**Ruled 2026-07-13: 3-tier one-time** — Supporter **$4.20** / Standard **$6.99** /
+  Patron **$9.99**, one-time purchase (no subscriptions). Dashboard entry rides the L6
+  owner-gate; StoreKit IAP mapping rides Phase 5.2.
+- [x] 0.3 **Domain + hosting for the released web app** (Vercel static hosting alongside
   `web-mirror` is the default recommendation); owner confirms product domain.
-- [ ] 0.4 Invite policy: initial cohorts (e.g. `crew`, `beta`, `owner`), max uses and expiry per
+  <br/>**Ruled 2026-07-13: Vercel subdomain today** (`breakdex.vercel.app`) — live in minutes,
+  zero cost; a custom product domain swaps in later without redeploying. L4 wires the pipeline.
+- [x] 0.4 Invite policy: initial cohorts (e.g. `crew`, `beta`, `owner`), max uses and expiry per
   code batch. Owner supplies the first invite list.
+  <br/>**Ruled 2026-07-13: `crew` / `beta` / `owner`** — `crew` (owner's people, ~10 uses, 90d),
+  `beta` (wider, ~25 uses, 30d), `owner` (unlimited). Cohort binds the remote-config profile
+  (2.4). The first invite *list* (actual recipients) stays owner-supplied at 4.4.
 
 ## Phase 1: Flutter Web bring-up (additive; no released gate yet; can start NOW)
 
@@ -244,6 +300,10 @@
 - [ ] 1.6 Web quality gate: `flutter build web` green in CI, core-flow smoke (create move → attach
   video → review) in a real browser via chrome-devtools; performance sanity: first load and
   library render measured and recorded (baseline for later optimization; no speculative tuning).
+  <br/>**CI half done** (wave 2026-07-11: `flutter build web` in CI, green). **Smoke driver ruled
+  2026-07-13: argent** (`software-mansion/argent`, v0.15.0 verified — MCP agentic toolkit driving
+  Chromium/web, iOS sims, Android; the executor runs the smoke itself via `npx @swmansion/argent
+  init`); chrome-devtools MCP stays the fallback. This is launch-wave **L3**.
 
 ## Phase 2: Invites + entitlements (Appwrite; gated on Appwrite Phase 3 identity)
 

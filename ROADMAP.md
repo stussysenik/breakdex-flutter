@@ -21,10 +21,19 @@
 > exactly the next unticked task, verify (binary truth), tick + update this block **in the
 > same commit**. Nothing else starts until this block says so.
 
-- **Change:** `migrate-canonical-backend-to-appwrite` — **⚡ Overnight wave (owner ruling
-  2026-07-12).** Read that `tasks.md`'s wave preamble FIRST (it sets the order and converts
-  tonight's owner-gates), then `design.md` **D11**. `main` is the merged single source of truth
-  (`main` == `phase-h-hardening` == `f87f4fc`, pushed); commit the wave on `main`.
+- **Change:** `add-web-first-release-and-monetization` — **🚀 Launch wave (owner ruling
+  2026-07-13; launching today).** A fresh Opus 4.8 session executes it: read that `tasks.md`'s
+  **"🚀 Launch wave — executor entrypoint"** preamble FIRST — it sets the order (L1 GUIDE.md →
+  L2 versioning → L3 argent-driven web smoke → L4 Vercel deploy pipeline → L5 invites flag-OFF →
+  L6 Lemon Squeezy payments seam) and records the four Phase-0 rulings (LS / 3-tier one-time
+  $4.20–$6.99–$9.99 / `breakdex.vercel.app` / crew–beta–owner cohorts). Runs **parallel to the
+  owner's Phase M device pass** (`docs/phase-m-runbook.md`, `migrate-canonical-backend-to-appwrite`) —
+  neither blocks the other; nothing in the launch wave needs the soak, and nothing destructive
+  (Appwrite 5.1/5.2, Phases 6–7) starts until the soak passes.
+- **Prior change:** `migrate-canonical-backend-to-appwrite` — **⚡ Overnight wave (owner ruling
+  2026-07-12), COMPLETE + maximally advanced pre-soak.** Its wave preamble + `design.md` D11
+  remain the reference. `main` is the merged single source of truth; the wave commits sit local
+  (`46abea0..HEAD`, unpushed — owner's call).
 - **Phase 5 advance (owner-directed 2026-07-13):** both unblocked Phase-5 tasks landed —
   `5.3` (Drive metadata safety-net export; code-complete + flag-OFF: tombstone-safe v10 codec +
   `MetadataBackupService`, gated `kMetadataDriveBackupEnabled` default OFF, commit `9e1748e`) and
