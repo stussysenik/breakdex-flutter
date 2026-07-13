@@ -32,8 +32,11 @@ cold; leave the ones you own alone.
 | **Breakdex** | Your library — every move you've logged, grouped how you like. |
 | **Add** | Capture or create — film/attach a clip, name a move, start a combo. |
 | **Review** | The practice session — Breakdex shows you what's due, you rate how it felt. |
-| **Stats** | Your progress — what's mastered, what's slipping, how much you've trained. |
 | **Settings** | Look and feel, categories, and your backups (see below). |
+
+There's also an optional **Stats** tab — your progress at a glance (what's mastered,
+what's slipping, how much you've trained). It's off by default; flip it on in
+**Settings → Practice → Stats Tab** and it slots into the bottom bar.
 
 You don't have to use every part. A lot of people just log moves and glance at Stats.
 That's fine — the review engine is there when you want it.

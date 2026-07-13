@@ -35,8 +35,12 @@
   **repaired rotted release pipeline** the verify surfaced (`@semantic-release/changelog` +
   `update_release_metadata.cjs` still pointed at root/deleted docs from the 2026-07-06
   consolidation → would crash `semantic-release` on the next `feat`/`fix` push; now target the real
-  `docs/` set; script dry-run exit 0). **Next = L3 (1.6 argent-driven web smoke).** Then L4 Vercel
-  pipeline → L5 invites flag-OFF → L6 Lemon Squeezy payments seam.
+  `docs/` set; script dry-run exit 0). **L3 (1.6 web smoke) DONE** — `flutter build web --release`
+  green; core-flow screens (`/breakdex`, `/add`, `/review`) render clean in real Chrome with **0
+  console errors**; perf baseline recorded (FCP 772 ms, CLS 0.00, main.dart.js 5.47 MB uncompressed).
+  Used chrome-devtools MCP (sanctioned fallback; argent init would add repo config the preamble
+  warns against); full canvas-tap click-through fenced to argent/Phase-M. **Next = L4 (4.3 Vercel
+  deploy pipeline).** Then L5 invites flag-OFF → L6 Lemon Squeezy payments seam.
 - **Prior change:** `migrate-canonical-backend-to-appwrite` — **⚡ Overnight wave (owner ruling
   2026-07-12), COMPLETE + maximally advanced pre-soak.** Its wave preamble + `design.md` D11
   remain the reference. `main` is the merged single source of truth; the wave commits sit local

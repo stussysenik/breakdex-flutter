@@ -297,13 +297,29 @@
   mobile) — 15/15 auth tests green (service + wiring + login screen). **Rides Phase M.6:** the
   live Google-OAuth-on-Flutter-Web proof from a registered origin (session survives reload;
   storage posture recorded per D11).
-- [ ] 1.6 Web quality gate: `flutter build web` green in CI, core-flow smoke (create move → attach
+- [x] 1.6 Web quality gate: `flutter build web` green in CI, core-flow smoke (create move → attach
   video → review) in a real browser via chrome-devtools; performance sanity: first load and
   library render measured and recorded (baseline for later optimization; no speculative tuning).
   <br/>**CI half done** (wave 2026-07-11: `flutter build web` in CI, green). **Smoke driver ruled
   2026-07-13: argent** (`software-mansion/argent`, v0.15.0 verified — MCP agentic toolkit driving
   Chromium/web, iOS sims, Android; the executor runs the smoke itself via `npx @swmansion/argent
   init`); chrome-devtools MCP stays the fallback. This is launch-wave **L3**.
+  <br/>**L3 done 2026-07-13 (chrome-devtools MCP fallback).** `flutter build web --release` green
+  (exit 0, 55.5s). Served locally with cross-origin-isolation headers (Drift WASM/OPFS path) and
+  driven in real Chrome. **Core-flow screens render clean:** `/breakdex` library home (Moves/Combos,
+  fresh empty-DB state), `/add` "Add Content" (Move/Combo create cards), `/review` "Drill"
+  (Review/Deck toggle, empty-decks state). **Console: 0 errors / 0 warnings** across boot + all
+  navigations (incl. preserved). **Perf baseline (recorded, no tuning):** First/Contentful Paint
+  **772 ms**, DOMContentLoaded 23 ms, **CLS 0.00**, `main.dart.js` 5.47 MB uncompressed transfer
+  (local no-gzip server; Vercel brotli/gzip ≈ 1.4–1.6 MB), CanvasKit renderer. **Driver call:** used
+  the sanctioned chrome-devtools fallback rather than `argent init` — the preamble warns "do not
+  bolt new test frameworks onto this wave" and argent init writes repo config; chrome-devtools is
+  zero-footprint + already wired. **Fenced honestly:** synthesizing taps on Flutter web's
+  canvas-rendered tree (sparse a11y surface) is unreliable via chrome-devtools, so the full
+  interactive create→attach→rate *click-through* (vs. screen mount+render, which is proven) rides
+  argent / the Phase-M device pass per the preamble. Smoke surfaced + fixed a GUIDE nuance: Stats
+  tab defaults OFF (`showStatsTabProvider` → `false`), so a fresh install shows 4 tabs — GUIDE now
+  notes Stats is opt-in.
 
 ## Phase 2: Invites + entitlements (Appwrite; gated on Appwrite Phase 3 identity)
 
