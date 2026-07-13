@@ -11,8 +11,8 @@ each kill-switch). Nothing here has been run against live — this is the exact,
 > **only** with the targeted `create-*` calls below.
 
 Order: **(A) auth → (B) provision the two note tables → (C) redeploy Functions → (D) register
-the web origin → (E) M.1–M.6 device pass → (F) push decision.** A–D are owner-gated infra; E is
-the live proof; F is your call on the unpushed wave commits (`46abea0..HEAD`, ~17 incl. 5.3/5.4).
+the web origin → (E) M.1–M.6 device pass.** A–D are owner-gated infra; E is the live proof.
+(F, the push decision, is **done** — all wave + launch commits pushed to `origin/main` 2026-07-13.)
 
 ---
 
@@ -127,18 +127,12 @@ report before proceeding.
 
 ---
 
-## F. The push decision (yours)
+## F. The push decision — ✅ DONE (2026-07-13)
 
-The wave commits sit local/unpushed: `46abea0..HEAD` (~17, incl. the 5.3/5.4/ledger commits).
-They are additive, pref-OFF, and green
-(`flutter analyze` 0; `flutter test` 916 green / 9 pre-existing reds / 0 regressions;
-`flutter build web` green). Push is **your call** — nothing above depends on pushing first, and
-pushing does not flip any device behaviour (all cutovers stay OFF until M.4).
-
-```bash
-git log --oneline origin/main..HEAD   # review the 13 before deciding
-# git push origin main                 # when you choose to
-```
+All 26 local commits (the Appwrite overnight wave `46abea0..e4b8dd6`, Phase-5 advance, and the
+L1–L6 launch wave through `418c550`) were pushed to `origin/main` on 2026-07-13 (owner-authorized,
+clean fast-forward `76840af..418c550`). Pushing flipped no device behaviour — all cutovers stay
+pref-OFF until M.4.
 
 ---
 

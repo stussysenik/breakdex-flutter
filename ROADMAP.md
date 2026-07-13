@@ -31,7 +31,8 @@
   neither blocks the other; nothing in the launch wave needs the soak, and nothing destructive
   (Appwrite 5.1/5.2, Phases 6–7) starts until the soak passes.
 - **🚀 Launch wave (2026-07-13): L1–L6 ALL DONE — every agent-runnable item landed.** Commits on
-  `main`, **UNPUSHED** (owner's push decision). Binary truth throughout: `flutter analyze` 0 errors,
+  `main`, **PUSHED** to `origin/main` 2026-07-13 (owner-authorized, all 26 wave+launch commits,
+  fast-forward `76840af..418c550`). Binary truth throughout: `flutter analyze` 0 errors,
   each Function `dart test` green, client `flutter test` green, `flutter build web` green, 0
   regressions. Summary:
   - **L1 (4.1 `GUIDE.md`)** — rider-facing guide at repo root.
@@ -54,7 +55,7 @@
     verify fail-closed, idempotent per LS order id, `order_created`→grant, `order_refunded`→revoke
     **status-only, never deletes data** = lockout not loss, 12/12); `checkout.dart` offerings
     ($4.20/$6.99/$9.99) + pure LS checkout-URL builder; entitlements schema gained `status`/`orderId`.
-  - **Owner-gated remainder (NOT agent-runnable):** the **push decision** on all local wave commits;
+  - **Owner-gated remainder (NOT agent-runnable):** ~~the push decision~~ (✅ pushed 2026-07-13);
     **live provisioning** (targeted `tables-db create-*` for `invites`/`entitlements` + `push
     functions --activate` for `invites-redeem`/`payments-webhook` — NEVER `push tables --all`); the
     Vercel OAuth + 3 secrets (`docs/web-deploy.md`); the Lemon Squeezy account + variant ids + webhook
@@ -62,8 +63,20 @@
     Appwrite Phase M device pass. **No agent-runnable launch task remains** — the wave is code-complete.
 - **Prior change:** `migrate-canonical-backend-to-appwrite` — **⚡ Overnight wave (owner ruling
   2026-07-12), COMPLETE + maximally advanced pre-soak.** Its wave preamble + `design.md` D11
-  remain the reference. `main` is the merged single source of truth; the wave commits sit local
-  (`46abea0..HEAD`, unpushed — owner's call).
+  remain the reference. `main` is the merged single source of truth; all wave commits **pushed**
+  to `origin/main` 2026-07-13.
+- **▶ NEXT SESSION ENTRYPOINT (`openspec apply migrate-canonical-backend-to-appwrite`):**
+  **Phase M — the cross-surface "same data everywhere" proof.** Everything code-side is done,
+  green, pushed, pref-OFF. What remains is the live half, run start-to-finish from
+  `docs/phase-m-runbook.md` with the owner present: **(A)** CLI auth from `.env.local` (keys
+  verified present 2026-07-13) → **(B)** provision `moveNoteEntries`/`comboNoteEntries` via
+  targeted `create-*` (never `push tables --all`) → **(C)** `push functions --activate` →
+  **(D)** console: register web origin(s) → **(E)** device pass **M.1–M.6** (build/boot → live
+  iOS Google login → real-data backfill → **M.4 flip-the-prefs cross-surface soak** = phone edit
+  seen on web + back, per-entity, notes+tombstones last → remote-config flip 1R.4 → web login) →
+  tick M.1–M.6 + V.3 in the master `tasks.md`. Launch-side provisioning (invites/entitlements
+  tables + `invites-redeem`/`payments-webhook` Functions + Vercel + Lemon Squeezy) can ride the
+  same authenticated session — see the launch-wave block above.
 - **Phase 5 advance (owner-directed 2026-07-13):** both unblocked Phase-5 tasks landed —
   `5.3` (Drive metadata safety-net export; code-complete + flag-OFF: tombstone-safe v10 codec +
   `MetadataBackupService`, gated `kMetadataDriveBackupEnabled` default OFF, commit `9e1748e`) and
@@ -78,9 +91,9 @@
   green. See the master `tasks.md` **✅ Wave report — 2026-07-13** for the full proven-vs-Phase-M
   split. **Next is owner-in-the-loop: Phase M** (physical device, this morning) — M.1 build/install,
   M.2 live iOS Google login, M.3 real-data backfill, M.4 cross-surface soak (the flip-the-prefs
-  proof), M.5 config flip, M.6 web login — **plus the owner's push decision** on the 9 commits and
-  the owner-gated live Appwrite provisioning (targeted `tables-db create-*` for the note-entry
-  tables + `push functions --activate`; never `push tables --all`).
+  proof), M.5 config flip, M.6 web login — plus the owner-gated live Appwrite provisioning
+  (targeted `tables-db create-*` for the note-entry tables + `push functions --activate`; never
+  `push tables --all`). ~~Push decision~~ ✅ done — everything is on `origin/main` (2026-07-13).
   **Done in the wave so far:** `0.5` → `0.2` → `3.3` → `3.4` → `4.1`–`4.3` (moves cutover template
   complete) → `4.4` (combos + combo_moves; 23/23) → `4.5` (reviews append-only; 18/18) → `4.6`
   (fsrs_cards pull-only server-derived; 13/13) → `4.7` (decks + deck_moves; 24/24) → `4.8`
