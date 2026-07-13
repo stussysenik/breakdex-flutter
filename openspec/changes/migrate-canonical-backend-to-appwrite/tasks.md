@@ -850,9 +850,19 @@ pre-wave until the owner flips each kill-switch after the Phase M soak.
   Tests: export round-trip (tombstone + move-journal survival) + backup service (upload/skip/stale)
   green; `test/core/services` 320 green, `analyze` clean. **Rides Phase M:** real Drive-upload
   proof + (optional) a user-facing manual-backup button once the soak flips the flag on.
-- [ ] 5.4 **Self-host cutover runbook** (`DOCS/appwrite-selfhost.md`): Hetzner + Docker Compose
-  install, Appwrite cloud→self migration procedure, `mariadb-dump` + offsite backup schedule,
-  restore drill checklist, `.env` swap. Document-only; no provisioning yet.
+- [x] 5.4 **Self-host cutover runbook** (`docs/appwrite-selfhost.md` — lowercase, matching repo
+  convention): Hetzner + Docker Compose install, Appwrite cloud→self migration procedure,
+  `mariadb-dump` + offsite backup schedule, restore drill checklist, `.env` swap. Document-only;
+  no provisioning yet.
+  <br/>**Done 2026-07-13.** Written system-specific, not generic: leads with the architecture fact
+  that the **device is canonical truth + Appwrite is a shadow copy**, so the primary "migration" is
+  re-backfill from the device (`SyncBackfillService`) with videos untouched on Drive — MariaDB
+  dump/restore is scoped to server-derived FSRS only (or recompute from re-backfilled `reviewEvents`).
+  Covers: pinned-image Docker install + TLS/hardening; `.env` swap (endpoint/project/key + web-origin
+  CORS + Google OAuth); **targeted** schema push with the `push tables --all` hazard called out +
+  the 3 Functions (`reviews-append`/`sync-pull`/`sync-push`) activate; dual backup sinks (nightly
+  `mariadb-dump` offsite + the task-5.3 Drive JSON export); a quarterly restore drill; and a
+  binary-truth cutover checklist gating cloud decommission.
 
 ## Phase 6: Web authoring studio on the new substrate (after Flutter cutover; owner priority order)
 
