@@ -263,11 +263,14 @@
                 { "key": "cohort", "type": "string", "size": 32, "required": true, "default": null },
                 { "key": "source", "type": "string", "size": 32, "required": true, "default": null },
                 { "key": "code", "type": "string", "size": 32, "required": false },
+                { "key": "status", "type": "string", "size": 16, "required": false, "default": "active" },
+                { "key": "orderId", "type": "string", "size": 64, "required": false },
                 { "key": "grantedAt", "type": "integer", "required": true, "default": null }
             ],
             "indexes": [
                 { "key": "by_user_code", "type": "key", "columns": ["userId", "code"] },
-                { "key": "by_user", "type": "key", "columns": ["userId"] }
+                { "key": "by_user", "type": "key", "columns": ["userId"] },
+                { "key": "by_order", "type": "key", "columns": ["orderId"] }
             ]
         }
     ],
@@ -316,6 +319,18 @@
             "events": [],
             "scopes": ["tables.read", "rows.read", "rows.write"],
             "path": "functions/invites-redeem",
+            "entrypoint": "lib/main.dart",
+            "commands": "dart pub get",
+            "enabled": true
+        },
+        {
+            "$id": "payments-webhook",
+            "name": "payments-webhook",
+            "runtime": "dart-3.11",
+            "execute": ["any"],
+            "events": [],
+            "scopes": ["tables.read", "rows.read", "rows.write"],
+            "path": "functions/payments-webhook",
             "entrypoint": "lib/main.dart",
             "commands": "dart pub get",
             "enabled": true

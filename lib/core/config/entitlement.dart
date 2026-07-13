@@ -21,7 +21,14 @@ class Entitlement {
   /// Parse the `entitlements` row data (or a redeem-Function response) into an
   /// [Entitlement], or return null if the required fields are absent/malformed —
   /// an absent entitlement must read as "not entitled", never throw into the gate.
+  ///
+  /// A `status: revoked` row (a refunded/charged-back purchase) also reads as
+  /// null: the user is locked out until they re-purchase, but their row and all
+  /// their data persist untouched ("lockout not loss").
   static Entitlement? tryFrom(final Map<String, Object?> data) {
+    if (data['status'] == 'revoked') {
+      return null;
+    }
     final tier = data['tier'];
     final cohort = data['cohort'];
     if (tier is! String || tier.isEmpty || cohort is! String || cohort.isEmpty) {

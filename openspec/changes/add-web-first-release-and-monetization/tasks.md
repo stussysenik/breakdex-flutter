@@ -375,13 +375,40 @@
 
 ## Phase 3: Payments + offerings (web checkout; gated on Phase 2)
 
-- [ ] 3.1 Wire the chosen merchant-of-record checkout for the 0.2 offerings; success redirects
+- [x] 3.1 Wire the chosen merchant-of-record checkout for the 0.2 offerings; success redirects
   into the app.
-- [ ] 3.2 `payments-webhook` Function: provider webhook → verify signature → write entitlement
+  <br/>**L6 done 2026-07-13 (Lemon Squeezy; live keys owner-gated).** `lib/core/config/checkout.dart`:
+  the three one-time `kOfferings` (Supporter $4.20 / Standard $6.99 / Patron $9.99) + a pure
+  `checkoutUrlFor(tier, {userId, email, successUrl})` that builds the LS hosted-checkout URL carrying
+  the Appwrite `user_id` as custom data (the webhook reads it back to grant the right user) and a
+  success redirect into the app. Store slug + per-tier variant ids are `--dart-define` config (empty
+  by default → builder returns null → no dead buy links); kept in lockstep with the webhook's
+  variant→tier map. The paywall UI + URL launch ride the owner's live LS setup (no `url_launcher`
+  dep added — same posture as L5's live entitlement read). Test: offerings + null-when-unconfigured.
+- [x] 3.2 `payments-webhook` Function: provider webhook → verify signature → write entitlement
   (same shape as invite-granted ones, `source: purchase`); idempotent per provider event id.
-- [ ] 3.3 Refund/chargeback path: webhook downgrades entitlement; user data is NEVER deleted on
+  <br/>**L6 done 2026-07-13.** `functions/payments-webhook/` (registered, `execute: ["any"]` — public
+  endpoint, HMAC-guarded). Pure core `lib/webhook.dart`: `verifySignature` (constant-time HMAC-SHA256
+  over the RAW body with the LS secret; **fail-closed** on empty secret/sig) + `WebhookEvent.fromJson`
+  (LS envelope: `meta.event_name`/`custom_data.user_id`, `data.id`, variant id) + `applyWebhook`
+  (idempotent per LS `orderId` via the new `by_order` index; `order_created` → grant a `source:purchase`
+  entitlement, tier from the variant map). Entitlements table extended (`status` default `active`,
+  `orderId`). `main.dart` reads `bodyRaw` + `x-signature`, verifies, applies via TablesDB; always 200
+  to a valid event so LS never retries a handled one. Binary truth: `dart analyze` clean, `dart test`
+  12/12.
+- [x] 3.3 Refund/chargeback path: webhook downgrades entitlement; user data is NEVER deleted on
   downgrade (read-only lockout at most).
-- [ ] 3.4 Tests: webhook signature rejection, idempotent replay, downgrade preserves data.
+  <br/>**L6 done 2026-07-13.** `order_refunded` → `applyWebhook` calls `store.revoke(orderId)` which
+  **flips `status` to `revoked` only** — no row/user-data delete anywhere in the Function. The client
+  mirrors it: `Entitlement.tryFrom` returns null for a `revoked` row, so the gate re-locks the user
+  (lockout) while every move/combo/review they own persists untouched (not loss). Tested both sides
+  (Function: refund revokes + preserves the row + tier; client: revoked reads as no-entitlement).
+- [x] 3.4 Tests: webhook signature rejection, idempotent replay, downgrade preserves data.
+  <br/>**L6 done 2026-07-13.** Function `dart test` 12/12: signature accept / forge-reject /
+  tamper-reject (same sig, changed payload) / fail-closed-empty; grant / idempotent-replay /
+  unmapped-variant-ignored; refund-revokes-preserves-row / refund-unknown-ignored; envelope
+  validation. Client `flutter test`: offerings + checkout-null-when-unconfigured + revoked-re-locks +
+  active/legacy-parses. 0 regressions; full `flutter analyze` 0 errors.
 
 ## Phase 4: Release hygiene + private web release (the first invite wave)
 

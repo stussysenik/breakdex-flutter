@@ -30,29 +30,36 @@
   owner's Phase M device pass** (`docs/phase-m-runbook.md`, `migrate-canonical-backend-to-appwrite`) —
   neither blocks the other; nothing in the launch wave needs the soak, and nothing destructive
   (Appwrite 5.1/5.2, Phases 6–7) starts until the soak passes.
-- **Launch-wave progress (2026-07-13, in flight):** **L1 (4.1 `GUIDE.md`) + L2 (4.2 versioning)
-  DONE.** L1 = rider-facing guide at repo root. L2 = versioning convention documented in GUIDE +
-  **repaired rotted release pipeline** the verify surfaced (`@semantic-release/changelog` +
-  `update_release_metadata.cjs` still pointed at root/deleted docs from the 2026-07-06
-  consolidation → would crash `semantic-release` on the next `feat`/`fix` push; now target the real
-  `docs/` set; script dry-run exit 0). **L3 (1.6 web smoke) DONE** — `flutter build web --release`
-  green; core-flow screens (`/breakdex`, `/add`, `/review`) render clean in real Chrome with **0
-  console errors**; perf baseline recorded (FCP 772 ms, CLS 0.00, main.dart.js 5.47 MB uncompressed).
-  Used chrome-devtools MCP (sanctioned fallback; argent init would add repo config the preamble
-  warns against); full canvas-tap click-through fenced to argent/Phase-M. **L4 (4.3 Vercel deploy
-  pipeline) DONE** — `deploy-web.yml` (reusable) builds `flutter build web` + `vercel deploy
-  build/web --prod` to breakdex.vercel.app; `release.yml` auto-calls it on a published tag
-  (sidesteps the GITHUB_TOKEN tag-trigger gotcha); `web/vercel.json` SPA + no-cache entry files,
-  **no COEP** (keeps Drive video + OAuth working); rollback = dispatch on a prior tag / Vercel
-  Instant Rollback; `docs/web-deploy.md` has the owner OAuth setup (3 secrets); self-skips until
-  wired. **L5 (Phase 2 invites + entitlements, flag-OFF) DONE** — `invites`/`entitlements` tables
-  authored in `appwrite.config.json`; `invites-redeem` Dart Function (idempotent per (user,code),
-  typed invalid/expired/exhausted, `dart test` 10/10); `EntitlementGate` sealed pure gate +
-  `EntitlementGatePrompt` at root (flag `kEntitlementGateEnabled` **OFF** by default → inert, no
-  Appwrite call, builds byte-identical); `userCohortProvider` binds a redeemed cohort into
-  `RemoteConfig.flag(cohort:)`; client tests 13/13; full analyze 0 errors; web build green. Live
-  provisioning (targeted `tables-db create-*` + `push functions`) + first mint ride the owner.
-  **Next = L6 (Phase 3 Lemon Squeezy payments seam).** That is the last agent-runnable launch item.
+- **🚀 Launch wave (2026-07-13): L1–L6 ALL DONE — every agent-runnable item landed.** Commits on
+  `main`, **UNPUSHED** (owner's push decision). Binary truth throughout: `flutter analyze` 0 errors,
+  each Function `dart test` green, client `flutter test` green, `flutter build web` green, 0
+  regressions. Summary:
+  - **L1 (4.1 `GUIDE.md`)** — rider-facing guide at repo root.
+  - **L2 (4.2 versioning)** — convention in GUIDE + **repaired rotted release pipeline** the verify
+    surfaced (`@semantic-release/changelog` + `update_release_metadata.cjs` still pointed at
+    root/deleted docs from the 2026-07-06 consolidation → would crash `semantic-release` on the next
+    `feat`/`fix` push; now target the real `docs/` set; script dry-run exit 0).
+  - **L3 (1.6 web smoke)** — `/breakdex`,`/add`,`/review` render clean in real Chrome, **0 console
+    errors**; perf baseline FCP 772 ms / CLS 0.00 / main.dart.js 5.47 MB uncompressed. chrome-devtools
+    MCP (sanctioned fallback); full canvas-tap click-through fenced to argent/Phase-M.
+  - **L4 (4.3 Vercel pipeline)** — `deploy-web.yml` builds web + `vercel deploy --prod` to
+    breakdex.vercel.app; `release.yml` auto-calls it on a published tag (sidesteps the GITHUB_TOKEN
+    tag-trigger gotcha); `web/vercel.json` SPA + no-cache + **no COEP** (keeps Drive video + OAuth);
+    rollback = dispatch on a prior tag / Vercel Instant Rollback; `docs/web-deploy.md` owner setup.
+  - **L5 (Phase 2 invites, flag-OFF)** — `invites`/`entitlements` tables; `invites-redeem` Dart
+    Function (idempotent per (user,code), typed rejections, 10/10); `EntitlementGate` pure gate +
+    root `EntitlementGatePrompt` (`kEntitlementGateEnabled` **OFF** → inert, byte-identical builds);
+    `userCohortProvider` binds cohort into `RemoteConfig.flag(cohort:)`; client tests 13/13.
+  - **L6 (Phase 3 Lemon Squeezy payments)** — `payments-webhook` Dart Function (constant-time HMAC
+    verify fail-closed, idempotent per LS order id, `order_created`→grant, `order_refunded`→revoke
+    **status-only, never deletes data** = lockout not loss, 12/12); `checkout.dart` offerings
+    ($4.20/$6.99/$9.99) + pure LS checkout-URL builder; entitlements schema gained `status`/`orderId`.
+  - **Owner-gated remainder (NOT agent-runnable):** the **push decision** on all local wave commits;
+    **live provisioning** (targeted `tables-db create-*` for `invites`/`entitlements` + `push
+    functions --activate` for `invites-redeem`/`payments-webhook` — NEVER `push tables --all`); the
+    Vercel OAuth + 3 secrets (`docs/web-deploy.md`); the Lemon Squeezy account + variant ids + webhook
+    secret; flipping `kEntitlementGateEnabled` on; `4.4` wave-1 mint+send; `4.5` soak; and the
+    Appwrite Phase M device pass. **No agent-runnable launch task remains** — the wave is code-complete.
 - **Prior change:** `migrate-canonical-backend-to-appwrite` — **⚡ Overnight wave (owner ruling
   2026-07-12), COMPLETE + maximally advanced pre-soak.** Its wave preamble + `design.md` D11
   remain the reference. `main` is the merged single source of truth; the wave commits sit local
