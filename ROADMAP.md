@@ -39,8 +39,13 @@
   green; core-flow screens (`/breakdex`, `/add`, `/review`) render clean in real Chrome with **0
   console errors**; perf baseline recorded (FCP 772 ms, CLS 0.00, main.dart.js 5.47 MB uncompressed).
   Used chrome-devtools MCP (sanctioned fallback; argent init would add repo config the preamble
-  warns against); full canvas-tap click-through fenced to argent/Phase-M. **Next = L4 (4.3 Vercel
-  deploy pipeline).** Then L5 invites flag-OFF → L6 Lemon Squeezy payments seam.
+  warns against); full canvas-tap click-through fenced to argent/Phase-M. **L4 (4.3 Vercel deploy
+  pipeline) DONE** — `deploy-web.yml` (reusable) builds `flutter build web` + `vercel deploy
+  build/web --prod` to breakdex.vercel.app; `release.yml` auto-calls it on a published tag
+  (sidesteps the GITHUB_TOKEN tag-trigger gotcha); `web/vercel.json` SPA + no-cache entry files,
+  **no COEP** (keeps Drive video + OAuth working); rollback = dispatch on a prior tag / Vercel
+  Instant Rollback; `docs/web-deploy.md` has the owner OAuth setup (3 secrets); self-skips until
+  wired. **Next = L5 (Phase 2 invites, flag-OFF).** Then L6 Lemon Squeezy payments seam.
 - **Prior change:** `migrate-canonical-backend-to-appwrite` — **⚡ Overnight wave (owner ruling
   2026-07-12), COMPLETE + maximally advanced pre-soak.** Its wave preamble + `design.md` D11
   remain the reference. `main` is the merged single source of truth; the wave commits sit local

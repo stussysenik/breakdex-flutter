@@ -1,0 +1,69 @@
+name: Deploy Web (Vercel)
+
+# Builds the released Flutter web app and deploys it to Vercel production
+# (breakdex.vercel.app — 0.3 ruling). Reusable:
+#   * workflow_call  → invoked by Release after a version is published.
+#   * workflow_dispatch → manual (re)deploy. ROLLBACK = dispatch with `ref` set to
+#     a previous tag; Vercel then serves that build. (Vercel's dashboard
+#     "Instant Rollback" — promote a prior production deployment — is the faster
+#     path for an emergency; this rebuild path is the tag-of-record one.)
+#
+# Owner-gated: needs the repo secrets VERCEL_TOKEN / VERCEL_ORG_ID /
+# VERCEL_PROJECT_ID (see docs/web-deploy.md). Absent them the job logs a warning
+# and exits 0 — the pipeline is wired but never stalls the release.
+
+on:
+  workflow_call:
+    inputs:
+      ref:
+        description: Tag or SHA to build and deploy.
+        type: string
+        required: true
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: Tag/SHA to (re)deploy — rollback = a previous tag.
+        type: string
+        required: true
+
+concurrency:
+  group: deploy-web-prod
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.ref }}
+
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.x'
+
+      - run: flutter pub get
+
+      # The monotonic build number lives in pubspec.yaml (semantic-release-pub
+      # bumps it on release). Pass it explicitly so the web build embeds the same
+      # number mobile CI will pass in Phase 5 — one number across platforms
+      # (4.2's "--build-number in CI" half). web/vercel.json is copied into
+      # build/web/ by the Flutter build, so the output dir is deploy-ready.
+      - name: Build web
+        run: |
+          BUILD_NUMBER="$(grep -m1 '^version:' pubspec.yaml | sed -E 's/^version:[^+]*\+//')"
+          echo "Building web with build number: ${BUILD_NUMBER}"
+          flutter build web --release --build-number "${BUILD_NUMBER}"
+
+      - name: Deploy to Vercel (production)
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+        run: |
+          if [ -z "${VERCEL_TOKEN}" ] || [ -z "${VERCEL_PROJECT_ID}" ]; then
+            echo "::warning title=Vercel not configured::VERCEL_TOKEN / VERCEL_PROJECT_ID unset — skipping live deploy. Owner: create the project (vercel link), map breakdex.vercel.app, and add the three repo secrets. See docs/web-deploy.md."
+            exit 0
+          fi
+          npm i -g vercel@latest
+          vercel deploy build/web --prod --yes --token "${VERCEL_TOKEN}"

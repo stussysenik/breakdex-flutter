@@ -12,6 +12,9 @@ permissions:
 jobs:
   release:
     runs-on: ubuntu-latest
+    outputs:
+      released: ${{ steps.detect.outputs.released }}
+      tag: ${{ steps.detect.outputs.tag }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -30,3 +33,29 @@ jobs:
       - run: npx semantic-release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      # After semantic-release commits+tags the release, HEAD is the release
+      # commit (bumped pubspec). An exact-match tag on HEAD means a new version
+      # published → hand its tag to the web deploy. No tag = no release this push.
+      - id: detect
+        run: |
+          if TAG="$(git describe --exact-match --tags HEAD 2>/dev/null)"; then
+            echo "released=true" >> "$GITHUB_OUTPUT"
+            echo "tag=${TAG}" >> "$GITHUB_OUTPUT"
+            echo "Released ${TAG}"
+          else
+            echo "released=false" >> "$GITHUB_OUTPUT"
+            echo "No new release on this push."
+          fi
+
+  # Auto-deploy the released build to Vercel. Running it here (needs: release)
+  # rather than via `on: push: tags` sidesteps the GitHub gotcha that tags pushed
+  # by GITHUB_TOKEN don't trigger downstream workflows. Skips itself when no
+  # version published; the called job self-skips when Vercel secrets are unset.
+  deploy-web:
+    needs: release
+    if: needs.release.outputs.released == 'true'
+    uses: ./.github/workflows/deploy-web.yml
+    with:
+      ref: ${{ needs.release.outputs.tag }}
+    secrets: inherit

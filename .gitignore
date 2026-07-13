@@ -63,3 +63,6 @@ node_modules/
 verify-*.png
 review-launcher-design.png
 *.iml
+
+# Vercel CLI (vercel link writes project/org IDs here — never commit)
+.vercel/

@@ -381,8 +381,27 @@
   hyperdata-ledger.md}`). Binary truth: `node scripts/update_release_metadata.cjs 1.4.0 v1.4.0`
   → exit 0, touches only the 3 marked docs (reverted — real values are CI's to write); `.releaserc.yml`
   parses. The `--build-number` CI half rides L4.
-- [ ] 4.3 Deploy pipeline: CI builds `flutter build web` on tag → deploys to the 0.3 host;
+- [x] 4.3 Deploy pipeline: CI builds `flutter build web` on tag → deploys to the 0.3 host;
   rollback = redeploy previous tag. Documented in GUIDE.md's "how updates arrive".
+  <br/>**L4 done 2026-07-13 (owner OAuth/secrets gated — pipeline wired, self-skips until set).**
+  `.github/workflows/deploy-web.yml` (reusable: `workflow_call` + `workflow_dispatch`) →
+  `flutter build web --release --build-number <pubspec build>` → `vercel deploy build/web --prod`
+  to **breakdex.vercel.app**. `release.yml` extended additively: after `semantic-release`, a detect
+  step (`git describe --exact-match`) sets `released`/`tag` outputs and a `deploy-web` job
+  (`needs: release`, `if: released`) calls the reusable workflow with the release tag — this
+  sidesteps the GitHub gotcha that tags pushed by `GITHUB_TOKEN` don't fire `on: push: tags`.
+  **Build-number CI half (4.2) landed here**: pulled from `pubspec.yaml` and passed to the web
+  build. **Static config** `web/vercel.json` (auto-copied into `build/web/` by the Flutter build):
+  SPA fallback + `no-cache` on entry files (index.html/service-worker/bootstrap/version.json/
+  main.dart.js) so the app's update check lands new builds on refresh — and **deliberately no COEP
+  `require-corp`** (would break cross-origin Drive `<video>` + Google OAuth; Drift degrades
+  gracefully without cross-origin isolation, `WasmDatabase.open` surfaces any reduced durability).
+  **Rollback = dispatch `deploy-web` on a previous tag** (rebuild that tag) or Vercel Instant
+  Rollback (promote a prior deployment); documented in `docs/web-deploy.md` + user-facing framing
+  already in GUIDE's "How updates arrive". Owner one-time setup (in `docs/web-deploy.md`): `vercel
+  link`, map the domain, add `VERCEL_TOKEN`/`VERCEL_ORG_ID`/`VERCEL_PROJECT_ID` repo secrets;
+  `.vercel/` gitignored. Binary truth: both workflows + `vercel.json` parse; `flutter build web`
+  green (L3); `web/`→`build/web/` copy behavior proven; live deploy is the owner's OAuth step.
 - [ ] 4.4 **Wave 1**: mint invite codes for the 0.4 list, send invites, owner walks the invitee
   path personally (outside-POV test ruling). Collect issues as openspec-tracked follow-ups.
 - [ ] 4.5 Soak gate: define the stabilization bar to exit to Phase 5 (no data-loss reports, sync
