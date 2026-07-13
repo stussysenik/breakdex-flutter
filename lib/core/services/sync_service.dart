@@ -21,6 +21,7 @@ import '../sync/sync_backend.dart';
 import '../sync/codecs/move_codec.dart';
 import '../sync/codecs/combo_codec.dart';
 import '../sync/codecs/review_codec.dart';
+import '../sync/codecs/fsrs_card_codec.dart';
 
 class SyncService {
   final AuthService authService;
@@ -91,6 +92,18 @@ class SyncService {
   static const String reviewsDualReadPrefKey = 'sync.reviews.dualRead.enabled';
   static const String reviewsBackendCursorPrefKey =
       'sync.reviews.backend.cursor';
+
+  /// Kill-switch + cursor for `fsrs_cards` (task 4.6). The card is **derived
+  /// server-side** from the `reviewEvents` log (same `fsrs` package, same math)
+  /// and **never pushed** — so, unlike every other entity, there is *no*
+  /// dual-write switch, only a read one. Dual-read pulls the derived delta and
+  /// applies it under an LWW guard keyed on the card's last-review time so a pull
+  /// never clobbers a just-finished local review the server hasn't folded yet.
+  /// Off by default; flipping off is the instant rollback to the Firestore path.
+  static const String fsrsCardsDualReadPrefKey =
+      'sync.fsrsCards.dualRead.enabled';
+  static const String fsrsCardsBackendCursorPrefKey =
+      'sync.fsrsCards.backend.cursor';
 
   TaskEither<AppFailure, Unit> authenticate() {
     return authService.refreshAuth().mapLeft((final f) => AppFailure.sync('Authentication failed: ${f.message}'));
@@ -265,6 +278,16 @@ class SyncService {
                 if (result != null) continue;
               } on Object catch (e) {
                 debugPrint('[SyncService] reviews dual-read failed, falling back to Firestore: $e');
+              }
+            }
+            // Derived FSRS cards (task 4.6): pull-only, server-derived from the
+            // reviewEvents log; never pushed.
+            if (table == 'fsrs_cards') {
+              try {
+                final result = await pullFsrsCardsFromBackend();
+                if (result != null) continue;
+              } on Object catch (e) {
+                debugPrint('[SyncService] fsrs_cards dual-read failed, falling back to Firestore: $e');
               }
             }
 
@@ -789,6 +812,57 @@ class SyncService {
         .getSingleOrNull();
     if (existing != null) return false;
     await db.into(db.reviews).insert(reviewFromSyncRecord(record));
+    return true;
+  }
+
+  // --- fsrs_cards: derived server-side, pull-only (task 4.6) ---
+  //
+  // The card is a reduction of the entity's `reviewEvents` log, derived by the
+  // `reviews-append` Function with the *same* `fsrs` package the client runs, so
+  // it is **never pushed** (no dual-write, no backfill) — only pulled. Reuses the
+  // generic upsert-only [_pullEntity] engine (H.3 fault isolation, H.4 one
+  // transaction, A2 lossless cursor); the merge is an LWW guard, not a blind
+  // overwrite, so a pulled card never clobbers a fresher local review.
+
+  /// Dual-read `fsrs_cards` (task 4.6): pull the derived-card delta from this
+  /// entity's own cursor and apply each under [_mergeFsrsCardRecordLww]. Returns
+  /// `null` when disabled so the caller falls back to Firestore.
+  Future<({int applied, int failed})?> pullFsrsCardsFromBackend() =>
+      _pullEntity(
+        type: SyncEntityType.fsrsCard,
+        prefKey: fsrsCardsDualReadPrefKey,
+        cursorKey: fsrsCardsBackendCursorPrefKey,
+        label: 'fsrsCard',
+        merge: _mergeFsrsCardRecordLww,
+      );
+
+  /// Merge one pulled derived card [record] iff it does not clobber a fresher
+  /// local review. The card's clock is its last-review time: the pulled
+  /// [SyncRecord.updatedAt] is the newest `reviewedAt` the server has folded, and
+  /// the local card's `lastReview` is the newest review applied on-device. If the
+  /// local card reflects a strictly-later review than the server has folded (the
+  /// dual-write of that review is still in flight), the pulled card is stale —
+  /// skip it. Compared at whole-second granularity (H.2/A3, as for the LWW
+  /// entities). A never-reviewed local card (`lastReview == null`) is treated as
+  /// epoch-0, so any derived card (which has folded ≥ 1 event) wins.
+  Future<bool> _mergeFsrsCardRecordLww(final SyncRecord record) async {
+    final entityId = record.json['entityId'] as String;
+    final entityType = record.json['entityType'] as String;
+    final existing = await (db.select(db.fsrsCards)
+          ..where((final t) =>
+              t.entityId.equals(entityId) & t.entityType.equals(entityType)))
+        .getSingleOrNull();
+    if (existing != null) {
+      final localClock = existing.lastReview ??
+          DateTime.fromMillisecondsSinceEpoch(0, isUtc: true);
+      if (localClock.millisecondsSinceEpoch ~/ 1000 >=
+          record.updatedAt.millisecondsSinceEpoch ~/ 1000) {
+        return false;
+      }
+    }
+    await db
+        .into(db.fsrsCards)
+        .insertOnConflictUpdate(fsrsCardFromSyncRecord(record));
     return true;
   }
 

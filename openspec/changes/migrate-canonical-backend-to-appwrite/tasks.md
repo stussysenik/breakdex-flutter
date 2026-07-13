@@ -633,9 +633,36 @@ rows; any need for `appwrite push tables --all` (destructive — see the ops haz
   unencodable skip, swallow-on-fail, insert-if-absent idempotency, own cursor, malformed isolation).
   Full suite: **0 regressions** (the same 9 reds fail on clean HEAD — verified by stash-baseline).
   Live smoke-user + real-data backfill + two-device soak ride **M.3/M.4**.
-- [ ] 4.6 `fsrs_cards`: derived server-side (1.4). Verify derived state matches local scheduler
+- [x] 4.6 `fsrs_cards`: derived server-side (1.4). Verify derived state matches local scheduler
   output on a copy of real data (tolerance: exact — same package, same math); then clients pull
   cards from Appwrite. Never pushed.
+  **Done (wave 2026-07-12).** A *pull-only* shape — the card is a reduction of the entity's
+  `reviewEvents` log, derived by the `reviews-append` Function with the **same `fsrs: ^2.0.1`** the
+  client runs (Decision 7; the `derive.dart` core + its 18/18 unit proof already landed in 1.4, and
+  1.5's live curl smoke proved `reviews-append` persists a real derived card). So 4.6 is purely the
+  client **read** path: **no dual-write, no backfill** — the one entity with a read kill-switch and
+  no write one. (a) **Codec** (`sync/codecs/fsrs_card_codec.dart`): decode-only
+  `fsrsCardFromSyncRecord` → `FsrsCardsCompanion` over the derived schedule the wire carries
+  (`stability`/`difficulty`/`due`(ms→UTC)/`state`(fsrs 1–3)); it deliberately does **not** set
+  `reps`/`lapses`/`lastReview` (the `fsrs` 2.x `Card` has no reps/lapses, and the derive doesn't
+  emit `lastReview`), so on upsert Drift leaves those local-only columns untouched. (b) **Dual-read**
+  (`sync_service.dart` `pullFsrsCardsFromBackend`): reuses the generic upsert-only `_pullEntity`
+  engine (H.3/H.4/A2) with an **LWW guard** (`_mergeFsrsCardRecordLww`) keyed on the card's
+  last-review time — the pulled `updatedAt` (newest server-folded `reviewedAt`) vs the local card's
+  `lastReview`, whole-second granularity (H.2/A3) — so a pull never clobbers a just-finished local
+  review whose event dual-write is still in flight; a never-reviewed local card (`lastReview` null)
+  is epoch-0 so any derived card wins. Own cursor `fsrsCardsBackendCursorPrefKey`; kill-switch
+  `fsrsCardsDualReadPrefKey`, **OFF** by default (Firestore `fsrs_cards` path byte-identical until
+  the owner flips post-**M.4**). Wired into `pullRemote` after the reviews block. No backend change
+  (the `fsrsCards` table + direct-read pull seam were provisioned in Phase 1/1R and the backend
+  already rejects any `fsrsCard` **push**). **Verified:** `dart analyze` (lib/core + new tests)
+  clean; **13/13** new tests green — `fsrs_card_codec_test` (schedule-field mapping, `due` ms→UTC,
+  state 1–3 passthrough, never-sets-reps/lapses/lastReview, int→double coercion),
+  `sync_service_fsrs_dual_test` (pref gating + null-backend, insert-when-absent, LWW stale-skip,
+  LWW-overwrite-preserving-local-reps/lapses/lastReview, whole-second tie→local-wins, null-lastReview
+  epoch-0, own cursor, malformed isolation). Full suite: **0 regressions** (same 9 reds on clean
+  HEAD). The "copy of real data / tolerance-exact" half is the derive's determinism, already proven
+  in 1.4's fold-parity suite + 1.5's live derive; the real-device pull soak rides **M.4**.
 - [ ] 4.7 `decks` + `deck_moves`: clocks + codecs + 4.1→4.3.
 - [ ] 4.8 **Tombstones end-to-end**: delete on device A → tombstone in Appwrite → device B hides
   the row locally without hard-deleting videos/rows; web studio DELETE=TOMBSTONE verified against
