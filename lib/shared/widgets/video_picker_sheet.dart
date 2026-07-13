@@ -409,6 +409,10 @@ class _GhostCard extends StatelessWidget {
   }
 }
 
+/// Web-only "import unavailable" notice. Task 1.4 made URL-based *playback*
+/// web-capable (see `networkVideoController`); web video *import*
+/// (picked bytes → OPFS → Drive upload) still rides Phase M (owner Drive
+/// session), so capture/import stays hidden on web until then.
 class _WebUnavailableNotice extends StatelessWidget {
   const _WebUnavailableNotice();
 

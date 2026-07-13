@@ -200,10 +200,47 @@
 > preamble + design D11 first. Cross-change rule: tick here in the same commit that lands the
 > work there. 1.5's live login proof is that wave's M.6.
 
-- [ ] 1.4 Video on web: playback via HTML video (Drive-sourced URLs), upload/import path for web
+- [x] 1.4 Video on web: playback via HTML video (Drive-sourced URLs), upload/import path for web
   users; document what is deferred (recording, native editor) as visible gaps.
-- [ ] 1.5 Auth + sync on web: Appwrite web OAuth session (httpOnly cookie posture per repo
+  **Done — buildable half (wave 2026-07-13).** Added `networkVideoController` to the media seam
+  (`native_media.dart` + both impls: native + web route a URL through
+  `VideoPlayerController.networkUrl`; web plays it via `video_player_web`'s HTML `<video>`) +
+  `supportsUrlVideoPlayback` (`web_support.dart`, true everywhere — a URL source is the one
+  playback path that works on web, unlike a local file). `VideoPlayerWidget`/`RobustVideoPlayer`
+  gained an optional `videoUrl` source (both `videoPath`/`videoUrl` now nullable + an assert that
+  one is present): when set it plays on every platform incl. web and skips the local-file
+  probe/poster; the "coming to web" status card now shows only when
+  `!supportsLocalVideoPlayback && videoUrl == null`. Existing local-file call sites untouched
+  (`videoUrl` defaults null). Deferred gaps kept **visibly** degraded + documented (no silent
+  caps): recording/gallery/file import stays hidden on web (`video_picker_sheet`'s
+  `_WebUnavailableNotice`, doc-noted), native editor tile already dims
+  (`move_detail_screen:302-318`). **Rides Phase M (owner Drive session):** the
+  `contentHash → Drive-media-URL` resolver, web video *import* (picked bytes → OPFS → Drive
+  upload), and the live Drive-URL playback proof (M.4). **Verified:** `flutter analyze` clean on
+  all touched files; new `native_media_url_seam_test` (network `dataSourceType`, flag) +
+  `robust_video_player_url_source_test` (URL-only / path-only constructor contract, assert on
+  neither) 7/7 green; `test/core/platform` + `test/shared/widgets` 0 regressions (the lone red is
+  the pre-existing `bottom_nav_shell` Riverpod-timer flake).
+- [x] 1.5 Auth + sync on web: Appwrite web OAuth session (httpOnly cookie posture per repo
   security contract), sync via the same `SyncBackend` seam. (Gated on Appwrite Phases 0–3.)
+  **Done — buildable half (wave 2026-07-13).** The 3.3 Appwrite OAuth path assumed mobile (SDK
+  auto-derives the `appwrite-callback-<projectId>` custom scheme; no web branch existed). Added a
+  web redirect branch: `AppwriteAccountGateway.createGoogleSession` now takes
+  `successUrl`/`failureUrl`, forwarded to `account.createOAuth2Session(success:, failure:)`;
+  `AppwriteAuthService` supplies them **only on web** (`kIsWeb`, injectable for tests) computed
+  from `Uri.base.origin` — success → app origin (the SPA reboots and `refresh()` re-seeds the
+  cookie session), failure → `<origin>/auth`; mobile passes null (scheme unchanged). Documented
+  the web model on `signInWithGoogle` (full-page redirect ⇒ control returns via the next boot's
+  `refresh()`, not inline). **httpOnly-cookie posture is code-clean** — no `setSession`, no
+  `localStorage` token handling anywhere; the session is the Appwrite cookie against the
+  registered web-platform origin (console CORS registration is owner-gated). **SyncBackend on web
+  needs no change** — `appwrite_functions_transport` is pure HTTP/WS SDK calls (Functions
+  `createExecution`/`listRows`/Realtime), already web-safe; once the session cookie is on the
+  shared client, executions are stamped server-side. **Verified:** `flutter analyze` clean;
+  `appwrite_auth_service_test` gains a web-branch pair (origin success/failure on web, null on
+  mobile) — 15/15 auth tests green (service + wiring + login screen). **Rides Phase M.6:** the
+  live Google-OAuth-on-Flutter-Web proof from a registered origin (session survives reload;
+  storage posture recorded per D11).
 - [ ] 1.6 Web quality gate: `flutter build web` green in CI, core-flow smoke (create move → attach
   video → review) in a real browser via chrome-devtools; performance sanity: first load and
   library render measured and recorded (baseline for later optimization; no speculative tuning).

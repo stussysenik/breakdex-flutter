@@ -16,11 +16,19 @@ class _FakeGateway implements AppwriteAccountGateway {
   int createCalls = 0;
   int deleteCalls = 0;
   List<String> lastScopes = const [];
+  String? lastSuccessUrl;
+  String? lastFailureUrl;
 
   @override
-  Future<void> createGoogleSession({final List<String> scopes = const []}) async {
+  Future<void> createGoogleSession({
+    final List<String> scopes = const [],
+    final String? successUrl,
+    final String? failureUrl,
+  }) async {
     createCalls++;
     lastScopes = scopes;
+    lastSuccessUrl = successUrl;
+    lastFailureUrl = failureUrl;
     if (signInError != null) throw signInError!;
     // A successful OAuth flow attaches the session ⇒ a subsequent get() works.
     user = const AuthUser(id: 'u1', email: 'me@example.com', name: 'Me');
@@ -143,6 +151,33 @@ void main() {
         isNot(const AuthUser(id: 'u2', email: 'a@b.com')),
       );
     });
+
+    test('web sign-in passes app-origin success/failure redirect URLs (1.5)',
+        () async {
+      final gw = _FakeGateway();
+      final service = AppwriteAuthService(
+        gw,
+        isWeb: true,
+        baseUri: () => Uri.parse('https://app.breakdex.io/library?x=1'),
+      );
+      addTearDown(service.dispose);
+
+      await service.signInWithGoogle();
+
+      expect(gw.lastSuccessUrl, 'https://app.breakdex.io');
+      expect(gw.lastFailureUrl, 'https://app.breakdex.io/auth');
+    });
+
+    test('mobile sign-in leaves redirect URLs null (SDK auto-scheme)', () async {
+      final gw = _FakeGateway();
+      final service = AppwriteAuthService(gw, isWeb: false);
+      addTearDown(service.dispose);
+
+      await service.signInWithGoogle();
+
+      expect(gw.lastSuccessUrl, isNull);
+      expect(gw.lastFailureUrl, isNull);
+    });
   });
 }
 
@@ -150,7 +185,11 @@ void main() {
 /// degenerate case `signInWithGoogle` must reject.
 class _NoSessionGateway implements AppwriteAccountGateway {
   @override
-  Future<void> createGoogleSession({final List<String> scopes = const []}) async {}
+  Future<void> createGoogleSession({
+    final List<String> scopes = const [],
+    final String? successUrl,
+    final String? failureUrl,
+  }) async {}
 
   @override
   Future<AuthUser?> currentUser() async => null;

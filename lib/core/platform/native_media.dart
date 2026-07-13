@@ -31,3 +31,15 @@ VideoPlayerController fileVideoController(
   final VideoPlayerOptions? videoPlayerOptions,
 }) =>
     nativeFileVideoController(path, videoPlayerOptions: videoPlayerOptions);
+
+/// URL-backed playback that works on **every** platform, web included: a network
+/// source routes through `video_player`'s HTML `<video>` backend on web and the
+/// AVFoundation/ExoPlayer network path on native. This is the seam a Drive media
+/// URL (authenticated) flows through so a released web build can actually play.
+/// Resolving `contentHash → Drive-media-URL` and the live wiring ride Phase M
+/// (owner Drive session); this seam only makes the playback path web-capable.
+VideoPlayerController networkVideoController(
+  final String url, {
+  final VideoPlayerOptions? videoPlayerOptions,
+}) =>
+    nativeNetworkVideoController(url, videoPlayerOptions: videoPlayerOptions);

@@ -76,7 +76,8 @@ mixin _VideoTransportMixin<T extends StatefulWidget> on State<T> {
 class VideoPlayerWidget extends ConsumerStatefulWidget {
   const VideoPlayerWidget({
     super.key,
-    required this.videoPath,
+    this.videoPath,
+    this.videoUrl,
     this.height = 300,
     this.borderRadius,
     this.overlay,
@@ -87,9 +88,18 @@ class VideoPlayerWidget extends ConsumerStatefulWidget {
     this.muted = false,
     this.playbackSpeed = 1.0,
     this.onPlayStateChanged,
-  });
+  }) : assert(
+         videoPath != null || videoUrl != null,
+         'VideoPlayerWidget needs a source: a local videoPath or a videoUrl.',
+       );
 
-  final String videoPath;
+  /// Local on-disk path (native-only playback via `fileVideoController`).
+  final String? videoPath;
+
+  /// URL source (authenticated Drive media). When set it takes precedence and
+  /// plays on every platform incl. web via `networkVideoController`, and the
+  /// local-file probe/poster are skipped (there is no local file to stat).
+  final String? videoUrl;
   final double height;
   final BorderRadius? borderRadius;
   final Widget? overlay;
@@ -172,7 +182,8 @@ class _VideoPlayerWidgetState extends ConsumerState<VideoPlayerWidget>
   @override
   void didUpdateWidget(covariant final VideoPlayerWidget oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (oldWidget.videoPath != widget.videoPath) {
+    if (oldWidget.videoPath != widget.videoPath ||
+        oldWidget.videoUrl != widget.videoUrl) {
       cancelHideTimer();
       MediaPlaybackCoordinator.shared.release(_playbackId);
       _controller.dispose();
@@ -208,10 +219,10 @@ class _VideoPlayerWidgetState extends ConsumerState<VideoPlayerWidget>
 
     final quietMode = ref.read(quietModeEnabledProvider);
 
-    _controller = fileVideoController(
-      widget.videoPath,
-      videoPlayerOptions: VideoPlayerOptions(mixWithOthers: quietMode),
-    )
+    final options = VideoPlayerOptions(mixWithOthers: quietMode);
+    _controller = (widget.videoUrl != null
+        ? networkVideoController(widget.videoUrl!, videoPlayerOptions: options)
+        : fileVideoController(widget.videoPath!, videoPlayerOptions: options))
       ..setLooping(widget.looping)
       ..initialize()
           .timeout(
@@ -247,7 +258,10 @@ class _VideoPlayerWidgetState extends ConsumerState<VideoPlayerWidget>
   }
 
   Future<void> _loadPoster() async {
-    final poster = await _videoService.generateThumbnail(widget.videoPath);
+    // No local file to thumbnail when playing a URL source (Drive media).
+    final path = widget.videoPath;
+    if (path == null || widget.videoUrl != null) return;
+    final poster = await _videoService.generateThumbnail(path);
     if (!mounted || poster == null) return;
     setState(() => _posterPath = poster);
   }
@@ -840,7 +854,8 @@ class VideoPlaceholder extends StatelessWidget {
 class RobustVideoPlayer extends ConsumerStatefulWidget {
   const RobustVideoPlayer({
     super.key,
-    required this.videoPath,
+    this.videoPath,
+    this.videoUrl,
     this.height = 300,
     this.onRepick,
     this.onEdit,
@@ -854,9 +869,17 @@ class RobustVideoPlayer extends ConsumerStatefulWidget {
     this.muted = false,
     this.playbackSpeed = 1.0,
     this.onPlayStateChanged,
-  });
+  }) : assert(
+         videoPath != null || videoUrl != null,
+         'RobustVideoPlayer needs a source: a local videoPath or a videoUrl.',
+       );
 
-  final String videoPath;
+  /// Local on-disk path (native-only). Probed/resolved before playback.
+  final String? videoPath;
+
+  /// URL source (authenticated Drive media). When set, playback works on every
+  /// platform incl. web and the local-file probe is skipped entirely.
+  final String? videoUrl;
   final double height;
   final VoidCallback? onRepick;
   final VoidCallback? onEdit;
@@ -888,10 +911,10 @@ class _RobustVideoPlayerState extends ConsumerState<RobustVideoPlayer> {
     _stateSub = _loadingController.stream.listen((final state) {
       if (mounted) setState(() => _loadingState = state);
     });
-    // On web there is no local file to check (the check itself runs dart:io) and
-    // no local-file playback — build() renders a visible "coming to web" card
-    // instead, so skip the file probe entirely. See supportsLocalVideoPlayback.
-    if (supportsLocalVideoPlayback) _checkFile();
+    // A URL source (Drive media) has no local file to probe, and on web the probe
+    // itself runs dart:io — build() renders the URL player or a visible "coming to
+    // web" card instead. Only probe when there's a local file to stat.
+    if (widget.videoUrl == null && supportsLocalVideoPlayback) _checkFile();
   }
 
   @override
@@ -904,16 +927,20 @@ class _RobustVideoPlayerState extends ConsumerState<RobustVideoPlayer> {
   @override
   void didUpdateWidget(final RobustVideoPlayer oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (oldWidget.videoPath != widget.videoPath) _checkFile();
+    if (widget.videoUrl == null && oldWidget.videoPath != widget.videoPath) {
+      _checkFile();
+    }
   }
 
   Future<void> _checkFile({final bool isRetry = false}) async {
+    final path = widget.videoPath;
+    if (path == null) return; // URL source: nothing to probe.
     _loadingController.send(isRetry ? LoadingEvent.retry : LoadingEvent.start);
     _resolvedPath = null;
-    final status = await _videoService.checkVideoFileWithRetry(widget.videoPath);
+    final status = await _videoService.checkVideoFileWithRetry(path);
     if (!mounted) return;
     if (status == VideoFileStatus.missing) {
-      final found = await VideoPathResolver.resolve(widget.videoPath);
+      final found = await VideoPathResolver.resolve(path);
       if (!mounted) return;
       if (found != null) {
         _resolvedPath = found;
@@ -936,9 +963,30 @@ class _RobustVideoPlayerState extends ConsumerState<RobustVideoPlayer> {
     final colorScheme = Theme.of(context).colorScheme;
     final quietMode = ref.watch(quietModeEnabledProvider);
 
-    // Web can't play a local-file video (the only playback path today). Degrade
-    // visibly to a status card rather than constructing VideoPlayerWidget, whose
-    // fileVideoController throws UnsupportedError synchronously on web (1.4).
+    // A URL source (authenticated Drive media) plays on every platform incl. web
+    // via networkVideoController's HTML <video> path — no local-file probe needed.
+    if (widget.videoUrl != null) {
+      return VideoPlayerWidget(
+        videoUrl: widget.videoUrl,
+        videoPath: widget.videoPath,
+        height: widget.height,
+        borderRadius: widget.borderRadius,
+        overlay: widget.overlay,
+        onEdit: widget.onEdit,
+        autoPlay: widget.autoPlay,
+        minimal: widget.minimal,
+        looping: widget.looping,
+        muted: widget.muted || quietMode,
+        playbackSpeed: widget.playbackSpeed,
+        onPlayStateChanged: widget.onPlayStateChanged,
+      ).animate().fadeIn(duration: 300.ms);
+    }
+
+    // No URL and web can't play a local file (the only other playback path today).
+    // Degrade visibly to a status card rather than constructing VideoPlayerWidget,
+    // whose fileVideoController throws UnsupportedError synchronously on web. The
+    // contentHash → Drive-media-URL resolver that would supply videoUrl rides
+    // Phase M (owner Drive session); until then local-file-only web = this card.
     if (!supportsLocalVideoPlayback) {
       return _buildStatusCard(
         icon: Icons.movie_outlined,

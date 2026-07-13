@@ -14,6 +14,8 @@ library;
 
 import 'dart:async';
 
+import 'package:flutter/foundation.dart' show kIsWeb;
+
 /// A provider-neutral, immutable view of the signed-in account. Generic data,
 /// not an opaque SDK object (DOP): the rest of the app keys on [id] (the
 /// Appwrite `userId`) and displays [email]/[name].
@@ -62,12 +64,20 @@ class AuthException implements Exception {
 /// `Account`. Three doors, all the service needs:
 ///   * [createGoogleSession] — trigger the Google OAuth2 web flow; completes
 ///     when the callback resolves, attaching the session to the client.
+///     [successUrl]/[failureUrl] are the **web** redirect targets (task 1.5):
+///     on web the SDK does a full-page redirect and must be told where to
+///     return; on mobile they are null and the SDK auto-derives the
+///     `appwrite-callback-<projectId>` custom scheme.
 ///   * [currentUser] — the signed-in account, or `null` when there is no
 ///     session (a 401 is *no session*, not a fault). Throws [AuthException]
 ///     only on a genuine transport failure.
 ///   * [deleteCurrentSession] — logout; idempotent (no session → no-op).
 abstract interface class AppwriteAccountGateway {
-  Future<void> createGoogleSession({final List<String> scopes});
+  Future<void> createGoogleSession({
+    final List<String> scopes,
+    final String? successUrl,
+    final String? failureUrl,
+  });
 
   Future<AuthUser?> currentUser();
 
@@ -83,9 +93,20 @@ abstract interface class AppwriteAccountGateway {
 /// account (task 3.1's "session persistence proven" gate — unit-proven here via
 /// the gateway seam, live-proven once 0.2 opens).
 class AppwriteAuthService {
-  AppwriteAuthService(this._gateway);
+  /// [isWeb]/[baseUri] are injectable purely so the web redirect branch (task
+  /// 1.5) is unit-testable on the VM; production uses `kIsWeb` + `Uri.base`.
+  AppwriteAuthService(
+    this._gateway, {
+    final bool isWeb = kIsWeb,
+    final Uri Function()? baseUri,
+  })  : _isWeb = isWeb,
+        _baseUri = baseUri ?? _defaultBaseUri;
+
+  static Uri _defaultBaseUri() => Uri.base;
 
   final AppwriteAccountGateway _gateway;
+  final bool _isWeb;
+  final Uri Function() _baseUri;
   final _controller = StreamController<AuthUser?>.broadcast();
   AuthUser? _current;
 
@@ -108,14 +129,38 @@ class AppwriteAuthService {
 
   /// Run the Google OAuth2 flow and return the resulting account. Throws
   /// [AuthException] if the flow completes without a usable session.
+  ///
+  /// On **web** (task 1.5) [createGoogleSession] triggers a full-page redirect
+  /// to Google, so control does not return here — the app reboots at
+  /// [successUrl] and the returning cookie session is seeded by [refresh] on the
+  /// next launch. On **mobile** the flow resolves in-app, so the account is read
+  /// immediately below. The httpOnly session cookie is set by Appwrite against
+  /// the registered web-platform origin; nothing is persisted in `localStorage`
+  /// (repo security posture — enforced by console CORS/platform config).
   Future<AuthUser> signInWithGoogle({final List<String> scopes = const []}) async {
-    await _gateway.createGoogleSession(scopes: scopes);
+    final (String? success, String? failure) = _webRedirects();
+    await _gateway.createGoogleSession(
+      scopes: scopes,
+      successUrl: success,
+      failureUrl: failure,
+    );
     final user = await _gateway.currentUser();
     if (user == null) {
       throw const AuthException('Sign-in completed without creating a session.');
     }
     _emit(user);
     return user;
+  }
+
+  /// The web OAuth redirect targets, or `(null, null)` off web. Both point at
+  /// the app's own origin (which must be registered as an Appwrite web platform
+  /// for CORS + the httpOnly cookie): success returns to the app, which reboots
+  /// and re-seeds the session via [refresh]; failure lands on the in-app `/auth`
+  /// screen. Mobile leaves them null so the SDK auto-derives the custom scheme.
+  (String?, String?) _webRedirects() {
+    if (!_isWeb) return (null, null);
+    final origin = _baseUri().origin;
+    return (origin, '$origin/auth');
   }
 
   /// Delete the current session and emit signed-out.

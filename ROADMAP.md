@@ -25,10 +25,10 @@
   2026-07-12).** Read that `tasks.md`'s wave preamble FIRST (it sets the order and converts
   tonight's owner-gates), then `design.md` **D11**. `main` is the merged single source of truth
   (`main` == `phase-h-hardening` == `f87f4fc`, pushed); commit the wave on `main`.
-- **Next task:** `add-web-first-release-and-monetization` **`1.4`** (video on web) then **`1.5`**
-  (web auth + sync) — cross-change: tick BOTH ledgers in the landing commit. See that change's
-  `tasks.md`. The buildable halves land this session; the live web-login/soak halves ride Phase M
-  (M.6 web login, M.4 cross-surface soak).
+- **Next task:** `V.1`/`V.2` sweep + a **wave report** appended to the master `tasks.md` overnight-wave
+  section (what's proven overnight vs. what waits for Phase M). This is the wave's final item; after
+  it the overnight wave is complete and everything remaining is owner-in-the-loop Phase M
+  (morning 2026-07-13, physical device) + the owner's push decision.
   **Done in the wave so far:** `0.5` → `0.2` → `3.3` → `3.4` → `4.1`–`4.3` (moves cutover template
   complete) → `4.4` (combos + combo_moves; 23/23) → `4.5` (reviews append-only; 18/18) → `4.6`
   (fsrs_cards pull-only server-derived; 13/13) → `4.7` (decks + deck_moves; 24/24) → `4.8`
@@ -38,8 +38,13 @@
   dirty-tracking + soft-hide read-filters, dual-write/read + inbound-tombstone engines, backfill,
   config tables authored + Function allowlist→7 + tests; pref OFF until M.4. 24/24 new tests,
   Function tests 19/21 green, `test/core` 789 green 0 regressions; live provisioning + Function
-  redeploy + two-device note soak ride M).**
-  Remaining wave order: web-first `1.4`/`1.5` (cross-change) → `V.1`/`V.2` sweep + wave report. **Phase M (morning 2026-07-13,
+  redeploy + two-device note soak ride M) → **web-first `1.4` (URL video seam: `networkVideoController`
+  + `supportsUrlVideoPlayback` + `RobustVideoPlayer.videoUrl`; HTML `<video>` playback web-capable;
+  Drive-URL resolver + web import + live playback ride M.4) + `1.5` (web Appwrite OAuth: success/failure
+  redirect URLs on web via `Uri.base.origin`, httpOnly-cookie posture code-clean, SyncBackend transport
+  already web-safe; live web login rides M.6) — cross-change, both ledgers ticked; auth 15/15 + video 7/7
+  green, 0 regressions.**
+  Remaining wave order: `V.1`/`V.2` sweep + wave report. **Phase M (morning 2026-07-13,
   owner on the physical device)** holds every owner-in-the-loop proof: live Google login (M.2),
   real-data backfill (M.3), two-surface soak (M.4), config flip 1R.4 (M.5), web login (M.6).
 - **Owner-gated residue (parked, does not block the wave):** 0.4's Convex console delete; final

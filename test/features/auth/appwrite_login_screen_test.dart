@@ -14,7 +14,11 @@ class _ControllableGateway implements AppwriteAccountGateway {
   AuthException? error;
 
   @override
-  Future<void> createGoogleSession({final List<String> scopes = const []}) async {
+  Future<void> createGoogleSession({
+    final List<String> scopes = const [],
+    final String? successUrl,
+    final String? failureUrl,
+  }) async {
     if (gate != null) await gate!.future;
     if (error != null) throw error!;
   }

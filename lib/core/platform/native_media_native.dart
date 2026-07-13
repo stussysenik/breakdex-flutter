@@ -23,3 +23,12 @@ VideoPlayerController nativeFileVideoController(
   final VideoPlayerOptions? videoPlayerOptions,
 }) =>
     VideoPlayerController.file(File(path), videoPlayerOptions: videoPlayerOptions);
+
+VideoPlayerController nativeNetworkVideoController(
+  final String url, {
+  final VideoPlayerOptions? videoPlayerOptions,
+}) =>
+    VideoPlayerController.networkUrl(
+      Uri.parse(url),
+      videoPlayerOptions: videoPlayerOptions,
+    );

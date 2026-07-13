@@ -29,3 +29,11 @@ bool get supportsLocalVideoPlayback => !kIsWeb;
 /// Capturing (camera) or importing (gallery/files) a video into local storage
 /// depends on `dart:io` file writes, which throw on web. Deferred to task 1.4.
 bool get supportsVideoCaptureAndImport => !kIsWeb;
+
+/// Playing a video from a **URL** source (authenticated Drive media) works on
+/// every platform — on web `video_player_web` renders it into an HTML `<video>`
+/// element, unlike a local file which has no meaning in the browser. This flag
+/// is `true` everywhere; it is the web-capable playback path that the local-file
+/// [supportsLocalVideoPlayback] path degrades away from. The `contentHash → URL`
+/// resolver that feeds it rides Phase M (owner Drive session).
+bool get supportsUrlVideoPlayback => true;

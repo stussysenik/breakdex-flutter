@@ -21,3 +21,16 @@ VideoPlayerController nativeFileVideoController(
     throw UnsupportedError(
       'Local-file video playback is unavailable on web (native-only feature).',
     );
+
+/// A *URL* source is playable on web: `video_player_web` renders it into an HTML
+/// `<video>` element. This is the one playback path that works on web, so it does
+/// not throw. The URL itself (authenticated Drive media) is produced by the
+/// `contentHash → Drive-media-URL` resolver, which rides Phase M (owner session).
+VideoPlayerController nativeNetworkVideoController(
+  final String url, {
+  final VideoPlayerOptions? videoPlayerOptions,
+}) =>
+    VideoPlayerController.networkUrl(
+      Uri.parse(url),
+      videoPlayerOptions: videoPlayerOptions,
+    );
