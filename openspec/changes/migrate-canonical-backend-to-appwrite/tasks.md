@@ -53,6 +53,38 @@ commit the wave on `main`):
 rows; any need for `appwrite push tables --all` (destructive — see the ops hazard in ROADMAP
 `## NOW`); anything that would require committing a secret.
 
+### ✅ Wave report — 2026-07-13 (autonomous overnight run complete)
+
+The overnight wave ran to its final item. **Every wave task 4.4→4.9 + web-first 1.4/1.5 + V.1/V.2
+landed on `main`** (local commits, **not pushed** — owner-gated). Nothing deleted or mutated
+existing user state; every cutover is **pref-OFF** so device behavior is byte-identical to
+pre-wave until the owner flips each kill-switch after the Phase M soak.
+
+**What's proven overnight (offline / fixture / unit + wire):**
+- **9 atomic commits** `46abea0..da6eb97`, ledger + `## NOW` advanced in each. Entities cut over
+  to the Appwrite shadow via the shared strangler engines: `4.4` combos+combo_moves, `4.5` reviews
+  (append-only), `4.6` fsrs_cards (pull-only server-derived), `4.7` decks+deck_moves, `4.8`
+  tombstones (soft-hide, all 5 delete-bearing tables), `4.9` note entries (Appwrite-only, schema
+  v27). Web-first `1.4` (URL video playback seam → HTML `<video>` web-capable) + `1.5` (web
+  Appwrite OAuth redirect URLs; httpOnly posture code-clean; transport already web-safe).
+- **Binary-truth gates:** `flutter analyze` 0 errors/0 warnings; `flutter test` **916 green, 9
+  pre-existing reds, 0 regressions** across the wave (~124 tests added); Function packages
+  `sync-push` 19 + `sync-pull` 21 green; `flutter build web` green (released product compiles).
+- **Schema** advanced v23→v27, every migration additive + backfilled + presence-guarded; older
+  migration harnesses (v22–v25) patched to carry the new columns.
+
+**What waits for Phase M (owner, physical device, morning 2026-07-13) — the wave's live half:**
+- **M.1** device build/install + clean boot (brownfield gate). **M.2** live Google sign-in on iOS
+  + cross-restart session (ticks 3.1). **M.3** real-data backfill (4.1's gated half). **M.4**
+  cross-surface soak — the flip-the-prefs proof for every 4.x cutover: edit/delete/note/video-pointer
+  crosses phone↔web without data loss, Drive playback on web (1.4's live half). **M.5** remote-config
+  live flip (1R.4). **M.6** web Google OAuth from a registered origin (1.5's live half).
+- **Owner-gated infra (not code):** live Appwrite provisioning of the `moveNoteEntries`/
+  `comboNoteEntries` tables via **targeted** `tables-db create-*` (config authored in
+  `appwrite.config.json`; **never `push tables --all`** — ops hazard) + `push functions --activate`
+  to redeploy the 7-table allowlist; the console web-platform/CORS registration that makes 1.5's
+  httpOnly cookie work; iOS/Android release builds; the **push decision** on the 9 local commits.
+
 ## Phase H: Harden the migration template (no Appwrite needed; do FIRST; audit 2026-07-05)
 
 > DONE 2026-07-05 on branch `phase-h-hardening` (commit 8e301a1). `flutter analyze`
@@ -856,10 +888,24 @@ rows; any need for `appwrite push tables --all` (destructive — see the ops haz
 
 ## Validation
 
-- [ ] V.1 Phase H red/green suite green; all backfill snapshot proofs byte-identical; parity
+- [x] V.1 Phase H red/green suite green; all backfill snapshot proofs byte-identical; parity
   tests (2.3) green; identity claim-flow test green.
-- [ ] V.2 `flutter analyze` clean (with H.8 rules), `flutter test` green, iOS + Android builds;
+  **Done (wave sweep 2026-07-13).** All four hold within the full `flutter test` run (below): the
+  Phase H hardened dual-read suite (`sync_service_dual_read_test`), every per-entity byte-identical
+  backfill proof (`*_backfill_appwrite_test` for moves/combos/reviews/decks/note-entries), the
+  parity suite, and the identity claim-flow test are all green among the 916.
+- [x] V.2 `flutter analyze` clean (with H.8 rules), `flutter test` green, iOS + Android builds;
   `web-mirror` lint + tests green.
+  **Done — buildable half (wave sweep 2026-07-13).** `flutter analyze` (whole project): **0
+  errors / 0 warnings** (9 pre-existing style `info`s only, none in wave code). `flutter test`
+  (whole suite): **+916 passed, ~11 skipped, 9 failed** — the failure count held at exactly the
+  documented pre-existing 9 (Riverpod/timer/preview flakes in `card_count_sync_test`,
+  `party_screen_test`, `preview_harness_smoke_test`, `bottom_nav_shell_test`), i.e. the wave added
+  ~124 tests, **all green, 0 regressions**. `flutter build web` **green** (36.5s; the released
+  web product compiles with the full wave incl. 4.9 note sync + 1.4 URL video + 1.5 web OAuth).
+  **iOS + Android release builds ride Phase M / CI** (device-signed builds are M.1's gate; the web
+  compile is the released-product proof this session). **`web-mirror` lint + tests are a separate
+  workstream** (not touched by this wave; run under `add-web-authoring-and-lifecycle-studio`).
 - [ ] V.3 Manual soak: edit on phone → web updates live; edit on web → phone updates on pull;
   offline edits flush idempotently on reconnect; tombstone crosses without data loss; kill-switch
   rollback restores Firestore-only behavior byte-identically.

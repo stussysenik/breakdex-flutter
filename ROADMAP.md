@@ -25,10 +25,15 @@
   2026-07-12).** Read that `tasks.md`'s wave preamble FIRST (it sets the order and converts
   tonight's owner-gates), then `design.md` **D11**. `main` is the merged single source of truth
   (`main` == `phase-h-hardening` == `f87f4fc`, pushed); commit the wave on `main`.
-- **Next task:** `V.1`/`V.2` sweep + a **wave report** appended to the master `tasks.md` overnight-wave
-  section (what's proven overnight vs. what waits for Phase M). This is the wave's final item; after
-  it the overnight wave is complete and everything remaining is owner-in-the-loop Phase M
-  (morning 2026-07-13, physical device) + the owner's push decision.
+- **Next task:** ✅ **Overnight wave COMPLETE** (2026-07-13). All items 1–7 landed on `main`
+  (9 local commits `46abea0..` the V.1/V.2 commit, **not pushed** — owner-gated). `flutter analyze`
+  0 errors; `flutter test` 916 green / 9 pre-existing reds / **0 regressions**; `flutter build web`
+  green. See the master `tasks.md` **✅ Wave report — 2026-07-13** for the full proven-vs-Phase-M
+  split. **Next is owner-in-the-loop: Phase M** (physical device, this morning) — M.1 build/install,
+  M.2 live iOS Google login, M.3 real-data backfill, M.4 cross-surface soak (the flip-the-prefs
+  proof), M.5 config flip, M.6 web login — **plus the owner's push decision** on the 9 commits and
+  the owner-gated live Appwrite provisioning (targeted `tables-db create-*` for the note-entry
+  tables + `push functions --activate`; never `push tables --all`).
   **Done in the wave so far:** `0.5` → `0.2` → `3.3` → `3.4` → `4.1`–`4.3` (moves cutover template
   complete) → `4.4` (combos + combo_moves; 23/23) → `4.5` (reviews append-only; 18/18) → `4.6`
   (fsrs_cards pull-only server-derived; 13/13) → `4.7` (decks + deck_moves; 24/24) → `4.8`
