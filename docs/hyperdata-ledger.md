@@ -10,32 +10,32 @@ This ledger records what Breakdex is trying to be at the system level: a move li
 ## Release Snapshot
 
 <!-- release:meta:start -->
-- Release tag: `v1.3.0`
-- Release version: `1.3.0`
-- Pubspec version: `1.3.0+5`
-- Released: `2026-04-28`
-- Metadata refreshed: `2026-04-28`
+- Release tag: `v1.4.0`
+- Release version: `1.4.0`
+- Pubspec version: `1.4.0+6`
+- Released: `2026-07-13`
+- Metadata refreshed: `2026-07-13`
 <!-- release:meta:end -->
 
 ## Automatic Provenance
 
 <!-- release:provenance:start -->
 - Source branch: `main`
-- Source revision: `05c0ba3`
-- Source commit: `05c0ba33cd86d6f30a845e85bb8fef0e6b266359`
-- Source describe: `v1.2.0-11-g05c0ba3`
+- Source revision: `418c550`
+- Source commit: `418c55057558bddccc17e5a5f75ad1ff13761727`
+- Source describe: `v1.3.0-146-g418c550`
 - Generator: `scripts/update_release_metadata.cjs`
-- Inputs: `CHANGELOG.md`, `pubspec.yaml`, and local git metadata
+- Inputs: `docs/CHANGELOG.md`, `pubspec.yaml`, and local git metadata
 <!-- release:provenance:end -->
 
 ## Latest Tagged Notes
 
 <!-- release:notes:start -->
-- add clojuredart and openspec changes
-- land athlete ux, sync tooling, and research workbench
-- make progress graph view immediate
-- polish progress graph accessibility
-- progress parent-first redesign
+- 8 UI clarity fixes from audit
+- **a11y:** route Stats reaction-tile rating colors through AppSemanticTheme
+- fixed move re-name text edit
+- **i18n:** install l10n delegates in widget tests broken by 5.2a/5.2b
+- **instax:** repair InstaxVideoCard call sites after ReviewableItem refactor
 <!-- release:notes:end -->
 
 ## Why It Exists
