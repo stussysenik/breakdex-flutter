@@ -67,7 +67,7 @@
   manages the sim) and on Chromium against a locally served `flutter build web` bundle, both
   with `--dart-define=DEV_EMAIL_AUTH=true --dart-define=DEV_SYNC_PANEL=true`. Evidence: both
   surfaces reach the auth screen with the dev form visible.
-- [ ] 3.4 Author `docs/sync-rehearsal-runbook.md`: the R1–R7 ladder (below) as a results
+- [x] 3.4 Author `docs/sync-rehearsal-runbook.md`: the R1–R7 ladder (below) as a results
   ledger — per rung: driver used (argent | chrome-devtools fallback), surfaces, evidence,
   pass/fail — plus the design-D7 fence table verbatim ("what this did NOT prove").
 
