@@ -380,6 +380,11 @@ class BreakdexApp extends ConsumerWidget {
     // (BreakdexApp plus the report providers the startup-toast gate listens to).
     ref.watch(automaticDatabaseBackupLifecycleProvider);
 
+    // Scheduled metadata → Drive backup (task 5.3). Native-only + flag-gated OFF
+    // (kMetadataDriveBackupEnabled) so this is inert until the owner's Phase M
+    // soak flips it on; the manual trigger works regardless.
+    ref.watch(metadataBackupLifecycleProvider);
+
     final themeSetting = ref.watch(themeSettingProvider);
     final viewingMode = ref.watch(viewingModeProvider);
     final fontFamily = ref.watch(fontFamilyProvider);

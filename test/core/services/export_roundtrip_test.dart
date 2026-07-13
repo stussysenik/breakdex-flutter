@@ -54,15 +54,15 @@ void main() {
     ));
   }
 
-  group('Export schema v9', () {
+  group('Export schema v10', () {
     test('export carries status, createdAt, journal, and plans', () async {
       await seedJourneyData();
 
       final result = await StatsExportService.generateJsonExport(db, prefs);
       final data = jsonDecode(result.json) as Map<String, dynamic>;
 
-      expect(data['schemaVersion'], 9);
-      expect(AppMetadata.exportSchemaVersion, 9);
+      expect(data['schemaVersion'], 10);
+      expect(AppMetadata.exportSchemaVersion, 10);
 
       final combo = (data['combos'] as List).single as Map<String, dynamic>;
       expect(combo['status'], 'attempting');
@@ -102,6 +102,59 @@ void main() {
       expect(plans.length, 1);
       expect(plans.single.position, 3);
       expect(plans.single.completedAt, isNull);
+
+      await db2.close();
+    });
+
+    test('v10 tombstones + move journal survive the round-trip', () async {
+      // A live move and a soft-deleted (tombstoned) move.
+      await db.into(db.moves).insert(
+            MovesCompanion.insert(id: 'm-live', name: 'Windmill'),
+          );
+      await db.into(db.moves).insert(
+            MovesCompanion.insert(
+              id: 'm-dead',
+              name: 'Retired',
+              deletedAt: Value(DateTime.utc(2026, 7, 10)),
+            ),
+          );
+      // Move journal entry (v10-only export table).
+      await db.into(db.moveNoteEntries).insert(
+            MoveNoteEntriesCompanion.insert(
+              id: 'mn1',
+              moveId: 'm-live',
+              body: 'grabbed the hop',
+            ),
+          );
+
+      final exported =
+          (await StatsExportService.generateJsonExport(db, prefs)).json;
+
+      final db2 = AppDatabase.forTesting(NativeDatabase.memory());
+      SharedPreferences.setMockInitialValues({});
+      final prefs2 = await SharedPreferences.getInstance();
+      await StatsExportService.importFromJson(
+        db2,
+        prefs2,
+        exported,
+        ImportMode.replaceAll,
+      );
+
+      // The tombstone was captured and restored — the deleted move is NOT
+      // resurrected as a live row.
+      final allMoves = await db2.select(db2.moves).get();
+      expect(allMoves.map((final m) => m.id).toSet(), {'m-live', 'm-dead'});
+      final dead = allMoves.singleWhere((final m) => m.id == 'm-dead');
+      expect(dead.deletedAt, isNotNull);
+      expect(dead.deletedAt!.isAtSameMomentAs(DateTime.utc(2026, 7, 10)), isTrue);
+      final live = allMoves.singleWhere((final m) => m.id == 'm-live');
+      expect(live.deletedAt, isNull);
+
+      // Move journal round-tripped.
+      final notes = await db2.select(db2.moveNoteEntries).get();
+      expect(notes.single.id, 'mn1');
+      expect(notes.single.moveId, 'm-live');
+      expect(notes.single.body, 'grabbed the hop');
 
       await db2.close();
     });

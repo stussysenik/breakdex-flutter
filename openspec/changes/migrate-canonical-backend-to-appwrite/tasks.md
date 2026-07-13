@@ -832,8 +832,24 @@ pre-wave until the owner flips each kill-switch after the Phase M soak.
   Storage video-download path (H.6) remains until the video plane no longer references it.
 - [ ] 5.2 Retire Firebase Auth (identity fully on Appwrite since Phase 3; this removes the dead
   dependency). App builds without `firebase_auth`/`cloud_firestore`.
-- [ ] 5.3 Periodic **JSON export of all metadata to the user's Drive** (data-ownership safety
+- [x] 5.3 Periodic **JSON export of all metadata to the user's Drive** (data-ownership safety
   net): all entities + tombstones, versioned schema, restorable; scheduled + manual trigger.
+  <br/>**Done 2026-07-13 (code-complete, flag-OFF — same convention as 4.1–4.9; live Drive-upload
+  proof rides Phase M).** (a) Export codec is now the complete safety net: `exportSchemaVersion`
+  9→10, reads are **tombstone-inclusive** (raw selects, not `deletedAt IS NULL` DAO getters, which
+  silently dropped every soft-deleted row), `updatedAt`+`deletedAt` added to all seven LWW entities
+  (moves/combos/combo_moves/decks/deck_moves/combo_note_entries), and the missing `moveNoteEntries`
+  table (Appwrite-synced since 4.9) is exported + imported — so a restore no longer resurrects
+  deleted rows or loses move notes. (b) `MetadataBackupService` (`lib/core/services/metadata_backup_service.dart`):
+  `backupNow()` = manual (export → temp file → upload via the `gdrive` `CloudProvider` to
+  `Breakdex/backups/` → record `lastBackupAt`; skips, never throws, when unauthenticated);
+  `backupIfStale({interval=24h})` = scheduled. (c) Wired: `metadataBackupServiceProvider`
+  (manual, always reachable) + `MetadataBackupController` on launch/app-pause via
+  `metadataBackupLifecycleProvider`, **native-only + gated `kMetadataDriveBackupEnabled`
+  (default OFF)** so device behavior is byte-identical until the owner flips it post-soak.
+  Tests: export round-trip (tombstone + move-journal survival) + backup service (upload/skip/stale)
+  green; `test/core/services` 320 green, `analyze` clean. **Rides Phase M:** real Drive-upload
+  proof + (optional) a user-facing manual-backup button once the soak flips the flag on.
 - [ ] 5.4 **Self-host cutover runbook** (`DOCS/appwrite-selfhost.md`): Hetzner + Docker Compose
   install, Appwrite cloud→self migration procedure, `mariadb-dump` + offsite backup schedule,
   restore drill checklist, `.env` swap. Document-only; no provisioning yet.

@@ -129,7 +129,13 @@ Rating Breakdown:
 ${topMoves.isNotEmpty ? 'Most Practiced:\n$topMoves' : 'No moves practiced yet.'}''';
   }
 
-  /// Generates a full JSON export of all data (schema v9).
+  /// Generates a full JSON export of all data (schema v10).
+  ///
+  /// v10 changes from v9 (task 5.3 — Drive safety-net export):
+  /// - reads are **tombstone-inclusive** (raw selects, not `deletedAt IS NULL`
+  ///   getters) so soft-deleted rows survive and a restore never resurrects them
+  /// - every LWW entity carries `updatedAt` + `deletedAt`
+  /// - adds `moveNoteEntries` (move journal became Appwrite-synced in task 4.9)
   ///
   /// v9 changes from v8:
   /// - combos include status and createdAt (combo journey)
@@ -143,15 +149,19 @@ ${topMoves.isNotEmpty ? 'Most Practiced:\n$topMoves' : 'No moves practiced yet.'
     final AppDatabase db,
     final SharedPreferences prefs,
   ) async {
-    final moves = await db.movesDao.getAllIncludingArchived();
+    // v10 safety-net semantics: read every LWW entity **tombstone-inclusive**
+    // (raw selects, not the `deletedAt IS NULL` DAO getters) so soft-deleted rows
+    // survive the round-trip and a restore never resurrects deleted state.
+    final moves = await db.select(db.moves).get();
     final reviews = await db.reviewsDao.watchAll().first;
     final battleResults = await db.select(db.battleResults).get();
-    final combos = await db.combosDao.getAll();
+    final combos = await db.select(db.combos).get();
     final comboMoves = await db.select(db.comboMoves).get();
     final comboNoteEntries = await db.select(db.comboNoteEntries).get();
+    final moveNoteEntries = await db.select(db.moveNoteEntries).get();
     final comboPlans = await db.comboPlansDao.getAll();
     final fsrsCards = await db.fsrsCardsDao.getAll();
-    final decks = await db.decksDao.getAll();
+    final decks = await db.select(db.decks).get();
     final deckMoves = await db.select(db.deckMoves).get();
 
     // Categories from SharedPreferences
@@ -184,6 +194,9 @@ ${topMoves.isNotEmpty ? 'Most Practiced:\n$topMoves' : 'No moves practiced yet.'
               'archiveReason': m.archiveReason,
               'notes': m.notes,
               'createdAt': m.createdAt.toIso8601String(),
+              // v10: LWW clock + tombstone
+              'updatedAt': m.updatedAt?.toIso8601String(),
+              'deletedAt': m.deletedAt?.toIso8601String(),
             },
           )
           .toList(),
@@ -198,6 +211,9 @@ ${topMoves.isNotEmpty ? 'Most Practiced:\n$topMoves' : 'No moves practiced yet.'
                   : null,
               'status': c.status,
               'createdAt': c.createdAt.toIso8601String(),
+              // v10: LWW clock + tombstone
+              'updatedAt': c.updatedAt?.toIso8601String(),
+              'deletedAt': c.deletedAt?.toIso8601String(),
             },
           )
           .toList(),
@@ -208,6 +224,9 @@ ${topMoves.isNotEmpty ? 'Most Practiced:\n$topMoves' : 'No moves practiced yet.'
               'sequenceIndex': cm.sequenceIndex,
               'comboId': cm.comboId,
               'moveId': cm.moveId,
+              // v10: LWW clock + tombstone
+              'updatedAt': cm.updatedAt?.toIso8601String(),
+              'deletedAt': cm.deletedAt?.toIso8601String(),
             },
           )
           .toList(),
@@ -222,6 +241,22 @@ ${topMoves.isNotEmpty ? 'Most Practiced:\n$topMoves' : 'No moves practiced yet.'
               'videoPath': e.videoPath,
               'videoHash': e.videoHash,
               'createdAt': e.createdAt.toIso8601String(),
+              // v10: LWW clock + tombstone
+              'updatedAt': e.updatedAt?.toIso8601String(),
+              'deletedAt': e.deletedAt?.toIso8601String(),
+            },
+          )
+          .toList(),
+      // v10: move journal (Appwrite-synced since task 4.9; videos by reference)
+      'moveNoteEntries': moveNoteEntries
+          .map(
+            (final e) => {
+              'id': e.id,
+              'moveId': e.moveId,
+              'body': e.body,
+              'createdAt': e.createdAt.toIso8601String(),
+              'updatedAt': e.updatedAt?.toIso8601String(),
+              'deletedAt': e.deletedAt?.toIso8601String(),
             },
           )
           .toList(),
@@ -297,11 +332,21 @@ ${topMoves.isNotEmpty ? 'Most Practiced:\n$topMoves' : 'No moves practiced yet.'
               'sessionSize': d.sessionSize,
               'createdAt': d.createdAt.toIso8601String(),
               'updatedAt': d.updatedAt.toIso8601String(),
+              // v10: tombstone
+              'deletedAt': d.deletedAt?.toIso8601String(),
             },
           )
           .toList(),
       'deckMoves': deckMoves
-          .map((final dm) => {'deckId': dm.deckId, 'moveId': dm.moveId})
+          .map(
+            (final dm) => {
+              'deckId': dm.deckId,
+              'moveId': dm.moveId,
+              // v10: LWW clock + tombstone
+              'updatedAt': dm.updatedAt?.toIso8601String(),
+              'deletedAt': dm.deletedAt?.toIso8601String(),
+            },
+          )
           .toList(),
     };
 
@@ -376,12 +421,18 @@ ${topMoves.isNotEmpty ? 'Most Practiced:\n$topMoves' : 'No moves practiced yet.'
     final data = jsonDecode(json) as Map<String, dynamic>;
     final version = data['schemaVersion'] as int? ?? 1;
 
+    // v10: nullable LWW clock / tombstone parser (absent in pre-v10 exports).
+    DateTime? parseDate(final Object? v) =>
+        v != null ? DateTime.parse(v as String) : null;
+
     final movesJson = data['moves'] as List? ?? [];
     final reviewsJson = data['reviews'] as List? ?? [];
     final combosJson = data['combos'] as List? ?? [];
     final comboMovesJson = data['comboMoves'] as List? ?? [];
     // v9 fields — absent in older exports, imported with defaults
     final comboNoteEntriesJson = data['comboNoteEntries'] as List? ?? [];
+    // v10 field — move journal (task 4.9); absent in older exports
+    final moveNoteEntriesJson = data['moveNoteEntries'] as List? ?? [];
     final comboPlansJson = data['comboPlans'] as List? ?? [];
     final battleResultsJson = data['battleResults'] as List? ?? [];
     final categoriesJson = data['categories'] as List? ?? [];
@@ -431,6 +482,8 @@ ${topMoves.isNotEmpty ? 'Most Practiced:\n$topMoves' : 'No moves practiced yet.'
                     ? DateTime.parse(map['createdAt'] as String)
                     : DateTime.now(),
               ),
+              updatedAt: Value(parseDate(map['updatedAt'])),
+              deletedAt: Value(parseDate(map['deletedAt'])),
             ),
           );
           movesImported++;
@@ -468,6 +521,8 @@ ${topMoves.isNotEmpty ? 'Most Practiced:\n$topMoves' : 'No moves practiced yet.'
                       ? DateTime.parse(map['createdAt'] as String)
                       : DateTime.now(),
                 ),
+                updatedAt: Value(parseDate(map['updatedAt'])),
+                deletedAt: Value(parseDate(map['deletedAt'])),
               ),
             );
         movesImported++;
@@ -496,6 +551,8 @@ ${topMoves.isNotEmpty ? 'Most Practiced:\n$topMoves' : 'No moves practiced yet.'
                 createdAt: map['createdAt'] != null
                     ? Value(DateTime.parse(map['createdAt'] as String))
                     : const Value.absent(),
+                updatedAt: Value(parseDate(map['updatedAt'])),
+                deletedAt: Value(parseDate(map['deletedAt'])),
               ),
             );
         combosImported++;
@@ -529,6 +586,40 @@ ${topMoves.isNotEmpty ? 'Most Practiced:\n$topMoves' : 'No moves practiced yet.'
                   createdAt: map['createdAt'] != null
                       ? Value(DateTime.parse(map['createdAt'] as String))
                       : const Value.absent(),
+                  updatedAt: Value(parseDate(map['updatedAt'])),
+                  deletedAt: Value(parseDate(map['deletedAt'])),
+                ),
+              );
+        }
+      }
+
+      // Import move journal entries (v10+; absent in older exports)
+      if (moveNoteEntriesJson.isNotEmpty) {
+        final existingMoveEntryIds = mode == ImportMode.merge
+            ? (await db.select(db.moveNoteEntries).get())
+                  .map((final e) => e.id)
+                  .toSet()
+            : <String>{};
+
+        for (final e in moveNoteEntriesJson) {
+          final map = e as Map<String, dynamic>;
+          final id = map['id'] as String;
+          if (mode == ImportMode.merge && existingMoveEntryIds.contains(id)) {
+            continue;
+          }
+
+          await db
+              .into(db.moveNoteEntries)
+              .insert(
+                MoveNoteEntriesCompanion.insert(
+                  id: id,
+                  moveId: map['moveId'] as String,
+                  body: map['body'] as String? ?? '',
+                  createdAt: map['createdAt'] != null
+                      ? Value(DateTime.parse(map['createdAt'] as String))
+                      : const Value.absent(),
+                  updatedAt: Value(parseDate(map['updatedAt'])),
+                  deletedAt: Value(parseDate(map['deletedAt'])),
                 ),
               );
         }
@@ -587,6 +678,8 @@ ${topMoves.isNotEmpty ? 'Most Practiced:\n$topMoves' : 'No moves practiced yet.'
                   sequenceIndex: map['sequenceIndex'] as int,
                   comboId: map['comboId'] as String,
                   moveId: map['moveId'] as String,
+                  updatedAt: Value(parseDate(map['updatedAt'])),
+                  deletedAt: Value(parseDate(map['deletedAt'])),
                 ),
               );
           comboMovesImported++;
@@ -737,6 +830,7 @@ ${topMoves.isNotEmpty ? 'Most Practiced:\n$topMoves' : 'No moves practiced yet.'
                         ? DateTime.parse(map['updatedAt'] as String)
                         : DateTime.now(),
                   ),
+                  deletedAt: Value(parseDate(map['deletedAt'])),
                 ),
               );
           decksImported++;
@@ -763,7 +857,12 @@ ${topMoves.isNotEmpty ? 'Most Practiced:\n$topMoves' : 'No moves practiced yet.'
           await db
               .into(db.deckMoves)
               .insert(
-                DeckMovesCompanion.insert(deckId: deckId, moveId: moveId),
+                DeckMovesCompanion.insert(
+                  deckId: deckId,
+                  moveId: moveId,
+                  updatedAt: Value(parseDate(map['updatedAt'])),
+                  deletedAt: Value(parseDate(map['deletedAt'])),
+                ),
               );
           deckMovesImported++;
         }

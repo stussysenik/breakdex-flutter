@@ -41,6 +41,7 @@ import 'services/canonical_folder_service.dart';
 import 'services/canonical_import_gate.dart';
 import 'services/canonical_reconcile_service.dart';
 import 'services/database_recovery_service.dart';
+import 'services/metadata_backup_service.dart';
 import 'services/managed_album_reconciliation_service.dart';
 import 'services/media_playback_coordinator.dart';
 import 'services/move_creation_service.dart';

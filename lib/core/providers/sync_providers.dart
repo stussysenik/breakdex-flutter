@@ -71,6 +71,41 @@ final cloudProvidersProvider = StreamProvider<List<CloudProvider>>((final ref) {
   });
 });
 
+/// Metadata Drive-backup service (task 5.3), or null until a `gdrive` provider
+/// is configured + the sync engine has one to write through. Sink = the user's
+/// own Drive quota; payload = the tombstone-inclusive v10 JSON export.
+final metadataBackupServiceProvider = Provider<MetadataBackupService?>((
+  final ref,
+) {
+  final providers = ref.watch(cloudProvidersProvider).valueOrNull ?? [];
+  CloudProvider? gdrive;
+  for (final p in providers) {
+    if (p.providerType == 'gdrive') {
+      gdrive = p;
+      break;
+    }
+  }
+  if (gdrive == null) return null;
+  return MetadataBackupService(
+    ref.watch(databaseProvider),
+    ref.watch(sharedPreferencesProvider),
+    gdrive,
+  );
+});
+
+/// Activates the scheduled metadata backup (launch + app-pause). No-op unless
+/// [kMetadataDriveBackupEnabled] is flipped on post-soak; the manual trigger via
+/// [metadataBackupServiceProvider] works regardless.
+final metadataBackupLifecycleProvider = Provider<void>((final ref) {
+  final controller = MetadataBackupController(
+    resolve: () async => ref.read(metadataBackupServiceProvider),
+  );
+  controller.start();
+  ref.onDispose(() {
+    unawaited(controller.dispose());
+  });
+});
+
 /// Main asset sync engine orchestrator.
 final assetSyncEngineProvider = Provider<asset_sync.AssetSyncEngine>((final ref) {
   final engine = asset_sync.AssetSyncEngine(
