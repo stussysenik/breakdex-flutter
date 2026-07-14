@@ -28,6 +28,22 @@ flip that entity's pref back OFF and halt the ladder.
 - **WHEN** the full ladder has run
 - **THEN** a server-key spot-check shows no row outside `userId == dev0` was created, modified, or deleted by the rehearsal
 
+### Requirement: Video pointer metadata rides the same sync machinery
+
+The rehearsal SHALL prove that video **pointer** rows (the backend's video metadata — never
+bytes) cross surfaces under the same dual-write → dual-read → LWW → tombstone machinery as
+every other entity. Video **bytes** stay on Google Drive and require the owner's Drive token
+(`google_sign_in`, a separate flow from Appwrite identity), so byte upload/playback SHALL
+remain fenced to Phase M — user #0 has no Google account by design.
+
+#### Scenario: A video pointer crosses surfaces
+- **WHEN** user #0 creates a move with video metadata on one surface with the relevant prefs ON
+- **THEN** the pointer row (name/reference fields, not bytes) appears on the other surface, and the missing-bytes state degrades visibly rather than erroring
+
+#### Scenario: Byte transport is explicitly fenced
+- **WHEN** the rehearsal ledger records the video rung
+- **THEN** it names Drive byte upload/playback as NOT covered, pointing to Phase M
+
 ### Requirement: The rehearsal ledger fences what it cannot prove
 
 The rehearsal ledger SHALL enumerate, alongside its results, the Phase-M proofs it does not

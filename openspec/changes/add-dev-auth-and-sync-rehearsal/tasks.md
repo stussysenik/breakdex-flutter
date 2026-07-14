@@ -92,7 +92,12 @@
   does **not** resurrect after relaunch + re-sync on either surface.
 - [ ] 4.7 **R7 — notes** (requires 3.1 §B). Note-entry created on sim crosses to web and
   back; tombstoned note stays gone. Skip-with-note if §B deferred.
-- [ ] 4.8 Fill the runbook ledger (3.4) with all evidence; record fenced items (design D7);
+- [ ] 4.8 **R8 — video pointers** (design D8 scoping). Create a move with video metadata on
+  one surface; the **pointer row** (metadata fields, never bytes) crosses to the other under
+  the same flip order; missing bytes degrade visibly, no error. Byte upload/playback stays
+  fenced to Phase M (user #0 has no Google/Drive account by design — record the fence in the
+  ledger alongside the D7 table).
+- [ ] 4.9 Fill the runbook ledger (3.4) with all evidence; record fenced items (design D7);
   tick this change complete; advance ROADMAP `## NOW` in the same commit; name
   `migrate-canonical-backend-to-appwrite` in the commit body (its M.4 confidence rises, its
   boxes stay untouched).

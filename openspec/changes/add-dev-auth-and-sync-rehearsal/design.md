@@ -68,3 +68,26 @@ binary truth includes naming the instrument.
 
 The rehearsal ledger in `docs/sync-rehearsal-runbook.md` records the right column as fenced,
 so a green rehearsal can never be misread as "Phase M passed".
+
+## D8 — Google OAuth live findings (2026-07-14): the chain is green server-side; failures were sequencing, not code
+
+Live-verified with `curl` against the production project (`6a50f25b000e15631ad0`), so no
+future session re-derives this:
+
+- **Appwrite** `GET /account/sessions/oauth2/google?project=…&success=appwrite-callback-<pid>://…`
+  returns `301 → accounts.google.com` with the correct `client_id` (`…jpou873…`) and
+  `redirect_uri` (`…/oauth2/callback/google/<pid>`). Appwrite accepts the mobile callback
+  scheme — it does **not** emit "Missing redirect URL" for this flow. That earlier error was
+  transient pre-config state and does not reproduce.
+- **Google** accepts that `redirect_uri` (`302` to sign-in, no `redirect_uri_mismatch`).
+- **App side**: `appwriteAuthServiceProvider` wires the live SDK gateway; `/auth` route is
+  reachable ungated; `appwrite-callback-<pid>` is registered in **both** `Info.plist` and
+  `Info-DebugProfile.plist`; a plain `flutter run` targets production via the compiled
+  defaults in `appwrite_env.dart`.
+
+The only link never proven is the **on-device browser→app callback handoff** — interactive
+by nature, owner-gated (M.2). Everything the rehearsal needs (email/password, redirect-free
+per D4) bypasses that link entirely. Consequence for this change: a failed Google tap on a
+device is **not** a blocker for any rung R1–R8 and must not restart an OAuth debugging loop;
+the ladder proceeds on the dev path, and M.2 stays the owner's single remaining live proof.
+See memory `gotcha_appwrite_oauth_device_debug` for the one-pass verification recipe.

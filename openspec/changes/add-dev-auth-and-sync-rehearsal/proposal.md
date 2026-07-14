@@ -35,6 +35,11 @@ sanctions `argent init` here.
   method (`signInWithEmailPassword`), and a flag-gated sign-in form on the auth screen.
   **Sign-in only — no registration UI or client-side `account.create`** (the product is
   invite-gated; user #0 is minted owner-side via `appwrite users create`).
+- **R8 video-pointer rung + D8 OAuth findings** (2026-07-14 update): the rehearsal ladder
+  gains a video **pointer** sync rung (bytes stay fenced to Phase M — user #0 has no
+  Google/Drive account), and design D8 records the live-verified Google OAuth chain
+  (Appwrite→Google green server-side via curl) so a failed device tap never restarts an
+  OAuth debugging loop or blocks the ladder.
 - **Dev sync-cutover panel** (flag `kDevSyncPanelEnabled`, dart-define `DEV_SYNC_PANEL`,
   default **OFF**): a runtime surface that reads/flips every per-entity dual-write / dual-read
   pref and shows current sync state. Serves the rehearsal AND the owner's real M.4 pass.
