@@ -29,6 +29,14 @@ non-destructive infra; never improvise them (and **never `push tables --all`** �
   (`DEV0_PASSWORD` lives in `.env.local`, never committed — design D1). Verify with
   `appwrite users get --user-id dev0`.
 
+> **Status 2026-07-14 — ALL prerequisites DONE (owner present).** §A pass · §B both note
+> tables live · §C both functions enabled + live · §D web platforms `localhost` +
+> `breakdex.vercel.app` registered via `POST /projects/{id}/platforms` (API-automatable —
+> no console click) · `dev0` minted (`DEV0_EMAIL`/`DEV0_PASSWORD` in `.env.local`) **plus**
+> the owner account (`itsmxzou@gmail.com`, `emailVerification=true`, so Google OAuth later
+> attaches to the same user). The on-device takeover trigger is the sync panel's
+> **Backfill now** button (task 2.4). The ladder below is ready to run.
+
 ## Build config (both surfaces)
 
 Both dev flags ON, everything else default:

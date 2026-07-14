@@ -455,6 +455,23 @@ final noteEntriesBackfillServiceProvider =
   );
 });
 
+/// Every-entity backfill composed for the takeover flow (M.3 / rehearsal R2):
+/// one [SyncBackfillService] holding all DAOs, so the dev sync panel's
+/// "Backfill now" action runs the full local→shadow copy under the signed-in
+/// user. Same non-destructive, idempotent posture as every sibling above.
+/// Invoked explicitly (button tap), never at boot.
+final fullBackfillServiceProvider = Provider<SyncBackfillService>((final ref) {
+  return SyncBackfillService(
+    ref.watch(appwriteSyncBackendProvider),
+    ref.watch(movesDaoProvider),
+    combosDao: ref.watch(combosDaoProvider),
+    reviewsDao: ref.watch(reviewsDaoProvider),
+    decksDao: ref.watch(decksDaoProvider),
+    moveNoteEntriesDao: ref.watch(moveNoteEntriesDaoProvider),
+    comboNoteEntriesDao: ref.watch(comboNoteEntriesDaoProvider),
+  );
+});
+
 final syncServiceProvider = Provider<SyncService>((final ref) {
   return SyncService(
     authService: ref.watch(authServiceProvider),

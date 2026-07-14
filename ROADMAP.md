@@ -29,10 +29,17 @@
   the missing on-device switch-hand for `migrate-canonical-backend-to-appwrite` M.4) → **3.4**
   `docs/sync-rehearsal-runbook.md` (R1–R7 ledger + D7 fence). Binary truth: `flutter analyze`
   clean, `flutter test` green both flag configs, `flutter build web` green flags-OFF
-  (byte-identical). **Owner-gated remainder (fenced, next):** 3.1/3.2 live provisioning + mint
-  `dev0` (phase-m-runbook §A–D), 3.3 `argent init` + device smoke, **Phase 4** the live R1–R7
-  ladder on sim + web. Then the real **Phase M** device pass (`docs/phase-m-runbook.md`) — the
-  rehearsal raises its confidence but its M boxes stay the owner's. Prior queue head
+  (byte-identical). **2026-07-14 owner-present wave:** 3.1/3.2 **DONE** — §A–§D all live
+  (note tables + functions verified; web platforms `localhost` + `breakdex.vercel.app`
+  registered via API, no console click); `dev0` minted (creds in `.env.local`) **plus** the
+  owner account (`itsmxzou@gmail.com`, email-verified so Google OAuth later attaches to the
+  SAME user — both auth doors, one account); spec gained **2.4** the panel's **Backfill now**
+  takeover trigger (composed `fullBackfillServiceProvider`, per-entity row/batch report =
+  M.3 parity evidence; backfill previously had NO runtime caller). **Remainder (owner-in-
+  the-loop, next):** 3.3 `argent init` + smoke, **Phase 4** the live R1–R8 ladder on sim +
+  web (owner drives; entry = `docs/sync-rehearsal-runbook.md`, prereqs banner says ready),
+  then 4.9 ledger + the real **Phase M** pass (`docs/phase-m-runbook.md`) — the rehearsal
+  raises its confidence but its M boxes stay the owner's. Prior queue head
   (`add-web-first-release-and-monetization`, launch wave L1–L6) is **DONE** — history below.
 
 - **Change:** `add-web-first-release-and-monetization` — **🚀 Launch wave (owner ruling

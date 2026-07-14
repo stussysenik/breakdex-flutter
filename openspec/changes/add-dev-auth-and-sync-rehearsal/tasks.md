@@ -50,18 +50,34 @@
 - [x] 2.3 Widget tests: flag OFF ⇒ panel/tile absent; toggle flips the exact pref key;
   re-open shows persisted state. Verify: targeted `flutter test` green, `flutter analyze`
   clean, `flutter build web` green (both flags OFF — byte-identical guarantee holds).
+- [x] 2.4 **Backfill-now takeover action** (2026-07-14, owner-directed): the panel gains a
+  "Backfill now" button running every entity's `SyncBackfillService` backfill under the
+  signed-in user (composed `fullBackfillServiceProvider`, all DAOs) and reporting per-entity
+  row/batch counts — the on-device trigger M.3/R2 needed and previously lacked (backfill had
+  no runtime caller). Disabled while signed out; service resolved lazily on tap, never at
+  boot. Verify: 2 new widget tests + 5 existing green, `flutter analyze` clean.
 
 ## Phase 3 — harness + user #0 (owner-gated rungs fenced)
 
-- [ ] 3.1 **[OWNER-GATED]** Live prerequisites, run per `docs/phase-m-runbook.md` §A–§D with
+- [x] 3.1 **[OWNER-GATED]** Live prerequisites, run per `docs/phase-m-runbook.md` §A–§D with
   the owner present: §A CLI auth (verified 2026-07-13) → §B note tables (targeted `create-*`
   ONLY — never `push tables --all`) → §C `push functions --activate` → §D register
   `http://localhost:<port>` web platform in console. If §B is deferred, note it: every rung
   except R7 (notes) still runs.
-- [ ] 3.2 **[OWNER-GATED]** Mint user #0:
+  **DONE 2026-07-14 (owner present):** §A re-authed, `health get` pass; §B both note tables
+  already live (12 tables total); §C `sync-push`/`sync-pull` enabled + live (deployment
+  `6a557e35…` active); §D turned out API-automatable — web platforms `localhost` +
+  `breakdex.vercel.app` created via `POST /projects/{id}/platforms` (201 ×2), no console
+  click needed.
+- [x] 3.2 **[OWNER-GATED]** Mint user #0:
   `appwrite users create --user-id dev0 --email <dev address> --password "$DEV0_PASSWORD"`
   (server-key CLI; `DEV0_PASSWORD` added to `.env.local`, never committed — design D1).
   Verify: `appwrite users get --user-id dev0` shows the account.
+  **DONE 2026-07-14:** `dev0` (dev0@breakdex.dev) minted; `DEV0_EMAIL`/`DEV0_PASSWORD` in
+  `.env.local`. **Plus (owner ruling, same day):** the owner's real account minted
+  (`itsmxzou@gmail.com`, id `6a5596818ea8e26e048a`) with `emailVerification=true`, so a later
+  Google OAuth sign-in attaches to the SAME user by verified email — both auth doors, one
+  account, no data split. `users list` shows exactly the 2 accounts.
 - [ ] 3.3 `npx @swmansion/argent init` at repo root; commit the generated config as-is (this
   change sanctions it — design D6). Smoke: argent boots the app on an iOS simulator (flowdeck
   manages the sim) and on Chromium against a locally served `flutter build web` bundle, both
