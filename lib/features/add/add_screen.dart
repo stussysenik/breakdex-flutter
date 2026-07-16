@@ -27,6 +27,9 @@ class AddScreen extends ConsumerWidget {
   @override
   Widget build(final BuildContext context, final WidgetRef ref) {
     final entityNames = ref.watch(entityNamesProvider);
+    // Compact widths (phones) stack the choices vertically; wide surfaces
+    // keep them side by side.
+    final compact = MediaQuery.sizeOf(context).width < 600;
     return Scaffold(
       body: CustomScrollView(
         slivers: [
@@ -38,14 +41,17 @@ class AddScreen extends ConsumerWidget {
             hasScrollBody: false,
             child: Padding(
               padding: const EdgeInsets.all(AppSpacing.screenEdge),
-              child: Row(
+              child: Flex(
+                direction: compact ? Axis.vertical : Axis.horizontal,
                 children: [
                   _ChoiceCard(
                     emoji: '🤸',
                     label: entityNames.moveSingular,
                     onTap: () => _startClipFlow(context, ref),
                   ),
-                  const SizedBox(width: AppSpacing.md),
+                  SizedBox.square(
+                    dimension: compact ? AppSpacing.lg : AppSpacing.md,
+                  ),
                   _ChoiceCard(
                     emoji: '✨',
                     label: entityNames.comboSingular,

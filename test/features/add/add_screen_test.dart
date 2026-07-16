@@ -12,22 +12,49 @@ import 'package:breakdex/l10n/gen/app_localizations.dart';
 /// must be visual anchors + single short labels (visual-first-surfaces spec).
 const _paragraphThreshold = 24;
 
+Future<void> _pumpAddScreen(final WidgetTester tester) async {
+  SharedPreferences.setMockInitialValues({});
+  final prefs = await SharedPreferences.getInstance();
+  await tester.pumpWidget(
+    ProviderScope(
+      overrides: [sharedPreferencesProvider.overrideWithValue(prefs)],
+      child: const MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: AddScreen(),
+      ),
+    ),
+  );
+}
+
 void main() {
+  testWidgets(
+    'choice cards stack vertically on phone widths, horizontally when wide',
+    (final tester) async {
+      Axis choiceAxis() => tester
+          .widget<Flex>(find.ancestor(
+            of: find.text('Move'),
+            matching: find.byType(Flex),
+          ).first)
+          .direction;
+
+      addTearDown(tester.view.reset);
+      tester.view.devicePixelRatio = 1.0;
+
+      tester.view.physicalSize = const Size(390, 844);
+      await _pumpAddScreen(tester);
+      expect(choiceAxis(), Axis.vertical);
+
+      tester.view.physicalSize = const Size(1024, 768);
+      await tester.pumpAndSettle();
+      expect(choiceAxis(), Axis.horizontal);
+    },
+  );
+
   testWidgets(
     'Add tab presents visual anchors with no paragraph-style helper text',
     (final tester) async {
-      SharedPreferences.setMockInitialValues({});
-      final prefs = await SharedPreferences.getInstance();
-      await tester.pumpWidget(
-        ProviderScope(
-          overrides: [sharedPreferencesProvider.overrideWithValue(prefs)],
-          child: const MaterialApp(
-            localizationsDelegates: AppLocalizations.localizationsDelegates,
-            supportedLocales: AppLocalizations.supportedLocales,
-            home: AddScreen(),
-          ),
-        ),
-      );
+      await _pumpAddScreen(tester);
 
       // Each create choice is reachable by a single short label + anchor.
       expect(find.text('Move'), findsOneWidget);
