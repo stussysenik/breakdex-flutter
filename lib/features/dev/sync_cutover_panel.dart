@@ -17,7 +17,8 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../core/design/spacing.dart';
 import '../../core/design/typography.dart';
-import '../../core/providers.dart' show fullBackfillServiceProvider;
+import '../../core/providers.dart'
+    show fullBackfillServiceProvider, syncServiceProvider;
 import '../../core/services/appwrite_auth_providers.dart';
 import '../../core/services/settings_service.dart' show sharedPreferencesProvider;
 import '../../core/services/sync_service.dart';
@@ -126,6 +127,8 @@ class _SyncCutoverPanelState extends ConsumerState<SyncCutoverPanel> {
             ],
             const SizedBox(height: AppSpacing.sm),
             _BackfillSection(signedIn: user != null),
+            const SizedBox(height: AppSpacing.md),
+            _HydrateSection(signedIn: user != null),
             const SizedBox(height: AppSpacing.md),
             _IdentityFooter(userId: user?.id, email: user?.email),
           ],
@@ -358,6 +361,110 @@ class _BackfillSectionState extends ConsumerState<_BackfillSection> {
             Text(
               'Failed: $_error',
               key: const ValueKey('backfill-error'),
+              style: AppTypography.bodySmall.copyWith(color: colorScheme.error),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+/// The inbound mirror of [_BackfillSection] (M.6 / rehearsal R-pull): force-pulls
+/// every entity from the backend into local Drift via
+/// [SyncService.hydrateAllFromBackend] — bypassing the dual-read kill-switches —
+/// and reports per-entity applied/failed. This is the debug hand for the same
+/// hydration that fires automatically on login; on a fresh device (empty local
+/// db) `applied` == the row counts the backend holds. Disabled while signed out.
+class _HydrateSection extends ConsumerStatefulWidget {
+  const _HydrateSection({required this.signedIn});
+
+  final bool signedIn;
+
+  @override
+  ConsumerState<_HydrateSection> createState() => _HydrateSectionState();
+}
+
+class _HydrateSectionState extends ConsumerState<_HydrateSection> {
+  bool _running = false;
+  List<({String label, int applied, int failed})> _reports = const [];
+  String? _error;
+
+  Future<void> _run() async {
+    setState(() {
+      _running = true;
+      _reports = const [];
+      _error = null;
+    });
+    try {
+      final reports =
+          await ref.read(syncServiceProvider).hydrateAllFromBackend();
+      if (mounted) setState(() => _reports = reports);
+    } on Object catch (error) {
+      if (mounted) setState(() => _error = '$error');
+    } finally {
+      if (mounted) setState(() => _running = false);
+    }
+  }
+
+  @override
+  Widget build(final BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    return Container(
+      padding: const EdgeInsets.all(AppSpacing.md),
+      decoration: BoxDecoration(
+        color: colorScheme.surface,
+        borderRadius: BorderRadius.circular(AppRadius.md),
+        border: Border.all(color: colorScheme.outline.withValues(alpha: 0.18)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Hydrate (inbound)',
+            style: AppTypography.titleSmall.copyWith(
+              color: colorScheme.onSurface,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          const SizedBox(height: AppSpacing.sm),
+          Text(
+            'Pulls every backend row into this device\'s local library '
+            '(LWW-merged, safe to re-run). Runs automatically on sign-in — this '
+            'button is the manual/debug trigger.',
+            style: AppTypography.bodySmall.copyWith(
+              color: colorScheme.secondary,
+            ),
+          ),
+          const SizedBox(height: AppSpacing.md),
+          FilledButton.tonal(
+            key: const ValueKey('pull-now'),
+            onPressed: widget.signedIn && !_running ? _run : null,
+            child: Text(_running ? 'Pulling…' : 'Pull from backend now'),
+          ),
+          if (!widget.signedIn) ...[
+            const SizedBox(height: AppSpacing.sm),
+            Text(
+              'Sign in first — hydrate reads the signed-in user\'s space.',
+              style: AppTypography.caption.copyWith(color: colorScheme.secondary),
+            ),
+          ],
+          for (final report in _reports) ...[
+            const SizedBox(height: AppSpacing.sm),
+            Text(
+              '${report.label}: ${report.applied} applied'
+              '${report.failed != 0 ? ' · ${report.failed} failed' : ''}',
+              key: ValueKey('pull-report-${report.label}'),
+              style: AppTypography.bodySmall.copyWith(
+                color: colorScheme.onSurface,
+              ),
+            ),
+          ],
+          if (_error != null) ...[
+            const SizedBox(height: AppSpacing.sm),
+            Text(
+              'Failed: $_error',
+              key: const ValueKey('pull-error'),
               style: AppTypography.bodySmall.copyWith(color: colorScheme.error),
             ),
           ],

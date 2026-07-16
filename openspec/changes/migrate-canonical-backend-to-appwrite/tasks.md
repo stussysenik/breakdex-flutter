@@ -913,14 +913,32 @@ pre-wave until the owner flips each kill-switch after the Phase M soak.
 > **Still unproven → boxes stay open:** M.2's kill+relaunch cross-restart half (which is also
 > what ticks 3.1), M.1's library-intact gate, M.3–M.6. Debug trail:
 > `DOCS/appwrite-oauth-provisioning.md` + memory `gotcha_appwrite_oauth_device_debug`.
+>
+> **2026-07-16 — M.3 PROVEN both layers + inbound hydration built (unblocks M.6):**
+> owner ran `Backfill now` (dev panel) → 139 rows into `itsmxzou@gmail.com`'s space
+> (move 51, combo 1, comboMove 18, reviewEvent 51, moveNoteEntry 15, comboNoteEntry 3;
+> deck/deckMove 0). Verified server-side: a direct `tablesdb …/rows` count per table
+> == the phone's report exactly. **Gap found + closed:** `Backfill now` is push-only,
+> and the reads are local-Drift-only (`SyncAware*` delegate straight to `_inner`), so a
+> fresh web client (empty OPFS) would show **nothing** on sign-in — the inbound pull is
+> gated behind dual-read prefs (off) + `pendingCount>0`. **Fix (this commit):**
+> `SyncService.hydrateAllFromBackend()` — the inbound mirror of backfill, force-pulls
+> all 9 entities bypassing the kill-switches via the existing LWW merge/cursor core
+> (extracted `_pullAndMergeEntity`). Wired to fire **automatically on first login**
+> (`hydrateOnLoginTriggerProvider`, once per user, never throws) + a dev **"Pull from
+> backend now"** button. M.3's rows tick; **M.6** is now a real demo (sign in on web →
+> auto-hydrate → library appears), still owner-to-run. Memory `web-hydration-unwired`.
 
 - [ ] M.1 Device build + install (flowdeck-managed). Existing local library intact, boot clean —
   the brownfield gate for everything the wave landed.
 - [ ] M.2 **Live Google sign-in on iOS**: single familiar consent (3.3); kill + relaunch ⇒ still
   signed in (3.1's cross-restart proof — tick 3.1 here). If 0.5 left 0.2 unproven, this is where
   it resolves; failures route to `DOCS/appwrite-oauth-provisioning.md`.
-- [ ] M.3 **Real-data backfill** on the owner's device (4.1's gated half): flagged run,
-  byte-identical local snapshot, rows visible in the Appwrite console.
+- [x] M.3 **Real-data backfill** on the owner's device (4.1's gated half): flagged run,
+  byte-identical local snapshot, rows visible in the Appwrite console. **DONE 2026-07-16
+  (see the Phase-M evidence note above):** 139 rows into `itsmxzou@gmail.com`'s space via
+  `Backfill now`; server `tablesdb …/rows` count == phone report per entity; backfill is
+  read-only on local (non-destructive by construction), so the local snapshot is unchanged.
 - [ ] M.4 **Cross-surface soak** (V.3 subset): edit on phone → web sees it live; edit on web →
   phone picks it up; offline edit flushes idempotently; a tombstone crosses without data loss;
   note entries + video pointers included; Drive playback works on web.

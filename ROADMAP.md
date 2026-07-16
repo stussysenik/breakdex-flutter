@@ -43,11 +43,19 @@
   PROVEN on the senik device** — two stacked faults fixed (SDK-25.x swallowed callback params
   → gateway rewritten to the token flow via `flutter_web_auth_2`; Appwrite Google provider had
   no client secret → pushed via console API). Server confirms the Google session + identity on
-  the owner account; evidence in the Appwrite change's Phase-M note. **Next unticked
-  (owner-driven, phone in hand):** Settings → Backup & data → Sync cutover (dev) →
-  **Backfill now** (per-entity row report = M.3 parity evidence), then web sign-in from a
-  registered origin (M.6) and the R1–R8 rehearsal ladder
-  (`docs/sync-rehearsal-runbook.md`). Prior queue head
+  the owner account; evidence in the Appwrite change's Phase-M note. **2026-07-16 (cont.):
+  M.3 DONE + proven both layers** — owner's `Backfill now` seeded 139 rows into
+  `itsmxzou@gmail.com`'s Appwrite space; a direct server `tablesdb …/rows` count == the
+  phone's per-entity report exactly. **Inbound hydration built (unblocks M.6):**
+  `Backfill now` was push-only and reads are local-Drift-only, so a fresh web client would
+  show empty on sign-in → added `SyncService.hydrateAllFromBackend()` (inbound mirror,
+  bypasses dual-read gates via the existing LWW core), fired **automatically on first login**
+  + a dev **"Pull from backend now"** button. `flutter analyze` clean, `flutter test` 950
+  green / 9 pre-existing reds / 0 regressions (+6 new), `flutter build web` green. **Next
+  unticked (owner-driven):** **M.6** web sign-in from a registered origin — sign in on web
+  (localhost:8080 / breakdex.vercel.app) with the same Google account → auto-hydrate → your
+  library appears; then the R1–R8 rehearsal ladder (`docs/sync-rehearsal-runbook.md`).
+  Prior queue head
   (`add-web-first-release-and-monetization`, launch wave L1–L6) is **DONE** — history below.
 
 - **Change:** `add-web-first-release-and-monetization` — **🚀 Launch wave (owner ruling

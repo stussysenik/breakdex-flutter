@@ -768,7 +768,29 @@ class SyncService {
   }) async {
     final backend = syncBackend;
     if (backend == null || !(prefs.getBool(prefKey) ?? false)) return null;
+    return _pullAndMergeEntity(
+      backend: backend,
+      type: type,
+      cursorKey: cursorKey,
+      label: label,
+      merge: merge,
+      applyDelete: applyDelete,
+    );
+  }
 
+  /// The gate-free core of a dual-read: pull [type]'s delta from its own cursor
+  /// and merge under LWW (H.3 fault-isolated, H.4 one transaction, A2 lossless
+  /// cursor advance). [_pullEntity] wraps this behind the per-entity kill-switch
+  /// for the *incremental* live cycle; [hydrateAllFromBackend] calls it directly
+  /// for a deliberate full seed. Same merge, same cursor plumbing either way.
+  Future<({int applied, int failed})> _pullAndMergeEntity({
+    required final SyncBackend backend,
+    required final SyncEntityType type,
+    required final String cursorKey,
+    required final String label,
+    required final Future<bool> Function(SyncRecord) merge,
+    final Future<bool> Function(SyncTombstone)? applyDelete,
+  }) async {
     final cursorMs = prefs.getInt(cursorKey);
     final since = cursorMs == null
         ? null
@@ -805,6 +827,72 @@ class SyncService {
       await prefs.setInt(cursorKey, cursor.millisecondsSinceEpoch);
     }
     return (applied: applied, failed: failed);
+  }
+
+  /// Force-pull every entity from the canonical backend into local Drift — the
+  /// inbound mirror of the outbound backfill ([SyncBackfillService]). Where the
+  /// live dual-read is gated per-entity (the staged cutover kill-switches, off by
+  /// default), a hydrate is a *deliberate* seed: it merges every table regardless
+  /// of those switches, under the same LWW/append rules and cursors. Its reason
+  /// to exist is the fresh device — a just-signed-in web client whose local Drift
+  /// starts empty must be able to see the user's library without first flipping
+  /// cutover flags. Idempotent (a re-run is LWW-safe; same-second local rows are
+  /// skipped, never clobbered) and a no-op when no backend is wired.
+  ///
+  /// Returns a per-entity `(label, applied, failed)` report (also the dev-panel /
+  /// M.3-parity evidence). Never partial-fails the whole run: one entity's error
+  /// is caught and surfaced as a `failed` count so the rest still hydrate.
+  Future<List<({String label, int applied, int failed})>>
+      hydrateAllFromBackend() async {
+    final backend = syncBackend;
+    if (backend == null) return const [];
+
+    final reports = <({String label, int applied, int failed})>[];
+    Future<void> run(
+      final SyncEntityType type,
+      final String cursorKey,
+      final String label,
+      final Future<bool> Function(SyncRecord) merge, [
+      final Future<bool> Function(SyncTombstone)? applyDelete,
+    ]) async {
+      try {
+        final r = await _pullAndMergeEntity(
+          backend: backend,
+          type: type,
+          cursorKey: cursorKey,
+          label: label,
+          merge: merge,
+          applyDelete: applyDelete,
+        );
+        reports.add((label: label, applied: r.applied, failed: r.failed));
+      } on Object catch (e) {
+        debugPrint('[SyncService] hydrate $label failed: $e');
+        reports.add((label: label, applied: 0, failed: -1));
+      }
+    }
+
+    // Dependency order (parents before their join rows), matching the backfill.
+    await run(SyncEntityType.move, movesBackendCursorPrefKey, 'move',
+        _mergeMoveRecordLww, _applyMoveTombstone);
+    await run(SyncEntityType.combo, combosBackendCursorPrefKey, 'combo',
+        _mergeComboRecordLww, _applyComboTombstone);
+    await run(SyncEntityType.comboMove, comboMovesBackendCursorPrefKey,
+        'comboMove', _mergeComboMoveRecordLww, _applyComboMoveTombstone);
+    await run(SyncEntityType.reviewEvent, reviewsBackendCursorPrefKey, 'review',
+        _mergeReviewRecordAppend);
+    await run(SyncEntityType.fsrsCard, fsrsCardsBackendCursorPrefKey, 'fsrsCard',
+        _mergeFsrsCardRecordLww);
+    await run(SyncEntityType.deck, decksBackendCursorPrefKey, 'deck',
+        _mergeDeckRecordLww, _applyDeckTombstone);
+    await run(SyncEntityType.deckMove, deckMovesBackendCursorPrefKey, 'deckMove',
+        _mergeDeckMoveRecordLww, _applyDeckMoveTombstone);
+    await run(SyncEntityType.moveNoteEntry, moveNoteEntriesBackendCursorPrefKey,
+        'moveNoteEntry', _mergeMoveNoteEntryRecordLww,
+        _applyMoveNoteEntryTombstone);
+    await run(SyncEntityType.comboNoteEntry,
+        comboNoteEntriesBackendCursorPrefKey, 'comboNoteEntry',
+        _mergeComboNoteEntryRecordLww, _applyComboNoteEntryTombstone);
+    return reports;
   }
 
   // --- Inbound tombstone application (task 4.8) ---

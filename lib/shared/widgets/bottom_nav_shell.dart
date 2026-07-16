@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../core/providers.dart';
 import '../../core/design/theme.dart';
+import '../../core/services/hydrate_on_login_providers.dart';
 import '../../core/services/legacy_identity_providers.dart';
 import '../../core/services/media_playback_coordinator.dart';
 import '../../core/models/app_mode.dart';
@@ -60,6 +61,10 @@ class BottomNavShell extends ConsumerWidget {
                 // D3 legacy-identity claim on first Appwrite login (task 3.4);
                 // no-op until a session exists, idempotent thereafter.
                 ref.watch(legacyIdentityClaimTriggerProvider);
+                // Auto-hydrate local Drift from the backend on first login so a
+                // fresh device (esp. a just-signed-in web client) sees the
+                // user's library immediately; once per user, never throws.
+                ref.watch(hydrateOnLoginTriggerProvider);
                 return const SyncProgressBar();
               },
             ),

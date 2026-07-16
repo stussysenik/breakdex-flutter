@@ -1,8 +1,10 @@
 import 'package:breakdex/core/config/appwrite_env.dart';
 import 'package:breakdex/core/database/database.dart';
-import 'package:breakdex/core/providers.dart' show fullBackfillServiceProvider;
+import 'package:breakdex/core/providers.dart'
+    show fullBackfillServiceProvider, syncServiceProvider;
 import 'package:breakdex/core/services/appwrite_auth_providers.dart';
 import 'package:breakdex/core/services/appwrite_auth_service.dart' show AuthUser;
+import 'package:breakdex/core/services/auth_service.dart';
 import 'package:breakdex/core/services/settings_service.dart'
     show sharedPreferencesProvider;
 import 'package:breakdex/core/services/sync_service.dart';
@@ -53,6 +55,7 @@ Widget _host(
   final SharedPreferences prefs, {
   final AuthUser? user,
   final SyncBackfillService? backfill,
+  final SyncService? syncService,
 }) {
   return ProviderScope(
     overrides: [
@@ -62,6 +65,8 @@ Widget _host(
       currentAppwriteUserProvider.overrideWith((final ref) => Stream.value(user)),
       if (backfill != null)
         fullBackfillServiceProvider.overrideWithValue(backfill),
+      if (syncService != null)
+        syncServiceProvider.overrideWithValue(syncService),
     ],
     child: const MaterialApp(home: SyncCutoverPanel()),
   );
@@ -191,6 +196,62 @@ void main() {
     );
     expect(find.byKey(const ValueKey('backfill-error')), findsNothing);
     expect(backend.pushes, 0, reason: 'empty DB ⇒ no push calls');
+  });
+
+  testWidgets('pull-from-backend is disabled while signed out',
+      (final tester) async {
+    _tallViewport(tester);
+    SharedPreferences.setMockInitialValues({});
+    final prefs = await SharedPreferences.getInstance();
+    await tester.pumpWidget(_host(prefs));
+    await tester.pumpAndSettle();
+
+    final button = tester.widget<FilledButton>(
+      find.byKey(const ValueKey('pull-now')),
+    );
+    expect(button.onPressed, isNull, reason: 'no session ⇒ nothing to hydrate');
+  });
+
+  testWidgets('pull from backend now hydrates every entity and reports counts',
+      (final tester) async {
+    _tallViewport(tester);
+    SharedPreferences.setMockInitialValues({});
+    final prefs = await SharedPreferences.getInstance();
+    final db = AppDatabase.forTesting(NativeDatabase.memory());
+    addTearDown(db.close);
+    // A fake backend serving empty deltas — the report renders one line per
+    // entity (all 0 applied), proving the button drives hydrateAllFromBackend
+    // over the full set without fabricating rows.
+    final service = SyncService(
+      authService: AuthService(prefs),
+      syncDao: db.syncDao,
+      db: db,
+      prefs: prefs,
+      syncBackend: _FakeBackend(),
+    );
+    await tester.pumpWidget(
+      _host(
+        prefs,
+        user: const AuthUser(id: 'dev0', email: 'd@x.io'),
+        syncService: service,
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byKey(const ValueKey('pull-now')));
+    await tester.pumpAndSettle();
+
+    // One report line per entity (9: move, combo, comboMove, review, fsrsCard,
+    // deck, deckMove, moveNoteEntry, comboNoteEntry).
+    expect(
+      find.byWidgetPredicate(
+        (final w) =>
+            w.key is ValueKey<String> &&
+            (w.key! as ValueKey<String>).value.startsWith('pull-report-'),
+      ),
+      findsNWidgets(9),
+    );
+    expect(find.byKey(const ValueKey('pull-error')), findsNothing);
   });
 
   test('kDevSyncPanelEnabled defaults OFF (byte-identical release guarantee)',
