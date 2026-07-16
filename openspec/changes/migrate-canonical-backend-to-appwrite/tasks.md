@@ -162,6 +162,12 @@ pre-wave until the owner flips each kill-switch after the Phase M soak.
   console-half still open** (box stays `[ ]`): Google **Web** OAuth client + redirect URI, enable
   the Appwrite Google provider, register iOS/Android/web platforms. **Exact step-by-step:
   `DOCS/appwrite-oauth-provisioning.md`.**
+  **✅ Console-half RESOLVED live (2026-07-16):** the enabled provider was missing its Google
+  **client secret** — Google refused every code exchange (`invalid_request`, 424) while all
+  probe legs stayed green (the probes only exercise the redirect *into* consent, never the
+  code exchange back). Secret PATCHed via the console API using the owner's `appwrite login`
+  cookie (project API keys lack `projects.write`); value kept in gitignored `.env.local`.
+  Native iOS platform allow-listing proven by the live device sign-in (Phase M note).
 - [x] 0.3 Install/verify the Appwrite CLI; `appwrite init` against the project so schema and
   Functions deploy headlessly from the repo (`appwrite/` config directory, committed; no secrets).
   **Done 2026-07-10.** CLI v22.6.1 (`npm i -g appwrite-cli`). **Deviations (CLI v22 shape):**
@@ -895,6 +901,18 @@ pre-wave until the owner flips each kill-switch after the Phase M soak.
   store-policy constraints; do not adopt without a fresh owner decision).
 
 ## Phase M: Morning proof — 2026-07-13 (owner + agent, physical device; the wave's live half)
+
+> **2026-07-16 live evidence — M.2's sign-in leg PROVEN on the senik device:** Google OAuth
+> completed end-to-end; server confirms 1 Google session (valid to 2027-07) + the `google`
+> identity `itsmxzou@gmail.com` attached to the pre-created owner account. Two stacked faults
+> fixed on the way: (1) **app** — appwrite SDK 25.x `webAuth` silently swallows the callback's
+> query params (incl. Appwrite's `error` on the failure redirect), so
+> `appwrite_account_gateway.dart` now drives the browser leg itself via `flutter_web_auth_2`
+> + the token flow (`/account/tokens/oauth2` → `Account.createSession`) with full callback
+> logging; (2) **config** — the Appwrite Google provider had no client secret (0.2 note).
+> **Still unproven → boxes stay open:** M.2's kill+relaunch cross-restart half (which is also
+> what ticks 3.1), M.1's library-intact gate, M.3–M.6. Debug trail:
+> `DOCS/appwrite-oauth-provisioning.md` + memory `gotcha_appwrite_oauth_device_debug`.
 
 - [ ] M.1 Device build + install (flowdeck-managed). Existing local library intact, boot clean —
   the brownfield gate for everything the wave landed.

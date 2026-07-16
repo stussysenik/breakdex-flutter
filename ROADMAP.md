@@ -39,7 +39,15 @@
   the-loop, next):** 3.3 `argent init` + smoke, **Phase 4** the live R1–R8 ladder on sim +
   web (owner drives; entry = `docs/sync-rehearsal-runbook.md`, prereqs banner says ready),
   then 4.9 ledger + the real **Phase M** pass (`docs/phase-m-runbook.md`) — the rehearsal
-  raises its confidence but its M boxes stay the owner's. Prior queue head
+  raises its confidence but its M boxes stay the owner's. **2026-07-16: live Google OAuth
+  PROVEN on the senik device** — two stacked faults fixed (SDK-25.x swallowed callback params
+  → gateway rewritten to the token flow via `flutter_web_auth_2`; Appwrite Google provider had
+  no client secret → pushed via console API). Server confirms the Google session + identity on
+  the owner account; evidence in the Appwrite change's Phase-M note. **Next unticked
+  (owner-driven, phone in hand):** Settings → Backup & data → Sync cutover (dev) →
+  **Backfill now** (per-entity row report = M.3 parity evidence), then web sign-in from a
+  registered origin (M.6) and the R1–R8 rehearsal ladder
+  (`docs/sync-rehearsal-runbook.md`). Prior queue head
   (`add-web-first-release-and-monetization`, launch wave L1–L6) is **DONE** — history below.
 
 - **Change:** `add-web-first-release-and-monetization` — **🚀 Launch wave (owner ruling

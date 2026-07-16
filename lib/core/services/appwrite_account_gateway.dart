@@ -7,13 +7,20 @@ library;
 import 'package:appwrite/appwrite.dart';
 import 'package:appwrite/enums.dart';
 import 'package:appwrite/models.dart' as models;
+import 'package:flutter_web_auth_2/flutter_web_auth_2.dart';
 
+import '../utils/diagnostics.dart';
 import 'appwrite_auth_service.dart';
 
 class AppwriteAccountSdkGateway implements AppwriteAccountGateway {
-  AppwriteAccountSdkGateway(final Client client) : _account = Account(client);
+  AppwriteAccountSdkGateway(final Client client)
+      : _account = Account(client),
+        _projectId = client.config['project'] ?? '',
+        _endpoint = client.endPoint;
 
   final Account _account;
+  final String _projectId;
+  final String _endpoint;
 
   @override
   Future<void> createGoogleSession({
@@ -21,21 +28,77 @@ class AppwriteAccountSdkGateway implements AppwriteAccountGateway {
     final String? successUrl,
     final String? failureUrl,
   }) async {
+    // Web (task 1.5): the service supplies app-origin redirect targets for the
+    // full-page OAuth redirect — the SDK path is fine there.
+    if (successUrl != null) {
+      try {
+        DiagnosticsLog.info('Auth',
+            'OAuth start (web) success=$successUrl failure=$failureUrl scopes=${scopes.length}');
+        await _account.createOAuth2Session(
+          provider: OAuthProvider.google,
+          scopes: scopes.isEmpty ? null : scopes,
+          success: successUrl,
+          failure: failureUrl,
+        );
+      } on AppwriteException catch (e) {
+        DiagnosticsLog.error('Auth',
+            'OAuth failed code=${e.code} type=${e.type} message=${e.message}');
+        throw AuthException(e.message ?? 'Google sign-in failed.');
+      }
+      return;
+    }
+
+    // Mobile: drive the browser leg ourselves instead of the SDK's `webAuth` —
+    // SDK 25.x's parser swallows the callback's query params (incl. Appwrite's
+    // `error` on the failure redirect), which reduced a live server-side
+    // failure to the opaque "Key and Secret not available" (device,
+    // 2026-07-16). Token flow (`/account/tokens/oauth2`) is the recommended
+    // mobile pattern: the callback carries userId+secret, exchanged via
+    // [Account.createSession]. The `appwrite-callback-<projectId>` scheme is
+    // registered in both iOS plists + AndroidManifest (0.2). Empty scopes ⇒
+    // identity-only session (the Drive token is minted by google_sign_in, 3.3).
+    final String scheme = 'appwrite-callback-$_projectId';
+    final Uri authUrl = Uri.parse('$_endpoint/account/tokens/oauth2/google').replace(
+      queryParameters: {
+        'project': _projectId,
+        'success': '$scheme://oauth',
+        'failure': '$scheme://oauth',
+        if (scopes.isNotEmpty) 'scopes[]': scopes,
+      },
+    );
+    DiagnosticsLog.info('Auth', 'OAuth start (mobile token flow) url=$authUrl');
+
+    final String rawCallback;
     try {
-      // Mobile: [successUrl]/[failureUrl] are null, so the SDK auto-derives the
-      // callback scheme `appwrite-callback-<projectId>` — the scheme 0.2
-      // registered in both iOS plists + AndroidManifest. Web (task 1.5): the
-      // service supplies the app-origin redirect targets for the full-page
-      // OAuth redirect (a custom scheme has no meaning in a browser). Empty
-      // scopes ⇒ null (identity-only session; the Drive token is minted
-      // separately by google_sign_in, 3.3).
-      await _account.createOAuth2Session(
-        provider: OAuthProvider.google,
-        scopes: scopes.isEmpty ? null : scopes,
-        success: successUrl,
-        failure: failureUrl,
+      rawCallback = await FlutterWebAuth2.authenticate(
+        url: authUrl.toString(),
+        callbackUrlScheme: scheme,
+        options: const FlutterWebAuth2Options(useWebview: false),
       );
+    } on Exception catch (e) {
+      DiagnosticsLog.error('Auth', 'OAuth browser leg failed/cancelled: $e');
+      throw const AuthException('Google sign-in was cancelled or failed to open.');
+    }
+
+    final Map<String, String> params = Uri.parse(rawCallback).queryParameters;
+    DiagnosticsLog.info('Auth', 'OAuth callback params: ${params.map(
+      (k, v) => MapEntry(k, k == 'secret' ? '${v.substring(0, v.length < 8 ? v.length : 8)}…' : v),
+    )}');
+
+    final String? userId = params['userId'];
+    final String? secret = params['secret'];
+    if (userId == null || secret == null) {
+      final reason = params['error'] ?? params['message'] ?? 'no error param';
+      DiagnosticsLog.error('Auth', 'OAuth failure redirect: $reason');
+      throw AuthException('Google sign-in failed: $reason');
+    }
+
+    try {
+      await _account.createSession(userId: userId, secret: secret);
+      DiagnosticsLog.info('Auth', 'OAuth token exchanged: session created for user=$userId');
     } on AppwriteException catch (e) {
+      DiagnosticsLog.error('Auth',
+          'Token→session exchange failed code=${e.code} type=${e.type} message=${e.message}');
       throw AuthException(e.message ?? 'Google sign-in failed.');
     }
   }

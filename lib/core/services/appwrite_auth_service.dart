@@ -16,6 +16,8 @@ import 'dart:async';
 
 import 'package:flutter/foundation.dart' show kIsWeb;
 
+import '../utils/diagnostics.dart';
+
 /// A provider-neutral, immutable view of the signed-in account. Generic data,
 /// not an opaque SDK object (DOP): the rest of the app keys on [id] (the
 /// Appwrite `userId`) and displays [email]/[name].
@@ -157,6 +159,8 @@ class AppwriteAuthService {
       failureUrl: failure,
     );
     final user = await _gateway.currentUser();
+    DiagnosticsLog.info('Auth',
+        'Post-OAuth session read: ${user == null ? 'NO SESSION' : 'user=${user.id} email=${user.email}'}');
     if (user == null) {
       throw const AuthException('Sign-in completed without creating a session.');
     }

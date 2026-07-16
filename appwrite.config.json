@@ -1,6 +1,97 @@
 {
     "projectId": "6a50f25b000e15631ad0",
     "projectName": "Breakdex",
+    "functions": [
+        {
+            "$id": "sync-push",
+            "name": "sync-push",
+            "runtime": "dart-3.11",
+            "execute": [
+                "users"
+            ],
+            "events": [],
+            "scopes": [
+                "tables.read",
+                "rows.read",
+                "rows.write"
+            ],
+            "path": "functions/sync-push",
+            "entrypoint": "lib/main.dart",
+            "commands": "dart pub get",
+            "enabled": true
+        },
+        {
+            "$id": "sync-pull",
+            "name": "sync-pull",
+            "runtime": "dart-3.11",
+            "execute": [
+                "users"
+            ],
+            "events": [],
+            "scopes": [
+                "tables.read",
+                "rows.read"
+            ],
+            "path": "functions/sync-pull",
+            "entrypoint": "lib/main.dart",
+            "commands": "dart pub get",
+            "enabled": true
+        },
+        {
+            "$id": "reviews-append",
+            "name": "reviews-append",
+            "runtime": "dart-3.11",
+            "execute": [
+                "users"
+            ],
+            "events": [],
+            "scopes": [
+                "tables.read",
+                "rows.read",
+                "rows.write"
+            ],
+            "path": "functions/reviews-append",
+            "entrypoint": "lib/main.dart",
+            "commands": "dart pub get",
+            "enabled": true
+        },
+        {
+            "$id": "invites-redeem",
+            "name": "invites-redeem",
+            "runtime": "dart-3.11",
+            "execute": [
+                "users"
+            ],
+            "events": [],
+            "scopes": [
+                "tables.read",
+                "rows.read",
+                "rows.write"
+            ],
+            "path": "functions/invites-redeem",
+            "entrypoint": "lib/main.dart",
+            "commands": "dart pub get",
+            "enabled": true
+        },
+        {
+            "$id": "payments-webhook",
+            "name": "payments-webhook",
+            "runtime": "dart-3.11",
+            "execute": [
+                "any"
+            ],
+            "events": [],
+            "scopes": [
+                "tables.read",
+                "rows.read",
+                "rows.write"
+            ],
+            "path": "functions/payments-webhook",
+            "entrypoint": "lib/main.dart",
+            "commands": "dart pub get",
+            "enabled": true
+        }
+    ],
     "tablesDB": [
         {
             "$id": "breakdex",
@@ -16,15 +107,58 @@
             "$permissions": [],
             "rowSecurity": true,
             "columns": [
-                { "key": "id", "type": "string", "size": 128, "required": true, "default": null },
-                { "key": "userId", "type": "string", "size": 64, "required": true, "default": null },
-                { "key": "updatedAt", "type": "integer", "required": true, "default": null },
-                { "key": "clientOpId", "type": "string", "size": 128, "required": true, "default": null },
-                { "key": "payload", "type": "string", "size": 1000000, "required": true, "default": null }
+                {
+                    "key": "id",
+                    "type": "string",
+                    "size": 128,
+                    "required": true,
+                    "default": null
+                },
+                {
+                    "key": "userId",
+                    "type": "string",
+                    "size": 64,
+                    "required": true,
+                    "default": null
+                },
+                {
+                    "key": "updatedAt",
+                    "type": "integer",
+                    "required": true,
+                    "default": null
+                },
+                {
+                    "key": "clientOpId",
+                    "type": "string",
+                    "size": 128,
+                    "required": true,
+                    "default": null
+                },
+                {
+                    "key": "payload",
+                    "type": "string",
+                    "size": 1000000,
+                    "required": true,
+                    "default": null
+                }
             ],
             "indexes": [
-                { "key": "by_user_id", "type": "key", "columns": ["userId", "id"] },
-                { "key": "by_user_updatedAt", "type": "key", "columns": ["userId", "updatedAt"] }
+                {
+                    "key": "by_user_id",
+                    "type": "key",
+                    "columns": [
+                        "userId",
+                        "id"
+                    ]
+                },
+                {
+                    "key": "by_user_updatedAt",
+                    "type": "key",
+                    "columns": [
+                        "userId",
+                        "updatedAt"
+                    ]
+                }
             ]
         },
         {
@@ -34,15 +168,58 @@
             "$permissions": [],
             "rowSecurity": true,
             "columns": [
-                { "key": "id", "type": "string", "size": 128, "required": true, "default": null },
-                { "key": "userId", "type": "string", "size": 64, "required": true, "default": null },
-                { "key": "updatedAt", "type": "integer", "required": true, "default": null },
-                { "key": "clientOpId", "type": "string", "size": 128, "required": true, "default": null },
-                { "key": "payload", "type": "string", "size": 1000000, "required": true, "default": null }
+                {
+                    "key": "id",
+                    "type": "string",
+                    "size": 128,
+                    "required": true,
+                    "default": null
+                },
+                {
+                    "key": "userId",
+                    "type": "string",
+                    "size": 64,
+                    "required": true,
+                    "default": null
+                },
+                {
+                    "key": "updatedAt",
+                    "type": "integer",
+                    "required": true,
+                    "default": null
+                },
+                {
+                    "key": "clientOpId",
+                    "type": "string",
+                    "size": 128,
+                    "required": true,
+                    "default": null
+                },
+                {
+                    "key": "payload",
+                    "type": "string",
+                    "size": 1000000,
+                    "required": true,
+                    "default": null
+                }
             ],
             "indexes": [
-                { "key": "by_user_id", "type": "key", "columns": ["userId", "id"] },
-                { "key": "by_user_updatedAt", "type": "key", "columns": ["userId", "updatedAt"] }
+                {
+                    "key": "by_user_id",
+                    "type": "key",
+                    "columns": [
+                        "userId",
+                        "id"
+                    ]
+                },
+                {
+                    "key": "by_user_updatedAt",
+                    "type": "key",
+                    "columns": [
+                        "userId",
+                        "updatedAt"
+                    ]
+                }
             ]
         },
         {
@@ -52,15 +229,58 @@
             "$permissions": [],
             "rowSecurity": true,
             "columns": [
-                { "key": "id", "type": "string", "size": 128, "required": true, "default": null },
-                { "key": "userId", "type": "string", "size": 64, "required": true, "default": null },
-                { "key": "updatedAt", "type": "integer", "required": true, "default": null },
-                { "key": "clientOpId", "type": "string", "size": 128, "required": true, "default": null },
-                { "key": "payload", "type": "string", "size": 1000000, "required": true, "default": null }
+                {
+                    "key": "id",
+                    "type": "string",
+                    "size": 128,
+                    "required": true,
+                    "default": null
+                },
+                {
+                    "key": "userId",
+                    "type": "string",
+                    "size": 64,
+                    "required": true,
+                    "default": null
+                },
+                {
+                    "key": "updatedAt",
+                    "type": "integer",
+                    "required": true,
+                    "default": null
+                },
+                {
+                    "key": "clientOpId",
+                    "type": "string",
+                    "size": 128,
+                    "required": true,
+                    "default": null
+                },
+                {
+                    "key": "payload",
+                    "type": "string",
+                    "size": 1000000,
+                    "required": true,
+                    "default": null
+                }
             ],
             "indexes": [
-                { "key": "by_user_id", "type": "key", "columns": ["userId", "id"] },
-                { "key": "by_user_updatedAt", "type": "key", "columns": ["userId", "updatedAt"] }
+                {
+                    "key": "by_user_id",
+                    "type": "key",
+                    "columns": [
+                        "userId",
+                        "id"
+                    ]
+                },
+                {
+                    "key": "by_user_updatedAt",
+                    "type": "key",
+                    "columns": [
+                        "userId",
+                        "updatedAt"
+                    ]
+                }
             ]
         },
         {
@@ -70,15 +290,58 @@
             "$permissions": [],
             "rowSecurity": true,
             "columns": [
-                { "key": "id", "type": "string", "size": 128, "required": true, "default": null },
-                { "key": "userId", "type": "string", "size": 64, "required": true, "default": null },
-                { "key": "updatedAt", "type": "integer", "required": true, "default": null },
-                { "key": "clientOpId", "type": "string", "size": 128, "required": true, "default": null },
-                { "key": "payload", "type": "string", "size": 1000000, "required": true, "default": null }
+                {
+                    "key": "id",
+                    "type": "string",
+                    "size": 128,
+                    "required": true,
+                    "default": null
+                },
+                {
+                    "key": "userId",
+                    "type": "string",
+                    "size": 64,
+                    "required": true,
+                    "default": null
+                },
+                {
+                    "key": "updatedAt",
+                    "type": "integer",
+                    "required": true,
+                    "default": null
+                },
+                {
+                    "key": "clientOpId",
+                    "type": "string",
+                    "size": 128,
+                    "required": true,
+                    "default": null
+                },
+                {
+                    "key": "payload",
+                    "type": "string",
+                    "size": 1000000,
+                    "required": true,
+                    "default": null
+                }
             ],
             "indexes": [
-                { "key": "by_user_id", "type": "key", "columns": ["userId", "id"] },
-                { "key": "by_user_updatedAt", "type": "key", "columns": ["userId", "updatedAt"] }
+                {
+                    "key": "by_user_id",
+                    "type": "key",
+                    "columns": [
+                        "userId",
+                        "id"
+                    ]
+                },
+                {
+                    "key": "by_user_updatedAt",
+                    "type": "key",
+                    "columns": [
+                        "userId",
+                        "updatedAt"
+                    ]
+                }
             ]
         },
         {
@@ -88,15 +351,58 @@
             "$permissions": [],
             "rowSecurity": true,
             "columns": [
-                { "key": "id", "type": "string", "size": 128, "required": true, "default": null },
-                { "key": "userId", "type": "string", "size": 64, "required": true, "default": null },
-                { "key": "updatedAt", "type": "integer", "required": true, "default": null },
-                { "key": "clientOpId", "type": "string", "size": 128, "required": true, "default": null },
-                { "key": "payload", "type": "string", "size": 1000000, "required": true, "default": null }
+                {
+                    "key": "id",
+                    "type": "string",
+                    "size": 128,
+                    "required": true,
+                    "default": null
+                },
+                {
+                    "key": "userId",
+                    "type": "string",
+                    "size": 64,
+                    "required": true,
+                    "default": null
+                },
+                {
+                    "key": "updatedAt",
+                    "type": "integer",
+                    "required": true,
+                    "default": null
+                },
+                {
+                    "key": "clientOpId",
+                    "type": "string",
+                    "size": 128,
+                    "required": true,
+                    "default": null
+                },
+                {
+                    "key": "payload",
+                    "type": "string",
+                    "size": 1000000,
+                    "required": true,
+                    "default": null
+                }
             ],
             "indexes": [
-                { "key": "by_user_id", "type": "key", "columns": ["userId", "id"] },
-                { "key": "by_user_updatedAt", "type": "key", "columns": ["userId", "updatedAt"] }
+                {
+                    "key": "by_user_id",
+                    "type": "key",
+                    "columns": [
+                        "userId",
+                        "id"
+                    ]
+                },
+                {
+                    "key": "by_user_updatedAt",
+                    "type": "key",
+                    "columns": [
+                        "userId",
+                        "updatedAt"
+                    ]
+                }
             ]
         },
         {
@@ -106,15 +412,58 @@
             "$permissions": [],
             "rowSecurity": true,
             "columns": [
-                { "key": "id", "type": "string", "size": 128, "required": true, "default": null },
-                { "key": "userId", "type": "string", "size": 64, "required": true, "default": null },
-                { "key": "updatedAt", "type": "integer", "required": true, "default": null },
-                { "key": "clientOpId", "type": "string", "size": 128, "required": true, "default": null },
-                { "key": "payload", "type": "string", "size": 1000000, "required": true, "default": null }
+                {
+                    "key": "id",
+                    "type": "string",
+                    "size": 128,
+                    "required": true,
+                    "default": null
+                },
+                {
+                    "key": "userId",
+                    "type": "string",
+                    "size": 64,
+                    "required": true,
+                    "default": null
+                },
+                {
+                    "key": "updatedAt",
+                    "type": "integer",
+                    "required": true,
+                    "default": null
+                },
+                {
+                    "key": "clientOpId",
+                    "type": "string",
+                    "size": 128,
+                    "required": true,
+                    "default": null
+                },
+                {
+                    "key": "payload",
+                    "type": "string",
+                    "size": 1000000,
+                    "required": true,
+                    "default": null
+                }
             ],
             "indexes": [
-                { "key": "by_user_id", "type": "key", "columns": ["userId", "id"] },
-                { "key": "by_user_updatedAt", "type": "key", "columns": ["userId", "updatedAt"] }
+                {
+                    "key": "by_user_id",
+                    "type": "key",
+                    "columns": [
+                        "userId",
+                        "id"
+                    ]
+                },
+                {
+                    "key": "by_user_updatedAt",
+                    "type": "key",
+                    "columns": [
+                        "userId",
+                        "updatedAt"
+                    ]
+                }
             ]
         },
         {
@@ -124,15 +473,58 @@
             "$permissions": [],
             "rowSecurity": true,
             "columns": [
-                { "key": "id", "type": "string", "size": 128, "required": true, "default": null },
-                { "key": "userId", "type": "string", "size": 64, "required": true, "default": null },
-                { "key": "updatedAt", "type": "integer", "required": true, "default": null },
-                { "key": "clientOpId", "type": "string", "size": 128, "required": true, "default": null },
-                { "key": "payload", "type": "string", "size": 1000000, "required": true, "default": null }
+                {
+                    "key": "id",
+                    "type": "string",
+                    "size": 128,
+                    "required": true,
+                    "default": null
+                },
+                {
+                    "key": "userId",
+                    "type": "string",
+                    "size": 64,
+                    "required": true,
+                    "default": null
+                },
+                {
+                    "key": "updatedAt",
+                    "type": "integer",
+                    "required": true,
+                    "default": null
+                },
+                {
+                    "key": "clientOpId",
+                    "type": "string",
+                    "size": 128,
+                    "required": true,
+                    "default": null
+                },
+                {
+                    "key": "payload",
+                    "type": "string",
+                    "size": 1000000,
+                    "required": true,
+                    "default": null
+                }
             ],
             "indexes": [
-                { "key": "by_user_id", "type": "key", "columns": ["userId", "id"] },
-                { "key": "by_user_updatedAt", "type": "key", "columns": ["userId", "updatedAt"] }
+                {
+                    "key": "by_user_id",
+                    "type": "key",
+                    "columns": [
+                        "userId",
+                        "id"
+                    ]
+                },
+                {
+                    "key": "by_user_updatedAt",
+                    "type": "key",
+                    "columns": [
+                        "userId",
+                        "updatedAt"
+                    ]
+                }
             ]
         },
         {
@@ -142,18 +534,83 @@
             "$permissions": [],
             "rowSecurity": true,
             "columns": [
-                { "key": "id", "type": "string", "size": 128, "required": true, "default": null },
-                { "key": "userId", "type": "string", "size": 64, "required": true, "default": null },
-                { "key": "entityId", "type": "string", "size": 128, "required": true, "default": null },
-                { "key": "entityType", "type": "string", "size": 32, "required": true, "default": null },
-                { "key": "rating", "type": "integer", "required": true, "default": null, "min": 0, "max": 3 },
-                { "key": "reviewedAt", "type": "integer", "required": true, "default": null },
-                { "key": "clientOpId", "type": "string", "size": 128, "required": true, "default": null }
+                {
+                    "key": "id",
+                    "type": "string",
+                    "size": 128,
+                    "required": true,
+                    "default": null
+                },
+                {
+                    "key": "userId",
+                    "type": "string",
+                    "size": 64,
+                    "required": true,
+                    "default": null
+                },
+                {
+                    "key": "entityId",
+                    "type": "string",
+                    "size": 128,
+                    "required": true,
+                    "default": null
+                },
+                {
+                    "key": "entityType",
+                    "type": "string",
+                    "size": 32,
+                    "required": true,
+                    "default": null
+                },
+                {
+                    "key": "rating",
+                    "type": "integer",
+                    "required": true,
+                    "default": null,
+                    "min": 0,
+                    "max": 3
+                },
+                {
+                    "key": "reviewedAt",
+                    "type": "integer",
+                    "required": true,
+                    "default": null
+                },
+                {
+                    "key": "clientOpId",
+                    "type": "string",
+                    "size": 128,
+                    "required": true,
+                    "default": null
+                }
             ],
             "indexes": [
-                { "key": "by_user_entity", "type": "key", "columns": ["userId", "entityType", "entityId", "reviewedAt"] },
-                { "key": "by_user_clientOpId", "type": "key", "columns": ["userId", "clientOpId"] },
-                { "key": "by_user_reviewedAt", "type": "key", "columns": ["userId", "reviewedAt"] }
+                {
+                    "key": "by_user_entity",
+                    "type": "key",
+                    "columns": [
+                        "userId",
+                        "entityType",
+                        "entityId",
+                        "reviewedAt"
+                    ]
+                },
+                {
+                    "key": "by_user_clientOpId",
+                    "type": "key",
+                    "columns": [
+                        "userId",
+                        "clientOpId"
+                    ]
+                },
+                {
+                    "key": "by_user_reviewedAt",
+                    "type": "key",
+                    "columns": [
+                        "userId",
+                        "reviewedAt"
+                    ]
+                }
             ]
         },
         {
@@ -163,19 +620,82 @@
             "$permissions": [],
             "rowSecurity": true,
             "columns": [
-                { "key": "entityId", "type": "string", "size": 128, "required": true, "default": null },
-                { "key": "entityType", "type": "string", "size": 32, "required": true, "default": null },
-                { "key": "userId", "type": "string", "size": 64, "required": true, "default": null },
-                { "key": "stability", "type": "double", "required": false },
-                { "key": "difficulty", "type": "double", "required": false },
-                { "key": "due", "type": "integer", "required": true, "default": null },
-                { "key": "state", "type": "integer", "required": true, "default": null, "min": 0, "max": 3 },
-                { "key": "lastEventOpId", "type": "string", "size": 128, "required": false },
-                { "key": "updatedAt", "type": "integer", "required": true, "default": null }
+                {
+                    "key": "entityId",
+                    "type": "string",
+                    "size": 128,
+                    "required": true,
+                    "default": null
+                },
+                {
+                    "key": "entityType",
+                    "type": "string",
+                    "size": 32,
+                    "required": true,
+                    "default": null
+                },
+                {
+                    "key": "userId",
+                    "type": "string",
+                    "size": 64,
+                    "required": true,
+                    "default": null
+                },
+                {
+                    "key": "stability",
+                    "type": "double",
+                    "required": false
+                },
+                {
+                    "key": "difficulty",
+                    "type": "double",
+                    "required": false
+                },
+                {
+                    "key": "due",
+                    "type": "integer",
+                    "required": true,
+                    "default": null
+                },
+                {
+                    "key": "state",
+                    "type": "integer",
+                    "required": true,
+                    "default": null,
+                    "min": 0,
+                    "max": 3
+                },
+                {
+                    "key": "lastEventOpId",
+                    "type": "string",
+                    "size": 128,
+                    "required": false
+                },
+                {
+                    "key": "updatedAt",
+                    "type": "integer",
+                    "required": true,
+                    "default": null
+                }
             ],
             "indexes": [
-                { "key": "by_user_entity", "type": "key", "columns": ["userId", "entityType", "entityId"] },
-                { "key": "by_user_updatedAt", "type": "key", "columns": ["userId", "updatedAt"] }
+                {
+                    "key": "by_user_entity",
+                    "type": "key",
+                    "columns": [
+                        "userId",
+                        "entityType",
+                        "entityId"
+                    ]
+                },
+                {
+                    "key": "by_user_updatedAt",
+                    "type": "key",
+                    "columns": [
+                        "userId",
+                        "updatedAt"
+                    ]
+                }
             ]
         },
         {
@@ -185,15 +705,55 @@
             "$permissions": [],
             "rowSecurity": true,
             "columns": [
-                { "key": "firebaseUid", "type": "string", "size": 128, "required": true, "default": null },
-                { "key": "appwriteUserId", "type": "string", "size": 64, "required": true, "default": null },
-                { "key": "email", "type": "string", "size": 320, "required": true, "default": null },
-                { "key": "createdAt", "type": "integer", "required": false }
+                {
+                    "key": "firebaseUid",
+                    "type": "string",
+                    "size": 128,
+                    "required": true,
+                    "default": null
+                },
+                {
+                    "key": "appwriteUserId",
+                    "type": "string",
+                    "size": 64,
+                    "required": true,
+                    "default": null
+                },
+                {
+                    "key": "email",
+                    "type": "string",
+                    "size": 320,
+                    "required": true,
+                    "default": null
+                },
+                {
+                    "key": "createdAt",
+                    "type": "integer",
+                    "required": false
+                }
             ],
             "indexes": [
-                { "key": "by_firebaseUid", "type": "key", "columns": ["firebaseUid"] },
-                { "key": "by_appwriteUserId", "type": "key", "columns": ["appwriteUserId"] },
-                { "key": "by_email", "type": "key", "columns": ["email"] }
+                {
+                    "key": "by_firebaseUid",
+                    "type": "key",
+                    "columns": [
+                        "firebaseUid"
+                    ]
+                },
+                {
+                    "key": "by_appwriteUserId",
+                    "type": "key",
+                    "columns": [
+                        "appwriteUserId"
+                    ]
+                },
+                {
+                    "key": "by_email",
+                    "type": "key",
+                    "columns": [
+                        "email"
+                    ]
+                }
             ]
         },
         {
@@ -203,32 +763,124 @@
             "$permissions": [],
             "rowSecurity": true,
             "columns": [
-                { "key": "id", "type": "string", "size": 128, "required": true, "default": null },
-                { "key": "entityType", "type": "string", "size": 32, "required": true, "default": null },
-                { "key": "userId", "type": "string", "size": 64, "required": true, "default": null },
-                { "key": "deletedAt", "type": "integer", "required": true, "default": null },
-                { "key": "clientOpId", "type": "string", "size": 128, "required": true, "default": null }
+                {
+                    "key": "id",
+                    "type": "string",
+                    "size": 128,
+                    "required": true,
+                    "default": null
+                },
+                {
+                    "key": "entityType",
+                    "type": "string",
+                    "size": 32,
+                    "required": true,
+                    "default": null
+                },
+                {
+                    "key": "userId",
+                    "type": "string",
+                    "size": 64,
+                    "required": true,
+                    "default": null
+                },
+                {
+                    "key": "deletedAt",
+                    "type": "integer",
+                    "required": true,
+                    "default": null
+                },
+                {
+                    "key": "clientOpId",
+                    "type": "string",
+                    "size": 128,
+                    "required": true,
+                    "default": null
+                }
             ],
             "indexes": [
-                { "key": "by_user_entity_deletedAt", "type": "key", "columns": ["userId", "entityType", "deletedAt"] },
-                { "key": "by_user_deletedAt", "type": "key", "columns": ["userId", "deletedAt"] }
+                {
+                    "key": "by_user_entity_deletedAt",
+                    "type": "key",
+                    "columns": [
+                        "userId",
+                        "entityType",
+                        "deletedAt"
+                    ]
+                },
+                {
+                    "key": "by_user_deletedAt",
+                    "type": "key",
+                    "columns": [
+                        "userId",
+                        "deletedAt"
+                    ]
+                }
             ]
         },
         {
             "$id": "appConfig",
             "databaseId": "breakdex",
             "name": "appConfig",
-            "$permissions": ["read(\"users\")"],
+            "$permissions": [
+                "read(\"users\")"
+            ],
             "rowSecurity": false,
             "columns": [
-                { "key": "version", "type": "integer", "required": true, "default": null, "min": 0 },
-                { "key": "minSupportedBuild", "type": "integer", "required": true, "default": null, "min": 0 },
-                { "key": "latestBuild", "type": "integer", "required": true, "default": null, "min": 0 },
-                { "key": "updateMessage", "type": "string", "size": 4000, "required": false },
-                { "key": "featureFlags", "type": "string", "size": 100000, "required": false, "default": "{}" },
-                { "key": "killSwitches", "type": "string", "size": 100000, "required": false, "default": "{}" },
-                { "key": "cohortProfiles", "type": "string", "size": 100000, "required": false, "default": "{}" },
-                { "key": "updatedAt", "type": "integer", "required": true, "default": null }
+                {
+                    "key": "version",
+                    "type": "integer",
+                    "required": true,
+                    "default": null,
+                    "min": 0
+                },
+                {
+                    "key": "minSupportedBuild",
+                    "type": "integer",
+                    "required": true,
+                    "default": null,
+                    "min": 0
+                },
+                {
+                    "key": "latestBuild",
+                    "type": "integer",
+                    "required": true,
+                    "default": null,
+                    "min": 0
+                },
+                {
+                    "key": "updateMessage",
+                    "type": "string",
+                    "size": 4000,
+                    "required": false
+                },
+                {
+                    "key": "featureFlags",
+                    "type": "string",
+                    "size": 100000,
+                    "required": false,
+                    "default": "{}"
+                },
+                {
+                    "key": "killSwitches",
+                    "type": "string",
+                    "size": 100000,
+                    "required": false,
+                    "default": "{}"
+                },
+                {
+                    "key": "cohortProfiles",
+                    "type": "string",
+                    "size": 100000,
+                    "required": false,
+                    "default": "{}"
+                },
+                {
+                    "key": "updatedAt",
+                    "type": "integer",
+                    "required": true,
+                    "default": null
+                }
             ],
             "indexes": []
         },
@@ -239,16 +891,61 @@
             "$permissions": [],
             "rowSecurity": true,
             "columns": [
-                { "key": "code", "type": "string", "size": 32, "required": true, "default": null },
-                { "key": "cohort", "type": "string", "size": 32, "required": true, "default": null },
-                { "key": "entitlementTier", "type": "string", "size": 32, "required": true, "default": null },
-                { "key": "maxUses", "type": "integer", "required": true, "default": null, "min": 0 },
-                { "key": "uses", "type": "integer", "required": true, "default": null, "min": 0 },
-                { "key": "expiresAt", "type": "integer", "required": false },
-                { "key": "createdAt", "type": "integer", "required": true, "default": null }
+                {
+                    "key": "code",
+                    "type": "string",
+                    "size": 32,
+                    "required": true,
+                    "default": null
+                },
+                {
+                    "key": "cohort",
+                    "type": "string",
+                    "size": 32,
+                    "required": true,
+                    "default": null
+                },
+                {
+                    "key": "entitlementTier",
+                    "type": "string",
+                    "size": 32,
+                    "required": true,
+                    "default": null
+                },
+                {
+                    "key": "maxUses",
+                    "type": "integer",
+                    "required": true,
+                    "default": null,
+                    "min": 0
+                },
+                {
+                    "key": "uses",
+                    "type": "integer",
+                    "required": true,
+                    "default": null,
+                    "min": 0
+                },
+                {
+                    "key": "expiresAt",
+                    "type": "integer",
+                    "required": false
+                },
+                {
+                    "key": "createdAt",
+                    "type": "integer",
+                    "required": true,
+                    "default": null
+                }
             ],
             "indexes": [
-                { "key": "by_code", "type": "key", "columns": ["code"] }
+                {
+                    "key": "by_code",
+                    "type": "key",
+                    "columns": [
+                        "code"
+                    ]
+                }
             ]
         },
         {
@@ -258,82 +955,84 @@
             "$permissions": [],
             "rowSecurity": true,
             "columns": [
-                { "key": "userId", "type": "string", "size": 64, "required": true, "default": null },
-                { "key": "tier", "type": "string", "size": 32, "required": true, "default": null },
-                { "key": "cohort", "type": "string", "size": 32, "required": true, "default": null },
-                { "key": "source", "type": "string", "size": 32, "required": true, "default": null },
-                { "key": "code", "type": "string", "size": 32, "required": false },
-                { "key": "status", "type": "string", "size": 16, "required": false, "default": "active" },
-                { "key": "orderId", "type": "string", "size": 64, "required": false },
-                { "key": "grantedAt", "type": "integer", "required": true, "default": null }
+                {
+                    "key": "userId",
+                    "type": "string",
+                    "size": 64,
+                    "required": true,
+                    "default": null
+                },
+                {
+                    "key": "tier",
+                    "type": "string",
+                    "size": 32,
+                    "required": true,
+                    "default": null
+                },
+                {
+                    "key": "cohort",
+                    "type": "string",
+                    "size": 32,
+                    "required": true,
+                    "default": null
+                },
+                {
+                    "key": "source",
+                    "type": "string",
+                    "size": 32,
+                    "required": true,
+                    "default": null
+                },
+                {
+                    "key": "code",
+                    "type": "string",
+                    "size": 32,
+                    "required": false
+                },
+                {
+                    "key": "status",
+                    "type": "string",
+                    "size": 16,
+                    "required": false,
+                    "default": "active"
+                },
+                {
+                    "key": "orderId",
+                    "type": "string",
+                    "size": 64,
+                    "required": false
+                },
+                {
+                    "key": "grantedAt",
+                    "type": "integer",
+                    "required": true,
+                    "default": null
+                }
             ],
             "indexes": [
-                { "key": "by_user_code", "type": "key", "columns": ["userId", "code"] },
-                { "key": "by_user", "type": "key", "columns": ["userId"] },
-                { "key": "by_order", "type": "key", "columns": ["orderId"] }
+                {
+                    "key": "by_user_code",
+                    "type": "key",
+                    "columns": [
+                        "userId",
+                        "code"
+                    ]
+                },
+                {
+                    "key": "by_user",
+                    "type": "key",
+                    "columns": [
+                        "userId"
+                    ]
+                },
+                {
+                    "key": "by_order",
+                    "type": "key",
+                    "columns": [
+                        "orderId"
+                    ]
+                }
             ]
-        }
-    ],
-    "functions": [
-        {
-            "$id": "sync-push",
-            "name": "sync-push",
-            "runtime": "dart-3.11",
-            "execute": ["users"],
-            "events": [],
-            "scopes": ["tables.read", "rows.read", "rows.write"],
-            "path": "functions/sync-push",
-            "entrypoint": "lib/main.dart",
-            "commands": "dart pub get",
-            "enabled": true
-        },
-        {
-            "$id": "sync-pull",
-            "name": "sync-pull",
-            "runtime": "dart-3.11",
-            "execute": ["users"],
-            "events": [],
-            "scopes": ["tables.read", "rows.read"],
-            "path": "functions/sync-pull",
-            "entrypoint": "lib/main.dart",
-            "commands": "dart pub get",
-            "enabled": true
-        },
-        {
-            "$id": "reviews-append",
-            "name": "reviews-append",
-            "runtime": "dart-3.11",
-            "execute": ["users"],
-            "events": [],
-            "scopes": ["tables.read", "rows.read", "rows.write"],
-            "path": "functions/reviews-append",
-            "entrypoint": "lib/main.dart",
-            "commands": "dart pub get",
-            "enabled": true
-        },
-        {
-            "$id": "invites-redeem",
-            "name": "invites-redeem",
-            "runtime": "dart-3.11",
-            "execute": ["users"],
-            "events": [],
-            "scopes": ["tables.read", "rows.read", "rows.write"],
-            "path": "functions/invites-redeem",
-            "entrypoint": "lib/main.dart",
-            "commands": "dart pub get",
-            "enabled": true
-        },
-        {
-            "$id": "payments-webhook",
-            "name": "payments-webhook",
-            "runtime": "dart-3.11",
-            "execute": ["any"],
-            "events": [],
-            "scopes": ["tables.read", "rows.read", "rows.write"],
-            "path": "functions/payments-webhook",
-            "entrypoint": "lib/main.dart",
-            "commands": "dart pub get",
-            "enabled": true
         }
     ]
 }
