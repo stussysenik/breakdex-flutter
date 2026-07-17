@@ -50,14 +50,16 @@ void main() {
   Future<void> seedOp(
     final String id,
     final String hash,
-    final String status,
-  ) async {
+    final String status, {
+    final String? errorMessage,
+  }) async {
     await db.syncOperationsDao.insertOperation(SyncOperationsCompanion(
       id: Value(id),
       contentHash: Value(hash),
       providerId: const Value('gdrive'),
       operationType: const Value('upload'),
       status: Value(status),
+      errorMessage: Value(errorMessage),
       createdAt: Value(DateTime.now()),
     ));
   }
@@ -71,13 +73,15 @@ void main() {
     await seedCopy('c2', 'h1', 'gdrive', 'verified');
     await seedCopy('c3', 'h2', 'gdrive', 'failed');
     await seedOp('o1', 'h2', 'queued');
-    await seedOp('o2', 'h2', 'failed');
+    await seedOp('o2', 'h2', 'failed', errorMessage: 'DetailedApiRequestError');
     await seedOp('o3', 'h1', 'queued');
+    await seedOp('o4', 'h1', 'failed', errorMessage: 'DetailedApiRequestError');
+    await seedOp('o5', 'h3', 'failed');
 
     final report = await SyncDiagnostics(db).dump();
     final lines = report.split('\n');
 
-    expect(lines, hasLength(3));
+    expect(lines, hasLength(6));
     expect(
       lines[0],
       'asset_manifest: 3 rows (2 live, 1 underprotected, 1 tombstoned)',
@@ -86,7 +90,11 @@ void main() {
       lines[1],
       'asset_copies: gdrive×failed: 1 · gdrive×verified: 1 · local×verified: 1',
     );
-    expect(lines[2], 'sync_operations: failed: 1 · queued: 2');
+    expect(lines[2], 'sync_operations: failed: 3 · queued: 2');
+    // Failed-op errors, grouped by message, most frequent first.
+    expect(lines[3], 'failed op errors:');
+    expect(lines[4], '  2× DetailedApiRequestError');
+    expect(lines[5], '  1× (no error message)');
   });
 
   test('dump on an empty database reports zeros, not errors', () async {

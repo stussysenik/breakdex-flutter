@@ -32,13 +32,29 @@ class SyncDiagnostics {
       opsByStatus.update(op.status, (final v) => v + 1, ifAbsent: () => 1);
     }
 
+    // Failed ops grouped by error message — the WHY behind a stuck sweep.
+    final errorCounts = <String, int>{};
+    for (final op in ops) {
+      if (op.status != 'failed') continue;
+      final error = op.errorMessage ?? '(no error message)';
+      errorCounts.update(error, (final v) => v + 1, ifAbsent: () => 1);
+    }
+
     return [
       'asset_manifest: ${manifests.length} rows (${live.length} live, '
           '$underprotected underprotected, '
           '${manifests.length - live.length} tombstoned)',
       'asset_copies: ${_fmt(copiesByKey)}',
       'sync_operations: ${_fmt(opsByStatus)}',
+      if (errorCounts.isNotEmpty)
+        'failed op errors:\n${_fmtErrors(errorCounts)}',
     ].join('\n');
+  }
+
+  static String _fmtErrors(final Map<String, int> counts) {
+    final entries = counts.entries.toList()
+      ..sort((final a, final b) => b.value.compareTo(a.value));
+    return entries.map((final e) => '  ${e.value}× ${e.key}').join('\n');
   }
 
   static String _fmt(final Map<String, int> counts) {

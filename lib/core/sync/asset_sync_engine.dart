@@ -138,8 +138,14 @@ class AssetSyncEngine {
 
   /// Run a full sync cycle. No-op if already running.
   Future<void> runSyncCycle(final ConnectionType connectionType) async {
-    if (_running) return;
+    if (_running) {
+      debugPrint('[VideoBackup] cycle requested but already running — skipped');
+      return;
+    }
     _running = true;
+    debugPrint(
+      '[VideoBackup] cycle start (connection: ${connectionType.name})',
+    );
 
     try {
       // Step 0: Recover stale in_progress ops from a previous crashed session
@@ -160,8 +166,9 @@ class AssetSyncEngine {
           _state != SyncEngineState.paused) {
         _setState(SyncEngineState.idle);
       }
+      debugPrint('[VideoBackup] cycle end (terminal state: ${_state.name})');
     } on Object catch (e) {
-      debugPrint('Sync cycle error: $e');
+      debugPrint('[VideoBackup] cycle error: $e');
       _setState(SyncEngineState.error);
     } finally {
       _running = false;
@@ -238,7 +245,9 @@ class AssetSyncEngine {
   // Internal
   // ---------------------------------------------------------------------------
 
-  Future<void> _uploadUnderprotected(final ConnectionType connectionType) async {
+  Future<void> _uploadUnderprotected(
+    final ConnectionType connectionType,
+  ) async {
     final underprotected = await _manifestDao.getUnderprotected();
     if (underprotected.isEmpty) return;
 
@@ -249,6 +258,8 @@ class AssetSyncEngine {
     // waitingForWifi; dataCapExceeded/offline files simply skip — canTransfer
     // is per-file, so smaller files may still fit.
     var deferred = 0;
+    var skipped = 0;
+    var queued = 0;
     for (final asset in underprotected) {
       if (_state == SyncEngineState.paused) return;
 
@@ -260,10 +271,19 @@ class AssetSyncEngine {
         deferred++;
         continue;
       }
-      if (decision != TransferDecision.allow) continue;
+      if (decision != TransferDecision.allow) {
+        skipped++;
+        continue;
+      }
 
       await queueUpload(asset.contentHash);
+      queued++;
     }
+
+    debugPrint(
+      '[VideoBackup] sweep: ${underprotected.length} underprotected → '
+      '$queued queued, $deferred deferred (wifi), $skipped skipped (policy)',
+    );
 
     if (deferred == underprotected.length) {
       _setState(SyncEngineState.waitingForWifi);
@@ -277,12 +297,19 @@ class AssetSyncEngine {
     // library must upload in one cycle, not one batch per manual sync tap.
     // Pause is honored between operations; a batch that executes nothing
     // (every op deferred by policy) ends the drain so a stuck op can't spin.
+    var batch = 0;
     while (true) {
       if (_state == SyncEngineState.paused) return;
 
       final queued = await _opsDao.getQueued(limit: maxConcurrent);
-      if (queued.isEmpty) return;
+      if (queued.isEmpty) {
+        debugPrint(
+          '[VideoBackup] drain done: queue empty after $batch batches',
+        );
+        return;
+      }
 
+      batch++;
       var executed = 0;
       for (final op in queued) {
         if (_state == SyncEngineState.paused) return;
@@ -296,7 +323,14 @@ class AssetSyncEngine {
         await _executeOperation(op, connectionType);
         executed++;
       }
-      if (executed == 0) return;
+      debugPrint(
+        '[VideoBackup] batch $batch: ${queued.length} fetched, '
+        '$executed executed',
+      );
+      if (executed == 0) {
+        debugPrint('[VideoBackup] drain stopped: whole batch policy-deferred');
+        return;
+      }
     }
   }
 
@@ -308,11 +342,19 @@ class AssetSyncEngine {
         .where((final p) => p.providerType == op.providerId)
         .firstOrNull;
     if (provider == null) {
+      debugPrint(
+        '[VideoBackup] op ${_opLabel(op)} FAILED: provider not configured',
+      );
       await _opsDao.markFailed(op.id, 'Provider not configured');
       return;
     }
 
     await _opsDao.markInProgress(op.id);
+    debugPrint(
+      '[VideoBackup] op ${_opLabel(op)} start '
+      '(${op.totalBytes} bytes, retry ${op.retryCount})',
+    );
+    final sw = Stopwatch()..start();
 
     try {
       switch (op.operationType) {
@@ -325,11 +367,32 @@ class AssetSyncEngine {
         case 'delete_remote':
           await _executeDeleteRemote(op, provider);
         default:
-          await _opsDao.markFailed(op.id, 'Unknown operation type');
+          await _fail(op, 'Unknown operation type');
       }
+      debugPrint(
+        '[VideoBackup] op ${_opLabel(op)} settled in ${sw.elapsed.inSeconds}s',
+      );
     } on Object catch (e) {
+      debugPrint(
+        '[VideoBackup] op ${_opLabel(op)} FAILED '
+        'after ${sw.elapsed.inSeconds}s: $e',
+      );
       await _opsDao.markFailed(op.id, e.toString());
     }
+  }
+
+  /// Mark an op failed with a synchronous, traceable log line.
+  Future<void> _fail(final SyncOperation op, final String message) async {
+    debugPrint('[VideoBackup] op ${_opLabel(op)} FAILED: $message');
+    await _opsDao.markFailed(op.id, message);
+  }
+
+  /// Short traceable label: `upload:gdrive:3f2a9c1e`.
+  static String _opLabel(final SyncOperation op) {
+    final hash = op.contentHash.length > 8
+        ? op.contentHash.substring(0, 8)
+        : op.contentHash;
+    return '${op.operationType}:${op.providerId}:$hash';
   }
 
   Future<void> _executeUpload(
@@ -339,7 +402,7 @@ class AssetSyncEngine {
   ) async {
     final manifest = await _manifestDao.getByHash(op.contentHash);
     if (manifest?.localPath == null) {
-      await _opsDao.markFailed(op.id, 'No local file to upload');
+      await _fail(op, 'No local file to upload');
       return;
     }
 
@@ -392,7 +455,7 @@ class AssetSyncEngine {
         .firstOrNull;
 
     if (remoteCopy?.remotePath == null) {
-      await _opsDao.markFailed(op.id, 'No remote path available');
+      await _fail(op, 'No remote path available');
       return;
     }
 
@@ -422,7 +485,7 @@ class AssetSyncEngine {
       op.contentHash,
     );
     if (!hashMatches) {
-      await _opsDao.markFailed(op.id, 'Downloaded file hash mismatch');
+      await _fail(op, 'Downloaded file hash mismatch');
       return;
     }
 
@@ -452,14 +515,17 @@ class AssetSyncEngine {
     return p.join(videosDir.path, '$contentHash.mp4');
   }
 
-  Future<void> _executeVerify(final SyncOperation op, final CloudProvider provider) async {
+  Future<void> _executeVerify(
+    final SyncOperation op,
+    final CloudProvider provider,
+  ) async {
     final copies = await _copiesDao.getByHash(op.contentHash);
     final remoteCopy = copies
         .where((final c) => c.provider == provider.providerType)
         .firstOrNull;
 
     if (remoteCopy?.remotePath == null) {
-      await _opsDao.markFailed(op.id, 'No remote path to verify');
+      await _fail(op, 'No remote path to verify');
       return;
     }
 
@@ -474,7 +540,7 @@ class AssetSyncEngine {
       await _opsDao.markCompleted(op.id);
     } else {
       await _copiesDao.markFailed(remoteCopy.id, 'Remote verification failed');
-      await _opsDao.markFailed(op.id, 'Remote verification failed');
+      await _fail(op, 'Remote verification failed');
     }
   }
 
@@ -485,10 +551,7 @@ class AssetSyncEngine {
     // Safety check: only delete remote if this is a tombstoned asset
     final manifest = await _manifestDao.getByHash(op.contentHash);
     if (manifest?.deletedAt == null) {
-      await _opsDao.markFailed(
-        op.id,
-        'Cannot delete remote copy of non-tombstoned asset',
-      );
+      await _fail(op, 'Cannot delete remote copy of non-tombstoned asset');
       return;
     }
 
@@ -530,6 +593,8 @@ class AssetSyncEngine {
     if (retryable.isEmpty) return;
 
     final now = DateTime.now();
+    var retried = 0;
+    var backingOff = 0;
     for (final op in retryable) {
       if (_state == SyncEngineState.paused) return;
 
@@ -539,12 +604,23 @@ class AssetSyncEngine {
 
       // Only retry if enough time has passed since the failure
       final failedAt = op.completedAt ?? op.createdAt;
-      if (now.difference(failedAt) < backoff) continue;
+      if (now.difference(failedAt) < backoff) {
+        backingOff++;
+        continue;
+      }
 
-      debugPrint('Retrying op ${op.id} (attempt ${op.retryCount + 1})');
+      debugPrint(
+        '[VideoBackup] retrying op ${_opLabel(op)} '
+        '(attempt ${op.retryCount + 1})',
+      );
       await _opsDao.requeueForRetry(op.id);
       await _executeOperation(op, connectionType);
+      retried++;
     }
+    debugPrint(
+      '[VideoBackup] retry pass: ${retryable.length} failed ops → '
+      '$retried retried, $backingOff still backing off',
+    );
   }
 
   /// Log a video asset state transition to sync_log for auditability.
