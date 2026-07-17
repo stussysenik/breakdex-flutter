@@ -51,10 +51,17 @@
   show empty on sign-in → added `SyncService.hydrateAllFromBackend()` (inbound mirror,
   bypasses dual-read gates via the existing LWW core), fired **automatically on first login**
   + a dev **"Pull from backend now"** button. `flutter analyze` clean, `flutter test` 950
-  green / 9 pre-existing reds / 0 regressions (+6 new), `flutter build web` green. **Next
-  unticked (owner-driven):** **M.6** web sign-in from a registered origin — sign in on web
-  (localhost:8080 / breakdex.vercel.app) with the same Google account → auto-hydrate → your
-  library appears; then the R1–R8 rehearsal ladder (`docs/sync-rehearsal-runbook.md`).
+  green / 9 pre-existing reds / 0 regressions (+6 new), `flutter build web` green. **2026-07-17: M.6 DONE both halves** — agent-driven web proof
+  (fresh Chrome profile, dev email door as owner: auto-hydrate 164 rows, library renders,
+  session + data survive reload, re-hydrate no-ops) **plus the owner's live Google OAuth on
+  web** (server sessions list shows `provider: google`, Chrome/Mac, expires 2027-07-17).
+  D11 posture recorded in the M.6 tick: localStorage `cookieFallback` (cross-origin), httpOnly
+  needs a custom API domain later. **Next unticked (owner-driven):** the **R1–R8 rehearsal
+  ladder** (`docs/sync-rehearsal-runbook.md`, dev0 on sim + web) → then Phase-M remainder
+  **M.4** cross-surface soak (phone must be signed in — its Google session was dropped when
+  the owner dev password was set 2026-07-16; one re-sign-in) and **M.5** remote-config flip
+  (provision the `appConfig/current` row). Push decision still the owner's (main ahead,
+  unpushed).
   Prior queue head
   (`add-web-first-release-and-monetization`, launch wave L1–L6) is **DONE** — history below.
 

@@ -944,9 +944,18 @@ pre-wave until the owner flips each kill-switch after the Phase M soak.
   note entries + video pointers included; Drive playback works on web.
 - [ ] M.5 **Remote-config live flip (1R.4):** owner changes `updateMessage`/a flag in the
   console → running clients update without redeploy; tick 1R.4.
-- [ ] M.6 **Web login:** Google OAuth on Flutter Web from a registered origin; session survives
+- [x] M.6 **Web login:** Google OAuth on Flutter Web from a registered origin; session survives
   reload; storage posture recorded per D11 (httpOnly cookie vs fallback). This is web-first
-  1.5's live half.
+  1.5's live half. **DONE 2026-07-17, two halves:** (1) agent-driven proof on `localhost:8080`
+  (fresh isolated Chrome profile, dev email door as the owner account): auto-hydrate applied
+  **164 rows** (move:51 combo:1 comboMove:18 review:51 fsrsCard:25 moveNoteEntry:15
+  comboNoteEntry:3), full library renders, session + data survive reload, re-hydrate no-ops
+  (LWW idempotent). (2) **Owner's live Google OAuth on web** — server `users/…/sessions` shows
+  `provider: google`, Chrome/Mac, created 2026-07-17, expires 2027-07-17. **D11 posture
+  recorded:** cross-origin (`localhost` → `fra.cloud.appwrite.io`) the SDK persists the session
+  via `cookieFallback` in localStorage (`a_session_<project>`), NOT an httpOnly cookie —
+  first-party httpOnly requires a custom API domain (follow-up rides the launch workstream).
+  Benign boot 404: `appConfig/rows/current` (remote-config row unprovisioned until M.5).
 
 ## Validation
 
