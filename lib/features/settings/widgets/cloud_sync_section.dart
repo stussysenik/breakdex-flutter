@@ -104,17 +104,35 @@ class CloudSyncSection extends ConsumerWidget {
         ),
         const SizedBox(height: AppSpacing.sm),
 
-        // Google Drive
-        SyncProviderRow(
-          icon: Icons.add_to_drive_outlined,
-          title: l10n.setSyncProviderGdriveTitle,
-          status: gDriveConnected
-              ? ProviderStatus.connected
-              : ProviderStatus.available,
-          onTap: gDriveConnected
-              ? () => _disconnectGDrive(context, ref)
-              : () => _enableGDrive(context, ref),
-        ),
+        // Google Drive. On web the google_sign_in Drive setup is not wired —
+        // render honestly unavailable instead of offering a tap that can only
+        // fail (backup-account spec). When connected, name the account that
+        // holds the videos so nobody searches the wrong Drive.
+        if (ref.watch(isWebPlatformProvider))
+          SyncProviderRow(
+            icon: Icons.add_to_drive_outlined,
+            title: l10n.setSyncProviderGdriveTitle,
+            subtitle: l10n.setSyncGdriveWebUnavailable,
+            status: ProviderStatus.unavailable,
+            onTap: null,
+          )
+        else
+          SyncProviderRow(
+            icon: Icons.add_to_drive_outlined,
+            title: l10n.setSyncProviderGdriveTitle,
+            subtitle: gDriveConnected &&
+                    ref.watch(gdriveAccountEmailProvider).valueOrNull != null
+                ? l10n.setSyncGdriveConnectedAccount(
+                    ref.watch(gdriveAccountEmailProvider).valueOrNull!,
+                  )
+                : null,
+            status: gDriveConnected
+                ? ProviderStatus.connected
+                : ProviderStatus.available,
+            onTap: gDriveConnected
+                ? () => _disconnectGDrive(context, ref)
+                : () => _enableGDrive(context, ref),
+          ),
         const SizedBox(height: AppSpacing.sm),
 
         // S3 — coming soon
@@ -339,6 +357,10 @@ enum ProviderStatus { connected, available, unavailable, comingSoon, loading }
 class SyncProviderRow extends StatelessWidget {
   final IconData icon;
   final String title;
+
+  /// Optional detail under the title — the connected account email, or the
+  /// reason a provider is unavailable on this platform.
+  final String? subtitle;
   final ProviderStatus status;
   final VoidCallback? onTap;
 
@@ -346,6 +368,7 @@ class SyncProviderRow extends StatelessWidget {
     super.key,
     required this.icon,
     required this.title,
+    this.subtitle,
     required this.status,
     this.onTap,
   });
@@ -385,13 +408,29 @@ class SyncProviderRow extends StatelessWidget {
             ),
             const SizedBox(width: AppSpacing.md),
             Expanded(
-              child: Text(
-                title,
-                style: AppTypography.bodyMedium.copyWith(
-                  color: isDisabled
-                      ? colorScheme.onSurface.withValues(alpha: 0.3)
-                      : colorScheme.onSurface,
-                ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: AppTypography.bodyMedium.copyWith(
+                      color: isDisabled
+                          ? colorScheme.onSurface.withValues(alpha: 0.3)
+                          : colorScheme.onSurface,
+                    ),
+                  ),
+                  if (subtitle != null)
+                    Text(
+                      subtitle!,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: AppTypography.caption.copyWith(
+                        color: colorScheme.onSurface.withValues(
+                          alpha: isDisabled ? 0.3 : 0.5,
+                        ),
+                      ),
+                    ),
+                ],
               ),
             ),
             _statusLabel(l10n, colorScheme),

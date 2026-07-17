@@ -33,10 +33,16 @@
   (`5fd1380`), 1.6 field-split reclassification note filed in `make-sync-total`'s §D6.
   Binary truth: `flutter analyze` 0 errors (9 pre-existing infos untouched), targeted
   suites + provider/sync/database dirs green (317+), `check_l10n.sh` green, 0 regressions.
+  **Phase 2 (account clarity) also DONE by agent 2026-07-17:** 2.1 the Drive row names
+  the Google account holding the backup ("Connected · email" subtitle; captured on
+  connect, cached in the row's `configJson`, silent-read refresh —
+  `GDriveSetupService.connectedAccountEmail`), 2.2 on web the Drive row renders
+  `unavailable` ("Backup runs from your phone"), no tap handler. Widget tests use a
+  pure-override harness (live Drift streams flake widget tests — same class as the 9
+  pre-existing reds); service caching unit-tested; `flutter build web` green.
   **Next unticked: 1.7 owner 30-second device proof** — rebuild, Sync Status header shows
   the real pending count (~66), one Sync Now on Wi-Fi, Drive shows the full library,
-  Verify Integrity reports 67 OK (screenshot + Drive count in the tick). **Phase 2**
-  (2.1 Drive-row account email, 2.2 web unavailable affordance) is agent-runnable next;
+  Verify Integrity reports 67 OK (screenshot + Drive count in the tick).
   **Phase 3** stays owner-gated on design O1/O2.
 
 - **Change (owner-driven, parallel):** `add-dev-auth-and-sync-rehearsal` — de-risks the owner's Phase-M pass

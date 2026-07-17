@@ -43,6 +43,11 @@ class GDriveProvider extends CloudProvider {
   /// Stored folder ID from provider config — avoids repeated lookups.
   String? configFolderId;
 
+  /// Email of the Google account holding the backup, captured on interactive
+  /// authenticate — persisted to the provider row so the UI can always say
+  /// which account the videos live in (backup-account spec).
+  String? accountEmail;
+
   static const _folderName = 'Breakdex';
   static const _folderMimeType = 'application/vnd.google-apps.folder';
 
@@ -95,9 +100,10 @@ class GDriveProvider extends CloudProvider {
 
       _driveApi = await _buildDriveApi(_account!);
       await _ensureBreakdexFolder();
-      // Surface the resolved folder ID so setup can persist it (avoids a
-      // Drive lookup on every subsequent launch).
+      // Surface the resolved folder ID + account so setup can persist them
+      // (avoids a Drive lookup on every launch; names the backup account).
       configFolderId = _breakdexFolderId;
+      accountEmail = _account!.email;
       return true;
     } on Object catch (e) {
       debugPrint('[GDriveProvider] Auth failed: $e');

@@ -1274,6 +1274,14 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String setSyncGdriveConnectedAccount(String email) {
+    return 'Connected · $email';
+  }
+
+  @override
+  String get setSyncGdriveWebUnavailable => 'Backup runs from your phone';
+
+  @override
   String get setSyncGdriveConnected => 'Google Drive connected';
 
   @override

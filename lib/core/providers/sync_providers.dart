@@ -278,6 +278,18 @@ final gDriveSetupProvider = Provider<GDriveSetupService>((final ref) {
   );
 });
 
+/// Email of the Google account holding video backups — silent-read when a
+/// session is restorable, configJson cache offline; null when Drive isn't
+/// connected. Re-resolves whenever the provider rows change.
+final gdriveAccountEmailProvider = FutureProvider<String?>((final ref) async {
+  ref.watch(cloudProvidersProvider);
+  return ref.watch(gDriveSetupProvider).connectedAccountEmail();
+});
+
+/// True on Flutter Web. A provider (not a direct kIsWeb read) so widget tests
+/// can exercise the web-only degraded affordances on the VM.
+final isWebPlatformProvider = Provider<bool>((final _) => kIsWeb);
+
 // ---------------------------------------------------------------------------
 // Free Up Space — local storage management
 // ---------------------------------------------------------------------------

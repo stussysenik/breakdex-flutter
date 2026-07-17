@@ -2181,6 +2181,18 @@ abstract class AppLocalizations {
   /// **'Re-upload failed: {error}'**
   String setSyncReuploadFailed(String error);
 
+  /// Drive row subtitle naming the Google account that holds the video backup, so the user always knows where their videos live.
+  ///
+  /// In en, this message translates to:
+  /// **'Connected · {email}'**
+  String setSyncGdriveConnectedAccount(String email);
+
+  /// Drive row subtitle on web, where Google Drive video backup cannot be set up — the row renders unavailable instead of offering a sign-in that can only fail.
+  ///
+  /// In en, this message translates to:
+  /// **'Backup runs from your phone'**
+  String get setSyncGdriveWebUnavailable;
+
   /// Cloud-sync settings: snackbar confirming Google Drive was newly connected.
   ///
   /// In en, this message translates to:

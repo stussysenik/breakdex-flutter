@@ -40,11 +40,11 @@
 
 ## Phase 2 — Account clarity
 
-- [ ] 2.1 Drive row account email: surface the connected `GoogleSignInAccount.email`
+- [x] 2.1 Drive row account email: surface the connected `GoogleSignInAccount.email`
   (silent sign-in read; cache last-known in the provider row's `configJson` so the
   email renders offline too). Localized "Connected · {email}". Verify: widget test,
   analyze clean, l10n check green.
-- [ ] 2.2 Web affordance: on `kIsWeb`, Drive row renders `ProviderStatus.unavailable`
+- [x] 2.2 Web affordance: on `kIsWeb`, Drive row renders `ProviderStatus.unavailable`
   with reason copy ("backup runs from your phone"); no tap handler. Verify: widget test
   for web branch, `flutter build web` green.
 

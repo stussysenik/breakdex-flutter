@@ -1,23 +1,74 @@
 import 'dart:convert';
 
 import 'package:drift/drift.dart';
+import 'package:flutter/foundation.dart';
+import 'package:google_sign_in/google_sign_in.dart';
+import 'package:googleapis/drive/v3.dart' as drive;
 import 'package:uuid/uuid.dart';
 
 import '../database/database.dart';
 import '../database/daos/sync_providers_dao.dart';
 import 'providers/gdrive_provider.dart';
 
+/// Reads the connected Google account's email without UI (silent sign-in).
+/// Returns null when no cached session exists. Injectable for testing.
+typedef SilentEmailReader = Future<String?> Function();
+
 /// Orchestrates Google Drive setup via OAuth.
 ///
 /// Flow:
 /// 1. Trigger Google Sign-In with Drive file scope
 /// 2. Create/find "Breakdex" folder in user's Drive
-/// 3. Insert row into sync_providers table with folder ID in configJson
+/// 3. Insert row into sync_providers table with folder ID + account email in
+///    configJson
 /// 4. [cloudProvidersProvider] auto-rebuilds (watches DAO stream)
 class GDriveSetupService {
   final SyncProvidersDao syncProvidersDao;
+  final SilentEmailReader _silentEmail;
 
-  GDriveSetupService({required this.syncProvidersDao});
+  GDriveSetupService({
+    required this.syncProvidersDao,
+    final SilentEmailReader? silentEmail,
+  }) : _silentEmail = silentEmail ?? _defaultSilentEmail;
+
+  static Future<String?> _defaultSilentEmail() async {
+    if (kIsWeb || !GDriveProvider.isConfigured) return null;
+    try {
+      final account = await GoogleSignIn(
+        scopes: [drive.DriveApi.driveFileScope],
+      ).signInSilently();
+      return account?.email;
+    } on Object catch (_) {
+      return null;
+    }
+  }
+
+  /// The Google account holding the video backup: live silent-sign-in read
+  /// when a session is restorable, the configJson cache offline. Fresh reads
+  /// are written back to the row so the email keeps rendering offline.
+  /// Null when Drive isn't configured or the account was never captured.
+  Future<String?> connectedAccountEmail() async {
+    final row = await syncProvidersDao.getByType('gdrive');
+    if (row == null) return null;
+
+    var config = <String, dynamic>{};
+    if (row.configJson != null) {
+      try {
+        config = jsonDecode(row.configJson!) as Map<String, dynamic>;
+      } on Object catch (_) {}
+    }
+    final cached = config['accountEmail'] as String?;
+
+    final live = await _silentEmail();
+    if (live != null && live != cached) {
+      config['accountEmail'] = live;
+      await syncProvidersDao.updateProvider(
+        row.id,
+        SyncProvidersCompanion(configJson: Value(jsonEncode(config))),
+      );
+    }
+    return live ?? cached;
+  }
 
   /// Trigger Google Sign-In and configure Drive provider.
   ///
@@ -46,9 +97,11 @@ class GDriveSetupService {
       return GDriveSetupResult.cancelled;
     }
 
-    // Store the folder ID so we can skip lookup on future launches
+    // Store the folder ID (skips lookup on future launches) and the account
+    // email (renders offline in the Drive row).
     final configJson = jsonEncode({
       'folderId': provider.configFolderId,
+      'accountEmail': provider.accountEmail,
     });
 
     await syncProvidersDao.insertProvider(
