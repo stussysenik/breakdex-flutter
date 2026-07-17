@@ -13,7 +13,7 @@
   missing/unreadable. Green: resolve via `VideoPathResolver.toAbsolute()` before
   `computeHash` (also cover the genuinely-missing case staying missing). Verify:
   new tests green, `flutter analyze` clean.
-- [ ] 1.2 Sweep skip-not-abort. Red: two underprotected assets, first deferred by
+- [x] 1.2 Sweep skip-not-abort. Red: two underprotected assets, first deferred by
   policy (`waitForWifi`), second transferable — current sweep queues neither. Green:
   per-file skip with deferred tally; all-deferred still surfaces `waitingForWifi`.
   Verify: tests green, analyze clean.

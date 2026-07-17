@@ -154,7 +154,12 @@ class AssetSyncEngine {
       // Step 3: Retry failed operations with exponential backoff
       await _retryFailed(connectionType);
 
-      _setState(SyncEngineState.idle);
+      // Preserve a terminal waitingForWifi/paused verdict — idle would
+      // misreport a sweep that deferred everything as "all synced".
+      if (_state != SyncEngineState.waitingForWifi &&
+          _state != SyncEngineState.paused) {
+        _setState(SyncEngineState.idle);
+      }
     } on Object catch (e) {
       debugPrint('Sync cycle error: $e');
       _setState(SyncEngineState.error);
@@ -239,6 +244,11 @@ class AssetSyncEngine {
 
     _setState(SyncEngineState.uploading);
 
+    // Skip-not-abort: one deferred (over-policy) file must never shadow the
+    // transferable files behind it. Only an all-deferred sweep surfaces
+    // waitingForWifi; dataCapExceeded/offline files simply skip — canTransfer
+    // is per-file, so smaller files may still fit.
+    var deferred = 0;
     for (final asset in underprotected) {
       if (_state == SyncEngineState.paused) return;
 
@@ -247,12 +257,16 @@ class AssetSyncEngine {
         connectionType,
       );
       if (decision == TransferDecision.waitForWifi) {
-        _setState(SyncEngineState.waitingForWifi);
-        return;
+        deferred++;
+        continue;
       }
       if (decision != TransferDecision.allow) continue;
 
       await queueUpload(asset.contentHash);
+    }
+
+    if (deferred == underprotected.length) {
+      _setState(SyncEngineState.waitingForWifi);
     }
   }
 

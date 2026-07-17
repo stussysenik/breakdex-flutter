@@ -22,6 +22,9 @@ class _TrackedFakeProvider implements CloudProvider {
   bool shouldThrowOnUpload = false;
   bool shouldThrowOnDownload = false;
 
+  /// Test hook fired after each successful upload (e.g. to pause mid-drain).
+  void Function()? onUpload;
+
   final String _providerType;
   _TrackedFakeProvider({final String providerType = 'icloud'})
     : _providerType = providerType;
@@ -55,6 +58,7 @@ class _TrackedFakeProvider implements CloudProvider {
   }) async {
     if (shouldThrowOnUpload) throw Exception('Upload failed');
     uploadedLocalPaths.add(localPath);
+    onUpload?.call();
     return RemoteAsset(remotePath: remotePath, sizeBytes: 1024);
   }
 
@@ -91,15 +95,34 @@ class _TrackedFakeProvider implements CloudProvider {
   Future<({int totalBytes, int usedBytes})?> quota() async => null;
 }
 
+/// Policy that defers files over [deferOverBytes] to WiFi — the per-file
+/// deferral shape (oversized file on a capped link) the sweep must skip past.
+class _SizeGatedPolicy extends NetworkPolicy {
+  _SizeGatedPolicy(super.prefs, {required this.deferOverBytes});
+
+  final int deferOverBytes;
+
+  @override
+  TransferDecision canTransfer(
+    final int sizeBytes,
+    final ConnectionType connectionType, {
+    final TransferIntent intent = TransferIntent.backgroundSync,
+  }) {
+    if (sizeBytes > deferOverBytes) return TransferDecision.waitForWifi;
+    return super.canTransfer(sizeBytes, connectionType, intent: intent);
+  }
+}
+
 Future<void> _seedManifest(
   final AppDatabase db, {
   required final String hash,
   final String? localPath,
   final DateTime? deletedAt,
+  final int fileSizeBytes = 1024,
 }) async {
   await db.assetManifestDao.upsert(AssetManifestCompanion(
     contentHash: Value(hash),
-    fileSizeBytes: const Value(1024),
+    fileSizeBytes: Value(fileSizeBytes),
     sourceType: const Value('camera'),
     importedAt: Value(DateTime.now()),
     localPath: Value(localPath),
@@ -350,6 +373,90 @@ void main() {
 
       expect(fakeProvider.uploadedLocalPaths.isNotEmpty, isTrue);
       expect(s3Fake.uploadedLocalPaths.isNotEmpty, isTrue);
+    });
+  });
+
+  group('upload sweep (skip, not abort)', () {
+    test('deferred file does not block transferable files behind it', () async {
+      // Big file FIRST in the sweep, small transferable file behind it.
+      final bigFile = File('${tempDir.path}/big.mp4');
+      await bigFile.writeAsBytes(List.filled(64, 1));
+      final smallFile = File('${tempDir.path}/small.mp4');
+      await smallFile.writeAsBytes(List.filled(64, 2));
+
+      await _seedManifest(
+        db,
+        hash: 'big001',
+        localPath: 'big.mp4',
+        fileSizeBytes: 5000,
+      );
+      await _seedManifest(
+        db,
+        hash: 'small1',
+        localPath: 'small.mp4',
+        fileSizeBytes: 1024,
+      );
+
+      final gatedEngine = AssetSyncEngine(
+        manifestDao: db.assetManifestDao,
+        copiesDao: db.assetCopiesDao,
+        opsDao: db.syncOperationsDao,
+        hashService: AssetHashService(),
+        networkPolicy: _SizeGatedPolicy(
+          await SharedPreferences.getInstance(),
+          deferOverBytes: 2000,
+        ),
+        safetyGuard: SafetyGuard(db.assetManifestDao, db.assetCopiesDao),
+        providers: [fakeProvider],
+      );
+      addTearDown(gatedEngine.dispose);
+
+      await gatedEngine.runSyncCycle(ConnectionType.wifi);
+
+      expect(
+        fakeProvider.uploadedLocalPaths.any((final p) => p.endsWith('small.mp4')),
+        isTrue,
+        reason: 'the transferable file behind a deferred one must still upload',
+      );
+      expect(
+        fakeProvider.uploadedLocalPaths.any((final p) => p.endsWith('big.mp4')),
+        isFalse,
+        reason: 'the deferred file itself stays deferred',
+      );
+    });
+
+    test('all-deferred sweep still surfaces waitingForWifi', () async {
+      await _seedManifest(
+        db,
+        hash: 'big002',
+        localPath: 'big2.mp4',
+        fileSizeBytes: 5000,
+      );
+      await _seedManifest(
+        db,
+        hash: 'big003',
+        localPath: 'big3.mp4',
+        fileSizeBytes: 6000,
+      );
+
+      final gatedEngine = AssetSyncEngine(
+        manifestDao: db.assetManifestDao,
+        copiesDao: db.assetCopiesDao,
+        opsDao: db.syncOperationsDao,
+        hashService: AssetHashService(),
+        networkPolicy: _SizeGatedPolicy(
+          await SharedPreferences.getInstance(),
+          deferOverBytes: 2000,
+        ),
+        safetyGuard: SafetyGuard(db.assetManifestDao, db.assetCopiesDao),
+        providers: [fakeProvider],
+      );
+      addTearDown(gatedEngine.dispose);
+
+      await gatedEngine.runSyncCycle(ConnectionType.wifi);
+
+      expect(fakeProvider.uploadedLocalPaths, isEmpty);
+      expect(gatedEngine.state, SyncEngineState.waitingForWifi);
     });
   });
 
