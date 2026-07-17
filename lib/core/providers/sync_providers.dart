@@ -346,23 +346,37 @@ enum SyncHealth {
   noProviders,
 }
 
-/// Computed provider combining engine state + provider config → single health enum.
+/// Live count of assets still below the copy minimum — the persistent Drift
+/// truth behind sync health (design D1), independent of engine mood.
+final underprotectedCountProvider = StreamProvider<int>((final ref) {
+  return ref.watch(assetManifestDaoProvider).watchUnderprotectedCount();
+});
+
+/// Computed provider: provider config + engine state + persistent protection
+/// state → single health enum (design D1). The engine's progress stream only
+/// signals "busy right now"; the verdict `allSynced` is derived from the
+/// database count and can never appear while any live asset lacks a verified
+/// cloud copy — there is no unemitted-stream default.
 final syncHealthProvider = Provider<SyncHealth>((final ref) {
   final providers = ref.watch(cloudProvidersProvider).valueOrNull ?? [];
   if (providers.isEmpty) return SyncHealth.noProviders;
 
-  final progress = ref.watch(assetSyncProgressProvider).valueOrNull;
-  if (progress == null) return SyncHealth.allSynced;
+  final engineState = ref.watch(assetSyncProgressProvider).valueOrNull?.state;
+  if (engineState == asset_sync.SyncEngineState.uploading ||
+      engineState == asset_sync.SyncEngineState.downloading ||
+      engineState == asset_sync.SyncEngineState.hashing ||
+      engineState == asset_sync.SyncEngineState.verifying) {
+    return SyncHealth.syncing;
+  }
 
-  return switch (progress.state) {
-    asset_sync.SyncEngineState.error => SyncHealth.error,
-    asset_sync.SyncEngineState.uploading ||
-    asset_sync.SyncEngineState.downloading ||
-    asset_sync.SyncEngineState.hashing ||
-    asset_sync.SyncEngineState.verifying => SyncHealth.syncing,
-    _ when progress.pendingUploads > 0 => SyncHealth.pendingUpload,
-    _ => SyncHealth.allSynced,
-  };
+  final underprotected = ref.watch(underprotectedCountProvider).valueOrNull;
+  // Count not read from Drift yet — report "checking", never a defaulted
+  // allSynced.
+  if (underprotected == null) return SyncHealth.syncing;
+  if (underprotected > 0) return SyncHealth.pendingUpload;
+
+  if (engineState == asset_sync.SyncEngineState.error) return SyncHealth.error;
+  return SyncHealth.allSynced;
 });
 
 /// On-demand downloader for re-downloading freed videos from cloud.

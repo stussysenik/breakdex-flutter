@@ -20,7 +20,7 @@
 - [x] 1.3 Queue drain loop. Red: 5 queued ops, Wi-Fi (`maxConcurrent = 2`) — current
   cycle completes only 2. Green: batch loop until empty with pause check between
   batches (test pause interrupts drain). Verify: tests green, analyze clean.
-- [ ] 1.4 Honest health. Add `watchUnderprotectedCount()` to `AssetManifestDao`;
+- [x] 1.4 Honest health. Add `watchUnderprotectedCount()` to `AssetManifestDao`;
   `syncHealthProvider` computes from it per design D1 (busy → syncing, count>0 →
   pendingUpload, no unemitted-stream default). Show the pending count in the Video
   Backup section subtitle and Sync Status header (localized, ARB). Red: provider test

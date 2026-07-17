@@ -40,6 +40,19 @@ class AssetManifestDao extends DatabaseAccessor<AppDatabase>
           ))
           .get();
 
+  /// Watch the count of live assets below the copy minimum — the persistent
+  /// "how many videos still need backup" truth that drives sync health (D1).
+  Stream<int> watchUnderprotectedCount({final int minCopies = 2}) {
+    final count = assetManifest.contentHash.count();
+    final query = selectOnly(assetManifest)
+      ..addColumns([count])
+      ..where(
+        assetManifest.copyCount.isSmallerThanValue(minCopies) &
+            assetManifest.deletedAt.isNull(),
+      );
+    return query.map((final row) => row.read(count) ?? 0).watchSingle();
+  }
+
   /// All live assets that currently have a local file on disk. Used by the
   /// manual integrity check, which hashes everything rather than sampling.
   Future<List<AssetManifestData>> getLocalAssets() =>

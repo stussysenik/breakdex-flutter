@@ -41,6 +41,18 @@ class CloudSyncSection extends ConsumerWidget {
 
     final syncHealth = ref.watch(syncHealthProvider);
     final syncProgress = ref.watch(assetSyncProgressProvider).valueOrNull;
+    final pendingCount = ref.watch(underprotectedCountProvider).valueOrNull;
+
+    // Honest subtitle (D1): live engine label only while transferring;
+    // otherwise the persistent Drift count decides — "All synced" is a
+    // measurement, never a default.
+    final syncSubtitle = switch (syncHealth) {
+      SyncHealth.noProviders => null,
+      SyncHealth.syncing when syncProgress != null => syncProgress.statusLabel,
+      _ when pendingCount == null => l10n.setSyncChecking,
+      _ when pendingCount > 0 => l10n.setSyncPendingCount(pendingCount),
+      _ => l10n.setSyncAllSynced,
+    };
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -57,10 +69,10 @@ class CloudSyncSection extends ConsumerWidget {
             SyncHealthDot(health: syncHealth),
           ],
         ),
-        if (syncProgress != null && syncHealth != SyncHealth.noProviders) ...[
+        if (syncSubtitle != null) ...[
           const SizedBox(height: 4),
           Text(
-            syncProgress.statusLabel,
+            syncSubtitle,
             style: AppTypography.caption.copyWith(
               color: colorScheme.onSurface.withValues(alpha: 0.5),
             ),

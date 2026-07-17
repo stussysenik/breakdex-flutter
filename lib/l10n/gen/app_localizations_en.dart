@@ -1220,6 +1220,23 @@ class AppLocalizationsEn extends AppLocalizations {
   String get setSyncSectionHeader => 'VIDEO BACKUP';
 
   @override
+  String setSyncPendingCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count videos waiting to back up',
+      one: '1 video waiting to back up',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get setSyncAllSynced => 'All synced';
+
+  @override
+  String get setSyncChecking => 'Checking…';
+
+  @override
   String get setSyncProviderIcloudTitle => 'iCloud Drive';
 
   @override

@@ -854,6 +854,12 @@
 
   "setSyncSectionHeader": "VIDEO BACKUP",
   "@setSyncSectionHeader": { "description": "Cloud-sync settings panel: section header above the backup-provider list." },
+  "setSyncPendingCount": "{count, plural, one{1 video waiting to back up} other{{count} videos waiting to back up}}",
+  "@setSyncPendingCount": { "description": "Sync health: how many live videos still lack a verified cloud copy (Video Backup subtitle + Sync Status header). Computed from the database, never a default.", "placeholders": { "count": { "type": "int", "example": "66" } } },
+  "setSyncAllSynced": "All synced",
+  "@setSyncAllSynced": { "description": "Sync health: shown only when the database proves zero videos lack a verified cloud copy." },
+  "setSyncChecking": "Checking…",
+  "@setSyncChecking": { "description": "Sync health: transient label while the pending-backup count is still being read from the database." },
   "setSyncProviderIcloudTitle": "iCloud Drive",
   "@setSyncProviderIcloudTitle": { "description": "Cloud-sync settings: row title for the iCloud Drive backup provider." },
   "setSyncProviderGdriveTitle": "Google Drive",

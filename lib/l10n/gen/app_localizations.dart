@@ -2097,6 +2097,24 @@ abstract class AppLocalizations {
   /// **'VIDEO BACKUP'**
   String get setSyncSectionHeader;
 
+  /// Sync health: how many live videos still lack a verified cloud copy (Video Backup subtitle + Sync Status header). Computed from the database, never a default.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, one{1 video waiting to back up} other{{count} videos waiting to back up}}'**
+  String setSyncPendingCount(int count);
+
+  /// Sync health: shown only when the database proves zero videos lack a verified cloud copy.
+  ///
+  /// In en, this message translates to:
+  /// **'All synced'**
+  String get setSyncAllSynced;
+
+  /// Sync health: transient label while the pending-backup count is still being read from the database.
+  ///
+  /// In en, this message translates to:
+  /// **'Checking…'**
+  String get setSyncChecking;
+
   /// Cloud-sync settings: row title for the iCloud Drive backup provider.
   ///
   /// In en, this message translates to:

@@ -12,6 +12,7 @@ import '../../core/design/typography.dart';
 import '../../core/providers.dart';
 import '../../core/sync/asset_sync_engine.dart';
 import '../../core/sync/integrity_verifier.dart';
+import '../../l10n/gen/app_localizations.dart';
 import '../../shared/widgets/app_loader.dart';
 
 /// Sync status dashboard showing overall progress, active transfers,
@@ -42,6 +43,7 @@ class SyncStatusScreen extends ConsumerWidget {
           // Overall status card
           _StatusCard(
             syncProgress: syncProgress.valueOrNull ?? SyncProgress.idle,
+            pendingCount: ref.watch(underprotectedCountProvider).valueOrNull,
             colorScheme: colorScheme,
           ),
           const SizedBox(height: AppSpacing.lg),
@@ -325,16 +327,33 @@ class _IssueRow extends StatelessWidget {
 
 class _StatusCard extends StatelessWidget {
   final SyncProgress syncProgress;
+
+  /// Live Drift count of assets still lacking a verified cloud copy; null
+  /// while the first read is in flight.
+  final int? pendingCount;
   final ColorScheme colorScheme;
 
   const _StatusCard({
     required this.syncProgress,
+    required this.pendingCount,
     required this.colorScheme,
   });
 
   @override
   Widget build(final BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final isIdle = syncProgress.state == SyncEngineState.idle;
+    // Honest header (D1): an idle engine says nothing about protection — the
+    // persistent count decides. "All synced" only renders once the store
+    // proves zero pending; a silent stream shows "Checking…", never a default.
+    final allSynced = isIdle && pendingCount == 0;
+    final headerLabel = !isIdle
+        ? syncProgress.statusLabel
+        : switch (pendingCount) {
+            null => l10n.setSyncChecking,
+            0 => l10n.setSyncAllSynced,
+            final count => l10n.setSyncPendingCount(count),
+          };
 
     return Container(
       padding: const EdgeInsets.all(AppSpacing.lg),
@@ -342,7 +361,7 @@ class _StatusCard extends StatelessWidget {
         color: colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
         borderRadius: BorderRadius.circular(AppRadius.md),
         border: Border.all(
-          color: isIdle
+          color: allSynced
               ? AppColors.stateMastery.withValues(alpha: 0.3)
               : AppColors.accent.withValues(alpha: 0.3),
         ),
@@ -353,13 +372,13 @@ class _StatusCard extends StatelessWidget {
           Row(
             children: [
               Icon(
-                isIdle ? Icons.cloud_done_outlined : Icons.sync,
-                color: isIdle ? AppColors.stateMastery : AppColors.accent,
+                allSynced ? Icons.cloud_done_outlined : Icons.sync,
+                color: allSynced ? AppColors.stateMastery : AppColors.accent,
                 size: 24,
               ),
               const SizedBox(width: AppSpacing.sm),
               Text(
-                syncProgress.statusLabel,
+                headerLabel,
                 style: AppTypography.titleSmall.copyWith(
                   color: colorScheme.onSurface,
                 ),
