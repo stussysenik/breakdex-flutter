@@ -272,18 +272,31 @@ class AssetSyncEngine {
 
   Future<void> _processQueue(final ConnectionType connectionType) async {
     final maxConcurrent = _networkPolicy.maxConcurrentUploads(connectionType);
-    final queued = await _opsDao.getQueued(limit: maxConcurrent);
 
-    for (final op in queued) {
+    // Drain in maxConcurrent batches until the queue is empty — a 67-video
+    // library must upload in one cycle, not one batch per manual sync tap.
+    // Pause is honored between operations; a batch that executes nothing
+    // (every op deferred by policy) ends the drain so a stuck op can't spin.
+    while (true) {
       if (_state == SyncEngineState.paused) return;
 
-      final decision = _networkPolicy.canTransfer(
-        op.totalBytes,
-        connectionType,
-      );
-      if (decision != TransferDecision.allow) continue;
+      final queued = await _opsDao.getQueued(limit: maxConcurrent);
+      if (queued.isEmpty) return;
 
-      await _executeOperation(op, connectionType);
+      var executed = 0;
+      for (final op in queued) {
+        if (_state == SyncEngineState.paused) return;
+
+        final decision = _networkPolicy.canTransfer(
+          op.totalBytes,
+          connectionType,
+        );
+        if (decision != TransferDecision.allow) continue;
+
+        await _executeOperation(op, connectionType);
+        executed++;
+      }
+      if (executed == 0) return;
     }
   }
 

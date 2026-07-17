@@ -460,6 +460,47 @@ void main() {
     });
   });
 
+  group('queue drain loop', () {
+    Future<void> seedUploads(final int count) async {
+      for (var i = 0; i < count; i++) {
+        final file = File('${tempDir.path}/drain_$i.mp4');
+        await file.writeAsBytes(List.filled(64, i));
+        await _seedManifest(db, hash: 'drain$i', localPath: 'drain_$i.mp4');
+        await _seedOperation(
+          db,
+          id: 'op-drain-$i',
+          hash: 'drain$i',
+          operationType: 'upload',
+        );
+      }
+    }
+
+    test('one cycle drains the whole queue past maxConcurrent', () async {
+      // WiFi caps a batch at 2 concurrent uploads — 5 queued ops must still
+      // all complete in ONE cycle, not require ~3 manual sync taps.
+      await seedUploads(5);
+
+      await engine.runSyncCycle(ConnectionType.wifi);
+
+      expect(fakeProvider.uploadedLocalPaths.length, 5);
+      expect(await db.syncOperationsDao.getQueued(), isEmpty);
+    });
+
+    test('pause interrupts the drain between operations', () async {
+      await seedUploads(5);
+      fakeProvider.onUpload = () {
+        if (fakeProvider.uploadedLocalPaths.length == 2) engine.pause();
+      };
+
+      await engine.runSyncCycle(ConnectionType.wifi);
+
+      expect(fakeProvider.uploadedLocalPaths.length, 2);
+      expect((await db.syncOperationsDao.getQueued()).length, 3,
+          reason: 'paused mid-drain — remaining ops stay queued for resume');
+      expect(engine.state, SyncEngineState.paused);
+    });
+  });
+
   group('state management', () {
     test('pause and resume', () async {
       engine.pause();

@@ -17,7 +17,7 @@
   policy (`waitForWifi`), second transferable — current sweep queues neither. Green:
   per-file skip with deferred tally; all-deferred still surfaces `waitingForWifi`.
   Verify: tests green, analyze clean.
-- [ ] 1.3 Queue drain loop. Red: 5 queued ops, Wi-Fi (`maxConcurrent = 2`) — current
+- [x] 1.3 Queue drain loop. Red: 5 queued ops, Wi-Fi (`maxConcurrent = 2`) — current
   cycle completes only 2. Green: batch loop until empty with pause check between
   batches (test pause interrupts drain). Verify: tests green, analyze clean.
 - [ ] 1.4 Honest health. Add `watchUnderprotectedCount()` to `AssetManifestDao`;
