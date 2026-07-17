@@ -17,6 +17,7 @@ import '../../core/services/media_playback_coordinator.dart';
 import '../../core/services/settings_service.dart';
 import '../../core/services/video_path_resolver.dart';
 import '../../core/services/video_service.dart';
+import '../../core/utils/diagnostics.dart';
 import '../../core/utils/loading_state_machine.dart';
 import 'app_loader.dart';
 
@@ -915,6 +916,13 @@ class _RobustVideoPlayerState extends ConsumerState<RobustVideoPlayer> {
     // itself runs dart:io — build() renders the URL player or a visible "coming to
     // web" card instead. Only probe when there's a local file to stat.
     if (widget.videoUrl == null && supportsLocalVideoPlayback) _checkFile();
+    if (widget.videoUrl == null && !supportsLocalVideoPlayback) {
+      DiagnosticsLog.info(
+        'VideoWeb',
+        'degrading to "coming to web" card — no videoUrl supplied; '
+        'videoPath=${widget.videoPath} original=${widget.originalVideoName}',
+      );
+    }
   }
 
   @override

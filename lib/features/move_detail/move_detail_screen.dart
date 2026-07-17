@@ -22,6 +22,7 @@ import '../../core/services/video_path_resolver.dart';
 import '../../core/state_machines/move_detail/provider.dart';
 import '../../core/state_machines/move_detail/state.dart';
 import '../../core/state_machines/move_detail/event.dart';
+import '../../core/utils/diagnostics.dart';
 import '../../core/utils/share_sheet.dart';
 import '../../core/utils/transfer_rate_estimator.dart';
 import '../../shared/widgets/action_tile.dart';
@@ -60,6 +61,7 @@ class _MoveDetailScreenState extends ConsumerState<MoveDetailScreen> {
       ref.read(moveRepositoryProvider).getById(moveId).then((final m) {
         if (mounted) {
           debugPrint('[MoveDetailScreen] initState loaded move name="${m.name}" id=${m.id}');
+          if (!supportsLocalVideoPlayback) unawaited(_logWebVideoDiagnostics(m));
           ref.read(moveDetailProvider.notifier).init(m);
         }
       }).catchError((final Object err, final StackTrace stack) {
@@ -69,6 +71,40 @@ class _MoveDetailScreenState extends ConsumerState<MoveDetailScreen> {
         }
       });
     });
+  }
+
+  /// Web-only evidence trail for the pending Drive-URL resolver (web-first
+  /// 1.4's live half): one structured line per move open stating exactly what
+  /// this client knows about the move's video — the stored (native) path, the
+  /// content hash, and whether the local DB holds a manifest row / any cloud
+  /// copy pointers for it. Never throws; purely observational.
+  Future<void> _logWebVideoDiagnostics(final Move m) async {
+    try {
+      final hash = m.contentHash;
+      final db = ref.read(databaseProvider);
+      final manifest =
+          hash == null ? null : await db.assetManifestDao.getByHash(hash);
+      final copies =
+          hash == null ? const <AssetCopy>[] : await db.assetCopiesDao.getByHash(hash);
+      final copySummary = copies.isEmpty
+          ? 'NONE'
+          : copies
+              .map(
+                (final c) =>
+                    '${c.provider}:${c.status}${c.remotePath != null ? '(+remotePath)' : '(no remotePath)'}',
+              )
+              .join(', ');
+      DiagnosticsLog.info(
+        'VideoWeb',
+        'move "${m.name}": videoPath=${m.videoPath ?? 'NULL'} '
+        'originalVideoName=${m.originalVideoName ?? 'NULL'} '
+        'contentHash=${hash ?? 'NULL'} manifestRow=${manifest != null ? 'present(localPath=${manifest.localPath != null})' : 'ABSENT'} '
+        'cloudCopies=[$copySummary] → playable URL requires a gdrive copy '
+        'with a remotePath + Drive media resolver (pending)',
+      );
+    } on Object catch (e) {
+      DiagnosticsLog.warn('VideoWeb', 'video diagnostics failed: $e');
+    }
   }
 
   @override
@@ -595,6 +631,13 @@ class _VideoTechInfoRowsState extends State<_VideoTechInfoRows> {
   }
 
   Future<void> _probe() async {
+    // fileVideoController throws UnsupportedError synchronously on web (the
+    // probe reads a local file); thrown before the first await it escapes the
+    // catch below as an uncaught async error on every move-detail open.
+    if (!supportsLocalVideoPlayback) {
+      _failed = true; // pre-first-build, no setState needed
+      return;
+    }
     final controller = fileVideoController(widget.videoPath);
     try {
       await controller.setVolume(0);
