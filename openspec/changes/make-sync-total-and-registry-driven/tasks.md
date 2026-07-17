@@ -11,7 +11,9 @@
 
 - [ ] 1.1 Enumerate all Drift tables from `lib/core/database/database.dart` and classify
   each: `synced | localOnly(reason) | mustSync`. Ratify the draft table in `design.md` §D6;
-  resolve `ProvenanceEvents` explicitly (sync vs reasoned-local). Record as
+  resolve `ProvenanceEvents` explicitly (sync vs reasoned-local) **and ratify the
+  `AssetManifest`/`AssetCopies` field-split reclassification filed 2026-07-17 by
+  `fix-video-backup-truth-and-unify-account` 1.6 (§D6 note)**. Record as
   `docs/sync-coverage.md` — the human-readable ledger the totality test enforces.
 
 ## S2 — Totality test (the keystone; expected RED)

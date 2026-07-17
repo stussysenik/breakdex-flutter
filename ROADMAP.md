@@ -21,7 +21,25 @@
 > exactly the next unticked task, verify (binary truth), tick + update this block **in the
 > same commit**. Nothing else starts until this block says so.
 
-- **Change (active):** `add-dev-auth-and-sync-rehearsal` — de-risks the owner's Phase-M pass
+- **Change (active, owner-launched 2026-07-17):** `fix-video-backup-truth-and-unify-account`
+  — the video-backup pipeline was structurally dishonest (verifier reported 67/67 "missing"
+  on a relative-path bug; one deferred file aborted the whole upload sweep; a cycle drained
+  only one `maxConcurrent` batch; "All synced" was an unemitted-stream default). **Phase 1
+  (backup truth & throughput) DONE by agent 2026-07-17**, each fix red/green: 1.1 verifier
+  resolves relative paths (`9d6625c`), 1.2 sweep skips deferred files + all-deferred still
+  surfaces waitingForWifi (`5e7db70`), 1.3 queue drain loop (`4a57587`), 1.4 honest health
+  derived from `watchUnderprotectedCount()` in Drift + real pending count in Video Backup
+  subtitle and Sync Status header, localized (`3e7c2c5`), 1.5 dev diagnostics dump
+  (`5fd1380`), 1.6 field-split reclassification note filed in `make-sync-total`'s §D6.
+  Binary truth: `flutter analyze` 0 errors (9 pre-existing infos untouched), targeted
+  suites + provider/sync/database dirs green (317+), `check_l10n.sh` green, 0 regressions.
+  **Next unticked: 1.7 owner 30-second device proof** — rebuild, Sync Status header shows
+  the real pending count (~66), one Sync Now on Wi-Fi, Drive shows the full library,
+  Verify Integrity reports 67 OK (screenshot + Drive count in the tick). **Phase 2**
+  (2.1 Drive-row account email, 2.2 web unavailable affordance) is agent-runnable next;
+  **Phase 3** stays owner-gated on design O1/O2.
+
+- **Change (owner-driven, parallel):** `add-dev-auth-and-sync-rehearsal` — de-risks the owner's Phase-M pass
   by letting a dev **user #0** rehearse the whole sync ladder without Google OAuth. **Agent
   wave DONE 2026-07-14** (owner greenlit; slots ahead of Phase M). Committed on `main`
   (UNPUSHED): proposal (`8da0253`) → **Phase 1** dev email/password auth seam (flag

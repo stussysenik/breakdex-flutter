@@ -29,7 +29,7 @@
 - [x] 1.5 Dev diagnostics dump: dev-only action printing/logging manifest count,
   copies grouped by provider×status, operations grouped by status (reuse the existing
   dev panel surface). Verify: analyze clean; output shape asserted in one unit test.
-- [ ] 1.6 File the reclassification note in
+- [x] 1.6 File the reclassification note in
   `openspec/changes/make-sync-total-and-registry-driven/design.md` §D6:
   `AssetManifest`/`AssetCopies` move from `localOnly` to a field-split ruling
   (portable pointer fields sync; device-state fields stay local) — required for web

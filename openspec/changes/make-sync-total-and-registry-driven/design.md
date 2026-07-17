@@ -85,4 +85,15 @@ never lost — so shipping core sync first strands nothing.
 | `Achievements` | **mustSync** | earned state; loss = regression |
 | `BattleResults` | **mustSync** | user history |
 | `ProvenanceEvents` | **classify in S1** | audit trail — may be reasoned-local (regenerable) |
-| `SyncLog`, `SyncOperations`, `SyncProviders`, `AssetManifest`, `AssetCopies` | **localOnly** | device bookkeeping / local asset state |
+| `SyncLog`, `SyncOperations`, `SyncProviders` | **localOnly** | device bookkeeping |
+| `AssetManifest`, `AssetCopies` | **field-split** (was localOnly) | see note below |
+
+> **Reclassification note (2026-07-17, filed by `fix-video-backup-truth-and-unify-account`
+> task 1.6):** `AssetManifest`/`AssetCopies` move from `localOnly` to a **field-split**
+> ruling. The *portable pointer* fields (content hash, file size, source metadata, remote
+> copy provider/path/etag/verified-at) must sync — a signed-in web or fresh-device client
+> needs them to locate video bytes on Drive for playback/restore. The *device-state*
+> fields (`localPath`, `localVerifiedAt`, per-device copy rows for `provider = 'local'`,
+> transfer bookkeeping) stay local — they are meaningless off-device. Exact column split
+> is ratified in S1 alongside `ProvenanceEvents`. Required for web video playback
+> (pointer sync + URL resolver + Phase-3 token, specced separately).
