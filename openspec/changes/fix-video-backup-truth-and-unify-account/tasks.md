@@ -26,7 +26,7 @@
   Backup section subtitle and Sync Status header (localized, ARB). Red: provider test
   with progress-stream silent + 1 underprotected row currently yields `allSynced`.
   Verify: tests green, analyze clean, `scripts/check_l10n.sh` green.
-- [ ] 1.5 Dev diagnostics dump: dev-only action printing/logging manifest count,
+- [x] 1.5 Dev diagnostics dump: dev-only action printing/logging manifest count,
   copies grouped by provider×status, operations grouped by status (reuse the existing
   dev panel surface). Verify: analyze clean; output shape asserted in one unit test.
 - [ ] 1.6 File the reclassification note in

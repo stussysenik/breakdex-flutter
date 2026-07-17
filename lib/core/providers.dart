@@ -74,6 +74,7 @@ import 'sync/providers/gdrive_provider.dart';
 import 'sync/providers/firebase_storage_provider.dart';
 import 'sync/providers/icloud_provider.dart';
 import 'sync/safety_guard.dart';
+import 'sync/sync_diagnostics.dart';
 import 'sync/tombstone_cleaner.dart';
 import 'sync/manifest_serializer.dart';
 import 'sync/manifest_sync_service.dart';

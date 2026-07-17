@@ -129,6 +129,11 @@ final assetSyncProgressProvider = StreamProvider<asset_sync.SyncProgress>((
   return ref.watch(assetSyncEngineProvider).progressStream;
 });
 
+/// Dev-only diagnostics over the video-backup tables (manifest, copies, ops).
+final syncDiagnosticsProvider = Provider<SyncDiagnostics>((final ref) {
+  return SyncDiagnostics(ref.watch(databaseProvider));
+});
+
 /// Integrity verifier for periodic file re-hashing.
 final integrityVerifierProvider = Provider<IntegrityVerifier>((final ref) {
   return IntegrityVerifier(

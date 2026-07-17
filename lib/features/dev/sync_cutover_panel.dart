@@ -18,7 +18,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../../core/design/spacing.dart';
 import '../../core/design/typography.dart';
 import '../../core/providers.dart'
-    show fullBackfillServiceProvider, syncServiceProvider;
+    show fullBackfillServiceProvider, syncDiagnosticsProvider, syncServiceProvider;
 import '../../core/services/appwrite_auth_providers.dart';
 import '../../core/services/settings_service.dart' show sharedPreferencesProvider;
 import '../../core/services/sync_service.dart';
@@ -129,6 +129,8 @@ class _SyncCutoverPanelState extends ConsumerState<SyncCutoverPanel> {
             _BackfillSection(signedIn: user != null),
             const SizedBox(height: AppSpacing.md),
             _HydrateSection(signedIn: user != null),
+            const SizedBox(height: AppSpacing.md),
+            const _DiagnosticsSection(),
             const SizedBox(height: AppSpacing.md),
             _IdentityFooter(userId: user?.id, email: user?.email),
           ],
@@ -465,6 +467,98 @@ class _HydrateSectionState extends ConsumerState<_HydrateSection> {
             Text(
               'Failed: $_error',
               key: const ValueKey('pull-error'),
+              style: AppTypography.bodySmall.copyWith(color: colorScheme.error),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+/// Video-backup ground truth (task 1.5): dumps manifest counts, copies by
+/// provider×status, and operations by status — the state behind the sync
+/// health verdict, as inspectable evidence. Also debugPrints the report so it
+/// lands in captured device logs.
+class _DiagnosticsSection extends ConsumerStatefulWidget {
+  const _DiagnosticsSection();
+
+  @override
+  ConsumerState<_DiagnosticsSection> createState() =>
+      _DiagnosticsSectionState();
+}
+
+class _DiagnosticsSectionState extends ConsumerState<_DiagnosticsSection> {
+  bool _running = false;
+  String? _report;
+  String? _error;
+
+  Future<void> _run() async {
+    setState(() {
+      _running = true;
+      _error = null;
+    });
+    try {
+      final report = await ref.read(syncDiagnosticsProvider).dump();
+      debugPrint('[SyncDiagnostics]\n$report');
+      if (mounted) setState(() => _report = report);
+    } on Object catch (error) {
+      if (mounted) setState(() => _error = '$error');
+    } finally {
+      if (mounted) setState(() => _running = false);
+    }
+  }
+
+  @override
+  Widget build(final BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    return Container(
+      padding: const EdgeInsets.all(AppSpacing.md),
+      decoration: BoxDecoration(
+        color: colorScheme.surface,
+        borderRadius: BorderRadius.circular(AppRadius.md),
+        border: Border.all(color: colorScheme.outline.withValues(alpha: 0.18)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Video-backup diagnostics',
+            style: AppTypography.titleSmall.copyWith(
+              color: colorScheme.onSurface,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          const SizedBox(height: AppSpacing.sm),
+          Text(
+            'Manifest rows, copies by provider×status, operations by status — '
+            'the raw state behind the sync health label. Also printed to the '
+            'device log.',
+            style: AppTypography.bodySmall.copyWith(
+              color: colorScheme.secondary,
+            ),
+          ),
+          const SizedBox(height: AppSpacing.md),
+          FilledButton.tonal(
+            key: const ValueKey('sync-diagnostics-dump'),
+            onPressed: _running ? null : _run,
+            child: Text(_running ? 'Dumping…' : 'Dump backup state'),
+          ),
+          if (_report != null) ...[
+            const SizedBox(height: AppSpacing.sm),
+            Text(
+              _report!,
+              key: const ValueKey('sync-diagnostics-report'),
+              style: AppTypography.caption.copyWith(
+                color: colorScheme.onSurface,
+              ),
+            ),
+          ],
+          if (_error != null) ...[
+            const SizedBox(height: AppSpacing.sm),
+            Text(
+              'Failed: $_error',
+              key: const ValueKey('sync-diagnostics-error'),
               style: AppTypography.bodySmall.copyWith(color: colorScheme.error),
             ),
           ],
