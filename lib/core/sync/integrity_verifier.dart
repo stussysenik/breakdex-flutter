@@ -5,6 +5,7 @@ import 'package:flutter/foundation.dart';
 import '../database/database.dart';
 import '../database/daos/asset_copies_dao.dart';
 import '../database/daos/asset_manifest_dao.dart';
+import '../services/video_path_resolver.dart';
 import 'asset_hash_service.dart';
 
 /// Why a single file failed verification.
@@ -147,9 +148,12 @@ class IntegrityVerifier {
         continue;
       }
 
+      // Manifest paths are stored relative (v10+); resolve exactly like the
+      // uploader does or every check throws PathNotFoundException.
       String actualHash;
       try {
-        actualHash = await _hashService.computeHash(localPath);
+        actualHash =
+            await _hashService.computeHash(VideoPathResolver.toAbsolute(localPath));
       } on Object catch (e) {
         debugPrint('Integrity check error for ${asset.contentHash}: $e');
         issues.add(IntegrityIssue(

@@ -2,6 +2,7 @@ import 'dart:io';
 import 'dart:math';
 
 import 'package:breakdex/core/database/database.dart';
+import 'package:breakdex/core/services/video_path_resolver.dart';
 import 'package:breakdex/core/sync/asset_hash_service.dart';
 import 'package:breakdex/core/sync/integrity_verifier.dart';
 import 'package:drift/drift.dart';
@@ -12,14 +13,20 @@ import '../../helpers/test_database.dart';
 void main() {
   late AppDatabase db;
   late AssetHashService hashService;
+  late Directory docsDir;
 
   setUp(() {
     db = createTestDatabase();
     hashService = AssetHashService();
+    docsDir = Directory.systemTemp.createTempSync('verify_docs_');
+    VideoPathResolver.docsPathOverride = docsDir.path;
   });
 
   tearDown(() async {
     await db.close();
+    try {
+      docsDir.deleteSync(recursive: true);
+    } on Object catch (_) {}
   });
 
   /// Insert a manifest entry with a known hash and local path.
@@ -225,6 +232,53 @@ void main() {
       expect(healed, 1);
       final localCopy = await db.assetCopiesDao.getLocalCopy('h1');
       expect(localCopy?.status, 'failed');
+    });
+
+    test('resolves relative manifest paths before hashing (v10+ schema)',
+        () async {
+      final verifier = IntegrityVerifier(
+        db.assetManifestDao,
+        db.assetCopiesDao,
+        hashService,
+      );
+
+      // v10+ stores paths RELATIVE to the documents dir; the verifier must
+      // resolve them the same way the uploader does before hashing.
+      const relativePath = 'Moves/Default/clip.mp4';
+      final file = File('${docsDir.path}/$relativePath')
+        ..createSync(recursive: true)
+        ..writeAsBytesSync([1, 2, 3, 4, 5]);
+      final realHash = await hashService.computeHash(file.path);
+
+      await seedManifest(db, hash: realHash, localPath: relativePath);
+      await seedLocalCopy(db, hash: realHash);
+
+      final report = await verifier.verify(checkAll: true, heal: false);
+
+      expect(report.filesChecked, 1);
+      expect(report.filesOk, 1,
+          reason: 'a healthy file behind a relative path must verify OK');
+      expect(report.allGood, isTrue);
+    });
+
+    test('genuinely missing relative path is still reported missing',
+        () async {
+      final verifier = IntegrityVerifier(
+        db.assetManifestDao,
+        db.assetCopiesDao,
+        hashService,
+      );
+
+      await seedManifest(db,
+          hash: 'b' * 64, localPath: 'Moves/Default/gone.mp4');
+      await seedLocalCopy(db, hash: 'b' * 64);
+
+      final report = await verifier.verify(checkAll: true, heal: false);
+
+      expect(report.filesChecked, 1);
+      expect(report.filesOk, 0);
+      expect(report.filesMissing, 1);
+      expect(report.allGood, isFalse);
     });
 
     test('counts null localPath as filesMissing', () {
