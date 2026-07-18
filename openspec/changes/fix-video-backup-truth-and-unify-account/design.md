@@ -197,6 +197,25 @@ candidate query to include archived entities) or genuinely deleted (classificati
 correct). Terminal is a stronger claim than retryable; it must not be reached by a query
 gap.
 
+**Shipped 2026-07-19 (4.4), with one ruling the text above did not state: the verdict is
+revocable, and revocation is automatic.** D11's lesson applied forward — the 22 "gone"
+videos sat in quarantine all along, so "bytes nowhere" is always a claim about *the paths
+we knew to check*, never about the universe. A permanent terminal flag would be a silent
+soft-delete of any video that later comes back (restore, re-import): the sweep would skip
+it forever and nobody would know. Ruling: terminal means "nowhere as of the last known
+path"; any writer that re-homes bytes revokes it in the same operation (the 1.8 rule,
+extended from paths to verdicts). Two revocation sites exist today —
+`OrphanRestoreService.restore()` and `VideoImportSyncHook.onVideoImported()` — both via
+`SyncOperationsDao.clearTerminal`, which deletes the terminal rows so the asset re-enters
+the sweep as ordinary underprotected. Mechanics: `markTerminal` is a verdict, not an
+attempt (retry budget untouched); `queueUpload` checks `hasTerminal` before inserting,
+which is the re-queue-site visibility the correction above demanded; the second-cycle red
+proved the old sweep re-inserted a fresh op. The blind-spot check resolved during 4.7/4.0:
+terminal is reachable only after lane 3's sandbox hash scan misses, so no query gap can
+produce it. One deliberate leftover: 4.5's header bucket still reads "keeps failing" for
+terminal assets — now *under*-claiming rather than lying. Earning "will not retry" in the
+ARB copy is cheap and safe now; folded into 4.10's surface pass.
+
 ## D10 — Hash is identity, path is hint: the sandbox-scan rescue lane
 
 **Ground truth (2026-07-19 device forensics, answers 4.0):** the per-asset forensics run

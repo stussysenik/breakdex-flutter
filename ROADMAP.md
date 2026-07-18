@@ -144,10 +144,21 @@
   registry before quarantining: manifest-known files stay put for the engine's heal
   lane 3; only genuinely unknown files quarantine. Red proven by stash. 4 tests —
   first-ever for `StorageJanitor`. Suites 706 green (sync+db+services), analyze clean.
+  **4.4 DONE 2026-07-19** — the bytes-nowhere verdict: all three heal lanes exhausted
+  (now including a null stored path, previously an unhealable insta-fail) →
+  `'terminal'` op status, budget untouched, and `queueUpload` consults it — closing
+  D9's re-queue hole (second-cycle red proven). **Ruling (D9 addendum): terminal is
+  revocable-automatic** — restore and re-import `clearTerminal` when bytes re-home,
+  because a permanent verdict is a silent soft-delete (D11's lesson forward). The
+  classifier's `isTerminal` now means the verdict, not an exhausted budget; 4.5's
+  "keeps failing" copy under-claims for terminal assets and its "will not retry"
+  upgrade folds into 4.10. Suites 710 green (sync+db+services) + 15 settings widgets,
+  analyze 0 errors.
   **Next: owner device run** — DEV_SYNC_PANEL build → "Restore quarantined orphans" →
   expect 22 restored, unresolvable 0, next sweep uploads them (that evidence also
   completes 4.8's tick). Then agent-runnable **4.10** (tombstone fallback + stale-op
-  cleanup) and 4.4; 3.2 also agent-runnable (console-cookie recipe). 4.6 owner-gated.
+  cleanup + terminal ARB copy); 3.2 also agent-runnable (console-cookie recipe).
+  4.6 owner-gated.
   **Also unticked:** 1.7 owner 30-second device proof.
   **New sibling change (2026-07-19, strict-valid): `humanize-video-surfaces-and-gate-release`**
   — Phase 1 picker collapse (In Breakdex / Import; sequenced after 4.7), Phase 2 human

@@ -186,6 +186,18 @@ class AssetSyncEngine {
       );
       if (alreadyExists) continue;
 
+      // A standing terminal verdict (bytes provably nowhere, design D9) is
+      // not re-litigated by the sweep — `operationExists` only dedupes
+      // against queued/in_progress, which is exactly how failed assets used
+      // to be re-queued forever. Revoked by `clearTerminal` when bytes
+      // reappear.
+      final isTerminal = await _opsDao.hasTerminal(
+        contentHash: contentHash,
+        providerId: provider.providerType,
+        operationType: 'upload',
+      );
+      if (isTerminal) continue;
+
       final manifest = await _manifestDao.getByHash(contentHash);
       if (manifest == null) continue;
 
@@ -201,6 +213,11 @@ class AssetSyncEngine {
       );
     }
   }
+
+  /// Revoke a terminal verdict for an asset whose bytes just reappeared —
+  /// see [SyncOperationsDao.clearTerminal].
+  Future<void> clearTerminalVerdict(final String contentHash) =>
+      _opsDao.clearTerminal(contentHash);
 
   /// Queue a download for an asset from the first available provider.
   Future<void> queueDownload(final String contentHash) async {
@@ -452,6 +469,11 @@ class AssetSyncEngine {
     await _opsDao.markFailed(op.id, message);
   }
 
+  Future<void> _terminal(final SyncOperation op, final String message) async {
+    debugPrint('[VideoBackup] op ${_opLabel(op)} TERMINAL: $message');
+    await _opsDao.markTerminal(op.id, message);
+  }
+
   /// Short traceable label: `upload:gdrive:3f2a9c1e`.
   static String _opLabel(final SyncOperation op) {
     final hash = op.contentHash.length > 8
@@ -466,24 +488,35 @@ class AssetSyncEngine {
     final ConnectionType connectionType,
   ) async {
     final manifest = await _manifestDao.getByHash(op.contentHash);
-    if (manifest?.localPath == null) {
-      await _fail(op, 'No local file to upload');
+    if (manifest == null) {
+      // Bookkeeping anomaly, not proven byte absence — stays retryable.
+      await _fail(op, 'No manifest row for asset');
       return;
     }
 
     final remotePath = 'breakdex/${op.contentHash}';
     final token = CancellationToken();
-    var localPath = VideoPathResolver.toAbsolute(manifest!.localPath!);
+    var localPath = manifest.localPath == null
+        ? null
+        : VideoPathResolver.toAbsolute(manifest.localPath!);
 
     // The manifest's localPath is only written at import; renames and category
     // moves relocate the file and update the owning move/combo, not the
     // manifest. A stale path used to reach the provider as a missing file
     // (surfacing as a cryptic "negative content length" from Drive) — instead,
-    // re-derive from the owning entities and persist the healed path.
-    if (!await File(localPath).exists()) {
+    // re-derive from the owning entities and persist the healed path. A null
+    // stored path goes through the same lanes: lanes 2 and 3 never needed it.
+    if (localPath == null || !await File(localPath).exists()) {
       final healed = await _healStaleLocalPath(op.contentHash);
       if (healed == null) {
-        await _fail(op, 'Local file missing: ${manifest.localPath}');
+        // Every lane exhausted — stored path, owners, sandbox hash scan.
+        // This is the ONLY path to a terminal verdict: absence positively
+        // proven, never inferred from an error (design D9).
+        await _terminal(
+          op,
+          'Bytes not found: stored path, owning entities, and sandbox '
+          'scan all missed (was ${manifest.localPath ?? 'unset'})',
+        );
         return;
       }
       localPath = healed;

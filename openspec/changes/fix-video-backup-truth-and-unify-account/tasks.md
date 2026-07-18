@@ -167,7 +167,7 @@
   via `findMissingLocalCopies()` — the owner can answer 4.0's first half from the dump
   alone. Verify: 6 new tests green; sync+database+dev **324 green / 0 failures**; full
   suite **994 green, 9 pre-existing reds, 0 regressions**; `flutter analyze` 0 errors.
-- [ ] 4.4 Terminal vs retryable failure (design D9). ~~Gated on 4.0's second answer~~
+- [x] 4.4 Terminal vs retryable failure (design D9). ~~Gated on 4.0's second answer~~
   4.0 refuted the archived-blind-spot hypothesis (owners=0 across the board) — the gate
   is now **4.7**: the sandbox-rescue lane must land first so "terminal" is only reachable
   after a hash scan of the sandbox comes up empty, never by a path/query gap. Red: an upload whose file is
@@ -182,6 +182,21 @@
   The terminal verdict must be visible at the re-queue site (or held on the manifest),
   or the sweep undoes it. Red must cover that second cycle, not just the first.
   Verify: both failure classes tested, retry-lane suite green, analyze clean.
+  **DONE 2026-07-19.** Bytes-nowhere (all three heal lanes exhausted, including a null
+  stored path — previously an unhealable insta-fail) → `markTerminal`: distinct
+  `'terminal'` status, retry budget untouched; `queueUpload` checks `hasTerminal` before
+  inserting, closing the re-queue hole. **Ruling added during implementation (D9
+  addendum): the verdict is revocable-automatic** — `clearTerminal` fires from
+  `OrphanRestoreService.restore()` and `VideoImportSyncHook` when bytes re-home (D11's
+  lesson: permanent terminal = silent soft-delete of a recoverable video). Classifier
+  honesty rode along: `isTerminal` now means the verdict, not an exhausted budget (an
+  exhausted `failed` op IS re-swept), and `_latestFailed`/diagnostics read `'terminal'`
+  as failure-class so a terminal asset can never fall through to "pending". Red proven:
+  second-cycle re-queue test red pre-fix (fresh op inserted), classifier test red
+  (terminal fell to pending), restore-revocation test red (verdict survived restore).
+  Green: 6 new/rewritten tests; sync+db+services **710 green / 0 failures**; settings
+  widget suite 15 green; `flutter analyze` 0 errors. Leftover recorded in D9: the
+  "keeps failing" ARB copy may now say "will not retry" honestly — folded into 4.10.
 - [x] 4.5 Unbackupable and in-flight visibility (spec: last two requirements). Sync
   Status separates the counts — uploading / waiting / retrying / keeps-failing /
   backed up — via a pure `AssetSyncTally.from()` folded over the same rows the list

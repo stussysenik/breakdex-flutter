@@ -46,7 +46,7 @@ class SyncDiagnostics {
     // Failed ops grouped by error message — the WHY behind a stuck sweep.
     final errorCounts = <String, int>{};
     for (final op in ops) {
-      if (op.status != 'failed') continue;
+      if (op.status != 'failed' && op.status != 'terminal') continue;
       final error = op.errorMessage ?? '(no error message)';
       errorCounts.update(error, (final v) => v + 1, ifAbsent: () => 1);
     }

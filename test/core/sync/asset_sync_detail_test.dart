@@ -180,23 +180,30 @@ void main() {
       expect(detail.errorMessage, 'real error');
     });
 
-    test('retries exhausted marks the failure terminal', () {
-      final retrying = _only(buildAssetSyncDetails(
-        manifests: [_manifest(hash: 'h1')],
-        copies: const [],
-        operations: [
-          _op(hash: 'h1', status: 'failed', retryCount: 1, maxRetries: 3),
-        ],
-      ));
-      expect(retrying.isTerminal, isFalse);
-
-      final terminal = _only(buildAssetSyncDetails(
+    test('only the terminal verdict marks a failure terminal (4.4)', () {
+      // An exhausted budget is NOT terminal: the next sweep inserts a fresh
+      // operation with the count reset, so this asset will be retried.
+      final exhausted = _only(buildAssetSyncDetails(
         manifests: [_manifest(hash: 'h1')],
         copies: const [],
         operations: [
           _op(hash: 'h1', status: 'failed', retryCount: 3, maxRetries: 3),
         ],
       ));
+      expect(exhausted.status, AssetSyncStatus.failed);
+      expect(exhausted.isTerminal, isFalse);
+
+      // The engine's bytes-nowhere verdict is — and it must still read as a
+      // failure, never fall through to pending.
+      final terminal = _only(buildAssetSyncDetails(
+        manifests: [_manifest(hash: 'h1')],
+        copies: const [],
+        operations: [
+          _op(hash: 'h1', status: 'terminal', errorMessage: 'Bytes not found'),
+        ],
+      ));
+      expect(terminal.status, AssetSyncStatus.failed);
+      expect(terminal.errorMessage, 'Bytes not found');
       expect(terminal.isTerminal, isTrue);
     });
 

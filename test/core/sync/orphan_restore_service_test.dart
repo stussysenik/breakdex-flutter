@@ -149,4 +149,28 @@ void main() {
     expect(report.bytesNotFound, ['deadbeefcafe']);
     expect(await db.movesDao.getAll(), isEmpty);
   });
+
+  test('restore revokes a terminal verdict — new bytes are new evidence (4.4)',
+      () async {
+    final hash = await quarantine('Windmill', List.filled(64, 9));
+    await seedManifest(hash, localPath: 'Moves/Old/gone.mp4');
+    // The engine ruled the bytes nowhere before quarantine rescue existed.
+    await db.syncOperationsDao.insertOperation(SyncOperationsCompanion(
+      id: const Value('op-terminal'),
+      contentHash: Value(hash),
+      providerId: const Value('gdrive'),
+      operationType: const Value('upload'),
+      status: const Value('terminal'),
+      createdAt: Value(DateTime.now()),
+    ));
+
+    final report = await service.restore();
+
+    expect(report.restored, hasLength(1));
+    final ops = await (db.select(db.syncOperations)
+          ..where((final t) => t.contentHash.equals(hash)))
+        .get();
+    expect(ops.where((final o) => o.status == 'terminal'), isEmpty,
+        reason: 'a restored asset must re-enter the upload sweep');
+  });
 }

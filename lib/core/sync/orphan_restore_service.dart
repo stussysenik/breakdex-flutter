@@ -112,6 +112,10 @@ class OrphanRestoreService {
           videoFileSize: Value(BigInt.from(manifest.fileSizeBytes)),
         ),
       );
+      // Revoke any terminal verdict: it meant "bytes nowhere as of the last
+      // known path", and this restore just proved otherwise (4.4). Without
+      // this, a restored video would stay invisible to the upload sweep.
+      await _db.syncOperationsDao.clearTerminal(hash);
       report.restored.add('$hash → $destRelative');
     }
 

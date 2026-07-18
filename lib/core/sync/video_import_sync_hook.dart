@@ -105,7 +105,10 @@ class VideoImportSyncHook {
       ));
       debugPrint('[VideoImportSyncHook] Move linked to hash');
 
-      // Step 6: Queue uploads for all enabled cloud providers
+      // Step 6: Queue uploads for all enabled cloud providers. A re-import
+      // of a previously bytes-nowhere asset is new evidence — revoke any
+      // terminal verdict first, or queueUpload would silently skip it (4.4).
+      await _syncEngine.clearTerminalVerdict(contentHash);
       await _syncEngine.queueUpload(contentHash);
       debugPrint('[VideoImportSyncHook] Upload queued');
 

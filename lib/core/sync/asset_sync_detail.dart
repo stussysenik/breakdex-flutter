@@ -50,8 +50,9 @@ class AssetSyncDetail {
   /// [AssetSyncStatus.failed].
   final String? errorMessage;
 
-  /// The failed operation has exhausted its retries — the engine will not try
-  /// again on its own.
+  /// The engine ruled the bytes nowhere (op status 'terminal', design D9):
+  /// every heal lane missed, the sweep will not re-queue it, and only a
+  /// restore that re-homes the bytes revokes the verdict.
   final bool isTerminal;
 
   final List<AssetCopyState> copies;
@@ -91,15 +92,9 @@ class AssetSyncTally {
   /// The last attempt failed and the engine will try that operation again.
   final int retrying;
 
-  /// The last attempt burned its whole retry budget.
-  ///
-  /// Deliberately *not* named "will never be retried". The operation is
-  /// finished, but the next sweep calls `queueUpload` for any asset still
-  /// under the copy minimum, and `operationExists` only dedupes against
-  /// `queued`/`in_progress` — so a fresh operation is inserted with
-  /// `retryCount` back at zero. The budget is bounded per operation and
-  /// unbounded per asset. Making that promise true is task 4.4; until then
-  /// this bucket means "keeps failing", which is what the user sees.
+  /// The engine ruled the bytes nowhere (terminal verdict, task 4.4): every
+  /// heal lane missed, and the sweep skips the asset rather than re-queueing
+  /// it. Revoked when a restore re-homes the bytes.
   final int unbackupable;
 
   /// A cloud provider holds a verified copy.
@@ -213,9 +208,11 @@ List<AssetSyncDetail> buildAssetSyncDetails({
       transferredBytes: active?.bytesTransferred ?? 0,
       errorMessage:
           status == AssetSyncStatus.failed ? failed?.errorMessage : null,
-      isTerminal: status == AssetSyncStatus.failed &&
-          failed != null &&
-          failed.retryCount >= failed.maxRetries,
+      // Terminal is the engine's bytes-nowhere verdict (op status
+      // 'terminal'), not an exhausted budget — an exhausted 'failed' op is
+      // re-swept with a fresh operation, so it WILL be retried (task 4.4).
+      isTerminal:
+          status == AssetSyncStatus.failed && failed?.status == 'terminal',
       copies: [
         for (final c in assetCopies)
           AssetCopyState(provider: c.provider, status: c.status),
@@ -243,7 +240,7 @@ int _rank(final AssetSyncStatus status) => switch (status) {
 SyncOperation? _latestFailed(final List<SyncOperation> ops) {
   SyncOperation? latest;
   for (final op in ops) {
-    if (op.status != 'failed') continue;
+    if (op.status != 'failed' && op.status != 'terminal') continue;
     if (latest == null ||
         (op.completedAt ?? op.createdAt)
             .isAfter(latest.completedAt ?? latest.createdAt)) {

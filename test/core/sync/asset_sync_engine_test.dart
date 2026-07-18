@@ -580,8 +580,68 @@ void main() {
       final op = await (db.select(db.syncOperations)
             ..where((final t) => t.id.equals('op-gone')))
           .getSingle();
+      expect(op.status, 'terminal');
+      expect(op.errorMessage, contains('Bytes not found'));
+      // The retry budget is untouched — terminal is a verdict, not an attempt.
+      expect(op.retryCount, 0);
+    });
+  });
+
+  group('terminal verdict (design D9, task 4.4)', () {
+    const hash = 'gonehash01';
+
+    /// D9's core defect: `operationExists` dedupes only against
+    /// queued/in_progress, so each sweep re-inserted a fresh op with the
+    /// retry budget reset — bounded per operation, unbounded per asset. The
+    /// red must cover the SECOND cycle, where the sweep used to undo the
+    /// verdict.
+    test('terminal asset is not re-queued by the next sweep', () async {
+      await _seedManifest(db, hash: hash, localPath: 'Moves/Old/gone.mp4');
+      await _seedOperation(db, id: 'op-t1', hash: hash, operationType: 'upload');
+
+      await engine.runSyncCycle(ConnectionType.wifi);
+      await engine.runSyncCycle(ConnectionType.wifi);
+
+      final ops = await (db.select(db.syncOperations)
+            ..where((final t) => t.contentHash.equals(hash)))
+          .get();
+      expect(ops, hasLength(1));
+      expect(ops.single.status, 'terminal');
+      expect(fakeProvider.uploadedLocalPaths, isEmpty);
+    });
+
+    test('provider failure stays retryable, never terminal', () async {
+      final file = File('${tempDir.path}/present.mp4');
+      await file.writeAsBytes(List.filled(64, 1));
+      await _seedManifest(db, hash: hash, localPath: 'present.mp4');
+      await _seedOperation(db, id: 'op-t2', hash: hash, operationType: 'upload');
+      fakeProvider.shouldThrowOnUpload = true;
+
+      await engine.runSyncCycle(ConnectionType.wifi);
+
+      final op = await (db.select(db.syncOperations)
+            ..where((final t) => t.id.equals('op-t2')))
+          .getSingle();
       expect(op.status, 'failed');
-      expect(op.errorMessage, contains('Local file missing'));
+    });
+
+    /// D11's lesson applied forward: the 22 "gone" videos were in quarantine
+    /// all along. Terminal means "nowhere as of the last known path" — new
+    /// bytes are new evidence, and the verdict must not outlive it.
+    test('clearTerminal revives the asset for the next sweep', () async {
+      await _seedManifest(db, hash: hash, localPath: 'Moves/Old/gone.mp4');
+      await _seedOperation(db, id: 'op-t3', hash: hash, operationType: 'upload');
+      await engine.runSyncCycle(ConnectionType.wifi);
+
+      // Bytes come back (a restore re-homes them) and the verdict is cleared.
+      final restored = File('${tempDir.path}/Moves/Old/gone.mp4');
+      restored.parent.createSync(recursive: true);
+      await restored.writeAsBytes(List.filled(64, 2));
+      await db.syncOperationsDao.clearTerminal(hash);
+
+      await engine.runSyncCycle(ConnectionType.wifi);
+
+      expect(fakeProvider.uploadedLocalPaths, [restored.path]);
     });
   });
 
