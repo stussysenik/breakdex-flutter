@@ -2403,6 +2403,18 @@ abstract class AppLocalizations {
   /// **'{combos} have no filmed date — showing most recently added.'**
   String libraryFilmedFallbackForCombos(String combos);
 
+  /// Library month-section header for the calendar month the user is currently in.
+  ///
+  /// In en, this message translates to:
+  /// **'This month'**
+  String get libraryMonthThis;
+
+  /// Library month-section header for the calendar month immediately before the current one.
+  ///
+  /// In en, this message translates to:
+  /// **'Last month'**
+  String get libraryMonthLast;
+
   /// Settings Backup & Reset: generic error snackbar when an async data action throws.
   ///
   /// In en, this message translates to:

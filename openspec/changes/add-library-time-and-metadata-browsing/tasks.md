@@ -90,11 +90,40 @@
   the practiced chain reds the ordering test. `flutter analyze` 0 errors (9 pre-existing
   infos), `scripts/check_l10n.sh` green, suite **1065 green / 9 pre-existing reds / 0
   regressions**.
-- [ ] 2.4 Month grouping for date sorts in scan and glance modes; no grouping in study
+- [x] 2.4 Month grouping for date sorts in scan and glance modes; no grouping in study
   mode or under A–Z (design D3). Relative labels for the current and prior month,
   absolute beyond. Verify: unit tests on the bucketing boundaries (month edge, year edge,
   local-time correctness), widget test asserting headers appear and disappear with the
   sort. Localized.
+  **DONE 2026-07-18.** Three pure functions in `lib/core/models/library_month_sections.dart`
+  — `libraryMonthSections` (contiguous-run split, order preserved byte-for-byte, so
+  grouping is a *projection* of the sort and can never re-order it),
+  `libraryMonthLabel` (month-ordinal comparison, so the December→January edge is not a
+  special case), and `libraryGroupsByMonth` — plus `LibraryMonthHeader` and the
+  `librarySectionedSliver` wrapper in the screen.
+  **The sliver shape is what kept this cheap.** Rather than interleaving headers into a
+  flattened item list (which would have moved `_MoveRow`'s stagger index and every
+  builder signature with it), the wrapper applies the caller's *existing* per-mode sliver
+  builder once per section and joins them with `SliverMainAxisGroup`. Grid headers fall
+  out as full-width rows for free, and no row/cell/grid widget changed at all.
+  **Two things the executor should not have to re-derive.** Bucketing normalizes with
+  `.toLocal()` — Drift hands back UTC for some columns, and bucketing the raw instant
+  puts a late-evening capture in the following month for anyone west of UTC. That
+  normalization has a test, but it is honestly **vacuous under `TZ=UTC`** (the two inputs
+  are then the same wall clock), so it discriminates only off UTC; it is there because
+  the behavior is load-bearing in production, not because it is provable everywhere.
+  Second: a *future* month (a wrong device clock stamping a filmed date ahead) is
+  absolute, not "This month" — a negative delta must not fall into the relative arm.
+  **Not asserted:** the screen-level binding `dateOf: (m) => m.effectiveDate(sort)` — the
+  one line tying the buckets to the *active* sort's dimension — is only reachable by
+  pumping the screen, whose live Drift streams flake widget tests. The grouping and the
+  date resolution are each proven; their junction is not.
+  Binary truth: 23 tests (13 unit + 10 widget), **five** mutations each proven to red —
+  dropping the study exclusion (−1), dropping the A–Z exclusion (−2), making the section
+  split never split (−6), reading the label from the month number alone so December reads
+  as "last month" from July (−3), and letting a future month fall into `thisMonth` (−1).
+  `flutter analyze` 0 errors (9 pre-existing infos), suite **1088 green / 9 pre-existing
+  reds / 0 regressions**, `scripts/check_l10n.sh` green, `flutter build web` green.
 
 ## Phase 3 — Dates on rows and tiles
 

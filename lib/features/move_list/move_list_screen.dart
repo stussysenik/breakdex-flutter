@@ -7,6 +7,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:intl/intl.dart';
 
 import '../../core/database/database.dart';
 import '../../core/database/daos/combos_dao.dart';
@@ -15,6 +16,7 @@ import '../../core/design/spacing.dart';
 import '../../core/design/theme.dart';
 import '../../core/design/typography.dart';
 import '../../core/models/learning_state.dart';
+import '../../core/models/library_month_sections.dart';
 import '../../core/models/library_sort.dart';
 import '../../l10n/gen/app_localizations.dart';
 import '../../core/models/move_creation.dart';
@@ -315,11 +317,18 @@ class MoveListScreen extends ConsumerWidget {
                           );
                         }
 
-                        return switch (viewMode) {
-                          ViewMode.glance => _MoveGridSliver(moves: filtered),
-                          ViewMode.scan => _MoveListSliver(moves: filtered),
-                          ViewMode.study => _MoveStudySliver(moves: filtered),
-                        };
+                        final sort = ref.watch(librarySortProvider);
+                        return librarySectionedSliver<Move>(
+                          items: filtered,
+                          sort: sort,
+                          viewMode: viewMode,
+                          dateOf: (final m) => m.effectiveDate(sort),
+                          sliverOf: (final section) => switch (viewMode) {
+                            ViewMode.glance => _MoveGridSliver(moves: section),
+                            ViewMode.scan => _MoveListSliver(moves: section),
+                            ViewMode.study => _MoveStudySliver(moves: section),
+                          },
+                        );
                       },
                     )
                   : combosAsync.when(
@@ -330,11 +339,7 @@ class MoveListScreen extends ConsumerWidget {
                         child: Center(child: Text('Error: $e')),
                       ),
                       data: (final rows) {
-                        final filtered = rows
-                            .map((final r) => (r.combo, r.moveCount))
-                            .toList();
-
-                        if (filtered.isEmpty) {
+                        if (rows.isEmpty) {
                           return SliverFillRemaining(
                             child: _EmptyState(
                               hasSearch: searchQuery.isNotEmpty,
@@ -343,13 +348,32 @@ class MoveListScreen extends ConsumerWidget {
                           );
                         }
 
-                        return switch (viewMode) {
-                          ViewMode.glance => _ComboGridSliver(combos: filtered),
-                          ViewMode.scan => _CombosContentSliver(
-                            combos: filtered,
-                          ),
-                          ViewMode.study => _ComboStudySliver(combos: filtered),
-                        };
+                        final sort = ref.watch(librarySortProvider);
+                        return librarySectionedSliver<LibraryRow>(
+                          items: rows,
+                          sort: sort,
+                          viewMode: viewMode,
+                          dateOf: (final r) => r.effectiveDate(sort),
+                          sliverOf: (final section) {
+                            // `LibraryRow` maps back to the `(combo, count)`
+                            // pair at the sliver boundary, so no widget
+                            // signature moves for the sake of grouping.
+                            final combos = section
+                                .map((final r) => (r.combo, r.moveCount))
+                                .toList();
+                            return switch (viewMode) {
+                              ViewMode.glance => _ComboGridSliver(
+                                combos: combos,
+                              ),
+                              ViewMode.scan => _CombosContentSliver(
+                                combos: combos,
+                              ),
+                              ViewMode.study => _ComboStudySliver(
+                                combos: combos,
+                              ),
+                            };
+                          },
+                        );
                       },
                     ),
 
@@ -1080,6 +1104,96 @@ class LibraryFilmedFallbackNotice extends ConsumerWidget {
       ),
     );
   }
+}
+
+/// A month divider in the library feed.
+///
+/// The near past reads relatively ("This month"), everything else absolutely
+/// ("June 2026") — design D3. Uppercasing matches the section-header idiom the
+/// combos screen already uses; the ARB strings stay sentence case so a
+/// translator is never handed a shouted phrase to translate.
+class LibraryMonthHeader extends StatelessWidget {
+  const LibraryMonthHeader({
+    required this.year,
+    required this.month,
+    this.now,
+    super.key,
+  });
+
+  final int year;
+  final int month;
+
+  /// Injectable so a test can pin the relative/absolute boundary instead of
+  /// racing the wall clock.
+  final DateTime? now;
+
+  @override
+  Widget build(final BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    final label = switch (libraryMonthLabel(
+      year: year,
+      month: month,
+      now: now ?? DateTime.now(),
+    )) {
+      LibraryMonthLabel.thisMonth => l10n.libraryMonthThis,
+      LibraryMonthLabel.lastMonth => l10n.libraryMonthLast,
+      LibraryMonthLabel.absolute => DateFormat.yMMMM(
+        Localizations.localeOf(context).toString(),
+      ).format(DateTime(year, month)),
+    };
+
+    return SliverToBoxAdapter(
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(
+          AppSpacing.screenEdge,
+          AppSpacing.md,
+          AppSpacing.screenEdge,
+          AppSpacing.xs,
+        ),
+        child: Text(
+          label.toUpperCase(),
+          style: AppTypography.sectionHeader.copyWith(
+            color: Theme.of(context).colorScheme.secondary,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Wraps a feed sliver in month sections when the active sort and view mode
+/// call for them (design D3), and returns it untouched when they don't.
+///
+/// Grouping is a projection of a date ordering, so A–Z never groups; `study`
+/// never groups either, because one card fills the viewport and a header
+/// between cards is a scroll interruption with no scanning benefit. [sliverOf]
+/// is the caller's existing per-mode builder, applied per section, so grid
+/// headers fall out as full-width rows without a second grid layout.
+Widget librarySectionedSliver<T>({
+  required final List<T> items,
+  required final LibrarySort sort,
+  required final ViewMode viewMode,
+  required final DateTime Function(T item) dateOf,
+  required final Widget Function(List<T> section) sliverOf,
+  final DateTime? now,
+}) {
+  if (!libraryGroupsByMonth(sort) || viewMode == ViewMode.study) {
+    return sliverOf(items);
+  }
+
+  final sections = libraryMonthSections(items, dateOf);
+  return SliverMainAxisGroup(
+    slivers: [
+      for (final section in sections) ...[
+        LibraryMonthHeader(
+          year: section.year,
+          month: section.month,
+          now: now,
+        ),
+        sliverOf(section.items),
+      ],
+    ],
+  );
 }
 
 // -- Arsenal Segment Control -------------------------------------------------

@@ -195,7 +195,25 @@
   moves-tab silence red; hardcode the noun → rename red; point combo-filmed at the
   practiced chain → ordering red). `flutter analyze` 0 errors, `check_l10n.sh` green,
   suite **1065 green / 9 pre-existing reds / 0 regressions**.
-  **Next agent-runnable: 2.4** (month grouping on date sorts, D3) — then Phase 3.
+  **2.4 DONE 2026-07-18** — date sorts now break the feed into month sections in scan and
+  glance ("THIS MONTH" / "LAST MONTH" / "APRIL 2026"); study and A–Z stay flat per D3.
+  Three pure functions (`library_month_sections.dart`) do the bucketing, labeling, and the
+  should-we-group decision; `librarySectionedSliver` joins the caller's **existing**
+  per-mode sliver builder once per section with `SliverMainAxisGroup`, so grid headers are
+  full-width rows for free and **no row/cell/grid widget changed** — the alternative,
+  interleaving headers into a flattened item list, would have moved `_MoveRow`'s stagger
+  index and every builder signature with it. Two non-obvious rulings are pinned by tests:
+  bucketing normalizes with `.toLocal()` (Drift hands back UTC; the raw instant puts a
+  late-evening capture in the next month for anyone west of UTC — though that test is
+  honestly vacuous under `TZ=UTC`), and a *future* month (wrong device clock) labels
+  absolute rather than borrowing "This month" via a negative delta. Binary truth: 23 tests,
+  five mutations each proven red (drop study exclusion, drop A–Z exclusion, never split a
+  section, label from the month number alone, let the future fall into `thisMonth`).
+  `flutter analyze` 0 errors, `check_l10n.sh` + `flutter build web` green, suite
+  **1088 green / 9 pre-existing reds / 0 regressions**. Known gap, not papered over: the
+  screen-level `dateOf: effectiveDate(sort)` junction is unasserted — reaching it means
+  pumping the screen's live Drift streams, which flake widget tests.
+  **Next agent-runnable: 3.1** (shared localized date-line formatter) — then 3.2.
   Phase 5 stays owner-gated on O1.
 
 - **Change (owner-driven, parallel):** `add-dev-auth-and-sync-rehearsal` — de-risks the owner's Phase-M pass

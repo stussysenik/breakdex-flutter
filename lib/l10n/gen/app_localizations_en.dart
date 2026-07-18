@@ -1414,6 +1414,12 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String get libraryMonthThis => 'This month';
+
+  @override
+  String get libraryMonthLast => 'Last month';
+
+  @override
   String setError(String error) {
     return 'Error: $error';
   }

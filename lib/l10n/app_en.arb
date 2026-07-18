@@ -959,6 +959,10 @@
     "description": "Shown on the combos tab when the filmed-date sort is active. Combos are not filmed, so the list falls back to the added date and says so rather than faking a capture date.",
     "placeholders": { "combos": { "type": "String", "example": "Combos" } }
   },
+  "libraryMonthThis": "This month",
+  "@libraryMonthThis": { "description": "Library month-section header for the calendar month the user is currently in." },
+  "libraryMonthLast": "Last month",
+  "@libraryMonthLast": { "description": "Library month-section header for the calendar month immediately before the current one." },
   "setError": "Error: {error}",
   "@setError": { "description": "Settings Backup & Reset: generic error snackbar when an async data action throws.", "placeholders": { "error": { "type": "String", "example": "FileSystemException" } } }
 }
