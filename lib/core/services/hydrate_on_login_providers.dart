@@ -28,9 +28,18 @@ final hydrateOnLoginTriggerProvider = Provider<void>((final ref) {
   final user = ref.watch(currentAppwriteUserProvider).valueOrNull;
   if (user == null) return;
   if (ref.read(_lastHydratedUserId) == user.id) return;
-  ref.read(_lastHydratedUserId.notifier).state = user.id;
 
-  unawaited(_hydrate(ref, user.id));
+  // Deferred past the build: Riverpod forbids writing another provider while
+  // this one is initializing (asserts at shell root when a session is already
+  // live at boot). The guard is re-checked inside because two builds can race
+  // ahead of the first microtask.
+  unawaited(
+    Future<void>.microtask(() {
+      if (ref.read(_lastHydratedUserId) == user.id) return;
+      ref.read(_lastHydratedUserId.notifier).state = user.id;
+      unawaited(_hydrate(ref, user.id));
+    }),
+  );
 });
 
 Future<void> _hydrate(final Ref ref, final String userId) async {
