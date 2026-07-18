@@ -81,12 +81,19 @@
   `getLocalCopy`'s `getSingleOrNull()` **throws** once a duplicate exists. Binary truth:
   db+sync+services **640 green / 0 failures**, full suite **988 green, 9 pre-existing
   reds, 0 regressions**, `flutter analyze` 0 errors.
-  **Next unticked, and it needs the owner: 4.0** — read ground truth via the 1.5
-  diagnostics dump on a device build (**D8**: don't guess which of three causes lags the
-  counter), and answer the open question — do the ~22 failing `Moves/Power moves/` videos
-  still **play**? (play ⇒ the heal has an archived-entity blind spot,
-  `getActiveByContentHash` at `moves_dao.dart:42`; don't play ⇒ terminal classification is
-  correct). **4.4 is blocked on that answer.** **4.3 also DONE 2026-07-18**
+  **4.0 DONE 2026-07-19 (owner device run + extended forensics).** The dump answered it
+  and **refuted both hypotheses**: manifest 99 (72 live / 28 underprotected / 27
+  tombstoned); ops completed 118 / failed 264, growing **+22 per cycle** — exactly the 22
+  unreachable; on disk without a local copy row **0**. All 22 read
+  `owners=0 (0 archived, 0 deleted)`, and the new owner-join positive control read
+  **50/72**, so the join works and there is simply no owner to widen the heal toward —
+  yet the bytes are not gone: the picker's APP VIDEOS scan lists them and a byte-exact
+  match was confirmed for `69e13899`. Ruling **D10**: *hash is identity, path is a hint,
+  the sandbox is byte authority*. Remedy is **4.7** (hash-indexed sandbox rescue as the
+  third heal lane) then **4.8** (explicit dev-action tombstoning of confirmed-gone
+  residue); **4.4 is re-gated on 4.7** — terminal is only reachable after a sandbox miss.
+  Forensics landed as a four-way `AssetResolution` (adds `DELETED-OWNER`) plus the
+  positive control. **4.3 also DONE 2026-07-18**
   (`LocalCopyReconciler` + dev-panel action), which clears the honest transient v28
   introduces — and it closed a 4.0 blocker: the 1.5 dump could not produce the
   missing-local-copy count 4.0 asks for, and now reports it directly, so the owner can
@@ -116,8 +123,12 @@
   (a test now asserts the phrase never renders), and **4.4's scope widened** — the terminal
   verdict has to survive the next sweep's re-queue, so its red must cover the second cycle.
   Suite **1030 green, 9 pre-existing reds, 0 regressions**; analyze 0 errors; l10n gate green.
-  Next agent-runnable: none in Phase 4 — 4.4 and 4.6 are owner-gated behind 4.0.
+  **Next unticked, agent-runnable now: 4.7** (hash-indexed sandbox rescue), then 4.8,
+  then 4.4. 3.2 is also agent-runnable now (console-cookie recipe). 4.6 stays owner-gated.
   **Also unticked:** 1.7 owner 30-second device proof.
+  **New sibling change (2026-07-19, strict-valid): `humanize-video-surfaces-and-gate-release`**
+  — Phase 1 picker collapse (In Breakdex / Import; sequenced after 4.7), Phase 2 human
+  subtitles (independent, startable now), Phase 3 the release gate as a falsifiable spec.
   **Phase 3** stays owner-gated on design O1/O2.
 
 - **Change (ACTIVE — queue head as of 2026-07-18, Phase 4 above being owner-gated):**

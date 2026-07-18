@@ -2,8 +2,6 @@
 // LocalCopyReconciler — the sync alternative blocks the UI isolate.
 // ignore_for_file: avoid_slow_async_io
 
-import 'package:drift/drift.dart';
-
 import '../database/database.dart';
 import '../platform/io.dart';
 import '../services/video_path_resolver.dart';
@@ -108,12 +106,16 @@ class SyncDiagnostics {
       }
 
       final hash = manifest.contentHash;
-      final owners =
-          await (_db.select(_db.moves)..where(
-                (final t) =>
-                    t.contentHash.equals(hash) & t.deletedAt.isNull(),
-              ))
+      // Deleted owners are fetched, not filtered out in SQL: a soft-deleted
+      // owner is a materially different verdict from no owner at all, and
+      // collapsing them in the query makes the two indistinguishable here.
+      final allMoves =
+          await (_db.select(_db.moves)
+                ..where((final t) => t.contentHash.equals(hash)))
               .get();
+      final owners =
+          allMoves.where((final m) => m.deletedAt == null).toList();
+      final deletedOwnerCount = allMoves.length - owners.length;
       final combos =
           await (_db.select(_db.combos)
                 ..where((final t) => t.contentHash.equals(hash)))
@@ -146,18 +148,22 @@ class SyncDiagnostics {
         ownerCount: owners.length + combos.length,
         activeOwnerHasBytes: activeOnDisk,
         archivedOwnerHasBytes: archivedOnDisk,
+        deletedOwnerCount: deletedOwnerCount,
       );
       tally.update(resolution, (final v) => v + 1, ifAbsent: () => 1);
 
       lines.add(
         '  ${assetResolutionLabel(resolution)} '
         '${hash.length > 8 ? hash.substring(0, 8) : hash} '
-        'owners=${owners.length}($archivedCount archived)+${combos.length}combo '
+        'owners=${owners.length}($archivedCount archived, '
+        '$deletedOwnerCount deleted)+${combos.length}combo '
         'path=${relative ?? '(none)'}',
       );
     }
 
-    if (lines.isEmpty) return 'unresolvable assets: none';
+    final control = await _ownerJoinControl();
+
+    if (lines.isEmpty) return '$control\nunresolvable assets: none';
 
     final summary = tally.entries
         .map((final e) => '${assetResolutionLabel(e.key)}: ${e.value}')
@@ -166,8 +172,37 @@ class SyncDiagnostics {
         .map((final r) => '  ${assetResolutionLabel(r)} — ${assetResolutionMeaning(r)}')
         .join('\n');
 
-    return 'unresolvable assets: ${lines.length} ($summary)\n'
+    return '$control\n'
+        'unresolvable assets: ${lines.length} ($summary)\n'
         '$meanings\n${lines.join('\n')}';
+  }
+
+  /// Positive control for the owner lookup above.
+  ///
+  /// The per-asset loop only ever runs its owner query against assets whose
+  /// bytes are already missing, so a report of "owners=0" everywhere is equally
+  /// consistent with "these really are orphans" and "this join never matches
+  /// anything" (mismatched hash encodings, say). This measures the join across
+  /// *all* live manifest hashes, where matches are expected. A reading of 0/N
+  /// means the join is broken and every ORPHAN verdict above is worthless.
+  Future<String> _ownerJoinControl() async {
+    final manifests = await _db.assetManifestDao.getAll();
+    final liveHashes = manifests
+        .where((final m) => m.deletedAt == null)
+        .map((final m) => m.contentHash)
+        .toSet();
+    if (liveHashes.isEmpty) {
+      return 'owner-join control: 0/0 live manifest hashes match ≥1 move';
+    }
+
+    final moveHashes = (await _db.select(_db.moves).get())
+        .map((final m) => m.contentHash)
+        .whereType<String>()
+        .toSet();
+    final matched = liveHashes.where(moveHashes.contains).length;
+
+    return 'owner-join control: $matched/${liveHashes.length} '
+        'live manifest hashes match ≥1 move';
   }
 
   static String _fmtErrors(final Map<String, int> counts) {

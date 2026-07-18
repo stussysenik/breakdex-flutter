@@ -21,6 +21,12 @@ enum AssetResolution {
   /// The video is genuinely gone — a terminal failure, not a retryable one.
   bytesGone,
 
+  /// The only entities claiming this hash are soft-deleted moves. The manifest
+  /// row outlived its owner *deliberately* — distinct from [orphan], where the
+  /// owner was never there. Recoverable by undeleting; terminal if the deletion
+  /// was intended, in which case the manifest row should be tombstoned too.
+  deletedOwner,
+
   /// No move or combo claims this hash at all. The manifest row outlived its
   /// owner; there is nothing to heal from.
   orphan,
@@ -36,11 +42,13 @@ AssetResolution classifyAssetResolution({
   required final int ownerCount,
   required final bool activeOwnerHasBytes,
   required final bool archivedOwnerHasBytes,
+  final int deletedOwnerCount = 0,
 }) {
   if (activeOwnerHasBytes) return AssetResolution.activeOwnerOnDisk;
   if (archivedOwnerHasBytes) return AssetResolution.archivedOwnerOnDisk;
-  if (ownerCount == 0) return AssetResolution.orphan;
-  return AssetResolution.bytesGone;
+  if (ownerCount > 0) return AssetResolution.bytesGone;
+  if (deletedOwnerCount > 0) return AssetResolution.deletedOwner;
+  return AssetResolution.orphan;
 }
 
 /// Short, greppable label for a device log.
@@ -49,6 +57,7 @@ String assetResolutionLabel(final AssetResolution resolution) =>
       AssetResolution.activeOwnerOnDisk => 'ACTIVE-OWNER-ON-DISK',
       AssetResolution.archivedOwnerOnDisk => 'ARCHIVED-OWNER-ON-DISK',
       AssetResolution.bytesGone => 'BYTES-GONE',
+      AssetResolution.deletedOwner => 'DELETED-OWNER',
       AssetResolution.orphan => 'ORPHAN',
     };
 
@@ -60,5 +69,7 @@ String assetResolutionMeaning(final AssetResolution resolution) =>
       AssetResolution.archivedOwnerOnDisk =>
         'recoverable: heal skips archived owners (moves_dao getActiveByContentHash)',
       AssetResolution.bytesGone => 'terminal: no owner path has bytes',
+      AssetResolution.deletedOwner =>
+        'owner exists but is soft-deleted — undelete to recover, or tombstone the manifest row',
       AssetResolution.orphan => 'terminal: manifest row has no owning entity',
     };

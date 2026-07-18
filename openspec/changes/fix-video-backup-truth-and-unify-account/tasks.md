@@ -102,7 +102,7 @@
 > re-creates duplicates); 4.4 needs the 4.0 answer first. 2.3's per-asset list is the
 > surface 4.1/4.5/4.4 all report into — land 2.3 before or alongside 4.5.
 
-- [ ] 4.0 Ground-truth read before any fix (design D8, D9 blind spot). Run the 1.5
+- [x] 4.0 Ground-truth read before any fix (design D8, D9 blind spot). Run the 1.5
   diagnostics dump on the owner's device build and record in the tick: manifest count,
   copies by provider×status, operations by status, and the count of live assets whose
   local file exists but which have no `local` copy row. Separately answer the open
@@ -110,6 +110,17 @@
   app**? (play = heal blind spot, widen `entityPathCandidatesForHash` to archived
   entities; don't play = bytes genuinely gone, terminal classification is correct.)
   No code. Evidence: dump output + a one-line verdict per question.
+  **ANSWERED 2026-07-19** (device run with the extended forensics —
+  `asset_resolution.dart` four-way classifier + owner-join positive control; tick this
+  box in the commit that lands that forensics code): manifest 99 (72 live / 28
+  underprotected / 27 tombstoned); copies gdrive×verified 50, local×verified 44,
+  local×deleted 10, local×failed 6; ops completed 118 / failed 264 (+22 per cycle =
+  exactly the 22 unreachable); on disk without a local copy row: **0**. Verdict:
+  control 50/72 proves the join; all 22 read `owners=0 (0 archived, 0 deleted)` —
+  **neither hypothesis was right**: no owner exists to widen toward, yet bytes for at
+  least some survive on disk (picker APP VIDEOS scan lists them; byte-exact match
+  confirmed for `69e13899`). Remedy = hash-indexed sandbox rescue (4.7, design D10),
+  then tombstone the residue (4.8).
 - [x] 4.1 Per-operation progress emission (design D6). Red proven: with 3 upload ops
   queued the stream carried exactly **2** events (cycle-start + cycle-end) and 2 again
   for a failing op — the counter cannot move mid-sweep. Green: `_emitProgress()` at the
@@ -156,9 +167,10 @@
   via `findMissingLocalCopies()` — the owner can answer 4.0's first half from the dump
   alone. Verify: 6 new tests green; sync+database+dev **324 green / 0 failures**; full
   suite **994 green, 9 pre-existing reds, 0 regressions**; `flutter analyze` 0 errors.
-- [ ] 4.4 Terminal vs retryable failure (design D9). Gated on 4.0's second answer — if
-  the heal has an archived-entity blind spot, widen `entityPathCandidatesForHash` first
-  and re-measure before classifying anything terminal. Red: an upload whose file is
+- [ ] 4.4 Terminal vs retryable failure (design D9). ~~Gated on 4.0's second answer~~
+  4.0 refuted the archived-blind-spot hypothesis (owners=0 across the board) — the gate
+  is now **4.7**: the sandbox-rescue lane must land first so "terminal" is only reachable
+  after a hash scan of the sandbox comes up empty, never by a path/query gap. Red: an upload whose file is
   genuinely missing currently consumes retry budget and is re-attempted on later cycles.
   Green: that path marks the operation terminal (distinct status, retry budget
   untouched, not re-attempted); every other failure keeps today's retryable behavior.
@@ -188,14 +200,39 @@
   sweep (not only at the end); after the cycle, pending + unbackupable accounts for
   every live asset with no double-counting; a second Sync Now re-attempts nothing
   terminal. Evidence: screenshot mid-sweep + final counts in the tick.
+- [ ] 4.7 Hash-indexed sandbox rescue (design D10). One recursive scan of `Moves/` +
+  `Combos/` builds a `contentHash → absolute path` index by parsing the hash embedded
+  in canonical filenames (`Name - hash8.ext` and `<fullhash>.ext` forms; hash8 collisions
+  resolved by full-hash verify before trusting). Wire as the third lane of
+  `_healStaleLocalPath` (stored path → entity candidates → sandbox scan), persisting the
+  found relative path to the manifest exactly like lane 2. Extend the diagnostics
+  forensics line with `bytes found on disk at <path>` / `bytes not found in sandbox` per
+  unreachable asset, so the rescuable/gone split is measured, not guessed. Red: manifest
+  row with stale `localPath`, no owning entity, bytes present under a different category
+  dir — current heal returns null and the upload fails "Local file missing". Green: heal
+  returns the scanned path, manifest updated, upload proceeds. Also fix the stale
+  `asset_manifest.localPath` doc comment ("Absolute path" → relative-to-Documents,
+  healable). Verify: new tests red/green, sync suite green, analyze clean.
+- [ ] 4.8 Tombstone the residue (gated on 4.7's device evidence). For unreachable assets
+  the sandbox scan confirms gone (`bytes not found`), a dev-panel action tombstones the
+  manifest rows (sets `deletedAt`, same soft-delete idiom as user deletes) so the sweep
+  stops re-queueing them — with the diagnostics dump re-run inline so the effect is
+  visible. Never automatic: bytes-gone is a verdict a human confirms once, not a state
+  the engine infers repeatedly. Red: tombstoned-by-action asset no longer queued on the
+  next sweep; `failed` count flat across two consecutive cycles in the engine test.
+  Verify: tests green, analyze clean. Device evidence in the tick: two cycles, flat
+  `failed` count, unreachable list empty or all-terminal.
 
 ## Phase 3 — One-account magic (owner-gated: design.md O1 ruling first)
 
 - [ ] 3.1 [OWNER] Rule on O1 (Appwrite `drive.file` scope + re-consent tradeoff) and
   O2 (legacy row retirement). Record rulings in design.md.
-- [ ] 3.2 Add `drive.file` to the Appwrite Google provider scopes (console/API step,
-  owner-run per established recipe); verify a fresh session's `providerAccessToken`
-  can list/create files via Drive REST with a curl proof.
+- [ ] 3.2 Add `drive.file` to the Appwrite Google provider scopes. Agent-runnable
+  first: use the established `.env.local` credentials + console-cookie recipe (the same
+  PATCH path that fixed the missing client secret — project API keys lack
+  `projects.write`, the console session from `appwrite login` does not); owner fallback
+  only if the cookie recipe fails. Verify a fresh session's `providerAccessToken` can
+  list/create files via Drive REST with a curl proof.
 - [ ] 3.3 `AppwriteTokenDriveProvider implements CloudProvider` using the session
   provider token (+ refresh via `account.updateSession` on 401), behind
   `DRIVE_VIA_APPWRITE` (default OFF). Reuses the existing upload/verify contract.

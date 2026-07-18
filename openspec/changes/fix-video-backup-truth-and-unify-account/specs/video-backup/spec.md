@@ -173,3 +173,36 @@ that is merely pending.
   exists
 - **WHEN** the failure is classified
 - **THEN** it remains retryable under the existing backoff and retry-limit rules
+
+### Requirement: Stale local paths heal from sandbox bytes by content hash
+
+The engine SHALL treat the content hash as the asset's identity and the sandbox as the
+byte authority: before any upload fails for a missing local file, the engine SHALL
+attempt to locate the bytes by scanning the app sandbox for a canonical filename
+embedding the asset's content hash, and on a hit SHALL persist the found relative path
+to the manifest and proceed. "Terminal" SHALL be reachable only after this scan misses.
+
+#### Scenario: Ownerless asset with surviving bytes is rescued
+
+- **GIVEN** a manifest row whose stored `localPath` is stale and which has no owning
+  move or combo (active, archived, or deleted)
+- **AND** a file whose name embeds the asset's content hash exists elsewhere under
+  `Moves/` or `Combos/`
+- **WHEN** an upload for the asset runs
+- **THEN** the heal locates the file by hash, updates the manifest's `localPath`, and
+  the upload proceeds instead of failing "Local file missing"
+
+#### Scenario: Sandbox miss is measured before it is terminal
+
+- **GIVEN** an unreachable asset whose bytes exist nowhere in the sandbox
+- **WHEN** the diagnostics forensics run
+- **THEN** the asset's line reports the sandbox-scan result explicitly, so the
+  rescuable/gone split is evidence, not inference
+
+#### Scenario: Confirmed-gone residue stops consuming the sweep
+
+- **GIVEN** an asset the sandbox scan confirmed gone and which was tombstoned via the
+  explicit dev action
+- **WHEN** subsequent sync cycles sweep for underprotected assets
+- **THEN** the asset is not re-queued and the failed-operation count stays flat across
+  cycles

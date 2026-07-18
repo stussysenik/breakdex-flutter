@@ -197,6 +197,37 @@ candidate query to include archived entities) or genuinely deleted (classificati
 correct). Terminal is a stronger claim than retryable; it must not be reached by a query
 gap.
 
+## D10 — Hash is identity, path is hint: the sandbox-scan rescue lane
+
+**Ground truth (2026-07-19 device forensics, answers 4.0):** the per-asset forensics run
+(`asset_resolution.dart` + extended diagnostics, owner-join control `50/72` proving the
+join sound) classified all 22 unreachable assets as `owners=0 (0 archived, 0 deleted)` —
+**the D9 archived-entity blind-spot hypothesis is refuted.** No owner query widening can
+heal them: there is no owning row, active, archived, or tombstoned. Yet the bytes for at
+least some demonstrably survive in the sandbox — the picker's APP VIDEOS tab (a raw
+recursive scan of `Moves/`) lists them, with a byte-exact size match confirmed for
+`69e13899` (`Thursday July 16th 2026`, 6 126 241 bytes).
+
+The asymmetry that allows this: **playback** already treats the sandbox as byte authority
+— `VideoPathResolver.resolve()` falls back to a recursive filename scan
+(`video_player_widget.dart:951`) — while **upload** heals only from owning-entity path
+candidates (`_healStaleLocalPath`). A file that moved on disk stays playable but becomes
+un-uploadable, and the sweep re-queues it every cycle (`failed` grew +22/cycle, measured
+242 → 264 across one cycle).
+
+**Ruling:** the content hash is the identity of an asset; `localPath` is a cache hint;
+the sandbox is the byte authority. Every canonical filename embeds the hash
+(`Name - hash8.ext` or `<fullhash>.ext`), so a single recursive scan of `Moves/` +
+`Combos/` indexed by hash-in-filename gives the engine the same self-healing the player
+has. The heal gains a third lane: (1) stored path, (2) owning-entity candidates,
+(3) hash-indexed sandbox scan — persisting the found path to the manifest as before.
+Assets the scan cannot find have genuinely lost their bytes and flow into D9's terminal
+classification plus a manifest tombstone (4.8), so the sweep stops re-queueing them and
+`failed` stops growing.
+
+This is enforcement of the existing model, not a new one: `asset_manifest` keyed by hash
+already said this — the engine just never fully believed it.
+
 ## Open questions (owner)
 
 - **O1:** Approve the Appwrite-scope approach for Phase 3 (re-consent tradeoff above)?

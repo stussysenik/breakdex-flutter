@@ -81,7 +81,7 @@ void main() {
     final report = await SyncDiagnostics(db).dump();
     final lines = report.split('\n');
 
-    expect(lines, hasLength(11));
+    expect(lines, hasLength(12));
     expect(
       lines[0],
       'asset_manifest: 3 rows (2 live, 1 underprotected, 1 tombstoned)',
@@ -104,10 +104,61 @@ void main() {
     // widening the heal's query could never recover. Asserting the verdict,
     // not just the count, is the point: an ORPHAN misreported as BYTES-GONE
     // would send the fix at the wrong query.
-    expect(lines[7], 'unresolvable assets: 2 (ORPHAN: 2)');
-    expect(lines[8], contains('ORPHAN — terminal: manifest row has no owning'));
-    expect(lines[9], startsWith('  ORPHAN h1 owners=0(0 archived)+0combo'));
-    expect(lines[10], startsWith('  ORPHAN h2 owners=0(0 archived)+0combo'));
+    // Positive control: with no moves seeded at all, 0/2 is the *correct*
+    // reading and the ORPHAN verdicts below are trustworthy only because the
+    // control is separately proven to fire (see the test that seeds a move).
+    expect(lines[7], 'owner-join control: 0/2 live manifest hashes match ≥1 move');
+    expect(lines[8], 'unresolvable assets: 2 (ORPHAN: 2)');
+    expect(lines[9], contains('ORPHAN — terminal: manifest row has no owning'));
+    expect(
+      lines[10],
+      startsWith('  ORPHAN h1 owners=0(0 archived, 0 deleted)+0combo'),
+    );
+    expect(
+      lines[11],
+      startsWith('  ORPHAN h2 owners=0(0 archived, 0 deleted)+0combo'),
+    );
+  });
+
+  Future<void> seedMove(
+    final String id,
+    final String hash, {
+    final DateTime? deletedAt,
+  }) async {
+    await db.into(db.moves).insert(MovesCompanion.insert(
+          id: id,
+          name: 'Move $id',
+          contentHash: Value(hash),
+          deletedAt: Value(deletedAt),
+        ));
+  }
+
+  // The positive control earns its place only if it can read non-zero. Without
+  // this test, "owner-join control: 0/N" on a device is indistinguishable from
+  // a join that never matches — which is precisely the doubt it exists to kill.
+  test('owner-join control counts hashes that do match a move', () async {
+    await seedManifest('h1');
+    await seedManifest('h2');
+    await seedMove('m1', 'h1');
+
+    final report = await SyncDiagnostics(db).dump();
+
+    expect(
+      report,
+      contains('owner-join control: 1/2 live manifest hashes match ≥1 move'),
+    );
+  });
+
+  // A soft-deleted owner is recoverable; a missing one is not. Reporting both
+  // as ORPHAN would point the fix at the wrong repair.
+  test('a soft-deleted owner reads DELETED-OWNER, not ORPHAN', () async {
+    await seedManifest('h1');
+    await seedMove('m1', 'h1', deletedAt: DateTime.now());
+
+    final report = await SyncDiagnostics(db).dump();
+
+    expect(report, contains('unresolvable assets: 1 (DELETED-OWNER: 1)'));
+    expect(report, contains('DELETED-OWNER h1 owners=0(0 archived, 1 deleted)'));
   });
 
   test('dump on an empty database reports zeros, not errors', () async {
@@ -120,6 +171,7 @@ void main() {
         'on disk without a local copy row: 0',
         'asset_copies: (none)',
         'sync_operations: (none)',
+        'owner-join control: 0/0 live manifest hashes match ≥1 move',
         // An empty database has nothing unreachable — the section must say so
         // rather than going silent, so "no line" never reads as "not checked".
         'unresolvable assets: none',
