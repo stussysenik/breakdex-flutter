@@ -6,6 +6,7 @@ part of 'asset_manifest_dao.dart';
 mixin _$AssetManifestDaoMixin on DatabaseAccessor<AppDatabase> {
   $AssetManifestTable get assetManifest => attachedDatabase.assetManifest;
   $AssetCopiesTable get assetCopies => attachedDatabase.assetCopies;
+  $SyncOperationsTable get syncOperations => attachedDatabase.syncOperations;
   AssetManifestDaoManager get managers => AssetManifestDaoManager(this);
 }
 
@@ -16,4 +17,9 @@ class AssetManifestDaoManager {
       $$AssetManifestTableTableManager(_db.attachedDatabase, _db.assetManifest);
   $$AssetCopiesTableTableManager get assetCopies =>
       $$AssetCopiesTableTableManager(_db.attachedDatabase, _db.assetCopies);
+  $$SyncOperationsTableTableManager get syncOperations =>
+      $$SyncOperationsTableTableManager(
+        _db.attachedDatabase,
+        _db.syncOperations,
+      );
 }

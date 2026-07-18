@@ -67,11 +67,33 @@
 - [x] 2.2 Web affordance: on `kIsWeb`, Drive row renders `ProviderStatus.unavailable`
   with reason copy ("backup runs from your phone"); no tap handler. Verify: widget test
   for web branch, `flutter build web` green.
-- [ ] 2.3 Per-asset sync detail (owner-requested 2026-07-18): Sync Status should show
+- [x] 2.3 Per-asset sync detail (owner-requested 2026-07-18): Sync Status should show
   individual assets — name/thumb, per-provider op state (queued / uploading with
   progress / verified / failed+error), so "is it doing anything?" is answerable at a
   glance. Ground truth exists (`sync_operations.errorMessage`, `asset_copies` status,
   1.5 diagnostics dump); this is a read-only list over those tables.
+  **DONE 2026-07-18.** `AssetSyncDetail` + the pure `buildAssetSyncDetails()`
+  (`lib/core/sync/asset_sync_detail.dart`) classify each live asset as
+  uploading / queued / failed / pending / backed up, sorted worst-first so the
+  answer is the first row. `AssetManifestDao.watchSyncDetails()` reads it live
+  from ONE joined query over the three tables, so a copy verifying or an
+  operation failing re-emits without the manifest being touched; the
+  copies × operations fan-out is de-duplicated by primary key on the way out.
+  Two honesty rulings, both test-pinned: a verified **local** copy is never
+  "backed up" (local bytes answer the may-I-delete question, not the
+  cloud-protection one), and a transfer that has moved zero bytes reports a
+  null fraction — an indeterminate bar — rather than a fabricated 0% that
+  reads as stalled. **Name, not thumb:** renames and category moves relocate
+  the file (task 1.8), so the current path's basename already tracks the
+  owning move's name; a real thumbnail needs frame extraction that does not
+  exist yet, and inventing one was out of scope for a read-only list.
+  Binary truth: 27 new tests (20 unit + 7 widget on the pure-override
+  harness), both load-bearing decisions proven by mutation — flipping
+  `provider != 'local'` and swapping the sort ranks each go red, and the tree
+  is green again after revert. Full suite **1021 green, 9 pre-existing reds,
+  0 regressions**; `flutter analyze` 0 errors; `check_l10n.sh` green;
+  `flutter build web` green. Copy stays hardcoded English to match the
+  screen's existing idiom — **4.5 owns the ARB pass** for this surface.
 
 ## Phase 4 — Progress legibility & copy truth (2026-07-18 device run)
 

@@ -1,12 +1,14 @@
 import 'package:drift/drift.dart';
 
+import '../../sync/asset_sync_detail.dart';
 import '../database.dart';
 import '../tables/asset_manifest.dart';
 import '../tables/asset_copies.dart';
+import '../tables/sync_operations.dart';
 
 part 'asset_manifest_dao.g.dart';
 
-@DriftAccessor(tables: [AssetManifest, AssetCopies])
+@DriftAccessor(tables: [AssetManifest, AssetCopies, SyncOperations])
 class AssetManifestDao extends DatabaseAccessor<AppDatabase>
     with _$AssetManifestDaoMixin {
   AssetManifestDao(super.db);
@@ -75,6 +77,50 @@ class AssetManifestDao extends DatabaseAccessor<AppDatabase>
             assetManifest.deletedAt.isNull(),
       );
     return query.map((final row) => row.read(count) ?? 0).watchSingle();
+  }
+
+  /// Live per-asset backup state for the Sync Status detail list.
+  ///
+  /// One joined query rather than three streams, so a change to *any* of the
+  /// three tables re-emits — a copy verifying or an operation failing moves
+  /// the row without waiting for the manifest to be touched. The join fans out
+  /// (copies × operations per asset); rows are de-duplicated by primary key on
+  /// the way out and classified by the pure [buildAssetSyncDetails].
+  Stream<List<AssetSyncDetail>> watchSyncDetails() {
+    final query =
+        (select(assetManifest)..where((final t) => t.deletedAt.isNull())).join([
+      leftOuterJoin(
+        assetCopies,
+        assetCopies.contentHash.equalsExp(assetManifest.contentHash),
+      ),
+      leftOuterJoin(
+        syncOperations,
+        syncOperations.contentHash.equalsExp(assetManifest.contentHash),
+      ),
+    ]);
+
+    return query.watch().map((final rows) {
+      final manifests = <String, AssetManifestData>{};
+      final copies = <String, AssetCopy>{};
+      final operations = <String, SyncOperation>{};
+
+      for (final row in rows) {
+        final manifest = row.readTable(assetManifest);
+        manifests[manifest.contentHash] = manifest;
+
+        final copy = row.readTableOrNull(assetCopies);
+        if (copy != null) copies[copy.id] = copy;
+
+        final operation = row.readTableOrNull(syncOperations);
+        if (operation != null) operations[operation.id] = operation;
+      }
+
+      return buildAssetSyncDetails(
+        manifests: manifests.values.toList(),
+        copies: copies.values.toList(),
+        operations: operations.values.toList(),
+      );
+    });
   }
 
   /// All live assets that currently have a local file on disk. Used by the

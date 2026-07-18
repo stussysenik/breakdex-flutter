@@ -1,0 +1,163 @@
+import 'package:breakdex/core/providers.dart';
+import 'package:breakdex/core/services/settings_service.dart';
+import 'package:breakdex/core/sync/asset_sync_detail.dart';
+import 'package:breakdex/core/sync/asset_sync_engine.dart';
+import 'package:breakdex/features/settings/sync_status_screen.dart';
+import 'package:breakdex/l10n/gen/app_localizations.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_test/flutter_test.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+
+/// Pure-override harness: every stream the screen watches is stubbed, so no
+/// live Drift query streams exist (their close timers flake widget tests).
+/// The query itself is covered by `test/core/sync/asset_sync_detail_test.dart`.
+Future<void> _pumpScreen(
+  final WidgetTester tester, {
+  required final List<AssetSyncDetail>? details,
+}) async {
+  SharedPreferences.setMockInitialValues({});
+  final prefs = await SharedPreferences.getInstance();
+
+  await tester.pumpWidget(
+    ProviderScope(
+      overrides: [
+        sharedPreferencesProvider.overrideWithValue(prefs),
+        assetSyncProgressProvider.overrideWith(
+          (final ref) => const Stream<SyncProgress>.empty(),
+        ),
+        underprotectedCountProvider.overrideWith((final ref) => Stream.value(0)),
+        assetSyncDetailsProvider.overrideWith(
+          (final ref) => details == null
+              ? const Stream<List<AssetSyncDetail>>.empty()
+              : Stream.value(details),
+        ),
+      ],
+      child: const MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: SyncStatusScreen(),
+      ),
+    ),
+  );
+  // Not pumpAndSettle: an indeterminate progress bar animates forever, so
+  // settling would time out on exactly the case worth testing.
+  await tester.pump();
+  await tester.pump();
+}
+
+AssetSyncDetail _detail({
+  required final String label,
+  required final AssetSyncStatus status,
+  final int fileSizeBytes = 10 * 1024 * 1024,
+  final int transferredBytes = 0,
+  final String? errorMessage,
+  final bool isTerminal = false,
+  final List<AssetCopyState> copies = const [],
+}) =>
+    AssetSyncDetail(
+      contentHash: label,
+      label: label,
+      fileSizeBytes: fileSizeBytes,
+      status: status,
+      transferredBytes: transferredBytes,
+      errorMessage: errorMessage,
+      isTerminal: isTerminal,
+      copies: copies,
+    );
+
+void main() {
+  testWidgets('a silent stream says Checking, never an empty library',
+      (final tester) async {
+    await _pumpScreen(tester, details: null);
+
+    expect(find.text('Checking…'), findsOneWidget);
+    expect(find.text('No videos are being tracked yet.'), findsNothing);
+  });
+
+  testWidgets('an empty list says so plainly', (final tester) async {
+    await _pumpScreen(tester, details: const []);
+
+    expect(find.text('No videos are being tracked yet.'), findsOneWidget);
+  });
+
+  testWidgets('an uploading asset shows its bytes and a progress bar',
+      (final tester) async {
+    await _pumpScreen(tester, details: [
+      _detail(
+        label: 'flare.mp4',
+        status: AssetSyncStatus.uploading,
+        fileSizeBytes: 10 * 1024 * 1024,
+        transferredBytes: 5 * 1024 * 1024,
+      ),
+    ]);
+
+    expect(find.text('flare.mp4'), findsOneWidget);
+    expect(find.text('5.0 MB of 10.0 MB'), findsOneWidget);
+
+    final bar = tester.widget<LinearProgressIndicator>(
+      find.byKey(const Key('assetProgress_flare.mp4')),
+    );
+    expect(bar.value, closeTo(0.5, 0.001));
+  });
+
+  testWidgets('an upload with no bytes yet shows an indeterminate bar',
+      (final tester) async {
+    await _pumpScreen(tester, details: [
+      _detail(label: 'windmill.mp4', status: AssetSyncStatus.uploading),
+    ]);
+
+    final bar = tester.widget<LinearProgressIndicator>(
+      find.byKey(const Key('assetProgress_windmill.mp4')),
+    );
+    expect(bar.value, isNull);
+  });
+
+  testWidgets('a failure shows its error and whether it will retry',
+      (final tester) async {
+    await _pumpScreen(tester, details: [
+      _detail(
+        label: 'headspin.mp4',
+        status: AssetSyncStatus.failed,
+        errorMessage: 'file not found',
+      ),
+      _detail(
+        label: 'airflare.mp4',
+        status: AssetSyncStatus.failed,
+        errorMessage: 'file not found',
+        isTerminal: true,
+      ),
+    ]);
+
+    expect(find.text('Failed — retrying: file not found'), findsOneWidget);
+    expect(
+      find.text('Failed — will not retry: file not found'),
+      findsOneWidget,
+    );
+  });
+
+  testWidgets('a backed-up asset names the providers holding it',
+      (final tester) async {
+    await _pumpScreen(tester, details: [
+      _detail(
+        label: 'flare.mp4',
+        status: AssetSyncStatus.backedUp,
+        copies: const [
+          AssetCopyState(provider: 'gdrive', status: 'verified'),
+          AssetCopyState(provider: 'local', status: 'verified'),
+        ],
+      ),
+    ]);
+
+    // The local copy is not cloud protection, so it is not listed as one.
+    expect(find.text('gdrive'), findsOneWidget);
+  });
+
+  testWidgets('a pending asset is named as not backed up', (final tester) async {
+    await _pumpScreen(tester, details: [
+      _detail(label: 'flare.mp4', status: AssetSyncStatus.pending),
+    ]);
+
+    expect(find.text('Not backed up · 10.0 MB'), findsOneWidget);
+  });
+}

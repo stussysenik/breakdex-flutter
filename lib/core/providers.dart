@@ -63,6 +63,7 @@ import 'database/daos/asset_manifest_dao.dart';
 import 'database/daos/asset_copies_dao.dart';
 import 'database/daos/sync_operations_dao.dart';
 import 'sync/asset_hash_service.dart';
+import 'sync/asset_sync_detail.dart';
 import 'sync/asset_sync_engine.dart' as asset_sync;
 import 'sync/background_sync_manager.dart';
 import 'sync/cloud_provider.dart';

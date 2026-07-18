@@ -378,6 +378,13 @@ final underprotectedCountProvider = StreamProvider<int>((final ref) {
   return ref.watch(assetManifestDaoProvider).watchUnderprotectedCount();
 });
 
+/// Live per-asset backup state for the Sync Status detail list — read-only
+/// over the manifest, its copies, and the operation queue.
+final assetSyncDetailsProvider =
+    StreamProvider<List<AssetSyncDetail>>((final ref) {
+  return ref.watch(assetManifestDaoProvider).watchSyncDetails();
+});
+
 /// Computed provider: provider config + engine state + persistent protection
 /// state → single health enum (design D1). The engine's progress stream only
 /// signals "busy right now"; the verdict `allSynced` is derived from the

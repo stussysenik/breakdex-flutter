@@ -91,11 +91,20 @@
   introduces — and it closed a 4.0 blocker: the 1.5 dump could not produce the
   missing-local-copy count 4.0 asks for, and now reports it directly, so the owner can
   answer 4.0's first half from the dump alone. Full suite **994 green, 9 pre-existing
-  reds, 0 regressions**. Next agent-runnable: **2.3** (per-asset sync detail list) →
-  **4.5** (pending / uploading / unbackupable split + byte progress), which 2.3 hosts.
+  reds, 0 regressions**.
+  **2.3 DONE 2026-07-18** — Sync Status now lists each video with what is actually
+  happening to it (uploading with byte progress / queued / failed+error+will-it-retry /
+  not backed up / backed up, worst-first), read live from ONE joined query over
+  manifest × copies × operations, classified by a pure `buildAssetSyncDetails()`.
+  Two honesty rulings pinned by mutation-proven tests: a verified **local** copy is
+  never "backed up", and a zero-byte transfer shows an indeterminate bar rather than a
+  fake 0%. Name comes from the on-disk basename (1.8 keeps it tracking renames); a real
+  thumbnail needs frame extraction that does not exist. Full suite **1021 green, 9
+  pre-existing reds, 0 regressions**; analyze 0 errors; `check_l10n.sh` + web build green.
+  Next agent-runnable: **4.5** (pending / uploading / unbackupable split + byte progress,
+  plus the ARB pass for the 2.3 surface, which stays hardcoded English until then).
   4.4 and 4.6 stay owner-gated behind 4.0.
-  **Also unticked:** 1.7 owner 30-second device proof; 2.3 per-asset sync detail list in
-  Sync Status (the surface 4.1/4.4/4.5 report into — land it before or alongside 4.5).
+  **Also unticked:** 1.7 owner 30-second device proof.
   **Phase 3** stays owner-gated on design O1/O2.
 
 - **Change (new, specced 2026-07-18, strict-valid, UNCOMMITTED):**

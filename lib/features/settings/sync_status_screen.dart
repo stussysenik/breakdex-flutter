@@ -10,6 +10,7 @@ import '../../core/design/colors.dart';
 import '../../core/design/spacing.dart';
 import '../../core/design/typography.dart';
 import '../../core/providers.dart';
+import '../../core/sync/asset_sync_detail.dart';
 import '../../core/sync/asset_sync_engine.dart';
 import '../../core/sync/integrity_verifier.dart';
 import '../../l10n/gen/app_localizations.dart';
@@ -44,6 +45,15 @@ class SyncStatusScreen extends ConsumerWidget {
           _StatusCard(
             syncProgress: syncProgress.valueOrNull ?? SyncProgress.idle,
             pendingCount: ref.watch(underprotectedCountProvider).valueOrNull,
+            colorScheme: colorScheme,
+          ),
+          const SizedBox(height: AppSpacing.lg),
+
+          // Per-asset detail — what the engine is actually doing, per video.
+          _SectionHeader(title: 'Videos', colorScheme: colorScheme),
+          const SizedBox(height: AppSpacing.sm),
+          _AssetDetailList(
+            details: ref.watch(assetSyncDetailsProvider).valueOrNull,
             colorScheme: colorScheme,
           ),
           const SizedBox(height: AppSpacing.lg),
@@ -410,6 +420,155 @@ class _StatusCard extends StatelessWidget {
     );
   }
 }
+
+/// Per-asset backup state, worst-first. Read-only: it reports what the
+/// manifest, the copies, and the operation queue already say, and never
+/// infers a state none of them support.
+class _AssetDetailList extends StatelessWidget {
+  /// Null while the first Drift read is in flight — rendered as "Checking…",
+  /// never as an empty library.
+  final List<AssetSyncDetail>? details;
+  final ColorScheme colorScheme;
+
+  const _AssetDetailList({required this.details, required this.colorScheme});
+
+  @override
+  Widget build(final BuildContext context) {
+    final rows = details;
+    if (rows == null) {
+      return _AssetDetailNote(text: 'Checking…', colorScheme: colorScheme);
+    }
+    if (rows.isEmpty) {
+      return _AssetDetailNote(
+        text: 'No videos are being tracked yet.',
+        colorScheme: colorScheme,
+      );
+    }
+
+    return Column(
+      children: [
+        for (final detail in rows)
+          Padding(
+            padding: const EdgeInsets.only(bottom: AppSpacing.xs),
+            child: _AssetDetailRow(detail: detail, colorScheme: colorScheme),
+          ),
+      ],
+    );
+  }
+}
+
+class _AssetDetailNote extends StatelessWidget {
+  final String text;
+  final ColorScheme colorScheme;
+
+  const _AssetDetailNote({required this.text, required this.colorScheme});
+
+  @override
+  Widget build(final BuildContext context) => Text(
+        text,
+        style: AppTypography.bodySmall.copyWith(
+          color: colorScheme.onSurface.withValues(alpha: 0.5),
+        ),
+      );
+}
+
+class _AssetDetailRow extends StatelessWidget {
+  final AssetSyncDetail detail;
+  final ColorScheme colorScheme;
+
+  const _AssetDetailRow({required this.detail, required this.colorScheme});
+
+  @override
+  Widget build(final BuildContext context) {
+    final (icon, tint) = switch (detail.status) {
+      AssetSyncStatus.backedUp => (
+          Icons.cloud_done_outlined,
+          AppColors.stateMastery,
+        ),
+      AssetSyncStatus.uploading => (Icons.cloud_upload_outlined, AppColors.accent),
+      AssetSyncStatus.queued => (Icons.schedule, AppColors.accent),
+      AssetSyncStatus.failed => (
+          Icons.error_outline,
+          AppColors.actionAgain,
+        ),
+      AssetSyncStatus.pending => (
+          Icons.cloud_off_outlined,
+          AppColors.actionHard,
+        ),
+    };
+
+    return Container(
+      padding: const EdgeInsets.all(AppSpacing.sm),
+      decoration: BoxDecoration(
+        color: colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
+        borderRadius: BorderRadius.circular(AppRadius.md),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(icon, color: tint, size: 18),
+          const SizedBox(width: AppSpacing.sm),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  detail.label,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: AppTypography.bodySmall
+                      .merge(const TextStyle(fontWeight: FontWeight.w600))
+                      .copyWith(color: colorScheme.onSurface),
+                ),
+                Text(
+                  _detailLine(detail),
+                  style: AppTypography.caption.copyWith(
+                    color: colorScheme.onSurface.withValues(alpha: 0.6),
+                  ),
+                ),
+                if (detail.status == AssetSyncStatus.uploading) ...[
+                  const SizedBox(height: AppSpacing.xs),
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(AppRadius.xxs),
+                    child: LinearProgressIndicator(
+                      key: Key('assetProgress_${detail.contentHash}'),
+                      // Null while no bytes have moved — an indeterminate bar
+                      // is honest about "started, nothing reported yet".
+                      value: detail.fraction,
+                      backgroundColor:
+                          colorScheme.onSurface.withValues(alpha: 0.1),
+                      valueColor: const AlwaysStoppedAnimation(AppColors.accent),
+                      minHeight: 3,
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// The one line under the name that answers "what is happening to this file".
+String _detailLine(final AssetSyncDetail detail) => switch (detail.status) {
+      AssetSyncStatus.backedUp => [
+          for (final copy in detail.copies)
+            if (copy.provider != 'local' && copy.status == 'verified')
+              copy.provider,
+        ].join(' · '),
+      AssetSyncStatus.uploading =>
+        '${_mb(detail.transferredBytes)} of ${_mb(detail.fileSizeBytes)}',
+      AssetSyncStatus.queued => 'Queued · ${_mb(detail.fileSizeBytes)}',
+      AssetSyncStatus.failed =>
+        '${detail.isTerminal ? "Failed — will not retry" : "Failed — retrying"}'
+            '${detail.errorMessage == null ? "" : ": ${detail.errorMessage}"}',
+      AssetSyncStatus.pending => 'Not backed up · ${_mb(detail.fileSizeBytes)}',
+    };
+
+String _mb(final int bytes) =>
+    '${(bytes / (1024 * 1024)).toStringAsFixed(1)} MB';
 
 class _SectionHeader extends StatelessWidget {
   final String title;
