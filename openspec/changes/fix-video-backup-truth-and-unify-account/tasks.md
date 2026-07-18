@@ -120,12 +120,20 @@
   pre-fix; `flutter test test/core/database/ test/core/sync/ test/core/services/`
   **640 green / 0 failures**; full suite **988 green, 9 pre-existing reds, 0 regressions**;
   `flutter analyze` 0 errors (9 pre-existing infos).
-- [ ] 4.3 Copy reconcile from disk truth (design D8). Red: a live manifest row whose file
-  exists but has no `local` copy row stays underprotected after a successful cloud
-  upload. Green: reconcile inserts a verified `local` copy record for every live asset
-  whose resolved path exists on disk, and inserts nothing when it does not; recompute
-  `copyCount`. Runs once (idempotent; safe to re-run) and is reachable from the dev
-  panel. Verify: both scenarios tested, suites green, analyze clean.
+- [x] 4.3 Copy reconcile from disk truth (design D8). Red asserted in the test itself:
+  an asset whose bytes are on disk with a successful `gdrive` copy still reads
+  `copyCount < 2` and `watchUnderprotectedCount() == 1`. Green: new
+  `LocalCopyReconciler` (`lib/core/sync/local_copy_reconciler.dart`) inserts a verified
+  `local` row for every live asset whose resolved path exists, inserts nothing when the
+  file is gone (a missing video must never read as protected), and recomputes
+  `copyCount`; idempotent, tombstone-skipping, reachable from the dev panel
+  ("Reconcile local copies from disk", which re-dumps so the effect is visible).
+  It deliberately avoids `getLocalCopy` — `getSingleOrNull()` throws on the legacy
+  duplicate rows 4.2 collapses. **Also closes a 4.0 blocker:** the 1.5 dump could not
+  produce the count 4.0 asks for, so it now reports `on disk without a local copy row: N`
+  via `findMissingLocalCopies()` — the owner can answer 4.0's first half from the dump
+  alone. Verify: 6 new tests green; sync+database+dev **324 green / 0 failures**; full
+  suite **994 green, 9 pre-existing reds, 0 regressions**; `flutter analyze` 0 errors.
 - [ ] 4.4 Terminal vs retryable failure (design D9). Gated on 4.0's second answer — if
   the heal has an archived-entity blind spot, widen `entityPathCandidatesForHash` first
   and re-measure before classifying anything terminal. Red: an upload whose file is

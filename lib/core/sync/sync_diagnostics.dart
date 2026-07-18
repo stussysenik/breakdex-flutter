@@ -1,4 +1,5 @@
 import '../database/database.dart';
+import 'local_copy_reconciler.dart';
 
 /// Dev-only snapshot of the video-backup ground truth: manifest counts,
 /// copies grouped by provider×status, operations grouped by status.
@@ -40,10 +41,18 @@ class SyncDiagnostics {
       errorCounts.update(error, (final v) => v + 1, ifAbsent: () => 1);
     }
 
+    // Live assets whose bytes are on disk but which carry no `local` copy row
+    // — the count task 4.0 asks for, and the gap 4.3's reconcile closes.
+    final missingLocal = await LocalCopyReconciler(
+      manifestDao: _db.assetManifestDao,
+      copiesDao: _db.assetCopiesDao,
+    ).findMissingLocalCopies();
+
     return [
       'asset_manifest: ${manifests.length} rows (${live.length} live, '
           '$underprotected underprotected, '
           '${manifests.length - live.length} tombstoned)',
+      'on disk without a local copy row: ${missingLocal.length}',
       'asset_copies: ${_fmt(copiesByKey)}',
       'sync_operations: ${_fmt(opsByStatus)}',
       if (errorCounts.isNotEmpty)

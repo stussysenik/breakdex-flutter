@@ -69,6 +69,7 @@ import 'sync/cloud_provider.dart';
 import 'sync/gdrive_setup_service.dart';
 import 'sync/icloud_setup_service.dart';
 import 'sync/integrity_verifier.dart';
+import 'sync/local_copy_reconciler.dart';
 import 'sync/legacy_asset_migration.dart';
 import 'sync/network_policy.dart';
 import 'sync/providers/gdrive_provider.dart';

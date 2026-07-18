@@ -18,7 +18,11 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../../core/design/spacing.dart';
 import '../../core/design/typography.dart';
 import '../../core/providers.dart'
-    show fullBackfillServiceProvider, syncDiagnosticsProvider, syncServiceProvider;
+    show
+        fullBackfillServiceProvider,
+        localCopyReconcilerProvider,
+        syncDiagnosticsProvider,
+        syncServiceProvider;
 import '../../core/services/appwrite_auth_providers.dart';
 import '../../core/services/settings_service.dart' show sharedPreferencesProvider;
 import '../../core/services/sync_service.dart';
@@ -509,6 +513,27 @@ class _DiagnosticsSectionState extends ConsumerState<_DiagnosticsSection> {
     }
   }
 
+  /// Insert the `local` copy rows that disk truth supports, then re-dump so
+  /// the effect on the underprotected count is visible in the same view.
+  Future<void> _reconcile() async {
+    setState(() {
+      _running = true;
+      _error = null;
+    });
+    try {
+      final inserted = await ref.read(localCopyReconcilerProvider).reconcile();
+      debugPrint('[SyncDiagnostics] reconciled $inserted local copy row(s)');
+      final report = await ref.read(syncDiagnosticsProvider).dump();
+      if (mounted) {
+        setState(() => _report = 'Inserted $inserted local copy row(s).\n\n$report');
+      }
+    } on Object catch (error) {
+      if (mounted) setState(() => _error = '$error');
+    } finally {
+      if (mounted) setState(() => _running = false);
+    }
+  }
+
   @override
   Widget build(final BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
@@ -543,6 +568,14 @@ class _DiagnosticsSectionState extends ConsumerState<_DiagnosticsSection> {
             key: const ValueKey('sync-diagnostics-dump'),
             onPressed: _running ? null : _run,
             child: Text(_running ? 'Dumping…' : 'Dump backup state'),
+          ),
+          const SizedBox(height: AppSpacing.sm),
+          OutlinedButton(
+            key: const ValueKey('sync-reconcile-local-copies'),
+            onPressed: _running ? null : _reconcile,
+            child: Text(
+              _running ? 'Reconciling…' : 'Reconcile local copies from disk',
+            ),
           ),
           if (_report != null) ...[
             const SizedBox(height: AppSpacing.sm),

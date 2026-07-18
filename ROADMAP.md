@@ -86,9 +86,14 @@
   counter), and answer the open question — do the ~22 failing `Moves/Power moves/` videos
   still **play**? (play ⇒ the heal has an archived-entity blind spot,
   `getActiveByContentHash` at `moves_dao.dart:42`; don't play ⇒ terminal classification is
-  correct). **4.4 is blocked on that answer.** Agent-runnable without it: **4.3** (copy
-  reconcile from disk truth — land it right after 4.2, it clears the honest transient
-  v28 introduces), then 2.3 → 4.5.
+  correct). **4.4 is blocked on that answer.** **4.3 also DONE 2026-07-18**
+  (`LocalCopyReconciler` + dev-panel action), which clears the honest transient v28
+  introduces — and it closed a 4.0 blocker: the 1.5 dump could not produce the
+  missing-local-copy count 4.0 asks for, and now reports it directly, so the owner can
+  answer 4.0's first half from the dump alone. Full suite **994 green, 9 pre-existing
+  reds, 0 regressions**. Next agent-runnable: **2.3** (per-asset sync detail list) →
+  **4.5** (pending / uploading / unbackupable split + byte progress), which 2.3 hosts.
+  4.4 and 4.6 stay owner-gated behind 4.0.
   **Also unticked:** 1.7 owner 30-second device proof; 2.3 per-asset sync detail list in
   Sync Status (the surface 4.1/4.4/4.5 report into — land it before or alongside 4.5).
   **Phase 3** stays owner-gated on design O1/O2.

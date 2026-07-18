@@ -134,6 +134,15 @@ final syncDiagnosticsProvider = Provider<SyncDiagnostics>((final ref) {
   return SyncDiagnostics(ref.watch(databaseProvider));
 });
 
+/// Reconciles `asset_copies` against disk truth — inserts the `local` rows a
+/// legacy import never wrote, so an on-disk asset stops reading a copy short.
+final localCopyReconcilerProvider = Provider<LocalCopyReconciler>((final ref) {
+  return LocalCopyReconciler(
+    manifestDao: ref.watch(assetManifestDaoProvider),
+    copiesDao: ref.watch(assetCopiesDaoProvider),
+  );
+});
+
 /// Integrity verifier for periodic file re-hashing.
 final integrityVerifierProvider = Provider<IntegrityVerifier>((final ref) {
   return IntegrityVerifier(

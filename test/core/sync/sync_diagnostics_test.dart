@@ -81,20 +81,24 @@ void main() {
     final report = await SyncDiagnostics(db).dump();
     final lines = report.split('\n');
 
-    expect(lines, hasLength(6));
+    expect(lines, hasLength(7));
     expect(
       lines[0],
       'asset_manifest: 3 rows (2 live, 1 underprotected, 1 tombstoned)',
     );
+    // The 4.0 question, answerable from the dump: live assets whose bytes are
+    // on disk but which carry no `local` copy row. Nothing here resolves to a
+    // real file, so the honest answer is 0 rather than a guess.
+    expect(lines[1], 'on disk without a local copy row: 0');
     expect(
-      lines[1],
+      lines[2],
       'asset_copies: gdrive×failed: 1 · gdrive×verified: 1 · local×verified: 1',
     );
-    expect(lines[2], 'sync_operations: failed: 3 · queued: 2');
+    expect(lines[3], 'sync_operations: failed: 3 · queued: 2');
     // Failed-op errors, grouped by message, most frequent first.
-    expect(lines[3], 'failed op errors:');
-    expect(lines[4], '  2× DetailedApiRequestError');
-    expect(lines[5], '  1× (no error message)');
+    expect(lines[4], 'failed op errors:');
+    expect(lines[5], '  2× DetailedApiRequestError');
+    expect(lines[6], '  1× (no error message)');
   });
 
   test('dump on an empty database reports zeros, not errors', () async {
@@ -104,6 +108,7 @@ void main() {
       report.split('\n'),
       [
         'asset_manifest: 0 rows (0 live, 0 underprotected, 0 tombstoned)',
+        'on disk without a local copy row: 0',
         'asset_copies: (none)',
         'sync_operations: (none)',
       ],
