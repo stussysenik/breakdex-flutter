@@ -542,6 +542,34 @@ void main() {
       expect(manifest!.localPath, 'Moves/Power/Windmill - stale01h.mp4');
     });
 
+    // The 4.0 device read found 22 assets with NO owner of any kind — not
+    // active, not archived, not soft-deleted — whose bytes were nevertheless
+    // on disk under a different category directory. Lane 2 can only heal
+    // toward an owner, so every one of them failed "Local file missing" and
+    // re-queued forever. Identity is the hash in the filename, not the path.
+    test('heals from the sandbox when no entity owns the content', () async {
+      const hexHash = '69e13899aabbccdd';
+      final strandedFile = File(
+        '${tempDir.path}/Moves/Power moves/Air Flare - 69e13899.mp4',
+      );
+      await strandedFile.parent.create(recursive: true);
+      await strandedFile.writeAsBytes(List.filled(64, 7));
+
+      await _seedManifest(db, hash: hexHash, localPath: 'Moves/Old/gone.mp4');
+      await _seedOperation(
+        db,
+        id: 'op-sandbox',
+        hash: hexHash,
+        operationType: 'upload',
+      );
+
+      await engine.runSyncCycle(ConnectionType.wifi);
+
+      expect(fakeProvider.uploadedLocalPaths, [strandedFile.path]);
+      final manifest = await db.assetManifestDao.getByHash(hexHash);
+      expect(manifest!.localPath, 'Moves/Power moves/Air Flare - 69e13899.mp4');
+    });
+
     test('fails honestly when no owning entity has the file', () async {
       await _seedManifest(db, hash: hash, localPath: 'Moves/Old/gone.mp4');
       await _seedOperation(db, id: 'op-gone', hash: hash, operationType: 'upload');

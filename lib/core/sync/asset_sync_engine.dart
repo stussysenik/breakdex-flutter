@@ -21,6 +21,7 @@ import 'asset_hash_service.dart';
 import 'cloud_provider.dart';
 import 'network_policy.dart';
 import 'safety_guard.dart';
+import 'sandbox_hash_index.dart';
 
 /// Overall sync progress snapshot for UI display.
 class SyncProgress {
@@ -386,9 +387,18 @@ class AssetSyncEngine {
   }
 
   /// Mark an op failed with a synchronous, traceable log line.
-  /// Find the content at its owning entity's current path and persist it back
-  /// to the manifest. Returns the healed absolute path, or null when no owning
-  /// entity has the file on disk.
+  /// Find the content's bytes and persist their location back to the manifest.
+  /// Returns the healed absolute path, or null when the bytes are nowhere.
+  ///
+  /// Three lanes, cheapest first. The stored path is tried by the caller; this
+  /// tries (2) the owning entities' current paths, which stay correct through
+  /// renames and category moves, then (3) a hash-indexed scan of the sandbox.
+  ///
+  /// Lane 3 exists because lane 2 has a hole the 4.0 device read exposed: it
+  /// can only heal toward an *owner*, and 22 assets had none at all — no active
+  /// owner, no archived one, no soft-deleted one — while their bytes sat on
+  /// disk under a different category directory. Path is a hint; the hash
+  /// embedded in every canonical filename is identity (design D10).
   Future<String?> _healStaleLocalPath(final String contentHash) async {
     final candidates = await _manifestDao.entityPathCandidatesForHash(
       contentHash,
@@ -396,19 +406,45 @@ class AssetSyncEngine {
     for (final relative in candidates) {
       final absolute = VideoPathResolver.toAbsolute(relative);
       if (await File(absolute).exists()) {
-        await _manifestDao.updateLocalState(
-          contentHash,
-          localPath: Value(relative),
-        );
-        debugPrint(
-          '[VideoBackup] healed stale localPath for '
-          '${contentHash.length > 8 ? contentHash.substring(0, 8) : contentHash}'
-          ' → $relative',
-        );
-        return absolute;
+        return _persistHealedPath(contentHash, relative, absolute, 'owner');
       }
     }
+
+    final documentsPath = VideoPathResolver.documentsPath;
+    final index = await SandboxHashIndex.scan(documentsPath);
+    final found = await index.resolve(
+      contentHash,
+      documentsPath: documentsPath,
+      hasher: _hashService,
+    );
+    if (found != null) {
+      return _persistHealedPath(
+        contentHash,
+        found,
+        VideoPathResolver.toAbsolute(found),
+        'sandbox',
+      );
+    }
+
     return null;
+  }
+
+  Future<String> _persistHealedPath(
+    final String contentHash,
+    final String relative,
+    final String absolute,
+    final String lane,
+  ) async {
+    await _manifestDao.updateLocalState(
+      contentHash,
+      localPath: Value(relative),
+    );
+    debugPrint(
+      '[VideoBackup] healed stale localPath ($lane) for '
+      '${contentHash.length > 8 ? contentHash.substring(0, 8) : contentHash}'
+      ' → $relative',
+    );
+    return absolute;
   }
 
   Future<void> _fail(final SyncOperation op, final String message) async {

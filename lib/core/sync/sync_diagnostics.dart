@@ -5,8 +5,10 @@
 import '../database/database.dart';
 import '../platform/io.dart';
 import '../services/video_path_resolver.dart';
+import 'asset_hash_service.dart';
 import 'asset_resolution.dart';
 import 'local_copy_reconciler.dart';
+import 'sandbox_hash_index.dart';
 
 /// Dev-only snapshot of the video-backup ground truth: manifest counts,
 /// copies grouped by provider×status, operations grouped by status.
@@ -15,6 +17,7 @@ import 'local_copy_reconciler.dart';
 /// guesswork — "the UI says All synced" becomes three verifiable lines.
 class SyncDiagnostics {
   final AppDatabase _db;
+  final AssetHashService _hasher = AssetHashService();
 
   SyncDiagnostics(this._db);
 
@@ -97,6 +100,13 @@ class SyncDiagnostics {
     final lines = <String>[];
     final tally = <AssetResolution, int>{};
 
+    // Built once for the whole report. Every verdict below is about a *path*
+    // failing; this is the only reading that speaks to whether the *bytes*
+    // exist, which is what decides rescue (4.7) versus tombstone (4.8).
+    final documentsPath = VideoPathResolver.documentsPath;
+    final sandbox = await SandboxHashIndex.scan(documentsPath);
+    var rescuable = 0;
+
     for (final manifest in manifests) {
       if (manifest.deletedAt != null) continue;
 
@@ -152,16 +162,26 @@ class SyncDiagnostics {
       );
       tally.update(resolution, (final v) => v + 1, ifAbsent: () => 1);
 
+      final found = await sandbox.resolve(
+        hash,
+        documentsPath: documentsPath,
+        hasher: _hasher,
+      );
+      if (found != null) rescuable++;
+
       lines.add(
         '  ${assetResolutionLabel(resolution)} '
         '${hash.length > 8 ? hash.substring(0, 8) : hash} '
         'owners=${owners.length}($archivedCount archived, '
         '$deletedOwnerCount deleted)+${combos.length}combo '
-        'path=${relative ?? '(none)'}',
+        'path=${relative ?? '(none)'} '
+        '${found == null ? 'bytes not found in sandbox' : 'bytes found on disk at $found'}',
       );
     }
 
     final control = await _ownerJoinControl();
+    final split = 'sandbox rescue: $rescuable of ${lines.length} '
+        'unreachable assets have bytes on disk';
 
     if (lines.isEmpty) return '$control\nunresolvable assets: none';
 
@@ -172,7 +192,7 @@ class SyncDiagnostics {
         .map((final r) => '  ${assetResolutionLabel(r)} — ${assetResolutionMeaning(r)}')
         .join('\n');
 
-    return '$control\n'
+    return '$control\n$split\n'
         'unresolvable assets: ${lines.length} ($summary)\n'
         '$meanings\n${lines.join('\n')}';
   }

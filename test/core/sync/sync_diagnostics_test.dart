@@ -1,7 +1,11 @@
+import 'dart:io';
+
 import 'package:breakdex/core/database/database.dart';
+import 'package:breakdex/core/services/video_path_resolver.dart';
 import 'package:breakdex/core/sync/sync_diagnostics.dart';
 import 'package:drift/drift.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:path/path.dart' as p;
 
 import '../../helpers/test_database.dart';
 
@@ -81,7 +85,7 @@ void main() {
     final report = await SyncDiagnostics(db).dump();
     final lines = report.split('\n');
 
-    expect(lines, hasLength(12));
+    expect(lines, hasLength(13));
     expect(
       lines[0],
       'asset_manifest: 3 rows (2 live, 1 underprotected, 1 tombstoned)',
@@ -108,14 +112,21 @@ void main() {
     // reading and the ORPHAN verdicts below are trustworthy only because the
     // control is separately proven to fire (see the test that seeds a move).
     expect(lines[7], 'owner-join control: 0/2 live manifest hashes match ≥1 move');
-    expect(lines[8], 'unresolvable assets: 2 (ORPHAN: 2)');
-    expect(lines[9], contains('ORPHAN — terminal: manifest row has no owning'));
+    // The rescue/gone split — the reading that decides whether an unreachable
+    // asset is 4.7's business (bytes on disk) or 4.8's (bytes truly gone).
     expect(
-      lines[10],
-      startsWith('  ORPHAN h1 owners=0(0 archived, 0 deleted)+0combo'),
+      lines[8],
+      'sandbox rescue: 0 of 2 unreachable assets have bytes on disk',
     );
+    expect(lines[9], 'unresolvable assets: 2 (ORPHAN: 2)');
+    expect(lines[10], contains('ORPHAN — terminal: manifest row has no owning'));
     expect(
       lines[11],
+      startsWith('  ORPHAN h1 owners=0(0 archived, 0 deleted)+0combo'),
+    );
+    expect(lines[11], endsWith('bytes not found in sandbox'));
+    expect(
+      lines[12],
       startsWith('  ORPHAN h2 owners=0(0 archived, 0 deleted)+0combo'),
     );
   });
@@ -146,6 +157,35 @@ void main() {
     expect(
       report,
       contains('owner-join control: 1/2 live manifest hashes match ≥1 move'),
+    );
+  });
+
+  // The split earns its place only if it can read non-zero — the same doubt
+  // the owner-join control exists to kill. A report that always says "0 have
+  // bytes on disk" would send every unreachable asset to the tombstone lane.
+  test('an unreachable asset whose bytes are in the sandbox reads found',
+      () async {
+    final docs = Directory.systemTemp.createTempSync('diag_sandbox');
+    addTearDown(() => docs.deleteSync(recursive: true));
+    VideoPathResolver.docsPathOverride = docs.path;
+
+    final stranded = File(
+      p.join(docs.path, 'Moves', 'Power moves', 'Air Flare - 69e13899.mp4'),
+    );
+    stranded.parent.createSync(recursive: true);
+    stranded.writeAsBytesSync(List.filled(16, 3));
+
+    await seedManifest('69e13899aabb');
+
+    final report = await SyncDiagnostics(db).dump();
+
+    expect(
+      report,
+      contains('sandbox rescue: 1 of 1 unreachable assets have bytes on disk'),
+    );
+    expect(
+      report,
+      contains('bytes found on disk at Moves/Power moves/Air Flare - 69e13899.mp4'),
     );
   });
 

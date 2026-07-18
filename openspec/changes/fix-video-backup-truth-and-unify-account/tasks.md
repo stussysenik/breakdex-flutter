@@ -200,7 +200,7 @@
   sweep (not only at the end); after the cycle, pending + unbackupable accounts for
   every live asset with no double-counting; a second Sync Now re-attempts nothing
   terminal. Evidence: screenshot mid-sweep + final counts in the tick.
-- [ ] 4.7 Hash-indexed sandbox rescue (design D10). One recursive scan of `Moves/` +
+- [x] 4.7 Hash-indexed sandbox rescue (design D10). One recursive scan of `Moves/` +
   `Combos/` builds a `contentHash → absolute path` index by parsing the hash embedded
   in canonical filenames (`Name - hash8.ext` and `<fullhash>.ext` forms; hash8 collisions
   resolved by full-hash verify before trusting). Wire as the third lane of
@@ -213,6 +213,28 @@
   returns the scanned path, manifest updated, upload proceeds. Also fix the stale
   `asset_manifest.localPath` doc comment ("Absolute path" → relative-to-Documents,
   healable). Verify: new tests red/green, sync suite green, analyze clean.
+  **DONE 2026-07-19.** `lib/core/sync/sandbox_hash_index.dart`: a pure
+  `sandboxHashToken()` parser plus `SandboxHashIndex.scan()/resolve()`. Wired as lane 3
+  of `_healStaleLocalPath`, with lanes 2 and 3 sharing one `_persistHealedPath` that logs
+  which lane fired. **One spec detail was wrong and the code corrects it:** the spec said
+  parse "the hash embedded in canonical filenames", and the four existing inline parsers
+  all use `split(' - ').last` — which returns the *whole basename* when there is no
+  separator, so `IMG_4021.mov` would key the index under `img_4021`. The parser therefore
+  validates hex and length (64 for `<fullhash>.ext`, 8 for `Name - hash8.ext`) and returns
+  null otherwise; a junk key can only ever produce a wrong rescue, and handing the
+  uploader wrong bytes under the right hash is the one failure mode this lane must not
+  have. Uses `lastIndexOf(' - ')` so names containing the separator still parse.
+  hash8 ties are resolved by full-hash verify; a lone hash8 match is trusted without
+  re-hashing megabytes (documented tradeoff). Red proven by stashing the wiring: the new
+  engine test read `Actual: []` (no upload). Green: uploads the stranded file and the
+  manifest records `Moves/Power moves/Air Flare - 69e13899.mp4`. Diagnostics gained
+  `sandbox rescue: N of M unreachable assets have bytes on disk` plus a per-asset
+  `bytes found on disk at <path>` / `bytes not found in sandbox`, with a test proving the
+  found-branch fires (a split that could only read 0 would send every asset to 4.8).
+  Verify: 12 new index tests + 1 engine + 1 diagnostics test green; sync+database+services
+  **697 green / 0 failures**; `flutter analyze` 0 errors; full suite **1157 green**, reds
+  identical to baseline on the same files (42/6/9 with and without the change) — **0
+  regressions**; `check_l10n.sh` and `flutter build web` green.
 - [ ] 4.8 Tombstone the residue (gated on 4.7's device evidence). For unreachable assets
   the sandbox scan confirms gone (`bytes not found`), a dev-panel action tombstones the
   manifest rows (sets `deletedAt`, same soft-delete idiom as user deletes) so the sweep

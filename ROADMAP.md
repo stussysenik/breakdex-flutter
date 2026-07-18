@@ -123,8 +123,15 @@
   (a test now asserts the phrase never renders), and **4.4's scope widened** — the terminal
   verdict has to survive the next sweep's re-queue, so its red must cover the second cycle.
   Suite **1030 green, 9 pre-existing reds, 0 regressions**; analyze 0 errors; l10n gate green.
-  **Next unticked, agent-runnable now: 4.7** (hash-indexed sandbox rescue), then 4.8,
-  then 4.4. 3.2 is also agent-runnable now (console-cookie recipe). 4.6 stays owner-gated.
+  **4.7 DONE 2026-07-19** — `SandboxHashIndex` is heal lane 3: one recursive pass over
+  `Moves/` + `Combos/` keyed by the hash embedded in canonical filenames, so an asset with
+  no owner of any kind still finds its bytes. The parser validates hex and length rather
+  than reusing the repo's `split(' - ').last` idiom, which returns the whole basename on
+  names with no separator — a junk index key can only ever hand the uploader the wrong
+  bytes under the right hash. Diagnostics now measure the rescuable/gone split per asset,
+  which is exactly the evidence 4.8 is gated on. Suite 1157 green, 0 regressions.
+  **Next unticked, agent-runnable now: 4.8** (tombstone the residue), then 4.4.
+  3.2 is also agent-runnable now (console-cookie recipe). 4.6 stays owner-gated.
   **Also unticked:** 1.7 owner 30-second device proof.
   **New sibling change (2026-07-19, strict-valid): `humanize-video-surfaces-and-gate-release`**
   — Phase 1 picker collapse (In Breakdex / Import; sequenced after 4.7), Phase 2 human
