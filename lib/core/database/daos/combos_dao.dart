@@ -446,7 +446,7 @@ class CombosDao extends DatabaseAccessor<AppDatabase> with _$CombosDaoMixin {
     final query = customSelect(
       '''
       SELECT c.id, c.name, c.notes, c.active_video_path, c.content_hash,
-             c.status, c.created_at,
+             c.status, c.created_at, c.updated_at,
         (SELECT GROUP_CONCAT(m.name, ' → ')
          FROM combo_moves cm
          JOIN moves m ON m.id = cm.move_id
@@ -470,6 +470,7 @@ class CombosDao extends DatabaseAccessor<AppDatabase> with _$CombosDaoMixin {
 
     return query.watch().map((final rows) => rows.map((final row) {
           final lastEntryAt = row.readNullable<int>('last_entry_at');
+          final updatedAt = row.readNullable<int>('updated_at');
           return LibraryRow(
             combo: Combo(
               id: row.read<String>('id'),
@@ -481,6 +482,11 @@ class CombosDao extends DatabaseAccessor<AppDatabase> with _$CombosDaoMixin {
               createdAt: DateTime.fromMillisecondsSinceEpoch(
                 row.read<int>('created_at') * 1000,
               ),
+              // Hydrated because the "recently practiced" chain reads it for
+              // combos edited but never jotted (design D2).
+              updatedAt: updatedAt != null
+                  ? DateTime.fromMillisecondsSinceEpoch(updatedAt * 1000)
+                  : null,
             ),
             transitionChain: row.readNullable<String>('transition_chain') ?? '',
             moveCount: row.read<int>('move_count'),

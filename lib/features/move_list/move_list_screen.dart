@@ -101,8 +101,12 @@ final _dismissedReliabilityReportEpochProvider = StateProvider<int?>(
   (final ref) => null,
 );
 
-final _combosStreamProvider = StreamProvider<List<(Combo, int)>>((final ref) {
-  final stream = ref.watch(comboRepositoryProvider).watchAllWithMoveCounts();
+/// The library's combo feed. Reads `watchLibraryRows` (rather than
+/// `watchAllWithMoveCounts`) because the "recently practiced" chain needs
+/// `lastEntryAt`, which only that query carries — jotting a combo does not
+/// touch `combos.updatedAt`.
+final _combosStreamProvider = StreamProvider<List<LibraryRow>>((final ref) {
+  final stream = ref.watch(combosDaoProvider).watchLibraryRows();
   return stream.map((final combos) {
     debugPrint('[MoveList] _combosStreamProvider emitted ${combos.length} combos');
     return combos;
@@ -165,6 +169,32 @@ final _movesStreamProvider = StreamProvider<List<Move>>((final ref) {
   });
 });
 
+/// The moves the library renders: the feed, filtered by the search query and
+/// ordered by the active sort. Sorting is client-side (design D1) — the list is
+/// already fully in memory and filtered in Dart, so the DAO ordering is left
+/// alone and a sort change costs no query.
+///
+/// Public so the ordering can be driven and asserted without pumping the
+/// screen; live Drift streams flake widget tests.
+final libraryMovesProvider = Provider<AsyncValue<List<Move>>>((final ref) {
+  final query = ref.watch(_searchQueryProvider).toLowerCase();
+  final sort = ref.watch(librarySortProvider);
+  return ref.watch(_movesStreamProvider).whenData((final moves) => moves
+      .where((final m) => m.name.toLowerCase().contains(query))
+      .toList()
+    ..sort(moveLibraryComparator(sort)));
+});
+
+/// The combos the library renders. See [libraryMovesProvider].
+final libraryCombosProvider = Provider<AsyncValue<List<LibraryRow>>>((final ref) {
+  final query = ref.watch(_searchQueryProvider).toLowerCase();
+  final sort = ref.watch(librarySortProvider);
+  return ref.watch(_combosStreamProvider).whenData((final combos) => combos
+      .where((final c) => c.combo.name.toLowerCase().contains(query))
+      .toList()
+    ..sort(comboLibraryComparator(sort)));
+});
+
 // -- Screen ------------------------------------------------------------------
 
 class MoveListScreen extends ConsumerWidget {
@@ -175,8 +205,8 @@ class MoveListScreen extends ConsumerWidget {
 
   @override
   Widget build(final BuildContext context, final WidgetRef ref) {
-    final movesAsync = ref.watch(_movesStreamProvider);
-    final combosAsync = ref.watch(_combosStreamProvider);
+    final movesAsync = ref.watch(libraryMovesProvider);
+    final combosAsync = ref.watch(libraryCombosProvider);
     final searchQuery = ref.watch(_searchQueryProvider);
     final viewMode = ref.watch(_viewModeProvider);
     final viewNames = ref.watch(viewNamesProvider);
@@ -266,17 +296,7 @@ class MoveListScreen extends ConsumerWidget {
                       error: (final e, _) => SliverFillRemaining(
                         child: Center(child: Text('Error: $e')),
                       ),
-                      data: (final moves) {
-                        final filtered = searchQuery.isEmpty
-                            ? moves
-                            : moves
-                                  .where(
-                                    (final m) => m.name.toLowerCase().contains(
-                                      searchQuery.toLowerCase(),
-                                    ),
-                                  )
-                                  .toList();
-
+                      data: (final filtered) {
                         if (filtered.isEmpty) {
                           return SliverFillRemaining(
                             child: _EmptyState(
@@ -300,16 +320,10 @@ class MoveListScreen extends ConsumerWidget {
                       error: (final e, _) => SliverFillRemaining(
                         child: Center(child: Text('Error: $e')),
                       ),
-                      data: (final combosWithCounts) {
-                        final filtered = searchQuery.isEmpty
-                            ? combosWithCounts
-                            : combosWithCounts
-                                  .where(
-                                    (final c) => c.$1.name.toLowerCase().contains(
-                                      searchQuery.toLowerCase(),
-                                    ),
-                                  )
-                                  .toList();
+                      data: (final rows) {
+                        final filtered = rows
+                            .map((final r) => (r.combo, r.moveCount))
+                            .toList();
 
                         if (filtered.isEmpty) {
                           return SliverFillRemaining(

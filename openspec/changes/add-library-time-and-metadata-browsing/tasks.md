@@ -24,7 +24,7 @@
 
 ## Phase 2 — Sort + grouping in the library
 
-- [ ] 2.1 Apply the comparator in the provider that already derives the filtered move and
+- [x] 2.1 Apply the comparator in the provider that already derives the filtered move and
   combo lists (design D1 — client-side; DAO ordering untouched). Verify: widget test via
   the pure-override harness (live Drift streams flake widget tests) asserting reorder on
   sort change; existing move-list tests green.
@@ -34,6 +34,22 @@
   it was edited yesterday. Add `c.updated_at` to that SELECT and hydrate it here; the
   comparator already reads it. Verify: the combo ordering test must distinguish
   edited-but-never-jotted from never-touched, which today it cannot.
+  **DONE 2026-07-18.** `libraryMovesProvider` / `libraryCombosProvider` in
+  `move_list_screen.dart` now own filter-then-sort; the screen reads them instead of the
+  raw streams. **1.1's premise was one surface off:** the library's combo tab did not read
+  `watchLibraryRows` at all — it read `watchAllWithMoveCounts` (`(Combo, int)` tuples,
+  ordered by move count then name), so the practiced chain had no `lastEntryAt` there
+  either, and jotting a combo does **not** stamp `combos.updatedAt`
+  (`combo_note_entries_dao.dart:62-82`) — both middle links were dead, not one. The feed
+  is now `watchLibraryRows` for both library surfaces, with `c.updated_at` added to that
+  SELECT and hydrated; `LibraryRow` maps back to `(combo, moveCount)` at the sliver
+  boundary, so no widget signature moved. Verified by driving the derivation providers
+  against a real in-memory database rather than pumping the screen (live Drift streams
+  flake widget tests). Binary truth: 7 tests, mutation-proven — removing both `..sort`
+  calls goes −4, dropping the `updatedAt` hydration goes −2; the fixture gives all four
+  sorts four *different* orders, none of them the feed's own `createdAt DESC`, so no sort
+  can pass by coincidence. `flutter analyze` 0 errors (9 pre-existing infos), suite
+  **1055 green / 9 pre-existing reds / 0 regressions**.
 - [ ] 2.2 Sort control in the library header, composed with the existing
   `_PillToggleRow`/`_ViewModeToggle` idiom rather than a new control vocabulary.
   Localized. Verify: widget test, `scripts/check_l10n.sh` green.

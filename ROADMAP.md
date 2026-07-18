@@ -157,8 +157,23 @@
   incl. a simulated-restart round-trip per sort, mutation-proven (changing the default goes
   −4; dropping the `setString` in `set()` goes −1, exactly the round-trip). `flutter analyze`
   0 errors (9 pre-existing infos), suite **1048 green / 9 pre-existing reds / 0 regressions**.
-  **Next agent-runnable: 2.1** (apply the comparator + the `c.updated_at` SELECT fix), which
-  opens Phase 2. Phase 5 stays owner-gated on O1.
+  **2.1 DONE by agent 2026-07-18** — `libraryMovesProvider`/`libraryCombosProvider` own
+  filter-then-sort; the screen reads them instead of the raw streams. Reading the code
+  corrected 1.1 by one surface: the library's combo tab never used `watchLibraryRows` —
+  it used `watchAllWithMoveCounts`, which carries no `lastEntryAt`, and jotting does not
+  stamp `combos.updatedAt`, so **both** middle links of the practiced chain were dead
+  there, not one. Both library surfaces now read `watchLibraryRows`, with `c.updated_at`
+  added to that SELECT and hydrated; `LibraryRow` maps to `(combo, moveCount)` at the
+  sliver boundary so no widget signature moved. Ordering is proven by driving the
+  derivation providers against a real in-memory DB, not by pumping the screen. Binary
+  truth: 7 tests, mutation-proven (dropping both sorts −4, dropping the hydration −2;
+  the fixture makes all four sorts yield four different orders, none the feed's own
+  `createdAt DESC`). `flutter analyze` 0 errors, suite **1055 green / 9 pre-existing reds
+  / 0 regressions**.
+  **Next agent-runnable: 2.2** (sort control in the library header) — but see O2 below:
+  it decides whether that control writes one key or one per segment. The single-key
+  version is what's built and is the cheaper thing to widen.
+  Phase 5 stays owner-gated on O1.
 
 - **Change (owner-driven, parallel):** `add-dev-auth-and-sync-rehearsal` — de-risks the owner's Phase-M pass
   by letting a dev **user #0** rehearse the whole sync ladder without Google OAuth. **Agent
