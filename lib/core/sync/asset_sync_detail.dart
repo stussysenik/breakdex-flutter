@@ -75,6 +75,82 @@ class AssetSyncDetail {
           : null;
 }
 
+/// How the live library divides across the pipeline.
+///
+/// Folded from the same [AssetSyncDetail] rows the list renders, so the
+/// buckets partition the library exactly: every live asset lands in one and
+/// no asset lands in two. [total] is therefore an arithmetic identity, not a
+/// second count that could disagree with the first.
+class AssetSyncTally {
+  /// Bytes are moving right now.
+  final int uploading;
+
+  /// Queued or untouched — waiting, nothing moving.
+  final int waiting;
+
+  /// The last attempt failed and the engine will try that operation again.
+  final int retrying;
+
+  /// The last attempt burned its whole retry budget.
+  ///
+  /// Deliberately *not* named "will never be retried". The operation is
+  /// finished, but the next sweep calls `queueUpload` for any asset still
+  /// under the copy minimum, and `operationExists` only dedupes against
+  /// `queued`/`in_progress` — so a fresh operation is inserted with
+  /// `retryCount` back at zero. The budget is bounded per operation and
+  /// unbounded per asset. Making that promise true is task 4.4; until then
+  /// this bucket means "keeps failing", which is what the user sees.
+  final int unbackupable;
+
+  /// A cloud provider holds a verified copy.
+  final int backedUp;
+
+  const AssetSyncTally({
+    required this.uploading,
+    required this.waiting,
+    required this.retrying,
+    required this.unbackupable,
+    required this.backedUp,
+  });
+
+  factory AssetSyncTally.from(final List<AssetSyncDetail> details) {
+    var uploading = 0;
+    var waiting = 0;
+    var retrying = 0;
+    var unbackupable = 0;
+    var backedUp = 0;
+    for (final detail in details) {
+      switch (detail.status) {
+        case AssetSyncStatus.uploading:
+          uploading++;
+        case AssetSyncStatus.queued:
+        case AssetSyncStatus.pending:
+          waiting++;
+        case AssetSyncStatus.failed:
+          if (detail.isTerminal) {
+            unbackupable++;
+          } else {
+            retrying++;
+          }
+        case AssetSyncStatus.backedUp:
+          backedUp++;
+      }
+    }
+    return AssetSyncTally(
+      uploading: uploading,
+      waiting: waiting,
+      retrying: retrying,
+      unbackupable: unbackupable,
+      backedUp: backedUp,
+    );
+  }
+
+  int get total => uploading + waiting + retrying + unbackupable + backedUp;
+
+  /// Everything without a verified cloud copy, whatever stage it is at.
+  int get unprotected => total - backedUp;
+}
+
 /// Compose the per-asset list from raw table rows.
 ///
 /// Pure so the classification is testable without a database. Tombstoned

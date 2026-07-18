@@ -1237,6 +1237,73 @@ class AppLocalizationsEn extends AppLocalizations {
   String get setSyncChecking => 'Checking…';
 
   @override
+  String get setSyncVideosHeader => 'Videos';
+
+  @override
+  String get setSyncNoVideosTracked => 'No videos are being tracked yet.';
+
+  @override
+  String setSyncTallyUploading(int count) {
+    return '$count uploading';
+  }
+
+  @override
+  String setSyncTallyWaiting(int count) {
+    return '$count waiting';
+  }
+
+  @override
+  String setSyncTallyRetrying(int count) {
+    return '$count retrying';
+  }
+
+  @override
+  String setSyncTallyStuck(int count) {
+    return '$count keep failing';
+  }
+
+  @override
+  String setSyncTallyBackedUp(int count) {
+    return '$count backed up';
+  }
+
+  @override
+  String setSyncDetailUploading(String transferred, String total, int percent) {
+    return '$transferred of $total · $percent%';
+  }
+
+  @override
+  String setSyncDetailStarting(String total) {
+    return 'Starting · $total';
+  }
+
+  @override
+  String setSyncDetailQueued(String total) {
+    return 'Queued · $total';
+  }
+
+  @override
+  String setSyncDetailPending(String total) {
+    return 'Not backed up · $total';
+  }
+
+  @override
+  String setSyncDetailRetrying(String error) {
+    return 'Retrying after: $error';
+  }
+
+  @override
+  String get setSyncDetailRetryingUnknown => 'Retrying after a failed upload';
+
+  @override
+  String setSyncDetailStuck(String error) {
+    return 'Keeps failing: $error';
+  }
+
+  @override
+  String get setSyncDetailStuckUnknown => 'Keeps failing — retries exhausted';
+
+  @override
   String get setSyncProviderIcloudTitle => 'iCloud Drive';
 
   @override

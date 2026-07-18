@@ -93,7 +93,7 @@ void main() {
     ]);
 
     expect(find.text('flare.mp4'), findsOneWidget);
-    expect(find.text('5.0 MB of 10.0 MB'), findsOneWidget);
+    expect(find.text('5.0 MB of 10.0 MB · 50%'), findsOneWidget);
 
     final bar = tester.widget<LinearProgressIndicator>(
       find.byKey(const Key('assetProgress_flare.mp4')),
@@ -113,6 +113,16 @@ void main() {
     expect(bar.value, isNull);
   });
 
+  testWidgets('an upload with no bytes yet says "Starting", not 0%',
+      (final tester) async {
+    await _pumpScreen(tester, details: [
+      _detail(label: 'windmill.mp4', status: AssetSyncStatus.uploading),
+    ]);
+
+    expect(find.text('Starting · 10.0 MB'), findsOneWidget);
+    expect(find.textContaining('0%'), findsNothing);
+  });
+
   testWidgets('a failure shows its error and whether it will retry',
       (final tester) async {
     await _pumpScreen(tester, details: [
@@ -129,11 +139,26 @@ void main() {
       ),
     ]);
 
-    expect(find.text('Failed — retrying: file not found'), findsOneWidget);
-    expect(
-      find.text('Failed — will not retry: file not found'),
-      findsOneWidget,
-    );
+    expect(find.text('Retrying after: file not found'), findsOneWidget);
+    // Never "will not retry": the next sweep queues a fresh operation for any
+    // asset still under the copy minimum, so that promise would be false.
+    expect(find.text('Keeps failing: file not found'), findsOneWidget);
+    expect(find.textContaining('will not retry'), findsNothing);
+  });
+
+  testWidgets('a failure with no recorded error still says what happened',
+      (final tester) async {
+    await _pumpScreen(tester, details: [
+      _detail(label: 'headspin.mp4', status: AssetSyncStatus.failed),
+      _detail(
+        label: 'airflare.mp4',
+        status: AssetSyncStatus.failed,
+        isTerminal: true,
+      ),
+    ]);
+
+    expect(find.text('Retrying after a failed upload'), findsOneWidget);
+    expect(find.text('Keeps failing — retries exhausted'), findsOneWidget);
   });
 
   testWidgets('a backed-up asset names the providers holding it',
@@ -159,5 +184,44 @@ void main() {
     ]);
 
     expect(find.text('Not backed up · 10.0 MB'), findsOneWidget);
+  });
+
+  testWidgets('the tally splits what is moving from what is waiting from '
+      'what is broken', (final tester) async {
+    await _pumpScreen(tester, details: [
+      _detail(label: 'a.mp4', status: AssetSyncStatus.uploading),
+      _detail(label: 'b.mp4', status: AssetSyncStatus.queued),
+      _detail(label: 'c.mp4', status: AssetSyncStatus.pending),
+      _detail(label: 'd.mp4', status: AssetSyncStatus.failed),
+      _detail(
+        label: 'e.mp4',
+        status: AssetSyncStatus.failed,
+        isTerminal: true,
+      ),
+      _detail(label: 'f.mp4', status: AssetSyncStatus.backedUp),
+    ]);
+
+    expect(find.text('1 uploading'), findsOneWidget);
+    expect(find.text('2 waiting'), findsOneWidget);
+    expect(find.text('1 retrying'), findsOneWidget);
+    expect(find.text('1 keep failing'), findsOneWidget);
+    expect(find.text('1 backed up'), findsOneWidget);
+  });
+
+  testWidgets('empty buckets are omitted rather than shown as zero',
+      (final tester) async {
+    await _pumpScreen(tester, details: [
+      _detail(label: 'a.mp4', status: AssetSyncStatus.backedUp),
+    ]);
+
+    expect(find.text('1 backed up'), findsOneWidget);
+    for (final zero in const [
+      '0 uploading',
+      '0 waiting',
+      '0 retrying',
+      '0 keep failing',
+    ]) {
+      expect(find.text(zero), findsNothing);
+    }
   });
 }

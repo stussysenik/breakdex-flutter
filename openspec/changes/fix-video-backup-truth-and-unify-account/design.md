@@ -155,11 +155,25 @@ we do not guess which defect bit this library when the instrument to check alrea
 
 ## D9 — Terminal vs retryable failure
 
-The retry lane is bounded (`maxRetries` default 3, `sync_operations.dart:32`;
-`getRetryable` filters `retryCount < maxRetries`), and `queueUpload` dedupes against
-existing operations (`asset_sync_engine.dart:181-186`). So the 93-failed-op wall is
-self-limiting, not literally infinite — the earlier "permafail storm" reading was too
-strong. The real defect is subtler and worse:
+**Corrected during 4.5 by reading the dedupe, not the summary of it.** The revision above
+("self-limiting, not literally infinite") was wrong, and the original "permafail storm"
+reading was right. The retry lane *is* bounded per operation — `getRetryable` filters
+`retryCount < maxRetries` — but `operationExists` dedupes only against `queued` and
+`in_progress` (`sync_operations_dao.dart:63-76`). A `failed` row blocks nothing. Every
+sweep calls `queueUpload` for each still-underprotected asset (`asset_sync_engine.dart:279`),
+which finds no live operation and **inserts a fresh one with `retryCount` back at zero**.
+The budget is bounded per operation and unbounded per asset: three attempts, every cycle,
+forever. So 4.4 cannot mark the *operation* terminal and stop there — the terminal verdict
+has to be readable at the point of re-queue, or the next sweep simply undoes it.
+
+Consequence already shipped: 4.5's UI never says "will not retry", because today that
+would be a lie. The exhausted bucket reads "keeps failing", which is exactly what the
+engine does. 4.4 earns the stronger wording.
+
+Original text, for the record — the retry lane is bounded (`maxRetries` default 3,
+`sync_operations.dart:32`; `getRetryable` filters `retryCount < maxRetries`), and
+`queueUpload` dedupes against existing operations (`asset_sync_engine.dart:181-186`).
+The real defect is subtler and worse:
 
 An asset whose bytes are gone burns three retries to learn what the first attempt already
 proved, then sits in `failed` forever while the manifest row stays underprotected. The

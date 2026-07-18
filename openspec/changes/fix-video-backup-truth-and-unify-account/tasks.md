@@ -162,13 +162,28 @@
   genuinely missing currently consumes retry budget and is re-attempted on later cycles.
   Green: that path marks the operation terminal (distinct status, retry budget
   untouched, not re-attempted); every other failure keeps today's retryable behavior.
+  **Scope widened by 4.5's read of the dedupe (design D9, corrected):** marking the
+  *operation* terminal is not enough. `operationExists` dedupes only against
+  `queued`/`in_progress` (`sync_operations_dao.dart:63-76`), so a `failed` row blocks
+  nothing and the next sweep's `queueUpload` (`asset_sync_engine.dart:279`) inserts a
+  fresh operation with `retryCount` back at zero — three attempts per cycle, forever.
+  The terminal verdict must be visible at the re-queue site (or held on the manifest),
+  or the sweep undoes it. Red must cover that second cycle, not just the first.
   Verify: both failure classes tested, retry-lane suite green, analyze clean.
-- [ ] 4.5 Unbackupable and in-flight visibility (spec: last two requirements). Sync
-  Status separates three counts — pending, uploading, unbackupable(+reason) — and the
-  active transfer shows its asset and byte/percentage progress from
-  `sync_operations.transferredBytes`. Localized (ARB). Verify: widget tests via the
-  pure-override harness (live Drift streams flake widget tests), `scripts/check_l10n.sh`
-  green, analyze clean.
+- [x] 4.5 Unbackupable and in-flight visibility (spec: last two requirements). Sync
+  Status separates the counts — uploading / waiting / retrying / keeps-failing /
+  backed up — via a pure `AssetSyncTally.from()` folded over the same rows the list
+  renders, so the buckets partition the library by construction (mutation-proven: a
+  double-count makes `total` disagree with the row count and goes red). The active
+  transfer shows byte *and* percentage progress; a transfer with no reported bytes says
+  "Starting", never a fabricated 0%. The failure copy says "keeps failing", **not**
+  "will not retry" — see the D9 correction above; that promise is false until 4.4 lands,
+  and a test asserts the phrase is absent. Empty buckets are omitted rather than shown
+  as zero. ARB pass covers the whole per-asset surface (18 keys); the pre-existing
+  Network / Data-usage sections of the screen stay as they were — they predate this
+  change and belong to no task here. Verify: 9 new tests (5 unit + 4 widget on the
+  pure-override harness), suite **1030 green / 9 pre-existing reds / 0 regressions**,
+  `flutter analyze` 0 errors, `scripts/check_l10n.sh` green.
 - [ ] 4.6 On-device proof (owner, one sync cycle): the counter advances *during* the
   sweep (not only at the end); after the cycle, pending + unbackupable accounts for
   every live asset with no double-counting; a second Sync Now re-attempts nothing

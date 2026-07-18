@@ -101,9 +101,22 @@
   fake 0%. Name comes from the on-disk basename (1.8 keeps it tracking renames); a real
   thumbnail needs frame extraction that does not exist. Full suite **1021 green, 9
   pre-existing reds, 0 regressions**; analyze 0 errors; `check_l10n.sh` + web build green.
-  Next agent-runnable: **4.5** (pending / uploading / unbackupable split + byte progress,
-  plus the ARB pass for the 2.3 surface, which stays hardcoded English until then).
-  4.4 and 4.6 stay owner-gated behind 4.0.
+  **4.5 DONE 2026-07-18** — the header's single number is now a split: uploading /
+  waiting / retrying / keeps-failing / backed up, folded by a pure `AssetSyncTally.from()`
+  over the *same* rows the list renders, so the buckets partition the library by
+  construction rather than by a second count that could disagree. Transfers show a
+  percentage as well as bytes; a transfer with nothing reported yet says "Starting".
+  The whole per-asset surface is localized (18 ARB keys).
+  **4.5 also corrected design D9, which had corrected itself in the wrong direction.**
+  The "self-limiting, not a permafail storm" revision was wrong: `operationExists` dedupes
+  only against `queued`/`in_progress` (`sync_operations_dao.dart:63-76`), so a `failed`
+  row blocks nothing, and each sweep's `queueUpload` (`asset_sync_engine.dart:279`) inserts
+  a **fresh operation with `retryCount` back at zero** — bounded per operation, unbounded
+  per asset. Consequence: 2.3's "Failed — will not retry" was a false promise and is gone
+  (a test now asserts the phrase never renders), and **4.4's scope widened** — the terminal
+  verdict has to survive the next sweep's re-queue, so its red must cover the second cycle.
+  Suite **1030 green, 9 pre-existing reds, 0 regressions**; analyze 0 errors; l10n gate green.
+  Next agent-runnable: none in Phase 4 — 4.4 and 4.6 are owner-gated behind 4.0.
   **Also unticked:** 1.7 owner 30-second device proof.
   **Phase 3** stays owner-gated on design O1/O2.
 

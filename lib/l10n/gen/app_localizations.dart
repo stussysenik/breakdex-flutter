@@ -2115,6 +2115,96 @@ abstract class AppLocalizations {
   /// **'Checking…'**
   String get setSyncChecking;
 
+  /// Sync Status: section header above the per-video backup detail list.
+  ///
+  /// In en, this message translates to:
+  /// **'Videos'**
+  String get setSyncVideosHeader;
+
+  /// Sync Status: shown when the asset manifest holds no live videos, so there is nothing to back up.
+  ///
+  /// In en, this message translates to:
+  /// **'No videos are being tracked yet.'**
+  String get setSyncNoVideosTracked;
+
+  /// Sync Status summary chip: videos whose bytes are moving right now.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} uploading'**
+  String setSyncTallyUploading(int count);
+
+  /// Sync Status summary chip: videos queued or untouched — nothing moving yet.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} waiting'**
+  String setSyncTallyWaiting(int count);
+
+  /// Sync Status summary chip: videos whose last upload failed and will be attempted again.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} retrying'**
+  String setSyncTallyRetrying(int count);
+
+  /// Sync Status summary chip: videos whose upload burned its whole retry budget. Not phrased as a promise that it will never retry — the next sweep re-queues them (task 4.4).
+  ///
+  /// In en, this message translates to:
+  /// **'{count} keep failing'**
+  String setSyncTallyStuck(int count);
+
+  /// Sync Status summary chip: videos a cloud provider holds a verified copy of.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} backed up'**
+  String setSyncTallyBackedUp(int count);
+
+  /// Sync Status row: byte progress of the active transfer for one video.
+  ///
+  /// In en, this message translates to:
+  /// **'{transferred} of {total} · {percent}%'**
+  String setSyncDetailUploading(String transferred, String total, int percent);
+
+  /// Sync Status row: the transfer began but no bytes have been reported yet, so no percentage is shown rather than a fabricated 0%.
+  ///
+  /// In en, this message translates to:
+  /// **'Starting · {total}'**
+  String setSyncDetailStarting(String total);
+
+  /// Sync Status row: an upload operation exists but has not started.
+  ///
+  /// In en, this message translates to:
+  /// **'Queued · {total}'**
+  String setSyncDetailQueued(String total);
+
+  /// Sync Status row: no cloud copy, nothing queued, nothing failed.
+  ///
+  /// In en, this message translates to:
+  /// **'Not backed up · {total}'**
+  String setSyncDetailPending(String total);
+
+  /// Sync Status row: last upload failed, engine will retry, error text known.
+  ///
+  /// In en, this message translates to:
+  /// **'Retrying after: {error}'**
+  String setSyncDetailRetrying(String error);
+
+  /// Sync Status row: last upload failed with no recorded error text; engine will retry.
+  ///
+  /// In en, this message translates to:
+  /// **'Retrying after a failed upload'**
+  String get setSyncDetailRetryingUnknown;
+
+  /// Sync Status row: the upload exhausted its retry budget, error text known.
+  ///
+  /// In en, this message translates to:
+  /// **'Keeps failing: {error}'**
+  String setSyncDetailStuck(String error);
+
+  /// Sync Status row: the upload exhausted its retry budget with no recorded error text.
+  ///
+  /// In en, this message translates to:
+  /// **'Keeps failing — retries exhausted'**
+  String get setSyncDetailStuckUnknown;
+
   /// Cloud-sync settings: row title for the iCloud Drive backup provider.
   ///
   /// In en, this message translates to:

@@ -317,6 +317,87 @@ void main() {
     });
   });
 
+  group('AssetSyncTally — the three-way split', () {
+    AssetSyncDetail row(
+      final AssetSyncStatus status, {
+      final bool isTerminal = false,
+    }) =>
+        AssetSyncDetail(
+          contentHash: 'h',
+          label: 'a.mp4',
+          fileSizeBytes: 1000,
+          status: status,
+          transferredBytes: 0,
+          errorMessage: null,
+          isTerminal: isTerminal,
+          copies: const [],
+        );
+
+    test('queued and pending are one "waiting" bucket — both mean nothing '
+        'is moving', () {
+      final tally = AssetSyncTally.from([
+        row(AssetSyncStatus.queued),
+        row(AssetSyncStatus.pending),
+      ]);
+
+      expect(tally.waiting, 2);
+      expect(tally.uploading, 0);
+    });
+
+    test('a failed asset splits on its retry budget, not on being failed', () {
+      final tally = AssetSyncTally.from([
+        row(AssetSyncStatus.failed),
+        row(AssetSyncStatus.failed, isTerminal: true),
+      ]);
+
+      expect(tally.retrying, 1);
+      expect(tally.unbackupable, 1);
+    });
+
+    test('the buckets partition the library — total equals the row count and '
+        'no asset is counted twice', () {
+      final rows = [
+        row(AssetSyncStatus.uploading),
+        row(AssetSyncStatus.queued),
+        row(AssetSyncStatus.pending),
+        row(AssetSyncStatus.failed),
+        row(AssetSyncStatus.failed, isTerminal: true),
+        row(AssetSyncStatus.backedUp),
+      ];
+
+      final tally = AssetSyncTally.from(rows);
+
+      expect(tally.total, rows.length);
+      expect(
+        tally.uploading +
+            tally.waiting +
+            tally.retrying +
+            tally.unbackupable +
+            tally.backedUp,
+        rows.length,
+      );
+    });
+
+    test('unprotected counts everything without a verified cloud copy', () {
+      final tally = AssetSyncTally.from([
+        row(AssetSyncStatus.backedUp),
+        row(AssetSyncStatus.backedUp),
+        row(AssetSyncStatus.pending),
+        row(AssetSyncStatus.failed, isTerminal: true),
+      ]);
+
+      expect(tally.unprotected, 2);
+      expect(tally.backedUp, 2);
+    });
+
+    test('an empty library tallies to zero, not to a fabricated total', () {
+      final tally = AssetSyncTally.from(const []);
+
+      expect(tally.total, 0);
+      expect(tally.unprotected, 0);
+    });
+  });
+
   group('watchSyncDetails — live over three tables', () {
     late AppDatabase db;
 

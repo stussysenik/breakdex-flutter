@@ -50,7 +50,10 @@ class SyncStatusScreen extends ConsumerWidget {
           const SizedBox(height: AppSpacing.lg),
 
           // Per-asset detail — what the engine is actually doing, per video.
-          _SectionHeader(title: 'Videos', colorScheme: colorScheme),
+          _SectionHeader(
+            title: AppLocalizations.of(context).setSyncVideosHeader,
+            colorScheme: colorScheme,
+          ),
           const SizedBox(height: AppSpacing.sm),
           _AssetDetailList(
             details: ref.watch(assetSyncDetailsProvider).valueOrNull,
@@ -434,19 +437,29 @@ class _AssetDetailList extends StatelessWidget {
 
   @override
   Widget build(final BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final rows = details;
     if (rows == null) {
-      return _AssetDetailNote(text: 'Checking…', colorScheme: colorScheme);
+      return _AssetDetailNote(
+        text: l10n.setSyncChecking,
+        colorScheme: colorScheme,
+      );
     }
     if (rows.isEmpty) {
       return _AssetDetailNote(
-        text: 'No videos are being tracked yet.',
+        text: l10n.setSyncNoVideosTracked,
         colorScheme: colorScheme,
       );
     }
 
     return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        _AssetTallyRow(
+          tally: AssetSyncTally.from(rows),
+          colorScheme: colorScheme,
+        ),
+        const SizedBox(height: AppSpacing.sm),
         for (final detail in rows)
           Padding(
             padding: const EdgeInsets.only(bottom: AppSpacing.xs),
@@ -470,6 +483,59 @@ class _AssetDetailNote extends StatelessWidget {
           color: colorScheme.onSurface.withValues(alpha: 0.5),
         ),
       );
+}
+
+/// The three-way split the header can't carry: what is moving, what is
+/// waiting, and what is broken. Buckets come from [AssetSyncTally], so they
+/// partition the same rows listed below — a video can never appear in two.
+class _AssetTallyRow extends StatelessWidget {
+  final AssetSyncTally tally;
+  final ColorScheme colorScheme;
+
+  const _AssetTallyRow({required this.tally, required this.colorScheme});
+
+  @override
+  Widget build(final BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    // Empty buckets are omitted rather than shown as "0" — a zero is noise
+    // that reads as a problem the user has to parse.
+    final chips = <(int, String, Color)>[
+      (tally.uploading, l10n.setSyncTallyUploading(tally.uploading),
+          AppColors.accent),
+      (tally.waiting, l10n.setSyncTallyWaiting(tally.waiting),
+          AppColors.actionHard),
+      (tally.retrying, l10n.setSyncTallyRetrying(tally.retrying),
+          AppColors.actionHard),
+      (tally.unbackupable, l10n.setSyncTallyStuck(tally.unbackupable),
+          AppColors.actionAgain),
+      (tally.backedUp, l10n.setSyncTallyBackedUp(tally.backedUp),
+          AppColors.stateMastery),
+    ];
+
+    return Wrap(
+      spacing: AppSpacing.xs,
+      runSpacing: AppSpacing.xs,
+      children: [
+        for (final (count, label, tint) in chips)
+          if (count > 0)
+            Container(
+              key: Key('assetTally_$label'),
+              padding: const EdgeInsets.symmetric(
+                horizontal: AppSpacing.sm,
+                vertical: AppSpacing.xxs,
+              ),
+              decoration: BoxDecoration(
+                color: tint.withValues(alpha: 0.12),
+                borderRadius: BorderRadius.circular(AppRadius.sm),
+              ),
+              child: Text(
+                label,
+                style: AppTypography.caption.copyWith(color: tint),
+              ),
+            ),
+      ],
+    );
+  }
 }
 
 class _AssetDetailRow extends StatelessWidget {
@@ -521,7 +587,7 @@ class _AssetDetailRow extends StatelessWidget {
                       .copyWith(color: colorScheme.onSurface),
                 ),
                 Text(
-                  _detailLine(detail),
+                  _detailLine(AppLocalizations.of(context), detail),
                   style: AppTypography.caption.copyWith(
                     color: colorScheme.onSurface.withValues(alpha: 0.6),
                   ),
@@ -552,19 +618,41 @@ class _AssetDetailRow extends StatelessWidget {
 }
 
 /// The one line under the name that answers "what is happening to this file".
-String _detailLine(final AssetSyncDetail detail) => switch (detail.status) {
+///
+/// The failed cases say "keeps failing", never "will not retry": the retry
+/// budget is spent for that *operation*, but the next sweep queues a fresh one
+/// (see [AssetSyncTally.unbackupable]). Promising a stop the engine does not
+/// make is the same class of dishonesty this change exists to remove.
+String _detailLine(
+  final AppLocalizations l10n,
+  final AssetSyncDetail detail,
+) =>
+    switch (detail.status) {
       AssetSyncStatus.backedUp => [
           for (final copy in detail.copies)
             if (copy.provider != 'local' && copy.status == 'verified')
               copy.provider,
         ].join(' · '),
-      AssetSyncStatus.uploading =>
-        '${_mb(detail.transferredBytes)} of ${_mb(detail.fileSizeBytes)}',
-      AssetSyncStatus.queued => 'Queued · ${_mb(detail.fileSizeBytes)}',
-      AssetSyncStatus.failed =>
-        '${detail.isTerminal ? "Failed — will not retry" : "Failed — retrying"}'
-            '${detail.errorMessage == null ? "" : ": ${detail.errorMessage}"}',
-      AssetSyncStatus.pending => 'Not backed up · ${_mb(detail.fileSizeBytes)}',
+      AssetSyncStatus.uploading => switch (detail.fraction) {
+          // No bytes reported yet — say "starting" rather than compute a 0%
+          // that reads as stalled.
+          null => l10n.setSyncDetailStarting(_mb(detail.fileSizeBytes)),
+          final fraction => l10n.setSyncDetailUploading(
+              _mb(detail.transferredBytes),
+              _mb(detail.fileSizeBytes),
+              (fraction * 100).round(),
+            ),
+        },
+      AssetSyncStatus.queued =>
+        l10n.setSyncDetailQueued(_mb(detail.fileSizeBytes)),
+      AssetSyncStatus.failed => switch ((detail.isTerminal, detail.errorMessage)) {
+          (true, final String error) => l10n.setSyncDetailStuck(error),
+          (true, _) => l10n.setSyncDetailStuckUnknown,
+          (false, final String error) => l10n.setSyncDetailRetrying(error),
+          (false, _) => l10n.setSyncDetailRetryingUnknown,
+        },
+      AssetSyncStatus.pending =>
+        l10n.setSyncDetailPending(_mb(detail.fileSizeBytes)),
     };
 
 String _mb(final int bytes) =>
