@@ -235,15 +235,43 @@
   **697 green / 0 failures**; `flutter analyze` 0 errors; full suite **1157 green**, reds
   identical to baseline on the same files (42/6/9 with and without the change) — **0
   regressions**; `check_l10n.sh` and `flutter build web` green.
-- [ ] 4.8 Tombstone the residue (gated on 4.7's device evidence). For unreachable assets
-  the sandbox scan confirms gone (`bytes not found`), a dev-panel action tombstones the
-  manifest rows (sets `deletedAt`, same soft-delete idiom as user deletes) so the sweep
-  stops re-queueing them — with the diagnostics dump re-run inline so the effect is
-  visible. Never automatic: bytes-gone is a verdict a human confirms once, not a state
-  the engine infers repeatedly. Red: tombstoned-by-action asset no longer queued on the
-  next sweep; `failed` count flat across two consecutive cycles in the engine test.
-  Verify: tests green, analyze clean. Device evidence in the tick: two cycles, flat
-  `failed` count, unreachable list empty or all-terminal.
+- [ ] 4.8 Restore-and-re-adopt the quarantined orphans (design D11 — REWRITTEN
+  2026-07-19: device evidence read `sandbox rescue: 22 of 22`, all in
+  `Moves/.lost+found/`; the tombstone premise "bytes gone" is falsified, and
+  tombstoning would soft-delete recoverable videos). An `OrphanRestoreService`
+  (pure logic, injected deps, unit-testable) takes each live zero-owner manifest whose
+  bytes the sandbox index finds and: (1) **full-hash verifies** the candidate file
+  equals `contentHash` — mismatch is reported, never adopted (D11 ruling 2; two of the
+  22 show name drift); (2) moves the file out of `.lost+found` to a canonical
+  `Moves/Recovered/<name> - <hash8>.<ext>` path AND updates `localPath` in the same
+  operation (the 1.8 rule); (3) creates an owning move in a `Recovered` category
+  (original owners are hard-deleted; category truth is unrecoverable) so the asset is
+  visible in the library and owned again. Idempotent: re-running adopts nothing new.
+  Dev-panel action + inline re-dump, same idiom as reconcile; never automatic. Red:
+  a stranded zero-owner manifest with bytes in the fake sandbox gains an owner, a
+  healed path, and upload eligibility only after restore runs. Verify: unit tests
+  (hash-mismatch refusal, idempotence, manifest+move atomicity), analyze clean.
+  Device evidence in the tick: 22 restored, library shows Recovered category,
+  unresolvable list reads 0, next sweep uploads them.
+- [ ] 4.9 Janitor joins the registry (design D11 ruling 4 — loop closure). Before
+  quarantining a file, `StorageJanitor` parses the hash from the canonical filename
+  (reuse `SandboxHashIndex`'s validating parser — NOT the `split(' - ').last` idiom)
+  and checks live `asset_manifest` rows: manifest-known files are never moved to
+  `.lost+found`; the janitor heals `localPath` to the file's actual location instead.
+  Genuinely unknown files (no parseable hash, or hash not in the manifest) quarantine
+  as before. Red: a manifest-known file at a stale path is quarantined by the current
+  janitor (this is the exact mechanism that stranded the 22); green: same file stays
+  put, manifest heals. Verify: unit tests both branches, analyze clean.
+- [ ] 4.10 Tombstone the true residue (fallback, gated on 4.8's device evidence).
+  For assets restore confirms byte-less (`bytes not found` after 4.8 runs — currently
+  zero), the dev-panel action tombstones the manifest rows (sets `deletedAt`, same
+  soft-delete idiom as user deletes) so the sweep stops re-queueing them, with inline
+  re-dump. Never automatic. Also clears the stale `failed` op rows for resolved assets
+  so `sync_operations` counts reflect the present, not the archaeology (264 failed at
+  the 2026-07-19 dump, most from healed pre-1.8 states). Red: tombstoned asset no
+  longer queued; `failed` count flat across two cycles in the engine test. Verify:
+  tests green, analyze clean. Device evidence in the tick: two cycles, flat `failed`
+  count, unreachable list empty or all-terminal.
 
 ## Phase 3 — One-account magic (owner-gated: design.md O1 ruling first)
 

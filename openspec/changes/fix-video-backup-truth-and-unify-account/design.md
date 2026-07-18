@@ -228,6 +228,52 @@ classification plus a manifest tombstone (4.8), so the sweep stops re-queueing t
 This is enforcement of the existing model, not a new one: `asset_manifest` keyed by hash
 already said this — the engine just never fully believed it.
 
+## D11 — One registry, every mover writes it: closing the quarantine loop
+
+**Ground truth (2026-07-19 device run, answers 4.7's gate and falsifies 4.8's premise):**
+`sandbox rescue: 22 of 22` — every unreachable asset has intact bytes, and all 22 sit in
+`Moves/.lost+found/`. The residue is not byte-loss; it is **quarantine by the janitor**
+(`storage_janitor.dart`): it decides "owned?" from `move.videoPath` +
+`combo.activeVideoPath` only, never consults `asset_manifest`, and relocates files
+without updating the manifest. Sequence: owner deleted → janitor sees an unreferenced
+file → moves it to `.lost+found` → the live manifest row keeps the dead path → the sweep
+re-queues it forever (the +22-failed/cycle bleed). Two quarantined files
+(`0808dba4`, `514a01df`) carry filenames that diverge from the manifest's path — name
+drift the hash suffix survives but a filename-trusting restore would not.
+
+**Root cause is structural: two bookkeepers, no shared ledger.** The janitor's ownership
+truth is entities; sync's backup truth is the manifest. Any file the manifest knows but
+no entity references is simultaneously "identity unknown" (janitor) and "must back up"
+(sync). D10's ruling already names the fix: the manifest is *the* asset registry.
+
+**Rulings:**
+
+1. **Tombstoning the 22 is wrong and is not done.** As specced, 4.8 would soft-delete
+   assets whose bytes demonstrably exist. 4.8 is rewritten as **restore-and-re-adopt**
+   (below); tombstone survives only as the terminal fallback for `bytes not found`
+   assets — currently a set of size zero.
+2. **Restore verifies the full hash before adopting.** D10 allowed a lone hash8 match to
+   be trusted for *upload* healing; restore additionally rewrites library structure and
+   recreates owners, and two of the 22 already show name drift. Before any adopt, the
+   candidate file is re-hashed and must equal `contentHash` exactly — a mismatch is
+   reported, never adopted.
+3. **A live manifest row with zero owners is an illegal state.** Restore re-creates an
+   owning move for each orphan (recovered under a dedicated category; original category
+   is unrecoverable — the owner rows are hard-deleted). Future deletes must resolve the
+   asset's fate in the same operation (tombstone or explicit loose-asset keep) — never
+   silently strand a live row.
+4. **The janitor joins the registry (the loop-closure half).**
+   (a) Before quarantining, it checks the file's hash-in-filename against live manifest
+   rows — a manifest-known file is *not* "identity unknown"; the janitor heals
+   `localPath` to where the file actually is (the same write the engine's heal lanes
+   do) instead of relocating it. (b) When it *does* move a file (genuinely unknown), it
+   is already outside the manifest, so no write is needed — but the invariant is stated:
+   **every operation that relocates a manifest-known file updates `localPath` in the
+   same operation** (the 1.8 rule, extended to its last remaining violator).
+
+This makes the contamination class unrepresentable rather than periodically cleaned up:
+the registry cannot drift from disk because nothing moves bytes without telling it.
+
 ## Open questions (owner)
 
 - **O1:** Approve the Appwrite-scope approach for Phase 3 (re-consent tradeoff above)?
