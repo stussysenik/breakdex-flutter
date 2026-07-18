@@ -16,6 +16,7 @@ import '../../core/design/theme.dart';
 import '../../core/design/typography.dart';
 import '../../core/models/learning_state.dart';
 import '../../core/models/library_sort.dart';
+import '../../l10n/gen/app_localizations.dart';
 import '../../core/models/move_creation.dart';
 import '../../core/models/reviewable_item.dart'
     show ComboVideoPath, MoveVideoPath;
@@ -278,6 +279,9 @@ class MoveListScreen extends ConsumerWidget {
                     const SizedBox(height: AppSpacing.sm),
 
                     _ViewModeToggle(viewMode: viewMode, viewNames: viewNames),
+                    const SizedBox(height: AppSpacing.sm),
+
+                    const LibrarySortToggle(),
                     const SizedBox(height: AppSpacing.sm),
                   ],
                 ),
@@ -986,6 +990,42 @@ class _ViewModeToggle extends ConsumerWidget {
   }
 }
 
+// -- Library Sort Toggle -----------------------------------------------------
+
+/// The library's ordering control. One row for both tabs — the sort is global
+/// (design O2), so switching segments never silently re-orders the list.
+///
+/// Public (unlike the other two toggles) so it can be pumped on its own; the
+/// screen it lives in reads live Drift streams, which flake widget tests.
+class LibrarySortToggle extends ConsumerWidget {
+  const LibrarySortToggle({super.key});
+
+  @override
+  Widget build(final BuildContext context, final WidgetRef ref) {
+    final l10n = AppLocalizations.of(context);
+    return _PillToggleRow<LibrarySort>(
+      items: LibrarySort.values,
+      selected: ref.watch(librarySortProvider),
+      iconOf: (final s) => switch (s) {
+        LibrarySort.recentlyAdded => Icons.schedule_rounded,
+        LibrarySort.recentlyFilmed => Icons.videocam_rounded,
+        LibrarySort.recentlyPracticed => Icons.replay_rounded,
+        LibrarySort.alphabetical => Icons.sort_by_alpha_rounded,
+      },
+      labelOf: (final s) => switch (s) {
+        LibrarySort.recentlyAdded => l10n.librarySortAdded,
+        LibrarySort.recentlyFilmed => l10n.librarySortFilmed,
+        LibrarySort.recentlyPracticed => l10n.librarySortPracticed,
+        LibrarySort.alphabetical => l10n.librarySortAlphabetical,
+      },
+      onSelected: (final s) {
+        HapticFeedback.selectionClick();
+        unawaited(ref.read(librarySortProvider.notifier).set(s));
+      },
+    );
+  }
+}
+
 // -- Arsenal Segment Control -------------------------------------------------
 
 class _ArsenalSegmentControl extends ConsumerWidget {
@@ -1074,8 +1114,14 @@ class _PillToggleRow<T> extends StatelessWidget {
                                 : colorScheme.secondary,
                           ),
                           const SizedBox(width: 6),
-                          Text(
+                          // Flexible: four pills (the sort row) do not fit a
+                          // narrow screen at full label width; two and three
+                          // still lay out unchanged.
+                          Flexible(
+                            child: Text(
                             labelOf(item),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
                             style: AppTypography.caption.copyWith(
                               color: selected == item
                                   ? Colors.white
@@ -1083,6 +1129,7 @@ class _PillToggleRow<T> extends StatelessWidget {
                               fontWeight: selected == item
                                   ? FontWeight.w600
                                   : FontWeight.w400,
+                            ),
                             ),
                           ),
                         ],

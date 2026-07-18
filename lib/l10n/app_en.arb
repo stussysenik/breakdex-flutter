@@ -946,6 +946,14 @@
   "@setSyncStatusNotAvailable": { "description": "Cloud-sync settings: trailing status label on a provider row that is unavailable on this device." },
   "setSyncStatusComingSoon": "Coming soon",
   "@setSyncStatusComingSoon": { "description": "Cloud-sync settings: trailing status label on a provider row that is not yet supported (e.g. S3)." },
+  "librarySortAdded": "Added",
+  "@librarySortAdded": { "description": "Library sort control: order by when the move or combo was added to the library (newest first)." },
+  "librarySortFilmed": "Filmed",
+  "@librarySortFilmed": { "description": "Library sort control: order by when the video was actually filmed (newest first)." },
+  "librarySortPracticed": "Practiced",
+  "@librarySortPracticed": { "description": "Library sort control: order by when the move or combo was last practiced or edited (most recent first)." },
+  "librarySortAlphabetical": "A–Z",
+  "@librarySortAlphabetical": { "description": "Library sort control: order alphabetically by name." },
   "setError": "Error: {error}",
   "@setError": { "description": "Settings Backup & Reset: generic error snackbar when an async data action throws.", "placeholders": { "error": { "type": "String", "example": "FileSystemException" } } }
 }

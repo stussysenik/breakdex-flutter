@@ -2373,6 +2373,30 @@ abstract class AppLocalizations {
   /// **'Coming soon'**
   String get setSyncStatusComingSoon;
 
+  /// Library sort control: order by when the move or combo was added to the library (newest first).
+  ///
+  /// In en, this message translates to:
+  /// **'Added'**
+  String get librarySortAdded;
+
+  /// Library sort control: order by when the video was actually filmed (newest first).
+  ///
+  /// In en, this message translates to:
+  /// **'Filmed'**
+  String get librarySortFilmed;
+
+  /// Library sort control: order by when the move or combo was last practiced or edited (most recent first).
+  ///
+  /// In en, this message translates to:
+  /// **'Practiced'**
+  String get librarySortPracticed;
+
+  /// Library sort control: order alphabetically by name.
+  ///
+  /// In en, this message translates to:
+  /// **'A–Z'**
+  String get librarySortAlphabetical;
+
   /// Settings Backup & Reset: generic error snackbar when an async data action throws.
   ///
   /// In en, this message translates to:

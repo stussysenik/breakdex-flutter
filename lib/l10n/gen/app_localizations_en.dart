@@ -1397,6 +1397,18 @@ class AppLocalizationsEn extends AppLocalizations {
   String get setSyncStatusComingSoon => 'Coming soon';
 
   @override
+  String get librarySortAdded => 'Added';
+
+  @override
+  String get librarySortFilmed => 'Filmed';
+
+  @override
+  String get librarySortPracticed => 'Practiced';
+
+  @override
+  String get librarySortAlphabetical => 'A–Z';
+
+  @override
   String setError(String error) {
     return 'Error: $error';
   }

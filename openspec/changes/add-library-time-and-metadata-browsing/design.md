@@ -94,6 +94,10 @@ count — no new query, no new column, no cost. Categories remain SharedPreferen
 
 - **O1:** Beyond the date, which provenance earns tile space — file size, original
   filename, backup state — or does the date line stand alone (visual-first default)?
-- **O2:** Should the sort choice be global (one setting for Moves and Combos, as specced)
-  or remembered per tab? Global is fewer moving parts; per-tab matches how differently the
-  two lists are used.
+- **O2 — RULED 2026-07-18: global, single key.** One `library_sort` preference and one
+  control row for both tabs; switching segments never silently re-orders the list. Chosen
+  because it is the cheaper thing to widen: per-tab keys can later default from the global
+  value with no migration, whereas collapsing two keys into one has to pick a loser. It
+  also matches the visual-first ruling — one control, not one per segment. Consequence:
+  a filmed sort on the combo tab is always a fallback, which is exactly what task 2.3
+  exists to disclose rather than hide.

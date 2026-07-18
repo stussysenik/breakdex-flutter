@@ -170,9 +170,22 @@
   the fixture makes all four sorts yield four different orders, none the feed's own
   `createdAt DESC`). `flutter analyze` 0 errors, suite **1055 green / 9 pre-existing reds
   / 0 regressions**.
-  **Next agent-runnable: 2.2** (sort control in the library header) — but see O2 below:
-  it decides whether that control writes one key or one per segment. The single-key
-  version is what's built and is the cheaper thing to widen.
+  **O2 RULED by owner 2026-07-18 — global, single key** (one `library_sort`, one control,
+  both tabs together; per-tab can be widened later from the global value with no migration,
+  the reverse cannot). Recorded in design.md; removed from task 5.1.
+  **2.2 DONE 2026-07-18** — `LibrarySortToggle`, a third `_PillToggleRow` under the
+  view-mode row: Added / Filmed / Practiced / A–Z, localized (4 ARB keys), persisting
+  through `librarySortProvider`. Public so it can be pumped without the screen's live
+  Drift streams. The shared `_PillToggleRow` needed one real fix to carry four pills — its
+  bare `Text` label overflows a 320pt viewport at four items, so it is now `Flexible` +
+  ellipsis; two and three pills are unchanged. Binary truth: 5 tests, each mutation-proven
+  (remove `Flexible` → narrow-screen red; drop the `setString` → persistence red; hardcode
+  `build()` to the default → restore-stored-sort red). `flutter analyze` 0 errors,
+  `check_l10n.sh` green, suite **1060 green / 9 pre-existing reds / 0 regressions** (the 9
+  re-confirmed against a clean stash of HEAD).
+  **Next agent-runnable: 2.3** (combo tab discloses the filmed-date fallback) — the O2
+  ruling makes this load-bearing, since a global sort means a filmed sort *will* land on
+  the combo tab. Then 2.4 (month grouping) and Phase 3.
   Phase 5 stays owner-gated on O1.
 
 - **Change (owner-driven, parallel):** `add-dev-auth-and-sync-rehearsal` — de-risks the owner's Phase-M pass

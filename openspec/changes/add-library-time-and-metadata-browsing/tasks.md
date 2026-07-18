@@ -50,9 +50,25 @@
   sorts four *different* orders, none of them the feed's own `createdAt DESC`, so no sort
   can pass by coincidence. `flutter analyze` 0 errors (9 pre-existing infos), suite
   **1055 green / 9 pre-existing reds / 0 regressions**.
-- [ ] 2.2 Sort control in the library header, composed with the existing
+- [x] 2.2 Sort control in the library header, composed with the existing
   `_PillToggleRow`/`_ViewModeToggle` idiom rather than a new control vocabulary.
   Localized. Verify: widget test, `scripts/check_l10n.sh` green.
+  **DONE 2026-07-18, under the O2 ruling (global, single key — recorded in design.md).**
+  `LibrarySortToggle` is a third `_PillToggleRow`, sitting below the view-mode row: four
+  pills (Added / Filmed / Practiced / A–Z), 4 new ARB keys, `HapticFeedback.selectionClick`
+  and persistence through the existing `librarySortProvider`. It is public, unlike the
+  other two toggles, so it can be pumped alone — the screen around it reads live Drift
+  streams, which flake widget tests.
+  **One shared-widget change was forced, not chosen:** `_PillToggleRow` rendered its label
+  as a bare `Text` in a `Row`, which is fine at two and three pills and *overflows* at
+  four. The label is now `Flexible` + ellipsis. This is load-bearing, not defensive — the
+  narrow-screen test goes red when the wrapper is removed (320pt viewport, real overflow
+  exception). Two and three pills lay out unchanged.
+  Binary truth: 5 tests, each mutation-proven — removing `Flexible` reds the narrow-screen
+  test, dropping the `setString` reds the persistence test, and hardcoding `build()` to the
+  default reds the restore-stored-sort test. `flutter analyze` 0 errors (9 pre-existing
+  infos), `scripts/check_l10n.sh` green, suite **1060 green / 9 pre-existing reds / 0
+  regressions** (the 9 confirmed red on a clean stash of HEAD, incl. `preview_harness_smoke`).
 - [ ] 2.3 Combo tab under a filmed-date sort falls back to recently-added and says so
   (spec: "Combos do not fake a capture date"). Verify: widget test for the fallback and
   its disclosure.
@@ -85,7 +101,9 @@
 
 - [ ] 5.1 [OWNER] Rule on O1: beyond the date, which provenance earns tile space — file
   size, original filename, backup state — or does the date line stand alone (visual-first
-  default)? Also O2: global sort vs per-tab. Record rulings in design.md.
+  default)? Record the ruling in design.md.
+  **O2 is no longer part of this task — ruled 2026-07-18 (global, single key) to unblock
+  2.2; see design.md.** Only O1 remains owner-gated here.
 - [ ] 5.2 Implement the O1 ruling, if any. Visual encoding preferred over text where one
   exists (design D4).
 - [ ] 5.3 Make the tile backup indicator honest. **Cross-change: blocked on
