@@ -20,6 +20,7 @@ import '../../core/services/settings_service.dart';
 import '../../shared/widgets/pressable.dart';
 import '../../shared/widgets/state_pill.dart';
 import '../../core/models/learning_state.dart';
+import '../../core/models/library_category_activity.dart';
 
 class MoveCategoryScreen extends ConsumerWidget {
   const MoveCategoryScreen({super.key});
@@ -33,17 +34,10 @@ class MoveCategoryScreen extends ConsumerWidget {
 
     final moves = movesAsync.valueOrNull ?? const <Move>[];
 
-    final categoryNames = categories.map((final c) => c.name).toSet();
-    final categoryCounts = <String, int>{};
-    int uncategorizedCount = 0;
-
-    for (final move in moves) {
-      if (categoryNames.contains(move.category)) {
-        categoryCounts[move.category] = (categoryCounts[move.category] ?? 0) + 1;
-      } else {
-        uncategorizedCount++;
-      }
-    }
+    final activities = libraryCategoryActivities(
+      moves: moves,
+      categoryNames: categories.map((final c) => c.name).toSet(),
+    );
 
     return Scaffold(
       appBar: AppBar(
@@ -80,7 +74,7 @@ class MoveCategoryScreen extends ConsumerWidget {
           for (final cat in categories)
             _CategoryTile(
               category: cat,
-              count: categoryCounts[cat.name] ?? 0,
+              count: (activities.byCategory[cat.name] ?? LibraryCategoryActivity.empty).count,
               onTap: () => context.push('/breakdex/moves/${Uri.encodeComponent(cat.name)}'),
             ),
           const SizedBox(height: AppSpacing.lg),
@@ -92,7 +86,7 @@ class MoveCategoryScreen extends ConsumerWidget {
               colorValue: colorScheme.secondary.toARGB32(),
               isDefault: true,
             ),
-            count: uncategorizedCount,
+            count: activities.uncategorized.count,
             onTap: () => context.push('/breakdex/moves/uncategorized'),
           ),
         ],

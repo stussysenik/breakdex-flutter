@@ -205,9 +205,27 @@
 
 ## Phase 4 — Category recency
 
-- [ ] 4.1 Extend the existing per-category count pass in `MoveCategoryScreen:36-43` to
+- [x] 4.1 Extend the existing per-category count pass in `MoveCategoryScreen:36-43` to
   also compute most-recent activity (design D5 — same pass, no new query, no schema
   change). Verify: unit test on the aggregation incl. the empty-category case.
+  **DONE 2026-07-18.** The inline loop moved out to `libraryCategoryActivities` in
+  `lib/core/models/library_category_activity.dart` — one pass over the same move list,
+  a `max` alongside the count, no query and no column added. It returns
+  `LibraryCategoryActivity(count, lastAddedAt)` per category plus an `uncategorized`
+  bucket, which is the shape the screen already routed to.
+  **The date is `createdAt`, deliberately, not `updatedAt`.** The spec says "most
+  recently added to"; editing an old move is not adding to the category, and a recency
+  order built on `updatedAt` would shuffle whenever a move is renamed.
+  **Empty categories are seeded, not skipped.** The map is built from `categoryNames`
+  up front, so a category nobody has filed under is `LibraryCategoryActivity.empty`
+  rather than absent — that is what makes 4.2's "sorts last, never hidden" a sort rule
+  over present data instead of a null-hole to special-case at the call site. The screen
+  is wired to it now but renders only the count; disclosure is 4.2.
+  Binary truth: 4 unit tests, three mutations each proven red — taking the last-seen
+  date instead of the max (−1), dropping the empty-category seeding (−2), and giving an
+  unknown category its own bucket instead of routing it to uncategorized (−1).
+  `flutter analyze` 0 errors (9 pre-existing infos), suite **1122 green / 9
+  pre-existing reds / 0 regressions**, `scripts/check_l10n.sh` green.
 - [ ] 4.2 Show last-activity on `_CategoryTile` and add a recency ordering for the
   category grid; empty categories sort last, never hidden. Localized. Verify: widget
   test, l10n check green.

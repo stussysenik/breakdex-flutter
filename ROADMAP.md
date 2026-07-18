@@ -249,9 +249,21 @@
   stream), **seven** mutations each proven red. `flutter analyze` 0 errors, suite
   **1118 green / 9 pre-existing reds / 0 regressions**, `check_l10n.sh` +
   `flutter build web` green.
-  **Next agent-runnable: 4.1** (extend the per-category count pass in
-  `MoveCategoryScreen:36-43` to also compute most-recent activity — design D5, same pass,
-  no new query, no schema change). Phase 5 stays owner-gated on O1.
+  **4.1 DONE 2026-07-18** — the inline per-category count loop moved out to
+  `libraryCategoryActivities` (`lib/core/models/library_category_activity.dart`): one pass
+  over the same move list, a `max` alongside the count, no new query and no schema change
+  (design D5). The recency date is `createdAt`, not `updatedAt` — the spec says "most
+  recently added to", and editing an old move is not adding to the category. Empty
+  categories are **seeded** from the category-name set rather than skipped, so 4.2's
+  "sorts last, never hidden" is a sort rule over present data instead of a null-hole at
+  the call site. The screen is wired to it but still renders only the count; disclosure is
+  4.2. Binary truth: 4 unit tests, three mutations each proven red (last-seen instead of
+  max, no empty seeding, unknown category not routed to uncategorized). `flutter analyze`
+  0 errors, suite **1122 green / 9 pre-existing reds / 0 regressions**, `check_l10n.sh`
+  green.
+  **Next agent-runnable: 4.2** (show last-activity on `_CategoryTile` + a recency ordering
+  for the category grid; empty categories sort last, never hidden — localized).
+  Phase 5 stays owner-gated on O1.
 
 - **Change (owner-driven, parallel):** `add-dev-auth-and-sync-rehearsal` — de-risks the owner's Phase-M pass
   by letting a dev **user #0** rehearse the whole sync ladder without Google OAuth. **Agent
