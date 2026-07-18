@@ -4,9 +4,12 @@
 part of '../move_list_screen.dart';
 
 class _MoveGridCell extends ConsumerWidget {
-  const _MoveGridCell({required this.move});
+  const _MoveGridCell({required this.move, required this.date});
 
   final Move move;
+
+  /// The move's effective date under the active sort, resolved by the sliver.
+  final DateTime date;
 
   @override
   Widget build(final BuildContext context, final WidgetRef ref) {
@@ -49,12 +52,22 @@ class _MoveGridCell extends ConsumerWidget {
               ),
             ),
       name: move.name,
-      subtitle: move.category != 'default'
-          ? _CategoryLabel(
+      // The tile sits on a video thumbnail, so both lines take the light
+      // treatment the shell's imagery demands rather than the theme's.
+      subtitle: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          if (move.category != 'default') ...[
+            _CategoryLabel(
               category: move.category,
               overrideTextColor: Colors.white70,
-            )
-          : null,
+            ),
+            const SizedBox(height: AppSpacing.xxs),
+          ],
+          LibraryDateLabel(date: date, color: Colors.white70),
+        ],
+      ),
       topRightWidget: StatePill(state: learningState),
     );
   }

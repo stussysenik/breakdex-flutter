@@ -233,8 +233,25 @@
   point the `daysAgo` arm at the yesterday key, drop the year from the absolute format).
   `flutter analyze` 0 errors (9 pre-existing infos), suite **1106 green / 9 pre-existing
   reds / 0 regressions**, `check_l10n.sh` green post-commit.
-  **Next agent-runnable: 3.2** (render it on `_MoveRow`, `_MoveGridCell`, `_ComboRow`, and
-  the combo grid cell, following the active sort). Phase 5 stays owner-gated on O1.
+  **3.2 DONE 2026-07-18** — all four library surfaces now disclose a date, and it is the
+  date the *active sort* ordered by. One `LibraryDateLabel` renders every one of them, so
+  they differ only in the color the surface can afford (a row defers to the theme; a grid
+  tile passes `white70` because it sits on a thumbnail). The screen resolves the date and
+  the slivers carry it: a move resolves from the sort alone, but a combo cannot — its
+  practiced date is `lastEntryAt`, which lives on `LibraryRow` and not on `Combo` — so the
+  combo sliver payload widened from `(Combo, int)` to `(Combo, int, DateTime)`. That
+  asymmetry is load-bearing: resolving combos downstream from the sort would silently show
+  `updatedAt` where the sort used `lastEntryAt`, which is mutation M3. `_ComboRow` gained
+  the same metadata `Wrap` `_MoveRow` already had, so the two row types read as one
+  library. Study cards deliberately do **not** render the line (3.2 names four surfaces);
+  their sliver takes the widened triple and discards the date. Binary truth: 12 widget
+  tests pumping the **real screen** with the library providers overridden (no live Drift
+  stream), **seven** mutations each proven red. `flutter analyze` 0 errors, suite
+  **1118 green / 9 pre-existing reds / 0 regressions**, `check_l10n.sh` +
+  `flutter build web` green.
+  **Next agent-runnable: 4.1** (extend the per-category count pass in
+  `MoveCategoryScreen:36-43` to also compute most-recent activity — design D5, same pass,
+  no new query, no schema change). Phase 5 stays owner-gated on O1.
 
 - **Change (owner-driven, parallel):** `add-dev-auth-and-sync-rehearsal` — de-risks the owner's Phase-M pass
   by letting a dev **user #0** rehearse the whole sync ladder without Google OAuth. **Agent

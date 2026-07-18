@@ -5,15 +5,20 @@ part of '../move_list_screen.dart';
 class _CombosContentSliver extends StatelessWidget {
   const _CombosContentSliver({required this.combos});
 
-  final List<(Combo, int)> combos;
+  final List<(Combo, int, DateTime)> combos;
 
   @override
   Widget build(final BuildContext context) {
     return _sliverStaggeredList(
       itemCount: combos.length,
       builder: (final index) {
-        final (combo, moveCount) = combos[index];
-        return _ComboRow(combo: combo, moveCount: moveCount, index: index);
+        final (combo, moveCount, date) = combos[index];
+        return _ComboRow(
+          combo: combo,
+          moveCount: moveCount,
+          date: date,
+          index: index,
+        );
       },
     );
   }
@@ -22,10 +27,19 @@ class _CombosContentSliver extends StatelessWidget {
 /// A combo list row with swipe-to-delete, move-count dots, and a colored
 /// leading bar. Mirrors the `_MoveRow` pattern for consistent UX.
 class _ComboRow extends ConsumerWidget {
-  const _ComboRow({required this.combo, required this.moveCount, this.index = 0});
+  const _ComboRow({
+    required this.combo,
+    required this.moveCount,
+    required this.date,
+    this.index = 0,
+  });
 
   final Combo combo;
   final int moveCount;
+
+  /// The combo's effective date under the active sort, resolved by the sliver.
+  final DateTime date;
+
   final int index;
 
   /// Max dots rendered before showing a "+N" overflow indicator.
@@ -103,10 +117,19 @@ class _ComboRow extends ConsumerWidget {
                             ),
                             overflow: TextOverflow.ellipsis,
                           ),
-                          if (moveCount > 0) ...[
-                            const SizedBox(height: AppSpacing.xs),
-                            _MoveCountDots(count: moveCount),
-                          ],
+                          const SizedBox(height: AppSpacing.xs),
+                          // Same metadata Wrap as `_MoveRow`, so the two row
+                          // types read as one library rather than two.
+                          Wrap(
+                            spacing: AppSpacing.sm,
+                            runSpacing: AppSpacing.xs,
+                            crossAxisAlignment: WrapCrossAlignment.center,
+                            children: [
+                              if (moveCount > 0)
+                                _MoveCountDots(count: moveCount),
+                              LibraryDateLabel(date: date),
+                            ],
+                          ),
                         ],
                       ),
                     ),

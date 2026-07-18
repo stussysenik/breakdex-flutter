@@ -161,10 +161,47 @@
   yesterday ARB key (−2), and dropping the year from the absolute format (−2).
   `flutter analyze` 0 errors (9 pre-existing infos), suite **1106 green / 9 pre-existing
   reds / 0 regressions**, `scripts/check_l10n.sh` green post-commit.
-- [ ] 3.2 Render it on `_MoveRow`, `_MoveGridCell`, `_ComboRow`, and the combo grid cell,
+- [x] 3.2 Render it on `_MoveRow`, `_MoveGridCell`, `_ComboRow`, and the combo grid cell,
   showing the date for the **active** sort (spec: "The displayed date follows the active
   sort"). Verify: widget tests per surface; visual density stays within TOKENS grid
   (8pt base / 4pt half-step).
+  **3.2 DONE 2026-07-18.** All four surfaces disclose a date, and it is the date the
+  active sort ordered by. One `LibraryDateLabel` (in `library_date_line_format.dart`,
+  beside the 3.1 formatter) renders every one of them, so the four surfaces differ only
+  in the color they can afford — a row defers to the theme, a grid tile passes `white70`
+  because it sits on a video thumbnail.
+  **Where the date is resolved, and why it is not uniform.** The screen owns `sort`, so
+  the screen resolves the date and the slivers carry it down. A *move* can be resolved
+  from the sort alone (`move.effectiveDate(sort)` reads only columns on `Move`), so the
+  move slivers take a `LibrarySort` and resolve per item. A *combo* cannot: its practiced
+  date is `lastEntryAt`, which lives on `LibraryRow` and not on `Combo`, and the sliver
+  boundary already drops the row. So the combo boundary record widened from
+  `(Combo, int)` to `(Combo, int, DateTime)` and carries the resolved date. That
+  asymmetry is load-bearing, not an oversight — resolving combos downstream from the sort
+  would silently show `updatedAt` where the sort used `lastEntryAt`, and mutation M3 below
+  is exactly that bug.
+  **Placement.** `_MoveRow` puts the line in its existing metadata `Wrap` (category,
+  state pill, date); `_ComboRow` gains the same `Wrap` so the two row types read as one
+  library rather than two — previously its move-count dots were a bare conditional. Grid
+  tiles append the line to the subtitle column with an `AppSpacing.xxs` step. All spacing
+  is existing tokens; no raw literals, no new grid steps.
+  **Out of scope, deliberately.** Study cards (the third view mode) do not render the
+  date line — 3.2 names four surfaces. Their sliver takes the widened combo triple and
+  discards the date, so the combo slivers keep one payload shape.
+  Binary truth: 12 widget tests (each surface × each sort dimension it can distinguish),
+  **seven** mutations each proven red — move list sliver passing `createdAt` instead of
+  `effectiveDate(sort)` (−2), the same on the move grid sliver (−2), the combo boundary
+  passing `combo.createdAt` (−2), and dropping the label outright from each of the four
+  surfaces (−3 each). The tests pump the **real screen** with `libraryMovesProvider` /
+  `libraryCombosProvider` overridden (both are plain `Provider`s over `AsyncValue`), so
+  no live Drift stream is pumped; `currentAppwriteUserProvider` and `comboRepositoryProvider`
+  are stubbed because the auth header opened a real network timer and the combo tile's
+  `watchComboMoves` left a Drift teardown timer pending — the flake class documented in
+  `docs/stale-tests-post-redesign.md`. Fixture dates are anchored to `DateTime.now()`
+  rather than pinned to literals, because the production call sites do not inject `now`
+  and a fixed date would decay into a different arm of the formatter overnight.
+  `flutter analyze` 0 errors (9 pre-existing infos), suite **1118 green / 9 pre-existing
+  reds / 0 regressions**, `check_l10n.sh` + `flutter build web` green.
 
 ## Phase 4 — Category recency
 

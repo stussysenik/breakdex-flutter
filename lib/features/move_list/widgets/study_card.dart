@@ -59,14 +59,16 @@ class _MoveStudyCard extends StatelessWidget {
 class _ComboStudySliver extends StatelessWidget {
   const _ComboStudySliver({required this.combos});
 
-  final List<(Combo, int)> combos;
+  // Study cards do not render the date line (out of 3.2's scope); the triple
+  // is carried so the combo slivers share one payload shape.
+  final List<(Combo, int, DateTime)> combos;
 
   @override
   Widget build(final BuildContext context) {
     return _sliverStaggeredList(
       itemCount: combos.length,
       builder: (final index) {
-        final (combo, moveCount) = combos[index];
+        final (combo, moveCount, _) = combos[index];
         return _ComboStudyCard(
           combo: combo,
           moveCount: moveCount,

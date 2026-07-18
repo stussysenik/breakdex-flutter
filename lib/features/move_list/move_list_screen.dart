@@ -35,6 +35,7 @@ import '../../core/services/entity_names_service.dart';
 import '../../shared/widgets/celebration_overlay.dart';
 import '../../shared/widgets/pressable.dart';
 import '../../shared/widgets/state_pill.dart';
+import 'widgets/library_date_line_format.dart';
 import '../../shared/widgets/app_loader.dart';
 import '../../shared/widgets/video_picker_sheet.dart';
 import '../../shared/widgets/video_player_widget.dart';
@@ -324,8 +325,14 @@ class MoveListScreen extends ConsumerWidget {
                           viewMode: viewMode,
                           dateOf: (final m) => m.effectiveDate(sort),
                           sliverOf: (final section) => switch (viewMode) {
-                            ViewMode.glance => _MoveGridSliver(moves: section),
-                            ViewMode.scan => _MoveListSliver(moves: section),
+                            ViewMode.glance => _MoveGridSliver(
+                              moves: section,
+                              sort: sort,
+                            ),
+                            ViewMode.scan => _MoveListSliver(
+                              moves: section,
+                              sort: sort,
+                            ),
                             ViewMode.study => _MoveStudySliver(moves: section),
                           },
                         );
@@ -355,11 +362,17 @@ class MoveListScreen extends ConsumerWidget {
                           viewMode: viewMode,
                           dateOf: (final r) => r.effectiveDate(sort),
                           sliverOf: (final section) {
-                            // `LibraryRow` maps back to the `(combo, count)`
-                            // pair at the sliver boundary, so no widget
-                            // signature moves for the sake of grouping.
+                            // `LibraryRow` maps back to a `(combo, count,
+                            // date)` triple at the sliver boundary. The date
+                            // rides along because a combo's practiced date is
+                            // `lastEntryAt`, which lives on the row and not on
+                            // the combo — the sort alone cannot recover it
+                            // downstream the way a move's can.
                             final combos = section
-                                .map((final r) => (r.combo, r.moveCount))
+                                .map(
+                                  (final r) =>
+                                      (r.combo, r.moveCount, r.effectiveDate(sort)),
+                                )
                                 .toList();
                             return switch (viewMode) {
                               ViewMode.glance => _ComboGridSliver(
@@ -1406,15 +1419,24 @@ class _EmptyState extends StatelessWidget {
 // -- List View ---------------------------------------------------------------
 
 class _MoveListSliver extends StatelessWidget {
-  const _MoveListSliver({required this.moves});
+  const _MoveListSliver({required this.moves, required this.sort});
 
   final List<Move> moves;
+
+  /// A move's date line follows the active sort, and a move can resolve it
+  /// from the sort alone — unlike a combo, whose practiced date lives on the
+  /// `LibraryRow` the sliver boundary already dropped.
+  final LibrarySort sort;
 
   @override
   Widget build(final BuildContext context) {
     return _sliverStaggeredList(
       itemCount: moves.length,
-      builder: (final index) => _MoveRow(move: moves[index], index: index),
+      builder: (final index) => _MoveRow(
+        move: moves[index],
+        date: moves[index].effectiveDate(sort),
+        index: index,
+      ),
     );
   }
 }
@@ -1422,15 +1444,20 @@ class _MoveListSliver extends StatelessWidget {
 // -- Grid View ---------------------------------------------------------------
 
 class _MoveGridSliver extends StatelessWidget {
-  const _MoveGridSliver({required this.moves});
+  const _MoveGridSliver({required this.moves, required this.sort});
 
   final List<Move> moves;
+
+  final LibrarySort sort;
 
   @override
   Widget build(final BuildContext context) {
     return _sliverArsenalGrid(
       itemCount: moves.length,
-      builder: (final index) => _MoveGridCell(move: moves[index]),
+      builder: (final index) => _MoveGridCell(
+        move: moves[index],
+        date: moves[index].effectiveDate(sort),
+      ),
     );
   }
 }

@@ -1,9 +1,13 @@
 part of '../move_list_screen.dart';
 
 class _MoveRow extends ConsumerWidget {
-  const _MoveRow({required this.move, this.index = 0});
+  const _MoveRow({required this.move, required this.date, this.index = 0});
 
   final Move move;
+
+  /// The move's effective date under the active sort, resolved by the sliver.
+  final DateTime date;
+
   final int index;
 
   @override
@@ -112,6 +116,7 @@ class _MoveRow extends ConsumerWidget {
                                 if (move.category != 'default')
                                   _CategoryLabel(category: move.category),
                                 StatePill(state: state),
+                                LibraryDateLabel(date: date),
                               ],
                             ),
                           ],

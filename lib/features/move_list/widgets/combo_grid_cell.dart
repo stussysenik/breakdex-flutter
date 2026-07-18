@@ -8,18 +8,19 @@ part of '../move_list_screen.dart';
 class _ComboGridSliver extends StatelessWidget {
   const _ComboGridSliver({required this.combos});
 
-  final List<(Combo, int)> combos;
+  final List<(Combo, int, DateTime)> combos;
 
   @override
   Widget build(final BuildContext context) {
     return _sliverArsenalGrid(
       itemCount: combos.length,
       builder: (final index) {
-        final (combo, moveCount) = combos[index];
+        final (combo, moveCount, date) = combos[index];
         return _ComboGridCell(
           key: ValueKey('combo-cell-${combo.id}'),
           combo: combo,
           moveCount: moveCount,
+          date: date,
         );
       },
     );
@@ -34,10 +35,14 @@ class _ComboGridCell extends ConsumerWidget {
     super.key,
     required this.combo,
     required this.moveCount,
+    required this.date,
   });
 
   final Combo combo;
   final int moveCount;
+
+  /// The combo's effective date under the active sort, resolved by the sliver.
+  final DateTime date;
 
   @override
   Widget build(final BuildContext context, final WidgetRef ref) {
@@ -105,6 +110,8 @@ class _ComboGridCell extends ConsumerWidget {
                 ],
               ],
             ),
+            const SizedBox(height: AppSpacing.xxs),
+            LibraryDateLabel(date: date, color: Colors.white70),
           ],
         );
 

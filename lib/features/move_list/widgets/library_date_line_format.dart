@@ -1,6 +1,7 @@
-import 'package:flutter/widgets.dart';
+import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
+import '../../../core/design/typography.dart';
 import '../../../core/models/library_date_line.dart';
 import '../../../l10n/gen/app_localizations.dart';
 
@@ -30,4 +31,40 @@ String formatLibraryDateLine(
       Localizations.localeOf(context).toString(),
     ).format(date.toLocal()),
   };
+}
+
+/// The date line as the library actually renders it, on rows and on tiles.
+///
+/// One widget rather than four copies of "caption, secondary, one line": the
+/// surfaces differ only in the color they can afford — a row sits on `surface`
+/// and defers to the theme, a grid tile sits on a video thumbnail and has to
+/// pass a light [color] to stay legible.
+class LibraryDateLabel extends StatelessWidget {
+  const LibraryDateLabel({
+    super.key,
+    required this.date,
+    this.color,
+    this.now,
+  });
+
+  /// The item's effective date for the **active** sort. Which dimension that
+  /// is belongs to the caller — this widget renders whatever it is handed.
+  final DateTime date;
+
+  /// Overrides the default `onSurface`-secondary color for tiles that render
+  /// over imagery.
+  final Color? color;
+
+  /// Injectable clock, so a test can pin the relative/absolute boundary.
+  final DateTime? now;
+
+  @override
+  Widget build(final BuildContext context) => Text(
+    formatLibraryDateLine(context, date, now: now),
+    maxLines: 1,
+    overflow: TextOverflow.ellipsis,
+    style: AppTypography.caption.copyWith(
+      color: color ?? Theme.of(context).colorScheme.secondary,
+    ),
+  );
 }
