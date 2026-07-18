@@ -261,9 +261,25 @@
   max, no empty seeding, unknown category not routed to uncategorized). `flutter analyze`
   0 errors, suite **1122 green / 9 pre-existing reds / 0 regressions**, `check_l10n.sh`
   green.
-  **Next agent-runnable: 4.2** (show last-activity on `_CategoryTile` + a recency ordering
-  for the category grid; empty categories sort last, never hidden — localized).
-  Phase 5 stays owner-gated on O1.
+  **4.2 DONE 2026-07-18** — `categoryNamesByRecency` (same file) re-orders the stored
+  category list most-recently-added-to first, and `_CategoryTile` now takes the whole
+  `LibraryCategoryActivity` and renders 3.1's `LibraryDateLabel` under the name, so the
+  tile discloses the date the grid was sorted on. Ties **and** the empty tail fall back to
+  the stored (creation) order by an explicit index tiebreak — `List.sort` is not stable in
+  Dart, so every empty category compares equal and could otherwise swap places on any
+  rebuild. Empty tiles read **"Nothing here yet"**, deliberately not naming the entity:
+  that noun is user-configurable, so it cannot be baked into a translated string. Binary
+  truth: 5 unit + 3 widget tests, **six** mutations each proven red (no tiebreak −2,
+  empties first −2, oldest-first −1, stored order rendered −3, empties hidden −1, no tile
+  date line −1); the two stability tests use 40 categories on purpose, since below 32
+  elements Dart's sort is stable by accident. `flutter analyze` 0 errors, suite **1130
+  green / 9 pre-existing reds / 0 regressions**, `check_l10n.sh` green.
+  **Phase 4 is complete. Next: Phase 5, which is owner-gated on O1** — beyond the date,
+  which provenance earns tile space (file size, original filename, backup state), or does
+  the date line stand alone? Nothing in this change is agent-runnable until that is ruled.
+  **Filed, not fixed** (found while testing 4.2, predates it): `MoveCategoryScreen`'s
+  AppBar `leading` (chevron + "Back") overflows its fixed 56px toolbar slot, so the Back
+  affordance is clipped on-device. Belongs to whichever change owns library chrome.
 
 - **Change (owner-driven, parallel):** `add-dev-auth-and-sync-rehearsal` — de-risks the owner's Phase-M pass
   by letting a dev **user #0** rehearse the whole sync ladder without Google OAuth. **Agent

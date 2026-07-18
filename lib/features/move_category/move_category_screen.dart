@@ -21,6 +21,8 @@ import '../../shared/widgets/pressable.dart';
 import '../../shared/widgets/state_pill.dart';
 import '../../core/models/learning_state.dart';
 import '../../core/models/library_category_activity.dart';
+import '../../l10n/gen/app_localizations.dart';
+import '../move_list/widgets/library_date_line_format.dart';
 
 class MoveCategoryScreen extends ConsumerWidget {
   const MoveCategoryScreen({super.key});
@@ -38,6 +40,15 @@ class MoveCategoryScreen extends ConsumerWidget {
       moves: moves,
       categoryNames: categories.map((final c) => c.name).toSet(),
     );
+
+    final byName = {for (final c in categories) c.name: c};
+    final ordered = [
+      for (final name in categoryNamesByRecency(
+        orderedNames: [for (final c in categories) c.name],
+        byCategory: activities.byCategory,
+      ))
+        byName[name]!,
+    ];
 
     return Scaffold(
       appBar: AppBar(
@@ -71,10 +82,10 @@ class MoveCategoryScreen extends ConsumerWidget {
         children: [
           Semantics(header: true, child: Text('Categories', style: AppTypography.titleLarge.copyWith(color: colorScheme.onSurface))),
           const SizedBox(height: AppSpacing.lg),
-          for (final cat in categories)
+          for (final cat in ordered)
             _CategoryTile(
               category: cat,
-              count: (activities.byCategory[cat.name] ?? LibraryCategoryActivity.empty).count,
+              activity: activities.byCategory[cat.name] ?? LibraryCategoryActivity.empty,
               onTap: () => context.push('/breakdex/moves/${Uri.encodeComponent(cat.name)}'),
             ),
           const SizedBox(height: AppSpacing.lg),
@@ -86,7 +97,7 @@ class MoveCategoryScreen extends ConsumerWidget {
               colorValue: colorScheme.secondary.toARGB32(),
               isDefault: true,
             ),
-            count: activities.uncategorized.count,
+            activity: activities.uncategorized,
             onTap: () => context.push('/breakdex/moves/uncategorized'),
           ),
         ],
@@ -100,10 +111,10 @@ final _allMovesProvider = StreamProvider<List<Move>>((final ref) {
 });
 
 class _CategoryTile extends StatelessWidget {
-  const _CategoryTile({required this.category, required this.count, required this.onTap});
+  const _CategoryTile({required this.category, required this.activity, required this.onTap});
 
   final Category category;
-  final int count;
+  final LibraryCategoryActivity activity;
   final VoidCallback onTap;
 
   @override
@@ -125,10 +136,26 @@ class _CategoryTile extends StatelessWidget {
               ),
               const SizedBox(width: AppSpacing.md),
               Expanded(
-                child: Text(category.name, style: AppTypography.bodyMedium.copyWith(color: colorScheme.onSurface, fontWeight: FontWeight.w600)),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(category.name, style: AppTypography.bodyMedium.copyWith(color: colorScheme.onSurface, fontWeight: FontWeight.w600)),
+                    const SizedBox(height: 4),
+                    // The tile the grid is sorted by discloses the date it is
+                    // sorted on; an empty category says so rather than showing
+                    // a blank where every sibling has a line.
+                    if (activity.lastAddedAt case final lastAddedAt?)
+                      LibraryDateLabel(date: lastAddedAt)
+                    else
+                      Text(
+                        AppLocalizations.of(context).libraryCategoryEmpty,
+                        style: AppTypography.caption.copyWith(color: colorScheme.secondary),
+                      ),
+                  ],
+                ),
               ),
               Text(
-                '$count',
+                '${activity.count}',
                 style: AppTypography.bodySmall.copyWith(color: colorScheme.secondary),
               ),
               const SizedBox(width: AppSpacing.md),

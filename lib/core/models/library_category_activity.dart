@@ -67,3 +67,33 @@ LibraryCategoryActivities libraryCategoryActivities({
 
   return (byCategory: byCategory, uncategorized: uncategorized);
 }
+
+/// [orderedNames] re-ordered most-recently-added-to first.
+///
+/// A category nobody has filed anything under has no date, and sorts **last**
+/// rather than disappearing — the grid is how you find a category to file into,
+/// so hiding the empty ones would hide exactly the ones you are looking for.
+///
+/// Ties and the empty tail fall back to the incoming order, which is the order
+/// the user created their categories in. That fallback is load-bearing rather
+/// than cosmetic: `List.sort` is not stable in Dart, so without an explicit
+/// tiebreak two categories last added to on the same instant — or every empty
+/// category — could swap places on any rebuild.
+List<String> categoryNamesByRecency({
+  required final List<String> orderedNames,
+  required final Map<String, LibraryCategoryActivity> byCategory,
+}) {
+  final indexed = orderedNames.indexed.toList()
+    ..sort((final a, final b) {
+      final aDate = byCategory[a.$2]?.lastAddedAt;
+      final bDate = byCategory[b.$2]?.lastAddedAt;
+      if (aDate == null || bDate == null) {
+        if (aDate != null) return -1;
+        if (bDate != null) return 1;
+        return a.$1.compareTo(b.$1);
+      }
+      final byDate = bDate.compareTo(aDate);
+      return byDate != 0 ? byDate : a.$1.compareTo(b.$1);
+    });
+  return [for (final (_, name) in indexed) name];
+}

@@ -969,6 +969,8 @@
   "@libraryDateYesterday": { "description": "Library row/tile date line when the item's date for the active sort is the previous calendar day." },
   "libraryDateDaysAgo": "{count, plural, other{{count} days ago}}",
   "@libraryDateDaysAgo": { "description": "Library row/tile date line for the recent past, two to six calendar days back. One day back reads as 'Yesterday' instead.", "placeholders": { "count": { "type": "int", "example": "3" } } },
+  "libraryCategoryEmpty": "Nothing here yet",
+  "@libraryCategoryEmpty": { "description": "Library category tile date line, in place of a date, when the category holds no items. Deliberately does not name the entity: that noun is user-configurable, so it cannot be baked into a translated string." },
   "setError": "Error: {error}",
   "@setError": { "description": "Settings Backup & Reset: generic error snackbar when an async data action throws.", "placeholders": { "error": { "type": "String", "example": "FileSystemException" } } }
 }

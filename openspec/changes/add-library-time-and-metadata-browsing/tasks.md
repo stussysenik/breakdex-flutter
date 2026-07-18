@@ -226,9 +226,37 @@
   unknown category its own bucket instead of routing it to uncategorized (−1).
   `flutter analyze` 0 errors (9 pre-existing infos), suite **1122 green / 9
   pre-existing reds / 0 regressions**, `scripts/check_l10n.sh` green.
-- [ ] 4.2 Show last-activity on `_CategoryTile` and add a recency ordering for the
+- [x] 4.2 Show last-activity on `_CategoryTile` and add a recency ordering for the
   category grid; empty categories sort last, never hidden. Localized. Verify: widget
   test, l10n check green.
+  **DONE 2026-07-18.** `categoryNamesByRecency` (same file as 4.1's aggregate) re-orders
+  the stored category list most-recently-added-to first; `_CategoryTile` takes the whole
+  `LibraryCategoryActivity` instead of a bare count and renders 3.1's `LibraryDateLabel`
+  under the name, so the tile discloses the date the grid was sorted on.
+  **Ties and the empty tail fall back to the stored order, explicitly.** `List.sort` is
+  not stable in Dart, so without an index tiebreak two categories added to on the same
+  instant — or every empty category, which all compare equal — could swap places on any
+  rebuild. The stored order is category-creation order, which is the most defensible
+  thing to be stable against.
+  **The empty line reads "Nothing here yet", deliberately neutral.** It does not name the
+  entity: that noun is user-configurable (`entityNamesProvider.movePlural`), and
+  interpolating a user-supplied word into a translated string is not localizable.
+  Binary truth: 5 unit tests + 3 widget tests, six mutations each proven red — dropping
+  the stable tiebreak (−2), sorting empties first (−2), oldest-first (−1), rendering the
+  stored order instead of the recency order (−3), hiding empty categories (−1), and
+  dropping the tile date line (−1). The two stability tests use **40** categories on
+  purpose: below 32 elements Dart's sort is insertion sort and stable by accident, so a
+  narrow fixture would pass without the tiebreak.
+  The widget test drains one **pre-existing** exception by shape: the AppBar's custom
+  `leading` (chevron + "Back") overflows the toolbar's fixed 56px slot. Verified
+  pre-existing by pumping the same screen with `lib/` stashed (same three overflows).
+  Not fixed here — out of 4.2's scope — but see the note below.
+  `flutter analyze` 0 errors (9 pre-existing infos), suite **1130 green / 9 pre-existing
+  reds / 0 regressions**, `scripts/check_l10n.sh` green.
+
+  > **Filed, not fixed:** `MoveCategoryScreen`'s AppBar `leading` overflows its 56px
+  > slot, so the "Back" affordance is clipped on-device. It predates this change and
+  > belongs to whichever change owns library chrome, not to Phase 4.
 
 ## Phase 5 — Provenance beyond the date (owner-gated)
 

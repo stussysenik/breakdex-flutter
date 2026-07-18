@@ -2433,6 +2433,12 @@ abstract class AppLocalizations {
   /// **'{count, plural, other{{count} days ago}}'**
   String libraryDateDaysAgo(int count);
 
+  /// Library category tile date line, in place of a date, when the category holds no items. Deliberately does not name the entity: that noun is user-configurable, so it cannot be baked into a translated string.
+  ///
+  /// In en, this message translates to:
+  /// **'Nothing here yet'**
+  String get libraryCategoryEmpty;
+
   /// Settings Backup & Reset: generic error snackbar when an async data action throws.
   ///
   /// In en, this message translates to:

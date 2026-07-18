@@ -1436,6 +1436,9 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String get libraryCategoryEmpty => 'Nothing here yet';
+
+  @override
   String setError(String error) {
     return 'Error: $error';
   }

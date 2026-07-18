@@ -76,4 +76,70 @@ void main() {
       expect(result.uncategorized, LibraryCategoryActivity.empty);
     });
   });
+
+  group('categoryNamesByRecency', () {
+    LibraryCategoryActivity dated(final DateTime? at) =>
+        LibraryCategoryActivity(count: at == null ? 0 : 1, lastAddedAt: at);
+
+    test('orders most-recently-added-to first', () {
+      final ordered = categoryNamesByRecency(
+        orderedNames: const ['Power', 'Freezes', 'Toprock'],
+        byCategory: {
+          'Power': dated(jan),
+          'Freezes': dated(dec),
+          'Toprock': dated(jun),
+        },
+      );
+
+      expect(ordered, ['Freezes', 'Toprock', 'Power']);
+    });
+
+    test('empty categories sort last but are never dropped', () {
+      final ordered = categoryNamesByRecency(
+        orderedNames: const ['Empty', 'Power', 'AlsoEmpty'],
+        byCategory: {
+          'Empty': LibraryCategoryActivity.empty,
+          'Power': dated(jan),
+          'AlsoEmpty': LibraryCategoryActivity.empty,
+        },
+      );
+
+      expect(ordered, ['Power', 'Empty', 'AlsoEmpty']);
+      expect(ordered.length, 3);
+    });
+
+    // Wide enough to leave Dart's small-list insertion sort — which is stable by
+    // accident — and reach the unstable path, so dropping the index tiebreak
+    // actually shuffles these instead of passing by luck.
+    final wide = [for (var i = 0; i < 40; i++) 'cat-$i'];
+
+    test('equal dates keep the incoming order', () {
+      final ordered = categoryNamesByRecency(
+        orderedNames: wide,
+        byCategory: {for (final name in wide) name: dated(jun)},
+      );
+
+      expect(ordered, wide);
+    });
+
+    test('the empty tail keeps the incoming order', () {
+      final ordered = categoryNamesByRecency(
+        orderedNames: wide,
+        byCategory: {
+          for (final name in wide) name: LibraryCategoryActivity.empty,
+        },
+      );
+
+      expect(ordered, wide);
+    });
+
+    test('a name with no activity entry at all sorts last, not thrown away', () {
+      final ordered = categoryNamesByRecency(
+        orderedNames: const ['Ghost', 'Power'],
+        byCategory: {'Power': dated(jan)},
+      );
+
+      expect(ordered, ['Power', 'Ghost']);
+    });
+  });
 }
