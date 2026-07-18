@@ -145,7 +145,20 @@
   surface that uses it; the model is right, the SELECT is short one column, and that fix now
   sits in 2.1. Binary truth: 11 unit tests, each proven by mutation (reversing the date
   comparison and dropping the `videoCreationDate` fallback each go red), analyze 0 issues.
-  **Next agent-runnable: 1.2** (persisted sort provider). Phase 5 stays owner-gated on O1.
+  **1.2 DONE by agent 2026-07-18** — `librarySortFromStored` (pure, in the model file) plus
+  `librarySortProvider`/`LibrarySortNotifier` on the `library_sort` key, mirroring the
+  `_viewModeProvider` idiom. Two deliberate departures: the key has no legacy vocabulary to
+  migrate (it ships with one naming scheme), so tolerance is unknown-value → default rather
+  than a migration map for values that never existed; and the provider is **public** where
+  `_viewModeProvider` is private, because 2.1/2.2 both read it and because persistence is
+  worth proving by driving the notifier against real SharedPreferences instead of asserting
+  resolver symmetry the way `view_mode_test.dart` does. Default is `recentlyAdded` (today's
+  behavior) and a stored preference is never overridden by it. Binary truth: 7 unit tests
+  incl. a simulated-restart round-trip per sort, mutation-proven (changing the default goes
+  −4; dropping the `setString` in `set()` goes −1, exactly the round-trip). `flutter analyze`
+  0 errors (9 pre-existing infos), suite **1048 green / 9 pre-existing reds / 0 regressions**.
+  **Next agent-runnable: 2.1** (apply the comparator + the `c.updated_at` SELECT fix), which
+  opens Phase 2. Phase 5 stays owner-gated on O1.
 
 - **Change (owner-driven, parallel):** `add-dev-auth-and-sync-rehearsal` — de-risks the owner's Phase-M pass
   by letting a dev **user #0** rehearse the whole sync ladder without Google OAuth. **Agent

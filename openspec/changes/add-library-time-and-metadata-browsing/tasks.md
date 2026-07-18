@@ -16,7 +16,7 @@
   Verify: unit tests covering each dimension, the null-`videoCreationDate` fallback, the
   combo `lastEntryAt → updatedAt → createdAt` chain, and comparator stability for equal
   dates (ties break by name, so ordering is deterministic). `flutter analyze` clean.
-- [ ] 1.2 Persisted sort provider alongside the existing `_viewModeProvider` pattern
+- [x] 1.2 Persisted sort provider alongside the existing `_viewModeProvider` pattern
   (SharedPreferences key `library_sort`), with a legacy-value-tolerant read like
   `ViewMode`'s migration at `move_list_screen.dart:56-65`. Default: recentlyAdded
   (today's behavior — a stored preference is never overridden by a new default).

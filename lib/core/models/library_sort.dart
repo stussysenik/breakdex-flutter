@@ -17,6 +17,18 @@ enum LibrarySort {
   bool get isDateDimension => this != LibrarySort.alphabetical;
 }
 
+/// Resolves the persisted `library_sort` value to a [LibrarySort].
+///
+/// Unlike `ViewMode`, this key has no legacy vocabulary to migrate — it ships
+/// with one naming scheme. Tolerance here means an unknown or absent value
+/// falls to [LibrarySort.recentlyAdded], today's behavior, so a preferences
+/// row written by a future build can never strand an older one.
+LibrarySort librarySortFromStored(final String? raw) =>
+    LibrarySort.values.firstWhere(
+      (final sort) => sort.name == raw,
+      orElse: () => LibrarySort.recentlyAdded,
+    );
+
 extension MoveLibrarySort on Move {
   /// The date this move sorts by under [sort].
   ///

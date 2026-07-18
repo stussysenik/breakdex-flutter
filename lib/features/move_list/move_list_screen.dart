@@ -15,6 +15,7 @@ import '../../core/design/spacing.dart';
 import '../../core/design/theme.dart';
 import '../../core/design/typography.dart';
 import '../../core/models/learning_state.dart';
+import '../../core/models/library_sort.dart';
 import '../../core/models/move_creation.dart';
 import '../../core/models/reviewable_item.dart'
     show ComboVideoPath, MoveVideoPath;
@@ -131,6 +132,28 @@ class _ViewModeNotifier extends Notifier<ViewMode> {
     state = mode;
     final prefs = ref.read(sharedPreferencesProvider);
     await prefs.setString(_key, mode.name);
+  }
+}
+
+/// The library's active ordering, persisted across launches.
+///
+/// Public (unlike [_viewModeProvider]) because the sort is read by the list
+/// derivation and the header control, and because persistence is proven by
+/// driving this notifier rather than by asserting resolver symmetry.
+final librarySortProvider = NotifierProvider<LibrarySortNotifier, LibrarySort>(
+  LibrarySortNotifier.new,
+);
+
+class LibrarySortNotifier extends Notifier<LibrarySort> {
+  static const _key = 'library_sort';
+
+  @override
+  LibrarySort build() =>
+      librarySortFromStored(ref.watch(sharedPreferencesProvider).getString(_key));
+
+  Future<void> set(final LibrarySort sort) async {
+    state = sort;
+    await ref.read(sharedPreferencesProvider).setString(_key, sort.name);
   }
 }
 
