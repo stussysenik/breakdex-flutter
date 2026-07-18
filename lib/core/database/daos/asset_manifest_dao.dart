@@ -27,6 +27,30 @@ class AssetManifestDao extends DatabaseAccessor<AppDatabase>
     assetManifest,
   )..where((final t) => t.contentHash.equals(contentHash))).getSingleOrNull();
 
+  /// Current video paths of the entities that own this content, in
+  /// most-authoritative order (active moves first, then combos). Moves and
+  /// combos keep their paths current through every rename/category move,
+  /// while the manifest's `localPath` is only written at import — so these
+  /// are the repair candidates when the manifest's copy has gone stale.
+  /// Callers own the on-disk existence check.
+  Future<List<String>> entityPathCandidatesForHash(
+    final String contentHash,
+  ) async {
+    final moves = await attachedDatabase.movesDao.getActiveByContentHash(
+      contentHash,
+    );
+    final combos =
+        await (attachedDatabase.select(attachedDatabase.combos)
+              ..where((final t) => t.contentHash.equals(contentHash)))
+            .get();
+    return [
+      for (final m in moves)
+        if (m.videoPath != null) m.videoPath!,
+      for (final c in combos)
+        if (c.activeVideoPath != null) c.activeVideoPath!,
+    ];
+  }
+
   Stream<AssetManifestData?> watchByHash(final String contentHash) => (select(
     assetManifest,
   )..where((final t) => t.contentHash.equals(contentHash))).watchSingleOrNull();

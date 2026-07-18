@@ -37,8 +37,9 @@ void main() {
         gates: {...kCoreBootGates, BootGate.migrations, BootGate.healing},
         ready: true,
       );
-      // 2 of 4 post-frame gates done.
-      expect(some.postFrameProgress, closeTo(0.5, 0.0001));
+      // 2 of 3 post-frame gates done (pruning was a dead gate nothing ever
+      // completed — its removal is what lets isComplete actually flip).
+      expect(some.postFrameProgress, closeTo(2 / 3, 0.0001));
     });
 
     test('interpolatedProgress blends time with the gate floor', () {

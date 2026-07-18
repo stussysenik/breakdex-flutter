@@ -29,11 +29,8 @@ enum BootGate {
   /// FSRS data migrations (post-frame).
   migrations,
 
-  /// Video path healing (post-frame).
+  /// Video path healing + folder pruning (post-frame, the Janitor).
   healing,
-
-  /// Canonical folder pruning (post-frame).
-  pruning,
 
   /// Legacy asset migration (post-frame).
   legacyMigration,

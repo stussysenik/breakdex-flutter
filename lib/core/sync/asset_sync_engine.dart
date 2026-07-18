@@ -382,6 +382,31 @@ class AssetSyncEngine {
   }
 
   /// Mark an op failed with a synchronous, traceable log line.
+  /// Find the content at its owning entity's current path and persist it back
+  /// to the manifest. Returns the healed absolute path, or null when no owning
+  /// entity has the file on disk.
+  Future<String?> _healStaleLocalPath(final String contentHash) async {
+    final candidates = await _manifestDao.entityPathCandidatesForHash(
+      contentHash,
+    );
+    for (final relative in candidates) {
+      final absolute = VideoPathResolver.toAbsolute(relative);
+      if (await File(absolute).exists()) {
+        await _manifestDao.updateLocalState(
+          contentHash,
+          localPath: Value(relative),
+        );
+        debugPrint(
+          '[VideoBackup] healed stale localPath for '
+          '${contentHash.length > 8 ? contentHash.substring(0, 8) : contentHash}'
+          ' → $relative',
+        );
+        return absolute;
+      }
+    }
+    return null;
+  }
+
   Future<void> _fail(final SyncOperation op, final String message) async {
     debugPrint('[VideoBackup] op ${_opLabel(op)} FAILED: $message');
     await _opsDao.markFailed(op.id, message);
@@ -408,7 +433,22 @@ class AssetSyncEngine {
 
     final remotePath = 'breakdex/${op.contentHash}';
     final token = CancellationToken();
-    final localPath = VideoPathResolver.toAbsolute(manifest!.localPath!);
+    var localPath = VideoPathResolver.toAbsolute(manifest!.localPath!);
+
+    // The manifest's localPath is only written at import; renames and category
+    // moves relocate the file and update the owning move/combo, not the
+    // manifest. A stale path used to reach the provider as a missing file
+    // (surfacing as a cryptic "negative content length" from Drive) — instead,
+    // re-derive from the owning entities and persist the healed path.
+    if (!await File(localPath).exists()) {
+      final healed = await _healStaleLocalPath(op.contentHash);
+      if (healed == null) {
+        await _fail(op, 'Local file missing: ${manifest.localPath}');
+        return;
+      }
+      localPath = healed;
+    }
+
     var lastTransferred = 0;
 
     final result = await provider.upload(

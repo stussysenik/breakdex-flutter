@@ -155,6 +155,11 @@ class GDriveProvider extends CloudProvider {
     final api = await _ensureApi();
     final file = File(localPath);
     final stat = await file.stat();
+    // A missing file stats as size -1, which Drive's Media rejects with a
+    // cryptic "negative content length" — fail with the actual story instead.
+    if (stat.type == FileSystemEntityType.notFound) {
+      throw StateError('Local file missing: $localPath');
+    }
     final folderId = await _requireFolderId();
 
     // Check if file already exists (dedup by name in Breakdex folder)

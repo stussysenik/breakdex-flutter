@@ -156,7 +156,6 @@ class _GatesList extends StatelessWidget {
       BootGate.recovery => 'Recovery Check',
       BootGate.migrations => 'Data Migrations',
       BootGate.healing => 'Path Healing',
-      BootGate.pruning => 'Storage Pruning',
       BootGate.legacyMigration => 'Legacy Assets',
     };
   }

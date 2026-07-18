@@ -40,9 +40,20 @@
   `unavailable` ("Backup runs from your phone"), no tap handler. Widget tests use a
   pure-override harness (live Drift streams flake widget tests — same class as the 9
   pre-existing reds); service caching unit-tested; `flutter build web` green.
-  **Next unticked: 1.7 owner 30-second device proof** — rebuild, Sync Status header shows
-  the real pending count (~66), one Sync Now on Wi-Fi, Drive shows the full library,
-  Verify Integrity reports 67 OK (screenshot + Drive count in the tick).
+  **2026-07-18 device run surfaced two more structural defects, both FIXED red/green
+  (tasks 1.8/1.9):** 1.8 manifest path drift — renames/category moves relocated video
+  files without carrying `asset_manifest.localPath`, so all 55 uploads failed with
+  Drive's cryptic "negative content length" (missing file stats size −1); engine now
+  self-heals the manifest from the owning move/combo's current path and fails honestly
+  when the file is truly gone, and orchestrator/healer update the manifest in the same
+  operation that moves a file. 1.9 the ever-present 2px blue hairline at the top of
+  every view was `BootGate.pruning` — a dead gate nothing completes — pinning
+  `isComplete` false forever; gate removed. Same run also confirmed the
+  hydrate-on-login red screen fix (provider-build assertion; deferred via microtask).
+  **Next unticked: 1.7 owner 30-second device proof (re-run on this build)** — Sync
+  Status header shows the real pending count, one Sync Now on Wi-Fi, Drive shows the
+  full library, Verify Integrity OK (screenshot + Drive count in the tick). New 2.3
+  (owner-requested): per-asset sync detail list in Sync Status.
   **Phase 3** stays owner-gated on design O1/O2.
 
 - **Change (owner-driven, parallel):** `add-dev-auth-and-sync-rehearsal` — de-risks the owner's Phase-M pass

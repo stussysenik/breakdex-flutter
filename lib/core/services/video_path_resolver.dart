@@ -546,6 +546,14 @@ abstract final class VideoPathHealer {
           await db.movesDao.updateMove(
             MovesCompanion(id: Value(move.id), videoPath: Value(semanticRelative)),
           );
+          // The physical file moved — carry the manifest pointer with it, or
+          // the backup engine keeps uploading from the abandoned path.
+          if (move.contentHash != null) {
+            await db.assetManifestDao.updateLocalState(
+              move.contentHash!,
+              localPath: Value(semanticRelative),
+            );
+          }
           migrated++;
         }
       }

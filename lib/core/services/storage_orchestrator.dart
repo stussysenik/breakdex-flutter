@@ -135,6 +135,7 @@ class StorageOrchestrator {
         category: Value(newName),
         videoPath: Value(newRelative),
       ));
+      await _followManifestPath(move.contentHash, newRelative);
     }
 
     await _provenance?.logEdited(
@@ -223,6 +224,9 @@ class StorageOrchestrator {
       category: Value(newCategory),
       videoPath: Value(newRelative),
     ));
+    if (newRelative != null) {
+      await _followManifestPath(move.contentHash, newRelative);
+    }
 
     // Cleanup old dir if empty
     await _cleanupOldCategoryDir(move.category);
@@ -260,10 +264,27 @@ class StorageOrchestrator {
       name: Value(newName),
       videoPath: Value(newRelative),
     ));
+    if (newRelative != null) {
+      await _followManifestPath(move.contentHash, newRelative);
+    }
 
     return move.copyWith(
       name: newName,
       videoPath: Value(newRelative),
+    );
+  }
+
+  /// The sync engine uploads from `asset_manifest.localPath`, not the move
+  /// row — every physical file move must carry the manifest pointer with it,
+  /// or backups fail on a path that no longer exists.
+  Future<void> _followManifestPath(
+    final String? contentHash,
+    final String newRelative,
+  ) async {
+    if (contentHash == null) return;
+    await _db.assetManifestDao.updateLocalState(
+      contentHash,
+      localPath: Value(newRelative),
     );
   }
 

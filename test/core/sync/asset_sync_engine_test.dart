@@ -510,4 +510,50 @@ void main() {
       expect(engine.state, SyncEngineState.idle);
     });
   });
+
+  // Renames/category moves relocate the file and update the owning move —
+  // not the manifest. The engine must re-derive the current path from the
+  // owning entities, persist the heal, and upload; a file that is truly gone
+  // fails with an honest message instead of reaching the provider.
+  group('stale manifest path healing', () {
+    const hash = 'stale01hash';
+
+    test('heals localPath from the owning move and uploads', () async {
+      final movedFile = File(
+        '${tempDir.path}/Moves/Power/Windmill - stale01h.mp4',
+      );
+      await movedFile.parent.create(recursive: true);
+      await movedFile.writeAsBytes(List.filled(64, 0));
+
+      await db.movesDao.insertMove(const MovesCompanion(
+        id: Value('move-1'),
+        name: Value('Windmill'),
+        category: Value('Power'),
+        contentHash: Value(hash),
+        videoPath: Value('Moves/Power/Windmill - stale01h.mp4'),
+      ));
+      await _seedManifest(db, hash: hash, localPath: 'Moves/Old/gone.mp4');
+      await _seedOperation(db, id: 'op-heal', hash: hash, operationType: 'upload');
+
+      await engine.runSyncCycle(ConnectionType.wifi);
+
+      expect(fakeProvider.uploadedLocalPaths, [movedFile.path]);
+      final manifest = await db.assetManifestDao.getByHash(hash);
+      expect(manifest!.localPath, 'Moves/Power/Windmill - stale01h.mp4');
+    });
+
+    test('fails honestly when no owning entity has the file', () async {
+      await _seedManifest(db, hash: hash, localPath: 'Moves/Old/gone.mp4');
+      await _seedOperation(db, id: 'op-gone', hash: hash, operationType: 'upload');
+
+      await engine.runSyncCycle(ConnectionType.wifi);
+
+      expect(fakeProvider.uploadedLocalPaths, isEmpty);
+      final op = await (db.select(db.syncOperations)
+            ..where((final t) => t.id.equals('op-gone')))
+          .getSingle();
+      expect(op.status, 'failed');
+      expect(op.errorMessage, contains('Local file missing'));
+    });
+  });
 }
