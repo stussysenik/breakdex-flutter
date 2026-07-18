@@ -235,7 +235,7 @@
   **697 green / 0 failures**; `flutter analyze` 0 errors; full suite **1157 green**, reds
   identical to baseline on the same files (42/6/9 with and without the change) — **0
   regressions**; `check_l10n.sh` and `flutter build web` green.
-- [ ] 4.8 Restore-and-re-adopt the quarantined orphans (design D11 — REWRITTEN
+- [x] 4.8 Restore-and-re-adopt the quarantined orphans (design D11 — REWRITTEN
   2026-07-19: device evidence read `sandbox rescue: 22 of 22`, all in
   `Moves/.lost+found/`; the tombstone premise "bytes gone" is falsified, and
   tombstoning would soft-delete recoverable videos). An `OrphanRestoreService`
@@ -253,6 +253,14 @@
   (hash-mismatch refusal, idempotence, manifest+move atomicity), analyze clean.
   Device evidence in the tick: 22 restored, library shows Recovered category,
   unresolvable list reads 0, next sweep uploads them.
+  **Code DONE 2026-07-19** — `OrphanRestoreService` (db + `MoveRepository` via the
+  sync-aware provider, so restored moves enter record sync; hasher injected),
+  panel button `sync-restore-orphans` + inline re-dump + `Recovered` category
+  registration. Red embedded in the adopt test's before-assertions (zero moves,
+  dead path). Verify: 5 new unit tests (adopt, hash-mismatch refusal w/ impostor
+  file, idempotence, owned-skip, byte-less bucket) green; panel suite 14 green;
+  sync+database+services **702 green / 0 failures**; `flutter analyze` 0 errors
+  (9 pre-existing infos). Device evidence pending the owner's next run.
 - [ ] 4.9 Janitor joins the registry (design D11 ruling 4 — loop closure). Before
   quarantining a file, `StorageJanitor` parses the hash from the canonical filename
   (reuse `SandboxHashIndex`'s validating parser — NOT the `split(' - ').last` idiom)

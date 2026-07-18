@@ -73,6 +73,7 @@ import 'sync/integrity_verifier.dart';
 import 'sync/local_copy_reconciler.dart';
 import 'sync/legacy_asset_migration.dart';
 import 'sync/network_policy.dart';
+import 'sync/orphan_restore_service.dart';
 import 'sync/providers/gdrive_provider.dart';
 import 'sync/providers/firebase_storage_provider.dart';
 import 'sync/providers/icloud_provider.dart';

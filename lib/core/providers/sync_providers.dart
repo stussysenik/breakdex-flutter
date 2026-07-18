@@ -143,6 +143,15 @@ final localCopyReconcilerProvider = Provider<LocalCopyReconciler>((final ref) {
   );
 });
 
+/// Restores quarantined orphans — zero-owner manifests whose bytes survive in
+/// `.lost+found` (design D11, task 4.8). Dev-panel-invoked, never automatic.
+final orphanRestoreServiceProvider = Provider<OrphanRestoreService>((final ref) {
+  return OrphanRestoreService(
+    db: ref.watch(databaseProvider),
+    moveRepository: ref.watch(moveRepositoryProvider),
+  );
+});
+
 /// Integrity verifier for periodic file re-hashing.
 final integrityVerifierProvider = Provider<IntegrityVerifier>((final ref) {
   return IntegrityVerifier(

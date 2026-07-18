@@ -21,8 +21,13 @@ import '../../core/providers.dart'
     show
         fullBackfillServiceProvider,
         localCopyReconcilerProvider,
+        orphanRestoreServiceProvider,
         syncDiagnosticsProvider,
         syncServiceProvider;
+import '../../core/services/categories_service.dart'
+    show categoriesProvider;
+import '../../core/sync/orphan_restore_service.dart'
+    show OrphanRestoreService;
 import '../../core/services/appwrite_auth_providers.dart';
 import '../../core/services/settings_service.dart' show sharedPreferencesProvider;
 import '../../core/services/sync_service.dart';
@@ -534,6 +539,34 @@ class _DiagnosticsSectionState extends ConsumerState<_DiagnosticsSection> {
     }
   }
 
+  /// Restore quarantined orphans (task 4.8): verify → re-home → re-own, then
+  /// re-dump so the unresolvable list visibly shrinks in the same view. Also
+  /// registers the Recovered category so the restored moves are reachable.
+  Future<void> _restoreOrphans() async {
+    setState(() {
+      _running = true;
+      _error = null;
+    });
+    try {
+      final restore = await ref.read(orphanRestoreServiceProvider).restore();
+      debugPrint('[SyncDiagnostics] orphan restore:\n$restore');
+      if (restore.restored.isNotEmpty &&
+          !ref.read(categoriesProvider).any(
+              (final c) => c.name == OrphanRestoreService.recoveredCategory)) {
+        await ref.read(categoriesProvider.notifier).addCategory(
+              OrphanRestoreService.recoveredCategory,
+              Colors.teal,
+            );
+      }
+      final report = await ref.read(syncDiagnosticsProvider).dump();
+      if (mounted) setState(() => _report = '$restore\n\n$report');
+    } on Object catch (error) {
+      if (mounted) setState(() => _error = '$error');
+    } finally {
+      if (mounted) setState(() => _running = false);
+    }
+  }
+
   @override
   Widget build(final BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
@@ -575,6 +608,14 @@ class _DiagnosticsSectionState extends ConsumerState<_DiagnosticsSection> {
             onPressed: _running ? null : _reconcile,
             child: Text(
               _running ? 'Reconciling…' : 'Reconcile local copies from disk',
+            ),
+          ),
+          const SizedBox(height: AppSpacing.sm),
+          OutlinedButton(
+            key: const ValueKey('sync-restore-orphans'),
+            onPressed: _running ? null : _restoreOrphans,
+            child: Text(
+              _running ? 'Restoring…' : 'Restore quarantined orphans',
             ),
           ),
           if (_report != null) ...[
