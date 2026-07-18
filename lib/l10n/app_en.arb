@@ -963,6 +963,12 @@
   "@libraryMonthThis": { "description": "Library month-section header for the calendar month the user is currently in." },
   "libraryMonthLast": "Last month",
   "@libraryMonthLast": { "description": "Library month-section header for the calendar month immediately before the current one." },
+  "libraryDateToday": "Today",
+  "@libraryDateToday": { "description": "Library row/tile date line when the item's date for the active sort is the current calendar day." },
+  "libraryDateYesterday": "Yesterday",
+  "@libraryDateYesterday": { "description": "Library row/tile date line when the item's date for the active sort is the previous calendar day." },
+  "libraryDateDaysAgo": "{count, plural, other{{count} days ago}}",
+  "@libraryDateDaysAgo": { "description": "Library row/tile date line for the recent past, two to six calendar days back. One day back reads as 'Yesterday' instead.", "placeholders": { "count": { "type": "int", "example": "3" } } },
   "setError": "Error: {error}",
   "@setError": { "description": "Settings Backup & Reset: generic error snackbar when an async data action throws.", "placeholders": { "error": { "type": "String", "example": "FileSystemException" } } }
 }

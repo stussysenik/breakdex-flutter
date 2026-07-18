@@ -1420,6 +1420,22 @@ class AppLocalizationsEn extends AppLocalizations {
   String get libraryMonthLast => 'Last month';
 
   @override
+  String get libraryDateToday => 'Today';
+
+  @override
+  String get libraryDateYesterday => 'Yesterday';
+
+  @override
+  String libraryDateDaysAgo(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count days ago',
+    );
+    return '$_temp0';
+  }
+
+  @override
   String setError(String error) {
     return 'Error: $error';
   }

@@ -2415,6 +2415,24 @@ abstract class AppLocalizations {
   /// **'Last month'**
   String get libraryMonthLast;
 
+  /// Library row/tile date line when the item's date for the active sort is the current calendar day.
+  ///
+  /// In en, this message translates to:
+  /// **'Today'**
+  String get libraryDateToday;
+
+  /// Library row/tile date line when the item's date for the active sort is the previous calendar day.
+  ///
+  /// In en, this message translates to:
+  /// **'Yesterday'**
+  String get libraryDateYesterday;
+
+  /// Library row/tile date line for the recent past, two to six calendar days back. One day back reads as 'Yesterday' instead.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, other{{count} days ago}}'**
+  String libraryDateDaysAgo(int count);
+
   /// Settings Backup & Reset: generic error snackbar when an async data action throws.
   ///
   /// In en, this message translates to:

@@ -213,8 +213,28 @@
   **1088 green / 9 pre-existing reds / 0 regressions**. Known gap, not papered over: the
   screen-level `dateOf: effectiveDate(sort)` junction is unasserted — reaching it means
   pumping the screen's live Drift streams, which flake widget tests.
-  **Next agent-runnable: 3.1** (shared localized date-line formatter) — then 3.2.
-  Phase 5 stays owner-gated on O1.
+  **3.1 DONE 2026-07-18** — the date line rows and tiles will show is now one localized
+  formatter, built before any surface renders it, so "3 days ago" cannot come out four
+  subtly different ways. Split in two: `libraryDateLine` in `lib/core/models/` classifies
+  (`today` / `yesterday` / `daysAgo` / `absolute`) with no Flutter at all, and
+  `formatLibraryDateLine` in the library's `widgets/` reaches for the ARB key or
+  `DateFormat.yMMMd` — `lib/core/` imports no l10n anywhere in this repo and this did not
+  become the first exception. Two rulings pinned by tests: the boundary is **calendar
+  days, not elapsed hours** (something filmed at 11pm reads "Yesterday" at 1am, which
+  24-hour arithmetic gets wrong), computed on UTC-normalized day ordinals so a 23/25-hour
+  DST day cannot round a 7-day gap down into the relative arm; and a *future* date is
+  absolute, the same ruling 2.4 made for months. Horizon: 7 days, exclusive.
+  **Prior art acknowledged, not absorbed:** `lib/core/utils/time_format.dart`
+  (`relativeTime`, compact + hardcoded English) and `_daysAgo` in `lab_detail_screen.dart`
+  are unlocalized ancestors of this; converging them means ARB keys and context plumbing
+  through unrelated features, so they stay put rather than becoming a drive-by refactor.
+  Binary truth: 18 tests, **six** mutations each proven red (elapsed-hours instead of
+  calendar days, drop the future guard, widen the horizon to 30, delete the yesterday arm,
+  point the `daysAgo` arm at the yesterday key, drop the year from the absolute format).
+  `flutter analyze` 0 errors (9 pre-existing infos), suite **1106 green / 9 pre-existing
+  reds / 0 regressions**, `check_l10n.sh` green post-commit.
+  **Next agent-runnable: 3.2** (render it on `_MoveRow`, `_MoveGridCell`, `_ComboRow`, and
+  the combo grid cell, following the active sort). Phase 5 stays owner-gated on O1.
 
 - **Change (owner-driven, parallel):** `add-dev-auth-and-sync-rehearsal` — de-risks the owner's Phase-M pass
   by letting a dev **user #0** rehearse the whole sync ladder without Google OAuth. **Agent

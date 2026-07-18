@@ -127,9 +127,40 @@
 
 ## Phase 3 — Dates on rows and tiles
 
-- [ ] 3.1 Shared date-line presentation (relative for the recent past, absolute beyond)
+- [x] 3.1 Shared date-line presentation (relative for the recent past, absolute beyond)
   as one localized formatter reused by all row/tile widgets — not re-implemented per
   widget. Verify: unit tests across the relative/absolute boundary; l10n check green.
+  **DONE 2026-07-18.** Built before any surface renders it, which is the point of the
+  task: there is no per-widget implementation to converge later.
+  **Split in two, along the layering line this repo already holds.**
+  `libraryDateLine` (`lib/core/models/library_date_line.dart`) classifies a date against
+  `now` into `today` / `yesterday` / `daysAgo` / `absolute` with no Flutter at all;
+  `formatLibraryDateLine` (`lib/features/move_list/widgets/library_date_line_format.dart`)
+  turns that into a string via the ARB keys or `DateFormat.yMMMd`. The two are separate
+  because `lib/core/` imports `AppLocalizations` in exactly zero places today, and 3.1 was
+  not worth making it one — the classification is the part with rulings in it, and it
+  tests without a `pumpWidget`.
+  **Two rulings the executor of 3.2 should not re-derive.** First, the boundary is
+  **calendar days, not elapsed hours**: something filmed at 11pm reads "Yesterday" at 1am,
+  because that is the day the user remembers, and 24-hour arithmetic calls it "Today".
+  Both instants normalize to local midnight and compare as *UTC* day ordinals, so a 23- or
+  25-hour local day (DST) cannot round a 7-day gap down to 6 and leak into the relative
+  arm. Second, a *future* date is absolute, never "Today" — the same ruling 2.4 made for
+  month headers, for the same reason (a wrong device clock stamping a filmed date ahead
+  must not borrow the relative arm through a negative delta). Horizon: 7 days, exclusive
+  (`libraryRelativeDateHorizonDays`).
+  **Prior art acknowledged rather than absorbed.** `relativeTime` in
+  `lib/core/utils/time_format.dart` (compact, hardcoded English, non-injectable clock) and
+  the private `_daysAgo` in `lab_detail_screen.dart:463` are unlocalized ancestors of this
+  formatter. Converging them means ARB keys and context plumbing through lab cards,
+  timelines, and quick-log feeds — surfaces this change does not touch — so they stay put;
+  folding them in would be a drive-by refactor, not DRY.
+  Binary truth: 18 tests (11 unit + 7 widget), **six** mutations each proven red —
+  elapsed-hours instead of calendar days (−3), dropping the future guard (−3), widening the
+  horizon to 30 (−3), deleting the yesterday arm (−3), pointing the `daysAgo` arm at the
+  yesterday ARB key (−2), and dropping the year from the absolute format (−2).
+  `flutter analyze` 0 errors (9 pre-existing infos), suite **1106 green / 9 pre-existing
+  reds / 0 regressions**, `scripts/check_l10n.sh` green post-commit.
 - [ ] 3.2 Render it on `_MoveRow`, `_MoveGridCell`, `_ComboRow`, and the combo grid cell,
   showing the date for the **active** sort (spec: "The displayed date follows the active
   sort"). Verify: widget tests per surface; visual density stays within TOKENS grid
