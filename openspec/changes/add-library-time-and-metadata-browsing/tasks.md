@@ -10,7 +10,7 @@
 
 ## Phase 1 — Sort model (pure, no UI)
 
-- [ ] 1.1 `LibrarySort` enum (recentlyAdded, recentlyFilmed, recentlyPracticed,
+- [x] 1.1 `LibrarySort` enum (recentlyAdded, recentlyFilmed, recentlyPracticed,
   alphabetical) plus `effectiveDate` accessors for moves and combos implementing the
   design D2 fallback table. Pure functions in `lib/core/models/` — no Drift, no widgets.
   Verify: unit tests covering each dimension, the null-`videoCreationDate` fallback, the
@@ -28,6 +28,12 @@
   combo lists (design D1 — client-side; DAO ordering untouched). Verify: widget test via
   the pure-override harness (live Drift streams flake widget tests) asserting reorder on
   sort change; existing move-list tests green.
+  **Widened by 1.1 (design D2 note):** `watchLibraryRows` builds its `Combo` without
+  `updatedAt` (`combos_dao.dart:475-484`), so the practiced chain's middle link is dead
+  in the only surface that uses it — a combo with no jots sorts by `createdAt` even when
+  it was edited yesterday. Add `c.updated_at` to that SELECT and hydrate it here; the
+  comparator already reads it. Verify: the combo ordering test must distinguish
+  edited-but-never-jotted from never-touched, which today it cannot.
 - [ ] 2.2 Sort control in the library header, composed with the existing
   `_PillToggleRow`/`_ViewModeToggle` idiom rather than a new control vocabulary.
   Localized. Verify: widget test, `scripts/check_l10n.sh` green.

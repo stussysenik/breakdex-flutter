@@ -120,7 +120,7 @@
   **Also unticked:** 1.7 owner 30-second device proof.
   **Phase 3** stays owner-gated on design O1/O2.
 
-- **Change (new, specced 2026-07-18, strict-valid, UNCOMMITTED):**
+- **Change (ACTIVE — queue head as of 2026-07-18, Phase 4 above being owner-gated):**
   `add-library-time-and-metadata-browsing` — the library is time-blind. Ordering is a
   hardcoded `createdAt DESC` in every DAO (`moves_dao.dart:29`, `combos_dao.dart:465`) with
   no user sort control anywhere; `moves.videoCreationDate` (when the clip was actually
@@ -135,6 +135,17 @@
   ruling. **5.3 is cross-change-blocked** on Phase 4 above — the tile's backup icon currently
   keys off `contentHash != null`, i.e. "tracked", not "backed up", and can't be made honest
   until `copyCount` can be trusted.
+  **1.1 DONE by agent 2026-07-18** — `lib/core/models/library_sort.dart`: the `LibrarySort`
+  enum, an `effectiveDate(sort)` extension per entity implementing D2's fallback table, and
+  two comparators. The chains all terminate at the non-nullable `createdAt`, so
+  `effectiveDate` is total — no entity can drop out of the ordering for lack of a date — and
+  ties break by name then id, so ordering is deterministic rather than merely usually
+  stable. Reading the code corrected D2: `watchLibraryRows` never hydrates `combo.updatedAt`
+  (`combos_dao.dart:475-484`), so the practiced chain's middle link is dead in the only
+  surface that uses it; the model is right, the SELECT is short one column, and that fix now
+  sits in 2.1. Binary truth: 11 unit tests, each proven by mutation (reversing the date
+  comparison and dropping the `videoCreationDate` fallback each go red), analyze 0 issues.
+  **Next agent-runnable: 1.2** (persisted sort provider). Phase 5 stays owner-gated on O1.
 
 - **Change (owner-driven, parallel):** `add-dev-auth-and-sync-rehearsal` — de-risks the owner's Phase-M pass
   by letting a dev **user #0** rehearse the whole sync ladder without Google OAuth. **Agent

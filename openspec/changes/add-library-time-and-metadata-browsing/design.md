@@ -39,6 +39,14 @@ null. Without a fallback, "recently filmed" would silently drop most of the libr
 bottom in arbitrary order. With it, those clips sort by when they entered Breakdex, which
 is the honest approximation.
 
+**Correction from 1.1 — the combo `updatedAt` link is not wired.** D2's table reads the
+chain off the `combos` table, but the library's own stream does not carry it:
+`watchLibraryRows` constructs `Combo(...)` from named columns and omits `updatedAt`
+(`combos_dao.dart:475-484`), leaving it null for every row. `effectiveDate` implements the
+full chain as specified — the gap is hydration, not the model — so the fix is one column in
+that SELECT, moved into task 2.1 rather than left as a silent degradation to
+`lastEntryAt → createdAt`.
+
 **"Recently filmed" is hidden for combos, not faked.** A combo has no capture date; when
 that sort is active the combo tab falls back to recently-added and says so, rather than
 inventing a date from its member moves.
