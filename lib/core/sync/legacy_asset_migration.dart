@@ -131,7 +131,7 @@ class LegacyAssetMigration {
       );
 
       // Insert local copy record
-      final copyId = '${move.id}_local'; // Deterministic ID for idempotency
+      final copyId = AssetCopiesDao.copyId(hash, 'local');
       await _copiesDao.upsertCopy(
         AssetCopiesCompanion.insert(
           id: copyId,

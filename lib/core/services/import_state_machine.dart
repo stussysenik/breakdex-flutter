@@ -138,7 +138,7 @@ class ImportStateMachine {
         ImportPhase.recordingManifest,
       );
 
-      final copyId = '${canonicalHash}_local';
+      final copyId = AssetCopiesDao.copyId(canonicalHash, 'local');
       await _copiesDao.upsertCopy(
         AssetCopiesCompanion.insert(
           id: copyId,

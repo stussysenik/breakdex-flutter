@@ -556,4 +556,85 @@ void main() {
       expect(op.errorMessage, contains('Local file missing'));
     });
   });
+
+  group('copy identity', () {
+    /// D7: ids used to be a fresh UUID per upload, so `insertOnConflictUpdate`
+    /// never conflicted — each re-upload appended a row and `copyCount` could
+    /// satisfy the two-copy minimum on one real cloud copy.
+    test('re-uploading to the same provider keeps one copy row', () async {
+      const hash = 'dedupehash';
+      final file = File('${tempDir.path}/dedupe.mp4');
+      await file.writeAsBytes(List.filled(64, 0));
+      await _seedManifest(db, hash: hash, localPath: 'dedupe.mp4');
+      await _seedCopy(db, id: '${hash}_local', hash: hash, provider: 'local');
+
+      for (final opId in ['op-up-1', 'op-up-2']) {
+        await _seedOperation(
+          db,
+          id: opId,
+          hash: hash,
+          operationType: 'upload',
+        );
+        await engine.runSyncCycle(ConnectionType.wifi);
+      }
+
+      final copies = await db.assetCopiesDao.getByHash(hash);
+      expect(copies.where((final c) => c.provider == 'icloud').length, 1);
+      expect(copies.length, 2);
+
+      final manifest = await db.assetManifestDao.getByHash(hash);
+      expect(manifest!.copyCount, 2);
+    });
+  });
+
+  group('progress emission', () {
+    /// D6: emissions used to come only from `_setState` — one at cycle start,
+    /// one at the end — so a long sweep showed a frozen "17/72" throughout.
+    /// Each settled operation must emit, success or failure.
+    test('emits a progress event per settled operation', () async {
+      final events = <SyncProgress>[];
+      final sub = engine.progressStream.listen(events.add);
+
+      for (var i = 0; i < 3; i++) {
+        final file = File('${tempDir.path}/op_$i.mp4');
+        await file.writeAsBytes(List.filled(64, 0));
+        await _seedManifest(db, hash: 'hash$i', localPath: 'op_$i.mp4');
+        await _seedOperation(
+          db,
+          id: 'op-$i',
+          hash: 'hash$i',
+          operationType: 'upload',
+        );
+      }
+
+      await engine.runSyncCycle(ConnectionType.wifi);
+      await pumpEventQueue();
+      await sub.cancel();
+
+      // 2 state transitions (syncing, idle) + 1 per settled operation.
+      expect(events.length, greaterThanOrEqualTo(5));
+    });
+
+    test('emits a progress event when an operation fails', () async {
+      fakeProvider.shouldThrowOnUpload = true;
+      final events = <SyncProgress>[];
+      final sub = engine.progressStream.listen(events.add);
+
+      final file = File('${tempDir.path}/fails.mp4');
+      await file.writeAsBytes(List.filled(64, 0));
+      await _seedManifest(db, hash: 'failhash', localPath: 'fails.mp4');
+      await _seedOperation(
+        db,
+        id: 'op-fail',
+        hash: 'failhash',
+        operationType: 'upload',
+      );
+
+      await engine.runSyncCycle(ConnectionType.wifi);
+      await pumpEventQueue();
+      await sub.cancel();
+
+      expect(events.length, greaterThanOrEqualTo(3));
+    });
+  });
 }

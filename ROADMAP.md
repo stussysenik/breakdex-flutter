@@ -50,11 +50,64 @@
   every view was `BootGate.pruning` — a dead gate nothing completes — pinning
   `isComplete` false forever; gate removed. Same run also confirmed the
   hydrate-on-login red screen fix (provider-build assertion; deferred via microtask).
-  **Next unticked: 1.7 owner 30-second device proof (re-run on this build)** — Sync
-  Status header shows the real pending count, one Sync Now on Wi-Fi, Drive shows the
-  full library, Verify Integrity OK (screenshot + Drive count in the tick). New 2.3
-  (owner-requested): per-asset sync detail list in Sync Status.
+  **2026-07-18 device run #2 — Phase 1 fixes CONFIRMED WORKING, next layer specced.**
+  The run drained the entire queue in one cycle (~33 videos healed + uploaded, incl. 87/68/66 MB
+  files); the localPath heal fired on 7+ stale manifests; failures now fail instantly with the
+  real path instead of Drive's "negative content length". Three defects the run exposed are
+  specced as **new Phase 4 (progress legibility & copy truth)** in that `tasks.md`, with
+  rulings in design.md **D6–D9** — all verified against the code, not inferred:
+  (a) the "17/72" counter freezes for the whole sweep — `_emitProgress()` is called only
+  from `_setState()` (`asset_sync_engine.dart:693-696`), so it emits at cycle start/end and
+  never per operation (**D6**);
+  (b) copy identity is broken — `AssetCopies.primaryKey` is `{id}` alone and the engine
+  writes each upload with a fresh `_uuid.v4()`, so `upsertCopy`'s `insertOnConflictUpdate`
+  **always inserts**; every re-upload appends a duplicate `gdrive` row and `copyCount` can
+  overstate protection (the documented two-copy minimum). A latent variant: legacy migration
+  keys the local copy `'${move.id}_local'` while import keys it `'${hash}_local'` — two rows
+  for one logical copy → an asset can read `copyCount == 2` with **zero** cloud copies (**D7**);
+  (c) an asset whose bytes are gone burns 3 retries then sits failed forever, permanently
+  inflating the pending count with no way to distinguish "uploading" from "unbackupable"
+  (**D9** — note the earlier "infinite permafail storm" reading was too strong; `maxRetries`
+  and `queueUpload`'s dedupe do bound it).
+  **Phase 4 progress — 4.1 and 4.2 DONE by agent 2026-07-18, each red/green.** 4.1: the
+  counter froze because the stream carried exactly 2 events per cycle regardless of how
+  many operations ran; `_emitProgress()` now fires after every settled operation, success
+  or failure (`asset_sync_engine.dart`). 4.2: copy identity is now
+  `AssetCopiesDao.copyId(contentHash, provider)` at all **six** write sites (the spec said
+  five — `video_import_sync_hook.dart:89` was missed), backed by a unique index and
+  schema **v28** collapsing duplicates by most-protective status. Reading the code
+  corrected D7 twice: there were **five** id schemes, two keyed by entity id and two by
+  content hash, so one logical local copy could occupy *three* rows (D7 said two), and
+  `getLocalCopy`'s `getSingleOrNull()` **throws** once a duplicate exists. Binary truth:
+  db+sync+services **640 green / 0 failures**, full suite **988 green, 9 pre-existing
+  reds, 0 regressions**, `flutter analyze` 0 errors.
+  **Next unticked, and it needs the owner: 4.0** — read ground truth via the 1.5
+  diagnostics dump on a device build (**D8**: don't guess which of three causes lags the
+  counter), and answer the open question — do the ~22 failing `Moves/Power moves/` videos
+  still **play**? (play ⇒ the heal has an archived-entity blind spot,
+  `getActiveByContentHash` at `moves_dao.dart:42`; don't play ⇒ terminal classification is
+  correct). **4.4 is blocked on that answer.** Agent-runnable without it: **4.3** (copy
+  reconcile from disk truth — land it right after 4.2, it clears the honest transient
+  v28 introduces), then 2.3 → 4.5.
+  **Also unticked:** 1.7 owner 30-second device proof; 2.3 per-asset sync detail list in
+  Sync Status (the surface 4.1/4.4/4.5 report into — land it before or alongside 4.5).
   **Phase 3** stays owner-gated on design O1/O2.
+
+- **Change (new, specced 2026-07-18, strict-valid, UNCOMMITTED):**
+  `add-library-time-and-metadata-browsing` — the library is time-blind. Ordering is a
+  hardcoded `createdAt DESC` in every DAO (`moves_dao.dart:29`, `combos_dao.dart:465`) with
+  no user sort control anywhere; `moves.videoCreationDate` (when the clip was actually
+  filmed) is stored and read by nothing; tiles show a thumbnail, a name, and a category label
+  only when it isn't `'default'`. Adds: a persisted sort (added / filmed / practiced / A–Z)
+  with a defined fallback chain per dimension (**D2**), month grouping on date sorts (**D3**),
+  a date line on rows and tiles, and category recency computed in the existing count pass
+  (**D5**). Sort stays client-side — the list is already fully in memory and filtered in Dart
+  (**D1**). No schema change, no migration. **Owner-gated O1 (design D4):** metadata text on
+  tiles pushes against the shipped visual-first ruling ("text is for input and settings"), so
+  only the date is in scope by default; file size / original filename / backup state need a
+  ruling. **5.3 is cross-change-blocked** on Phase 4 above — the tile's backup icon currently
+  keys off `contentHash != null`, i.e. "tracked", not "backed up", and can't be made honest
+  until `copyCount` can be trusted.
 
 - **Change (owner-driven, parallel):** `add-dev-auth-and-sync-rehearsal` — de-risks the owner's Phase-M pass
   by letting a dev **user #0** rehearse the whole sync ladder without Google OAuth. **Agent

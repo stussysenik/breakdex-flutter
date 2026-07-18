@@ -166,7 +166,7 @@ class CanonicalReconcileService {
               importedAt: now,
             ),
           );
-          final copyId = '${hash}_local';
+          final copyId = AssetCopiesDao.copyId(hash, 'local');
           await _copiesDao.upsertCopy(
             AssetCopiesCompanion.insert(
               id: copyId,

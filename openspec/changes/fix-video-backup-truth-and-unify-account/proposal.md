@@ -51,6 +51,28 @@ one-account unification behind it.
 - The Drive row shows the connected Google account email.
 - On web, the Drive row renders as unavailable (visibly degraded, not tappable).
 
+**Phase 4 — Progress legibility & copy truth (added 2026-07-18 after the device run):**
+
+Phase 1 made the pipeline *work* — the run drained 55 uploads and healed ~33 stale paths.
+It exposed the next layer: the app does the work but does not narrate it, and the counter
+it narrates with cannot be trusted.
+
+- Progress emits per settled operation, not only on engine state transitions — the
+  "17/72" counter advances during a sweep instead of freezing until the cycle ends
+  (design D6).
+- In-flight transfers show which asset is moving and how far along it is, so a slow
+  network reads as slow rather than hung.
+- A copy is identified by `(contentHash, provider)` — deterministic ids, a unique index,
+  and a one-way migration collapsing the duplicate rows every re-upload has been
+  appending. `copyCount` becomes a count of distinct providers holding the file, so it
+  can no longer overstate protection (design D7).
+- A reconcile rebuilds missing `local` copy records from disk truth, so legacy assets
+  stop being permanently underprotected after a successful upload — run *after* reading
+  the diagnostics, not on a guess about which defect dominates (design D8).
+- Failures are classified: an asset whose bytes are genuinely gone fails terminally and
+  is shown as unbackupable with its reason, separately from pending work — so the pending
+  count can honestly reach zero instead of being permanently inflated (design D9).
+
 **Phase 3 — One-account magic (owner-gated design, see design.md):**
 - Request the `drive.file` scope in the existing Appwrite Google OAuth flow; drive video
   backup with the session's `providerAccessToken`. One Google sign-in = app login + video
@@ -74,7 +96,11 @@ one-account unification behind it.
 | `lib/features/settings/widgets/cloud_sync_section.dart` | ~300 LOC | +20 (email, web state) |
 | Dev diagnostics (existing dev panel) | — | +40 |
 | Phase 3 gateway (`lib/core/sync/providers/`) | — | +120 (new token-backed Drive client, flagged) |
-| Tests | — | +8–12 focused tests (each fix red/green) |
+| `asset_sync_engine.dart` (Phase 4) | ~700 LOC | +25 (per-op emit, copy id, terminal class) |
+| `asset_copies_dao.dart` + table + migration | ~120 LOC | +45 (unique index, dedupe migration, reconcile) |
+| 4 other copy write sites | — | +1 line each (deterministic id) |
+| `sync_status_screen.dart` (2.3 + 4.5) | ~450 LOC | +90 (per-asset list, 3 counts, live bytes) |
+| Tests | — | +8–12 (Phases 1–3) +10–14 (Phase 4, each fix red/green) |
 
 ## Non-goals
 

@@ -75,6 +75,114 @@ Consequences to accept (why this is owner-gated):
 - The one video that did upload proves OAuth, folder creation, and the upload path
   end-to-end.
 
+## D6 — Progress is a projection, and projections must be pushed
+
+The 2026-07-18 device run drained the whole queue while the Sync Status screen sat frozen
+at "17/72". Traced: the `17/72` text renders `SyncProgress.syncedAssets/totalAssets`
+(`sync_status_screen.dart:402`), fed only by `_emitProgress()`, which is called only from
+`_setState()` (`asset_sync_engine.dart:693-696`). `_setState` fires at cycle start
+(`uploading`), cycle end (`idle`), pause, and the wifi-wait branch — never when an
+individual operation settles. So the stream emits one snapshot at sweep start and goes
+silent for the entire drain.
+
+This does not contradict D1 — it completes it. D1 ruled the *health verdict* derives from
+Drift (and it does: the settings badge and pending count are live, because they watch
+`watchUnderprotectedCount()`). The engine stream survives as the *transfer* projection.
+The defect is that the projection was only pushed on mood changes.
+
+**Ruling:** call `_emitProgress()` at the end of `_executeOperation`, after the operation
+settles either way. One call site, no new state, no UI change — the existing stream
+becomes per-operation fresh and everything downstream (`syncedAssets`, the fraction, the
+bar) goes live. Mixing a live Drift stream and a stale engine snapshot on one screen is
+what produced the contradiction the owner saw; this removes the staleness rather than
+adding a second source of truth.
+
+For in-flight bytes, the data already exists — `provider.upload`'s `onProgress` callback
+writes `sync_operations.transferredBytes` on every chunk (`asset_sync_engine.dart:459`).
+The active-transfer readout watches those rows; it does not need a new channel.
+
+## D7 — Copy identity is `(contentHash, provider)`, enforced structurally
+
+`AssetCopies.primaryKey` is `{id}` alone (`tables/asset_copies.dart:46`), and the engine
+records every successful upload with `id: _uuid.v4()`
+(`asset_sync_engine.dart:469-481`). `upsertCopy` is `insertOnConflictUpdate` — with a
+fresh UUID there is never a conflict, so **every upload appends a new row**. The import
+paths get this right by accident of convention (`'${hash}_local'` in
+`import_state_machine.dart:141`), which is why the bug is invisible until the cloud path
+runs twice.
+
+Two consequences, both live in the current database:
+- **Inflation.** Re-uploading an asset (the dedupe-retry storm does exactly this) adds
+  another `verified` `gdrive` row. `updateCopyCount` counts rows, so `copyCount` climbs
+  past the number of distinct providers actually holding the file.
+- **False protection.** `copyCount >= 2` is the definition of "protected"
+  (`getUnderprotected`, `watchUnderprotectedCount`) and the documented two-copy minimum
+  gating local deletion (`tables/asset_copies.dart:6-9`). Two duplicate `gdrive` rows
+  satisfy it with **one** real cloud copy. Nothing gates deletion on it *today* — grep
+  confirms `copyCount` has no deletion consumer — but the invariant is load-bearing for
+  the free-space work that will, and a counter that can lie about protection is exactly
+  the class of defect this change exists to remove.
+
+A third, latent variant: `legacy_asset_migration.dart:134` keys the local copy
+`'${move.id}_local'` while `import_state_machine.dart:141` keys it `'${hash}_local'`. Two
+different IDs for the same logical `(hash, local)` copy — if both paths ever touched one
+asset, that asset shows `copyCount == 2` with **zero** cloud copies and is silently
+excluded from every sweep.
+
+**Ruling:** make the identity structural rather than conventional.
+1. Derive the id as `'${contentHash}_$provider'` at every write site (engine, import,
+   legacy migration, on-demand downloader, reconcile service — five call sites).
+2. Add a unique index on `(contentHash, provider)` so a future call site cannot
+   reintroduce the bug silently.
+3. One-way migration: collapse duplicate pairs keeping the most protective status
+   (`verified` > `uploading`/`pending` > `failed`), then recompute every `copyCount`.
+   Additive and non-destructive — no asset loses a record it genuinely has.
+
+## D8 — Diagnose before backfilling the local-copy gap
+
+The device run showed ~33 successful uploads moving the counter by ~5. D7's inflation
+alone cannot explain an *under*-count, so at least one other cause is present. The
+candidate: legacy assets that never got a `local` copy row, so a successful Drive upload
+leaves them at `copyCount == 1` — still underprotected, re-swept forever, counter never
+converging.
+
+That is a hypothesis, not a finding. The 1.5 diagnostics dump already reports copies
+grouped by provider×status; it answers this directly. **Ruling:** the executor runs the
+dump first and records the actual distribution in the task tick, then applies the
+reconcile. The reconcile is written to be correct regardless of which cause dominates —
+rebuild `local` rows from disk truth, never invent one for a file that is not there — but
+we do not guess which defect bit this library when the instrument to check already ships.
+
+## D9 — Terminal vs retryable failure
+
+The retry lane is bounded (`maxRetries` default 3, `sync_operations.dart:32`;
+`getRetryable` filters `retryCount < maxRetries`), and `queueUpload` dedupes against
+existing operations (`asset_sync_engine.dart:181-186`). So the 93-failed-op wall is
+self-limiting, not literally infinite — the earlier "permafail storm" reading was too
+strong. The real defect is subtler and worse:
+
+An asset whose bytes are gone burns three retries to learn what the first attempt already
+proved, then sits in `failed` forever while the manifest row stays underprotected. The
+pending count can therefore never reach zero, and the user is given no way to distinguish
+"22 videos still uploading" from "22 videos whose files no longer exist". A permanently
+inflated pending count is the same dishonesty as "All synced" — inverted.
+
+**Ruling:** classify at the failure site. `_executeUpload` already knows the difference —
+it fails with `'Local file missing: …'` only after `_healStaleLocalPath` returns null
+(`asset_sync_engine.dart:443-449`). That path marks the operation terminal (a distinct
+status, retry budget untouched); every other failure keeps today's retryable behavior.
+Terminal-failed assets are counted and shown separately in Sync Status, so pending can
+converge to zero honestly while the unbackupable set stays visible and actionable.
+
+**Known blind spot to check during 4.4:** `entityPathCandidatesForHash` consults only
+*active* moves (`moves_dao.dart:42 getActiveByContentHash`). An archived move whose file
+is still on disk is invisible to the heal, so its asset would be classified terminal while
+its bytes exist. Before shipping the terminal classification, confirm whether the ~22
+`Moves/Power moves/` failures are archived-with-file (heal blind spot → widen the
+candidate query to include archived entities) or genuinely deleted (classification is
+correct). Terminal is a stronger claim than retryable; it must not be reached by a query
+gap.
+
 ## Open questions (owner)
 
 - **O1:** Approve the Appwrite-scope approach for Phase 3 (re-consent tradeoff above)?

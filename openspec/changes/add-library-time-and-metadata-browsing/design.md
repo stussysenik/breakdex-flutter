@@ -1,0 +1,91 @@
+# Design — add-library-time-and-metadata-browsing
+
+## D1 — Sort client-side, not in the DAO
+
+The obvious move is to parameterize `MovesDao.watchAll()` with an ordering. Rejected: the
+list screen already loads the whole library and filters it in Dart (search at
+`move_list_screen.dart:247-256`), so the rows are in memory regardless. Pushing sort into
+Drift would mean a parameterized watch per dimension, a new stream subscription on every
+sort change, and a widened DAO surface — for a library measured in hundreds of rows, where
+a comparator over an in-memory list is microseconds.
+
+**Ruling:** sort is view state. A `LibrarySort` enum + a comparator function, applied in
+the provider that already derives the filtered list. The DAO keeps its single
+`createdAt DESC` watch as the stable input. This also keeps the sort logic pure and
+unit-testable without a database.
+
+Revisit only if a real library crosses a threshold where the in-memory pass is measurable —
+the boring solution first, per the essentialist axiom.
+
+## D2 — One `effectiveDate`, three sort dimensions
+
+Four date-ish fields exist on `moves` (`videoCreationDate`, `createdAt`, `updatedAt`,
+`archivedAt`) and three on `combos` (`createdAt`, `updatedAt`, plus `lastEntryAt` derived
+in `combos_dao.dart:459-491`). Exposing them raw would produce a sort menu nobody can
+reason about.
+
+**Ruling:** three user-facing dimensions, each with an explicit fallback:
+
+| Sort | Move reads | Combo reads | Fallback when null |
+| --- | --- | --- | --- |
+| Recently added | `createdAt` | `createdAt` | never null (non-nullable column) |
+| Recently filmed | `videoCreationDate` | — (n/a) | `createdAt` |
+| Recently practiced | `updatedAt` | `lastEntryAt` → `updatedAt` | `createdAt` |
+| A–Z | `name` | `name` | — |
+
+`effectiveDate(sort)` is a single pure accessor per entity. The fallback chain is what
+makes the feature safe: `videoCreationDate` is nullable and, for legacy imports, usually
+null. Without a fallback, "recently filmed" would silently drop most of the library to the
+bottom in arbitrary order. With it, those clips sort by when they entered Breakdex, which
+is the honest approximation.
+
+**"Recently filmed" is hidden for combos, not faked.** A combo has no capture date; when
+that sort is active the combo tab falls back to recently-added and says so, rather than
+inventing a date from its member moves.
+
+## D3 — Grouping is a projection of the active sort
+
+Sticky month headers appear **only** when a date sort is active — grouping an A–Z list by
+month is noise. Buckets are calendar months in local time, labeled relatively for the near
+past ("This month", "Last month") and absolutely beyond it ("June 2026"), so the top of the
+list reads in the tense a user thinks in.
+
+Grouping applies to `scan` (list) mode. `glance` (2-col grid) gets headers as full-width
+sliver rows; `study` (large cards) does not group — one card fills the viewport, so a
+header between cards is a scroll interruption with no scanning benefit. Stated explicitly
+so an executor doesn't "finish" the third mode for symmetry.
+
+## D4 — Tile metadata sits against visual-first doctrine (owner call)
+
+The repo's interface ruling is explicit: *chrome communicates through visual anchors; text
+is for input and settings* (`/CLAUDE.md`, `redesign-visual-first-experience`). Phases 2–5
+of that change deliberately **removed** text from these exact surfaces. Adding a metadata
+line to every tile pushes directly back against a shipped ruling.
+
+The tension is real and this change does not resolve it unilaterally. Ruling: **the date
+line is in scope** — a date is the smallest possible text and it is the thing the user
+asked for. Everything else (file size, original filename, backup state) is **owner-gated
+as O1**, with a bias toward visual encoding where one exists: backup state already has an
+icon (`move_grid_cell.dart:29-45`), and that icon should be made honest against
+`copyCount` rather than duplicated as a text label.
+
+Note the current backup icon keys off `contentHash != null`, which means "this asset is
+tracked", not "this asset is backed up" — a real dishonesty, and the same class of defect
+`fix-video-backup-truth-and-unify-account` exists to remove. Correcting it depends on that
+change's Phase 4 landing `copyCount` truth (D7/D8 there); until then this change does not
+touch the icon. Cross-change dependency, recorded in tasks.
+
+## D5 — Category recency without a schema change
+
+`MoveCategoryScreen` already computes per-category counts in Dart over the full move list
+(`:36-43`). Most-recent-activity per category is the same pass with a `max` instead of a
+count — no new query, no new column, no cost. Categories remain SharedPreferences-backed
+(`categories_service.dart`); nothing here changes that model or requires it to.
+
+## Open questions (owner)
+
+- **O1:** Beyond the date, which provenance earns tile space — file size, original
+  filename, backup state — or does the date line stand alone (visual-first default)?
+- **O2:** Should the sort choice be global (one setting for Moves and Combos, as specced)
+  or remembered per tab? Global is fewer moving parts; per-tab matches how differently the
+  two lists are used.

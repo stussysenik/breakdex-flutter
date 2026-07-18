@@ -379,6 +379,10 @@ class AssetSyncEngine {
       );
       await _opsDao.markFailed(op.id, e.toString());
     }
+
+    // Emissions otherwise come only from `_setState` — cycle start and end —
+    // which freezes the visible counter for the whole sweep (design D6).
+    await _emitProgress();
   }
 
   /// Mark an op failed with a synchronous, traceable log line.
@@ -468,7 +472,7 @@ class AssetSyncEngine {
     // Record the copy
     await _copiesDao.upsertCopy(
       AssetCopiesCompanion.insert(
-        id: _uuid.v4(),
+        id: AssetCopiesDao.copyId(op.contentHash, provider.providerType),
         contentHash: op.contentHash,
         provider: provider.providerType,
         remotePath: Value(result.remotePath),

@@ -1,8 +1,10 @@
 # Tasks — fix-video-backup-truth-and-unify-account
 
 > **Phase dependencies:** Phases 1 and 2 are independent of each other and start
-> immediately. Phase 3 is owner-gated (design.md O1) and depends on nothing in 1–2
-> technically, but lands after them. Task 1.6 is a cross-change note, no code.
+> immediately. Phase 4 depends on Phase 1 (shipped) and is independent of 2 and 3;
+> it is the next agent-runnable work. Phase 3 is owner-gated (design.md O1) and depends
+> on nothing in 1–2 technically, but lands after them. Task 1.6 is a cross-change note,
+> no code.
 > Ledger rule: tick in the same commit as the work, with terminal evidence. Every fix in
 > Phase 1 is red/green: failing test first against current behavior, then the fix.
 
@@ -70,6 +72,77 @@
   progress / verified / failed+error), so "is it doing anything?" is answerable at a
   glance. Ground truth exists (`sync_operations.errorMessage`, `asset_copies` status,
   1.5 diagnostics dump); this is a read-only list over those tables.
+
+## Phase 4 — Progress legibility & copy truth (2026-07-18 device run)
+
+> Independent of Phases 2–3; depends on Phase 1 (shipped). Order matters *within* the
+> phase: 4.1 is standalone; 4.2 → 4.3 (identity before reconcile, or the reconcile
+> re-creates duplicates); 4.4 needs the 4.0 answer first. 2.3's per-asset list is the
+> surface 4.1/4.5/4.4 all report into — land 2.3 before or alongside 4.5.
+
+- [ ] 4.0 Ground-truth read before any fix (design D8, D9 blind spot). Run the 1.5
+  diagnostics dump on the owner's device build and record in the tick: manifest count,
+  copies by provider×status, operations by status, and the count of live assets whose
+  local file exists but which have no `local` copy row. Separately answer the open
+  device question: do the ~22 failing `Moves/Power moves/` videos still **play in the
+  app**? (play = heal blind spot, widen `entityPathCandidatesForHash` to archived
+  entities; don't play = bytes genuinely gone, terminal classification is correct.)
+  No code. Evidence: dump output + a one-line verdict per question.
+- [x] 4.1 Per-operation progress emission (design D6). Red proven: with 3 upload ops
+  queued the stream carried exactly **2** events (cycle-start + cycle-end) and 2 again
+  for a failing op — the counter cannot move mid-sweep. Green: `_emitProgress()` at the
+  end of `_executeOperation`, after both the success and the failure path, so a failed
+  upload also refreshes the count. Verify: 2 new tests green, engine suite 17 green,
+  `flutter analyze` clean on touched files.
+- [x] 4.2 Copy identity `(contentHash, provider)` (design D7). Red proven: two uploads of
+  one asset to one provider left **2 `icloud` rows** (`copyCount` 3 with local).
+  **Two spec corrections found in the code:** there are **six** write sites, not five —
+  `video_import_sync_hook.dart:89` was missed — and **five** distinct id schemes, not
+  two: `${moveId}_local` (import hook), `${move.id}_local` (legacy migration),
+  `${canonicalHash}_local` (import machine), `${hash}_local` (canonical reconcile),
+  `${contentHash}_local_redownload` (on-demand downloader), plus `_uuid.v4()` in the
+  engine. Two of those key by **entity id** and two by **content hash**, so one logical
+  local copy could occupy *three* rows — D7 described two. Also latent: `getLocalCopy`
+  uses `getSingleOrNull()`, which **throws** once a duplicate local row exists.
+  Green: (a) the scheme now lives in one place, `AssetCopiesDao.copyId(hash, provider)`,
+  called at all six sites; (b) unique index `asset_copies_hash_provider_unique`,
+  installed in `onCreate` *and* the migration (mirrors `_installIntegrityTriggers`);
+  (c) schema **v28** collapses duplicate pairs — most-protective status wins, newest
+  breaks ties — deletes losers before restating ids (a survivor's new deterministic id
+  can collide with a duplicate's current id), then recomputes every `copyCount`.
+  The step is guarded on `asset_copies` existing *and* carrying the columns it reads;
+  without that guard it ran against hand-written legacy fixtures whose `asset_copies`
+  never matched the real v10 shape (no `status`) and broke 27 unrelated migration tests.
+  Honest transient recorded in the migration comment: recomputing drops assets that
+  never got a `local` copy row from the `copy_count` default of 1 to their true count,
+  so the underprotected total can *rise* on first open — the pre-existing gap becoming
+  visible, which 4.3 reconciles. Verify: 6 new migration tests + 1 engine test, all red
+  pre-fix; `flutter test test/core/database/ test/core/sync/ test/core/services/`
+  **640 green / 0 failures**; full suite **988 green, 9 pre-existing reds, 0 regressions**;
+  `flutter analyze` 0 errors (9 pre-existing infos).
+- [ ] 4.3 Copy reconcile from disk truth (design D8). Red: a live manifest row whose file
+  exists but has no `local` copy row stays underprotected after a successful cloud
+  upload. Green: reconcile inserts a verified `local` copy record for every live asset
+  whose resolved path exists on disk, and inserts nothing when it does not; recompute
+  `copyCount`. Runs once (idempotent; safe to re-run) and is reachable from the dev
+  panel. Verify: both scenarios tested, suites green, analyze clean.
+- [ ] 4.4 Terminal vs retryable failure (design D9). Gated on 4.0's second answer — if
+  the heal has an archived-entity blind spot, widen `entityPathCandidatesForHash` first
+  and re-measure before classifying anything terminal. Red: an upload whose file is
+  genuinely missing currently consumes retry budget and is re-attempted on later cycles.
+  Green: that path marks the operation terminal (distinct status, retry budget
+  untouched, not re-attempted); every other failure keeps today's retryable behavior.
+  Verify: both failure classes tested, retry-lane suite green, analyze clean.
+- [ ] 4.5 Unbackupable and in-flight visibility (spec: last two requirements). Sync
+  Status separates three counts — pending, uploading, unbackupable(+reason) — and the
+  active transfer shows its asset and byte/percentage progress from
+  `sync_operations.transferredBytes`. Localized (ARB). Verify: widget tests via the
+  pure-override harness (live Drift streams flake widget tests), `scripts/check_l10n.sh`
+  green, analyze clean.
+- [ ] 4.6 On-device proof (owner, one sync cycle): the counter advances *during* the
+  sweep (not only at the end); after the cycle, pending + unbackupable accounts for
+  every live asset with no double-counting; a second Sync Now re-attempts nothing
+  terminal. Evidence: screenshot mid-sweep + final counts in the tick.
 
 ## Phase 3 — One-account magic (owner-gated: design.md O1 ruling first)
 

@@ -10,6 +10,19 @@ class AssetCopiesDao extends DatabaseAccessor<AppDatabase>
     with _$AssetCopiesDaoMixin {
   AssetCopiesDao(super.db);
 
+  /// The identity of a copy is `(contentHash, provider)` — one asset has at
+  /// most one copy per provider (design D7). Deriving the row id from that
+  /// pair is what makes [upsertCopy] actually upsert; before this, every write
+  /// site minted its own id (a fresh UUID in the sync engine, four different
+  /// `_local` schemes elsewhere), so re-uploads appended duplicate rows and
+  /// `copyCount` overstated protection — the two-copy minimum that gates local
+  /// deletion could be satisfied by one real cloud copy.
+  ///
+  /// A unique index on `(content_hash, provider)` enforces the same invariant
+  /// at the storage layer; see `_installAssetCopyIdentityIndex`.
+  static String copyId(final String contentHash, final String provider) =>
+      '${contentHash}_$provider';
+
   // ---------------------------------------------------------------------------
   // Reads
   // ---------------------------------------------------------------------------

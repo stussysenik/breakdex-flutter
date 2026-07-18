@@ -139,7 +139,7 @@ class OnDemandDownloader implements LocalAssetRetriever {
       final now = DateTime.now();
       await _copiesDao.upsertCopy(
         AssetCopiesCompanion.insert(
-          id: '${contentHash}_local_redownload',
+          id: AssetCopiesDao.copyId(contentHash, 'local'),
           contentHash: contentHash,
           provider: 'local',
           status: const Value('verified'),

@@ -86,7 +86,7 @@ class VideoImportSyncHook {
       debugPrint('[VideoImportSyncHook] Manifest inserted');
 
       // Step 4: Insert local copy record in asset_copies
-      final copyId = '${moveId}_local';
+      final copyId = AssetCopiesDao.copyId(contentHash, 'local');
       await _copiesDao.upsertCopy(AssetCopiesCompanion.insert(
         id: copyId,
         contentHash: contentHash,
