@@ -1409,6 +1409,11 @@ class AppLocalizationsEn extends AppLocalizations {
   String get librarySortAlphabetical => 'A–Z';
 
   @override
+  String libraryFilmedFallbackForCombos(String combos) {
+    return '$combos have no filmed date — showing most recently added.';
+  }
+
+  @override
   String setError(String error) {
     return 'Error: $error';
   }

@@ -954,6 +954,11 @@
   "@librarySortPracticed": { "description": "Library sort control: order by when the move or combo was last practiced or edited (most recent first)." },
   "librarySortAlphabetical": "A–Z",
   "@librarySortAlphabetical": { "description": "Library sort control: order alphabetically by name." },
+  "libraryFilmedFallbackForCombos": "{combos} have no filmed date — showing most recently added.",
+  "@libraryFilmedFallbackForCombos": {
+    "description": "Shown on the combos tab when the filmed-date sort is active. Combos are not filmed, so the list falls back to the added date and says so rather than faking a capture date.",
+    "placeholders": { "combos": { "type": "String", "example": "Combos" } }
+  },
   "setError": "Error: {error}",
   "@setError": { "description": "Settings Backup & Reset: generic error snackbar when an async data action throws.", "placeholders": { "error": { "type": "String", "example": "FileSystemException" } } }
 }

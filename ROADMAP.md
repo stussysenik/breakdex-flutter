@@ -183,9 +183,19 @@
   `build()` to the default → restore-stored-sort red). `flutter analyze` 0 errors,
   `check_l10n.sh` green, suite **1060 green / 9 pre-existing reds / 0 regressions** (the 9
   re-confirmed against a clean stash of HEAD).
-  **Next agent-runnable: 2.3** (combo tab discloses the filmed-date fallback) — the O2
-  ruling makes this load-bearing, since a global sort means a filmed sort *will* land on
-  the combo tab. Then 2.4 (month grouping) and Phase 3.
+  **2.3 DONE 2026-07-18** — the combo tab now discloses the filmed-date fallback instead
+  of quietly showing an added-date order under a "Filmed" pill: a caption
+  (`LibraryFilmedFallbackNotice`) that renders for the filmed × combos pair only, naming
+  both the absence and the substitute, in the user's own configured noun. The ordering
+  half needed no code — 1.1's `effectiveDate` already resolved combo-filmed to
+  `createdAt` — but it was unasserted at the provider level, so it was true only by
+  construction; it is now proven against a real in-memory database on a fixture whose
+  added order differs from its practiced order, so a leaked fallback reds rather than
+  passing by luck. Binary truth: 5 tests, each mutation-proven (drop the segment guard →
+  moves-tab silence red; hardcode the noun → rename red; point combo-filmed at the
+  practiced chain → ordering red). `flutter analyze` 0 errors, `check_l10n.sh` green,
+  suite **1065 green / 9 pre-existing reds / 0 regressions**.
+  **Next agent-runnable: 2.4** (month grouping on date sorts, D3) — then Phase 3.
   Phase 5 stays owner-gated on O1.
 
 - **Change (owner-driven, parallel):** `add-dev-auth-and-sync-rehearsal` — de-risks the owner's Phase-M pass

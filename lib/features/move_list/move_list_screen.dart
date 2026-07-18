@@ -283,6 +283,11 @@ class MoveListScreen extends ConsumerWidget {
 
                     const LibrarySortToggle(),
                     const SizedBox(height: AppSpacing.sm),
+
+                    LibraryFilmedFallbackNotice(
+                      sort: ref.watch(librarySortProvider),
+                      segment: segment,
+                    ),
                   ],
                 ),
               ),
@@ -1022,6 +1027,57 @@ class LibrarySortToggle extends ConsumerWidget {
         HapticFeedback.selectionClick();
         unawaited(ref.read(librarySortProvider.notifier).set(s));
       },
+    );
+  }
+}
+
+/// Discloses that a filmed-date sort is a fallback on the combo tab.
+///
+/// A combo has no capture date, so [ComboLibrarySort.effectiveDate] resolves
+/// `recentlyFilmed` to `createdAt` (design D2). The sort is global (O2), so the
+/// user can arrive here without having chosen it for this tab — silently
+/// showing an added-date order under a "Filmed" pill would be a lie of
+/// omission. Renders nothing for every other sort/segment pair.
+class LibraryFilmedFallbackNotice extends ConsumerWidget {
+  const LibraryFilmedFallbackNotice({
+    required this.sort,
+    required this.segment,
+    super.key,
+  });
+
+  final LibrarySort sort;
+  final ArsenalSegment segment;
+
+  @override
+  Widget build(final BuildContext context, final WidgetRef ref) {
+    if (sort != LibrarySort.recentlyFilmed ||
+        segment != ArsenalSegment.combos) {
+      return const SizedBox.shrink();
+    }
+
+    final colorScheme = Theme.of(context).colorScheme;
+    return Padding(
+      padding: const EdgeInsets.only(bottom: AppSpacing.sm),
+      child: Row(
+        children: [
+          Icon(
+            Icons.info_outline_rounded,
+            size: AppSpacing.md,
+            color: colorScheme.secondary,
+          ),
+          const SizedBox(width: AppSpacing.xs),
+          Expanded(
+            child: Text(
+              AppLocalizations.of(context).libraryFilmedFallbackForCombos(
+                ref.watch(entityNamesProvider).comboPlural,
+              ),
+              style: AppTypography.caption.copyWith(
+                color: colorScheme.secondary,
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

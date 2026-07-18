@@ -69,9 +69,27 @@
   default reds the restore-stored-sort test. `flutter analyze` 0 errors (9 pre-existing
   infos), `scripts/check_l10n.sh` green, suite **1060 green / 9 pre-existing reds / 0
   regressions** (the 9 confirmed red on a clean stash of HEAD, incl. `preview_harness_smoke`).
-- [ ] 2.3 Combo tab under a filmed-date sort falls back to recently-added and says so
+- [x] 2.3 Combo tab under a filmed-date sort falls back to recently-added and says so
   (spec: "Combos do not fake a capture date"). Verify: widget test for the fallback and
   its disclosure.
+  **DONE 2026-07-18.** `LibraryFilmedFallbackNotice` renders a caption under the sort row
+  — "Combos have no filmed date — showing most recently added." — only for the
+  filmed × combos pair, and `SizedBox.shrink()` everywhere else. It takes `sort` and
+  `segment` as parameters rather than reading them, which is what makes it poolable as a
+  pure pump; the screen around it reads live Drift streams that flake widget tests.
+  The noun comes from `entityNamesProvider.comboPlural` (ARB placeholder), so a user who
+  renamed combos sees their own word — a hardcoded "Combos" reds a test.
+  **The ordering half needed no code**: `ComboLibrarySort.effectiveDate` already resolved
+  `recentlyFilmed → createdAt` from 1.1. It was, however, unasserted at the provider
+  level, so the fallback was only true by construction — now proven against a real
+  in-memory database, using a fixture whose added order differs from its practiced order,
+  so a fallback that leaked to `lastEntryAt`/`updatedAt` reds rather than passing by
+  coincidence.
+  Binary truth: 5 tests, mutation-proven — dropping the segment guard reds the moves-tab
+  silence, hardcoding the noun reds the rename test, and pointing the combo filmed arm at
+  the practiced chain reds the ordering test. `flutter analyze` 0 errors (9 pre-existing
+  infos), `scripts/check_l10n.sh` green, suite **1065 green / 9 pre-existing reds / 0
+  regressions**.
 - [ ] 2.4 Month grouping for date sorts in scan and glance modes; no grouping in study
   mode or under A–Z (design D3). Relative labels for the current and prior month,
   absolute beyond. Verify: unit tests on the bucketing boundaries (month edge, year edge,

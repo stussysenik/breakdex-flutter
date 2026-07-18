@@ -142,6 +142,17 @@ void main() {
           ['c-jotted', 'c-edited', 'c-untouched']);
     });
 
+    test(
+        'recently filmed falls back to added order — a combo has no capture '
+        'date and does not borrow one from its edits or jots', () async {
+      await setSort(LibrarySort.recentlyFilmed);
+      final combos = await settled(libraryCombosProvider, 3);
+      // Identical to the added order, and deliberately *not* the practiced
+      // order — a fallback that leaked to updatedAt/lastEntryAt reds here.
+      expect(combos.map((final c) => c.combo.name),
+          ['Untouched', 'Edited', 'Jotted']);
+    });
+
     test('watchLibraryRows carries updatedAt for edited combos', () async {
       final combos = await settled(libraryCombosProvider, 3);
       final edited =

@@ -2397,6 +2397,12 @@ abstract class AppLocalizations {
   /// **'A–Z'**
   String get librarySortAlphabetical;
 
+  /// Shown on the combos tab when the filmed-date sort is active. Combos are not filmed, so the list falls back to the added date and says so rather than faking a capture date.
+  ///
+  /// In en, this message translates to:
+  /// **'{combos} have no filmed date — showing most recently added.'**
+  String libraryFilmedFallbackForCombos(String combos);
+
   /// Settings Backup & Reset: generic error snackbar when an async data action throws.
   ///
   /// In en, this message translates to:
