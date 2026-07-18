@@ -130,8 +130,24 @@
   names with no separator — a junk index key can only ever hand the uploader the wrong
   bytes under the right hash. Diagnostics now measure the rescuable/gone split per asset,
   which is exactly the evidence 4.8 is gated on. Suite 1157 green, 0 regressions.
-  **Next unticked, agent-runnable now: 4.8** (tombstone the residue), then 4.4.
-  3.2 is also agent-runnable now (console-cookie recipe). 4.6 stays owner-gated.
+  **4.7's device evidence (2026-07-19 owner run) read `sandbox rescue: 22 of 22` — all in
+  `Moves/.lost+found/` — falsifying 4.8's tombstone premise.** Root cause ruled **D11**:
+  the janitor quarantined manifest-known files (two bookkeepers, no shared ledger), and
+  tombstoning would soft-delete recoverable videos. 4.8 REWRITTEN restore-not-tombstone;
+  tombstone demoted to fallback 4.10.
+  **4.8 code DONE 2026-07-19** — `OrphanRestoreService`: full-hash verify (two of the 22
+  showed name drift; wrong bytes under the right identity is the one unforgivable
+  failure) → re-home to `Moves/Recovered/` updating `localPath` in the same operation
+  (1.8 rule) → recreate an owning move (Recovered category, registered on first
+  restore). Idempotent; dev-panel action + inline re-dump. 5 unit tests.
+  **4.9 DONE 2026-07-19 (loop closure)** — the janitor now consults the manifest
+  registry before quarantining: manifest-known files stay put for the engine's heal
+  lane 3; only genuinely unknown files quarantine. Red proven by stash. 4 tests —
+  first-ever for `StorageJanitor`. Suites 706 green (sync+db+services), analyze clean.
+  **Next: owner device run** — DEV_SYNC_PANEL build → "Restore quarantined orphans" →
+  expect 22 restored, unresolvable 0, next sweep uploads them (that evidence also
+  completes 4.8's tick). Then agent-runnable **4.10** (tombstone fallback + stale-op
+  cleanup) and 4.4; 3.2 also agent-runnable (console-cookie recipe). 4.6 owner-gated.
   **Also unticked:** 1.7 owner 30-second device proof.
   **New sibling change (2026-07-19, strict-valid): `humanize-video-surfaces-and-gate-release`**
   — Phase 1 picker collapse (In Breakdex / Import; sequenced after 4.7), Phase 2 human
