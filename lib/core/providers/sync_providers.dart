@@ -378,6 +378,13 @@ final underprotectedCountProvider = StreamProvider<int>((final ref) {
   return ref.watch(assetManifestDaoProvider).watchUnderprotectedCount();
 });
 
+/// Assets that hold a verified cloud copy, so the library can offer a restore
+/// affordance only where the bytes can actually be fetched back (task 5.3).
+final restorableAssetHashesProvider =
+    StreamProvider<Set<String>>((final ref) {
+  return ref.watch(assetCopiesDaoProvider).watchRestorableHashes();
+});
+
 /// Live per-asset backup state for the Sync Status detail list — read-only
 /// over the manifest, its copies, and the operation queue.
 final assetSyncDetailsProvider =

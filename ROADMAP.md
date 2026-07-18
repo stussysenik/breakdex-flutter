@@ -274,9 +274,22 @@
   date line −1); the two stability tests use 40 categories on purpose, since below 32
   elements Dart's sort is stable by accident. `flutter analyze` 0 errors, suite **1130
   green / 9 pre-existing reds / 0 regressions**, `check_l10n.sh` green.
-  **Phase 4 is complete. Next: Phase 5, which is owner-gated on O1** — beyond the date,
-  which provenance earns tile space (file size, original filename, backup state), or does
-  the date line stand alone? Nothing in this change is agent-runnable until that is ruled.
+  **Phase 5 COMPLETE 2026-07-18 — this change is DONE and archive-ready.**
+  **O1 ruled by the owner: the date line stands alone.** No file size, no original
+  filename; backup state is the one addition and it lands as a visual, not text. So `5.1`
+  records the ruling in design.md D4 and `5.2` closes as a no-op under it.
+  **`5.3` was NOT still blocked** — its stated blocker (that change's Phase 4 landing
+  `copyCount` truth) cleared when 4.2/4.3 ticked, so the honest indicator landed here.
+  Reading the code corrected the task twice: the icon is not a tile-wide backup
+  indicator but the no-thumbnail placeholder only, so the claim under repair is
+  *"restorable from cloud"*; and the honest predicate is **not** `copyCount >= 2`, since
+  `copyCount` counts the local copy — an asset can meet the two-copy minimum with zero
+  cloud copies. New `AssetCopiesDao.watchRestorableHashes()` (verified copy on a
+  non-`local` provider, one stream for the whole grid) behind
+  `restorableAssetHashesProvider` replaces `contentHash != null`. Red proven on the cell
+  (pre-fix, an asset with no cloud copy renders the download icon) plus two DAO
+  mutations (−2 each). Suite **1134 green / 9 pre-existing reds / 0 regressions**,
+  analyze 0 errors.
   **Filed, not fixed** (found while testing 4.2, predates it): `MoveCategoryScreen`'s
   AppBar `leading` (chevron + "Back") overflows its fixed 56px toolbar slot, so the Back
   affordance is clipped on-device. Belongs to whichever change owns library chrome.

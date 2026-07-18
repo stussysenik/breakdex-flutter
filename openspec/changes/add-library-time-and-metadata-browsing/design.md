@@ -83,6 +83,35 @@ tracked", not "this asset is backed up" — a real dishonesty, and the same clas
 change's Phase 4 landing `copyCount` truth (D7/D8 there); until then this change does not
 touch the icon. Cross-change dependency, recorded in tasks.
 
+### O1 ruled 2026-07-18 (owner): the date line stands alone
+
+Nothing beyond the date earns tile space. File size and original filename stay off the
+tile — both are text on a surface the visual-first ruling reserves for imagery, and
+neither answers a browsing question the date does not. 5.2 is therefore a **no-op**: the
+only provenance added past the date is backup state, and it is added as the *visual* the
+paragraph above already prefers, which is 5.3's work. This keeps the change's net text
+addition at exactly one line per tile.
+
+**Reading the code corrected this D4 paragraph.** The backup icon is not a general tile
+indicator — it renders only in the no-thumbnail placeholder branch
+(`move_grid_cell.dart`, `move.videoPath == null`), so a tile with a thumbnail makes no
+backup claim at all. That narrows the dishonesty but does not excuse it: the claim the
+icon actually makes there is *"this is retrievable from the cloud"*, and `contentHash !=
+null` is true for every tracked asset including ones that never finished uploading.
+
+The honest predicate is also **not `copyCount >= 2`**, as this paragraph assumed.
+`copyCount` counts verified copy rows *including the local one*, so it answers "is this
+sufficiently protected", not "can I pull these bytes back". The restore affordance needs
+the narrower question — **is there a verified copy on a provider other than `local`** —
+which is what `AssetCopiesDao.watchRestorableHashes()` answers, in one stream for the
+whole grid rather than a query per tile.
+
+Two states, not three: "restorable" versus "gone". Tracked-but-unprotected and never-
+tracked are distinguishable in the data but identical to the user standing in front of a
+missing video — neither can be recovered — so the tile does not spend a third visual on
+the difference. While the stream is unresolved the tile reads as *not* restorable: a
+momentary honest "gone" beats a promise the app cannot keep.
+
 ## D5 — Category recency without a schema change
 
 `MoveCategoryScreen` already computes per-category counts in Dart over the full move list

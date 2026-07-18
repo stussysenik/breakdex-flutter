@@ -16,6 +16,16 @@ class _MoveGridCell extends ConsumerWidget {
     final learningState = LearningState.fromString(move.learningState);
     final colorScheme = Theme.of(context).colorScheme;
 
+    // Whether this move's bytes can actually be pulled back down (task 5.3).
+    // The tile used to ask `contentHash != null`, which only says the asset is
+    // tracked — a move that never finished uploading would still offer a
+    // download. Unresolved reads as not-restorable: a momentary honest "gone"
+    // beats a promise the app cannot keep.
+    final hash = move.contentHash;
+    final restorable = hash != null &&
+        (ref.watch(restorableAssetHashesProvider).valueOrNull ?? const {})
+            .contains(hash);
+
     return _GridCardShell(
       onTap: () {
         HapticFeedback.lightImpact();
@@ -30,15 +40,15 @@ class _MoveGridCell extends ConsumerWidget {
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   Icon(
-                    move.contentHash != null
+                    restorable
                         ? Icons.cloud_download_outlined
                         : Icons.videocam_off,
                     size: 40,
-                    color: move.contentHash != null
+                    color: restorable
                         ? AppColors.accent.withValues(alpha: 0.5)
                         : colorScheme.secondary,
                   ),
-                  if (move.contentHash == null) ...[
+                  if (!restorable) ...[
                     const SizedBox(height: 4),
                     Text(
                       'Missing',

@@ -59,6 +59,25 @@ class AssetCopiesDao extends DatabaseAccessor<AppDatabase>
     return row.read(count) ?? 0;
   }
 
+  /// Content hashes that have a **verified copy on some provider other than
+  /// `local`** — i.e. assets whose bytes can actually be pulled back down.
+  ///
+  /// This is the honest basis for the library's "restore from cloud" tile
+  /// affordance. Keying that off `contentHash != null` (as the grid did before
+  /// task 5.3) asserts only that the asset is *tracked*; a tracked asset with
+  /// no cloud copy, or one still uploading, would promise a download that
+  /// cannot happen. One stream serves the whole grid, so tiles cost no queries.
+  Stream<Set<String>> watchRestorableHashes() {
+    final query = selectOnly(assetCopies, distinct: true)
+      ..addColumns([assetCopies.contentHash])
+      ..where(assetCopies.status.equals('verified') &
+          assetCopies.provider.equals('local').not());
+    return query
+        .watch()
+        .map((final rows) =>
+            rows.map((final r) => r.read(assetCopies.contentHash)!).toSet());
+  }
+
   /// Copies currently uploading (for progress UI).
   Stream<List<AssetCopy>> watchUploading() =>
       (select(assetCopies)

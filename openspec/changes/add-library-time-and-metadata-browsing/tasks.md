@@ -260,16 +260,38 @@
 
 ## Phase 5 — Provenance beyond the date (owner-gated)
 
-- [ ] 5.1 [OWNER] Rule on O1: beyond the date, which provenance earns tile space — file
+- [x] 5.1 [OWNER] Rule on O1: beyond the date, which provenance earns tile space — file
   size, original filename, backup state — or does the date line stand alone (visual-first
   default)? Record the ruling in design.md.
   **O2 is no longer part of this task — ruled 2026-07-18 (global, single key) to unblock
-  2.2; see design.md.** Only O1 remains owner-gated here.
-- [ ] 5.2 Implement the O1 ruling, if any. Visual encoding preferred over text where one
+  2.2; see design.md.**
+  **RULED 2026-07-18 (owner): the date line stands alone.** No file size, no original
+  filename. Backup state is the one exception and it lands as a *visual*, not text —
+  which is 5.3, not 5.2. Recorded in design.md under D4.
+- [x] 5.2 Implement the O1 ruling, if any. Visual encoding preferred over text where one
   exists (design D4).
-- [ ] 5.3 Make the tile backup indicator honest. **Cross-change: blocked on
+  **No-op under the 5.1 ruling** — the ruling adds no text, and the single visual it does
+  admit is 5.3's. Closed rather than left open so the phase does not read as unfinished.
+- [x] 5.3 Make the tile backup indicator honest. **Cross-change: blocked on
   `fix-video-backup-truth-and-unify-account` Phase 4** (4.2/4.3 land `copyCount` truth).
   Today the icon keys off `contentHash != null` — "tracked", not "backed up"
   (`move_grid_cell.dart:29-45`). Re-key it to real protection state once that count can
   be trusted; tick both ledgers per the cross-change rule. Verify: widget test for
   backed-up vs tracked-but-unprotected.
+  **DONE 2026-07-18.** The blocker cleared: that change's 4.2 (copy identity
+  `(contentHash, provider)` + unique index, schema v28) and 4.3 (`LocalCopyReconciler`)
+  are both ticked, so copy rows are now one-per-provider and trustworthy.
+  Reading the code corrected the task twice, both corrections recorded in design.md D4:
+  (a) the icon is not a tile-wide indicator — it renders only in the no-thumbnail
+  placeholder branch, so the claim under repair is "restorable from cloud", not
+  "backed up"; (b) the honest predicate is **not** `copyCount >= 2`, because `copyCount`
+  includes the local copy — an asset can satisfy the two-copy minimum with zero cloud
+  copies. New `AssetCopiesDao.watchRestorableHashes()` answers the narrow question
+  (verified copy on a non-`local` provider) as one stream for the whole grid, exposed as
+  `restorableAssetHashesProvider`; the cell reads it instead of `contentHash != null`.
+  Red proven: the widget test's unprotected case fails against the pre-fix cell (it
+  renders `cloud_download_outlined` for an asset with no cloud copy at all). DAO
+  mutations proven red: dropping the `local` exclusion (−2) and loosening the `verified`
+  status filter (−2). Binary truth: 2 unit + 2 widget tests, `flutter analyze` 0 errors
+  (9 pre-existing infos), suite **1134 green / 9 pre-existing reds / 0 regressions** —
+  the same nine Drift-stream flakes, verified by name.
