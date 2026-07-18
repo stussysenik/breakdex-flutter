@@ -81,7 +81,7 @@ void main() {
     final report = await SyncDiagnostics(db).dump();
     final lines = report.split('\n');
 
-    expect(lines, hasLength(7));
+    expect(lines, hasLength(11));
     expect(
       lines[0],
       'asset_manifest: 3 rows (2 live, 1 underprotected, 1 tombstoned)',
@@ -99,6 +99,15 @@ void main() {
     expect(lines[4], 'failed op errors:');
     expect(lines[5], '  2× DetailedApiRequestError');
     expect(lines[6], '  1× (no error message)');
+    // Per-asset forensics (design D8). These fixtures have no owning move or
+    // combo at all, so both live assets are ORPHAN — the one verdict that
+    // widening the heal's query could never recover. Asserting the verdict,
+    // not just the count, is the point: an ORPHAN misreported as BYTES-GONE
+    // would send the fix at the wrong query.
+    expect(lines[7], 'unresolvable assets: 2 (ORPHAN: 2)');
+    expect(lines[8], contains('ORPHAN — terminal: manifest row has no owning'));
+    expect(lines[9], startsWith('  ORPHAN h1 owners=0(0 archived)+0combo'));
+    expect(lines[10], startsWith('  ORPHAN h2 owners=0(0 archived)+0combo'));
   });
 
   test('dump on an empty database reports zeros, not errors', () async {
@@ -111,6 +120,9 @@ void main() {
         'on disk without a local copy row: 0',
         'asset_copies: (none)',
         'sync_operations: (none)',
+        // An empty database has nothing unreachable — the section must say so
+        // rather than going silent, so "no line" never reads as "not checked".
+        'unresolvable assets: none',
       ],
     );
   });

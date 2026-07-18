@@ -1,4 +1,13 @@
+// Async filesystem stat is intentional here for the same reason it is in
+// LocalCopyReconciler — the sync alternative blocks the UI isolate.
+// ignore_for_file: avoid_slow_async_io
+
+import 'package:drift/drift.dart';
+
 import '../database/database.dart';
+import '../platform/io.dart';
+import '../services/video_path_resolver.dart';
+import 'asset_resolution.dart';
 import 'local_copy_reconciler.dart';
 
 /// Dev-only snapshot of the video-backup ground truth: manifest counts,
@@ -57,7 +66,108 @@ class SyncDiagnostics {
       'sync_operations: ${_fmt(opsByStatus)}',
       if (errorCounts.isNotEmpty)
         'failed op errors:\n${_fmtErrors(errorCounts)}',
+      await dumpUnresolvableAssets(),
     ].join('\n');
+  }
+
+  /// Does a stored relative path have bytes behind it?
+  ///
+  /// Fails soft on purpose: `VideoPathResolver.toAbsolute` asserts the resolver
+  /// was initialized, and a *diagnostic* that throws is worse than useless — it
+  /// takes down the one surface you opened to find out what is wrong. An
+  /// unresolvable path is reported as "no bytes", which is what it means here.
+  Future<bool> _hasBytes(final String? relative) async {
+    if (relative == null) return false;
+    try {
+      return await File(VideoPathResolver.toAbsolute(relative)).exists();
+    } on Object {
+      return false;
+    }
+  }
+
+  /// Per-asset forensics for every live asset whose bytes the engine cannot
+  /// reach — the ground truth design D8 asks for.
+  ///
+  /// "Local file missing" is one sentence covering four situations, and only
+  /// two of them are terminal. For each unreachable asset this reports what its
+  /// owning entities actually say and whether any of their paths has bytes
+  /// behind it, so the archived-owner blind spot is *counted* rather than
+  /// inferred from a sample of filenames. Read-only: selects and stat calls,
+  /// no writes.
+  Future<String> dumpUnresolvableAssets() async {
+    final manifests = await _db.assetManifestDao.getAll();
+    final lines = <String>[];
+    final tally = <AssetResolution, int>{};
+
+    for (final manifest in manifests) {
+      if (manifest.deletedAt != null) continue;
+
+      final relative = manifest.localPath;
+      if (await _hasBytes(relative)) {
+        continue; // Reachable — not what this report is about.
+      }
+
+      final hash = manifest.contentHash;
+      final owners =
+          await (_db.select(_db.moves)..where(
+                (final t) =>
+                    t.contentHash.equals(hash) & t.deletedAt.isNull(),
+              ))
+              .get();
+      final combos =
+          await (_db.select(_db.combos)
+                ..where((final t) => t.contentHash.equals(hash)))
+              .get();
+
+      // Combos are already unfiltered by the heal's candidate query, so they
+      // count toward the *active* side — the heal can see them.
+      var activeOnDisk = false;
+      var archivedOnDisk = false;
+      var archivedCount = 0;
+
+      for (final move in owners) {
+        final path = move.videoPath;
+        final isArchived = move.archivedAt != null;
+        if (isArchived) archivedCount++;
+        if (!await _hasBytes(path)) continue;
+        if (isArchived) {
+          archivedOnDisk = true;
+        } else {
+          activeOnDisk = true;
+        }
+      }
+      for (final combo in combos) {
+        if (await _hasBytes(combo.activeVideoPath)) {
+          activeOnDisk = true;
+        }
+      }
+
+      final resolution = classifyAssetResolution(
+        ownerCount: owners.length + combos.length,
+        activeOwnerHasBytes: activeOnDisk,
+        archivedOwnerHasBytes: archivedOnDisk,
+      );
+      tally.update(resolution, (final v) => v + 1, ifAbsent: () => 1);
+
+      lines.add(
+        '  ${assetResolutionLabel(resolution)} '
+        '${hash.length > 8 ? hash.substring(0, 8) : hash} '
+        'owners=${owners.length}($archivedCount archived)+${combos.length}combo '
+        'path=${relative ?? '(none)'}',
+      );
+    }
+
+    if (lines.isEmpty) return 'unresolvable assets: none';
+
+    final summary = tally.entries
+        .map((final e) => '${assetResolutionLabel(e.key)}: ${e.value}')
+        .join(' · ');
+    final meanings = tally.keys
+        .map((final r) => '  ${assetResolutionLabel(r)} — ${assetResolutionMeaning(r)}')
+        .join('\n');
+
+    return 'unresolvable assets: ${lines.length} ($summary)\n'
+        '$meanings\n${lines.join('\n')}';
   }
 
   static String _fmtErrors(final Map<String, int> counts) {
