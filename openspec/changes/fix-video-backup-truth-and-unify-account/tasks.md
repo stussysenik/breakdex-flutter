@@ -261,15 +261,21 @@
   file, idempotence, owned-skip, byte-less bucket) green; panel suite 14 green;
   sync+database+services **702 green / 0 failures**; `flutter analyze` 0 errors
   (9 pre-existing infos). Device evidence pending the owner's next run.
-- [ ] 4.9 Janitor joins the registry (design D11 ruling 4 — loop closure). Before
+- [x] 4.9 Janitor joins the registry (design D11 ruling 4 — loop closure). Before
   quarantining a file, `StorageJanitor` parses the hash from the canonical filename
   (reuse `SandboxHashIndex`'s validating parser — NOT the `split(' - ').last` idiom)
   and checks live `asset_manifest` rows: manifest-known files are never moved to
-  `.lost+found`; the janitor heals `localPath` to the file's actual location instead.
-  Genuinely unknown files (no parseable hash, or hash not in the manifest) quarantine
-  as before. Red: a manifest-known file at a stale path is quarantined by the current
-  janitor (this is the exact mechanism that stranded the 22); green: same file stays
-  put, manifest heals. Verify: unit tests both branches, analyze clean.
+  `.lost+found`. Genuinely unknown files (no parseable hash, or hash not in the
+  manifest) quarantine as before. **Spec deviation, recorded:** the janitor does NOT
+  write `localPath` itself — 4.7's engine heal lane 3 already re-points it from the
+  same sandbox scan on the next sweep, and two writers healing the same field is the
+  two-bookkeepers defect this task exists to kill. The janitor's whole fix is "leave
+  manifest-known bytes in place" (logged `[KNOWN]`); healing stays the engine's.
+  Tombstoned manifests are not live claims — their files still quarantine.
+  Red proven by stashing the janitor change: the manifest-known test quarantined the
+  file (+3 −1), the other three passed — quarantine behavior otherwise unchanged.
+  Green: 4 janitor tests (first-ever for this class), sync+database+services
+  **706 green / 0 failures**, `flutter analyze` clean. DONE 2026-07-19.
 - [ ] 4.10 Tombstone the true residue (fallback, gated on 4.8's device evidence).
   For assets restore confirms byte-less (`bytes not found` after 4.8 runs — currently
   zero), the dev-panel action tombstones the manifest rows (sets `deletedAt`, same

@@ -7,6 +7,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../database/database.dart';
 import '../providers.dart';
+import '../sync/sandbox_hash_index.dart' show sandboxHashToken;
 import '../utils/diagnostics.dart';
 import '../utils/filesystem_utils.dart';
 import 'video_path_resolver.dart';
@@ -40,6 +41,21 @@ class StorageJanitor {
         if (c.activeVideoPath != null) dbPaths.add(VideoPathResolver.toAbsolute(c.activeVideoPath!));
       }
 
+      // Hash tokens of every live manifest row (full hash + hash8). A file
+      // whose canonical filename carries one of these is manifest-known — a
+      // registered asset at a stale path, NOT "identity unknown". Quarantining
+      // it severs the asset from its bytes while the manifest keeps billing
+      // for it (design D11: the exact mechanism that stranded 22 assets in
+      // `.lost+found`). Entities are not the only ownership truth; the
+      // manifest registry is consulted before any file is moved.
+      final manifestTokens = <String>{};
+      for (final m in await _db.assetManifestDao.getAll()) {
+        if (m.deletedAt != null) continue;
+        final hash = m.contentHash.toLowerCase();
+        manifestTokens.add(hash);
+        if (hash.length > 8) manifestTokens.add(hash.substring(0, 8));
+      }
+
       // 2. Scan Filesystem
       final movesDir = Directory(p.join(VideoPathResolver.documentsPath, 'Moves'));
       if (!await movesDir.exists()) return;
@@ -62,6 +78,16 @@ class StorageJanitor {
         // If file NOT in DB -> Orphan
         if (!dbPaths.contains(absPath)) {
           final filename = p.basename(absPath);
+
+          // Manifest-known: leave in place. The engine's hash-indexed heal
+          // lane (D10) re-points `localPath` here on the next sweep; moving
+          // the file would only force another heal or, pre-D10, strand it.
+          final token = sandboxHashToken(filename);
+          if (token != null && manifestTokens.contains(token)) {
+            DiagnosticsLog.info(
+                'Janitor', '[KNOWN] Manifest asset, left for heal: $filename');
+            continue;
+          }
           final target = p.join(lostAndFound.path, filename);
           
           if (!await lostAndFound.exists()) await lostAndFound.create(recursive: true);
