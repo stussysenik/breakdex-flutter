@@ -54,6 +54,33 @@ move detail screen — provenance is real information, just not row-level inform
 primary/secondary text on any library surface. This is the UI face of the D10 axiom in
 the backup change — identifiers are for machines; surfaces show names and dates.
 
+**Addendum (2.2, 2026-07-19) — an identifier is opt-in, never a fallback.** The move
+detail screen carried the same defect one layer down: a caption under the move's name
+rendering `originalVideoName`, falling back to `ID: <hash8>`. "Provenance remains on the
+detail screen" above means the *labeled* Video Info row, not a bare caption — a subtitle
+slot is a subtitle slot on every surface. That caption now shows the added date through
+the shared `LibraryDateLabel`, and is owner-selectable via `MoveDetailCaption`
+(Date / Filename / ID / None, default Date).
+
+The rule the preference must not break: **selecting `Filename` on a move that has no
+filename resolves to the date, not to a hash.** Fallback is where identifiers leak back
+in — a mode is a request for a *kind* of information, and silently substituting a
+machine identifier when that kind is unavailable is how the original defect arose.
+`createdAt` is non-null on every move, so an honest fallback always exists. A property
+test walks every mode against a move with neither filename nor hash and asserts only
+`contentId` can produce an `ID:` string.
+
+**Correction to note, because the first reading was wrong.** The caption initially looked
+like a duplicate of the panel's `Original` row, i.e. safe to delete. It is not: the panel
+is gated on `move.videoPath != null` while the caption was gated on identity, so a
+**cloud-only** move — bytes not local, hash present, precisely what the backup change
+produces — renders no panel, and the caption was its only identifying text. Deleting it
+would have been a silent information loss (D11's lesson: a disappearing identity reads as
+a soft-delete). The date keeps that slot populated. The residual finding — provenance
+placement keyed on byte locality rather than on identity, so *which* surface carries it
+flips with whether the bytes happen to be local — is filed under 2.3 as a checklist item,
+not fixed here.
+
 ## D5 — The release gate is a spec so it can be false
 
 "Sync is done" has been a vibe repeatedly (see `feedback_verified_layer_labeling`:

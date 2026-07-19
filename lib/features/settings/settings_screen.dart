@@ -20,6 +20,7 @@ import '../../core/app_metadata.dart';
 import '../../core/models/add_flow_order.dart';
 import '../../core/models/app_mode.dart';
 import '../../core/models/learning_state.dart';
+import '../../core/models/move_detail_caption.dart';
 import '../../core/providers.dart';
 import '../../core/services/app_storage_paths.dart';
 import '../../core/services/categories_service.dart';
@@ -454,6 +455,20 @@ class SettingsScreen extends ConsumerWidget {
                             ),
                           ),
                       ],
+                    ),
+                  ),
+                  const SizedBox(height: AppSpacing.md),
+                  _SettingsPanel(
+                    title: l10n.setPanelMoveCaption,
+                    child: _SegmentedPicker<MoveDetailCaption>(
+                      values: MoveDetailCaption.values,
+                      selected: ref.watch(moveDetailCaptionProvider),
+                      labelOf: (final c) => c.displayName,
+                      fontSize: 11,
+                      onChanged: (final c) {
+                        HapticFeedback.selectionClick();
+                        ref.read(moveDetailCaptionProvider.notifier).set(c);
+                      },
                     ),
                   ),
                   const SizedBox(height: AppSpacing.md),

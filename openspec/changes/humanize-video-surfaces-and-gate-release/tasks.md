@@ -58,13 +58,61 @@
   Verify: `library_sort_test` 16 green, 5 new `LibraryDateLabel` widget tests green,
   models+features **+267 vs a stashed-baseline +257, identical ~7 -7 — 0 regressions**,
   `flutter analyze` 0 errors, `check_l10n.sh` green (3 new ARB keys, placeholdered).
-- [ ] 2.2 Detail-screen provenance: `originalVideoName` (and file size, already
-  specced there) visible on move detail — confirm present or add the line. Verify:
-  widget test, analyze clean.
+- [x] 2.2 Detail-screen provenance + caption. DONE 2026-07-19.
+  **Scope corrected by the owner mid-task.** As written this was a confirm, and the
+  confirm passes: the labeled Video Info panel already renders both
+  `originalVideoName` and file size (`move_detail_screen.dart:297-308`). But the
+  sweep in 2.1 undercounted — there are **two** renderings on this screen, and the
+  second one is the defect. A monospace caption sat directly under the move's name
+  showing `originalVideoName`, falling back to `ID: <hash8>`: the same UUID-subtitle
+  disease 2.1 cured on category rows, one screen deeper, and exactly what D4's own
+  text already anticipated ("the subtitle becomes the date… `originalVideoName`
+  remains on the move detail screen" — the panel *is* that home, the caption is not).
+  The caption now shows the added date via the shared `LibraryDateLabel`
+  (`createdAt`, `LibraryDateSource.added`), so the detail screen cannot word a date
+  differently from the library. Owner-selectable: new `MoveDetailCaption` preference
+  (Date / Filename / ID / None, default Date) persisted under `move_detail_caption`
+  following the `AddFlowOrder` notifier idiom, surfaced as a `_SegmentedPicker` in
+  Settings → Library ("Move Caption").
+  **Ruling (D4 addendum): a raw identifier is reachable only by explicitly selecting
+  it, never by fallback.** `filename` on a move with no filename falls back to the
+  *date*, not to a hash — asking for a name and being handed an identifier is the
+  precise defect being replaced, and `createdAt` is non-null on every move so the
+  fallback is always available. A property test walks every mode against a move with
+  neither filename nor hash and asserts only `contentId` yields an `ID:` string, so a
+  future mode cannot quietly reintroduce the UUID caption.
+  **A wrong turn worth recording:** the first proposal was to delete the caption
+  outright as a duplicate of the panel row. It is not a duplicate — the panel is
+  gated on `move.videoPath != null` (`:271`) while the caption was gated on
+  identity, so for a **cloud-only move** (bytes not local, hash present — the state
+  the whole backup effort produces) the panel does not render and that caption was
+  the only identifying text on the screen. Deleting it would have been a silent
+  information loss of exactly the kind D11 warns about. Replacing it with a date
+  keeps the slot populated for those moves; the `videoPath`-vs-identity gating
+  asymmetry on the panel is filed under 2.3 as a separate finding.
+  Red: 9 resolver/enum tests failed to compile against the pre-fix model; the
+  filename-with-no-filename case is the one that pins the ruling.
+  Verify: 12 new tests green (9 pure resolver + 3 widget, no ProviderScope and no
+  Drift, so the documented live-stream flake class cannot apply), affected suites
+  (settings + move_detail + move_list + move_category + core/models) **187/187, 0
+  failures**, full suite **1193 green / 11 skipped / 9 red**, red set **byte-identical
+  to a stashed baseline** (`diff` empty — 5 card-count + 2 party + preview harness +
+  bottom-nav shell, all documented flake classes) → **0 regressions measured**,
+  `flutter analyze` 0 errors (9 pre-existing infos untouched), `check_l10n.sh` green
+  (1 new ARB key), `flutter build web` green.
 - [ ] 2.3 Codify the review rule (design D4): add "no content hash, UUID, or raw
   filename as primary/secondary text on library surfaces" to the review checklist in
-  `openspec/AGENTS.md` conventions (alongside the tokens-conformance item). Evidence:
-  the diff.
+  `openspec/AGENTS.md` conventions (alongside the tokens-conformance item). Include
+  the 2.2 addendum — an identifier may be shown only when explicitly selected, never
+  reached by fallback. Evidence: the diff.
+  **Carried finding from 2.2 (needs an owner ruling, not just a checklist line):**
+  provenance placement on move detail is keyed on byte locality, not identity — the
+  Video Info panel is gated on `move.videoPath != null` (`move_detail_screen.dart:271`),
+  so a cloud-only move shows no filename, size, or recorded date anywhere, even though
+  `asset_manifest` holds `fileSizeBytes` for that same content hash. Related: the
+  detail screen reads size only from `moves.videoFileSize` and never from the manifest,
+  so legacy rows with a null size silently hide the row (`orphan_restore_service.dart:112`
+  is the only place that backfills one from the other).
 
 ## Phase 3 — Multi-user release gate
 

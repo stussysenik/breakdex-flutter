@@ -682,6 +682,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get setPanelAddFlow => 'Add Flow';
 
   @override
+  String get setPanelMoveCaption => 'Move Caption';
+
+  @override
   String get setPanelStatsTab => 'Stats Tab';
 
   @override

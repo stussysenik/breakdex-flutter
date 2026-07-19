@@ -1215,6 +1215,12 @@ abstract class AppLocalizations {
   /// **'Add Flow'**
   String get setPanelAddFlow;
 
+  /// Settings panel title: what the move detail screen captions a move's name with (date, filename, id, or nothing).
+  ///
+  /// In en, this message translates to:
+  /// **'Move Caption'**
+  String get setPanelMoveCaption;
+
   /// Settings panel title: show/hide the stats tab toggle.
   ///
   /// In en, this message translates to:

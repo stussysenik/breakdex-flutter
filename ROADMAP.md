@@ -173,9 +173,32 @@
   `effectiveDateSource` mirror the chains on both `Move` and `LibraryRow`, with a property
   test pinning source-to-date agreement. Suites +267 vs baseline +257, identical 7 reds
   (2 party + 5 card-count, both documented flake classes) — 0 regressions; analyze 0
-  errors; l10n gate green. **Next in Phase 2: 2.2** (detail-screen provenance — confirm
-  `originalVideoName` + file size are present) then **2.3** (codify design D4 in the
-  `openspec/AGENTS.md` review checklist).
+  errors; l10n gate green.
+  **2.2 DONE 2026-07-19 — owner corrected the scope mid-task, and the correction was
+  the point.** As specced it was a confirm, and the confirm passes (the labeled Video
+  Info panel already carries `originalVideoName` + file size). But 2.1's sweep
+  undercounted: the detail screen had **two** renderings, and the second was a
+  monospace caption under the move's name showing the filename, falling back to
+  `ID: <hash8>` — 2.1's UUID-subtitle defect one screen deeper. It now shows the added
+  date through the shared `LibraryDateLabel`, owner-selectable via a new
+  `MoveDetailCaption` preference (Date / Filename / ID / None, default Date) in
+  Settings → Library. **Ruling (D4 addendum): an identifier is reachable only by
+  explicitly selecting it, never by fallback** — `Filename` on a move with no filename
+  resolves to the *date*, since being handed a hash when you asked for a name is the
+  defect itself; a property test walks every mode to pin it.
+  **Recorded because it nearly shipped:** the first proposal was to delete the caption
+  as a duplicate of the panel row. It is not — the panel is gated on `videoPath != null`
+  while the caption was gated on identity, so a **cloud-only** move (bytes not local,
+  hash present — what the backup effort produces) would have been left with no
+  identifying text at all. Deleting it would have been a silent information loss of
+  the kind D11 warns about. The residual asymmetry (provenance placement keyed on byte
+  locality rather than identity) is filed under 2.3 for an owner ruling.
+  Verify: 12 new tests (9 pure resolver + 3 widget, no ProviderScope/Drift so the flake
+  class cannot apply); affected suites 187/187; full suite **1193 green / 11 skipped /
+  9 red with the red set byte-identical to a stashed baseline** (`diff` empty) →
+  **0 regressions measured**; analyze 0 errors; `check_l10n.sh` green; web build green.
+  **Next in Phase 2: 2.3** (codify design D4 in the `openspec/AGENTS.md` review
+  checklist, plus the carried cloud-only-provenance finding).
 
 - **Change (ACTIVE — queue head as of 2026-07-18, Phase 4 above being owner-gated):**
   `add-library-time-and-metadata-browsing` — the library is time-blind. Ordering is a

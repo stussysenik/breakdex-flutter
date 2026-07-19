@@ -545,6 +545,8 @@
   "@setPanelVideoEditor": { "description": "Settings panel title: video-editor selection toggle." },
   "setPanelAddFlow": "Add Flow",
   "@setPanelAddFlow": { "description": "Settings panel title: add-flow order segmented picker." },
+  "setPanelMoveCaption": "Move Caption",
+  "@setPanelMoveCaption": { "description": "Settings panel title: what the move detail screen captions a move's name with (date, filename, id, or nothing)." },
   "setPanelStatsTab": "Stats Tab",
   "@setPanelStatsTab": { "description": "Settings panel title: show/hide the stats tab toggle." },
   "setPanelAppTheme": "App Theme",

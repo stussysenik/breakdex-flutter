@@ -4,6 +4,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import '../models/add_flow_order.dart';
 import '../models/app_mode.dart';
+import '../models/move_detail_caption.dart';
 
 enum ThemeSetting { system, dark, light }
 
@@ -176,6 +177,28 @@ class AddFlowOrderNotifier extends Notifier<AddFlowOrder> {
     final prefs = ref.read(sharedPreferencesProvider);
     await prefs.setString(_key, order.name);
     state = order;
+  }
+}
+
+/// What the move detail screen captions a move's name with (D4).
+final moveDetailCaptionProvider =
+    NotifierProvider<MoveDetailCaptionNotifier, MoveDetailCaption>(
+      MoveDetailCaptionNotifier.new,
+    );
+
+class MoveDetailCaptionNotifier extends Notifier<MoveDetailCaption> {
+  static const _key = 'move_detail_caption';
+
+  @override
+  MoveDetailCaption build() {
+    final prefs = ref.watch(sharedPreferencesProvider);
+    return MoveDetailCaption.fromString(prefs.getString(_key));
+  }
+
+  Future<void> set(final MoveDetailCaption caption) async {
+    final prefs = ref.read(sharedPreferencesProvider);
+    await prefs.setString(_key, caption.name);
+    state = caption;
   }
 }
 

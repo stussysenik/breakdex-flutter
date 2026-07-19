@@ -16,8 +16,11 @@ import '../../core/design/colors.dart';
 import '../../core/design/spacing.dart';
 import '../../core/design/typography.dart';
 import '../../core/models/learning_state.dart';
+import '../../core/models/move_detail_caption.dart';
 import '../../core/models/reviewable_item.dart';
 import '../../core/providers.dart';
+import '../../core/services/settings_service.dart';
+import 'widgets/move_detail_caption_line.dart';
 import '../../core/services/video_path_resolver.dart';
 import '../../core/state_machines/move_detail/provider.dart';
 import '../../core/state_machines/move_detail/state.dart';
@@ -184,19 +187,28 @@ class _MoveDetailScreenState extends ConsumerState<MoveDetailScreen> {
                           color: colorScheme.onSurface,
                         ),
                       ),
-                      // Hash / filename
-                      if (move.originalVideoName != null ||
-                          move.contentHash != null) ...[
-                        const SizedBox(height: 4),
-                        Text(
-                          move.originalVideoName ??
-                              'ID: ${move.contentHash?.substring(0, 8) ?? move.id.substring(0, 8)}',
-                          style: AppTypography.caption.copyWith(
-                            color: colorScheme.secondary,
-                            fontFamily: 'monospace',
-                          ),
-                        ),
-                      ],
+                      // Caption (D4): the date by default, not the camera
+                      // filename or a truncated hash. Owner-selectable via
+                      // Settings → Library; the filename keeps its labeled row
+                      // in the Video Info panel below.
+                      Builder(
+                        builder: (final context) {
+                          final spec = resolveMoveDetailCaption(
+                            mode: ref.watch(moveDetailCaptionProvider),
+                            createdAt: move.createdAt,
+                            originalVideoName: move.originalVideoName,
+                            contentHash: move.contentHash,
+                            moveId: move.id,
+                          );
+                          if (spec is MoveDetailCaptionNone) {
+                            return const SizedBox.shrink();
+                          }
+                          return Padding(
+                            padding: const EdgeInsets.only(top: 4),
+                            child: MoveDetailCaptionLine(spec: spec),
+                          );
+                        },
+                      ),
                       // App-managed Photos album filename (derived from the
                       // semantic naming scheme used at album export).
                       if (move.managedAlbumFilename != null) ...[
