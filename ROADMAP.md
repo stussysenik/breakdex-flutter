@@ -164,6 +164,18 @@
   — Phase 1 picker collapse (In Breakdex / Import; sequenced after 4.7), Phase 2 human
   subtitles (independent, startable now), Phase 3 the release gate as a falsifiable spec.
   **Phase 3** stays owner-gated on design O1/O2.
+  **2.1 DONE 2026-07-19** — the category move row subtitled `originalVideoName` (a camera
+  filename, often a bare UUID); it now shows the active sort's own date via the shared
+  `LibraryDateLabel`. The ruling that fell out: **the caption names the source
+  `effectiveDate` resolved to, never the sort that was asked for** — the fallback chains
+  make an unfilmed move sort under "Filmed" by its `createdAt`, so labeling it "Filmed"
+  would swap a useless subtitle for a false one. `LibraryDateSource` +
+  `effectiveDateSource` mirror the chains on both `Move` and `LibraryRow`, with a property
+  test pinning source-to-date agreement. Suites +267 vs baseline +257, identical 7 reds
+  (2 party + 5 card-count, both documented flake classes) — 0 regressions; analyze 0
+  errors; l10n gate green. **Next in Phase 2: 2.2** (detail-screen provenance — confirm
+  `originalVideoName` + file size are present) then **2.3** (codify design D4 in the
+  `openspec/AGENTS.md` review checklist).
 
 - **Change (ACTIVE — queue head as of 2026-07-18, Phase 4 above being owner-gated):**
   `add-library-time-and-metadata-browsing` — the library is time-blind. Ordering is a

@@ -29,6 +29,15 @@ LibrarySort librarySortFromStored(final String? raw) =>
       orElse: () => LibrarySort.recentlyAdded,
     );
 
+/// Which dimension an [effectiveDate] actually came from.
+///
+/// Not the same thing as the active [LibrarySort]. The fallback chains that
+/// make `effectiveDate` total also make the requested dimension a poor label:
+/// an unfilmed move sorted by "filmed" is ordered by its *added* date, and
+/// captioning that date "Filmed" states something the data does not support.
+/// A surface that labels a date resolves the source, never the sort.
+enum LibraryDateSource { added, filmed, practiced }
+
 extension MoveLibrarySort on Move {
   /// The date this move sorts by under [sort].
   ///
@@ -38,6 +47,23 @@ extension MoveLibrarySort on Move {
         LibrarySort.recentlyAdded || LibrarySort.alphabetical => createdAt,
         LibrarySort.recentlyFilmed => videoCreationDate ?? createdAt,
         LibrarySort.recentlyPracticed => updatedAt ?? createdAt,
+      };
+
+  /// The dimension [effectiveDate] resolved to under [sort].
+  ///
+  /// Mirrors that chain link for link: wherever it falls through to
+  /// `createdAt`, this reports [LibraryDateSource.added], so the caption and
+  /// the date can never disagree.
+  LibraryDateSource effectiveDateSource(final LibrarySort sort) =>
+      switch (sort) {
+        LibrarySort.recentlyAdded ||
+        LibrarySort.alphabetical =>
+          LibraryDateSource.added,
+        LibrarySort.recentlyFilmed => videoCreationDate == null
+            ? LibraryDateSource.added
+            : LibraryDateSource.filmed,
+        LibrarySort.recentlyPracticed =>
+          updatedAt == null ? LibraryDateSource.added : LibraryDateSource.practiced,
       };
 }
 
@@ -54,6 +80,22 @@ extension ComboLibrarySort on LibraryRow {
           combo.createdAt,
         LibrarySort.recentlyPracticed =>
           lastEntryAt ?? combo.updatedAt ?? combo.createdAt,
+      };
+
+  /// The dimension [effectiveDate] resolved to under [sort].
+  ///
+  /// A combo can never report [LibraryDateSource.filmed]: it has no capture
+  /// event, which is exactly why `LibraryFilmedFallbackNotice` exists.
+  LibraryDateSource effectiveDateSource(final LibrarySort sort) =>
+      switch (sort) {
+        LibrarySort.recentlyAdded ||
+        LibrarySort.recentlyFilmed ||
+        LibrarySort.alphabetical =>
+          LibraryDateSource.added,
+        LibrarySort.recentlyPracticed =>
+          lastEntryAt == null && combo.updatedAt == null
+              ? LibraryDateSource.added
+              : LibraryDateSource.practiced,
       };
 }
 

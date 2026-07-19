@@ -2433,6 +2433,24 @@ abstract class AppLocalizations {
   /// **'{count, plural, other{{count} days ago}}'**
   String libraryDateDaysAgo(int count);
 
+  /// Library row subtitle when the shown date is when the item was added to the library. The date is already localized and may be relative ('3 days ago') or absolute ('Jan 5, 2026').
+  ///
+  /// In en, this message translates to:
+  /// **'Added {date}'**
+  String libraryDateAdded(String date);
+
+  /// Library row subtitle when the shown date is when the video was actually filmed. Only used when a capture date really exists; an item without one is labeled with libraryDateAdded instead.
+  ///
+  /// In en, this message translates to:
+  /// **'Filmed {date}'**
+  String libraryDateFilmed(String date);
+
+  /// Library row subtitle when the shown date is when the item was last practiced or edited.
+  ///
+  /// In en, this message translates to:
+  /// **'Practiced {date}'**
+  String libraryDatePracticed(String date);
+
   /// Library category tile date line, in place of a date, when the category holds no items. Deliberately does not name the entity: that noun is user-configurable, so it cannot be baked into a translated string.
   ///
   /// In en, this message translates to:

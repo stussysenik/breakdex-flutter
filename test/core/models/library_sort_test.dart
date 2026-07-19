@@ -167,4 +167,86 @@ void main() {
       expect(combos.map((final r) => r.combo.id), ['c2', 'c1']);
     });
   });
+
+  group('effectiveDateSource — the label may never outrun the data', () {
+    test('a move names the dimension it actually resolved', () {
+      final filmed = _move(
+        id: '1',
+        name: 'A',
+        createdAt: _at(1),
+        videoCreationDate: _at(5),
+      );
+      expect(
+        filmed.effectiveDateSource(LibrarySort.recentlyFilmed),
+        LibraryDateSource.filmed,
+      );
+      expect(
+        filmed.effectiveDateSource(LibrarySort.recentlyAdded),
+        LibraryDateSource.added,
+      );
+    });
+
+    test('a fallback reports the source it fell back TO, not the one asked for',
+        () {
+      // The whole point: effectiveDate is total, so an unfilmed move still
+      // sorts under "filmed" — by its createdAt. Labeling that date "Filmed"
+      // would replace a UUID subtitle with a false one.
+      final unfilmed = _move(id: '1', name: 'A', createdAt: _at(1));
+      expect(unfilmed.effectiveDate(LibrarySort.recentlyFilmed), _at(1));
+      expect(
+        unfilmed.effectiveDateSource(LibrarySort.recentlyFilmed),
+        LibraryDateSource.added,
+      );
+
+      final unpracticed = _move(id: '2', name: 'B', createdAt: _at(1));
+      expect(
+        unpracticed.effectiveDateSource(LibrarySort.recentlyPracticed),
+        LibraryDateSource.added,
+      );
+    });
+
+    test('A–Z labels the added date it stands in with', () {
+      final move = _move(
+        id: '1',
+        name: 'A',
+        createdAt: _at(1),
+        videoCreationDate: _at(5),
+      );
+      expect(
+        move.effectiveDateSource(LibrarySort.alphabetical),
+        LibraryDateSource.added,
+      );
+    });
+
+    test('a combo never claims a filmed date — it has no capture event', () {
+      final combo = _combo(id: 'c1', name: 'A', createdAt: _at(1));
+      expect(
+        combo.effectiveDateSource(LibrarySort.recentlyFilmed),
+        LibraryDateSource.added,
+      );
+      expect(
+        _combo(id: 'c2', name: 'B', createdAt: _at(1), lastEntryAt: _at(20))
+            .effectiveDateSource(LibrarySort.recentlyPracticed),
+        LibraryDateSource.practiced,
+      );
+    });
+
+    test('every source agrees with the date effectiveDate returned', () {
+      for (final sort in LibrarySort.values) {
+        for (final move in [
+          _move(id: '1', name: 'A', createdAt: _at(1)),
+          _move(id: '2', name: 'B', createdAt: _at(1), videoCreationDate: _at(5)),
+          _move(id: '3', name: 'C', createdAt: _at(1), updatedAt: _at(9)),
+        ]) {
+          final date = move.effectiveDate(sort);
+          final expected = switch (move.effectiveDateSource(sort)) {
+            LibraryDateSource.added => move.createdAt,
+            LibraryDateSource.filmed => move.videoCreationDate,
+            LibraryDateSource.practiced => move.updatedAt,
+          };
+          expect(date, expected, reason: '$sort on move ${move.id}');
+        }
+      }
+    });
+  });
 }

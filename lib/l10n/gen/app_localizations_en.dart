@@ -1436,6 +1436,21 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String libraryDateAdded(String date) {
+    return 'Added $date';
+  }
+
+  @override
+  String libraryDateFilmed(String date) {
+    return 'Filmed $date';
+  }
+
+  @override
+  String libraryDatePracticed(String date) {
+    return 'Practiced $date';
+  }
+
+  @override
   String get libraryCategoryEmpty => 'Nothing here yet';
 
   @override

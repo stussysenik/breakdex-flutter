@@ -31,12 +31,33 @@
 
 ## Phase 2 — Subtitle legibility (independent, start now)
 
-- [ ] 2.1 Row subtitles show the date, not `originalVideoName`: category-screen move
-  rows + any list row still subtitling a filename/UUID (sweep with grep for
-  `originalVideoName` render sites). Label follows the effectiveDate source ("Added …" /
-  "Filmed …") so the sorted date and shown date agree. Red: row widget test asserting a
-  UUID-named fixture renders a date subtitle and never the UUID. Verify: widget tests
-  green, analyze clean, l10n check green.
+- [x] 2.1 Row subtitles show the date, not `originalVideoName`. DONE 2026-07-19.
+  The `originalVideoName` sweep found **one** offending subtitle —
+  `move_category_screen.dart:961` — and two legitimate keeps: the move-detail
+  provenance row (that is 2.2's surface, where the filename is the point) and
+  `video_player_widget`'s "Video not found" diagnostic. `_MoveRow` is now a
+  `ConsumerWidget` rendering the shared `LibraryDateLabel` at
+  `move.effectiveDate(sort)`, so the shown date is the same one the active sort
+  ordered by.
+  **Ruling (D4 addendum): the caption follows the resolved source, never the
+  requested sort.** The fallback chains that make `effectiveDate` *total* also make
+  the sort a false label — an unfilmed move ordered under "Filmed" is ordered by its
+  `createdAt`, and captioning that "Filmed" would have replaced a useless subtitle
+  with a lying one. New `LibraryDateSource` + `effectiveDateSource(sort)` mirrors the
+  chain link for link on both `Move` and `LibraryRow` (a combo can never report
+  `filmed` — it has no capture event, the same fact `LibraryFilmedFallbackNotice`
+  already discloses). A property test asserts every source agrees with the date
+  `effectiveDate` actually returned, so the two cannot drift apart.
+  Red: the five `effectiveDateSource` unit tests failed to compile against the
+  pre-fix model, and the fallback case is the one that pins the ruling.
+  **Scope limit, stated plainly:** the widget tests pump the subtitle composition,
+  not the category screen — `_MoveRow` is private and booting that screen drags in
+  live Drift streams (the documented flake class), so no test reds against the old
+  UUID subtitle at screen level; the swap itself is covered by analyze + the shared
+  widget's contract.
+  Verify: `library_sort_test` 16 green, 5 new `LibraryDateLabel` widget tests green,
+  models+features **+267 vs a stashed-baseline +257, identical ~7 -7 — 0 regressions**,
+  `flutter analyze` 0 errors, `check_l10n.sh` green (3 new ARB keys, placeholdered).
 - [ ] 2.2 Detail-screen provenance: `originalVideoName` (and file size, already
   specced there) visible on move detail — confirm present or add the line. Verify:
   widget test, analyze clean.

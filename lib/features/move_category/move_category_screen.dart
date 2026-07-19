@@ -21,7 +21,9 @@ import '../../shared/widgets/pressable.dart';
 import '../../shared/widgets/state_pill.dart';
 import '../../core/models/learning_state.dart';
 import '../../core/models/library_category_activity.dart';
+import '../../core/models/library_sort.dart';
 import '../../l10n/gen/app_localizations.dart';
+import '../move_list/move_list_screen.dart' show librarySortProvider;
 import '../move_list/widgets/library_date_line_format.dart';
 
 class MoveCategoryScreen extends ConsumerWidget {
@@ -934,7 +936,7 @@ class _FilterChip extends StatelessWidget {
   }
 }
 
-class _MoveRow extends StatelessWidget {
+class _MoveRow extends ConsumerWidget {
   const _MoveRow({required this.move, required this.state, required this.onTap});
 
   final Move move;
@@ -942,8 +944,9 @@ class _MoveRow extends StatelessWidget {
   final VoidCallback onTap;
 
   @override
-  Widget build(final BuildContext context) {
+  Widget build(final BuildContext context, final WidgetRef ref) {
     final colorScheme = Theme.of(context).colorScheme;
+    final sort = ref.watch(librarySortProvider);
     return Padding(
       padding: const EdgeInsets.only(bottom: AppSpacing.sm),
       child: Pressable(
@@ -958,10 +961,16 @@ class _MoveRow extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(move.name, style: AppTypography.bodyMedium.copyWith(color: colorScheme.onSurface, fontWeight: FontWeight.w600)),
-                    if (move.originalVideoName != null) ...[
-                      const SizedBox(height: 4),
-                      Text(move.originalVideoName!, style: AppTypography.caption.copyWith(color: colorScheme.secondary), maxLines: 1, overflow: TextOverflow.ellipsis),
-                    ],
+                    // The subtitle used to be `originalVideoName` — a camera
+                    // filename or a bare UUID, which tells the user nothing
+                    // and violates design D4. It now shows the same date the
+                    // active sort ordered by, captioned with the dimension it
+                    // actually resolved to (never the requested one).
+                    const SizedBox(height: 4),
+                    LibraryDateLabel(
+                      date: move.effectiveDate(sort),
+                      source: move.effectiveDateSource(sort),
+                    ),
                   ],
                 ),
               ),

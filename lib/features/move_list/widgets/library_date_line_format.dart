@@ -3,6 +3,7 @@ import 'package:intl/intl.dart';
 
 import '../../../core/design/typography.dart';
 import '../../../core/models/library_date_line.dart';
+import '../../../core/models/library_sort.dart';
 import '../../../l10n/gen/app_localizations.dart';
 
 /// The one localized date line the library shows on rows and tiles.
@@ -33,6 +34,27 @@ String formatLibraryDateLine(
   };
 }
 
+/// [formatLibraryDateLine] captioned with the dimension the date came from.
+///
+/// [source] is the resolved source, not the active sort — see
+/// [LibraryDateSource]. Passing the sort's dimension instead would caption an
+/// unfilmed move's added date "Filmed", which is the failure this exists to
+/// prevent.
+String formatLibraryDateLineWithSource(
+  final BuildContext context,
+  final DateTime date,
+  final LibraryDateSource source, {
+  final DateTime? now,
+}) {
+  final l10n = AppLocalizations.of(context);
+  final formatted = formatLibraryDateLine(context, date, now: now);
+  return switch (source) {
+    LibraryDateSource.added => l10n.libraryDateAdded(formatted),
+    LibraryDateSource.filmed => l10n.libraryDateFilmed(formatted),
+    LibraryDateSource.practiced => l10n.libraryDatePracticed(formatted),
+  };
+}
+
 /// The date line as the library actually renders it, on rows and on tiles.
 ///
 /// One widget rather than four copies of "caption, secondary, one line": the
@@ -43,6 +65,7 @@ class LibraryDateLabel extends StatelessWidget {
   const LibraryDateLabel({
     super.key,
     required this.date,
+    this.source,
     this.color,
     this.now,
   });
@@ -50,6 +73,12 @@ class LibraryDateLabel extends StatelessWidget {
   /// The item's effective date for the **active** sort. Which dimension that
   /// is belongs to the caller — this widget renders whatever it is handed.
   final DateTime date;
+
+  /// When set, captions the date with the dimension it came from ("Added 3
+  /// days ago"). Tiles that sit under a name in a dense grid leave this null
+  /// and show the bare date; a row that replaced a filename subtitle sets it,
+  /// because there the date has to explain itself.
+  final LibraryDateSource? source;
 
   /// Overrides the default `onSurface`-secondary color for tiles that render
   /// over imagery.
@@ -60,7 +89,9 @@ class LibraryDateLabel extends StatelessWidget {
 
   @override
   Widget build(final BuildContext context) => Text(
-    formatLibraryDateLine(context, date, now: now),
+    source == null
+        ? formatLibraryDateLine(context, date, now: now)
+        : formatLibraryDateLineWithSource(context, date, source!, now: now),
     maxLines: 1,
     overflow: TextOverflow.ellipsis,
     style: AppTypography.caption.copyWith(
