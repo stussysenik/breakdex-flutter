@@ -71,10 +71,15 @@ class OrphanRestoreService {
       }
 
       // Full-hash gate (D11 ruling 2): the one failure mode a restore must
-      // not have is adopting the wrong bytes under the right identity.
+      // not have is adopting the wrong bytes under the right identity. A
+      // refusal also names what the bytes actually ARE (2026-07-19 device
+      // run: 4 of 22 refused) — the log answers the question instead of
+      // restating it.
       final absolute = p.join(documentsPath, candidate);
-      if (!await _hasher.verifyHash(absolute, hash)) {
-        report.hashMismatch.add('$hash at $candidate');
+      final actual = await _computeHashOrNull(absolute);
+      if (actual != hash) {
+        report.hashMismatch
+            .add('$hash at $candidate — ${await _identifyBytes(actual)}');
         continue;
       }
 
@@ -120,6 +125,32 @@ class OrphanRestoreService {
     }
 
     return report;
+  }
+
+  Future<String?> _computeHashOrNull(final String absolute) async {
+    try {
+      return await _hasher.computeHash(absolute);
+    } on Object catch (_) {
+      return null;
+    }
+  }
+
+  /// Forensic verdict for mismatched bytes: which identity the candidate file
+  /// *really* carries, looked up in the manifest. Each bucket names its
+  /// remedy — duplicate (delete-safe), tombstoned (a second recovery),
+  /// orphan (restorable under its true hash), unknown (adopt as new).
+  Future<String> _identifyBytes(final String? actual) async {
+    if (actual == null) return 'bytes unreadable';
+    final hash8 = actual.length > 8 ? actual.substring(0, 8) : actual;
+    final row = await _db.assetManifestDao.getByHash(actual);
+    if (row == null) return 'bytes are $hash8 — unknown to manifest';
+    if (row.deletedAt != null) {
+      return 'bytes are $hash8 — a tombstoned asset (${row.sourceName})';
+    }
+    if (await _hasOwner(actual)) {
+      return 'bytes are $hash8 — duplicate of a live owned asset';
+    }
+    return 'bytes are $hash8 — another orphan (restorable under true hash)';
   }
 
   Future<bool> _hasOwner(final String hash) async {

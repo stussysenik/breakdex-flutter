@@ -275,7 +275,25 @@
   dead path). Verify: 5 new unit tests (adopt, hash-mismatch refusal w/ impostor
   file, idempotence, owned-skip, byte-less bucket) green; panel suite 14 green;
   sync+database+services **702 green / 0 failures**; `flutter analyze` 0 errors
-  (9 pre-existing infos). Device evidence pending the owner's next run.
+  (9 pre-existing infos).
+  **DEVICE EVIDENCE 2026-07-19 (owner run, DEV_SYNC_PANEL build): 18 restored,
+  4 refused on full-hash mismatch, 0 byte-less.** Not the predicted 22/22 — and
+  the shortfall is the gate working, not failing: four `.lost+found` files carry
+  bytes that are not the hash their filename claims. Two of them (`69e13899`,
+  `1bb10442`) wear *exactly* matching names, which is the whole argument for
+  full-hash verification over the hash8 trust D10 allows for upload healing —
+  name agreement is not evidence. Had this lane trusted the token, four videos
+  would have been adopted under wrong identities, silently.
+  **Follow-on shipped in the same pass:** a refusal now names what the bytes
+  *are* (`_identifyBytes`) — duplicate of a live owned asset / a tombstoned
+  asset / another orphan restorable under its true hash / unknown to the
+  manifest. The prior line printed the expected hash and the path, which
+  restated the question the operator was asking. Each verdict names its remedy,
+  so the residue is triageable from the device log alone with no further
+  instrumentation. Red proven by stash: both forensic tests read the old bare
+  `<hash> at <path>` shape. Verify: 7 restore tests (2 new/tightened) green,
+  panel suite 9 green, sync+database+services **711 green / 0 failures**,
+  analyze 0 errors on both changed files.
 - [x] 4.9 Janitor joins the registry (design D11 ruling 4 — loop closure). Before
   quarantining a file, `StorageJanitor` parses the hash from the canonical filename
   (reuse `SandboxHashIndex`'s validating parser — NOT the `split(' - ').last` idiom)
@@ -301,6 +319,18 @@
   longer queued; `failed` count flat across two cycles in the engine test. Verify:
   tests green, analyze clean. Device evidence in the tick: two cycles, flat `failed`
   count, unreachable list empty or all-terminal.
+  **Premise update from 4.8's device run (2026-07-19) — read before building this.**
+  The tombstone target set is **empty**: restore reported `bytes not found: 0`. Every
+  remaining unresolvable asset has bytes on disk; the residue is 4 **hash-mismatch**
+  assets, not byte-less ones. Tombstoning those would be exactly the soft-delete-of-
+  recoverable-video defect that rewrote 4.8. So this task's *first* half currently has
+  nothing to act on and MUST NOT be pointed at the mismatch set as a substitute.
+  Its *second* half (clearing stale `failed` op rows — 264 at the dump, most from healed
+  pre-1.8 states) is unaffected and still worth doing; consider landing that alone.
+  The mismatch residue needs its own decision, informed by the forensic verdicts 4.8 now
+  logs — duplicates are delete-safe, unknown bytes want adoption under their true hash,
+  and the 4 missing identities may still exist in Drive (`gdrive×verified: 50`), which
+  cannot be checked until the phone's dropped Google session is restored.
 
 ## Phase 3 — One-account magic (owner-gated: design.md O1 ruling first)
 

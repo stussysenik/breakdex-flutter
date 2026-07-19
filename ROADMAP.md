@@ -154,11 +154,27 @@
   "keeps failing" copy under-claims for terminal assets and its "will not retry"
   upgrade folds into 4.10. Suites 710 green (sync+db+services) + 15 settings widgets,
   analyze 0 errors.
-  **Next: owner device run** — DEV_SYNC_PANEL build → "Restore quarantined orphans" →
-  expect 22 restored, unresolvable 0, next sweep uploads them (that evidence also
-  completes 4.8's tick). Then agent-runnable **4.10** (tombstone fallback + stale-op
-  cleanup + terminal ARB copy); 3.2 also agent-runnable (console-cookie recipe).
-  4.6 owner-gated.
+  **4.8 device run DONE 2026-07-19 (owner) — 18 restored, 4 refused, 0 byte-less.**
+  Not the predicted 22/22, and the shortfall is the full-hash gate earning its cost:
+  four `.lost+found` files hold bytes that are not the hash their name claims, two of
+  them under *exactly* matching names. Name agreement is not evidence — trusting the
+  filename token would have adopted four videos under wrong identities, silently.
+  A refusal now names what the bytes actually are (duplicate of a live asset /
+  tombstoned / another orphan / unknown), each verdict carrying its own remedy, so the
+  residue is triageable from the device log with no further instrumentation. Red proven
+  by stash; sync+db+services **711 green / 0 failures**, analyze 0 errors.
+  **Next (owner, highest value): re-sign-in to Google on the phone.** The 18 recovered
+  videos exist only on that device — `2× Bad state: GDriveProvider not authenticated`
+  in the same dump means the upload lane cannot protect them. This also unblocks
+  checking whether the 4 missing identities still exist in Drive (`gdrive×verified: 50`).
+  Then agent-runnable: **4.10's second half only** (stale `failed` op cleanup + terminal
+  ARB copy) — its tombstone half has an **empty target set** now that `bytes not found`
+  is 0, and must not be repointed at the mismatch residue; see the premise note in
+  tasks.md. 3.2 also agent-runnable (console-cookie recipe). 4.6 owner-gated.
+  **Carried, unfiled:** `76× Invalid argument(s): A negative content length is not
+  allowed` is the dominant failed-op error in the device dump — a real upload-path
+  defect, plausibly the same null/`-1` size issue as 2.3's carried finding
+  (`moves.videoFileSize` read without the manifest's `fileSizeBytes` fallback).
   **Also unticked:** 1.7 owner 30-second device proof.
   **New sibling change (2026-07-19, strict-valid): `humanize-video-surfaces-and-gate-release`**
   — Phase 1 picker collapse (In Breakdex / Import; sequenced after 4.7), Phase 2 human

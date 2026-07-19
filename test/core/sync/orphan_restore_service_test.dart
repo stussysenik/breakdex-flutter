@@ -41,6 +41,10 @@ void main() {
         localPath: Value(localPath),
       ));
 
+  /// A file in the quarantine directory, by name.
+  File lostAndFound(final String name) =>
+      File(p.join(docs.path, 'Moves', '.lost+found', name));
+
   /// Writes [bytes] into `.lost+found` under a canonical `Name - hash8.ext`
   /// name and returns the full content hash — the quarantined-orphan shape
   /// the 2026-07-19 device dump found 22 of.
@@ -51,12 +55,7 @@ void main() {
     final staging = File(p.join(docs.path, 'staging.bin'))
       ..writeAsBytesSync(bytes);
     final hash = await hasher.computeHash(staging.path);
-    final target = File(p.join(
-      docs.path,
-      'Moves',
-      '.lost+found',
-      '$name - ${hash.substring(0, 8)}.mp4',
-    ));
+    final target = lostAndFound('$name - ${hash.substring(0, 8)}.mp4');
     target.parent.createSync(recursive: true);
     staging.renameSync(target.path);
     return hash;
@@ -91,27 +90,47 @@ void main() {
     final hash = await quarantine('Real', List.filled(64, 1));
     // A second file wearing the first hash8 in its name but holding other
     // bytes — the drift shape (0808dba4/514a01df) the full-hash gate is for.
-    final impostor = File(p.join(
-      docs.path,
-      'Moves',
-      '.lost+found',
-      'Impostor - ${hash.substring(0, 8)}.mp4',
-    ))..writeAsBytesSync(List.filled(64, 2));
+    final impostor = lostAndFound('Impostor - ${hash.substring(0, 8)}.mp4')
+      ..writeAsBytesSync(List.filled(64, 2));
     // Remove the real file so only the impostor matches the token.
-    File(p.join(
-      docs.path,
-      'Moves',
-      '.lost+found',
-      'Real - ${hash.substring(0, 8)}.mp4',
-    )).deleteSync();
+    lostAndFound('Real - ${hash.substring(0, 8)}.mp4').deleteSync();
     await seedManifest(hash);
 
     final report = await service.restore();
 
     expect(report.restored, isEmpty);
     expect(report.hashMismatch, hasLength(1));
+    expect(report.hashMismatch.single, contains('unknown to manifest'),
+        reason: 'a refusal must name what the bytes actually are');
     expect(await db.movesDao.getAll(), isEmpty);
     expect(impostor.existsSync(), isTrue, reason: 'never moved, never adopted');
+  });
+
+  test('mismatch forensics: names bytes that duplicate a live owned asset',
+      () async {
+    // The drift shape: a quarantined file named for one identity while its
+    // bytes belong to another that is already live and owned — the bucket
+    // that makes a refused file delete-safe rather than a mystery.
+    final ownedHash = await quarantine('Owned', List.filled(64, 3));
+    final missingHash = await quarantine('Missing', List.filled(64, 4));
+    lostAndFound('Drifted - ${missingHash.substring(0, 8)}.mp4')
+        .writeAsBytesSync(List.filled(64, 3));
+    lostAndFound('Missing - ${missingHash.substring(0, 8)}.mp4').deleteSync();
+    await seedManifest(ownedHash, localPath: 'Moves/Power moves/owned.mp4');
+    await seedManifest(missingHash);
+    await db.movesDao.insertMove(MovesCompanion.insert(
+      id: 'm-owned',
+      name: 'Owned',
+      contentHash: Value(ownedHash),
+    ));
+
+    final report = await service.restore();
+
+    expect(
+      report.hashMismatch.single,
+      allOf(startsWith(missingHash),
+          contains('duplicate of a live owned asset')),
+    );
   });
 
   test('is idempotent: a second run adopts nothing new', () async {
