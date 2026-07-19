@@ -2151,10 +2151,10 @@ abstract class AppLocalizations {
   /// **'{count} retrying'**
   String setSyncTallyRetrying(int count);
 
-  /// Sync Status summary chip: videos whose upload burned its whole retry budget. Not phrased as a promise that it will never retry — the next sweep re-queues them (task 4.4).
+  /// Sync Status summary chip: videos under a terminal verdict — bytes provably nowhere (task 4.4). The sweep skips them, so 'can't' is a kept promise; the verdict is revoked automatically when the bytes re-home (restore/re-import).
   ///
   /// In en, this message translates to:
-  /// **'{count} keep failing'**
+  /// **'{count} can\'t be backed up'**
   String setSyncTallyStuck(int count);
 
   /// Sync Status summary chip: videos a cloud provider holds a verified copy of.
@@ -2199,16 +2199,16 @@ abstract class AppLocalizations {
   /// **'Retrying after a failed upload'**
   String get setSyncDetailRetryingUnknown;
 
-  /// Sync Status row: the upload exhausted its retry budget, error text known.
+  /// Sync Status row: terminal verdict (bytes nowhere, task 4.4) with error text. Honest since 4.4: queueUpload consults the verdict, so the sweep really does not re-queue this asset until its bytes re-home.
   ///
   /// In en, this message translates to:
-  /// **'Keeps failing: {error}'**
+  /// **'Won\'t retry — {error}'**
   String setSyncDetailStuck(String error);
 
-  /// Sync Status row: the upload exhausted its retry budget with no recorded error text.
+  /// Sync Status row: terminal verdict (bytes nowhere, task 4.4) with no recorded error text.
   ///
   /// In en, this message translates to:
-  /// **'Keeps failing — retries exhausted'**
+  /// **'Won\'t retry — the video file is nowhere on this device'**
   String get setSyncDetailStuckUnknown;
 
   /// Cloud-sync settings: row title for the iCloud Drive backup provider.

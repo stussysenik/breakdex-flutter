@@ -619,10 +619,10 @@ class _AssetDetailRow extends StatelessWidget {
 
 /// The one line under the name that answers "what is happening to this file".
 ///
-/// The failed cases say "keeps failing", never "will not retry": the retry
-/// budget is spent for that *operation*, but the next sweep queues a fresh one
-/// (see [AssetSyncTally.unbackupable]). Promising a stop the engine does not
-/// make is the same class of dishonesty this change exists to remove.
+/// A non-terminal failure says "retrying" because the next sweep queues a
+/// fresh operation. A terminal verdict says "won't retry" — honest since 4.4:
+/// `queueUpload` consults the verdict, so the sweep really skips the asset
+/// until a restore or re-import re-homes its bytes and revokes it.
 String _detailLine(
   final AppLocalizations l10n,
   final AssetSyncDetail detail,

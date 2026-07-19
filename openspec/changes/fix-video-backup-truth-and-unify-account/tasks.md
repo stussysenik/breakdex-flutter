@@ -309,7 +309,7 @@
   file (+3 −1), the other three passed — quarantine behavior otherwise unchanged.
   Green: 4 janitor tests (first-ever for this class), sync+database+services
   **706 green / 0 failures**, `flutter analyze` clean. DONE 2026-07-19.
-- [ ] 4.10 Tombstone the true residue (fallback, gated on 4.8's device evidence).
+- [x] 4.10 Tombstone the true residue (fallback, gated on 4.8's device evidence).
   For assets restore confirms byte-less (`bytes not found` after 4.8 runs — currently
   zero), the dev-panel action tombstones the manifest rows (sets `deletedAt`, same
   soft-delete idiom as user deletes) so the sweep stops re-queueing them, with inline
@@ -331,6 +331,22 @@
   logs — duplicates are delete-safe, unknown bytes want adoption under their true hash,
   and the 4 missing identities may still exist in Drive (`gdrive×verified: 50`), which
   cannot be checked until the phone's dropped Google session is restored.
+  **DONE 2026-07-19 as re-premised — second half only; tombstone half deliberately
+  not built** (empty target set per the premise note above; the second device run's
+  verdicts read all four residue files as intact `unknown to manifest` — real videos
+  the ledger never knew, remedy = ordinary picker import, no code). Landed:
+  (1) `SyncOperationsDao.purgeResolvedFailed()` deletes `failed` ops superseded by a
+  verified copy on the same provider — archaeology from healed pre-1.8 states (264 at
+  the dump); rows for still-unprotected assets stay (live "retrying" truth), and
+  terminal verdicts stay (revoked only by `clearTerminal` when bytes re-home, pinned
+  by test). (2) Dev-panel "Clear stale failed operations" with inline re-dump.
+  (3) The terminal ARB copy upgrade folded in from 4.5: "keeps failing" → "won't
+  retry" (`setSyncTallyStuck` "{count} can't be backed up", `setSyncDetailStuck`
+  "Won't retry — {error}") — honest now that 4.4's verdict survives sweeps; the
+  stale "never say will-not-retry" doc/guard test rewritten to reserve the phrase
+  for terminal rows only. Red by stash: 4 failures (DAO test + 3 copy tests) against
+  pre-fix lib. Green: sync+database+services+settings **730 green / 0 failures**,
+  analyze 0 errors (9 pre-existing infos), l10n gate green on committed gen.
 
 ## Phase 3 — One-account magic (owner-gated: design.md O1 ruling first)
 

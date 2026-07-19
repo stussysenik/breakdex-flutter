@@ -140,10 +140,11 @@ void main() {
     ]);
 
     expect(find.text('Retrying after: file not found'), findsOneWidget);
-    // Never "will not retry": the next sweep queues a fresh operation for any
-    // asset still under the copy minimum, so that promise would be false.
-    expect(find.text('Keeps failing: file not found'), findsOneWidget);
-    expect(find.textContaining('will not retry'), findsNothing);
+    // "Won't retry" is reserved for the terminal verdict, where it is a kept
+    // promise since 4.4 (queueUpload consults the verdict). A non-terminal
+    // failure is re-swept, so it must never claim a stop (task 4.10).
+    expect(find.text("Won't retry — file not found"), findsOneWidget);
+    expect(find.textContaining("Won't retry"), findsOneWidget);
   });
 
   testWidgets('a failure with no recorded error still says what happened',
@@ -158,7 +159,10 @@ void main() {
     ]);
 
     expect(find.text('Retrying after a failed upload'), findsOneWidget);
-    expect(find.text('Keeps failing — retries exhausted'), findsOneWidget);
+    expect(
+      find.text("Won't retry — the video file is nowhere on this device"),
+      findsOneWidget,
+    );
   });
 
   testWidgets('a backed-up asset names the providers holding it',
@@ -204,7 +208,7 @@ void main() {
     expect(find.text('1 uploading'), findsOneWidget);
     expect(find.text('2 waiting'), findsOneWidget);
     expect(find.text('1 retrying'), findsOneWidget);
-    expect(find.text('1 keep failing'), findsOneWidget);
+    expect(find.text("1 can't be backed up"), findsOneWidget);
     expect(find.text('1 backed up'), findsOneWidget);
   });
 
@@ -219,7 +223,7 @@ void main() {
       '0 uploading',
       '0 waiting',
       '0 retrying',
-      '0 keep failing',
+      "0 can't be backed up",
     ]) {
       expect(find.text(zero), findsNothing);
     }

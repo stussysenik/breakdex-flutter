@@ -167,10 +167,25 @@
   videos exist only on that device — `2× Bad state: GDriveProvider not authenticated`
   in the same dump means the upload lane cannot protect them. This also unblocks
   checking whether the 4 missing identities still exist in Drive (`gdrive×verified: 50`).
-  Then agent-runnable: **4.10's second half only** (stale `failed` op cleanup + terminal
-  ARB copy) — its tombstone half has an **empty target set** now that `bytes not found`
-  is 0, and must not be repointed at the mismatch residue; see the premise note in
-  tasks.md. 3.2 also agent-runnable (console-cookie recipe). 4.6 owner-gated.
+  **Restore re-run 2026-07-19 (owner, new build): the 4 refusals are all intact
+  `unknown to manifest`** — each file's bytes hash to exactly what its filename
+  claims; the "wrong bytes under a matching name" reading is dead. They are real
+  videos the ledger never knew; remedy = ordinary picker import (APP VIDEOS lists
+  them), no code. Owner signed in to Google the same day, so the upload lane can
+  now protect the 18.
+  **4.10 DONE 2026-07-19 as re-premised — second half only** (the tombstone half's
+  target set was empty and stayed unbuilt, per the premise note in tasks.md):
+  `SyncOperationsDao.purgeResolvedFailed()` deletes `failed` ops superseded by a
+  verified copy on the same provider (the 264-row archaeology); live-retry rows and
+  terminal verdicts stay, pinned by test. Dev-panel "Clear stale failed operations"
+  with inline re-dump. The terminal copy upgrade folded in from 4.5: "keeps
+  failing" → "Won't retry" / "{count} can't be backed up" — honest now that 4.4's
+  verdict survives sweeps; the guard test reserves the phrase for terminal rows.
+  Red by stash (4 failures against pre-fix lib); sync+db+services+settings **730
+  green / 0 failures**, analyze 0 errors, l10n gate green.
+  Remaining agent-runnable: 3.2 (console-cookie recipe). 4.6/1.7 owner-gated device
+  proofs — next owner look = Sync Status after a sweep: tap "Clear stale failed
+  operations", expect the failed count to collapse and the 18 to drain to backed up.
   **Carried, unfiled:** `76× Invalid argument(s): A negative content length is not
   allowed` is the dominant failed-op error in the device dump — a real upload-path
   defect, plausibly the same null/`-1` size issue as 2.3's carried finding

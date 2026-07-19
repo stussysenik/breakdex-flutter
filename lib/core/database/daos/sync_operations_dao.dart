@@ -176,6 +176,26 @@ class SyncOperationsDao extends DatabaseAccessor<AppDatabase>
         ),
       );
 
+  /// Delete `failed` operations that a later verified copy has made
+  /// archaeology: the asset now holds a verified copy on the very provider
+  /// the operation failed against, so the failure describes a past state,
+  /// not the present (task 4.10). Rows for assets still without a verified
+  /// copy are live truth ("retrying") and stay. Terminal verdicts stay —
+  /// they are revoked by [clearTerminal] when bytes re-home, never swept.
+  /// Returns the number of rows deleted.
+  Future<int> purgeResolvedFailed() {
+    final copies = attachedDatabase.assetCopies;
+    return (delete(syncOperations)
+          ..where((final t) =>
+              t.status.equals('failed') &
+              existsQuery(attachedDatabase.select(copies)
+                ..where((final c) =>
+                    c.contentHash.equalsExp(t.contentHash) &
+                    c.provider.equalsExp(t.providerId) &
+                    c.status.equals('verified')))))
+        .go();
+  }
+
   /// Clean up completed operations older than [before].
   Future<void> cleanupCompleted(final DateTime before) =>
       (delete(syncOperations)

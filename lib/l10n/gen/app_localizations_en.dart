@@ -1262,7 +1262,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String setSyncTallyStuck(int count) {
-    return '$count keep failing';
+    return '$count can\'t be backed up';
   }
 
   @override
@@ -1300,11 +1300,12 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String setSyncDetailStuck(String error) {
-    return 'Keeps failing: $error';
+    return 'Won\'t retry — $error';
   }
 
   @override
-  String get setSyncDetailStuckUnknown => 'Keeps failing — retries exhausted';
+  String get setSyncDetailStuckUnknown =>
+      'Won\'t retry — the video file is nowhere on this device';
 
   @override
   String get setSyncProviderIcloudTitle => 'iCloud Drive';

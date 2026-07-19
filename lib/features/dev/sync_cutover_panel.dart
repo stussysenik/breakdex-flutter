@@ -23,6 +23,7 @@ import '../../core/providers.dart'
         localCopyReconcilerProvider,
         orphanRestoreServiceProvider,
         syncDiagnosticsProvider,
+        syncOperationsDaoProvider,
         syncServiceProvider;
 import '../../core/services/categories_service.dart'
     show categoriesProvider;
@@ -567,6 +568,30 @@ class _DiagnosticsSectionState extends ConsumerState<_DiagnosticsSection> {
     }
   }
 
+  /// Delete `failed` op rows superseded by a verified copy on the same
+  /// provider (task 4.10 second half) — archaeology from healed pre-1.8
+  /// states — then re-dump so the ops-by-status counts visibly drop.
+  Future<void> _purgeStaleFailed() async {
+    setState(() {
+      _running = true;
+      _error = null;
+    });
+    try {
+      final purged =
+          await ref.read(syncOperationsDaoProvider).purgeResolvedFailed();
+      debugPrint('[SyncDiagnostics] purged $purged stale failed op row(s)');
+      final report = await ref.read(syncDiagnosticsProvider).dump();
+      if (mounted) {
+        setState(
+            () => _report = 'Purged $purged stale failed op row(s).\n\n$report');
+      }
+    } on Object catch (error) {
+      if (mounted) setState(() => _error = '$error');
+    } finally {
+      if (mounted) setState(() => _running = false);
+    }
+  }
+
   @override
   Widget build(final BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
@@ -616,6 +641,14 @@ class _DiagnosticsSectionState extends ConsumerState<_DiagnosticsSection> {
             onPressed: _running ? null : _restoreOrphans,
             child: Text(
               _running ? 'Restoring…' : 'Restore quarantined orphans',
+            ),
+          ),
+          const SizedBox(height: AppSpacing.sm),
+          OutlinedButton(
+            key: const ValueKey('sync-purge-stale-failed'),
+            onPressed: _running ? null : _purgeStaleFailed,
+            child: Text(
+              _running ? 'Purging…' : 'Clear stale failed operations',
             ),
           ),
           if (_report != null) ...[
