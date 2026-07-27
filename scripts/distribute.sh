@@ -56,11 +56,21 @@ if [ -z "$BUILD_NUMBER" ]; then
   exit 1
 fi
 
+# The whole premise of this script is "gate, THEN build". Without checking the
+# gate's exit status it printed SOME GATES FAILED and built anyway — a green
+# artifact off a red tree. Never build past a failed gate.
 run_verify() {
   if [ "$QUICK" -eq 1 ]; then
     ./verify.sh --quick
   else
     ./verify.sh
+  fi
+  status=$?
+  if [ "$status" -ne 0 ]; then
+    echo >&2
+    echo "REFUSING TO BUILD: the gate failed (exit $status)." >&2
+    echo "Fix it, or inspect with ./verify.sh. No artifact was produced." >&2
+    exit "$status"
   fi
 }
 
