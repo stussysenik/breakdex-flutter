@@ -3,7 +3,7 @@
 ## ADDED Requirements
 
 ### Requirement: Automatic tier progression
-Achievement tiers advance automatically based on review activity and FSRS state.
+Achievement tiers SHALL advance automatically based on review activity and FSRS state.
 
 #### Scenario: Move creation → Seed tier
 Given a new move "Toprock" is created
@@ -26,7 +26,7 @@ When achievement check runs
 Then tier advances to "mastered" and a celebration overlay appears
 
 ### Requirement: Achievement garden grid
-A visual grid displays all moves at their current achievement tier with tier-appropriate icons.
+A visual grid SHALL display all moves at their current achievement tier with tier-appropriate icons.
 
 #### Scenario: Garden renders all moves
 Given 4 moves exist at tiers seed, sprouting, growing, mastered
@@ -34,7 +34,7 @@ When achievement garden is displayed
 Then 4 tiles render with icons: rock, seedling, plant, gem
 
 ### Requirement: Tier unlock celebration
-When a move advances to a new achievement tier, a celebration animation plays.
+When a move advances to a new achievement tier, a celebration animation SHALL play.
 
 #### Scenario: Advancing to mastered shows celebration
 Given move "6-Step" advances from growing to mastered
