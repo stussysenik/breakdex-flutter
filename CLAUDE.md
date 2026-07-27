@@ -83,6 +83,14 @@ canonical example it fixed.)
 - **Fable 5:** Restricted strictly to **planning, scoping, and orchestration**. Never use Fable 5 as a heavy execution agent (to prevent API spend limit blowouts).
 - **Gemini / Opus 5:** Use for heavy execution, multi-file refactoring, spawning parallel sub-agent fleets, and running cumulative test gates.
 
+## Service Discoverability & Convention
+
+To ensure services are easily discoverable and to prevent monolithic dependency files, all services MUST follow this structural convention:
+1. **File Location:** Core services live in `lib/core/services/` (or their respective domain folder).
+2. **Provider Colocation:** The Riverpod provider for a service (e.g., `final myServiceProvider = Provider(...)`) MUST be defined at the bottom of the exact same file as the service class itself.
+3. **No Feature-Scattering:** Do not hide core service providers inside `lib/features/*/providers/` (like the misplaced `achievementServiceProvider`).
+4. **Deprecate the Monolith:** Stop appending new providers to the massive 600+ line `lib/core/providers.dart`. Colocate them instead.
+
 ## Where to look
 
 - **Backlog / sequencing:** root `ROADMAP.md` → "Backlog — OpenSpec change order (D8)".
