@@ -78,6 +78,11 @@ review violation to reconcile before new work builds on it. (This rule was intro
 `align-cross-client-foundations`; the 0/51-vs-shipped drift in `state-machine-crud` is the
 canonical example it fixed.)
 
+## Model Orchestration & Limits
+
+- **Fable 5:** Restricted strictly to **planning, scoping, and orchestration**. Never use Fable 5 as a heavy execution agent (to prevent API spend limit blowouts).
+- **Gemini / Opus 5:** Use for heavy execution, multi-file refactoring, spawning parallel sub-agent fleets, and running cumulative test gates.
+
 ## Where to look
 
 - **Backlog / sequencing:** root `ROADMAP.md` → "Backlog — OpenSpec change order (D8)".
