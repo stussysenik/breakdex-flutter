@@ -348,6 +348,19 @@
   pre-fix lib. Green: sync+database+services+settings **730 green / 0 failures**,
   analyze 0 errors (9 pre-existing infos), l10n gate green on committed gen.
 
+> **Carried finding FILED 2026-07-27 (was "unfiled" in the NOW block): the 76×
+> "negative content length" generator is dead; the rows are archaeology.** Verified at
+> the code layer, not inferred: the engine's three heal lanes make a missing file
+> `terminal` before any provider call (`asset_sync_engine.dart:499-519`, the D9 path),
+> and `GDriveProvider.upload` independently guards `notFound` with the honest
+> `StateError('Local file missing')` (`gdrive_provider.dart:158-162`, the 1.8c fix).
+> `drive.Media` has exactly one construction site and it sits behind that guard. The 76
+> failed-op rows predate 1.8 and purge via 4.10's "Clear stale failed operations" as
+> their assets verify. The note's other half — `moves.videoFileSize` shown without the
+> manifest's `fileSizeBytes` fallback — is display-side and already filed under
+> `humanize-video-surfaces-and-gate-release` 2.3 (cloud-only provenance ruling); no
+> upload-path work remains here.
+
 ## Phase 3 — One-account magic (owner-gated: design.md O1 ruling first)
 
 - [ ] 3.1 [OWNER] Rule on O1 (Appwrite `drive.file` scope + re-consent tradeoff) and

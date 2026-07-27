@@ -183,14 +183,21 @@
   verdict survives sweeps; the guard test reserves the phrase for terminal rows.
   Red by stash (4 failures against pre-fix lib); sync+db+services+settings **730
   green / 0 failures**, analyze 0 errors, l10n gate green.
-  Remaining agent-runnable: 3.2 (console-cookie recipe). 4.6/1.7 owner-gated device
-  proofs — next owner look = Sync Status after a sweep: tap "Clear stale failed
-  operations", expect the failed count to collapse and the 18 to drain to backed up.
-  **Carried, unfiled:** `76× Invalid argument(s): A negative content length is not
-  allowed` is the dominant failed-op error in the device dump — a real upload-path
-  defect, plausibly the same null/`-1` size issue as 2.3's carried finding
-  (`moves.videoFileSize` read without the manifest's `fileSizeBytes` fallback).
-  **Also unticked:** 1.7 owner 30-second device proof.
+  **Everything left in this change is owner-gated (surfaced 2026-07-27 session):**
+  1.7/4.6 device proofs — next owner look = Sync Status after a sweep: tap "Clear stale
+  failed operations", expect the failed count to collapse and the 18 to drain to backed
+  up. Phase 3 waits on **3.1** — design.md O1/O2 are still open questions, and 3.2
+  (adding `drive.file` to the live Appwrite Google provider) IS the consequence O1 asks
+  the owner to accept; its curl proof also needs a fresh Google OAuth session only the
+  owner can grant. The earlier "3.2 agent-runnable" note named the *mechanism*
+  (console-cookie recipe), not a lifted gate — an agent executes 3.2 once O1 is ruled.
+  **Carried finding FILED 2026-07-27 (verdict in tasks.md, code-verified):** the 76×
+  "negative content length" generator is dead — engine heal lanes make a missing file
+  terminal pre-provider (`asset_sync_engine.dart:499-519`) and `GDriveProvider.upload`
+  guards `notFound` honestly (1.8c); the rows are pre-1.8 archaeology, purged by 4.10's
+  dev action as assets verify. The `videoFileSize`-fallback half is display-side,
+  already filed under `humanize-video-surfaces-and-gate-release` 2.3. Baseline
+  re-proven at HEAD 2026-07-27: analyze 0 errors, sync+db+services 715 green / 0 fail.
   **New sibling change (2026-07-19, strict-valid): `humanize-video-surfaces-and-gate-release`**
   — Phase 1 picker collapse (In Breakdex / Import; sequenced after 4.7), Phase 2 human
   subtitles (independent, startable now), Phase 3 the release gate as a falsifiable spec.
