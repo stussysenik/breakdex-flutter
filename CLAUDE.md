@@ -1,8 +1,8 @@
-# Breakdex — Agent Contract
+# Breakdex — Unified Agent Contract (Claude & Gemini)
 
 Canonical, load-bearing rulings for any agent working in this repo. Read this first; it names
-the decided stack so you don't re-derive ground truth every session. Global craft mandate
-(`~/.claude/CLAUDE.md`, `~/CLAUDE.md`) still applies and takes precedence where it conflicts.
+the decided stack so you don't re-derive ground truth every session. Global craft mandates
+(`~/.claude/CLAUDE.md`, `~/CLAUDE.md`, and `~/.gemini/GEMINI.md`) still apply and take precedence where they conflict.
 
 ## Instruments — ported from valoric (2026-07-27)
 
