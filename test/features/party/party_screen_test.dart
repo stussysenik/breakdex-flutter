@@ -7,6 +7,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:breakdex/core/database/database.dart';
+import 'package:breakdex/core/services/appwrite_auth_providers.dart';
+import 'package:breakdex/core/services/appwrite_auth_service.dart';
 import 'package:breakdex/core/providers.dart';
 import 'package:breakdex/core/services/settings_service.dart';
 import 'package:breakdex/features/party/bloc/party_bloc.dart';
@@ -45,6 +47,7 @@ void main() {
         databaseProvider.overrideWithValue(db),
         sharedPreferencesProvider.overrideWithValue(prefs),
         currentTabIndexProvider.overrideWith((_) => 2),
+        currentAppwriteUserProvider.overrideWith((final ref) => Stream<AuthUser?>.value(null)),
       ],
       child: MaterialApp(
         home: BlocProvider<PartyBloc>.value(
@@ -119,7 +122,7 @@ void main() {
     final bloc = PartyBloc();
     debugPrint('DEBUG: Pumping widget...');
     await tester.pumpWidget(buildPartyScreenActive(bloc: bloc));
-    await tester.pumpAndSettle();
+    await tester.pump(const Duration(seconds: 1));
 
     debugPrint('DEBUG: Sending shake...');
     await sendShake(tester);
@@ -135,19 +138,16 @@ void main() {
     debugPrint('DEBUG: Cleaning up...');
     await cleanupWidget(tester);
     debugPrint('DEBUG: Closing bloc...');
-    await bloc.close();
+    bloc.close();
     debugPrint('DEBUG: Test finished!');
-    // flaky: pumpAndSettle never settles against the party screen's perpetual
-    // SwingDetector/cycle timers (10-min timeout). Logic verified green in runtime
-    // logs; needs bounded pump() rewrite. See docs/stale-tests-post-redesign.md.
-  }, skip: true);
+  });
 
   testWidgets('shake reveals a move after full cycle', (final tester) async {
     await seedMove(db, id: 'move-1', name: 'Windmill', category: 'power');
 
     final bloc = PartyBloc();
     await tester.pumpWidget(buildPartyScreenActive(bloc: bloc));
-    await tester.pumpAndSettle();
+    await tester.pump(const Duration(seconds: 1));
 
     await sendShake(tester);
     await tester.pump();
@@ -158,16 +158,13 @@ void main() {
     bloc.add(PartyEvent.tick(DateTime.now().add(const Duration(seconds: 6))));
     await tester.pump(); // Process the tick event to transition to revealing state
     
-    await tester.pumpAndSettle(); // Settle the reveal animation which triggers the transition to revealed state
+    for (var i = 0; i < 5; i++) await tester.pump(const Duration(milliseconds: 500)); // Bounded pump for animation
     await tester.pump(); // Process the final transition to revealed state
 
     expect(find.text('WINDMILL'), findsOneWidget);
     expect(find.text('SHAKE AGAIN FOR ANOTHER move'), findsOneWidget);
 
     await cleanupWidget(tester);
-    await bloc.close();
-    // flaky: pumpAndSettle never settles against the party screen's perpetual
-    // SwingDetector/cycle timers (10-min timeout). Logic verified green in runtime
-    // logs; needs bounded pump() rewrite. See docs/stale-tests-post-redesign.md.
-  }, skip: true);
+    bloc.close();
+  });
 }

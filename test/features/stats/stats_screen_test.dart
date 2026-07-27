@@ -8,7 +8,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
-  testWidgets('progress screen leads with parent-first structure and queue', (
+  testWidgets('progress screen shows brutalist stat log', (
     final tester,
   ) async {
     final bundle = StatsBundle(
@@ -100,13 +100,15 @@ void main() {
 
     await tester.pumpAndSettle();
 
-    expect(find.text('Resume'), findsOneWidget);
-    expect(find.text('Move Parents'), findsOneWidget);
-    expect(find.text('Now'), findsOneWidget);
-    expect(find.text('Today'), findsOneWidget);
-    expect(find.text('Tomorrow'), findsOneWidget);
-    expect(find.text('Power'), findsOneWidget);
-    // stale post-redesign: StatsScreen redesigned to the brutalist stat log;
-    // Resume/Move Parents/queue no longer exist. See docs/stale-tests-post-redesign.md.
-  }, skip: true);
+    expect(find.text('CURRENT STREAK'), findsOneWidget);
+    expect(find.text('ACTIVE DAYS'), findsOneWidget);
+    expect(find.text('TOTAL REVIEWS'), findsOneWidget);
+    expect(find.text('RETENTION'), findsOneWidget);
+    expect(find.text('PRACTICE CALENDAR'), findsOneWidget);
+    expect(find.text('4 DAYS'), findsOneWidget);
+    expect(find.text('0 TOTAL'), findsOneWidget);
+    await tester.drag(find.byType(CustomScrollView), const Offset(0, -500));
+    await tester.pumpAndSettle();
+    expect(find.text('RECENT REACTION LOG'), findsOneWidget);
+  });
 }

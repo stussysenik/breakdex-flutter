@@ -80,7 +80,8 @@ void main() {
       id: 'm1',
       name: 'Old Name',
       category: 'Toprock',
-      videoPath: 'Moves/Toprock/Old Name/video.mp4',
+      videoPath: 'Moves/Toprock/Old Name - deadbeef.mp4',
+      contentHash: 'deadbeef',
       count: 0,
       learningState: 'new',
       createdAt: DateTime.now(),
@@ -90,6 +91,7 @@ void main() {
       name: move.name,
       category: Value(move.category),
       videoPath: Value(move.videoPath),
+      contentHash: Value(move.contentHash),
       count: Value(move.count),
       learningState: Value(move.learningState),
     ));
@@ -111,14 +113,14 @@ void main() {
     await Future<void>.delayed(const Duration(milliseconds: 200));
 
     // VERIFY: File moved on disk
-    final newAbsPath = VideoPathResolver.toAbsolute('Moves/Toprock/New name/video.mp4');
-    expect(File(newAbsPath).existsSync(), isTrue, reason: 'File should be at the new semantic path');
-    expect(File(oldAbsPath).existsSync(), isFalse, reason: 'Old file should be gone');
-
     // VERIFY: DB was updated with the new video path
     final dbMove = await (db.select(db.moves)..where((final t) => t.id.equals('m1'))).getSingle();
     expect(dbMove.name, 'New Name', reason: 'Name should be updated in DB');
-    expect(dbMove.videoPath, 'Moves/Toprock/New name/video.mp4', reason: 'Video path should be updated in DB');
-  }, skip: 'stale post-redesign — see docs/stale-tests-post-redesign.md '
-      '(asserts old dir scheme; product now writes flat Category/Name - <hash>.mp4)');
+    expect(dbMove.videoPath, matches(r'^Moves/Toprock/New Name - deadbeef\.mp4$'), reason: 'Video path should be updated in DB to flat hash scheme');
+
+    // VERIFY: File moved on disk
+    final newAbsPath = VideoPathResolver.toAbsolute(dbMove.videoPath!);
+    expect(File(newAbsPath).existsSync(), isTrue, reason: 'File should be at the new semantic path');
+    expect(File(oldAbsPath).existsSync(), isFalse, reason: 'Old file should be gone');
+  });
 }

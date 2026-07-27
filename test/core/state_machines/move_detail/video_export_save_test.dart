@@ -8,6 +8,8 @@ import 'dart:io';
 import 'package:path/path.dart' as p;
 
 import 'package:breakdex/core/database/database.dart';
+import 'package:breakdex/core/services/appwrite_auth_service.dart';
+import 'package:breakdex/core/services/appwrite_auth_providers.dart';
 import 'package:breakdex/core/state_machines/move_detail/provider.dart';
 import 'package:breakdex/core/state_machines/move_detail/event.dart';
 import 'package:breakdex/core/providers.dart';
@@ -77,6 +79,7 @@ void main() {
         videoImportSyncHookProvider.overrideWithValue(
           FakeVideoImportSyncHook(),
         ),
+        currentAppwriteUserProvider.overrideWith((final ref) => Stream<AuthUser?>.value(null)),
       ],
     );
   });
@@ -132,15 +135,13 @@ void main() {
         db.moves,
       )..where((final t) => t.id.equals('m1'))).getSingle();
       expect(dbMove.videoPath, isNotNull);
-      expect(dbMove.videoPath, contains('Moves/Power/Windmill/'));
+      expect(dbMove.videoPath, matches(r'^Moves/Power/Windmill - [a-f0-9]+\.mp4$'));
       expect(dbMove.contentHash, isNotNull);
       expect(dbMove.originalVideoName, 'source.mp4');
       expect(dbMove.managedAlbumAssetId, isNull);
       expect(dbMove.managedAlbumFilename, isNull);
       expect(dbMove.managedAlbumName, isNull);
     },
-    skip: 'stale post-redesign — see docs/stale-tests-post-redesign.md '
-        '(expects Moves/Power/Windmill/ dir; product writes flat Name - <hash>.mp4)',
   );
 
   test(
@@ -186,13 +187,13 @@ void main() {
       final importsDir = Directory(p.join(tempDir, 'Imports'))
         ..createSync(recursive: true);
 
-      Future<Move> waitForHash(final String expectedHash) async {
+      Future<Move> waitForHash(final String shortHash) async {
         final deadline = DateTime.now().add(const Duration(seconds: 15));
         while (DateTime.now().isBefore(deadline)) {
           final dbMove = await (db.select(
             db.moves,
           )..where((final t) => t.id.equals('m-optw'))).getSingle();
-          if (dbMove.contentHash == expectedHash) return dbMove;
+          if (dbMove.contentHash == shortHash) return dbMove;
           await Future<void>.delayed(const Duration(milliseconds: 100));
         }
         return (db.select(
@@ -206,15 +207,16 @@ void main() {
           p.join(importsDir.path, p.basename(sourcePath)),
         );
         final expectedHash = await hashService.computeHash(copiedSource.path);
+        final shortHash = expectedHash.substring(0, 8);
 
         notifier.send(VideoPicked(copiedSource.path, p.basename(sourcePath)));
 
-        final dbMove = await waitForHash(expectedHash);
+        final dbMove = await waitForHash(shortHash);
         final storedPath = dbMove.videoPath;
 
         expect(storedPath, isNotNull);
-        expect(storedPath, 'Moves/Power/Airflare/$expectedHash.mp4');
-        expect(dbMove.contentHash, expectedHash);
+        expect(storedPath, 'Moves/Power/Airflare - $shortHash.mp4');
+        expect(dbMove.contentHash, shortHash);
         expect(dbMove.originalVideoName, p.basename(sourcePath));
         expect(
           await File(VideoPathResolver.toAbsolute(storedPath!)).exists(),
@@ -227,7 +229,5 @@ void main() {
         previousPath = storedPath;
       }
     },
-    skip: 'stale post-redesign — see docs/stale-tests-post-redesign.md '
-        '(expects Airflare/<hash>.mp4; product writes flat Airflare - <hash>.mp4)',
   );
 }
