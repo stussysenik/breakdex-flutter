@@ -3,7 +3,7 @@ title: Data Layer
 name: data
 order: 3
 status: verified
-verified: c552761
+verified: 4802790
 watches:
   - lib/core/database/**
   - lib/core/data/**
@@ -29,7 +29,7 @@ This chapter defines the primitives, then reasons up: the layering, the migratio
 
 **DAO.** A `class XDao extends DatabaseAccessor<AppDatabase> with _$XDaoMixin`, annotated `@DriftAccessor(tables: [...])`, with `part 'x_dao.g.dart'`. It owns the queries for its tables — `select`, `into().insert`, `update().write`, `.watch()` streams. DAOs are the *only* layer that speaks SQL. Example: `MovesDao` (`daos/moves_dao.dart`) exposes `watchAll()`, `insertMove`, `archiveMove`, etc.
 
-**Schema version.** The single integer `AppDatabase.schemaVersion` (`database.dart`). **Currently `28`.** It is the monotonic counter that drives migrations: bump it by one for every schema change and add a matching `if (from < N)` block.
+**Schema version.** The single integer `AppDatabase.schemaVersion` (`database.dart`). **Currently `27`.** It is the monotonic counter that drives migrations: bump it by one for every schema change and add a matching `if (from < N)` block.
 
 **Migration.** The `MigrationStrategy` on `AppDatabase`: an `onCreate` (fresh install → `createAll()` + triggers) and an `onUpgrade(m, from, to)` that runs each `if (from < N)` block in order to walk a legacy DB forward to the current schema.
 
@@ -55,7 +55,7 @@ The migration ladder is the schema's history, each rung an `if (from < N)`:
 
 ```dart
 @override
-int get schemaVersion => 28;
+int get schemaVersion => 27;
 
 onUpgrade: (m, from, to) async {
   if (from < 5)  await m.addColumn(moves, moves.originalVideoName);
@@ -71,15 +71,12 @@ onUpgrade: (m, from, to) async {
   if (from < 25) { /* deck_moves.updated_at LWW clock (4.7) */ }
   if (from < 26) { /* deleted_at soft-hide on moves/combos/combo_moves/decks/deck_moves (4.8) */ }
   if (from < 27) { /* note-entry updated_at + deleted_at (4.9) */ }
-  if (from < 28) { /* asset-copy identity: collapse dupes, unique (content_hash, provider) index, restate copy_count (D7) */ }
   await _backfillReviewSnapshots();
   await _installIntegrityTriggers();  // re-run every upgrade — triggers are IF NOT EXISTS
 }
 ```
 
 The v24–v27 rungs are the Appwrite strangler-fig spreading the two sync columns across the synced tables, and they follow the same disciplines: `updated_at` is added nullable then backfilled (from the row's own `created_at`, or — for join tables with no `created_at`, like `combo_moves`/`deck_moves` — from the parent's clock); `deleted_at` is added nullable with **no** backfill (NULL = "not deleted" is already correct for every existing row). `deleted_at` is the *inbound tombstone soft-hide* (v26): a delete on device A reaches device B as a tombstone that stamps `deleted_at` instead of hard-deleting, so a remote delete never destroys rows or videos — a local delete still hard-deletes on its origin device. Every browse/list read filters `deleted_at IS NULL` (in `MovesDao` the `_isActive`/`_isArchived` predicates both require it — a remote-deleted row is neither active nor archived); for left-joins the step-level predicate rides the ON clause so a combo whose only steps are hidden still lists.
-
-The v28 rung is a **blob-plane data-repair rung**, not a sync-column rung: it establishes that a copy's identity is `(content_hash, provider)` (design D7 — one asset has at most one copy per provider). Pre-v28, the sync engine minted a fresh UUID per upload and four write sites used four different `_local` id schemes, so re-uploads appended duplicate `asset_copies` rows and `copy_count` overstated protection — the two-copy minimum gating local deletion could be satisfied by one real cloud copy. The rung collapses duplicates (most-protective status wins, newest breaks ties), installs a `UNIQUE INDEX` on `(content_hash, provider)` (also installed in `onCreate`), restates every id via the deterministic `AssetCopiesDao.copyId(hash, provider)`, and recomputes `asset_manifest.copy_count` from surviving *verified* rows. It is guarded by `_tableExists`/`_columnNames` so it stays inert on legacy DBs predating the asset tables. Honest transient: underprotected counts can *rise* on first open after v28 — the pre-existing gap becoming visible, not new damage. Relatedly, `asset_manifest.localPath` is now documented as a **relative-to-Documents hint, never identity**: iOS rewrites the container UUID on reinstall, so it resolves through `VideoPathResolver.toAbsolute` and is healed by the sync engine when stale ([Sync](./04-sync.mdx), the heal lanes).
 
 Three disciplines are visible in the source and are mandatory for any new rung:
 

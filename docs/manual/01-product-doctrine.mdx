@@ -3,7 +3,7 @@ title: Product Doctrine
 name: product-doctrine
 order: 1
 status: verified
-verified: c552761
+verified: 4802790
 watches:
   - lib/core/models/**
   - lib/core/domain/**
@@ -65,17 +65,6 @@ anchor (the move's own media, a positional cue, a color from the learning-state 
 carry the meaning instead. The details and the three view modes live in the
 `redesign-visual-first-experience` spec; the standard the manual enforces is: **on product
 surfaces, prefer a visual anchor over a text label.**
-
-The library disclosure work is this doctrine applied to *metadata text*: the caption slots
-that used to leak implementation artifacts (a clip's `originalVideoName`, a bare UUID, an
-`ID: <hash8>`) now show human dates instead. The models behind it live in `lib/core/models/`
-as **pure projections over the atoms, not a parallel content model**: `library_sort.dart`
-(three date dimensions + A–Z, each with a total fallback chain terminating at `createdAt`),
-`library_date_line.dart` (relative recent-past / absolute otherwise), `library_month_sections.dart`
-(month runs as a projection of the active sort, never a re-sort), `library_category_activity.dart`
-(per-category count + recency in one pass), and `move_detail_caption.dart` (the detail caption
-is a date; the filename keeps a labeled row in Video Info rather than being deleted). Each is
-a pure function of `Move`/`Combo` rows — no new persisted entity, so the atom model is intact.
 
 ## Non-goals are doctrine, not omissions
 
