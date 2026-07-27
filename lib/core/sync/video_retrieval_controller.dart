@@ -4,14 +4,14 @@
 import 'dart:async';
 import 'dart:collection';
 
-import '../database/daos/asset_manifest_dao.dart';
-import '../database/daos/sync_dao.dart';
-import '../services/connectivity_service.dart';
-import '../services/provenance_journal_service.dart';
-import '../utils/app_clock.dart';
-import '../utils/transfer_rate_estimator.dart';
-import 'network_policy.dart';
-import 'on_demand_downloader.dart';
+import 'package:breakdex/core/database/daos/asset_manifest_dao.dart';
+import 'package:breakdex/core/database/daos/sync_dao.dart';
+import 'package:breakdex/core/services/connectivity_service.dart';
+import 'package:breakdex/core/services/provenance_journal_service.dart';
+import 'package:breakdex/core/utils/app_clock.dart';
+import 'package:breakdex/core/utils/transfer_rate_estimator.dart';
+import 'package:breakdex/core/sync/network_policy.dart';
+import 'package:breakdex/core/sync/on_demand_downloader.dart';
 
 enum VideoRetrievalState {
   idle,

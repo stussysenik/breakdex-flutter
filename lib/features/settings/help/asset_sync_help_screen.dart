@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 
-import '../../../core/design/colors.dart';
-import '../../../core/design/spacing.dart';
-import '../../../core/design/typography.dart';
+import 'package:breakdex/core/design/colors.dart';
+import 'package:breakdex/core/design/spacing.dart';
+import 'package:breakdex/core/design/typography.dart';
 
 /// Help page explaining the asset sync system to users.
 ///

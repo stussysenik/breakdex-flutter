@@ -1,9 +1,9 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'settings_service.dart';
-import '../design/colors.dart';
-import '../providers.dart';
+import 'package:breakdex/core/services/settings_service.dart';
+import 'package:breakdex/core/design/colors.dart';
+import 'package:breakdex/core/providers.dart';
 
 class Category {
   final String name;

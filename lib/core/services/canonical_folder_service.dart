@@ -2,16 +2,16 @@
 // ignore_for_file: avoid_slow_async_io
 
 import 'dart:convert';
-import '../platform/io.dart';
+import 'package:breakdex/core/platform/io.dart';
 
 import 'package:flutter/foundation.dart';
 import 'package:path/path.dart' as p;
 
-import '../utils/diagnostics.dart';
-import '../utils/filesystem_utils.dart';
-import 'app_storage_paths.dart';
-import 'video_path_resolver.dart';
-import 'video_storage_gate.dart';
+import 'package:breakdex/core/utils/diagnostics.dart';
+import 'package:breakdex/core/utils/filesystem_utils.dart';
+import 'package:breakdex/core/services/app_storage_paths.dart';
+import 'package:breakdex/core/services/video_path_resolver.dart';
+import 'package:breakdex/core/services/video_storage_gate.dart';
 
 const _markerFileName = '.breakdex-master';
 const _ledgerFileName = '.breakdex-ledger.json';

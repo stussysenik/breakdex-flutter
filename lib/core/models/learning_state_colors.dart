@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
-import 'learning_state.dart';
-import '../design/colors.dart';
+import 'package:breakdex/core/models/learning_state.dart';
+import 'package:breakdex/core/design/colors.dart';
 
 class LearningStateColors {
   final Color newState;

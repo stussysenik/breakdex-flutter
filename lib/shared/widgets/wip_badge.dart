@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
-import '../../core/design/spacing.dart';
-import '../../core/design/typography.dart';
+import 'package:breakdex/core/design/spacing.dart';
+import 'package:breakdex/core/design/typography.dart';
 
 class WipBadge extends StatelessWidget {
   const WipBadge({super.key, this.label = 'WIP', this.compact = false});

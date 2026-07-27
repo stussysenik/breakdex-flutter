@@ -2,24 +2,24 @@
 // ignore_for_file: discarded_futures
 
 import 'dart:async';
-import '../../core/platform/native_media.dart';
-import '../../core/platform/web_support.dart';
+import 'package:breakdex/core/platform/native_media.dart';
+import 'package:breakdex/core/platform/web_support.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:video_player/video_player.dart';
-import '../../core/design/colors.dart';
-import '../../core/design/spacing.dart';
-import '../../core/design/typography.dart';
-import '../../core/navigation/app_route_observer.dart';
-import '../../core/services/media_playback_coordinator.dart';
-import '../../core/services/settings_service.dart';
-import '../../core/services/video_path_resolver.dart';
-import '../../core/services/video_service.dart';
-import '../../core/utils/diagnostics.dart';
-import '../../core/utils/loading_state_machine.dart';
-import 'app_loader.dart';
+import 'package:breakdex/core/design/colors.dart';
+import 'package:breakdex/core/design/spacing.dart';
+import 'package:breakdex/core/design/typography.dart';
+import 'package:breakdex/core/navigation/app_route_observer.dart';
+import 'package:breakdex/core/services/media_playback_coordinator.dart';
+import 'package:breakdex/core/services/settings_service.dart';
+import 'package:breakdex/core/services/video_path_resolver.dart';
+import 'package:breakdex/core/services/video_service.dart';
+import 'package:breakdex/core/utils/diagnostics.dart';
+import 'package:breakdex/core/utils/loading_state_machine.dart';
+import 'package:breakdex/shared/widgets/app_loader.dart';
 
 /// Skip amount for forward/backward navigation.
 /// 5 seconds suits short breakdancing clips (typically 5–30s).

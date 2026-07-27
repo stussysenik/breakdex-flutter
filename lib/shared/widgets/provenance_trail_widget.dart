@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import '../../core/design/spacing.dart';
-import '../../core/design/typography.dart';
-import '../../core/models/canonical_asset.dart';
+import 'package:breakdex/core/design/spacing.dart';
+import 'package:breakdex/core/design/typography.dart';
+import 'package:breakdex/core/models/canonical_asset.dart';
 
 class ProvenanceTrailWidget extends StatelessWidget {
   const ProvenanceTrailWidget({super.key, required this.trail, this.maxEntries});

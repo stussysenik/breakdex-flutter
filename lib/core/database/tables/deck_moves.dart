@@ -1,6 +1,6 @@
 import 'package:drift/drift.dart';
-import 'decks.dart';
-import 'moves.dart';
+import 'package:breakdex/core/database/tables/decks.dart';
+import 'package:breakdex/core/database/tables/moves.dart';
 
 /// Join table for manual decks — maps specific moves to a deck.
 ///

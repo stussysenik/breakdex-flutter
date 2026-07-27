@@ -9,8 +9,8 @@ import 'package:appwrite/enums.dart';
 import 'package:appwrite/models.dart' as models;
 import 'package:flutter_web_auth_2/flutter_web_auth_2.dart';
 
-import '../utils/diagnostics.dart';
-import 'appwrite_auth_service.dart';
+import 'package:breakdex/core/utils/diagnostics.dart';
+import 'package:breakdex/core/services/appwrite_auth_service.dart';
 
 class AppwriteAccountSdkGateway implements AppwriteAccountGateway {
   AppwriteAccountSdkGateway(final Client client)

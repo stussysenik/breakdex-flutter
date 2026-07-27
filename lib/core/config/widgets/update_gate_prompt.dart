@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../design/spacing.dart';
-import '../../design/typography.dart';
-import '../update_gate.dart';
-import '../update_gate_providers.dart';
+import 'package:breakdex/core/design/spacing.dart';
+import 'package:breakdex/core/design/typography.dart';
+import 'package:breakdex/core/config/update_gate.dart';
+import 'package:breakdex/core/config/update_gate_providers.dart';
 
 /// Root wrapper that renders the config-driven update prompt over [child].
 ///

@@ -1,8 +1,8 @@
 // H.8 lint triage — avoid_slow_async_io: async filesystem stat is intentional (avoids blocking the UI isolate); sync alternatives would block.
 // ignore_for_file: avoid_slow_async_io
 
-import '../platform/io.dart';
-import '../platform/native_file_transfer.dart';
+import 'package:breakdex/core/platform/io.dart';
+import 'package:breakdex/core/platform/native_file_transfer.dart';
 import 'package:flutter/foundation.dart';
 import 'package:drift/drift.dart';
 import 'package:path_provider/path_provider.dart';
@@ -12,18 +12,18 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:fpdart/fpdart.dart';
 
-import '../database/database.dart';
-import '../database/daos/sync_dao.dart';
-import 'auth_service.dart';
-import 'video_path_resolver.dart';
-import '../domain/failures/failure.dart';
-import '../sync/sync_backend.dart';
-import '../sync/codecs/move_codec.dart';
-import '../sync/codecs/combo_codec.dart';
-import '../sync/codecs/review_codec.dart';
-import '../sync/codecs/fsrs_card_codec.dart';
-import '../sync/codecs/deck_codec.dart';
-import '../sync/codecs/note_entry_codec.dart';
+import 'package:breakdex/core/database/database.dart';
+import 'package:breakdex/core/database/daos/sync_dao.dart';
+import 'package:breakdex/core/services/auth_service.dart';
+import 'package:breakdex/core/services/video_path_resolver.dart';
+import 'package:breakdex/core/domain/failures/failure.dart';
+import 'package:breakdex/core/sync/sync_backend.dart';
+import 'package:breakdex/core/sync/codecs/move_codec.dart';
+import 'package:breakdex/core/sync/codecs/combo_codec.dart';
+import 'package:breakdex/core/sync/codecs/review_codec.dart';
+import 'package:breakdex/core/sync/codecs/fsrs_card_codec.dart';
+import 'package:breakdex/core/sync/codecs/deck_codec.dart';
+import 'package:breakdex/core/sync/codecs/note_entry_codec.dart';
 
 class SyncService {
   final AuthService authService;

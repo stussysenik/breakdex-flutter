@@ -1,11 +1,11 @@
 import 'dart:async';
-import '../platform/io.dart';
+import 'package:breakdex/core/platform/io.dart';
 
 import 'package:flutter/foundation.dart';
 import 'package:path/path.dart' as p;
 
-import 'cloud_provider.dart';
-import 'manifest_serializer.dart';
+import 'package:breakdex/core/sync/cloud_provider.dart';
+import 'package:breakdex/core/sync/manifest_serializer.dart';
 
 /// Debounced manifest uploader — after any metadata change, waits for 5 seconds
 /// of inactivity then serializes the full library and uploads `manifest.json`

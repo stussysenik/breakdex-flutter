@@ -1,5 +1,5 @@
-import '../machine.dart';
-import '../../../core/database/database.dart';
+import 'package:breakdex/core/state_machines/machine.dart';
+import 'package:breakdex/core/database/database.dart';
 
 sealed class ComboDetailState {
   final Combo combo;

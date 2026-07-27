@@ -2,9 +2,9 @@ import 'dart:convert';
 import 'package:drift/drift.dart';
 import 'package:path/path.dart' as p;
 import 'package:shared_preferences/shared_preferences.dart';
-import '../app_metadata.dart';
-import '../database/database.dart';
-import '../../features/stats/providers/stats_providers.dart';
+import 'package:breakdex/core/app_metadata.dart';
+import 'package:breakdex/core/database/database.dart';
+import 'package:breakdex/features/stats/providers/stats_providers.dart';
 
 /// Result of a JSON export operation.
 class ExportResult {

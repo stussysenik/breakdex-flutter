@@ -4,11 +4,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../core/design/colors.dart';
-import '../../../core/design/typography.dart';
-import '../../../core/providers.dart';
-import '../../../shared/widgets/scene_3d_view.dart';
-import '../providers/analysis_providers.dart';
+import 'package:breakdex/core/design/colors.dart';
+import 'package:breakdex/core/design/typography.dart';
+import 'package:breakdex/core/providers.dart';
+import 'package:breakdex/shared/widgets/scene_3d_view.dart';
+import 'package:breakdex/features/move_analysis/providers/analysis_providers.dart';
 
 /// Panel showing the 3D skeleton visualization.
 ///

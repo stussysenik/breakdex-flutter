@@ -1,14 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../core/design/colors.dart';
-import '../../core/design/spacing.dart';
-import '../../core/design/typography.dart';
-import '../../core/models/learning_state.dart';
-import '../../core/models/reviewable_item.dart';
-import '../../core/providers.dart';
-import '../../shared/widgets/pressable.dart';
-import '../../shared/widgets/video_player_widget.dart';
+import 'package:breakdex/core/design/colors.dart';
+import 'package:breakdex/core/design/spacing.dart';
+import 'package:breakdex/core/design/typography.dart';
+import 'package:breakdex/core/models/learning_state.dart';
+import 'package:breakdex/core/models/reviewable_item.dart';
+import 'package:breakdex/core/providers.dart';
+import 'package:breakdex/shared/widgets/pressable.dart';
+import 'package:breakdex/shared/widgets/video_player_widget.dart';
 
 class InstaxVideoCard extends ConsumerStatefulWidget {
   const InstaxVideoCard({

@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import '../../core/design/spacing.dart';
+import 'package:breakdex/core/design/spacing.dart';
 
 /// The signature Breakdex loading motif: two dots that slide along one track in
 /// opposite phase and **cross paths** at center, then return.

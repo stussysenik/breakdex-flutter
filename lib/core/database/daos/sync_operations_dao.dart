@@ -1,7 +1,7 @@
 import 'package:drift/drift.dart';
 
-import '../database.dart';
-import '../tables/sync_operations.dart';
+import 'package:breakdex/core/database/database.dart';
+import 'package:breakdex/core/database/tables/sync_operations.dart';
 
 part 'sync_operations_dao.g.dart';
 

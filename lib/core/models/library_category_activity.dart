@@ -1,4 +1,4 @@
-import '../database/database.dart';
+import 'package:breakdex/core/database/database.dart';
 
 /// What a category tile knows about itself: how many moves it holds and when it
 /// was most recently added to (design D5).

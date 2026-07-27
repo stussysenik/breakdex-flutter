@@ -2,13 +2,13 @@ import 'dart:convert';
 
 import 'package:shared_preferences/shared_preferences.dart';
 
-import '../database/daos/combos_dao.dart';
-import '../database/daos/decks_dao.dart';
-import '../database/daos/fsrs_cards_dao.dart';
-import '../database/daos/moves_dao.dart';
-import '../database/daos/reviews_dao.dart';
-import '../database/database.dart';
-import '../web/library_manifest.dart';
+import 'package:breakdex/core/database/daos/combos_dao.dart';
+import 'package:breakdex/core/database/daos/decks_dao.dart';
+import 'package:breakdex/core/database/daos/fsrs_cards_dao.dart';
+import 'package:breakdex/core/database/daos/moves_dao.dart';
+import 'package:breakdex/core/database/daos/reviews_dao.dart';
+import 'package:breakdex/core/database/database.dart';
+import 'package:breakdex/core/web/library_manifest.dart';
 
 /// Serializes the entire Breakdex library into a compact `manifest.json`
 /// suitable for cloud storage and consumption by the web viewer.

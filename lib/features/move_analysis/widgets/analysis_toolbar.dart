@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../core/design/colors.dart';
-import '../../../core/design/spacing.dart';
-import '../../../core/design/typography.dart';
-import '../providers/analysis_providers.dart';
+import 'package:breakdex/core/design/colors.dart';
+import 'package:breakdex/core/design/spacing.dart';
+import 'package:breakdex/core/design/typography.dart';
+import 'package:breakdex/features/move_analysis/providers/analysis_providers.dart';
 
 /// Toolbar at the bottom of the MoveAnalysisScreen.
 ///

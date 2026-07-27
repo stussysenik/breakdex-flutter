@@ -1,8 +1,8 @@
 import 'package:drift/drift.dart';
-import '../database.dart';
-import '../tables/fsrs_cards.dart';
-import '../tables/moves.dart';
-import '../tables/combos.dart';
+import 'package:breakdex/core/database/database.dart';
+import 'package:breakdex/core/database/tables/fsrs_cards.dart';
+import 'package:breakdex/core/database/tables/moves.dart';
+import 'package:breakdex/core/database/tables/combos.dart';
 
 part 'fsrs_cards_dao.g.dart';
 

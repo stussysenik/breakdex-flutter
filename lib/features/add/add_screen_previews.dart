@@ -3,8 +3,8 @@
 import 'package:flutter/widget_previews.dart';
 import 'package:flutter/widgets.dart';
 
-import '../../dev/preview_harness.dart';
-import 'add_screen.dart';
+import 'package:breakdex/dev/preview_harness.dart';
+import 'package:breakdex/features/add/add_screen.dart';
 
 @Preview(name: 'AddScreen · light', group: 'add', wrapper: wrapLight)
 Widget addScreenLight() => const AddScreen();

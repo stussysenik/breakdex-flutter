@@ -1,4 +1,4 @@
-import '../database/database.dart';
+import 'package:breakdex/core/database/database.dart';
 
 /// Where a single asset stands in the backup pipeline, as one word.
 ///

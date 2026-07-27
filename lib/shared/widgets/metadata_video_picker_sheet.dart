@@ -2,7 +2,7 @@
 // ignore_for_file: avoid_slow_async_io, discarded_futures
 
 import 'dart:async';
-import '../../core/platform/io.dart';
+import 'package:breakdex/core/platform/io.dart';
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -11,17 +11,17 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
-import '../../core/database/database.dart';
-import '../../core/design/spacing.dart';
-import '../../core/design/typography.dart';
-import '../../core/providers.dart';
-import '../../core/services/video_service.dart';
-import '../../core/services/storage_action_machine.dart' hide assetHashServiceProvider;
-import '../../core/services/video_path_resolver.dart';
-import '../../core/utils/app_clock.dart';
-import 'app_loader.dart';
-import '../../core/utils/diagnostics.dart';
-import '../../core/utils/stall_detector.dart';
+import 'package:breakdex/core/database/database.dart';
+import 'package:breakdex/core/design/spacing.dart';
+import 'package:breakdex/core/design/typography.dart';
+import 'package:breakdex/core/providers.dart';
+import 'package:breakdex/core/services/video_service.dart';
+import 'package:breakdex/core/services/storage_action_machine.dart' hide assetHashServiceProvider;
+import 'package:breakdex/core/services/video_path_resolver.dart';
+import 'package:breakdex/core/utils/app_clock.dart';
+import 'package:breakdex/shared/widgets/app_loader.dart';
+import 'package:breakdex/core/utils/diagnostics.dart';
+import 'package:breakdex/core/utils/stall_detector.dart';
 
 class MetadataVideoPickerSheet extends ConsumerStatefulWidget {
   const MetadataVideoPickerSheet({super.key});

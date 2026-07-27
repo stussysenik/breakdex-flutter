@@ -1,4 +1,4 @@
-import '../../../core/platform/io.dart';
+import 'package:breakdex/core/platform/io.dart';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -6,13 +6,13 @@ import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:path/path.dart' as p;
 
-import '../../../core/database/database.dart';
-import '../../../core/design/spacing.dart';
-import '../../../core/design/typography.dart';
-import '../../../core/providers.dart';
-import '../../../core/services/video_path_resolver.dart';
-import '../../../core/utils/diagnostics.dart';
-import '../../../core/utils/time_format.dart';
+import 'package:breakdex/core/database/database.dart';
+import 'package:breakdex/core/design/spacing.dart';
+import 'package:breakdex/core/design/typography.dart';
+import 'package:breakdex/core/providers.dart';
+import 'package:breakdex/core/services/video_path_resolver.dart';
+import 'package:breakdex/core/utils/diagnostics.dart';
+import 'package:breakdex/core/utils/time_format.dart';
 
 /// Jots longer than this read better at bodyMedium (16); shorter ones sit
 /// on bodySmall (14). The 14/16 fluid-type rule from the journal grid.

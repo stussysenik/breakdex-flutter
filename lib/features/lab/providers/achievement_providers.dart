@@ -1,9 +1,9 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../core/database/database.dart';
-import '../../../core/database/daos/achievements_dao.dart';
-import '../../../core/providers.dart';
-import '../../../core/services/achievement_service.dart';
+import 'package:breakdex/core/database/database.dart';
+import 'package:breakdex/core/database/daos/achievements_dao.dart';
+import 'package:breakdex/core/providers.dart';
+import 'package:breakdex/core/services/achievement_service.dart';
 
 // ---------------------------------------------------------------------------
 // DAO provider — follows the same pattern as movesDaoProvider, etc.

@@ -3,9 +3,9 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
-import '../../../core/design/colors.dart';
-import '../../../core/design/spacing.dart';
-import '../../../core/design/typography.dart';
+import 'package:breakdex/core/design/colors.dart';
+import 'package:breakdex/core/design/spacing.dart';
+import 'package:breakdex/core/design/typography.dart';
 
 /// The combo journey vocabulary — shared with labs.
 const comboStatuses = ['idea', 'attempting', 'landed', 'clean'];

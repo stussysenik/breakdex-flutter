@@ -1,7 +1,7 @@
 import 'package:drift/drift.dart';
-import '../database.dart';
-import '../tables/aura_links.dart';
-import '../tables/aura_presets.dart';
+import 'package:breakdex/core/database/database.dart';
+import 'package:breakdex/core/database/tables/aura_links.dart';
+import 'package:breakdex/core/database/tables/aura_presets.dart';
 
 part 'aura_dao.g.dart';
 

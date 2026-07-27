@@ -1,6 +1,6 @@
 import 'package:drift/drift.dart';
-import '../database.dart';
-import '../tables/achievements.dart';
+import 'package:breakdex/core/database/database.dart';
+import 'package:breakdex/core/database/tables/achievements.dart';
 
 part 'achievements_dao.g.dart';
 

@@ -1,6 +1,6 @@
 import 'package:drift/drift.dart';
 
-import 'open_connection_native.dart'
+import 'package:breakdex/core/database/connection/open_connection_native.dart'
     if (dart.library.js_interop) 'open_connection_web.dart';
 
 /// The production [AppDatabase] connection, selected per platform.

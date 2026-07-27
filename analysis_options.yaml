@@ -53,6 +53,9 @@ linter:
     unnecessary_null_checks: true
     use_super_parameters: true
     combinators_ordering: true
+    # domain-restructure 3.2.0 — absolute imports make a folder move a single
+    # path find-replace instead of a two-directional relative-edge rewrite.
+    always_use_package_imports: true
     
     # Safety — resource leak detection
     cancel_subscriptions: true

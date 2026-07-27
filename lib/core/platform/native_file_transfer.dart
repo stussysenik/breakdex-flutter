@@ -1,6 +1,6 @@
 import 'package:firebase_storage/firebase_storage.dart';
 
-import 'native_file_transfer_native.dart'
+import 'package:breakdex/core/platform/native_file_transfer_native.dart'
     if (dart.library.js_interop) 'native_file_transfer_web.dart';
 
 /// Firebase Storage's `putFile`/`writeToFile` take a `dart:io.File` and only

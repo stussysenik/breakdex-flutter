@@ -3,8 +3,8 @@
 import 'package:flutter/widget_previews.dart';
 import 'package:flutter/widgets.dart';
 
-import '../../dev/preview_harness.dart';
-import 'create_combo_screen.dart';
+import 'package:breakdex/dev/preview_harness.dart';
+import 'package:breakdex/features/create_combo/create_combo_screen.dart';
 
 @Preview(name: 'CreateComboScreen · light', group: 'create_combo', wrapper: wrapLight)
 Widget createComboScreenLight() => const CreateComboScreen();

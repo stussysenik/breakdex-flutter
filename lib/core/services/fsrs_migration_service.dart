@@ -2,10 +2,10 @@ import 'package:drift/drift.dart';
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-import '../database/database.dart';
-import '../database/daos/fsrs_cards_dao.dart';
-import '../database/daos/moves_dao.dart';
-import '../database/daos/combos_dao.dart';
+import 'package:breakdex/core/database/database.dart';
+import 'package:breakdex/core/database/daos/fsrs_cards_dao.dart';
+import 'package:breakdex/core/database/daos/moves_dao.dart';
+import 'package:breakdex/core/database/daos/combos_dao.dart';
 
 /// One-time migration that creates FSRS card rows for all existing moves.
 ///

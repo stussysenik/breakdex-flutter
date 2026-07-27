@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
-import '../models/learning_state.dart';
-import '../models/learning_state_colors.dart';
-import '../services/settings_service.dart';
-import 'colors.dart';
-import 'spacing.dart';
-import 'typography.dart';
+import 'package:breakdex/core/models/learning_state.dart';
+import 'package:breakdex/core/models/learning_state_colors.dart';
+import 'package:breakdex/core/services/settings_service.dart';
+import 'package:breakdex/core/design/colors.dart';
+import 'package:breakdex/core/design/spacing.dart';
+import 'package:breakdex/core/design/typography.dart';
 
 abstract final class AppShadows {
   static List<BoxShadow> soft(final Brightness brightness) => [

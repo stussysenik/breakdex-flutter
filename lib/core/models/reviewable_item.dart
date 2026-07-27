@@ -1,8 +1,8 @@
 import 'dart:math';
 
-import '../database/database.dart';
-import '../database/daos/fsrs_cards_dao.dart';
-import '../services/video_path_resolver.dart';
+import 'package:breakdex/core/database/database.dart';
+import 'package:breakdex/core/database/daos/fsrs_cards_dao.dart';
+import 'package:breakdex/core/services/video_path_resolver.dart';
 
 /// A polymorphic wrapper for anything that can be reviewed — moves and combos.
 ///

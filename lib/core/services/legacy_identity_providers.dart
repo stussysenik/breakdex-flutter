@@ -12,11 +12,11 @@ import 'dart:async';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../config/remote_config_providers.dart' show appwriteClientProvider;
-import '../providers.dart' show authServiceProvider;
-import 'appwrite_auth_providers.dart' show currentAppwriteUserProvider;
-import 'legacy_identity_gateway.dart';
-import 'legacy_identity_service.dart';
+import 'package:breakdex/core/config/remote_config_providers.dart' show appwriteClientProvider;
+import 'package:breakdex/core/providers.dart' show authServiceProvider;
+import 'package:breakdex/core/services/appwrite_auth_providers.dart' show currentAppwriteUserProvider;
+import 'package:breakdex/core/services/legacy_identity_gateway.dart';
+import 'package:breakdex/core/services/legacy_identity_service.dart';
 
 final legacyIdentityClaimServiceProvider =
     Provider<LegacyIdentityClaimService>((final ref) {

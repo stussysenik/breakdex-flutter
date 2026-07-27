@@ -1,12 +1,12 @@
 import 'package:drift/drift.dart';
 import 'package:fsrs/fsrs.dart' as fsrs;
 
-import '../database/database.dart';
-import '../database/daos/fsrs_cards_dao.dart';
-import '../models/fsrs_settings.dart';
-import '../models/learning_state.dart';
-import '../models/reviewable_item.dart';
-import '../utils/app_clock.dart';
+import 'package:breakdex/core/database/database.dart';
+import 'package:breakdex/core/database/daos/fsrs_cards_dao.dart';
+import 'package:breakdex/core/models/fsrs_settings.dart';
+import 'package:breakdex/core/models/learning_state.dart';
+import 'package:breakdex/core/models/reviewable_item.dart';
+import 'package:breakdex/core/utils/app_clock.dart';
 
 /// Anki-style due count breakdown by card state.
 ///

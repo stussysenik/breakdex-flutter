@@ -2,13 +2,13 @@
 // ignore_for_file: avoid_slow_async_io
 
 import 'dart:async';
-import '../platform/io.dart';
+import 'package:breakdex/core/platform/io.dart';
 
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/widgets.dart';
 import 'package:path/path.dart' as p;
 
-import 'app_storage_paths.dart';
+import 'package:breakdex/core/services/app_storage_paths.dart';
 
 class DatabaseRecoveryService {
   DatabaseRecoveryService({

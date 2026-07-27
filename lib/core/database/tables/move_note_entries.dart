@@ -1,6 +1,6 @@
 import 'package:drift/drift.dart';
 
-import 'moves.dart';
+import 'package:breakdex/core/database/tables/moves.dart';
 
 class MoveNoteEntries extends Table {
   TextColumn get id => text()();

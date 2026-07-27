@@ -1,6 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../core/models/pose_frame.dart';
+import 'package:breakdex/core/models/pose_frame.dart';
 
 /// Analysis mode: analyzing a recorded video vs live camera feed.
 enum AnalysisMode { video, camera }

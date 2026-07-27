@@ -5,11 +5,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 
-import '../../../core/database/database.dart';
-import '../../../core/design/colors.dart';
-import '../../../core/design/spacing.dart';
-import '../../../core/design/theme.dart';
-import '../../../core/design/typography.dart';
+import 'package:breakdex/core/database/database.dart';
+import 'package:breakdex/core/design/colors.dart';
+import 'package:breakdex/core/design/spacing.dart';
+import 'package:breakdex/core/design/theme.dart';
+import 'package:breakdex/core/design/typography.dart';
 
 /// Compact card representing a single move inside the Set Builder sequencer.
 ///

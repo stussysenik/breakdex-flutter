@@ -1,14 +1,14 @@
 // H.8 lint triage — avoid_slow_async_io: async filesystem stat is intentional (avoids blocking the UI isolate); sync alternatives would block.
 // ignore_for_file: avoid_slow_async_io
 
-import '../../platform/io.dart';
+import 'package:breakdex/core/platform/io.dart';
 
 import 'package:flutter/foundation.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:googleapis/drive/v3.dart' as drive;
 import 'package:http/http.dart' as http;
 
-import '../cloud_provider.dart';
+import 'package:breakdex/core/sync/cloud_provider.dart';
 
 /// Restores a Drive session without UI, returning an authenticated client or
 /// `null` when no cached Google session is available. Injectable for testing.

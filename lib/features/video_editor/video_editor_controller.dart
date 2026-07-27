@@ -2,7 +2,7 @@
 // ignore_for_file: discarded_futures
 
 import 'dart:async';
-import '../../core/platform/native_media.dart';
+import 'package:breakdex/core/platform/native_media.dart';
 import 'dart:ui';
 import 'package:flutter/foundation.dart';
 import 'package:uuid/uuid.dart';
@@ -10,9 +10,9 @@ import 'package:path/path.dart' as p;
 import 'package:video_player/video_player.dart';
 import 'package:video_thumbnail/video_thumbnail.dart';
 
-import '../../core/services/native_video_export.dart';
-import '../../core/services/video_service.dart';
-import '../../core/utils/diagnostics.dart';
+import 'package:breakdex/core/services/native_video_export.dart';
+import 'package:breakdex/core/services/video_service.dart';
+import 'package:breakdex/core/utils/diagnostics.dart';
 
 /// Represents the visual state of the video edits.
 class VideoEditState {

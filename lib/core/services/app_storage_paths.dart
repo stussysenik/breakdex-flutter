@@ -1,8 +1,8 @@
 // H.8 lint triage — avoid_slow_async_io: async filesystem stat is intentional (avoids blocking the UI isolate); sync alternatives would block.
 // ignore_for_file: avoid_slow_async_io
 
-import '../platform/io.dart';
-import '../platform/native_paths.dart';
+import 'package:breakdex/core/platform/io.dart';
+import 'package:breakdex/core/platform/native_paths.dart';
 
 import 'package:flutter/services.dart';
 import 'package:path/path.dart' as p;

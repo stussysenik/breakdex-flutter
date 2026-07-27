@@ -1,17 +1,17 @@
 // H.8 lint triage — avoid_slow_async_io: async filesystem stat is intentional (avoids blocking the UI isolate); sync alternatives would block.
 // ignore_for_file: avoid_slow_async_io
 
-import '../platform/io.dart';
+import 'package:breakdex/core/platform/io.dart';
 
 import 'package:drift/drift.dart';
 import 'package:flutter/foundation.dart';
 
-import '../database/daos/asset_copies_dao.dart';
-import '../database/daos/asset_manifest_dao.dart';
-import '../database/daos/moves_dao.dart';
-import '../database/database.dart';
-import '../services/video_path_resolver.dart';
-import 'asset_hash_service.dart';
+import 'package:breakdex/core/database/daos/asset_copies_dao.dart';
+import 'package:breakdex/core/database/daos/asset_manifest_dao.dart';
+import 'package:breakdex/core/database/daos/moves_dao.dart';
+import 'package:breakdex/core/database/database.dart';
+import 'package:breakdex/core/services/video_path_resolver.dart';
+import 'package:breakdex/core/sync/asset_hash_service.dart';
 
 /// Progress snapshot emitted during legacy migration.
 class MigrationProgress {

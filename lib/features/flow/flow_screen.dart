@@ -7,16 +7,16 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-import '../../core/design/spacing.dart';
-import '../../core/services/entity_names_service.dart';
-import '../../core/design/theme.dart';
-import '../../core/design/typography.dart';
-import '../../core/services/categories_service.dart';
-import '../../shared/widgets/app_segmented_control.dart';
-import '../../shared/widgets/wip_badge.dart';
-import 'providers/flow_graph_providers.dart';
-import 'widgets/flow_coach_marks.dart';
-import 'widgets/flow_graph_canvas.dart';
+import 'package:breakdex/core/design/spacing.dart';
+import 'package:breakdex/core/services/entity_names_service.dart';
+import 'package:breakdex/core/design/theme.dart';
+import 'package:breakdex/core/design/typography.dart';
+import 'package:breakdex/core/services/categories_service.dart';
+import 'package:breakdex/shared/widgets/app_segmented_control.dart';
+import 'package:breakdex/shared/widgets/wip_badge.dart';
+import 'package:breakdex/features/flow/providers/flow_graph_providers.dart';
+import 'package:breakdex/features/flow/widgets/flow_coach_marks.dart';
+import 'package:breakdex/features/flow/widgets/flow_graph_canvas.dart';
 
 /// Root screen for the Flow tab — move transition mapping.
 ///

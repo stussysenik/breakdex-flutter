@@ -1,6 +1,6 @@
-import '../database/daos/achievements_dao.dart';
-import '../database/daos/fsrs_cards_dao.dart';
-import '../database/daos/reviews_dao.dart';
+import 'package:breakdex/core/database/daos/achievements_dao.dart';
+import 'package:breakdex/core/database/daos/fsrs_cards_dao.dart';
+import 'package:breakdex/core/database/daos/reviews_dao.dart';
 
 /// Pure-logic service that evaluates tier advancement for the Achievement Garden.
 ///

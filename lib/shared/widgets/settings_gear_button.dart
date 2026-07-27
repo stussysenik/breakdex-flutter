@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-import '../../core/providers.dart';
-import '../../l10n/gen/app_localizations.dart';
+import 'package:breakdex/core/providers.dart';
+import 'package:breakdex/l10n/gen/app_localizations.dart';
 
 /// Gear icon button for accessing Settings from any screen's header.
 ///

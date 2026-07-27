@@ -3,12 +3,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../core/design/colors.dart';
-import '../../core/design/spacing.dart';
-import '../../core/design/typography.dart';
-import '../../core/providers.dart';
-import '../../core/sync/space_manager.dart';
-import '../../shared/widgets/app_loader.dart';
+import 'package:breakdex/core/design/colors.dart';
+import 'package:breakdex/core/design/spacing.dart';
+import 'package:breakdex/core/design/typography.dart';
+import 'package:breakdex/core/providers.dart';
+import 'package:breakdex/core/sync/space_manager.dart';
+import 'package:breakdex/shared/widgets/app_loader.dart';
 
 /// Provider for space analysis — refreshes when this screen is opened.
 final spaceAnalysisProvider = FutureProvider<SpaceAnalysis>((final ref) {

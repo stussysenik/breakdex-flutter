@@ -6,9 +6,9 @@ import 'package:google_sign_in/google_sign_in.dart';
 import 'package:googleapis/drive/v3.dart' as drive;
 import 'package:uuid/uuid.dart';
 
-import '../database/database.dart';
-import '../database/daos/sync_providers_dao.dart';
-import 'providers/gdrive_provider.dart';
+import 'package:breakdex/core/database/database.dart';
+import 'package:breakdex/core/database/daos/sync_providers_dao.dart';
+import 'package:breakdex/core/sync/providers/gdrive_provider.dart';
 
 /// Reads the connected Google account's email without UI (silent sign-in).
 /// Returns null when no cached session exists. Injectable for testing.

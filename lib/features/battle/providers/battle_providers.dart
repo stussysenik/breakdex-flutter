@@ -5,8 +5,8 @@ import 'dart:async';
 import 'dart:math';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:uuid/uuid.dart';
-import '../../../core/database/database.dart';
-import '../../../core/providers.dart';
+import 'package:breakdex/core/database/database.dart';
+import 'package:breakdex/core/providers.dart';
 
 enum BattleDifficulty {
   easy(duration: 90, label: 'Easy'),

@@ -8,17 +8,17 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-import '../../core/design/spacing.dart';
-import '../../core/design/typography.dart';
-import '../../core/models/pose_frame.dart';
-import '../../core/providers.dart';
-import '../../shared/widgets/video_player_widget.dart'
+import 'package:breakdex/core/design/spacing.dart';
+import 'package:breakdex/core/design/typography.dart';
+import 'package:breakdex/core/models/pose_frame.dart';
+import 'package:breakdex/core/providers.dart';
+import 'package:breakdex/shared/widgets/video_player_widget.dart'
     show RobustVideoPlayer, VideoPlaceholder;
-import 'providers/analysis_providers.dart';
-import '../../shared/widgets/app_loader.dart';
-import 'widgets/analysis_toolbar.dart';
-import 'widgets/pose_overlay.dart';
-import 'widgets/skeleton_3d_panel.dart';
+import 'package:breakdex/features/move_analysis/providers/analysis_providers.dart';
+import 'package:breakdex/shared/widgets/app_loader.dart';
+import 'package:breakdex/features/move_analysis/widgets/analysis_toolbar.dart';
+import 'package:breakdex/features/move_analysis/widgets/pose_overlay.dart';
+import 'package:breakdex/features/move_analysis/widgets/skeleton_3d_panel.dart';
 
 /// Full-screen move analysis screen: video + 3D skeleton visualization.
 ///

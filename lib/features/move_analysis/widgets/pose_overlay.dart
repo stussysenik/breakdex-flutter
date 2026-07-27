@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 
-import '../../../core/design/colors.dart';
-import '../../../core/models/pose_frame.dart';
-import '../../../core/models/pose_joint.dart';
+import 'package:breakdex/core/design/colors.dart';
+import 'package:breakdex/core/models/pose_frame.dart';
+import 'package:breakdex/core/models/pose_joint.dart';
 
 /// 2D overlay that draws detected pose joints on top of the video frame.
 ///

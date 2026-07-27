@@ -3,8 +3,8 @@
 import 'package:flutter/widget_previews.dart';
 import 'package:flutter/widgets.dart';
 
-import '../../dev/preview_harness.dart';
-import 'move_list_screen.dart';
+import 'package:breakdex/dev/preview_harness.dart';
+import 'package:breakdex/features/move_list/move_list_screen.dart';
 
 @Preview(name: 'MoveListScreen · light', group: 'move_list', wrapper: wrapLight)
 Widget moveListScreenLight() => MoveListScreen();

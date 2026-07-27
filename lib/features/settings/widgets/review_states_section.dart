@@ -4,13 +4,13 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:uuid/uuid.dart';
 
-import '../../../core/design/spacing.dart';
-import '../../../core/design/typography.dart';
-import '../../../core/models/learning_state.dart';
-import '../../../core/providers.dart';
-import '../../../l10n/gen/app_localizations.dart';
-import '../../../shared/widgets/color_setting_tile.dart';
-import '../../../shared/widgets/settings_list_group.dart';
+import 'package:breakdex/core/design/spacing.dart';
+import 'package:breakdex/core/design/typography.dart';
+import 'package:breakdex/core/models/learning_state.dart';
+import 'package:breakdex/core/providers.dart';
+import 'package:breakdex/l10n/gen/app_localizations.dart';
+import 'package:breakdex/shared/widgets/color_setting_tile.dart';
+import 'package:breakdex/shared/widgets/settings_list_group.dart';
 
 const reviewStatePresetColors = [
   Color(0xFFC46F6F),

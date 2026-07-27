@@ -1,8 +1,8 @@
 import 'package:drift/drift.dart';
 
-import '../database.dart';
-import '../tables/sets.dart';
-import '../tables/set_items.dart';
+import 'package:breakdex/core/database/database.dart';
+import 'package:breakdex/core/database/tables/sets.dart';
+import 'package:breakdex/core/database/tables/set_items.dart';
 
 part 'sets_dao.g.dart';
 

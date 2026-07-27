@@ -3,8 +3,8 @@
 import 'package:flutter/widget_previews.dart';
 import 'package:flutter/widgets.dart';
 
-import '../../dev/preview_harness.dart';
-import 'combos_screen.dart';
+import 'package:breakdex/dev/preview_harness.dart';
+import 'package:breakdex/features/combos/combos_screen.dart';
 
 @Preview(name: 'CombosScreen · light', group: 'combos', wrapper: wrapLight)
 Widget combosScreenLight() => const CombosScreen();

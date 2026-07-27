@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../core/design/spacing.dart';
-import '../../../core/design/typography.dart';
-import '../providers/aura_providers.dart';
-import 'aura_link_tile.dart';
+import 'package:breakdex/core/design/spacing.dart';
+import 'package:breakdex/core/design/typography.dart';
+import 'package:breakdex/features/flow/providers/aura_providers.dart';
+import 'package:breakdex/features/flow/widgets/aura_link_tile.dart';
 
 // ---------------------------------------------------------------------------
 // AuraTransitionIndicator — colored dot/pill between two moves in a set.

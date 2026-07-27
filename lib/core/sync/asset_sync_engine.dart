@@ -2,26 +2,26 @@
 // ignore_for_file: avoid_slow_async_io, discarded_futures
 
 import 'dart:async';
-import '../platform/io.dart';
+import 'package:breakdex/core/platform/io.dart';
 
 import 'package:drift/drift.dart';
 import 'package:flutter/foundation.dart';
 import 'package:path/path.dart' as p;
 import 'package:uuid/uuid.dart';
 
-import '../database/database.dart';
-import '../database/daos/asset_copies_dao.dart';
-import '../database/daos/asset_manifest_dao.dart';
-import '../database/daos/sync_dao.dart';
-import '../database/daos/sync_operations_dao.dart';
-import '../services/app_storage_paths.dart';
-import '../services/connectivity_service.dart';
-import '../services/video_path_resolver.dart';
-import 'asset_hash_service.dart';
-import 'cloud_provider.dart';
-import 'network_policy.dart';
-import 'safety_guard.dart';
-import 'sandbox_hash_index.dart';
+import 'package:breakdex/core/database/database.dart';
+import 'package:breakdex/core/database/daos/asset_copies_dao.dart';
+import 'package:breakdex/core/database/daos/asset_manifest_dao.dart';
+import 'package:breakdex/core/database/daos/sync_dao.dart';
+import 'package:breakdex/core/database/daos/sync_operations_dao.dart';
+import 'package:breakdex/core/services/app_storage_paths.dart';
+import 'package:breakdex/core/services/connectivity_service.dart';
+import 'package:breakdex/core/services/video_path_resolver.dart';
+import 'package:breakdex/core/sync/asset_hash_service.dart';
+import 'package:breakdex/core/sync/cloud_provider.dart';
+import 'package:breakdex/core/sync/network_policy.dart';
+import 'package:breakdex/core/sync/safety_guard.dart';
+import 'package:breakdex/core/sync/sandbox_hash_index.dart';
 
 /// Overall sync progress snapshot for UI display.
 class SyncProgress {

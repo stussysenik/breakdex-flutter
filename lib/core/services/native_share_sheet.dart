@@ -3,7 +3,7 @@ import 'dart:ui';
 import 'package:flutter/foundation.dart';
 import 'package:share_plus/share_plus.dart';
 
-import 'native_bridge.dart';
+import 'package:breakdex/core/services/native_bridge.dart';
 
 /// Presents the system share sheet.
 ///

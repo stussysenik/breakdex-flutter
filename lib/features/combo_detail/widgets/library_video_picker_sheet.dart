@@ -1,16 +1,16 @@
-import '../../../core/platform/io.dart';
+import 'package:breakdex/core/platform/io.dart';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:path/path.dart' as p;
 
-import '../../../core/database/database.dart';
-import '../../../core/design/spacing.dart';
-import '../../../core/design/typography.dart';
-import '../../../core/providers.dart';
-import '../../../core/services/video_path_resolver.dart';
-import '../../../shared/widgets/app_loader.dart';
-import '../../../shared/widgets/metadata_video_picker_sheet.dart';
+import 'package:breakdex/core/database/database.dart';
+import 'package:breakdex/core/design/spacing.dart';
+import 'package:breakdex/core/design/typography.dart';
+import 'package:breakdex/core/providers.dart';
+import 'package:breakdex/core/services/video_path_resolver.dart';
+import 'package:breakdex/shared/widgets/app_loader.dart';
+import 'package:breakdex/shared/widgets/metadata_video_picker_sheet.dart';
 
 /// A video picker that lists library-referenced videos first:
 /// "THIS COMBO'S MOVES" (with file info), then "RECENT TAKES",

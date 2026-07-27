@@ -5,9 +5,9 @@ library;
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../config/remote_config_providers.dart' show appwriteClientProvider;
-import 'appwrite_account_gateway.dart';
-import 'appwrite_auth_service.dart';
+import 'package:breakdex/core/config/remote_config_providers.dart' show appwriteClientProvider;
+import 'package:breakdex/core/services/appwrite_account_gateway.dart';
+import 'package:breakdex/core/services/appwrite_auth_service.dart';
 
 /// The identity service, over the live Appwrite client (reused from the
 /// remote-config layer — one client per app).

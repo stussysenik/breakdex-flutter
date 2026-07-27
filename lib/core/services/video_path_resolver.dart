@@ -1,19 +1,19 @@
 // H.8 lint triage — avoid_slow_async_io: async filesystem stat is intentional (avoids blocking the UI isolate); sync alternatives would block.
 // ignore_for_file: avoid_slow_async_io
 
-import '../platform/io.dart';
+import 'package:breakdex/core/platform/io.dart';
 
 import 'package:drift/drift.dart';
 import 'package:flutter/foundation.dart';
 import 'package:path/path.dart' as p;
 import 'package:shared_preferences/shared_preferences.dart';
 
-import '../database/database.dart';
-import '../models/canonical_path.dart';
-import '../utils/app_clock.dart';
-import '../utils/filesystem_utils.dart';
-import '../utils/diagnostics.dart';
-import 'app_storage_paths.dart';
+import 'package:breakdex/core/database/database.dart';
+import 'package:breakdex/core/models/canonical_path.dart';
+import 'package:breakdex/core/utils/app_clock.dart';
+import 'package:breakdex/core/utils/filesystem_utils.dart';
+import 'package:breakdex/core/utils/diagnostics.dart';
+import 'package:breakdex/core/services/app_storage_paths.dart';
 
 String _sanitizeFilename(final String name) {
   return name

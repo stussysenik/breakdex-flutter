@@ -1,6 +1,6 @@
 import 'package:drift/drift.dart';
-import '../database.dart';
-import '../tables/milestones.dart';
+import 'package:breakdex/core/database/database.dart';
+import 'package:breakdex/core/database/tables/milestones.dart';
 
 part 'milestones_dao.g.dart';
 

@@ -2,16 +2,16 @@
 // ignore_for_file: avoid_slow_async_io, discarded_futures
 
 import 'dart:async';
-import '../platform/io.dart';
+import 'package:breakdex/core/platform/io.dart';
 
 import 'package:drift/drift.dart' show Value;
 import 'package:flutter/foundation.dart';
 
-import '../database/daos/asset_copies_dao.dart';
-import '../database/daos/asset_manifest_dao.dart';
-import '../database/database.dart';
-import '../sync/safety_guard.dart';
-import 'canonical_folder_service.dart';
+import 'package:breakdex/core/database/daos/asset_copies_dao.dart';
+import 'package:breakdex/core/database/daos/asset_manifest_dao.dart';
+import 'package:breakdex/core/database/database.dart';
+import 'package:breakdex/core/sync/safety_guard.dart';
+import 'package:breakdex/core/services/canonical_folder_service.dart';
 
 enum DeletePhase {
   idle,

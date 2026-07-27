@@ -1,10 +1,10 @@
 import 'package:flutter/foundation.dart';
 
-import '../database/database.dart';
-import '../database/daos/combos_dao.dart';
-import '../database/daos/sync_dao.dart';
-import '../services/provenance_service.dart';
-import 'repositories.dart';
+import 'package:breakdex/core/database/database.dart';
+import 'package:breakdex/core/database/daos/combos_dao.dart';
+import 'package:breakdex/core/database/daos/sync_dao.dart';
+import 'package:breakdex/core/services/provenance_service.dart';
+import 'package:breakdex/core/data/repositories.dart';
 
 /// Decorator that wraps a [MoveRepository] and logs mutations to [SyncDao].
 class SyncAwareMoveRepository implements MoveRepository {

@@ -3,8 +3,8 @@
 import 'package:flutter/widget_previews.dart';
 import 'package:flutter/widgets.dart';
 
-import '../../dev/preview_harness.dart';
-import 'move_category_screen.dart';
+import 'package:breakdex/dev/preview_harness.dart';
+import 'package:breakdex/features/move_category/move_category_screen.dart';
 
 @Preview(name: 'MoveCategoryScreen · light', group: 'move_category', wrapper: wrapLight)
 Widget moveCategoryScreenLight() => const MoveCategoryScreen();

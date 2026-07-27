@@ -3,9 +3,9 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import '../../../core/design/spacing.dart';
-import '../../../core/design/typography.dart';
-import '../providers/battle_providers.dart';
+import 'package:breakdex/core/design/spacing.dart';
+import 'package:breakdex/core/design/typography.dart';
+import 'package:breakdex/features/battle/providers/battle_providers.dart';
 
 class BattleIntro extends StatelessWidget {
   const BattleIntro({

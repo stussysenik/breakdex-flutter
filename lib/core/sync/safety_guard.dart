@@ -1,5 +1,5 @@
-import '../database/daos/asset_copies_dao.dart';
-import '../database/daos/asset_manifest_dao.dart';
+import 'package:breakdex/core/database/daos/asset_copies_dao.dart';
+import 'package:breakdex/core/database/daos/asset_manifest_dao.dart';
 
 /// Exception thrown when a deletion would violate safety constraints.
 class SafetyException implements Exception {

@@ -3,8 +3,8 @@
 import 'package:flutter/widget_previews.dart';
 import 'package:flutter/widgets.dart';
 
-import '../../dev/preview_harness.dart';
-import 'lab_detail_screen.dart';
+import 'package:breakdex/dev/preview_harness.dart';
+import 'package:breakdex/features/lab/lab_detail_screen.dart';
 
 @Preview(name: 'LabDetailScreen · light', group: 'lab', wrapper: wrapLight)
 Widget labDetailScreenLight() => const LabDetailScreen(labId: PreviewSeed.labId);

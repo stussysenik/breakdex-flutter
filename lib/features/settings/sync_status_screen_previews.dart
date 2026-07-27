@@ -3,8 +3,8 @@
 import 'package:flutter/widget_previews.dart';
 import 'package:flutter/widgets.dart';
 
-import '../../dev/preview_harness.dart';
-import 'sync_status_screen.dart';
+import 'package:breakdex/dev/preview_harness.dart';
+import 'package:breakdex/features/settings/sync_status_screen.dart';
 
 @Preview(name: 'SyncStatusScreen · light', group: 'settings', wrapper: wrapLight)
 Widget syncStatusScreenLight() => const SyncStatusScreen();

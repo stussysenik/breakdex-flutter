@@ -1,6 +1,6 @@
 import 'package:meta/meta.dart';
 
-import 'remote_config.dart';
+import 'package:breakdex/core/config/remote_config.dart';
 
 /// The update-prompt decision, derived **purely** from a [RemoteConfig] snapshot
 /// and the running build number. Three total states — no impossible ones — so a

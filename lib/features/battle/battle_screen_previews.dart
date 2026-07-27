@@ -3,8 +3,8 @@
 import 'package:flutter/widget_previews.dart';
 import 'package:flutter/widgets.dart';
 
-import '../../dev/preview_harness.dart';
-import 'battle_screen.dart';
+import 'package:breakdex/dev/preview_harness.dart';
+import 'package:breakdex/features/battle/battle_screen.dart';
 
 @Preview(name: 'BattleScreen · light', group: 'battle', wrapper: wrapLight)
 Widget battleScreenLight() => const BattleScreen();

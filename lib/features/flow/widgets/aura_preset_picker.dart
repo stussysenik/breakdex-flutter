@@ -6,11 +6,11 @@ import 'package:drift/drift.dart' hide Column;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:uuid/uuid.dart';
 
-import '../../../core/database/database.dart';
-import '../../../core/design/spacing.dart';
-import '../../../core/design/typography.dart';
-import '../../../core/providers.dart';
-import '../providers/aura_providers.dart';
+import 'package:breakdex/core/database/database.dart';
+import 'package:breakdex/core/design/spacing.dart';
+import 'package:breakdex/core/design/typography.dart';
+import 'package:breakdex/core/providers.dart';
+import 'package:breakdex/features/flow/providers/aura_providers.dart';
 
 // ---------------------------------------------------------------------------
 // AuraPresetPicker — horizontal scroll of preset "team" chips.

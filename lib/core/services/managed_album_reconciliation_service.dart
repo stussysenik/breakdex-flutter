@@ -4,16 +4,16 @@ import 'package:drift/drift.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/widgets.dart';
 
-import '../data/repositories.dart';
-import '../database/daos/moves_dao.dart';
-import '../database/database.dart';
-import '../models/move_archive_reason.dart';
-import '../models/reviewable_item.dart';
-import 'media_cleanup_service.dart';
-import 'native_video_album.dart';
-import 'video_path_resolver.dart';
-import 'video_service.dart';
-import 'provenance_journal_service.dart';
+import 'package:breakdex/core/data/repositories.dart';
+import 'package:breakdex/core/database/daos/moves_dao.dart';
+import 'package:breakdex/core/database/database.dart';
+import 'package:breakdex/core/models/move_archive_reason.dart';
+import 'package:breakdex/core/models/reviewable_item.dart';
+import 'package:breakdex/core/services/media_cleanup_service.dart';
+import 'package:breakdex/core/services/native_video_album.dart';
+import 'package:breakdex/core/services/video_path_resolver.dart';
+import 'package:breakdex/core/services/video_service.dart';
+import 'package:breakdex/core/services/provenance_journal_service.dart';
 
 enum ManagedAlbumReconcileTrigger { startup, resume, libraryChanged }
 

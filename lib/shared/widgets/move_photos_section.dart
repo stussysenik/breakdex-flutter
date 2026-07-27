@@ -3,8 +3,8 @@
 
 import 'dart:async';
 import 'dart:convert';
-import '../../core/platform/io.dart';
-import '../../core/platform/native_media.dart';
+import 'package:breakdex/core/platform/io.dart';
+import 'package:breakdex/core/platform/native_media.dart';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -12,10 +12,10 @@ import 'package:image_picker/image_picker.dart';
 import 'package:path/path.dart' as p;
 import 'package:uuid/uuid.dart';
 
-import '../../core/design/spacing.dart';
-import '../../core/design/typography.dart';
-import '../../core/services/app_storage_paths.dart';
-import 'app_loader.dart';
+import 'package:breakdex/core/design/spacing.dart';
+import 'package:breakdex/core/design/typography.dart';
+import 'package:breakdex/core/services/app_storage_paths.dart';
+import 'package:breakdex/shared/widgets/app_loader.dart';
 
 Future<String> _photoDirectory() async {
   final docs = await AppStoragePaths.documentsDirectory();

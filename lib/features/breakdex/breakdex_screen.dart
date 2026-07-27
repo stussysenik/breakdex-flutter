@@ -2,10 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-import '../../core/design/spacing.dart';
-import '../../core/design/typography.dart';
-import '../../core/services/entity_names_service.dart';
-import '../../l10n/gen/app_localizations.dart';
+import 'package:breakdex/core/design/spacing.dart';
+import 'package:breakdex/core/design/typography.dart';
+import 'package:breakdex/core/services/entity_names_service.dart';
+import 'package:breakdex/l10n/gen/app_localizations.dart';
 
 class BreakdexScreen extends ConsumerWidget {
   const BreakdexScreen({super.key});

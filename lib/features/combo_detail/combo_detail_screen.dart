@@ -11,29 +11,29 @@ import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:uuid/uuid.dart';
 
-import '../../core/database/database.dart';
-import '../../core/services/entity_names_service.dart';
-import '../../core/database/daos/combo_plans_dao.dart';
-import '../../core/database/daos/combos_dao.dart';
-import '../../core/design/spacing.dart';
-import '../../core/design/typography.dart';
-import '../../core/models/reviewable_item.dart';
-import '../../core/providers.dart';
-import '../../core/services/media_playback_coordinator.dart';
-import '../../core/services/native_share_sheet.dart';
-import '../../core/services/native_video_album.dart';
-import '../../core/utils/diagnostics.dart';
-import '../../core/utils/share_sheet.dart';
-import '../../shared/widgets/beat_grid.dart';
-import '../../shared/widgets/video_player_widget.dart'
+import 'package:breakdex/core/database/database.dart';
+import 'package:breakdex/core/services/entity_names_service.dart';
+import 'package:breakdex/core/database/daos/combo_plans_dao.dart';
+import 'package:breakdex/core/database/daos/combos_dao.dart';
+import 'package:breakdex/core/design/spacing.dart';
+import 'package:breakdex/core/design/typography.dart';
+import 'package:breakdex/core/models/reviewable_item.dart';
+import 'package:breakdex/core/providers.dart';
+import 'package:breakdex/core/services/media_playback_coordinator.dart';
+import 'package:breakdex/core/services/native_share_sheet.dart';
+import 'package:breakdex/core/services/native_video_album.dart';
+import 'package:breakdex/core/utils/diagnostics.dart';
+import 'package:breakdex/core/utils/share_sheet.dart';
+import 'package:breakdex/shared/widgets/beat_grid.dart';
+import 'package:breakdex/shared/widgets/video_player_widget.dart'
     show RobustVideoPlayer, VideoPlaceholder;
 
-import '../../core/state_machines/combo_detail/machine.dart' as sm;
-import '../../core/state_machines/combo_detail/provider.dart';
-import '../../shared/widgets/app_loader.dart';
-import 'widgets/status_tag.dart';
-import 'widgets/journal_list.dart';
-import 'widgets/jot_composer.dart';
+import 'package:breakdex/core/state_machines/combo_detail/machine.dart' as sm;
+import 'package:breakdex/core/state_machines/combo_detail/provider.dart';
+import 'package:breakdex/shared/widgets/app_loader.dart';
+import 'package:breakdex/features/combo_detail/widgets/status_tag.dart';
+import 'package:breakdex/features/combo_detail/widgets/journal_list.dart';
+import 'package:breakdex/features/combo_detail/widgets/jot_composer.dart';
 
 class ComboDetailScreen extends ConsumerStatefulWidget {
   const ComboDetailScreen({super.key, required this.comboId});

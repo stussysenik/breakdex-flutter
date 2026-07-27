@@ -2,8 +2,8 @@ import 'dart:async';
 
 import 'package:appwrite/appwrite.dart';
 
-import 'appwrite_env.dart';
-import 'remote_config.dart';
+import 'package:breakdex/core/config/appwrite_env.dart';
+import 'package:breakdex/core/config/remote_config.dart';
 
 /// The only file that touches the Appwrite SDK for remote config.
 ///

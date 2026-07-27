@@ -7,9 +7,9 @@ import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-import '../database/database.dart';
-import '../sync/cloud_provider.dart';
-import 'stats_export_service.dart';
+import 'package:breakdex/core/database/database.dart';
+import 'package:breakdex/core/sync/cloud_provider.dart';
+import 'package:breakdex/core/services/stats_export_service.dart';
 
 /// Auto-activation of the *scheduled* Drive backup. Default OFF to match the
 /// overnight-wave discipline (device behavior stays byte-identical until the

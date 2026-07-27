@@ -3,8 +3,8 @@
 import 'package:flutter/widget_previews.dart';
 import 'package:flutter/widgets.dart';
 
-import '../../../dev/preview_harness.dart';
-import 'schedule_review_screen.dart';
+import 'package:breakdex/dev/preview_harness.dart';
+import 'package:breakdex/features/flashcard_review/widgets/schedule_review_screen.dart';
 
 @Preview(name: 'ScheduleReviewScreen · light', group: 'flashcard_review', wrapper: wrapLight)
 Widget scheduleReviewScreenLight() => const ScheduleReviewScreen();

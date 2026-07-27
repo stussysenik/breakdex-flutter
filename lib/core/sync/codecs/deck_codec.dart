@@ -19,8 +19,8 @@ library;
 
 import 'package:drift/drift.dart';
 
-import '../../database/database.dart';
-import '../sync_backend.dart';
+import 'package:breakdex/core/database/database.dart';
+import 'package:breakdex/core/sync/sync_backend.dart';
 
 /// Never-null-clock guard for a corrupt row whose `updatedAt` is somehow null
 /// (unreachable post-v25-migration + DAO stamping). Epoch-0 is the

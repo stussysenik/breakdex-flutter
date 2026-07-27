@@ -15,7 +15,7 @@
 /// `legacy_identity_gateway.dart`, so the claim logic is unit-testable offline.
 library;
 
-import 'appwrite_auth_service.dart' show AuthUser;
+import 'package:breakdex/core/services/appwrite_auth_service.dart' show AuthUser;
 
 /// An immutable legacy→Appwrite identity link (generic data, DOP).
 class LegacyIdentity {

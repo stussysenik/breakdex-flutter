@@ -3,8 +3,8 @@
 import 'package:flutter/widget_previews.dart';
 import 'package:flutter/widgets.dart';
 
-import '../../dev/preview_harness.dart';
-import 'recently_deleted_screen.dart';
+import 'package:breakdex/dev/preview_harness.dart';
+import 'package:breakdex/features/settings/recently_deleted_screen.dart';
 
 @Preview(name: 'RecentlyDeletedScreen · light', group: 'settings', wrapper: wrapLight)
 Widget recentlyDeletedScreenLight() => const RecentlyDeletedScreen();

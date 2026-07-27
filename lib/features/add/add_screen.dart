@@ -6,20 +6,20 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:path/path.dart' as p;
 
-import '../../core/design/spacing.dart';
-import '../../core/services/entity_names_service.dart';
-import '../../core/design/typography.dart';
-import '../../core/models/add_flow_order.dart';
-import '../../core/models/learning_state.dart';
-import '../../core/models/move_creation.dart';
-import '../../core/providers.dart';
-import '../../core/state_machines/move_creation/provider.dart';
-import '../../core/services/categories_service.dart';
-import '../../core/services/settings_service.dart';
-import '../../core/services/video_service.dart';
-import '../../shared/widgets/video_picker_sheet.dart';
-import '../../shared/widgets/video_player_widget.dart';
-import '../../l10n/gen/app_localizations.dart';
+import 'package:breakdex/core/design/spacing.dart';
+import 'package:breakdex/core/services/entity_names_service.dart';
+import 'package:breakdex/core/design/typography.dart';
+import 'package:breakdex/core/models/add_flow_order.dart';
+import 'package:breakdex/core/models/learning_state.dart';
+import 'package:breakdex/core/models/move_creation.dart';
+import 'package:breakdex/core/providers.dart';
+import 'package:breakdex/core/state_machines/move_creation/provider.dart';
+import 'package:breakdex/core/services/categories_service.dart';
+import 'package:breakdex/core/services/settings_service.dart';
+import 'package:breakdex/core/services/video_service.dart';
+import 'package:breakdex/shared/widgets/video_picker_sheet.dart';
+import 'package:breakdex/shared/widgets/video_player_widget.dart';
+import 'package:breakdex/l10n/gen/app_localizations.dart';
 
 class AddScreen extends ConsumerWidget {
   const AddScreen({super.key});

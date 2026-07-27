@@ -1,7 +1,7 @@
 import 'package:drift/drift.dart';
 
-import '../database.dart';
-import '../tables/asset_copies.dart';
+import 'package:breakdex/core/database/database.dart';
+import 'package:breakdex/core/database/tables/asset_copies.dart';
 
 part 'asset_copies_dao.g.dart';
 

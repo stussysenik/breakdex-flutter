@@ -2,16 +2,16 @@
 // ignore_for_file: avoid_slow_async_io, discarded_futures
 
 import 'dart:async';
-import '../platform/io.dart';
+import 'package:breakdex/core/platform/io.dart';
 import 'package:flutter/services.dart';
 import 'package:path/path.dart' as p;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../models/canonical_path.dart';
-import '../utils/diagnostics.dart';
-import '../utils/filesystem_utils.dart';
-import '../sync/asset_hash_service.dart';
-import 'video_path_resolver.dart';
+import 'package:breakdex/core/models/canonical_path.dart';
+import 'package:breakdex/core/utils/diagnostics.dart';
+import 'package:breakdex/core/utils/filesystem_utils.dart';
+import 'package:breakdex/core/sync/asset_hash_service.dart';
+import 'package:breakdex/core/services/video_path_resolver.dart';
 
 /// Sealed hierarchy of storage intents.
 sealed class StorageAction {

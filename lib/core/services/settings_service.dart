@@ -2,9 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-import '../models/add_flow_order.dart';
-import '../models/app_mode.dart';
-import '../models/move_detail_caption.dart';
+import 'package:breakdex/core/models/add_flow_order.dart';
+import 'package:breakdex/core/models/app_mode.dart';
+import 'package:breakdex/core/models/move_detail_caption.dart';
 
 enum ThemeSetting { system, dark, light }
 

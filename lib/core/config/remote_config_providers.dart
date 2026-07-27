@@ -1,12 +1,12 @@
 import 'package:appwrite/appwrite.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../services/appwrite_auth_providers.dart' show currentAppwriteUserProvider;
-import '../services/settings_service.dart' show sharedPreferencesProvider;
-import 'appwrite_env.dart';
-import 'appwrite_remote_config_source.dart';
-import 'remote_config.dart';
-import 'remote_config_service.dart';
+import 'package:breakdex/core/services/appwrite_auth_providers.dart' show currentAppwriteUserProvider;
+import 'package:breakdex/core/services/settings_service.dart' show sharedPreferencesProvider;
+import 'package:breakdex/core/config/appwrite_env.dart';
+import 'package:breakdex/core/config/appwrite_remote_config_source.dart';
+import 'package:breakdex/core/config/remote_config.dart';
+import 'package:breakdex/core/config/remote_config_service.dart';
 
 /// Shared Appwrite client for the live `breakdex` project (read-only until a
 /// session lands in Phase 3). Phase 2's sync backend will reuse this provider.

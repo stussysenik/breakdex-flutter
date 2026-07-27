@@ -6,7 +6,7 @@ import 'dart:math';
 import 'package:flutter/services.dart';
 import 'package:sensors_plus/sensors_plus.dart';
 
-import '../utils/diagnostics.dart';
+import 'package:breakdex/core/utils/diagnostics.dart';
 
 /// Detects an intentional "swing" motion using accelerometer data.
 ///

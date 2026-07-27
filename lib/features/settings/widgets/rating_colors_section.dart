@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../core/providers.dart';
-import '../../../l10n/gen/app_localizations.dart';
-import '../../../shared/widgets/color_setting_tile.dart';
+import 'package:breakdex/core/providers.dart';
+import 'package:breakdex/l10n/gen/app_localizations.dart';
+import 'package:breakdex/shared/widgets/color_setting_tile.dart';
 
 /// Preset palette for rating color customization.
 const ratingPresetColors = [

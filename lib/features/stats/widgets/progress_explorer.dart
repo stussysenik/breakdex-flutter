@@ -8,20 +8,20 @@ import 'package:intl/intl.dart';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../core/design/colors.dart';
-import '../../../core/services/entity_names_service.dart';
-import '../../../core/design/spacing.dart';
-import '../../../core/design/theme.dart';
-import '../../../core/design/typography.dart';
-import '../../../core/services/native_share_sheet.dart';
-import '../../../core/services/stats_export_service.dart';
-import '../../../core/utils/share_sheet.dart';
-import '../../../shared/widgets/app_loader.dart';
-import '../../../shared/widgets/app_segmented_control.dart';
-import '../../../shared/widgets/wip_badge.dart';
-import '../providers/stats_providers.dart';
-import 'heat_map_grid.dart';
-import 'stat_card.dart';
+import 'package:breakdex/core/design/colors.dart';
+import 'package:breakdex/core/services/entity_names_service.dart';
+import 'package:breakdex/core/design/spacing.dart';
+import 'package:breakdex/core/design/theme.dart';
+import 'package:breakdex/core/design/typography.dart';
+import 'package:breakdex/core/services/native_share_sheet.dart';
+import 'package:breakdex/core/services/stats_export_service.dart';
+import 'package:breakdex/core/utils/share_sheet.dart';
+import 'package:breakdex/shared/widgets/app_loader.dart';
+import 'package:breakdex/shared/widgets/app_segmented_control.dart';
+import 'package:breakdex/shared/widgets/wip_badge.dart';
+import 'package:breakdex/features/stats/providers/stats_providers.dart';
+import 'package:breakdex/features/stats/widgets/heat_map_grid.dart';
+import 'package:breakdex/features/stats/widgets/stat_card.dart';
 
 class ProgressExplorer extends StatefulWidget {
   const ProgressExplorer({super.key, required this.stats});

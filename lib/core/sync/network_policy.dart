@@ -1,7 +1,7 @@
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-import '../services/connectivity_service.dart';
+import 'package:breakdex/core/services/connectivity_service.dart';
 
 /// Decision from the network policy about whether a transfer should proceed.
 enum TransferDecision {

@@ -4,13 +4,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../core/design/colors.dart';
-import '../../core/design/spacing.dart';
-import '../../core/design/typography.dart';
-import 'providers/battle_providers.dart';
-import 'widgets/battle_intro.dart';
-import 'widgets/timer_ring.dart';
-import 'widgets/battle_results_view.dart';
+import 'package:breakdex/core/design/colors.dart';
+import 'package:breakdex/core/design/spacing.dart';
+import 'package:breakdex/core/design/typography.dart';
+import 'package:breakdex/features/battle/providers/battle_providers.dart';
+import 'package:breakdex/features/battle/widgets/battle_intro.dart';
+import 'package:breakdex/features/battle/widgets/timer_ring.dart';
+import 'package:breakdex/features/battle/widgets/battle_results_view.dart';
 
 class BattleScreen extends ConsumerWidget {
   const BattleScreen({super.key});

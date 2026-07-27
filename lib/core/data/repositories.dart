@@ -1,5 +1,5 @@
-import '../database/database.dart';
-import '../database/daos/combos_dao.dart';
+import 'package:breakdex/core/database/database.dart';
+import 'package:breakdex/core/database/daos/combos_dao.dart';
 
 /// Abstract interface for move data access.
 /// Implementations can wrap Drift, REST APIs, SpacetimeDB, etc.

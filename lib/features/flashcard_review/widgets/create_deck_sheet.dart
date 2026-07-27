@@ -7,17 +7,17 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:uuid/uuid.dart';
 
-import '../../../core/database/database.dart';
-import '../../../core/design/spacing.dart';
-import '../../../core/design/theme.dart';
-import '../../../core/design/typography.dart';
-import '../../../core/models/learning_state.dart';
-import '../../../core/providers.dart';
-import '../../../core/services/categories_service.dart';
-import '../../../core/services/deck_service.dart';
-import '../../../core/services/entity_names_service.dart';
-import '../../../l10n/gen/app_localizations.dart';
-import '../providers/deck_providers.dart';
+import 'package:breakdex/core/database/database.dart';
+import 'package:breakdex/core/design/spacing.dart';
+import 'package:breakdex/core/design/theme.dart';
+import 'package:breakdex/core/design/typography.dart';
+import 'package:breakdex/core/models/learning_state.dart';
+import 'package:breakdex/core/providers.dart';
+import 'package:breakdex/core/services/categories_service.dart';
+import 'package:breakdex/core/services/deck_service.dart';
+import 'package:breakdex/core/services/entity_names_service.dart';
+import 'package:breakdex/l10n/gen/app_localizations.dart';
+import 'package:breakdex/features/flashcard_review/providers/deck_providers.dart';
 
 /// Bottom sheet for creating a new smart or manual deck.
 ///

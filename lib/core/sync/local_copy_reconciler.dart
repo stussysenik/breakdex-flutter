@@ -2,14 +2,14 @@
 // (avoids blocking the UI isolate); sync alternatives would block.
 // ignore_for_file: avoid_slow_async_io
 
-import '../platform/io.dart';
+import 'package:breakdex/core/platform/io.dart';
 
 import 'package:drift/drift.dart';
 
-import '../database/database.dart';
-import '../database/daos/asset_copies_dao.dart';
-import '../database/daos/asset_manifest_dao.dart';
-import '../services/video_path_resolver.dart';
+import 'package:breakdex/core/database/database.dart';
+import 'package:breakdex/core/database/daos/asset_copies_dao.dart';
+import 'package:breakdex/core/database/daos/asset_manifest_dao.dart';
+import 'package:breakdex/core/services/video_path_resolver.dart';
 
 /// Reconciles `asset_copies` against what is actually on disk (design D8).
 ///

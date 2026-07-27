@@ -26,12 +26,17 @@
   **3.1 DONE 2026-07-28** — map at `openspec/changes/domain-restructure/domain-source-map.md`;
   10 domains named (`sets` beats `labs`; `media` and `backup` stay separate; `kernel` = pure
   primitives + platform seams); 4 high-fan-in files quarantined from the batches.
+  **3.2.0 DONE 2026-07-28** (owner-approved prerequisite found by 3.1) — `lib/` normalized
+  from 1678 relative imports to `package:breakdex/…`: 1721 `dart fix` rewrites across 331
+  files, `always_use_package_imports` now enforced. Analyzer 0 errors / 0 warnings before
+  and after; the 2 remaining suite failures reproduce at `b0b8f90` with the change stashed
+  out, so zero regressions.
   **Next unticked task:** 3.2 Move one low-risk domain slice mechanically.
-  ⚠ **Owner call blocks 3.2:** the map found `lib/` is 1678 relative imports vs 4
-  `package:breakdex/…`, so folder moves are not grep-verifiable until imports are
-  normalized. Recommended new prerequisite task `3.2.0` — enable
-  `always_use_package_imports`, `dart fix --apply`, prove analyzer + full suite green
-  (huge LOC, zero behavior). Approve or reject before 3.2 starts.
+  ⚠ **Recommendation on the record: park 3.2–3.5.** They move folders, ship no product
+  value, and would touch every file while the release queue waits. The prerequisite that
+  had standalone value (3.2.0) is done. Suggested reorder: `distribution-web` →
+  `multi-user-sync` → `android-e2e`, and return to the folder moves after a release.
+  Owner call.
 
 - **Change (archived 2026-07-27):** `engineer-workflow-and-multi-user-foundation`
   — Factory model accepted, old owner-gated proof closed. Umbrella split into child changes: domain-restructure, action-audit-log, multi-user-sync, android-e2e, distribution-web.

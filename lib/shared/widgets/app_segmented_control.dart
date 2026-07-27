@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 
-import '../../core/design/spacing.dart';
-import '../../core/design/theme.dart';
-import '../../core/design/typography.dart';
+import 'package:breakdex/core/design/spacing.dart';
+import 'package:breakdex/core/design/theme.dart';
+import 'package:breakdex/core/design/typography.dart';
 
 class AppSegmentedControlItem<T> {
   const AppSegmentedControlItem({

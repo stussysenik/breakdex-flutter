@@ -2,10 +2,10 @@
 // ignore_for_file: discarded_futures
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../models/move_creation.dart';
-import '../../providers.dart';
-import '../../services/storage_action_machine.dart';
-import 'machine.dart';
+import 'package:breakdex/core/models/move_creation.dart';
+import 'package:breakdex/core/providers.dart';
+import 'package:breakdex/core/services/storage_action_machine.dart';
+import 'package:breakdex/core/state_machines/move_creation/machine.dart';
 
 class MoveCreationNotifier extends Notifier<MoveCreationState> {
   late final MoveCreationMachine _machine;

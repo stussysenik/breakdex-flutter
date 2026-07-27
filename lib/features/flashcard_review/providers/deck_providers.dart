@@ -1,8 +1,8 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../core/database/database.dart';
-import '../../../core/models/learning_state.dart';
-import '../../../core/providers.dart';
+import 'package:breakdex/core/database/database.dart';
+import 'package:breakdex/core/models/learning_state.dart';
+import 'package:breakdex/core/providers.dart';
 
 /// Live stream of all saved decks.
 final decksListProvider = StreamProvider<List<Deck>>((final ref) {

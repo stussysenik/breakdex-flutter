@@ -1,6 +1,6 @@
 import 'package:drift/drift.dart';
-import '../database.dart';
-import '../tables/lab_entries.dart';
+import 'package:breakdex/core/database/database.dart';
+import 'package:breakdex/core/database/tables/lab_entries.dart';
 
 part 'lab_entries_dao.g.dart';
 

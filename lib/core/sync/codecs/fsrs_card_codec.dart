@@ -23,8 +23,8 @@ library;
 
 import 'package:drift/drift.dart';
 
-import '../../database/database.dart';
-import '../sync_backend.dart';
+import 'package:breakdex/core/database/database.dart';
+import 'package:breakdex/core/sync/sync_backend.dart';
 
 /// Decode a pulled `fsrsCard` [record] into an [FsrsCardsCompanion] over the
 /// derived schedule fields. Identity is the `(entityId, entityType)` composite

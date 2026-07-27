@@ -1,5 +1,5 @@
-import '../database/daos/combos_dao.dart';
-import '../database/daos/moves_dao.dart';
+import 'package:breakdex/core/database/daos/combos_dao.dart';
+import 'package:breakdex/core/database/daos/moves_dao.dart';
 
 class ReviewableNamingService {
   ReviewableNamingService({

@@ -2,13 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-import '../../../core/database/database.dart';
-import '../../../core/design/colors.dart';
-import '../../../core/design/spacing.dart';
-import '../../../core/design/typography.dart';
-import '../../../shared/widgets/app_loader.dart';
-import '../providers/lab_providers.dart';
-import 'lab_card.dart';
+import 'package:breakdex/core/database/database.dart';
+import 'package:breakdex/core/design/colors.dart';
+import 'package:breakdex/core/design/spacing.dart';
+import 'package:breakdex/core/design/typography.dart';
+import 'package:breakdex/shared/widgets/app_loader.dart';
+import 'package:breakdex/features/lab/providers/lab_providers.dart';
+import 'package:breakdex/features/lab/widgets/lab_card.dart';
 
 /// Kanban-style board view with 4 horizontal-scroll columns:
 /// Idea, Attempting, Landed, Clean.

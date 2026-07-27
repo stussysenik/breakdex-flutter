@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../core/design/typography.dart';
-import '../../core/providers.dart';
-import '../../core/state_machines/sync/sync_bloc.dart';
+import 'package:breakdex/core/design/typography.dart';
+import 'package:breakdex/core/providers.dart';
+import 'package:breakdex/core/state_machines/sync/sync_bloc.dart';
 
 class SyncProgressBar extends ConsumerWidget {
   const SyncProgressBar({super.key});

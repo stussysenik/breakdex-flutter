@@ -1,7 +1,7 @@
 import 'dart:async';
 
-import '../sync_backend.dart';
-import 'appwrite_transport.dart';
+import 'package:breakdex/core/sync/sync_backend.dart';
+import 'package:breakdex/core/sync/backends/appwrite_transport.dart';
 
 /// Appwrite implementation of [SyncBackend]. Maps the provider-neutral contract
 /// onto the deployed Dart Functions (`sync-push`, `sync-pull`, `reviews-append`)

@@ -5,13 +5,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../core/design/colors.dart';
-import '../../core/design/spacing.dart';
-import '../../core/design/typography.dart';
-import '../../core/providers.dart';
-import '../../core/services/settings_service.dart';
-import '../../shared/widgets/app_loader.dart';
-import '../../core/sync/icloud_setup_service.dart';
+import 'package:breakdex/core/design/colors.dart';
+import 'package:breakdex/core/design/spacing.dart';
+import 'package:breakdex/core/design/typography.dart';
+import 'package:breakdex/core/providers.dart';
+import 'package:breakdex/core/services/settings_service.dart';
+import 'package:breakdex/shared/widgets/app_loader.dart';
+import 'package:breakdex/core/sync/icloud_setup_service.dart';
 
 /// First-launch card prompting iCloud backup with one-tap enable.
 ///

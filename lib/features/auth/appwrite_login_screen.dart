@@ -12,13 +12,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../core/config/appwrite_env.dart';
-import '../../core/design/colors.dart';
-import '../../core/design/spacing.dart';
-import '../../core/design/theme.dart';
-import '../../core/design/typography.dart';
-import '../../core/services/appwrite_auth_providers.dart';
-import '../../core/services/appwrite_auth_service.dart';
+import 'package:breakdex/core/config/appwrite_env.dart';
+import 'package:breakdex/core/design/colors.dart';
+import 'package:breakdex/core/design/spacing.dart';
+import 'package:breakdex/core/design/theme.dart';
+import 'package:breakdex/core/design/typography.dart';
+import 'package:breakdex/core/services/appwrite_auth_providers.dart';
+import 'package:breakdex/core/services/appwrite_auth_service.dart';
 
 class AppwriteLoginScreen extends ConsumerStatefulWidget {
   const AppwriteLoginScreen({super.key, this.onSignedIn});

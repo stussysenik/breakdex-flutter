@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
-import '../../../core/design/spacing.dart';
-import '../../../core/design/typography.dart';
+import 'package:breakdex/core/design/spacing.dart';
+import 'package:breakdex/core/design/typography.dart';
 
 /// Compact textual counter for the immersive review overlay.
 ///

@@ -1,5 +1,5 @@
 import 'package:drift/drift.dart';
-import 'moves.dart';
+import 'package:breakdex/core/database/tables/moves.dart';
 
 @ReferenceName('auraLinksFromRefs')
 @ReferenceName('auraLinksToRefs')

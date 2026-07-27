@@ -1,4 +1,4 @@
-import 'cloud_provider.dart';
+import 'package:breakdex/core/sync/cloud_provider.dart';
 
 /// Manages the lifecycle of [CloudProvider] instances and supports
 /// runtime switching of the active sync provider.

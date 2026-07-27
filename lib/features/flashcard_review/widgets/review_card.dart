@@ -1,16 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../core/database/database.dart';
-import '../../../core/database/daos/combos_dao.dart';
-import '../../../core/design/colors.dart';
-import '../../../core/design/spacing.dart';
-import '../../../core/models/learning_state.dart';
-import '../../../core/models/review_card_display_settings.dart';
-import '../../../core/providers.dart';
-import '../../../shared/widgets/video_player_widget.dart';
-import 'instrument_panel.dart';
-import 'review_position_badge.dart';
+import 'package:breakdex/core/database/database.dart';
+import 'package:breakdex/core/database/daos/combos_dao.dart';
+import 'package:breakdex/core/design/colors.dart';
+import 'package:breakdex/core/design/spacing.dart';
+import 'package:breakdex/core/models/learning_state.dart';
+import 'package:breakdex/core/models/review_card_display_settings.dart';
+import 'package:breakdex/core/providers.dart';
+import 'package:breakdex/shared/widgets/video_player_widget.dart';
+import 'package:breakdex/features/flashcard_review/widgets/instrument_panel.dart';
+import 'package:breakdex/features/flashcard_review/widgets/review_position_badge.dart';
 
 class ReviewCard extends ConsumerWidget {
   const ReviewCard({

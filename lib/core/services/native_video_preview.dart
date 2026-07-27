@@ -1,6 +1,6 @@
 import 'dart:typed_data';
 
-import 'native_bridge.dart';
+import 'package:breakdex/core/services/native_bridge.dart';
 
 class NativeVideoPreview extends NativeBridge {
   NativeVideoPreview() : super('video_preview', hasEventChannel: false);

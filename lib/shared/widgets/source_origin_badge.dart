@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import '../../core/design/spacing.dart';
-import '../../core/design/typography.dart';
-import '../../core/models/canonical_asset.dart';
+import 'package:breakdex/core/design/spacing.dart';
+import 'package:breakdex/core/design/typography.dart';
+import 'package:breakdex/core/models/canonical_asset.dart';
 
 class SourceOriginBadge extends StatelessWidget {
   const SourceOriginBadge({super.key, required this.source});

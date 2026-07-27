@@ -2,8 +2,8 @@
 // ignore_for_file: avoid_slow_async_io, discarded_futures
 
 import 'dart:async';
-import '../../core/platform/io.dart';
-import '../../core/platform/native_media.dart';
+import 'package:breakdex/core/platform/io.dart';
+import 'package:breakdex/core/platform/native_media.dart';
 import 'dart:ui';
 
 import 'package:flutter/foundation.dart';
@@ -17,18 +17,18 @@ import 'package:path_provider/path_provider.dart';
 import 'package:uuid/uuid.dart';
 import 'package:video_player/video_player.dart';
 
-import '../../core/design/colors.dart';
-import '../../core/design/spacing.dart';
-import '../../core/design/typography.dart';
-import '../../core/navigation/app_route_observer.dart' show appRouteObserver;
-import '../../core/services/media_playback_coordinator.dart';
-import '../../core/services/native_video_export.dart';
-import '../../core/services/video_service.dart';
-import '../../core/utils/loading_state_machine.dart';
-import '../../core/utils/pid_controller.dart';
-import '../../core/utils/diagnostics.dart';
-import '../../shared/widgets/app_loader.dart';
-import 'video_edit_geometry.dart';
+import 'package:breakdex/core/design/colors.dart';
+import 'package:breakdex/core/design/spacing.dart';
+import 'package:breakdex/core/design/typography.dart';
+import 'package:breakdex/core/navigation/app_route_observer.dart' show appRouteObserver;
+import 'package:breakdex/core/services/media_playback_coordinator.dart';
+import 'package:breakdex/core/services/native_video_export.dart';
+import 'package:breakdex/core/services/video_service.dart';
+import 'package:breakdex/core/utils/loading_state_machine.dart';
+import 'package:breakdex/core/utils/pid_controller.dart';
+import 'package:breakdex/core/utils/diagnostics.dart';
+import 'package:breakdex/shared/widgets/app_loader.dart';
+import 'package:breakdex/features/video_editor/video_edit_geometry.dart';
 
 class SimplifiedVideoEditorView extends ConsumerStatefulWidget {
   const SimplifiedVideoEditorView({super.key, required this.videoPath});

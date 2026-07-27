@@ -1,11 +1,11 @@
 import 'package:drift/drift.dart';
 
-import '../database/database.dart';
-import '../models/reviewable_item.dart';
-import '../utils/diagnostics.dart';
-import 'native_video_album.dart';
-import 'video_path_resolver.dart';
-import 'video_service.dart';
+import 'package:breakdex/core/database/database.dart';
+import 'package:breakdex/core/models/reviewable_item.dart';
+import 'package:breakdex/core/utils/diagnostics.dart';
+import 'package:breakdex/core/services/native_video_album.dart';
+import 'package:breakdex/core/services/video_path_resolver.dart';
+import 'package:breakdex/core/services/video_service.dart';
 
 class MediaCleanupService {
   MediaCleanupService({

@@ -1,6 +1,6 @@
 import 'package:drift/drift.dart';
 
-import 'combos.dart';
+import 'package:breakdex/core/database/tables/combos.dart';
 
 /// Practice plans: intentions, not history. Deletable and reorderable;
 /// never written into the journal ledger.

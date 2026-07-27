@@ -1,4 +1,4 @@
-import 'app_clock.dart';
+import 'package:breakdex/core/utils/app_clock.dart';
 
 /// Smoothed transfer-rate + ETA estimator — the "math = how much time is left"
 /// behind deterministic download UI.

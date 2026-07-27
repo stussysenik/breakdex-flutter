@@ -1,5 +1,5 @@
 import 'package:flutter/foundation.dart';
-import '../utils/diagnostics.dart';
+import 'package:breakdex/core/utils/diagnostics.dart';
 
 /// Zero-dependency state machine base class.
 ///

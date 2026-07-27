@@ -6,11 +6,11 @@ import 'package:appwrite/enums.dart' as enums;
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../providers.dart' show movesDaoProvider;
-import '../services/appwrite_auth_providers.dart' show currentAppwriteUserProvider;
-import 'appwrite_env.dart';
-import 'entitlement.dart';
-import 'remote_config_providers.dart' show appwriteClientProvider;
+import 'package:breakdex/core/providers.dart' show movesDaoProvider;
+import 'package:breakdex/core/services/appwrite_auth_providers.dart' show currentAppwriteUserProvider;
+import 'package:breakdex/core/config/appwrite_env.dart';
+import 'package:breakdex/core/config/entitlement.dart';
+import 'package:breakdex/core/config/remote_config_providers.dart' show appwriteClientProvider;
 
 /// Client-side outcome of a redeem — the typed statuses the Function returns,
 /// plus a transport [error]. The UI shows a message per case.

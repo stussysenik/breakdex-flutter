@@ -2,8 +2,8 @@ import 'dart:math';
 
 import 'package:flutter_bloc/flutter_bloc.dart';
 
-import '../../../core/database/database.dart';
-import '../../../core/utils/diagnostics.dart';
+import 'package:breakdex/core/database/database.dart';
+import 'package:breakdex/core/utils/diagnostics.dart';
 
 sealed class ComboPartyEvent {
   const ComboPartyEvent();

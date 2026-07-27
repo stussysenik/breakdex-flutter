@@ -8,13 +8,13 @@ import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:uuid/uuid.dart';
 
-import '../../core/database/daos/combo_plans_dao.dart';
-import '../../core/database/database.dart';
-import '../../core/design/spacing.dart';
-import '../../core/design/typography.dart';
-import '../../core/providers.dart';
-import '../../shared/widgets/app_loader.dart';
-import '../combo_detail/widgets/status_tag.dart';
+import 'package:breakdex/core/database/daos/combo_plans_dao.dart';
+import 'package:breakdex/core/database/database.dart';
+import 'package:breakdex/core/design/spacing.dart';
+import 'package:breakdex/core/design/typography.dart';
+import 'package:breakdex/core/providers.dart';
+import 'package:breakdex/shared/widgets/app_loader.dart';
+import 'package:breakdex/features/combo_detail/widgets/status_tag.dart';
 
 final allCombosProvider = StreamProvider<List<Combo>>((final ref) {
   return ref.watch(combosDaoProvider).watchAll();

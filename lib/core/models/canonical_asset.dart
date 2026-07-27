@@ -1,4 +1,4 @@
-import '../platform/io.dart';
+import 'package:breakdex/core/platform/io.dart';
 
 sealed class CanonicalAsset {
   final String hash;

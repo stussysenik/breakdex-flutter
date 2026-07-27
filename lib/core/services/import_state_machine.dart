@@ -2,18 +2,18 @@
 // ignore_for_file: avoid_slow_async_io, discarded_futures
 
 import 'dart:async';
-import '../platform/io.dart';
+import 'package:breakdex/core/platform/io.dart';
 
 import 'package:drift/drift.dart' show Value;
 
-import '../database/daos/asset_copies_dao.dart';
-import '../database/daos/asset_manifest_dao.dart';
-import '../database/database.dart';
-import '../models/canonical_asset.dart';
-import '../sync/asset_hash_service.dart';
-import 'canonical_folder_service.dart';
-import 'canonical_import_gate.dart';
-import 'video_path_resolver.dart';
+import 'package:breakdex/core/database/daos/asset_copies_dao.dart';
+import 'package:breakdex/core/database/daos/asset_manifest_dao.dart';
+import 'package:breakdex/core/database/database.dart';
+import 'package:breakdex/core/models/canonical_asset.dart';
+import 'package:breakdex/core/sync/asset_hash_service.dart';
+import 'package:breakdex/core/services/canonical_folder_service.dart';
+import 'package:breakdex/core/services/canonical_import_gate.dart';
+import 'package:breakdex/core/services/video_path_resolver.dart';
 
 enum ImportPhase {
   idle,

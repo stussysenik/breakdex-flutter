@@ -1,9 +1,9 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../app_metadata.dart';
-import 'remote_config.dart';
-import 'remote_config_providers.dart';
-import 'update_gate.dart';
+import 'package:breakdex/core/app_metadata.dart';
+import 'package:breakdex/core/config/remote_config.dart';
+import 'package:breakdex/core/config/remote_config_providers.dart';
+import 'package:breakdex/core/config/update_gate.dart';
 
 /// The running build number, as an int.
 ///

@@ -4,17 +4,17 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-import '../../core/providers.dart';
-import '../../core/design/theme.dart';
-import '../../core/services/hydrate_on_login_providers.dart';
-import '../../core/services/legacy_identity_providers.dart';
-import '../../core/services/media_playback_coordinator.dart';
-import '../../core/models/app_mode.dart';
-import '../../core/services/settings_service.dart';
-import '../../core/utils/diagnostics.dart';
-import '../../l10n/gen/app_localizations.dart';
-import 'shake_detector.dart';
-import 'sync_progress_bar.dart';
+import 'package:breakdex/core/providers.dart';
+import 'package:breakdex/core/design/theme.dart';
+import 'package:breakdex/core/services/hydrate_on_login_providers.dart';
+import 'package:breakdex/core/services/legacy_identity_providers.dart';
+import 'package:breakdex/core/services/media_playback_coordinator.dart';
+import 'package:breakdex/core/models/app_mode.dart';
+import 'package:breakdex/core/services/settings_service.dart';
+import 'package:breakdex/core/utils/diagnostics.dart';
+import 'package:breakdex/l10n/gen/app_localizations.dart';
+import 'package:breakdex/shared/widgets/shake_detector.dart';
+import 'package:breakdex/shared/widgets/sync_progress_bar.dart';
 
 class BottomNavShell extends ConsumerWidget {
   const BottomNavShell({super.key, required this.navigationShell});

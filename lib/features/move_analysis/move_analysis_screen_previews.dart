@@ -3,8 +3,8 @@
 import 'package:flutter/widget_previews.dart';
 import 'package:flutter/widgets.dart';
 
-import '../../dev/preview_harness.dart';
-import 'move_analysis_screen.dart';
+import 'package:breakdex/dev/preview_harness.dart';
+import 'package:breakdex/features/move_analysis/move_analysis_screen.dart';
 
 @Preview(name: 'MoveAnalysisScreen · light', group: 'move_analysis', wrapper: wrapLight)
 Widget moveAnalysisScreenLight() => const MoveAnalysisScreen(videoPath: PreviewSeed.videoPath);

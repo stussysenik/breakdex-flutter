@@ -9,16 +9,16 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:path/path.dart' as p;
 import 'package:uuid/uuid.dart';
 
-import '../../database/database.dart';
-import '../../models/learning_state.dart';
-import '../../models/canonical_path.dart';
-import '../../providers.dart';
-import '../../services/video_path_resolver.dart';
-import '../../services/storage_action_machine.dart';
-import '../../utils/diagnostics.dart';
-import 'state.dart';
-import 'event.dart';
-import 'machine.dart';
+import 'package:breakdex/core/database/database.dart';
+import 'package:breakdex/core/models/learning_state.dart';
+import 'package:breakdex/core/models/canonical_path.dart';
+import 'package:breakdex/core/providers.dart';
+import 'package:breakdex/core/services/video_path_resolver.dart';
+import 'package:breakdex/core/services/storage_action_machine.dart';
+import 'package:breakdex/core/utils/diagnostics.dart';
+import 'package:breakdex/core/state_machines/move_detail/state.dart';
+import 'package:breakdex/core/state_machines/move_detail/event.dart';
+import 'package:breakdex/core/state_machines/move_detail/machine.dart';
 
 /// Riverpod Notifier wrapping a MoveDetailMachine for a specific move.
 class MoveDetailNotifier extends Notifier<MoveDetailState> {

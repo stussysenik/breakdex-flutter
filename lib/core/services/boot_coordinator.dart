@@ -3,8 +3,8 @@ import 'dart:math' as math;
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../utils/diagnostics.dart';
-import 'settings_service.dart' show sharedPreferencesProvider;
+import 'package:breakdex/core/utils/diagnostics.dart';
+import 'package:breakdex/core/services/settings_service.dart' show sharedPreferencesProvider;
 
 /// The critical stages of the application startup sequence.
 enum BootGate {

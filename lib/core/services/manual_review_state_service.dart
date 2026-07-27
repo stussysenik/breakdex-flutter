@@ -1,11 +1,11 @@
 import 'package:drift/drift.dart';
 import 'package:flutter/foundation.dart';
 
-import '../data/repositories.dart';
-import '../database/daos/fsrs_cards_dao.dart';
-import '../database/daos/sync_dao.dart';
-import '../models/learning_state.dart';
-import '../database/database.dart';
+import 'package:breakdex/core/data/repositories.dart';
+import 'package:breakdex/core/database/daos/fsrs_cards_dao.dart';
+import 'package:breakdex/core/database/daos/sync_dao.dart';
+import 'package:breakdex/core/models/learning_state.dart';
+import 'package:breakdex/core/database/database.dart';
 
 class ManualMoveStateResult {
   const ManualMoveStateResult({

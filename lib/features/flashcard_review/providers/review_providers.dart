@@ -2,13 +2,13 @@ import 'dart:math';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../core/database/database.dart';
-import '../../../core/models/learning_state.dart';
-import '../../../core/models/reviewable_item.dart';
-import '../../../core/providers.dart';
-import '../../../core/services/settings_service.dart';
-import '../../../core/services/fsrs_service.dart';
-import 'deck_providers.dart';
+import 'package:breakdex/core/database/database.dart';
+import 'package:breakdex/core/models/learning_state.dart';
+import 'package:breakdex/core/models/reviewable_item.dart';
+import 'package:breakdex/core/providers.dart';
+import 'package:breakdex/core/services/settings_service.dart';
+import 'package:breakdex/core/services/fsrs_service.dart';
+import 'package:breakdex/features/flashcard_review/providers/deck_providers.dart';
 
 enum ReviewSessionSource {
   stateBased,

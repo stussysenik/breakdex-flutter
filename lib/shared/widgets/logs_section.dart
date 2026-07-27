@@ -7,10 +7,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:uuid/uuid.dart';
 
-import '../../core/design/spacing.dart';
-import '../../core/design/typography.dart';
-import '../../core/utils/time_format.dart';
-import '../../core/providers.dart';
+import 'package:breakdex/core/design/spacing.dart';
+import 'package:breakdex/core/design/typography.dart';
+import 'package:breakdex/core/utils/time_format.dart';
+import 'package:breakdex/core/providers.dart';
 
 /// Live log entries for a move or combo. Keyed on (type, id) so the family
 /// caches one stream per entity. Backed by Drift `.watch()` queries, it

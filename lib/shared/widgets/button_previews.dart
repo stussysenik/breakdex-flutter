@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/widget_previews.dart';
 
-import 'primary_button.dart';
-import 'secondary_button.dart';
+import 'package:breakdex/shared/widgets/primary_button.dart';
+import 'package:breakdex/shared/widgets/secondary_button.dart';
 
 // Widget previews for the shared button components. Run `flutter widget-preview
 // start` (or open the Widget Preview panel in your IDE) to render these.

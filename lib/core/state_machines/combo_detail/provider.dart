@@ -6,11 +6,11 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:drift/drift.dart' show Value;
 import 'package:uuid/uuid.dart';
-import 'machine.dart';
-import '../../../core/database/database.dart';
-import '../../../core/database/daos/combos_dao.dart';
-import '../../../core/providers.dart';
-import '../../../core/utils/diagnostics.dart';
+import 'package:breakdex/core/state_machines/combo_detail/machine.dart';
+import 'package:breakdex/core/database/database.dart';
+import 'package:breakdex/core/database/daos/combos_dao.dart';
+import 'package:breakdex/core/providers.dart';
+import 'package:breakdex/core/utils/diagnostics.dart';
 
 final comboByIdStreamProvider = StreamProvider.family<Combo, String>((final ref, final id) {
   return ref.watch(comboRepositoryProvider).watchById(id);

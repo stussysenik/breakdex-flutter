@@ -6,15 +6,15 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../core/design/colors.dart';
-import '../../core/design/spacing.dart';
-import '../../core/design/typography.dart';
-import '../../core/providers.dart';
-import '../../core/sync/asset_sync_detail.dart';
-import '../../core/sync/asset_sync_engine.dart';
-import '../../core/sync/integrity_verifier.dart';
-import '../../l10n/gen/app_localizations.dart';
-import '../../shared/widgets/app_loader.dart';
+import 'package:breakdex/core/design/colors.dart';
+import 'package:breakdex/core/design/spacing.dart';
+import 'package:breakdex/core/design/typography.dart';
+import 'package:breakdex/core/providers.dart';
+import 'package:breakdex/core/sync/asset_sync_detail.dart';
+import 'package:breakdex/core/sync/asset_sync_engine.dart';
+import 'package:breakdex/core/sync/integrity_verifier.dart';
+import 'package:breakdex/l10n/gen/app_localizations.dart';
+import 'package:breakdex/shared/widgets/app_loader.dart';
 
 /// Sync status dashboard showing overall progress, active transfers,
 /// and monthly data usage.

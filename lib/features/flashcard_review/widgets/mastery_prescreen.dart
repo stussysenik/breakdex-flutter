@@ -6,19 +6,19 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../core/database/database.dart';
-import '../../../core/services/entity_names_service.dart';
-import '../../../core/design/spacing.dart';
-import '../../../core/design/theme.dart';
-import '../../../core/design/typography.dart';
-import '../../../core/models/learning_state.dart';
-import '../../../core/providers.dart';
-import '../../../l10n/gen/app_localizations.dart';
-import '../../../shared/widgets/app_loader.dart';
-import '../../../shared/widgets/app_segmented_control.dart';
-import '../providers/deck_providers.dart';
-import '../providers/review_providers.dart';
-import 'create_deck_sheet.dart';
+import 'package:breakdex/core/database/database.dart';
+import 'package:breakdex/core/services/entity_names_service.dart';
+import 'package:breakdex/core/design/spacing.dart';
+import 'package:breakdex/core/design/theme.dart';
+import 'package:breakdex/core/design/typography.dart';
+import 'package:breakdex/core/models/learning_state.dart';
+import 'package:breakdex/core/providers.dart';
+import 'package:breakdex/l10n/gen/app_localizations.dart';
+import 'package:breakdex/shared/widgets/app_loader.dart';
+import 'package:breakdex/shared/widgets/app_segmented_control.dart';
+import 'package:breakdex/features/flashcard_review/providers/deck_providers.dart';
+import 'package:breakdex/features/flashcard_review/providers/review_providers.dart';
+import 'package:breakdex/features/flashcard_review/widgets/create_deck_sheet.dart';
 
 /// The session launcher shown before entering a flashcard review session.
 class MasteryPrescreen extends ConsumerWidget {

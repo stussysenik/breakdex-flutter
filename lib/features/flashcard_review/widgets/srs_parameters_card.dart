@@ -4,11 +4,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../core/design/spacing.dart';
-import '../../../core/design/typography.dart';
-import '../../../core/models/fsrs_settings.dart';
-import '../../../core/providers.dart';
-import '../../../l10n/gen/app_localizations.dart';
+import 'package:breakdex/core/design/spacing.dart';
+import 'package:breakdex/core/design/typography.dart';
+import 'package:breakdex/core/models/fsrs_settings.dart';
+import 'package:breakdex/core/providers.dart';
+import 'package:breakdex/l10n/gen/app_localizations.dart';
 
 /// Editable FSRS scheduling controls.
 ///

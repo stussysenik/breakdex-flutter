@@ -3,8 +3,8 @@
 import 'package:flutter/widget_previews.dart';
 import 'package:flutter/widgets.dart';
 
-import '../../dev/preview_harness.dart';
-import 'flow_screen.dart';
+import 'package:breakdex/dev/preview_harness.dart';
+import 'package:breakdex/features/flow/flow_screen.dart';
 
 @Preview(name: 'FlowScreen · light', group: 'flow', wrapper: wrapLight)
 Widget flowScreenLight() => const FlowScreen();

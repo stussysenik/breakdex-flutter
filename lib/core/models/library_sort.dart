@@ -1,5 +1,5 @@
-import '../database/daos/combos_dao.dart';
-import '../database/database.dart';
+import 'package:breakdex/core/database/daos/combos_dao.dart';
+import 'package:breakdex/core/database/database.dart';
 
 /// How the library is ordered. Three date dimensions plus A–Z (design D2).
 ///

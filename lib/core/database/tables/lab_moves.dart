@@ -1,6 +1,6 @@
 import 'package:drift/drift.dart';
-import 'labs.dart';
-import 'moves.dart';
+import 'package:breakdex/core/database/tables/labs.dart';
+import 'package:breakdex/core/database/tables/moves.dart';
 
 class LabMoves extends Table {
   TextColumn get labId =>

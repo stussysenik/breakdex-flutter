@@ -1,10 +1,10 @@
 import 'package:drift/drift.dart';
-import '../database.dart';
-import '../tables/labs.dart';
-import '../tables/lab_moves.dart';
-import '../tables/lab_entries.dart';
-import '../tables/milestones.dart';
-import '../tables/moves.dart';
+import 'package:breakdex/core/database/database.dart';
+import 'package:breakdex/core/database/tables/labs.dart';
+import 'package:breakdex/core/database/tables/lab_moves.dart';
+import 'package:breakdex/core/database/tables/lab_entries.dart';
+import 'package:breakdex/core/database/tables/milestones.dart';
+import 'package:breakdex/core/database/tables/moves.dart';
 
 part 'labs_dao.g.dart';
 

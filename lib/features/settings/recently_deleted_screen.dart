@@ -5,14 +5,14 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-import '../../core/database/database.dart';
-import '../../core/design/colors.dart';
-import '../../core/design/spacing.dart';
-import '../../core/design/typography.dart';
-import '../../core/models/move_archive_reason.dart';
-import '../../core/providers.dart';
-import '../../shared/widgets/app_loader.dart';
-import '../../shared/widgets/settings_list_group.dart';
+import 'package:breakdex/core/database/database.dart';
+import 'package:breakdex/core/design/colors.dart';
+import 'package:breakdex/core/design/spacing.dart';
+import 'package:breakdex/core/design/typography.dart';
+import 'package:breakdex/core/models/move_archive_reason.dart';
+import 'package:breakdex/core/providers.dart';
+import 'package:breakdex/shared/widgets/app_loader.dart';
+import 'package:breakdex/shared/widgets/settings_list_group.dart';
 
 final archivedMovesProvider = StreamProvider<List<Move>>((final ref) {
   return ref.watch(movesDaoProvider).watchArchived();

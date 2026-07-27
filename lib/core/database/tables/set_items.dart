@@ -1,6 +1,6 @@
 import 'package:drift/drift.dart';
 
-import 'sets.dart';
+import 'package:breakdex/core/database/tables/sets.dart';
 
 class SetItems extends Table {
   TextColumn get id => text()();

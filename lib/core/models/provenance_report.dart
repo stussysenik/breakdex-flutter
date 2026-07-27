@@ -1,6 +1,6 @@
 import 'package:intl/intl.dart';
 
-import '../services/provenance_journal_service.dart';
+import 'package:breakdex/core/services/provenance_journal_service.dart';
 
 class ProvenanceReport {
   const ProvenanceReport({

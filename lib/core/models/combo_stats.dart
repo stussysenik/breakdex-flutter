@@ -1,4 +1,4 @@
-import 'learning_state.dart';
+import 'package:breakdex/core/models/learning_state.dart';
 
 LearningState compositeState(final List<LearningState> moveStates) {
   if (moveStates.isEmpty) return LearningState.newState;

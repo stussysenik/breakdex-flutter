@@ -3,8 +3,8 @@
 import 'package:flutter/widget_previews.dart';
 import 'package:flutter/widgets.dart';
 
-import '../../dev/preview_harness.dart';
-import 'free_space_screen.dart';
+import 'package:breakdex/dev/preview_harness.dart';
+import 'package:breakdex/features/settings/free_space_screen.dart';
 
 @Preview(name: 'FreeSpaceScreen · light', group: 'settings', wrapper: wrapLight)
 Widget freeSpaceScreenLight() => const FreeSpaceScreen();

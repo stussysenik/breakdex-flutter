@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../design/spacing.dart';
-import '../../design/typography.dart';
-import '../entitlement.dart';
-import '../entitlement_providers.dart';
+import 'package:breakdex/core/design/spacing.dart';
+import 'package:breakdex/core/design/typography.dart';
+import 'package:breakdex/core/config/entitlement.dart';
+import 'package:breakdex/core/config/entitlement_providers.dart';
 
 /// Root wrapper that renders the invite-code gate over [child] for released
 /// builds that require an entitlement.

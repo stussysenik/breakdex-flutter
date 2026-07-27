@@ -9,18 +9,18 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:uuid/uuid.dart';
 
-import '../../core/database/database.dart';
-import '../../core/design/spacing.dart';
-import '../../core/design/typography.dart';
-import '../../core/models/reviewable_item.dart';
-import '../../core/providers.dart';
-import '../../core/utils/diagnostics.dart';
-import '../../shared/widgets/beat_grid.dart';
-import '../../shared/widgets/combo_step_line.dart';
-import '../combos/plan_combo_flow.dart';
-import '../../shared/widgets/app_loader.dart';
-import '../../shared/widgets/secondary_button.dart';
-import '../../shared/widgets/video_player_widget.dart'
+import 'package:breakdex/core/database/database.dart';
+import 'package:breakdex/core/design/spacing.dart';
+import 'package:breakdex/core/design/typography.dart';
+import 'package:breakdex/core/models/reviewable_item.dart';
+import 'package:breakdex/core/providers.dart';
+import 'package:breakdex/core/utils/diagnostics.dart';
+import 'package:breakdex/shared/widgets/beat_grid.dart';
+import 'package:breakdex/shared/widgets/combo_step_line.dart';
+import 'package:breakdex/features/combos/plan_combo_flow.dart';
+import 'package:breakdex/shared/widgets/app_loader.dart';
+import 'package:breakdex/shared/widgets/secondary_button.dart';
+import 'package:breakdex/shared/widgets/video_player_widget.dart'
     show RobustVideoPlayer, VideoPlaceholder;
 
 class CreateComboScreen extends ConsumerStatefulWidget {

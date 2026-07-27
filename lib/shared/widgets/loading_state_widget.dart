@@ -3,9 +3,9 @@
 
 import 'package:flutter/material.dart';
 
-import '../../core/design/spacing.dart';
-import '../../core/utils/loading_state_machine.dart';
-import 'app_loader.dart';
+import 'package:breakdex/core/design/spacing.dart';
+import 'package:breakdex/core/utils/loading_state_machine.dart';
+import 'package:breakdex/shared/widgets/app_loader.dart';
 
 /// Renders a visual representation of a [LoadingStateMachine] state.
 ///

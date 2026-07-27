@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../core/design/spacing.dart';
-import '../../../core/design/typography.dart';
-import '../../../shared/widgets/app_loader.dart';
-import '../providers/achievement_providers.dart';
-import 'achievement_tile.dart';
+import 'package:breakdex/core/design/spacing.dart';
+import 'package:breakdex/core/design/typography.dart';
+import 'package:breakdex/shared/widgets/app_loader.dart';
+import 'package:breakdex/features/lab/providers/achievement_providers.dart';
+import 'package:breakdex/features/lab/widgets/achievement_tile.dart';
 
 /// A data-dense grid showing every move's achievement tier.
 ///

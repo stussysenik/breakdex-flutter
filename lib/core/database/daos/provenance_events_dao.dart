@@ -1,7 +1,7 @@
 import 'package:drift/drift.dart';
 
-import '../database.dart';
-import '../tables/provenance_events.dart';
+import 'package:breakdex/core/database/database.dart';
+import 'package:breakdex/core/database/tables/provenance_events.dart';
 
 part 'provenance_events_dao.g.dart';
 

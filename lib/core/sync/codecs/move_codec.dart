@@ -9,8 +9,8 @@ library;
 
 import 'package:drift/drift.dart';
 
-import '../../database/database.dart';
-import '../sync_backend.dart';
+import 'package:breakdex/core/database/database.dart';
+import 'package:breakdex/core/sync/sync_backend.dart';
 
 /// Project a [Move] onto its provider-neutral [SyncRecord].
 ///

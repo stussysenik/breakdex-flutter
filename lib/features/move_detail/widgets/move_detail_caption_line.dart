@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 
-import '../../../core/design/typography.dart';
-import '../../../core/models/library_sort.dart';
-import '../../../core/models/move_detail_caption.dart';
-import '../../move_list/widgets/library_date_line_format.dart';
+import 'package:breakdex/core/design/typography.dart';
+import 'package:breakdex/core/models/library_sort.dart';
+import 'package:breakdex/core/models/move_detail_caption.dart';
+import 'package:breakdex/features/move_list/widgets/library_date_line_format.dart';
 
 /// The one caption under a move's name on the move detail screen.
 ///

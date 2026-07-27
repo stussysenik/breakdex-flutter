@@ -1,9 +1,9 @@
 import 'package:drift/drift.dart';
 import 'package:uuid/uuid.dart';
 
-import '../database/database.dart';
-import '../database/daos/sync_providers_dao.dart';
-import 'providers/icloud_provider.dart';
+import 'package:breakdex/core/database/database.dart';
+import 'package:breakdex/core/database/daos/sync_providers_dao.dart';
+import 'package:breakdex/core/sync/providers/icloud_provider.dart';
 
 /// Orchestrates one-tap iCloud setup.
 ///

@@ -21,9 +21,9 @@ library;
 
 import 'package:drift/drift.dart';
 
-import '../../database/database.dart';
-import '../../models/learning_state.dart';
-import '../sync_backend.dart';
+import 'package:breakdex/core/database/database.dart';
+import 'package:breakdex/core/models/learning_state.dart';
+import 'package:breakdex/core/sync/sync_backend.dart';
 
 /// Project a [Review] onto its provider-neutral append-only [SyncRecord], or
 /// `null` when the reviewed entity cannot be identified (see the library note).

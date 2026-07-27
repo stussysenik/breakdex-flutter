@@ -6,13 +6,13 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:uuid/uuid.dart';
 
-import '../../../core/database/database.dart';
-import '../../../core/utils/time_format.dart';
-import '../../../core/design/colors.dart';
-import '../../../core/design/spacing.dart';
-import '../../../core/design/typography.dart';
-import '../../../shared/widgets/app_loader.dart';
-import '../providers/lab_providers.dart';
+import 'package:breakdex/core/database/database.dart';
+import 'package:breakdex/core/utils/time_format.dart';
+import 'package:breakdex/core/design/colors.dart';
+import 'package:breakdex/core/design/spacing.dart';
+import 'package:breakdex/core/design/typography.dart';
+import 'package:breakdex/shared/widgets/app_loader.dart';
+import 'package:breakdex/features/lab/providers/lab_providers.dart';
 
 /// Vertical timeline showing lab entries and milestones interleaved
 /// chronologically for 'project'-type labs.

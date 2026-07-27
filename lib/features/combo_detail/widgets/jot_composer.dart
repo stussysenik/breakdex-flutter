@@ -6,11 +6,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:path/path.dart' as p;
 import 'package:uuid/uuid.dart';
 
-import '../../../core/design/spacing.dart';
-import '../../../core/design/typography.dart';
-import '../../../core/providers.dart';
-import '../../../core/utils/diagnostics.dart';
-import 'library_video_picker_sheet.dart';
+import 'package:breakdex/core/design/spacing.dart';
+import 'package:breakdex/core/design/typography.dart';
+import 'package:breakdex/core/providers.dart';
+import 'package:breakdex/core/utils/diagnostics.dart';
+import 'package:breakdex/features/combo_detail/widgets/library_video_picker_sheet.dart';
 
 /// The pinned capture affordance: text field, "+ video", accent send.
 /// One action — jot it down. Every send appends one immutable journal row.

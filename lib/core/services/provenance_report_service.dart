@@ -1,5 +1,5 @@
-import '../models/provenance_report.dart';
-import 'provenance_journal_service.dart';
+import 'package:breakdex/core/models/provenance_report.dart';
+import 'package:breakdex/core/services/provenance_journal_service.dart';
 
 class ProvenanceReportService {
   const ProvenanceReportService(this._journal);

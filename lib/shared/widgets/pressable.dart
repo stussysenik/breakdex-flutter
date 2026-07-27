@@ -4,7 +4,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
-import '../../core/design/spacing.dart';
+import 'package:breakdex/core/design/spacing.dart';
 
 /// A reusable press-feedback wrapper that scales down on tap-down and
 /// springs back on release, with optional haptic feedback.

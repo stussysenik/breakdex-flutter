@@ -4,8 +4,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
-import '../../core/design/spacing.dart';
-import 'timeline_node.dart';
+import 'package:breakdex/core/design/spacing.dart';
+import 'package:breakdex/shared/widgets/timeline_node.dart';
 
 class ComboStepLine extends StatefulWidget {
   const ComboStepLine({

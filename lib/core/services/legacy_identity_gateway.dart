@@ -11,8 +11,8 @@ library;
 
 import 'package:appwrite/appwrite.dart';
 
-import '../config/appwrite_env.dart';
-import 'legacy_identity_service.dart';
+import 'package:breakdex/core/config/appwrite_env.dart';
+import 'package:breakdex/core/services/legacy_identity_service.dart';
 
 class AppwriteLegacyIdentityGateway implements LegacyIdentityGateway {
   AppwriteLegacyIdentityGateway({required final Client client})

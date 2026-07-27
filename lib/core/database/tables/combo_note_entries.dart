@@ -1,6 +1,6 @@
 import 'package:drift/drift.dart';
 
-import 'combos.dart';
+import 'package:breakdex/core/database/tables/combos.dart';
 
 class ComboNoteEntries extends Table {
   TextColumn get id => text()();

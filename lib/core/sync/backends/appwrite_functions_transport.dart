@@ -5,7 +5,7 @@ import 'package:appwrite/appwrite.dart' as aw;
 import 'package:appwrite/enums.dart' as enums;
 import 'package:appwrite/models.dart' as models;
 
-import 'appwrite_transport.dart';
+import 'package:breakdex/core/sync/backends/appwrite_transport.dart';
 
 /// [AppwriteTransport] over the Appwrite client SDK — `Functions` for Function
 /// executions, `TablesDB` for the direct per-user reads, and `Realtime` for the

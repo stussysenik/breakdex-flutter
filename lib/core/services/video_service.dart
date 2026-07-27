@@ -3,25 +3,25 @@
 
 import 'dart:async';
 import 'dart:collection';
-import '../platform/io.dart';
-import '../platform/native_media.dart';
+import 'package:breakdex/core/platform/io.dart';
+import 'package:breakdex/core/platform/native_media.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:path/path.dart' as p;
-import '../utils/diagnostics.dart';
+import 'package:breakdex/core/utils/diagnostics.dart';
 import 'package:uuid/uuid.dart';
 import 'package:video_thumbnail/video_thumbnail.dart';
 import 'package:fpdart/fpdart.dart';
 
-import '../domain/failures/failure.dart';
-import '../utils/filesystem_utils.dart';
-import '../utils/loading_state_machine.dart';
-import 'native_video_preview.dart';
-import 'video_path_resolver.dart';
-import 'video_storage_gate.dart';
+import 'package:breakdex/core/domain/failures/failure.dart';
+import 'package:breakdex/core/utils/filesystem_utils.dart';
+import 'package:breakdex/core/utils/loading_state_machine.dart';
+import 'package:breakdex/core/services/native_video_preview.dart';
+import 'package:breakdex/core/services/video_path_resolver.dart';
+import 'package:breakdex/core/services/video_storage_gate.dart';
 
 enum VideoFileStatus { ready, missing, error }
 

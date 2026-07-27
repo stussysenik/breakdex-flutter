@@ -8,15 +8,15 @@ import 'package:flutter/services.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../shared/widgets/app_loader.dart';
-import '../../../core/database/database.dart';
-import '../../../core/design/spacing.dart';
-import '../../../core/design/theme.dart';
-import '../../../core/design/typography.dart';
-import '../../../core/providers.dart';
-import '../providers/aura_providers.dart';
-import 'aura_link_tile.dart';
-import 'aura_preset_picker.dart';
+import 'package:breakdex/shared/widgets/app_loader.dart';
+import 'package:breakdex/core/database/database.dart';
+import 'package:breakdex/core/design/spacing.dart';
+import 'package:breakdex/core/design/theme.dart';
+import 'package:breakdex/core/design/typography.dart';
+import 'package:breakdex/core/providers.dart';
+import 'package:breakdex/features/flow/providers/aura_providers.dart';
+import 'package:breakdex/features/flow/widgets/aura_link_tile.dart';
+import 'package:breakdex/features/flow/widgets/aura_preset_picker.dart';
 
 // ---------------------------------------------------------------------------
 // AuraView — the main "Your Aura" screen/section.

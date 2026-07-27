@@ -1,8 +1,8 @@
 import 'dart:convert';
-import '../database/database.dart';
-import '../database/daos/decks_dao.dart';
-import '../database/daos/fsrs_cards_dao.dart';
-import '../database/daos/moves_dao.dart';
+import 'package:breakdex/core/database/database.dart';
+import 'package:breakdex/core/database/daos/decks_dao.dart';
+import 'package:breakdex/core/database/daos/fsrs_cards_dao.dart';
+import 'package:breakdex/core/database/daos/moves_dao.dart';
 
 /// Filter criteria for smart decks, serialized as JSON in the database.
 class DeckFilter {

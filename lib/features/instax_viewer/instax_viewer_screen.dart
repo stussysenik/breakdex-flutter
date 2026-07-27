@@ -7,15 +7,15 @@ import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-import '../../core/database/database.dart';
-import '../../core/models/reviewable_item.dart' show MoveVideoPath, ReviewableMove;
-import '../../core/services/media_playback_coordinator.dart';
-import '../../core/design/colors.dart';
-import '../../core/design/spacing.dart';
-import '../../core/design/typography.dart';
-import '../../shared/widgets/app_loader.dart';
-import '../../core/providers.dart';
-import 'instax_video_card.dart';
+import 'package:breakdex/core/database/database.dart';
+import 'package:breakdex/core/models/reviewable_item.dart' show MoveVideoPath, ReviewableMove;
+import 'package:breakdex/core/services/media_playback_coordinator.dart';
+import 'package:breakdex/core/design/colors.dart';
+import 'package:breakdex/core/design/spacing.dart';
+import 'package:breakdex/core/design/typography.dart';
+import 'package:breakdex/shared/widgets/app_loader.dart';
+import 'package:breakdex/core/providers.dart';
+import 'package:breakdex/features/instax_viewer/instax_video_card.dart';
 
 enum InstaxMode {
   carousel,

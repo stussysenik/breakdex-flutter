@@ -1,6 +1,6 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
-import '../design/colors.dart';
+import 'package:breakdex/core/design/colors.dart';
 
 /// User-defined learning state for custom review modes.
 ///

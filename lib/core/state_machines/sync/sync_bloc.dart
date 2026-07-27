@@ -1,8 +1,8 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
 
-import '../../domain/failures/failure.dart';
-import '../../services/sync_service.dart';
+import 'package:breakdex/core/domain/failures/failure.dart';
+import 'package:breakdex/core/services/sync_service.dart';
 
 part 'sync_bloc.freezed.dart';
 

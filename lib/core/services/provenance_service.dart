@@ -3,8 +3,8 @@ import 'dart:math';
 
 import 'package:drift/drift.dart';
 
-import '../database/database.dart';
-import '../database/daos/provenance_events_dao.dart';
+import 'package:breakdex/core/database/database.dart';
+import 'package:breakdex/core/database/daos/provenance_events_dao.dart';
 
 /// Service for recording data provenance events.
 ///

@@ -5,7 +5,7 @@ import 'dart:async';
 import 'dart:collection';
 import 'package:flutter/widgets.dart';
 
-import 'video_service.dart';
+import 'package:breakdex/core/services/video_service.dart';
 
 /// Priority-queue thumbnail loader with bounded concurrency.
 ///

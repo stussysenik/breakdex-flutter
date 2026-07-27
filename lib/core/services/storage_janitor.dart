@@ -1,16 +1,16 @@
 // H.8 lint triage — avoid_slow_async_io: async filesystem stat is intentional (avoids blocking the UI isolate); sync alternatives would block.
 // ignore_for_file: avoid_slow_async_io
 
-import '../platform/io.dart';
+import 'package:breakdex/core/platform/io.dart';
 import 'package:path/path.dart' as p;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../database/database.dart';
-import '../providers.dart';
-import '../sync/sandbox_hash_index.dart' show sandboxHashToken;
-import '../utils/diagnostics.dart';
-import '../utils/filesystem_utils.dart';
-import 'video_path_resolver.dart';
+import 'package:breakdex/core/database/database.dart';
+import 'package:breakdex/core/providers.dart';
+import 'package:breakdex/core/sync/sandbox_hash_index.dart' show sandboxHashToken;
+import 'package:breakdex/core/utils/diagnostics.dart';
+import 'package:breakdex/core/utils/filesystem_utils.dart';
+import 'package:breakdex/core/services/video_path_resolver.dart';
 
 /// Performs a symmetric difference between the SQL database and the Filesystem.
 /// 

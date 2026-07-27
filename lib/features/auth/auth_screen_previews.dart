@@ -3,8 +3,8 @@
 import 'package:flutter/widget_previews.dart';
 import 'package:flutter/widgets.dart';
 
-import '../../dev/preview_harness.dart';
-import 'auth_screen.dart';
+import 'package:breakdex/dev/preview_harness.dart';
+import 'package:breakdex/features/auth/auth_screen.dart';
 
 @Preview(name: 'AuthScreen · light', group: 'auth', wrapper: wrapLight)
 Widget authScreenLight() => const AuthScreen();

@@ -5,15 +5,15 @@ import 'package:flutter/foundation.dart';
 import 'package:path/path.dart' as p;
 import 'package:uuid/uuid.dart';
 
-import '../data/repositories.dart';
-import '../database/database.dart';
-import '../database/daos/fsrs_cards_dao.dart';
-import '../models/move_creation.dart';
-import 'reviewable_naming_service.dart';
-import 'video_path_resolver.dart';
-import 'blackbox_service.dart';
-import 'storage_action_machine.dart';
-import '../models/canonical_path.dart';
+import 'package:breakdex/core/data/repositories.dart';
+import 'package:breakdex/core/database/database.dart';
+import 'package:breakdex/core/database/daos/fsrs_cards_dao.dart';
+import 'package:breakdex/core/models/move_creation.dart';
+import 'package:breakdex/core/services/reviewable_naming_service.dart';
+import 'package:breakdex/core/services/video_path_resolver.dart';
+import 'package:breakdex/core/services/blackbox_service.dart';
+import 'package:breakdex/core/services/storage_action_machine.dart';
+import 'package:breakdex/core/models/canonical_path.dart';
 
 typedef MoveVideoImportedHandler =
     Future<void> Function({required String localPath, required String moveId, String? precomputedHash});

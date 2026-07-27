@@ -1,8 +1,8 @@
 import 'package:drift/drift.dart';
 
-import '../database.dart';
-import '../tables/combo_note_entries.dart';
-import 'sync_dao.dart';
+import 'package:breakdex/core/database/database.dart';
+import 'package:breakdex/core/database/tables/combo_note_entries.dart';
+import 'package:breakdex/core/database/daos/sync_dao.dart';
 
 part 'combo_note_entries_dao.g.dart';
 

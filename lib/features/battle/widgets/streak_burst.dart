@@ -3,7 +3,7 @@
 
 import 'dart:math';
 import 'package:flutter/material.dart';
-import '../../../core/design/colors.dart';
+import 'package:breakdex/core/design/colors.dart';
 
 class StreakBurst extends StatefulWidget {
   const StreakBurst({super.key, required this.trigger});

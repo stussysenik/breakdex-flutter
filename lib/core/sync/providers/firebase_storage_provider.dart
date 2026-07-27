@@ -1,10 +1,10 @@
 // H.8 lint triage — avoid_slow_async_io: async filesystem stat is intentional (avoids blocking the UI isolate); sync alternatives would block.
 // ignore_for_file: avoid_slow_async_io
 
-import '../../platform/io.dart';
-import '../../platform/native_file_transfer.dart';
+import 'package:breakdex/core/platform/io.dart';
+import 'package:breakdex/core/platform/native_file_transfer.dart';
 import 'package:firebase_storage/firebase_storage.dart';
-import '../cloud_provider.dart';
+import 'package:breakdex/core/sync/cloud_provider.dart';
 
 class FirebaseStorageProvider implements CloudProvider {
   @override

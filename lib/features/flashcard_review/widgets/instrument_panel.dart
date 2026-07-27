@@ -4,14 +4,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
-import '../../../core/database/database.dart';
-import '../../../core/database/daos/combos_dao.dart';
-import '../../../core/design/spacing.dart';
-import '../../../core/design/typography.dart';
-import '../../../core/models/learning_state.dart';
-import '../../../core/models/review_card_display_settings.dart';
-import '../../../shared/widgets/beat_grid.dart';
-import '../../../shared/widgets/state_pill.dart';
+import 'package:breakdex/core/database/database.dart';
+import 'package:breakdex/core/database/daos/combos_dao.dart';
+import 'package:breakdex/core/design/spacing.dart';
+import 'package:breakdex/core/design/typography.dart';
+import 'package:breakdex/core/models/learning_state.dart';
+import 'package:breakdex/core/models/review_card_display_settings.dart';
+import 'package:breakdex/shared/widgets/beat_grid.dart';
+import 'package:breakdex/shared/widgets/state_pill.dart';
 /// Instrument panel — metadata and playback controls that sit between the
 /// video player and the rating buttons in the redesigned review card.
 ///

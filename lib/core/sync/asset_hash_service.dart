@@ -1,4 +1,4 @@
-import '../platform/io.dart';
+import 'package:breakdex/core/platform/io.dart';
 import 'dart:isolate';
 
 import 'package:crypto/crypto.dart';

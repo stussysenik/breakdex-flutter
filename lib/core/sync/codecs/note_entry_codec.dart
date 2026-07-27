@@ -18,8 +18,8 @@ library;
 
 import 'package:drift/drift.dart';
 
-import '../../database/database.dart';
-import '../sync_backend.dart';
+import 'package:breakdex/core/database/database.dart';
+import 'package:breakdex/core/sync/sync_backend.dart';
 
 /// Project a [MoveNoteEntry] onto its provider-neutral [SyncRecord]. The LWW
 /// clock falls back to `createdAt` for a (post-v27-migration unreachable) null

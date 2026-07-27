@@ -1,4 +1,4 @@
-import 'native_bridge.dart';
+import 'package:breakdex/core/services/native_bridge.dart';
 
 enum PhotoLibraryAccessStatus {
   notDetermined,

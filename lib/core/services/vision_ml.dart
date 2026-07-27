@@ -1,8 +1,8 @@
 import 'dart:typed_data';
 
-import '../models/pose_frame.dart';
-import '../models/pose_joint.dart';
-import 'native_bridge.dart';
+import 'package:breakdex/core/models/pose_frame.dart';
+import 'package:breakdex/core/models/pose_joint.dart';
+import 'package:breakdex/core/services/native_bridge.dart';
 
 /// Dart interface to the native Apple Vision + CoreML plugin.
 ///

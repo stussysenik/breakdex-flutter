@@ -1,7 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../../core/database/database.dart';
-import '../../../core/providers.dart';
-import '../../../core/services/fsrs_service.dart';
+import 'package:breakdex/core/database/database.dart';
+import 'package:breakdex/core/providers.dart';
+import 'package:breakdex/core/services/fsrs_service.dart';
 
 /// A single move-level review entry for the day detail drilldown.
 class DayMoveReview {

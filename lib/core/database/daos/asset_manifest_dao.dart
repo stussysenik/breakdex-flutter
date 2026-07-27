@@ -1,10 +1,10 @@
 import 'package:drift/drift.dart';
 
-import '../../sync/asset_sync_detail.dart';
-import '../database.dart';
-import '../tables/asset_manifest.dart';
-import '../tables/asset_copies.dart';
-import '../tables/sync_operations.dart';
+import 'package:breakdex/core/sync/asset_sync_detail.dart';
+import 'package:breakdex/core/database/database.dart';
+import 'package:breakdex/core/database/tables/asset_manifest.dart';
+import 'package:breakdex/core/database/tables/asset_copies.dart';
+import 'package:breakdex/core/database/tables/sync_operations.dart';
 
 part 'asset_manifest_dao.g.dart';
 

@@ -4,12 +4,12 @@ import 'package:drift/drift.dart';
 import 'package:path/path.dart' as p;
 import 'package:uuid/uuid.dart';
 
-import '../data/repositories.dart';
-import '../database/database.dart';
-import '../services/video_path_resolver.dart';
-import '../utils/filesystem_utils.dart';
-import 'asset_hash_service.dart';
-import 'sandbox_hash_index.dart';
+import 'package:breakdex/core/data/repositories.dart';
+import 'package:breakdex/core/database/database.dart';
+import 'package:breakdex/core/services/video_path_resolver.dart';
+import 'package:breakdex/core/utils/filesystem_utils.dart';
+import 'package:breakdex/core/sync/asset_hash_service.dart';
+import 'package:breakdex/core/sync/sandbox_hash_index.dart';
 
 /// Restores quarantined orphan assets — live manifest rows with zero owning
 /// entities whose bytes survive in the sandbox (design D11, task 4.8).

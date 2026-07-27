@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
-import '../../../core/design/typography.dart';
-import '../../../core/models/library_date_line.dart';
-import '../../../core/models/library_sort.dart';
-import '../../../l10n/gen/app_localizations.dart';
+import 'package:breakdex/core/design/typography.dart';
+import 'package:breakdex/core/models/library_date_line.dart';
+import 'package:breakdex/core/models/library_sort.dart';
+import 'package:breakdex/l10n/gen/app_localizations.dart';
 
 /// The one localized date line the library shows on rows and tiles.
 ///

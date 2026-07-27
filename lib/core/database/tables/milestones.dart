@@ -1,5 +1,5 @@
 import 'package:drift/drift.dart';
-import 'labs.dart';
+import 'package:breakdex/core/database/tables/labs.dart';
 
 class Milestones extends Table {
   TextColumn get id => text()();

@@ -1,6 +1,6 @@
-import 'io.dart';
+import 'package:breakdex/core/platform/io.dart';
 
-import 'native_paths_native.dart'
+import 'package:breakdex/core/platform/native_paths_native.dart'
     if (dart.library.js_interop) 'native_paths_web.dart';
 
 /// `path_provider`'s application-documents directory is a native filesystem

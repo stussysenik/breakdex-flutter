@@ -1,6 +1,6 @@
 import 'package:drift/drift.dart';
 
-import 'asset_manifest.dart';
+import 'package:breakdex/core/database/tables/asset_manifest.dart';
 
 /// Tracks each copy of a video asset across storage providers.
 ///

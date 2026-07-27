@@ -1,4 +1,4 @@
-import 'pose_joint.dart';
+import 'package:breakdex/core/models/pose_joint.dart';
 
 /// A single frame of pose data — all detected joints at a point in time.
 ///

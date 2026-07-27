@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 
-import '../../../core/database/database.dart';
-import '../../../core/utils/time_format.dart';
-import '../../../core/design/colors.dart';
-import '../../../core/design/spacing.dart';
-import '../../../core/design/theme.dart';
-import '../../../core/design/typography.dart';
+import 'package:breakdex/core/database/database.dart';
+import 'package:breakdex/core/utils/time_format.dart';
+import 'package:breakdex/core/design/colors.dart';
+import 'package:breakdex/core/design/spacing.dart';
+import 'package:breakdex/core/design/theme.dart';
+import 'package:breakdex/core/design/typography.dart';
 
 /// Reusable lab card widget used in both list and board views.
 ///

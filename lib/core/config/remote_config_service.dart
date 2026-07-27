@@ -2,7 +2,7 @@ import 'dart:convert';
 
 import 'package:shared_preferences/shared_preferences.dart';
 
-import 'remote_config.dart';
+import 'package:breakdex/core/config/remote_config.dart';
 
 /// Resolves the app's remote config with a strict fallback ladder:
 /// **remote → last-cached → compiled defaults**.

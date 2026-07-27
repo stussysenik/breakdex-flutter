@@ -1,11 +1,11 @@
 import 'package:flutter/foundation.dart';
 import 'package:drift/drift.dart';
-import '../database.dart';
-import '../tables/combos.dart';
-import '../tables/combo_moves.dart';
-import '../tables/combo_note_entries.dart';
-import '../tables/combo_plans.dart';
-import '../tables/moves.dart';
+import 'package:breakdex/core/database/database.dart';
+import 'package:breakdex/core/database/tables/combos.dart';
+import 'package:breakdex/core/database/tables/combo_moves.dart';
+import 'package:breakdex/core/database/tables/combo_note_entries.dart';
+import 'package:breakdex/core/database/tables/combo_plans.dart';
+import 'package:breakdex/core/database/tables/moves.dart';
 
 part 'combos_dao.g.dart';
 

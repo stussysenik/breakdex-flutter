@@ -1,13 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../shared/widgets/app_loader.dart';
-import '../../core/design/spacing.dart';
-import '../../core/design/theme.dart';
-import '../../core/design/typography.dart';
-import 'providers/stats_providers.dart';
-import 'widgets/practice_calendar_view.dart';
-import '../../core/utils/diagnostics.dart';
+import 'package:breakdex/shared/widgets/app_loader.dart';
+import 'package:breakdex/core/design/spacing.dart';
+import 'package:breakdex/core/design/theme.dart';
+import 'package:breakdex/core/design/typography.dart';
+import 'package:breakdex/features/stats/providers/stats_providers.dart';
+import 'package:breakdex/features/stats/widgets/practice_calendar_view.dart';
+import 'package:breakdex/core/utils/diagnostics.dart';
 
 class StatsScreen extends ConsumerWidget {
   const StatsScreen({super.key});

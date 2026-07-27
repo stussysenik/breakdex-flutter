@@ -1,5 +1,5 @@
-import '../models/pose_joint.dart';
-import 'native_bridge.dart';
+import 'package:breakdex/core/models/pose_joint.dart';
+import 'package:breakdex/core/services/native_bridge.dart';
 
 /// Dart interface to the native SceneKit 3D rendering plugin.
 ///

@@ -8,15 +8,15 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-import '../../../core/database/database.dart';
-import '../../../core/design/spacing.dart';
-import '../../../core/design/theme.dart';
-import '../../../core/design/typography.dart';
-import '../../../core/providers.dart';
-import '../../../core/utils/diagnostics.dart';
-import '../../../shared/widgets/app_loader.dart';
-import '../../flow/providers/aura_providers.dart';
-import '../../flow/widgets/aura_link_tile.dart' show AuraAffinity;
+import 'package:breakdex/core/database/database.dart';
+import 'package:breakdex/core/design/spacing.dart';
+import 'package:breakdex/core/design/theme.dart';
+import 'package:breakdex/core/design/typography.dart';
+import 'package:breakdex/core/providers.dart';
+import 'package:breakdex/core/utils/diagnostics.dart';
+import 'package:breakdex/shared/widgets/app_loader.dart';
+import 'package:breakdex/features/flow/providers/aura_providers.dart';
+import 'package:breakdex/features/flow/widgets/aura_link_tile.dart' show AuraAffinity;
 
 // ---------------------------------------------------------------------------
 // MoveAuraSection — compact aura flow display for the Move Detail screen.

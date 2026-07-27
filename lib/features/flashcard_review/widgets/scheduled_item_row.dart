@@ -1,18 +1,18 @@
 // H.8 lint triage — discarded_futures: intentional fire-and-forget (UI/provider side effects); the rule still guards new sync/codec files.
 // ignore_for_file: discarded_futures
 
-import '../../../core/platform/io.dart';
+import 'package:breakdex/core/platform/io.dart';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../core/design/spacing.dart';
-import '../../../core/design/theme.dart';
-import '../../../core/design/typography.dart';
-import '../../../core/providers.dart';
-import '../../../core/services/fsrs_service.dart';
-import '../../../core/models/reviewable_item.dart';
+import 'package:breakdex/core/design/spacing.dart';
+import 'package:breakdex/core/design/theme.dart';
+import 'package:breakdex/core/design/typography.dart';
+import 'package:breakdex/core/providers.dart';
+import 'package:breakdex/core/services/fsrs_service.dart';
+import 'package:breakdex/core/models/reviewable_item.dart';
 
 /// A row in the schedule item list showing an item's name, state, and SRS data.
 ///

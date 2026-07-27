@@ -1,4 +1,4 @@
-import '../platform/io.dart';
+import 'package:breakdex/core/platform/io.dart';
 import 'dart:math';
 
 import 'package:drift/drift.dart' show Value;
@@ -8,9 +8,9 @@ import 'package:flutter_launch_arguments/flutter_launch_arguments.dart';
 import 'package:path/path.dart' as p;
 import 'package:shared_preferences/shared_preferences.dart';
 
-import '../database/database.dart';
-import '../models/learning_state.dart';
-import 'app_storage_paths.dart';
+import 'package:breakdex/core/database/database.dart';
+import 'package:breakdex/core/models/learning_state.dart';
+import 'package:breakdex/core/services/app_storage_paths.dart';
 
 class _FixtureVideoSeed {
   const _FixtureVideoSeed({

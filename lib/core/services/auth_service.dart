@@ -3,7 +3,7 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:fpdart/fpdart.dart';
 
-import '../domain/failures/failure.dart';
+import 'package:breakdex/core/domain/failures/failure.dart';
 
 class AuthService {
   bool _initialized = false;

@@ -3,12 +3,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-import '../core/database/database.dart';
-import '../core/design/theme.dart';
-import '../core/providers.dart';
-import '../core/services/settings_service.dart';
-import '../shared/widgets/app_loader.dart';
-import 'preview_db.dart';
+import 'package:breakdex/core/database/database.dart';
+import 'package:breakdex/core/design/theme.dart';
+import 'package:breakdex/core/providers.dart';
+import 'package:breakdex/core/services/settings_service.dart';
+import 'package:breakdex/shared/widgets/app_loader.dart';
+import 'package:breakdex/dev/preview_db.dart';
 
 /// Shared widget-preview harness for the whole app.
 ///

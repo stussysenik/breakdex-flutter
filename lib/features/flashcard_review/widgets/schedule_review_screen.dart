@@ -3,19 +3,19 @@ import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-import '../../../shared/widgets/app_loader.dart';
-import '../../../core/design/colors.dart';
-import '../../../core/design/spacing.dart';
-import '../../../core/design/theme.dart';
-import '../../../core/design/typography.dart';
-import '../../../core/models/learning_state.dart';
-import '../../../core/services/entity_names_service.dart';
-import '../../../l10n/gen/app_localizations.dart';
-import '../providers/review_providers.dart';
-import 'item_schedule_detail_sheet.dart';
-import 'schedule_calendar.dart';
-import 'scheduled_item_row.dart';
-import 'srs_parameters_card.dart';
+import 'package:breakdex/shared/widgets/app_loader.dart';
+import 'package:breakdex/core/design/colors.dart';
+import 'package:breakdex/core/design/spacing.dart';
+import 'package:breakdex/core/design/theme.dart';
+import 'package:breakdex/core/design/typography.dart';
+import 'package:breakdex/core/models/learning_state.dart';
+import 'package:breakdex/core/services/entity_names_service.dart';
+import 'package:breakdex/l10n/gen/app_localizations.dart';
+import 'package:breakdex/features/flashcard_review/providers/review_providers.dart';
+import 'package:breakdex/features/flashcard_review/widgets/item_schedule_detail_sheet.dart';
+import 'package:breakdex/features/flashcard_review/widgets/schedule_calendar.dart';
+import 'package:breakdex/features/flashcard_review/widgets/scheduled_item_row.dart';
+import 'package:breakdex/features/flashcard_review/widgets/srs_parameters_card.dart';
 
 /// The schedule review mode: a calendar-based view of upcoming reviews.
 ///

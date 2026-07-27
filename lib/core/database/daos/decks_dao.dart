@@ -1,10 +1,10 @@
 import 'package:drift/drift.dart';
-import '../database.dart';
-import '../tables/decks.dart';
-import '../tables/deck_moves.dart';
-import '../tables/moves.dart';
-import '../../sync/codecs/deck_codec.dart' show deckMoveWireId;
-import 'sync_dao.dart';
+import 'package:breakdex/core/database/database.dart';
+import 'package:breakdex/core/database/tables/decks.dart';
+import 'package:breakdex/core/database/tables/deck_moves.dart';
+import 'package:breakdex/core/database/tables/moves.dart';
+import 'package:breakdex/core/sync/codecs/deck_codec.dart' show deckMoveWireId;
+import 'package:breakdex/core/database/daos/sync_dao.dart';
 
 part 'decks_dao.g.dart';
 

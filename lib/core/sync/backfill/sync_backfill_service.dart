@@ -1,15 +1,15 @@
-import '../../database/daos/combo_note_entries_dao.dart';
-import '../../database/daos/combos_dao.dart';
-import '../../database/daos/decks_dao.dart';
-import '../../database/daos/move_note_entries_dao.dart';
-import '../../database/daos/moves_dao.dart';
-import '../../database/daos/reviews_dao.dart';
-import '../codecs/combo_codec.dart';
-import '../codecs/deck_codec.dart';
-import '../codecs/move_codec.dart';
-import '../codecs/note_entry_codec.dart';
-import '../codecs/review_codec.dart';
-import '../sync_backend.dart';
+import 'package:breakdex/core/database/daos/combo_note_entries_dao.dart';
+import 'package:breakdex/core/database/daos/combos_dao.dart';
+import 'package:breakdex/core/database/daos/decks_dao.dart';
+import 'package:breakdex/core/database/daos/move_note_entries_dao.dart';
+import 'package:breakdex/core/database/daos/moves_dao.dart';
+import 'package:breakdex/core/database/daos/reviews_dao.dart';
+import 'package:breakdex/core/sync/codecs/combo_codec.dart';
+import 'package:breakdex/core/sync/codecs/deck_codec.dart';
+import 'package:breakdex/core/sync/codecs/move_codec.dart';
+import 'package:breakdex/core/sync/codecs/note_entry_codec.dart';
+import 'package:breakdex/core/sync/codecs/review_codec.dart';
+import 'package:breakdex/core/sync/sync_backend.dart';
 
 /// Non-destructive backfill of local Drift metadata into a [SyncBackend] shadow
 /// (task 1.4 of `add-convex-sync-backend`).

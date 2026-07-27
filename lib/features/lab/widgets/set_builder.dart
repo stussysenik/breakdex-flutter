@@ -5,14 +5,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../core/database/daos/labs_dao.dart';
-import '../../../core/design/colors.dart';
-import '../../../core/design/spacing.dart';
-import '../../../core/design/typography.dart';
-import '../../../shared/widgets/app_loader.dart';
-import '../providers/lab_providers.dart';
-import '../../flow/widgets/aura_transition_indicator.dart';
-import 'set_move_card.dart';
+import 'package:breakdex/core/database/daos/labs_dao.dart';
+import 'package:breakdex/core/design/colors.dart';
+import 'package:breakdex/core/design/spacing.dart';
+import 'package:breakdex/core/design/typography.dart';
+import 'package:breakdex/shared/widgets/app_loader.dart';
+import 'package:breakdex/features/lab/providers/lab_providers.dart';
+import 'package:breakdex/features/flow/widgets/aura_transition_indicator.dart';
+import 'package:breakdex/features/lab/widgets/set_move_card.dart';
 
 /// Horizontal move sequencer for labs with type 'set'.
 ///

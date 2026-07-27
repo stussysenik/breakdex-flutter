@@ -15,9 +15,9 @@ import 'dart:async';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../providers.dart' show syncServiceProvider;
-import '../utils/diagnostics.dart';
-import 'appwrite_auth_providers.dart' show currentAppwriteUserProvider;
+import 'package:breakdex/core/providers.dart' show syncServiceProvider;
+import 'package:breakdex/core/utils/diagnostics.dart';
+import 'package:breakdex/core/services/appwrite_auth_providers.dart' show currentAppwriteUserProvider;
 
 /// The last Appwrite userId auto-hydrated in this app session, so the (heavy)
 /// full pull fires once per sign-in — not on every shell rebuild or stream

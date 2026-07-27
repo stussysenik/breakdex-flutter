@@ -3,8 +3,8 @@
 import 'package:flutter/widget_previews.dart';
 import 'package:flutter/widgets.dart';
 
-import '../../dev/preview_harness.dart';
-import 'system_status_screen.dart';
+import 'package:breakdex/dev/preview_harness.dart';
+import 'package:breakdex/features/settings/system_status_screen.dart';
 
 @Preview(name: 'SystemStatusScreen · light', group: 'settings', wrapper: wrapLight)
 Widget systemStatusScreenLight() => const SystemStatusScreen();

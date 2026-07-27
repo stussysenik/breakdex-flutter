@@ -3,8 +3,8 @@
 import 'package:flutter/widget_previews.dart';
 import 'package:flutter/widgets.dart';
 
-import '../../dev/preview_harness.dart';
-import 'video_editor_screen.dart';
+import 'package:breakdex/dev/preview_harness.dart';
+import 'package:breakdex/features/video_editor/video_editor_screen.dart';
 
 @Preview(name: 'VideoEditorScreen · light', group: 'video_editor', wrapper: wrapLight)
 Widget videoEditorScreenLight() => const VideoEditorScreen(videoPath: PreviewSeed.videoPath);

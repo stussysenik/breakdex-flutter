@@ -1,7 +1,7 @@
 import 'package:drift/drift.dart';
 import 'package:flutter/foundation.dart';
-import '../database.dart';
-import '../tables/moves.dart';
+import 'package:breakdex/core/database/database.dart';
+import 'package:breakdex/core/database/tables/moves.dart';
 
 part 'moves_dao.g.dart';
 

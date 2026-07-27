@@ -2,16 +2,16 @@
 // ignore_for_file: discarded_futures
 
 import 'dart:async';
-import '../../core/platform/native_media.dart';
-import '../../core/platform/web_support.dart';
+import 'package:breakdex/core/platform/native_media.dart';
+import 'package:breakdex/core/platform/web_support.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import '../../core/design/spacing.dart';
-import '../../core/design/typography.dart';
-import '../../core/services/video_service.dart';
-import '../../core/utils/loading_state_machine.dart';
-import 'app_loader.dart';
-import 'metadata_video_picker_sheet.dart';
+import 'package:breakdex/core/design/spacing.dart';
+import 'package:breakdex/core/design/typography.dart';
+import 'package:breakdex/core/services/video_service.dart';
+import 'package:breakdex/core/utils/loading_state_machine.dart';
+import 'package:breakdex/shared/widgets/app_loader.dart';
+import 'package:breakdex/shared/widgets/metadata_video_picker_sheet.dart';
 
 /// Bottom sheet with 3 video source options: Camera, Photo Library, Files (iCloud).
 /// Shows loading overlay during pick/download. Returns [VideoPickResult] or null.

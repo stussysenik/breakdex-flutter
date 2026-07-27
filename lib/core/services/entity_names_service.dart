@@ -1,6 +1,6 @@
 import 'dart:convert';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'settings_service.dart';
+import 'package:breakdex/core/services/settings_service.dart';
 
 /// The user-facing nouns for the two data-banks (Moves and Combos).
 ///

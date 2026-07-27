@@ -15,9 +15,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-import '../../core/design/spacing.dart';
-import '../../core/design/typography.dart';
-import '../../core/providers.dart'
+import 'package:breakdex/core/design/spacing.dart';
+import 'package:breakdex/core/design/typography.dart';
+import 'package:breakdex/core/providers.dart'
     show
         fullBackfillServiceProvider,
         localCopyReconcilerProvider,
@@ -25,14 +25,14 @@ import '../../core/providers.dart'
         syncDiagnosticsProvider,
         syncOperationsDaoProvider,
         syncServiceProvider;
-import '../../core/services/categories_service.dart'
+import 'package:breakdex/core/services/categories_service.dart'
     show categoriesProvider;
-import '../../core/sync/orphan_restore_service.dart'
+import 'package:breakdex/core/sync/orphan_restore_service.dart'
     show OrphanRestoreService;
-import '../../core/services/appwrite_auth_providers.dart';
-import '../../core/services/settings_service.dart' show sharedPreferencesProvider;
-import '../../core/services/sync_service.dart';
-import '../../core/sync/backfill/sync_backfill_service.dart'
+import 'package:breakdex/core/services/appwrite_auth_providers.dart';
+import 'package:breakdex/core/services/settings_service.dart' show sharedPreferencesProvider;
+import 'package:breakdex/core/services/sync_service.dart';
+import 'package:breakdex/core/sync/backfill/sync_backfill_service.dart'
     show BackfillReport, SyncBackfillService;
 
 /// One cutover entity: a label, the shared dual-**write** pref key (null for

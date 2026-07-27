@@ -3,8 +3,8 @@
 import 'package:flutter/widget_previews.dart';
 import 'package:flutter/widgets.dart';
 
-import '../../dev/preview_harness.dart';
-import 'settings_screen.dart';
+import 'package:breakdex/dev/preview_harness.dart';
+import 'package:breakdex/features/settings/settings_screen.dart';
 
 @Preview(name: 'SettingsScreen · light', group: 'settings', wrapper: wrapLight)
 Widget settingsScreenLight() => const SettingsScreen();

@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import '../../../core/design/theme.dart';
-import '../../../core/design/spacing.dart';
+import 'package:breakdex/core/design/theme.dart';
+import 'package:breakdex/core/design/spacing.dart';
 
 /// Compact stat card with progressive disclosure: zero-value cards dim to 40%
 /// opacity so the user's eye is drawn to meaningful data first.

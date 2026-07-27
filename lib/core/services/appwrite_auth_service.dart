@@ -16,7 +16,7 @@ import 'dart:async';
 
 import 'package:flutter/foundation.dart' show kIsWeb;
 
-import '../utils/diagnostics.dart';
+import 'package:breakdex/core/utils/diagnostics.dart';
 
 /// A provider-neutral, immutable view of the signed-in account. Generic data,
 /// not an opaque SDK object (DOP): the rest of the app keys on [id] (the

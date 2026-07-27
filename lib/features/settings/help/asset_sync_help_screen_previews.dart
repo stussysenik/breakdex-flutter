@@ -3,8 +3,8 @@
 import 'package:flutter/widget_previews.dart';
 import 'package:flutter/widgets.dart';
 
-import '../../../dev/preview_harness.dart';
-import 'asset_sync_help_screen.dart';
+import 'package:breakdex/dev/preview_harness.dart';
+import 'package:breakdex/features/settings/help/asset_sync_help_screen.dart';
 
 @Preview(name: 'AssetSyncHelpScreen · light', group: 'settings', wrapper: wrapLight)
 Widget assetSyncHelpScreenLight() => const AssetSyncHelpScreen();

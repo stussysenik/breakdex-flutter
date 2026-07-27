@@ -1,6 +1,6 @@
 import 'package:drift/drift.dart';
-import 'combos.dart';
-import 'moves.dart';
+import 'package:breakdex/core/database/tables/combos.dart';
+import 'package:breakdex/core/database/tables/moves.dart';
 
 class Reviews extends Table {
   TextColumn get id => text()();

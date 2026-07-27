@@ -1,8 +1,8 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../core/database/database.dart';
-import '../../../core/providers.dart';
-import 'aura_providers.dart';
+import 'package:breakdex/core/database/database.dart';
+import 'package:breakdex/core/providers.dart';
+import 'package:breakdex/features/flow/providers/aura_providers.dart';
 
 // ---------------------------------------------------------------------------
 // Graph data model — nodes, edges, and the combined graph structure.

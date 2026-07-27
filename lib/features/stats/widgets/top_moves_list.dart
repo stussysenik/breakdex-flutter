@@ -2,13 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
-import '../../../core/design/spacing.dart';
-import '../../../core/design/theme.dart';
-import '../../../core/design/typography.dart';
-import '../../../core/models/learning_state.dart';
-import '../../../core/providers.dart';
-import '../../../core/services/categories_service.dart';
-import '../providers/stats_providers.dart';
+import 'package:breakdex/core/design/spacing.dart';
+import 'package:breakdex/core/design/theme.dart';
+import 'package:breakdex/core/design/typography.dart';
+import 'package:breakdex/core/models/learning_state.dart';
+import 'package:breakdex/core/providers.dart';
+import 'package:breakdex/core/services/categories_service.dart';
+import 'package:breakdex/features/stats/providers/stats_providers.dart';
 
 /// Top practiced moves list with enriched subtitle: category + FSRS state + last reviewed.
 class TopMovesList extends ConsumerWidget {

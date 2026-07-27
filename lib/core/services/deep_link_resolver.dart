@@ -1,13 +1,13 @@
 // H.8 lint triage — avoid_slow_async_io: async filesystem stat is intentional (avoids blocking the UI isolate); sync alternatives would block.
 // ignore_for_file: avoid_slow_async_io
 
-import '../platform/io.dart';
+import 'package:breakdex/core/platform/io.dart';
 
 import 'package:path/path.dart' as p;
 
-import '../database/database.dart';
-import '../utils/diagnostics.dart';
-import 'video_path_resolver.dart';
+import 'package:breakdex/core/database/database.dart';
+import 'package:breakdex/core/utils/diagnostics.dart';
+import 'package:breakdex/core/services/video_path_resolver.dart';
 
 /// Resolution result: a navigation target in Breakdex.
 class DeepLinkTarget {

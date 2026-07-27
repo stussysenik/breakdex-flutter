@@ -6,13 +6,13 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/services.dart';
 import 'package:video_player/video_player.dart';
 
-import '../../core/design/spacing.dart';
-import '../../core/design/typography.dart';
-import '../../core/utils/diagnostics.dart';
-import '../../shared/widgets/app_loader.dart';
-import 'robust_trim_timeline.dart';
-import 'video_edit_geometry.dart';
-import 'video_editor_controller.dart';
+import 'package:breakdex/core/design/spacing.dart';
+import 'package:breakdex/core/design/typography.dart';
+import 'package:breakdex/core/utils/diagnostics.dart';
+import 'package:breakdex/shared/widgets/app_loader.dart';
+import 'package:breakdex/features/video_editor/robust_trim_timeline.dart';
+import 'package:breakdex/features/video_editor/video_edit_geometry.dart';
+import 'package:breakdex/features/video_editor/video_editor_controller.dart';
 
 class RobustVideoEditorView extends StatefulWidget {
   const RobustVideoEditorView({super.key, required this.controller});

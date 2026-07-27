@@ -4,8 +4,8 @@
 
 import 'package:path/path.dart' as p;
 
-import '../platform/io.dart';
-import 'asset_hash_service.dart';
+import 'package:breakdex/core/platform/io.dart';
+import 'package:breakdex/core/sync/asset_hash_service.dart';
 
 /// Video extensions the sandbox holds. Matches the picker's APP VIDEOS scan.
 const _videoExtensions = {'.mp4', '.mov', '.m4v'};

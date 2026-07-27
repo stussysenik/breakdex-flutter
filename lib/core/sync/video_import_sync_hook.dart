@@ -2,18 +2,18 @@
 // ignore_for_file: avoid_slow_async_io
 
 import 'dart:async';
-import '../platform/io.dart';
+import 'package:breakdex/core/platform/io.dart';
 
 import 'package:drift/drift.dart';
 import 'package:flutter/foundation.dart';
-import '../database/database.dart';
-import '../database/daos/asset_copies_dao.dart';
-import '../database/daos/asset_manifest_dao.dart';
-import '../database/daos/moves_dao.dart';
-import '../services/connectivity_service.dart';
-import '../services/video_path_resolver.dart';
-import 'asset_hash_service.dart';
-import 'asset_sync_engine.dart';
+import 'package:breakdex/core/database/database.dart';
+import 'package:breakdex/core/database/daos/asset_copies_dao.dart';
+import 'package:breakdex/core/database/daos/asset_manifest_dao.dart';
+import 'package:breakdex/core/database/daos/moves_dao.dart';
+import 'package:breakdex/core/services/connectivity_service.dart';
+import 'package:breakdex/core/services/video_path_resolver.dart';
+import 'package:breakdex/core/sync/asset_hash_service.dart';
+import 'package:breakdex/core/sync/asset_sync_engine.dart';
 
 /// Post-import hook that bridges video import → hash → manifest → upload.
 ///

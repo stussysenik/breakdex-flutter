@@ -8,19 +8,19 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 
-import '../../core/database/daos/combo_plans_dao.dart';
-import '../../core/services/entity_names_service.dart';
-import '../../core/database/daos/combos_dao.dart';
-import '../../core/database/database.dart' show ComboPlansCompanion;
-import '../../core/design/spacing.dart';
-import '../../core/design/theme.dart';
-import '../../core/design/typography.dart';
-import '../../core/providers.dart';
-import '../../core/utils/time_format.dart';
-import '../../shared/widgets/app_loader.dart';
-import '../../shared/widgets/app_segmented_control.dart';
-import '../combo_detail/widgets/status_tag.dart';
-import 'plan_combo_flow.dart';
+import 'package:breakdex/core/database/daos/combo_plans_dao.dart';
+import 'package:breakdex/core/services/entity_names_service.dart';
+import 'package:breakdex/core/database/daos/combos_dao.dart';
+import 'package:breakdex/core/database/database.dart' show ComboPlansCompanion;
+import 'package:breakdex/core/design/spacing.dart';
+import 'package:breakdex/core/design/theme.dart';
+import 'package:breakdex/core/design/typography.dart';
+import 'package:breakdex/core/providers.dart';
+import 'package:breakdex/core/utils/time_format.dart';
+import 'package:breakdex/shared/widgets/app_loader.dart';
+import 'package:breakdex/shared/widgets/app_segmented_control.dart';
+import 'package:breakdex/features/combo_detail/widgets/status_tag.dart';
+import 'package:breakdex/features/combos/plan_combo_flow.dart';
 
 // ---------------------------------------------------------------------------
 // Providers

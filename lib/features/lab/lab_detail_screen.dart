@@ -9,20 +9,20 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-import '../../core/database/database.dart';
-import '../../core/design/colors.dart';
-import '../../core/design/spacing.dart';
-import '../../core/design/theme.dart';
-import '../../core/design/typography.dart';
-import '../../core/providers.dart';
-import '../flow/providers/aura_providers.dart';
-import '../../shared/widgets/app_loader.dart';
-import '../../shared/widgets/notes_section.dart';
-import 'providers/lab_providers.dart';
-import 'widgets/lab_timeline.dart';
-import 'widgets/linked_moves_section.dart';
-import 'widgets/milestone_list.dart';
-import 'widgets/set_builder.dart';
+import 'package:breakdex/core/database/database.dart';
+import 'package:breakdex/core/design/colors.dart';
+import 'package:breakdex/core/design/spacing.dart';
+import 'package:breakdex/core/design/theme.dart';
+import 'package:breakdex/core/design/typography.dart';
+import 'package:breakdex/core/providers.dart';
+import 'package:breakdex/features/flow/providers/aura_providers.dart';
+import 'package:breakdex/shared/widgets/app_loader.dart';
+import 'package:breakdex/shared/widgets/notes_section.dart';
+import 'package:breakdex/features/lab/providers/lab_providers.dart';
+import 'package:breakdex/features/lab/widgets/lab_timeline.dart';
+import 'package:breakdex/features/lab/widgets/linked_moves_section.dart';
+import 'package:breakdex/features/lab/widgets/milestone_list.dart';
+import 'package:breakdex/features/lab/widgets/set_builder.dart';
 
 /// Full detail screen for a single lab (project or set).
 ///

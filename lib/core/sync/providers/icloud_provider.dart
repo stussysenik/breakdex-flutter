@@ -1,6 +1,6 @@
 import 'package:flutter/services.dart';
 
-import '../cloud_provider.dart';
+import 'package:breakdex/core/sync/cloud_provider.dart';
 
 /// iCloud Drive adapter using native Swift via MethodChannel.
 ///

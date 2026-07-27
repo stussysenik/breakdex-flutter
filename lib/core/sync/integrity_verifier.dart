@@ -2,11 +2,11 @@ import 'dart:math';
 
 import 'package:flutter/foundation.dart';
 
-import '../database/database.dart';
-import '../database/daos/asset_copies_dao.dart';
-import '../database/daos/asset_manifest_dao.dart';
-import '../services/video_path_resolver.dart';
-import 'asset_hash_service.dart';
+import 'package:breakdex/core/database/database.dart';
+import 'package:breakdex/core/database/daos/asset_copies_dao.dart';
+import 'package:breakdex/core/database/daos/asset_manifest_dao.dart';
+import 'package:breakdex/core/services/video_path_resolver.dart';
+import 'package:breakdex/core/sync/asset_hash_service.dart';
 
 /// Why a single file failed verification.
 enum IntegrityIssueKind {

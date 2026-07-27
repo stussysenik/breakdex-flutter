@@ -1,5 +1,5 @@
-import '../machine.dart';
-import '../../models/move_creation.dart';
+import 'package:breakdex/core/state_machines/machine.dart';
+import 'package:breakdex/core/models/move_creation.dart';
 
 sealed class MoveCreationState {}
 class Idle extends MoveCreationState {}

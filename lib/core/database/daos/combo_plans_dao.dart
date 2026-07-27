@@ -1,9 +1,9 @@
 import 'package:drift/drift.dart';
 
-import '../database.dart';
-import '../tables/combo_plans.dart';
-import '../tables/combos.dart';
-import '../tables/combo_note_entries.dart';
+import 'package:breakdex/core/database/database.dart';
+import 'package:breakdex/core/database/tables/combo_plans.dart';
+import 'package:breakdex/core/database/tables/combos.dart';
+import 'package:breakdex/core/database/tables/combo_note_entries.dart';
 
 part 'combo_plans_dao.g.dart';
 

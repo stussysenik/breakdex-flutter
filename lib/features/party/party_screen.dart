@@ -9,24 +9,24 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-import '../../core/database/database.dart';
-import '../../core/design/colors.dart';
-import '../../core/design/spacing.dart';
-import '../../core/design/typography.dart';
-import '../../core/models/learning_state.dart';
-import '../../core/models/reviewable_item.dart' show MoveVideoPath;
-import '../../core/providers.dart';
-import '../../core/services/settings_service.dart';
-import '../../core/services/video_path_resolver.dart';
-import '../../shared/widgets/app_loader.dart';
-import '../../shared/widgets/combo_step_line.dart';
-import '../../shared/widgets/state_pill.dart';
-import '../../shared/widgets/video_player_widget.dart' show RobustVideoPlayer;
-import '../../core/utils/diagnostics.dart';
+import 'package:breakdex/core/database/database.dart';
+import 'package:breakdex/core/design/colors.dart';
+import 'package:breakdex/core/design/spacing.dart';
+import 'package:breakdex/core/design/typography.dart';
+import 'package:breakdex/core/models/learning_state.dart';
+import 'package:breakdex/core/models/reviewable_item.dart' show MoveVideoPath;
+import 'package:breakdex/core/providers.dart';
+import 'package:breakdex/core/services/settings_service.dart';
+import 'package:breakdex/core/services/video_path_resolver.dart';
+import 'package:breakdex/shared/widgets/app_loader.dart';
+import 'package:breakdex/shared/widgets/combo_step_line.dart';
+import 'package:breakdex/shared/widgets/state_pill.dart';
+import 'package:breakdex/shared/widgets/video_player_widget.dart' show RobustVideoPlayer;
+import 'package:breakdex/core/utils/diagnostics.dart';
 
-import '../../core/services/swing_detector.dart';
-import 'bloc/party_bloc.dart';
-import 'bloc/combo_party_bloc.dart';
+import 'package:breakdex/core/services/swing_detector.dart';
+import 'package:breakdex/features/party/bloc/party_bloc.dart';
+import 'package:breakdex/features/party/bloc/combo_party_bloc.dart';
 
 const _partySubsystem = 'Party';
 

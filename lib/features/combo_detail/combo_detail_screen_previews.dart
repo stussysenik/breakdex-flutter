@@ -3,8 +3,8 @@
 import 'package:flutter/widget_previews.dart';
 import 'package:flutter/widgets.dart';
 
-import '../../dev/preview_harness.dart';
-import 'combo_detail_screen.dart';
+import 'package:breakdex/dev/preview_harness.dart';
+import 'package:breakdex/features/combo_detail/combo_detail_screen.dart';
 
 @Preview(name: 'ComboDetailScreen · light', group: 'combo_detail', wrapper: wrapLight)
 Widget comboDetailScreenLight() => const ComboDetailScreen(comboId: PreviewSeed.comboId);

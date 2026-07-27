@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../core/services/boot_coordinator.dart';
-import '../../core/services/video_path_resolver.dart';
-import '../../core/design/spacing.dart';
-import '../../core/design/typography.dart';
-import '../../shared/widgets/app_loader.dart';
+import 'package:breakdex/core/services/boot_coordinator.dart';
+import 'package:breakdex/core/services/video_path_resolver.dart';
+import 'package:breakdex/core/design/spacing.dart';
+import 'package:breakdex/core/design/typography.dart';
+import 'package:breakdex/shared/widgets/app_loader.dart';
 
 class SystemStatusScreen extends ConsumerWidget {
   const SystemStatusScreen({super.key});

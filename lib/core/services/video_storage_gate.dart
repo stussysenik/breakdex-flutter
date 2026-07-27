@@ -1,6 +1,6 @@
 import 'package:flutter/foundation.dart';
 
-import 'app_storage_paths.dart';
+import 'package:breakdex/core/services/app_storage_paths.dart';
 
 /// Enforces that video files are only written to designated storage directories.
 ///

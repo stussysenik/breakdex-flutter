@@ -10,16 +10,16 @@ import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:uuid/uuid.dart';
 
-import '../../core/database/database.dart';
-import '../../core/design/spacing.dart';
-import '../../core/design/typography.dart';
-import '../../shared/widgets/app_segmented_control.dart';
-import '../../core/utils/time_format.dart';
-import '../../shared/widgets/wip_badge.dart';
-import 'providers/lab_providers.dart';
-import 'widgets/lab_board_view.dart';
-import 'widgets/lab_list_view.dart';
-import 'widgets/lab_sets_view.dart';
+import 'package:breakdex/core/database/database.dart';
+import 'package:breakdex/core/design/spacing.dart';
+import 'package:breakdex/core/design/typography.dart';
+import 'package:breakdex/shared/widgets/app_segmented_control.dart';
+import 'package:breakdex/core/utils/time_format.dart';
+import 'package:breakdex/shared/widgets/wip_badge.dart';
+import 'package:breakdex/features/lab/providers/lab_providers.dart';
+import 'package:breakdex/features/lab/widgets/lab_board_view.dart';
+import 'package:breakdex/features/lab/widgets/lab_list_view.dart';
+import 'package:breakdex/features/lab/widgets/lab_sets_view.dart';
 
 /// The Lab tab — a space for organizing training projects and practice sets.
 ///

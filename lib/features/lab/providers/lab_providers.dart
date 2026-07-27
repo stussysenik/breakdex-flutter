@@ -1,10 +1,10 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../core/database/daos/labs_dao.dart';
-import '../../../core/database/daos/lab_entries_dao.dart';
-import '../../../core/database/daos/milestones_dao.dart';
-import '../../../core/database/database.dart';
-import '../../../core/providers.dart';
+import 'package:breakdex/core/database/daos/labs_dao.dart';
+import 'package:breakdex/core/database/daos/lab_entries_dao.dart';
+import 'package:breakdex/core/database/daos/milestones_dao.dart';
+import 'package:breakdex/core/database/database.dart';
+import 'package:breakdex/core/providers.dart';
 
 // -- DAO providers ------------------------------------------------------------
 

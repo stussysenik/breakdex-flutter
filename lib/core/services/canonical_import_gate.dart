@@ -2,14 +2,14 @@
 // ignore_for_file: avoid_slow_async_io, discarded_futures
 
 import 'dart:async';
-import '../platform/io.dart';
+import 'package:breakdex/core/platform/io.dart';
 
 import 'package:flutter/foundation.dart';
 import 'package:path/path.dart' as p;
 
-import '../database/daos/asset_manifest_dao.dart';
-import '../sync/asset_hash_service.dart';
-import '../utils/loading_state_machine.dart';
+import 'package:breakdex/core/database/daos/asset_manifest_dao.dart';
+import 'package:breakdex/core/sync/asset_hash_service.dart';
+import 'package:breakdex/core/utils/loading_state_machine.dart';
 
 sealed class GateResult {
   const GateResult();

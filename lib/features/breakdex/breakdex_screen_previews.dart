@@ -3,8 +3,8 @@
 import 'package:flutter/widget_previews.dart';
 import 'package:flutter/widgets.dart';
 
-import '../../dev/preview_harness.dart';
-import 'breakdex_screen.dart';
+import 'package:breakdex/dev/preview_harness.dart';
+import 'package:breakdex/features/breakdex/breakdex_screen.dart';
 
 @Preview(name: 'BreakdexScreen · light', group: 'breakdex', wrapper: wrapLight)
 Widget breakdexScreenLight() => const BreakdexScreen();

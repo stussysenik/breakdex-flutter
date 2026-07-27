@@ -4,14 +4,14 @@ import 'package:drift/drift.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/widgets.dart';
 
-import '../data/repositories.dart';
-import '../database/daos/moves_dao.dart';
-import '../database/database.dart';
-import '../models/reviewable_item.dart';
-import '../services/connectivity_service.dart';
-import '../services/video_path_resolver.dart';
-import '../services/video_service.dart';
-import 'video_retrieval_controller.dart';
+import 'package:breakdex/core/data/repositories.dart';
+import 'package:breakdex/core/database/daos/moves_dao.dart';
+import 'package:breakdex/core/database/database.dart';
+import 'package:breakdex/core/models/reviewable_item.dart';
+import 'package:breakdex/core/services/connectivity_service.dart';
+import 'package:breakdex/core/services/video_path_resolver.dart';
+import 'package:breakdex/core/services/video_service.dart';
+import 'package:breakdex/core/sync/video_retrieval_controller.dart';
 
 enum VideoReliabilityTrigger { startup, resume, connectivityImproved }
 

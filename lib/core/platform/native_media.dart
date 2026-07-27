@@ -1,7 +1,7 @@
 import 'package:flutter/widgets.dart';
 import 'package:video_player/video_player.dart';
 
-import 'native_media_native.dart'
+import 'package:breakdex/core/platform/native_media_native.dart'
     if (dart.library.js_interop) 'native_media_web.dart';
 
 /// Local-file-backed media that only exists on native (`dart:io.File` +

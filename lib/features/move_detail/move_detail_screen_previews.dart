@@ -3,8 +3,8 @@
 import 'package:flutter/widget_previews.dart';
 import 'package:flutter/widgets.dart';
 
-import '../../dev/preview_harness.dart';
-import 'move_detail_screen.dart';
+import 'package:breakdex/dev/preview_harness.dart';
+import 'package:breakdex/features/move_detail/move_detail_screen.dart';
 
 @Preview(name: 'MoveDetailScreen · light', group: 'move_detail', wrapper: wrapLight)
 Widget moveDetailScreenLight() => const MoveDetailScreen(moveId: PreviewSeed.moveId);

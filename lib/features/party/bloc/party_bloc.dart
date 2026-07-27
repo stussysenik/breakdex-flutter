@@ -4,8 +4,8 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
 
-import '../../../core/database/database.dart';
-import '../../../core/utils/diagnostics.dart';
+import 'package:breakdex/core/database/database.dart';
+import 'package:breakdex/core/utils/diagnostics.dart';
 
 part 'party_bloc.freezed.dart';
 

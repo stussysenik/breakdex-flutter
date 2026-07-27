@@ -4,9 +4,9 @@
 import 'dart:math';
 import 'package:flutter/material.dart';
 
-import '../../core/design/colors.dart';
-import '../../core/design/spacing.dart';
-import '../../core/design/typography.dart';
+import 'package:breakdex/core/design/colors.dart';
+import 'package:breakdex/core/design/spacing.dart';
+import 'package:breakdex/core/design/typography.dart';
 
 /// Full-screen particle celebration overlay.
 /// Shows confetti burst + combo name, auto-dismisses after 1.5s.

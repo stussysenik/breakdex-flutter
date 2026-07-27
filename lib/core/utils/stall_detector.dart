@@ -1,7 +1,7 @@
 import 'dart:async';
 
-import 'app_clock.dart';
-import 'diagnostics.dart';
+import 'package:breakdex/core/utils/app_clock.dart';
+import 'package:breakdex/core/utils/diagnostics.dart';
 
 /// Watches an in-flight operation's progress feed and logs stall windows.
 ///

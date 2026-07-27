@@ -2,13 +2,13 @@
 // LocalCopyReconciler — the sync alternative blocks the UI isolate.
 // ignore_for_file: avoid_slow_async_io
 
-import '../database/database.dart';
-import '../platform/io.dart';
-import '../services/video_path_resolver.dart';
-import 'asset_hash_service.dart';
-import 'asset_resolution.dart';
-import 'local_copy_reconciler.dart';
-import 'sandbox_hash_index.dart';
+import 'package:breakdex/core/database/database.dart';
+import 'package:breakdex/core/platform/io.dart';
+import 'package:breakdex/core/services/video_path_resolver.dart';
+import 'package:breakdex/core/sync/asset_hash_service.dart';
+import 'package:breakdex/core/sync/asset_resolution.dart';
+import 'package:breakdex/core/sync/local_copy_reconciler.dart';
+import 'package:breakdex/core/sync/sandbox_hash_index.dart';
 
 /// Dev-only snapshot of the video-backup ground truth: manifest counts,
 /// copies grouped by provider×status, operations grouped by status.

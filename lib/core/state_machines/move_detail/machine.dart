@@ -1,8 +1,8 @@
 import 'package:path/path.dart' as p;
 
-import '../machine.dart';
-import 'state.dart';
-import 'event.dart';
+import 'package:breakdex/core/state_machines/machine.dart';
+import 'package:breakdex/core/state_machines/move_detail/state.dart';
+import 'package:breakdex/core/state_machines/move_detail/event.dart';
 
 /// Pure state machine for the move detail screen CRUD operations.
 ///

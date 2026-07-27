@@ -1,4 +1,4 @@
-import 'providers/review_providers.dart';
+import 'package:breakdex/features/flashcard_review/providers/review_providers.dart';
 
 String reviewSessionItemKey(final ReviewSessionItem item) =>
     '${item.entityType}:${item.entityId}';

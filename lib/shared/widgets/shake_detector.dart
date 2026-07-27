@@ -9,7 +9,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:sensors_plus/sensors_plus.dart';
 
-import '../../core/utils/diagnostics.dart';
+import 'package:breakdex/core/utils/diagnostics.dart';
 
 final shakeEnabledProvider = StateProvider<bool>((final ref) => true);
 

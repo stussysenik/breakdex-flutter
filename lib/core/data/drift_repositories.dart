@@ -1,11 +1,11 @@
 import 'package:flutter/foundation.dart';
 
-import '../database/database.dart';
-import '../database/daos/moves_dao.dart';
-import '../database/daos/combos_dao.dart';
-import '../database/daos/reviews_dao.dart';
-import '../database/daos/sets_dao.dart';
-import 'repositories.dart';
+import 'package:breakdex/core/database/database.dart';
+import 'package:breakdex/core/database/daos/moves_dao.dart';
+import 'package:breakdex/core/database/daos/combos_dao.dart';
+import 'package:breakdex/core/database/daos/reviews_dao.dart';
+import 'package:breakdex/core/database/daos/sets_dao.dart';
+import 'package:breakdex/core/data/repositories.dart';
 
 class DriftMoveRepository implements MoveRepository {
   final MovesDao _dao;
