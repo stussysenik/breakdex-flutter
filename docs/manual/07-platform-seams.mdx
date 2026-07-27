@@ -3,7 +3,7 @@ title: Platform Seams & Web
 name: platform
 order: 7
 status: verified
-verified: 686b95e
+verified: 76b9002
 watches:
   - lib/core/platform/**
   - lib/core/database/connection/**
@@ -15,7 +15,7 @@ watches:
 
 Flutter Web is the released consumer app, not a demo — the ruling in root `CLAUDE.md` is "same codebase as mobile; platform gaps degrade visibly." That sentence has a mechanical consequence: the *same* Dart source must compile to a native binary (which has `dart:io`, `dart:ffi`, a real filesystem) and to a web bundle (which has none of those). A single import of `dart:io` anywhere in the reachable graph fails the web compile outright. This chapter defines the seam that makes one source tree compile two ways, and the policy that governs what happens when a native capability simply isn't there on web.
 
-This is recent work: Phase 1.0.1 landed the `dart:io` platform seam. Read it as the foundation the web release is being built on — some of it is wired, some is deliberately a loud stub, and this chapter marks exactly which is which.
+This is recent work: Phase 1.0.1 landed the `dart:io` platform seam, and the web-release wave since then added media/paths/file-transfer seams, the `web_support.dart` capability flags, and — the big one — **persistent web Drift** (`WasmDatabase` on OPFS/IndexedDB). This chapter marks exactly which parts are wired and which still degrade by loud throw.
 
 ## Primitives
 
@@ -59,7 +59,7 @@ The trio is a canonical stub/impl split:
 grep -rl "import 'dart:io'" lib/ | grep -v _native.dart
 ```
 
-which must return **empty**. Verified at authoring: `lib/` contains exactly two raw `import 'dart:io'` lines, both in `_native.dart` seam files (`platform/io_native.dart` and the DB connection's `open_connection_native.dart`); every other file routes through a facade. That grep *is* standard [`#platform-1`](./09-standards.mdx#platform-1) — it is how "no `dart:io` in the web compile graph" is proven, not asserted.
+which must return **empty**. Verified at re-verification: `lib/` contains five raw `import 'dart:io'` sites — four in `_native.dart` seam files (`platform/io_native.dart`, `platform/native_media_native.dart`, `platform/native_file_transfer_native.dart`, and the DB connection's `open_connection_native.dart`), which the grep excludes, plus **one known violation**: `lib/core/services/metadata_backup_service.dart` imports `dart:io` directly (it compiles on web only because `dart:io` *types* compile there and throw at runtime — see the `dart:io`-compiles-on-web gotcha). The exclusion grep therefore does **not** currently return empty; that file is outstanding [`#platform-1`](./09-standards.mdx#platform-1) debt, not a revision of the standard. The grep *is* the standard — it is how "no `dart:io` in the web compile graph" is proven, not asserted.
 
 ### Why the web side is stubs, not throws-everywhere
 
@@ -134,23 +134,30 @@ QueryExecutor openPlatformConnection() => LazyDatabase(() async {
 
 Splitting the connection keeps `dart:io` **and** `dart:ffi` out of the web compile, which is what lets the rest of the app — including the widget-preview scaffold, which renders only on web — build at all.
 
-### What is actually wired vs. deferred
+### Production web persistence is wired
 
-This is the honest part. **Production web Drift persistence is not implemented.** The web connection is a *loud stub*:
+The loud stub is gone. **Production web Drift persistence is implemented**: the web connection opens a persistent `WasmDatabase`, letting Drift probe the browser and pick the best storage — OPFS (durable, multi-tab) when supported, falling back to IndexedDB:
 
 ```dart
 // open_connection_web.dart
 QueryExecutor openPlatformConnection() {
-  throw UnsupportedError(
-    'Web AppDatabase connection is not implemented yet. Previews use '
-    'AppDatabase.forTesting; wire WasmDatabase for the web release.',
-  );
+  return LazyDatabase(() async {
+    final result = await WasmDatabase.open(
+      databaseName: 'breakdex',
+      sqlite3Uri: Uri.parse('sqlite3.wasm'),
+      driftWorkerUri: Uri.parse('drift_worker.js'),
+    );
+    if (result.missingFeatures.isNotEmpty) {
+      debugPrint('[drift/web] storage=… degraded — missing …');
+    }
+    return result.resolvedExecutor;
+  });
 }
 ```
 
-Constructing `AppDatabase()` on web today throws. That is the degradation primitive applied to an unbuilt feature: a not-yet-wired web capability fails **loudly**, never by silently returning an empty database ([`#platform-4`](./09-standards.mdx#platform-4)). Wiring `WasmDatabase` with **OPFS/IndexedDB** persistence is explicitly named as Flutter-Web-release work, to be done before shipping a build that calls `AppDatabase()` directly.
+Constructing `AppDatabase()` on web now opens the real, persistent database. The degradation primitive still applies at the storage tier: a reduced-durability fallback is *surfaced* (the `missingFeatures` `debugPrint`), never silently swallowed. The runtime assets — `web/sqlite3.wasm` and `web/drift_worker.js` — are served from the web root, and the wasm is ABI-pinned to the `sqlite3: 2.9.4` package in `pubspec.yaml` (bump both in lockstep; the pin comment says exactly this).
 
-WASM Drift *does* run today, but only in one place — the widget-preview harness, which uses the second `AppDatabase` constructor, `AppDatabase.forTesting(super.e)`, with an in-memory executor:
+Separately, WASM Drift also runs in the widget-preview harness, which uses the second `AppDatabase` constructor, `AppDatabase.forTesting(super.e)`, with an in-memory executor:
 
 ```dart
 // lib/dev/preview_db_web.dart
@@ -161,11 +168,11 @@ Future<QueryExecutor> openPreviewExecutor() async {
 }
 ```
 
-`sqlite3.wasm` ships as a **package asset** (declared in `pubspec.yaml`, pinned in lockstep with the `sqlite3: 2.9.4` Dart binding so the WASM/Dart ABI stays matched) and is loaded through `rootBundle` so its asset key resolves however the preview scaffold remaps root-project URIs. In-memory means a fresh, re-seeded DB every session — exactly what previews want, and exactly *not* what the shipped consumer app needs.
+The preview harness's `sqlite3.wasm` ships as a **package asset** (declared in `pubspec.yaml`) and is loaded through `rootBundle` so its asset key resolves however the preview scaffold remaps root-project URIs. In-memory means a fresh, re-seeded DB every session — exactly what previews want, and exactly *not* what the shipped consumer app needs (which is why the release path above uses persistent `WasmDatabase.open` instead).
 
-> **Gotcha — two constructors, two worlds.** `AppDatabase()` calls `openConnection()` (the platform facade → throws on web today). `AppDatabase.forTesting(e)` takes an executor you hand it (the preview harness hands it `WasmDatabase.inMemory`). The preview scaffold never reaches `open_connection_web.dart`; that path is dead until the release wires OPFS. Do not read "WASM works in previews" as "web persistence works."
+> **Gotcha — two constructors, two worlds.** `AppDatabase()` calls `openConnection()` (the platform facade → persistent OPFS/IndexedDB `WasmDatabase` on web). `AppDatabase.forTesting(e)` takes an executor you hand it (the preview harness hands it `WasmDatabase.inMemory`). The preview scaffold never reaches `open_connection_web.dart`. Do not read preview behavior (fresh DB every session) as release behavior (persistent), or vice versa.
 
-> **Gotcha — `sqlite3.wasm` and `sqlite3` bump together.** The asset is ABI-matched to the pinned `sqlite3` Dart package (`simolus3/sqlite3.dart`, release tag `sqlite3-<version>`). Bump one without the other and the WASM load fails at runtime, not compile time.
+> **Gotcha — `sqlite3.wasm` exists twice, and both bump with `sqlite3`.** There are two copies: the package asset (`assets/sqlite3.wasm`, previews) and the served web-root copy (`web/sqlite3.wasm`, release). Both are ABI-matched to the pinned `sqlite3` Dart package (`simolus3/sqlite3.dart`, release tag `sqlite3-<version>`). Bump the package without the wasm files (or one copy without the other) and the WASM load fails at runtime, not compile time.
 
 ## The web mirror is a third thing — don't confuse it
 
@@ -173,28 +180,30 @@ Future<QueryExecutor> openPreviewExecutor() async {
 
 ## The shape of a seam, generalized
 
-Both seams — `io.dart` and `open_connection.dart` — are the same four moves, and any future platform seam must follow them:
+The seam family has grown past the original two. All of them — `io.dart`, `open_connection.dart`, and the web-release wave's `native_paths.dart` (path_provider's documents directory; web throws — the DB lives in OPFS), `native_media.dart` (local-file image/video widgets; web renders a placeholder or throws, while `networkVideoController` — URL playback — works on *every* platform via the HTML `<video>` backend), and `native_file_transfer.dart` (Firebase Storage `putFile`/`writeToFile`; web throws — legacy Firebase video sync is native-only) — are the same four moves, and any future platform seam must follow them:
 
 1. One **facade** file: only the `export/import … if (dart.library.js_interop)` line.
 2. A **`_native.dart`** default that re-exports or opens the real native capability (and carries the raw `dart:*` import the grep excludes).
 3. A **web** override presenting the *identical* public surface, degrading per [`#platform-2`](./09-standards.mdx#platform-2).
 4. All `lib/` code imports the **facade**, never the platform library ([`#platform-1`](./09-standards.mdx#platform-1)).
 
-The compile-time `if` is preferred over a runtime `kIsWeb` branch wherever the capability can be resolved at compile time ([`#platform-3`](./09-standards.mdx#platform-3)): a conditional import removes the native library from the web *graph*, whereas a `kIsWeb` runtime check still drags `dart:io` into the web compile and defeats the whole point. `kIsWeb`/`defaultTargetPlatform` remain legitimate only for runtime *behavior* branches where both sides already compile on both targets (e.g. `native_share_sheet.dart` choosing an iOS share sheet vs. a fallback).
+The compile-time `if` is preferred over a runtime `kIsWeb` branch wherever the capability can be resolved at compile time ([`#platform-3`](./09-standards.mdx#platform-3)): a conditional import removes the native library from the web *graph*, whereas a `kIsWeb` runtime check still drags `dart:io` into the web compile and defeats the whole point. `kIsWeb`/`defaultTargetPlatform` remain legitimate only for runtime *behavior* branches where both sides already compile on both targets (e.g. `native_share_sheet.dart` choosing an iOS share sheet vs. a fallback). The codified home for such branches is `lib/core/platform/web_support.dart`: four `kIsWeb`-keyed capability getters (`supportsNativeVideoExport`, `supportsLocalVideoPlayback`, `supportsVideoCaptureAndImport` — all `!kIsWeb` — and `supportsUrlVideoPlayback`, `true` everywhere) that UI reads to hide or label native-only affordances *before* a control that would throw is ever shown. That is visible degradation at the affordance tier, complementing the compile-time seams at the capability tier.
 
 ## Standards this chapter enforces
 
 - No `import 'dart:io'` / `dart:ffi` in `lib/` except a `_native.dart` seam file; all platform access routes through a facade. The exclusion grep must return empty. ([`#platform-1`](./09-standards.mdx#platform-1))
 - Web stubs degrade to the most honest of {compute, truthful answer, loud throw}; never a silent no-op that fakes success. ([`#platform-2`](./09-standards.mdx#platform-2))
 - Platform selection is a compile-time conditional import keyed on `dart.library.js_interop` (Wasm-safe), not a runtime `kIsWeb` branch, whenever the capability is compile-time resolvable. ([`#platform-3`](./09-standards.mdx#platform-3))
-- A web capability that isn't wired yet throws loudly (as `open_connection_web.dart` does), never returns an empty/degraded success. ([`#platform-4`](./09-standards.mdx#platform-4))
+- A web capability that isn't wired yet throws loudly (as `native_paths_web.dart` and `native_file_transfer_web.dart` do), never returns an empty/degraded success. ([`#platform-4`](./09-standards.mdx#platform-4))
 
 ## Indexes
 
 - `lib/core/platform/io.dart` — the `dart:io` facade (the one export line; read the trio together).
 - `lib/core/platform/io_native.dart` / `io_web.dart` — native re-export; web degrading stubs.
 - `lib/core/database/connection/open_connection.dart` — the Drift connection facade.
-- `lib/core/database/connection/open_connection_web.dart` — web DB stub (throws; OPFS deferred).
-- `lib/dev/preview_db_web.dart` — the only wired WASM Drift path today (in-memory, previews).
+- `lib/core/database/connection/open_connection_web.dart` — persistent web DB (`WasmDatabase.open`, OPFS → IndexedDB fallback, degradation surfaced).
+- `lib/core/platform/native_paths.dart` / `native_media.dart` / `native_file_transfer.dart` — the web-release seam trio (each a facade + `_native`/`_web` pair).
+- `lib/core/platform/web_support.dart` — runtime capability flags for affordance-level visible degradation.
+- `lib/dev/preview_db_web.dart` — the preview-harness WASM Drift path (in-memory, re-seeded per session).
 - `lib/core/web/library_manifest.dart` — JSON export schema for the read-only web studio mirror (not a seam).
 - root `CLAUDE.md` — "Flutter Web = released consumer app; platform gaps degrade visibly."
