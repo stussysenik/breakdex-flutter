@@ -3,7 +3,7 @@
 ## ADDED Requirements
 
 ### Requirement: 5th navigation tab
-A "Lab" tab SHALL be added as the 5th bottom navigation item with a science/flask icon. Tapping it SHALL navigate to /lab.
+A "Lab" tab SHALL be added as the 5th bottom navigation item with a science/flask icon. Tapping it navigates to /lab.
 
 #### Scenario: Tab renders in bottom nav
 Given the app is running

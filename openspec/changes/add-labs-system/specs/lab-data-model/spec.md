@@ -16,7 +16,7 @@ When the lab is inserted
 Then it has labType "set" and can hold ordered moves
 
 ### Requirement: Milestone tracking within labs
-Milestones SHALL be stored as progress markers within labs in a `milestones` table with labId FK, title, optional notes, and nullable completedAt.
+Milestones SHALL be progress markers within labs, stored in `milestones` table with labId FK, title, optional notes, and nullable completedAt.
 
 #### Scenario: Add milestone to lab
 Given a lab "Air Flare" exists

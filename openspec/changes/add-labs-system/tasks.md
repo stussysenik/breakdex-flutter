@@ -1,11 +1,11 @@
 # Tasks — Add Labs System
 
 ## Phase 1: Data Foundation
-- [ ] 1.1 Create table definitions (labs, milestones, lab_moves, lab_entries, achievements, aura_links, aura_presets)
-- [ ] 1.2 Create DAOs (LabsDao, MilestonesDao, LabEntriesDao, AchievementsDao, AuraDao) with CRUD + watch streams
-- [ ] 1.3 Schema v12 migration in database.dart with achievement backfill for existing moves
-- [ ] 1.4 Riverpod providers for all entities
-- [ ] 1.5 Unit tests for all 5 DAOs (CRUD, cascade deletes, watch streams, edge cases)
+- [x] 1.1 Create table definitions (labs, milestones, lab_moves, lab_entries, achievements, aura_links, aura_presets) (completed in cab8ce1)
+- [x] 1.2 Create DAOs (LabsDao, MilestonesDao, LabEntriesDao, AchievementsDao, AuraDao) with CRUD + watch streams (completed in cab8ce1)
+- [x] 1.3 Schema v12 migration in database.dart with achievement backfill for existing moves (completed in cab8ce1)
+- [x] 1.4 Riverpod providers for all entities (completed in cab8ce1)
+- [x] 1.5 Unit tests for all 5 DAOs (CRUD, cascade deletes, watch streams, edge cases) (completed in cab8ce1)
 
 ## Phase 2: Lab Tab Shell
 - [ ] 2.1 Add 5th tab to BottomNavShell + GoRouter (/lab route + branch)
