@@ -1,9 +1,9 @@
 # Tasks — Reverse Album Delete Archive & Recovery
 
 ## Phase 1: Data Model
-- [ ] 1.1 Add move archive columns locally and in Supabase migrations
-- [ ] 1.2 Filter archived moves out of active move queries while preserving by-ID access
-- [ ] 1.3 Add DAO helpers for archived lists, tracked managed assets, and expired archives
+- [x] 1.1 Add move archive columns locally and in Supabase migrations (landed `5707fe1`)
+- [x] 1.2 Filter archived moves out of active move queries while preserving by-ID access (landed `b28cfa1`)
+- [x] 1.3 Add DAO helpers for archived lists, tracked managed assets, and expired archives (landed `d382437`)
 
 ## Phase 2: Reconciliation
 - [ ] 2.1 Extend the Photos bridge with read-access and managed-asset lookup methods

@@ -1,9 +1,9 @@
 # Tasks — Add Photo Library Archive Recovery
 
 ## Phase 1: Archive Model
-- [ ] 1.1 Add move archive columns locally and in Supabase migrations
-- [ ] 1.2 Add active vs archived move DAO queries and restore/archive helpers
-- [ ] 1.3 Route repository-backed active surfaces through non-archived move queries
+- [x] 1.1 Add move archive columns locally and in Supabase migrations (landed `5707fe1`)
+- [x] 1.2 Add active vs archived move DAO queries and restore/archive helpers (landed `d382437`)
+- [x] 1.3 Route repository-backed active surfaces through non-archived move queries (landed `b28cfa1`)
 
 ## Phase 2: Native Photos Reconciliation
 - [ ] 2.1 Extend `VideoAlbumPlugin` with tracked-asset reconcile APIs and stream events
