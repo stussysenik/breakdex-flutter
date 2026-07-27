@@ -11,10 +11,11 @@ cd "$(dirname "$0")/.." || exit 1
 
 TARGET="${1:-}"
 QUICK=0
+ALLOW_DEBUG_SIGNING=0
 
 if [ "$TARGET" = "" ] || [ "$TARGET" = "-h" ] || [ "$TARGET" = "--help" ]; then
   cat <<'USAGE'
-Usage: scripts/distribute.sh <target> [--quick]
+Usage: scripts/distribute.sh <target> [--quick] [--allow-debug-signing]
 
 Targets:
   web           Run gates, then flutter build web --release
@@ -25,11 +26,14 @@ Targets:
   all           Run gates, then web + android-aab + ios-nosign
 
 Options:
-  --quick       Use ./verify.sh --quick before building. Default is full verify.
+  --quick                 Use ./verify.sh --quick before building. Default is full verify.
+  --allow-debug-signing   Build an Android artifact with the template's debug keys.
+                          Installable locally, NOT uploadable to Play.
 
 Notes:
   ios-* targets require macOS + Xcode. ios-ipa also requires valid signing setup.
-  Android signing is read from the normal Flutter/Gradle project configuration.
+  android-* refuse to build until release signing is configured (android/key.properties),
+  because a debug-signed bundle is not a release artifact.
 USAGE
   exit 0
 fi
@@ -38,6 +42,7 @@ shift || true
 for arg in "$@"; do
   case "$arg" in
     --quick) QUICK=1 ;;
+    --allow-debug-signing) ALLOW_DEBUG_SIGNING=1 ;;
     *)
       echo "Unknown option: $arg" >&2
       exit 2
@@ -70,11 +75,51 @@ build_web() {
   flutter build web --release --build-number "$BUILD_NUMBER"
 }
 
+# android/app/build.gradle.kts still carries the Flutter template's
+# `signingConfig = signingConfigs.getByName("debug")` for the release build. A
+# debug-signed artifact cannot be uploaded to Play and is not a release binary,
+# so a green build here would be a false green. Refuse it unless the caller
+# explicitly asks for an unsigned/debug-signed local build.
+require_android_release_signing() {
+  if [ -f android/key.properties ]; then
+    return 0
+  fi
+  if grep -q 'signingConfigs.getByName("debug")' android/app/build.gradle.kts 2>/dev/null; then
+    if [ "$ALLOW_DEBUG_SIGNING" -eq 1 ]; then
+      echo "WARNING: building $1 with DEBUG signing keys (--allow-debug-signing)." >&2
+      echo "         The artifact is installable locally and NOT uploadable to Play." >&2
+      return 0
+    fi
+    cat >&2 <<'SIGN'
+Android release signing is not configured.
+
+android/app/build.gradle.kts still uses the Flutter template default:
+  signingConfig = signingConfigs.getByName("debug")
+
+A debug-signed AAB/APK cannot be uploaded to Play, so shipping one would be a
+false green. Fix it before claiming a release artifact:
+
+  1. keytool -genkey -v -keystore ~/breakdex-upload.jks -keyalg RSA \
+       -keysize 2048 -validity 10000 -alias upload
+  2. Create android/key.properties (gitignored) with storeFile, storePassword,
+     keyAlias, keyPassword.
+  3. Load it in android/app/build.gradle.kts and point the release
+     signingConfig at it.
+
+To build a local, non-uploadable artifact anyway:
+  scripts/distribute.sh <target> --allow-debug-signing
+SIGN
+    exit 1
+  fi
+}
+
 build_android_apk() {
+  require_android_release_signing "android-apk"
   flutter build apk --release --build-number "$BUILD_NUMBER"
 }
 
 build_android_aab() {
+  require_android_release_signing "android-aab"
   flutter build appbundle --release --build-number "$BUILD_NUMBER"
 }
 
