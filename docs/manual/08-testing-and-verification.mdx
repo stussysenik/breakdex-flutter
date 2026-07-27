@@ -3,7 +3,7 @@ title: Testing & Verification
 name: testing
 order: 8
 status: verified
-verified: 686b95e
+verified: 76b9002
 watches:
   - test/**
   - .github/workflows/ci.yml
@@ -30,13 +30,14 @@ From these four, everything below is forced: the CI gate is a *floor* (it proves
 
 ## The test suite
 
-110 `*_test.dart` files under `test/`, split by layer:
+144 `*_test.dart` files under `test/`, split by layer (the jump from 110 is the Appwrite overnight wave — sync dual-write/dual-read/codec/backfill/migration suites — plus config/entitlement and web-seam tests):
 
 | Dir | Files | Covers |
 | --- | --- | --- |
-| `test/core/` | 76 | database + DAOs, state machines, sync, providers, models, design, utils |
-| `test/features/` | 25 | screen-level widget tests (move_list, flashcard_review, stats, add, flow, video_editor, party, …) |
-| `test/shared/` | 6 | shared widgets |
+| `test/core/` | 108 | database + DAOs (incl. migration v22–v27 suites), state machines, sync (codecs, backfills, dual-read/write, tombstones, Appwrite backend/transport), config (remote config, update/entitlement gates), providers, models, design, utils |
+| `test/features/` | 26 | screen-level widget tests (move_list, flashcard_review, stats, add, flow, video_editor, party, auth, …) |
+| `test/shared/` | 7 | shared widgets |
+| `test/` root | 3 | l10n foundation, preview-harness smoke, template widget test |
 | `test/helpers/` | — | `test_data.dart`, `test_database.dart` (in-memory Drift fixtures) |
 
 Test dependencies (`pubspec.yaml`, dev-dependencies):
@@ -45,6 +46,7 @@ Test dependencies (`pubspec.yaml`, dev-dependencies):
 flutter_test:      { sdk: flutter }   # unit + widget tests — the workhorse
 integration_test:  { sdk: flutter }   # provisioned
 patrol: ^4.6.1                        # native E2E driver — provisioned, not yet exercised
+fake_async: ^1.3.1                    # deterministic timer control in unit tests
 ```
 
 `patrol` is configured (`patrol:` block names `app_name: "Breakdex"`, bundle id `com.breakdex.breakdex`), but there is **no `integration_test/` directory** yet — no native E2E flow has been authored. Patrol is the intended Flutter-native E2E path (UIAutomator/XCUITest for permission dialogs, WebView/OAuth); today the suite is `flutter_test` unit + widget tests only. Treat E2E coverage as a stated gap, not a live gate.
@@ -67,31 +69,32 @@ jobs:
       - uses: actions/checkout@v4
         with: { fetch-depth: 0 }        # full history — the docs ledger diffs verified..HEAD
       - uses: subosito/flutter-action@v2
-        with: { flutter-version: '3.x' }
+        with: { flutter-version: '3.41.3' }   # pinned exactly — '3.x' drifted to 3.44.6 and broke the web compile
       - run: flutter pub get
       - run: ./scripts/check_l10n.sh   # generated l10n must be committed + current
       - run: node scripts/docs_ledger_check   # manual chapters current with their watched code
       - run: flutter analyze
+      - run: flutter build web         # the web release target must keep compiling (1.6 CI half)
 ```
 
-Four gates: dependency resolution, **l10n freshness**, **docs-ledger freshness**, and **static analysis**.
+Five gates: dependency resolution, **l10n freshness**, **docs-ledger freshness**, **static analysis**, and the **web compile** (a native-only import leaking past a platform seam fails here rather than in a browser — [Platform Seams](./07-platform-seams.mdx)).
 
 - `scripts/check_l10n.sh` runs `flutter gen-l10n` and fails (`exit 1`) if `lib/l10n/gen` has any diff — i.e. the committed generated localizations must match the ARB sources ([Localization](./06-localization.mdx)).
 - `scripts/docs_ledger_check` diffs each verified manual chapter's `verified..HEAD` restricted to its `watches` globs (git plumbing only) and fails if a watched path changed without the chapter being re-verified ([Manual Meta](./12-meta.mdx)). This is why `checkout` needs `fetch-depth: 0` — a shallow clone can't reach a chapter's `verified` commit.
 - `flutter analyze` is the static gate. It must report `No issues found` — the `analysis_options.yaml` ruleset ([Standards](./09-standards.mdx)) is the real teeth here.
 
-**CI does NOT run `flutter test`, and does NOT build any artifact.** The 110-file suite is *not* enforced on push or PR. This is a deliberately honest statement of the current floor: green CI proves the code analyzes and l10n is current — it does **not** prove the tests pass. Running `flutter test` before handoff is a manual discipline (§9), not something the machine does for you. Do not read a green CI check as "tests pass."
+**CI does NOT run `flutter test`.** (It does now build one artifact — the web bundle — but only as a compile gate; nothing is published from CI.) The 144-file suite is *not* enforced on push or PR. This is a deliberately honest statement of the current floor: green CI proves the code analyzes and l10n is current — it does **not** prove the tests pass. Running `flutter test` before handoff is a manual discipline (§9), not something the machine does for you. Do not read a green CI check as "tests pass."
 
-`release.yml` is separate: it fires only on `push` to `main`, runs `npx semantic-release` (Node 20) for monotonic versioning + CHANGELOG. It is a publishing pipeline, not a verification gate — it presumes the branch already earned its way to `main`.
+`release.yml` is separate: it fires only on `push` to `main`, runs `npx semantic-release` (Node 20, Flutter pinned `3.41.3`) for monotonic versioning + CHANGELOG, then a `detect` step checks for an exact-match tag on HEAD and — when a new version published — chains the `deploy-web` reusable workflow with that tag (done via `needs:` rather than `on: push: tags` because tags pushed by `GITHUB_TOKEN` don't trigger downstream workflows; the deploy self-skips when Vercel secrets are unset). It is a publishing pipeline, not a verification gate — it presumes the branch already earned its way to `main`.
 
 > **The rule that resolves the ambiguity:** the CI check being green is a *floor* (analyze + l10n), never a ceiling. Terminal-verified proof for anything the analyzer can't see — behavior, rendering, migrations — is on you, produced locally against the runtime target, before you claim done.
 
-## Runtime verification targets — one works, two are dead ends
+## Runtime verification targets — iOS sim is canonical; web boots; macOS is dead
 
-For any claim that requires *seeing the app run* (a screen renders, a flow completes, a migration applies), the target matters because two of the three obvious ones do not boot — and their failure is infrastructural, unrelated to your change:
+For any claim that requires *seeing the app run* (a screen renders, a flow completes, a migration applies), the target matters — one of the three obvious ones does not boot at all, and one is a compile/boot check rather than a full proof surface:
 
 - **macOS desktop — dead end.** No `macos/` runner exists. `flutter run -d macos` → `"No macOS desktop project configured"`, exit 1.
-- **Chrome / Flutter web — dead end (today).** Compile fails inside `sqlite3-2.9.4/.../ffi/generated/*.dart`: `"Only JS interop members may be 'external'"`. The Drift-on-WASM/OPFS path the repo contract calls for is not yet wired into the default web entrypoint, so a plain `flutter run -d chrome` never compiles. This is a tracked web-infra gap ([Platform Seams](./07-platform-seams.mdx)), not something a feature diff broke.
+- **Chrome / Flutter web — now compiles and boots.** The old dead end (a `sqlite3` FFI compile failure) was closed by the Phase 1.0 web foundation: the platform seams keep `dart:io`/`dart:ffi` out of the web graph, persistent web Drift is wired ([Platform Seams](./07-platform-seams.mdx)), `flutter build web` is a CI gate, and the app renders in Chrome with a clean boot console. Chrome is a legitimate compile/boot check; it is still *not* the canonical runtime-proof target for native or data-backed claims — browser-driven core-flow smoke (task 1.6) remains an open half.
 - **iOS simulator — the working target.** Boot via `flowdeck` + `flutter run -d <udid>`; capture the accessibility tree + image with `flowdeck ui simulator screen --screenshot`.
 
 Practicals for the iOS-sim path (these are the difference between verifying and hanging):
@@ -114,13 +117,7 @@ Brownfield amplifies this: the repo is late-stage production with real user data
 
 ## Known-pre-existing-failures policy
 
-Not every red test is your bug. The suite currently carries a documented set of failures that belong to a **test-ahead** change (`clarify-review-loop-and-media-cleanup`) — tests written before the implementation they describe. They were confirmed **not regressions** by stash-and-rerun (stash your diff, run the suite, observe the same failures on clean `HEAD`). The recorded set:
-
-- `rename_magic` / `video_export_save` — assert the future path scheme `Moves/Cat/Name/<hash>.mp4` vs the shipped `Moves/Cat/Name - <hash>.mp4`.
-- `card_count_sync` — FSRS due-only counts.
-- `state_picker_sheet` — renamed labels ("Practicing" / "Strong").
-- `mastery_prescreen` / `stats_screen` — copy changes.
-- `party_screen` — timer timeouts.
+Not every red test is your bug. The suite carried a documented set of failures belonging to a **test-ahead** change (`clarify-review-loop-and-media-cleanup`) plus post-redesign staleness — tests describing an implementation or copy that no longer matches. That set has since been **quarantined in place**: the affected cases (`rename_magic` / `video_export_save` path-scheme asserts, `card_count_sync` FSRS counts, `stats_screen` copy, flaky `party_screen` timers, …) now carry explicit `skip:` markers pointing at the ledger `docs/stale-tests-post-redesign.md`, so a clean run of the suite is green rather than "green modulo a memorized red list". Un-skipping one is the work order to reconcile the test with the shipped behavior, recorded in that ledger.
 
 **The policy:** documented pre-existing failures are recorded and **not chased** while working an unrelated change. Before assuming a red test is pre-existing, *re-baseline*: stash-and-rerun to confirm it fails on clean `HEAD` too. A failure that is red on your branch but green on clean `HEAD` is your regression — that one you own. The discipline is what keeps binary truth honest: "the suite has failures" is not license to ignore *new* red, only known-baseline red.
 
@@ -128,14 +125,14 @@ Not every red test is your bug. The suite currently carries a documented set of 
 
 - No success claim without terminal-verified proof; "compiles" / "analyzes" / "200" is not "works". ([`#test-1`](./09-standards.mdx#test-1))
 - Bug fixes follow red/green: failing repro (`exit 1`) → smallest fix → same repro green (`exit 0`). ([`#test-2`](./09-standards.mdx#test-2))
-- Runtime/visual verification runs on the iOS simulator; macOS and Chrome are non-targets until their infra gaps close. ([`#test-3`](./09-standards.mdx#test-3))
+- Runtime/visual verification runs on the iOS simulator; macOS is a non-target, and Chrome is a compile/boot check, not the canonical proof surface. ([`#test-3`](./09-standards.mdx#test-3))
 - Pre-existing failures are re-baselined by stash-and-rerun and left unchased; new red on your branch is yours. ([`#test-4`](./09-standards.mdx#test-4))
 
 ## Indexes
 
-- `.github/workflows/ci.yml` — the actual gate: `pub get` → `check_l10n.sh` → `flutter analyze`. No `flutter test`, no build.
-- `.github/workflows/release.yml` — `semantic-release` on `main` only; publishing, not verification.
+- `.github/workflows/ci.yml` — the actual gate: `pub get` → `check_l10n.sh` → `docs_ledger_check` → `flutter analyze` → `flutter build web`. No `flutter test`.
+- `.github/workflows/release.yml` — `semantic-release` on `main` only, chaining `deploy-web` on a published version; publishing, not verification.
 - `scripts/check_l10n.sh` — the l10n-freshness gate (`flutter gen-l10n` + `git diff` on `lib/l10n/gen`).
-- `test/` — 110 `*_test.dart` files; `test/helpers/` for in-memory Drift fixtures.
+- `test/` — 144 `*_test.dart` files; `test/helpers/` for in-memory Drift fixtures.
 - `pubspec.yaml` — `flutter_test` / `integration_test` / `patrol ^4.6.1` (patrol provisioned, no `integration_test/` flows yet).
 - root `CLAUDE.md` — §9 Binary Truth and the brownfield "verify on a real build" ruling.

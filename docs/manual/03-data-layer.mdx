@@ -3,7 +3,7 @@ title: Data Layer
 name: data
 order: 3
 status: verified
-verified: 686b95e
+verified: 76b9002
 watches:
   - lib/core/database/**
   - lib/core/data/**
@@ -21,7 +21,7 @@ This chapter defines the primitives, then reasons up: the layering, the migratio
 
 ## Primitives
 
-**Table.** A hand-written `class X extends Table` under `lib/core/database/tables/` whose getters declare columns (`TextColumn get id => text()()`). The table class is the *schema*; it is never instantiated. Its `primaryKey` getter names the key columns. Example — `Moves` (`tables/moves.dart`) declares `id` (PK), `name` (`withLength(min: 1)`), `videoPath` (nullable), `updatedAt` (nullable, the LWW clock), and `createdAt`.
+**Table.** A hand-written `class X extends Table` under `lib/core/database/tables/` whose getters declare columns (`TextColumn get id => text()()`). The table class is the *schema*; it is never instantiated. Its `primaryKey` getter names the key columns. Example — `Moves` (`tables/moves.dart`) declares `id` (PK), `name` (`withLength(min: 1)`), `videoPath` (nullable), `updatedAt` (nullable, the LWW clock), `deletedAt` (nullable, the inbound-tombstone soft-hide — distinct from user `archivedAt`), and `createdAt`.
 
 **Data class.** The immutable row value Drift generates from a `Table`: `class Move extends DataClass`, `class Combo`, `class Review`, `class FsrsCard`, `class BreakdexSet`, `class SetItem`, `class ComboMove`, and so on (see `database.g.dart`). One row = one `const`-constructible value object. Reads return these; the UI renders these. Note the naming skew: the `Sets` table produces **`BreakdexSet`** (not `Set`, which is a Dart core type), and `SyncLog` produces `SyncLogData`.
 
@@ -29,7 +29,7 @@ This chapter defines the primitives, then reasons up: the layering, the migratio
 
 **DAO.** A `class XDao extends DatabaseAccessor<AppDatabase> with _$XDaoMixin`, annotated `@DriftAccessor(tables: [...])`, with `part 'x_dao.g.dart'`. It owns the queries for its tables — `select`, `into().insert`, `update().write`, `.watch()` streams. DAOs are the *only* layer that speaks SQL. Example: `MovesDao` (`daos/moves_dao.dart`) exposes `watchAll()`, `insertMove`, `archiveMove`, etc.
 
-**Schema version.** The single integer `AppDatabase.schemaVersion` (`database.dart`). **Currently `23`.** It is the monotonic counter that drives migrations: bump it by one for every schema change and add a matching `if (from < N)` block.
+**Schema version.** The single integer `AppDatabase.schemaVersion` (`database.dart`). **Currently `27`.** It is the monotonic counter that drives migrations: bump it by one for every schema change and add a matching `if (from < N)` block.
 
 **Migration.** The `MigrationStrategy` on `AppDatabase`: an `onCreate` (fresh install → `createAll()` + triggers) and an `onUpgrade(m, from, to)` that runs each `if (from < N)` block in order to walk a legacy DB forward to the current schema.
 
@@ -55,7 +55,7 @@ The migration ladder is the schema's history, each rung an `if (from < N)`:
 
 ```dart
 @override
-int get schemaVersion => 23;
+int get schemaVersion => 27;
 
 onUpgrade: (m, from, to) async {
   if (from < 5)  await m.addColumn(moves, moves.originalVideoName);
@@ -67,10 +67,16 @@ onUpgrade: (m, from, to) async {
     await customStatement('ALTER TABLE moves ADD COLUMN updated_at INTEGER');
     await customStatement('UPDATE moves SET updated_at = created_at WHERE updated_at IS NULL');
   }
+  if (from < 24) { /* combos.updated_at + combo_moves.updated_at LWW clocks (4.4) */ }
+  if (from < 25) { /* deck_moves.updated_at LWW clock (4.7) */ }
+  if (from < 26) { /* deleted_at soft-hide on moves/combos/combo_moves/decks/deck_moves (4.8) */ }
+  if (from < 27) { /* note-entry updated_at + deleted_at (4.9) */ }
   await _backfillReviewSnapshots();
   await _installIntegrityTriggers();  // re-run every upgrade — triggers are IF NOT EXISTS
 }
 ```
+
+The v24–v27 rungs are the Appwrite strangler-fig spreading the two sync columns across the synced tables, and they follow the same disciplines: `updated_at` is added nullable then backfilled (from the row's own `created_at`, or — for join tables with no `created_at`, like `combo_moves`/`deck_moves` — from the parent's clock); `deleted_at` is added nullable with **no** backfill (NULL = "not deleted" is already correct for every existing row). `deleted_at` is the *inbound tombstone soft-hide* (v26): a delete on device A reaches device B as a tombstone that stamps `deleted_at` instead of hard-deleting, so a remote delete never destroys rows or videos — a local delete still hard-deletes on its origin device. Every browse/list read filters `deleted_at IS NULL` (in `MovesDao` the `_isActive`/`_isArchived` predicates both require it — a remote-deleted row is neither active nor archived); for left-joins the step-level predicate rides the ON clause so a combo whose only steps are hidden still lists.
 
 Three disciplines are visible in the source and are mandatory for any new rung:
 
@@ -102,7 +108,7 @@ dart run build_runner build --delete-conflicting-outputs
 
 Skipping this leaves the hand-written schema and `database.g.dart` out of sync — the analyzer will flag missing symbols, and a stale `.g.dart` is a build-breaking, not a runtime, failure.
 
-DAO idioms worth matching: reactive reads use `.watch()`/`.watchSingle()`; a JOIN result is packed into a hand-written value class (`FsrsCardWithEntity`) via `readTable`/`readTableOrNull`; an upsert on a composite PK is `insertOnConflictUpdate`. `MovesDao._stampUpdatedAt` shows the companion-presence idiom in action — it stamps `updatedAt` with `DateTime.now().toUtc()` **only if the caller left it absent**, so the reconcile path can pass a remote timestamp that must be preserved rather than clobbered.
+DAO idioms worth matching: reactive reads use `.watch()`/`.watchSingle()`; a JOIN result is packed into a hand-written value class (`FsrsCardWithEntity`) via `readTable`/`readTableOrNull`; an upsert on a composite PK is `insertOnConflictUpdate`. `MovesDao._stampUpdatedAt` shows the companion-presence idiom in action — it stamps `updatedAt` with `DateTime.now().toUtc()` **only if the caller left it absent**, so the reconcile path can pass a remote timestamp that must be preserved rather than clobbered. That idiom is now a family: `CombosDao._stampCombo`/`_stampComboMove`, and the decks/note-entry DAOs' equivalents, apply the same absent-only stamp on every insert/update of a synced table.
 
 ## The three-layer repository
 

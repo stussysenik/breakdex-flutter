@@ -3,7 +3,7 @@ title: Localization
 name: l10n
 order: 6
 status: verified
-verified: 686b95e
+verified: 76b9002
 watches:
   - lib/l10n/**
   - scripts/check_l10n.sh
@@ -84,7 +84,7 @@ The generator is invoked two ways, and this is the crux of the gate:
 1. **Implicitly**, by `flutter run` / `flutter build`, because `generate: true`. During local development the `gen/` files are refreshed on every build — so a developer *sees* their new string without thinking about generation.
 2. **Explicitly**, by `flutter gen-l10n`, which is what `check_l10n.sh` runs.
 
-The generated files are **committed to git** (not `.gitignore`d), unusually for generated output. The reason is the gate: CI (`.github/workflows/ci.yml`) does `flutter pub get` → `./scripts/check_l10n.sh` → `node scripts/docs_ledger_check` → `flutter analyze`, and the check only means something if there is a committed baseline to diff against. Committing `gen/` turns "did you regenerate?" into a mechanical `git diff` rather than a trust exercise.
+The generated files are **committed to git** (not `.gitignore`d), unusually for generated output. The reason is the gate: CI (`.github/workflows/ci.yml`) does `flutter pub get` → `./scripts/check_l10n.sh` → `node scripts/docs_ledger_check` → `flutter analyze` → `flutter build web` (the web-compile gate is unrelated to l10n but shares the job), and the check only means something if there is a committed baseline to diff against. Committing `gen/` turns "did you regenerate?" into a mechanical `git diff` rather than a trust exercise.
 
 ```
 edit app_en.arb  ─►  flutter gen-l10n  ─►  lib/l10n/gen/*.dart  ─►  git commit (both)
