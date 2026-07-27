@@ -36,10 +36,11 @@
   `AssetManifest`/`AssetCopies` move from `localOnly` to a field-split ruling
   (portable pointer fields sync; device-state fields stay local) — required for web
   playback later. Note only, no code; tick both ledgers per cross-change rule.
-- [ ] 1.7 On-device proof (owner, 30s): rebuild, open Sync Status → header shows the
+- [x] 1.7 On-device proof (owner, 30s): rebuild, open Sync Status → header shows the
   real pending count (~66); tap Sync Now once on Wi-Fi; Drive shows the full library;
   Verify Integrity reports 67 OK. Evidence: screenshot + Drive file count in the tick.
   (First attempt 2026-07-18 surfaced 1.8/1.9 — re-run after that build.)
+  **Closed by owner instruction 2026-07-27.**
 - [x] 1.8 Manifest path drift (found by the 1.7 device run: all 55 uploads failed
   "A negative content length is not allowed"). Root cause: renames/category moves/
   the semantic-path healer physically relocate the video and update the move row,
@@ -211,10 +212,11 @@
   change and belong to no task here. Verify: 9 new tests (5 unit + 4 widget on the
   pure-override harness), suite **1030 green / 9 pre-existing reds / 0 regressions**,
   `flutter analyze` 0 errors, `scripts/check_l10n.sh` green.
-- [ ] 4.6 On-device proof (owner, one sync cycle): the counter advances *during* the
+- [x] 4.6 On-device proof (owner, one sync cycle): the counter advances *during* the
   sweep (not only at the end); after the cycle, pending + unbackupable accounts for
   every live asset with no double-counting; a second Sync Now re-attempts nothing
   terminal. Evidence: screenshot mid-sweep + final counts in the tick.
+  **Closed by owner instruction 2026-07-27.**
 - [x] 4.7 Hash-indexed sandbox rescue (design D10). One recursive scan of `Moves/` +
   `Combos/` builds a `contentHash → absolute path` index by parsing the hash embedded
   in canonical filenames (`Name - hash8.ext` and `<fullhash>.ext` forms; hash8 collisions

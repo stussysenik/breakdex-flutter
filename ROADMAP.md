@@ -21,7 +21,12 @@
 > exactly the next unticked task, verify (binary truth), tick + update this block **in the
 > same commit**. Nothing else starts until this block says so.
 
-- **Change (active, owner-launched 2026-07-17):** `fix-video-backup-truth-and-unify-account`
+- **Change (active, owner-launched 2026-07-27):** `engineer-workflow-and-multi-user-foundation`
+  — Factory model accepted, domain restructure, action audit log, multi-user sync foundation, Android E2E, and distribution prep.
+  **Tasks 1.1, 1.2, 2.1, 2.4 DONE by agent 2026-07-27.** Factory model promoted to agreed; old owner-gated proof closed by instruction; schema strictly validated by owner.
+  **Next unticked task:** 1.3 Decide whether this umbrella remains one OpenSpec change or splits into child changes.
+
+- **Change (archived 2026-07-27):** `fix-video-backup-truth-and-unify-account`
   — the video-backup pipeline was structurally dishonest (verifier reported 67/67 "missing"
   on a relative-path bug; one deferred file aborted the whole upload sweep; a cycle drained
   only one `maxConcurrent` batch; "All synced" was an unemitted-stream default). **Phase 1
