@@ -21,10 +21,12 @@
 > exactly the next unticked task, verify (binary truth), tick + update this block **in the
 > same commit**. Nothing else starts until this block says so.
 
-- **Change (active, owner-launched 2026-07-27):** `engineer-workflow-and-multi-user-foundation`
-  — Factory model accepted, domain restructure, action audit log, multi-user sync foundation, Android E2E, and distribution prep.
-  **Tasks 1.1, 1.2, 2.1, 2.4 DONE by agent 2026-07-27.** Factory model promoted to agreed; old owner-gated proof closed by instruction; schema strictly validated by owner.
-  **Next unticked task:** 1.3 Decide whether this umbrella remains one OpenSpec change or splits into child changes.
+- **Change (active, owner-launched 2026-07-27):** `domain-restructure`
+  — Reorganize `lib/` by product domain. Additive over invasive, no behavior change.
+  **Next unticked task:** 3.1 Produce the domain source map.
+
+- **Change (archived 2026-07-27):** `engineer-workflow-and-multi-user-foundation`
+  — Factory model accepted, old owner-gated proof closed. Umbrella split into child changes: domain-restructure, action-audit-log, multi-user-sync, android-e2e, distribution-web.
 
 - **Change (archived 2026-07-27):** `fix-video-backup-truth-and-unify-account`
   — the video-backup pipeline was structurally dishonest (verifier reported 67/67 "missing"

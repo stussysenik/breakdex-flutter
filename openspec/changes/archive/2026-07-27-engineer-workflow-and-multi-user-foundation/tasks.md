@@ -2,7 +2,7 @@
 
 - [x] 1.1 Review `CLAUDE.md`, `docs/manual/FACTORY.md`, `docs/manual/DECISIONS.md`, `docs/manual/READINGS.md`, and `docs/manual/session.log` with the owner; mark the factory model accepted or revise it.
 - [x] 1.2 Run `npx @fission-ai/openspec@latest validate engineer-workflow-and-multi-user-foundation --strict` and fix any schema errors.
-- [ ] 1.3 Decide whether this umbrella remains one OpenSpec change or splits into child changes for domain restructure, audit log, Android E2E, and distribution.
+- [x] 1.3 Decide whether this umbrella remains one OpenSpec change or splits into child changes for domain restructure, audit log, Android E2E, and distribution. (Owner chose to split)
 
 ## 2. Close Active Video Backup Truth Change
 
