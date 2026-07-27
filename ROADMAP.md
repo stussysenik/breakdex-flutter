@@ -38,6 +38,50 @@
   `multi-user-sync` → `android-e2e`, and return to the folder moves after a release.
   Owner call.
 
+### Session 2026-07-28 — the release gate is now real (read this before distribution work)
+
+**The full gate passes for the first time: `./verify.sh` → ALL GATES PASSED**, 1212 pass /
+3 skip / 0 fail in ~64s. It was previously non-terminating, so nothing could be verified
+before a release. Three real bugs were behind that, all fixed:
+
+1. **`scripts/distribute.sh` built past a failed gate** (`1b7e34b`). It printed
+   `SOME GATES FAILED` and still produced `build/web`: `run_verify` never checked the exit
+   status, and the script runs `set -u` without `set -e`. The script's premise — gate, THEN
+   build — was not enforced. It now exits with the gate's status.
+2. **`lib/dev/preview_harness.dart` could not render any real screen** (`af2a13b`): no
+   `localizationsDelegates`, so every `AppLocalizations.of(context)!` call crashed; and no
+   Appwrite auth stub, so a *preview* made a network call. The IDE preview tool was broken,
+   not just its test.
+3. **Android release builds sign with debug keys** (`ec5d28f`). `android/app/build.gradle.kts`
+   still has the Flutter template's `signingConfig = signingConfigs.getByName("debug")`, so
+   `distribute.sh android-aab` would have exited 0 with a bundle Play rejects. It now refuses,
+   with `--allow-debug-signing` as the explicit local-install escape hatch.
+
+**PROVEN this session:**
+
+- full gate green (`./verify.sh` ALL GATES PASSED, 1212/3/0 in ~64s), analyzer 0 errors / 0 warnings
+- `scripts/distribute.sh web` produces a real artifact **off a green full gate** —
+  `build/web`, 42 MB, `main.dart.js` 5.5 MB, 38s compile
+- `scripts/distribute.sh android-apk --allow-debug-signing` produces a real release APK —
+  `build/app/outputs/flutter-apk/app-release.apk`, **53.7 MB, 113s, exit 0**. So the Android
+  release toolchain works; Android is one keystore away, not structurally blocked.
+- the Android signing guard refuses correctly when the keystore is absent
+
+**NOT PROVEN:** any *uploadable* Android artifact (the APK above is debug-signed — Play will
+reject it) · any iOS artifact (never attempted; needs Xcode + signing) · device behavior on
+any platform · live Appwrite sync · the deployed web app.
+
+**Owner-gated, blocking Android distribution:** generate the upload keystore
+(`keytool -genkey -v -keystore ~/breakdex-upload.jks -keyalg RSA -keysize 2048 -validity
+10000 -alias upload`), write `android/key.properties` (already gitignored), and point the
+release `signingConfig` at it. Until then `android-aab` correctly refuses.
+
+**Known friction, needs an owner call:** the docs-ledger gate diffs `verified..HEAD`, so any
+commit touching a watched path leaves the tree red until a follow-up hash-bump commit — and
+that red now blocks `distribute.sh`. It cost 3 extra commits today. Diffing against the
+working tree instead would let the bump ride in the same commit. That changes a gate, so it
+was left alone.
+
 - **Change (archived 2026-07-27):** `engineer-workflow-and-multi-user-foundation`
   — Factory model accepted, old owner-gated proof closed. Umbrella split into child changes: domain-restructure, action-audit-log, multi-user-sync, android-e2e, distribution-web.
 
