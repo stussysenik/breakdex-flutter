@@ -2,3 +2,4 @@
 2026-07-27T21:42+0200 student engineer-workflow-and-multi-user-foundation Marked factory model accepted, closed owner-gated tasks for old change, ticked validated task 1.2
 2026-07-27T21:47+0200 teacher engineer-workflow-and-multi-user-foundation Split umbrella into child changes (domain-restructure, action-audit-log, multi-user-sync, android-e2e, distribution-web) and archived the umbrella
 2026-07-28T00:22+0200 student factory-infra Landed valoric-ported instruments (CODEX.md symlink, scripts/distribute.sh, FACTORY.md/READINGS.md, CONTEXT.md, data-update-playbook), Dart CodeRabbit rule, archive dedup
+2026-07-28T00:28+0200 student domain-restructure Ticked 3.1: domain source map (10 domains, sets/media/backup/kernel names resolved, 4 high-fan-in files quarantined); found lib/ is 1678 relative vs 4 package: imports — flagged normalization as owner-gated prerequisite 3.2.0
