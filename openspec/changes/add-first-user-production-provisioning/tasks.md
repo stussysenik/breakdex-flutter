@@ -1,5 +1,13 @@
 # Tasks — first-user production provisioning & sync activation
 
+> Ledger audited 2026-07-27: **0/15 is accurate — nothing here has shipped.** Greps for
+> `syncActivationEnabled`, `setDualWriteAll`, `activateSync`, `firstLoginProvisioningTrigger`,
+> and `sync.provisioned` return zero hits in `lib/`+`test/`, and
+> `appwrite_functions_transport.dart` has no `Query.equal('userId', …)` (5.1 open too).
+> The remote-config files that exist (`remote_config_service.dart`,
+> `appwrite_remote_config_source.dart`, `update_gate.dart`) belong to
+> `migrate-canonical-backend-to-appwrite` Phase 1R, not to this change's tasks.
+
 **Dependencies:** Phase 1 (remote-config field) and Phase 2 (SyncService activation API)
 are independent; Phase 3 (trigger) consumes both; Phase 4 (tests) consumes 1–3; Phase 5
 is optional hardening (independent); Phase 6 is owner-driven device proof (after 1–4).
