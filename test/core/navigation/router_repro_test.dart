@@ -6,6 +6,9 @@ import 'package:breakdex/core/navigation/app_router.dart';
 import 'package:breakdex/core/providers.dart';
 import 'package:breakdex/core/services/settings_service.dart';
 import 'package:breakdex/core/database/database.dart';
+import 'package:breakdex/l10n/gen/app_localizations.dart';
+import 'package:breakdex/core/services/appwrite_auth_service.dart';
+import 'package:breakdex/core/services/appwrite_auth_providers.dart';
 import '../../helpers/test_database.dart';
 
 void main() {
@@ -41,9 +44,12 @@ void main() {
         overrides: [
           databaseProvider.overrideWithValue(db),
           sharedPreferencesProvider.overrideWithValue(prefs),
+          currentAppwriteUserProvider.overrideWith((final ref) => Stream<AuthUser?>.value(null)),
         ],
         child: MaterialApp.router(
           routerConfig: appRouter,
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
         ),
       ),
     );
@@ -59,7 +65,5 @@ void main() {
 
     await db.close();
     await tester.pump(const Duration(milliseconds: 500));
-    // stale post-redesign: harness lacks localization delegates added by redesign;
-    // redirects are correct. See docs/stale-tests-post-redesign.md.
-  }, skip: true);
+  });
 }

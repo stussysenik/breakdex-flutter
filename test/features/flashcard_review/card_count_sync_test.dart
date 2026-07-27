@@ -4,6 +4,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:breakdex/core/database/database.dart';
+import 'package:breakdex/core/services/appwrite_auth_service.dart';
+import 'package:breakdex/core/services/appwrite_auth_providers.dart';
 import 'package:breakdex/core/models/learning_state.dart';
 import 'package:breakdex/core/providers.dart';
 import 'package:breakdex/core/services/settings_service.dart';
@@ -41,6 +43,7 @@ void main() {
             }),
           ),
           comboRefreshProvider.overrideWith((final ref) => Stream.value(0)),
+          currentAppwriteUserProvider.overrideWith((final ref) => Stream<AuthUser?>.value(null)),
           // Added these to fix timeouts in tests
           reviewEntityKindProvider.overrideWith((final ref) => ReviewEntityKind.moves),
         ],
@@ -196,6 +199,7 @@ void main() {
 
     test('FSRS card state change reflected in both providers', () async {
       await seedMove(db, id: 'move-1', name: 'Windmill');
+      await (db.update(db.moves)..where((final t) => t.id.equals('move-1'))).write(const MovesCompanion(learningState: Value('LEARNING')));
       // Seed FSRS card as "learning" (fsrsState=1)
       await seedFsrsCard(
         db,
@@ -222,8 +226,7 @@ void main() {
       expect(learningCount, 1);
       expect(sessionItems.length, learningCount);
       expect(sessionItems.first.state, LearningState.learning);
-    }, skip: 'stale post-redesign — see docs/stale-tests-post-redesign.md '
-        '(matrix now counts by learningState column; seeds NEW, expects FSRS-driven count)');
+    });
 
     test(
       'Manual move reset updates review launcher counts immediately',
@@ -282,6 +285,8 @@ void main() {
     test('Future-due learning cards are excluded from launch counts', () async {
       await seedMove(db, id: 'due-now', name: 'Windmill');
       await seedMove(db, id: 'due-later', name: 'Headspin');
+      await (db.update(db.moves)..where((final t) => t.id.equals('due-now'))).write(const MovesCompanion(learningState: Value('LEARNING')));
+      await (db.update(db.moves)..where((final t) => t.id.equals('due-later'))).write(const MovesCompanion(learningState: Value('LEARNING')));
       await seedFsrsCard(
         db,
         entityId: 'due-now',
@@ -314,8 +319,7 @@ void main() {
 
       expect(learningCount, 1);
       expect(sessionItems.map((final item) => item.entityId), ['due-now']);
-    }, skip: 'stale post-redesign — see docs/stale-tests-post-redesign.md '
-        '(both moves seeded NEW; column matrix returns learning=0, test expects 1)');
+    });
 
     test('Combo counts match between matrix and session items', () async {
       await seedCombo(db, id: 'combo-1', name: 'Power Combo');
