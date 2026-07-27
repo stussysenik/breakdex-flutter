@@ -3,11 +3,12 @@ title: Executor Onboarding
 name: onboarding
 order: 11
 status: verified
-verified: 79f06dc
+verified: 5b2aeca
 watches:
   - openspec/AGENTS.md
   - ROADMAP.md
   - CLAUDE.md
+  - CODEX.md
 ---
 
 # Executor Onboarding
@@ -89,5 +90,6 @@ chapter's body and `verified:` frontmatter in the same commit
 - root `ROADMAP.md` — the ONE roadmap and the `## NOW` queue head.
 - [`../../openspec/AGENTS.md`](../../openspec/AGENTS.md) — OpenSpec conventions, teacher/student
   split, the ledger rule.
-- root `CLAUDE.md` — the agent contract and the locked canonical stack.
+- root `CLAUDE.md` — the agent contract and the locked canonical stack. `GEMINI.md` and
+  `CODEX.md` must stay symlinks to it, so all agents read one factory contract.
 - [Engineering Standards](./09-standards.mdx) — the rules your work is reviewed against.

@@ -3,12 +3,13 @@ title: Testing & Verification
 name: testing
 order: 8
 status: verified
-verified: 149ec0d
+verified: 5b2aeca
 watches:
   - test/**
   - .github/workflows/ci.yml
   - .github/workflows/release.yml
   - scripts/check_l10n.sh
+  - scripts/distribute.sh
   - pubspec.yaml
 ---
 
@@ -132,6 +133,8 @@ Not every red test is your bug. The suite carried a documented set of failures b
 
 - `.github/workflows/ci.yml` — the actual gate: `pub get` → `check_l10n.sh` → `docs_ledger_check` → `flutter analyze` → `flutter build web`. No `flutter test`.
 - `.github/workflows/release.yml` — `semantic-release` on `main` only, chaining `deploy-web` on a published version; publishing, not verification.
+- `scripts/distribute.sh` — one-command artifact gate for web, Android APK/AAB, unsigned iOS
+  compile, and signed iOS IPA when owner signing is configured.
 - `scripts/check_l10n.sh` — the l10n-freshness gate (`flutter gen-l10n` + `git diff` on `lib/l10n/gen`).
 - `test/` — 144 `*_test.dart` files; `test/helpers/` for in-memory Drift fixtures.
 - `pubspec.yaml` — `flutter_test` / `integration_test` / `patrol ^4.6.1` (patrol provisioned, no `integration_test/` flows yet).

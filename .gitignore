@@ -1,6 +1,7 @@
 # Miscellaneous
 *.class
 *.log
+!docs/manual/session.log
 *.pyc
 *.swp
 .DS_Store

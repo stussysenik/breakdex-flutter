@@ -5,6 +5,8 @@ reviews:
     enabled: true
     drafts: false
   path_instructions:
+    - path: "**/*.dart"
+      instructions: "Review for Flutter lifecycle bugs, missing dispose/cancellation, async gaps without mounted checks, Riverpod misuse, Drift migration safety, state-machine regressions, and avoidable rebuild/performance issues"
     - path: "**/*.{ts,tsx,js,jsx}"
       instructions: "Review for XSS, injection, React anti-patterns, and accessibility"
     - path: "**/*.py"

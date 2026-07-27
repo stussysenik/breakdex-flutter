@@ -1,8 +1,18 @@
-# Breakdex — Unified Agent Contract (Claude & Gemini)
+# Breakdex — Unified Agent Contract (Claude, Gemini & Codex)
 
 Canonical, load-bearing rulings for any agent working in this repo. Read this first; it names
 the decided stack so you don't re-derive ground truth every session. Global craft mandates
 (`~/.claude/CLAUDE.md`, `~/CLAUDE.md`, and `~/.gemini/GEMINI.md`) still apply and take precedence where they conflict.
+
+## Shared agent entry points
+
+`GEMINI.md` is a **symlink** to `CLAUDE.md`. This file is the single source of truth for both Claude and Gemini agents. Never replace the symlink with a standalone copy — if one drifts, the other becomes a stale duplicate and the contract breaks. The `.gemini/skills/diagnose/` skill mirrors `.claude/skills/diagnose/` and should stay in sync for the same reason.
+
+`CODEX.md` follows the same rule: it must be a symlink to `CLAUDE.md`, not a copied file.
+Codex therefore reads the same factory contract, session lanes, gates, locked stack, and
+release rules as Claude and Gemini. If an agent-specific note is needed, add it here only
+when it is true for the shared workflow; otherwise put tool-local behavior in the tool's
+home-level instructions.
 
 ## Instruments — ported from valoric (2026-07-27)
 
@@ -21,16 +31,59 @@ Two root entry points make the prose rules below machine-checkable:
   instruments, map failures to fixes, report proven vs NOT PROVEN.
 - Commit boundaries: gate passed, task closed, bug fixed — not every file saved.
 
+## Operating manual — `docs/manual/FACTORY.md`
+
+`CLAUDE.md` is the law — what must be true. `FACTORY.md` is the mechanism — how the law
+is executed and verified. The two never disagree; if they do, CLAUDE.md wins and FACTORY.md
+is the bug.
+
+FACTORY.md defines:
+
+- **Three session types** (Scholar / Teacher / Student) — never mixed in one session
+- **Six records** and their provenance interlock
+- **The session-start protocol**
+- **Gate rules and standing bars**
+
+Read FACTORY.md before your first task in any session. The quick reference lives here;
+the full operating manual lives there.
+
+## Session types — never mixed
+
+A session is exactly one of three lanes. Mixing them is how specs acquire implementation
+bias and implementations acquire scope.
+
+- **Scholar session** — study reference code, docs, and tools → write entries in
+  `docs/manual/READINGS.md`. No opinions without a source. No spec text. No implementation.
+  Dispatched whenever a design decision would otherwise rest on confident vibes.
+- **Teacher session** — brainstorm → converge → write ONE spec as an OpenSpec change
+  (proposal, design, tasks). Zero implementation code. Every non-obvious claim cites a
+  READINGS entry. Output is a new change under `openspec/changes/`.
+- **Student session** — implement exactly one approved spec. If the spec is ambiguous,
+  stop and flag it. Never improvise around a spec — ambiguity is a bug in the spec,
+  fixed there, never patched around in code.
+
+A spec must be self-contained: implementable by a model that never saw the originating
+conversation. Three roles answer to this, never mixed:
+
+| Role | Output | Gate |
+|------|--------|------|
+| Scholar | `READINGS.md` entries | source cited |
+| Teacher | one OpenSpec change (proposal + design + tasks) | `openspec --strict` |
+| Student | code that ticks the tasks | `verify.sh` green |
+
 ## Session start — do this before anything else
 
-0. Run `./status.sh`, then `./verify.sh --quick` if anything will be edited.
-
-1. Read root `ROADMAP.md` → **`## NOW`** block. It names the ONE active change and the next
+0. Identify your session type (Scholar / Teacher / Student). Read `docs/manual/FACTORY.md`
+   if this is your first session or if the operating model has changed.
+1. Run `./status.sh`, then `./verify.sh --quick` if anything will be edited.
+2. Read root `ROADMAP.md` → **`## NOW`** block. It names the ONE active change and the next
    unticked task. That is your work; do not re-derive priorities from the 30+ open changes.
-2. Open that change's `tasks.md`; execute exactly the next unticked task per
+3. Open that change's `tasks.md`; execute exactly the next unticked task per
    `openspec/AGENTS.md` (binary truth, ledger rule).
-3. Tick the box AND advance the `## NOW` block **in the same commit** that lands the work.
-4. Only the owner reorders the queue. If a task is owner-gated, stop and surface it — then
+4. Tick the box AND advance the `## NOW` block **in the same commit** that lands the work.
+5. Append one line to `docs/manual/session.log`:
+   `YYYY-MM-DDThh:mm+TZ <role> <change-name> <summary of what happened>`
+6. Only the owner reorders the queue. If a task is owner-gated, stop and surface it — then
    work the parallel-allowed track named in the NOW block, nothing else.
 
 ## Canonical stack — LOCKED
@@ -70,6 +123,40 @@ Two root entry points make the prose rules below machine-checkable:
 - Google Drive scope minimized to file-level (`drive.file`) already in use; no broad `drive` scope.
 - `.env` conventions carry cloud + self-host keys; keys are never committed.
 
+## Docs layout
+
+| Path | Purpose |
+| --- | --- |
+| `docs/manual/` | Engineering manual (12-chapter MDX, docs ledger) |
+| `docs/design/TOKENS.md` | Single source for design tokens |
+| `docs/*runbook*.md`, `docs/web-deploy.md`, `docs/appwrite-*.md`, `docs/phase-m-runbook.md` | Operational runbooks (sync, deploy, provisioning) |
+| `docs/data-update-playbook.md` | Smooth schema/app update playbook: forward migrations, action history, projections, ghost states |
+| `docs/VISION.MD`, `docs/PRD.md`, `docs/TECHSTACK.MD`, `docs/CHANGELOG.md` | Product docs |
+| `docs/architecture.md`, `docs/hyperdata-ledger.md`, `docs/stale-tests-post-redesign.md` | Technical reference |
+
+## Distribution and update scriptability
+
+Distribution must be runnable from one command, with the same binary-truth posture as code
+work. The root entry point is `scripts/distribute.sh`:
+
+| Command | Purpose |
+| --- | --- |
+| `scripts/distribute.sh web` | full gate, then `flutter build web --release` |
+| `scripts/distribute.sh android-aab` | full gate, then Play-ready Android App Bundle |
+| `scripts/distribute.sh android-apk` | full gate, then sideloadable Android APK |
+| `scripts/distribute.sh ios-nosign` | full gate, then iOS release compile without signing |
+| `scripts/distribute.sh ios-ipa` | full gate, then signed iOS IPA; owner signing required |
+| `scripts/distribute.sh all --quick` | quick edit-loop gate, then web + Android AAB + unsigned iOS compile |
+
+The script passes the monotonic `pubspec.yaml` build number into each Flutter build. iOS
+distribution remains owner-gated because signing, provisioning profiles, and App Store
+credentials are external state. Android signing follows the normal Flutter/Gradle project
+configuration.
+
+## Archive convention
+
+Archived OpenSpec changes live in a single location: **`openspec/changes/archive/`** — never `openspec/archive/`. Each archived change is a dated directory (prefixed `YYYY-MM-DD-`) containing the full change artifact set, or a standalone `.md` file for single-artifact changes.
+
 ## Ledger rule (same-commit ticking)
 
 A change's `tasks.md` checkboxes MUST be ticked in the **same commit** that lands the
@@ -96,6 +183,7 @@ To ensure services are easily discoverable and to prevent monolithic dependency 
 - **Backlog / sequencing:** root `ROADMAP.md` → "Backlog — OpenSpec change order (D8)".
 - **Design tokens:** `docs/design/TOKENS.md`.
 - **OpenSpec conventions:** `openspec/AGENTS.md`. Drive non-trivial work through `openspec/`.
+- **Engineering manual:** `docs/manual/index.mdx` — 12-chapter reference (state, data, sync, testing, review checklist). Docs-ledger drift check: `scripts/docs_ledger_check`.
 - **Brownfield constraint:** late-stage production with real users + data — additive over
   invasive, never delete/orphan user state, migrations one-way and tested, verify on a real
   build before claiming done.
