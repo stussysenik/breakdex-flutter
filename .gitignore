@@ -52,7 +52,10 @@ senik/
 node_modules/
 
 # Tool configs
-.claude/
+.claude/*
+!.claude/skills
+.claude/skills/*
+!.claude/skills/diagnose/
 .flowdeck/
 .maestro-artifacts/
 .maestro-test-output/

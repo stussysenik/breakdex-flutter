@@ -4,7 +4,26 @@ Canonical, load-bearing rulings for any agent working in this repo. Read this fi
 the decided stack so you don't re-derive ground truth every session. Global craft mandate
 (`~/.claude/CLAUDE.md`, `~/CLAUDE.md`) still applies and takes precedence where it conflicts.
 
+## Instruments — ported from valoric (2026-07-27)
+
+Two root entry points make the prose rules below machine-checkable:
+
+- **`./status.sh`** — the derived board: active change, next unticked task, git state,
+  queue size. Derived, never stored — it only reads ROADMAP.md, tasks.md, and git.
+  Run it at session start; when it disagrees with an assumption, the board wins.
+- **`./verify.sh`** — the cumulative binary-truth gate (§9 instrument): ledger drift
+  (`scripts/verify_ledger.sh`), openspec `--strict` on the active change, docs ledger,
+  l10n, analyzer, full test suite. `--quick` skips tests for the edit loop; a done-claim
+  requires the full run, exit 0.
+- **Every gate prints what it did NOT prove.** A green run is a claim about exactly the
+  listed layers, nothing more (device / web runtime / live sync stay owner-verified).
+- The `/diagnose` skill (`.claude/skills/diagnose`) is the reading protocol: run the
+  instruments, map failures to fixes, report proven vs NOT PROVEN.
+- Commit boundaries: gate passed, task closed, bug fixed — not every file saved.
+
 ## Session start — do this before anything else
+
+0. Run `./status.sh`, then `./verify.sh --quick` if anything will be edited.
 
 1. Read root `ROADMAP.md` → **`## NOW`** block. It names the ONE active change and the next
    unticked task. That is your work; do not re-derive priorities from the 30+ open changes.
