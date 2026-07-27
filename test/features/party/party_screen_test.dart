@@ -138,7 +138,7 @@ void main() {
     debugPrint('DEBUG: Cleaning up...');
     await cleanupWidget(tester);
     debugPrint('DEBUG: Closing bloc...');
-    bloc.close();
+    await bloc.close();
     debugPrint('DEBUG: Test finished!');
   });
 
@@ -165,6 +165,6 @@ void main() {
     expect(find.text('SHAKE AGAIN FOR ANOTHER move'), findsOneWidget);
 
     await cleanupWidget(tester);
-    bloc.close();
+    await bloc.close();
   });
 }
