@@ -5,6 +5,8 @@ import 'package:go_router/go_router.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:breakdex/shared/widgets/bottom_nav_shell.dart';
 import 'package:breakdex/core/providers.dart';
+import 'package:breakdex/core/services/appwrite_auth_providers.dart';
+import 'package:breakdex/core/services/appwrite_auth_service.dart';
 import 'package:breakdex/core/services/settings_service.dart';
 import 'package:breakdex/l10n/gen/app_localizations.dart';
 
@@ -22,6 +24,11 @@ void main() {
               overrides: [
                 sharedPreferencesProvider.overrideWithValue(prefs),
                 syncTriggerProvider.overrideWith((final ref) {}),
+                // Without this, `isSignedInProvider` reaches the live Appwrite
+                // client: Account.get() leaves an HTTP timer pending past
+                // widget-tree disposal and the test fails on !timersPending.
+                currentAppwriteUserProvider
+                    .overrideWith((final ref) => Stream<AuthUser?>.value(null)),
               ],
               child: BottomNavShell(navigationShell: navigationShell),
             );

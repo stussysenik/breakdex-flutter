@@ -21,19 +21,31 @@ never returns.
 take 20+ minutes and exit non-zero, so no one could run it before a release. A gate that cannot
 be run proves nothing.
 
-## Known red, NOT quarantined (2 tests, as of 2026-07-28)
+## Fixed 2026-07-28 — the last 2 reds (root cause: unstubbed Appwrite auth)
 
-These stay red and visible — they fail fast, so they do not block the gate the way the party
-hangs did. Both reproduced at `b0b8f90` with the 3.2.0 import normalization stashed out, so
-neither is a regression from it:
+Both were pre-existing (reproduced at `b0b8f90` with the 3.2.0 import normalization stashed
+out) and both had the same root cause: nothing overrode `currentAppwriteUserProvider`, so
+anything reading `isSignedInProvider` reached the live Appwrite client. `Account.get()` left an
+HTTP timer pending past widget-tree disposal and the binding's `!timersPending` assert fired.
 
-- `test/shared/widgets/bottom_nav_shell_test.dart` — "does not throw Riverpod modification
-  error on build"
-- `test/preview_harness_smoke_test.dart` — "preview harness renders a data-driven screen with
-  seed data"
+- `test/shared/widgets/bottom_nav_shell_test.dart` — added the
+  `currentAppwriteUserProvider.overrideWith(… Stream.value(null))` override that the other 10
+  auth-touching tests already use.
+- `test/preview_harness_smoke_test.dart` — surfaced **two real bugs in
+  `lib/dev/preview_harness.dart`**, not just a bad test:
+  1. the harness `MaterialApp` registered no `localizationsDelegates`, so every screen calling
+     `AppLocalizations.of(context)!` (e.g. `LibrarySortToggle`) crashed on a null check — the
+     preview tool could not render a real screen at all;
+  2. the harness `ProviderScope` did not stub Appwrite auth, so a *preview* would make a
+     network call.
+  The test's `find.textContaining('Six Step')` was also genuinely stale: the library's default
+  `ViewMode.glance` is the visual-first grid and renders no move-name text. Replaced with
+  `find.byType(LibraryDateLabel)` — rendered inside every grid cell and derived from the seeded
+  rows, so it still proves data reached the widgets.
 
-Full-suite baseline after the party quarantine: **1210 pass / 3 skip / 2 fail in ~54s**
-(was 20+ minutes and non-terminating).
+**Full suite is now green: 1212 pass / 3 skip / 0 fail in ~64s**, down from 20+ minutes and
+non-terminating. `./verify.sh` reports ALL GATES PASSED, which also unblocks
+`scripts/distribute.sh` (it runs the gate before every build).
 
 **Repair path (party):** rebuild on the pure-override harness (stub every stream provider, no live
 `AppDatabase`) and unit-test the `PartyBloc` shake/cycle/reveal transitions separately from the

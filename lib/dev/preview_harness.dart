@@ -6,9 +6,12 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:breakdex/core/database/database.dart';
 import 'package:breakdex/core/design/theme.dart';
 import 'package:breakdex/core/providers.dart';
+import 'package:breakdex/core/services/appwrite_auth_providers.dart';
+import 'package:breakdex/core/services/appwrite_auth_service.dart';
 import 'package:breakdex/core/services/settings_service.dart';
-import 'package:breakdex/shared/widgets/app_loader.dart';
 import 'package:breakdex/dev/preview_db.dart';
+import 'package:breakdex/l10n/gen/app_localizations.dart';
+import 'package:breakdex/shared/widgets/app_loader.dart';
 
 /// Shared widget-preview harness for the whole app.
 ///
@@ -175,11 +178,16 @@ class _PreviewHostState extends State<_PreviewHost> {
         // While loading/erroring, render a bare MaterialApp (no ProviderScope).
         // ProviderScope is only mounted once we have the final, fixed set of
         // overrides — Riverpod forbids changing the override count after mount.
+        // The delegates are not optional: every screen that calls
+        // `AppLocalizations.of(context)!` (e.g. LibrarySortToggle) throws a
+        // null-check error without them, so previewing a real screen failed.
         Widget shell(final Widget home) => MaterialApp(
               debugShowCheckedModeBanner: false,
               theme: AppTheme.light(),
               darkTheme: AppTheme.dark(),
               themeMode: widget.themeMode,
+              localizationsDelegates: AppLocalizations.localizationsDelegates,
+              supportedLocales: AppLocalizations.supportedLocales,
               home: home,
             );
 
@@ -205,6 +213,12 @@ class _PreviewHostState extends State<_PreviewHost> {
           overrides: <Override>[
             databaseProvider.overrideWithValue(backend.db),
             sharedPreferencesProvider.overrideWithValue(backend.prefs),
+            // A preview must never touch the network. Without this, anything
+            // reading `isSignedInProvider` reaches the live Appwrite client and
+            // Account.get() leaves an HTTP timer pending — which also fails the
+            // widget-test binding's leak check.
+            currentAppwriteUserProvider
+                .overrideWith((final ref) => Stream<AuthUser?>.value(null)),
           ],
           child: shell(widget.child),
         );
