@@ -165,6 +165,30 @@ review violation to reconcile before new work builds on it. (This rule was intro
 `align-cross-client-foundations`; the 0/51-vs-shipped drift in `state-machine-crud` is the
 canonical example it fixed.)
 
+## Capture rule — an ask never lives only in chat
+
+Introduced 2026-07-28 after a session took an owner's "do ALL of it", silently
+re-narrowed to one track, and left eight design asks existing nowhere but the
+transcript. The budget ceiling was the real constraint; dropping the record was not.
+
+- **Owner scope answers are binding. You may sequence them; you may not shed them.**
+  Choosing what to build *first* is an agent call. Choosing what to build *at all*
+  is not. If you pick one track out of several, say so before the work, not after.
+- **Capture before you build.** The moment an ask arrives, it goes into the queue —
+  an OpenSpec change, or a task appended to the active one — in the *same* session,
+  before any implementation starts. A one-line stub in `tasks.md` is a valid capture;
+  an unwritten intention is not. Budget pressure is the argument *for* capturing
+  early, never the excuse for skipping it.
+- **Running out of budget is normal; losing the ask is the defect.** Ending a session
+  with work unstarted but fully recorded is a clean stop. Ending it with work
+  unstarted and unrecorded means the next session cannot even know what was asked.
+- **Report against the ask, not against what you did.** Close every session by
+  listing each thing the owner asked for as done / not done, in their words. A
+  summary that only narrates completed work hides the gap it should surface.
+
+This is the `## NOW` discipline applied to inbound scope: the board is the memory,
+the transcript is not.
+
 ## Model Orchestration & Limits
 
 - **Fable 5:** Restricted strictly to **planning, scoping, and orchestration**. Never use Fable 5 as a heavy execution agent (to prevent API spend limit blowouts).

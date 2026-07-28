@@ -149,3 +149,46 @@ Decisions (owner, 2026-07-08):
   equivalent, so snapping them would *change pixels/feel* — that is a scale-extension vs
   snap-to-grid aesthetic call for the owner, not a value-preserving conformance win. Enumerated
   so the boundary is explicit and reviewable.
+
+## 6. Owner design wave — captured 2026-07-28 (UNSPECCED, verbatim intent)
+
+Captured under the `## Capture rule` in CLAUDE.md: these arrived in a working session
+that had no budget left to build them. They are recorded here so they exist on the board
+rather than in a transcript. **None are specced yet** — each needs a Teacher pass (and 6.6
+needs a Scholar pass first) before any Student session touches code.
+
+- [ ] 6.1 **One-page Add flow.** `SCR-20260728-maiy` (Add Content) should be as easy as the
+  home tiles in `SCR-20260728-makk` — "imagine everything was a blend". Adjust the grid and
+  layout rules so Add is a single-page layout, not a scroll with a card below the fold.
+- [ ] 6.2 **`Moves` header overflow.** `SCR-20260728-mafz` shows a RenderFlex "OVERFLOWED BY 2"
+  on the `< Back  Moves` header. Reproduce (it did not overflow on an API-35 emulator at
+  default text scale — suspect larger text scale or iOS metrics) and fix.
+- [ ] 6.3 **Settings full-view transition animation.** An interesting full-view transition
+  when opening settings sections. Must compose from `AppMotion` tokens (Fluid + Morph only —
+  raw curve/duration literals are review violations).
+- [ ] 6.4 **Icon system + icon packs.** Current icons read generic. Want handpicked,
+  human, Notion-quality — "I would even pay for them, that's the quality". Make icon sets
+  swappable from the design system, with selectable packs surfaced in Settings.
+- [ ] 6.5 **Pantone-only color packs.** `SCR-20260728-maro`: minimal but not sophisticated;
+  "better colors". Design from light→bold weights, fluid and organic rather than hard
+  statements — Linear's design philosophy, simple handpicked colors. Color packs are
+  **Pantone only**: adjust any color, pick by season, and choose from the full database
+  including every past Color of the Year. `docs/design/TOKENS.md` stays the single source.
+- [ ] 6.6 **Typography control + power-user layer.** `SCR-20260728-mawt`: per-label/input
+  font-family control, made easy — "interfaces are to be read", the taste is in denoting each
+  one. Alongside it: one central XState machine; an AST-shaped property model so every
+  element is addressable; lexical (`sgrep`) matched with syntactical search; and cmd+K brought
+  into the app so it serves power users. Treat as an infinite-traversal problem over a set of
+  information pieces. **Scholar session required before specifying.**
+- [ ] 6.7 **Never-destroy behavior ledger.** Working state and behavior are never destroyed:
+  a black box that can be viewed in-app at any time and exported out. **Must extend the
+  existing `provenanceJournal` / `docs/hyperdata-ledger.md`, not become a second system.**
+- [ ] 6.8 **Honest stats.** `SCR-20260728-maro` (MOVES BOXES): give actually helpful and
+  reliable stats — the current NEW / PRACTICING / STRONG / TOTAL DUE readout is not earning
+  its space.
+- [ ] 6.9 **Updates + A/B testing.** Solve the update story, and add an A/B test showcase
+  openable from Settings. Overlaps the remote-config work in
+  `add-web-first-release-and-monetization` (Phase 1R) — reconcile before specifying.
+- [ ] 6.10 **Ephemeral Maestro fixtures.** Long-term usable Maestro testing needs temporary
+  data, not permanent seeding: qualitative flows must run against real-looking data that
+  leaves no residue. Pairs with `android-e2e` 6.3.
