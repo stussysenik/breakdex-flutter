@@ -73,6 +73,34 @@ Future<void> _backupDatabaseIfNeeded(
   }
 }
 
+/// Bring Firebase up without letting an unconfigured platform take down boot.
+///
+/// Firebase is legacy here — Appwrite is the canonical backend — and
+/// `firebase_options.dart` only carries an iOS config. On Android its
+/// `currentPlatform` getter *throws*, and because that throw happened while
+/// building the `unawaited(...)` argument it escaped `main()` before `runApp`,
+/// so the app never rendered a frame: blank screen, no crash dialog. A missing
+/// legacy backend must degrade visibly (one warning, gate marked unconfigured),
+/// exactly like the web branch above, not block the product.
+Future<void> _initializeFirebaseIfConfigured(final BootCoordinator boot) async {
+  try {
+    await Firebase.initializeApp(
+      options: DefaultFirebaseOptions.currentPlatform,
+    );
+    boot.completeGate(BootGate.firebase);
+    // Deliberately unbounded: the failure this guards against is an
+    // UnsupportedError (an Error, not an Exception), and any other init failure
+    // in a legacy backend should be survivable too.
+    // ignore: avoid_catches_without_on_clauses
+  } catch (error) {
+    DiagnosticsLog.warn(
+      'Boot',
+      'Firebase unavailable on this platform, continuing without it: $error',
+    );
+    boot.completeGate(BootGate.firebase, detail: 'unconfigured');
+  }
+}
+
 /// Open database with crash recovery.
 Future<AppDatabase> _openDatabaseSafely(
   final DatabaseRecoveryService recoveryService,
@@ -257,8 +285,7 @@ void main() async {
     boot.completeGate(BootGate.videoResolver, detail: 'skipped-web');
     boot.completeGate(BootGate.storageGate, detail: 'skipped-web');
   } else {
-    unawaited(Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform)
-        .then((_) => boot.completeGate(BootGate.firebase)));
+    unawaited(_initializeFirebaseIfConfigured(boot));
     unawaited(VideoPathResolver.initialize()
         .then((_) => boot.completeGate(BootGate.videoResolver)));
     unawaited(VideoStorageGate.initialize()
