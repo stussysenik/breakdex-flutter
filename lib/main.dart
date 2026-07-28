@@ -202,6 +202,10 @@ void main() async {
 
   DiagnosticsLog.configure(
     threshold: kDebugMode ? LogLevel.trace : LogLevel.info,
+    // Retain more than we print, in every build. A release user reporting "sync
+    // did nothing" cannot re-run with a higher verbosity, so the detail has to
+    // already be in the buffer when they hit Copy diagnostics.
+    captureThreshold: LogLevel.debug,
   );
   DiagnosticsLog.setSubsystemThreshold('SwingDetector', LogLevel.trace);
   DiagnosticsLog.setSubsystemThreshold('Party', LogLevel.trace);

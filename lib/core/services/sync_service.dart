@@ -24,6 +24,7 @@ import 'package:breakdex/core/sync/codecs/review_codec.dart';
 import 'package:breakdex/core/sync/codecs/fsrs_card_codec.dart';
 import 'package:breakdex/core/sync/codecs/deck_codec.dart';
 import 'package:breakdex/core/sync/codecs/note_entry_codec.dart';
+import 'package:breakdex/core/utils/diagnostics.dart';
 
 class SyncService {
   final AuthService authService;
@@ -698,7 +699,15 @@ class SyncService {
     required final Future<SyncRecord> Function(String id) recordFor,
   }) async {
     final backend = syncBackend;
-    if (backend == null || !(prefs.getBool(prefKey) ?? false)) return;
+    if (backend == null || !(prefs.getBool(prefKey) ?? false)) {
+      // The most common "sync is broken" report is a closed gate, not a failure.
+      // Silence here is indistinguishable from a bug, so name which gate shut.
+      DiagnosticsLog.debug(
+        'Sync',
+        'push skipped $label — ${backend == null ? 'no backend' : 'pref $prefKey off'}',
+      );
+      return;
+    }
 
     final upserts = <SyncRecord>[];
     final deletes = <SyncTombstone>[];
@@ -716,15 +725,22 @@ class SyncService {
           upserts.add(await recordFor(entry.entityId));
         }
       } on Object catch (e) {
-        debugPrint('[SyncService] dual-write skipped $label ${entry.entityId}: $e');
+        DiagnosticsLog.warn(
+          'Sync',
+          'push encode failed $label ${entry.entityId}: $e',
+        );
       }
     }
 
     if (upserts.isEmpty && deletes.isEmpty) return;
     try {
       await backend.push(type, upserts: upserts, deletes: deletes);
+      DiagnosticsLog.info(
+        'Sync',
+        'push ok $label — ${upserts.length} upsert(s), ${deletes.length} delete(s)',
+      );
     } on Object catch (e) {
-      debugPrint('[SyncService] $label dual-write push failed: $e');
+      DiagnosticsLog.error('Sync', 'push FAILED $label: $e');
     }
   }
 
@@ -797,6 +813,11 @@ class SyncService {
         : DateTime.fromMillisecondsSinceEpoch(cursorMs, isUtc: true);
 
     final delta = await backend.pull(type, since: since);
+    DiagnosticsLog.debug(
+      'Sync',
+      'pull $label since=${since?.toIso8601String() ?? 'never'} '
+          '→ ${delta.upserts.length} upsert(s), ${delta.deletes.length} delete(s)',
+    );
 
     var applied = 0;
     var failed = 0;
@@ -806,7 +827,7 @@ class SyncService {
           if (await merge(record)) applied++;
         } on Object catch (e) {
           failed++;
-          debugPrint('[SyncService] skipped malformed $label ${record.id}: $e');
+          DiagnosticsLog.warn('Sync', 'skipped malformed $label ${record.id}: $e');
         }
       }
       if (applyDelete != null) {
@@ -815,8 +836,8 @@ class SyncService {
             if (await applyDelete(tombstone)) applied++;
           } on Object catch (e) {
             failed++;
-            debugPrint(
-                '[SyncService] skipped tombstone $label ${tombstone.id}: $e');
+            DiagnosticsLog.warn(
+                'Sync', 'skipped tombstone $label ${tombstone.id}: $e');
           }
         }
       }
@@ -845,7 +866,11 @@ class SyncService {
   Future<List<({String label, int applied, int failed})>>
       hydrateAllFromBackend() async {
     final backend = syncBackend;
-    if (backend == null) return const [];
+    if (backend == null) {
+      DiagnosticsLog.warn('Sync', 'hydrate skipped — no backend wired');
+      return const [];
+    }
+    final hydrate = StageLogger.begin('hydrateAllFromBackend', subsystem: 'Sync');
 
     final reports = <({String label, int applied, int failed})>[];
     Future<void> run(
@@ -865,8 +890,9 @@ class SyncService {
           applyDelete: applyDelete,
         );
         reports.add((label: label, applied: r.applied, failed: r.failed));
+        hydrate.stage(label, {'applied': r.applied, 'failed': r.failed});
       } on Object catch (e) {
-        debugPrint('[SyncService] hydrate $label failed: $e');
+        DiagnosticsLog.error('Sync', 'hydrate $label FAILED: $e');
         reports.add((label: label, applied: 0, failed: -1));
       }
     }
@@ -892,6 +918,11 @@ class SyncService {
     await run(SyncEntityType.comboNoteEntry,
         comboNoteEntriesBackendCursorPrefKey, 'comboNoteEntry',
         _mergeComboNoteEntryRecordLww, _applyComboNoteEntryTombstone);
+
+    final applied = reports.fold(0, (final a, final r) => a + r.applied);
+    final failed = reports.where((final r) => r.failed != 0).length;
+    hydrate.complete('$applied row(s) applied across ${reports.length} entities'
+        '${failed == 0 ? '' : ', $failed entity/entities with failures'}');
     return reports;
   }
 
