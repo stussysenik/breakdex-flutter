@@ -3,7 +3,7 @@ title: Sync
 name: sync
 order: 4
 status: verified
-verified: ec5d28f
+verified: 24417e2
 watches:
   - lib/core/sync/**
   - lib/core/services/sync_service.dart
@@ -158,6 +158,32 @@ Sync is a **strangler-fig in progress**; do not read the contract's shipped stat
 - The **live metadata path is still Firestore, but the Appwrite seam is now wired for every entity — all pref-OFF by default.** `SyncService` still imports `cloud_firestore`/`firebase_storage` (the running legacy leg), and beside it the overnight wave landed the full strangler ladder: `moves` (4.1–4.3, the template), `combos`/`comboMoves` (4.4), `reviewEvents` (4.5 — append-only, upserts only, never a tombstone), `fsrsCards` (4.6 — pull-only, derived), `decks`/`deckMoves` (4.7), inbound tombstone application (4.8), and the Appwrite-only note-entry pair (4.9). Each pair has its own `sync.<entity>.dualWrite.enabled` / `dualRead.enabled` kill-switch (every gate defaults `false`; flipping a switch off is the instant rollback) and per-entity backend cursors. The backfill service grew the matching `backfillCombos`/`backfillReviews`/`backfillDecks`/note-entry methods, still read-only against Drift. Until the owner's Phase-M soak flips the prefs, device behavior is byte-identical to pre-wave — the wiring is shipped, the cutover is not.
 
 Backfill and ledger detail — snapshot-equality proofs, release provenance, entity sequencing — live in [`../hyperdata-ledger.md`](../hyperdata-ledger.md); this chapter does not duplicate them.
+
+## Observability — why sync went quiet
+
+Sync fails silently by construction: every per-entity cutover pref defaults **off**, so
+"nothing synced" is far more often a closed gate than a broken call. Reading that from
+outside was impossible until the subsystem was instrumented (2026-07-28) — `Sync` had zero
+`DiagnosticsLog` coverage while being the subsystem most often debugged.
+
+Instrumentation sits at the two chokepoints every entity funnels through, not at each
+call site:
+
+- **`_dualWriteEntity`** (all pushes) — logs which gate shut when it skips
+  (`no backend` vs `pref <key> off`), the per-entity encode failures it swallows, and the
+  upsert/delete counts on a successful push.
+- **`_pullAndMergeEntity`** (all pulls, and the LWW core `hydrateAllFromBackend` calls
+  directly) — logs the cursor it pulled from (`since=…` or `never`) and the delta sizes,
+  which is what distinguishes "the server has nothing new" from "the cursor is wrong".
+- **`hydrateAllFromBackend`** — a `StageLogger` run, one stage per entity, so a fresh-device
+  seed reports applied/failed per table rather than one opaque total.
+
+These lines are **retained, not just printed**: `DiagnosticsLog` keeps a bounded ring
+buffer at `debug` while the console prints at `info`, because a release user cannot re-run
+at higher verbosity. `DiagnosticsLog.export()` redacts secrets, JWTs, and email
+local-parts, and System Status → DIAGNOSTIC LOG renders the buffer with a **Copy** button —
+so a sync failure can leave the device without leaking the session that caused it. See
+`lib/core/utils/diagnostics.dart`.
 
 ## Standards this chapter enforces
 

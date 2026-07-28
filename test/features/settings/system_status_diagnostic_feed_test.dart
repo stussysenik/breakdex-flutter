@@ -69,7 +69,8 @@ void main() {
     await tester.pump();
 
     expect(clipboardCalls, hasLength(1));
-    final text = clipboardCalls.single.arguments['text'] as String;
+    final args = clipboardCalls.single.arguments as Map<Object?, Object?>;
+    final text = args['text']! as String;
     expect(text, contains('<redacted>'));
     expect(text, isNot(contains('supersecrettoken')));
   });

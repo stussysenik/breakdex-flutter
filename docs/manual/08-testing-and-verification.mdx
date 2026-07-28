@@ -3,7 +3,7 @@ title: Testing & Verification
 name: testing
 order: 8
 status: verified
-verified: 1b7e34b
+verified: 24417e2
 watches:
   - test/**
   - .github/workflows/ci.yml
@@ -115,6 +115,28 @@ For a bug fix, the protocol is not "write a test that passes." It is:
 The red step is the load-bearing one: it is the only thing that proves the test has teeth. This is the state-machine layer's natural mode — a `(state, event) → expected` row is a repro that either matches the transition table or does not.
 
 Brownfield amplifies this: the repo is late-stage production with real user data ([Data Layer](./03-data-layer.mdx)). Changes are additive over invasive, migrations are one-way and must be tested, and a claim of done requires verification on a **real build**, not a passing unit test alone (root `CLAUDE.md`, brownfield row). A migration proven only by a green unit test is *not* proven — it is proven when the iOS-sim build boots against a populated DB without data loss.
+
+## Testing a widget that reads a static buffer
+
+`DiagnosticsLog`'s retained ring buffer is process-global static state, and its feed widget
+polls it on a `Timer.periodic`. Both are the usual sources of cross-test bleed and the
+repo's documented `Timer is still pending` flake (`docs/stale-tests-post-redesign.md`), so
+the pattern that keeps `diagnostics_buffer_test.dart` and
+`system_status_diagnostic_feed_test.dart` deterministic is worth stating:
+
+- **Reset the global in `setUp`, never in `tearDown`.** `DiagnosticsLog.clearBuffer()` plus
+  an explicit `configure(...)` means each case states the thresholds it depends on rather
+  than inheriting whatever ran last.
+- **Cancel the timer in `dispose`, and let the tester dispose the tree.** `testWidgets`
+  tears the tree down at the end of each case, which cancels the periodic timer — no
+  pending-timer failure, and no need for `fakeAsync`.
+- **Pump the panel, not the screen.** `SystemStatusScreen` watches boot and storage
+  providers that need the whole app graph; the claim under test is about the log buffer, so
+  the feed is exposed as `SystemStatusScreen.debugFeed` (`@visibleForTesting`) and pumped
+  alone. A narrower harness is the difference between a widget test and a boot test.
+- **Assert the negative.** The feed previously rendered four hardcoded lines, so its test
+  asserts the fiction is *absent* (`findsNothing`) as well as that real records appear —
+  a placeholder that still renders would otherwise pass a purely positive assertion.
 
 ## Known-pre-existing-failures policy
 

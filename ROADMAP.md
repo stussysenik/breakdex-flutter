@@ -21,7 +21,21 @@
 > exactly the next unticked task, verify (binary truth), tick + update this block **in the
 > same commit**. Nothing else starts until this block says so.
 
-- **Change (active, owner-launched 2026-07-27):** `domain-restructure`
+- **Change (active, owner-directed 2026-07-28):** `android-e2e`
+  — Android launch + device-test harness. **Next unticked task: 6.1** — resolve what
+  "Argent" means here. The research is done and points one way: `argent`
+  (`@swmansion/argent`) is ruled in `docs/sync-rehearsal-runbook.md` for **iOS-sim / web**
+  smoke only; **Maestro** is installed (`~/.maestro/bin/maestro`) and is the Android tool.
+  6.1 is writing that decision down, then 6.2 (smoke script against a pinned Android
+  target) and 6.3 (Maestro flows). 6.4/6.5 need a real device — owner's session.
+  Android SDK, `adb`, and `emulator` are all present; no emulator is currently booted. A
+  release APK already builds (53.7 MB, exit 0) but is **debug-signed** — a Play-uploadable
+  artifact is still blocked on the owner's `keytool` keystore step (see below).
+  **Parallel-allowed track:** Flutter-web UI-state work (view order/precedence, one-page
+  layouts, Fluid+Morph motion) — needs the owner to name specific screens; "the web app"
+  is too broad to scope.
+
+- **Parked 2026-07-28 (was active, owner-launched 2026-07-27):** `domain-restructure`
   — Reorganize `lib/` by product domain. Additive over invasive, no behavior change.
   **3.1 DONE 2026-07-28** — map at `openspec/changes/domain-restructure/domain-source-map.md`;
   10 domains named (`sets` beats `labs`; `media` and `backup` stay separate; `kernel` = pure
@@ -37,6 +51,59 @@
   had standalone value (3.2.0) is done. Suggested reorder: `distribution-web` →
   `multi-user-sync` → `android-e2e`, and return to the folder moves after a release.
   Owner call.
+
+### Session 2026-07-28b — queue triage + diagnostics retention
+
+**Owner directive:** before picking a front, establish what is active, what is in
+flight, and what should be archived. Done — and the answer is now derived, not written
+down: **`./status.sh --queue`** classifies every open change from ticks, git age, and
+`openspec validate --strict`. Run it instead of trusting this paragraph.
+
+What it surfaced on first run (queue went 39 → 37 open):
+
+- **2 archived** — `add-scientific-research-workbench` and
+  `add-quiet-playback-and-senior-drill-ui` were fully ticked and landed in `46c604c`,
+  still sitting open. Archived with `--skip-specs` (both are tooling / settings-cleanup
+  changes with no spec deltas to sync).
+- **13 fail `--strict`, one root cause** — they were written to an older proposal
+  template (`## Summary` / `## Motivation`) before openspec required `## Why` /
+  `## What Changes` plus `specs/` deltas. **Not retrofitted in bulk**; repair belongs to
+  whichever of them becomes active next. `verify.sh` only strict-checks the *active*
+  change, which is why this rotted unseen — the footer has always named it as NOT PROVEN.
+- **3 structurally broken — owner call needed.** `add-capture-and-pro-metadata` and
+  `harden-photo-permission-and-export-cleanup` have no `tasks.md` (never planned into
+  executable work); `unified-continuity-and-combo-editing` has only a `spec.md`, so
+  openspec does not recognise it as a change at all. Keep, re-plan, or drop?
+- **5 STALE** (>30d untouched): `add-combo-journey-system`, `add-web-mirror-player`,
+  `foundation-data-resilience` (59/64), `redesign-add-tab-with-move-combo-choice`,
+  `tighten-combo-journey-and-review-polish` (33/36). Two of those are nearly finished.
+
+**Queue reorder — 2026-07-28.** The owner named **Flutter web** and **Android launch** as
+the day's work, which parks `domain-restructure` 3.2–3.5 by directive (folder moves, no
+product value; 3.2.0, the prerequisite with standalone value, already landed). The NOW
+block therefore moves to `android-e2e`. The *fuller* ordering
+(`distribution-web` → `multi-user-sync` → `android-e2e`) remains the previous session's
+**recommendation, not yet confirmed** — do not treat it as ruled.
+
+**Diagnostics — you can now hand over a log.** `DiagnosticsLog` retains as well as prints
+(bounded ring buffer, captures at `debug` while the console stays at `info`), and
+`export()` redacts secrets, JWTs, and email local-parts so a log can leave the device.
+System Status → DIAGNOSTIC LOG **was fake** (four hardcoded lines) and now renders the
+real buffer with a **Copy** button. `Sync` had *zero* instrumentation — the least-logged
+subsystem and the one being debugged — and is now covered at its two chokepoints plus
+`hydrateAllFromBackend`, including *which* cutover gate shut when a push is skipped.
+
+**PROVEN:** `./verify.sh` ALL GATES PASSED — 1225 pass / 3 skip / 0 fail, analyzer 0/0.
+**NOT PROVEN:** any of this on a device; that the redactor catches a secret shape outside
+its pattern list.
+
+**Not started this session** (owner asked, ran out of budget before them): Android launch
++ `android-e2e` 6.1–6.3 (Maestro is installed and is the Android tool — `argent` is
+`@swmansion/argent`, ruled for iOS-sim/web only, so 6.1 is still an open decision), and
+Flutter-web UI-state work. `multi-user-sync` 5.1–5.5 remain **owner-gated**: all five are
+*proof* tasks needing live Appwrite credentials and two devices. Per-user isolation is
+already code-complete server-side (`functions/sync-push/lib/main.dart` — trusted
+`x-appwrite-user-id`, `Query.equal('userId', …)`, `_ownerOnly(userId)` permissions).
 
 ### Session 2026-07-28 — the release gate is now real (read this before distribution work)
 
