@@ -129,7 +129,6 @@ class SettingsScreen extends ConsumerWidget {
             // ── PRACTICE & REVIEW ──────────────────────────────────────────
             _SettingsSection(
               title: l10n.setSectionPractice,
-              subtitle: l10n.setSectionPracticeSubtitle,
               child: Column(
                 children: [
                   _SettingsPanel(

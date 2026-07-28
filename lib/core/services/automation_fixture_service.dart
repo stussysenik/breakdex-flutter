@@ -35,11 +35,18 @@ class FlutterLaunchArgumentReader implements LaunchArgumentReader {
 
   final FlutterLaunchArguments _launchArguments;
 
+  // flutter_launch_arguments is a native-only pigeon channel. On web every call
+  // throws PlatformException(channel-error), and this reader runs before
+  // runApp — an unguarded throw here aborts the boot sequence and the app never
+  // renders. Fixture seeding is a native automation seam, so web reads as "no
+  // launch arguments" rather than as an error.
   @override
-  Future<String?> getString(final String key) => _launchArguments.getString(key);
+  Future<String?> getString(final String key) async =>
+      kIsWeb ? null : _launchArguments.getString(key);
 
   @override
-  Future<bool?> getBool(final String key) => _launchArguments.getBool(key);
+  Future<bool?> getBool(final String key) async =>
+      kIsWeb ? null : _launchArguments.getBool(key);
 }
 
 class AutomationFixtureService {
