@@ -22,12 +22,18 @@
 > same commit**. Nothing else starts until this block says so.
 
 - **Change (active, owner-directed 2026-07-28):** `android-e2e`
-  — Android launch + device-test harness. **Next unticked task: 6.1** — resolve what
-  "Argent" means here. The research is done and points one way: `argent`
-  (`@swmansion/argent`) is ruled in `docs/sync-rehearsal-runbook.md` for **iOS-sim / web**
-  smoke only; **Maestro** is installed (`~/.maestro/bin/maestro`) and is the Android tool.
-  6.1 is writing that decision down, then 6.2 (smoke script against a pinned Android
-  target) and 6.3 (Maestro flows). 6.4/6.5 need a real device — owner's session.
+  — Android launch + device-test harness. **6.1 DONE 2026-07-28** — the tooling path is
+  ruled in the change's `design.md` (D1–D4): `argent` (`@swmansion/argent`) is an MCP
+  agentic toolkit scoped to **iOS-sim / web** smoke, *not* a device farm and not on the
+  Android path; **Maestro 2.1.0 is the Android driver**, and **48 flows plus `config.yaml`
+  already exist under `.maestro/`**, fixture-seeded through
+  `lib/core/services/automation_fixture_service.dart`. Patrol is declared in `pubspec.yaml`
+  but has zero tests — it stays the escape hatch for native dialogs / OAuth WebView only.
+  **Next unticked task: 6.2** — a smoke gate against a pinned Android target. That gate is
+  also what proves whether the existing flows survived the visual-first redesign: none has
+  been touched since `dc93ba6` (2026-06-30), so assume the
+  `docs/stale-tests-post-redesign.md` staleness class until a run says otherwise. Then 6.3
+  (re-validate, don't re-author, the flows). 6.4/6.5 need a real device — owner's session.
   Android SDK, `adb`, and `emulator` are all present; no emulator is currently booted. A
   release APK already builds (53.7 MB, exit 0) but is **debug-signed** — a Play-uploadable
   artifact is still blocked on the owner's `keytool` keystore step (see below).
