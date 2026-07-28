@@ -3,13 +3,14 @@ title: Testing & Verification
 name: testing
 order: 8
 status: verified
-verified: 34722a1
+verified: 52108b5
 watches:
   - test/**
   - .github/workflows/ci.yml
   - .github/workflows/release.yml
   - scripts/check_l10n.sh
   - scripts/distribute.sh
+  - scripts/android_smoke.sh
   - pubspec.yaml
 ---
 
@@ -97,6 +98,9 @@ For any claim that requires *seeing the app run* (a screen renders, a flow compl
 - **macOS desktop — dead end.** No `macos/` runner exists. `flutter run -d macos` → `"No macOS desktop project configured"`, exit 1.
 - **Chrome / Flutter web — now compiles and boots.** The old dead end (a `sqlite3` FFI compile failure) was closed by the Phase 1.0 web foundation: the platform seams keep `dart:io`/`dart:ffi` out of the web graph, persistent web Drift is wired ([Platform Seams](./07-platform-seams.mdx)), `flutter build web` is a CI gate, and the app renders in Chrome with a clean boot console. Chrome is a legitimate compile/boot check; it is still *not* the canonical runtime-proof target for native or data-backed claims — browser-driven core-flow smoke (task 1.6) remains an open half.
 - **iOS simulator — the working target.** Boot via `flowdeck` + `flutter run -d <udid>`; capture the accessibility tree + image with `flowdeck ui simulator screen --screenshot`.
+- **Android emulator — scripted, not hand-driven.** `scripts/android_smoke.sh` is the gate: parse → boot → build → install → drive (Maestro) → exit code. It pins `Medium_Phone_API_35` (`ANDROID_AVD` overrides) and reuses an already-attached device, so the lab run and the owner's device run take the same path. `LINT_ONLY=1` stops after the device-free parse step, which returns in seconds — always run that first, because Maestro parses *every* flow under `.maestro/` before filtering by tag, so one stale flow in an unrelated tier blocks the whole smoke run. Tooling ruling: `openspec/changes/android-e2e/design.md` D1–D2 (Maestro is the Android driver; `argent` is iOS-sim/web only).
+
+**Android is a distinct proof surface, and the cheap gates cannot see it.** On 2026-07-28 the analyzer, 1225 unit tests, and `flutter build web` were all green while the Android app was dead on launch — `DefaultFirebaseOptions.currentPlatform` threw before `runApp`, so it had never rendered a frame. Nothing short of running it on Android could have caught that. Treat "green suite" as a claim about the layers the suite covers, never about a platform nobody launched.
 
 Practicals for the iOS-sim path (these are the difference between verifying and hanging):
 
