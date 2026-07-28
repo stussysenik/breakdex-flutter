@@ -1,5 +1,11 @@
 # Flow: Stats dashboard verification
-# Seeds fixture data and verifies the Stats tab renders metrics correctly.
+# Seeds fixture data, opts the Stats tab in, and verifies it renders.
+#
+# The Stats tab is NOT in the default nav. Settings carries a "Show Stats Tab"
+# toggle and the nav renders 4 tabs until it is on — the old version of this
+# flow tapped a `progress-tab` that is never mounted on a fresh install. Since
+# config.yaml clears state before every flow, the opt-in has to happen inside
+# the flow.
 #
 # Prerequisites: None (uses seeded fixture data)
 # Tags: smoke
@@ -16,19 +22,17 @@ tags:
       maestro: true
       breakdexFixture: review
 
-# Navigate to Stats tab
+# -- Opt the Stats tab in --
 - tapOn:
-    id: "progress-tab"
-- assertVisible: "Progress"
+    id: "settings-tab"
+- assertVisible: "Settings"
+- scrollUntilVisible:
+    element:
+      text: "Show Stats Tab"
+    direction: DOWN
+- tapOn: "Show Stats Tab"
 
-# Verify key metrics are visible
-- assertVisible: "Retention"
+# -- The tab should now be mounted --
+- tapOn:
+    id: "stats-tab"
 - takeScreenshot: e2e-screenshots/stats-dashboard
-
-# Tap the Time toggle to switch to timeline view
-- runFlow:
-    when:
-      visible: "Time"
-    commands:
-      - tapOn: "Time"
-      - takeScreenshot: e2e-screenshots/stats-timeline

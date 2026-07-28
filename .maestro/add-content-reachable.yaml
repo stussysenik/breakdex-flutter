@@ -1,0 +1,39 @@
+# Flow: Add-content reachability regression test
+# Replaces arsenal-fab-reachable.yaml. The frosted-glass FAB it guarded no
+# longer exists: the visual-first redesign moved creation onto its own Add tab,
+# so the reachability risk is now "can both entry cards be reached and tapped
+# above the bottom nav", not "is the FAB tappable above it".
+#
+# Prerequisites: None (works with empty database)
+# Tags: smoke, regression
+
+appId: com.breakdex.breakdex
+name: Add Content Reachable
+tags:
+  - smoke
+  - regression
+
+---
+
+- launchApp
+
+- assertVisible: "Breakdex"
+
+- tapOn:
+    id: "add-tab"
+- assertVisible: "Add Content"
+
+# Both entry cards must be present. The Combo card sits at the bottom of the
+# scroll extent, directly above the nav bar — that is the reachability risk
+# this flow exists to catch.
+- assertVisible: "Move"
+- assertVisible: "Combo"
+- takeScreenshot: e2e-screenshots/add-content-entry
+
+# Tap the Combo card and confirm it actually navigates rather than being
+# swallowed by the nav bar's hit area.
+- tapOn: "Combo"
+- extendedWaitUntil:
+    visible: "Combo"
+    timeout: 5000
+- takeScreenshot: e2e-screenshots/add-content-combo

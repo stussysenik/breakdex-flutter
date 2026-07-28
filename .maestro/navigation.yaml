@@ -1,6 +1,11 @@
-# Flow 3: Tab navigation & basic screens
-# Verifies all bottom nav tabs render their correct screens and
-# basic drill-down navigation works.
+# Flow: Tab navigation & basic screens
+# Verifies every bottom-nav tab renders its screen and that the Breakdex home
+# tiles drill down and come back.
+#
+# Selectors were read off a live API-35 emulator hierarchy (task 6.3), not
+# guessed. The pre-redesign 5-tab IA this flow used to encode is gone: the tabs
+# are now breakdex / add / review / settings, and Stats is opt-in (see
+# stats-dashboard.yaml).
 #
 # Prerequisites: None (works with empty database)
 # Tags: smoke
@@ -12,46 +17,43 @@ tags:
 
 ---
 
-# Bring Breakdex to foreground explicitly. On this simulator, relying on the
-# implicit launch path leaves Maestro on SpringBoard.
 - launchApp
 
-# App should launch on Arsenal tab by default
-- assertVisible: "Arsenal"
+# -- Breakdex home: the visual-first landing --
+- assertVisible: "Breakdex"
+- assertVisible: "Moves"
+- assertVisible: "Combos"
 
-# -- Arsenal Tab --
-- assertVisible: "Search moves..."
-
-# -- Review Tab --
+# -- Drill into Moves and back out --
 - tapOn:
-    id: "drill-tab"
+    id: "moves-tile"
+- assertVisible: "Categories"
+- assertVisible: "Uncategorized"
+- tapOn:
+    id: "moves-back"
+- assertVisible: "Breakdex"
+
+# -- Add tab --
+- tapOn:
+    id: "add-tab"
+- assertVisible: "Add Content"
+- assertVisible: "Move"
+- assertVisible: "Combo"
+
+# -- Review tab --
+- tapOn:
+    id: "review-tab"
 - assertVisible: "Drill"
 - assertVisible: "Deck"
+- assertVisible: "MOVES BOXES"
 
-# -- Stats Tab --
+# -- Settings tab --
 - tapOn:
-    id: "progress-tab"
-- assertVisible: "Progress"
-
-# -- Settings Tab --
-- tapOn:
-    id: "settings-gear"
+    id: "settings-tab"
 - assertVisible: "Settings"
+- assertVisible: "PRACTICE & REVIEW"
 
-# -- Back to Arsenal Tab --
+# -- Back to home --
 - tapOn:
-    id: "settings-back"
-- assertVisible: "Progress"
-- tapOn:
-    id: "moves-tab"
-- assertVisible: "Arsenal"
-
-# -- Verify segment toggle (Moves / Combos) --
-- tapOn: "Combos"
-- assertVisible: "Search combos..."
-- tapOn: "Moves"
-- assertVisible: "Search moves..."
-
-# -- Verify view mode toggle --
-- tapOn: "Gallery"
-- tapOn: "List"
+    id: "breakdex-tab"
+- assertVisible: "Breakdex"
