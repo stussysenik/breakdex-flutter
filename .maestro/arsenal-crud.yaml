@@ -42,13 +42,13 @@ tags:
 - takeScreenshot: e2e-screenshots/arsenal-search-found
 
 # Clear and search for non-existent move
-- clearText
+- eraseText
 - inputText: "zzz"
 - assertVisible: "No results"
 - takeScreenshot: e2e-screenshots/arsenal-search-empty
 
 # Clear search
-- clearText
+- eraseText
 
 # ── Move detail ─────────────────────────────────────────────────────
 

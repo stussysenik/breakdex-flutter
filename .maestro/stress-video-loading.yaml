@@ -59,19 +59,19 @@ tags:
 
 # ── Phase 3: Rapid scroll through move list (thumbnail loading) ──
 # Scroll down fast, then back up — thumbnails loading while scrolling
-- scroll:
+- swipe:
     direction: DOWN
     duration: 2000
-- scroll:
+- swipe:
     direction: DOWN
     duration: 2000
-- scroll:
+- swipe:
     direction: UP
     duration: 1500
-- scroll:
+- swipe:
     direction: DOWN
     duration: 1000
-- scroll:
+- swipe:
     direction: UP
     duration: 3000
 
@@ -127,7 +127,7 @@ tags:
 - repeat:
     times: 5
     commands:
-      - scroll:
+      - swipe:
           direction: DOWN
           duration: 300
       - tapOn:

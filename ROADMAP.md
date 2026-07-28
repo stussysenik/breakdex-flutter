@@ -29,11 +29,18 @@
   already exist under `.maestro/`**, fixture-seeded through
   `lib/core/services/automation_fixture_service.dart`. Patrol is declared in `pubspec.yaml`
   but has zero tests — it stays the escape hatch for native dialogs / OAuth WebView only.
-  **Next unticked task: 6.2** — a smoke gate against a pinned Android target. That gate is
-  also what proves whether the existing flows survived the visual-first redesign: none has
-  been touched since `dc93ba6` (2026-06-30), so assume the
-  `docs/stale-tests-post-redesign.md` staleness class until a run says otherwise. Then 6.3
-  (re-validate, don't re-author, the flows). 6.4/6.5 need a real device — owner's session.
+  **6.2 DONE 2026-07-28** — `scripts/android_smoke.sh` (parse → boot → build → install →
+  drive → honest exit code), verified end-to-end on `emulator-5554` (API 35).
+  ⚠ **It found that the Android app had never rendered a frame.**
+  `DefaultFirebaseOptions.currentPlatform` throws for Android and the throw escaped
+  `main()` before `runApp` — blank white screen, no crash dialog, on every Android build
+  including the owner's device. Fixed in `8e7f683` (boot degrades to
+  `firebase … detail=unconfigured`); the app now renders. Analyzer, 1225 tests, and the web
+  build were all green the whole time this was broken — no cheap signal could see it.
+  **Next unticked task: 6.3** — the 6/6 smoke failures are now stale selectors, not a dead
+  app: the flows encode the pre-redesign 5-tab IA. Mostly a mapping
+  (`moves-tab`→`breakdex-tab`, `progress-tab`→`stats-tab`, `drill-tab`→`review-tab`);
+  `flow-tab` has no successor. 6.4/6.5 need a real device — owner's session.
   Android SDK, `adb`, and `emulator` are all present; no emulator is currently booted. A
   release APK already builds (53.7 MB, exit 0) but is **debug-signed** — a Play-uploadable
   artifact is still blocked on the owner's `keytool` keystore step (see below).

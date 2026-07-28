@@ -54,3 +54,25 @@ and **not Play-uploadable**. Producing a real keystore is an owner step (`keytoo
 credentials that must never be committed); Phase 6 can complete its smoke and matrix work
 against the debug-signed artifact, and Android *distribution* readiness stays blocked on
 that owner step.
+
+## D5 — What the first gate run actually found (2026-07-28)
+
+The gate earned its keep on the first real run. Recorded here because it changes what
+6.3 and 6.4 mean:
+
+1. **The Android app had never rendered a frame.** `firebase_options.dart` throws
+   `UnsupportedError` for Android, and that throw escaped `main()` before `runApp` —
+   blank white screen, no crash dialog. Fixed in `8e7f683`; boot now completes with
+   `firebase … detail=unconfigured`. This is why every flow failed against an empty
+   screen, and it would have failed identically on the owner's physical device.
+2. **The flow suite had version-drifted from Maestro 2.x.** Parameterized `scroll:`
+   (9 files), `openApp`, and `clearText` are no longer valid commands, and `shake` was
+   removed outright with no successor — `party-shake.yaml` is parked as
+   `.yaml.disabled` rather than silently neutered, since triggering the shake gesture
+   *was* the flow. Repairing these was in scope for 6.2 only because Maestro parses the
+   whole directory: an unrelated stale flow blocks the smoke tag.
+3. **The remaining failures are selector drift, not app breakage** — see 6.3.
+
+The order matters: without the parse repair the gate could not run, and without the
+gate the boot bug stayed invisible to every cheap signal. Analyzer, 1225 unit tests,
+and the web build were all green while Android was dead on launch.

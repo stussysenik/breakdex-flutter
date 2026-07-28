@@ -20,10 +20,10 @@ tags:
 - tapOn: "Combos"
 
 # Phase 1: Scroll the 30-combo list
-- scroll:
+- swipe:
     direction: DOWN
     duration: 3000
-- scroll:
+- swipe:
     direction: UP
     duration: 2000
 

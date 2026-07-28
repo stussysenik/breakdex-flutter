@@ -1,7 +1,7 @@
 appId: com.breakdex.app
 ---
 - clearState
-- openApp
+- launchApp
 - tapOn: "Arsenal"
 - tapOn: "Add"
 - tapOn: "Create Move"

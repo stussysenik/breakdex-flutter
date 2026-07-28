@@ -23,10 +23,10 @@ tags:
 - repeat:
     times: 5
     commands:
-      - scroll:
+      - swipe:
           direction: DOWN
           duration: 500
-      - scroll:
+      - swipe:
           direction: UP
           duration: 500
 
@@ -60,10 +60,10 @@ tags:
 - repeat:
     times: 3
     commands:
-      - scroll:
+      - swipe:
           direction: DOWN
           duration: 2000
-      - scroll:
+      - swipe:
           direction: UP
           duration: 2000
 

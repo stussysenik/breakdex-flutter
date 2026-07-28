@@ -91,7 +91,7 @@ tags:
 - takeScreenshot: e2e-screenshots/stress-lab-aura-move-detail
 
 # Scroll down to look for aura section on move detail
-- scroll:
+- swipe:
     direction: DOWN
     duration: 2000
 
@@ -108,10 +108,10 @@ tags:
 - takeScreenshot: e2e-screenshots/stress-lab-aura-return
 
 # ── Phase 6: Scroll the Aura view if it has content ──
-- scroll:
+- swipe:
     direction: DOWN
     duration: 3000
-- scroll:
+- swipe:
     direction: UP
     duration: 2000
 

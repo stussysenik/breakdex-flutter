@@ -30,10 +30,10 @@ tags:
 - takeScreenshot: e2e-screenshots/stress-achievement-garden-opened
 
 # ── Phase 3: Scroll through achievement garden ──
-- scroll:
+- swipe:
     direction: DOWN
     duration: 3000
-- scroll:
+- swipe:
     direction: UP
     duration: 2000
 
@@ -106,10 +106,10 @@ tags:
 - takeScreenshot: e2e-screenshots/stress-achievement-garden-after-reviews
 
 # ── Phase 7: Final scroll to verify no visual glitches ──
-- scroll:
+- swipe:
     direction: DOWN
     duration: 2000
-- scroll:
+- swipe:
     direction: UP
     duration: 1500
 

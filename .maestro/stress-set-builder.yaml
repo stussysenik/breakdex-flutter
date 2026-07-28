@@ -85,10 +85,10 @@ tags:
 - repeat:
     times: 5
     commands:
-      - scroll:
+      - swipe:
           direction: DOWN
           duration: 300
-      - scroll:
+      - swipe:
           direction: UP
           duration: 300
 

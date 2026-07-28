@@ -10,18 +10,18 @@ tags:
 
 # Switch to grid view if not already
 - tapOn: "Gallery"
-- scroll:
+- swipe:
     direction: DOWN
     duration: 3000
 
 # Scroll back up
-- scroll:
+- swipe:
     direction: UP
     duration: 2000
 
 # Switch to list view
 - tapOn: "List"
-- scroll:
+- swipe:
     direction: DOWN
     duration: 3000
 

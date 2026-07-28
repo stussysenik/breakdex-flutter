@@ -17,10 +17,10 @@ tags:
 - assertVisible: "Arsenal"
 
 # Phase 1: Scroll the full 100-move list
-- scroll:
+- swipe:
     direction: DOWN
     duration: 5000
-- scroll:
+- swipe:
     direction: UP
     duration: 3000
 
@@ -33,10 +33,10 @@ tags:
 
 # Phase 3: Grid mode scroll
 - tapOn: "Gallery"
-- scroll:
+- swipe:
     direction: DOWN
     duration: 4000
-- scroll:
+- swipe:
     direction: UP
     duration: 2000
 - tapOn: "List"
@@ -72,7 +72,7 @@ tags:
       - tapOn: "Moves"
 
 # Phase 7: FAB during scroll
-- scroll:
+- swipe:
     direction: DOWN
     duration: 1000
 - tapOn:
@@ -82,10 +82,10 @@ tags:
 
 # Phase 8: Combos list with 30 combos — scroll
 - tapOn: "Combos"
-- scroll:
+- swipe:
     direction: DOWN
     duration: 3000
-- scroll:
+- swipe:
     direction: UP
     duration: 2000
 
