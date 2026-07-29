@@ -109,6 +109,100 @@ and category chips always render alongside the category name.
 
 ---
 
+## Layout & Grid
+
+> **The stacked-viewport model.** Every screen is the *same frame* with different
+> filling. You are never designing "a screen" — you are choosing what goes in the
+> content band of the one viewport this app has. Switching views swaps the filling;
+> the frame does not move. Dart source: `lib/core/design/layout.dart` (`AppLayout`).
+> Enforcement: `AppScreen` (`lib/shared/widgets/app_screen.dart`).
+
+### The four bands
+
+```
+┌──────────────────────────┐
+│ safe area (system)       │  band 1 — system owned
+├──────────────────────────┤
+│ HEADER          [actions]│  band 2 — 72pt, title on a fixed baseline
+├──────────────────────────┤
+│                          │
+│  content (scrolls)       │  band 3 — the ONLY band that varies
+│                          │
+├──────────────────────────┤
+│ ◇  ◇  ◇  ◇               │  band 4 — 56pt, shell owned
+└──────────────────────────┘
+```
+
+Bands 1, 2 and 4 are **identical on every screen and never move.** The content
+band's first pixel therefore lands at the same `y` — safe-area top + 80 — on every
+screen in the app, with no exceptions.
+
+| Token | Value | Dart Constant | Rule |
+|-------|-------|---------------|------|
+| `headerHeight` | 72 | `AppLayout.headerHeight` | `titleLarge` line box (36) centred in 18/18. Fixed — no collapsing, floating, or `.large` headers. |
+| `contentTopGap` | 8 | `AppLayout.contentTopGap` | Gap between header band and first content pixel. |
+| `navBandHeight` | 56 | `AppLayout.navBandHeight` | Bottom nav. Rendered *over* content (`extendBody: true`). |
+| `scrollBottomInset` | 72 | `AppLayout.scrollBottomInset` | Scroll padding so the last item clears the translucent nav band. |
+| `gutter` | 24 | `AppLayout.gutter` | Left/right content edge. Mirrors `AppSpacing.screenEdge`. |
+| `maxContentWidth` | 720 | `AppLayout.maxContentWidth` | Reading column clamp; centres above this. |
+| `maxWideWidth` | 1080 | `AppLayout.maxWideWidth` | Dense grids/boards only — never reading content. |
+| `breakpointCompact` | 600 | `AppLayout.breakpointCompact` | Below: single column. |
+| `breakpointExpanded` | 1024 | `AppLayout.breakpointExpanded` | At/above: side-by-side regions allowed. |
+
+### Vertical rhythm
+
+| Token | Value | Dart Constant | Rule |
+|-------|-------|---------------|------|
+| `baseline` | 4 | `AppLayout.baseline` | Every vertical measurement is a multiple of this. |
+| `blockGrid` | 8 | `AppLayout.blockGrid` | Every *block* height (card, row, section) is a multiple of this. |
+| `sectionGap` | 32 | `AppLayout.sectionGap` | Between two sections of a screen. |
+| `itemGap` | 12 | `AppLayout.itemGap` | Between siblings inside one section. |
+| `cardPadding` | 16 | `AppLayout.cardPadding` | Inside a card or panel. |
+| `rowHeight` | 56 | `AppLayout.rowHeight` | Minimum tappable row; also the a11y touch-target floor. |
+
+Sections are composed with `AppSection`, not with ad-hoc `SizedBox`es — hand-spaced
+blocks are how screens drift apart again one commit at a time.
+
+### The one-scroll rule
+
+Interfaces here are **read**. A screen's primary content should be reachable in one
+continuous scroll:
+
+- **One scroll axis per screen.** No nested independently-scrolling regions.
+- **No horizontal carousels that hide content.** If it matters, it is in the column.
+- **No tabs-within-a-screen** to hide a second page of content. Use a section.
+- A screen needing more than ~2 viewport heights of primary content is a signal to
+  split the *information architecture*, not to add another scroller.
+
+### Conformance
+
+A screen that builds its own `Scaffold`, `AppBar`, or `SliverAppBar` has opted out of
+the constitution and is a **review violation**. Screens use `AppScreen` (column form,
+the default) or `AppScreen.slivers` (grids and lazy lists). A raw pixel value in a
+layout position that a token expresses is likewise a violation, on the same footing as
+a raw `Duration` in motion or a raw `BorderRadius.circular(N)`.
+
+**Migration ledger** — the constitution landed 2026-07-29; screens conform as they are
+touched, never in one invasive sweep:
+
+| Screen | State | Note |
+|--------|-------|------|
+| `add` | ✅ conforms | First screen on the frame; the reference implementation. |
+| `breakdex` | ⬜ pending | Plain `AppBar` (56) — header band is 16pt short. |
+| `stats` | ⬜ pending | Floating `SliverAppBar`; overrides title to Menlo w900 against the theme's `titleLarge`. |
+| `lab` | ⬜ pending | No app bar; hand-rolled header inside a `CustomScrollView`. |
+| `flow` | ⬜ pending | No app bar; hand-rolled header. Also carries raw `horizontal: 12` and `EdgeInsets.all(1)`. |
+
+### Known non-conformance in the type scale
+
+`titleMedium` (line height 30) and `titleSmall` (26) are **not** multiples of the 4pt
+baseline; every other step in the scale is. Text blocks set in those two styles cannot
+land on the grid, which is visible as uneven gaps wherever they stack. Snapping them to
+32 and 28 fixes it and shifts type metrics on every screen that uses them — recorded
+here as a deliberate open item, not silently changed.
+
+---
+
 ## Radius
 
 | Token | Value | Dart Constant | CSS Property | Consumers |

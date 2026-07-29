@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:path/path.dart' as p;
 
+import 'package:breakdex/core/design/layout.dart';
 import 'package:breakdex/core/design/spacing.dart';
 import 'package:breakdex/core/services/entity_names_service.dart';
 import 'package:breakdex/core/design/typography.dart';
@@ -17,6 +18,7 @@ import 'package:breakdex/core/state_machines/move_creation/provider.dart';
 import 'package:breakdex/core/services/categories_service.dart';
 import 'package:breakdex/core/services/settings_service.dart';
 import 'package:breakdex/core/services/video_service.dart';
+import 'package:breakdex/shared/widgets/app_screen.dart';
 import 'package:breakdex/shared/widgets/video_picker_sheet.dart';
 import 'package:breakdex/shared/widgets/video_player_widget.dart';
 import 'package:breakdex/l10n/gen/app_localizations.dart';
@@ -27,42 +29,30 @@ class AddScreen extends ConsumerWidget {
   @override
   Widget build(final BuildContext context, final WidgetRef ref) {
     final entityNames = ref.watch(entityNamesProvider);
-    // Compact widths (phones) stack the choices vertically; wide surfaces
-    // keep them side by side.
-    final compact = MediaQuery.sizeOf(context).width < 600;
-    return Scaffold(
-      body: CustomScrollView(
-        slivers: [
-          SliverAppBar.large(
-            title: Text(AppLocalizations.of(context).addContentTitle),
-            floating: true,
-          ),
-          SliverFillRemaining(
-            hasScrollBody: false,
-            child: Padding(
-              padding: const EdgeInsets.all(AppSpacing.screenEdge),
-              child: Flex(
-                direction: compact ? Axis.vertical : Axis.horizontal,
-                children: [
-                  _ChoiceCard(
-                    emoji: '🤸',
-                    label: entityNames.moveSingular,
-                    onTap: () => _startClipFlow(context, ref),
-                  ),
-                  SizedBox.square(
-                    dimension: compact ? AppSpacing.lg : AppSpacing.md,
-                  ),
-                  _ChoiceCard(
-                    emoji: '✨',
-                    label: entityNames.comboSingular,
-                    onTap: () => context.push<String>('/create-combo'),
-                  ),
-                ],
-              ),
+    // The choices are rows in the content band, not a bespoke hero layout:
+    // one column, one rhythm, identical to every other screen's first section.
+    return AppScreen(
+      title: AppLocalizations.of(context).addContentTitle,
+      children: [
+        AppSection(
+          first: true,
+          key: const Key('add-choices'),
+          children: [
+            _ChoiceCard(
+              identifier: 'add-move-card',
+              icon: Icons.videocam_outlined,
+              label: entityNames.moveSingular,
+              onTap: () => _startClipFlow(context, ref),
             ),
-          ),
-        ],
-      ),
+            _ChoiceCard(
+              identifier: 'add-combo-card',
+              icon: Icons.auto_awesome_motion_outlined,
+              label: entityNames.comboSingular,
+              onTap: () => context.push<String>('/create-combo'),
+            ),
+          ],
+        ),
+      ],
     );
   }
 
@@ -124,34 +114,44 @@ class AddScreen extends ConsumerWidget {
 
 class _ChoiceCard extends StatelessWidget {
   const _ChoiceCard({
-    required this.emoji,
+    required this.identifier,
+    required this.icon,
     required this.label,
     required this.onTap,
   });
 
-  final String emoji;
+  /// Stable handle for E2E drivers. The rendered label is
+  /// entity-name-configurable, so text is not a selector these cards can offer.
+  final String identifier;
+  final IconData icon;
   final String label;
   final VoidCallback onTap;
 
   @override
   Widget build(final BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
-    return Expanded(
+    return Semantics(
+      identifier: identifier,
       child: InkWell(
         onTap: onTap,
         borderRadius: BorderRadius.circular(AppRadius.lg),
         child: Container(
-          padding: const EdgeInsets.all(AppSpacing.lg),
+          // Two block-grid rows tall (72), so the card lands on the same
+          // rhythm as every other tappable row in the app.
+          constraints: const BoxConstraints(minHeight: AppLayout.headerHeight),
+          padding: const EdgeInsets.symmetric(
+            horizontal: AppLayout.cardPadding,
+          ),
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(AppRadius.lg),
             color: colorScheme.surfaceContainerHighest,
           ),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
+          child: Row(
             children: [
-              Text(emoji, style: const TextStyle(fontSize: 64)),
-              const SizedBox(height: AppSpacing.md),
-              Text(label, style: AppTypography.titleMedium),
+              Icon(icon, size: 32, color: colorScheme.onSurface),
+              const SizedBox(width: AppSpacing.md),
+              Expanded(child: Text(label, style: AppTypography.titleSmall)),
+              Icon(Icons.chevron_right, size: 20, color: colorScheme.outline),
             ],
           ),
         ),

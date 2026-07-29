@@ -21,7 +21,24 @@
 > exactly the next unticked task, verify (binary truth), tick + update this block **in the
 > same commit**. Nothing else starts until this block says so.
 
-- **Change (active, owner-directed 2026-07-29):** `add-web-first-release-and-monetization`
+- **Change (active, owner-directed 2026-07-29 · layout):** `add-stacked-viewport-layout`
+  — **Stacked-viewport layout constitution.** Owner's ruling: every screen must be one
+  viewport with the same frame, not independently re-invented per view; consistent
+  placement, grid rules, line-height/rhythm matching, one-scroll IA. Diagnosis on the
+  record: five tabs used **three different header mechanisms** (`AppBar` 56 ·
+  `SliverAppBar.large` 152 · floating `SliverAppBar` with a Menlo-w900 title override)
+  plus two hand-rolled headers, and `lib/` had **no max content width at all** — a defect
+  on Flutter Web, the ranked-#1 surface.
+  **Landed:** `AppLayout` tokens, `AppScreen`/`AppSection` (the frame is a type, not a
+  convention), TOKENS.md → **Layout & Grid** with a per-screen migration ledger, CLAUDE.md
+  **Layout doctrine** row, and the `add` screen migrated as the reference implementation.
+  **Proven green:** `./verify.sh` all gates (**1227 pass / 3 skip / 0 fail**),
+  `openspec --strict`, and `flutter build web --release`.
+  **Next unticked:** 3.1 `breakdex` onto the frame. Screens migrate **as touched**, never
+  as a sweep. Task 4.1 (type-scale baseline snap: `titleMedium` 30→32, `titleSmall` 26→28)
+  is **owner-gated** — it shifts type metrics on every screen.
+
+- **Parked 2026-07-29 (was active, owner-directed earlier the same day):** `add-web-first-release-and-monetization`
   — **Ship-today redirect.** Owner's ruling this session: *"no need for testing and wasting
   tokens on devices — I just need if generally the project and its workload is in working
   shape so I can do minor UI tweaks and functionalities and deploy and distribute today for

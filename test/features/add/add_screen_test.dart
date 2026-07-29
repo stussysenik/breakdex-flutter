@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import 'package:breakdex/core/design/layout.dart';
 import 'package:breakdex/core/services/settings_service.dart';
 import 'package:breakdex/features/add/add_screen.dart';
 import 'package:breakdex/l10n/gen/app_localizations.dart';
@@ -29,27 +30,59 @@ Future<void> _pumpAddScreen(final WidgetTester tester) async {
 
 void main() {
   testWidgets(
-    'choice cards stack vertically on phone widths, horizontally when wide',
+    'content band starts at the same y regardless of viewport width',
     (final tester) async {
-      Axis choiceAxis() => tester
-          .widget<Flex>(find.ancestor(
-            of: find.text('Move'),
-            matching: find.byType(Flex),
-          ).first)
-          .direction;
+      // The stacked-viewport invariant: bands 1/2/4 never move, so the first
+      // content pixel is always headerHeight + contentTopGap below the safe
+      // area. A screen whose content shifts with width has left the frame.
+      double firstContentTop() =>
+          tester.getTopLeft(find.byKey(const Key('add-choices'))).dy;
 
       addTearDown(tester.view.reset);
       tester.view.devicePixelRatio = 1.0;
+      const expected = AppLayout.headerHeight + AppLayout.contentTopGap;
 
       tester.view.physicalSize = const Size(390, 844);
       await _pumpAddScreen(tester);
-      expect(choiceAxis(), Axis.vertical);
+      expect(firstContentTop(), expected);
 
       tester.view.physicalSize = const Size(1024, 768);
       await tester.pumpAndSettle();
-      expect(choiceAxis(), Axis.horizontal);
+      expect(firstContentTop(), expected);
     },
   );
+
+  testWidgets('content column is clamped to a readable measure', (
+    final tester,
+  ) async {
+    addTearDown(tester.view.reset);
+    tester.view.devicePixelRatio = 1.0;
+    tester.view.physicalSize = const Size(1600, 900);
+
+    await _pumpAddScreen(tester);
+
+    final width = tester.getSize(find.byKey(const Key('add-choices'))).width;
+    expect(width, AppLayout.maxContentWidth - (AppLayout.gutter * 2));
+  });
+
+  testWidgets('choice rows land on the block grid', (final tester) async {
+    await _pumpAddScreen(tester);
+
+    final cards = find.descendant(
+      of: find.byKey(const Key('add-choices')),
+      matching: find.byType(InkWell),
+    );
+    expect(cards, findsNWidgets(2));
+
+    for (var i = 0; i < 2; i++) {
+      final height = tester.getSize(cards.at(i)).height;
+      expect(
+        height % AppLayout.blockGrid,
+        0,
+        reason: 'choice card $i is off the block grid at ${height}px',
+      );
+    }
+  });
 
   testWidgets(
     'Add tab presents visual anchors with no paragraph-style helper text',

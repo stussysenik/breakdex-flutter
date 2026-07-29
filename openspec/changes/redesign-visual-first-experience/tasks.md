@@ -157,9 +157,13 @@ that had no budget left to build them. They are recorded here so they exist on t
 rather than in a transcript. **None are specced yet** — each needs a Teacher pass (and 6.6
 needs a Scholar pass first) before any Student session touches code.
 
-- [ ] 6.1 **One-page Add flow.** `SCR-20260728-maiy` (Add Content) should be as easy as the
+- [x] 6.1 **One-page Add flow.** `SCR-20260728-maiy` (Add Content) should be as easy as the
   home tiles in `SCR-20260728-makk` — "imagine everything was a blend". Adjust the grid and
   layout rules so Add is a single-page layout, not a scroll with a card below the fold.
+  **DONE 2026-07-29 — delivered by `add-stacked-viewport-layout`.** The ask was a layout
+  rule, so it was answered with a rule rather than a one-screen tweak; `add` is that
+  change's reference migration (tasks 2.1–2.3). See that change for the constitution, the
+  per-screen migration ledger, and the owner-gated type-scale item (4.1).
 - [ ] 6.2 **`Moves` header overflow.** `SCR-20260728-mafz` shows a RenderFlex "OVERFLOWED BY 2"
   on the `< Back  Moves` header. Reproduce (it did not overflow on an API-35 emulator at
   default text scale — suspect larger text scale or iOS metrics) and fix.
