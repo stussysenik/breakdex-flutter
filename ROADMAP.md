@@ -37,7 +37,11 @@
   **3.1 DONE 2026-07-29** — `breakdex` on the frame via `AppScreen.slivers` +
   `SliverFillRemaining`, so the signature hero tiles keep their optical centring instead of
   being top-anchored by the migration; no alignment knob added to the frame.
-  **Next unticked:** 3.2 `stats` onto the frame (drops the Menlo-w900 title override). Screens migrate **as touched**, never
+  **3.2 DONE 2026-07-29** — `stats` on the frame; its brutalist Menlo voice stays in the
+  content band (the band a screen owns) while the title stops scrolling away. Conformance is
+  now enforced by `test/design/frame_conformance_test.dart`, not by review — review is what
+  let five headers diverge in the first place.
+  **Next unticked:** 3.3 `lab` onto `AppScreen.slivers`. Screens migrate **as touched**, never
   as a sweep. Task 4.1 (type-scale baseline snap: `titleMedium` 30→32, `titleSmall` 26→28)
   is **owner-gated** — it shifts type metrics on every screen.
 

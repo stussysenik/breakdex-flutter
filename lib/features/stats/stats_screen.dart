@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:breakdex/shared/widgets/app_loader.dart';
+import 'package:breakdex/shared/widgets/app_screen.dart';
 import 'package:breakdex/core/design/spacing.dart';
 import 'package:breakdex/core/design/theme.dart';
 import 'package:breakdex/core/design/typography.dart';
@@ -18,40 +19,34 @@ class StatsScreen extends ConsumerWidget {
     final statsAsync = ref.watch(statsBundleProvider);
     final colorScheme = Theme.of(context).colorScheme;
 
-    return Scaffold(
-      backgroundColor: colorScheme.surface,
-      body: statsAsync.when(
-        loading: () => const Center(child: AppLoader()),
-        error: (final error, _) => Center(child: Text('Error: $error')),
+    // The header band is the app's, not this screen's: the floating
+    // `SliverAppBar` and its Menlo-w900 title override were why STATISTICS
+    // scrolled away and sat at a different height than every other screen.
+    // The brutalist voice stays where it belongs — inside the content band,
+    // which is the band the constitution lets a screen own.
+    return AppScreen.slivers(
+      title: 'Statistics',
+      slivers: statsAsync.when(
+        loading: () => const [
+          SliverFillRemaining(
+            hasScrollBody: false,
+            child: Center(child: AppLoader()),
+          ),
+        ],
+        error: (final error, _) => [
+          SliverFillRemaining(
+            hasScrollBody: false,
+            child: Center(child: Text('Error: $error')),
+          ),
+        ],
         data: (final stats) {
           final activeDays = stats.dailyBreakdown
               .where((final day) => day.reviewCount > 0)
               .length;
 
-          return CustomScrollView(
-            physics: const AlwaysScrollableScrollPhysics(),
-            slivers: [
-              SliverAppBar(
-                floating: true,
-                snap: true,
-                backgroundColor: colorScheme.surface.withValues(alpha: 0.9),
-                title: Text(
-                  'STATISTICS'.toUpperCase(),
-                  style: AppTypography.titleSmall.copyWith(
-                    fontWeight: FontWeight.w900,
-                    fontFamily: 'Menlo',
-                    letterSpacing: 1.2,
-                  ),
-                ),
-                centerTitle: false,
-              ),
-              
-              SliverPadding(
-                padding: const EdgeInsets.symmetric(horizontal: AppSpacing.screenEdge),
-                sliver: SliverList(
-                  delegate: SliverChildListDelegate([
-                    const SizedBox(height: AppSpacing.md),
-                    
+          return [
+              SliverList(
+                delegate: SliverChildListDelegate([
                     _StatRow(label: 'CURRENT STREAK', value: '${stats.currentStreak} DAYS'),
                     _StatRow(label: 'ACTIVE DAYS', value: '$activeDays TOTAL'),
                     _StatRow(label: 'TOTAL REVIEWS', value: '${stats.reviewTimeline.length} EVENTS'),
@@ -86,33 +81,19 @@ class StatsScreen extends ConsumerWidget {
                       ),
                     ),
                     const SizedBox(height: AppSpacing.md),
-                  ]),
-                ),
+                ]),
               ),
 
-              SliverPadding(
-                padding: const EdgeInsets.symmetric(horizontal: AppSpacing.screenEdge),
-                sliver: SliverList(
-                  delegate: SliverChildBuilderDelegate(
-                    (final context, final index) {
-                      final entry = stats.reviewTimeline[index];
-                      return _BrutalistReactionTile(entry: entry);
-                    },
-                    childCount: stats.reviewTimeline.take(20).length,
-                  ),
+              SliverList(
+                delegate: SliverChildBuilderDelegate(
+                  (final context, final index) {
+                    final entry = stats.reviewTimeline[index];
+                    return _BrutalistReactionTile(entry: entry);
+                  },
+                  childCount: stats.reviewTimeline.take(20).length,
                 ),
               ),
-
-              // Bottom padding for frosted nav bar
-              SliverPadding(
-                padding: EdgeInsets.only(
-                  bottom: kBottomNavigationBarHeight +
-                      MediaQuery.of(context).padding.bottom +
-                      AppSpacing.xxl,
-                ),
-              ),
-            ],
-          );
+          ];
         },
       ),
     );

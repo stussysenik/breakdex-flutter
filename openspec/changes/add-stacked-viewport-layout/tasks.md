@@ -9,6 +9,10 @@
 - [x] 1.3 `docs/design/TOKENS.md` → **Layout & Grid**: four-band diagram, both token tables,
       the one-scroll rule, conformance rule, migration ledger
 - [x] 1.4 CLAUDE.md → Canonical stack gains the **Layout doctrine** row
+- [x] 1.5 `test/design/frame_conformance_test.dart` — the conformance rule enforced by CI
+      rather than by review. Review is what already failed: five screens each grew their own
+      header and every one of them passed. Its screen list mirrors the TOKENS.md migration
+      ledger; the two move in the same commit.
 
 ## 2. Reference migration
 
@@ -27,8 +31,13 @@
       knob was added to `AppScreen` to achieve this. Covered by
       `test/features/breakdex/breakdex_screen_test.dart` (frame conformance + centring,
       red-proved at 151 against the 458 the rule requires).
-- [ ] 3.2 `stats` — replace floating `SliverAppBar`; drop the Menlo w900 title override in
+- [x] 3.2 `stats` — replace floating `SliverAppBar`; drop the Menlo w900 title override in
       favour of the frame's `titleLarge`
+      **DONE 2026-07-29.** The header is the app's; the brutalist voice is the screen's. Menlo
+      stays throughout the content band — that band is exactly what the constitution lets a
+      screen own — while the title stops scrolling away and stops sitting at its own height.
+      Also drops the hand-rolled `kBottomNavigationBarHeight + padding.bottom + xxl` bottom
+      inset and the per-sliver `screenEdge` gutters, both of which the frame supplies.
 - [ ] 3.3 `lab` — replace the hand-rolled header; keep the sliver content on
       `AppScreen.slivers`
 - [ ] 3.4 `flow` — replace the hand-rolled header; resolve the raw `horizontal: 12` and

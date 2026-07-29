@@ -189,7 +189,7 @@ touched, never in one invasive sweep:
 |--------|-------|------|
 | `add` | ✅ conforms | First screen on the frame; the reference implementation. |
 | `breakdex` | ✅ conforms | Sliver form; hero tiles centred inside the band via `SliverFillRemaining`. |
-| `stats` | ⬜ pending | Floating `SliverAppBar`; overrides title to Menlo w900 against the theme's `titleLarge`. |
+| `stats` | ✅ conforms | Header on the frame; the Menlo voice stays inside the content band, which the screen owns. |
 | `lab` | ⬜ pending | No app bar; hand-rolled header inside a `CustomScrollView`. |
 | `flow` | ⬜ pending | No app bar; hand-rolled header. Also carries raw `horizontal: 12` and `EdgeInsets.all(1)`. |
 
