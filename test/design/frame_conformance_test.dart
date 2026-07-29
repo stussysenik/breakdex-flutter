@@ -2,15 +2,20 @@ import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
 
-/// Screens that have been migrated onto `AppScreen`, mirroring the migration
-/// ledger in `docs/design/TOKENS.md` → Layout & Grid. Add a row here in the
-/// same commit that migrates a screen; the ledger and this list are the same
-/// claim, one for humans and one for CI.
+/// The conformance roster: every screen that is on the frame. All five tabs
+/// are, as of 2026-07-29, which is why `docs/design/TOKENS.md` no longer
+/// carries a migration ledger — this list replaced it. Add a screen here in
+/// the same commit that migrates it.
+///
+/// Detail routes pushed on top of a tab are deliberately absent: they are a
+/// different placement problem (back affordance, no nav band) and framing them
+/// is a separate ruling.
 const _migratedScreens = <String>[
   'lib/features/add/add_screen.dart',
   'lib/features/breakdex/breakdex_screen.dart',
   'lib/features/stats/stats_screen.dart',
   'lib/features/lab/lab_screen.dart',
+  'lib/features/flow/flow_screen.dart',
 ];
 
 /// Chrome a screen is no longer allowed to build for itself. The frame renders

@@ -7,7 +7,9 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import 'package:breakdex/core/design/layout.dart';
 import 'package:breakdex/core/design/spacing.dart';
+import 'package:breakdex/shared/widgets/app_screen.dart';
 import 'package:breakdex/core/services/entity_names_service.dart';
 import 'package:breakdex/core/design/theme.dart';
 import 'package:breakdex/core/design/typography.dart';
@@ -38,58 +40,28 @@ class FlowScreen extends ConsumerWidget {
     };
     final modeDescription = _FlowModeDescription.forMode(viewMode);
 
-    return Scaffold(
-      body: CoachMarkTrigger(
-        child: SafeArea(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Padding(
-                padding: const EdgeInsets.fromLTRB(
-                  AppSpacing.screenEdge,
-                  AppSpacing.md,
-                  AppSpacing.screenEdge,
-                  0,
+    // Flow does not scroll: the graph canvas takes whatever height is left and
+    // pans inside itself. `SliverFillRemaining` gives the content band exactly
+    // one viewport, so the column can still use Expanded — and the frame's
+    // bottom inset replaces the hand-rolled nav-band spacer this screen carried.
+    return AppScreen.slivers(
+      title: 'Flow',
+      actions: const [WipBadge(compact: true)],
+      slivers: [
+        SliverFillRemaining(
+          child: CoachMarkTrigger(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'WIP: use this to inspect connections and weak bridges, but expect the interaction model to keep tightening.',
+                  style: AppTypography.bodySmall.copyWith(
+                    color: colorScheme.secondary,
+                    height: 1.35,
+                  ),
                 ),
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            children: [
-                              Text(
-                                'Flow',
-                                style: AppTypography.titleLarge.copyWith(
-                                  color: colorScheme.onSurface,
-                                ),
-                              ),
-                              const SizedBox(width: AppSpacing.sm),
-                              const WipBadge(compact: true),
-                            ],
-                          ),
-                          const SizedBox(height: AppSpacing.xs),
-                          Text(
-                            'WIP: use this to inspect connections and weak bridges, but expect the interaction model to keep tightening.',
-                            style: AppTypography.bodySmall.copyWith(
-                              color: colorScheme.secondary,
-                              height: 1.35,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: AppSpacing.sm),
-              Padding(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: AppSpacing.screenEdge,
-                ),
-                child: AppSegmentedControl<FlowViewMode>(
+                const SizedBox(height: AppLayout.itemGap),
+                AppSegmentedControl<FlowViewMode>(
                   items: const [
                     AppSegmentedControlItem(
                       value: FlowViewMode.map,
@@ -113,24 +85,14 @@ class FlowScreen extends ConsumerWidget {
                     ref.read(flowViewModeProvider.notifier).state = mode;
                   },
                 ),
-              ),
-              const SizedBox(height: AppSpacing.xs),
-              Padding(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: AppSpacing.screenEdge,
-                ),
-                child: _FlowModePanel(
+                const SizedBox(height: AppLayout.itemGap),
+                _FlowModePanel(
                   description: modeDescription,
                   summary: graphSummary,
                 ),
-              ),
-              const SizedBox(height: AppSpacing.xs),
-              Flexible(
-                fit: FlexFit.loose,
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: AppSpacing.screenEdge,
-                  ),
+                const SizedBox(height: AppLayout.itemGap),
+                Flexible(
+                  fit: FlexFit.loose,
                   child: SingleChildScrollView(
                     primary: false,
                     child: AnimatedSwitcher(
@@ -172,35 +134,36 @@ class FlowScreen extends ConsumerWidget {
                     ),
                   ),
                 ),
-              ),
-              const SizedBox(height: AppSpacing.xs),
-              Expanded(
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 12),
+                const SizedBox(height: AppLayout.itemGap),
+                // The canvas sits on the frame's gutter like everything else;
+                // the hairline inset is the panel's own border width, which is
+                // why the two are the same constant rather than a loose `1`.
+                Expanded(
                   child: DecoratedBox(
                     decoration: _panelDecoration(context),
-                    child: Padding(
-                      padding: const EdgeInsets.all(1),
+                    child: const Padding(
+                      padding: EdgeInsets.all(_panelBorderWidth),
                       child: ClipRRect(
-                        borderRadius: BorderRadius.circular(AppRadius.md),
-                        child: const FlowGraphCanvas(),
+                        borderRadius: BorderRadius.all(
+                          Radius.circular(AppRadius.md),
+                        ),
+                        child: FlowGraphCanvas(),
                       ),
                     ),
                   ),
                 ),
-              ),
-              SizedBox(
-                height:
-                    kBottomNavigationBarHeight +
-                    MediaQuery.of(context).padding.bottom,
-              ),
-            ],
+              ],
+            ),
           ),
         ),
-      ),
+      ],
     );
   }
 }
+
+/// Width of the hairline border every flow panel draws. The canvas insets by
+/// exactly this so the graph never paints over its own frame.
+const double _panelBorderWidth = 1;
 
 class _FlowModeDescription {
   const _FlowModeDescription({
@@ -719,7 +682,7 @@ BoxDecoration _panelDecoration(final BuildContext context, {final Color? highlig
         ? colorScheme.surface
         : highlight.withValues(alpha: 0.04),
     borderRadius: BorderRadius.circular(AppRadius.md),
-    border: Border.all(color: borderColor),
+    border: Border.all(color: borderColor, width: _panelBorderWidth),
   );
 }
 

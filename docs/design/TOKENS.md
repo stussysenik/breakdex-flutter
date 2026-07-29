@@ -182,16 +182,23 @@ the default) or `AppScreen.slivers` (grids and lazy lists). A raw pixel value in
 layout position that a token expresses is likewise a violation, on the same footing as
 a raw `Duration` in motion or a raw `BorderRadius.circular(N)`.
 
-**Migration ledger** — the constitution landed 2026-07-29; screens conform as they are
-touched, never in one invasive sweep:
+**All five tabs conform** as of 2026-07-29 — `add` (the reference implementation),
+`breakdex`, `stats`, `lab`, `flow`. The migration ledger that tracked them is retired;
+its job is now done by `test/design/frame_conformance_test.dart`, which fails CI if any
+roster screen re-declares a band. A migrated screen is added to that roster in the same
+commit that migrates it. Prose could describe the rule; only the test can hold it, and
+review is what let five headers diverge in the first place.
 
-| Screen | State | Note |
-|--------|-------|------|
-| `add` | ✅ conforms | First screen on the frame; the reference implementation. |
-| `breakdex` | ✅ conforms | Sliver form; hero tiles centred inside the band via `SliverFillRemaining`. |
-| `stats` | ✅ conforms | Header on the frame; the Menlo voice stays inside the content band, which the screen owns. |
-| `lab` | ✅ conforms | Sliver form; the WIP badge moved into the header `actions` slot, and the FAB's nav-band inset became a frame concern (`AppScreen.floatingActionButton`) instead of five hand-rolled copies of `kBottomNavigationBarHeight + padding.bottom`. |
-| `flow` | ⬜ pending | No app bar; hand-rolled header. Also carries raw `horizontal: 12` and `EdgeInsets.all(1)`. |
+Two frame concerns were discovered during the migrations and belong to `AppScreen`, not
+to any screen: the FAB slot (`AppScreen.floatingActionButton`, which also supplies the
+nav-band inset the shell's `extendBody: true` requires) and the choice of column vs
+sliver form. A screen that needs a third thing from the frame extends the frame — it
+does not build around it.
+
+Detail and modal routes pushed on top of a tab (`move_detail`, `combo_detail`,
+`video_editor`, …) are **not** on the roster. They are a different placement problem —
+a back affordance, no nav band — and giving them the tab frame is a separate ruling, not
+an oversight.
 
 ### Known non-conformance in the type scale
 

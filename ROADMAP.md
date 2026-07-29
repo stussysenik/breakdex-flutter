@@ -46,9 +46,16 @@
   `extendBody: true` requires — that inset was hand-rolled in five screens as
   `kBottomNavigationBarHeight + padding.bottom`. Covered by
   `test/shared/widgets/app_screen_test.dart` (red-proved without the inset).
-  **Next unticked:** 3.4 `flow` onto the frame. Screens migrate **as touched**, never
-  as a sweep. Task 4.1 (type-scale baseline snap: `titleMedium` 30→32, `titleSmall` 26→28)
-  is **owner-gated** — it shifts type metrics on every screen.
+  **3.4 + 3.5 DONE 2026-07-29** — `flow` on the frame (the first non-scrolling screen: the
+  graph canvas takes the remaining height via `SliverFillRemaining` and pans inside itself;
+  the raw `horizontal: 12` and `EdgeInsets.all(1)` resolved). **All five tabs now conform**,
+  so the TOKENS.md migration ledger is retired — `test/design/frame_conformance_test.dart`
+  is the roster CI can fail.
+  **Next unticked:** 4.1 and 4.2, both **owner-gated**. 4.1 (type-scale baseline snap:
+  `titleMedium` 30→32, `titleSmall` 26→28) shifts type metrics on every screen; 4.2 asks
+  whether `web-mirror/`'s `tokens.css` mirrors `AppLayout` or the dev surface is exempt.
+  Sections 1–3 are complete, so the change is implementation-complete pending those two
+  calls and the owner's V.4 sitting.
 
 - **Parked 2026-07-29 (was active, owner-directed earlier the same day):** `add-web-first-release-and-monetization`
   — **Ship-today redirect.** Owner's ruling this session: *"no need for testing and wasting

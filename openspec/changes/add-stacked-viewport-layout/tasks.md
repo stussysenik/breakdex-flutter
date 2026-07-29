@@ -48,9 +48,19 @@
       why five screens each hand-rolled `kBottomNavigationBarHeight + padding.bottom`. Proved
       by `test/shared/widgets/app_screen_test.dart`, red without the inset. The three lab
       views also dropped their own `screenEdge` gutters, which the frame was about to double.
-- [ ] 3.4 `flow` — replace the hand-rolled header; resolve the raw `horizontal: 12` and
+- [x] 3.4 `flow` — replace the hand-rolled header; resolve the raw `horizontal: 12` and
       `EdgeInsets.all(1)` literals to tokens
-- [ ] 3.5 Retire the migration ledger from TOKENS.md once every row reads ✅
+      **DONE 2026-07-29.** `flow` is the first migrated screen that does not scroll: the graph
+      canvas takes whatever height is left and pans inside itself. `SliverFillRemaining` gives
+      the content band exactly one viewport so the column can still use `Expanded`, and the
+      frame's bottom inset replaces the hand-rolled nav-band spacer. `horizontal: 12` resolved
+      to the frame's gutter; `EdgeInsets.all(1)` became `_panelBorderWidth`, shared with the
+      border it insets from — the two were always the same number for the same reason.
+- [x] 3.5 Retire the migration ledger from TOKENS.md once every row reads ✅
+      **DONE 2026-07-29.** All five tabs conform, so the ledger's job passes to
+      `test/design/frame_conformance_test.dart` — a roster CI can fail, not a table review
+      can skim. TOKENS.md keeps what prose is actually good at: which concerns belong to the
+      frame, and why pushed detail routes are deliberately not on the roster.
 
 ## 4. Open design decisions
 
