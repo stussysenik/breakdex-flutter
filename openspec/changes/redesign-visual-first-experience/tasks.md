@@ -320,27 +320,45 @@ needs a Scholar pass first) before any Student session touches code.
   and ch7 watches `lib/dev/preview_db_web.dart`, both changed this session, so stamping at the *old*
   HEAD would re-redden them immediately.
 
-- [ ] 6.14 **Two tests flaked once and cannot be named — the run that caught them discarded its own
-  evidence** (2026-07-30). Two consecutive `flutter test` runs on the *same* tree disagreed:
-  `+1268 ~4 -2` then `+1270 ~4` with `All tests passed!`. The totals reconcile at 1274 both times,
-  so exactly two tests failed once and passed on re-run — flake, not a regression, and not caused
-  by this session's edits (the add-flow and picker suites pass 17/17 in isolation, and the
-  preview-harness smoke test passes on both paths it can reach).
-  <br/>**Why they are unnamed, which is the part to fix first.** The failing run's captured output
-  retained only its tail — the transcript began mid-suite at `+1249`, by which point `-2` was
-  already in the counter, so both failure blocks had scrolled out irrecoverably. Nothing in the
-  retained text identified either test. This is the "diagnostic that truncates its own evidence"
-  case from root `CLAUDE.md` → Context budget, and it cost the identification outright: a
-  re-run cannot reproduce a flake on demand.
-  <br/>**Next step, in order:** capture to a file with `--reporter expanded` (not a piped tail) so
-  a failure block survives, then run the suite repeatedly until the flake reappears with a name.
-  Note also that a piped `flutter test | tail` reports the **pipe's** exit status, not the suite's,
-  so a failing run can be misread as `exit 0` — read the `+N ~N -N` counter, never the exit code
-  alone. **Standing suspects, unproven:** the timer-related flakes already on record in
-  `docs/stale-tests-post-redesign.md` (`party_screen`) — that ledger is the first place to look,
-  and if the flake is one of those, this task closes by adding it there rather than here.
-  <br/>**Not a blocker for `verify.sh`:** the gate passes on a clean run. It is recorded because a
-  suite that is green only most of the time silently erodes the binary-truth axiom.
+- [ ] 6.14 **The suite is flaky at roughly 50%, and the flaking tests are still unnamed**
+  (2026-07-30). Four `flutter test` runs on the *same* commit disagreed:
+
+  | run | result | conditions |
+  | --- | --- | --- |
+  | 1 | `+1268 ~4 -2` | **two `flutter test` processes running concurrently** (a duplicate was launched by mistake) |
+  | 2 | `+1270 ~4` green | preview scaffold alive in Chrome |
+  | 3 | `+1269 ~4 -1` (via `verify.sh`) | preview scaffold alive in Chrome |
+  | 4 | `+1270 ~4` green | preview scaffold alive in Chrome |
+  | 5 | `+1270 ~4` green, **`ALL GATES PASSED` / `EXIT=0`** | preview process killed, nothing else running |
+
+  Totals reconcile at 1274 every time, so this is flake, not regression, and not caused by this
+  session's edits: the add-flow and picker suites pass 17/17 in isolation and the preview-harness
+  smoke test passes on both paths it can reach. Note the failure *count* differs between runs
+  (2 then 1), so it is not one deterministic test — it is a population of timing-sensitive ones.
+  <br/>**Leading hypothesis — CPU contention, not a logic bug.** Both failures came from loaded
+  runs: run 1 had two suites competing for cores and failed worst (`-2`); run 3 failed (`-1`) with
+  the preview scaffold's Chrome process alive. Run 5, deliberately clean, was green end to end.
+  Runs 2 and 4 were *also* alongside Chrome and passed, so load raises the failure probability
+  rather than determining it — consistent with tests that race a real wall-clock timer. Contention
+  is therefore **supported but not established**; establishing it needs a run under deliberate,
+  measured load versus an idle run, several times each, which is the next step.
+  <br/>**Practical consequence now, before any of that:** run the suite on an otherwise idle
+  machine, and never judge a red suite that shared the box with a `widget-preview` scaffold or a
+  second `flutter test`. `docs/stale-tests-post-redesign.md` already records timer-related flakes
+  (`party_screen`); this chapter's own guidance on static buffers and `Timer.periodic` names the
+  mechanism. If the flake turns out to be one already on that ledger, close this by adding the
+  evidence there rather than duplicating it here.
+  <br/>**Why they are unnamed, and the operator error to stop repeating.** Every failing run so far
+  was read through `| tail`, which discarded the failure blocks before they could be read — the
+  first transcript began at `+1249` with `-2` already in the counter. **`verify.sh` is not at
+  fault:** line 69 runs `flutter test` with stdout inherited, so it *does* print the failure block;
+  piping the script through `tail` is what threw it away. Two rules follow, both cheap:
+  redirect to a file (`flutter test --reporter expanded > log 2>&1`) and grep it, never pipe to
+  `tail`; and read the `+N ~N -N` counter rather than the exit code, because a piped
+  `flutter test | tail` reports the **pipe's** status and shows `exit 0` for a failing suite.
+  <br/>**Not currently a `verify.sh` blocker** — the gate passes on a clean run. It is recorded
+  because a suite that is green only half the time quietly erodes the binary-truth axiom: it makes
+  "the tests pass" a coin flip that every future session will have to re-flip.
 
 - [ ] 6.13 **Per-screen exceptions the repaired preview harness exposed** (found 2026-07-30, the
   first run in which previews actually rendered). These were invisible while every preview died at
