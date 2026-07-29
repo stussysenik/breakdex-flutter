@@ -3,7 +3,7 @@ title: Testing & Verification
 name: testing
 order: 8
 status: verified
-verified: e5950e1
+verified: fcc65bd
 watches:
   - test/**
   - .github/workflows/ci.yml
@@ -36,20 +36,31 @@ From these four, everything below is forced: the CI gate is a *floor* (it proves
 
 | Dir | Files | Covers |
 | --- | --- | --- |
-| `test/core/` | 128 | database + DAOs (incl. migration v22–v27 suites), state machines, sync (codecs, backfills, dual-read/write, tombstones, Appwrite backend/transport), config (remote config, update/entitlement gates), providers, models, design, utils |
+| `test/core/` | 129 | database + DAOs (incl. migration v22–v27 suites), state machines, sync (codecs, backfills, dual-read/write, tombstones, Appwrite backend/transport), config (remote config, update/entitlement gates), providers, models, design, utils |
 | `test/features/` | 43 | screen-level widget tests (move_list, flashcard_review, stats, add, flow, video_editor, party, auth, …) |
 | `test/shared/` | 9 | shared widgets, incl. the `AppScreen` frame and `BackLeading` |
 | `test/design/` | 2 | source-level conformance + the type baseline (see below) |
 | `test/` root | 3 | l10n foundation, preview-harness smoke, template widget test |
 | `test/helpers/` | — | `test_data.dart`, `test_database.dart` (in-memory Drift fixtures) |
 
-**Conformance tests are a distinct category.** `test/design/frame_conformance_test.dart` reads
-screen *source* and fails if a screen on the roster builds its own `Scaffold`/`AppBar`/
-`SliverAppBar`. It exists because the layout constitution's predecessor was a review rule, and
-review passed five screens that each grew a different header ([Design System](./05-design-system.mdx)).
-A rule with no failing gate is a preference. Reach for this shape when the invariant is about
-how code is *written* rather than what it computes — and keep it narrow, because a source test
-that over-matches becomes a refactor tax.
+**Conformance tests are a distinct category**, and they do not all live in `test/design/` —
+the category is defined by what it asserts, not by where it sits. Two shapes are in use:
+
+- **Source-level.** `test/design/frame_conformance_test.dart` reads screen *source* and fails
+  if a screen on the roster builds its own `Scaffold`/`AppBar`/`SliverAppBar`.
+  `test/design/type_baseline_test.dart` is the same shape for the type scale.
+- **Structure-level.** `test/core/navigation/settings_section_transition_test.dart` walks the
+  live `appRouter` and fails any `/settings-panel*` route declared without a `pageBuilder`,
+  so a new settings section cannot ship with the default push transition by accident. It
+  asserts over a built object graph rather than over text, which is the sturdier form when
+  the invariant has a runtime representation to walk.
+
+Both exist for the same reason: the layout constitution's predecessor was a review rule, and
+review passed five screens that each grew a different header
+([Design System](./05-design-system.mdx)). A rule with no failing gate is a preference. Reach
+for this category when the invariant is about how code is *written or wired* rather than what
+it computes — prefer walking a real graph over matching source text, and keep source matching
+narrow, because a source test that over-matches becomes a refactor tax.
 
 Test dependencies (`pubspec.yaml`, dev-dependencies):
 

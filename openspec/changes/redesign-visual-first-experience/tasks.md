@@ -209,11 +209,38 @@ needs a Scholar pass first) before any Student session touches code.
 - [ ] 6.4 **Icon system + icon packs.** Current icons read generic. Want handpicked,
   human, Notion-quality — "I would even pay for them, that's the quality". Make icon sets
   swappable from the design system, with selectable packs surfaced in Settings.
+  <br/>**SPECCED 2026-07-29 (Teacher pass) → `openspec/changes/add-icon-system-and-packs`,
+  strict-valid.** The measured finding is why "swappable" was impossible: there is no icon
+  vocabulary, only **434 raw `Icons.*` sites across 92 files naming 228 distinct glyphs** —
+  148 of them used exactly once, and 51 pure style-variant duplicates (`close` vs
+  `close_rounded`) rendering the same meaning two ways. So "reads generic" is not a taste
+  problem about which glyphs were picked; it is the absence of a curated set. Specced as a
+  closed `AppIcon` enum (≤ 80 semantic names) with packs resolving it through an exhaustive
+  `switch` with no `default`, so an incomplete pack is a **compile error** rather than a
+  rendered fallback. Default `material` pack is glyph-preserving except for enumerated
+  collapses; `lucide_icons_flutter` (MIT) is pack two. Ticks here when that change's Phase 4
+  closes.
 - [ ] 6.5 **Pantone-only color packs.** `SCR-20260728-maro`: minimal but not sophisticated;
   "better colors". Design from light→bold weights, fluid and organic rather than hard
   statements — Linear's design philosophy, simple handpicked colors. Color packs are
   **Pantone only**: adjust any color, pick by season, and choose from the full database
   including every past Color of the Year. `docs/design/TOKENS.md` stays the single source.
+  <br/>**SPECCED 2026-07-29 (Teacher pass) → `openspec/changes/add-color-packs`,
+  strict-valid.** Same mechanism as 6.4, applied to color: a closed role vocabulary, packs
+  resolving it exhaustively, `ThemeExtension`, persisted preference, gated by test. Two
+  findings shaped it. (1) Surfaces are **compile-time constants** — 38 `const Color` in a
+  58-line `colors.dart`, only 4 values user-adjustable — so "better colors" is currently
+  inexpressible for most of the pixels; and the 4 adjustable values move independently of
+  each other, which is why the palette reads minimal without reading handpicked. Answered
+  with **seeds + a perceptually derived OKLCH ramp** rather than 38 hexes, which is where
+  "light→bold, fluid and organic" actually lives. (2) A free-form color feature would
+  silently defeat the shipped `AccessiblePalette` work, so the three axes are ordered
+  `pack → brightness → accessibility overlay` with **the overlay last and winning**.
+  <br/>**Owner decision open, blocking nothing (that change's 6.1):** PANTONE® is a
+  registered trademark and its names/numbers/sRGB translations are licensed IP — shipping
+  "the full database" is a purchase, not an implementation. The catalogue sits behind an
+  interface, so the spec ships in-house curated seasonal/year collections by default and a
+  licensed dataset drops in later with no mechanism change.
 - [ ] 6.6 **Typography control + power-user layer.** `SCR-20260728-mawt`: per-label/input
   font-family control, made easy — "interfaces are to be read", the taste is in denoting each
   one. Alongside it: one central XState machine; an AST-shaped property model so every
@@ -232,3 +259,19 @@ needs a Scholar pass first) before any Student session touches code.
 - [ ] 6.10 **Ephemeral Maestro fixtures.** Long-term usable Maestro testing needs temporary
   data, not permanent seeding: qualitative flows must run against real-looking data that
   leaves no residue. Pairs with `android-e2e` 6.3.
+
+**Teacher session 2026-07-29 — disposition of the rest, so it is not re-derived.** That
+session specced 6.4 and 6.5 (above) and stopped there deliberately, under the token ceiling.
+The remaining items are *not* blocked on those two; each needs its own pass, and the lane it
+needs is already known:
+
+| Item | Lane needed next | Why it was not specced here |
+| --- | --- | --- |
+| 6.6 Typography + power-user layer | **Scholar, then Teacher** | Already marked Scholar-first in its own entry. It is four asks in one (per-element font control, a central XState machine, an AST-shaped property model, lexical+syntactic search, cmd+K) and specifying it from confident vibes is exactly what the Scholar lane exists to prevent. |
+| 6.7 Never-destroy behavior ledger | Teacher | Must extend `provenanceJournal` / `docs/hyperdata-ledger.md`; the Teacher pass has to read that existing system first or it becomes the second system its own entry forbids. |
+| 6.8 Honest stats | Teacher | The smallest of the set and the most independent — a good next Teacher pass. Needs a decision about what the readout is *for* before it can name replacement metrics. |
+| 6.9 Updates + A/B testing | Teacher, **after reconciliation** | Overlaps `add-web-first-release-and-monetization` Phase 1R remote config. Specifying it before reconciling produces a competing config surface. |
+| 6.10 Ephemeral Maestro fixtures | Teacher | Pairs with `android-e2e` 6.3; spec both together or the fixture contract lands twice. |
+
+Recommended order once 6.4/6.5 are implemented: **6.8 → 6.7 → 6.10 → 6.9 → 6.6**, cheapest
+and most independent first, with 6.6 last because it is the only one gated on a Scholar pass.
