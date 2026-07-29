@@ -6,6 +6,7 @@ import 'package:breakdex/core/design/spacing.dart';
 import 'package:breakdex/core/design/typography.dart';
 import 'package:breakdex/core/services/entity_names_service.dart';
 import 'package:breakdex/l10n/gen/app_localizations.dart';
+import 'package:breakdex/shared/widgets/app_screen.dart';
 
 class BreakdexScreen extends ConsumerWidget {
   const BreakdexScreen({super.key});
@@ -16,34 +17,42 @@ class BreakdexScreen extends ConsumerWidget {
     final textColor = colorScheme.onSurface;
     final entityNames = ref.watch(entityNamesProvider);
 
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(AppLocalizations.of(context).appTitle),
-      ),
-      body: Center(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Semantics(
-              identifier: 'moves-tile',
-              child: _HeroNavTile(
-                label: entityNames.movePlural,
-                onTap: () => context.go('/breakdex/moves'),
-                color: textColor,
-              ),
+    // Sliver form, not because this screen is long, but because the two hero
+    // tiles are meant to sit in the optical centre of the content band. The
+    // frame fixes where the band *starts*; how content arranges inside it is
+    // the screen's business, and `SliverFillRemaining` says "centre in what is
+    // left" without the frame needing an alignment knob.
+    return AppScreen.slivers(
+      title: AppLocalizations.of(context).appTitle,
+      slivers: [
+        SliverFillRemaining(
+          hasScrollBody: false,
+          child: Center(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Semantics(
+                  identifier: 'moves-tile',
+                  child: _HeroNavTile(
+                    label: entityNames.movePlural,
+                    onTap: () => context.go('/breakdex/moves'),
+                    color: textColor,
+                  ),
+                ),
+                const SizedBox(height: AppSpacing.xxl),
+                Semantics(
+                  identifier: 'combos-tile',
+                  child: _HeroNavTile(
+                    label: entityNames.comboPlural,
+                    onTap: () => context.go('/breakdex/combos'),
+                    color: textColor,
+                  ),
+                ),
+              ],
             ),
-            const SizedBox(height: AppSpacing.xxl),
-            Semantics(
-              identifier: 'combos-tile',
-              child: _HeroNavTile(
-                label: entityNames.comboPlural,
-                onTap: () => context.go('/breakdex/combos'),
-                color: textColor,
-              ),
-            ),
-          ],
+          ),
         ),
-      ),
+      ],
     );
   }
 }

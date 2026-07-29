@@ -34,7 +34,10 @@
   **Layout doctrine** row, and the `add` screen migrated as the reference implementation.
   **Proven green:** `./verify.sh` all gates (**1227 pass / 3 skip / 0 fail**),
   `openspec --strict`, and `flutter build web --release`.
-  **Next unticked:** 3.1 `breakdex` onto the frame. Screens migrate **as touched**, never
+  **3.1 DONE 2026-07-29** — `breakdex` on the frame via `AppScreen.slivers` +
+  `SliverFillRemaining`, so the signature hero tiles keep their optical centring instead of
+  being top-anchored by the migration; no alignment knob added to the frame.
+  **Next unticked:** 3.2 `stats` onto the frame (drops the Menlo-w900 title override). Screens migrate **as touched**, never
   as a sweep. Task 4.1 (type-scale baseline snap: `titleMedium` 30→32, `titleSmall` 26→28)
   is **owner-gated** — it shifts type metrics on every screen.
 

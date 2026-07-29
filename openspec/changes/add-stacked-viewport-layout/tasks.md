@@ -20,7 +20,13 @@
 
 ## 3. Remaining screen migrations — as touched, never as a sweep
 
-- [ ] 3.1 `breakdex` — replace `Scaffold` + `AppBar` (56) with the frame
+- [x] 3.1 `breakdex` — replace `Scaffold` + `AppBar` (56) with the frame
+      **DONE 2026-07-29.** Uses `AppScreen.slivers` + `SliverFillRemaining`: the frame fixes
+      where the content band starts, while the two hero tiles keep their optical centring —
+      migrating the app's signature surface must not silently top-anchor it. No alignment
+      knob was added to `AppScreen` to achieve this. Covered by
+      `test/features/breakdex/breakdex_screen_test.dart` (frame conformance + centring,
+      red-proved at 151 against the 458 the rule requires).
 - [ ] 3.2 `stats` — replace floating `SliverAppBar`; drop the Menlo w900 title override in
       favour of the frame's `titleLarge`
 - [ ] 3.3 `lab` — replace the hand-rolled header; keep the sliver content on

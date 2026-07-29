@@ -188,7 +188,7 @@ touched, never in one invasive sweep:
 | Screen | State | Note |
 |--------|-------|------|
 | `add` | ✅ conforms | First screen on the frame; the reference implementation. |
-| `breakdex` | ⬜ pending | Plain `AppBar` (56) — header band is 16pt short. |
+| `breakdex` | ✅ conforms | Sliver form; hero tiles centred inside the band via `SliverFillRemaining`. |
 | `stats` | ⬜ pending | Floating `SliverAppBar`; overrides title to Menlo w900 against the theme's `titleLarge`. |
 | `lab` | ⬜ pending | No app bar; hand-rolled header inside a `CustomScrollView`. |
 | `flow` | ⬜ pending | No app bar; hand-rolled header. Also carries raw `horizontal: 12` and `EdgeInsets.all(1)`. |
