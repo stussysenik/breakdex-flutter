@@ -7,6 +7,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:breakdex/core/design/spacing.dart';
 import 'package:breakdex/core/design/typography.dart';
 import 'package:breakdex/core/navigation/app_route_observer.dart';
+import 'package:breakdex/core/navigation/settings_section_page.dart';
 import 'package:breakdex/features/move_detail/move_detail_screen.dart';
 import 'package:breakdex/features/flashcard_review/flashcard_review_screen.dart';
 import 'package:breakdex/features/create_combo/create_combo_screen.dart';
@@ -189,42 +190,66 @@ final appRouter = GoRouter(
     GoRoute(
       path: '/settings-panel',
       parentNavigatorKey: _rootNavigatorKey,
-      builder: (final context, final state) => const SettingsScreen(),
+      pageBuilder: (final context, final state) => settingsSectionPage(
+        key: state.pageKey,
+        child: const SettingsScreen(),
+      ),
     ),
     GoRoute(
       path: '/settings-panel/sync-providers',
       parentNavigatorKey: _rootNavigatorKey,
-      builder: (final context, final state) => const SyncProvidersScreen(),
+      pageBuilder: (final context, final state) => settingsSectionPage(
+        key: state.pageKey,
+        child: const SyncProvidersScreen(),
+      ),
     ),
     GoRoute(
       path: '/settings-panel/sync-status',
       parentNavigatorKey: _rootNavigatorKey,
-      builder: (final context, final state) => const SyncStatusScreen(),
+      pageBuilder: (final context, final state) => settingsSectionPage(
+        key: state.pageKey,
+        child: const SyncStatusScreen(),
+      ),
     ),
     GoRoute(
       path: '/settings-panel/free-space',
       parentNavigatorKey: _rootNavigatorKey,
-      builder: (final context, final state) => const FreeSpaceScreen(),
+      pageBuilder: (final context, final state) => settingsSectionPage(
+        key: state.pageKey,
+        child: const FreeSpaceScreen(),
+      ),
     ),
     GoRoute(
       path: '/settings-panel/recently-deleted',
       parentNavigatorKey: _rootNavigatorKey,
-      builder: (final context, final state) => const RecentlyDeletedScreen(),
+      pageBuilder: (final context, final state) => settingsSectionPage(
+        key: state.pageKey,
+        child: const RecentlyDeletedScreen(),
+      ),
     ),
     GoRoute(
       path: '/settings-panel/canonical-trash',
       parentNavigatorKey: _rootNavigatorKey,
-      builder: (final context, final state) => const CanonicalTrashScreen(),
+      pageBuilder: (final context, final state) => settingsSectionPage(
+        key: state.pageKey,
+        child: const CanonicalTrashScreen(),
+      ),
     ),
     GoRoute(
       path: '/settings-panel/system-status',
       parentNavigatorKey: _rootNavigatorKey,
-      builder: (final context, final state) => const SystemStatusScreen(),
+      pageBuilder: (final context, final state) => settingsSectionPage(
+        key: state.pageKey,
+        child: const SystemStatusScreen(),
+      ),
     ),
     GoRoute(
       path: '/settings-panel/sync-help',
       parentNavigatorKey: _rootNavigatorKey,
-      builder: (final context, final state) => const AssetSyncHelpScreen(),
+      pageBuilder: (final context, final state) => settingsSectionPage(
+        key: state.pageKey,
+        child: const AssetSyncHelpScreen(),
+      ),
     ),
     GoRoute(
       path: '/video-viewer',

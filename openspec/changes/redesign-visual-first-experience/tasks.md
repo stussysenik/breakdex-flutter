@@ -187,9 +187,25 @@ needs a Scholar pass first) before any Student session touches code.
   with its own `leadingWidth: 104` and a `sectionHeader` type style. It is the same class of
   defect at large text scales, but converting it changes that screen's voice — out of scope for
   a header-overflow task, and worth doing when that screen is next touched.
-- [ ] 6.3 **Settings full-view transition animation.** An interesting full-view transition
+- [x] 6.3 **Settings full-view transition animation.** An interesting full-view transition
   when opening settings sections. Must compose from `AppMotion` tokens (Fluid + Morph only —
   raw curve/duration literals are review violations).
+  <br/>**DONE 2026-07-29.** Answered as a route type, not a per-screen animation:
+  `settingsSectionPage` (`lib/core/navigation/settings_section_page.dart`) is the page every
+  `/settings-panel*` route is built from, so a new settings section cannot ship with the
+  default push transition by accident. The motion composes both sanctioned families and
+  nothing else — **Fluid** for the arriving section (fade on `entrance`, a 6%-of-height rise
+  on `fluid`, `moderate02` in / `moderate01` out) and **Morph** for the view it covers (one
+  persistent surface scaling back to 0.96 on `springGentle`), which is what makes the two
+  views read as depth in one stack rather than two unrelated pages. Reduced motion
+  (`MediaQuery.disableAnimations`) returns the child unwrapped, so the route cuts.
+  <br/>Covered by `test/core/navigation/settings_section_transition_test.dart`, including a
+  conformance case that walks `appRouter` and fails any `/settings-panel*` route without a
+  `pageBuilder` — red-proved against the pre-change router.
+  <br/>**Left alone deliberately:** the dev-only `SyncCutoverPanel` push
+  (`settings_screen.dart`, behind `kDevSyncPanelEnabled`, flag OFF) keeps its
+  `MaterialPageRoute` — converting it would touch a tree-shaken dev surface for no product
+  gain. **NOT proven:** how the transition feels on a device or in a browser.
 - [ ] 6.4 **Icon system + icon packs.** Current icons read generic. Want handpicked,
   human, Notion-quality — "I would even pay for them, that's the quality". Make icon sets
   swappable from the design system, with selectable packs surfaced in Settings.

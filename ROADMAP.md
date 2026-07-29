@@ -22,12 +22,14 @@
 > same commit**. Nothing else starts until this block says so.
 
 - **Change (active, 2026-07-29 · product finish):** `redesign-visual-first-experience`
-  — **6.2 DONE 2026-07-29** — the `Moves` header overflow (`SCR-20260728-mafz`) was `AppBar`'s
-  fixed 56pt leading slot, not a rounding artefact: 29px over at test metrics, 48px at text
-  scale 1.3, 2px on the owner's device. Fixed as `BackLeading`, a control that declares its own
-  slot width and ellipsizes, so overflow is impossible at any text scale.
-  **Next unticked: 6.3** — a full-view transition when opening settings sections, composed from
-  `AppMotion` tokens (Fluid + Morph only; raw curve/duration literals are review violations).
+  — **6.3 DONE 2026-07-29** — the settings full-view transition landed as a route type rather
+  than a per-screen animation: `settingsSectionPage` is the page every `/settings-panel*` route
+  is built from, so a new section cannot ship with the default push transition by accident.
+  Fluid carries the arriving section (fade + 6% rise), Morph recedes the view it covers to 0.96
+  on the gentle spring; reduced motion cuts. A conformance test walks `appRouter` and fails any
+  settings route without a `pageBuilder`.
+  **Next unticked: 6.4** — icon system + swappable icon packs surfaced in Settings
+  (needs a Teacher pass before code, per the §6 capture note).
   Phases 2–5 shipped 2026-07-08; what is left is a short finish list of owner-observed defects
   plus V.2's Patrol journey. Release-blocking for
   wave-1 invites, and no backend dependency — it runs parallel to the owner-gated Appwrite and
