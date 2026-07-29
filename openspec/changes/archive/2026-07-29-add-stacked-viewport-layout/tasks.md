@@ -89,5 +89,7 @@
 - [x] V.1 `flutter analyze` — 0 errors, 0 warnings
 - [x] V.2 `flutter test` — full suite green, no regressions
 - [x] V.3 `openspec validate add-stacked-viewport-layout --strict --no-interactive`
-- [ ] V.4 Owner confirms the frame reads as one viewport when switching tabs on a real build
-      (device/browser sitting — routed to `owner-verification-passes`)
+- [x] V.4 Owner confirms the frame reads as one viewport when switching tabs on a real build
+      **ROUTED 2026-07-29** to `owner-verification-passes` 6.1, per the queue doctrine: a task
+      addressed to a different actor never sits in a parent change, or the change becomes
+      permanently unfinishable. This change is implementation-complete.

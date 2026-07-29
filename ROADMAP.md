@@ -21,41 +21,23 @@
 > exactly the next unticked task, verify (binary truth), tick + update this block **in the
 > same commit**. Nothing else starts until this block says so.
 
-- **Change (active, owner-directed 2026-07-29 · layout):** `add-stacked-viewport-layout`
-  — **Stacked-viewport layout constitution.** Owner's ruling: every screen must be one
-  viewport with the same frame, not independently re-invented per view; consistent
-  placement, grid rules, line-height/rhythm matching, one-scroll IA. Diagnosis on the
-  record: five tabs used **three different header mechanisms** (`AppBar` 56 ·
-  `SliverAppBar.large` 152 · floating `SliverAppBar` with a Menlo-w900 title override)
-  plus two hand-rolled headers, and `lib/` had **no max content width at all** — a defect
-  on Flutter Web, the ranked-#1 surface.
-  **Landed:** `AppLayout` tokens, `AppScreen`/`AppSection` (the frame is a type, not a
-  convention), TOKENS.md → **Layout & Grid** with a per-screen migration ledger, CLAUDE.md
-  **Layout doctrine** row, and the `add` screen migrated as the reference implementation.
-  **Proven green:** `./verify.sh` all gates (**1227 pass / 3 skip / 0 fail**),
-  `openspec --strict`, and `flutter build web --release`.
-  **3.1 DONE 2026-07-29** — `breakdex` on the frame via `AppScreen.slivers` +
-  `SliverFillRemaining`, so the signature hero tiles keep their optical centring instead of
-  being top-anchored by the migration; no alignment knob added to the frame.
-  **3.2 DONE 2026-07-29** — `stats` on the frame; its brutalist Menlo voice stays in the
-  content band (the band a screen owns) while the title stops scrolling away. Conformance is
-  now enforced by `test/design/frame_conformance_test.dart`, not by review — review is what
-  let five headers diverge in the first place.
-  **3.3 DONE 2026-07-29** — `lab` on the frame. The WIP badge became a header action; the
-  frame grew `AppScreen.floatingActionButton`, which also owns the nav-band inset the shell's
-  `extendBody: true` requires — that inset was hand-rolled in five screens as
-  `kBottomNavigationBarHeight + padding.bottom`. Covered by
-  `test/shared/widgets/app_screen_test.dart` (red-proved without the inset).
-  **3.4 + 3.5 DONE 2026-07-29** — `flow` on the frame (the first non-scrolling screen: the
-  graph canvas takes the remaining height via `SliverFillRemaining` and pans inside itself;
-  the raw `horizontal: 12` and `EdgeInsets.all(1)` resolved). **All five tabs now conform**,
-  so the TOKENS.md migration ledger is retired — `test/design/frame_conformance_test.dart`
-  is the roster CI can fail.
-  **Next unticked:** 4.1 and 4.2, both **owner-gated**. 4.1 (type-scale baseline snap:
-  `titleMedium` 30→32, `titleSmall` 26→28) shifts type metrics on every screen; 4.2 asks
-  whether `web-mirror/`'s `tokens.css` mirrors `AppLayout` or the dev surface is exempt.
-  Sections 1–3 are complete, so the change is implementation-complete pending those two
-  calls and the owner's V.4 sitting.
+- **Change (active, 2026-07-29 · product finish):** `redesign-visual-first-experience`
+  — **Next unticked: 6.2** — the `Moves` header RenderFlex overflow the owner screenshotted
+  (`SCR-20260728-mafz`, "OVERFLOWED BY 2"). Phases 2–5 shipped 2026-07-08; what is left is a
+  short finish list of owner-observed defects plus V.2's Patrol journey. Release-blocking for
+  wave-1 invites, and no backend dependency — it runs parallel to the owner-gated Appwrite and
+  distribution work.
+
+- **Archived 2026-07-29 (implementation-complete, 19/19):** `add-stacked-viewport-layout`
+  — **Stacked-viewport layout constitution.** All five tabs are on one frame: `AppLayout`
+  tokens, `AppScreen`/`AppSection` as a type rather than a convention, and two CI gates that
+  replace review (`frame_conformance_test.dart` for the roster, `type_baseline_test.dart` for
+  the scale). Owner ruled the type scale rides a **2pt** baseline — the proposed 30→32 / 26→28
+  snap did not happen — and that `web-mirror/` is exempt from the frame. Reason-for-archive
+  note: `openspec/changes/archive/2026-07-29-add-stacked-viewport-layout/README.md`; capability
+  promoted to `openspec/specs/layout-system/`. The owner sitting (does it read as one viewport
+  when switching tabs?) is routed to `owner-verification-passes` §6.1 — nothing here was proven
+  on a device or in a browser.
 
 - **Parked 2026-07-29 (was active, owner-directed earlier the same day):** `add-web-first-release-and-monetization`
   — **Ship-today redirect.** Owner's ruling this session: *"no need for testing and wasting

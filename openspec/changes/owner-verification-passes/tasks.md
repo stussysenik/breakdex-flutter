@@ -58,3 +58,11 @@ survives the move.
 - [ ] 5.1 Signing, provisioning profiles, and App Store credentials for
       `scripts/distribute.sh ios-ipa`. External state by definition — see CLAUDE.md
       "Distribution and update scriptability".
+
+## 6. Design sittings
+
+- [ ] 6.1 Confirm the frame reads as **one viewport** when switching tabs on a real build:
+      the title sits at the same height on all five tabs, content's first pixel is at the same
+      `y`, and nothing feels top-anchored that used to be centred (`breakdex`'s hero tiles are
+      the one to watch). Web additionally: the 720/1080 clamp should centre the column on a
+      wide monitor rather than stretching it. (`add-stacked-viewport-layout` V.4)
