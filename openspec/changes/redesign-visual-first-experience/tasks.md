@@ -276,7 +276,7 @@ needs a Scholar pass first) before any Student session touches code.
   6.3 per queue doctrine, so this box does not hold the change open on work addressed to a
   different actor.
 
-- [ ] 6.12 **Docs Ledger Gate is red on a dangling stamp — `verify.sh` cannot go green until
+- [x] 6.12 **Docs Ledger Gate is red on a dangling stamp — `verify.sh` cannot go green until
   this clears** (found 2026-07-29; blocks every done-claim on this change, which is why it is
   parked here and not in a docs change). `docs/manual/08-testing-and-verification.mdx` and
   `docs/manual/11-executor-onboarding.mdx` both carry `verified: fcc65bd`, and `fcc65bd` exists
