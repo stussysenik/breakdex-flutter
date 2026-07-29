@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:breakdex/core/design/theme.dart';
+import 'package:breakdex/core/design/icons.dart';
 import 'package:breakdex/core/providers.dart';
 import 'package:breakdex/core/design/typography.dart';
 import 'package:breakdex/core/models/learning_state.dart';
@@ -66,7 +67,7 @@ class StatePill extends ConsumerWidget {
           ),
           if (showDisclosure) ...[
             const SizedBox(width: 4),
-            Icon(Icons.expand_more, size: 14, color: stateColor),
+            AppIconView(AppIcon.expandMore, size: 14, color: stateColor),
           ],
         ],
       ),

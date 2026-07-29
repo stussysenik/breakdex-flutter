@@ -13,6 +13,7 @@ import 'package:breakdex/core/design/typography.dart';
 import 'package:breakdex/core/providers.dart';
 import 'package:breakdex/core/services/fsrs_service.dart';
 import 'package:breakdex/core/models/reviewable_item.dart';
+import 'package:breakdex/core/design/icons.dart';
 
 /// A row in the schedule item list showing an item's name, state, and SRS data.
 ///
@@ -90,8 +91,8 @@ class ScheduledItemRow extends ConsumerWidget {
                     ),
                     child: Icon(
                       item.item is ReviewableCombo
-                          ? Icons.linear_scale_rounded
-                          : Icons.sports_martial_arts,
+                          ? AppIcon.menu.resolve(context)
+                          : AppIcon.move.resolve(context),
                       color: colorScheme.secondary,
                       size: 20,
                     ),
@@ -114,8 +115,8 @@ class ScheduledItemRow extends ConsumerWidget {
                           // Entity type icon
                           Icon(
                             item.item is ReviewableCombo
-                                ? Icons.linear_scale_rounded
-                                : Icons.sports_martial_arts,
+                                ? AppIcon.menu.resolve(context)
+                                : AppIcon.move.resolve(context),
                             size: 12,
                             color: colorScheme.secondary,
                           ),
@@ -178,8 +179,8 @@ class ScheduledItemRow extends ConsumerWidget {
               // Chevron
               Padding(
                 padding: const EdgeInsets.only(right: AppSpacing.sm),
-                child: Icon(
-                  Icons.chevron_right,
+                child: AppIconView(
+                  AppIcon.forward,
                   size: 16,
                   color: colorScheme.secondary.withValues(alpha: 0.5),
                 ),
@@ -194,14 +195,14 @@ class ScheduledItemRow extends ConsumerWidget {
   Widget _buildThumbnail(final String path) {
     final file = File(path);
     if (!file.existsSync()) {
-      return const Center(child: Icon(Icons.videocam_off, size: 20));
+      return const Center(child: AppIconView(AppIcon.video, size: 20));
     }
     // Video thumbnail placeholder — actual thumbnail generation would
     // require a video_thumbnail package, so we show a styled placeholder
     return Container(
       color: Colors.black12,
       child: const Center(
-        child: Icon(Icons.play_circle_outline, size: 20, color: Colors.white54),
+        child: AppIconView(AppIcon.play, size: 20, color: Colors.white54),
       ),
     );
   }

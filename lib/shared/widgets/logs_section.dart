@@ -10,18 +10,21 @@ import 'package:uuid/uuid.dart';
 import 'package:breakdex/core/design/spacing.dart';
 import 'package:breakdex/core/design/typography.dart';
 import 'package:breakdex/core/utils/time_format.dart';
+import 'package:breakdex/core/design/icons.dart';
 import 'package:breakdex/core/providers.dart';
 
 /// Live log entries for a move or combo. Keyed on (type, id) so the family
 /// caches one stream per entity. Backed by Drift `.watch()` queries, it
 /// re-emits on every add/edit/delete — the section updates instantly.
 final _logEntriesProvider =
-    StreamProvider.family<List<dynamic>, ({String type, String id})>(
-        (final ref, final key) {
-  return key.type == 'move'
-      ? ref.watch(moveNoteEntriesDaoProvider).watchByMoveId(key.id)
-      : ref.watch(comboNoteEntriesDaoProvider).watchByComboId(key.id);
-});
+    StreamProvider.family<List<dynamic>, ({String type, String id})>((
+      final ref,
+      final key,
+    ) {
+      return key.type == 'move'
+          ? ref.watch(moveNoteEntriesDaoProvider).watchByMoveId(key.id)
+          : ref.watch(comboNoteEntriesDaoProvider).watchByComboId(key.id);
+    });
 
 class LogsSection extends ConsumerWidget {
   const LogsSection({
@@ -36,8 +39,9 @@ class LogsSection extends ConsumerWidget {
   @override
   Widget build(final BuildContext context, final WidgetRef ref) {
     final colorScheme = Theme.of(context).colorScheme;
-    final logsAsync =
-        ref.watch(_logEntriesProvider((type: entityType, id: entityId)));
+    final logsAsync = ref.watch(
+      _logEntriesProvider((type: entityType, id: entityId)),
+    );
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -54,7 +58,7 @@ class LogsSection extends ConsumerWidget {
             ),
             IconButton(
               onPressed: () => _showAddLogDialog(context, ref),
-              icon: const Icon(Icons.add_rounded, size: 20),
+              icon: const AppIconView(AppIcon.add, size: 20),
               color: colorScheme.primary,
               visualDensity: VisualDensity.compact,
             ),
@@ -89,51 +93,59 @@ class LogsSection extends ConsumerWidget {
                 final String id = log.id as String;
 
                 return Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(
-                          '${relativeTime(date)} · ${DateFormat('HH:mm').format(date)}',
-                          style: AppTypography.caption.copyWith(
-                            color: colorScheme.primary,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
                         Row(
-                          mainAxisSize: MainAxisSize.min,
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
-                            GestureDetector(
-                              onTap: () => _editLog(context, ref, id, body),
-                              child: Icon(
-                                Icons.edit_outlined,
-                                size: 14,
-                                color: colorScheme.outline,
+                            Text(
+                              '${relativeTime(date)} · ${DateFormat('HH:mm').format(date)}',
+                              style: AppTypography.caption.copyWith(
+                                color: colorScheme.primary,
+                                fontWeight: FontWeight.bold,
                               ),
                             ),
-                            const SizedBox(width: AppSpacing.sm),
-                            GestureDetector(
-                              onTap: () => _deleteLog(context, ref, id),
-                              child: Icon(
-                                Icons.close_rounded,
-                                size: 14,
-                                color: colorScheme.outline,
-                              ),
+                            Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                GestureDetector(
+                                  onTap: () => _editLog(context, ref, id, body),
+                                  child: AppIconView(
+                                    AppIcon.edit,
+                                    size: 14,
+                                    color: colorScheme.outline,
+                                  ),
+                                ),
+                                const SizedBox(width: AppSpacing.sm),
+                                GestureDetector(
+                                  onTap: () => _deleteLog(context, ref, id),
+                                  child: AppIconView(
+                                    AppIcon.close,
+                                    size: 14,
+                                    color: colorScheme.outline,
+                                  ),
+                                ),
+                              ],
                             ),
                           ],
                         ),
+                        const SizedBox(height: 4),
+                        Text(
+                          body,
+                          style: AppTypography.bodySmall.copyWith(
+                            color: colorScheme.onSurface,
+                          ),
+                        ),
                       ],
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      body,
-                      style: AppTypography.bodySmall.copyWith(
-                        color: colorScheme.onSurface,
-                      ),
-                    ),
-                  ],
-                ).animate().fadeIn(duration: 250.ms, delay: (50 * index).ms).slideX(begin: 0.05, end: 0, duration: 250.ms, delay: (50 * index).ms);
+                    )
+                    .animate()
+                    .fadeIn(duration: 250.ms, delay: (50 * index).ms)
+                    .slideX(
+                      begin: 0.05,
+                      end: 0,
+                      duration: 250.ms,
+                      delay: (50 * index).ms,
+                    );
               },
             );
           },
@@ -142,7 +154,10 @@ class LogsSection extends ConsumerWidget {
     );
   }
 
-  Future<void> _showAddLogDialog(final BuildContext context, final WidgetRef ref) async {
+  Future<void> _showAddLogDialog(
+    final BuildContext context,
+    final WidgetRef ref,
+  ) async {
     final controller = TextEditingController();
     final result = await showDialog<String>(
       context: context,
@@ -152,9 +167,7 @@ class LogsSection extends ConsumerWidget {
           controller: controller,
           autofocus: true,
           maxLines: null,
-          decoration: const InputDecoration(
-            hintText: 'What did you work on?',
-          ),
+          decoration: const InputDecoration(hintText: 'What did you work on?'),
         ),
         actions: [
           TextButton(
@@ -171,23 +184,23 @@ class LogsSection extends ConsumerWidget {
 
     if (result != null && result.isNotEmpty) {
       if (entityType == 'move') {
-        await ref.read(moveNoteEntriesDaoProvider).addEntry(
-          id: const Uuid().v4(),
-          moveId: entityId,
-          body: result,
-        );
+        await ref
+            .read(moveNoteEntriesDaoProvider)
+            .addEntry(id: const Uuid().v4(), moveId: entityId, body: result);
       } else {
-        await ref.read(comboNoteEntriesDaoProvider).addEntry(
-          id: const Uuid().v4(),
-          comboId: entityId,
-          body: result,
-        );
+        await ref
+            .read(comboNoteEntriesDaoProvider)
+            .addEntry(id: const Uuid().v4(), comboId: entityId, body: result);
       }
       unawaited(HapticFeedback.mediumImpact());
     }
   }
 
-  Future<void> _deleteLog(final BuildContext context, final WidgetRef ref, final String id) async {
+  Future<void> _deleteLog(
+    final BuildContext context,
+    final WidgetRef ref,
+    final String id,
+  ) async {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (final context) => AlertDialog(
@@ -215,7 +228,12 @@ class LogsSection extends ConsumerWidget {
     }
   }
 
-  Future<void> _editLog(final BuildContext context, final WidgetRef ref, final String id, final String currentBody) async {
+  Future<void> _editLog(
+    final BuildContext context,
+    final WidgetRef ref,
+    final String id,
+    final String currentBody,
+  ) async {
     final controller = TextEditingController(text: currentBody);
     final result = await showDialog<String>(
       context: context,
@@ -225,9 +243,7 @@ class LogsSection extends ConsumerWidget {
           controller: controller,
           autofocus: true,
           maxLines: null,
-          decoration: const InputDecoration(
-            hintText: 'What did you work on?',
-          ),
+          decoration: const InputDecoration(hintText: 'What did you work on?'),
         ),
         actions: [
           TextButton(

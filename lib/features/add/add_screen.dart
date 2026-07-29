@@ -22,6 +22,7 @@ import 'package:breakdex/shared/widgets/app_screen.dart';
 import 'package:breakdex/shared/widgets/video_picker_sheet.dart';
 import 'package:breakdex/shared/widgets/video_player_widget.dart';
 import 'package:breakdex/l10n/gen/app_localizations.dart';
+import 'package:breakdex/core/design/icons.dart';
 
 class AddScreen extends ConsumerWidget {
   const AddScreen({super.key});
@@ -40,13 +41,13 @@ class AddScreen extends ConsumerWidget {
           children: [
             _ChoiceCard(
               identifier: 'add-move-card',
-              icon: Icons.videocam_outlined,
+              icon: AppIcon.video.resolve(context),
               label: entityNames.moveSingular,
               onTap: () => _startClipFlow(context, ref),
             ),
             _ChoiceCard(
               identifier: 'add-combo-card',
-              icon: Icons.auto_awesome_motion_outlined,
+              icon: AppIcon.discover.resolve(context),
               label: entityNames.comboSingular,
               onTap: () => context.push<String>('/create-combo'),
             ),
@@ -56,7 +57,10 @@ class AddScreen extends ConsumerWidget {
     );
   }
 
-  Future<void> _startClipFlow(final BuildContext context, final WidgetRef ref) async {
+  Future<void> _startClipFlow(
+    final BuildContext context,
+    final WidgetRef ref,
+  ) async {
     final pickResult = await VideoPickerSheet.show(context);
     if (pickResult == null || !context.mounted) return;
 
@@ -151,7 +155,11 @@ class _ChoiceCard extends StatelessWidget {
               Icon(icon, size: 32, color: colorScheme.onSurface),
               const SizedBox(width: AppSpacing.md),
               Expanded(child: Text(label, style: AppTypography.titleSmall)),
-              Icon(Icons.chevron_right, size: 20, color: colorScheme.outline),
+              AppIconView(
+                AppIcon.forward,
+                size: 20,
+                color: colorScheme.outline,
+              ),
             ],
           ),
         ),
@@ -194,7 +202,9 @@ class _ClipMetadataFormState extends ConsumerState<_ClipMetadataForm> {
     super.initState();
     _nameController.addListener(_onNameChanged);
     if (widget.pickResult.originalFileName != null) {
-      final name = p.basenameWithoutExtension(widget.pickResult.originalFileName!);
+      final name = p.basenameWithoutExtension(
+        widget.pickResult.originalFileName!,
+      );
       _nameController.text = name.replaceAll('_', ' ').replaceAll('-', ' ');
     }
   }
@@ -251,7 +261,8 @@ class _ClipMetadataFormState extends ConsumerState<_ClipMetadataForm> {
     final l10n = AppLocalizations.of(context);
     final colorScheme = Theme.of(context).colorScheme;
 
-    final selectedCategory = categories.any((final cat) => cat.name == _selectedCategory)
+    final selectedCategory =
+        categories.any((final cat) => cat.name == _selectedCategory)
         ? _selectedCategory
         : (categories.isNotEmpty ? categories.first.name : null);
 
@@ -276,7 +287,8 @@ class _ClipMetadataFormState extends ConsumerState<_ClipMetadataForm> {
             children: [
               Center(
                 child: Container(
-                  width: 36, height: 4,
+                  width: 36,
+                  height: 4,
                   decoration: BoxDecoration(
                     color: colorScheme.outline.withValues(alpha: 0.5),
                     borderRadius: BorderRadius.circular(2),
@@ -284,7 +296,7 @@ class _ClipMetadataFormState extends ConsumerState<_ClipMetadataForm> {
                 ),
               ),
               const SizedBox(height: AppSpacing.lg),
-              
+
               ClipRRect(
                 borderRadius: BorderRadius.circular(AppRadius.md),
                 child: AspectRatio(
@@ -299,7 +311,13 @@ class _ClipMetadataFormState extends ConsumerState<_ClipMetadataForm> {
               ),
               const SizedBox(height: AppSpacing.lg),
 
-              Text(l10n.fieldNameLabel, style: AppTypography.labelLarge.copyWith(color: colorScheme.secondary, letterSpacing: 1.5)),
+              Text(
+                l10n.fieldNameLabel,
+                style: AppTypography.labelLarge.copyWith(
+                  color: colorScheme.secondary,
+                  letterSpacing: 1.5,
+                ),
+              ),
               TextField(
                 controller: _nameController,
                 autofocus: true,
@@ -308,12 +326,20 @@ class _ClipMetadataFormState extends ConsumerState<_ClipMetadataForm> {
                   hintText: l10n.addNameHint,
                   errorText: _errorText,
                   border: InputBorder.none,
-                  hintStyle: AppTypography.titleLarge.copyWith(color: colorScheme.outline),
+                  hintStyle: AppTypography.titleLarge.copyWith(
+                    color: colorScheme.outline,
+                  ),
                 ),
                 textCapitalization: TextCapitalization.words,
               ),
               const SizedBox(height: AppSpacing.xl),
-              Text(l10n.fieldCategoryLabel, style: AppTypography.labelLarge.copyWith(color: colorScheme.secondary, letterSpacing: 1.5)),
+              Text(
+                l10n.fieldCategoryLabel,
+                style: AppTypography.labelLarge.copyWith(
+                  color: colorScheme.secondary,
+                  letterSpacing: 1.5,
+                ),
+              ),
               const SizedBox(height: AppSpacing.md),
               Wrap(
                 spacing: AppSpacing.sm,
@@ -336,13 +362,21 @@ class _ClipMetadataFormState extends ConsumerState<_ClipMetadataForm> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(l10n.fieldBeatCountLabel, style: AppTypography.labelLarge.copyWith(color: colorScheme.secondary, letterSpacing: 1.5)),
+                        Text(
+                          l10n.fieldBeatCountLabel,
+                          style: AppTypography.labelLarge.copyWith(
+                            color: colorScheme.secondary,
+                            letterSpacing: 1.5,
+                          ),
+                        ),
                         const SizedBox(height: AppSpacing.md),
                         Row(
                           children: [
                             _CountButton(
-                              icon: Icons.remove,
-                              onTap: _count > 1 ? () => setState(() => _count--) : null,
+                              icon: AppIcon.remove.resolve(context),
+                              onTap: _count > 1
+                                  ? () => setState(() => _count--)
+                                  : null,
                             ),
                             SizedBox(
                               width: 48,
@@ -353,8 +387,10 @@ class _ClipMetadataFormState extends ConsumerState<_ClipMetadataForm> {
                               ),
                             ),
                             _CountButton(
-                              icon: Icons.add,
-                              onTap: _count < 32 ? () => setState(() => _count++) : null,
+                              icon: AppIcon.add.resolve(context),
+                              onTap: _count < 32
+                                  ? () => setState(() => _count++)
+                                  : null,
                             ),
                           ],
                         ),
@@ -365,16 +401,26 @@ class _ClipMetadataFormState extends ConsumerState<_ClipMetadataForm> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(l10n.fieldStatusLabel, style: AppTypography.labelLarge.copyWith(color: colorScheme.secondary, letterSpacing: 1.5)),
+                        Text(
+                          l10n.fieldStatusLabel,
+                          style: AppTypography.labelLarge.copyWith(
+                            color: colorScheme.secondary,
+                            letterSpacing: 1.5,
+                          ),
+                        ),
                         const SizedBox(height: AppSpacing.md),
                         DropdownButton<LearningState>(
                           value: _selectedState,
                           isExpanded: true,
                           underline: const SizedBox.shrink(),
                           items: LearningState.values.map((final s) {
-                            return DropdownMenuItem(value: s, child: Text(s.name.toUpperCase()));
+                            return DropdownMenuItem(
+                              value: s,
+                              child: Text(s.name.toUpperCase()),
+                            );
                           }).toList(),
-                          onChanged: (final s) => setState(() => _selectedState = s!),
+                          onChanged: (final s) =>
+                              setState(() => _selectedState = s!),
                         ),
                       ],
                     ),
@@ -386,15 +432,27 @@ class _ClipMetadataFormState extends ConsumerState<_ClipMetadataForm> {
                 width: double.infinity,
                 height: 56,
                 child: ElevatedButton(
-                  onPressed: _nameEmpty || selectedCategory == null ? null : _submit,
+                  onPressed: _nameEmpty || selectedCategory == null
+                      ? null
+                      : _submit,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: colorScheme.onSurface,
                     foregroundColor: colorScheme.surface,
-                    disabledBackgroundColor: colorScheme.onSurface.withValues(alpha: 0.1),
-                    disabledForegroundColor: colorScheme.onSurface.withValues(alpha: 0.3),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppRadius.sm)),
+                    disabledBackgroundColor: colorScheme.onSurface.withValues(
+                      alpha: 0.1,
+                    ),
+                    disabledForegroundColor: colorScheme.onSurface.withValues(
+                      alpha: 0.3,
+                    ),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(AppRadius.sm),
+                    ),
                   ),
-                  child: Text(l10n.saveEntityButton(entityNames.moveSingular.toUpperCase())),
+                  child: Text(
+                    l10n.saveEntityButton(
+                      entityNames.moveSingular.toUpperCase(),
+                    ),
+                  ),
                 ),
               ),
             ],
@@ -419,15 +477,26 @@ class _CountButton extends StatelessWidget {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        width: 40, height: 40,
+        width: 40,
+        height: 40,
         decoration: BoxDecoration(
-          color: enabled ? colorScheme.surfaceContainerHighest : colorScheme.surfaceContainerHighest.withValues(alpha: 0.4),
+          color: enabled
+              ? colorScheme.surfaceContainerHighest
+              : colorScheme.surfaceContainerHighest.withValues(alpha: 0.4),
           borderRadius: BorderRadius.circular(AppRadius.sm),
           border: Border.all(
-            color: enabled ? colorScheme.outline.withValues(alpha: 0.4) : colorScheme.outline.withValues(alpha: 0.15),
+            color: enabled
+                ? colorScheme.outline.withValues(alpha: 0.4)
+                : colorScheme.outline.withValues(alpha: 0.15),
           ),
         ),
-        child: Icon(icon, size: 20, color: enabled ? colorScheme.primary : colorScheme.outline.withValues(alpha: 0.3)),
+        child: Icon(
+          icon,
+          size: 20,
+          color: enabled
+              ? colorScheme.primary
+              : colorScheme.outline.withValues(alpha: 0.3),
+        ),
       ),
     );
   }

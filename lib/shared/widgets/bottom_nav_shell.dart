@@ -12,6 +12,7 @@ import 'package:breakdex/core/services/media_playback_coordinator.dart';
 import 'package:breakdex/core/models/app_mode.dart';
 import 'package:breakdex/core/services/settings_service.dart';
 import 'package:breakdex/core/utils/diagnostics.dart';
+import 'package:breakdex/core/design/icons.dart';
 import 'package:breakdex/l10n/gen/app_localizations.dart';
 import 'package:breakdex/shared/widgets/shake_detector.dart';
 import 'package:breakdex/shared/widgets/sync_progress_bar.dart';
@@ -31,7 +32,10 @@ class BottomNavShell extends ConsumerWidget {
       if (context.mounted) {
         final current = ref.read(currentTabIndexProvider);
         if (current != navigationShell.currentIndex) {
-          DiagnosticsLog.debug('BottomNavShell', 'Syncing tab index: current=$current, next=${navigationShell.currentIndex}');
+          DiagnosticsLog.debug(
+            'BottomNavShell',
+            'Syncing tab index: current=$current, next=${navigationShell.currentIndex}',
+          );
           ref.read(currentTabIndexProvider.notifier).state =
               navigationShell.currentIndex;
         }
@@ -46,10 +50,16 @@ class BottomNavShell extends ConsumerWidget {
       body: ShakeDetector(
         onShake: () {
           if (navigationShell.currentIndex == 2) {
-            DiagnosticsLog.debug('BottomNavShell', 'shake ignored — already on review tab');
+            DiagnosticsLog.debug(
+              'BottomNavShell',
+              'shake ignored — already on review tab',
+            );
             return;
           }
-          DiagnosticsLog.info('BottomNavShell', 'shake triggered — navigating to review');
+          DiagnosticsLog.info(
+            'BottomNavShell',
+            'shake triggered — navigating to review',
+          );
           navigationShell.goBranch(2);
         },
         child: Column(
@@ -88,11 +98,17 @@ class BottomNavShell extends ConsumerWidget {
               boxShadow: AppShadows.layered(brightness),
             ),
             child: BottomNavigationBar(
-              currentIndex: _calculateRealIndex(navigationShell.currentIndex, showStats),
+              currentIndex: _calculateRealIndex(
+                navigationShell.currentIndex,
+                showStats,
+              ),
               onTap: (final index) {
                 MediaPlaybackCoordinator.shared.pauseAll();
                 final branchIndex = _calculateBranchIndex(index, showStats);
-                DiagnosticsLog.info('BottomNavShell', 'Tab tapped: visual_index=$index, showStats=$showStats -> branch_index=$branchIndex');
+                DiagnosticsLog.info(
+                  'BottomNavShell',
+                  'Tab tapped: visual_index=$index, showStats=$showStats -> branch_index=$branchIndex',
+                );
                 navigationShell.goBranch(
                   branchIndex,
                   initialLocation: branchIndex == navigationShell.currentIndex,
@@ -105,14 +121,14 @@ class BottomNavShell extends ConsumerWidget {
                 BottomNavigationBarItem(
                   icon: Semantics(
                     identifier: 'breakdex-tab',
-                    child: const Icon(Icons.grid_view_rounded),
+                    child: const AppIconView(AppIcon.grid),
                   ),
                   label: l10n.navBreakdex,
                 ),
                 BottomNavigationBarItem(
                   icon: Semantics(
                     identifier: 'add-tab',
-                    child: const Icon(Icons.add_circle_outline),
+                    child: const AppIconView(AppIcon.add),
                   ),
                   label: l10n.navAdd,
                 ),
@@ -122,10 +138,10 @@ class BottomNavShell extends ConsumerWidget {
                     child: Consumer(
                       builder: (final context, final ref, _) {
                         final appMode = ref.watch(appModeProvider);
-                        return Icon(
+                        return AppIconView(
                           appMode == AppMode.anki
-                              ? Icons.style_outlined
-                              : Icons.celebration_outlined,
+                              ? AppIcon.study
+                              : AppIcon.celebration,
                         );
                       },
                     ),
@@ -136,14 +152,14 @@ class BottomNavShell extends ConsumerWidget {
                   BottomNavigationBarItem(
                     icon: Semantics(
                       identifier: 'stats-tab',
-                      child: const Icon(Icons.insights_rounded),
+                      child: const AppIconView(AppIcon.insight),
                     ),
                     label: l10n.navStats,
                   ),
                 BottomNavigationBarItem(
                   icon: Semantics(
                     identifier: 'settings-tab',
-                    child: const Icon(Icons.settings_outlined),
+                    child: const AppIconView(AppIcon.settings),
                   ),
                   label: l10n.navSettings,
                 ),

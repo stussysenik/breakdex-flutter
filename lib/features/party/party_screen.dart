@@ -21,12 +21,14 @@ import 'package:breakdex/core/services/video_path_resolver.dart';
 import 'package:breakdex/shared/widgets/app_loader.dart';
 import 'package:breakdex/shared/widgets/combo_step_line.dart';
 import 'package:breakdex/shared/widgets/state_pill.dart';
-import 'package:breakdex/shared/widgets/video_player_widget.dart' show RobustVideoPlayer;
+import 'package:breakdex/shared/widgets/video_player_widget.dart'
+    show RobustVideoPlayer;
 import 'package:breakdex/core/utils/diagnostics.dart';
 
 import 'package:breakdex/core/services/swing_detector.dart';
 import 'package:breakdex/features/party/bloc/party_bloc.dart';
 import 'package:breakdex/features/party/bloc/combo_party_bloc.dart';
+import 'package:breakdex/core/design/icons.dart';
 
 const _partySubsystem = 'Party';
 
@@ -55,10 +57,7 @@ class _PartyScreenState extends ConsumerState<PartyScreen>
   void initState() {
     super.initState();
     _comboBloc = ComboPartyBloc();
-    _swingDetector = SwingDetector(
-      threshold: 18.0,
-      onSwing: _onShakeDetected,
-    );
+    _swingDetector = SwingDetector(threshold: 18.0, onSwing: _onShakeDetected);
     _revealController = AnimationController(
       vsync: this,
       duration: AppMotion.slow01,
@@ -151,7 +150,8 @@ class _PartyScreenState extends ConsumerState<PartyScreen>
         );
         _comboBloc.add(ComboShake(combos, durationMs));
       },
-      loading: () => DiagnosticsLog.warn(_partySubsystem, 'combos still loading on shake'),
+      loading: () =>
+          DiagnosticsLog.warn(_partySubsystem, 'combos still loading on shake'),
       error: (final e, final s) =>
           DiagnosticsLog.error(_partySubsystem, 'combos error on shake: $e'),
     );
@@ -182,9 +182,11 @@ class _PartyScreenState extends ConsumerState<PartyScreen>
 
   void _triggerHaptics() {
     unawaited(HapticFeedback.heavyImpact());
-    unawaited(Future<void>.delayed(const Duration(milliseconds: 80), () {
-      unawaited(HapticFeedback.heavyImpact());
-    }));
+    unawaited(
+      Future<void>.delayed(const Duration(milliseconds: 80), () {
+        unawaited(HapticFeedback.heavyImpact());
+      }),
+    );
   }
 
   void _lockShake() {
@@ -217,10 +219,7 @@ class _PartyScreenState extends ConsumerState<PartyScreen>
     final isComboMode = ref.watch(partyComboModeProvider);
 
     if (isComboMode) {
-      return BlocProvider.value(
-        value: _comboBloc,
-        child: _buildComboParty(),
-      );
+      return BlocProvider.value(value: _comboBloc, child: _buildComboParty());
     }
     return _buildMoveParty();
   }
@@ -232,7 +231,10 @@ class _PartyScreenState extends ConsumerState<PartyScreen>
 
     return BlocListener<PartyBloc, PartyState>(
       listener: (final context, final state) {
-        DiagnosticsLog.trace(_partySubsystem, 'move listener: state=${state.runtimeType}');
+        DiagnosticsLog.trace(
+          _partySubsystem,
+          'move listener: state=${state.runtimeType}',
+        );
         state.maybeWhen(
           cycling: (_, _, _, _, _, _) {
             DiagnosticsLog.debug(_partySubsystem, 'move bloc → cycling');
@@ -245,8 +247,7 @@ class _PartyScreenState extends ConsumerState<PartyScreen>
             DiagnosticsLog.debug(_partySubsystem, 'move bloc → revealing');
             _stopTicker();
             _onRevealAnimationComplete(() {
-              context.read<PartyBloc>().add(
-                  PartyEvent.tick(DateTime.now()));
+              context.read<PartyBloc>().add(PartyEvent.tick(DateTime.now()));
             });
           },
           revealed: (_) {
@@ -257,12 +258,8 @@ class _PartyScreenState extends ConsumerState<PartyScreen>
         );
       },
       child: movesAsync.when(
-        loading: () => const Scaffold(
-          body: Center(child: AppLoader()),
-        ),
-        error: (final e, _) => Scaffold(
-          body: Center(child: Text('Error: $e')),
-        ),
+        loading: () => const Scaffold(body: Center(child: AppLoader())),
+        error: (final e, _) => Scaffold(body: Center(child: Text('Error: $e'))),
         data: (final moves) {
           return Scaffold(
             body: SafeArea(
@@ -305,12 +302,8 @@ class _PartyScreenState extends ConsumerState<PartyScreen>
         }
       },
       child: combosAsync.when(
-        loading: () => const Scaffold(
-          body: Center(child: AppLoader()),
-        ),
-        error: (final e, _) => Scaffold(
-          body: Center(child: Text('Error: $e')),
-        ),
+        loading: () => const Scaffold(body: Center(child: AppLoader())),
+        error: (final e, _) => Scaffold(body: Center(child: Text('Error: $e'))),
         data: (final combos) {
           return Scaffold(
             body: SafeArea(
@@ -324,12 +317,12 @@ class _PartyScreenState extends ConsumerState<PartyScreen>
     );
   }
 
-  Widget _buildEmptyState(final ColorScheme colorScheme, {required final bool isCombo}) {
+  Widget _buildEmptyState(
+    final ColorScheme colorScheme, {
+    required final bool isCombo,
+  }) {
     final itemLabel = isCombo ? 'combos' : 'moves';
-    DiagnosticsLog.info(
-      _partySubsystem,
-      'showing empty state for $itemLabel',
-    );
+    DiagnosticsLog.info(_partySubsystem, 'showing empty state for $itemLabel');
 
     return Center(
       child: Padding(
@@ -337,8 +330,8 @@ class _PartyScreenState extends ConsumerState<PartyScreen>
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(
-              Icons.celebration_outlined,
+            AppIconView(
+              AppIcon.celebration,
               size: 64,
               color: colorScheme.primary.withValues(alpha: 0.4),
             ),
@@ -398,14 +391,21 @@ class _PartyScreenState extends ConsumerState<PartyScreen>
                   allMoves.length,
                   isCombo: false,
                 ),
-                cycling: (_, final currentMove, _, final startTime, _, final durationMs) =>
-                    _buildCyclingDisplay(
-                  colorScheme,
-                  currentMove.name,
-                  key: ValueKey(currentMove.id),
-                  startTime: startTime,
-                  durationMs: durationMs,
-                ),
+                cycling:
+                    (
+                      _,
+                      final currentMove,
+                      _,
+                      final startTime,
+                      _,
+                      final durationMs,
+                    ) => _buildCyclingDisplay(
+                      colorScheme,
+                      currentMove.name,
+                      key: ValueKey(currentMove.id),
+                      startTime: startTime,
+                      durationMs: durationMs,
+                    ),
                 revealing: (final move) =>
                     _buildMoveRevealedCard(colorScheme, move),
                 revealed: (final move) =>
@@ -468,18 +468,20 @@ class _PartyScreenState extends ConsumerState<PartyScreen>
         Expanded(
           child: BlocBuilder<ComboPartyBloc, ComboPartyState>(
             builder: (final context, final state) {
-              DiagnosticsLog.debug('Party',
-                  'ComboBlocBuilder state=${state.runtimeType}');
+              DiagnosticsLog.debug(
+                'Party',
+                'ComboBlocBuilder state=${state.runtimeType}',
+              );
               return switch (state) {
                 ComboIdle() => _buildIdlePrompt(
-                    colorScheme,
-                    combos.length,
-                    isCombo: true,
-                  ),
+                  colorScheme,
+                  combos.length,
+                  isCombo: true,
+                ),
                 ComboCycling(
                   :final currentCombo,
                   :final startTime,
-                  :final durationMs
+                  :final durationMs,
                 ) =>
                   _buildCyclingDisplay(
                     colorScheme,
@@ -488,10 +490,14 @@ class _PartyScreenState extends ConsumerState<PartyScreen>
                     startTime: startTime,
                     durationMs: durationMs,
                   ),
-                ComboRevealing(:final combo) =>
-                  _buildComboRevealedCard(colorScheme, combo),
-                ComboRevealed(:final combo) =>
-                  _buildComboRevealedCard(colorScheme, combo),
+                ComboRevealing(:final combo) => _buildComboRevealedCard(
+                  colorScheme,
+                  combo,
+                ),
+                ComboRevealed(:final combo) => _buildComboRevealedCard(
+                  colorScheme,
+                  combo,
+                ),
               };
             },
           ),
@@ -539,8 +545,8 @@ class _PartyScreenState extends ConsumerState<PartyScreen>
           const SizedBox(height: AppSpacing.lg),
           GestureDetector(
             onTap: _onShakeDetected,
-            child: Icon(
-              Icons.vibration,
+            child: AppIconView(
+              AppIcon.flashcard,
               size: 56,
               color: colorScheme.primary.withValues(alpha: 0.3),
             ),
@@ -632,7 +638,10 @@ class _PartyScreenState extends ConsumerState<PartyScreen>
     );
   }
 
-  Widget _buildMoveRevealedCard(final ColorScheme colorScheme, final Move move) {
+  Widget _buildMoveRevealedCard(
+    final ColorScheme colorScheme,
+    final Move move,
+  ) {
     return _buildRevealedCardWrapper(
       colorScheme,
       child: _buildMoveCard(colorScheme, move),
@@ -745,8 +754,8 @@ class _PartyScreenState extends ConsumerState<PartyScreen>
               ),
             ),
             child: Center(
-              child: Icon(
-                Icons.auto_awesome_outlined,
+              child: AppIconView(
+                AppIcon.discover,
                 size: 48,
                 color: colorScheme.primary.withValues(alpha: 0.35),
               ),
@@ -787,7 +796,8 @@ class _PartyScreenState extends ConsumerState<PartyScreen>
     final ColorScheme colorScheme,
     final ComboPartyDisplay combo,
   ) {
-    final activeVideoPath = _selectedComboStepIndex < combo.moveVideoPaths.length
+    final activeVideoPath =
+        _selectedComboStepIndex < combo.moveVideoPaths.length
         ? combo.moveVideoPaths[_selectedComboStepIndex]
         : combo.videoPath;
 
@@ -819,10 +829,7 @@ class _PartyScreenState extends ConsumerState<PartyScreen>
               final beats = combo.moveBeats[idx];
 
               return Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 8,
-                  vertical: 3,
-                ),
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                 decoration: BoxDecoration(
                   color: isSelected
                       ? colorScheme.primary
@@ -838,7 +845,9 @@ class _PartyScreenState extends ConsumerState<PartyScreen>
                     Text(
                       name.toUpperCase(),
                       style: AppTypography.caption.copyWith(
-                        color: isSelected ? colorScheme.onPrimary : colorScheme.primary,
+                        color: isSelected
+                            ? colorScheme.onPrimary
+                            : colorScheme.primary,
                         fontWeight: FontWeight.w800,
                         letterSpacing: 0.5,
                       ),
@@ -863,7 +872,9 @@ class _PartyScreenState extends ConsumerState<PartyScreen>
           ClipRRect(
             borderRadius: BorderRadius.circular(AppRadius.md),
             child: RobustVideoPlayer(
-              key: ValueKey('party-combo-video-${combo.id}-$_selectedComboStepIndex-$activeVideoPath'),
+              key: ValueKey(
+                'party-combo-video-${combo.id}-$_selectedComboStepIndex-$activeVideoPath',
+              ),
               videoPath: activeVideoPath,
               autoPlay: true,
               looping: true,
@@ -885,8 +896,8 @@ class _PartyScreenState extends ConsumerState<PartyScreen>
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Icon(
-                  Icons.videocam_off_outlined,
+                AppIconView(
+                  AppIcon.video,
                   size: 32,
                   color: colorScheme.primary.withValues(alpha: 0.35),
                 ),
@@ -903,7 +914,7 @@ class _PartyScreenState extends ConsumerState<PartyScreen>
             ),
           ),
         const SizedBox(height: AppSpacing.lg),
-        
+
         // Total Beats above timeline
         Row(
           mainAxisAlignment: MainAxisAlignment.end,
@@ -955,7 +966,9 @@ class _PartyScreenState extends ConsumerState<PartyScreen>
     required final bool isCombo,
   }) {
     final itemLabel = isCombo ? 'combo' : 'move';
-    final icon = isCycling ? Icons.casino_outlined : Icons.vibration;
+    final icon = isCycling
+        ? AppIcon.shuffle.resolve(context)
+        : AppIcon.flashcard.resolve(context);
 
     String text;
     if (_shakeLocked && !isCycling) {
@@ -1051,9 +1064,13 @@ class _PhaseIndicator extends StatelessWidget {
   }
 }
 
-final _moveFsrsCardProvider =
-    FutureProvider.family<FsrsCard?, String>((final ref, final moveId) {
-  return ref.watch(fsrsCardsDaoProvider).getByEntityId(moveId, entityType: 'move');
+final _moveFsrsCardProvider = FutureProvider.family<FsrsCard?, String>((
+  final ref,
+  final moveId,
+) {
+  return ref
+      .watch(fsrsCardsDaoProvider)
+      .getByEntityId(moveId, entityType: 'move');
 });
 
 class _MoveReviewStats extends ConsumerWidget {
@@ -1077,7 +1094,11 @@ class _MoveReviewStats extends ConsumerWidget {
             Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                const Icon(Icons.favorite, size: 14, color: AppColors.accent),
+                const AppIconView(
+                  AppIcon.star,
+                  size: 14,
+                  color: AppColors.accent,
+                ),
                 const SizedBox(width: 4),
                 Text(
                   '${card.reps}',
@@ -1089,12 +1110,12 @@ class _MoveReviewStats extends ConsumerWidget {
                 const SizedBox(width: AppSpacing.md),
                 _StatChip(
                   label: '${card.stability.toStringAsFixed(1)}d',
-                  icon: Icons.trending_up,
+                  icon: AppIcon.graph.resolve(context),
                 ),
                 const SizedBox(width: AppSpacing.sm),
                 _StatChip(
                   label: '${(card.difficulty * 10).round()}%',
-                  icon: Icons.fitness_center,
+                  icon: AppIcon.move.resolve(context),
                 ),
               ],
             ),
@@ -1144,8 +1165,9 @@ final _partyMovesProvider = StreamProvider<List<Move>>((final ref) {
   return ref.watch(moveRepositoryProvider).watchAll();
 });
 
-final _partyCombosProvider =
-    StreamProvider<List<ComboPartyDisplay>>((final ref) async* {
+final _partyCombosProvider = StreamProvider<List<ComboPartyDisplay>>((
+  final ref,
+) async* {
   final combosDao = ref.watch(combosDaoProvider);
 
   // Watch a joined stream of combos and their moves so we react to any changes
@@ -1163,19 +1185,31 @@ final _partyCombosProvider =
       if (combo.activeVideoPath != null) {
         absVideoPath = VideoPathResolver.toAbsolute(combo.activeVideoPath!);
       } else {
-        final firstWithVideo = moves.where((final m) => m.move.videoPath != null).firstOrNull;
+        final firstWithVideo = moves
+            .where((final m) => m.move.videoPath != null)
+            .firstOrNull;
         if (firstWithVideo != null) {
-          absVideoPath = VideoPathResolver.toAbsolute(firstWithVideo.move.videoPath!);
+          absVideoPath = VideoPathResolver.toAbsolute(
+            firstWithVideo.move.videoPath!,
+          );
         }
       }
 
-      result.add(ComboPartyDisplay(
-        combo: combo,
-        moveNames: moves.map((final m) => m.move.name).toList(),
-        moveBeats: moves.map((final m) => m.move.count).toList(),
-        moveVideoPaths: moves.map((final m) => m.move.videoPath != null ? VideoPathResolver.toAbsolute(m.move.videoPath!) : null).toList(),
-        resolvedVideoPath: absVideoPath,
-      ));
+      result.add(
+        ComboPartyDisplay(
+          combo: combo,
+          moveNames: moves.map((final m) => m.move.name).toList(),
+          moveBeats: moves.map((final m) => m.move.count).toList(),
+          moveVideoPaths: moves
+              .map(
+                (final m) => m.move.videoPath != null
+                    ? VideoPathResolver.toAbsolute(m.move.videoPath!)
+                    : null,
+              )
+              .toList(),
+          resolvedVideoPath: absVideoPath,
+        ),
+      );
     }
     yield result;
   }

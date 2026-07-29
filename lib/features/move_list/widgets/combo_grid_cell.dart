@@ -53,7 +53,8 @@ class _ComboGridCell extends ConsumerWidget {
       builder: (final context, final snapshot) {
         final moves = snapshot.data ?? const <ComboMoveWithDetail>[];
 
-        final previewPath = moves
+        final previewPath =
+            moves
                 .map((final item) => item.move.resolvedVideoPath)
                 .whereType<String>()
                 .firstOrNull ??
@@ -63,14 +64,23 @@ class _ComboGridCell extends ConsumerWidget {
             ? _GridThumbnail(videoPath: previewPath)
             : _ComboPreviewFallback(
                 stepCount: moves.length,
-                stepNames: moves.map((final item) => item.move.name).take(3).toList(),
+                stepNames: moves
+                    .map((final item) => item.move.name)
+                    .take(3)
+                    .toList(),
               );
 
-        final names = moves.map((final item) => item.move.name).take(3).toList();
+        final names = moves
+            .map((final item) => item.move.name)
+            .take(3)
+            .toList();
         final overflow = moves.length - names.length;
         final sequenceLabel = names.isEmpty
             ? '$moveCount move${moveCount == 1 ? '' : 's'}'
-            : [names.join(' \u2022 '), if (overflow > 0) '+$overflow'].join(' ');
+            : [
+                names.join(' \u2022 '),
+                if (overflow > 0) '+$overflow',
+              ].join(' ');
 
         final subtitle = Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -126,17 +136,15 @@ class _ComboGridCell extends ConsumerWidget {
           topRightWidget: Container(
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
             decoration: BoxDecoration(
-              color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.9),
+              color: Theme.of(
+                context,
+              ).colorScheme.primary.withValues(alpha: 0.9),
               borderRadius: BorderRadius.circular(AppRadius.sm),
             ),
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                const Icon(
-                  Icons.linear_scale_rounded,
-                  size: 12,
-                  color: Colors.white,
-                ),
+                const AppIconView(AppIcon.combo, size: 12, color: Colors.white),
                 const SizedBox(width: 4),
                 Text(
                   '$moveCount',

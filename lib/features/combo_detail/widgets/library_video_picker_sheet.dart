@@ -11,6 +11,7 @@ import 'package:breakdex/core/providers.dart';
 import 'package:breakdex/core/services/video_path_resolver.dart';
 import 'package:breakdex/shared/widgets/app_loader.dart';
 import 'package:breakdex/shared/widgets/metadata_video_picker_sheet.dart';
+import 'package:breakdex/core/design/icons.dart';
 
 /// A video picker that lists library-referenced videos first:
 /// "THIS COMBO'S MOVES" (with file info), then "RECENT TAKES",
@@ -29,7 +30,8 @@ class LibraryVideoPickerSheet extends ConsumerWidget {
   static Future<void> show(
     final BuildContext context, {
     required final String comboId,
-    required final void Function(String relativePath, String? hash) onVideoPicked,
+    required final void Function(String relativePath, String? hash)
+    onVideoPicked,
   }) {
     return showModalBottomSheet(
       context: context,
@@ -89,16 +91,17 @@ class LibraryVideoPickerSheet extends ConsumerWidget {
                   ),
                   const SizedBox(height: AppSpacing.sm),
                   ...videos.map((final pair) {
-                        final move = pair.$1;
-                        return _VideoRow(
-                          label: move.name,
-                          subtitle: '${p.basename(move.videoPath ?? '')} · ${_fileSizeMb(move.videoPath)}',
-                          onTap: () {
-                            Navigator.pop(context);
-                            onVideoPicked(move.videoPath!, move.contentHash);
-                          },
-                        );
-                      }),
+                    final move = pair.$1;
+                    return _VideoRow(
+                      label: move.name,
+                      subtitle:
+                          '${p.basename(move.videoPath ?? '')} · ${_fileSizeMb(move.videoPath)}',
+                      onTap: () {
+                        Navigator.pop(context);
+                        onVideoPicked(move.videoPath!, move.contentHash);
+                      },
+                    );
+                  }),
                   const SizedBox(height: AppSpacing.lg),
                 ],
               );
@@ -120,16 +123,18 @@ class LibraryVideoPickerSheet extends ConsumerWidget {
                     ),
                   ),
                   const SizedBox(height: AppSpacing.sm),
-                  ...entries.map((final entry) => _VideoRow(
-                        label: p.basename(entry.videoPath ?? ''),
-                        subtitle: entry.body.length > 60
-                            ? '${entry.body.substring(0, 60)}…'
-                            : entry.body,
-                        onTap: () {
-                          Navigator.pop(context);
-                          onVideoPicked(entry.videoPath!, entry.videoHash);
-                        },
-                      )),
+                  ...entries.map(
+                    (final entry) => _VideoRow(
+                      label: p.basename(entry.videoPath ?? ''),
+                      subtitle: entry.body.length > 60
+                          ? '${entry.body.substring(0, 60)}…'
+                          : entry.body,
+                      onTap: () {
+                        Navigator.pop(context);
+                        onVideoPicked(entry.videoPath!, entry.videoHash);
+                      },
+                    ),
+                  ),
                   const SizedBox(height: AppSpacing.lg),
                 ],
               );
@@ -137,7 +142,7 @@ class LibraryVideoPickerSheet extends ConsumerWidget {
           ),
           // Import from Photos (last row)
           ListTile(
-            leading: Icon(Icons.photo_library_outlined, color: colorScheme.primary),
+            leading: AppIconView(AppIcon.photo, color: colorScheme.primary),
             title: Text(
               'Import new from Photos…',
               style: AppTypography.bodyMedium.copyWith(
@@ -153,7 +158,9 @@ class LibraryVideoPickerSheet extends ConsumerWidget {
               }
             },
           ),
-          SizedBox(height: MediaQuery.of(context).padding.bottom + AppSpacing.md),
+          SizedBox(
+            height: MediaQuery.of(context).padding.bottom + AppSpacing.md,
+          ),
         ],
       ),
     );
@@ -177,7 +184,7 @@ class _VideoRow extends StatelessWidget {
 
     return ListTile(
       dense: true,
-      leading: Icon(Icons.play_circle_outline, color: colorScheme.primary, size: 20),
+      leading: AppIconView(AppIcon.play, color: colorScheme.primary, size: 20),
       title: Text(
         label,
         style: AppTypography.bodyMedium.copyWith(
@@ -212,11 +219,13 @@ String _fileSizeMb(final String? relativePath) {
 // -- Providers --
 
 final _comboMoveVideosProvider =
-    FutureProvider.family<List<(Move, int)>, String>((final ref, final comboId) {
-  return ref.watch(combosDaoProvider).getComboMoveVideos(comboId);
-});
+    FutureProvider.family<List<(Move, int)>, String>((
+      final ref,
+      final comboId,
+    ) {
+      return ref.watch(combosDaoProvider).getComboMoveVideos(comboId);
+    });
 
-final _recentTakesProvider =
-    StreamProvider<List<ComboNoteEntry>>((final ref) {
+final _recentTakesProvider = StreamProvider<List<ComboNoteEntry>>((final ref) {
   return ref.watch(comboNoteEntriesDaoProvider).watchRecentTakeRefs(limit: 5);
 });

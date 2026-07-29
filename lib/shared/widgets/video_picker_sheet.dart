@@ -8,6 +8,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:breakdex/core/design/spacing.dart';
 import 'package:breakdex/core/design/typography.dart';
+import 'package:breakdex/core/design/icons.dart';
 import 'package:breakdex/core/services/video_service.dart';
 import 'package:breakdex/core/utils/loading_state_machine.dart';
 import 'package:breakdex/shared/widgets/app_loader.dart';
@@ -127,7 +128,9 @@ class _VideoPickerSheetState extends State<VideoPickerSheet> {
       );
     } on Object catch (e) {
       if (mounted) {
-        _loadingController.send(LoadingEvent.fail(_describeError(e), retryable: true));
+        _loadingController.send(
+          LoadingEvent.fail(_describeError(e), retryable: true),
+        );
       }
     }
   }
@@ -154,7 +157,9 @@ class _VideoPickerSheetState extends State<VideoPickerSheet> {
       );
     } on Object catch (e) {
       if (mounted) {
-        _loadingController.send(LoadingEvent.fail(_describeError(e), retryable: true));
+        _loadingController.send(
+          LoadingEvent.fail(_describeError(e), retryable: true),
+        );
       }
     }
   }
@@ -178,7 +183,9 @@ class _VideoPickerSheetState extends State<VideoPickerSheet> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  widget.previousVideoName != null ? 'Re-pick Video' : 'Add Video',
+                  widget.previousVideoName != null
+                      ? 'Re-pick Video'
+                      : 'Add Video',
                   style: AppTypography.titleMedium.copyWith(
                     color: colorScheme.onSurface,
                   ),
@@ -196,21 +203,21 @@ class _VideoPickerSheetState extends State<VideoPickerSheet> {
                   const SizedBox(height: AppSpacing.md),
                 ],
                 _SourceTile(
-                  icon: Icons.photo_library,
+                  icon: AppIcon.photo.resolve(context),
                   label: 'Photo Library',
                   subtitle: 'Includes iCloud Photos',
                   onTap: isLoading || !canImport ? null : _pickFromPhotos,
                 ),
                 const SizedBox(height: AppSpacing.sm),
                 _SourceTile(
-                  icon: Icons.folder,
+                  icon: AppIcon.folder.resolve(context),
                   label: 'Files',
                   subtitle: 'iCloud Drive, Dropbox, local files',
                   onTap: isLoading || !canImport ? null : _pickFromFiles,
                 ),
                 const SizedBox(height: AppSpacing.sm),
                 _SourceTile(
-                  icon: Icons.videocam,
+                  icon: AppIcon.video.resolve(context),
                   label: 'Camera',
                   subtitle: 'Record a new video',
                   onTap: isLoading || !canImport ? null : _recordVideo,
@@ -229,10 +236,8 @@ class _VideoPickerSheetState extends State<VideoPickerSheet> {
     return _loadState.map(
       idle: (_) => const SizedBox.shrink(),
       ready: (_) => const SizedBox.shrink(),
-      loading: (_) => _LoadingOverlayContent(
-        statusText: 'Preparing...',
-        onCancel: _cancel,
-      ),
+      loading: (_) =>
+          _LoadingOverlayContent(statusText: 'Preparing...', onCancel: _cancel),
       downloading: (final s) => _LoadingOverlayContent(
         statusText: 'Importing...',
         progress: s.progress,
@@ -273,7 +278,9 @@ class _LoadingOverlayContent extends StatelessWidget {
       child: Container(
         decoration: const BoxDecoration(
           color: Colors.black54,
-          borderRadius: BorderRadius.vertical(top: Radius.circular(AppRadius.lg)),
+          borderRadius: BorderRadius.vertical(
+            top: Radius.circular(AppRadius.lg),
+          ),
         ),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -329,13 +336,15 @@ class _ErrorOverlayContent extends StatelessWidget {
       child: Container(
         decoration: const BoxDecoration(
           color: Colors.black87,
-          borderRadius: BorderRadius.vertical(top: Radius.circular(AppRadius.lg)),
+          borderRadius: BorderRadius.vertical(
+            top: Radius.circular(AppRadius.lg),
+          ),
         ),
         padding: const EdgeInsets.all(AppSpacing.xl),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Icon(Icons.error_outline_rounded, color: Colors.redAccent, size: 48),
+            const AppIconView(AppIcon.error, color: Colors.redAccent, size: 48),
             const SizedBox(height: AppSpacing.md),
             Text(
               message,
@@ -354,7 +363,10 @@ class _ErrorOverlayContent extends StatelessWidget {
               ),
             TextButton(
               onPressed: onCancel,
-              child: const Text('Back', style: TextStyle(color: Colors.white70)),
+              child: const Text(
+                'Back',
+                style: TextStyle(color: Colors.white70),
+              ),
             ),
           ],
         ),
@@ -381,7 +393,8 @@ class _GhostCard extends StatelessWidget {
       child: Row(
         children: [
           Container(
-            width: 48, height: 48,
+            width: 48,
+            height: 48,
             decoration: BoxDecoration(
               color: colorScheme.surfaceContainerHighest,
               borderRadius: BorderRadius.circular(AppRadius.xxs),
@@ -389,20 +402,32 @@ class _GhostCard extends StatelessWidget {
             clipBehavior: Clip.antiAlias,
             child: thumbnailPath != null
                 ? fileImage(thumbnailPath!, fit: BoxFit.cover)
-                : const Icon(Icons.movie, size: 20),
+                : const AppIconView(AppIcon.video, size: 20),
           ),
           const SizedBox(width: AppSpacing.md),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text('CURRENT SELECTION', style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, letterSpacing: 1)),
+                const Text(
+                  'CURRENT SELECTION',
+                  style: TextStyle(
+                    fontSize: 10,
+                    fontWeight: FontWeight.bold,
+                    letterSpacing: 1,
+                  ),
+                ),
                 const SizedBox(height: 4),
-                Text(videoName, style: AppTypography.bodySmall, overflow: TextOverflow.ellipsis, maxLines: 1),
+                Text(
+                  videoName,
+                  style: AppTypography.bodySmall,
+                  overflow: TextOverflow.ellipsis,
+                  maxLines: 1,
+                ),
               ],
             ),
           ),
-          Icon(Icons.history, color: colorScheme.secondary, size: 18),
+          AppIconView(AppIcon.schedule, color: colorScheme.secondary, size: 18),
         ],
       ),
     );
@@ -429,13 +454,15 @@ class _WebUnavailableNotice extends StatelessWidget {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(Icons.info_outline_rounded, size: 20, color: colorScheme.secondary),
+          AppIconView(AppIcon.info, size: 20, color: colorScheme.secondary),
           const SizedBox(width: AppSpacing.md),
           Expanded(
             child: Text(
               "Video import isn't available on web yet — add videos from the "
               'mobile app. Web import is coming soon.',
-              style: AppTypography.bodySmall.copyWith(color: colorScheme.secondary),
+              style: AppTypography.bodySmall.copyWith(
+                color: colorScheme.secondary,
+              ),
             ),
           ),
         ],
@@ -482,11 +509,16 @@ class _SourceTile extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(label, style: AppTypography.titleSmall),
-                    Text(subtitle, style: AppTypography.bodySmall.copyWith(color: colorScheme.secondary)),
+                    Text(
+                      subtitle,
+                      style: AppTypography.bodySmall.copyWith(
+                        color: colorScheme.secondary,
+                      ),
+                    ),
                   ],
                 ),
               ),
-              Icon(Icons.chevron_right, color: colorScheme.outline),
+              AppIconView(AppIcon.forward, color: colorScheme.outline),
             ],
           ),
         ),

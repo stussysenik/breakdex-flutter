@@ -11,6 +11,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:uuid/uuid.dart';
 
 import 'package:breakdex/core/database/database.dart';
+import 'package:breakdex/core/design/icons.dart';
 import 'package:breakdex/core/design/layout.dart';
 import 'package:breakdex/core/design/spacing.dart';
 import 'package:breakdex/shared/widgets/app_screen.dart';
@@ -105,7 +106,7 @@ class _LabScreenState extends ConsumerState<LabScreen> {
                 child: FloatingActionButton(
                   onPressed: _showCreateLabSheet,
                   backgroundColor: colorScheme.primary,
-                  child: const Icon(Icons.add, color: Colors.white),
+                  child: const AppIconView(AppIcon.add, color: Colors.white),
                 ),
               )
               .animate()
@@ -145,21 +146,21 @@ class _LabScreenState extends ConsumerState<LabScreen> {
 
         // 3-segment toggle: Projects | Board | Sets
         AppSegmentedControl<LabViewMode>(
-          items: const [
+          items: [
             AppSegmentedControlItem(
               value: LabViewMode.projects,
               label: 'Projects',
-              icon: Icons.trip_origin,
+              icon: AppIcon.timeline.resolve(context),
             ),
             AppSegmentedControlItem(
               value: LabViewMode.board,
               label: 'Board',
-              icon: Icons.grid_view_rounded,
+              icon: AppIcon.grid.resolve(context),
             ),
             AppSegmentedControlItem(
               value: LabViewMode.sets,
               label: 'Sets',
-              icon: Icons.playlist_play_rounded,
+              icon: AppIcon.combo.resolve(context),
             ),
           ],
           selectedValue: viewMode,
@@ -181,7 +182,7 @@ class _LabScreenState extends ConsumerState<LabScreen> {
                   controller: _quickLogController,
                   decoration: const InputDecoration(
                     hintText: 'Quick log...',
-                    prefixIcon: Icon(Icons.edit_note_rounded),
+                    prefixIcon: AppIconView(AppIcon.edit),
                   ),
                   textInputAction: TextInputAction.send,
                   onSubmitted: (_) => _submitQuickLog(),
@@ -194,7 +195,7 @@ class _LabScreenState extends ConsumerState<LabScreen> {
               button: true,
               child: IconButton.filled(
                 onPressed: _submitQuickLog,
-                icon: const Icon(Icons.add, color: Colors.white),
+                icon: const AppIconView(AppIcon.add, color: Colors.white),
                 style: IconButton.styleFrom(
                   backgroundColor: colorScheme.primary,
                 ),
@@ -359,14 +360,14 @@ class _CreateLabSheetState extends State<_CreateLabSheet> {
             children: [
               _TypeChip(
                 label: 'Project',
-                icon: Icons.science_outlined,
+                icon: AppIcon.lab.resolve(context),
                 selected: _selectedType == 'project',
                 onTap: () => setState(() => _selectedType = 'project'),
               ),
               const SizedBox(width: AppSpacing.sm),
               _TypeChip(
                 label: 'Set',
-                icon: Icons.playlist_play_rounded,
+                icon: AppIcon.combo.resolve(context),
                 selected: _selectedType == 'set',
                 onTap: () => setState(() => _selectedType = 'set'),
               ),

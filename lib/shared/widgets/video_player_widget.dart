@@ -12,6 +12,7 @@ import 'package:video_player/video_player.dart';
 import 'package:breakdex/core/design/colors.dart';
 import 'package:breakdex/core/design/spacing.dart';
 import 'package:breakdex/core/design/typography.dart';
+import 'package:breakdex/core/design/icons.dart';
 import 'package:breakdex/core/navigation/app_route_observer.dart';
 import 'package:breakdex/core/services/media_playback_coordinator.dart';
 import 'package:breakdex/core/services/settings_service.dart';
@@ -198,7 +199,8 @@ class _VideoPlayerWidgetState extends ConsumerState<VideoPlayerWidget>
         unawaited(_controller.setLooping(widget.looping));
       }
       if (oldWidget.muted != widget.muted) {
-        final effectiveMute = widget.muted || ref.read(quietModeEnabledProvider);
+        final effectiveMute =
+            widget.muted || ref.read(quietModeEnabledProvider);
         unawaited(_controller.setVolume(effectiveMute ? 0.0 : 1.0));
         _isMuted = effectiveMute;
       }
@@ -221,41 +223,48 @@ class _VideoPlayerWidgetState extends ConsumerState<VideoPlayerWidget>
     final quietMode = ref.read(quietModeEnabledProvider);
 
     final options = VideoPlayerOptions(mixWithOthers: quietMode);
-    _controller = (widget.videoUrl != null
-        ? networkVideoController(widget.videoUrl!, videoPlayerOptions: options)
-        : fileVideoController(widget.videoPath!, videoPlayerOptions: options))
-      ..setLooping(widget.looping)
-      ..initialize()
-          .timeout(
-            const Duration(seconds: 10),
-            onTimeout: () => throw TimeoutException('Video init timed out'),
-          )
-          .then((_) async {
-            if (mounted) {
-              final effectiveMute = widget.muted || quietMode;
-              if (effectiveMute) await _controller.setVolume(0.0);
-              if (widget.playbackSpeed != 1.0) {
-                await _controller.setPlaybackSpeed(widget.playbackSpeed);
-              }
-              if (resumePosition != null) {
-                final duration = _controller.value.duration;
-                await _controller.seekTo(
-                  resumePosition > duration ? duration : resumePosition,
-                );
-              }
-              if ((resumePlaying || (allowAutoPlay && widget.autoPlay)) &&
-                  _tickerModeEnabled) {
-                MediaPlaybackCoordinator.shared.claimPrimary(_playbackId);
-                await _controller.play();
-                widget.onPlayStateChanged?.call(true);
-                scheduleHide();
-              }
-              setState(() => _initialized = true);
-            }
-          })
-          .catchError((_) {
-            if (mounted) setState(() => _hasError = true);
-          });
+    _controller =
+        (widget.videoUrl != null
+              ? networkVideoController(
+                  widget.videoUrl!,
+                  videoPlayerOptions: options,
+                )
+              : fileVideoController(
+                  widget.videoPath!,
+                  videoPlayerOptions: options,
+                ))
+          ..setLooping(widget.looping)
+          ..initialize()
+              .timeout(
+                const Duration(seconds: 10),
+                onTimeout: () => throw TimeoutException('Video init timed out'),
+              )
+              .then((_) async {
+                if (mounted) {
+                  final effectiveMute = widget.muted || quietMode;
+                  if (effectiveMute) await _controller.setVolume(0.0);
+                  if (widget.playbackSpeed != 1.0) {
+                    await _controller.setPlaybackSpeed(widget.playbackSpeed);
+                  }
+                  if (resumePosition != null) {
+                    final duration = _controller.value.duration;
+                    await _controller.seekTo(
+                      resumePosition > duration ? duration : resumePosition,
+                    );
+                  }
+                  if ((resumePlaying || (allowAutoPlay && widget.autoPlay)) &&
+                      _tickerModeEnabled) {
+                    MediaPlaybackCoordinator.shared.claimPrimary(_playbackId);
+                    await _controller.play();
+                    widget.onPlayStateChanged?.call(true);
+                    scheduleHide();
+                  }
+                  setState(() => _initialized = true);
+                }
+              })
+              .catchError((_) {
+                if (mounted) setState(() => _hasError = true);
+              });
   }
 
   Future<void> _loadPoster() async {
@@ -356,7 +365,11 @@ class _VideoPlayerWidgetState extends ConsumerState<VideoPlayerWidget>
         color: AppColors.darkBg,
         child: _hasError
             ? const Center(
-                child: Icon(Icons.error_outline, color: Colors.white54, size: 48),
+                child: AppIconView(
+                  AppIcon.error,
+                  color: Colors.white54,
+                  size: 48,
+                ),
               )
             : !_initialized
             ? Stack(
@@ -411,10 +424,10 @@ class _VideoPlayerWidgetState extends ConsumerState<VideoPlayerWidget>
                           child: AnimatedOpacity(
                             opacity: _showControls ? 0.0 : 0.4,
                             duration: AppMotion.moderate01,
-                            child: Icon(
+                            child: AppIconView(
                               _controller.value.isPlaying
-                                  ? Icons.pause_circle_filled_rounded
-                                  : Icons.play_circle_filled_rounded,
+                                  ? AppIcon.pause
+                                  : AppIcon.play,
                               color: Colors.white,
                               size: 56,
                             ),
@@ -437,10 +450,8 @@ class _VideoPlayerWidgetState extends ConsumerState<VideoPlayerWidget>
                               child: AnimatedOpacity(
                                 opacity: _showControls ? 0.9 : 0.5,
                                 duration: AppMotion.moderate01,
-                                child: Icon(
-                                  _isMuted
-                                      ? Icons.volume_off_rounded
-                                      : Icons.volume_up_rounded,
+                                child: AppIconView(
+                                  _isMuted ? AppIcon.volumeOff : AppIcon.volume,
                                   color: Colors.white,
                                   size: 22,
                                 ),
@@ -456,10 +467,10 @@ class _VideoPlayerWidgetState extends ConsumerState<VideoPlayerWidget>
                           child: AnimatedOpacity(
                             opacity: _controller.value.isPlaying ? 0.0 : 0.6,
                             duration: AppMotion.moderate01,
-                            child: Icon(
+                            child: AppIconView(
                               _controller.value.isPlaying
-                                  ? Icons.pause_circle_filled_rounded
-                                  : Icons.play_circle_filled_rounded,
+                                  ? AppIcon.pause
+                                  : AppIcon.play,
                               color: Colors.white,
                               size: 72,
                             ),
@@ -517,21 +528,21 @@ class _VideoControls extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               _TransportButton(
-                icon: Icons.replay_5_rounded,
+                icon: AppIcon.replay.resolve(context),
                 onTap: onSkipBack,
                 size: isFullscreen ? 40 : 32,
               ),
               const SizedBox(width: AppSpacing.lg),
               _TransportButton(
                 icon: isPlaying
-                    ? Icons.pause_circle_filled_rounded
-                    : Icons.play_circle_filled_rounded,
+                    ? AppIcon.pause.resolve(context)
+                    : AppIcon.play.resolve(context),
                 onTap: onTogglePlay,
                 size: isFullscreen ? 56 : 48,
               ),
               const SizedBox(width: AppSpacing.lg),
               _TransportButton(
-                icon: Icons.forward_5_rounded,
+                icon: AppIcon.skip.resolve(context),
                 onTap: onSkipForward,
                 size: isFullscreen ? 40 : 32,
               ),
@@ -583,7 +594,7 @@ class _SeekBarState extends State<_SeekBar> {
       if (widget.onEdit != null) ...[
         const SizedBox(width: 4),
         _TransportButton(
-          icon: Icons.tune_rounded,
+          icon: AppIcon.settings.resolve(context),
           onTap: widget.onEdit!,
           size: 24,
         ),
@@ -591,8 +602,8 @@ class _SeekBarState extends State<_SeekBar> {
       const SizedBox(width: 4),
       _TransportButton(
         icon: widget.isFullscreen
-            ? Icons.fullscreen_exit_rounded
-            : Icons.fullscreen_rounded,
+            ? AppIcon.fullscreenExit.resolve(context)
+            : AppIcon.fullscreen.resolve(context),
         onTap: widget.isFullscreen
             ? (widget.onExitFullscreen ?? () {})
             : (widget.onFullscreen ?? () {}),
@@ -610,10 +621,15 @@ class _SeekBarState extends State<_SeekBar> {
           final duration = value.duration;
           final position = value.position;
           final progress = duration.inMilliseconds > 0
-              ? (position.inMilliseconds / duration.inMilliseconds).clamp(0.0, 1.0)
+              ? (position.inMilliseconds / duration.inMilliseconds).clamp(
+                  0.0,
+                  1.0,
+                )
               : 0.0;
           final displayPosition = _dragging
-              ? Duration(milliseconds: (_dragValue * duration.inMilliseconds).round())
+              ? Duration(
+                  milliseconds: (_dragValue * duration.inMilliseconds).round(),
+                )
               : position;
 
           return Row(
@@ -622,15 +638,22 @@ class _SeekBarState extends State<_SeekBar> {
                 width: 38,
                 child: Text(
                   _fmt(displayPosition),
-                  style: AppTypography.caption.copyWith(color: Colors.white70, fontSize: 11),
+                  style: AppTypography.caption.copyWith(
+                    color: Colors.white70,
+                    fontSize: 11,
+                  ),
                 ),
               ),
               Expanded(
                 child: SliderTheme(
                   data: SliderThemeData(
                     trackHeight: 3,
-                    thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 6),
-                    overlayShape: const RoundSliderOverlayShape(overlayRadius: 14),
+                    thumbShape: const RoundSliderThumbShape(
+                      enabledThumbRadius: 6,
+                    ),
+                    overlayShape: const RoundSliderOverlayShape(
+                      overlayRadius: 14,
+                    ),
                     activeTrackColor: colorScheme.primary,
                     inactiveTrackColor: Colors.white24,
                     thumbColor: colorScheme.primary,
@@ -645,9 +668,13 @@ class _SeekBarState extends State<_SeekBar> {
                     onChanged: (final v) => setState(() => _dragValue = v),
                     onChangeEnd: (final v) {
                       setState(() => _dragging = false);
-                      unawaited(widget.controller.seekTo(
-                        Duration(milliseconds: (v * duration.inMilliseconds).round()),
-                      ));
+                      unawaited(
+                        widget.controller.seekTo(
+                          Duration(
+                            milliseconds: (v * duration.inMilliseconds).round(),
+                          ),
+                        ),
+                      );
                     },
                   ),
                 ),
@@ -656,7 +683,10 @@ class _SeekBarState extends State<_SeekBar> {
                 width: 38,
                 child: Text(
                   _fmt(duration),
-                  style: AppTypography.caption.copyWith(color: Colors.white70, fontSize: 11),
+                  style: AppTypography.caption.copyWith(
+                    color: Colors.white70,
+                    fontSize: 11,
+                  ),
                   textAlign: TextAlign.end,
                 ),
               ),
@@ -676,7 +706,11 @@ class _SeekBarState extends State<_SeekBar> {
 }
 
 class _TransportButton extends StatelessWidget {
-  const _TransportButton({required this.icon, required this.onTap, this.size = 32});
+  const _TransportButton({
+    required this.icon,
+    required this.onTap,
+    this.size = 32,
+  });
   final IconData icon;
   final VoidCallback onTap;
   final double size;
@@ -729,12 +763,16 @@ class _FullscreenVideoPlayerState extends State<_FullscreenVideoPlayer>
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
-    unawaited(SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky));
-    unawaited(SystemChrome.setPreferredOrientations([
-      DeviceOrientation.portraitUp,
-      DeviceOrientation.landscapeLeft,
-      DeviceOrientation.landscapeRight,
-    ]));
+    unawaited(
+      SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky),
+    );
+    unawaited(
+      SystemChrome.setPreferredOrientations([
+        DeviceOrientation.portraitUp,
+        DeviceOrientation.landscapeLeft,
+        DeviceOrientation.landscapeRight,
+      ]),
+    );
     if (widget.controller.value.isPlaying) scheduleHide();
   }
 
@@ -745,7 +783,8 @@ class _FullscreenVideoPlayerState extends State<_FullscreenVideoPlayer>
     if (_route != nextRoute) {
       if (_route is ModalRoute<dynamic>) appRouteObserver.unsubscribe(this);
       _route = nextRoute;
-      if (nextRoute is ModalRoute<dynamic>) appRouteObserver.subscribe(this, nextRoute);
+      if (nextRoute is ModalRoute<dynamic>)
+        appRouteObserver.subscribe(this, nextRoute);
     }
   }
 
@@ -761,9 +800,12 @@ class _FullscreenVideoPlayerState extends State<_FullscreenVideoPlayer>
     cancelHideTimer();
     WidgetsBinding.instance.removeObserver(this);
     if (_route is ModalRoute<dynamic>) appRouteObserver.unsubscribe(this);
-    if (!widget.controller.value.isPlaying) MediaPlaybackCoordinator.shared.release(widget.playbackId);
+    if (!widget.controller.value.isPlaying)
+      MediaPlaybackCoordinator.shared.release(widget.playbackId);
     unawaited(SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge));
-    unawaited(SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]));
+    unawaited(
+      SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]),
+    );
     super.dispose();
   }
 
@@ -823,7 +865,11 @@ class _FullscreenVideoPlayerState extends State<_FullscreenVideoPlayer>
                       color: Colors.black.withValues(alpha: 0.4),
                       shape: BoxShape.circle,
                     ),
-                    child: const Icon(Icons.close_rounded, color: Colors.white, size: 24),
+                    child: const AppIconView(
+                      AppIcon.close,
+                      color: Colors.white,
+                      size: 24,
+                    ),
                   ),
                 ),
               ),
@@ -836,9 +882,13 @@ class _FullscreenVideoPlayerState extends State<_FullscreenVideoPlayer>
 }
 
 class VideoPlaceholder extends StatelessWidget {
-  const VideoPlaceholder({super.key, this.height = 300, this.icon = Icons.videocam_outlined});
+  const VideoPlaceholder({
+    super.key,
+    this.height = 300,
+    this.icon = AppIcon.video,
+  });
   final double height;
-  final IconData icon;
+  final AppIcon icon;
 
   @override
   Widget build(final BuildContext context) {
@@ -846,8 +896,15 @@ class VideoPlaceholder extends StatelessWidget {
     return Container(
       height: height,
       width: double.infinity,
-      decoration: BoxDecoration(color: fill, borderRadius: BorderRadius.circular(AppRadius.lg)),
-      child: Icon(icon, color: Theme.of(context).colorScheme.secondary, size: 48),
+      decoration: BoxDecoration(
+        color: fill,
+        borderRadius: BorderRadius.circular(AppRadius.lg),
+      ),
+      child: AppIconView(
+        icon,
+        color: Theme.of(context).colorScheme.secondary,
+        size: 48,
+      ),
     );
   }
 }
@@ -920,7 +977,7 @@ class _RobustVideoPlayerState extends ConsumerState<RobustVideoPlayer> {
       DiagnosticsLog.info(
         'VideoWeb',
         'degrading to "coming to web" card — no videoUrl supplied; '
-        'videoPath=${widget.videoPath} original=${widget.originalVideoName}',
+            'videoPath=${widget.videoPath} original=${widget.originalVideoName}',
       );
     }
   }
@@ -960,9 +1017,13 @@ class _RobustVideoPlayerState extends ConsumerState<RobustVideoPlayer> {
       case VideoFileStatus.ready:
         _loadingController.send(LoadingEvent.complete(null));
       case VideoFileStatus.missing:
-        _loadingController.send(LoadingEvent.fail('Video not found', retryable: false));
+        _loadingController.send(
+          LoadingEvent.fail('Video not found', retryable: false),
+        );
       case VideoFileStatus.error:
-        _loadingController.send(LoadingEvent.fail('Something went wrong', retryable: true));
+        _loadingController.send(
+          LoadingEvent.fail('Something went wrong', retryable: true),
+        );
     }
   }
 
@@ -997,7 +1058,7 @@ class _RobustVideoPlayerState extends ConsumerState<RobustVideoPlayer> {
     // Phase M (owner Drive session); until then local-file-only web = this card.
     if (!supportsLocalVideoPlayback) {
       return _buildStatusCard(
-        icon: Icons.movie_outlined,
+        icon: AppIcon.video,
         message: 'Video playback is coming to web',
         colorScheme: colorScheme,
       );
@@ -1021,7 +1082,7 @@ class _RobustVideoPlayerState extends ConsumerState<RobustVideoPlayer> {
         onPlayStateChanged: widget.onPlayStateChanged,
       ).animate().fadeIn(duration: 300.ms),
       timeout: (final t) => _buildStatusCard(
-        icon: Icons.cloud_off,
+        icon: AppIcon.cloud,
         message: 'Connection timed out',
         actionLabel: 'Tap to retry',
         onAction: () => _checkFile(isRetry: true),
@@ -1029,7 +1090,7 @@ class _RobustVideoPlayerState extends ConsumerState<RobustVideoPlayer> {
       ),
       error: (final e) => e.message == 'Video not found'
           ? _buildStatusCard(
-              icon: Icons.cloud_off,
+              icon: AppIcon.cloud,
               message: 'Video not found',
               actionLabel: widget.onRepick != null ? 'Re-pick Video' : null,
               onAction: widget.onRepick,
@@ -1037,14 +1098,14 @@ class _RobustVideoPlayerState extends ConsumerState<RobustVideoPlayer> {
               showGhost: true,
             )
           : _buildStatusCard(
-              icon: Icons.error_outline,
+              icon: AppIcon.error,
               message: e.message,
               actionLabel: e.retryable ? 'Tap to retry' : null,
               onAction: e.retryable ? () => _checkFile(isRetry: true) : null,
               colorScheme: colorScheme,
             ),
       retrying: (_) => _buildStatusCard(
-        icon: Icons.refresh,
+        icon: AppIcon.refresh,
         message: 'Retrying...',
         showSpinner: true,
         colorScheme: colorScheme,
@@ -1058,7 +1119,8 @@ class _RobustVideoPlayerState extends ConsumerState<RobustVideoPlayer> {
           width: double.infinity,
           decoration: BoxDecoration(
             color: Theme.of(context).colorScheme.surfaceContainerHighest,
-            borderRadius: widget.borderRadius ?? BorderRadius.circular(AppRadius.lg),
+            borderRadius:
+                widget.borderRadius ?? BorderRadius.circular(AppRadius.lg),
           ),
         )
         .animate(onPlay: (final c) => c.repeat())
@@ -1066,7 +1128,7 @@ class _RobustVideoPlayerState extends ConsumerState<RobustVideoPlayer> {
   }
 
   Widget _buildStatusCard({
-    required final IconData icon,
+    required final AppIcon icon,
     required final String message,
     final String? actionLabel,
     final VoidCallback? onAction,
@@ -1094,7 +1156,9 @@ class _RobustVideoPlayerState extends ConsumerState<RobustVideoPlayer> {
             Container(
               decoration: BoxDecoration(
                 color: showGhost && widget.ghostThumbnailPath != null
-                    ? colorScheme.surfaceContainerHighest.withValues(alpha: 0.85)
+                    ? colorScheme.surfaceContainerHighest.withValues(
+                        alpha: 0.85,
+                      )
                     : colorScheme.surfaceContainerHighest,
               ),
               child: Column(
@@ -1103,13 +1167,21 @@ class _RobustVideoPlayerState extends ConsumerState<RobustVideoPlayer> {
                   if (showSpinner)
                     AppLoader(color: Theme.of(context).colorScheme.primary)
                   else
-                    Icon(icon, color: colorScheme.secondary, size: 48),
+                    AppIconView(icon, color: colorScheme.secondary, size: 48),
                   const SizedBox(height: AppSpacing.sm),
-                  Text(message, style: AppTypography.bodyMedium.copyWith(color: colorScheme.secondary)),
-                  if (widget.originalVideoName != null && message == 'Video not found') ...[
+                  Text(
+                    message,
+                    style: AppTypography.bodyMedium.copyWith(
+                      color: colorScheme.secondary,
+                    ),
+                  ),
+                  if (widget.originalVideoName != null &&
+                      message == 'Video not found') ...[
                     const SizedBox(height: 4),
                     Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: AppSpacing.lg,
+                      ),
                       child: Text(
                         widget.originalVideoName!,
                         style: AppTypography.caption.copyWith(

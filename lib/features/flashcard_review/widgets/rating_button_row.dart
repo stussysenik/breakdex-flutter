@@ -12,6 +12,7 @@ import 'package:breakdex/core/models/learning_state.dart';
 import 'package:breakdex/core/providers.dart';
 import 'package:breakdex/core/services/settings_service.dart';
 import 'package:breakdex/l10n/gen/app_localizations.dart';
+import 'package:breakdex/core/design/icons.dart';
 
 /// The AGAIN / HARD / GOOD / EASY rating buttons styled as subtle tinted pills.
 ///
@@ -42,21 +43,23 @@ class RatingButtonRow extends ConsumerWidget {
 
   /// Distinct icon per rating for color-blind accessibility.
   /// Shape + color = double encoding (WCAG 1.4.1 Use of Color).
-  static IconData iconForRating(final ReviewRating rating) => switch (rating) {
-        ReviewRating.again => Icons.close_rounded,    // X shape — "wrong"
-        ReviewRating.hard  => Icons.trending_flat_rounded, // Wave — "struggled"
-        ReviewRating.good  => Icons.check_rounded,    // Checkmark — "got it"
-        ReviewRating.easy  => Icons.star_rounded,     // Star — "effortless"
-      };
+  static AppIcon iconForRating(final ReviewRating rating) => switch (rating) {
+    ReviewRating.again => AppIcon.close, // X shape — "wrong"
+    ReviewRating.hard => AppIcon.forward, // Wave — "struggled"
+    ReviewRating.good => AppIcon.check, // Checkmark — "got it"
+    ReviewRating.easy => AppIcon.star, // Star — "effortless"
+  };
 
   /// Map from ReviewRating to the matching configurable color.
-  static Color _colorForRating(final ReviewRating rating, final RatingColors rc) =>
-      switch (rating) {
-        ReviewRating.again => rc.again,
-        ReviewRating.hard  => rc.hard,
-        ReviewRating.good  => rc.good,
-        ReviewRating.easy  => rc.easy,
-      };
+  static Color _colorForRating(
+    final ReviewRating rating,
+    final RatingColors rc,
+  ) => switch (rating) {
+    ReviewRating.again => rc.again,
+    ReviewRating.hard => rc.hard,
+    ReviewRating.good => rc.good,
+    ReviewRating.easy => rc.easy,
+  };
 
   @override
   Widget build(final BuildContext context, final WidgetRef ref) {
@@ -79,8 +82,7 @@ class RatingButtonRow extends ConsumerWidget {
     return Row(
       children: [
         for (final rating in ReviewRating.values) ...[
-          if (rating != ReviewRating.values.first)
-            const SizedBox(width: 12),
+          if (rating != ReviewRating.values.first) const SizedBox(width: 12),
           Expanded(
             child: compact
                 ? _CompactRatingButton(
@@ -151,7 +153,7 @@ class _CompactRatingButton extends StatelessWidget {
   });
 
   final ReviewRating rating;
-  final IconData icon;
+  final AppIcon icon;
   final Color color;
   final void Function(ReviewRating rating) onRate;
   final String intervalLabel;
@@ -184,7 +186,7 @@ class _CompactRatingButton extends StatelessWidget {
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Icon(icon, size: 24, color: color),
+                AppIconView(icon, size: 24, color: color),
                 const SizedBox(height: 4),
                 Text(
                   rating.displayText,
@@ -226,7 +228,7 @@ class _TintedPillButton extends StatelessWidget {
   });
 
   final ReviewRating rating;
-  final IconData icon;
+  final AppIcon icon;
   final Color color;
   final void Function(ReviewRating rating) onRate;
 
@@ -249,7 +251,7 @@ class _TintedPillButton extends StatelessWidget {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Icon(icon, size: 18, color: color),
+                AppIconView(icon, size: 18, color: color),
                 const SizedBox(width: 4),
                 Text(
                   rating.displayText,

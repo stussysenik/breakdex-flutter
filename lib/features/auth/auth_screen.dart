@@ -10,6 +10,7 @@ import 'package:breakdex/core/design/spacing.dart';
 import 'package:breakdex/core/design/typography.dart';
 import 'package:breakdex/core/providers.dart';
 import 'package:breakdex/shared/widgets/primary_button.dart';
+import 'package:breakdex/core/design/icons.dart';
 
 class AuthScreen extends ConsumerStatefulWidget {
   const AuthScreen({super.key});
@@ -83,22 +84,27 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
               children: [
                 GestureDetector(
                   onTap: () => context.pop(),
-                  child: Icon(Icons.arrow_back,
-                      color: colorScheme.onSurface, size: 24),
+                  child: AppIconView(
+                    AppIcon.back,
+                    color: colorScheme.onSurface,
+                    size: 24,
+                  ),
                 ),
               ],
             ),
             const SizedBox(height: AppSpacing.xl),
             Text(
               _isLogin ? 'Sign In' : 'Create Account',
-              style: AppTypography.titleLarge
-                  .copyWith(color: colorScheme.onSurface),
+              style: AppTypography.titleLarge.copyWith(
+                color: colorScheme.onSurface,
+              ),
             ),
             const SizedBox(height: AppSpacing.sm),
             Text(
               'Sync your moves, combos, and videos across devices.',
-              style: AppTypography.bodySmall
-                  .copyWith(color: colorScheme.secondary),
+              style: AppTypography.bodySmall.copyWith(
+                color: colorScheme.secondary,
+              ),
             ),
             const SizedBox(height: AppSpacing.xl),
             TextField(
@@ -106,12 +112,14 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
               keyboardType: TextInputType.emailAddress,
               autocorrect: false,
               textInputAction: TextInputAction.next,
-              style: AppTypography.bodyMedium
-                  .copyWith(color: colorScheme.onSurface),
+              style: AppTypography.bodyMedium.copyWith(
+                color: colorScheme.onSurface,
+              ),
               decoration: InputDecoration(
                 labelText: 'Email',
-                labelStyle: AppTypography.bodySmall
-                    .copyWith(color: colorScheme.secondary),
+                labelStyle: AppTypography.bodySmall.copyWith(
+                  color: colorScheme.secondary,
+                ),
                 filled: true,
                 fillColor: colorScheme.surfaceContainerHighest,
                 border: OutlineInputBorder(
@@ -126,12 +134,14 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
               obscureText: true,
               textInputAction: TextInputAction.done,
               onSubmitted: (_) => _submit(),
-              style: AppTypography.bodyMedium
-                  .copyWith(color: colorScheme.onSurface),
+              style: AppTypography.bodyMedium.copyWith(
+                color: colorScheme.onSurface,
+              ),
               decoration: InputDecoration(
                 labelText: 'Password',
-                labelStyle: AppTypography.bodySmall
-                    .copyWith(color: colorScheme.secondary),
+                labelStyle: AppTypography.bodySmall.copyWith(
+                  color: colorScheme.secondary,
+                ),
                 filled: true,
                 fillColor: colorScheme.surfaceContainerHighest,
                 border: OutlineInputBorder(
@@ -144,8 +154,9 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
               const SizedBox(height: AppSpacing.md),
               Text(
                 _error!,
-                style: AppTypography.bodySmall
-                    .copyWith(color: AppColors.actionAgain),
+                style: AppTypography.bodySmall.copyWith(
+                  color: AppColors.actionAgain,
+                ),
               ),
             ],
             const SizedBox(height: AppSpacing.lg),
@@ -167,8 +178,9 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
                     text: _isLogin
                         ? "Don't have an account? "
                         : 'Already have an account? ',
-                    style: AppTypography.bodySmall
-                        .copyWith(color: colorScheme.secondary),
+                    style: AppTypography.bodySmall.copyWith(
+                      color: colorScheme.secondary,
+                    ),
                     children: [
                       TextSpan(
                         text: _isLogin ? 'Sign Up' : 'Sign In',

@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:breakdex/core/utils/diagnostics.dart';
 import 'package:breakdex/core/services/boot_coordinator.dart';
 import 'package:breakdex/core/services/video_path_resolver.dart';
+import 'package:breakdex/core/design/icons.dart';
 import 'package:breakdex/core/design/spacing.dart';
 import 'package:breakdex/core/design/typography.dart';
 import 'package:breakdex/shared/widgets/app_loader.dart';
@@ -37,14 +38,18 @@ class SystemStatusScreen extends ConsumerWidget {
           const SizedBox(height: AppSpacing.xl),
           Text(
             'BOOT GATES',
-            style: AppTypography.sectionHeader.copyWith(color: colorScheme.secondary),
+            style: AppTypography.sectionHeader.copyWith(
+              color: colorScheme.secondary,
+            ),
           ),
           const SizedBox(height: AppSpacing.md),
           _GatesList(boot: boot),
           const SizedBox(height: AppSpacing.xl),
           Text(
             'STORAGE HYGIENE',
-            style: AppTypography.sectionHeader.copyWith(color: colorScheme.secondary),
+            style: AppTypography.sectionHeader.copyWith(
+              color: colorScheme.secondary,
+            ),
           ),
           const SizedBox(height: AppSpacing.md),
           const _HygieneCounters(),
@@ -52,7 +57,9 @@ class SystemStatusScreen extends ConsumerWidget {
 
           Text(
             'DIAGNOSTIC LOG',
-            style: AppTypography.sectionHeader.copyWith(color: colorScheme.secondary),
+            style: AppTypography.sectionHeader.copyWith(
+              color: colorScheme.secondary,
+            ),
           ),
           const SizedBox(height: AppSpacing.md),
           const _DiagnosticFeed(),
@@ -74,16 +81,20 @@ class _StatusHeader extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(AppSpacing.lg),
       decoration: BoxDecoration(
-        color: isHealthy ? Colors.green.withValues(alpha: 0.1) : colorScheme.surfaceContainerHighest,
+        color: isHealthy
+            ? Colors.green.withValues(alpha: 0.1)
+            : colorScheme.surfaceContainerHighest,
         borderRadius: BorderRadius.circular(AppRadius.md),
         border: Border.all(
-          color: isHealthy ? Colors.green.withValues(alpha: 0.3) : colorScheme.outline.withValues(alpha: 0.2),
+          color: isHealthy
+              ? Colors.green.withValues(alpha: 0.3)
+              : colorScheme.outline.withValues(alpha: 0.2),
         ),
       ),
       child: Row(
         children: [
-          Icon(
-            isHealthy ? Icons.check_circle_outline : Icons.pending_outlined,
+          AppIconView(
+            isHealthy ? AppIcon.success : AppIcon.empty,
             color: isHealthy ? Colors.green : colorScheme.primary,
             size: 32,
           ),
@@ -100,9 +111,9 @@ class _StatusHeader extends StatelessWidget {
                   ),
                 ),
                 Text(
-                  boot.isComplete 
-                    ? 'Started in ${DateTime.now().difference(boot.startTime).inMilliseconds}ms'
-                    : 'Clearing startup gates (${boot.completedGates.length}/${BootGate.values.length})',
+                  boot.isComplete
+                      ? 'Started in ${DateTime.now().difference(boot.startTime).inMilliseconds}ms'
+                      : 'Clearing startup gates (${boot.completedGates.length}/${BootGate.values.length})',
                   style: AppTypography.caption,
                 ),
               ],
@@ -127,22 +138,26 @@ class _GatesList extends StatelessWidget {
           padding: const EdgeInsets.only(bottom: AppSpacing.sm),
           child: Row(
             children: [
-              Icon(
-                isDone ? Icons.check_circle_rounded : Icons.radio_button_unchecked_rounded,
+              AppIconView(
+                isDone ? AppIcon.success : AppIcon.empty,
                 size: 18,
-                color: isDone ? Colors.green : Theme.of(context).colorScheme.outline,
+                color: isDone
+                    ? Colors.green
+                    : Theme.of(context).colorScheme.outline,
               ),
               const SizedBox(width: AppSpacing.md),
               Text(
                 _gateLabel(gate),
                 style: AppTypography.bodySmall.copyWith(
                   fontWeight: isDone ? FontWeight.w600 : FontWeight.w400,
-                  color: isDone ? null : Theme.of(context).colorScheme.secondary,
+                  color: isDone
+                      ? null
+                      : Theme.of(context).colorScheme.secondary,
                 ),
               ),
               const Spacer(),
               if (isDone)
-                const Icon(Icons.done_all, size: 14, color: Colors.green)
+                AppIconView(AppIcon.success, size: 14, color: Colors.green)
               else if (boot.currentTask?.contains(_gateLabel(gate)) ?? false)
                 const SizedBox(
                   width: 12,
@@ -207,9 +222,7 @@ class _DiagnosticFeedState extends State<_DiagnosticFeed> {
   }
 
   Future<void> _copy() async {
-    await Clipboard.setData(
-      ClipboardData(text: DiagnosticsLog.export()),
-    );
+    await Clipboard.setData(ClipboardData(text: DiagnosticsLog.export()));
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(content: Text('Diagnostics copied — secrets redacted')),
@@ -259,8 +272,9 @@ class _DiagnosticFeedState extends State<_DiagnosticFeed> {
             child: records.isEmpty
                 ? Text(
                     'Nothing retained yet.',
-                    style: AppTypography.caption
-                        .copyWith(color: colorScheme.secondary),
+                    style: AppTypography.caption.copyWith(
+                      color: colorScheme.secondary,
+                    ),
                   )
                 : ListView.builder(
                     reverse: true,
@@ -296,7 +310,10 @@ class _LogEntry extends StatelessWidget {
       child: Text.rich(
         TextSpan(
           children: [
-            TextSpan(text: '$time ', style: const TextStyle(color: Colors.blueGrey)),
+            TextSpan(
+              text: '$time ',
+              style: const TextStyle(color: Colors.blueGrey),
+            ),
             TextSpan(
               text: '[$tag] ',
               style: TextStyle(

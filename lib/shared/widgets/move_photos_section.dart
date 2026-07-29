@@ -14,6 +14,7 @@ import 'package:uuid/uuid.dart';
 
 import 'package:breakdex/core/design/spacing.dart';
 import 'package:breakdex/core/design/typography.dart';
+import 'package:breakdex/core/design/icons.dart';
 import 'package:breakdex/core/services/app_storage_paths.dart';
 import 'package:breakdex/shared/widgets/app_loader.dart';
 
@@ -75,12 +76,12 @@ class _MovePhotosSectionState extends State<MovePhotosSection> {
               mainAxisSize: MainAxisSize.min,
               children: [
                 ListTile(
-                  leading: const Icon(Icons.photo_library),
+                  leading: const AppIconView(AppIcon.photo),
                   title: const Text('Photo Library'),
                   onTap: () => Navigator.pop(ctx, 'gallery'),
                 ),
                 ListTile(
-                  leading: const Icon(Icons.camera_alt),
+                  leading: const AppIconView(AppIcon.camera),
                   title: const Text('Camera'),
                   onTap: () => Navigator.pop(ctx, 'camera'),
                 ),
@@ -117,9 +118,9 @@ class _MovePhotosSectionState extends State<MovePhotosSection> {
       unawaited(HapticFeedback.mediumImpact());
     } on Object catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed to add photo: $e')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Failed to add photo: $e')));
       }
     }
     if (mounted) setState(() => _loading = false);
@@ -135,21 +136,14 @@ class _MovePhotosSectionState extends State<MovePhotosSection> {
         child: Stack(
           fit: StackFit.expand,
           children: [
-            InteractiveViewer(
-              child: fileImage(
-                fullPath,
-                fit: BoxFit.contain,
-              ),
-            ),
+            InteractiveViewer(child: fileImage(fullPath, fit: BoxFit.contain)),
             Positioned(
               top: AppSpacing.lg,
               right: AppSpacing.md,
               child: IconButton(
-                icon: const Icon(Icons.close, color: Colors.white),
+                icon: const AppIconView(AppIcon.close, color: Colors.white),
                 onPressed: () => Navigator.pop(ctx),
-                style: IconButton.styleFrom(
-                  backgroundColor: Colors.black54,
-                ),
+                style: IconButton.styleFrom(backgroundColor: Colors.black54),
               ),
             ),
           ],
@@ -251,8 +245,8 @@ class _AddPhotoButton extends StatelessWidget {
             : Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Icon(
-                    Icons.add_a_photo_outlined,
+                  AppIconView(
+                    AppIcon.camera,
                     size: 28,
                     color: colorScheme.secondary,
                   ),
@@ -339,8 +333,8 @@ class _PhotoPlaceholder extends StatelessWidget {
         color: Theme.of(context).colorScheme.surfaceContainerHighest,
         borderRadius: BorderRadius.circular(AppRadius.sm),
       ),
-      child: Icon(
-        Icons.broken_image_outlined,
+      child: AppIconView(
+        AppIcon.photo,
         color: Theme.of(context).colorScheme.secondary.withValues(alpha: 0.3),
       ),
     );

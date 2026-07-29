@@ -11,6 +11,7 @@ import 'package:breakdex/features/battle/providers/battle_providers.dart';
 import 'package:breakdex/features/battle/widgets/battle_intro.dart';
 import 'package:breakdex/features/battle/widgets/timer_ring.dart';
 import 'package:breakdex/features/battle/widgets/battle_results_view.dart';
+import 'package:breakdex/core/design/icons.dart';
 
 class BattleScreen extends ConsumerWidget {
   const BattleScreen({super.key});
@@ -22,7 +23,7 @@ class BattleScreen extends ConsumerWidget {
     return Scaffold(
       appBar: AppBar(
         leading: IconButton(
-          icon: const Icon(Icons.close),
+          icon: const AppIconView(AppIcon.close),
           onPressed: () => _handleClose(context, ref, state),
         ),
         title: state.phase == BattlePhase.active
@@ -32,37 +33,39 @@ class BattleScreen extends ConsumerWidget {
       body: SafeArea(
         child: switch (state.phase) {
           BattlePhase.intro => BattleIntro(
-              selectedDifficulty: state.difficulty,
-              onSelectDifficulty: (final d) =>
-                  ref.read(battleProvider.notifier).selectDifficulty(d),
-              onStart: () => ref.read(battleProvider.notifier).start(),
-            ),
+            selectedDifficulty: state.difficulty,
+            onSelectDifficulty: (final d) =>
+                ref.read(battleProvider.notifier).selectDifficulty(d),
+            onStart: () => ref.read(battleProvider.notifier).start(),
+          ),
           BattlePhase.active => _ActiveBattle(state: state),
           BattlePhase.results => BattleResultsView(
-              state: state,
-              onPlayAgain: () {
-                ref.read(battleProvider.notifier).reset();
-              },
-              onDone: () {
-                ref.read(battleProvider.notifier).reset();
-                Navigator.of(context).pop();
-              },
-            ),
+            state: state,
+            onPlayAgain: () {
+              ref.read(battleProvider.notifier).reset();
+            },
+            onDone: () {
+              ref.read(battleProvider.notifier).reset();
+              Navigator.of(context).pop();
+            },
+          ),
         },
       ),
     );
   }
 }
 
-Future<void> _handleClose(final BuildContext context, final WidgetRef ref, final BattleState state) async {
+Future<void> _handleClose(
+  final BuildContext context,
+  final WidgetRef ref,
+  final BattleState state,
+) async {
   if (state.phase == BattlePhase.active) {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (final ctx) => AlertDialog(
         title: const Text('Forfeit battle?'),
-        content: const Text(
-          'Your current score will be lost.',
-        ),
+        content: const Text('Your current score will be lost.'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
@@ -115,9 +118,9 @@ class _ActiveBattle extends ConsumerWidget {
               child: Text(
                 '${state.streak}x Streak!',
                 style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                      color: AppColors.actionGood,
-                      fontWeight: FontWeight.w700,
-                    ),
+                  color: AppColors.actionGood,
+                  fontWeight: FontWeight.w700,
+                ),
               ),
             ),
           // Move card
@@ -135,9 +138,9 @@ class _ActiveBattle extends ConsumerWidget {
                   children: [
                     Text(
                       move.category,
-                      style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                            color: cs.secondary,
-                          ),
+                      style: Theme.of(
+                        context,
+                      ).textTheme.labelMedium?.copyWith(color: cs.secondary),
                       overflow: TextOverflow.ellipsis,
                     ),
                     const SizedBox(height: AppSpacing.sm),
@@ -153,9 +156,9 @@ class _ActiveBattle extends ConsumerWidget {
                     const SizedBox(height: AppSpacing.sm),
                     Text(
                       '#${state.currentIndex + 1}',
-                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                            color: cs.secondary,
-                          ),
+                      style: Theme.of(
+                        context,
+                      ).textTheme.bodySmall?.copyWith(color: cs.secondary),
                     ),
                   ],
                 ),

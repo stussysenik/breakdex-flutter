@@ -8,6 +8,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:breakdex/core/database/database.dart';
 import 'package:breakdex/core/design/colors.dart';
+import 'package:breakdex/core/design/icons.dart';
 import 'package:breakdex/core/design/spacing.dart';
 import 'package:breakdex/core/design/typography.dart';
 import 'package:breakdex/shared/widgets/app_loader.dart';
@@ -66,7 +67,8 @@ class SyncProvidersScreen extends ConsumerWidget {
               _EmptyProviderState(colorScheme: colorScheme)
             else
               ...providers.map(
-                (final p) => _ProviderCard(provider: p, colorScheme: colorScheme),
+                (final p) =>
+                    _ProviderCard(provider: p, colorScheme: colorScheme),
               ),
 
             const SizedBox(height: AppSpacing.lg),
@@ -91,14 +93,12 @@ class _EmptyProviderState extends StatelessWidget {
       decoration: BoxDecoration(
         color: colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
         borderRadius: BorderRadius.circular(AppRadius.md),
-        border: Border.all(
-          color: colorScheme.outline.withValues(alpha: 0.1),
-        ),
+        border: Border.all(color: colorScheme.outline.withValues(alpha: 0.1)),
       ),
       child: Column(
         children: [
-          Icon(
-            Icons.cloud_off_outlined,
+          AppIconView(
+            AppIcon.cloud,
             size: 48,
             color: colorScheme.onSurface.withValues(alpha: 0.3),
           ),
@@ -127,10 +127,7 @@ class _ProviderCard extends ConsumerWidget {
   final CloudProvider provider;
   final ColorScheme colorScheme;
 
-  const _ProviderCard({
-    required this.provider,
-    required this.colorScheme,
-  });
+  const _ProviderCard({required this.provider, required this.colorScheme});
 
   @override
   Widget build(final BuildContext context, final WidgetRef ref) {
@@ -143,13 +140,11 @@ class _ProviderCard extends ConsumerWidget {
       decoration: BoxDecoration(
         color: colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
         borderRadius: BorderRadius.circular(AppRadius.md),
-        border: Border.all(
-          color: colorScheme.outline.withValues(alpha: 0.1),
-        ),
+        border: Border.all(color: colorScheme.outline.withValues(alpha: 0.1)),
       ),
       child: Row(
         children: [
-          Icon(
+          AppIconView(
             _iconForProvider(provider.providerType),
             color: AppColors.accent,
             size: 28,
@@ -161,9 +156,9 @@ class _ProviderCard extends ConsumerWidget {
               children: [
                 Text(
                   provider.displayName,
-                  style: AppTypography.bodySmall.merge(const TextStyle(fontWeight: FontWeight.w600)).copyWith(
-                    color: colorScheme.onSurface,
-                  ),
+                  style: AppTypography.bodySmall
+                      .merge(const TextStyle(fontWeight: FontWeight.w600))
+                      .copyWith(color: colorScheme.onSurface),
                 ),
                 const SizedBox(height: 4),
                 FutureBuilder<bool>(
@@ -186,7 +181,9 @@ class _ProviderCard extends ConsumerWidget {
                   future: opsDao.getRetryable(),
                   builder: (final context, final snap) {
                     final failed = (snap.data ?? [])
-                        .where((final op) => op.providerId == provider.providerType)
+                        .where(
+                          (final op) => op.providerId == provider.providerType,
+                        )
                         .length;
                     if (failed == 0) return const SizedBox.shrink();
                     return Text(
@@ -200,8 +197,8 @@ class _ProviderCard extends ConsumerWidget {
               ],
             ),
           ),
-          Icon(
-            Icons.chevron_right,
+          AppIconView(
+            AppIcon.forward,
             color: colorScheme.onSurface.withValues(alpha: 0.3),
           ),
         ],
@@ -209,12 +206,12 @@ class _ProviderCard extends ConsumerWidget {
     );
   }
 
-  IconData _iconForProvider(final String type) => switch (type) {
-        'icloud' => Icons.cloud_outlined,
-        'gdrive' => Icons.add_to_drive_outlined,
-        's3' => Icons.storage_outlined,
-        _ => Icons.cloud_outlined,
-      };
+  AppIcon _iconForProvider(final String type) => switch (type) {
+    'icloud' => AppIcon.cloud,
+    'gdrive' => AppIcon.drive,
+    's3' => AppIcon.storage,
+    _ => AppIcon.cloud,
+  };
 }
 
 class _AddProviderButton extends ConsumerWidget {
@@ -237,13 +234,13 @@ class _AddProviderButton extends ConsumerWidget {
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Icon(Icons.add, color: AppColors.accent, size: 20),
+            AppIconView(AppIcon.add, color: AppColors.accent, size: 20),
             const SizedBox(width: AppSpacing.sm),
             Text(
               'Add Cloud Provider',
-              style: AppTypography.bodySmall.merge(const TextStyle(fontWeight: FontWeight.w600)).copyWith(
-                color: AppColors.accent,
-              ),
+              style: AppTypography.bodySmall
+                  .merge(const TextStyle(fontWeight: FontWeight.w600))
+                  .copyWith(color: AppColors.accent),
             ),
           ],
         ),
@@ -272,7 +269,7 @@ class _AddProviderButton extends ConsumerWidget {
             ),
             const SizedBox(height: AppSpacing.lg),
             _ProviderOption(
-              icon: Icons.cloud_outlined,
+              icon: AppIcon.cloud,
               title: 'iCloud Drive',
               subtitle: 'Uses your Apple iCloud storage',
               onTap: () async {
@@ -305,27 +302,23 @@ class _AddProviderButton extends ConsumerWidget {
             ),
             if (kGDriveEnabled)
               _ProviderOption(
-                icon: Icons.add_to_drive_outlined,
+                icon: AppIcon.drive,
                 title: 'Google Drive',
                 subtitle: 'Requires Google account sign-in',
                 onTap: () async {
                   Navigator.pop(ctx);
                   await HapticFeedback.mediumImpact();
-                  final result =
-                      await ref.read(gDriveSetupProvider).enable();
+                  final result = await ref.read(gDriveSetupProvider).enable();
                   if (!context.mounted) return;
                   switch (result) {
                     case GDriveSetupResult.enabled:
                       ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text('Google Drive connected'),
-                        ),
+                        const SnackBar(content: Text('Google Drive connected')),
                       );
                     case GDriveSetupResult.alreadyEnabled:
                       ScaffoldMessenger.of(context).showSnackBar(
                         const SnackBar(
-                          content:
-                              Text('Google Drive is already connected'),
+                          content: Text('Google Drive is already connected'),
                         ),
                       );
                     case GDriveSetupResult.cancelled:
@@ -338,7 +331,7 @@ class _AddProviderButton extends ConsumerWidget {
                 },
               ),
             _ProviderOption(
-              icon: Icons.storage_outlined,
+              icon: AppIcon.storage,
               title: 'S3 Compatible',
               subtitle: 'AWS S3, Cloudflare R2, Backblaze B2, MinIO',
               onTap: () {
@@ -357,7 +350,7 @@ class _AddProviderButton extends ConsumerWidget {
 }
 
 class _ProviderOption extends StatelessWidget {
-  final IconData icon;
+  final AppIcon icon;
   final String title;
   final String subtitle;
   final VoidCallback onTap;
@@ -373,12 +366,12 @@ class _ProviderOption extends StatelessWidget {
   Widget build(final BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
     return ListTile(
-      leading: Icon(icon, color: AppColors.accent),
+      leading: AppIconView(icon, color: AppColors.accent),
       title: Text(
         title,
-        style: AppTypography.bodySmall.merge(const TextStyle(fontWeight: FontWeight.w600)).copyWith(
-          color: colorScheme.onSurface,
-        ),
+        style: AppTypography.bodySmall
+            .merge(const TextStyle(fontWeight: FontWeight.w600))
+            .copyWith(color: colorScheme.onSurface),
       ),
       subtitle: Text(
         subtitle,

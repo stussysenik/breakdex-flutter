@@ -9,6 +9,7 @@ import 'package:breakdex/core/design/typography.dart';
 import 'package:breakdex/core/models/fsrs_settings.dart';
 import 'package:breakdex/core/providers.dart';
 import 'package:breakdex/l10n/gen/app_localizations.dart';
+import 'package:breakdex/core/design/icons.dart';
 
 /// Editable FSRS scheduling controls.
 ///
@@ -66,7 +67,11 @@ class _SrsParametersCardState extends ConsumerState<SrsParametersCard> {
           // Header + reset
           Row(
             children: [
-              Icon(Icons.tune, size: 16, color: colorScheme.primary),
+              AppIconView(
+                AppIcon.settings,
+                size: 16,
+                color: colorScheme.primary,
+              ),
               const SizedBox(width: 6),
               Text(
                 l10n.revFsrsParameters,
@@ -84,8 +89,9 @@ class _SrsParametersCardState extends ConsumerState<SrsParametersCard> {
                 },
                 style: TextButton.styleFrom(
                   minimumSize: const Size(0, 32),
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: AppSpacing.sm),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: AppSpacing.sm,
+                  ),
                   tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                 ),
                 child: Text(
@@ -102,7 +108,7 @@ class _SrsParametersCardState extends ConsumerState<SrsParametersCard> {
 
           // Retention — the highest-leverage knob.
           _ControlLabel(
-            icon: Icons.psychology,
+            icon: AppIcon.insight.resolve(context),
             label: l10n.revRetention,
             value: '${(retention * 100).round()}%',
           ),
@@ -134,7 +140,7 @@ class _SrsParametersCardState extends ConsumerState<SrsParametersCard> {
 
           // Maximum interval presets.
           _ControlLabel(
-            icon: Icons.calendar_month,
+            icon: AppIcon.calendar.resolve(context),
             label: l10n.revMaxInterval,
             value: _formatMaxInterval(config.maximumInterval),
           ),
@@ -154,7 +160,11 @@ class _SrsParametersCardState extends ConsumerState<SrsParametersCard> {
           // Fuzzing.
           Row(
             children: [
-              Icon(Icons.shuffle, size: 14, color: colorScheme.secondary),
+              AppIconView(
+                AppIcon.shuffle,
+                size: 14,
+                color: colorScheme.secondary,
+              ),
               const SizedBox(width: 8),
               Expanded(
                 child: Text(
@@ -174,7 +184,7 @@ class _SrsParametersCardState extends ConsumerState<SrsParametersCard> {
 
           // Learning / relearning step presets.
           _StepPresetRow(
-            icon: Icons.school,
+            icon: AppIcon.school.resolve(context),
             label: l10n.revLearning,
             presets: _stepPresets,
             current: config.learningSteps,
@@ -182,7 +192,7 @@ class _SrsParametersCardState extends ConsumerState<SrsParametersCard> {
           ),
           const SizedBox(height: AppSpacing.xs),
           _StepPresetRow(
-            icon: Icons.replay,
+            icon: AppIcon.replay.resolve(context),
             label: l10n.revRelearning,
             presets: _stepPresets,
             current: config.relearningSteps,
@@ -318,8 +328,9 @@ class _StepPresetRow extends StatelessWidget {
             const SizedBox(width: 8),
             Text(
               label,
-              style:
-                  AppTypography.caption.copyWith(color: colorScheme.secondary),
+              style: AppTypography.caption.copyWith(
+                color: colorScheme.secondary,
+              ),
             ),
           ],
         ),

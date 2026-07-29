@@ -11,6 +11,7 @@ import 'package:go_router/go_router.dart';
 
 import 'package:breakdex/core/database/database.dart';
 import 'package:breakdex/core/design/colors.dart';
+import 'package:breakdex/core/design/icons.dart';
 import 'package:breakdex/core/design/spacing.dart';
 import 'package:breakdex/core/design/theme.dart';
 import 'package:breakdex/core/design/typography.dart';
@@ -64,7 +65,9 @@ class _LabDetailScreenState extends ConsumerState<LabDetailScreen> {
     final nextIndex = (currentIndex + 1) % _statusCycle.length;
     final nextStatus = _statusCycle[nextIndex];
 
-    await ref.read(labsDaoProvider).updateLab(
+    await ref
+        .read(labsDaoProvider)
+        .updateLab(
           LabsCompanion(
             id: drift.Value(lab.id),
             status: drift.Value(nextStatus),
@@ -108,7 +111,9 @@ class _LabDetailScreenState extends ConsumerState<LabDetailScreen> {
 
     if (newName == null || newName.isEmpty || newName == lab.name) return;
 
-    await ref.read(labsDaoProvider).updateLab(
+    await ref
+        .read(labsDaoProvider)
+        .updateLab(
           LabsCompanion(
             id: drift.Value(lab.id),
             name: drift.Value(newName),
@@ -143,11 +148,9 @@ class _LabDetailScreenState extends ConsumerState<LabDetailScreen> {
 
     if (selectedMoveId == null || !mounted) return;
 
-    await ref.read(labsDaoProvider).addMoveToLab(
-          widget.labId,
-          selectedMoveId,
-          labMoves.length,
-        );
+    await ref
+        .read(labsDaoProvider)
+        .addMoveToLab(widget.labId, selectedMoveId, labMoves.length);
     unawaited(HapticFeedback.mediumImpact());
   }
 
@@ -235,8 +238,8 @@ class _LabDetailScreenState extends ConsumerState<LabDetailScreen> {
                     onTap: () => context.pop(),
                     child: Row(
                       children: [
-                        Icon(
-                          Icons.chevron_left,
+                        AppIconView(
+                          AppIcon.back,
                           color: colorScheme.secondary,
                           size: 20,
                         ),
@@ -259,10 +262,8 @@ class _LabDetailScreenState extends ConsumerState<LabDetailScreen> {
                   ),
                   child: Row(
                     children: [
-                      Icon(
-                        isSet
-                            ? Icons.playlist_play_rounded
-                            : Icons.science_outlined,
+                      AppIconView(
+                        isSet ? AppIcon.combo : AppIcon.lab,
                         color: AppColors.accent,
                         size: 24,
                       ),
@@ -280,8 +281,8 @@ class _LabDetailScreenState extends ConsumerState<LabDetailScreen> {
                       ),
                       // More menu
                       PopupMenuButton<String>(
-                        icon: Icon(
-                          Icons.more_horiz_rounded,
+                        icon: AppIconView(
+                          AppIcon.more,
                           color: colorScheme.secondary,
                         ),
                         onSelected: (final value) {
@@ -366,10 +367,7 @@ class _LabDetailScreenState extends ConsumerState<LabDetailScreen> {
                 // -- Type-specific content ------------------------------------
                 if (isSet) ...[
                   // Set Builder — horizontal move sequencer
-                  SetBuilder(
-                    labId: widget.labId,
-                    onAddMove: _showMovePicker,
-                  ),
+                  SetBuilder(labId: widget.labId, onAddMove: _showMovePicker),
                   const SizedBox(height: AppSpacing.lg),
                 ] else ...[
                   // Project: Timeline view
@@ -396,12 +394,12 @@ class _LabDetailScreenState extends ConsumerState<LabDetailScreen> {
                   child: NotesSection(
                     notes: lab.notes,
                     onChanged: (final text) {
-                      ref.read(labsDaoProvider).updateLab(
+                      ref
+                          .read(labsDaoProvider)
+                          .updateLab(
                             LabsCompanion(
                               id: drift.Value(lab.id),
-                              notes: drift.Value(
-                                text.isEmpty ? null : text,
-                              ),
+                              notes: drift.Value(text.isEmpty ? null : text),
                               updatedAt: drift.Value(DateTime.now()),
                             ),
                           );
@@ -435,7 +433,7 @@ class _LabDetailScreenState extends ConsumerState<LabDetailScreen> {
                     horizontal: AppSpacing.screenEdge,
                   ),
                   child: _ActionRow(
-                    icon: Icons.link_rounded,
+                    icon: AppIcon.link.resolve(context),
                     label: 'Link Move',
                     onTap: _showMovePicker,
                   ),
@@ -446,7 +444,7 @@ class _LabDetailScreenState extends ConsumerState<LabDetailScreen> {
                     horizontal: AppSpacing.screenEdge,
                   ),
                   child: _ActionRow(
-                    icon: Icons.delete_forever,
+                    icon: AppIcon.delete.resolve(context),
                     label: 'Delete Lab',
                     destructive: true,
                     onTap: () => _deleteLab(lab),
@@ -506,8 +504,8 @@ class _LabStatusPill extends StatelessWidget {
             ),
           ),
           const SizedBox(width: 4),
-          Icon(
-            Icons.touch_app_rounded,
+          AppIconView(
+            AppIcon.move,
             size: 12,
             color: color.withValues(alpha: 0.6),
           ),
@@ -517,12 +515,12 @@ class _LabStatusPill extends StatelessWidget {
   }
 
   static (String, Color) _statusMeta(final String status) => switch (status) {
-        'idea' => ('Idea', const Color(0xFFA7B1C2)),
-        'attempting' => ('Attempting', AppColors.stateLearning),
-        'landed' => ('Landed', AppColors.stateMastery),
-        'clean' => ('Clean', const Color(0xFF0D9F9A)),
-        _ => ('Idea', const Color(0xFFA7B1C2)),
-      };
+    'idea' => ('Idea', const Color(0xFFA7B1C2)),
+    'attempting' => ('Attempting', AppColors.stateLearning),
+    'landed' => ('Landed', AppColors.stateMastery),
+    'clean' => ('Clean', const Color(0xFF0D9F9A)),
+    _ => ('Idea', const Color(0xFFA7B1C2)),
+  };
 }
 
 // =============================================================================
@@ -613,9 +611,9 @@ class _MovePickerSheetState extends ConsumerState<_MovePickerSheet> {
               child: TextField(
                 controller: _searchController,
                 autofocus: true,
-                decoration: const InputDecoration(
+                decoration: InputDecoration(
                   hintText: 'Search moves...',
-                  prefixIcon: Icon(Icons.search),
+                  prefixIcon: AppIconView(AppIcon.search),
                 ),
               ),
             ),
@@ -634,9 +632,11 @@ class _MovePickerSheetState extends ConsumerState<_MovePickerSheet> {
                   final filtered = _query.isEmpty
                       ? allMoves
                       : allMoves
-                          .where((final m) =>
-                              m.name.toLowerCase().contains(_query))
-                          .toList();
+                            .where(
+                              (final m) =>
+                                  m.name.toLowerCase().contains(_query),
+                            )
+                            .toList();
 
                   if (filtered.isEmpty) {
                     return Center(
@@ -696,8 +696,8 @@ class _MovePickerSheetState extends ConsumerState<_MovePickerSheet> {
           padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm),
           child: Row(
             children: [
-              const Icon(
-                Icons.auto_awesome,
+              const AppIconView(
+                AppIcon.discover,
                 size: 14,
                 color: AppColors.stateMastery,
               ),
@@ -715,8 +715,12 @@ class _MovePickerSheetState extends ConsumerState<_MovePickerSheet> {
       );
       for (final move in suggested) {
         items.add(
-          _buildMoveTile(move, isLinked: linkedMoveIds.contains(move.id),
-              isSuggested: true, colorScheme: colorScheme),
+          _buildMoveTile(
+            move,
+            isLinked: linkedMoveIds.contains(move.id),
+            isSuggested: true,
+            colorScheme: colorScheme,
+          ),
         );
       }
       items.add(
@@ -728,14 +732,19 @@ class _MovePickerSheetState extends ConsumerState<_MovePickerSheet> {
     }
     for (final move in remaining) {
       items.add(
-        _buildMoveTile(move, isLinked: linkedMoveIds.contains(move.id),
-            isSuggested: false, colorScheme: colorScheme),
+        _buildMoveTile(
+          move,
+          isLinked: linkedMoveIds.contains(move.id),
+          isSuggested: false,
+          colorScheme: colorScheme,
+        ),
       );
     }
     return items;
   }
 
-  Widget _buildMoveTile(final Move move, {
+  Widget _buildMoveTile(
+    final Move move, {
     required final bool isLinked,
     required final bool isSuggested,
     required final ColorScheme colorScheme,
@@ -767,20 +776,18 @@ class _MovePickerSheetState extends ConsumerState<_MovePickerSheet> {
           color: isLinked
               ? colorScheme.secondary.withValues(alpha: 0.5)
               : isSuggested
-                  ? accent
-                  : colorScheme.onSurface,
+              ? accent
+              : colorScheme.onSurface,
           fontWeight: isSuggested ? FontWeight.w600 : FontWeight.w500,
         ),
       ),
       subtitle: Text(
         move.category,
-        style: AppTypography.caption.copyWith(
-          color: colorScheme.secondary,
-        ),
+        style: AppTypography.caption.copyWith(color: colorScheme.secondary),
       ),
       trailing: isLinked
-          ? const Icon(
-              Icons.check_rounded,
+          ? const AppIconView(
+              AppIcon.check,
               color: AppColors.stateMastery,
               size: 20,
             )
@@ -838,12 +845,13 @@ class _ActionRow extends StatelessWidget {
           children: [
             Icon(icon, color: color, size: 22),
             const SizedBox(width: AppSpacing.md),
-            Text(
-              label,
-              style: AppTypography.bodyMedium.copyWith(color: color),
-            ),
+            Text(label, style: AppTypography.bodyMedium.copyWith(color: color)),
             const Spacer(),
-            Icon(Icons.chevron_right, color: colorScheme.secondary, size: 20),
+            AppIconView(
+              AppIcon.forward,
+              color: colorScheme.secondary,
+              size: 20,
+            ),
           ],
         ),
       ),

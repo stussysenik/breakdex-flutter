@@ -15,6 +15,7 @@ import 'package:breakdex/core/design/typography.dart';
 import 'package:breakdex/core/providers.dart';
 import 'package:breakdex/shared/widgets/app_loader.dart';
 import 'package:breakdex/features/combo_detail/widgets/status_tag.dart';
+import 'package:breakdex/core/design/icons.dart';
 
 final allCombosProvider = StreamProvider<List<Combo>>((final ref) {
   return ref.watch(combosDaoProvider).watchAll();
@@ -63,7 +64,9 @@ Future<void> planComboFlow(
   );
   if (context.mounted) {
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('Planned for ${DateFormat('MMM d').format(picked)}')),
+      SnackBar(
+        content: Text('Planned for ${DateFormat('MMM d').format(picked)}'),
+      ),
     );
   }
 }
@@ -85,7 +88,9 @@ class _PlanPickerSheet extends ConsumerWidget {
           children: [
             Text(
               'Plan a combo',
-              style: AppTypography.titleSmall.copyWith(color: colorScheme.onSurface),
+              style: AppTypography.titleSmall.copyWith(
+                color: colorScheme.onSurface,
+              ),
             ),
             const SizedBox(height: AppSpacing.md),
             combosAsync.when(
@@ -95,7 +100,9 @@ class _PlanPickerSheet extends ConsumerWidget {
                 if (combos.isEmpty) {
                   return Text(
                     'No combos yet — create one first.',
-                    style: AppTypography.bodySmall.copyWith(color: colorScheme.secondary),
+                    style: AppTypography.bodySmall.copyWith(
+                      color: colorScheme.secondary,
+                    ),
                   );
                 }
                 return Flexible(
@@ -105,7 +112,7 @@ class _PlanPickerSheet extends ConsumerWidget {
                     itemBuilder: (final context, final index) {
                       if (index == 0) {
                         return ListTile(
-                          leading: const Icon(Icons.add),
+                          leading: const AppIconView(AppIcon.add),
                           title: const Text('New combo…'),
                           onTap: () {
                             Navigator.pop(context);

@@ -8,7 +8,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import 'package:breakdex/core/database/database.dart';
-import 'package:breakdex/core/models/reviewable_item.dart' show MoveVideoPath, ReviewableMove;
+import 'package:breakdex/core/models/reviewable_item.dart'
+    show MoveVideoPath, ReviewableMove;
 import 'package:breakdex/core/services/media_playback_coordinator.dart';
 import 'package:breakdex/core/design/colors.dart';
 import 'package:breakdex/core/design/spacing.dart';
@@ -16,6 +17,7 @@ import 'package:breakdex/core/design/typography.dart';
 import 'package:breakdex/shared/widgets/app_loader.dart';
 import 'package:breakdex/core/providers.dart';
 import 'package:breakdex/features/instax_viewer/instax_video_card.dart';
+import 'package:breakdex/core/design/icons.dart';
 
 enum InstaxMode {
   carousel,
@@ -28,19 +30,21 @@ enum InstaxMode {
   }
 
   String get label => switch (this) {
-        InstaxMode.carousel => 'Carousel',
-        InstaxMode.feed => 'Feed',
-        InstaxMode.tinder => 'Tinder',
-      };
+    InstaxMode.carousel => 'Carousel',
+    InstaxMode.feed => 'Feed',
+    InstaxMode.tinder => 'Tinder',
+  };
 
-  IconData get icon => switch (this) {
-        InstaxMode.carousel => Icons.swap_horiz,
-        InstaxMode.feed => Icons.view_agenda,
-        InstaxMode.tinder => Icons.style,
-      };
+  AppIcon get icon => switch (this) {
+    InstaxMode.carousel => AppIcon.shuffle,
+    InstaxMode.feed => AppIcon.glance,
+    InstaxMode.tinder => AppIcon.study,
+  };
 }
 
-final _instaxModeProvider = StateProvider<InstaxMode>((_) => InstaxMode.carousel);
+final _instaxModeProvider = StateProvider<InstaxMode>(
+  (_) => InstaxMode.carousel,
+);
 final _instaxCurrentIndexProvider = StateProvider<int>((_) => 0);
 
 class InstaxViewerScreen extends ConsumerStatefulWidget {
@@ -49,8 +53,7 @@ class InstaxViewerScreen extends ConsumerStatefulWidget {
   final String category;
 
   @override
-  ConsumerState<InstaxViewerScreen> createState() =>
-      _InstaxViewerScreenState();
+  ConsumerState<InstaxViewerScreen> createState() => _InstaxViewerScreenState();
 }
 
 class _InstaxViewerScreenState extends ConsumerState<InstaxViewerScreen>
@@ -85,15 +88,14 @@ class _InstaxViewerScreenState extends ConsumerState<InstaxViewerScreen>
       backgroundColor: AppColors.darkBg,
       appBar: _buildAppBar(mode),
       body: movesAsync.when(
-        data: (final moves) => InstaxVideoViewer(
-          moves: moves,
-          category: widget.category,
-        ),
-        loading: () => const Center(
-          child: AppLoader(),
-        ),
+        data: (final moves) =>
+            InstaxVideoViewer(moves: moves, category: widget.category),
+        loading: () => const Center(child: AppLoader()),
         error: (final err, _) => const Center(
-          child: Text('Failed to load moves', style: TextStyle(color: Colors.white38)),
+          child: Text(
+            'Failed to load moves',
+            style: TextStyle(color: Colors.white38),
+          ),
         ),
       ),
     );
@@ -109,7 +111,7 @@ class _InstaxViewerScreenState extends ConsumerState<InstaxViewerScreen>
             backgroundColor: AppColors.darkBg,
             elevation: 0,
             leading: IconButton(
-              icon: const Icon(Icons.arrow_back_ios_new, size: 18),
+              icon: const AppIconView(AppIcon.back, size: 18),
               onPressed: () => context.pop(),
             ),
             title: Text(
@@ -147,7 +149,9 @@ class _InstaxViewerScreenState extends ConsumerState<InstaxViewerScreen>
                         borderRadius: BorderRadius.circular(AppRadius.sm),
                         border: active
                             ? Border.all(
-                                color: colorScheme.primary.withValues(alpha: 0.4),
+                                color: colorScheme.primary.withValues(
+                                  alpha: 0.4,
+                                ),
                                 width: 1,
                               )
                             : null,
@@ -156,17 +160,23 @@ class _InstaxViewerScreenState extends ConsumerState<InstaxViewerScreen>
                         child: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            Icon(
+                            AppIconView(
                               m.icon,
                               size: 14,
-                              color: active ? colorScheme.primary : Colors.white54,
+                              color: active
+                                  ? colorScheme.primary
+                                  : Colors.white54,
                             ),
                             const SizedBox(width: 6),
                             Text(
                               m.label,
                               style: AppTypography.caption.copyWith(
-                                color: active ? colorScheme.primary : Colors.white54,
-                                fontWeight: active ? FontWeight.w600 : FontWeight.w400,
+                                color: active
+                                    ? colorScheme.primary
+                                    : Colors.white54,
+                                fontWeight: active
+                                    ? FontWeight.w600
+                                    : FontWeight.w400,
                               ),
                             ),
                           ],
@@ -233,17 +243,21 @@ class _CarouselModeState extends State<_CarouselMode> {
         itemCount: widget.moves.length,
         onPageChanged: (final i) {
           setState(() => _activeIndex = i);
-          debugPrint('[Carousel] onPageChanged=$i move=${widget.moves[i].name}');
+          debugPrint(
+            '[Carousel] onPageChanged=$i move=${widget.moves[i].name}',
+          );
         },
         itemBuilder: (final context, final index) {
           final move = widget.moves[index];
           return InstaxVideoCard(
-            item: ReviewableMove(move),
-            isActive: index == _activeIndex,
-            looping: true,
-            onLongPress: () => _onEditVideo(move),
-            onTap: () => _onTapMove(context, move),
-          ).animate(key: ValueKey('carousel-$index')).fadeIn(
+                item: ReviewableMove(move),
+                isActive: index == _activeIndex,
+                looping: true,
+                onLongPress: () => _onEditVideo(move),
+                onTap: () => _onTapMove(context, move),
+              )
+              .animate(key: ValueKey('carousel-$index'))
+              .fadeIn(
                 duration: AppMotion.moderate01,
                 delay: Duration(milliseconds: index.clamp(0, 10) * 40),
               );
@@ -291,7 +305,8 @@ class _FeedModeState extends State<_FeedMode> {
 
   void _onScroll() {
     _scrollOffset = _scrollController.offset;
-    final screenHeight = MediaQuery.of(context).size.height - kToolbarHeight - 106;
+    final screenHeight =
+        MediaQuery.of(context).size.height - kToolbarHeight - 106;
     if (screenHeight <= 0) return;
     final newIndex = (_scrollOffset / screenHeight).round().clamp(
       0,
@@ -299,15 +314,20 @@ class _FeedModeState extends State<_FeedMode> {
     );
     if (newIndex != _activeIndex) {
       setState(() => _activeIndex = newIndex);
-      debugPrint('[Feed] activeIndex=$newIndex move=${widget.moves[newIndex].name}');
+      debugPrint(
+        '[Feed] activeIndex=$newIndex move=${widget.moves[newIndex].name}',
+      );
     }
   }
 
   @override
   Widget build(final BuildContext context) {
     if (widget.moves.isEmpty) return const SizedBox.shrink();
-    final screenHeight = MediaQuery.of(context).size.height - kToolbarHeight - 106;
-    debugPrint('[Feed] build activeIndex=$_activeIndex screenHeight=$screenHeight');
+    final screenHeight =
+        MediaQuery.of(context).size.height - kToolbarHeight - 106;
+    debugPrint(
+      '[Feed] build activeIndex=$_activeIndex screenHeight=$screenHeight',
+    );
 
     return ListView.builder(
       controller: _scrollController,
@@ -316,17 +336,20 @@ class _FeedModeState extends State<_FeedMode> {
         final move = widget.moves[index];
         return SizedBox(
           height: screenHeight.clamp(400, double.infinity),
-          child: InstaxVideoCard(
-            item: ReviewableMove(move),
-            isActive: index == _activeIndex,
-            looping: true,
-            muted: index != _activeIndex,
-            onLongPress: () => _onEditVideo(move),
-            onTap: () => _onTapMove(context, move),
-          ).animate(key: ValueKey('feed-$index')).fadeIn(
-                duration: AppMotion.moderate01,
-                delay: Duration(milliseconds: index.clamp(0, 5) * 30),
-              ),
+          child:
+              InstaxVideoCard(
+                    item: ReviewableMove(move),
+                    isActive: index == _activeIndex,
+                    looping: true,
+                    muted: index != _activeIndex,
+                    onLongPress: () => _onEditVideo(move),
+                    onTap: () => _onTapMove(context, move),
+                  )
+                  .animate(key: ValueKey('feed-$index'))
+                  .fadeIn(
+                    duration: AppMotion.moderate01,
+                    delay: Duration(milliseconds: index.clamp(0, 5) * 30),
+                  ),
         );
       },
     );
@@ -374,7 +397,11 @@ class _TinderModeState extends State<_TinderMode> {
     final visibleCards = <Widget>[];
     const maxStack = 3;
 
-    for (int i = _topIndex; i < widget.moves.length && i < _topIndex + maxStack; i++) {
+    for (
+      int i = _topIndex;
+      i < widget.moves.length && i < _topIndex + maxStack;
+      i++
+    ) {
       final move = widget.moves[i];
       final offset = i - _topIndex;
 
@@ -422,18 +449,12 @@ class _TinderModeState extends State<_TinderMode> {
             end: const Offset(1, 1),
             duration: AppMotion.moderate01,
           )
-          .slideY(
-            begin: offset * 0.02,
-            end: 0,
-            duration: AppMotion.moderate01,
-          );
+          .slideY(begin: offset * 0.02, end: 0, duration: AppMotion.moderate01);
 
       visibleCards.add(card);
     }
 
-    return Stack(
-      children: visibleCards.reversed.toList(),
-    );
+    return Stack(children: visibleCards.reversed.toList());
   }
 
   void _onEditVideo(final Move move) {
@@ -444,20 +465,24 @@ class _TinderModeState extends State<_TinderMode> {
 
 void _onTapMove(final BuildContext context, final Move move) {
   final videoPath = move.resolvedVideoPath;
-  debugPrint('[InstaxViewer] _onTapMove moveId=${move.id} name="${move.name}" '
-      'hasVideo=${videoPath != null}');
+  debugPrint(
+    '[InstaxViewer] _onTapMove moveId=${move.id} name="${move.name}" '
+    'hasVideo=${videoPath != null}',
+  );
   if (videoPath != null) {
-    context.push('/video-viewer', extra: {
-      'videoPath': videoPath,
-      'title': move.name,
-    });
+    context.push(
+      '/video-viewer',
+      extra: {'videoPath': videoPath, 'title': move.name},
+    );
   } else {
     context.push('/breakdex/move/${move.id}');
   }
 }
 
-final _filteredMovesProvider =
-    FutureProvider.family<List<Move>, String>((final ref, final category) async {
+final _filteredMovesProvider = FutureProvider.family<List<Move>, String>((
+  final ref,
+  final category,
+) async {
   final repo = ref.watch(moveRepositoryProvider);
   final all = await repo.getAll();
   return all.where((final m) => m.category == category).toList();
@@ -482,7 +507,7 @@ class InstaxVideoViewer extends ConsumerWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Icon(Icons.camera_alt_outlined, size: 48, color: Colors.white24),
+            const AppIconView(AppIcon.camera, size: 48, color: Colors.white24),
             const SizedBox(height: AppSpacing.md),
             Text(
               'No moves yet',

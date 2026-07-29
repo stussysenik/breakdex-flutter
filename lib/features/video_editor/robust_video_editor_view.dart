@@ -13,6 +13,7 @@ import 'package:breakdex/shared/widgets/app_loader.dart';
 import 'package:breakdex/features/video_editor/robust_trim_timeline.dart';
 import 'package:breakdex/features/video_editor/video_edit_geometry.dart';
 import 'package:breakdex/features/video_editor/video_editor_controller.dart';
+import 'package:breakdex/core/design/icons.dart';
 
 class RobustVideoEditorView extends StatefulWidget {
   const RobustVideoEditorView({super.key, required this.controller});
@@ -65,7 +66,10 @@ class _RobustVideoEditorViewState extends State<RobustVideoEditorView> {
     final viewport = _currentViewport;
     if (viewport == null) return;
     final crop = viewport.normalizedCropRect(_transformController.value);
-    DiagnosticsLog.info('VideoEditor', 'Syncing crop to controller: ${crop.left.toStringAsFixed(3)},${crop.top.toStringAsFixed(3)}');
+    DiagnosticsLog.info(
+      'VideoEditor',
+      'Syncing crop to controller: ${crop.left.toStringAsFixed(3)},${crop.top.toStringAsFixed(3)}',
+    );
     widget.controller.updateCrop(crop);
   }
 
@@ -80,7 +84,15 @@ class _RobustVideoEditorViewState extends State<RobustVideoEditorView> {
   }
 
   static const _speeds = ['0.25x', '0.5x', '1x', '1.5x', '2x'];
-  static const _aspects = ['Original', 'Free Form', '9:16', '16:9', '1:1', '4:5', 'Custom...'];
+  static const _aspects = [
+    'Original',
+    'Free Form',
+    '9:16',
+    '16:9',
+    '1:1',
+    '4:5',
+    'Custom...',
+  ];
 
   @override
   Widget build(final BuildContext context) {
@@ -99,11 +111,14 @@ class _RobustVideoEditorViewState extends State<RobustVideoEditorView> {
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  const Icon(CupertinoIcons.exclamationmark_circle, color: Colors.red, size: 48),
+                  const AppIconView(AppIcon.error, color: Colors.red, size: 48),
                   const SizedBox(height: 16),
                   Text(
                     'EXPORT FAILED',
-                    style: AppTypography.labelLarge.copyWith(color: Colors.red, letterSpacing: 2),
+                    style: AppTypography.labelLarge.copyWith(
+                      color: Colors.red,
+                      letterSpacing: 2,
+                    ),
                   ),
                   const SizedBox(height: 8),
                   Text(
@@ -130,7 +145,8 @@ class _RobustVideoEditorViewState extends State<RobustVideoEditorView> {
           );
         }
 
-        if (status is EditorInitializing || controller.playerController == null) {
+        if (status is EditorInitializing ||
+            controller.playerController == null) {
           return const Center(child: AppLoader());
         }
 
@@ -148,32 +164,46 @@ class _RobustVideoEditorViewState extends State<RobustVideoEditorView> {
                   decoration: const BoxDecoration(),
                   clipBehavior: Clip.antiAlias,
                   child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: AppSpacing.sm),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: AppSpacing.md,
+                      vertical: AppSpacing.sm,
+                    ),
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         if (controller.hasUnsavedChanges)
                           TextButton(
                             onPressed: controller.revertToCommitted,
-                            child: Text('Discard', style: TextStyle(color: colorScheme.error)),
+                            child: Text(
+                              'Discard',
+                              style: TextStyle(color: colorScheme.error),
+                            ),
                           )
                         else
                           TextButton(
                             onPressed: () => Navigator.of(context).pop(),
-                            child: Text('Cancel', style: TextStyle(color: colorScheme.secondary)),
+                            child: Text(
+                              'Cancel',
+                              style: TextStyle(color: colorScheme.secondary),
+                            ),
                           ),
                         Text(
                           'EDIT VIDEO',
-                          style: AppTypography.labelLarge.copyWith(color: colorScheme.onSurface, letterSpacing: 2),
+                          style: AppTypography.labelLarge.copyWith(
+                            color: colorScheme.onSurface,
+                            letterSpacing: 2,
+                          ),
                         ),
                         TextButton(
-                          onPressed: controller.isExporting ? null : () async {
-                            controller.commitEdits();
-                            final result = await controller.export();
-                            if (result != null && context.mounted) {
-                              Navigator.of(context).pop(result);
-                            }
-                          },
+                          onPressed: controller.isExporting
+                              ? null
+                              : () async {
+                                  controller.commitEdits();
+                                  final result = await controller.export();
+                                  if (result != null && context.mounted) {
+                                    Navigator.of(context).pop(result);
+                                  }
+                                },
                           child: Text(
                             'SAVE',
                             style: TextStyle(
@@ -193,7 +223,9 @@ class _RobustVideoEditorViewState extends State<RobustVideoEditorView> {
                     children: [
                       Center(
                         child: Padding(
-                          padding: EdgeInsets.all(_isPreviewMode ? 0 : AppSpacing.screenEdge),
+                          padding: EdgeInsets.all(
+                            _isPreviewMode ? 0 : AppSpacing.screenEdge,
+                          ),
                           child: LayoutBuilder(
                             builder: (final context, final constraints) {
                               final aspects = <double?>[
@@ -215,7 +247,7 @@ class _RobustVideoEditorViewState extends State<RobustVideoEditorView> {
                                 maxHeight: constraints.maxHeight,
                                 targetAspect: targetAspect,
                               );
-                              
+
                               _currentViewport = viewport;
                               _scheduleViewportSync(viewport);
 
@@ -227,18 +259,21 @@ class _RobustVideoEditorViewState extends State<RobustVideoEditorView> {
                                 decoration: BoxDecoration(
                                   color: Colors.black,
                                   borderRadius: BorderRadius.circular(
-                                      _isPreviewMode ? 0 : AppRadius.md),
+                                    _isPreviewMode ? 0 : AppRadius.md,
+                                  ),
                                   border: _isPreviewMode
                                       ? null
                                       : Border.all(
                                           color: colorScheme.outlineVariant,
-                                          width: 1.5),
+                                          width: 1.5,
+                                        ),
                                   boxShadow: _isPreviewMode
                                       ? null
                                       : const [
                                           BoxShadow(
-                                              color: Colors.black54,
-                                              blurRadius: 12),
+                                            color: Colors.black54,
+                                            blurRadius: 12,
+                                          ),
                                         ],
                                 ),
                                 clipBehavior: Clip.antiAlias,
@@ -253,7 +288,8 @@ class _RobustVideoEditorViewState extends State<RobustVideoEditorView> {
                                         minScale: viewport.minScale,
                                         maxScale: viewport.maxScale,
                                         boundaryMargin: const EdgeInsets.all(
-                                            double.infinity),
+                                          double.infinity,
+                                        ),
                                         constrained: false,
                                         // Clamp + sync the crop only when the
                                         // gesture ends. Clamping mid-gesture
@@ -266,12 +302,15 @@ class _RobustVideoEditorViewState extends State<RobustVideoEditorView> {
                                         },
                                         child: Center(
                                           child: RotatedBox(
-                                            quarterTurns: (controller.rotation % 360) ~/ 90,
+                                            quarterTurns:
+                                                (controller.rotation % 360) ~/
+                                                90,
                                             child: SizedBox(
                                               width: videoSize.width,
                                               height: videoSize.height,
                                               child: VideoPlayer(
-                                                  controller.playerController!),
+                                                controller.playerController!,
+                                              ),
                                             ),
                                           ),
                                         ),
@@ -292,16 +331,21 @@ class _RobustVideoEditorViewState extends State<RobustVideoEditorView> {
                           ),
                         ),
                       ),
-                      
+
                       // Preview Toggle Button - Moved to Top Right
                       Positioned(
                         top: AppSpacing.lg,
                         right: AppSpacing.lg,
                         child: FloatingActionButton.small(
-                          onPressed: () => setState(() => _isPreviewMode = !_isPreviewMode),
+                          onPressed: () =>
+                              setState(() => _isPreviewMode = !_isPreviewMode),
                           backgroundColor: Colors.black45,
                           foregroundColor: Colors.white,
-                          child: Icon(_isPreviewMode ? CupertinoIcons.pencil : CupertinoIcons.eye),
+                          child: Icon(
+                            _isPreviewMode
+                                ? AppIcon.edit.resolve(context)
+                                : AppIcon.glance.resolve(context),
+                          ),
                         ),
                       ),
                     ],
@@ -315,10 +359,17 @@ class _RobustVideoEditorViewState extends State<RobustVideoEditorView> {
                   decoration: const BoxDecoration(),
                   clipBehavior: Clip.antiAlias,
                   child: Container(
-                    padding: const EdgeInsets.fromLTRB(AppSpacing.screenEdge, AppSpacing.lg, AppSpacing.screenEdge, AppSpacing.xl),
+                    padding: const EdgeInsets.fromLTRB(
+                      AppSpacing.screenEdge,
+                      AppSpacing.lg,
+                      AppSpacing.screenEdge,
+                      AppSpacing.xl,
+                    ),
                     decoration: BoxDecoration(
                       color: colorScheme.surface,
-                      borderRadius: const BorderRadius.vertical(top: Radius.circular(AppRadius.lg)),
+                      borderRadius: const BorderRadius.vertical(
+                        top: Radius.circular(AppRadius.lg),
+                      ),
                     ),
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
@@ -329,7 +380,8 @@ class _RobustVideoEditorViewState extends State<RobustVideoEditorView> {
                           playbackPosition: controller.playbackPosition,
                           isPlaying: controller.isPlaying,
                           thumbnails: controller.thumbnails,
-                          videoDurationMs: controller.videoDuration.inMilliseconds,
+                          videoDurationMs:
+                              controller.videoDuration.inMilliseconds,
                           onTrimChanged: controller.updateTrim,
                           onPlayheadChanged: controller.seekToNormalized,
                         ),
@@ -360,20 +412,34 @@ class _RobustVideoEditorViewState extends State<RobustVideoEditorView> {
                           mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                           children: [
                             _TransformBtn(
-                              icon: CupertinoIcons.rotate_left,
+                              icon: AppIcon.replay.resolve(context),
                               label: 'Rotate Left',
-                              onTap: () => controller.setRotation(controller.rotation - 90),
+                              onTap: () => controller.setRotation(
+                                controller.rotation - 90,
+                              ),
                             ),
                             Column(
                               children: [
-                                Text('ROTATION', style: AppTypography.caption.copyWith(color: colorScheme.secondary)),
-                                Text('${controller.rotation}°', style: const TextStyle(fontWeight: FontWeight.bold)),
+                                Text(
+                                  'ROTATION',
+                                  style: AppTypography.caption.copyWith(
+                                    color: colorScheme.secondary,
+                                  ),
+                                ),
+                                Text(
+                                  '${controller.rotation}°',
+                                  style: const TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
                               ],
                             ),
                             _TransformBtn(
-                              icon: CupertinoIcons.rotate_right,
+                              icon: AppIcon.refresh.resolve(context),
                               label: 'Rotate Right',
-                              onTap: () => controller.setRotation(controller.rotation + 90),
+                              onTap: () => controller.setRotation(
+                                controller.rotation + 90,
+                              ),
                             ),
                           ],
                         ),
@@ -384,8 +450,7 @@ class _RobustVideoEditorViewState extends State<RobustVideoEditorView> {
               ],
             ),
 
-            if (controller.isExporting)
-              _buildExportOverlay(colorScheme),
+            if (controller.isExporting) _buildExportOverlay(colorScheme),
           ],
         );
       },
@@ -401,7 +466,8 @@ class _RobustVideoEditorViewState extends State<RobustVideoEditorView> {
           mainAxisSize: MainAxisSize.min,
           children: [
             SizedBox(
-              width: 100, height: 100,
+              width: 100,
+              height: 100,
               child: CircularProgressIndicator(
                 value: progress?.progress,
                 strokeWidth: 6,
@@ -430,20 +496,38 @@ class _RobustVideoEditorViewState extends State<RobustVideoEditorView> {
   void _showCustomAspectDialog(final BuildContext context) {
     final controllerX = TextEditingController();
     final controllerY = TextEditingController();
-    
+
     showDialog<void>(
       context: context,
       builder: (final ctx) => AlertDialog(
         title: const Text('Custom Aspect Ratio'),
         content: Row(
           children: [
-            Expanded(child: TextField(controller: controllerX, keyboardType: TextInputType.number, decoration: const InputDecoration(labelText: 'Width'))),
-            const Padding(padding: EdgeInsets.symmetric(horizontal: 8), child: Text(':')),
-            Expanded(child: TextField(controller: controllerY, keyboardType: TextInputType.number, decoration: const InputDecoration(labelText: 'Height'))),
+            Expanded(
+              child: TextField(
+                controller: controllerX,
+                keyboardType: TextInputType.number,
+                decoration: const InputDecoration(labelText: 'Width'),
+              ),
+            ),
+            const Padding(
+              padding: EdgeInsets.symmetric(horizontal: 8),
+              child: Text(':'),
+            ),
+            Expanded(
+              child: TextField(
+                controller: controllerY,
+                keyboardType: TextInputType.number,
+                decoration: const InputDecoration(labelText: 'Height'),
+              ),
+            ),
           ],
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Cancel'),
+          ),
           TextButton(
             onPressed: () {
               final x = double.tryParse(controllerX.text);
@@ -470,7 +554,12 @@ class _RobustVideoEditorViewState extends State<RobustVideoEditorView> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(label, style: AppTypography.sectionHeader.copyWith(color: colorScheme.secondary)),
+        Text(
+          label,
+          style: AppTypography.sectionHeader.copyWith(
+            color: colorScheme.secondary,
+          ),
+        ),
         const SizedBox(height: 8),
         SizedBox(
           height: 38,
@@ -488,15 +577,21 @@ class _RobustVideoEditorViewState extends State<RobustVideoEditorView> {
                 child: Container(
                   padding: const EdgeInsets.symmetric(horizontal: 16),
                   decoration: BoxDecoration(
-                    color: isSelected ? colorScheme.primary : colorScheme.surfaceContainerHighest,
+                    color: isSelected
+                        ? colorScheme.primary
+                        : colorScheme.surfaceContainerHighest,
                     borderRadius: BorderRadius.circular(AppRadius.sm),
                   ),
                   child: Center(
                     child: Text(
                       items[i],
                       style: AppTypography.caption.copyWith(
-                        color: isSelected ? colorScheme.onPrimary : colorScheme.onSurface,
-                        fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                        color: isSelected
+                            ? colorScheme.onPrimary
+                            : colorScheme.onSurface,
+                        fontWeight: isSelected
+                            ? FontWeight.bold
+                            : FontWeight.normal,
                       ),
                     ),
                   ),
@@ -511,7 +606,11 @@ class _RobustVideoEditorViewState extends State<RobustVideoEditorView> {
 }
 
 class _TransformBtn extends StatelessWidget {
-  const _TransformBtn({required this.icon, required this.label, required this.onTap});
+  const _TransformBtn({
+    required this.icon,
+    required this.label,
+    required this.onTap,
+  });
   final IconData icon;
   final String label;
   final VoidCallback onTap;
@@ -531,7 +630,10 @@ class _TransformBtn extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 4),
-        Text(label, style: AppTypography.caption.copyWith(color: colorScheme.secondary)),
+        Text(
+          label,
+          style: AppTypography.caption.copyWith(color: colorScheme.secondary),
+        ),
       ],
     );
   }

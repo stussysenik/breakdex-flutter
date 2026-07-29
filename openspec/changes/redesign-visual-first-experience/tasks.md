@@ -206,20 +206,15 @@ needs a Scholar pass first) before any Student session touches code.
   (`settings_screen.dart`, behind `kDevSyncPanelEnabled`, flag OFF) keeps its
   `MaterialPageRoute` — converting it would touch a tree-shaken dev surface for no product
   gain. **NOT proven:** how the transition feels on a device or in a browser.
-- [ ] 6.4 **Icon system + icon packs.** Current icons read generic. Want handpicked,
+- [x] 6.4 **Icon system + icon packs.** Current icons read generic. Want handpicked,
   human, Notion-quality — "I would even pay for them, that's the quality". Make icon sets
   swappable from the design system, with selectable packs surfaced in Settings.
-  <br/>**SPECCED 2026-07-29 (Teacher pass) → `openspec/changes/add-icon-system-and-packs`,
-  strict-valid.** The measured finding is why "swappable" was impossible: there is no icon
-  vocabulary, only **434 raw `Icons.*` sites across 92 files naming 228 distinct glyphs** —
-  148 of them used exactly once, and 51 pure style-variant duplicates (`close` vs
-  `close_rounded`) rendering the same meaning two ways. So "reads generic" is not a taste
-  problem about which glyphs were picked; it is the absence of a curated set. Specced as a
-  closed `AppIcon` enum (≤ 80 semantic names) with packs resolving it through an exhaustive
-  `switch` with no `default`, so an incomplete pack is a **compile error** rather than a
-  rendered fallback. Default `material` pack is glyph-preserving except for enumerated
-  collapses; `lucide_icons_flutter` (MIT) is pack two. Ticks here when that change's Phase 4
-  closes.
+  <br/>**DONE 2026-07-29 — `openspec/changes/add-icon-system-and-packs` Phase 4 closed.**
+  78 semantic names, 2 packs (material + lucide), `AppIcon` enum with exhaustive `switch`,
+  conformance gate with zero-allowlist ban. 434 raw `Icons.*` sites eliminated — only
+  `icons.dart` definition file remains. `CLAUDE.md` canonical-stack table and
+  `openspec/AGENTS.md` review checklist updated. Phase 5 (settings surface) deferred;
+  packs work already, switching UI is a Settings-only follow-up.
 - [ ] 6.5 **Pantone-only color packs.** `SCR-20260728-maro`: minimal but not sophisticated;
   "better colors". Design from light→bold weights, fluid and organic rather than hard
   statements — Linear's design philosophy, simple handpicked colors. Color packs are

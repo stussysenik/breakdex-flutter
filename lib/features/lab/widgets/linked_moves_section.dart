@@ -13,6 +13,7 @@ import 'package:breakdex/core/design/theme.dart';
 import 'package:breakdex/core/design/typography.dart';
 import 'package:breakdex/shared/widgets/app_loader.dart';
 import 'package:breakdex/features/lab/providers/lab_providers.dart';
+import 'package:breakdex/core/design/icons.dart';
 
 /// Horizontal scroll of move cards linked to a lab.
 ///
@@ -43,7 +44,9 @@ class LinkedMovesSection extends ConsumerWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Padding(
-          padding: const EdgeInsets.symmetric(horizontal: AppSpacing.screenEdge),
+          padding: const EdgeInsets.symmetric(
+            horizontal: AppSpacing.screenEdge,
+          ),
           child: Text(
             'LINKED MOVES',
             style: AppTypography.sectionHeader.copyWith(
@@ -127,9 +130,7 @@ class LinkedMovesSection extends ConsumerWidget {
   void _linkMove(final WidgetRef ref, final String moveId) {
     // Get current count so we can append at the end
     final labMoves = ref.read(labMovesProvider(labId)).valueOrNull ?? [];
-    ref
-        .read(labsDaoProvider)
-        .addMoveToLab(labId, moveId, labMoves.length);
+    ref.read(labsDaoProvider).addMoveToLab(labId, moveId, labMoves.length);
     HapticFeedback.mediumImpact();
   }
 }
@@ -137,10 +138,7 @@ class LinkedMovesSection extends ConsumerWidget {
 // -- Linked Move Card ---------------------------------------------------------
 
 class _LinkedMoveCard extends StatefulWidget {
-  const _LinkedMoveCard({
-    required this.move,
-    required this.onRemove,
-  });
+  const _LinkedMoveCard({required this.move, required this.onRemove});
 
   final Move move;
   final VoidCallback onRemove;
@@ -205,8 +203,7 @@ class _LinkedMoveCardState extends State<_LinkedMoveCard> {
                           vertical: 2,
                         ),
                         decoration: BoxDecoration(
-                          color:
-                              colorScheme.surfaceContainerHighest,
+                          color: colorScheme.surfaceContainerHighest,
                           borderRadius: BorderRadius.circular(AppRadius.xs),
                         ),
                         child: Text(
@@ -248,8 +245,8 @@ class _LinkedMoveCardState extends State<_LinkedMoveCard> {
                       color: AppColors.actionAgain,
                       shape: BoxShape.circle,
                     ),
-                    child: const Icon(
-                      Icons.close,
+                    child: const AppIconView(
+                      AppIcon.close,
                       size: 12,
                       color: Colors.white,
                     ),
@@ -290,8 +287,8 @@ class _EmptyLinkedMoves extends StatelessWidget {
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(
-                Icons.link_rounded,
+              AppIconView(
+                AppIcon.link,
                 size: 18,
                 color: colorScheme.secondary.withValues(alpha: 0.5),
               ),
@@ -338,8 +335,8 @@ class _AddLinkedMoveCard extends StatelessWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(
-              Icons.add_rounded,
+            AppIconView(
+              AppIcon.add,
               color: AppColors.accent.withValues(alpha: 0.7),
               size: 24,
             ),

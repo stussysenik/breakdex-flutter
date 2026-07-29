@@ -10,6 +10,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:breakdex/shared/widgets/app_loader.dart';
 import 'package:breakdex/core/database/database.dart';
+import 'package:breakdex/core/design/icons.dart';
 import 'package:breakdex/core/design/spacing.dart';
 import 'package:breakdex/core/design/theme.dart';
 import 'package:breakdex/core/design/typography.dart';
@@ -138,7 +139,8 @@ class _AuraViewState extends ConsumerState<AuraView> {
         // Bottom padding for nav bar clearance.
         SliverPadding(
           padding: EdgeInsets.only(
-            bottom: kBottomNavigationBarHeight +
+            bottom:
+                kBottomNavigationBarHeight +
                 MediaQuery.of(context).padding.bottom +
                 AppSpacing.lg,
           ),
@@ -152,11 +154,12 @@ class _AuraViewState extends ConsumerState<AuraView> {
     final BuildContext context,
     final String fromMoveId,
   ) async {
-    final result = await showModalBottomSheet<({String toMoveId, String affinity})>(
-      context: context,
-      isScrollControlled: true,
-      builder: (_) => _AddConnectionSheet(fromMoveId: fromMoveId),
-    );
+    final result =
+        await showModalBottomSheet<({String toMoveId, String affinity})>(
+          context: context,
+          isScrollControlled: true,
+          builder: (_) => _AddConnectionSheet(fromMoveId: fromMoveId),
+        );
 
     if (result == null) return;
 
@@ -171,10 +174,7 @@ class _AuraViewState extends ConsumerState<AuraView> {
 // ---------------------------------------------------------------------------
 
 class _MoveGrid extends ConsumerWidget {
-  const _MoveGrid({
-    required this.selectedMoveId,
-    required this.onMoveSelected,
-  });
+  const _MoveGrid({required this.selectedMoveId, required this.onMoveSelected});
 
   final String? selectedMoveId;
   final ValueChanged<String> onMoveSelected;
@@ -184,9 +184,8 @@ class _MoveGrid extends ConsumerWidget {
     final movesAsync = ref.watch(_allMovesStreamProvider);
 
     return movesAsync.when(
-      loading: () => const SliverToBoxAdapter(
-        child: Center(child: AppLoader()),
-      ),
+      loading: () =>
+          const SliverToBoxAdapter(child: Center(child: AppLoader())),
       error: (final e, _) => SliverToBoxAdapter(
         child: Center(child: Text('Error loading moves: $e')),
       ),
@@ -198,13 +197,12 @@ class _MoveGrid extends ConsumerWidget {
               child: Center(
                 child: Column(
                   children: [
-                    Icon(
-                      Icons.auto_awesome_rounded,
+                    AppIconView(
+                      AppIcon.discover,
                       size: 48,
-                      color: Theme.of(context)
-                          .colorScheme
-                          .secondary
-                          .withValues(alpha: 0.4),
+                      color: Theme.of(
+                        context,
+                      ).colorScheme.secondary.withValues(alpha: 0.4),
                     ),
                     const SizedBox(height: AppSpacing.md),
                     Text(
@@ -232,19 +230,16 @@ class _MoveGrid extends ConsumerWidget {
               crossAxisSpacing: AppSpacing.sm,
               childAspectRatio: 1.3,
             ),
-            delegate: SliverChildBuilderDelegate(
-              (final context, final index) {
-                final move = moves[index];
-                final isSelected = move.id == selectedMoveId;
+            delegate: SliverChildBuilderDelegate((final context, final index) {
+              final move = moves[index];
+              final isSelected = move.id == selectedMoveId;
 
-                return _MoveGridTile(
-                  move: move,
-                  isSelected: isSelected,
-                  onTap: () => onMoveSelected(move.id),
-                );
-              },
-              childCount: moves.length,
-            ),
+              return _MoveGridTile(
+                move: move,
+                isSelected: isSelected,
+                onTap: () => onMoveSelected(move.id),
+              );
+            }, childCount: moves.length),
           ),
         );
       },
@@ -308,8 +303,7 @@ class _MoveGridTile extends ConsumerWidget {
             // Connection count badge.
             if (linkCount > 0)
               Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                 decoration: BoxDecoration(
                   color: colorScheme.primary.withValues(alpha: 0.12),
                   borderRadius: BorderRadius.circular(AppRadius.xs),
@@ -342,10 +336,7 @@ class _MoveGridTile extends ConsumerWidget {
 // ---------------------------------------------------------------------------
 
 class _ConnectionPanel extends ConsumerWidget {
-  const _ConnectionPanel({
-    required this.moveId,
-    required this.onAddConnection,
-  });
+  const _ConnectionPanel({required this.moveId, required this.onAddConnection});
 
   final String moveId;
   final VoidCallback onAddConnection;
@@ -380,8 +371,10 @@ class _ConnectionPanel extends ConsumerWidget {
                 GestureDetector(
                   onTap: onAddConnection,
                   child: Container(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 4,
+                    ),
                     decoration: BoxDecoration(
                       color: colorScheme.primary.withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(AppRadius.sm),
@@ -389,8 +382,8 @@ class _ConnectionPanel extends ConsumerWidget {
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Icon(
-                          Icons.add_rounded,
+                        AppIconView(
+                          AppIcon.add,
                           size: 14,
                           color: colorScheme.primary,
                         ),
@@ -442,45 +435,50 @@ class _ConnectionPanel extends ConsumerWidget {
                     for (int i = 0; i < links.length; i++)
                       Padding(
                         padding: EdgeInsets.only(
-                          bottom:
-                              i < links.length - 1 ? AppSpacing.sm : 0,
+                          bottom: i < links.length - 1 ? AppSpacing.sm : 0,
                         ),
-                        child: AuraLinkTile(
-                          fromMoveName:
-                              moveMap[links[i].fromMoveId] ?? 'Unknown',
-                          toMoveName:
-                              moveMap[links[i].toMoveId] ?? 'Unknown',
-                          affinity:
-                              AuraAffinity.fromString(links[i].affinity),
-                          notes: links[i].notes,
-                          onAffinityChanged: (final newAffinity) {
-                            ref.read(auraDaoProvider).upsertLink(
-                                  links[i].fromMoveId,
-                                  links[i].toMoveId,
-                                  newAffinity.name,
+                        child:
+                            AuraLinkTile(
+                                  fromMoveName:
+                                      moveMap[links[i].fromMoveId] ?? 'Unknown',
+                                  toMoveName:
+                                      moveMap[links[i].toMoveId] ?? 'Unknown',
+                                  affinity: AuraAffinity.fromString(
+                                    links[i].affinity,
+                                  ),
                                   notes: links[i].notes,
-                                );
-                          },
-                          onDelete: () {
-                            ref.read(auraDaoProvider).deleteLink(
-                                  links[i].fromMoveId,
-                                  links[i].toMoveId,
-                                );
-                            unawaited(HapticFeedback.lightImpact());
-                          },
-                        )
-                            .animate()
-                            .fadeIn(
-                              duration: AppMotion.moderate01,
-                              delay: Duration(milliseconds: i * 40),
-                            )
-                            .slideY(
-                              begin: 0.1,
-                              end: 0,
-                              duration: AppMotion.moderate02,
-                              delay: Duration(milliseconds: i * 40),
-                              curve: AppMotion.entrance,
-                            ),
+                                  onAffinityChanged: (final newAffinity) {
+                                    ref
+                                        .read(auraDaoProvider)
+                                        .upsertLink(
+                                          links[i].fromMoveId,
+                                          links[i].toMoveId,
+                                          newAffinity.name,
+                                          notes: links[i].notes,
+                                        );
+                                  },
+                                  onDelete: () {
+                                    ref
+                                        .read(auraDaoProvider)
+                                        .deleteLink(
+                                          links[i].fromMoveId,
+                                          links[i].toMoveId,
+                                        );
+                                    unawaited(HapticFeedback.lightImpact());
+                                  },
+                                )
+                                .animate()
+                                .fadeIn(
+                                  duration: AppMotion.moderate01,
+                                  delay: Duration(milliseconds: i * 40),
+                                )
+                                .slideY(
+                                  begin: 0.1,
+                                  end: 0,
+                                  duration: AppMotion.moderate02,
+                                  delay: Duration(milliseconds: i * 40),
+                                  curve: AppMotion.entrance,
+                                ),
                       ),
                   ],
                 );
@@ -541,8 +539,9 @@ class _AddConnectionSheetState extends ConsumerState<_AddConnectionSheet> {
   Widget build(final BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
     final movesAsync = ref.watch(_allMovesStreamProvider);
-    final existingLinksAsync =
-        ref.watch(auraLinksFromProvider(widget.fromMoveId));
+    final existingLinksAsync = ref.watch(
+      auraLinksFromProvider(widget.fromMoveId),
+    );
 
     return DraggableScrollableSheet(
       initialChildSize: 0.7,
@@ -587,9 +586,9 @@ class _AddConnectionSheetState extends ConsumerState<_AddConnectionSheet> {
                 textField: true,
                 child: TextField(
                   controller: _searchController,
-                  decoration: const InputDecoration(
+                  decoration: InputDecoration(
                     hintText: 'Search moves...',
-                    prefixIcon: Icon(Icons.search_rounded),
+                    prefixIcon: AppIconView(AppIcon.search),
                   ),
                 ),
               ),
@@ -598,8 +597,7 @@ class _AddConnectionSheetState extends ConsumerState<_AddConnectionSheet> {
               // Move list
               Expanded(
                 child: movesAsync.when(
-                  loading: () =>
-                      const Center(child: AppLoader()),
+                  loading: () => const Center(child: AppLoader()),
                   error: (final e, _) => Center(child: Text('Error: $e')),
                   data: (final moves) {
                     // Exclude the source move and already-linked moves.
@@ -608,11 +606,13 @@ class _AddConnectionSheetState extends ConsumerState<_AddConnectionSheet> {
                         .toSet();
 
                     final filtered = moves
-                        .where((final m) =>
-                            m.id != widget.fromMoveId &&
-                            !existingIds.contains(m.id) &&
-                            (_searchQuery.isEmpty ||
-                                m.name.toLowerCase().contains(_searchQuery)))
+                        .where(
+                          (final m) =>
+                              m.id != widget.fromMoveId &&
+                              !existingIds.contains(m.id) &&
+                              (_searchQuery.isEmpty ||
+                                  m.name.toLowerCase().contains(_searchQuery)),
+                        )
                         .toList();
 
                     if (filtered.isEmpty) {
@@ -659,10 +659,7 @@ class _AddConnectionSheetState extends ConsumerState<_AddConnectionSheet> {
 
 /// A single row in the add-connection sheet: move name + 3 affinity buttons.
 class _MoveConnectionRow extends StatelessWidget {
-  const _MoveConnectionRow({
-    required this.moveName,
-    required this.onSelect,
-  });
+  const _MoveConnectionRow({required this.moveName, required this.onSelect});
 
   final String moveName;
   final ValueChanged<AuraAffinity> onSelect;

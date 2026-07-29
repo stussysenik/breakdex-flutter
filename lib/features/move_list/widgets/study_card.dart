@@ -155,75 +155,81 @@ class _StudyCardShell extends StatelessWidget {
         scaleEnd: 0.98,
         child:
             RepaintBoundary(
-              child: Container(
-                margin: const EdgeInsets.only(bottom: AppSpacing.md),
-                clipBehavior: Clip.antiAlias,
-                decoration: AppSurfaces.panel(context, radius: AppRadius.md),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    SizedBox(
-                      height: _studyMediaHeight,
-                      width: double.infinity,
-                      child: media,
+                  child: Container(
+                    margin: const EdgeInsets.only(bottom: AppSpacing.md),
+                    clipBehavior: Clip.antiAlias,
+                    decoration: AppSurfaces.panel(
+                      context,
+                      radius: AppRadius.md,
                     ),
-                    Padding(
-                      padding: const EdgeInsets.all(AppSpacing.md),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        SizedBox(
+                          height: _studyMediaHeight,
+                          width: double.infinity,
+                          child: media,
+                        ),
+                        Padding(
+                          padding: const EdgeInsets.all(AppSpacing.md),
+                          child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Expanded(
-                                child: Text(
-                                  title,
-                                  maxLines: 1,
+                              Row(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Expanded(
+                                    child: Text(
+                                      title,
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: AppTypography.titleSmall.copyWith(
+                                        color: colorScheme.onSurface,
+                                      ),
+                                    ),
+                                  ),
+                                  const SizedBox(width: AppSpacing.sm),
+                                  trailing,
+                                ],
+                              ),
+                              if (meta.isNotEmpty) ...[
+                                const SizedBox(height: AppSpacing.sm),
+                                Wrap(
+                                  spacing: AppSpacing.md,
+                                  runSpacing: AppSpacing.xs,
+                                  crossAxisAlignment: WrapCrossAlignment.center,
+                                  children: meta,
+                                ),
+                              ],
+                              if (hasNotes) ...[
+                                const SizedBox(height: AppSpacing.sm),
+                                Text(
+                                  trimmedNotes,
+                                  maxLines: 2,
                                   overflow: TextOverflow.ellipsis,
-                                  style: AppTypography.titleSmall.copyWith(
-                                    color: colorScheme.onSurface,
+                                  style: AppTypography.bodySmall.copyWith(
+                                    color: colorScheme.secondary,
                                   ),
                                 ),
-                              ),
-                              const SizedBox(width: AppSpacing.sm),
-                              trailing,
+                              ],
                             ],
                           ),
-                          if (meta.isNotEmpty) ...[
-                            const SizedBox(height: AppSpacing.sm),
-                            Wrap(
-                              spacing: AppSpacing.md,
-                              runSpacing: AppSpacing.xs,
-                              crossAxisAlignment: WrapCrossAlignment.center,
-                              children: meta,
-                            ),
-                          ],
-                          if (hasNotes) ...[
-                            const SizedBox(height: AppSpacing.sm),
-                            Text(
-                              trimmedNotes,
-                              maxLines: 2,
-                              overflow: TextOverflow.ellipsis,
-                              style: AppTypography.bodySmall.copyWith(
-                                color: colorScheme.secondary,
-                              ),
-                            ),
-                          ],
-                        ],
-                      ),
+                        ),
+                      ],
                     ),
-                  ],
+                  ),
+                )
+                .animate()
+                .fadeIn(
+                  duration: AppMotion.moderate01,
+                  delay: Duration(milliseconds: index.clamp(0, 15) * 40),
+                )
+                .slideY(
+                  begin: 0.03,
+                  duration: AppMotion.moderate02,
+                  delay: Duration(milliseconds: index.clamp(0, 15) * 40),
+                  curve: AppMotion.entrance,
                 ),
-              ),
-            ).animate().fadeIn(
-              duration: AppMotion.moderate01,
-              delay: Duration(milliseconds: index.clamp(0, 15) * 40),
-            ).slideY(
-              begin: 0.03,
-              duration: AppMotion.moderate02,
-              delay: Duration(milliseconds: index.clamp(0, 15) * 40),
-              curve: AppMotion.entrance,
-            ),
       ),
     );
   }
@@ -266,8 +272,8 @@ class _StudyMediaMissing extends StatelessWidget {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(
-            recoverable ? Icons.cloud_download_outlined : Icons.videocam_off,
+          AppIconView(
+            recoverable ? AppIcon.download : AppIcon.videoOff,
             size: 40,
             color: recoverable
                 ? AppColors.accent.withValues(alpha: 0.6)
@@ -300,7 +306,7 @@ class _BeatCountLabel extends StatelessWidget {
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        Icon(Icons.graphic_eq_rounded, size: 12, color: colorScheme.secondary),
+        AppIconView(AppIcon.graph, size: 12, color: colorScheme.secondary),
         const SizedBox(width: AppSpacing.xxs),
         Text(
           '$count beat${count == 1 ? '' : 's'}',

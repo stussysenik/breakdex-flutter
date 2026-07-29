@@ -59,6 +59,11 @@ openspec/changes/<verb-led-id>/
   motion composes from `AppMotion` family tokens (Fluid/Morph doctrine) — raw
   `Curve`/`Duration` literals driving visible motion on a product surface are
   violations; every `AnimationController` is disposed with its owning widget.
+- Iconography: **`AppIcon` semantic enum** replaces raw `Icons.*` everywhere.
+  **Review checklist:** raw `Icons.*` / `CupertinoIcons.*` under `lib/` (outside
+  `icons.dart` definition) is a violation — enforced by
+  `test/core/design/icon_conformance_test.dart`. 78 names in 8 sections, 2 packs
+  (material + lucide), resolved through `AppIconView` at build time.
 - Localization: user-facing copy is resolved through `AppLocalizations` (ARB in
   `lib/l10n/`, generated `lib/l10n/gen/` committed & CI-verified via
   `scripts/check_l10n.sh`). **Review checklist:** no *new* hard-coded user-facing

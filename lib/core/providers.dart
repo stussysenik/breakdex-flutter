@@ -22,6 +22,7 @@ import 'package:breakdex/core/data/repositories.dart';
 import 'package:breakdex/core/data/drift_repositories.dart';
 import 'package:breakdex/core/data/sync_aware_repositories.dart';
 import 'package:breakdex/core/design/colors.dart';
+import 'package:breakdex/core/design/icons.dart';
 import 'package:breakdex/core/design/typography.dart';
 import 'package:breakdex/core/models/fsrs_settings.dart';
 import 'package:breakdex/core/models/learning_state.dart';

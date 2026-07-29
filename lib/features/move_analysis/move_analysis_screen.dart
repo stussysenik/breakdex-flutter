@@ -10,6 +10,7 @@ import 'package:go_router/go_router.dart';
 
 import 'package:breakdex/core/design/spacing.dart';
 import 'package:breakdex/core/design/typography.dart';
+import 'package:breakdex/core/design/icons.dart';
 import 'package:breakdex/core/models/pose_frame.dart';
 import 'package:breakdex/core/providers.dart';
 import 'package:breakdex/shared/widgets/video_player_widget.dart'
@@ -35,18 +36,13 @@ import 'package:breakdex/features/move_analysis/widgets/skeleton_3d_panel.dart';
 /// - 3D rendering uses `Scene3DView` widget (PlatformView → SceneKit)
 /// - State is managed via Riverpod providers in `analysis_providers.dart`
 class MoveAnalysisScreen extends ConsumerStatefulWidget {
-  const MoveAnalysisScreen({
-    super.key,
-    this.moveId,
-    required this.videoPath,
-  });
+  const MoveAnalysisScreen({super.key, this.moveId, required this.videoPath});
 
   final String? moveId;
   final String videoPath;
 
   @override
-  ConsumerState<MoveAnalysisScreen> createState() =>
-      _MoveAnalysisScreenState();
+  ConsumerState<MoveAnalysisScreen> createState() => _MoveAnalysisScreenState();
 }
 
 class _MoveAnalysisScreenState extends ConsumerState<MoveAnalysisScreen> {
@@ -97,13 +93,11 @@ class _MoveAnalysisScreenState extends ConsumerState<MoveAnalysisScreen> {
                         else if (mode == AnalysisMode.camera)
                           _buildCameraPlaceholder(colorScheme)
                         else
-                          const VideoPlaceholder(icon: Icons.videocam_off),
+                          const VideoPlaceholder(icon: AppIcon.videoOff),
 
                         // Pose overlay on top of video
                         if (pose != null)
-                          Positioned.fill(
-                            child: PoseOverlay(poseFrame: pose),
-                          ),
+                          Positioned.fill(child: PoseOverlay(poseFrame: pose)),
 
                         // Analyze button (video mode)
                         if (mode == AnalysisMode.video &&
@@ -121,9 +115,7 @@ class _MoveAnalysisScreenState extends ConsumerState<MoveAnalysisScreen> {
                   Container(height: 1, color: colorScheme.outline),
 
                   // Bottom half: 3D skeleton
-                  const Expanded(
-                    child: Skeleton3DPanel(),
-                  ),
+                  const Expanded(child: Skeleton3DPanel()),
                 ],
               ),
             ),
@@ -136,7 +128,10 @@ class _MoveAnalysisScreenState extends ConsumerState<MoveAnalysisScreen> {
     );
   }
 
-  Widget _buildHeader(final BuildContext context, final ColorScheme colorScheme) {
+  Widget _buildHeader(
+    final BuildContext context,
+    final ColorScheme colorScheme,
+  ) {
     return Container(
       padding: const EdgeInsets.symmetric(
         horizontal: AppSpacing.screenEdge,
@@ -153,7 +148,11 @@ class _MoveAnalysisScreenState extends ConsumerState<MoveAnalysisScreen> {
             onTap: () => context.pop(),
             child: Row(
               children: [
-                Icon(Icons.chevron_left, color: colorScheme.secondary, size: 20),
+                AppIconView(
+                  AppIcon.back,
+                  color: colorScheme.secondary,
+                  size: 20,
+                ),
                 Text(
                   'Back',
                   style: AppTypography.bodyMedium.copyWith(
@@ -188,23 +187,23 @@ class _MoveAnalysisScreenState extends ConsumerState<MoveAnalysisScreen> {
           mainAxisSize: MainAxisSize.min,
           children: [
             Icon(
-              livePose ? Icons.camera_alt : Icons.camera_alt_outlined,
-              color: livePose ? Theme.of(context).colorScheme.primary : Colors.white54,
+              livePose
+                  ? AppIcon.camera.resolve(context)
+                  : AppIcon.camera.resolve(context),
+              color: livePose
+                  ? Theme.of(context).colorScheme.primary
+                  : Colors.white54,
               size: 48,
             ),
             const SizedBox(height: 8),
             Text(
               livePose ? 'Live Pose Detection Active' : 'Camera Mode',
-              style: AppTypography.bodyMedium.copyWith(
-                color: Colors.white70,
-              ),
+              style: AppTypography.bodyMedium.copyWith(color: Colors.white70),
             ),
             if (livePose)
               Text(
                 'Point camera at a person',
-                style: AppTypography.caption.copyWith(
-                  color: Colors.white38,
-                ),
+                style: AppTypography.caption.copyWith(color: Colors.white38),
               ),
           ],
         ),
@@ -230,13 +229,14 @@ class _MoveAnalysisScreenState extends ConsumerState<MoveAnalysisScreen> {
               const SizedBox(
                 width: 14,
                 height: 14,
-                child: AppLoader(
-                  size: 6,
-                  color: Colors.white,
-                ),
+                child: AppLoader(size: 6, color: Colors.white),
               )
             else
-              const Icon(Icons.auto_fix_high, color: Colors.white, size: 16),
+              const AppIconView(
+                AppIcon.discover,
+                color: Colors.white,
+                size: 16,
+              ),
             const SizedBox(width: 6),
             Text(
               _isAnalyzing ? 'Analyzing...' : 'Analyze Pose',

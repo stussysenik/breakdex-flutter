@@ -5,6 +5,7 @@ import 'package:breakdex/core/design/spacing.dart';
 import 'package:breakdex/core/design/typography.dart';
 import 'package:breakdex/core/config/update_gate.dart';
 import 'package:breakdex/core/config/update_gate_providers.dart';
+import 'package:breakdex/core/design/icons.dart';
 
 /// Root wrapper that renders the config-driven update prompt over [child].
 ///
@@ -108,10 +109,7 @@ class _SoftNagStrip extends StatelessWidget {
               ),
             ),
             const SizedBox(width: AppSpacing.sm),
-            TextButton(
-              onPressed: onDismiss,
-              child: const Text('Dismiss'),
-            ),
+            TextButton(onPressed: onDismiss, child: const Text('Dismiss')),
           ],
         ),
       ),
@@ -138,7 +136,11 @@ class _HardBlockCard extends StatelessWidget {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(Icons.system_update, size: 40, color: colorScheme.primary),
+              AppIconView(
+                AppIcon.download,
+                size: 40,
+                color: colorScheme.primary,
+              ),
               const SizedBox(height: AppSpacing.md),
               Text(
                 'Update required',

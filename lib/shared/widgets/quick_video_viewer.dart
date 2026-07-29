@@ -10,6 +10,7 @@ import 'package:video_player/video_player.dart';
 
 import 'package:breakdex/core/design/spacing.dart';
 import 'package:breakdex/core/design/typography.dart';
+import 'package:breakdex/core/design/icons.dart';
 import 'package:breakdex/core/navigation/app_route_observer.dart';
 import 'package:breakdex/core/services/media_playback_coordinator.dart';
 import 'package:breakdex/core/utils/diagnostics.dart';
@@ -37,7 +38,10 @@ class _QuickVideoViewerState extends ConsumerState<QuickVideoViewer>
   @override
   void initState() {
     super.initState();
-    DiagnosticsLog.info('QuickVideoViewer', '_init videoPath=${widget.videoPath}');
+    DiagnosticsLog.info(
+      'QuickVideoViewer',
+      '_init videoPath=${widget.videoPath}',
+    );
     WidgetsBinding.instance.addObserver(this);
     _controller = fileVideoController(widget.videoPath)
       ..setLooping(true)
@@ -49,7 +53,9 @@ class _QuickVideoViewerState extends ConsumerState<QuickVideoViewer>
           .then((_) {
             if (mounted) {
               setState(() => _initialized = true);
-              MediaPlaybackCoordinator.shared.claimPrimary('qv_${widget.videoPath}');
+              MediaPlaybackCoordinator.shared.claimPrimary(
+                'qv_${widget.videoPath}',
+              );
               _controller.play();
             }
           })
@@ -57,9 +63,9 @@ class _QuickVideoViewerState extends ConsumerState<QuickVideoViewer>
             DiagnosticsLog.error('QuickVideoViewer', '_init failed: $e');
             if (mounted) {
               setState(() {
-              _hasError = true;
-              _errorMessage = '$e';
-            });
+                _hasError = true;
+                _errorMessage = '$e';
+              });
             }
           });
   }
@@ -71,7 +77,8 @@ class _QuickVideoViewerState extends ConsumerState<QuickVideoViewer>
     if (_route != nextRoute) {
       if (_route is ModalRoute<dynamic>) appRouteObserver.unsubscribe(this);
       _route = nextRoute;
-      if (nextRoute is ModalRoute<dynamic>) appRouteObserver.subscribe(this, nextRoute);
+      if (nextRoute is ModalRoute<dynamic>)
+        appRouteObserver.subscribe(this, nextRoute);
     }
   }
 
@@ -143,7 +150,11 @@ class _QuickVideoViewerState extends ConsumerState<QuickVideoViewer>
                     color: Colors.black.withValues(alpha: 0.4),
                     shape: BoxShape.circle,
                   ),
-                  child: const Icon(Icons.close_rounded, color: Colors.white, size: 24),
+                  child: const AppIconView(
+                    AppIcon.close,
+                    color: Colors.white,
+                    size: 24,
+                  ),
                 ),
               ),
             ),
@@ -156,7 +167,9 @@ class _QuickVideoViewerState extends ConsumerState<QuickVideoViewer>
               child: Center(
                 child: Text(
                   widget.title!,
-                  style: AppTypography.titleSmall.copyWith(color: Colors.white70),
+                  style: AppTypography.titleSmall.copyWith(
+                    color: Colors.white70,
+                  ),
                 ),
               ),
             ),
@@ -178,16 +191,18 @@ class _QuickVideoViewerState extends ConsumerState<QuickVideoViewer>
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                   children: [
-                    _CtrlBtn(Icons.replay_5_rounded, () {
+                    _CtrlBtn(AppIcon.replay.resolve(context), () {
                       final pos = _controller.value.position;
                       _controller.seekTo(pos - const Duration(seconds: 5));
                     }),
                     _CtrlBtn(
-                      _controller.value.isPlaying ? Icons.pause_circle_filled : Icons.play_circle_filled,
+                      _controller.value.isPlaying
+                          ? AppIcon.pause.resolve(context)
+                          : AppIcon.play.resolve(context),
                       _togglePlay,
                       size: 48,
                     ),
-                    _CtrlBtn(Icons.forward_5_rounded, () {
+                    _CtrlBtn(AppIcon.skip.resolve(context), () {
                       final pos = _controller.value.position;
                       final dur = _controller.value.duration;
                       var next = pos + const Duration(seconds: 5);
@@ -208,10 +223,12 @@ class _QuickVideoViewerState extends ConsumerState<QuickVideoViewer>
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          const Icon(Icons.error_outline, color: Colors.white38, size: 48),
+          const AppIconView(AppIcon.error, color: Colors.white38, size: 48),
           const SizedBox(height: AppSpacing.md),
-          Text(_errorMessage ?? 'Failed to load video',
-              style: AppTypography.bodySmall.copyWith(color: Colors.white54)),
+          Text(
+            _errorMessage ?? 'Failed to load video',
+            style: AppTypography.bodySmall.copyWith(color: Colors.white54),
+          ),
         ],
       ),
     );

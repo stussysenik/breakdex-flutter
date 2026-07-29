@@ -13,6 +13,7 @@ import 'package:breakdex/core/design/spacing.dart';
 import 'package:breakdex/core/design/theme.dart';
 import 'package:breakdex/core/design/typography.dart';
 import 'package:breakdex/core/providers.dart';
+import 'package:breakdex/core/design/icons.dart';
 import 'package:breakdex/features/lab/providers/lab_providers.dart';
 
 // ---------------------------------------------------------------------------
@@ -106,8 +107,7 @@ class _LabCalendarViewState extends ConsumerState<LabCalendarView> {
             children: [
               IconButton(
                 onPressed: _goToPreviousMonth,
-                icon: const Icon(Icons.chevron_left_rounded),
-                iconSize: 28,
+                icon: const AppIconView(AppIcon.back, size: 28),
                 color: colorScheme.onSurface,
               ),
               Text(
@@ -119,8 +119,7 @@ class _LabCalendarViewState extends ConsumerState<LabCalendarView> {
               ),
               IconButton(
                 onPressed: _goToNextMonth,
-                icon: const Icon(Icons.chevron_right_rounded),
-                iconSize: 28,
+                icon: const AppIconView(AppIcon.forward, size: 28),
                 color: colorScheme.onSurface,
               ),
             ],
@@ -157,7 +156,10 @@ class _LabCalendarViewState extends ConsumerState<LabCalendarView> {
   }
 
   /// Show a bottom sheet listing the day's activities.
-  Future<void> _showDayDetail(final BuildContext context, final DateTime date) async {
+  Future<void> _showDayDetail(
+    final BuildContext context,
+    final DateTime date,
+  ) async {
     unawaited(HapticFeedback.selectionClick());
     await showModalBottomSheet<void>(
       context: context,
@@ -505,8 +507,7 @@ class _DayDetailSheet extends ConsumerWidget {
 
               Expanded(
                 child: dayDataAsync.when(
-                  loading: () =>
-                      const Center(child: AppLoader()),
+                  loading: () => const Center(child: AppLoader()),
                   error: (final e, _) => Center(child: Text('Error: $e')),
                   data: (final data) {
                     if (data.isEmpty) {
@@ -685,7 +686,10 @@ class _DayActivityItem {
 
 /// Provider that fetches all activity details for a specific day.
 final _dayDetailProvider =
-    FutureProvider.family<List<_DayActivityItem>, DateTime>((final ref, final date) async {
+    FutureProvider.family<List<_DayActivityItem>, DateTime>((
+      final ref,
+      final date,
+    ) async {
       final start = DateTime(date.year, date.month, date.day);
       final end = start.add(const Duration(days: 1));
       final items = <_DayActivityItem>[];

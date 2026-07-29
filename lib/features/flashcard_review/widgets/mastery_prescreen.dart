@@ -19,6 +19,7 @@ import 'package:breakdex/shared/widgets/app_segmented_control.dart';
 import 'package:breakdex/features/flashcard_review/providers/deck_providers.dart';
 import 'package:breakdex/features/flashcard_review/providers/review_providers.dart';
 import 'package:breakdex/features/flashcard_review/widgets/create_deck_sheet.dart';
+import 'package:breakdex/core/design/icons.dart';
 
 /// The session launcher shown before entering a flashcard review session.
 class MasteryPrescreen extends ConsumerWidget {
@@ -66,13 +67,12 @@ class _StateModeSection extends ConsumerWidget {
   Widget build(final BuildContext context, final WidgetRef ref) {
     final selectedKind = ref.watch(reviewEntityKindProvider);
     final isMoves = selectedKind == ReviewEntityKind.moves;
-    
+
     final matrixAsync = ref.watch(reviewStateMatrixProvider);
     final stateLabels = ref.watch(learningStateLabelsProvider);
     final entityNames = ref.watch(entityNamesProvider);
     final l10n = AppLocalizations.of(context);
-    final title =
-        isMoves ? entityNames.movePlural : entityNames.comboPlural;
+    final title = isMoves ? entityNames.movePlural : entityNames.comboPlural;
 
     final practiceAll = ref.watch(_practiceAllModeProvider);
 
@@ -100,7 +100,7 @@ class _StateModeSection extends ConsumerWidget {
               },
             ),
             const SizedBox(height: AppSpacing.lg),
-            
+
             _BasicPracticeToggle(
               isEnabled: practiceAll,
               onChanged: (final value) {
@@ -144,7 +144,7 @@ class _StateModeSection extends ConsumerWidget {
     ref.read(reviewSessionTargetMoveIdsProvider.notifier).state = null;
     ref.read(reviewStateFilterProvider.notifier).state = state;
     ref.read(reviewCustomStateFilterProvider.notifier).state = null;
-    
+
     // We already synced practiceAll in the toggle, so just refresh and launch
     refreshReviewSession(ref);
     ref.read(reviewSessionActiveProvider.notifier).state = true;
@@ -164,7 +164,7 @@ class _StateModeSection extends ConsumerWidget {
     ref.read(reviewSessionTargetMoveIdsProvider.notifier).state = null;
     ref.read(reviewStateFilterProvider.notifier).state = null;
     ref.read(reviewCustomStateFilterProvider.notifier).state = dbValue;
-    
+
     refreshReviewSession(ref);
     ref.read(reviewSessionActiveProvider.notifier).state = true;
   }
@@ -173,7 +173,10 @@ class _StateModeSection extends ConsumerWidget {
 final _practiceAllModeProvider = StateProvider<bool>((final ref) => false);
 
 class _BasicPracticeToggle extends StatelessWidget {
-  const _BasicPracticeToggle({required this.isEnabled, required this.onChanged});
+  const _BasicPracticeToggle({
+    required this.isEnabled,
+    required this.onChanged,
+  });
   final bool isEnabled;
   final ValueChanged<bool> onChanged;
 
@@ -182,16 +185,23 @@ class _BasicPracticeToggle extends StatelessWidget {
     final colorScheme = Theme.of(context).colorScheme;
     final l10n = AppLocalizations.of(context);
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: 8),
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.md,
+        vertical: 8,
+      ),
       decoration: BoxDecoration(
-        color: isEnabled ? colorScheme.primary.withValues(alpha: 0.05) : Colors.transparent,
+        color: isEnabled
+            ? colorScheme.primary.withValues(alpha: 0.05)
+            : Colors.transparent,
         border: Border.all(color: colorScheme.outline.withValues(alpha: 0.2)),
         borderRadius: BorderRadius.circular(AppRadius.sm),
       ),
       child: Row(
         children: [
           Icon(
-            isEnabled ? Icons.bolt_rounded : Icons.bolt_outlined,
+            isEnabled
+                ? AppIcon.flashcard.resolve(context)
+                : AppIcon.flashcard.resolve(context),
             color: isEnabled ? colorScheme.primary : colorScheme.secondary,
             size: 20,
           ),
@@ -205,7 +215,9 @@ class _BasicPracticeToggle extends StatelessWidget {
                   style: AppTypography.bodySmall.copyWith(
                     fontWeight: FontWeight.w900,
                     fontFamily: 'Menlo',
-                    color: isEnabled ? colorScheme.primary : colorScheme.onSurface,
+                    color: isEnabled
+                        ? colorScheme.primary
+                        : colorScheme.onSurface,
                   ),
                 ),
                 Text(
@@ -224,7 +236,6 @@ class _BasicPracticeToggle extends StatelessWidget {
             onChanged: onChanged,
             activeThumbColor: colorScheme.primary,
           ),
-
         ],
       ),
     );
@@ -247,12 +258,12 @@ class _ReviewLaneToggle extends ConsumerWidget {
       items: [
         AppSegmentedControlItem(
           value: ReviewEntityKind.moves,
-          icon: Icons.trip_origin_rounded,
+          icon: AppIcon.timeline.resolve(context),
           label: entityNames.movePlural,
         ),
         AppSegmentedControlItem(
           value: ReviewEntityKind.combos,
-          icon: Icons.timeline_rounded,
+          icon: AppIcon.timeline.resolve(context),
           label: entityNames.comboPlural,
         ),
       ],
@@ -274,7 +285,7 @@ class _ReviewEmptyState extends ConsumerWidget {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(Icons.auto_awesome_outlined, size: 64, color: colorScheme.secondary),
+          AppIconView(AppIcon.discover, size: 64, color: colorScheme.secondary),
           const SizedBox(height: AppSpacing.md),
           Text(
             l10n.revArsenalEmpty,
@@ -321,7 +332,7 @@ class _DecksSection extends ConsumerWidget {
               ),
             ),
             IconButton(
-              icon: const Icon(Icons.add_rounded, size: 24),
+              icon: const AppIconView(AppIcon.add, size: 24),
               onPressed: () => CreateDeckSheet.show(context),
               tooltip: l10n.revCreateDeck,
             ),
@@ -339,7 +350,8 @@ class _DecksSection extends ConsumerWidget {
               shrinkWrap: true,
               physics: const NeverScrollableScrollPhysics(),
               itemCount: decks.length,
-              separatorBuilder: (final _, final index) => const SizedBox(height: AppSpacing.sm),
+              separatorBuilder: (final _, final index) =>
+                  const SizedBox(height: AppSpacing.sm),
               itemBuilder: (final context, final index) {
                 final deck = decks[index];
                 return _DeckListRow(
@@ -358,7 +370,9 @@ class _DecksSection extends ConsumerWidget {
 
   void _startDeckSession(final WidgetRef ref, final Deck deck) {
     HapticFeedback.heavyImpact();
-    ref.read(reviewSessionSourceProvider.notifier).set(ReviewSessionSource.deck);
+    ref
+        .read(reviewSessionSourceProvider.notifier)
+        .set(ReviewSessionSource.deck);
     ref.read(selectedDeckProvider.notifier).state = deck;
     ref.read(reviewSessionTargetMoveIdsProvider.notifier).state = null;
     refreshReviewSession(ref);
@@ -377,7 +391,7 @@ class _DecksSection extends ConsumerWidget {
           mainAxisSize: MainAxisSize.min,
           children: [
             ListTile(
-              leading: const Icon(Icons.edit_rounded),
+              leading: const AppIconView(AppIcon.edit),
               title: Text(AppLocalizations.of(context).revEditDeck),
               onTap: () {
                 Navigator.pop(context);
@@ -385,7 +399,7 @@ class _DecksSection extends ConsumerWidget {
               },
             ),
             ListTile(
-              leading: const Icon(Icons.delete_outline_rounded, color: Colors.red),
+              leading: const AppIconView(AppIcon.delete, color: Colors.red),
               title: Text(
                 AppLocalizations.of(context).revDeleteDeck,
                 style: const TextStyle(color: Colors.red),
@@ -416,11 +430,17 @@ class _EmptyDeckState extends StatelessWidget {
       ),
       child: Column(
         children: [
-          Icon(Icons.layers_outlined, size: 48, color: colorScheme.secondary.withValues(alpha: 0.4)),
+          AppIconView(
+            AppIcon.study,
+            size: 48,
+            color: colorScheme.secondary.withValues(alpha: 0.4),
+          ),
           const SizedBox(height: AppSpacing.md),
           Text(
             l10n.revNoCustomDecks,
-            style: AppTypography.bodyMedium.copyWith(color: colorScheme.secondary),
+            style: AppTypography.bodyMedium.copyWith(
+              color: colorScheme.secondary,
+            ),
           ),
           const SizedBox(height: AppSpacing.md),
           OutlinedButton(
@@ -465,7 +485,9 @@ class _DeckListRow extends StatelessWidget {
         child: Row(
           children: [
             Icon(
-              isSmart ? Icons.auto_awesome_rounded : Icons.layers_rounded,
+              isSmart
+                  ? AppIcon.discover.resolve(context)
+                  : AppIcon.study.resolve(context),
               size: 20,
               color: colorScheme.primary,
             ),
@@ -494,7 +516,7 @@ class _DeckListRow extends StatelessWidget {
                 ],
               ),
             ),
-            const Icon(Icons.chevron_right_rounded, size: 20),
+            const AppIconView(AppIcon.forward, size: 20),
           ],
         ),
       ),
@@ -527,9 +549,10 @@ class _ReviewListDashboard extends ConsumerWidget {
   Widget build(final BuildContext context, final WidgetRef ref) {
     final colorScheme = Theme.of(context).colorScheme;
     final l10n = AppLocalizations.of(context);
-    final int total = counts.values.fold(0, (final sum, final value) => sum + value) +
+    final int total =
+        counts.values.fold(0, (final sum, final value) => sum + value) +
         customCounts.values.fold(0, (final sum, final value) => sum + value);
-    
+
     final customStates = ref.watch(customLearningStatesProvider);
 
     return Column(
@@ -542,14 +565,16 @@ class _ReviewListDashboard extends ConsumerWidget {
                 ? l10n.revAllEntityBasicPractice(title.toUpperCase())
                 : l10n.revEntityBoxes(title.toUpperCase()),
             style: AppTypography.caption.copyWith(
-              color: isBasicPractice ? colorScheme.primary : colorScheme.secondary,
+              color: isBasicPractice
+                  ? colorScheme.primary
+                  : colorScheme.secondary,
               fontWeight: FontWeight.w800,
               letterSpacing: 1.2,
               fontFamily: 'Menlo',
             ),
           ),
         ),
-        
+
         for (final state in LearningState.values)
           _ReviewStateRow(
             state: state,
@@ -557,7 +582,7 @@ class _ReviewListDashboard extends ConsumerWidget {
             count: counts[state] ?? 0,
             onTap: () => onStartState(state),
           ),
-        
+
         for (final custom in customStates)
           if ((customCounts[custom.dbValue] ?? 0) > 0)
             _ReviewStateRow(
@@ -566,7 +591,7 @@ class _ReviewListDashboard extends ConsumerWidget {
               count: customCounts[custom.dbValue] ?? 0,
               onTap: () => onStartCustomState(custom.dbValue),
             ),
-        
+
         _ReviewStateRow(
           label: l10n.revTotalDue,
           count: total,
@@ -582,8 +607,12 @@ class _ReviewListDashboard extends ConsumerWidget {
           child: FilledButton(
             onPressed: total > 0 ? onStartAll : null,
             style: FilledButton.styleFrom(
-              backgroundColor: total == 0 ? colorScheme.surfaceContainerHighest : colorScheme.primary,
-              foregroundColor: total == 0 ? colorScheme.onSurfaceVariant : colorScheme.onPrimary,
+              backgroundColor: total == 0
+                  ? colorScheme.surfaceContainerHighest
+                  : colorScheme.primary,
+              foregroundColor: total == 0
+                  ? colorScheme.onSurfaceVariant
+                  : colorScheme.onPrimary,
               shape: const RoundedRectangleBorder(
                 borderRadius: BorderRadius.all(Radius.circular(AppRadius.sm)),
               ),
@@ -592,7 +621,7 @@ class _ReviewListDashboard extends ConsumerWidget {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                if (total > 0) const Icon(Icons.play_arrow_rounded, size: 24),
+                if (total > 0) const AppIconView(AppIcon.play, size: 24),
                 if (total > 0) const SizedBox(width: AppSpacing.sm),
                 Text(
                   total == 0
@@ -636,7 +665,9 @@ class _ReviewStateRow extends StatelessWidget {
   Widget build(final BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
     final enabled = count > 0 || isTotal;
-    final accent = customColor ?? (state != null ? context.stateColor(state!) : colorScheme.primary);
+    final accent =
+        customColor ??
+        (state != null ? context.stateColor(state!) : colorScheme.primary);
 
     return Semantics(
       button: true,
@@ -661,7 +692,9 @@ class _ReviewStateRow extends StatelessWidget {
               Container(
                 width: 4,
                 height: 24,
-                color: enabled ? accent : colorScheme.outline.withValues(alpha: 0.2),
+                color: enabled
+                    ? accent
+                    : colorScheme.outline.withValues(alpha: 0.2),
               ),
               const SizedBox(width: AppSpacing.md),
               Expanded(
@@ -671,16 +704,23 @@ class _ReviewStateRow extends StatelessWidget {
                     fontWeight: FontWeight.w700,
                     letterSpacing: 1.0,
                     fontFamily: 'Menlo',
-                    color: enabled ? colorScheme.onSurface : colorScheme.onSurface.withValues(alpha: 0.3),
+                    color: enabled
+                        ? colorScheme.onSurface
+                        : colorScheme.onSurface.withValues(alpha: 0.3),
                   ),
                 ),
               ),
               if (count > 0)
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 2,
+                  ),
                   decoration: BoxDecoration(
                     color: isTotal ? colorScheme.primary : Colors.transparent,
-                    border: isTotal ? null : Border.all(color: accent.withValues(alpha: 0.5)),
+                    border: isTotal
+                        ? null
+                        : Border.all(color: accent.withValues(alpha: 0.5)),
                     borderRadius: BorderRadius.circular(AppRadius.xs),
                   ),
                   child: Text(

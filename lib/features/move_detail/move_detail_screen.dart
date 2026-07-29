@@ -44,6 +44,7 @@ import 'package:breakdex/shared/widgets/app_loader.dart';
 import 'package:breakdex/l10n/gen/app_localizations.dart';
 
 import 'package:breakdex/features/move_detail/widgets/move_detail_overlays.dart';
+import 'package:breakdex/core/design/icons.dart';
 
 class MoveDetailScreen extends ConsumerStatefulWidget {
   const MoveDetailScreen({super.key, required this.moveId});
@@ -61,18 +62,27 @@ class _MoveDetailScreenState extends ConsumerState<MoveDetailScreen> {
     Future.microtask(() {
       final moveId = widget.moveId;
       debugPrint('[MoveDetailScreen] initState loading moveId=$moveId');
-      ref.read(moveRepositoryProvider).getById(moveId).then((final m) {
-        if (mounted) {
-          debugPrint('[MoveDetailScreen] initState loaded move name="${m.name}" id=${m.id}');
-          if (!supportsLocalVideoPlayback) unawaited(_logWebVideoDiagnostics(m));
-          ref.read(moveDetailProvider.notifier).init(m);
-        }
-      }).catchError((final Object err, final StackTrace stack) {
-        debugPrint('[MoveDetailScreen] initState FAILED to load moveId=$moveId — $err');
-        if (mounted) {
-          context.pop();
-        }
-      });
+      ref
+          .read(moveRepositoryProvider)
+          .getById(moveId)
+          .then((final m) {
+            if (mounted) {
+              debugPrint(
+                '[MoveDetailScreen] initState loaded move name="${m.name}" id=${m.id}',
+              );
+              if (!supportsLocalVideoPlayback)
+                unawaited(_logWebVideoDiagnostics(m));
+              ref.read(moveDetailProvider.notifier).init(m);
+            }
+          })
+          .catchError((final Object err, final StackTrace stack) {
+            debugPrint(
+              '[MoveDetailScreen] initState FAILED to load moveId=$moveId — $err',
+            );
+            if (mounted) {
+              context.pop();
+            }
+          });
     });
   }
 
@@ -85,25 +95,27 @@ class _MoveDetailScreenState extends ConsumerState<MoveDetailScreen> {
     try {
       final hash = m.contentHash;
       final db = ref.read(databaseProvider);
-      final manifest =
-          hash == null ? null : await db.assetManifestDao.getByHash(hash);
-      final copies =
-          hash == null ? const <AssetCopy>[] : await db.assetCopiesDao.getByHash(hash);
+      final manifest = hash == null
+          ? null
+          : await db.assetManifestDao.getByHash(hash);
+      final copies = hash == null
+          ? const <AssetCopy>[]
+          : await db.assetCopiesDao.getByHash(hash);
       final copySummary = copies.isEmpty
           ? 'NONE'
           : copies
-              .map(
-                (final c) =>
-                    '${c.provider}:${c.status}${c.remotePath != null ? '(+remotePath)' : '(no remotePath)'}',
-              )
-              .join(', ');
+                .map(
+                  (final c) =>
+                      '${c.provider}:${c.status}${c.remotePath != null ? '(+remotePath)' : '(no remotePath)'}',
+                )
+                .join(', ');
       DiagnosticsLog.info(
         'VideoWeb',
         'move "${m.name}": videoPath=${m.videoPath ?? 'NULL'} '
-        'originalVideoName=${m.originalVideoName ?? 'NULL'} '
-        'contentHash=${hash ?? 'NULL'} manifestRow=${manifest != null ? 'present(localPath=${manifest.localPath != null})' : 'ABSENT'} '
-        'cloudCopies=[$copySummary] → playable URL requires a gdrive copy '
-        'with a remotePath + Drive media resolver (pending)',
+            'originalVideoName=${m.originalVideoName ?? 'NULL'} '
+            'contentHash=${hash ?? 'NULL'} manifestRow=${manifest != null ? 'present(localPath=${manifest.localPath != null})' : 'ABSENT'} '
+            'cloudCopies=[$copySummary] → playable URL requires a gdrive copy '
+            'with a remotePath + Drive media resolver (pending)',
       );
     } on Object catch (e) {
       DiagnosticsLog.warn('VideoWeb', 'video diagnostics failed: $e');
@@ -152,7 +164,9 @@ class _MoveDetailScreenState extends ConsumerState<MoveDetailScreen> {
                         AspectRatio(
                           aspectRatio: 16 / 9,
                           child: RobustVideoPlayer(
-                            key: ValueKey('detail-video-${move.id}-${move.videoPath}-${move.contentHash}'),
+                            key: ValueKey(
+                              'detail-video-${move.id}-${move.videoPath}-${move.contentHash}',
+                            ),
                             videoPath: move.resolvedVideoPath!,
                             originalVideoName: move.originalVideoName,
                           ),
@@ -161,21 +175,29 @@ class _MoveDetailScreenState extends ConsumerState<MoveDetailScreen> {
                         _CloudVideoPlaceholder(
                           move: move,
                           onDownloaded: (final localPath) {
-                            ref.read(moveDetailProvider.notifier).send(
-                                  VideoEdited(localPath),
-                                );
+                            ref
+                                .read(moveDetailProvider.notifier)
+                                .send(VideoEdited(localPath));
                           },
                         )
                       else
                         _VideoMissingCard(
                           move: move,
-                          onReRecord: () => _addOrReplaceVideo(context, ref, move),
-                          onImport: () => _addOrReplaceVideo(context, ref, move),
+                          onReRecord: () =>
+                              _addOrReplaceVideo(context, ref, move),
+                          onImport: () =>
+                              _addOrReplaceVideo(context, ref, move),
                           onDelete: () async {
-                            final combosDao = ref.read(databaseProvider).combosDao;
-                            final combos = await combosDao.getCombosUsingMove(move.id);
+                            final combosDao = ref
+                                .read(databaseProvider)
+                                .combosDao;
+                            final combos = await combosDao.getCombosUsingMove(
+                              move.id,
+                            );
                             if (!mounted) return;
-                            ref.read(moveDetailProvider.notifier).send(TapDelete(combos: combos));
+                            ref
+                                .read(moveDetailProvider.notifier)
+                                .send(TapDelete(combos: combos));
                           },
                         ),
                       const SizedBox(height: AppSpacing.lg),
@@ -293,9 +315,12 @@ class _MoveDetailScreenState extends ConsumerState<MoveDetailScreen> {
                           width: double.infinity,
                           padding: const EdgeInsets.all(AppSpacing.md),
                           decoration: BoxDecoration(
-                            color: colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
+                            color: colorScheme.surfaceContainerHighest
+                                .withValues(alpha: 0.3),
                             borderRadius: BorderRadius.circular(AppRadius.sm),
-                            border: Border.all(color: colorScheme.outline.withValues(alpha: 0.1)),
+                            border: Border.all(
+                              color: colorScheme.outline.withValues(alpha: 0.1),
+                            ),
                           ),
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
@@ -303,26 +328,32 @@ class _MoveDetailScreenState extends ConsumerState<MoveDetailScreen> {
                               if (move.videoCreationDate != null)
                                 _MetadataRow(
                                   label: l10n.mdMetaRecorded,
-                                  value: DateFormat('MMM d, yyyy · HH:mm').format(move.videoCreationDate!),
-                                  icon: Icons.calendar_today_rounded,
+                                  value: DateFormat(
+                                    'MMM d, yyyy · HH:mm',
+                                  ).format(move.videoCreationDate!),
+                                  icon: AppIcon.calendar.resolve(context),
                                 ),
                               if (move.videoFileSize != null)
                                 _MetadataRow(
                                   label: l10n.mdMetaFileSize,
-                                  value: _formatFileSize(move.videoFileSize!.toInt()),
-                                  icon: Icons.data_usage_rounded,
+                                  value: _formatFileSize(
+                                    move.videoFileSize!.toInt(),
+                                  ),
+                                  icon: AppIcon.graph.resolve(context),
                                 ),
                               if (move.originalVideoName != null)
                                 _MetadataRow(
                                   label: l10n.mdMetaOriginalName,
                                   value: move.originalVideoName!,
-                                  icon: Icons.insert_drive_file_rounded,
+                                  icon: AppIcon.folder.resolve(context),
                                 ),
                               // Duration + resolution are read from the clip
                               // at display-time (not persisted) so they stay
                               // correct even for legacy/imported videos.
                               _VideoTechInfoRows(
-                                key: ValueKey('techinfo-${move.id}-${move.videoPath}'),
+                                key: ValueKey(
+                                  'techinfo-${move.id}-${move.videoPath}',
+                                ),
                                 videoPath: move.resolvedVideoPath!,
                               ),
                             ],
@@ -349,7 +380,7 @@ class _MoveDetailScreenState extends ConsumerState<MoveDetailScreen> {
                         // inert, labeled unavailable rather than crashing (1.3).
                         if (supportsNativeVideoExport)
                           ActionTile(
-                            icon: Icons.edit,
+                            icon: AppIcon.edit.resolve(context),
                             label: l10n.mdActionEditVideo,
                             onTap: () => _editVideo(context, ref, move),
                           )
@@ -358,21 +389,22 @@ class _MoveDetailScreenState extends ConsumerState<MoveDetailScreen> {
                             opacity: 0.5,
                             child: IgnorePointer(
                               child: ActionTile(
-                                icon: Icons.edit,
-                                label: '${l10n.mdActionEditVideo} — unavailable on web',
+                                icon: AppIcon.edit.resolve(context),
+                                label:
+                                    '${l10n.mdActionEditVideo} — unavailable on web',
                                 onTap: () {},
                               ),
                             ),
                           ),
                         const SizedBox(height: AppSpacing.sm),
                         ActionTile(
-                          icon: Icons.ios_share,
+                          icon: AppIcon.share.resolve(context),
                           label: l10n.mdActionShareVideo,
                           onTap: () => _shareVideo(context, move),
                         ),
                         const SizedBox(height: AppSpacing.sm),
                         ActionTile(
-                          icon: Icons.delete_outline,
+                          icon: AppIcon.delete.resolve(context),
                           label: l10n.mdActionRemoveVideo,
                           destructive: true,
                           onTap: () => ref
@@ -381,13 +413,13 @@ class _MoveDetailScreenState extends ConsumerState<MoveDetailScreen> {
                         ),
                       ] else
                         ActionTile(
-                          icon: Icons.videocam,
+                          icon: AppIcon.video.resolve(context),
                           label: l10n.mdActionAddVideo,
                           onTap: () => _addOrReplaceVideo(context, ref, move),
                         ),
                       const SizedBox(height: AppSpacing.sm),
                       ActionTile(
-                        icon: Icons.text_fields,
+                        icon: AppIcon.notes.resolve(context),
                         label: l10n.mdRenameEntity(entityNames.moveSingular),
                         onTap: () => ref
                             .read(moveDetailProvider.notifier)
@@ -395,20 +427,28 @@ class _MoveDetailScreenState extends ConsumerState<MoveDetailScreen> {
                       ),
                       const SizedBox(height: AppSpacing.sm),
                       ActionTile(
-                        icon: Icons.copy_rounded,
+                        icon: AppIcon.copy.resolve(context),
                         label: l10n.mdDuplicateEntity(entityNames.moveSingular),
-                        onTap: () => ref.read(moveDetailProvider.notifier).send(const TapDuplicate()),
+                        onTap: () => ref
+                            .read(moveDetailProvider.notifier)
+                            .send(const TapDuplicate()),
                       ),
                       const SizedBox(height: AppSpacing.sm),
                       ActionTile(
-                        icon: Icons.delete_forever,
+                        icon: AppIcon.delete.resolve(context),
                         label: l10n.mdDeleteEntity(entityNames.moveSingular),
                         destructive: true,
                         onTap: () async {
-                          final combosDao = ref.read(databaseProvider).combosDao;
-                          final combos = await combosDao.getCombosUsingMove(move.id);
+                          final combosDao = ref
+                              .read(databaseProvider)
+                              .combosDao;
+                          final combos = await combosDao.getCombosUsingMove(
+                            move.id,
+                          );
                           if (!mounted) return;
-                          ref.read(moveDetailProvider.notifier).send(TapDelete(combos: combos));
+                          ref
+                              .read(moveDetailProvider.notifier)
+                              .send(TapDelete(combos: combos));
                         },
                       ),
                       const SizedBox(height: AppSpacing.xxxl),
@@ -424,7 +464,10 @@ class _MoveDetailScreenState extends ConsumerState<MoveDetailScreen> {
     );
   }
 
-  List<Widget> _buildOverlays(final MoveDetailState state, final ColorScheme cs) {
+  List<Widget> _buildOverlays(
+    final MoveDetailState state,
+    final ColorScheme cs,
+  ) {
     debugPrint('[MoveDetailScreen] _buildOverlays state=${state.runtimeType}');
     final overlays = <Widget>[];
     final notifier = ref.read(moveDetailProvider.notifier);
@@ -432,58 +475,82 @@ class _MoveDetailScreenState extends ConsumerState<MoveDetailScreen> {
     final entityNames = ref.watch(entityNamesProvider);
 
     if (state is Renaming) {
-      overlays.add(RenameOverlay(
-        draftName: state.draftName,
-        onDraftChanged: (final n) => notifier.send(UpdateDraft(n)),
-        onCancel: () => notifier.send(const Cancel()),
-        onSave: (final n) => notifier.send(SaveName(n)),
-      ));
+      overlays.add(
+        RenameOverlay(
+          draftName: state.draftName,
+          onDraftChanged: (final n) => notifier.send(UpdateDraft(n)),
+          onCancel: () => notifier.send(const Cancel()),
+          onSave: (final n) => notifier.send(SaveName(n)),
+        ),
+      );
     }
 
     if (state is NameConflict) {
-      overlays.add(RenameOverlay(
-        draftName: state.conflictingName,
-        onDraftChanged: (final n) => notifier.send(UpdateDraft(n)),
-        onCancel: () => notifier.send(const Cancel()),
-        onSave: (final n) => notifier.send(SaveName(n)),
-        isConflict: true,
-        conflictName: state.conflictingName,
-      ));
+      overlays.add(
+        RenameOverlay(
+          draftName: state.conflictingName,
+          onDraftChanged: (final n) => notifier.send(UpdateDraft(n)),
+          onCancel: () => notifier.send(const Cancel()),
+          onSave: (final n) => notifier.send(SaveName(n)),
+          isConflict: true,
+          conflictName: state.conflictingName,
+        ),
+      );
     }
 
-    if (state is Deleting) overlays.add(SavingOverlay(message: l10n.mdOverlayDeleting));
-    if (state is SavingName) overlays.add(SavingOverlay(message: l10n.mdOverlayRenaming));
-    if (state is SavingState) overlays.add(SavingOverlay(message: l10n.mdOverlayUpdatingState));
-    if (state is SavingCategory) overlays.add(SavingOverlay(message: l10n.mdOverlayUpdatingCategory));
-    if (state is SavingCount) overlays.add(SavingOverlay(message: l10n.mdOverlayUpdatingCount));
-    if (state is SavingNotes) overlays.add(SavingOverlay(message: l10n.mdOverlaySavingNotes));
-    if (state is SavingPhotos) overlays.add(SavingOverlay(message: l10n.mdOverlayUpdatingPhotos));
-    if (state is Duplicating) overlays.add(SavingOverlay(message: l10n.mdOverlayDuplicatingEntity(entityNames.moveSingular.toLowerCase())));
+    if (state is Deleting)
+      overlays.add(SavingOverlay(message: l10n.mdOverlayDeleting));
+    if (state is SavingName)
+      overlays.add(SavingOverlay(message: l10n.mdOverlayRenaming));
+    if (state is SavingState)
+      overlays.add(SavingOverlay(message: l10n.mdOverlayUpdatingState));
+    if (state is SavingCategory)
+      overlays.add(SavingOverlay(message: l10n.mdOverlayUpdatingCategory));
+    if (state is SavingCount)
+      overlays.add(SavingOverlay(message: l10n.mdOverlayUpdatingCount));
+    if (state is SavingNotes)
+      overlays.add(SavingOverlay(message: l10n.mdOverlaySavingNotes));
+    if (state is SavingPhotos)
+      overlays.add(SavingOverlay(message: l10n.mdOverlayUpdatingPhotos));
+    if (state is Duplicating)
+      overlays.add(
+        SavingOverlay(
+          message: l10n.mdOverlayDuplicatingEntity(
+            entityNames.moveSingular.toLowerCase(),
+          ),
+        ),
+      );
     // Removed SavingVideo overlay to make video import non-blocking
 
     if (state is ChangingState) {
-      overlays.add(StatePickerOverlay(
-        currentState: LearningState.fromName(state.move.learningState),
-        moveName: state.move.name,
-        onCancel: () => notifier.send(const Cancel()),
-        onSave: (final next) => notifier.send(SaveState(next)),
-      ));
+      overlays.add(
+        StatePickerOverlay(
+          currentState: LearningState.fromName(state.move.learningState),
+          moveName: state.move.name,
+          onCancel: () => notifier.send(const Cancel()),
+          onSave: (final next) => notifier.send(SaveState(next)),
+        ),
+      );
     }
 
     if (state is ChangingCategory) {
-      overlays.add(CategoryPickerOverlay(
-        currentCategory: state.move.category,
-        onCancel: () => notifier.send(const Cancel()),
-        onSave: (final next) => notifier.send(SaveCategory(next)),
-      ));
+      overlays.add(
+        CategoryPickerOverlay(
+          currentCategory: state.move.category,
+          onCancel: () => notifier.send(const Cancel()),
+          onSave: (final next) => notifier.send(SaveCategory(next)),
+        ),
+      );
     }
 
     if (state is ChangingCount) {
-      overlays.add(CountEditorOverlay(
-        initialCount: state.move.count,
-        onCancel: () => notifier.send(const Cancel()),
-        onSave: (final next) => notifier.send(SaveCount(next)),
-      ));
+      overlays.add(
+        CountEditorOverlay(
+          initialCount: state.move.count,
+          onCancel: () => notifier.send(const Cancel()),
+          onSave: (final next) => notifier.send(SaveCount(next)),
+        ),
+      );
     }
 
     if (state is ConfirmingDelete) {
@@ -497,47 +564,57 @@ class _MoveDetailScreenState extends ConsumerState<MoveDetailScreen> {
             )
           : l10n.mdDeleteConfirmBody(entityNames.moveSingular.toLowerCase());
 
-      overlays.add(ConfirmActionOverlay(
-        title: l10n.mdDeleteConfirmTitle(entityNames.moveSingular),
-        content: content,
-        confirmLabel: l10n.mdConfirmDelete,
-        isDestructive: true,
-        onCancel: () => notifier.send(const Cancel()),
-        onConfirm: () => notifier.send(const Confirm()),
-      ));
+      overlays.add(
+        ConfirmActionOverlay(
+          title: l10n.mdDeleteConfirmTitle(entityNames.moveSingular),
+          content: content,
+          confirmLabel: l10n.mdConfirmDelete,
+          isDestructive: true,
+          onCancel: () => notifier.send(const Cancel()),
+          onConfirm: () => notifier.send(const Confirm()),
+        ),
+      );
     }
 
     if (state is ErrorState) {
-      overlays.add(ConfirmActionOverlay(
-        title: l10n.mdErrorTitle,
-        content: state.message,
-        confirmLabel: l10n.mdConfirmOk,
-        isDestructive: false,
-        onCancel: () => notifier.send(const Cancel()),
-        onConfirm: () => notifier.send(const Cancel()),
-      ));
+      overlays.add(
+        ConfirmActionOverlay(
+          title: l10n.mdErrorTitle,
+          content: state.message,
+          confirmLabel: l10n.mdConfirmOk,
+          isDestructive: false,
+          onCancel: () => notifier.send(const Cancel()),
+          onConfirm: () => notifier.send(const Cancel()),
+        ),
+      );
     }
 
     if (state is AlbumSyncFailed) {
-      overlays.add(ConfirmActionOverlay(
-        title: l10n.mdAlbumSyncFailedTitle,
-        content: state.message,
-        confirmLabel: l10n.mdConfirmOk,
-        isDestructive: false,
-        onCancel: () => notifier.send(const Cancel()),
-        onConfirm: () => notifier.send(const Cancel()),
-      ));
+      overlays.add(
+        ConfirmActionOverlay(
+          title: l10n.mdAlbumSyncFailedTitle,
+          content: state.message,
+          confirmLabel: l10n.mdConfirmOk,
+          isDestructive: false,
+          onCancel: () => notifier.send(const Cancel()),
+          onConfirm: () => notifier.send(const Cancel()),
+        ),
+      );
     }
 
     if (state is ConfirmingRemoveVideo) {
-      overlays.add(ConfirmActionOverlay(
-        title: l10n.mdRemoveVideoTitle,
-        content: l10n.mdRemoveVideoBody(entityNames.moveSingular.toLowerCase()),
-        confirmLabel: l10n.mdConfirmRemove,
-        isDestructive: true,
-        onCancel: () => notifier.send(const Cancel()),
-        onConfirm: () => notifier.send(const Confirm()),
-      ));
+      overlays.add(
+        ConfirmActionOverlay(
+          title: l10n.mdRemoveVideoTitle,
+          content: l10n.mdRemoveVideoBody(
+            entityNames.moveSingular.toLowerCase(),
+          ),
+          confirmLabel: l10n.mdConfirmRemove,
+          isDestructive: true,
+          onCancel: () => notifier.send(const Cancel()),
+          onConfirm: () => notifier.send(const Confirm()),
+        ),
+      );
     }
 
     return overlays;
@@ -552,18 +629,31 @@ class _MoveDetailScreenState extends ConsumerState<MoveDetailScreen> {
     );
   }
 
-  Future<void> _editVideo(final BuildContext context, final WidgetRef ref, final Move move) async {
+  Future<void> _editVideo(
+    final BuildContext context,
+    final WidgetRef ref,
+    final Move move,
+  ) async {
     final absPath = move.resolvedVideoPath!;
-    final editedPath = await context.push<String>('/video-editor', extra: {'videoPath': absPath});
+    final editedPath = await context.push<String>(
+      '/video-editor',
+      extra: {'videoPath': absPath},
+    );
     if (editedPath != null && mounted) {
       ref.read(moveDetailProvider.notifier).send(VideoEdited(editedPath));
     }
   }
 
-  Future<void> _addOrReplaceVideo(final BuildContext context, final WidgetRef ref, final Move move) async {
+  Future<void> _addOrReplaceVideo(
+    final BuildContext context,
+    final WidgetRef ref,
+    final Move move,
+  ) async {
     final pickResult = await VideoPickerSheet.show(context);
     if (pickResult != null && mounted) {
-      ref.read(moveDetailProvider.notifier).send(VideoEdited(pickResult.localPath));
+      ref
+          .read(moveDetailProvider.notifier)
+          .send(VideoEdited(pickResult.localPath));
     }
   }
 
@@ -605,7 +695,9 @@ class _MetadataRow extends StatelessWidget {
           Expanded(
             child: Text(
               value,
-              style: AppTypography.caption.copyWith(color: colorScheme.onSurface),
+              style: AppTypography.caption.copyWith(
+                color: colorScheme.onSurface,
+              ),
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
             ),
@@ -653,9 +745,7 @@ class _VideoTechInfoRowsState extends State<_VideoTechInfoRows> {
     final controller = fileVideoController(widget.videoPath);
     try {
       await controller.setVolume(0);
-      await controller
-          .initialize()
-          .timeout(const Duration(seconds: 8));
+      await controller.initialize().timeout(const Duration(seconds: 8));
       if (!mounted) return;
       setState(() {
         _duration = controller.value.duration;
@@ -689,13 +779,13 @@ class _VideoTechInfoRowsState extends State<_VideoTechInfoRows> {
           _MetadataRow(
             label: l10n.mdMetaDuration,
             value: _formatDuration(_duration!),
-            icon: Icons.timer_outlined,
+            icon: AppIcon.timer.resolve(context),
           ),
         if (resolution != null && resolution.width > 0)
           _MetadataRow(
             label: l10n.mdMetaResolution,
             value: '${resolution.width.toInt()} × ${resolution.height.toInt()}',
-            icon: Icons.aspect_ratio_rounded,
+            icon: AppIcon.fullscreen.resolve(context),
           ),
       ],
     );
@@ -712,7 +802,9 @@ class _CategoryBadge extends ConsumerWidget {
     final colorScheme = Theme.of(context).colorScheme;
     final categories = ref.watch(categoriesProvider);
     final l10n = AppLocalizations.of(context);
-    final match = categories.where((final item) => item.name == category).firstOrNull;
+    final match = categories
+        .where((final item) => item.name == category)
+        .firstOrNull;
     final dotColor = match?.color ?? colorScheme.secondary;
 
     return Semantics(
@@ -732,10 +824,34 @@ class _CategoryBadge extends ConsumerWidget {
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Container(width: 8, height: 8, decoration: BoxDecoration(color: dotColor, shape: BoxShape.circle)),
+                Container(
+                  width: 8,
+                  height: 8,
+                  decoration: BoxDecoration(
+                    color: dotColor,
+                    shape: BoxShape.circle,
+                  ),
+                ),
                 const SizedBox(width: 6),
-                Flexible(child: Text(category, maxLines: 1, overflow: TextOverflow.ellipsis, style: AppTypography.caption.copyWith(color: colorScheme.onSurface, fontWeight: FontWeight.w600))),
-                if (onTap != null) ...[const SizedBox(width: 4), Icon(Icons.expand_more, size: 14, color: colorScheme.secondary)],
+                Flexible(
+                  child: Text(
+                    category,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: AppTypography.caption.copyWith(
+                      color: colorScheme.onSurface,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+                if (onTap != null) ...[
+                  const SizedBox(width: 4),
+                  AppIconView(
+                    AppIcon.expandMore,
+                    size: 14,
+                    color: colorScheme.secondary,
+                  ),
+                ],
               ],
             ),
           ),
@@ -772,11 +888,34 @@ class _CountBadge extends StatelessWidget {
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Icon(Icons.music_note_rounded, size: 14, color: colorScheme.primary.withValues(alpha: 0.7)),
+                AppIconView(
+                  AppIcon.music,
+                  size: 14,
+                  color: colorScheme.primary.withValues(alpha: 0.7),
+                ),
                 const SizedBox(width: 4),
-                Text('$count', style: AppTypography.caption.copyWith(color: colorScheme.onSurface, fontWeight: FontWeight.w600)),
-                Text(l10n.mdCountsSuffix, style: AppTypography.caption.copyWith(color: colorScheme.secondary, fontWeight: FontWeight.w400)),
-                if (onTap != null) ...[const SizedBox(width: 4), Icon(Icons.expand_more, size: 14, color: colorScheme.secondary)],
+                Text(
+                  '$count',
+                  style: AppTypography.caption.copyWith(
+                    color: colorScheme.onSurface,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                Text(
+                  l10n.mdCountsSuffix,
+                  style: AppTypography.caption.copyWith(
+                    color: colorScheme.secondary,
+                    fontWeight: FontWeight.w400,
+                  ),
+                ),
+                if (onTap != null) ...[
+                  const SizedBox(width: 4),
+                  AppIconView(
+                    AppIcon.expandMore,
+                    size: 14,
+                    color: colorScheme.secondary,
+                  ),
+                ],
               ],
             ),
           ),
@@ -791,7 +930,12 @@ class _VideoMissingCard extends ConsumerWidget {
   final VoidCallback onReRecord;
   final VoidCallback onImport;
   final VoidCallback onDelete;
-  const _VideoMissingCard({required this.move, required this.onReRecord, required this.onImport, required this.onDelete});
+  const _VideoMissingCard({
+    required this.move,
+    required this.onReRecord,
+    required this.onImport,
+    required this.onDelete,
+  });
 
   @override
   Widget build(final BuildContext context, final WidgetRef ref) {
@@ -807,21 +951,57 @@ class _VideoMissingCard extends ConsumerWidget {
       ),
       child: Column(
         children: [
-          Icon(Icons.videocam_off_outlined, size: 48, color: colorScheme.onSurface.withValues(alpha: 0.3)),
+          AppIconView(
+            AppIcon.video,
+            size: 48,
+            color: colorScheme.onSurface.withValues(alpha: 0.3),
+          ),
           const SizedBox(height: AppSpacing.md),
-          Text(l10n.mdVideoMissingTitle, style: AppTypography.bodySmall.copyWith(color: colorScheme.onSurface, fontWeight: FontWeight.w600)),
+          Text(
+            l10n.mdVideoMissingTitle,
+            style: AppTypography.bodySmall.copyWith(
+              color: colorScheme.onSurface,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
           const SizedBox(height: 4),
-          Text(l10n.mdVideoMissingBody, style: AppTypography.caption.copyWith(color: colorScheme.onSurface.withValues(alpha: 0.5)), textAlign: TextAlign.center),
+          Text(
+            l10n.mdVideoMissingBody,
+            style: AppTypography.caption.copyWith(
+              color: colorScheme.onSurface.withValues(alpha: 0.5),
+            ),
+            textAlign: TextAlign.center,
+          ),
           const SizedBox(height: AppSpacing.lg),
           Row(
             children: [
-              Expanded(child: _MissingActionButton(icon: Icons.videocam, label: l10n.mdMissingReRecord, onTap: onReRecord)),
+              Expanded(
+                child: _MissingActionButton(
+                  icon: AppIcon.video.resolve(context),
+                  label: l10n.mdMissingReRecord,
+                  onTap: onReRecord,
+                ),
+              ),
               const SizedBox(width: AppSpacing.sm),
-              Expanded(child: _MissingActionButton(icon: Icons.photo_library_outlined, label: l10n.mdMissingImport, onTap: onImport)),
+              Expanded(
+                child: _MissingActionButton(
+                  icon: AppIcon.photo.resolve(context),
+                  label: l10n.mdMissingImport,
+                  onTap: onImport,
+                ),
+              ),
             ],
           ),
           const SizedBox(height: AppSpacing.sm),
-          GestureDetector(onTap: onDelete, child: Text(l10n.mdDeleteEntity(entityNames.moveSingular.toLowerCase()), style: AppTypography.caption.copyWith(color: AppColors.actionAgain.withValues(alpha: 0.7)))),
+          GestureDetector(
+            onTap: onDelete,
+            child: Text(
+              l10n.mdDeleteEntity(entityNames.moveSingular.toLowerCase()),
+              style: AppTypography.caption.copyWith(
+                color: AppColors.actionAgain.withValues(alpha: 0.7),
+              ),
+            ),
+          ),
         ],
       ),
     );
@@ -832,13 +1012,20 @@ class _MissingActionButton extends StatelessWidget {
   final IconData icon;
   final String label;
   final VoidCallback onTap;
-  const _MissingActionButton({required this.icon, required this.label, required this.onTap});
+  const _MissingActionButton({
+    required this.icon,
+    required this.label,
+    required this.onTap,
+  });
 
   @override
   Widget build(final BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
     return GestureDetector(
-      onTap: () { HapticFeedback.mediumImpact(); onTap(); },
+      onTap: () {
+        HapticFeedback.mediumImpact();
+        onTap();
+      },
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 12),
         decoration: BoxDecoration(
@@ -851,7 +1038,13 @@ class _MissingActionButton extends StatelessWidget {
           children: [
             Icon(icon, size: 18, color: AppColors.accent),
             const SizedBox(width: 6),
-            Text(label, style: AppTypography.bodySmall.copyWith(color: AppColors.accent, fontWeight: FontWeight.w600)),
+            Text(
+              label,
+              style: AppTypography.bodySmall.copyWith(
+                color: AppColors.accent,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
           ],
         ),
       ),
@@ -862,23 +1055,32 @@ class _MissingActionButton extends StatelessWidget {
 class _CloudVideoPlaceholder extends ConsumerStatefulWidget {
   final Move move;
   final ValueChanged<String> onDownloaded;
-  const _CloudVideoPlaceholder({required this.move, required this.onDownloaded});
+  const _CloudVideoPlaceholder({
+    required this.move,
+    required this.onDownloaded,
+  });
   @override
-  ConsumerState<_CloudVideoPlaceholder> createState() => _CloudVideoPlaceholderState();
+  ConsumerState<_CloudVideoPlaceholder> createState() =>
+      _CloudVideoPlaceholderState();
 }
 
-class _CloudVideoPlaceholderState extends ConsumerState<_CloudVideoPlaceholder> {
+class _CloudVideoPlaceholderState
+    extends ConsumerState<_CloudVideoPlaceholder> {
   String? _reportedLocalPath;
   @override
   Widget build(final BuildContext context) {
     final contentHash = widget.move.contentHash!;
     final retrievalAsync = ref.watch(videoRetrievalStatusProvider(contentHash));
-    final retrieval = retrievalAsync.valueOrNull ?? ref.read(videoRetrievalControllerProvider).snapshotFor(contentHash);
+    final retrieval =
+        retrievalAsync.valueOrNull ??
+        ref.read(videoRetrievalControllerProvider).snapshotFor(contentHash);
 
     ref.listen(videoRetrievalStatusProvider(contentHash), (_, final next) {
       final snapshot = next.valueOrNull;
       final localPath = snapshot?.localPath;
-      if (snapshot?.state == VideoRetrievalState.available && localPath != null && localPath != _reportedLocalPath) {
+      if (snapshot?.state == VideoRetrievalState.available &&
+          localPath != null &&
+          localPath != _reportedLocalPath) {
         _reportedLocalPath = localPath;
         widget.onDownloaded(localPath);
       }
@@ -886,7 +1088,9 @@ class _CloudVideoPlaceholderState extends ConsumerState<_CloudVideoPlaceholder> 
 
     final colorScheme = Theme.of(context).colorScheme;
     final l10n = AppLocalizations.of(context);
-    final isBusy = retrieval.state == VideoRetrievalState.queued || retrieval.state == VideoRetrievalState.downloading;
+    final isBusy =
+        retrieval.state == VideoRetrievalState.queued ||
+        retrieval.state == VideoRetrievalState.downloading;
     final isDownloading = retrieval.state == VideoRetrievalState.downloading;
     final eta = retrieval.etaRemaining;
     final rate = retrieval.bytesPerSecond;
@@ -908,9 +1112,16 @@ class _CloudVideoPlaceholderState extends ConsumerState<_CloudVideoPlaceholder> 
 
     return Container(
       height: 220,
-      decoration: BoxDecoration(color: colorScheme.surfaceContainerHighest, borderRadius: BorderRadius.circular(AppRadius.md)),
+      decoration: BoxDecoration(
+        color: colorScheme.surfaceContainerHighest,
+        borderRadius: BorderRadius.circular(AppRadius.md),
+      ),
       child: InkWell(
-        onTap: isBusy ? null : () => ref.read(videoRetrievalControllerProvider).requestPlayback(contentHash),
+        onTap: isBusy
+            ? null
+            : () => ref
+                  .read(videoRetrievalControllerProvider)
+                  .requestPlayback(contentHash),
         child: Center(
           child: Column(
             mainAxisSize: MainAxisSize.min,
@@ -919,14 +1130,24 @@ class _CloudVideoPlaceholderState extends ConsumerState<_CloudVideoPlaceholder> 
                 SizedBox(
                   width: 48,
                   height: 48,
-                  child: CircularProgressIndicator(value: retrieval.progress > 0 ? retrieval.progress : null),
+                  child: CircularProgressIndicator(
+                    value: retrieval.progress > 0 ? retrieval.progress : null,
+                  ),
                 )
               else
-                const Icon(Icons.cloud_download_outlined, size: 48, color: AppColors.accent),
+                const AppIconView(
+                  AppIcon.download,
+                  size: 48,
+                  color: AppColors.accent,
+                ),
               const SizedBox(height: AppSpacing.md),
               Text(
-                isBusy ? (retrieval.message ?? l10n.mdCloudDownloading) : l10n.mdCloudStored,
-                style: AppTypography.bodySmall.copyWith(fontWeight: FontWeight.w600),
+                isBusy
+                    ? (retrieval.message ?? l10n.mdCloudDownloading)
+                    : l10n.mdCloudStored,
+                style: AppTypography.bodySmall.copyWith(
+                  fontWeight: FontWeight.w600,
+                ),
               ),
               const SizedBox(height: 4),
               Text(detailLine, style: AppTypography.caption),

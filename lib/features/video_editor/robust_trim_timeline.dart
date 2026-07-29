@@ -1,7 +1,6 @@
 // H.8 lint triage — discarded_futures: intentional fire-and-forget (UI/provider side effects); the rule still guards new sync/codec files.
 // ignore_for_file: discarded_futures
 
-
 import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/services.dart';
@@ -10,6 +9,7 @@ import 'package:breakdex/core/design/colors.dart';
 import 'package:breakdex/core/design/spacing.dart';
 import 'package:breakdex/core/design/typography.dart';
 import 'package:breakdex/features/video_editor/trim_timeline_math.dart';
+import 'package:breakdex/core/design/icons.dart';
 
 class RobustTrimTimeline extends StatefulWidget {
   const RobustTrimTimeline({
@@ -47,7 +47,7 @@ class _RobustTrimTimelineState extends State<RobustTrimTimeline> {
   double? _dragRawValue;
   Offset? _dragOrigin;
   double _dragVerticalLiftPx = 0.0;
-  
+
   static const double _kGrabRadiusPx = 30.0;
   static const double _kHandleVisualWidth = 20.0;
   static const double _kFineScrubIndicatorLiftPx = 32.0;
@@ -85,7 +85,9 @@ class _RobustTrimTimelineState extends State<RobustTrimTimeline> {
     widget.onDragStart?.call();
     setState(() {
       _activeHandle = target;
-      _dragValue = target == 'start' ? widget.trimStart : (target == 'end' ? widget.trimEnd : widget.playbackPosition.value);
+      _dragValue = target == 'start'
+          ? widget.trimStart
+          : (target == 'end' ? widget.trimEnd : widget.playbackPosition.value);
       _dragRawValue = _dragValue;
       _dragOrigin = details.globalPosition;
       _dragVerticalLiftPx = 0.0;
@@ -101,7 +103,9 @@ class _RobustTrimTimelineState extends State<RobustTrimTimeline> {
     if (_activeHandle == 'start' || _activeHandle == 'end') {
       final origin = _dragOrigin;
       if (origin == null) return;
-      final lift = (origin.dy - details.globalPosition.dy).clamp(0.0, 100.0).toDouble();
+      final lift = (origin.dy - details.globalPosition.dy)
+          .clamp(0.0, 100.0)
+          .toDouble();
       setState(() => _dragVerticalLiftPx = lift);
 
       final isStart = _activeHandle == 'start';
@@ -135,7 +139,9 @@ class _RobustTrimTimelineState extends State<RobustTrimTimeline> {
       }
     } else if (_activeHandle == 'playhead') {
       final delta = details.delta.dx / width;
-      final newPos = (widget.playbackPosition.value + delta).clamp(widget.trimStart, widget.trimEnd).toDouble();
+      final newPos = (widget.playbackPosition.value + delta)
+          .clamp(widget.trimStart, widget.trimEnd)
+          .toDouble();
       if (newPos != widget.playbackPosition.value) {
         widget.onPlayheadChanged(newPos);
       }
@@ -156,7 +162,8 @@ class _RobustTrimTimelineState extends State<RobustTrimTimeline> {
   @override
   Widget build(final BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
-    final timelineWidth = MediaQuery.of(context).size.width - AppSpacing.screenEdge * 2;
+    final timelineWidth =
+        MediaQuery.of(context).size.width - AppSpacing.screenEdge * 2;
 
     return Column(
       mainAxisSize: MainAxisSize.min,
@@ -171,8 +178,12 @@ class _RobustTrimTimelineState extends State<RobustTrimTimeline> {
                 child: Text(
                   _formatDuration(widget.trimStart * widget.videoDurationMs),
                   style: AppTypography.caption.copyWith(
-                    color: _activeHandle == 'start' ? colorScheme.primary : Colors.white54,
-                    fontWeight: _activeHandle == 'start' ? FontWeight.bold : FontWeight.normal,
+                    color: _activeHandle == 'start'
+                        ? colorScheme.primary
+                        : Colors.white54,
+                    fontWeight: _activeHandle == 'start'
+                        ? FontWeight.bold
+                        : FontWeight.normal,
                   ),
                 ),
               ),
@@ -193,8 +204,12 @@ class _RobustTrimTimelineState extends State<RobustTrimTimeline> {
                 child: Text(
                   _formatDuration(widget.trimEnd * widget.videoDurationMs),
                   style: AppTypography.caption.copyWith(
-                    color: _activeHandle == 'end' ? colorScheme.primary : Colors.white54,
-                    fontWeight: _activeHandle == 'end' ? FontWeight.bold : FontWeight.normal,
+                    color: _activeHandle == 'end'
+                        ? colorScheme.primary
+                        : Colors.white54,
+                    fontWeight: _activeHandle == 'end'
+                        ? FontWeight.bold
+                        : FontWeight.normal,
                   ),
                 ),
               ),
@@ -227,47 +242,68 @@ class _RobustTrimTimelineState extends State<RobustTrimTimeline> {
                           borderRadius: BorderRadius.circular(2),
                         ),
                         clipBehavior: Clip.antiAlias,
-                        child: (i < widget.thumbnails.length && widget.thumbnails[i] != null)
+                        child:
+                            (i < widget.thumbnails.length &&
+                                widget.thumbnails[i] != null)
                             ? Opacity(
                                 opacity: 0.6,
-                                child: Image.memory(widget.thumbnails[i]!, fit: BoxFit.cover),
+                                child: Image.memory(
+                                  widget.thumbnails[i]!,
+                                  fit: BoxFit.cover,
+                                ),
                               )
                             : null,
                       ),
                     );
                   }),
                 ),
-                
+
                 // Dim overlays
                 Positioned(
-                  left: 0, top: 0, bottom: 0,
+                  left: 0,
+                  top: 0,
+                  bottom: 0,
                   width: widget.trimStart * timelineWidth,
                   child: Container(color: Colors.black54),
                 ),
                 Positioned(
-                  right: 0, top: 0, bottom: 0,
+                  right: 0,
+                  top: 0,
+                  bottom: 0,
                   width: (1 - widget.trimEnd) * timelineWidth,
                   child: Container(color: Colors.black54),
                 ),
-                
+
                 // Trim region border
                 Positioned(
                   left: widget.trimStart * timelineWidth,
-                  top: 0, bottom: 0,
+                  top: 0,
+                  bottom: 0,
                   width: (widget.trimEnd - widget.trimStart) * timelineWidth,
                   child: Container(
                     decoration: BoxDecoration(
                       border: Border.symmetric(
-                        vertical: BorderSide(color: colorScheme.primary, width: 2),
+                        vertical: BorderSide(
+                          color: colorScheme.primary,
+                          width: 2,
+                        ),
                       ),
                     ),
                   ),
                 ),
-                
+
                 // Handles (Visual only)
-                _buildHandle(widget.trimStart * timelineWidth, true, colorScheme),
-                _buildHandle(widget.trimEnd * timelineWidth - _kHandleVisualWidth, false, colorScheme),
-                
+                _buildHandle(
+                  widget.trimStart * timelineWidth,
+                  true,
+                  colorScheme,
+                ),
+                _buildHandle(
+                  widget.trimEnd * timelineWidth - _kHandleVisualWidth,
+                  false,
+                  colorScheme,
+                ),
+
                 // Playhead - High precision layered design
                 ValueListenableBuilder<double>(
                   valueListenable: widget.playbackPosition,
@@ -286,8 +322,12 @@ class _RobustTrimTimelineState extends State<RobustTrimTimeline> {
                             Container(
                               width: 6,
                               decoration: BoxDecoration(
-                                color: colorScheme.primary.withValues(alpha: isActive ? 0.3 : 0.15),
-                                borderRadius: BorderRadius.circular(AppRadius.xxs),
+                                color: colorScheme.primary.withValues(
+                                  alpha: isActive ? 0.3 : 0.15,
+                                ),
+                                borderRadius: BorderRadius.circular(
+                                  AppRadius.xxs,
+                                ),
                               ),
                             ),
                             // 2. Medium precision guide
@@ -299,10 +339,7 @@ class _RobustTrimTimelineState extends State<RobustTrimTimeline> {
                               ),
                             ),
                             // 3. Ultra-thin core 1px needle
-                            Container(
-                              width: 1,
-                              color: Colors.white,
-                            ),
+                            Container(width: 1, color: Colors.white),
                             // 4. Mathematical alignment markers (Top/Bottom handle)
                             Positioned(
                               top: 0,
@@ -311,10 +348,14 @@ class _RobustTrimTimelineState extends State<RobustTrimTimeline> {
                                 height: 4,
                                 decoration: BoxDecoration(
                                   color: Colors.white,
-                                  borderRadius: const BorderRadius.vertical(top: Radius.circular(2)),
+                                  borderRadius: const BorderRadius.vertical(
+                                    top: Radius.circular(2),
+                                  ),
                                   boxShadow: [
                                     BoxShadow(
-                                      color: colorScheme.primary.withValues(alpha: 0.5),
+                                      color: colorScheme.primary.withValues(
+                                        alpha: 0.5,
+                                      ),
                                       blurRadius: 4,
                                     ),
                                   ],
@@ -328,10 +369,14 @@ class _RobustTrimTimelineState extends State<RobustTrimTimeline> {
                                 height: 4,
                                 decoration: BoxDecoration(
                                   color: Colors.white,
-                                  borderRadius: const BorderRadius.vertical(bottom: Radius.circular(2)),
+                                  borderRadius: const BorderRadius.vertical(
+                                    bottom: Radius.circular(2),
+                                  ),
                                   boxShadow: [
                                     BoxShadow(
-                                      color: colorScheme.primary.withValues(alpha: 0.5),
+                                      color: colorScheme.primary.withValues(
+                                        alpha: 0.5,
+                                      ),
                                       blurRadius: 4,
                                     ),
                                   ],
@@ -346,20 +391,28 @@ class _RobustTrimTimelineState extends State<RobustTrimTimeline> {
                 ),
 
                 // Fine scrubbing indicator
-                if (_activeHandle != null && _dragVerticalLiftPx > _kFineScrubIndicatorLiftPx)
+                if (_activeHandle != null &&
+                    _dragVerticalLiftPx > _kFineScrubIndicatorLiftPx)
                   Positioned(
                     top: -30,
-                    left: 0, right: 0,
+                    left: 0,
+                    right: 0,
                     child: Center(
                       child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 4,
+                        ),
                         decoration: BoxDecoration(
                           color: colorScheme.primary,
                           borderRadius: BorderRadius.circular(AppRadius.sm),
                         ),
                         child: Text(
                           'FINE SCRUBBING',
-                          style: AppTypography.labelSmall.copyWith(color: Colors.white, fontWeight: FontWeight.w900),
+                          style: AppTypography.labelSmall.copyWith(
+                            color: Colors.white,
+                            fontWeight: FontWeight.w900,
+                          ),
                         ),
                       ),
                     ),
@@ -372,27 +425,45 @@ class _RobustTrimTimelineState extends State<RobustTrimTimeline> {
     );
   }
 
-  Widget _buildHandle(final double left, final bool isStart, final ColorScheme colorScheme) {
-    final isActive = (isStart && _activeHandle == 'start') || (!isStart && _activeHandle == 'end');
-    
+  Widget _buildHandle(
+    final double left,
+    final bool isStart,
+    final ColorScheme colorScheme,
+  ) {
+    final isActive =
+        (isStart && _activeHandle == 'start') ||
+        (!isStart && _activeHandle == 'end');
+
     return Positioned(
       left: left,
-      top: -2, bottom: -2,
+      top: -2,
+      bottom: -2,
       width: _kHandleVisualWidth,
       child: IgnorePointer(
         child: AnimatedContainer(
           duration: AppMotion.moderate01,
           decoration: BoxDecoration(
             color: isActive ? Colors.white : colorScheme.primary,
-            borderRadius: isStart 
-                ? const BorderRadius.horizontal(left: Radius.circular(AppRadius.xs))
-                : const BorderRadius.horizontal(right: Radius.circular(AppRadius.xs)),
-            boxShadow: isActive ? [BoxShadow(color: colorScheme.primary.withValues(alpha: 0.5), blurRadius: 8)] : null,
+            borderRadius: isStart
+                ? const BorderRadius.horizontal(
+                    left: Radius.circular(AppRadius.xs),
+                  )
+                : const BorderRadius.horizontal(
+                    right: Radius.circular(AppRadius.xs),
+                  ),
+            boxShadow: isActive
+                ? [
+                    BoxShadow(
+                      color: colorScheme.primary.withValues(alpha: 0.5),
+                      blurRadius: 8,
+                    ),
+                  ]
+                : null,
           ),
           child: Center(
-            child: Icon(
-              CupertinoIcons.line_horizontal_3, 
-              size: isActive ? 16 : 12, 
+            child: AppIconView(
+              AppIcon.menu,
+              size: isActive ? 16 : 12,
               color: isActive ? colorScheme.primary : Colors.white,
             ),
           ),
@@ -405,7 +476,10 @@ class _RobustTrimTimelineState extends State<RobustTrimTimeline> {
     final d = Duration(milliseconds: ms.round());
     final minutes = d.inMinutes.remainder(60).toString().padLeft(2, '0');
     final seconds = d.inSeconds.remainder(60).toString().padLeft(2, '0');
-    final millis = (d.inMilliseconds.remainder(1000) ~/ 10).toString().padLeft(2, '0');
+    final millis = (d.inMilliseconds.remainder(1000) ~/ 10).toString().padLeft(
+      2,
+      '0',
+    );
     return '$minutes:$seconds.$millis';
   }
 }

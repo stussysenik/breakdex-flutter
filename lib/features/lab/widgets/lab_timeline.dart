@@ -13,6 +13,7 @@ import 'package:breakdex/core/design/spacing.dart';
 import 'package:breakdex/core/design/typography.dart';
 import 'package:breakdex/shared/widgets/app_loader.dart';
 import 'package:breakdex/features/lab/providers/lab_providers.dart';
+import 'package:breakdex/core/design/icons.dart';
 
 /// Vertical timeline showing lab entries and milestones interleaved
 /// chronologically for 'project'-type labs.
@@ -74,7 +75,9 @@ class _LabTimelineState extends ConsumerState<LabTimeline> {
       children: [
         // Section header
         Padding(
-          padding: const EdgeInsets.symmetric(horizontal: AppSpacing.screenEdge),
+          padding: const EdgeInsets.symmetric(
+            horizontal: AppSpacing.screenEdge,
+          ),
           child: Text(
             'TIMELINE',
             style: AppTypography.sectionHeader.copyWith(
@@ -86,7 +89,9 @@ class _LabTimelineState extends ConsumerState<LabTimeline> {
 
         // Add entry input
         Padding(
-          padding: const EdgeInsets.symmetric(horizontal: AppSpacing.screenEdge),
+          padding: const EdgeInsets.symmetric(
+            horizontal: AppSpacing.screenEdge,
+          ),
           child: Row(
             children: [
               Expanded(
@@ -94,7 +99,7 @@ class _LabTimelineState extends ConsumerState<LabTimeline> {
                   controller: _entryController,
                   decoration: const InputDecoration(
                     hintText: 'Log progress...',
-                    prefixIcon: Icon(Icons.edit_note_rounded),
+                    prefixIcon: AppIconView(AppIcon.edit),
                     isDense: true,
                   ),
                   textInputAction: TextInputAction.send,
@@ -104,7 +109,11 @@ class _LabTimelineState extends ConsumerState<LabTimeline> {
               const SizedBox(width: AppSpacing.sm),
               IconButton.filled(
                 onPressed: _addEntry,
-                icon: const Icon(Icons.add, color: Colors.white, size: 20),
+                icon: const AppIconView(
+                  AppIcon.add,
+                  color: Colors.white,
+                  size: 20,
+                ),
                 style: IconButton.styleFrom(
                   backgroundColor: colorScheme.primary,
                   minimumSize: const Size(40, 40),
@@ -125,9 +134,12 @@ class _LabTimelineState extends ConsumerState<LabTimeline> {
             padding: const EdgeInsets.symmetric(
               horizontal: AppSpacing.screenEdge,
             ),
-            child: Text('Error: $e',
-                style:
-                    AppTypography.caption.copyWith(color: AppColors.actionAgain)),
+            child: Text(
+              'Error: $e',
+              style: AppTypography.caption.copyWith(
+                color: AppColors.actionAgain,
+              ),
+            ),
           ),
           data: (final entries) {
             final milestones = milestonesAsync.valueOrNull ?? [];
@@ -155,10 +167,7 @@ class _LabTimelineState extends ConsumerState<LabTimeline> {
               child: Column(
                 children: [
                   for (var i = 0; i < items.length; i++)
-                    _TimelineRow(
-                      item: items[i],
-                      isLast: i == items.length - 1,
-                    ),
+                    _TimelineRow(item: items[i], isLast: i == items.length - 1),
                 ],
               ),
             );
@@ -217,42 +226,37 @@ class _TimelineItem {
     required final String content,
     required final bool hasVideo,
     required final DateTime timestamp,
-  }) =>
-      _TimelineItem._(
-        type: _TimelineItemType.entry,
-        text: content,
-        timestamp: timestamp,
-        hasVideo: hasVideo,
-      );
+  }) => _TimelineItem._(
+    type: _TimelineItemType.entry,
+    text: content,
+    timestamp: timestamp,
+    hasVideo: hasVideo,
+  );
 
   factory _TimelineItem.milestone({
     required final String title,
     required final bool completed,
     required final DateTime timestamp,
-  }) =>
-      _TimelineItem._(
-        type: _TimelineItemType.milestone,
-        text: title,
-        timestamp: timestamp,
-        completed: completed,
-      );
+  }) => _TimelineItem._(
+    type: _TimelineItemType.milestone,
+    text: title,
+    timestamp: timestamp,
+    completed: completed,
+  );
 
   /// Dot color: blue for entries, purple for pending milestones, green for
   /// completed milestones.
   Color get dotColor => switch (type) {
-        _TimelineItemType.entry => AppColors.accent,
-        _TimelineItemType.milestone =>
-          completed ? AppColors.stateMastery : const Color(0xFF8B5CF6),
-      };
+    _TimelineItemType.entry => AppColors.accent,
+    _TimelineItemType.milestone =>
+      completed ? AppColors.stateMastery : const Color(0xFF8B5CF6),
+  };
 }
 
 // -- Timeline Row -------------------------------------------------------------
 
 class _TimelineRow extends StatelessWidget {
-  const _TimelineRow({
-    required this.item,
-    required this.isLast,
-  });
+  const _TimelineRow({required this.item, required this.isLast});
 
   final _TimelineItem item;
   final bool isLast;
@@ -302,7 +306,8 @@ class _TimelineRow extends StatelessWidget {
                   Text(
                     item.text,
                     style: AppTypography.bodySmall.copyWith(
-                      color: item.type == _TimelineItemType.milestone &&
+                      color:
+                          item.type == _TimelineItemType.milestone &&
                               item.completed
                           ? colorScheme.secondary.withValues(alpha: 0.6)
                           : colorScheme.onSurface,
@@ -321,8 +326,8 @@ class _TimelineRow extends StatelessWidget {
                     Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Icon(
-                          Icons.videocam_outlined,
+                        AppIconView(
+                          AppIcon.video,
                           size: 14,
                           color: AppColors.accent.withValues(alpha: 0.7),
                         ),
@@ -375,5 +380,4 @@ class _TimelineRow extends StatelessWidget {
       ),
     );
   }
-
 }

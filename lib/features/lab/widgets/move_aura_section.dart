@@ -16,7 +16,9 @@ import 'package:breakdex/core/providers.dart';
 import 'package:breakdex/core/utils/diagnostics.dart';
 import 'package:breakdex/shared/widgets/app_loader.dart';
 import 'package:breakdex/features/flow/providers/aura_providers.dart';
-import 'package:breakdex/features/flow/widgets/aura_link_tile.dart' show AuraAffinity;
+import 'package:breakdex/features/flow/widgets/aura_link_tile.dart'
+    show AuraAffinity;
+import 'package:breakdex/core/design/icons.dart';
 
 // ---------------------------------------------------------------------------
 // MoveAuraSection — compact aura flow display for the Move Detail screen.
@@ -59,8 +61,8 @@ class MoveAuraSection extends ConsumerWidget {
         // Section header — uppercase caption with auto_awesome icon.
         Row(
           children: [
-            Icon(
-              Icons.auto_awesome,
+            AppIconView(
+              AppIcon.discover,
               size: 14,
               color: colorScheme.secondary,
             ),
@@ -129,10 +131,14 @@ class _AuraFlowRow extends ConsumerWidget {
     final colorScheme = Theme.of(context).colorScheme;
 
     // Collect the connected move IDs so we can resolve names.
-    final connectedIds = links.map((final l) => switch (direction) {
-          _FlowDirection.outgoing => l.toMoveId,
-          _FlowDirection.incoming => l.fromMoveId,
-        }).toList();
+    final connectedIds = links
+        .map(
+          (final l) => switch (direction) {
+            _FlowDirection.outgoing => l.toMoveId,
+            _FlowDirection.incoming => l.fromMoveId,
+          },
+        )
+        .toList();
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -159,10 +165,7 @@ class _AuraFlowRow extends ConsumerWidget {
                 direction: direction,
               ),
             // "+" add connection button
-            _AddConnectionButton(
-              moveId: moveId,
-              direction: direction,
-            ),
+            _AddConnectionButton(moveId: moveId, direction: direction),
           ],
         ),
       ],
@@ -197,7 +200,9 @@ class _AuraPill extends ConsumerWidget {
     final affinityColor = affinity.color(context);
 
     // Watch the connected move reactively — name updates propagate instantly.
-    final moveStream = ref.watch(moveRepositoryProvider).watchById(connectedMoveId);
+    final moveStream = ref
+        .watch(moveRepositoryProvider)
+        .watchById(connectedMoveId);
 
     return StreamBuilder<Move>(
       stream: moveStream,
@@ -259,7 +264,11 @@ class _AuraPill extends ConsumerWidget {
     );
   }
 
-  Future<void> _showAffinitySheet(final BuildContext context, final WidgetRef ref, final String moveName) async {
+  Future<void> _showAffinitySheet(
+    final BuildContext context,
+    final WidgetRef ref,
+    final String moveName,
+  ) async {
     final colorScheme = Theme.of(context).colorScheme;
     final currentAffinity = AuraAffinity.fromString(link.affinity);
 
@@ -273,25 +282,48 @@ class _AuraPill extends ConsumerWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Padding(
-                padding: const EdgeInsets.fromLTRB(AppSpacing.screenEdge, AppSpacing.lg, AppSpacing.screenEdge, AppSpacing.md),
-                child: Text('Connection to "$moveName"', style: AppTypography.titleSmall),
+                padding: const EdgeInsets.fromLTRB(
+                  AppSpacing.screenEdge,
+                  AppSpacing.lg,
+                  AppSpacing.screenEdge,
+                  AppSpacing.md,
+                ),
+                child: Text(
+                  'Connection to "$moveName"',
+                  style: AppTypography.titleSmall,
+                ),
               ),
               for (final affinity in AuraAffinity.values)
                 ListTile(
                   leading: Container(
-                    width: 12, height: 12,
-                    decoration: BoxDecoration(color: affinity.color(context), shape: BoxShape.circle),
+                    width: 12,
+                    height: 12,
+                    decoration: BoxDecoration(
+                      color: affinity.color(context),
+                      shape: BoxShape.circle,
+                    ),
                   ),
                   title: Text(affinity.label, style: AppTypography.bodyMedium),
                   trailing: currentAffinity == affinity
-                      ? Icon(Icons.check, color: colorScheme.primary, size: 20)
+                      ? AppIconView(
+                          AppIcon.check,
+                          color: colorScheme.primary,
+                          size: 20,
+                        )
                       : null,
                   onTap: () => Navigator.pop(ctx, affinity.name),
                 ),
               const Divider(),
               ListTile(
-                leading: const Icon(Icons.delete_outline, color: Colors.red, size: 20),
-                title: Text('Remove Connection', style: AppTypography.bodyMedium.copyWith(color: Colors.red)),
+                leading: const AppIconView(
+                  AppIcon.delete,
+                  color: Colors.red,
+                  size: 20,
+                ),
+                title: Text(
+                  'Remove Connection',
+                  style: AppTypography.bodyMedium.copyWith(color: Colors.red),
+                ),
                 onTap: () => Navigator.pop(ctx, '__delete__'),
               ),
             ],
@@ -304,12 +336,18 @@ class _AuraPill extends ConsumerWidget {
     final dao = ref.read(auraDaoProvider);
 
     if (result == '__delete__') {
-      DiagnosticsLog.info('AuraPill', 'Deleting aura link ${link.fromMoveId}→${link.toMoveId} (was ${link.affinity})');
+      DiagnosticsLog.info(
+        'AuraPill',
+        'Deleting aura link ${link.fromMoveId}→${link.toMoveId} (was ${link.affinity})',
+      );
       await dao.deleteLink(link.fromMoveId, link.toMoveId);
       DiagnosticsLog.info('AuraPill', 'Aura link deleted OK');
       unawaited(HapticFeedback.mediumImpact());
     } else {
-      DiagnosticsLog.info('AuraPill', 'Changing aura link ${link.fromMoveId}→${link.toMoveId} from ${link.affinity} to $result');
+      DiagnosticsLog.info(
+        'AuraPill',
+        'Changing aura link ${link.fromMoveId}→${link.toMoveId} from ${link.affinity} to $result',
+      );
       await dao.upsertLink(link.fromMoveId, link.toMoveId, result);
       DiagnosticsLog.info('AuraPill', 'Aura affinity updated OK');
       unawaited(HapticFeedback.selectionClick());
@@ -322,10 +360,7 @@ class _AuraPill extends ConsumerWidget {
 // ---------------------------------------------------------------------------
 
 class _AddConnectionButton extends ConsumerWidget {
-  const _AddConnectionButton({
-    required this.moveId,
-    required this.direction,
-  });
+  const _AddConnectionButton({required this.moveId, required this.direction});
 
   final String moveId;
   final _FlowDirection direction;
@@ -348,8 +383,8 @@ class _AddConnectionButton extends ConsumerWidget {
               width: 1,
             ),
           ),
-          child: Icon(
-            Icons.add_rounded,
+          child: AppIconView(
+            AppIcon.add,
             size: 14,
             color: colorScheme.secondary.withValues(alpha: 0.6),
           ),
@@ -364,13 +399,10 @@ class _AddConnectionButton extends ConsumerWidget {
   ) async {
     final result =
         await showModalBottomSheet<({String targetMoveId, String affinity})>(
-      context: context,
-      isScrollControlled: true,
-      builder: (_) => _QuickAddSheet(
-        moveId: moveId,
-        direction: direction,
-      ),
-    );
+          context: context,
+          isScrollControlled: true,
+          builder: (_) => _QuickAddSheet(moveId: moveId, direction: direction),
+        );
 
     if (result == null) return;
 
@@ -394,10 +426,7 @@ class _AddConnectionButton extends ConsumerWidget {
 /// search + affinity-button pattern from `aura_view.dart` but scoped to the
 /// move detail context. Filters out the current move and already-linked moves.
 class _QuickAddSheet extends ConsumerStatefulWidget {
-  const _QuickAddSheet({
-    required this.moveId,
-    required this.direction,
-  });
+  const _QuickAddSheet({required this.moveId, required this.direction});
 
   final String moveId;
   final _FlowDirection direction;
@@ -431,10 +460,10 @@ class _QuickAddSheetState extends ConsumerState<_QuickAddSheet> {
 
     // Determine which direction's existing links to exclude.
     final existingLinksAsync = switch (widget.direction) {
-      _FlowDirection.outgoing =>
-        ref.watch(auraLinksFromProvider(widget.moveId)),
-      _FlowDirection.incoming =>
-        ref.watch(auraLinksToProvider(widget.moveId)),
+      _FlowDirection.outgoing => ref.watch(
+        auraLinksFromProvider(widget.moveId),
+      ),
+      _FlowDirection.incoming => ref.watch(auraLinksToProvider(widget.moveId)),
     };
 
     return DraggableScrollableSheet(
@@ -495,7 +524,7 @@ class _QuickAddSheetState extends ConsumerState<_QuickAddSheet> {
                   autofocus: true,
                   decoration: const InputDecoration(
                     hintText: 'Search moves...',
-                    prefixIcon: Icon(Icons.search_rounded),
+                    prefixIcon: AppIconView(AppIcon.search),
                   ),
                 ),
               ),
@@ -504,26 +533,27 @@ class _QuickAddSheetState extends ConsumerState<_QuickAddSheet> {
               // Move list
               Expanded(
                 child: movesAsync.when(
-                  loading: () =>
-                      const Center(child: AppLoader()),
+                  loading: () => const Center(child: AppLoader()),
                   error: (final e, _) => Center(child: Text('Error: $e')),
                   data: (final moves) {
                     // Build set of already-linked IDs to exclude.
                     final existingIds = (existingLinksAsync.valueOrNull ?? [])
-                        .map((final l) => switch (widget.direction) {
-                              _FlowDirection.outgoing => l.toMoveId,
-                              _FlowDirection.incoming => l.fromMoveId,
-                            })
+                        .map(
+                          (final l) => switch (widget.direction) {
+                            _FlowDirection.outgoing => l.toMoveId,
+                            _FlowDirection.incoming => l.fromMoveId,
+                          },
+                        )
                         .toSet();
 
                     final filtered = moves
-                        .where((final m) =>
-                            m.id != widget.moveId &&
-                            !existingIds.contains(m.id) &&
-                            (_searchQuery.isEmpty ||
-                                m.name
-                                    .toLowerCase()
-                                    .contains(_searchQuery)))
+                        .where(
+                          (final m) =>
+                              m.id != widget.moveId &&
+                              !existingIds.contains(m.id) &&
+                              (_searchQuery.isEmpty ||
+                                  m.name.toLowerCase().contains(_searchQuery)),
+                        )
                         .toList();
 
                     if (filtered.isEmpty) {
@@ -573,10 +603,7 @@ class _QuickAddSheetState extends ConsumerState<_QuickAddSheet> {
 // ---------------------------------------------------------------------------
 
 class _QuickMoveRow extends StatelessWidget {
-  const _QuickMoveRow({
-    required this.moveName,
-    required this.onSelect,
-  });
+  const _QuickMoveRow({required this.moveName, required this.onSelect});
 
   final String moveName;
   final ValueChanged<AuraAffinity> onSelect;
@@ -675,8 +702,8 @@ class _EmptyAuraState extends ConsumerWidget {
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(
-              Icons.add_rounded,
+            AppIconView(
+              AppIcon.add,
               size: 16,
               color: colorScheme.secondary.withValues(alpha: 0.5),
             ),
@@ -700,13 +727,13 @@ class _EmptyAuraState extends ConsumerWidget {
   ) async {
     final result =
         await showModalBottomSheet<({String targetMoveId, String affinity})>(
-      context: context,
-      isScrollControlled: true,
-      builder: (_) => _QuickAddSheet(
-        moveId: moveId,
-        direction: _FlowDirection.outgoing,
-      ),
-    );
+          context: context,
+          isScrollControlled: true,
+          builder: (_) => _QuickAddSheet(
+            moveId: moveId,
+            direction: _FlowDirection.outgoing,
+          ),
+        );
 
     if (result == null) return;
 

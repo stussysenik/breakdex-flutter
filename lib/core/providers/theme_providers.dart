@@ -1,6 +1,30 @@
 part of '../providers.dart';
 
 // ---------------------------------------------------------------------------
+// Icon pack — persisted in SharedPreferences
+// ---------------------------------------------------------------------------
+
+final iconPackProvider = NotifierProvider<IconPackNotifier, IconPackId>(
+  IconPackNotifier.new,
+);
+
+class IconPackNotifier extends Notifier<IconPackId> {
+  static const _key = 'icon_pack';
+
+  @override
+  IconPackId build() {
+    final prefs = ref.watch(sharedPreferencesProvider);
+    return IconPackId.fromKey(prefs.getString(_key));
+  }
+
+  Future<void> set(final IconPackId pack) async {
+    state = pack;
+    final prefs = ref.read(sharedPreferencesProvider);
+    await prefs.setString(_key, pack.key);
+  }
+}
+
+// ---------------------------------------------------------------------------
 // Font family — persisted in SharedPreferences
 // ---------------------------------------------------------------------------
 

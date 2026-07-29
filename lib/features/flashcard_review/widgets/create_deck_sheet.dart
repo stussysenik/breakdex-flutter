@@ -18,6 +18,7 @@ import 'package:breakdex/core/services/deck_service.dart';
 import 'package:breakdex/core/services/entity_names_service.dart';
 import 'package:breakdex/l10n/gen/app_localizations.dart';
 import 'package:breakdex/features/flashcard_review/providers/deck_providers.dart';
+import 'package:breakdex/core/design/icons.dart';
 
 /// Bottom sheet for creating a new smart or manual deck.
 ///
@@ -73,7 +74,9 @@ class _CreateDeckSheetState extends ConsumerState<CreateDeckSheet> {
         } on Object catch (_) {}
       } else if (!_isSmart) {
         // Load manual moves
-        ref.read(deckMovesProvider(deck.id).future).then((final List<Move> moves) {
+        ref.read(deckMovesProvider(deck.id).future).then((
+          final List<Move> moves,
+        ) {
           if (mounted) {
             setState(() {
               _selectedMoveIds.addAll(moves.map((final Move m) => m.id));
@@ -132,7 +135,7 @@ class _CreateDeckSheetState extends ConsumerState<CreateDeckSheet> {
                 Expanded(
                   child: _TypeChip(
                     label: l10n.revSmart,
-                    icon: Icons.auto_awesome,
+                    icon: AppIcon.discover.resolve(context),
                     isSelected: _isSmart,
                     onTap: () => setState(() => _isSmart = true),
                   ),
@@ -141,7 +144,7 @@ class _CreateDeckSheetState extends ConsumerState<CreateDeckSheet> {
                 Expanded(
                   child: _TypeChip(
                     label: l10n.revManual,
-                    icon: Icons.playlist_add_check,
+                    icon: AppIcon.combo.resolve(context),
                     isSelected: !_isSmart,
                     onTap: () => setState(() => _isSmart = false),
                   ),
@@ -312,7 +315,9 @@ class _CreateDeckSheetState extends ConsumerState<CreateDeckSheet> {
                   ).colorScheme.primary.withValues(alpha: 0.3),
                 ),
                 child: Text(
-                  widget.deck == null ? l10n.revCreateDeck : l10n.revSaveChanges,
+                  widget.deck == null
+                      ? l10n.revCreateDeck
+                      : l10n.revSaveChanges,
                 ),
               ),
             ),
@@ -405,7 +410,6 @@ class _CreateDeckSheetState extends ConsumerState<CreateDeckSheet> {
     if (mounted) Navigator.pop(context);
   }
 }
-
 
 class _TypeChip extends StatelessWidget {
   const _TypeChip({
@@ -551,7 +555,9 @@ class _ManualMoveSelector extends ConsumerWidget {
                 dense: true,
                 contentPadding: EdgeInsets.zero,
                 leading: Icon(
-                  isSelected ? Icons.check_box : Icons.check_box_outline_blank,
+                  isSelected
+                      ? AppIcon.check.resolve(context)
+                      : AppIcon.check.resolve(context),
                   color: isSelected
                       ? colorScheme.primary
                       : colorScheme.secondary,

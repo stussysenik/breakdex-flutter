@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:breakdex/core/design/typography.dart';
+import 'package:breakdex/core/design/icons.dart';
 
 enum TimelineNodeStyle { active, inactive, add }
 
@@ -65,8 +66,7 @@ class TimelineNode extends StatelessWidget {
     final node = Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        if (showLeadingLine)
-          Container(width: 24, height: 2, color: lineColor),
+        if (showLeadingLine) Container(width: 24, height: 2, color: lineColor),
         Container(
           width: 36,
           height: 36,
@@ -74,13 +74,11 @@ class TimelineNode extends StatelessWidget {
             shape: BoxShape.circle,
             // Active: solid fill; Inactive/Add: transparent with border.
             color: isActive ? activeColor : (isAdd ? Colors.transparent : null),
-            border: isActive
-                ? null
-                : Border.all(color: nodeColor, width: 2),
+            border: isActive ? null : Border.all(color: nodeColor, width: 2),
           ),
           child: Center(
             child: isAdd
-                ? Icon(Icons.add, size: 18, color: inactiveColor)
+                ? AppIconView(AppIcon.add, size: 18, color: inactiveColor)
                 : Text(
                     '$index',
                     style: AppTypography.caption.copyWith(
@@ -90,8 +88,7 @@ class TimelineNode extends StatelessWidget {
                   ),
           ),
         ),
-        if (showTrailingLine)
-          Container(width: 24, height: 2, color: lineColor),
+        if (showTrailingLine) Container(width: 24, height: 2, color: lineColor),
       ],
     );
 

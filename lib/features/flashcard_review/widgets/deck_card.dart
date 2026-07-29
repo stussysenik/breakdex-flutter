@@ -9,6 +9,7 @@ import 'package:breakdex/core/design/spacing.dart';
 import 'package:breakdex/core/design/theme.dart';
 import 'package:breakdex/core/design/typography.dart';
 import 'package:breakdex/core/services/deck_service.dart';
+import 'package:breakdex/core/design/icons.dart';
 
 /// A compact card representing a saved deck in the horizontal scroll list.
 ///
@@ -32,7 +33,9 @@ class DeckCard extends StatelessWidget {
   Widget build(final BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
     final isSmart = deck.deckType == 'smart';
-    final iconData = isSmart ? Icons.tune_rounded : Icons.layers_outlined;
+    final iconData = isSmart
+        ? AppIcon.settings.resolve(context)
+        : AppIcon.study.resolve(context);
 
     String? semanticLabel;
     if (isSmart && deck.filterCriteria != null) {
@@ -122,8 +125,8 @@ class DeckCard extends StatelessWidget {
                   HapticFeedback.heavyImpact();
                   onLongPress();
                 },
-                child: Icon(
-                  Icons.close,
+                child: AppIconView(
+                  AppIcon.close,
                   size: 14,
                   color: isSelected
                       ? Theme.of(context).colorScheme.primary

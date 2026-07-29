@@ -1,3 +1,4 @@
+import 'package:breakdex/core/design/icons.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -22,9 +23,9 @@ void main() {
     });
 
     test('icon maps to correct icon', () {
-      expect(InstaxMode.carousel.icon, Icons.swap_horiz);
-      expect(InstaxMode.feed.icon, Icons.view_agenda);
-      expect(InstaxMode.tinder.icon, Icons.style);
+      expect(InstaxMode.carousel.icon, AppIcon.shuffle);
+      expect(InstaxMode.feed.icon, AppIcon.glance);
+      expect(InstaxMode.tinder.icon, AppIcon.study);
     });
   });
 

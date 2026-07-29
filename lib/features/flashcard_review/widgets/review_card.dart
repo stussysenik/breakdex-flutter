@@ -11,6 +11,7 @@ import 'package:breakdex/core/providers.dart';
 import 'package:breakdex/shared/widgets/video_player_widget.dart';
 import 'package:breakdex/features/flashcard_review/widgets/instrument_panel.dart';
 import 'package:breakdex/features/flashcard_review/widgets/review_position_badge.dart';
+import 'package:breakdex/core/design/icons.dart';
 
 class ReviewCard extends ConsumerWidget {
   const ReviewCard({
@@ -128,13 +129,17 @@ class ReviewCard extends ConsumerWidget {
       stream: comboMovesStream,
       builder: (final context, final snapshot) {
         final comboMoves = snapshot.data ?? const <ComboMoveWithDetail>[];
-        final safeIndex = comboMoves.isEmpty ? 0 : _preferredStepIndex(comboMoves);
-        final currentStep = comboMoves.isEmpty ? null : comboMoves[safeIndex].move;
+        final safeIndex = comboMoves.isEmpty
+            ? 0
+            : _preferredStepIndex(comboMoves);
+        final currentStep = comboMoves.isEmpty
+            ? null
+            : comboMoves[safeIndex].move;
         final rawStepVideoPath = currentStep?.videoPath;
         final stepVideoPath =
             rawStepVideoPath != null && rawStepVideoPath.trim().isNotEmpty
-                ? rawStepVideoPath
-                : null;
+            ? rawStepVideoPath
+            : null;
 
         return _buildCard(
           context,
@@ -178,7 +183,8 @@ class ReviewCard extends ConsumerWidget {
                 aspectRatio: 0.75, // Physical Instax Mini aspect ratio (3:4)
                 child: Container(
                   decoration: BoxDecoration(
-                    color: fill, // Instax frame — user-customizable, default white
+                    color:
+                        fill, // Instax frame — user-customizable, default white
                     borderRadius: BorderRadius.circular(AppRadius.xxs),
                     boxShadow: [
                       BoxShadow(
@@ -188,7 +194,12 @@ class ReviewCard extends ConsumerWidget {
                       ),
                     ],
                   ),
-                  padding: const EdgeInsets.fromLTRB(16, 16, 16, 48), // Bottom-heavy frame
+                  padding: const EdgeInsets.fromLTRB(
+                    16,
+                    16,
+                    16,
+                    48,
+                  ), // Bottom-heavy frame
                   child: Container(
                     clipBehavior: Clip.antiAlias,
                     decoration: BoxDecoration(
@@ -203,7 +214,7 @@ class ReviewCard extends ConsumerWidget {
                             builder: (final context, final constraints) {
                               if (videoPath == null) {
                                 return const VideoPlaceholder(
-                                  icon: Icons.videocam_off_outlined,
+                                  icon: AppIcon.videoOff,
                                 );
                               }
 
@@ -278,8 +289,8 @@ class ReviewCard extends ConsumerWidget {
                                       ),
                                       shape: BoxShape.circle,
                                     ),
-                                    child: const Icon(
-                                      Icons.close_rounded,
+                                    child: const AppIconView(
+                                      AppIcon.close,
                                       color: Colors.white,
                                       size: 20,
                                     ),

@@ -12,6 +12,8 @@ import 'package:breakdex/core/models/learning_state.dart';
 import 'package:breakdex/core/models/review_card_display_settings.dart';
 import 'package:breakdex/shared/widgets/beat_grid.dart';
 import 'package:breakdex/shared/widgets/state_pill.dart';
+import 'package:breakdex/core/design/icons.dart';
+
 /// Instrument panel — metadata and playback controls that sit between the
 /// video player and the rating buttons in the redesigned review card.
 ///
@@ -252,16 +254,13 @@ class InstrumentPanel extends StatelessWidget {
                   if (showPlaybackControls) ...[
                     _InstrumentButton(
                       icon: loopEnabled
-                          ? Icons.repeat_one_rounded
-                          : Icons.repeat_rounded,
+                          ? AppIcon.repeat.resolve(context)
+                          : AppIcon.repeat.resolve(context),
                       isActive: loopEnabled,
                       onTap: onLoopToggle,
                     ),
                     const SizedBox(width: AppSpacing.md),
-                    _SpeedButton(
-                      speed: playbackSpeed,
-                      onTap: onSpeedCycle,
-                    ),
+                    _SpeedButton(speed: playbackSpeed, onTap: onSpeedCycle),
                   ],
                 ],
               ),
@@ -305,8 +304,8 @@ class _CollapsibleNotesState extends State<_CollapsibleNotes> {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(
-            Icons.notes_rounded,
+          AppIconView(
+            AppIcon.notes,
             size: 14,
             color: colorScheme.secondary.withValues(alpha: 0.7),
           ),
@@ -324,8 +323,8 @@ class _CollapsibleNotesState extends State<_CollapsibleNotes> {
           const SizedBox(width: AppSpacing.xs),
           Icon(
             _expanded
-                ? Icons.expand_less_rounded
-                : Icons.expand_more_rounded,
+                ? AppIcon.expandLess.resolve(context)
+                : AppIcon.expandMore.resolve(context),
             size: 16,
             color: colorScheme.secondary.withValues(alpha: 0.7),
           ),
@@ -388,10 +387,7 @@ class _InstrumentButton extends StatelessWidget {
 /// to draw attention to the non-default state — a subtle but effective
 /// indicator borrowed from pro video editing tools.
 class _SpeedButton extends StatelessWidget {
-  const _SpeedButton({
-    required this.speed,
-    this.onTap,
-  });
+  const _SpeedButton({required this.speed, this.onTap});
 
   final double speed;
   final VoidCallback? onTap;
@@ -399,8 +395,9 @@ class _SpeedButton extends StatelessWidget {
   /// Format the speed as a compact label: "1x", "0.5x", "1.5x", "2x".
   String get _label {
     // Avoid trailing zeros: 1.0 → "1x", 0.5 → "0.5x"
-    final formatted =
-        speed == speed.roundToDouble() ? speed.toInt().toString() : '$speed';
+    final formatted = speed == speed.roundToDouble()
+        ? speed.toInt().toString()
+        : '$speed';
     return '${formatted}x';
   }
 

@@ -3,7 +3,7 @@
 > **The single roadmap.** (`docs/ROADMAP.MD` and `docs/PROGRESS.MD` were folded in here and
 > removed, 2026-07-06.) Captures decisions, what already exists in the code, the remaining
 > delta, and a recommended sequence toward launch.
-> Last consolidated: 2026-07-06.
+> Last consolidated: 2026-07-29 (6.4 icon system implemented).
 
 > ⚠️ **Backend decision updated (2026-07-05).** The "Firebase (Firestore)" rows in the
 > LOCKED table and workstreams below are **superseded**. The canonical backend is now
@@ -22,29 +22,21 @@
 > same commit**. Nothing else starts until this block says so.
 
 - **Change (active, 2026-07-29 · product finish):** `redesign-visual-first-experience`
-  — **6.4 and 6.5 SPECCED 2026-07-29 (Teacher session — no implementation code).** Both were
-  unspecced captures that the §6 note required a Teacher pass for, and both are now
-  strict-valid changes on the board:
-  `openspec/changes/add-icon-system-and-packs` and `openspec/changes/add-color-packs`.
-  They share one mechanism deliberately — closed vocabulary → pack resolving it through an
-  exhaustive `switch` with **no `default`** (so an incomplete pack is a compile error, not a
-  rendered fallback) → `ThemeExtension` → persisted preference → conformance test. The
-  measurements are what shaped them: **434 raw `Icons.*` sites / 92 files / 228 distinct
-  glyphs, 148 used once, 51 pure style-variant duplicates**; and color surfaces that are
-  **compile-time constants** with only 4 user-adjustable values that move independently.
-  Both ship a default pack identical to today, so nothing changes appearance until selected.
-  **Next unticked: implement one of the two.** Recommended order — the icon change first, so
-  the shared pattern is established and reviewed once; there is no code dependency, so they
-  may run in parallel. Both are Student lanes now.
+  — **6.4 DONE 2026-07-29.** `openspec/changes/add-icon-system-and-packs` Phase 4 closed:
+  `AppIcon` enum with 78 semantic names, material + lucide packs, conformance gate with
+  absolute ban (zero-allowlist), `CLAUDE.md` + `openspec/AGENTS.md` updated. 434 raw
+  `Icons.*` sites eliminated. Phase 5 (settings switching surface) deferred — packs already
+  work programmatically.
+  **Next unticked: 6.5 — implement color packs** (`openspec/changes/add-color-packs`,
+  strict-valid). Same mechanism as 6.4: closed vocabulary → exhaustive-switch packs →
+  `ThemeExtension` → persisted preference → conformance test. Measured finding: 38 `const
+  Color` in 58-line `colors.dart`, only 4 user-adjustable values moving independently.
   **Owner decision open, blocking nothing** (`add-color-packs` 6.1): PANTONE® names/numbers
   are licensed IP, so the spec ships in-house curated seasonal collections behind a catalogue
   interface and a licensed dataset drops in later with no mechanism change.
   6.6–6.10 stay unspecced with their lanes and a recommended order recorded in that change's
   §6 disposition table (6.6 is Scholar-gated).
-  Phases 2–5 shipped 2026-07-08; what is left is a short finish list of owner-observed defects
-  plus V.2's Patrol journey. Release-blocking for
-  wave-1 invites, and no backend dependency — it runs parallel to the owner-gated Appwrite and
-  distribution work.
+  No backend dependency — runs parallel to the owner-gated Appwrite and distribution work.
 
 - **Archived 2026-07-29 (implementation-complete, 19/19):** `add-stacked-viewport-layout`
   — **Stacked-viewport layout constitution.** All five tabs are on one frame: `AppLayout`

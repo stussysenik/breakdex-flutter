@@ -8,6 +8,7 @@ import 'package:go_router/go_router.dart';
 
 import 'package:breakdex/core/database/database.dart';
 import 'package:breakdex/core/design/colors.dart';
+import 'package:breakdex/core/design/icons.dart';
 import 'package:breakdex/core/design/spacing.dart';
 import 'package:breakdex/core/design/typography.dart';
 import 'package:breakdex/core/models/canonical_asset.dart';
@@ -35,20 +36,34 @@ class CanonicalTrashScreen extends ConsumerWidget {
                 onTap: () => context.pop(),
                 child: Row(
                   children: [
-                    Icon(Icons.chevron_left, color: colorScheme.secondary, size: 20),
-                    Text('Settings',
-                        style: AppTypography.bodyMedium.copyWith(color: colorScheme.secondary)),
+                    AppIconView(
+                      AppIcon.back,
+                      color: colorScheme.secondary,
+                      size: 20,
+                    ),
+                    Text(
+                      'Settings',
+                      style: AppTypography.bodyMedium.copyWith(
+                        color: colorScheme.secondary,
+                      ),
+                    ),
                   ],
                 ),
               ),
               const SizedBox(height: AppSpacing.lg),
-              Text('Canonical Trash',
-                  style: AppTypography.titleLarge.copyWith(color: colorScheme.onSurface)),
+              Text(
+                'Canonical Trash',
+                style: AppTypography.titleLarge.copyWith(
+                  color: colorScheme.onSurface,
+                ),
+              ),
               const SizedBox(height: AppSpacing.sm),
               Text(
                 'Assets deleted from Breakdex stay here for 30 days '
                 'so you can restore them or remove them permanently.',
-                style: AppTypography.bodySmall.copyWith(color: colorScheme.secondary),
+                style: AppTypography.bodySmall.copyWith(
+                  color: colorScheme.secondary,
+                ),
               ),
               const SizedBox(height: AppSpacing.lg),
               Expanded(
@@ -56,15 +71,20 @@ class CanonicalTrashScreen extends ConsumerWidget {
                   data: (final assets) {
                     if (assets.isEmpty) {
                       return Center(
-                        child: Text('No assets in trash.',
-                            style: AppTypography.bodyMedium.copyWith(color: colorScheme.secondary)),
+                        child: Text(
+                          'No assets in trash.',
+                          style: AppTypography.bodyMedium.copyWith(
+                            color: colorScheme.secondary,
+                          ),
+                        ),
                       );
                     }
                     return ListView(
                       children: [
                         SettingsListGroup(
                           children: [
-                            for (final asset in assets) _TrashedAssetRow(asset: asset),
+                            for (final asset in assets)
+                              _TrashedAssetRow(asset: asset),
                           ],
                         ),
                       ],
@@ -72,8 +92,12 @@ class CanonicalTrashScreen extends ConsumerWidget {
                   },
                   loading: () => const Center(child: AppLoader()),
                   error: (final error, _) => Center(
-                    child: Text('Could not load trashed assets.',
-                        style: AppTypography.bodyMedium.copyWith(color: colorScheme.secondary)),
+                    child: Text(
+                      'Could not load trashed assets.',
+                      style: AppTypography.bodyMedium.copyWith(
+                        color: colorScheme.secondary,
+                      ),
+                    ),
                   ),
                 ),
               ),
@@ -98,66 +122,106 @@ class _TrashedAssetRow extends ConsumerWidget {
     final source = _parseSource(asset.sourceType);
 
     return ListTile(
-      contentPadding: const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: 4),
-      leading: const Icon(Icons.video_file_outlined, color: _trashedColor, size: 28),
-      title: Row(children: [
-        Expanded(child: Text(asset.sourceName ?? _shortHash(asset.contentHash),
-            style: AppTypography.bodyMedium.copyWith(color: colorScheme.onSurface))),
-        const SizedBox(width: AppSpacing.sm),
-        SourceOriginBadge(source: source),
-      ]),
-      subtitle: Text(_formatSubtitle(asset, daysLeft),
-          style: AppTypography.caption.copyWith(color: colorScheme.secondary)),
+      contentPadding: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.md,
+        vertical: 4,
+      ),
+      leading: AppIconView(AppIcon.video, color: _trashedColor, size: 28),
+      title: Row(
+        children: [
+          Expanded(
+            child: Text(
+              asset.sourceName ?? _shortHash(asset.contentHash),
+              style: AppTypography.bodyMedium.copyWith(
+                color: colorScheme.onSurface,
+              ),
+            ),
+          ),
+          const SizedBox(width: AppSpacing.sm),
+          SourceOriginBadge(source: source),
+        ],
+      ),
+      subtitle: Text(
+        _formatSubtitle(asset, daysLeft),
+        style: AppTypography.caption.copyWith(color: colorScheme.secondary),
+      ),
       trailing: PopupMenuButton<_TrashAction>(
         onSelected: (final action) async {
           unawaited(HapticFeedback.mediumImpact());
           switch (action) {
-            case _TrashAction.restore: await _restore(context, ref, asset);
-            case _TrashAction.deletePermanently: await _deletePermanently(context, ref, asset);
+            case _TrashAction.restore:
+              await _restore(context, ref, asset);
+            case _TrashAction.deletePermanently:
+              await _deletePermanently(context, ref, asset);
           }
         },
         itemBuilder: (_) => const [
           PopupMenuItem(value: _TrashAction.restore, child: Text('Restore')),
-          PopupMenuItem(value: _TrashAction.deletePermanently, child: Text('Delete permanently')),
+          PopupMenuItem(
+            value: _TrashAction.deletePermanently,
+            child: Text('Delete permanently'),
+          ),
         ],
       ),
     );
   }
 
-  Future<void> _restore(final BuildContext context, final WidgetRef ref, final AssetManifestData asset) async {
+  Future<void> _restore(
+    final BuildContext context,
+    final WidgetRef ref,
+    final AssetManifestData asset,
+  ) async {
     try {
-      await ref.read(assetManifestDaoProvider).upsert(AssetManifestCompanion.insert(
-            contentHash: asset.contentHash,
-            fileSizeBytes: asset.fileSizeBytes,
-            localPath: Value(asset.localPath),
-            sourceType: asset.sourceType,
-            sourceName: Value(asset.sourceName),
-            importedAt: asset.importedAt,
-            mimeType: Value(asset.mimeType),
-          ));
+      await ref
+          .read(assetManifestDaoProvider)
+          .upsert(
+            AssetManifestCompanion.insert(
+              contentHash: asset.contentHash,
+              fileSizeBytes: asset.fileSizeBytes,
+              localPath: Value(asset.localPath),
+              sourceType: asset.sourceType,
+              sourceName: Value(asset.sourceName),
+              importedAt: asset.importedAt,
+              mimeType: Value(asset.mimeType),
+            ),
+          );
       if (!context.mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Asset restored.')));
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Asset restored.')));
     } on Object catch (error) {
       if (!context.mounted) return;
-      ScaffoldMessenger.of(context)
-          .showSnackBar(SnackBar(content: Text('Restore failed: $error')));
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Restore failed: $error')));
     }
   }
 
   Future<void> _deletePermanently(
-      final BuildContext context, final WidgetRef ref, final AssetManifestData asset) async {
+    final BuildContext context,
+    final WidgetRef ref,
+    final AssetManifestData asset,
+  ) async {
     final confirm = await showDialog<bool>(
       context: context,
       builder: (final ctx) => AlertDialog(
         title: const Text('Delete permanently?'),
         content: Text(
-            'This removes the asset from Breakdex permanently '
-            '(${_formatFileSize(asset.fileSizeBytes)}).'),
+          'This removes the asset from Breakdex permanently '
+          '(${_formatFileSize(asset.fileSizeBytes)}).',
+        ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
           TextButton(
-              onPressed: () => Navigator.pop(ctx, true),
-              child: const Text('Delete', style: TextStyle(color: AppColors.actionAgain))),
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text(
+              'Delete',
+              style: TextStyle(color: AppColors.actionAgain),
+            ),
+          ),
         ],
       ),
     );
@@ -165,21 +229,26 @@ class _TrashedAssetRow extends ConsumerWidget {
     try {
       await ref.read(assetManifestDaoProvider).hardDelete(asset.contentHash);
       if (!context.mounted) return;
-      ScaffoldMessenger.of(context)
-          .showSnackBar(const SnackBar(content: Text('Asset deleted permanently.')));
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Asset deleted permanently.')),
+      );
     } on Object catch (error) {
       if (!context.mounted) return;
-      ScaffoldMessenger.of(context)
-          .showSnackBar(SnackBar(content: Text('Delete failed: $error')));
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Delete failed: $error')));
     }
   }
 
   static int _computeDaysLeft(final DateTime deletedAt) {
-    final remaining = deletedAt.add(const Duration(days: 30)).difference(DateTime.now());
+    final remaining = deletedAt
+        .add(const Duration(days: 30))
+        .difference(DateTime.now());
     return remaining.inDays.clamp(0, 30);
   }
 
-  static AssetSource _parseSource(final String sourceType) => switch (sourceType) {
+  static AssetSource _parseSource(final String sourceType) =>
+      switch (sourceType) {
         'camera' => AssetSource.camera,
         'photos' => AssetSource.photos,
         'files' => AssetSource.files,
@@ -191,7 +260,10 @@ class _TrashedAssetRow extends ConsumerWidget {
   static String _shortHash(final String hash) =>
       '${hash.substring(0, 4)}\u2026${hash.substring(hash.length - 4)}';
 
-  static String _formatSubtitle(final AssetManifestData asset, final int daysLeft) {
+  static String _formatSubtitle(
+    final AssetManifestData asset,
+    final int daysLeft,
+  ) {
     final size = _formatFileSize(asset.fileSizeBytes);
     final reason = asset.tombstoneReason ?? 'Deleted';
     if (daysLeft <= 0) return '$reason \u2014 $size \u2014 Expiring soon';

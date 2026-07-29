@@ -6,6 +6,7 @@ import 'package:breakdex/core/design/colors.dart';
 import 'package:breakdex/core/design/spacing.dart';
 import 'package:breakdex/core/design/theme.dart';
 import 'package:breakdex/core/design/typography.dart';
+import 'package:breakdex/core/design/icons.dart';
 
 /// Reusable lab card widget used in both list and board views.
 ///
@@ -38,7 +39,10 @@ class LabCard extends StatelessWidget {
   }
 
   /// Full card for list view — name, status pill, progress bar, metadata.
-  Widget _buildFullCard(final BuildContext context, final ColorScheme colorScheme) {
+  Widget _buildFullCard(
+    final BuildContext context,
+    final ColorScheme colorScheme,
+  ) {
     return GestureDetector(
       onTap: onTap,
       behavior: HitTestBehavior.opaque,
@@ -78,8 +82,8 @@ class LabCard extends StatelessWidget {
               children: [
                 Icon(
                   lab.labType == 'set'
-                      ? Icons.playlist_play_rounded
-                      : Icons.science_outlined,
+                      ? AppIcon.combo.resolve(context)
+                      : AppIcon.lab.resolve(context),
                   size: 14,
                   color: colorScheme.secondary,
                 ),
@@ -106,7 +110,10 @@ class LabCard extends StatelessWidget {
   }
 
   /// Compact card for board columns — name + status only.
-  Widget _buildCompactCard(final BuildContext context, final ColorScheme colorScheme) {
+  Widget _buildCompactCard(
+    final BuildContext context,
+    final ColorScheme colorScheme,
+  ) {
     return GestureDetector(
       onTap: onTap,
       behavior: HitTestBehavior.opaque,
@@ -141,7 +148,6 @@ class LabCard extends StatelessWidget {
       ),
     );
   }
-
 }
 
 // -- Status Pill --------------------------------------------------------------
@@ -186,12 +192,12 @@ class _StatusPill extends StatelessWidget {
   }
 
   static (String, Color) _statusMeta(final String status) => switch (status) {
-        'idea' => ('Idea', const Color(0xFFA7B1C2)),
-        'attempting' => ('Attempting', AppColors.stateLearning),
-        'landed' => ('Landed', AppColors.stateMastery),
-        'clean' => ('Clean', const Color(0xFF0D9F9A)),
-        _ => ('Idea', const Color(0xFFA7B1C2)),
-      };
+    'idea' => ('Idea', const Color(0xFFA7B1C2)),
+    'attempting' => ('Attempting', AppColors.stateLearning),
+    'landed' => ('Landed', AppColors.stateMastery),
+    'clean' => ('Clean', const Color(0xFF0D9F9A)),
+    _ => ('Idea', const Color(0xFFA7B1C2)),
+  };
 }
 
 // -- Progress Bar -------------------------------------------------------------
@@ -223,10 +229,10 @@ class _LabProgressBar extends StatelessWidget {
   }
 
   static double _progressForStatus(final String status) => switch (status) {
-        'idea' => 0.1,
-        'attempting' => 0.4,
-        'landed' => 0.75,
-        'clean' => 1.0,
-        _ => 0.1,
-      };
+    'idea' => 0.1,
+    'attempting' => 0.4,
+    'landed' => 0.75,
+    'clean' => 1.0,
+    _ => 0.1,
+  };
 }

@@ -4,6 +4,7 @@
 import 'package:flutter/material.dart';
 
 import 'package:breakdex/core/design/spacing.dart';
+import 'package:breakdex/core/design/icons.dart';
 import 'package:breakdex/core/utils/loading_state_machine.dart';
 import 'package:breakdex/shared/widgets/app_loader.dart';
 
@@ -44,10 +45,8 @@ class LoadingStateWidget<T> extends StatelessWidget {
         retryable: e.retryable,
         onRetry: onRetry,
       ),
-      retrying: (final r) => _RetryingWidget(
-        attempt: r.attempt,
-        maxAttempts: r.maxAttempts,
-      ),
+      retrying: (final r) =>
+          _RetryingWidget(attempt: r.attempt, maxAttempts: r.maxAttempts),
     );
   }
 }
@@ -89,14 +88,14 @@ class _LoadingShimmerState extends State<_LoadingShimmer>
       builder: (final context, final child) {
         return Opacity(
           opacity: _animation.value,
-          child: widget.child ??
+          child:
+              widget.child ??
               Container(
                 height: 200,
                 decoration: BoxDecoration(
-                  color: Theme.of(context)
-                      .colorScheme
-                      .onSurface
-                      .withValues(alpha: 0.08),
+                  color: Theme.of(
+                    context,
+                  ).colorScheme.onSurface.withValues(alpha: 0.08),
                   borderRadius: BorderRadius.circular(AppRadius.sm),
                 ),
               ),
@@ -121,10 +120,7 @@ class _DownloadingBar extends StatelessWidget {
         children: [
           ClipRRect(
             borderRadius: BorderRadius.circular(6),
-            child: LinearProgressIndicator(
-              value: progress,
-              minHeight: 6,
-            ),
+            child: LinearProgressIndicator(value: progress, minHeight: 6),
           ),
           const SizedBox(height: 8),
           Text(
@@ -154,7 +150,7 @@ class _TimeoutCard extends StatelessWidget {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          const Icon(Icons.cloud_off, color: Colors.amber, size: 32),
+          const AppIconView(AppIcon.cloud, color: Colors.amber, size: 32),
           const SizedBox(height: 8),
           Text(
             'Connection timed out',
@@ -164,7 +160,7 @@ class _TimeoutCard extends StatelessWidget {
             const SizedBox(height: 12),
             OutlinedButton.icon(
               onPressed: onRetry,
-              icon: const Icon(Icons.refresh, size: 16),
+              icon: const AppIconView(AppIcon.refresh, size: 16),
               label: const Text('Retry'),
             ),
           ],
@@ -197,8 +193,8 @@ class _ErrorCard extends StatelessWidget {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(
-            Icons.error_outline,
+          AppIconView(
+            AppIcon.error,
             color: Theme.of(context).colorScheme.error,
             size: 32,
           ),
@@ -206,15 +202,15 @@ class _ErrorCard extends StatelessWidget {
           Text(
             message,
             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: Theme.of(context).colorScheme.error,
-                ),
+              color: Theme.of(context).colorScheme.error,
+            ),
             textAlign: TextAlign.center,
           ),
           if (retryable && onRetry != null) ...[
             const SizedBox(height: 12),
             OutlinedButton.icon(
               onPressed: onRetry,
-              icon: const Icon(Icons.refresh, size: 16),
+              icon: const AppIconView(AppIcon.refresh, size: 16),
               label: const Text('Retry'),
               style: OutlinedButton.styleFrom(
                 foregroundColor: Theme.of(context).colorScheme.error,
@@ -228,10 +224,7 @@ class _ErrorCard extends StatelessWidget {
 }
 
 class _RetryingWidget extends StatelessWidget {
-  const _RetryingWidget({
-    required this.attempt,
-    required this.maxAttempts,
-  });
+  const _RetryingWidget({required this.attempt, required this.maxAttempts});
 
   final int attempt;
   final int maxAttempts;

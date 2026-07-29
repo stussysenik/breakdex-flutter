@@ -24,8 +24,10 @@ import 'package:breakdex/core/models/learning_state.dart';
 import 'package:breakdex/core/models/library_category_activity.dart';
 import 'package:breakdex/core/models/library_sort.dart';
 import 'package:breakdex/l10n/gen/app_localizations.dart';
-import 'package:breakdex/features/move_list/move_list_screen.dart' show librarySortProvider;
+import 'package:breakdex/features/move_list/move_list_screen.dart'
+    show librarySortProvider;
 import 'package:breakdex/features/move_list/widgets/library_date_line_format.dart';
+import 'package:breakdex/core/design/icons.dart';
 
 class MoveCategoryScreen extends ConsumerWidget {
   const MoveCategoryScreen({super.key});
@@ -65,16 +67,37 @@ class MoveCategoryScreen extends ConsumerWidget {
       body: ListView(
         padding: const EdgeInsets.all(AppSpacing.screenEdge),
         children: [
-          Semantics(header: true, child: Text('Categories', style: AppTypography.titleLarge.copyWith(color: colorScheme.onSurface))),
+          Semantics(
+            header: true,
+            child: Text(
+              'Categories',
+              style: AppTypography.titleLarge.copyWith(
+                color: colorScheme.onSurface,
+              ),
+            ),
+          ),
           const SizedBox(height: AppSpacing.lg),
           for (final cat in ordered)
             _CategoryTile(
               category: cat,
-              activity: activities.byCategory[cat.name] ?? LibraryCategoryActivity.empty,
-              onTap: () => context.push('/breakdex/moves/${Uri.encodeComponent(cat.name)}'),
+              activity:
+                  activities.byCategory[cat.name] ??
+                  LibraryCategoryActivity.empty,
+              onTap: () => context.push(
+                '/breakdex/moves/${Uri.encodeComponent(cat.name)}',
+              ),
             ),
           const SizedBox(height: AppSpacing.lg),
-          Semantics(header: true, child: Text('Uncategorized', style: AppTypography.titleSmall.copyWith(color: colorScheme.onSurface, fontWeight: FontWeight.w700))),
+          Semantics(
+            header: true,
+            child: Text(
+              'Uncategorized',
+              style: AppTypography.titleSmall.copyWith(
+                color: colorScheme.onSurface,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ),
           const SizedBox(height: AppSpacing.sm),
           _CategoryTile(
             category: Category(
@@ -96,7 +119,11 @@ final _allMovesProvider = StreamProvider<List<Move>>((final ref) {
 });
 
 class _CategoryTile extends StatelessWidget {
-  const _CategoryTile({required this.category, required this.activity, required this.onTap});
+  const _CategoryTile({
+    required this.category,
+    required this.activity,
+    required this.onTap,
+  });
 
   final Category category;
   final LibraryCategoryActivity activity;
@@ -117,14 +144,23 @@ class _CategoryTile extends StatelessWidget {
               Container(
                 width: 12,
                 height: 12,
-                decoration: BoxDecoration(color: category.color, shape: BoxShape.circle),
+                decoration: BoxDecoration(
+                  color: category.color,
+                  shape: BoxShape.circle,
+                ),
               ),
               const SizedBox(width: AppSpacing.md),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(category.name, style: AppTypography.bodyMedium.copyWith(color: colorScheme.onSurface, fontWeight: FontWeight.w600)),
+                    Text(
+                      category.name,
+                      style: AppTypography.bodyMedium.copyWith(
+                        color: colorScheme.onSurface,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
                     const SizedBox(height: 4),
                     // The tile the grid is sorted by discloses the date it is
                     // sorted on; an empty category says so rather than showing
@@ -134,17 +170,25 @@ class _CategoryTile extends StatelessWidget {
                     else
                       Text(
                         AppLocalizations.of(context).libraryCategoryEmpty,
-                        style: AppTypography.caption.copyWith(color: colorScheme.secondary),
+                        style: AppTypography.caption.copyWith(
+                          color: colorScheme.secondary,
+                        ),
                       ),
                   ],
                 ),
               ),
               Text(
                 '${activity.count}',
-                style: AppTypography.bodySmall.copyWith(color: colorScheme.secondary),
+                style: AppTypography.bodySmall.copyWith(
+                  color: colorScheme.secondary,
+                ),
               ),
               const SizedBox(width: AppSpacing.md),
-              Icon(Icons.chevron_right_rounded, color: colorScheme.secondary, size: 20),
+              AppIconView(
+                AppIcon.forward,
+                color: colorScheme.secondary,
+                size: 20,
+              ),
             ],
           ),
         ),
@@ -197,13 +241,12 @@ class MoveCategoryDetailScreen extends ConsumerWidget {
 
     final filtered = categoryName == 'uncategorized'
         ? allMoves
-            .where(
-              (final m) => !categoryNames.contains(m.category),
-            )
-            .toList()
+              .where((final m) => !categoryNames.contains(m.category))
+              .toList()
         : allMoves.where((final m) => m.category == categoryName).toList();
 
-    final bottomPadding = kBottomNavigationBarHeight +
+    final bottomPadding =
+        kBottomNavigationBarHeight +
         MediaQuery.of(context).padding.bottom +
         AppSpacing.xxl;
 
@@ -214,15 +257,17 @@ class MoveCategoryDetailScreen extends ConsumerWidget {
           identifier: 'category-back',
           onTap: () => context.pop(),
         ),
-        title: Text(categoryName == 'uncategorized' ? 'Uncategorized' : categoryName),
+        title: Text(
+          categoryName == 'uncategorized' ? 'Uncategorized' : categoryName,
+        ),
       ),
       body: filtered.isEmpty
           ? Center(
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Icon(
-                    Icons.music_note_outlined,
+                  AppIconView(
+                    AppIcon.music,
                     size: 48,
                     color: colorScheme.secondary.withValues(alpha: 0.4),
                   ),
@@ -242,24 +287,24 @@ class MoveCategoryDetailScreen extends ConsumerWidget {
                 Expanded(
                   child: switch (navMode) {
                     CategoryNavMode.scrollIndex => _ScrollIndexView(
-                        moves: filtered,
-                        bottomPadding: bottomPadding,
-                        onTap: (final move) =>
-                            context.push('/breakdex/move/${move.id}'),
-                      ),
+                      moves: filtered,
+                      bottomPadding: bottomPadding,
+                      onTap: (final move) =>
+                          context.push('/breakdex/move/${move.id}'),
+                    ),
                     CategoryNavMode.search => _SearchBarView(
-                        moves: filtered,
-                        categoryName: categoryName,
-                        bottomPadding: bottomPadding,
-                        onTap: (final move) =>
-                            context.push('/breakdex/move/${move.id}'),
-                      ),
+                      moves: filtered,
+                      categoryName: categoryName,
+                      bottomPadding: bottomPadding,
+                      onTap: (final move) =>
+                          context.push('/breakdex/move/${move.id}'),
+                    ),
                     CategoryNavMode.filterChips => _FilterChipsView(
-                        moves: filtered,
-                        bottomPadding: bottomPadding,
-                        onTap: (final move) =>
-                            context.push('/breakdex/move/${move.id}'),
-                      ),
+                      moves: filtered,
+                      bottomPadding: bottomPadding,
+                      onTap: (final move) =>
+                          context.push('/breakdex/move/${move.id}'),
+                    ),
                   },
                 ),
               ],
@@ -323,10 +368,11 @@ class _NavModeToggle extends ConsumerWidget {
                               Icon(
                                 switch (mode) {
                                   CategoryNavMode.scrollIndex =>
-                                    Icons.sort_by_alpha_rounded,
-                                  CategoryNavMode.search => Icons.search_rounded,
+                                    AppIcon.sort.resolve(context),
+                                  CategoryNavMode.search =>
+                                    AppIcon.search.resolve(context),
                                   CategoryNavMode.filterChips =>
-                                    Icons.filter_list_rounded,
+                                    AppIcon.filter.resolve(context),
                                 },
                                 size: 16,
                                 color: navMode == mode
@@ -394,11 +440,12 @@ class _ScrollIndexViewState extends State<_ScrollIndexView> {
   void initState() {
     super.initState();
     _grouped = _groupByLetter(widget.moves);
-    _letters = _grouped.keys.toList()..sort((final a, final b) {
-      if (a == '#') return 1;
-      if (b == '#') return -1;
-      return a.compareTo(b);
-    });
+    _letters = _grouped.keys.toList()
+      ..sort((final a, final b) {
+        if (a == '#') return 1;
+        if (b == '#') return -1;
+        return a.compareTo(b);
+      });
     for (final letter in _letters) {
       _letterHeaderKeys[letter] = GlobalKey();
     }
@@ -562,8 +609,9 @@ class _LetterStrip extends StatelessWidget {
                         color: isActive
                             ? colorScheme.primary
                             : colorScheme.secondary.withValues(alpha: 0.6),
-                        fontWeight:
-                            isActive ? FontWeight.w700 : FontWeight.w500,
+                        fontWeight: isActive
+                            ? FontWeight.w700
+                            : FontWeight.w500,
                       ),
                     ),
                   ),
@@ -631,10 +679,11 @@ class _SearchBarViewState extends State<_SearchBarView> {
     final filtered = _query.isEmpty
         ? widget.moves
         : widget.moves
-            .where(
-              (final m) => m.name.toLowerCase().contains(_query.toLowerCase()),
-            )
-            .toList();
+              .where(
+                (final m) =>
+                    m.name.toLowerCase().contains(_query.toLowerCase()),
+              )
+              .toList();
 
     return Column(
       children: [
@@ -654,11 +703,14 @@ class _SearchBarViewState extends State<_SearchBarView> {
               onChanged: _onChanged,
               decoration: InputDecoration(
                 hintText: 'Search ${widget.categoryName}...',
-                prefixIcon: Icon(Icons.search, color: colorScheme.secondary),
+                prefixIcon: AppIconView(
+                  AppIcon.search,
+                  color: colorScheme.secondary,
+                ),
                 suffixIcon: _query.isNotEmpty
                     ? IconButton(
                         visualDensity: VisualDensity.compact,
-                        icon: const Icon(Icons.clear_rounded, size: 18),
+                        icon: const AppIconView(AppIcon.close, size: 18),
                         onPressed: _clear,
                       )
                     : null,
@@ -727,13 +779,12 @@ class _FilterChipsView extends ConsumerWidget {
     final filtered = activeStates.isEmpty
         ? moves
         : moves
-            .where((final m) => activeStates.contains(m.learningState))
-            .toList();
+              .where((final m) => activeStates.contains(m.learningState))
+              .toList();
 
     filtered.sort(
-      (final a, final b) => sortAscending
-          ? a.name.compareTo(b.name)
-          : b.name.compareTo(a.name),
+      (final a, final b) =>
+          sortAscending ? a.name.compareTo(b.name) : b.name.compareTo(a.name),
     );
 
     return Column(
@@ -783,9 +834,8 @@ class _FilterChipsView extends ConsumerWidget {
                 child: GestureDetector(
                   onTap: () {
                     HapticFeedback.selectionClick();
-                    ref
-                        .read(_filterSortOrderProvider.notifier)
-                        .state = !sortAscending;
+                    ref.read(_filterSortOrderProvider.notifier).state =
+                        !sortAscending;
                   },
                   child: Container(
                     padding: const EdgeInsets.all(8),
@@ -795,8 +845,8 @@ class _FilterChipsView extends ConsumerWidget {
                     ),
                     child: Icon(
                       sortAscending
-                          ? Icons.arrow_downward_rounded
-                          : Icons.arrow_upward_rounded,
+                          ? AppIcon.down.resolve(context)
+                          : AppIcon.up.resolve(context),
                       size: 18,
                       color: colorScheme.secondary,
                     ),
@@ -881,7 +931,11 @@ class _FilterChip extends StatelessWidget {
             if (active)
               const Padding(
                 padding: EdgeInsets.only(right: 8),
-                child: Icon(Icons.check_rounded, size: 14, color: Colors.white),
+                child: AppIconView(
+                  AppIcon.check,
+                  size: 14,
+                  color: Colors.white,
+                ),
               ),
             Text(
               label,
@@ -898,7 +952,11 @@ class _FilterChip extends StatelessWidget {
 }
 
 class _MoveRow extends ConsumerWidget {
-  const _MoveRow({required this.move, required this.state, required this.onTap});
+  const _MoveRow({
+    required this.move,
+    required this.state,
+    required this.onTap,
+  });
 
   final Move move;
   final LearningState state;
@@ -921,7 +979,13 @@ class _MoveRow extends ConsumerWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(move.name, style: AppTypography.bodyMedium.copyWith(color: colorScheme.onSurface, fontWeight: FontWeight.w600)),
+                    Text(
+                      move.name,
+                      style: AppTypography.bodyMedium.copyWith(
+                        color: colorScheme.onSurface,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
                     // The subtitle used to be `originalVideoName` — a camera
                     // filename or a bare UUID, which tells the user nothing
                     // and violates design D4. It now shows the same date the

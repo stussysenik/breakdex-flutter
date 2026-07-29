@@ -8,18 +8,20 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:breakdex/shared/widgets/app_loader.dart';
 import 'package:breakdex/core/design/spacing.dart';
 import 'package:breakdex/core/design/typography.dart';
+import 'package:breakdex/core/design/icons.dart';
 import 'package:breakdex/features/stats/providers/stats_providers.dart';
 
 /// PracticeCalendarView — backward-looking calendar showing daily practice activity.
-/// 
+///
 /// Shows a month grid where each day cell indicates the intensity of practice
-/// (review count) for that day. 
+/// (review count) for that day.
 /// Tap a day to select it and update the details view.
 class PracticeCalendarView extends ConsumerStatefulWidget {
   const PracticeCalendarView({super.key});
 
   @override
-  ConsumerState<PracticeCalendarView> createState() => _PracticeCalendarViewState();
+  ConsumerState<PracticeCalendarView> createState() =>
+      _PracticeCalendarViewState();
 }
 
 class _PracticeCalendarViewState extends ConsumerState<PracticeCalendarView> {
@@ -35,14 +37,20 @@ class _PracticeCalendarViewState extends ConsumerState<PracticeCalendarView> {
   void _goToPreviousMonth() {
     HapticFeedback.selectionClick();
     setState(() {
-      _displayedMonth = DateTime(_displayedMonth.year, _displayedMonth.month - 1);
+      _displayedMonth = DateTime(
+        _displayedMonth.year,
+        _displayedMonth.month - 1,
+      );
     });
   }
 
   void _goToNextMonth() {
     HapticFeedback.selectionClick();
     setState(() {
-      _displayedMonth = DateTime(_displayedMonth.year, _displayedMonth.month + 1);
+      _displayedMonth = DateTime(
+        _displayedMonth.year,
+        _displayedMonth.month + 1,
+      );
     });
   }
 
@@ -52,7 +60,8 @@ class _PracticeCalendarViewState extends ConsumerState<PracticeCalendarView> {
     final statsAsync = ref.watch(statsBundleProvider);
 
     return statsAsync.when(
-      loading: () => const SizedBox(height: 300, child: Center(child: AppLoader())),
+      loading: () =>
+          const SizedBox(height: 300, child: Center(child: AppLoader())),
       error: (final e, _) => Center(child: Text('Error: $e')),
       data: (final stats) {
         return Column(
@@ -63,7 +72,7 @@ class _PracticeCalendarViewState extends ConsumerState<PracticeCalendarView> {
               children: [
                 IconButton(
                   onPressed: _goToPreviousMonth,
-                  icon: const Icon(Icons.chevron_left_rounded),
+                  icon: const AppIconView(AppIcon.back),
                   color: colorScheme.onSurface,
                 ),
                 Text(
@@ -76,7 +85,7 @@ class _PracticeCalendarViewState extends ConsumerState<PracticeCalendarView> {
                 ),
                 IconButton(
                   onPressed: _goToNextMonth,
-                  icon: const Icon(Icons.chevron_right_rounded),
+                  icon: const AppIconView(AppIcon.forward),
                   color: colorScheme.onSurface,
                 ),
               ],
@@ -100,8 +109,18 @@ class _PracticeCalendarViewState extends ConsumerState<PracticeCalendarView> {
 
   String _formatMonth(final DateTime month) {
     const months = [
-      'JANUARY', 'FEBRUARY', 'MARCH', 'APRIL', 'MAY', 'JUNE',
-      'JULY', 'AUGUST', 'SEPTEMBER', 'OCTOBER', 'NOVEMBER', 'DECEMBER'
+      'JANUARY',
+      'FEBRUARY',
+      'MARCH',
+      'APRIL',
+      'MAY',
+      'JUNE',
+      'JULY',
+      'AUGUST',
+      'SEPTEMBER',
+      'OCTOBER',
+      'NOVEMBER',
+      'DECEMBER',
     ];
     return '${months[month.month - 1]} ${month.year}';
   }
@@ -153,7 +172,7 @@ class _MonthGrid extends ConsumerWidget {
     final startOffset = (firstWeekday - 1) % 7;
     final totalCells = startOffset + daysInMonth;
     final rowCount = (totalCells / 7).ceil();
-    
+
     final selectedDate = ref.watch(selectedDateProvider);
     final today = DateTime.now();
     final todayDate = DateTime(today.year, today.month, today.day);
@@ -212,9 +231,10 @@ class _MonthGrid extends ConsumerWidget {
 
     final date = DateTime(month.year, month.month, dayNumber);
     final count = dailyCounts[date] ?? 0;
-    final isSelected = date.year == selectedDate.year &&
-                       date.month == selectedDate.month &&
-                       date.day == selectedDate.day;
+    final isSelected =
+        date.year == selectedDate.year &&
+        date.month == selectedDate.month &&
+        date.day == selectedDate.day;
     final isToday = date == todayDate;
 
     return _DayCell(
@@ -248,14 +268,14 @@ class _DayCell extends StatelessWidget {
   @override
   Widget build(final BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
-    
+
     final intensity = count > 0 ? (count / maxInMonth).clamp(0.1, 1.0) : 0.0;
-    final bgColor = count > 0 
+    final bgColor = count > 0
         ? colorScheme.primary.withValues(alpha: intensity)
         : Colors.transparent;
-    
-    final textColor = count > 0 && intensity > 0.5 
-        ? Colors.white 
+
+    final textColor = count > 0 && intensity > 0.5
+        ? Colors.white
         : colorScheme.onSurface;
 
     return GestureDetector(
@@ -268,11 +288,11 @@ class _DayCell extends StatelessWidget {
           color: bgColor,
           borderRadius: BorderRadius.circular(AppRadius.xxs),
           border: Border.all(
-            color: isSelected 
-                ? colorScheme.primary 
-                : isToday 
-                    ? colorScheme.primary.withValues(alpha: 0.3)
-                    : colorScheme.outline.withValues(alpha: 0.05),
+            color: isSelected
+                ? colorScheme.primary
+                : isToday
+                ? colorScheme.primary.withValues(alpha: 0.3)
+                : colorScheme.outline.withValues(alpha: 0.05),
             width: isSelected ? 2 : 1,
           ),
         ),
@@ -281,7 +301,9 @@ class _DayCell extends StatelessWidget {
           '$dayNumber',
           style: AppTypography.caption.copyWith(
             color: textColor,
-            fontWeight: isSelected || isToday ? FontWeight.w900 : FontWeight.w400,
+            fontWeight: isSelected || isToday
+                ? FontWeight.w900
+                : FontWeight.w400,
             fontFamily: 'Menlo',
             fontSize: 10,
           ),

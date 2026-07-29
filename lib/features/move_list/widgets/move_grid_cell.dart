@@ -22,7 +22,8 @@ class _MoveGridCell extends ConsumerWidget {
     // download. Unresolved reads as not-restorable: a momentary honest "gone"
     // beats a promise the app cannot keep.
     final hash = move.contentHash;
-    final restorable = hash != null &&
+    final restorable =
+        hash != null &&
         (ref.watch(restorableAssetHashesProvider).valueOrNull ?? const {})
             .contains(hash);
 
@@ -39,10 +40,8 @@ class _MoveGridCell extends ConsumerWidget {
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Icon(
-                    restorable
-                        ? Icons.cloud_download_outlined
-                        : Icons.videocam_off,
+                  AppIconView(
+                    restorable ? AppIcon.download : AppIcon.videoOff,
                     size: 40,
                     color: restorable
                         ? AppColors.accent.withValues(alpha: 0.5)
@@ -174,8 +173,8 @@ class _GridThumbnailState extends State<_GridThumbnail> {
         gaplessPlayback: true,
         errorBuilder: (_, _, _) => Container(
           color: colorScheme.surfaceContainerHighest,
-          child: Icon(
-            Icons.videocam_off,
+          child: AppIconView(
+            AppIcon.videoOff,
             size: 40,
             color: colorScheme.secondary,
           ),
@@ -185,17 +184,18 @@ class _GridThumbnailState extends State<_GridThumbnail> {
     if (_loaded) {
       return Container(
         color: colorScheme.surfaceContainerHighest,
-        child: Icon(Icons.videocam_off, size: 40, color: colorScheme.secondary),
+        child: AppIconView(
+          AppIcon.videoOff,
+          size: 40,
+          color: colorScheme.secondary,
+        ),
       );
     }
     // Shimmer placeholder while thumbnail loads — smoother than a spinner
     // and consistent with the RobustVideoPlayer loading state.
-    return Container(
-      color: colorScheme.surfaceContainerHighest,
-    ).animate(onPlay: (final c) => c.repeat()).shimmer(
-      duration: 1200.ms,
-      color: Colors.white12,
-    );
+    return Container(color: colorScheme.surfaceContainerHighest)
+        .animate(onPlay: (final c) => c.repeat())
+        .shimmer(duration: 1200.ms, color: Colors.white12);
   }
 }
 
@@ -226,10 +226,7 @@ class _GridCardShell extends StatelessWidget {
     Widget card = RepaintBoundary(
       child: Container(
         clipBehavior: Clip.antiAlias,
-        decoration: AppSurfaces.panel(
-          context,
-          radius: AppRadius.md,
-        ),
+        decoration: AppSurfaces.panel(context, radius: AppRadius.md),
         child: Stack(
           fit: StackFit.expand,
           children: [
@@ -278,10 +275,6 @@ class _GridCardShell extends StatelessWidget {
       card = Hero(tag: heroTag!, child: card);
     }
 
-    return Pressable(
-      onTap: onTap,
-      scaleEnd: 0.96,
-      child: card,
-    );
+    return Pressable(onTap: onTap, scaleEnd: 0.96, child: card);
   }
 }

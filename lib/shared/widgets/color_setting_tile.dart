@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 
 import 'package:breakdex/core/design/spacing.dart';
 import 'package:breakdex/core/design/typography.dart';
+import 'package:breakdex/core/design/icons.dart';
 import 'package:breakdex/l10n/gen/app_localizations.dart';
 
 String formatColorHex(final Color color) {
@@ -120,7 +121,7 @@ class ColorSettingTile extends StatelessWidget {
                 ),
               ),
               const SizedBox(width: AppSpacing.sm),
-              Icon(Icons.edit_outlined, size: 18, color: colorScheme.secondary),
+              AppIconView(AppIcon.edit, size: 18, color: colorScheme.secondary),
             ],
           ),
         ),
@@ -294,7 +295,7 @@ class _ColorEditorDialogState extends State<_ColorEditorDialog> {
                 decoration: InputDecoration(
                   hintText: '#AARRGGBB',
                   helperText: l10n.setColorHexHelper,
-                  prefixIcon: const Icon(Icons.tag_rounded),
+                  prefixIcon: const AppIconView(AppIcon.notes),
                 ),
                 onSubmitted: _applyHex,
                 onChanged: (final value) {
@@ -318,7 +319,12 @@ class _ColorEditorDialogState extends State<_ColorEditorDialog> {
                 value: hsv.hue,
                 min: 0,
                 max: 360,
-                thumbColor: HSVColor.fromAHSV(hsv.alpha, hsv.hue, 1, 1).toColor(),
+                thumbColor: HSVColor.fromAHSV(
+                  hsv.alpha,
+                  hsv.hue,
+                  1,
+                  1,
+                ).toColor(),
                 gradientColors: const [
                   Color(0xFFFF1744),
                   Color(0xFFFF9100),
@@ -342,7 +348,8 @@ class _ColorEditorDialogState extends State<_ColorEditorDialog> {
                   HSVColor.fromAHSV(hsv.alpha, hsv.hue, 1, hsv.value).toColor(),
                 ],
                 formatter: (final value) => '${value.round()}%',
-                onChanged: (final value) => _updateFromHsv(saturation: value / 100),
+                onChanged: (final value) =>
+                    _updateFromHsv(saturation: value / 100),
               ),
               _GradientChannelSlider(
                 label: l10n.setColorValueLabel,
@@ -352,8 +359,12 @@ class _ColorEditorDialogState extends State<_ColorEditorDialog> {
                 thumbColor: _color,
                 gradientColors: [
                   Colors.black,
-                  HSVColor.fromAHSV(hsv.alpha, hsv.hue, hsv.saturation, 1)
-                      .toColor(),
+                  HSVColor.fromAHSV(
+                    hsv.alpha,
+                    hsv.hue,
+                    hsv.saturation,
+                    1,
+                  ).toColor(),
                 ],
                 formatter: (final value) => '${value.round()}%',
                 onChanged: (final value) => _updateFromHsv(value: value / 100),
@@ -416,7 +427,8 @@ class _ColorEditorDialogState extends State<_ColorEditorDialog> {
                 min: 0,
                 max: 255,
                 activeColor: Colors.red,
-                onChanged: (final value) => _setColor(_color.withRed(value.round())),
+                onChanged: (final value) =>
+                    _setColor(_color.withRed(value.round())),
               ),
               _ChannelSlider(
                 label: l10n.setColorGreenLabel,
@@ -433,7 +445,8 @@ class _ColorEditorDialogState extends State<_ColorEditorDialog> {
                 min: 0,
                 max: 255,
                 activeColor: Colors.blue,
-                onChanged: (final value) => _setColor(_color.withBlue(value.round())),
+                onChanged: (final value) =>
+                    _setColor(_color.withBlue(value.round())),
               ),
               const SizedBox(height: AppSpacing.sm),
               Row(

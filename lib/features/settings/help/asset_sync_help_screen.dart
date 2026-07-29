@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import 'package:breakdex/core/design/colors.dart';
+import 'package:breakdex/core/design/icons.dart';
 import 'package:breakdex/core/design/spacing.dart';
 import 'package:breakdex/core/design/typography.dart';
 
@@ -30,10 +31,11 @@ class AssetSyncHelpScreen extends StatelessWidget {
         padding: const EdgeInsets.all(AppSpacing.screenEdge),
         children: [
           _HelpSection(
-            icon: Icons.fingerprint,
+            icon: AppIcon.insight,
             title: 'How Your Videos Are Protected',
             colorScheme: colorScheme,
-            content: 'Every video is fingerprinted with a SHA-256 hash when '
+            content:
+                'Every video is fingerprinted with a SHA-256 hash when '
                 'you import it. This unique fingerprint lets Breakdex:\n\n'
                 '- Detect if a file has been corrupted or modified\n'
                 '- Avoid storing duplicate copies of the same video\n'
@@ -43,10 +45,11 @@ class AssetSyncHelpScreen extends StatelessWidget {
                 'local file can be removed.',
           ),
           _HelpSection(
-            icon: Icons.delete_outline,
+            icon: AppIcon.delete,
             title: '30-Day Trash',
             colorScheme: colorScheme,
-            content: 'When you delete a video, it enters a 30-day grace '
+            content:
+                'When you delete a video, it enters a 30-day grace '
                 'period. During this time:\n\n'
                 '- The file stays on your device\n'
                 '- Cloud copies are preserved\n'
@@ -55,10 +58,11 @@ class AssetSyncHelpScreen extends StatelessWidget {
                 'removed.',
           ),
           _HelpSection(
-            icon: Icons.folder_outlined,
+            icon: AppIcon.folder,
             title: 'Where Your Files Live',
             colorScheme: colorScheme,
-            content: 'Local videos are stored in your app\'s Documents/'
+            content:
+                'Local videos are stored in your app\'s Documents/'
                 'Moves/ folder with UUID filenames (e.g. a1b2c3d4.mp4).\n\n'
                 'Cloud copies are organized by content hash in a Breakdex '
                 'folder on each provider:\n\n'
@@ -67,10 +71,11 @@ class AssetSyncHelpScreen extends StatelessWidget {
                 '- S3: Your configured bucket > breakdex/',
           ),
           _HelpSection(
-            icon: Icons.wifi,
+            icon: AppIcon.cloud,
             title: 'Sync Settings',
             colorScheme: colorScheme,
-            content: 'By default, sync only runs on WiFi to protect your '
+            content:
+                'By default, sync only runs on WiFi to protect your '
                 'mobile data plan.\n\n'
                 'You can enable mobile data sync in Settings > Sync Status '
                 'with a configurable monthly cap (default: 100 MB).\n\n'
@@ -80,10 +85,11 @@ class AssetSyncHelpScreen extends StatelessWidget {
                 'is on WiFi and charging.',
           ),
           _HelpSection(
-            icon: Icons.cloud_outlined,
+            icon: AppIcon.cloud,
             title: 'Cloud Providers',
             colorScheme: colorScheme,
-            content: 'You can configure multiple cloud providers. Each '
+            content:
+                'You can configure multiple cloud providers. Each '
                 'provider gets its own copy of every video.\n\n'
                 'iCloud Drive: Automatic with your Apple ID. Uses your '
                 'iCloud storage quota.\n\n'
@@ -96,10 +102,11 @@ class AssetSyncHelpScreen extends StatelessWidget {
                 'Providers.',
           ),
           _HelpSection(
-            icon: Icons.build_outlined,
+            icon: AppIcon.settings,
             title: 'Troubleshooting',
             colorScheme: colorScheme,
-            content: 'Video shows as missing?\n'
+            content:
+                'Video shows as missing?\n'
                 'Check Sync Status for download progress. If the video is '
                 'backed up to cloud, it will auto-download when you need it.\n\n'
                 'Sync stuck or slow?\n'
@@ -121,7 +128,7 @@ class AssetSyncHelpScreen extends StatelessWidget {
 }
 
 class _HelpSection extends StatelessWidget {
-  final IconData icon;
+  final AppIcon icon;
   final String title;
   final String content;
   final ColorScheme colorScheme;
@@ -147,7 +154,7 @@ class _HelpSection extends StatelessWidget {
         children: [
           Row(
             children: [
-              Icon(icon, color: AppColors.accent, size: 22),
+              AppIconView(icon, color: AppColors.accent, size: 22),
               const SizedBox(width: AppSpacing.sm),
               Expanded(
                 child: Text(

@@ -16,6 +16,7 @@ import 'package:breakdex/shared/widgets/app_loader.dart';
 import 'package:breakdex/shared/widgets/color_setting_tile.dart';
 import 'package:breakdex/features/flashcard_review/widgets/state_picker_sheet.dart';
 import 'package:breakdex/l10n/gen/app_localizations.dart';
+import 'package:breakdex/core/design/icons.dart';
 
 class StatePickerOverlay extends StatelessWidget {
   const StatePickerOverlay({
@@ -62,10 +63,7 @@ class StatePickerOverlay extends StatelessWidget {
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.end,
                   children: [
-                    TextButton(
-                      onPressed: onCancel,
-                      child: Text(l10n.mdCancel),
-                    ),
+                    TextButton(onPressed: onCancel, child: Text(l10n.mdCancel)),
                   ],
                 ),
               ),
@@ -139,16 +137,16 @@ class CategoryPickerOverlay extends ConsumerWidget {
                 children: [
                   TextButton.icon(
                     onPressed: () async {
-                      final created = await _showAddCategoryDialog(context, ref);
+                      final created = await _showAddCategoryDialog(
+                        context,
+                        ref,
+                      );
                       if (created != null) onSave(created);
                     },
-                    icon: const Icon(Icons.add, size: 18),
+                    icon: const AppIconView(AppIcon.add, size: 18),
                     label: Text(l10n.mdAddNew),
                   ),
-                  TextButton(
-                    onPressed: onCancel,
-                    child: Text(l10n.mdCancel),
-                  ),
+                  TextButton(onPressed: onCancel, child: Text(l10n.mdCancel)),
                 ],
               ),
             ],
@@ -158,7 +156,10 @@ class CategoryPickerOverlay extends ConsumerWidget {
     );
   }
 
-  Future<String?> _showAddCategoryDialog(final BuildContext context, final WidgetRef ref) {
+  Future<String?> _showAddCategoryDialog(
+    final BuildContext context,
+    final WidgetRef ref,
+  ) {
     return showDialog<String>(
       context: context,
       builder: (final context) {
@@ -213,9 +214,7 @@ class CategoryPickerOverlay extends ConsumerWidget {
                 onPressed: () async {
                   final name = controller.text.trim();
                   if (name.isEmpty) {
-                    setDialogState(
-                      () => errorText = l10n.mdCategoryNameEmpty,
-                    );
+                    setDialogState(() => errorText = l10n.mdCategoryNameEmpty);
                     return;
                   }
                   final exists = ref
@@ -292,8 +291,9 @@ class _CountEditorOverlayState extends State<CountEditorOverlay> {
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   _CountButton(
-                    icon: Icons.remove,
-                    onPressed: () => setState(() => _count = (_count - 1).clamp(0, 9999)),
+                    icon: AppIcon.remove.resolve(context),
+                    onPressed: () =>
+                        setState(() => _count = (_count - 1).clamp(0, 9999)),
                   ),
                   const SizedBox(width: AppSpacing.lg),
                   Text(
@@ -305,8 +305,9 @@ class _CountEditorOverlayState extends State<CountEditorOverlay> {
                   ),
                   const SizedBox(width: AppSpacing.lg),
                   _CountButton(
-                    icon: Icons.add,
-                    onPressed: () => setState(() => _count = (_count + 1).clamp(0, 9999)),
+                    icon: AppIcon.add.resolve(context),
+                    onPressed: () =>
+                        setState(() => _count = (_count + 1).clamp(0, 9999)),
                   ),
                 ],
               ),
@@ -314,7 +315,10 @@ class _CountEditorOverlayState extends State<CountEditorOverlay> {
               Row(
                 mainAxisAlignment: MainAxisAlignment.end,
                 children: [
-                  TextButton(onPressed: widget.onCancel, child: Text(l10n.mdCancel)),
+                  TextButton(
+                    onPressed: widget.onCancel,
+                    child: Text(l10n.mdCancel),
+                  ),
                   const SizedBox(width: AppSpacing.sm),
                   FilledButton(
                     onPressed: () => widget.onSave(_count),
@@ -470,16 +474,16 @@ class _RenameOverlayState extends ConsumerState<RenameOverlay> {
                       entityNames.moveSingular.toLowerCase(),
                       entityNames.comboSingular.toLowerCase(),
                     ),
-                    style: AppTypography.caption.copyWith(color: AppColors.actionAgain),
+                    style: AppTypography.caption.copyWith(
+                      color: AppColors.actionAgain,
+                    ),
                   ),
                 ),
               TextField(
                 controller: _controller,
                 autofocus: true,
                 style: AppTypography.bodyLarge,
-                decoration: InputDecoration(
-                  hintText: l10n.mdRenameHint,
-                ),
+                decoration: InputDecoration(hintText: l10n.mdRenameHint),
                 onChanged: widget.onDraftChanged,
                 onSubmitted: (final val) {
                   if (val.trim().isNotEmpty) widget.onSave(val.trim());
@@ -489,7 +493,10 @@ class _RenameOverlayState extends ConsumerState<RenameOverlay> {
               Row(
                 mainAxisAlignment: MainAxisAlignment.end,
                 children: [
-                  TextButton(onPressed: widget.onCancel, child: Text(l10n.mdCancel)),
+                  TextButton(
+                    onPressed: widget.onCancel,
+                    child: Text(l10n.mdCancel),
+                  ),
                   const SizedBox(width: AppSpacing.sm),
                   FilledButton(
                     onPressed: () {
@@ -560,10 +567,7 @@ class _EditableCategoryChip extends StatelessWidget {
         decoration: BoxDecoration(
           color: selected ? color : color.withValues(alpha: 0.1),
           borderRadius: BorderRadius.circular(AppRadius.pill),
-          border: Border.all(
-            color: color.withValues(alpha: 0.3),
-            width: 1,
-          ),
+          border: Border.all(color: color.withValues(alpha: 0.3), width: 1),
         ),
         child: Text(
           label,

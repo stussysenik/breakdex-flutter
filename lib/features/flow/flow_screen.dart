@@ -7,6 +7,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import 'package:breakdex/core/design/icons.dart';
 import 'package:breakdex/core/design/layout.dart';
 import 'package:breakdex/core/design/spacing.dart';
 import 'package:breakdex/shared/widgets/app_screen.dart';
@@ -62,20 +63,20 @@ class FlowScreen extends ConsumerWidget {
                 ),
                 const SizedBox(height: AppLayout.itemGap),
                 AppSegmentedControl<FlowViewMode>(
-                  items: const [
+                  items: [
                     AppSegmentedControlItem(
                       value: FlowViewMode.map,
-                      icon: CupertinoIcons.graph_square_fill,
+                      icon: AppIcon.graph.resolve(context),
                       label: 'Map',
                     ),
                     AppSegmentedControlItem(
                       value: FlowViewMode.focus,
-                      icon: CupertinoIcons.scope,
+                      icon: AppIcon.insight.resolve(context),
                       label: 'Focus',
                     ),
                     AppSegmentedControlItem(
                       value: FlowViewMode.clusters,
-                      icon: CupertinoIcons.square_grid_2x2_fill,
+                      icon: AppIcon.grid.resolve(context),
                       label: 'Zones',
                     ),
                   ],
@@ -173,28 +174,30 @@ class _FlowModeDescription {
     required this.hint,
   });
 
-  final IconData icon;
+  final AppIcon icon;
   final String title;
   final String description;
   final String hint;
 
-  static _FlowModeDescription forMode(final FlowViewMode mode) => switch (mode) {
+  static _FlowModeDescription forMode(
+    final FlowViewMode mode,
+  ) => switch (mode) {
     FlowViewMode.map => const _FlowModeDescription(
-      icon: CupertinoIcons.graph_square_fill,
+      icon: AppIcon.graph,
       title: 'Whole practice network',
       description:
           'See every move and transition together so gaps and hubs are obvious.',
       hint: 'Tap a node to inspect it. Double-tap opens move detail.',
     ),
     FlowViewMode.focus => const _FlowModeDescription(
-      icon: CupertinoIcons.scope,
+      icon: AppIcon.insight,
       title: 'One-move inspection',
       description:
           'Center on one move and its immediate routes to plan a dedicated sprint.',
       hint: 'Best for checking entries, exits, and weak follow-ups.',
     ),
     FlowViewMode.clusters => const _FlowModeDescription(
-      icon: CupertinoIcons.square_grid_2x2_fill,
+      icon: AppIcon.grid,
       title: 'Category zones',
       description:
           'Group moves by category to see which families bridge and which stay isolated.',
@@ -229,7 +232,7 @@ class _FlowModePanel extends ConsumerWidget {
                   context,
                   highlight: colorScheme.primary,
                 ),
-                child: Icon(
+                child: AppIconView(
                   description.icon,
                   size: 18,
                   color: colorScheme.primary,
@@ -266,22 +269,22 @@ class _FlowModePanel extends ConsumerWidget {
             runSpacing: AppSpacing.sm,
             children: [
               _MetricChip(
-                icon: CupertinoIcons.circle_grid_3x3_fill,
+                icon: AppIcon.grid.resolve(context),
                 label: ref.watch(entityNamesProvider).movePlural,
                 value: '${summary.nodeCount}',
               ),
               _MetricChip(
-                icon: CupertinoIcons.arrow_branch,
+                icon: AppIcon.link.resolve(context),
                 label: 'Links',
                 value: '${summary.edgeCount}',
               ),
               _MetricChip(
-                icon: Icons.check_circle_outline_rounded,
+                icon: AppIcon.success.resolve(context),
                 label: 'Mastered',
                 value: '${summary.masteredCount}',
               ),
               _MetricChip(
-                icon: CupertinoIcons.square_grid_2x2_fill,
+                icon: AppIcon.grid.resolve(context),
                 label: 'Zones',
                 value: '${summary.categoryCount}',
               ),
@@ -431,7 +434,7 @@ class _FlowSelectionInspector extends StatelessWidget {
               ),
               const SizedBox(width: AppSpacing.sm),
               _IconActionButton(
-                icon: Icons.close_rounded,
+                icon: AppIcon.close.resolve(context),
                 label: 'Clear selection',
                 onTap: onClear,
               ),
@@ -443,27 +446,27 @@ class _FlowSelectionInspector extends StatelessWidget {
             runSpacing: AppSpacing.sm,
             children: [
               _MetricChip(
-                icon: Icons.call_received_rounded,
+                icon: AppIcon.down.resolve(context),
                 label: 'In',
                 value: '${details.incomingCount}',
               ),
               _MetricChip(
-                icon: Icons.call_made_rounded,
+                icon: AppIcon.up.resolve(context),
                 label: 'Out',
                 value: '${details.outgoingCount}',
               ),
               _MetricChip(
-                icon: Icons.hub_outlined,
+                icon: AppIcon.discover.resolve(context),
                 label: 'Routes',
                 value: '${details.neighborCount}',
               ),
               _MetricChip(
-                icon: Icons.compare_arrows_rounded,
+                icon: AppIcon.sync.resolve(context),
                 label: 'Cross-zone',
                 value: '${details.crossCategoryCount}',
               ),
               _MetricChip(
-                icon: Icons.trending_flat_rounded,
+                icon: AppIcon.forward.resolve(context),
                 label: 'Natural',
                 value: '${details.naturalTransitionCount}',
               ),
@@ -475,12 +478,12 @@ class _FlowSelectionInspector extends StatelessWidget {
             runSpacing: AppSpacing.sm,
             children: [
               _TextActionChip(
-                icon: CupertinoIcons.scope,
+                icon: AppIcon.insight.resolve(context),
                 label: isFocusMode ? 'Focused' : 'Focus move',
                 onTap: isFocusMode ? null : onFocus,
               ),
               _TextActionChip(
-                icon: Icons.open_in_new_rounded,
+                icon: AppIcon.link.resolve(context),
                 label: 'Open detail',
                 onTap: onOpen,
               ),
@@ -671,7 +674,10 @@ class _IconActionButton extends StatelessWidget {
   }
 }
 
-BoxDecoration _panelDecoration(final BuildContext context, {final Color? highlight}) {
+BoxDecoration _panelDecoration(
+  final BuildContext context, {
+  final Color? highlight,
+}) {
   final colorScheme = Theme.of(context).colorScheme;
   final borderColor = (highlight ?? colorScheme.outline).withValues(
     alpha: highlight == null ? 0.18 : 0.24,
@@ -686,7 +692,10 @@ BoxDecoration _panelDecoration(final BuildContext context, {final Color? highlig
   );
 }
 
-BoxDecoration _chipDecoration(final BuildContext context, {final Color? highlight}) {
+BoxDecoration _chipDecoration(
+  final BuildContext context, {
+  final Color? highlight,
+}) {
   final colorScheme = Theme.of(context).colorScheme;
   final borderColor = (highlight ?? colorScheme.outline).withValues(
     alpha: highlight == null ? 0.16 : 0.22,

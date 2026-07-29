@@ -15,6 +15,7 @@ import 'package:breakdex/core/sync/asset_sync_engine.dart';
 import 'package:breakdex/core/sync/integrity_verifier.dart';
 import 'package:breakdex/l10n/gen/app_localizations.dart';
 import 'package:breakdex/shared/widgets/app_loader.dart';
+import 'package:breakdex/core/design/icons.dart';
 
 /// Sync status dashboard showing overall progress, active transfers,
 /// and monthly data usage.
@@ -92,25 +93,25 @@ class SyncStatusScreen extends ConsumerWidget {
           _SectionHeader(title: 'Actions', colorScheme: colorScheme),
           const SizedBox(height: AppSpacing.sm),
           _ActionTile(
-            icon: Icons.sync,
+            icon: AppIcon.sync.resolve(context),
             title: 'Sync Now',
             subtitle: 'Upload pending videos to cloud',
             onTap: () {
               // Trigger immediate sync
-              ref.read(backgroundSyncManagerProvider).triggerImmediate(
+              ref
+                  .read(backgroundSyncManagerProvider)
+                  .triggerImmediate(
                     syncCallback: () => ref
                         .read(assetSyncEngineProvider)
                         .runSyncCycle(
-                          ref
-                              .read(connectivityServiceProvider)
-                              .currentType,
+                          ref.read(connectivityServiceProvider).currentType,
                         ),
                   );
             },
             colorScheme: colorScheme,
           ),
           _ActionTile(
-            icon: Icons.verified_outlined,
+            icon: AppIcon.success.resolve(context),
             title: 'Verify Integrity',
             subtitle: 'Re-hash every local file and list any mismatches',
             onTap: () => _runIntegrityCheck(context, ref),
@@ -133,11 +134,13 @@ Future<void> _runIntegrityCheck(
   final verifier = ref.read(integrityVerifierProvider);
 
   // Blocking spinner — a full re-hash of every local video can take a while.
-  unawaited(showDialog<void>(
-    context: context,
-    barrierDismissible: false,
-    builder: (final _) => const Center(child: AppLoader()),
-  ));
+  unawaited(
+    showDialog<void>(
+      context: context,
+      barrierDismissible: false,
+      builder: (final _) => const Center(child: AppLoader()),
+    ),
+  );
 
   IntegrityReport report;
   try {
@@ -221,8 +224,10 @@ class _IntegrityResultSheet extends StatelessWidget {
                 itemCount: report.issues.length,
                 separatorBuilder: (final _, final _) =>
                     const SizedBox(height: AppSpacing.xs),
-                itemBuilder: (final _, final i) =>
-                    _IssueRow(issue: report.issues[i], colorScheme: colorScheme),
+                itemBuilder: (final _, final i) => _IssueRow(
+                  issue: report.issues[i],
+                  colorScheme: colorScheme,
+                ),
               ),
             ),
             if (mismatches.isNotEmpty) ...[
@@ -230,7 +235,7 @@ class _IntegrityResultSheet extends StatelessWidget {
               SizedBox(
                 width: double.infinity,
                 child: FilledButton.tonalIcon(
-                  icon: const Icon(Icons.cloud_download_outlined, size: 18),
+                  icon: const AppIconView(AppIcon.download, size: 18),
                   label: Text('Re-download ${mismatches.length} flagged'),
                   onPressed: () => _confirmHeal(context, mismatches),
                 ),
@@ -274,9 +279,7 @@ class _IntegrityResultSheet extends StatelessWidget {
     if (!context.mounted) return;
     Navigator.of(context).pop(); // close the result sheet
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('$healed flagged for re-download on next sync'),
-      ),
+      SnackBar(content: Text('$healed flagged for re-download on next sync')),
     );
   }
 }
@@ -290,15 +293,25 @@ class _IssueRow extends StatelessWidget {
   @override
   Widget build(final BuildContext context) {
     final (icon, tint) = switch (issue.kind) {
-      IntegrityIssueKind.mismatch => (Icons.warning_amber_rounded, AppColors.actionAgain),
-      IntegrityIssueKind.missing => (Icons.link_off, AppColors.actionHard),
-      IntegrityIssueKind.unreadable => (Icons.error_outline, AppColors.actionAgain),
+      IntegrityIssueKind.mismatch => (
+        AppIcon.warning.resolve(context),
+        AppColors.actionAgain,
+      ),
+      IntegrityIssueKind.missing => (
+        AppIcon.link.resolve(context),
+        AppColors.actionHard,
+      ),
+      IntegrityIssueKind.unreadable => (
+        AppIcon.error.resolve(context),
+        AppColors.actionAgain,
+      ),
     };
 
     final detail = switch (issue.kind) {
       IntegrityIssueKind.mismatch =>
         'expected ${_shortHash(issue.contentHash)} · got ${_shortHash(issue.actualHash)}',
-      IntegrityIssueKind.missing => 'manifest ${_shortHash(issue.contentHash)} · no file on disk',
+      IntegrityIssueKind.missing =>
+        'manifest ${_shortHash(issue.contentHash)} · no file on disk',
       IntegrityIssueKind.unreadable => issue.error ?? 'unreadable',
     };
 
@@ -319,9 +332,9 @@ class _IssueRow extends StatelessWidget {
               children: [
                 Text(
                   _basename(issue.localPath),
-                  style: AppTypography.bodySmall.merge(
-                    const TextStyle(fontWeight: FontWeight.w600),
-                  ).copyWith(color: colorScheme.onSurface),
+                  style: AppTypography.bodySmall
+                      .merge(const TextStyle(fontWeight: FontWeight.w600))
+                      .copyWith(color: colorScheme.onSurface),
                 ),
                 Text(
                   detail,
@@ -385,7 +398,9 @@ class _StatusCard extends StatelessWidget {
           Row(
             children: [
               Icon(
-                allSynced ? Icons.cloud_done_outlined : Icons.sync,
+                allSynced
+                    ? AppIcon.cloudDone.resolve(context)
+                    : AppIcon.sync.resolve(context),
                 color: allSynced ? AppColors.stateMastery : AppColors.accent,
                 size: 24,
               ),
@@ -404,8 +419,7 @@ class _StatusCard extends StatelessWidget {
               borderRadius: BorderRadius.circular(AppRadius.xxs),
               child: LinearProgressIndicator(
                 value: syncProgress.fraction,
-                backgroundColor:
-                    colorScheme.onSurface.withValues(alpha: 0.1),
+                backgroundColor: colorScheme.onSurface.withValues(alpha: 0.1),
                 valueColor: const AlwaysStoppedAnimation(AppColors.accent),
                 minHeight: 6,
               ),
@@ -478,11 +492,11 @@ class _AssetDetailNote extends StatelessWidget {
 
   @override
   Widget build(final BuildContext context) => Text(
-        text,
-        style: AppTypography.bodySmall.copyWith(
-          color: colorScheme.onSurface.withValues(alpha: 0.5),
-        ),
-      );
+    text,
+    style: AppTypography.bodySmall.copyWith(
+      color: colorScheme.onSurface.withValues(alpha: 0.5),
+    ),
+  );
 }
 
 /// The three-way split the header can't carry: what is moving, what is
@@ -500,16 +514,31 @@ class _AssetTallyRow extends StatelessWidget {
     // Empty buckets are omitted rather than shown as "0" — a zero is noise
     // that reads as a problem the user has to parse.
     final chips = <(int, String, Color)>[
-      (tally.uploading, l10n.setSyncTallyUploading(tally.uploading),
-          AppColors.accent),
-      (tally.waiting, l10n.setSyncTallyWaiting(tally.waiting),
-          AppColors.actionHard),
-      (tally.retrying, l10n.setSyncTallyRetrying(tally.retrying),
-          AppColors.actionHard),
-      (tally.unbackupable, l10n.setSyncTallyStuck(tally.unbackupable),
-          AppColors.actionAgain),
-      (tally.backedUp, l10n.setSyncTallyBackedUp(tally.backedUp),
-          AppColors.stateMastery),
+      (
+        tally.uploading,
+        l10n.setSyncTallyUploading(tally.uploading),
+        AppColors.accent,
+      ),
+      (
+        tally.waiting,
+        l10n.setSyncTallyWaiting(tally.waiting),
+        AppColors.actionHard,
+      ),
+      (
+        tally.retrying,
+        l10n.setSyncTallyRetrying(tally.retrying),
+        AppColors.actionHard,
+      ),
+      (
+        tally.unbackupable,
+        l10n.setSyncTallyStuck(tally.unbackupable),
+        AppColors.actionAgain,
+      ),
+      (
+        tally.backedUp,
+        l10n.setSyncTallyBackedUp(tally.backedUp),
+        AppColors.stateMastery,
+      ),
     ];
 
     return Wrap(
@@ -548,19 +577,25 @@ class _AssetDetailRow extends StatelessWidget {
   Widget build(final BuildContext context) {
     final (icon, tint) = switch (detail.status) {
       AssetSyncStatus.backedUp => (
-          Icons.cloud_done_outlined,
-          AppColors.stateMastery,
-        ),
-      AssetSyncStatus.uploading => (Icons.cloud_upload_outlined, AppColors.accent),
-      AssetSyncStatus.queued => (Icons.schedule, AppColors.accent),
+        AppIcon.cloudDone.resolve(context),
+        AppColors.stateMastery,
+      ),
+      AssetSyncStatus.uploading => (
+        AppIcon.upload.resolve(context),
+        AppColors.accent,
+      ),
+      AssetSyncStatus.queued => (
+        AppIcon.schedule.resolve(context),
+        AppColors.accent,
+      ),
       AssetSyncStatus.failed => (
-          Icons.error_outline,
-          AppColors.actionAgain,
-        ),
+        AppIcon.error.resolve(context),
+        AppColors.actionAgain,
+      ),
       AssetSyncStatus.pending => (
-          Icons.cloud_off_outlined,
-          AppColors.actionHard,
-        ),
+        AppIcon.error.resolve(context),
+        AppColors.actionHard,
+      ),
     };
 
     return Container(
@@ -601,9 +636,12 @@ class _AssetDetailRow extends StatelessWidget {
                       // Null while no bytes have moved — an indeterminate bar
                       // is honest about "started, nothing reported yet".
                       value: detail.fraction,
-                      backgroundColor:
-                          colorScheme.onSurface.withValues(alpha: 0.1),
-                      valueColor: const AlwaysStoppedAnimation(AppColors.accent),
+                      backgroundColor: colorScheme.onSurface.withValues(
+                        alpha: 0.1,
+                      ),
+                      valueColor: const AlwaysStoppedAnimation(
+                        AppColors.accent,
+                      ),
                       minHeight: 3,
                     ),
                   ),
@@ -626,34 +664,32 @@ class _AssetDetailRow extends StatelessWidget {
 String _detailLine(
   final AppLocalizations l10n,
   final AssetSyncDetail detail,
-) =>
-    switch (detail.status) {
-      AssetSyncStatus.backedUp => [
-          for (final copy in detail.copies)
-            if (copy.provider != 'local' && copy.status == 'verified')
-              copy.provider,
-        ].join(' · '),
-      AssetSyncStatus.uploading => switch (detail.fraction) {
-          // No bytes reported yet — say "starting" rather than compute a 0%
-          // that reads as stalled.
-          null => l10n.setSyncDetailStarting(_mb(detail.fileSizeBytes)),
-          final fraction => l10n.setSyncDetailUploading(
-              _mb(detail.transferredBytes),
-              _mb(detail.fileSizeBytes),
-              (fraction * 100).round(),
-            ),
-        },
-      AssetSyncStatus.queued =>
-        l10n.setSyncDetailQueued(_mb(detail.fileSizeBytes)),
-      AssetSyncStatus.failed => switch ((detail.isTerminal, detail.errorMessage)) {
-          (true, final String error) => l10n.setSyncDetailStuck(error),
-          (true, _) => l10n.setSyncDetailStuckUnknown,
-          (false, final String error) => l10n.setSyncDetailRetrying(error),
-          (false, _) => l10n.setSyncDetailRetryingUnknown,
-        },
-      AssetSyncStatus.pending =>
-        l10n.setSyncDetailPending(_mb(detail.fileSizeBytes)),
-    };
+) => switch (detail.status) {
+  AssetSyncStatus.backedUp => [
+    for (final copy in detail.copies)
+      if (copy.provider != 'local' && copy.status == 'verified') copy.provider,
+  ].join(' · '),
+  AssetSyncStatus.uploading => switch (detail.fraction) {
+    // No bytes reported yet — say "starting" rather than compute a 0%
+    // that reads as stalled.
+    null => l10n.setSyncDetailStarting(_mb(detail.fileSizeBytes)),
+    final fraction => l10n.setSyncDetailUploading(
+      _mb(detail.transferredBytes),
+      _mb(detail.fileSizeBytes),
+      (fraction * 100).round(),
+    ),
+  },
+  AssetSyncStatus.queued => l10n.setSyncDetailQueued(_mb(detail.fileSizeBytes)),
+  AssetSyncStatus.failed => switch ((detail.isTerminal, detail.errorMessage)) {
+    (true, final String error) => l10n.setSyncDetailStuck(error),
+    (true, _) => l10n.setSyncDetailStuckUnknown,
+    (false, final String error) => l10n.setSyncDetailRetrying(error),
+    (false, _) => l10n.setSyncDetailRetryingUnknown,
+  },
+  AssetSyncStatus.pending => l10n.setSyncDetailPending(
+    _mb(detail.fileSizeBytes),
+  ),
+};
 
 String _mb(final int bytes) =>
     '${(bytes / (1024 * 1024)).toStringAsFixed(1)} MB';
@@ -708,9 +744,9 @@ class _SettingsTile extends StatelessWidget {
               children: [
                 Text(
                   title,
-                  style: AppTypography.bodySmall.merge(const TextStyle(fontWeight: FontWeight.w600)).copyWith(
-                    color: colorScheme.onSurface,
-                  ),
+                  style: AppTypography.bodySmall
+                      .merge(const TextStyle(fontWeight: FontWeight.w600))
+                      .copyWith(color: colorScheme.onSurface),
                 ),
                 Text(
                   subtitle,
@@ -743,7 +779,9 @@ class _DataUsageCard extends StatelessWidget {
   Widget build(final BuildContext context) {
     final usedMb = usedBytes / (1024 * 1024);
     final capMb = capBytes / (1024 * 1024);
-    final fraction = capBytes > 0 ? (usedBytes / capBytes).clamp(0.0, 1.0) : 0.0;
+    final fraction = capBytes > 0
+        ? (usedBytes / capBytes).clamp(0.0, 1.0)
+        : 0.0;
 
     return Container(
       padding: const EdgeInsets.all(AppSpacing.md),
@@ -756,17 +794,16 @@ class _DataUsageCard extends StatelessWidget {
         children: [
           Text(
             'Mobile Data This Month',
-            style: AppTypography.bodySmall.merge(const TextStyle(fontWeight: FontWeight.w600)).copyWith(
-              color: colorScheme.onSurface,
-            ),
+            style: AppTypography.bodySmall
+                .merge(const TextStyle(fontWeight: FontWeight.w600))
+                .copyWith(color: colorScheme.onSurface),
           ),
           const SizedBox(height: AppSpacing.sm),
           ClipRRect(
             borderRadius: BorderRadius.circular(AppRadius.xxs),
             child: LinearProgressIndicator(
               value: fraction,
-              backgroundColor:
-                  colorScheme.onSurface.withValues(alpha: 0.1),
+              backgroundColor: colorScheme.onSurface.withValues(alpha: 0.1),
               valueColor: AlwaysStoppedAnimation(
                 fraction > 0.9 ? AppColors.actionAgain : AppColors.accent,
               ),
@@ -822,9 +859,9 @@ class _ActionTile extends StatelessWidget {
                 children: [
                   Text(
                     title,
-                    style: AppTypography.bodySmall.merge(const TextStyle(fontWeight: FontWeight.w600)).copyWith(
-                      color: colorScheme.onSurface,
-                    ),
+                    style: AppTypography.bodySmall
+                        .merge(const TextStyle(fontWeight: FontWeight.w600))
+                        .copyWith(color: colorScheme.onSurface),
                   ),
                   Text(
                     subtitle,
@@ -835,8 +872,8 @@ class _ActionTile extends StatelessWidget {
                 ],
               ),
             ),
-            Icon(
-              Icons.chevron_right,
+            AppIconView(
+              AppIcon.forward,
               color: colorScheme.onSurface.withValues(alpha: 0.3),
             ),
           ],

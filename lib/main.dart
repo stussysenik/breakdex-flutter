@@ -425,6 +425,7 @@ class BreakdexApp extends ConsumerWidget {
     final accent = ref.watch(accentColorProvider);
     final stateColors = ref.watch(learningStateColorsProvider);
     final palette = ref.watch(accessiblePaletteProvider);
+    final iconPack = ref.watch(iconPackProvider);
 
     return MaterialApp.router(
       onGenerateTitle: (final context) => AppLocalizations.of(context).appTitle,
@@ -438,6 +439,7 @@ class BreakdexApp extends ConsumerWidget {
         stateColors: stateColors,
         viewingMode: viewingMode,
         palette: palette,
+        iconPack: iconPack,
       ),
       darkTheme: AppTheme.dark(
         family: fontFamily,
@@ -445,6 +447,7 @@ class BreakdexApp extends ConsumerWidget {
         stateColors: stateColors,
         viewingMode: viewingMode,
         palette: palette,
+        iconPack: iconPack,
       ),
       themeMode: themeSetting.themeMode,
       routerConfig: appRouter,

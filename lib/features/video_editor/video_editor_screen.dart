@@ -9,8 +9,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:breakdex/core/providers.dart';
 import 'package:breakdex/core/services/settings_service.dart';
 import 'package:breakdex/features/video_editor/robust_video_editor_view.dart';
-import 'package:breakdex/features/video_editor/simplified_video_editor_screen.dart' show SimplifiedVideoEditorView;
+import 'package:breakdex/features/video_editor/simplified_video_editor_screen.dart'
+    show SimplifiedVideoEditorView;
 import 'package:breakdex/features/video_editor/video_editor_controller.dart';
+import 'package:breakdex/core/design/icons.dart';
 
 class VideoEditorScreen extends ConsumerStatefulWidget {
   const VideoEditorScreen({super.key, required this.videoPath});
@@ -54,7 +56,9 @@ class _VideoEditorScreenState extends ConsumerState<VideoEditorScreen> {
         },
         backgroundColor: colorScheme.secondaryContainer,
         child: Icon(
-          useSimplified ? CupertinoIcons.square_grid_2x2 : CupertinoIcons.film,
+          useSimplified
+              ? AppIcon.grid.resolve(context)
+              : AppIcon.video.resolve(context),
           color: colorScheme.onSecondaryContainer,
         ),
       ),

@@ -7,6 +7,7 @@ import 'package:go_router/go_router.dart';
 
 import 'package:breakdex/core/database/database.dart';
 import 'package:breakdex/core/design/colors.dart';
+import 'package:breakdex/core/design/icons.dart';
 import 'package:breakdex/core/design/spacing.dart';
 import 'package:breakdex/core/design/typography.dart';
 import 'package:breakdex/core/models/move_archive_reason.dart';
@@ -44,8 +45,8 @@ class RecentlyDeletedScreen extends ConsumerWidget {
                 onTap: () => context.pop(),
                 child: Row(
                   children: [
-                    Icon(
-                      Icons.chevron_left,
+                    AppIconView(
+                      AppIcon.back,
                       color: colorScheme.secondary,
                       size: 20,
                     ),
@@ -98,8 +99,7 @@ class RecentlyDeletedScreen extends ConsumerWidget {
                       ],
                     );
                   },
-                  loading: () =>
-                      const Center(child: AppLoader()),
+                  loading: () => const Center(child: AppLoader()),
                   error: (final error, final stackTrace) => Center(
                     child: Text(
                       'Recently Deleted could not be loaded.',
@@ -139,7 +139,7 @@ class _ArchivedMoveRow extends ConsumerWidget {
         horizontal: AppSpacing.md,
         vertical: 4,
       ),
-      leading: Icon(Icons.restore_from_trash, color: colorScheme.secondary),
+      leading: AppIconView(AppIcon.restore, color: colorScheme.secondary),
       title: Text(
         move.name,
         style: AppTypography.bodyMedium.copyWith(color: colorScheme.onSurface),
@@ -189,7 +189,10 @@ class _ArchivedMoveRow extends ConsumerWidget {
     }
   }
 
-  Future<void> _deletePermanently(final BuildContext context, final WidgetRef ref) async {
+  Future<void> _deletePermanently(
+    final BuildContext context,
+    final WidgetRef ref,
+  ) async {
     final confirm = await showDialog<bool>(
       context: context,
       builder: (final context) => AlertDialog(

@@ -1,4 +1,5 @@
 import 'package:breakdex/core/design/colors.dart';
+import 'package:breakdex/core/design/icons.dart';
 import 'package:breakdex/core/design/theme.dart';
 import 'package:breakdex/core/models/learning_state_colors.dart';
 import 'package:breakdex/core/services/settings_service.dart';
@@ -8,6 +9,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+
+import '../../helpers/icon_finders.dart';
 
 // Luminance-weighted grayscale — removes all hue/saturation from the subtree so
 // the test literally renders "color removed".
@@ -162,10 +165,10 @@ void main() {
       );
 
       // Four distinct icon shapes survive the loss of color...
-      expect(find.byIcon(Icons.close_rounded), findsOneWidget); // again
-      expect(find.byIcon(Icons.trending_flat_rounded), findsOneWidget); // hard
-      expect(find.byIcon(Icons.check_rounded), findsOneWidget); // good
-      expect(find.byIcon(Icons.star_rounded), findsOneWidget); // easy
+      expect(findAppIcon(AppIcon.close), findsOneWidget); // again
+      expect(findAppIcon(AppIcon.forward), findsOneWidget); // hard
+      expect(findAppIcon(AppIcon.check), findsOneWidget); // good
+      expect(findAppIcon(AppIcon.star), findsOneWidget); // easy
       // ...as do the four text labels.
       expect(find.text('AGAIN'), findsOneWidget);
       expect(find.text('HARD'), findsOneWidget);

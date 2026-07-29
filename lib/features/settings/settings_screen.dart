@@ -48,6 +48,7 @@ import 'package:breakdex/features/dev/sync_cutover_panel.dart';
 import 'package:breakdex/shared/widgets/shake_detector.dart';
 import 'package:breakdex/features/stats/providers/stats_providers.dart';
 import 'package:breakdex/features/settings/recently_deleted_screen.dart';
+import 'package:breakdex/core/design/icons.dart';
 
 final _settingsMovesProvider = StreamProvider<List<Move>>((final ref) {
   return ref.watch(moveRepositoryProvider).watchAll();
@@ -95,11 +96,13 @@ class SettingsScreen extends ConsumerWidget {
                   behavior: HitTestBehavior.opaque,
                   onTap: () => context.pop(),
                   child: Padding(
-                    padding: const EdgeInsets.symmetric(vertical: AppSpacing.xs),
+                    padding: const EdgeInsets.symmetric(
+                      vertical: AppSpacing.xs,
+                    ),
                     child: Row(
                       children: [
-                        Icon(
-                          Icons.chevron_left,
+                        AppIconView(
+                          AppIcon.back,
                           color: colorScheme.secondary,
                           size: 20,
                         ),
@@ -306,8 +309,12 @@ class SettingsScreen extends ConsumerWidget {
                           action: TextButton(
                             onPressed: () async {
                               await HapticFeedback.mediumImpact();
-                              await ref.read(learningStateLabelsProvider.notifier).reset();
-                              await ref.read(learningStateColorsProvider.notifier).resetAll();
+                              await ref
+                                  .read(learningStateLabelsProvider.notifier)
+                                  .reset();
+                              await ref
+                                  .read(learningStateColorsProvider.notifier)
+                                  .resetAll();
                             },
                             child: Text(l10n.setReset),
                           ),
@@ -333,7 +340,9 @@ class SettingsScreen extends ConsumerWidget {
                                 action: TextButton(
                                   onPressed: () async {
                                     await HapticFeedback.mediumImpact();
-                                    await ref.read(accentColorProvider.notifier).reset();
+                                    await ref
+                                        .read(accentColorProvider.notifier)
+                                        .reset();
                                   },
                                   child: Text(l10n.setReset),
                                 ),
@@ -345,7 +354,9 @@ class SettingsScreen extends ConsumerWidget {
                                 action: TextButton(
                                   onPressed: () async {
                                     await HapticFeedback.mediumImpact();
-                                    await ref.read(ratingColorsProvider.notifier).resetAll();
+                                    await ref
+                                        .read(ratingColorsProvider.notifier)
+                                        .resetAll();
                                   },
                                   child: Text(l10n.setReset),
                                 ),
@@ -376,7 +387,7 @@ class SettingsScreen extends ConsumerWidget {
                           child: SettingsListGroup(
                             children: [
                               ActionTile(
-                                icon: Icons.title,
+                                icon: AppIcon.notes.resolve(context),
                                 label: l10n.setLabelArsenalTitle(
                                   viewNames['title'] ?? 'Arsenal',
                                 ),
@@ -387,7 +398,7 @@ class SettingsScreen extends ConsumerWidget {
                                 ),
                               ),
                               ActionTile(
-                                icon: Icons.sports_martial_arts,
+                                icon: AppIcon.move.resolve(context),
                                 label: l10n.setLabelMovesDataBank(
                                   entityNames.movePlural,
                                 ),
@@ -400,7 +411,7 @@ class SettingsScreen extends ConsumerWidget {
                                 ),
                               ),
                               ActionTile(
-                                icon: Icons.link,
+                                icon: AppIcon.link.resolve(context),
                                 label: l10n.setLabelCombosDataBank(
                                   entityNames.comboPlural,
                                 ),
@@ -433,7 +444,7 @@ class SettingsScreen extends ConsumerWidget {
                     title: l10n.setPanelMoveCategories,
                     action: TextButton.icon(
                       onPressed: () => _showAddCategoryDialog(context, ref),
-                      icon: const Icon(Icons.add, size: 16),
+                      icon: const AppIconView(AppIcon.add, size: 16),
                       label: Text(l10n.setAdd),
                     ),
                     child: SettingsListGroup(
@@ -444,8 +455,9 @@ class SettingsScreen extends ConsumerWidget {
                             color: cat.color,
                             isDefault: cat.isDefault,
                             usageCount: categoryUsage[cat.name] ?? 0,
-                            onTap: () =>
-                                context.push('/breakdex/moves/${Uri.encodeComponent(cat.name)}'),
+                            onTap: () => context.push(
+                              '/breakdex/moves/${Uri.encodeComponent(cat.name)}',
+                            ),
                             onLongPress: () => _showCategoryActionsSheet(
                               context,
                               ref,
@@ -480,38 +492,60 @@ class SettingsScreen extends ConsumerWidget {
                     child: Column(
                       children: [
                         _DataActionTileAsync(
-                          icon: Icons.ios_share,
+                          icon: AppIcon.share.resolve(context),
                           label: l10n.setActionExportStats,
                           onTap: (final tileContext) async {
                             final origin = sharePositionOrigin(tileContext);
-                            final stats = await ref.read(statsBundleProvider.future);
-                            final summary = StatsExportService.generateTextSummary(stats);
-                            await NativeShareSheet.shareText(text: summary, sharePositionOrigin: origin);
+                            final stats = await ref.read(
+                              statsBundleProvider.future,
+                            );
+                            final summary =
+                                StatsExportService.generateTextSummary(stats);
+                            await NativeShareSheet.shareText(
+                              text: summary,
+                              sharePositionOrigin: origin,
+                            );
                             return null;
                           },
                         ),
                         const SizedBox(height: AppSpacing.sm),
                         _DataActionTileAsync(
-                          icon: Icons.file_download_outlined,
+                          icon: AppIcon.download.resolve(context),
                           label: l10n.setActionExportJson,
                           onTap: (final tileContext) async {
                             final origin = sharePositionOrigin(tileContext);
                             final db = ref.read(databaseProvider);
                             final prefs = ref.read(sharedPreferencesProvider);
-                            final result = await StatsExportService.generateJsonExport(db, prefs);
-                            final dir = await AppStoragePaths.documentsDirectory();
-                            final exportsDir = Directory(p.join(dir.path, 'Exports'));
-                            if (!await exportsDir.exists()) await exportsDir.create(recursive: true);
-                            final file = File(p.join(exportsDir.path, StatsExportService.exportFilename));
+                            final result =
+                                await StatsExportService.generateJsonExport(
+                                  db,
+                                  prefs,
+                                );
+                            final dir =
+                                await AppStoragePaths.documentsDirectory();
+                            final exportsDir = Directory(
+                              p.join(dir.path, 'Exports'),
+                            );
+                            if (!await exportsDir.exists())
+                              await exportsDir.create(recursive: true);
+                            final file = File(
+                              p.join(
+                                exportsDir.path,
+                                StatsExportService.exportFilename,
+                              ),
+                            );
                             await file.writeAsString(result.json, flush: true);
-                            await NativeShareSheet.shareFiles(filePaths: [file.path], sharePositionOrigin: origin);
+                            await NativeShareSheet.shareFiles(
+                              filePaths: [file.path],
+                              sharePositionOrigin: origin,
+                            );
                             return l10n.setExportedRecords(result.totalRecords);
                           },
                           showResultSnackBar: true,
                         ),
                         const SizedBox(height: AppSpacing.sm),
                         _DataActionTileAsync(
-                          icon: Icons.file_upload_outlined,
+                          icon: AppIcon.upload.resolve(context),
                           label: l10n.setActionImportJson,
                           onTap: (_) async {
                             await _showImportFlow(context, ref);
@@ -520,15 +554,19 @@ class SettingsScreen extends ConsumerWidget {
                         ),
                         const SizedBox(height: AppSpacing.sm),
                         ActionTile(
-                          icon: Icons.restore_from_trash_outlined,
-                          label: l10n.setActionRecentlyDeleted(archivedMoveCount),
-                          onTap: () => context.push('/settings-panel/recently-deleted'),
+                          icon: AppIcon.restore.resolve(context),
+                          label: l10n.setActionRecentlyDeleted(
+                            archivedMoveCount,
+                          ),
+                          onTap: () =>
+                              context.push('/settings-panel/recently-deleted'),
                         ),
                         const SizedBox(height: AppSpacing.sm),
                         ActionTile(
-                          icon: Icons.terminal_rounded,
+                          icon: AppIcon.menu.resolve(context),
                           label: l10n.setActionSystemStatus,
-                          onTap: () => context.push('/settings-panel/system-status'),
+                          onTap: () =>
+                              context.push('/settings-panel/system-status'),
                         ),
                         const SizedBox(height: AppSpacing.sm),
                         // Dev-only sync-cutover panel (task 2.2). Flag OFF ⇒ this
@@ -537,7 +575,7 @@ class SettingsScreen extends ConsumerWidget {
                         // MaterialPageRoute so no app router config is touched.
                         if (kDevSyncPanelEnabled) ...[
                           ActionTile(
-                            icon: Icons.sync_alt_rounded,
+                            icon: AppIcon.sync.resolve(context),
                             label: 'Sync cutover (dev)',
                             onTap: () => Navigator.of(context).push(
                               MaterialPageRoute<void>(
@@ -548,7 +586,7 @@ class SettingsScreen extends ConsumerWidget {
                           const SizedBox(height: AppSpacing.sm),
                         ],
                         ActionTile(
-                          icon: Icons.delete_forever,
+                          icon: AppIcon.delete.resolve(context),
                           label: l10n.setActionClearData,
                           destructive: true,
                           onTap: () => _showClearDataDialog(context, ref),
@@ -591,9 +629,7 @@ class SettingsScreen extends ConsumerWidget {
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  l10n.setClearBody,
-                ),
+                Text(l10n.setClearBody),
                 const SizedBox(height: AppSpacing.lg),
                 Text(
                   l10n.setClearConfirmPrompt,
@@ -623,9 +659,7 @@ class SettingsScreen extends ConsumerWidget {
                 child: Text(l10n.setCancel),
               ),
               TextButton(
-                onPressed: canConfirm
-                    ? () => Navigator.pop(ctx, true)
-                    : null,
+                onPressed: canConfirm ? () => Navigator.pop(ctx, true) : null,
                 child: Text(
                   l10n.setClearConfirmButton,
                   style: const TextStyle(color: AppColors.actionAgain),
@@ -650,12 +684,19 @@ class SettingsScreen extends ConsumerWidget {
           await exportsDir.create(recursive: true);
         }
         final backupFile = File(
-          p.join(exportsDir.path, 'breakdex_preclear_${DateTime.now().millisecondsSinceEpoch}.json'),
+          p.join(
+            exportsDir.path,
+            'breakdex_preclear_${DateTime.now().millisecondsSinceEpoch}.json',
+          ),
         );
         await backupFile.writeAsString(backup.json, flush: true);
         if (context.mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text(l10n.setClearBackupSaved(backupFile.path.split('/').last))),
+            SnackBar(
+              content: Text(
+                l10n.setClearBackupSaved(backupFile.path.split('/').last),
+              ),
+            ),
           );
         }
       } on Object catch (e) {
@@ -684,7 +725,10 @@ class SettingsScreen extends ConsumerWidget {
     });
   }
 
-  Future<void> _showImportFlow(final BuildContext context, final WidgetRef ref) async {
+  Future<void> _showImportFlow(
+    final BuildContext context,
+    final WidgetRef ref,
+  ) async {
     final l10n = AppLocalizations.of(context);
     final result = await FilePicker.platform.pickFiles(
       type: FileType.custom,
@@ -830,7 +874,7 @@ class SettingsScreen extends ConsumerWidget {
               const SizedBox(height: AppSpacing.md),
               ListTile(
                 contentPadding: EdgeInsets.zero,
-                leading: const Icon(Icons.edit_outlined),
+                leading: const AppIconView(AppIcon.edit),
                 title: Text(l10n.setCategoryEdit),
                 onTap: () =>
                     Navigator.pop(context, _CategorySheetAction.rename),
@@ -838,8 +882,8 @@ class SettingsScreen extends ConsumerWidget {
               if (!category.isDefault)
                 ListTile(
                   contentPadding: EdgeInsets.zero,
-                  leading: const Icon(
-                    Icons.delete_outline,
+                  leading: const AppIconView(
+                    AppIcon.delete,
                     color: AppColors.actionAgain,
                   ),
                   title: Text(
@@ -896,7 +940,9 @@ class SettingsScreen extends ConsumerWidget {
                 TextField(
                   controller: controller,
                   autofocus: true,
-                  decoration: InputDecoration(hintText: l10n.setCategoryNameHint),
+                  decoration: InputDecoration(
+                    hintText: l10n.setCategoryNameHint,
+                  ),
                 ),
                 const SizedBox(height: AppSpacing.md),
                 ColorSettingTile(
@@ -927,9 +973,7 @@ class SettingsScreen extends ConsumerWidget {
                   final newName = controller.text.trim();
                   if (newName.isEmpty) {
                     ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text(l10n.setCategoryNameEmpty),
-                      ),
+                      SnackBar(content: Text(l10n.setCategoryNameEmpty)),
                     );
                     return;
                   }
@@ -937,7 +981,8 @@ class SettingsScreen extends ConsumerWidget {
                   final exists = ref
                       .read(categoriesProvider)
                       .any(
-                        (final item) => item.name == newName && item.name != cat.name,
+                        (final item) =>
+                            item.name == newName && item.name != cat.name,
                       );
                   if (exists) {
                     ScaffoldMessenger.of(context).showSnackBar(
@@ -948,11 +993,7 @@ class SettingsScreen extends ConsumerWidget {
 
                   ref
                       .read(categoriesProvider.notifier)
-                      .renameCategory(
-                        cat.name,
-                        newName,
-                        selectedColor,
-                      );
+                      .renameCategory(cat.name, newName, selectedColor);
                   HapticFeedback.mediumImpact();
                   Navigator.pop(context);
                 },
@@ -1010,8 +1051,9 @@ class SettingsScreen extends ConsumerWidget {
     required final EntityNameField pluralField,
   }) {
     final l10n = AppLocalizations.of(context);
-    final singular =
-        TextEditingController(text: current.forField(singularField));
+    final singular = TextEditingController(
+      text: current.forField(singularField),
+    );
     final plural = TextEditingController(text: current.forField(pluralField));
     showDialog<void>(
       context: context,
@@ -1076,7 +1118,9 @@ class SettingsScreen extends ConsumerWidget {
     showDialog<void>(
       context: context,
       builder: (final ctx) => AlertDialog(
-        title: Text(l10n.setRenameStateTitle(defaultLearningStateLabels[state]!)),
+        title: Text(
+          l10n.setRenameStateTitle(defaultLearningStateLabels[state]!),
+        ),
         content: TextField(
           controller: controller,
           autofocus: true,
@@ -1123,7 +1167,9 @@ class SettingsScreen extends ConsumerWidget {
                 TextField(
                   controller: controller,
                   autofocus: true,
-                  decoration: InputDecoration(hintText: l10n.setCategoryNameHint),
+                  decoration: InputDecoration(
+                    hintText: l10n.setCategoryNameHint,
+                  ),
                 ),
                 const SizedBox(height: AppSpacing.md),
                 ColorSettingTile(
@@ -1154,9 +1200,7 @@ class SettingsScreen extends ConsumerWidget {
                   final name = controller.text.trim();
                   if (name.isEmpty) {
                     ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text(l10n.setCategoryNameEmpty),
-                      ),
+                      SnackBar(content: Text(l10n.setCategoryNameEmpty)),
                     );
                     return;
                   }
@@ -1197,9 +1241,7 @@ class SettingsScreen extends ConsumerWidget {
         context: context,
         builder: (final ctx) => AlertDialog(
           title: Text(l10n.setCategoryInUseTitle),
-          content: Text(
-            l10n.setCategoryInUseBody(usageCount, category.name),
-          ),
+          content: Text(l10n.setCategoryInUseBody(usageCount, category.name)),
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(ctx),
@@ -1260,7 +1302,7 @@ class _RatingPreviewChip extends StatelessWidget {
     required this.color,
   });
 
-  final IconData icon;
+  final AppIcon icon;
   final String label;
   final Color color;
 
@@ -1278,7 +1320,7 @@ class _RatingPreviewChip extends StatelessWidget {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, size: 14, color: color),
+          AppIconView(icon, size: 14, color: color),
           const SizedBox(width: AppSpacing.xxs),
           Text(
             label,
@@ -1389,7 +1431,9 @@ class _CategoryRow extends StatelessWidget {
     final colorScheme = Theme.of(context).colorScheme;
     final meta = [
       if (isDefault) l10n.setCategoryDefault,
-      usageCount == 0 ? l10n.setCategoryUnused : l10n.setCategoryMoveCount(usageCount),
+      usageCount == 0
+          ? l10n.setCategoryUnused
+          : l10n.setCategoryMoveCount(usageCount),
     ].join(' · ');
 
     return SettingsListRow(
@@ -1402,8 +1446,8 @@ class _CategoryRow extends StatelessWidget {
       ),
       title: name,
       subtitle: meta,
-      trailing: Icon(
-        Icons.chevron_right_rounded,
+      trailing: AppIconView(
+        AppIcon.forward,
         color: colorScheme.secondary,
         size: 18,
       ),
@@ -1453,7 +1497,11 @@ class _SettingsSection extends StatelessWidget {
 }
 
 class _SettingsSubPanel extends StatelessWidget {
-  const _SettingsSubPanel({required this.title, required this.child, this.action});
+  const _SettingsSubPanel({
+    required this.title,
+    required this.child,
+    this.action,
+  });
 
   final String title;
   final Widget child;
@@ -1568,7 +1616,9 @@ class _DataActionTileAsyncState extends State<_DataActionTileAsync> {
                 }
               } on Object catch (e) {
                 if (mounted) {
-                  messenger.showSnackBar(SnackBar(content: Text(l10n.setError('$e'))));
+                  messenger.showSnackBar(
+                    SnackBar(content: Text(l10n.setError('$e'))),
+                  );
                 }
               } finally {
                 if (mounted) setState(() => _loading = false);
@@ -1599,13 +1649,13 @@ class _DataActionTileAsyncState extends State<_DataActionTileAsync> {
             ),
             const Spacer(),
             if (_loading)
-              const SizedBox(
-                width: 18,
-                height: 18,
-                child: AppLoader(size: 6),
-              )
+              const SizedBox(width: 18, height: 18, child: AppLoader(size: 6))
             else
-              Icon(Icons.chevron_right, color: colorScheme.secondary, size: 20),
+              AppIconView(
+                AppIcon.forward,
+                color: colorScheme.secondary,
+                size: 20,
+              ),
           ],
         ),
       ),
@@ -1630,23 +1680,25 @@ class _PhotosAccessTile extends ConsumerWidget {
             SettingsListRow(
               title: _statusDisplayName(l10n, access),
               subtitle: _statusDescription(l10n, access),
-              leading: Icon(
+              leading: AppIconView(
                 _statusIcon(access),
                 size: 20,
                 color: access == PhotoLibraryAccessStatus.authorized
                     ? AppColors.actionGood
                     : colorScheme.secondary,
               ),
-              onTap: access == PhotoLibraryAccessStatus.denied ||
+              onTap:
+                  access == PhotoLibraryAccessStatus.denied ||
                       access == PhotoLibraryAccessStatus.restricted
                   ? () => NativeVideoAlbum().openSettings()
                   : access == PhotoLibraryAccessStatus.notDetermined
-                      ? () => ref.invalidate(photoLibraryAccessStatusProvider)
-                      : null,
-              trailing: access == PhotoLibraryAccessStatus.denied ||
+                  ? () => ref.invalidate(photoLibraryAccessStatusProvider)
+                  : null,
+              trailing:
+                  access == PhotoLibraryAccessStatus.denied ||
                       access == PhotoLibraryAccessStatus.restricted
-                  ? Icon(
-                      Icons.open_in_new,
+                  ? AppIconView(
+                      AppIcon.share,
                       size: 16,
                       color: colorScheme.secondary,
                     )
@@ -1672,7 +1724,7 @@ class _PhotosAccessTile extends ConsumerWidget {
             SettingsListRow(
               title: l10n.setPanelPhotoLibrary,
               subtitle: l10n.setPhotoUnableCheck,
-              leading: const Icon(Icons.error_outline, size: 20),
+              leading: const AppIconView(AppIcon.error, size: 20),
             ),
           ],
         ),
@@ -1685,7 +1737,8 @@ class _PhotosAccessTile extends ConsumerWidget {
     final PhotoLibraryAccessStatus status,
   ) {
     return switch (status) {
-      PhotoLibraryAccessStatus.notDetermined => l10n.setPhotoStatusNotDetermined,
+      PhotoLibraryAccessStatus.notDetermined =>
+        l10n.setPhotoStatusNotDetermined,
       PhotoLibraryAccessStatus.restricted => l10n.setPhotoStatusRestricted,
       PhotoLibraryAccessStatus.denied => l10n.setPhotoStatusDenied,
       PhotoLibraryAccessStatus.authorized => l10n.setPhotoStatusFullAccess,
@@ -1708,14 +1761,14 @@ class _PhotosAccessTile extends ConsumerWidget {
     };
   }
 
-  static IconData _statusIcon(final PhotoLibraryAccessStatus status) {
+  static AppIcon _statusIcon(final PhotoLibraryAccessStatus status) {
     return switch (status) {
-      PhotoLibraryAccessStatus.notDetermined => Icons.help_outline,
-      PhotoLibraryAccessStatus.restricted => Icons.lock_outline,
-      PhotoLibraryAccessStatus.denied => Icons.block,
-      PhotoLibraryAccessStatus.authorized => Icons.check_circle_outline,
-      PhotoLibraryAccessStatus.limited => Icons.photo_library_outlined,
-      PhotoLibraryAccessStatus.unknown => Icons.error_outline,
+      PhotoLibraryAccessStatus.notDetermined => AppIcon.help,
+      PhotoLibraryAccessStatus.restricted => AppIcon.warning,
+      PhotoLibraryAccessStatus.denied => AppIcon.close,
+      PhotoLibraryAccessStatus.authorized => AppIcon.check,
+      PhotoLibraryAccessStatus.limited => AppIcon.photo,
+      PhotoLibraryAccessStatus.unknown => AppIcon.error,
     };
   }
 }
@@ -1909,9 +1962,7 @@ class _FsrsToggle extends ConsumerWidget {
               ),
               const SizedBox(height: 4),
               Text(
-                isEnabled
-                    ? l10n.setFsrsEnabledDesc
-                    : l10n.setFsrsDisabledDesc,
+                isEnabled ? l10n.setFsrsEnabledDesc : l10n.setFsrsDisabledDesc,
                 style: AppTypography.caption.copyWith(
                   color: colorScheme.secondary.withValues(alpha: 0.6),
                   fontSize: 11,
@@ -2078,4 +2129,3 @@ class _StatsTabToggle extends ConsumerWidget {
     );
   }
 }
-

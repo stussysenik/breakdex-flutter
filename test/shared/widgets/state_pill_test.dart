@@ -1,3 +1,4 @@
+import 'package:breakdex/core/design/icons.dart';
 import 'package:breakdex/core/design/theme.dart';
 import 'package:breakdex/core/models/learning_state.dart';
 import 'package:breakdex/core/providers.dart';
@@ -7,6 +8,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+
+import '../../helpers/icon_finders.dart';
 
 void main() {
   testWidgets('state pill uses the configured semantic color and label', (
@@ -75,7 +78,7 @@ void main() {
     await tester.tap(find.byType(StatePill));
     await tester.pump();
 
-    expect(find.byIcon(Icons.expand_more), findsOneWidget);
+    expect(findAppIcon(AppIcon.expandMore), findsOneWidget);
     expect(tapped, isTrue);
   });
 }

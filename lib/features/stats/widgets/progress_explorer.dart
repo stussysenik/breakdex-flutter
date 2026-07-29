@@ -19,6 +19,7 @@ import 'package:breakdex/core/utils/share_sheet.dart';
 import 'package:breakdex/shared/widgets/app_loader.dart';
 import 'package:breakdex/shared/widgets/app_segmented_control.dart';
 import 'package:breakdex/shared/widgets/wip_badge.dart';
+import 'package:breakdex/core/design/icons.dart';
 import 'package:breakdex/features/stats/providers/stats_providers.dart';
 import 'package:breakdex/features/stats/widgets/heat_map_grid.dart';
 import 'package:breakdex/features/stats/widgets/stat_card.dart';
@@ -306,11 +307,7 @@ class _ProgressHeader extends StatelessWidget {
           ),
         ),
         const SizedBox(width: AppSpacing.md),
-        Row(
-          children: [
-            _ShareButton(stats: stats),
-          ],
-        ),
+        Row(children: [_ShareButton(stats: stats)]),
       ],
     );
   }
@@ -485,24 +482,24 @@ class _ExplorerControls extends ConsumerWidget {
               final subjectItems = [
                 AppSegmentedControlItem(
                   value: _ProgressSubjectMode.moves,
-                  icon: Icons.sports_martial_arts_rounded,
+                  icon: AppIcon.move.resolve(context),
                   label: entityNames.movePlural,
                 ),
                 AppSegmentedControlItem(
                   value: _ProgressSubjectMode.combos,
-                  icon: Icons.linear_scale_rounded,
+                  icon: AppIcon.menu.resolve(context),
                   label: entityNames.comboPlural,
                 ),
               ];
-              const structureItems = [
+              final structureItems = [
                 AppSegmentedControlItem(
                   value: _ProgressStructureMode.tree,
-                  icon: Icons.account_tree_outlined,
+                  icon: AppIcon.graph.resolve(context),
                   label: 'Tree',
                 ),
                 AppSegmentedControlItem(
                   value: _ProgressStructureMode.graph,
-                  icon: Icons.hub_outlined,
+                  icon: AppIcon.graph.resolve(context),
                   label: 'Graph',
                 ),
               ];
@@ -1190,8 +1187,8 @@ class _ComboGraphExplorer extends StatelessWidget {
                               ),
                               if (index != selectedGroup.steps.length - 1) ...[
                                 const SizedBox(width: AppSpacing.xs),
-                                Icon(
-                                  Icons.arrow_forward_rounded,
+                                AppIconView(
+                                  AppIcon.forward,
                                   size: 18,
                                   color: colorScheme.secondary,
                                 ),
@@ -1885,7 +1882,10 @@ _RecommendationSummary? _recommendedMoveParent(final StatsBundle stats) {
   );
 }
 
-String _moveResumeSubtitle(final MoveProgressGroup group, final MoveProgressItem item) {
+String _moveResumeSubtitle(
+  final MoveProgressGroup group,
+  final MoveProgressItem item,
+) {
   return switch (item.dueBucket) {
     ProgressDueBucket.now =>
       '${group.dueNowCount} move${group.dueNowCount == 1 ? '' : 's'} ready now in this parent.',
@@ -1949,7 +1949,10 @@ String _bucketReason(final ProgressDueBucket bucket) => switch (bucket) {
   ProgressDueBucket.unscheduled => 'Still unstarted',
 };
 
-Color _dueBucketColor(final BuildContext context, final ProgressDueBucket bucket) {
+Color _dueBucketColor(
+  final BuildContext context,
+  final ProgressDueBucket bucket,
+) {
   final colorScheme = Theme.of(context).colorScheme;
   return switch (bucket) {
     ProgressDueBucket.now => AppColors.actionAgain,
@@ -2023,12 +2026,8 @@ class _ShareButtonState extends State<_ShareButton> {
   Widget build(final BuildContext context) {
     return IconButton(
       icon: _sharing
-          ? const SizedBox(
-              width: 18,
-              height: 18,
-              child: AppLoader(size: 6),
-            )
-          : const Icon(Icons.ios_share, size: 22),
+          ? const SizedBox(width: 18, height: 18, child: AppLoader(size: 6))
+          : const AppIconView(AppIcon.share, size: 22),
       tooltip: 'Share progress',
       onPressed: _sharing ? null : _share,
     );

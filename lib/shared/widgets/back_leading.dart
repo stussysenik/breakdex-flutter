@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import 'package:breakdex/core/design/spacing.dart';
 import 'package:breakdex/core/design/typography.dart';
+import 'package:breakdex/core/design/icons.dart';
 
 /// The labelled back affordance used by pushed detail routes.
 ///
@@ -58,7 +59,7 @@ class BackLeading extends StatelessWidget {
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(Icons.chevron_left, color: colorScheme.secondary, size: 20),
+              AppIconView(AppIcon.back, color: colorScheme.secondary, size: 20),
               Flexible(
                 child: ExcludeSemantics(
                   child: Text(

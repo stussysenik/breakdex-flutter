@@ -3,6 +3,7 @@ import 'package:breakdex/core/models/learning_state.dart';
 import 'package:breakdex/core/models/learning_state_colors.dart';
 import 'package:breakdex/core/services/settings_service.dart';
 import 'package:breakdex/core/design/colors.dart';
+import 'package:breakdex/core/design/icons.dart';
 import 'package:breakdex/core/design/spacing.dart';
 import 'package:breakdex/core/design/typography.dart';
 
@@ -251,7 +252,10 @@ class AppSemanticTheme extends ThemeExtension<AppSemanticTheme> {
   }
 
   @override
-  AppSemanticTheme lerp(final ThemeExtension<AppSemanticTheme>? other, final double t) {
+  AppSemanticTheme lerp(
+    final ThemeExtension<AppSemanticTheme>? other,
+    final double t,
+  ) {
     if (other is! AppSemanticTheme) return this;
     return AppSemanticTheme(
       isMonoOutline: t < 0.5 ? isMonoOutline : other.isMonoOutline,
@@ -271,7 +275,8 @@ class AppSemanticTheme extends ThemeExtension<AppSemanticTheme> {
 extension AppSemanticThemeContext on BuildContext {
   AppSemanticTheme get semanticTheme => AppSemanticTheme.of(this);
 
-  Color stateColor(final LearningState state) => semanticTheme.colorForState(state);
+  Color stateColor(final LearningState state) =>
+      semanticTheme.colorForState(state);
 }
 
 abstract final class AppTheme {
@@ -281,6 +286,7 @@ abstract final class AppTheme {
     final LearningStateColors stateColors = LearningStateColors.defaults,
     final ViewingMode viewingMode = ViewingMode.standard,
     final AccessiblePalette palette = AccessiblePalette.standard,
+    final IconPackId iconPack = IconPackId.material,
   }) {
     // monoOutline and monochrome both render on the grayscale surface ramp.
     final gray =
@@ -299,6 +305,7 @@ abstract final class AppTheme {
       stateColors: stateColors,
       viewingMode: viewingMode,
       palette: palette,
+      iconPack: iconPack,
     );
   }
 
@@ -308,6 +315,7 @@ abstract final class AppTheme {
     final LearningStateColors stateColors = LearningStateColors.defaults,
     final ViewingMode viewingMode = ViewingMode.standard,
     final AccessiblePalette palette = AccessiblePalette.standard,
+    final IconPackId iconPack = IconPackId.material,
   }) {
     final gray =
         viewingMode == ViewingMode.monoOutline ||
@@ -325,6 +333,7 @@ abstract final class AppTheme {
       stateColors: stateColors,
       viewingMode: viewingMode,
       palette: palette,
+      iconPack: iconPack,
     );
   }
 
@@ -341,6 +350,7 @@ abstract final class AppTheme {
     required final LearningStateColors stateColors,
     required final ViewingMode viewingMode,
     required final AccessiblePalette palette,
+    required final IconPackId iconPack,
   }) {
     final isMonoOutline = viewingMode == ViewingMode.monoOutline;
     // Any grayscale mode (marker outline or monochrome palette) tones the accent
@@ -378,7 +388,7 @@ abstract final class AppTheme {
       brightness: brightness,
       useMaterial3: true,
       colorScheme: colorScheme,
-      extensions: [semanticTheme],
+      extensions: [semanticTheme, AppIconPackTheme(iconPack.build())],
       scaffoldBackgroundColor: bg,
       textTheme: textTheme,
       appBarTheme: AppBarTheme(

@@ -13,6 +13,7 @@ import 'package:breakdex/core/providers.dart';
 import 'package:breakdex/core/services/video_path_resolver.dart';
 import 'package:breakdex/core/utils/diagnostics.dart';
 import 'package:breakdex/core/utils/time_format.dart';
+import 'package:breakdex/core/design/icons.dart';
 
 /// Jots longer than this read better at bodyMedium (16); shorter ones sit
 /// on bodySmall (14). The 14/16 fluid-type rule from the journal grid.
@@ -20,8 +21,8 @@ const _fluidTypeThreshold = 120;
 
 final _journalEntriesProvider =
     StreamProvider.family<List<ComboNoteEntry>, String>((final ref, final id) {
-  return ref.watch(comboNoteEntriesDaoProvider).watchByComboId(id);
-});
+      return ref.watch(comboNoteEntriesDaoProvider).watchByComboId(id);
+    });
 
 /// The combo journal: append-only ledger on a strict 56/16/fluid grid —
 /// 56px timestamp column, 16px gutter, fluid body.
@@ -179,8 +180,7 @@ class _VideoRefChip extends StatelessWidget {
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(Icons.play_circle_outline,
-                size: 16, color: colorScheme.primary),
+            AppIconView(AppIcon.play, size: 16, color: colorScheme.primary),
             const SizedBox(width: AppSpacing.xxs),
             Flexible(
               child: Text(

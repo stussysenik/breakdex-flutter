@@ -30,7 +30,9 @@ import 'package:breakdex/core/services/categories_service.dart'
 import 'package:breakdex/core/sync/orphan_restore_service.dart'
     show OrphanRestoreService;
 import 'package:breakdex/core/services/appwrite_auth_providers.dart';
-import 'package:breakdex/core/services/settings_service.dart' show sharedPreferencesProvider;
+import 'package:breakdex/core/design/icons.dart';
+import 'package:breakdex/core/services/settings_service.dart'
+    show sharedPreferencesProvider;
 import 'package:breakdex/core/services/sync_service.dart';
 import 'package:breakdex/core/sync/backfill/sync_backfill_service.dart'
     show BackfillReport, SyncBackfillService;
@@ -39,7 +41,11 @@ import 'package:breakdex/core/sync/backfill/sync_backfill_service.dart'
 /// `fsrsCards` — it is derived server-side and never pushed, so read-only), and
 /// the dual-**read** pref key. Keys come straight from [SyncService] constants.
 class _CutoverEntity {
-  const _CutoverEntity({required this.label, this.writeKey, required this.readKey});
+  const _CutoverEntity({
+    required this.label,
+    this.writeKey,
+    required this.readKey,
+  });
 
   final String label;
   final String? writeKey;
@@ -125,8 +131,9 @@ class _SyncCutoverPanelState extends ConsumerState<SyncCutoverPanel> {
             for (final entity in _kCutoverEntities) ...[
               _EntityCard(
                 entity: entity,
-                writeValue:
-                    entity.writeKey == null ? null : _valueOf(entity.writeKey!),
+                writeValue: entity.writeKey == null
+                    ? null
+                    : _valueOf(entity.writeKey!),
                 readValue: _valueOf(entity.readKey),
                 onWrite: entity.writeKey == null
                     ? null
@@ -285,15 +292,15 @@ class _BackfillSectionState extends ConsumerState<_BackfillSection> {
   static List<Future<BackfillReport> Function()> _steps(
     final SyncBackfillService service,
   ) => [
-        service.backfillMoves,
-        service.backfillCombos,
-        service.backfillComboMoves,
-        service.backfillReviews,
-        service.backfillDecks,
-        service.backfillDeckMoves,
-        service.backfillMoveNoteEntries,
-        service.backfillComboNoteEntries,
-      ];
+    service.backfillMoves,
+    service.backfillCombos,
+    service.backfillComboMoves,
+    service.backfillReviews,
+    service.backfillDecks,
+    service.backfillDeckMoves,
+    service.backfillMoveNoteEntries,
+    service.backfillComboNoteEntries,
+  ];
 
   Future<void> _run() async {
     setState(() {
@@ -354,7 +361,9 @@ class _BackfillSectionState extends ConsumerState<_BackfillSection> {
             const SizedBox(height: AppSpacing.sm),
             Text(
               'Sign in first — backfill writes into the signed-in user\'s space.',
-              style: AppTypography.caption.copyWith(color: colorScheme.secondary),
+              style: AppTypography.caption.copyWith(
+                color: colorScheme.secondary,
+              ),
             ),
           ],
           for (final report in _reports) ...[
@@ -409,8 +418,9 @@ class _HydrateSectionState extends ConsumerState<_HydrateSection> {
       _error = null;
     });
     try {
-      final reports =
-          await ref.read(syncServiceProvider).hydrateAllFromBackend();
+      final reports = await ref
+          .read(syncServiceProvider)
+          .hydrateAllFromBackend();
       if (mounted) setState(() => _reports = reports);
     } on Object catch (error) {
       if (mounted) setState(() => _error = '$error');
@@ -458,7 +468,9 @@ class _HydrateSectionState extends ConsumerState<_HydrateSection> {
             const SizedBox(height: AppSpacing.sm),
             Text(
               'Sign in first — hydrate reads the signed-in user\'s space.',
-              style: AppTypography.caption.copyWith(color: colorScheme.secondary),
+              style: AppTypography.caption.copyWith(
+                color: colorScheme.secondary,
+              ),
             ),
           ],
           for (final report in _reports) ...[
@@ -531,7 +543,9 @@ class _DiagnosticsSectionState extends ConsumerState<_DiagnosticsSection> {
       debugPrint('[SyncDiagnostics] reconciled $inserted local copy row(s)');
       final report = await ref.read(syncDiagnosticsProvider).dump();
       if (mounted) {
-        setState(() => _report = 'Inserted $inserted local copy row(s).\n\n$report');
+        setState(
+          () => _report = 'Inserted $inserted local copy row(s).\n\n$report',
+        );
       }
     } on Object catch (error) {
       if (mounted) setState(() => _error = '$error');
@@ -552,12 +566,14 @@ class _DiagnosticsSectionState extends ConsumerState<_DiagnosticsSection> {
       final restore = await ref.read(orphanRestoreServiceProvider).restore();
       debugPrint('[SyncDiagnostics] orphan restore:\n$restore');
       if (restore.restored.isNotEmpty &&
-          !ref.read(categoriesProvider).any(
-              (final c) => c.name == OrphanRestoreService.recoveredCategory)) {
-        await ref.read(categoriesProvider.notifier).addCategory(
-              OrphanRestoreService.recoveredCategory,
-              Colors.teal,
-            );
+          !ref
+              .read(categoriesProvider)
+              .any(
+                (final c) => c.name == OrphanRestoreService.recoveredCategory,
+              )) {
+        await ref
+            .read(categoriesProvider.notifier)
+            .addCategory(OrphanRestoreService.recoveredCategory, Colors.teal);
       }
       final report = await ref.read(syncDiagnosticsProvider).dump();
       if (mounted) setState(() => _report = '$restore\n\n$report');
@@ -577,13 +593,15 @@ class _DiagnosticsSectionState extends ConsumerState<_DiagnosticsSection> {
       _error = null;
     });
     try {
-      final purged =
-          await ref.read(syncOperationsDaoProvider).purgeResolvedFailed();
+      final purged = await ref
+          .read(syncOperationsDaoProvider)
+          .purgeResolvedFailed();
       debugPrint('[SyncDiagnostics] purged $purged stale failed op row(s)');
       final report = await ref.read(syncDiagnosticsProvider).dump();
       if (mounted) {
         setState(
-            () => _report = 'Purged $purged stale failed op row(s).\n\n$report');
+          () => _report = 'Purged $purged stale failed op row(s).\n\n$report',
+        );
       }
     } on Object catch (error) {
       if (mounted) setState(() => _error = '$error');
@@ -696,13 +714,15 @@ class _IdentityFooter extends StatelessWidget {
       ),
       child: Row(
         children: [
-          Icon(Icons.person_outline, size: 18, color: colorScheme.secondary),
+          AppIconView(AppIcon.settings, size: 18, color: colorScheme.secondary),
           const SizedBox(width: AppSpacing.sm),
           Expanded(
             child: Text(
               'Mutating space: $who',
               key: const ValueKey('sync-cutover-identity'),
-              style: AppTypography.caption.copyWith(color: colorScheme.secondary),
+              style: AppTypography.caption.copyWith(
+                color: colorScheme.secondary,
+              ),
             ),
           ),
         ],

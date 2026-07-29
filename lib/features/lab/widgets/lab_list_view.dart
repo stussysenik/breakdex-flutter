@@ -9,6 +9,7 @@ import 'package:breakdex/core/design/typography.dart';
 import 'package:breakdex/shared/widgets/app_loader.dart';
 import 'package:breakdex/features/lab/providers/lab_providers.dart';
 import 'package:breakdex/features/lab/widgets/lab_card.dart';
+import 'package:breakdex/core/design/icons.dart';
 
 /// List view of labs, ordered by most recently updated.
 ///
@@ -33,12 +34,10 @@ class LabListView extends ConsumerWidget {
         : ref.watch(labsStreamProvider);
 
     return labsAsync.when(
-      loading: () => const SliverFillRemaining(
-        child: Center(child: AppLoader()),
-      ),
-      error: (final e, _) => SliverFillRemaining(
-        child: Center(child: Text('Error: $e')),
-      ),
+      loading: () =>
+          const SliverFillRemaining(child: Center(child: AppLoader())),
+      error: (final e, _) =>
+          SliverFillRemaining(child: Center(child: Text('Error: $e'))),
       data: (final labs) {
         if (labs.isEmpty) {
           return SliverFillRemaining(
@@ -49,27 +48,23 @@ class LabListView extends ConsumerWidget {
         // No horizontal padding here: the frame's content band already
         // supplies the gutter, and re-applying it doubles the inset.
         return SliverList.builder(
-            itemCount: labs.length,
-            itemBuilder: (_, final index) {
-              final lab = labs[index];
-              return LabCard(
-                lab: lab,
-                onTap: () => context.push('/lab/${lab.id}'),
-              )
-                  .animate()
-                  .fadeIn(
-                    duration: AppMotion.moderate01,
-                    delay: Duration(
-                      milliseconds: index.clamp(0, 15) * 40,
-                    ),
-                  )
-                  .slideY(
-                    begin: 0.03,
-                    duration: AppMotion.moderate02,
-                    delay: Duration(
-                      milliseconds: index.clamp(0, 15) * 40,
-                    ),
-                  );
+          itemCount: labs.length,
+          itemBuilder: (_, final index) {
+            final lab = labs[index];
+            return LabCard(
+                  lab: lab,
+                  onTap: () => context.push('/lab/${lab.id}'),
+                )
+                .animate()
+                .fadeIn(
+                  duration: AppMotion.moderate01,
+                  delay: Duration(milliseconds: index.clamp(0, 15) * 40),
+                )
+                .slideY(
+                  begin: 0.03,
+                  duration: AppMotion.moderate02,
+                  delay: Duration(milliseconds: index.clamp(0, 15) * 40),
+                );
           },
         );
       },
@@ -79,8 +74,10 @@ class LabListView extends ConsumerWidget {
 
 /// Type-filtered stream provider — watches [LabsDao.watchByType] for a
 /// specific labType ('project' or 'set').
-final _labsByTypeProvider =
-    StreamProvider.family<List<Lab>, String>((final ref, final labType) {
+final _labsByTypeProvider = StreamProvider.family<List<Lab>, String>((
+  final ref,
+  final labType,
+) {
   return ref.watch(labsDaoProvider).watchByType(labType);
 });
 
@@ -97,17 +94,17 @@ class _LabEmptyState extends StatelessWidget {
 
     final (icon, title, subtitle) = switch (labType) {
       'project' => (
-        Icons.science_outlined,
+        AppIcon.lab.resolve(context),
         'No projects yet',
         'Start your first training project',
       ),
       'set' => (
-        Icons.playlist_play_rounded,
+        AppIcon.combo.resolve(context),
         'No sets yet',
         'Start your first set',
       ),
       _ => (
-        Icons.science_outlined,
+        AppIcon.lab.resolve(context),
         'No labs yet',
         'Start your first lab',
       ),

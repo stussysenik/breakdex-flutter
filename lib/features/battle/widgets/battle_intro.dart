@@ -6,6 +6,7 @@ import 'package:flutter/services.dart';
 import 'package:breakdex/core/design/spacing.dart';
 import 'package:breakdex/core/design/typography.dart';
 import 'package:breakdex/features/battle/providers/battle_providers.dart';
+import 'package:breakdex/core/design/icons.dart';
 
 class BattleIntro extends StatelessWidget {
   const BattleIntro({
@@ -29,7 +30,11 @@ class BattleIntro extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           const Spacer(),
-          Icon(Icons.bolt_rounded, size: 64, color: Theme.of(context).colorScheme.primary),
+          AppIconView(
+            AppIcon.flashcard,
+            size: 64,
+            color: Theme.of(context).colorScheme.primary,
+          ),
           const SizedBox(height: AppSpacing.lg),
           Semantics(
             header: true,
@@ -44,9 +49,9 @@ class BattleIntro extends StatelessWidget {
           const SizedBox(height: AppSpacing.sm),
           Text(
             'Rate moves as fast as you can.\nGOOD streaks multiply your score!',
-            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: cs.secondary,
-                ),
+            style: Theme.of(
+              context,
+            ).textTheme.bodyMedium?.copyWith(color: cs.secondary),
             textAlign: TextAlign.center,
           ),
           const SizedBox(height: AppSpacing.xl),
@@ -126,20 +131,20 @@ class _DifficultyCard extends StatelessWidget {
                   Text(
                     difficulty.label,
                     style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                          fontWeight: FontWeight.w600,
-                        ),
+                      fontWeight: FontWeight.w600,
+                    ),
                   ),
                   Text(
                     '${difficulty.duration} seconds',
-                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: cs.secondary,
-                        ),
+                    style: Theme.of(
+                      context,
+                    ).textTheme.bodySmall?.copyWith(color: cs.secondary),
                   ),
                 ],
               ),
             ),
             if (isSelected)
-              Icon(Icons.check_circle, color: cs.primary, size: 24),
+              AppIconView(AppIcon.check, color: cs.primary, size: 24),
           ],
         ),
       ),

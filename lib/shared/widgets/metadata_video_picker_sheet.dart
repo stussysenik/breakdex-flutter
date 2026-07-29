@@ -14,9 +14,11 @@ import 'package:path_provider/path_provider.dart';
 import 'package:breakdex/core/database/database.dart';
 import 'package:breakdex/core/design/spacing.dart';
 import 'package:breakdex/core/design/typography.dart';
+import 'package:breakdex/core/design/icons.dart';
 import 'package:breakdex/core/providers.dart';
 import 'package:breakdex/core/services/video_service.dart';
-import 'package:breakdex/core/services/storage_action_machine.dart' hide assetHashServiceProvider;
+import 'package:breakdex/core/services/storage_action_machine.dart'
+    hide assetHashServiceProvider;
 import 'package:breakdex/core/services/video_path_resolver.dart';
 import 'package:breakdex/core/utils/app_clock.dart';
 import 'package:breakdex/shared/widgets/app_loader.dart';
@@ -27,7 +29,10 @@ class MetadataVideoPickerSheet extends ConsumerStatefulWidget {
   const MetadataVideoPickerSheet({super.key});
 
   static Future<VideoPickResult?> show(final BuildContext context) {
-    DiagnosticsLog.info('MetadataVideoPickerSheet', 'Opening high-fidelity discovery picker');
+    DiagnosticsLog.info(
+      'MetadataVideoPickerSheet',
+      'Opening high-fidelity discovery picker',
+    );
     return showModalBottomSheet<VideoPickResult>(
       context: context,
       isScrollControlled: true,
@@ -38,13 +43,16 @@ class MetadataVideoPickerSheet extends ConsumerStatefulWidget {
   }
 
   @override
-  ConsumerState<MetadataVideoPickerSheet> createState() => _MetadataVideoPickerSheetState();
+  ConsumerState<MetadataVideoPickerSheet> createState() =>
+      _MetadataVideoPickerSheetState();
 }
 
-class _MetadataVideoPickerSheetState extends ConsumerState<MetadataVideoPickerSheet> with SingleTickerProviderStateMixin {
+class _MetadataVideoPickerSheetState
+    extends ConsumerState<MetadataVideoPickerSheet>
+    with SingleTickerProviderStateMixin {
   late TabController _tabController;
   late ScrollController _scrollController;
-  
+
   List<MetadataAsset> _libraryAssets = [];
   List<MetadataAsset> _managedAssets = [];
   List<MetadataAsset>? _appAssets;
@@ -94,7 +102,8 @@ class _MetadataVideoPickerSheetState extends ConsumerState<MetadataVideoPickerSh
   }
 
   void _onScroll() {
-    if (_scrollController.position.pixels >= _scrollController.position.maxScrollExtent - 600) {
+    if (_scrollController.position.pixels >=
+        _scrollController.position.maxScrollExtent - 600) {
       if (!_loadingMore && _hasMore && _tabController.index == 0) {
         _loadMore();
       }
@@ -106,17 +115,21 @@ class _MetadataVideoPickerSheetState extends ConsumerState<MetadataVideoPickerSh
       _loading = true;
       _error = null;
     });
-    
+
     try {
       final results = await Future.wait([
-        ref.read(videoServiceProvider).fetchPhotoLibraryVideos(offset: 0, limit: _pageSize),
+        ref
+            .read(videoServiceProvider)
+            .fetchPhotoLibraryVideos(offset: 0, limit: _pageSize),
         _fetchAppVideos(),
         _fetchManagedVideos(),
       ]);
-      
+
       if (mounted) {
         setState(() {
-          _libraryAssets = results[0].where((final a) => a.duration > 0).toList();
+          _libraryAssets = results[0]
+              .where((final a) => a.duration > 0)
+              .toList();
           _appAssets = results[1];
           _managedAssets = results[2];
           _offset = results[0].length;
@@ -126,7 +139,11 @@ class _MetadataVideoPickerSheetState extends ConsumerState<MetadataVideoPickerSh
       }
       unawaited(_loadMembership());
     } on Object catch (e) {
-      if (mounted) setState(() { _error = e.toString(); _loading = false; });
+      if (mounted)
+        setState(() {
+          _error = e.toString();
+          _loading = false;
+        });
     }
   }
 
@@ -135,7 +152,8 @@ class _MetadataVideoPickerSheetState extends ConsumerState<MetadataVideoPickerSh
   Future<void> _loadMembership() async {
     try {
       final moves = await ref.read(movesDaoProvider).getAll();
-      if (mounted) setState(() => _membership = MoveMembershipIndex.fromMoves(moves));
+      if (mounted)
+        setState(() => _membership = MoveMembershipIndex.fromMoves(moves));
     } on Object catch (_) {
       // Overlay stays empty — the picker still imports.
     }
@@ -163,7 +181,8 @@ class _MetadataVideoPickerSheetState extends ConsumerState<MetadataVideoPickerSh
     if (byManaged != null) return byManaged;
     if (asset.isLocal) {
       final hash = await _contentHashForLocal(asset.localIdentifier);
-      if (hash != null) return _membership.memberMoveId(asset, contentHash: hash);
+      if (hash != null)
+        return _membership.memberMoveId(asset, contentHash: hash);
     }
     return null;
   }
@@ -171,13 +190,12 @@ class _MetadataVideoPickerSheetState extends ConsumerState<MetadataVideoPickerSh
   Future<void> _loadMore() async {
     if (_loadingMore || !_hasMore) return;
     setState(() => _loadingMore = true);
-    
+
     try {
-      final more = await ref.read(videoServiceProvider).fetchPhotoLibraryVideos(
-        offset: _offset, 
-        limit: _pageSize,
-      );
-      
+      final more = await ref
+          .read(videoServiceProvider)
+          .fetchPhotoLibraryVideos(offset: _offset, limit: _pageSize);
+
       if (mounted) {
         setState(() {
           final moreVideos = more.where((final a) => a.duration > 0).toList();
@@ -194,14 +212,20 @@ class _MetadataVideoPickerSheetState extends ConsumerState<MetadataVideoPickerSh
 
   Future<List<MetadataAsset>> _fetchManagedVideos() async {
     try {
-      final result = await ref.read(nativeVideoAlbumProvider).discoverRecoverableManagedAssets();
-      return result.assets.map((final a) => MetadataAsset(
-        localIdentifier: a.assetLocalIdentifier,
-        originalFileName: a.filename,
-        duration: 0.0,
-        width: 0,
-        height: 0,
-      )).toList();
+      final result = await ref
+          .read(nativeVideoAlbumProvider)
+          .discoverRecoverableManagedAssets();
+      return result.assets
+          .map(
+            (final a) => MetadataAsset(
+              localIdentifier: a.assetLocalIdentifier,
+              originalFileName: a.filename,
+              duration: 0.0,
+              width: 0,
+              height: 0,
+            ),
+          )
+          .toList();
     } on Object catch (_) {
       return [];
     }
@@ -212,10 +236,10 @@ class _MetadataVideoPickerSheetState extends ConsumerState<MetadataVideoPickerSh
       final docsPath = VideoPathResolver.documentsPath.isNotEmpty
           ? VideoPathResolver.documentsPath
           : (await getApplicationDocumentsDirectory()).path;
-          
+
       final movesDir = Directory(p.join(docsPath, 'Moves'));
       final combosDir = Directory(p.join(docsPath, 'Combos'));
-      
+
       final List<FileSystemEntity> entities = [];
       if (await movesDir.exists()) {
         entities.addAll(await movesDir.list(recursive: true).toList());
@@ -225,28 +249,37 @@ class _MetadataVideoPickerSheetState extends ConsumerState<MetadataVideoPickerSh
       }
 
       final List<MetadataAsset> assets = [];
-      
+
       for (final entity in entities) {
         if (entity is File) {
           final path = entity.path.toLowerCase();
-          if (path.contains('/.thumbs/') || path.contains('/.ds_store')) continue;
-          
-          if (path.endsWith('.mp4') || path.endsWith('.mov') || path.endsWith('.m4v')) {
+          if (path.contains('/.thumbs/') || path.contains('/.ds_store'))
+            continue;
+
+          if (path.endsWith('.mp4') ||
+              path.endsWith('.mov') ||
+              path.endsWith('.m4v')) {
             final stat = await entity.stat();
-            assets.add(MetadataAsset(
-              localIdentifier: entity.path, 
-              originalFileName: p.basename(entity.path),
-              creationDate: stat.changed,
-              duration: 1, 
-              width: 0,
-              height: 0,
-              isLocal: true,
-            ));
+            assets.add(
+              MetadataAsset(
+                localIdentifier: entity.path,
+                originalFileName: p.basename(entity.path),
+                creationDate: stat.changed,
+                duration: 1,
+                width: 0,
+                height: 0,
+                isLocal: true,
+              ),
+            );
           }
         }
       }
-      
-      assets.sort((final a, final b) => (b.creationDate ?? DateTime(0)).compareTo(a.creationDate ?? DateTime(0)));
+
+      assets.sort(
+        (final a, final b) => (b.creationDate ?? DateTime(0)).compareTo(
+          a.creationDate ?? DateTime(0),
+        ),
+      );
       return assets;
     } on Object catch (_) {
       return [];
@@ -305,18 +338,18 @@ class _MetadataVideoPickerSheetState extends ConsumerState<MetadataVideoPickerSh
           mainAxisSize: MainAxisSize.min,
           children: [
             const ListTile(
-              leading: Icon(Icons.video_library_rounded),
+              leading: AppIconView(AppIcon.video),
               title: Text('Already in Breakdex'),
               subtitle: Text('This video is already a move.'),
             ),
             const Divider(height: 1),
             ListTile(
-              leading: const Icon(Icons.open_in_new_rounded),
+              leading: const AppIconView(AppIcon.link),
               title: const Text('Open existing move'),
               onTap: () => Navigator.pop(ctx, _MemberChoice.openExisting),
             ),
             ListTile(
-              leading: const Icon(Icons.file_copy_rounded),
+              leading: const AppIconView(AppIcon.copy),
               title: const Text('Import again'),
               onTap: () => Navigator.pop(ctx, _MemberChoice.importAgain),
             ),
@@ -353,22 +386,24 @@ class _MetadataVideoPickerSheetState extends ConsumerState<MetadataVideoPickerSh
     });
     // PHAsset imports report progress on the native event channel — the
     // iCloud download fraction arrives here, not via the storage machine.
-    _nativeProgressSub = ref.read(videoServiceProvider).importProgress.listen(
-      (final fraction) {
-        if (mounted) {
-          _stallDetector?.note(fraction);
-          setState(() => _currentProgress = StorageProgress(
-                progress: fraction.clamp(0.0, 1.0),
-                stage: fraction >= 1.0 ? 'Importing' : 'Downloading',
-              ));
-        }
-      },
-    );
+    _nativeProgressSub = ref.read(videoServiceProvider).importProgress.listen((
+      final fraction,
+    ) {
+      if (mounted) {
+        _stallDetector?.note(fraction);
+        setState(
+          () => _currentProgress = StorageProgress(
+            progress: fraction.clamp(0.0, 1.0),
+            stage: fraction >= 1.0 ? 'Importing' : 'Downloading',
+          ),
+        );
+      }
+    });
 
     final navigator = Navigator.of(context);
     try {
       VideoPickResult? result;
-      
+
       if (asset.isLocal) {
         result = VideoPickResult(
           localPath: asset.localIdentifier,
@@ -376,7 +411,9 @@ class _MetadataVideoPickerSheetState extends ConsumerState<MetadataVideoPickerSh
           creationDate: asset.creationDate,
         );
       } else {
-        result = await ref.read(videoServiceProvider).importSpecificAsset(asset.localIdentifier);
+        result = await ref
+            .read(videoServiceProvider)
+            .importSpecificAsset(asset.localIdentifier);
       }
 
       _stallDetector?.stop();
@@ -421,7 +458,9 @@ class _MetadataVideoPickerSheetState extends ConsumerState<MetadataVideoPickerSh
                   controller: _tabController,
                   isScrollable: true,
                   tabAlignment: TabAlignment.start,
-                  padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: AppSpacing.md,
+                  ),
                   tabs: const [
                     Tab(text: 'PHOTO LIBRARY'),
                     Tab(text: 'VIDEO LIBRARY'),
@@ -432,41 +471,61 @@ class _MetadataVideoPickerSheetState extends ConsumerState<MetadataVideoPickerSh
                   unselectedLabelColor: colorScheme.secondary,
                   indicatorColor: colorScheme.primary,
                   indicatorSize: TabBarIndicatorSize.label,
-                  labelStyle: AppTypography.labelLarge.copyWith(fontWeight: FontWeight.w800, letterSpacing: 1.2),
-                  unselectedLabelStyle: AppTypography.labelLarge.copyWith(fontWeight: FontWeight.w500, letterSpacing: 1.2),
+                  labelStyle: AppTypography.labelLarge.copyWith(
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: 1.2,
+                  ),
+                  unselectedLabelStyle: AppTypography.labelLarge.copyWith(
+                    fontWeight: FontWeight.w500,
+                    letterSpacing: 1.2,
+                  ),
                 ),
                 const Divider(height: 1, thickness: 0.5),
                 Expanded(
                   child: TabBarView(
                     controller: _tabController,
                     children: [
-                      _buildGrid(_libraryAssets, 'Device Videos', isLibrary: true),
-                      _buildGrid(_managedAssets, 'Breakdex Album', isLibrary: false),
+                      _buildGrid(
+                        _libraryAssets,
+                        'Device Videos',
+                        isLibrary: true,
+                      ),
+                      _buildGrid(
+                        _managedAssets,
+                        'Breakdex Album',
+                        isLibrary: false,
+                      ),
                       _buildGrid(_appAssets, 'App Storage', isLibrary: false),
                     ],
                   ),
                 ),
               ],
             ),
-            bottomNavigationBar: _selectedIds.isNotEmpty && _importingAsset == null
+            bottomNavigationBar:
+                _selectedIds.isNotEmpty && _importingAsset == null
                 ? SafeArea(
-                    child: Padding(
-                      padding: const EdgeInsets.all(AppSpacing.lg),
-                      child: SizedBox(
-                        width: double.infinity,
-                        height: 56,
-                        child: ElevatedButton(
-                          onPressed: _handleImport,
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: colorScheme.primary,
-                            foregroundColor: colorScheme.onPrimary,
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppRadius.md)),
-                            elevation: 0,
+                    child:
+                        Padding(
+                          padding: const EdgeInsets.all(AppSpacing.lg),
+                          child: SizedBox(
+                            width: double.infinity,
+                            height: 56,
+                            child: ElevatedButton(
+                              onPressed: _handleImport,
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: colorScheme.primary,
+                                foregroundColor: colorScheme.onPrimary,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(
+                                    AppRadius.md,
+                                  ),
+                                ),
+                                elevation: 0,
+                              ),
+                              child: const Text('IMPORT VIDEO'),
+                            ),
                           ),
-                          child: const Text('IMPORT VIDEO'),
-                        ),
-                      ),
-                    ).animate().slideY(
+                        ).animate().slideY(
                           begin: 1,
                           end: 0,
                           duration: AppMotion.moderate02,
@@ -475,14 +534,12 @@ class _MetadataVideoPickerSheetState extends ConsumerState<MetadataVideoPickerSh
                   )
                 : null,
           ),
-          
-          if (_importingAsset != null)
-            _buildGhostingOverlay(context),
+
+          if (_importingAsset != null) _buildGhostingOverlay(context),
         ],
       ),
     );
   }
-
 
   Widget _buildHandle(final BuildContext context) {
     return Center(
@@ -512,7 +569,7 @@ class _MetadataVideoPickerSheetState extends ConsumerState<MetadataVideoPickerSh
             ),
           ),
           IconButton(
-            icon: const Icon(Icons.close_rounded),
+            icon: const AppIconView(AppIcon.close),
             onPressed: () => Navigator.pop(context),
           ),
         ],
@@ -520,7 +577,11 @@ class _MetadataVideoPickerSheetState extends ConsumerState<MetadataVideoPickerSh
     );
   }
 
-  Widget _buildGrid(final List<MetadataAsset>? assets, final String sourceLabel, {required final bool isLibrary}) {
+  Widget _buildGrid(
+    final List<MetadataAsset>? assets,
+    final String sourceLabel, {
+    required final bool isLibrary,
+  }) {
     if (_loading && isLibrary) {
       return const Center(child: AppLoader());
     }
@@ -534,9 +595,21 @@ class _MetadataVideoPickerSheetState extends ConsumerState<MetadataVideoPickerSh
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(Icons.videocam_off_outlined, size: 48, color: Theme.of(context).colorScheme.outline.withValues(alpha: 0.5)),
+            AppIconView(
+              AppIcon.videoOff,
+              size: 48,
+              color: Theme.of(
+                context,
+              ).colorScheme.outline.withValues(alpha: 0.5),
+            ),
             const SizedBox(height: AppSpacing.md),
-            Text('NO VIDEOS FOUND', style: AppTypography.caption.copyWith(letterSpacing: 1.0, fontWeight: FontWeight.bold)),
+            Text(
+              'NO VIDEOS FOUND',
+              style: AppTypography.caption.copyWith(
+                letterSpacing: 1.0,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
           ],
         ),
       );
@@ -554,12 +627,14 @@ class _MetadataVideoPickerSheetState extends ConsumerState<MetadataVideoPickerSh
       itemCount: assets.length + (isLibrary && _hasMore ? 1 : 0),
       itemBuilder: (final context, final index) {
         if (isLibrary && index == assets.length) {
-          return const Center(child: Padding(padding: EdgeInsets.all(16), child: AppLoader()));
+          return const Center(
+            child: Padding(padding: EdgeInsets.all(16), child: AppLoader()),
+          );
         }
-        
+
         final asset = assets[index];
         final isSelected = _selectedIds.contains(asset.localIdentifier);
-        
+
         return _VideoTile(
           asset: asset,
           isSelected: isSelected,
@@ -589,16 +664,21 @@ class _MetadataVideoPickerSheetState extends ConsumerState<MetadataVideoPickerSh
               Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  const Icon(Icons.cloud_off_rounded,
-                      color: Colors.redAccent, size: 48),
+                  const AppIconView(
+                    AppIcon.cloud,
+                    color: Colors.redAccent,
+                    size: 48,
+                  ),
                   const SizedBox(height: AppSpacing.md),
                   Padding(
                     padding: const EdgeInsets.symmetric(
-                        horizontal: AppSpacing.xl),
+                      horizontal: AppSpacing.xl,
+                    ),
                     child: Text(
                       _importError!,
-                      style: AppTypography.bodyMedium
-                          .copyWith(color: Colors.white),
+                      style: AppTypography.bodyMedium.copyWith(
+                        color: Colors.white,
+                      ),
                       textAlign: TextAlign.center,
                       maxLines: 4,
                       overflow: TextOverflow.ellipsis,
@@ -620,70 +700,82 @@ class _MetadataVideoPickerSheetState extends ConsumerState<MetadataVideoPickerSh
                       _importingAsset = null;
                       _importError = null;
                     }),
-                    child: const Text('Cancel',
-                        style: TextStyle(color: Colors.white70)),
+                    child: const Text(
+                      'Cancel',
+                      style: TextStyle(color: Colors.white70),
+                    ),
                   ),
                 ],
               )
             else
               Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Container(
-                  width: 120,
-                  height: 120,
-                  decoration: BoxDecoration(
-                    color: colorScheme.surfaceContainerHighest,
-                    borderRadius: BorderRadius.circular(AppRadius.lg),
-                    boxShadow: [
-                      BoxShadow(
-                        color: colorScheme.primary.withValues(alpha: 0.2),
-                        blurRadius: 40,
-                        spreadRadius: 10,
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Container(
+                        width: 120,
+                        height: 120,
+                        decoration: BoxDecoration(
+                          color: colorScheme.surfaceContainerHighest,
+                          borderRadius: BorderRadius.circular(AppRadius.lg),
+                          boxShadow: [
+                            BoxShadow(
+                              color: colorScheme.primary.withValues(alpha: 0.2),
+                              blurRadius: 40,
+                              spreadRadius: 10,
+                            ),
+                          ],
+                        ),
+                        child: const Center(
+                          child: AppIconView(
+                            AppIcon.sync,
+                            size: 48,
+                            color: Colors.white,
+                          ),
+                        ),
+                      )
+                      .animate(onPlay: (final c) => c.repeat())
+                      .rotate(duration: 3.seconds),
+
+                  const SizedBox(height: AppSpacing.xxl),
+
+                  Text(
+                    _currentProgress.stage.toUpperCase(),
+                    style: AppTypography.labelLarge.copyWith(
+                      color: Colors.white,
+                      letterSpacing: 4.0,
+                      fontWeight: FontWeight.w900,
+                    ),
+                  ).animate().fadeIn(),
+
+                  const SizedBox(height: AppSpacing.md),
+
+                  SizedBox(
+                    width: 240,
+                    height: 4,
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(2),
+                      child: LinearProgressIndicator(
+                        value: _currentProgress.progress > 0
+                            ? _currentProgress.progress
+                            : null,
+                        backgroundColor: Colors.white10,
+                        color: colorScheme.primary,
                       ),
-                    ],
-                  ),
-                  child: const Center(child: Icon(Icons.sync_rounded, size: 48, color: Colors.white)),
-                ).animate(onPlay: (final c) => c.repeat()).rotate(duration: 3.seconds),
-                
-                const SizedBox(height: AppSpacing.xxl),
-                
-                Text(
-                  _currentProgress.stage.toUpperCase(),
-                  style: AppTypography.labelLarge.copyWith(
-                    color: Colors.white,
-                    letterSpacing: 4.0,
-                    fontWeight: FontWeight.w900,
-                  ),
-                ).animate().fadeIn(),
-                
-                const SizedBox(height: AppSpacing.md),
-                
-                SizedBox(
-                  width: 240,
-                  height: 4,
-                  child: ClipRRect(
-                    borderRadius: BorderRadius.circular(2),
-                    child: LinearProgressIndicator(
-                      value: _currentProgress.progress > 0 ? _currentProgress.progress : null,
-                      backgroundColor: Colors.white10,
-                      color: colorScheme.primary,
                     ),
                   ),
-                ),
-                
-                const SizedBox(height: AppSpacing.sm),
-                
-                Text(
-                  '${(_currentProgress.progress * 100).toInt()}%',
-                  style: AppTypography.titleLarge.copyWith(
-                    color: Colors.white,
-                    fontWeight: FontWeight.w900,
-                    fontFeatures: [const FontFeature.tabularFigures()],
+
+                  const SizedBox(height: AppSpacing.sm),
+
+                  Text(
+                    '${(_currentProgress.progress * 100).toInt()}%',
+                    style: AppTypography.titleLarge.copyWith(
+                      color: Colors.white,
+                      fontWeight: FontWeight.w900,
+                      fontFeatures: [const FontFeature.tabularFigures()],
+                    ),
                   ),
-                ),
-              ],
-            ).animate().fadeIn(duration: 300.ms),
+                ],
+              ).animate().fadeIn(duration: 300.ms),
           ],
         ),
       ),
@@ -715,8 +807,18 @@ String formatTileSecondaryFact({final int? sizeBytes, final DateTime? date}) {
 }
 
 const _monthNames = [
-  'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-  'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
+  'Jan',
+  'Feb',
+  'Mar',
+  'Apr',
+  'May',
+  'Jun',
+  'Jul',
+  'Aug',
+  'Sep',
+  'Oct',
+  'Nov',
+  'Dec',
 ];
 
 /// The user's choice when a picked video already exists as a move.
@@ -847,21 +949,29 @@ class _VideoTileState extends ConsumerState<_VideoTile> {
   }
 
   String get _secondaryFact => formatTileSecondaryFact(
-        sizeBytes: _fileSizeBytes,
-        date: widget.asset.creationDate,
-      );
+    sizeBytes: _fileSizeBytes,
+    date: widget.asset.creationDate,
+  );
 
   Future<void> _loadThumbnail() async {
     final asset = widget.asset;
     try {
       Uint8List? bytes;
       if (asset.isLocal) {
-        final path = await ref.read(videoServiceProvider).generateThumbnail(asset.localIdentifier, maxWidth: 200);
+        final path = await ref
+            .read(videoServiceProvider)
+            .generateThumbnail(asset.localIdentifier, maxWidth: 200);
         if (path != null) bytes = await File(path).readAsBytes();
       } else {
-        bytes = await ref.read(videoServiceProvider).getAssetThumbnail(asset.localIdentifier);
+        bytes = await ref
+            .read(videoServiceProvider)
+            .getAssetThumbnail(asset.localIdentifier);
       }
-      if (mounted) setState(() { _thumbnail = bytes; _loading = false; });
+      if (mounted)
+        setState(() {
+          _thumbnail = bytes;
+          _loading = false;
+        });
     } on Object catch (_) {
       if (mounted) setState(() => _loading = false);
     }
@@ -887,17 +997,27 @@ class _VideoTileState extends ConsumerState<_VideoTile> {
         child: Stack(
           fit: StackFit.expand,
           children: [
-            if (_thumbnail != null) Image.memory(_thumbnail!, fit: BoxFit.cover)
-            else if (_loading) const Center(child: SizedBox(width: 20, height: 20, child: AppLoader(size: 6))),
-            
-            if (widget.isSelected) Container(color: colorScheme.primary.withValues(alpha: 0.2)),
+            if (_thumbnail != null)
+              Image.memory(_thumbnail!, fit: BoxFit.cover)
+            else if (_loading)
+              const Center(
+                child: SizedBox(
+                  width: 20,
+                  height: 20,
+                  child: AppLoader(size: 6),
+                ),
+              ),
+
+            if (widget.isSelected)
+              Container(color: colorScheme.primary.withValues(alpha: 0.2)),
 
             // Slot 4 — membership mark: already-in-Breakdex, top-left, tinted
             // distinctly from the primary selection check so the two never read
             // as one badge.
             if (_memberMoveId != null)
               Positioned(
-                top: 4, left: 4,
+                top: 4,
+                left: 4,
                 child: Semantics(
                   label: 'Already in Breakdex',
                   child: Container(
@@ -906,8 +1026,11 @@ class _VideoTileState extends ConsumerState<_VideoTile> {
                       color: colorScheme.tertiary,
                       shape: BoxShape.circle,
                     ),
-                    child: Icon(Icons.bookmark_added_rounded,
-                        size: 11, color: colorScheme.onTertiary),
+                    child: AppIconView(
+                      AppIcon.check,
+                      size: 11,
+                      color: colorScheme.onTertiary,
+                    ),
                   ),
                 ),
               ),
@@ -915,9 +1038,13 @@ class _VideoTileState extends ConsumerState<_VideoTile> {
             // Slot 1 pair — duration badge riding the thumbnail, bottom-right.
             if (durationBadge.isNotEmpty)
               Positioned(
-                bottom: 4, right: 4,
+                bottom: 4,
+                right: 4,
                 child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 4,
+                    vertical: 1,
+                  ),
                   decoration: BoxDecoration(
                     color: Colors.black.withValues(alpha: 0.6),
                     borderRadius: BorderRadius.circular(3),
@@ -968,7 +1095,9 @@ class _VideoTileState extends ConsumerState<_VideoTile> {
                         overflow: TextOverflow.ellipsis,
                       ),
                     Padding(
-                      padding: EdgeInsets.only(right: durationBadge.isNotEmpty ? 34 : 0),
+                      padding: EdgeInsets.only(
+                        right: durationBadge.isNotEmpty ? 34 : 0,
+                      ),
                       child: Text(
                         widget.asset.originalFileName,
                         style: AppTypography.labelSmall.copyWith(
@@ -986,14 +1115,22 @@ class _VideoTileState extends ConsumerState<_VideoTile> {
             ),
 
             Positioned(
-              top: 4, right: 4,
+              top: 4,
+              right: 4,
               child: AnimatedScale(
                 scale: widget.isSelected ? 1.0 : 0.0,
                 duration: 200.ms,
                 child: Container(
                   padding: const EdgeInsets.all(2),
-                  decoration: BoxDecoration(color: colorScheme.primary, shape: BoxShape.circle),
-                  child: const Icon(Icons.check, size: 12, color: Colors.white),
+                  decoration: BoxDecoration(
+                    color: colorScheme.primary,
+                    shape: BoxShape.circle,
+                  ),
+                  child: const AppIconView(
+                    AppIcon.check,
+                    size: 12,
+                    color: Colors.white,
+                  ),
                 ),
               ),
             ),

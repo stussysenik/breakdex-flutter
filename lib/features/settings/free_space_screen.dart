@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:breakdex/core/design/colors.dart';
+import 'package:breakdex/core/design/icons.dart';
 import 'package:breakdex/core/design/spacing.dart';
 import 'package:breakdex/core/design/typography.dart';
 import 'package:breakdex/core/providers.dart';
@@ -51,9 +52,7 @@ class _FreeSpaceScreenState extends ConsumerState<FreeSpaceScreen> {
         error: (final e, _) => Center(
           child: Text(
             'Could not analyze storage: $e',
-            style: AppTypography.bodySmall.copyWith(
-              color: colorScheme.error,
-            ),
+            style: AppTypography.bodySmall.copyWith(color: colorScheme.error),
           ),
         ),
         data: (final data) => _buildContent(context, data, colorScheme),
@@ -66,7 +65,9 @@ class _FreeSpaceScreenState extends ConsumerState<FreeSpaceScreen> {
     final SpaceAnalysis analysis,
     final ColorScheme colorScheme,
   ) {
-    final freeableMb = (analysis.freeableBytes / (1024 * 1024)).toStringAsFixed(1);
+    final freeableMb = (analysis.freeableBytes / (1024 * 1024)).toStringAsFixed(
+      1,
+    );
 
     return ListView(
       padding: const EdgeInsets.all(AppSpacing.screenEdge),
@@ -83,10 +84,8 @@ class _FreeSpaceScreenState extends ConsumerState<FreeSpaceScreen> {
           ),
           child: Column(
             children: [
-              Icon(
-                analysis.canFree
-                    ? Icons.cloud_done_outlined
-                    : Icons.check_circle_outline,
+              AppIconView(
+                analysis.canFree ? AppIcon.cloudDone : AppIcon.success,
                 size: 48,
                 color: analysis.canFree
                     ? AppColors.accent
@@ -152,7 +151,11 @@ class _FreeSpaceScreenState extends ConsumerState<FreeSpaceScreen> {
             ),
             child: Row(
               children: [
-                const Icon(Icons.check_circle, color: AppColors.stateMastery, size: 20),
+                AppIconView(
+                  AppIcon.success,
+                  color: AppColors.stateMastery,
+                  size: 20,
+                ),
                 const SizedBox(width: AppSpacing.sm),
                 Expanded(
                   child: Text(
@@ -246,9 +249,9 @@ class _FreeSpaceScreenState extends ConsumerState<FreeSpaceScreen> {
     } on Object catch (e) {
       if (mounted) {
         setState(() => _freeing = false);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed to free space: $e')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Failed to free space: $e')));
       }
     }
   }
@@ -280,11 +283,9 @@ class _StatRow extends StatelessWidget {
           ),
           Text(
             value,
-            style: AppTypography.bodySmall.merge(
-              const TextStyle(fontWeight: FontWeight.w600),
-            ).copyWith(
-              color: colorScheme.onSurface,
-            ),
+            style: AppTypography.bodySmall
+                .merge(const TextStyle(fontWeight: FontWeight.w600))
+                .copyWith(color: colorScheme.onSurface),
           ),
         ],
       ),

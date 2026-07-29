@@ -10,6 +10,7 @@ import 'package:breakdex/core/design/colors.dart';
 import 'package:breakdex/core/design/spacing.dart';
 import 'package:breakdex/core/design/theme.dart';
 import 'package:breakdex/core/design/typography.dart';
+import 'package:breakdex/core/design/icons.dart';
 
 /// Compact card representing a single move inside the Set Builder sequencer.
 ///
@@ -87,8 +88,9 @@ class _SetMoveCardState extends State<SetMoveCard> {
                   const SizedBox(height: AppSpacing.sm),
                   // Move name — truncated to 2 lines
                   Padding(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: AppSpacing.xs),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: AppSpacing.xs,
+                    ),
                     child: Text(
                       widget.move.name,
                       style: AppTypography.caption.copyWith(
@@ -121,8 +123,8 @@ class _SetMoveCardState extends State<SetMoveCard> {
                       color: AppColors.actionAgain,
                       shape: BoxShape.circle,
                     ),
-                    child: const Icon(
-                      Icons.close,
+                    child: const AppIconView(
+                      AppIcon.close,
                       size: 14,
                       color: Colors.white,
                     ),

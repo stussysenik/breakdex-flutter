@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'package:breakdex/core/design/icons.dart';
 import 'package:breakdex/core/providers.dart';
 import 'package:breakdex/l10n/gen/app_localizations.dart';
 import 'package:breakdex/shared/widgets/color_setting_tile.dart';
@@ -26,10 +27,10 @@ class RatingColorsSection extends ConsumerWidget {
     final l10n = AppLocalizations.of(context);
 
     final entries = [
-      (l10n.setRatingAgain, 'again', rc.again, Icons.close_rounded),
-      (l10n.setRatingHard, 'hard', rc.hard, Icons.remove_rounded),
-      (l10n.setRatingGood, 'good', rc.good, Icons.check_rounded),
-      (l10n.setRatingEasy, 'easy', rc.easy, Icons.star_rounded),
+      (l10n.setRatingAgain, 'again', rc.again, AppIcon.close),
+      (l10n.setRatingHard, 'hard', rc.hard, AppIcon.remove),
+      (l10n.setRatingGood, 'good', rc.good, AppIcon.check),
+      (l10n.setRatingEasy, 'easy', rc.easy, AppIcon.star),
     ];
 
     return Column(
@@ -58,7 +59,7 @@ class RatingColorRow extends ConsumerWidget {
   final String label;
   final String colorKey;
   final Color currentColor;
-  final IconData icon;
+  final AppIcon icon;
 
   @override
   Widget build(final BuildContext context, final WidgetRef ref) {
@@ -68,13 +69,16 @@ class RatingColorRow extends ConsumerWidget {
         title: label,
         subtitle: formatColorHex(currentColor),
         color: currentColor,
-        leading: Icon(icon, size: 18, color: currentColor),
+        leading: AppIconView(icon, size: 18, color: currentColor),
         onTap: () => _showColorPicker(context, ref),
       ),
     );
   }
 
-  Future<void> _showColorPicker(final BuildContext context, final WidgetRef ref) async {
+  Future<void> _showColorPicker(
+    final BuildContext context,
+    final WidgetRef ref,
+  ) async {
     final l10n = AppLocalizations.of(context);
     final selected = await showColorEditorDialog(
       context,

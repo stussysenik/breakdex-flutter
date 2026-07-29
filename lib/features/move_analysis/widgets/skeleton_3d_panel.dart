@@ -9,6 +9,7 @@ import 'package:breakdex/core/design/typography.dart';
 import 'package:breakdex/core/providers.dart';
 import 'package:breakdex/shared/widgets/scene_3d_view.dart';
 import 'package:breakdex/features/move_analysis/providers/analysis_providers.dart';
+import 'package:breakdex/core/design/icons.dart';
 
 /// Panel showing the 3D skeleton visualization.
 ///
@@ -50,7 +51,11 @@ class _Skeleton3DPanelState extends ConsumerState<Skeleton3DPanel> {
           color: colorScheme.surfaceContainerHighest,
           child: Row(
             children: [
-              Icon(Icons.view_in_ar, size: 16, color: colorScheme.secondary),
+              AppIconView(
+                AppIcon.discover,
+                size: 16,
+                color: colorScheme.secondary,
+              ),
               const SizedBox(width: 8),
               Text(
                 '3D Skeleton',
@@ -73,11 +78,7 @@ class _Skeleton3DPanelState extends ConsumerState<Skeleton3DPanel> {
           ),
         ),
         // 3D view
-        const Expanded(
-          child: Scene3DView(
-            backgroundColor: Colors.black,
-          ),
-        ),
+        const Expanded(child: Scene3DView(backgroundColor: Colors.black)),
       ],
     );
   }
@@ -94,8 +95,8 @@ class _ConfidenceDot extends StatelessWidget {
     final color = confidence > 0.7
         ? AppColors.actionGood
         : confidence > 0.4
-            ? AppColors.actionHard
-            : AppColors.actionAgain;
+        ? AppColors.actionHard
+        : AppColors.actionAgain;
 
     return Row(
       mainAxisSize: MainAxisSize.min,
@@ -103,10 +104,7 @@ class _ConfidenceDot extends StatelessWidget {
         Container(
           width: 8,
           height: 8,
-          decoration: BoxDecoration(
-            color: color,
-            shape: BoxShape.circle,
-          ),
+          decoration: BoxDecoration(color: color, shape: BoxShape.circle),
         ),
         const SizedBox(width: 4),
         Text(

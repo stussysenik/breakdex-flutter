@@ -41,6 +41,7 @@ import 'package:breakdex/shared/widgets/video_picker_sheet.dart';
 import 'package:breakdex/features/lab/providers/achievement_providers.dart';
 import 'package:breakdex/l10n/gen/app_localizations.dart';
 import 'package:breakdex/features/flashcard_review/review_session_state.dart';
+import 'package:breakdex/core/design/icons.dart';
 
 class FlashcardReviewScreen extends ConsumerStatefulWidget {
   const FlashcardReviewScreen({super.key});
@@ -265,11 +266,7 @@ class _FlashcardReviewScreenState extends ConsumerState<FlashcardReviewScreen>
     // header and segment control are hidden. End button lives in the
     // card's top overlay instead.
     if (sessionActive) {
-      return Scaffold(
-        body: SafeArea(
-          child: _buildFlashcardSession(),
-        ),
-      );
+      return Scaffold(body: SafeArea(child: _buildFlashcardSession()));
     }
 
     return Scaffold(
@@ -300,12 +297,12 @@ class _FlashcardReviewScreenState extends ConsumerState<FlashcardReviewScreen>
                 items: [
                   AppSegmentedControlItem(
                     value: ReviewMode.review,
-                    icon: Icons.grid_view_rounded,
+                    icon: AppIcon.grid.resolve(context),
                     label: l10n.revReviewSegment,
                   ),
                   AppSegmentedControlItem(
                     value: ReviewMode.deck,
-                    icon: Icons.layers_rounded,
+                    icon: AppIcon.study.resolve(context),
                     label: l10n.revDeckSegment,
                   ),
                 ],
@@ -390,9 +387,7 @@ class _FlashcardReviewScreenState extends ConsumerState<FlashcardReviewScreen>
                   ? 1.0
                   : 1.0 +
                         (0.006 *
-                            AppMotion.fluid.transform(
-                              _breathController.value,
-                            ));
+                            AppMotion.fluid.transform(_breathController.value));
               return Transform.scale(
                 scale: breathScale * _cardScale,
                 child: child,
@@ -427,13 +422,9 @@ class _FlashcardReviewScreenState extends ConsumerState<FlashcardReviewScreen>
                       onTitleTap: () {
                         final target = _items[_currentIndex];
                         if (target.isMove) {
-                          context.push(
-                            '/breakdex/move/${target.entityId}',
-                          );
+                          context.push('/breakdex/move/${target.entityId}');
                         } else {
-                          context.push(
-                            '/breakdex/combo/${target.entityId}',
-                          );
+                          context.push('/breakdex/combo/${target.entityId}');
                         }
                       },
                       onStatePillTap: () {
@@ -448,7 +439,8 @@ class _FlashcardReviewScreenState extends ConsumerState<FlashcardReviewScreen>
                       onLoopToggle: _toggleLoop,
                       playbackSpeed: _playbackSpeed,
                       onSpeedCycle: _cycleSpeed,
-                      activeComboStepIndex: _comboStepIndices[item.entityId] ?? 0,
+                      activeComboStepIndex:
+                          _comboStepIndices[item.entityId] ?? 0,
                       onStepSelected: (final index) {
                         setState(() {
                           _comboStepIndices[item.entityId] = index;
@@ -479,7 +471,8 @@ class _FlashcardReviewScreenState extends ConsumerState<FlashcardReviewScreen>
                       if (item.isCombo && item.combo != null)
                         _ComboBeatAssessment(
                           combo: item.combo!,
-                          activeStepIndex: _comboStepIndices[item.entityId] ?? 0,
+                          activeStepIndex:
+                              _comboStepIndices[item.entityId] ?? 0,
                           onStepSelected: (final index) {
                             setState(() {
                               _comboStepIndices[item.entityId] = index;
@@ -546,11 +539,7 @@ class _FlashcardReviewScreenState extends ConsumerState<FlashcardReviewScreen>
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(
-              Icons.remove_circle_outline,
-              size: 64,
-              color: colorScheme.secondary,
-            ),
+            AppIconView(AppIcon.remove, size: 64, color: colorScheme.secondary),
             const SizedBox(height: AppSpacing.md),
             Text(
               l10n.revEntityNoLongerAvailable(
@@ -563,7 +552,7 @@ class _FlashcardReviewScreenState extends ConsumerState<FlashcardReviewScreen>
             const SizedBox(height: AppSpacing.lg),
             OutlinedButton.icon(
               onPressed: _confirmEndSession,
-              icon: const Icon(Icons.arrow_back_rounded, size: 18),
+              icon: const AppIconView(AppIcon.back, size: 18),
               label: Text(l10n.revBack),
             ),
           ],
@@ -576,11 +565,7 @@ class _FlashcardReviewScreenState extends ConsumerState<FlashcardReviewScreen>
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(
-              Icons.library_add_outlined,
-              size: 64,
-              color: colorScheme.secondary,
-            ),
+            AppIconView(AppIcon.add, size: 64, color: colorScheme.secondary),
             const SizedBox(height: AppSpacing.md),
             Text(
               l10n.revBreakdexEmpty,
@@ -598,7 +583,7 @@ class _FlashcardReviewScreenState extends ConsumerState<FlashcardReviewScreen>
             const SizedBox(height: AppSpacing.lg),
             ElevatedButton.icon(
               onPressed: () => context.go('/moves'),
-              icon: const Icon(Icons.add),
+              icon: const AppIconView(AppIcon.add),
               label: Text(l10n.revAddEntity(entityNames.moveSingular)),
               style: ElevatedButton.styleFrom(
                 backgroundColor: colorScheme.primary,
@@ -624,15 +609,14 @@ class _FlashcardReviewScreenState extends ConsumerState<FlashcardReviewScreen>
             : l10n.revDeckNoMatchingCards(selectedDeck.name),
       ReviewSessionSource.stateBased when stateFilter != null =>
         l10n.revNoStateCardsAvailable(stateLabel, kindNoun),
-      ReviewSessionSource.stateBased =>
-        l10n.revNoDueCardsAvailable(kindNoun),
+      ReviewSessionSource.stateBased => l10n.revNoDueCardsAvailable(kindNoun),
     };
 
     return Center(
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(Icons.filter_list_off, size: 64, color: colorScheme.secondary),
+          AppIconView(AppIcon.filter, size: 64, color: colorScheme.secondary),
           const SizedBox(height: AppSpacing.md),
           Text(
             message,
@@ -643,7 +627,7 @@ class _FlashcardReviewScreenState extends ConsumerState<FlashcardReviewScreen>
           const SizedBox(height: AppSpacing.xl),
           OutlinedButton.icon(
             onPressed: _endSession,
-            icon: const Icon(Icons.arrow_back_rounded, size: 18),
+            icon: const AppIconView(AppIcon.back, size: 18),
             label: Text(l10n.revBackToReview),
           ),
         ],
@@ -682,8 +666,8 @@ class _FlashcardReviewScreenState extends ConsumerState<FlashcardReviewScreen>
                     color: AppColors.actionGood.withValues(alpha: 0.12),
                     shape: BoxShape.circle,
                   ),
-                  child: const Icon(
-                    Icons.check_rounded,
+                  child: const AppIconView(
+                    AppIcon.check,
                     size: 48,
                     color: AppColors.actionGood,
                   ),
@@ -919,18 +903,25 @@ class _FlashcardReviewScreenState extends ConsumerState<FlashcardReviewScreen>
     });
   }
 
-  Future<void> _rateItem(final ReviewSessionItem item, final ReviewRating rating) async {
+  Future<void> _rateItem(
+    final ReviewSessionItem item,
+    final ReviewRating rating,
+  ) async {
     if (_isProcessingRating) return;
     _isProcessingRating = true;
 
     if (item.isMove && item.move != null) {
       final move = item.move!;
-      debugPrint('[FlashcardReview] RATING move: id=${move.id} name="${move.name}" rating=$rating');
+      debugPrint(
+        '[FlashcardReview] RATING move: id=${move.id} name="${move.name}" rating=$rating',
+      );
       final fsrsResult = await ref
           .read(fsrsServiceProvider)
           .processReview(move.id, rating, entityType: 'move');
       final nextState = learningStateFromFsrsState(fsrsResult.postState);
-      debugPrint('[FlashcardReview] FSRS transition: pre=${fsrsResult.preState} post=${fsrsResult.postState} → state=$nextState (displayText=${nextState.displayText})');
+      debugPrint(
+        '[FlashcardReview] FSRS transition: pre=${fsrsResult.preState} post=${fsrsResult.postState} → state=$nextState (displayText=${nextState.displayText})',
+      );
 
       await ref
           .read(moveRepositoryProvider)
@@ -963,7 +954,9 @@ class _FlashcardReviewScreenState extends ConsumerState<FlashcardReviewScreen>
           );
 
       setState(() {
-        debugPrint('[FlashcardReview] setState: updating current item index=$_currentIndex');
+        debugPrint(
+          '[FlashcardReview] setState: updating current item index=$_currentIndex',
+        );
         _items[_currentIndex] = ReviewSessionItem(
           entityId: move.id,
           entityType: 'move',
@@ -1026,7 +1019,10 @@ class _FlashcardReviewScreenState extends ConsumerState<FlashcardReviewScreen>
   /// Runs asynchronously so it doesn't block the card advance animation.
   /// If the move earns a higher tier, the celebration overlay fires on top
   /// of the current screen. The overlay auto-dismisses after 1.5s.
-  void _checkAchievementAdvancement(final String moveId, final String moveName) {
+  void _checkAchievementAdvancement(
+    final String moveId,
+    final String moveName,
+  ) {
     final service = ref.read(achievementServiceProvider);
     service.checkAndAdvanceTier(moveId).then((final newTier) {
       if (newTier != null && mounted) {
@@ -1052,24 +1048,28 @@ class _FlashcardReviewScreenState extends ConsumerState<FlashcardReviewScreen>
       _cardOpacity = 0.0;
     });
 
-    unawaited(Future<void>.delayed(AppMotion.moderate01, () {
-      if (!mounted) return;
-      _advance();
-      _flushPendingSessionItems();
-      setState(() {
-        _cardScale = 1.0;
-        _cardOpacity = 1.0;
-        _assessmentStageVisible = false;
-      });
-
-      unawaited(Future<void>.delayed(const Duration(milliseconds: 120), () {
+    unawaited(
+      Future<void>.delayed(AppMotion.moderate01, () {
         if (!mounted) return;
+        _advance();
+        _flushPendingSessionItems();
         setState(() {
-          _animatingExit = false;
+          _cardScale = 1.0;
+          _cardOpacity = 1.0;
+          _assessmentStageVisible = false;
         });
-        _isProcessingRating = false;
-      }));
-    }));
+
+        unawaited(
+          Future<void>.delayed(const Duration(milliseconds: 120), () {
+            if (!mounted) return;
+            setState(() {
+              _animatingExit = false;
+            });
+            _isProcessingRating = false;
+          }),
+        );
+      }),
+    );
   }
 
   void _advance() {
@@ -1113,7 +1113,9 @@ class _ComboBeatAssessment extends ConsumerWidget {
 
   @override
   Widget build(final BuildContext context, final WidgetRef ref) {
-    final movesStream = ref.watch(comboRepositoryProvider).watchComboMoves(combo.id);
+    final movesStream = ref
+        .watch(comboRepositoryProvider)
+        .watchComboMoves(combo.id);
     final colorScheme = Theme.of(context).colorScheme;
     final l10n = AppLocalizations.of(context);
 

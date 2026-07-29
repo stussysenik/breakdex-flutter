@@ -16,6 +16,7 @@ import 'package:breakdex/features/flashcard_review/widgets/item_schedule_detail_
 import 'package:breakdex/features/flashcard_review/widgets/schedule_calendar.dart';
 import 'package:breakdex/features/flashcard_review/widgets/scheduled_item_row.dart';
 import 'package:breakdex/features/flashcard_review/widgets/srs_parameters_card.dart';
+import 'package:breakdex/core/design/icons.dart';
 
 /// The schedule review mode: a calendar-based view of upcoming reviews.
 ///
@@ -97,9 +98,7 @@ class ScheduleReviewScreen extends ConsumerWidget {
 
         // SRS parameters
         const SliverPadding(
-          padding: EdgeInsets.symmetric(
-            horizontal: AppSpacing.screenEdge,
-          ),
+          padding: EdgeInsets.symmetric(horizontal: AppSpacing.screenEdge),
           sliver: SliverToBoxAdapter(child: SrsParametersCard()),
         ),
         const SliverToBoxAdapter(child: SizedBox(height: AppSpacing.lg)),
@@ -140,9 +139,8 @@ class ScheduleReviewScreen extends ConsumerWidget {
 
         // Items list
         itemsAsync.when(
-          loading: () => const SliverToBoxAdapter(
-            child: Center(child: AppLoader()),
-          ),
+          loading: () =>
+              const SliverToBoxAdapter(child: Center(child: AppLoader())),
           error: (final e, _) => SliverToBoxAdapter(
             child: Center(child: Text(l10n.revError('$e'))),
           ),
@@ -157,8 +155,8 @@ class ScheduleReviewScreen extends ConsumerWidget {
                   child: Center(
                     child: Column(
                       children: [
-                        Icon(
-                          Icons.check_circle_outline,
+                        AppIconView(
+                          AppIcon.check,
                           size: 48,
                           color: AppColors.actionGood.withValues(alpha: 0.5),
                         ),

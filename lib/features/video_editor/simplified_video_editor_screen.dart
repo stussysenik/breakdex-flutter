@@ -20,7 +20,8 @@ import 'package:video_player/video_player.dart';
 import 'package:breakdex/core/design/colors.dart';
 import 'package:breakdex/core/design/spacing.dart';
 import 'package:breakdex/core/design/typography.dart';
-import 'package:breakdex/core/navigation/app_route_observer.dart' show appRouteObserver;
+import 'package:breakdex/core/navigation/app_route_observer.dart'
+    show appRouteObserver;
 import 'package:breakdex/core/services/media_playback_coordinator.dart';
 import 'package:breakdex/core/services/native_video_export.dart';
 import 'package:breakdex/core/services/video_service.dart';
@@ -29,6 +30,7 @@ import 'package:breakdex/core/utils/pid_controller.dart';
 import 'package:breakdex/core/utils/diagnostics.dart';
 import 'package:breakdex/shared/widgets/app_loader.dart';
 import 'package:breakdex/features/video_editor/video_edit_geometry.dart';
+import 'package:breakdex/core/design/icons.dart';
 
 class SimplifiedVideoEditorView extends ConsumerStatefulWidget {
   const SimplifiedVideoEditorView({super.key, required this.videoPath});
@@ -36,10 +38,12 @@ class SimplifiedVideoEditorView extends ConsumerStatefulWidget {
   final String videoPath;
 
   @override
-  ConsumerState<SimplifiedVideoEditorView> createState() => _SimplifiedVideoEditorViewState();
+  ConsumerState<SimplifiedVideoEditorView> createState() =>
+      _SimplifiedVideoEditorViewState();
 }
 
-class _SimplifiedVideoEditorViewState extends ConsumerState<SimplifiedVideoEditorView>
+class _SimplifiedVideoEditorViewState
+    extends ConsumerState<SimplifiedVideoEditorView>
     with RouteAware, WidgetsBindingObserver {
   double _trimStart = 0.0;
   double _trimEnd = 1.0;
@@ -61,8 +65,9 @@ class _SimplifiedVideoEditorViewState extends ConsumerState<SimplifiedVideoEdito
   final _loadingController = LoadingStateController<void>();
   LoadingStateMachine<void> _loadState = const Idle();
   StreamSubscription<LoadingStateMachine<void>>? _loadSub;
-  final TransformationController _transformController = TransformationController();
-  
+  final TransformationController _transformController =
+      TransformationController();
+
   final PidController _pidController = PidController();
   double _gestureBaseScale = 1.0;
   final Stopwatch _scaleStopwatch = Stopwatch();
@@ -217,14 +222,15 @@ class _SimplifiedVideoEditorViewState extends ConsumerState<SimplifiedVideoEdito
       final error = switch (status) {
         VideoFileStatus.missing =>
           'The video is missing or still being downloaded.',
-        VideoFileStatus.error =>
-          'The video file could not be accessed safely.',
+        VideoFileStatus.error => 'The video file could not be accessed safely.',
         VideoFileStatus.ready => null,
       };
-      _loadingController.send(LoadingEvent.fail(
-        error ?? 'Access failed',
-        retryable: status == VideoFileStatus.error,
-      ));
+      _loadingController.send(
+        LoadingEvent.fail(
+          error ?? 'Access failed',
+          retryable: status == VideoFileStatus.error,
+        ),
+      );
       return;
     }
 
@@ -258,12 +264,14 @@ class _SimplifiedVideoEditorViewState extends ConsumerState<SimplifiedVideoEdito
       unawaited(_generateThumbnails());
     } on Object catch (error) {
       if (!mounted || loadToken != _loadToken) return;
-      _loadingController.send(LoadingEvent.fail(
-        error is TimeoutException
-            ? 'The video took too long to initialize.'
-            : 'Could not load the selected video.',
-        retryable: true,
-      ));
+      _loadingController.send(
+        LoadingEvent.fail(
+          error is TimeoutException
+              ? 'The video took too long to initialize.'
+              : 'Could not load the selected video.',
+          retryable: true,
+        ),
+      );
     }
   }
 
@@ -306,9 +314,7 @@ class _SimplifiedVideoEditorViewState extends ConsumerState<SimplifiedVideoEdito
     // End of trim range reached
     if (normalized >= _trimEnd - _kPlaybackTolerance) {
       _pausePlayback();
-      unawaited(
-        _controller!.seekTo(_normalizedPositionToDuration(_trimStart)),
-      );
+      unawaited(_controller!.seekTo(_normalizedPositionToDuration(_trimStart)));
     }
   }
 
@@ -371,7 +377,10 @@ class _SimplifiedVideoEditorViewState extends ConsumerState<SimplifiedVideoEdito
   void _rotate() {
     setState(() {
       _rotation = (_rotation + 90) % 360;
-      DiagnosticsLog.info('VideoEditor', '[Simplified] Rotating to $_rotation°');
+      DiagnosticsLog.info(
+        'VideoEditor',
+        '[Simplified] Rotating to $_rotation°',
+      );
       _matrixInitialized = false;
       _previewViewportSize = null;
     });
@@ -380,7 +389,10 @@ class _SimplifiedVideoEditorViewState extends ConsumerState<SimplifiedVideoEdito
 
   void _setAspect(final int index) {
     if (index == _selectedAspectIndex && index != _customAspectIndex) return;
-    DiagnosticsLog.info('VideoEditor', '[Simplified] Setting aspect index $index');
+    DiagnosticsLog.info(
+      'VideoEditor',
+      '[Simplified] Setting aspect index $index',
+    );
     if (index == _customAspectIndex) {
       _showCustomAspectDialog();
     } else {
@@ -396,7 +408,10 @@ class _SimplifiedVideoEditorViewState extends ConsumerState<SimplifiedVideoEdito
   void _setSpeed(final int index) {
     if (index == _selectedSpeedIndex) return;
     final speed = _speeds[index];
-    DiagnosticsLog.info('VideoEditor', '[Simplified] Setting speed to ${speed}x');
+    DiagnosticsLog.info(
+      'VideoEditor',
+      '[Simplified] Setting speed to ${speed}x',
+    );
     setState(() => _selectedSpeedIndex = index);
     unawaited(_controller?.setPlaybackSpeed(speed));
     unawaited(HapticFeedback.selectionClick());
@@ -420,8 +435,11 @@ class _SimplifiedVideoEditorViewState extends ConsumerState<SimplifiedVideoEdito
       0.0,
     );
 
-    _transformController.value = Matrix4.diagonal3Values(clampedScale, clampedScale, 1.0)
-      ..setTranslationRaw(clampedTx, clampedTy, 0.0);
+    _transformController.value = Matrix4.diagonal3Values(
+      clampedScale,
+      clampedScale,
+      1.0,
+    )..setTranslationRaw(clampedTx, clampedTy, 0.0);
   }
 
   @override
@@ -434,7 +452,7 @@ class _SimplifiedVideoEditorViewState extends ConsumerState<SimplifiedVideoEdito
         backgroundColor: Colors.transparent,
         elevation: 0,
         leading: IconButton(
-          icon: Icon(CupertinoIcons.xmark, color: colorScheme.onSurface),
+          icon: AppIconView(AppIcon.close, color: colorScheme.onSurface),
           onPressed: () => _handleDiscard(context),
         ),
         title: Text(
@@ -510,7 +528,7 @@ class _SimplifiedVideoEditorViewState extends ConsumerState<SimplifiedVideoEdito
       ),
       timeout: (_) => _buildPreviewStatusCard(
         colorScheme,
-        icon: CupertinoIcons.timer,
+        icon: AppIcon.timer.resolve(context),
         title: 'Video load timed out',
         subtitle: 'Check your connection or try again.',
         actionLabel: 'Retry',
@@ -518,24 +536,26 @@ class _SimplifiedVideoEditorViewState extends ConsumerState<SimplifiedVideoEdito
       ),
       error: (final s) => _buildPreviewStatusCard(
         colorScheme,
-        icon: CupertinoIcons.exclamationmark_circle,
+        icon: AppIcon.error.resolve(context),
         title: 'Video failed to load',
         subtitle: s.message,
         actionLabel: s.retryable ? 'Retry' : null,
-        onAction: s.retryable ? () => unawaited(_loadVideo(isRetry: true)) : null,
+        onAction: s.retryable
+            ? () => unawaited(_loadVideo(isRetry: true))
+            : null,
       ),
       ready: (_) {
         if (!_isEditorReady) {
           return _buildPreviewStatusCard(
             colorScheme,
-            icon: CupertinoIcons.hourglass,
+            icon: AppIcon.schedule.resolve(context),
             title: 'Preparing editor...',
             subtitle: 'One more moment while the preview becomes available.',
           );
         }
 
         const playOverlay = Center(
-          child: Icon(CupertinoIcons.play_circle_fill, color: Colors.white70, size: 64),
+          child: AppIconView(AppIcon.play, color: Colors.white70, size: 64),
         );
 
         final targetAspect = _effectiveTargetAspect;
@@ -567,7 +587,8 @@ class _SimplifiedVideoEditorViewState extends ConsumerState<SimplifiedVideoEdito
                 targetAspect: targetAspect,
               );
 
-              if (!_matrixInitialized || _previewViewportSize != constraints.biggest) {
+              if (!_matrixInitialized ||
+                  _previewViewportSize != constraints.biggest) {
                 _previewViewport = viewport;
                 _previewViewportSize = constraints.biggest;
                 _transformController.value = viewport.initialTransform();
@@ -598,18 +619,27 @@ class _SimplifiedVideoEditorViewState extends ConsumerState<SimplifiedVideoEdito
                           constrained: false,
                           onInteractionStart: (_) {
                             _pausePlayback();
-                            _gestureBaseScale = _transformController.value.getMaxScaleOnAxis();
+                            _gestureBaseScale = _transformController.value
+                                .getMaxScaleOnAxis();
                             _pidController.reset();
                           },
                           onInteractionUpdate: (final details) {
-                            final dt = _scaleStopwatch.elapsedMilliseconds / 1000.0;
+                            final dt =
+                                _scaleStopwatch.elapsedMilliseconds / 1000.0;
                             _scaleStopwatch.reset();
-                            final currentScale = _transformController.value.getMaxScaleOnAxis();
+                            final currentScale = _transformController.value
+                                .getMaxScaleOnAxis();
 
-                            final rawTarget = (_gestureBaseScale * details.scale)
-                                .clamp(viewport.minScale, viewport.maxScale);
+                            final rawTarget =
+                                (_gestureBaseScale * details.scale).clamp(
+                                  viewport.minScale,
+                                  viewport.maxScale,
+                                );
 
-                            final target = rawTarget.clamp(currentScale, viewport.maxScale);
+                            final target = rawTarget.clamp(
+                              currentScale,
+                              viewport.maxScale,
+                            );
                             if ((target - currentScale).abs() < 0.008) return;
 
                             final delta = _pidController.update(
@@ -622,7 +652,12 @@ class _SimplifiedVideoEditorViewState extends ConsumerState<SimplifiedVideoEdito
                             final newScale = (currentScale + clampedDelta)
                                 .clamp(viewport.minScale, viewport.maxScale);
 
-                            _transformController.value = Matrix4.diagonal3Values(newScale, newScale, 1.0);
+                            _transformController.value =
+                                Matrix4.diagonal3Values(
+                                  newScale,
+                                  newScale,
+                                  1.0,
+                                );
                             _applyClampedPreviewTransform(viewport);
                           },
                           onInteractionEnd: (_) {
@@ -707,9 +742,7 @@ class _SimplifiedVideoEditorViewState extends ConsumerState<SimplifiedVideoEdito
           mainAxisSize: MainAxisSize.min,
           children: [
             if (showSpinner)
-              AppLoader(
-                color: Theme.of(context).colorScheme.primary,
-              )
+              AppLoader(color: Theme.of(context).colorScheme.primary)
             else if (icon != null)
               Icon(icon, color: Colors.white70, size: 40),
             const SizedBox(height: AppSpacing.md),
@@ -802,7 +835,7 @@ class _SimplifiedVideoEditorViewState extends ConsumerState<SimplifiedVideoEdito
           Row(
             children: [
               _TransformButton(
-                icon: CupertinoIcons.rotate_left,
+                icon: AppIcon.replay.resolve(context),
                 onTap: _rotate,
               ),
               const SizedBox(width: AppSpacing.md),
@@ -875,7 +908,9 @@ class _SimplifiedVideoEditorViewState extends ConsumerState<SimplifiedVideoEdito
                     child: Text(
                       'Taking longer than usual. Pre-encoding high-resolution video can be slow.',
                       textAlign: TextAlign.center,
-                      style: AppTypography.caption.copyWith(color: Colors.white70),
+                      style: AppTypography.caption.copyWith(
+                        color: Colors.white70,
+                      ),
                     ),
                   ),
                 ],
@@ -931,7 +966,9 @@ class _SimplifiedVideoEditorViewState extends ConsumerState<SimplifiedVideoEdito
       builder: (final ctx) {
         final colorScheme = Theme.of(ctx).colorScheme;
         return Padding(
-          padding: EdgeInsets.only(bottom: MediaQuery.of(ctx).viewInsets.bottom),
+          padding: EdgeInsets.only(
+            bottom: MediaQuery.of(ctx).viewInsets.bottom,
+          ),
           child: Padding(
             padding: const EdgeInsets.all(AppSpacing.screenEdge),
             child: Column(
@@ -951,12 +988,16 @@ class _SimplifiedVideoEditorViewState extends ConsumerState<SimplifiedVideoEdito
                 const SizedBox(height: AppSpacing.md),
                 Text(
                   'Custom Aspect Ratio',
-                  style: AppTypography.titleMedium.copyWith(color: colorScheme.onSurface),
+                  style: AppTypography.titleMedium.copyWith(
+                    color: colorScheme.onSurface,
+                  ),
                 ),
                 const SizedBox(height: AppSpacing.sm),
                 Text(
                   'Enter width and height to set a custom crop ratio.',
-                  style: AppTypography.bodySmall.copyWith(color: colorScheme.secondary),
+                  style: AppTypography.bodySmall.copyWith(
+                    color: colorScheme.secondary,
+                  ),
                 ),
                 const SizedBox(height: AppSpacing.lg),
                 Row(
@@ -972,8 +1013,15 @@ class _SimplifiedVideoEditorViewState extends ConsumerState<SimplifiedVideoEdito
                       ),
                     ),
                     Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
-                      child: Text(':', style: AppTypography.titleMedium.copyWith(color: colorScheme.onSurface)),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: AppSpacing.md,
+                      ),
+                      child: Text(
+                        ':',
+                        style: AppTypography.titleMedium.copyWith(
+                          color: colorScheme.onSurface,
+                        ),
+                      ),
                     ),
                     Expanded(
                       child: TextField(
@@ -1044,7 +1092,9 @@ class _SimplifiedVideoEditorViewState extends ConsumerState<SimplifiedVideoEdito
       final trimEndMs = (_trimEnd * _videoDuration.inMilliseconds).round();
       final speed = _speeds[_selectedSpeedIndex];
       final normalizedRotation = ((_rotation % 360) + 360) % 360;
-      final isCropMode = _effectiveTargetAspect != null || _aspectLabels[_selectedAspectIndex] == 'Free Form';
+      final isCropMode =
+          _effectiveTargetAspect != null ||
+          _aspectLabels[_selectedAspectIndex] == 'Free Form';
 
       Rect? finalCrop;
       if (isCropMode) {
@@ -1067,7 +1117,7 @@ class _SimplifiedVideoEditorViewState extends ConsumerState<SimplifiedVideoEdito
 
       unawaited(_progressSub?.cancel());
       _progressSub = null;
-      
+
       unawaited(HapticFeedback.heavyImpact());
       if (mounted) context.pop(resultPath);
     } on Object catch (e) {
@@ -1076,7 +1126,9 @@ class _SimplifiedVideoEditorViewState extends ConsumerState<SimplifiedVideoEdito
         if (await f.exists()) await f.delete();
       }
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Export failed: $e')));
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Export failed: $e')));
       }
     } finally {
       unawaited(_progressSub?.cancel());
@@ -1140,7 +1192,10 @@ class _PillSelector extends StatelessWidget {
                 child: GestureDetector(
                   onTap: () => onSelected(i),
                   child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 4,
+                    ),
                     decoration: BoxDecoration(
                       color: active ? colorScheme.primary : Colors.transparent,
                       borderRadius: BorderRadius.circular(AppRadius.xs),
@@ -1148,7 +1203,9 @@ class _PillSelector extends StatelessWidget {
                     child: Text(
                       items[i],
                       style: AppTypography.caption.copyWith(
-                        color: active ? colorScheme.onPrimary : colorScheme.onSurface,
+                        color: active
+                            ? colorScheme.onPrimary
+                            : colorScheme.onSurface,
                         fontWeight: active ? FontWeight.w700 : FontWeight.w500,
                       ),
                     ),
@@ -1196,7 +1253,7 @@ class _TrimTimelineState extends State<_TrimTimeline> {
   static const _kGrabRadiusPx = 30.0;
   static const _kSeekThrottleMs = 80;
 
-  String? _activeHandle; 
+  String? _activeHandle;
   double _playheadPosition = 0.0;
   double? _dragRawValue;
   int _lastSeekMs = 0;
@@ -1233,7 +1290,9 @@ class _TrimTimelineState extends State<_TrimTimeline> {
       widget.onDragStart?.call();
       setState(() {
         _activeHandle = target;
-        final dragVal = target == 'start' ? widget.trimStart : (target == 'end' ? widget.trimEnd : _playheadPosition);
+        final dragVal = target == 'start'
+            ? widget.trimStart
+            : (target == 'end' ? widget.trimEnd : _playheadPosition);
         _dragRawValue = dragVal;
       });
       unawaited(HapticFeedback.selectionClick());
@@ -1288,7 +1347,7 @@ class _TrimTimelineState extends State<_TrimTimeline> {
         ),
         child: Stack(
           children: [
-             Row(
+            Row(
               children: List.generate(8, (final i) {
                 return Expanded(
                   child: Container(
@@ -1298,10 +1357,15 @@ class _TrimTimelineState extends State<_TrimTimeline> {
                       color: AppColors.darkFill,
                       borderRadius: BorderRadius.circular(AppRadius.xxs),
                     ),
-                    child: (i < widget.thumbnails.length && widget.thumbnails[i] != null)
+                    child:
+                        (i < widget.thumbnails.length &&
+                            widget.thumbnails[i] != null)
                         ? Opacity(
                             opacity: 0.6,
-                            child: Image.memory(widget.thumbnails[i]!, fit: BoxFit.cover),
+                            child: Image.memory(
+                              widget.thumbnails[i]!,
+                              fit: BoxFit.cover,
+                            ),
                           )
                         : null,
                   ),
@@ -1310,8 +1374,11 @@ class _TrimTimelineState extends State<_TrimTimeline> {
             ),
             Positioned(
               left: widget.trimStart * MediaQuery.of(context).size.width,
-              top: 0, bottom: 0,
-              width: (widget.trimEnd - widget.trimStart) * MediaQuery.of(context).size.width,
+              top: 0,
+              bottom: 0,
+              width:
+                  (widget.trimEnd - widget.trimStart) *
+                  MediaQuery.of(context).size.width,
               child: Container(
                 decoration: BoxDecoration(
                   border: Border.symmetric(
@@ -1324,8 +1391,12 @@ class _TrimTimelineState extends State<_TrimTimeline> {
               valueListenable: widget.playbackPosition,
               builder: (final ctx, final pos, _) {
                 return Positioned(
-                  left: pos * (MediaQuery.of(context).size.width - AppSpacing.screenEdge * 2),
-                  top: 0, bottom: 0,
+                  left:
+                      pos *
+                      (MediaQuery.of(context).size.width -
+                          AppSpacing.screenEdge * 2),
+                  top: 0,
+                  bottom: 0,
                   child: Container(width: 2, color: Colors.white),
                 );
               },
@@ -1347,7 +1418,8 @@ class _TransformButton extends StatelessWidget {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        width: 44, height: 44,
+        width: 44,
+        height: 44,
         decoration: BoxDecoration(
           color: Theme.of(context).colorScheme.surfaceContainerHighest,
           borderRadius: BorderRadius.circular(AppRadius.sm),

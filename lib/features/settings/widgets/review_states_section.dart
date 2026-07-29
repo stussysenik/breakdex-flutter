@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:uuid/uuid.dart';
 
+import 'package:breakdex/core/design/icons.dart';
 import 'package:breakdex/core/design/spacing.dart';
 import 'package:breakdex/core/design/typography.dart';
 import 'package:breakdex/core/models/learning_state.dart';
@@ -57,7 +58,9 @@ class ReviewStatesSection extends ConsumerWidget {
                       .read(learningModeProvider.notifier)
                       .set(LearningMode.defaultMode),
                   child: Padding(
-                    padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm),
+                    padding: const EdgeInsets.symmetric(
+                      vertical: AppSpacing.sm,
+                    ),
                     child: Text(
                       l10n.setStatesModeDefault,
                       textAlign: TextAlign.center,
@@ -79,7 +82,9 @@ class ReviewStatesSection extends ConsumerWidget {
                       .read(learningModeProvider.notifier)
                       .set(LearningMode.custom),
                   child: Padding(
-                    padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm),
+                    padding: const EdgeInsets.symmetric(
+                      vertical: AppSpacing.sm,
+                    ),
                     child: Text(
                       l10n.setStatesModeCustom,
                       textAlign: TextAlign.center,
@@ -124,8 +129,8 @@ class ReviewStatesSection extends ConsumerWidget {
                     onTap: () => ref
                         .read(customLearningStatesProvider.notifier)
                         .remove(custom.id),
-                    child: Icon(
-                      Icons.close,
+                    child: AppIconView(
+                      AppIcon.close,
                       size: 18,
                       color: colorScheme.secondary,
                     ),
@@ -133,8 +138,8 @@ class ReviewStatesSection extends ConsumerWidget {
                 ),
               SettingsListRow(
                 onTap: () => _addCustomState(context, ref),
-                leading: Icon(
-                  Icons.add,
+                leading: AppIconView(
+                  AppIcon.add,
                   size: 18,
                   color: colorScheme.primary,
                 ),
@@ -184,7 +189,10 @@ class ReviewStatesSection extends ConsumerWidget {
         .setColor(state, selected);
   }
 
-  Future<void> _addCustomState(final BuildContext context, final WidgetRef ref) async {
+  Future<void> _addCustomState(
+    final BuildContext context,
+    final WidgetRef ref,
+  ) async {
     final l10n = AppLocalizations.of(context);
     final controller = TextEditingController();
     Color selectedColor = reviewStatePresetColors[0];
@@ -371,8 +379,8 @@ class _StateRowTrailing extends StatelessWidget {
         GestureDetector(
           onTap: onColorTap,
           behavior: HitTestBehavior.opaque,
-          child: Icon(
-            Icons.palette_outlined,
+          child: AppIconView(
+            AppIcon.edit,
             size: 18,
             color: colorScheme.secondary,
           ),

@@ -12,6 +12,7 @@ import 'package:breakdex/core/providers.dart';
 import 'package:breakdex/core/services/settings_service.dart';
 import 'package:breakdex/shared/widgets/app_loader.dart';
 import 'package:breakdex/core/sync/icloud_setup_service.dart';
+import 'package:breakdex/core/design/icons.dart';
 
 /// First-launch card prompting iCloud backup with one-tap enable.
 ///
@@ -62,16 +63,18 @@ class _OnboardingCardContentState
         decoration: BoxDecoration(
           color: colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
           borderRadius: BorderRadius.circular(AppRadius.md),
-          border: Border.all(
-            color: AppColors.accent.withValues(alpha: 0.3),
-          ),
+          border: Border.all(color: AppColors.accent.withValues(alpha: 0.3)),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Row(
               children: [
-                const Icon(Icons.cloud_outlined, color: AppColors.accent, size: 24),
+                const AppIconView(
+                  AppIcon.cloud,
+                  color: AppColors.accent,
+                  size: 24,
+                ),
                 const SizedBox(width: AppSpacing.sm),
                 Expanded(
                   child: Text(
@@ -103,10 +106,7 @@ class _OnboardingCardContentState
                         ? const SizedBox(
                             width: 18,
                             height: 18,
-                            child: AppLoader(
-                              size: 6,
-                              color: Colors.white,
-                            ),
+                            child: AppLoader(size: 6, color: Colors.white),
                           )
                         : const Text('Enable iCloud'),
                   ),

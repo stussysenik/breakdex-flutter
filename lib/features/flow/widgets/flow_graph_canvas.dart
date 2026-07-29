@@ -14,6 +14,7 @@ import 'package:uuid/uuid.dart';
 
 import 'package:breakdex/core/database/database.dart';
 import 'package:breakdex/core/design/colors.dart';
+import 'package:breakdex/core/design/icons.dart';
 import 'package:breakdex/core/design/spacing.dart';
 import 'package:breakdex/core/design/theme.dart';
 import 'package:breakdex/core/design/typography.dart';
@@ -89,10 +90,11 @@ class _ForceLayout {
   };
 
   /// Compute absolute gravity centers for a given canvas size.
-  static Map<String, Offset> categoryGravity(final double w, final double h) => {
-    for (final e in _categoryGravityRatios.entries)
-      e.key: Offset(w * e.value.$1, h * e.value.$2),
-  };
+  static Map<String, Offset> categoryGravity(final double w, final double h) =>
+      {
+        for (final e in _categoryGravityRatios.entries)
+          e.key: Offset(w * e.value.$1, h * e.value.$2),
+      };
 
   /// Cluster layout — per-category gravity instead of generic centering.
   void runClustered(
@@ -1003,7 +1005,7 @@ class _FlowGraphCanvasState extends ConsumerState<FlowGraphCanvas> {
   /// Compact, accessible overlay button for graph utilities.
   Widget _overlayControlButton({
     required final VoidCallback onTap,
-    required final IconData icon,
+    required final AppIcon icon,
     required final String semanticsLabel,
     required final String semanticsIdentifier,
   }) {
@@ -1025,7 +1027,7 @@ class _FlowGraphCanvasState extends ConsumerState<FlowGraphCanvas> {
             width: 36,
             height: 36,
             decoration: AppSurfaces.panel(context, radius: AppRadius.sm),
-            child: Icon(icon, size: 18, color: colorScheme.onSurface),
+            child: AppIconView(icon, size: 18, color: colorScheme.onSurface),
           ),
         ),
       ),
@@ -1109,14 +1111,14 @@ class _FlowGraphCanvasState extends ConsumerState<FlowGraphCanvas> {
 
     if (rawNodes.isEmpty) {
       return _emptyPlaceholder(
-        Icons.hub_outlined,
+        AppIcon.discover.resolve(context),
         'Add moves to your library\nto see them mapped here.',
       );
     }
 
     if (viewMode == FlowViewMode.focus && effectiveSelectedNodeId == null) {
       return _emptyPlaceholder(
-        Icons.center_focus_strong_rounded,
+        AppIcon.glance.resolve(context),
         'Select a move in Map mode\nto see its connections here.',
       );
     }
@@ -1191,7 +1193,7 @@ class _FlowGraphCanvasState extends ConsumerState<FlowGraphCanvas> {
             right: 8,
             child: _overlayControlButton(
               onTap: () => setState(() => _showLegend = !_showLegend),
-              icon: Icons.help_outline_rounded,
+              icon: AppIcon.help,
               semanticsLabel: _showLegend
                   ? 'Hide flow graph legend'
                   : 'Show flow graph legend',
@@ -1206,7 +1208,7 @@ class _FlowGraphCanvasState extends ConsumerState<FlowGraphCanvas> {
             right: 8,
             child: _overlayControlButton(
               onTap: _zoomToFit,
-              icon: Icons.center_focus_strong_rounded,
+              icon: AppIcon.glance,
               semanticsLabel: 'Recenter flow graph',
               semanticsIdentifier: 'flow-recenter',
             ),
@@ -1243,8 +1245,8 @@ class _FlowGraphCanvasState extends ConsumerState<FlowGraphCanvas> {
                           _multiSelectMode = false;
                           _multiSelectedIds = {};
                         }),
-                        child: Icon(
-                          Icons.close_rounded,
+                        child: AppIconView(
+                          AppIcon.close,
                           size: 20,
                           color: colorScheme.secondary,
                         ),

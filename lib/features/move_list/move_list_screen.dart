@@ -12,6 +12,7 @@ import 'package:intl/intl.dart';
 import 'package:breakdex/core/database/database.dart';
 import 'package:breakdex/core/database/daos/combos_dao.dart';
 import 'package:breakdex/core/design/colors.dart';
+import 'package:breakdex/core/design/icons.dart';
 import 'package:breakdex/core/design/spacing.dart';
 import 'package:breakdex/core/design/theme.dart';
 import 'package:breakdex/core/design/typography.dart';
@@ -101,6 +102,7 @@ class _SearchQueryNotifier extends Notifier<String> {
     });
   }
 }
+
 final _dismissedReliabilityReportEpochProvider = StateProvider<int?>(
   (final ref) => null,
 );
@@ -112,7 +114,9 @@ final _dismissedReliabilityReportEpochProvider = StateProvider<int?>(
 final _combosStreamProvider = StreamProvider<List<LibraryRow>>((final ref) {
   final stream = ref.watch(combosDaoProvider).watchLibraryRows();
   return stream.map((final combos) {
-    debugPrint('[MoveList] _combosStreamProvider emitted ${combos.length} combos');
+    debugPrint(
+      '[MoveList] _combosStreamProvider emitted ${combos.length} combos',
+    );
     return combos;
   });
 });
@@ -156,8 +160,9 @@ class LibrarySortNotifier extends Notifier<LibrarySort> {
   static const _key = 'library_sort';
 
   @override
-  LibrarySort build() =>
-      librarySortFromStored(ref.watch(sharedPreferencesProvider).getString(_key));
+  LibrarySort build() => librarySortFromStored(
+    ref.watch(sharedPreferencesProvider).getString(_key),
+  );
 
   Future<void> set(final LibrarySort sort) async {
     state = sort;
@@ -183,20 +188,32 @@ final _movesStreamProvider = StreamProvider<List<Move>>((final ref) {
 final libraryMovesProvider = Provider<AsyncValue<List<Move>>>((final ref) {
   final query = ref.watch(_searchQueryProvider).toLowerCase();
   final sort = ref.watch(librarySortProvider);
-  return ref.watch(_movesStreamProvider).whenData((final moves) => moves
-      .where((final m) => m.name.toLowerCase().contains(query))
-      .toList()
-    ..sort(moveLibraryComparator(sort)));
+  return ref
+      .watch(_movesStreamProvider)
+      .whenData(
+        (final moves) =>
+            moves
+                .where((final m) => m.name.toLowerCase().contains(query))
+                .toList()
+              ..sort(moveLibraryComparator(sort)),
+      );
 });
 
 /// The combos the library renders. See [libraryMovesProvider].
-final libraryCombosProvider = Provider<AsyncValue<List<LibraryRow>>>((final ref) {
+final libraryCombosProvider = Provider<AsyncValue<List<LibraryRow>>>((
+  final ref,
+) {
   final query = ref.watch(_searchQueryProvider).toLowerCase();
   final sort = ref.watch(librarySortProvider);
-  return ref.watch(_combosStreamProvider).whenData((final combos) => combos
-      .where((final c) => c.combo.name.toLowerCase().contains(query))
-      .toList()
-    ..sort(comboLibraryComparator(sort)));
+  return ref
+      .watch(_combosStreamProvider)
+      .whenData(
+        (final combos) =>
+            combos
+                .where((final c) => c.combo.name.toLowerCase().contains(query))
+                .toList()
+              ..sort(comboLibraryComparator(sort)),
+      );
 });
 
 // -- Screen ------------------------------------------------------------------
@@ -217,7 +234,8 @@ class MoveListScreen extends ConsumerWidget {
     final segment = ref.watch(_arsenalSegmentProvider);
     final colorScheme = Theme.of(context).colorScheme;
 
-    final title = viewNames['title'] ?? ref.watch(entityNamesProvider).movePlural;
+    final title =
+        viewNames['title'] ?? ref.watch(entityNamesProvider).movePlural;
 
     return Scaffold(
       body: ThumbnailCoordinatorScope(
@@ -261,14 +279,15 @@ class MoveListScreen extends ConsumerWidget {
                         label: 'Search',
                         textField: true,
                         child: TextField(
-                          onChanged: (final v) =>
-                              ref.read(_searchQueryProvider.notifier).onChanged(v),
+                          onChanged: (final v) => ref
+                              .read(_searchQueryProvider.notifier)
+                              .onChanged(v),
                           decoration: InputDecoration(
                             hintText: segment == ArsenalSegment.moves
                                 ? 'Search moves...'
                                 : 'Search combos...',
-                            prefixIcon: Icon(
-                              Icons.search,
+                            prefixIcon: AppIconView(
+                              AppIcon.search,
                               color: colorScheme.secondary,
                             ),
                           ),
@@ -370,8 +389,11 @@ class MoveListScreen extends ConsumerWidget {
                             // downstream the way a move's can.
                             final combos = section
                                 .map(
-                                  (final r) =>
-                                      (r.combo, r.moveCount, r.effectiveDate(sort)),
+                                  (final r) => (
+                                    r.combo,
+                                    r.moveCount,
+                                    r.effectiveDate(sort),
+                                  ),
                                 )
                                 .toList();
                             return switch (viewMode) {
@@ -434,7 +456,7 @@ class MoveListScreen extends ConsumerWidget {
                       },
                     },
                     backgroundColor: Theme.of(context).colorScheme.primary,
-                    child: const Icon(Icons.add, color: Colors.white),
+                    child: const AppIconView(AppIcon.add, color: Colors.white),
                   ),
                 )
                 .animate()
@@ -511,7 +533,10 @@ class MoveListScreen extends ConsumerWidget {
   }
 
   Future<({String localPath, String? originalVideoName})?>
-  _captureVideoAttachment(final BuildContext context, final WidgetRef ref) async {
+  _captureVideoAttachment(
+    final BuildContext context,
+    final WidgetRef ref,
+  ) async {
     MediaPlaybackCoordinator.shared.pauseAll();
     final pickerResult = await VideoPickerSheet.show(context);
     if (!context.mounted || pickerResult == null) return null;
@@ -602,8 +627,8 @@ class _StartupVideoReliabilityBanner extends ConsumerWidget {
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Icon(
-                hasRecovery ? Icons.download_done_rounded : Icons.cloud_sync,
+              AppIconView(
+                hasRecovery ? AppIcon.check : AppIcon.sync,
                 color: hasRecovery
                     ? AppColors.accent
                     : colorScheme.onSurfaceVariant,
@@ -642,7 +667,10 @@ class _StartupVideoReliabilityBanner extends ConsumerWidget {
                           .state =
                       reportEpoch;
                 },
-                icon: Icon(Icons.close, color: colorScheme.onSurfaceVariant),
+                icon: AppIconView(
+                  AppIcon.close,
+                  color: colorScheme.onSurfaceVariant,
+                ),
               ),
             ],
           ),
@@ -945,7 +973,7 @@ class _MoveVideoPromptSheet extends StatelessWidget {
               child: FilledButton.icon(
                 onPressed: () =>
                     Navigator.pop(context, _MoveVideoIntent.addNow),
-                icon: const Icon(Icons.video_call),
+                icon: const AppIconView(AppIcon.video),
                 label: const Text('Add Video'),
               ),
             ),
@@ -979,9 +1007,9 @@ class _ViewModeToggle extends ConsumerWidget {
       items: ViewMode.values,
       selected: viewMode,
       iconOf: (final m) => switch (m) {
-        ViewMode.glance => Icons.grid_view_rounded,
-        ViewMode.scan => Icons.view_list_rounded,
-        ViewMode.study => Icons.view_agenda_rounded,
+        ViewMode.glance => AppIcon.grid.resolve(context),
+        ViewMode.scan => AppIcon.list.resolve(context),
+        ViewMode.study => AppIcon.glance.resolve(context),
       },
       labelOf: (final m) => viewNames[m.name] ?? _defaultViewModeLabel(m),
       onSelected: (final m) {
@@ -1049,10 +1077,10 @@ class LibrarySortToggle extends ConsumerWidget {
       items: LibrarySort.values,
       selected: ref.watch(librarySortProvider),
       iconOf: (final s) => switch (s) {
-        LibrarySort.recentlyAdded => Icons.schedule_rounded,
-        LibrarySort.recentlyFilmed => Icons.videocam_rounded,
-        LibrarySort.recentlyPracticed => Icons.replay_rounded,
-        LibrarySort.alphabetical => Icons.sort_by_alpha_rounded,
+        LibrarySort.recentlyAdded => AppIcon.schedule.resolve(context),
+        LibrarySort.recentlyFilmed => AppIcon.video.resolve(context),
+        LibrarySort.recentlyPracticed => AppIcon.replay.resolve(context),
+        LibrarySort.alphabetical => AppIcon.sort.resolve(context),
       },
       labelOf: (final s) => switch (s) {
         LibrarySort.recentlyAdded => l10n.librarySortAdded,
@@ -1097,8 +1125,8 @@ class LibraryFilmedFallbackNotice extends ConsumerWidget {
       padding: const EdgeInsets.only(bottom: AppSpacing.sm),
       child: Row(
         children: [
-          Icon(
-            Icons.info_outline_rounded,
+          AppIconView(
+            AppIcon.info,
             size: AppSpacing.md,
             color: colorScheme.secondary,
           ),
@@ -1198,11 +1226,7 @@ Widget librarySectionedSliver<T>({
   return SliverMainAxisGroup(
     slivers: [
       for (final section in sections) ...[
-        LibraryMonthHeader(
-          year: section.year,
-          month: section.month,
-          now: now,
-        ),
+        LibraryMonthHeader(year: section.year, month: section.month, now: now),
         sliverOf(section.items),
       ],
     ],
@@ -1222,8 +1246,8 @@ class _ArsenalSegmentControl extends ConsumerWidget {
       items: ArsenalSegment.values,
       selected: segment,
       iconOf: (final s) => switch (s) {
-        ArsenalSegment.moves => Icons.sports_martial_arts,
-        ArsenalSegment.combos => Icons.linear_scale_rounded,
+        ArsenalSegment.moves => AppIcon.move.resolve(context),
+        ArsenalSegment.combos => AppIcon.combo.resolve(context),
       },
       labelOf: (final s) => switch (s) {
         ArsenalSegment.moves => ref.watch(entityNamesProvider).movePlural,
@@ -1302,17 +1326,17 @@ class _PillToggleRow<T> extends StatelessWidget {
                           // still lay out unchanged.
                           Flexible(
                             child: Text(
-                            labelOf(item),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: AppTypography.caption.copyWith(
-                              color: selected == item
-                                  ? Colors.white
-                                  : colorScheme.onSurface,
-                              fontWeight: selected == item
-                                  ? FontWeight.w600
-                                  : FontWeight.w400,
-                            ),
+                              labelOf(item),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: AppTypography.caption.copyWith(
+                                color: selected == item
+                                    ? Colors.white
+                                    : colorScheme.onSurface,
+                                fontWeight: selected == item
+                                    ? FontWeight.w600
+                                    : FontWeight.w400,
+                              ),
                             ),
                           ),
                         ],
@@ -1384,7 +1408,9 @@ class _EmptyState extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         children: [
           Icon(
-            isCombo ? Icons.linear_scale_rounded : Icons.sports_martial_arts,
+            isCombo
+                ? AppIcon.combo.resolve(context)
+                : AppIcon.move.resolve(context),
             size: 64,
             color: colorScheme.secondary,
           ),

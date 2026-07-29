@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import 'package:breakdex/core/providers.dart';
+import 'package:breakdex/core/design/icons.dart';
 import 'package:breakdex/l10n/gen/app_localizations.dart';
 
 /// Gear icon button for accessing Settings from any screen's header.
@@ -45,8 +46,8 @@ class SettingsGearButton extends ConsumerWidget {
               style: const TextStyle(fontSize: 10, color: Colors.white),
             ),
             backgroundColor: colorScheme.primary,
-            child: Icon(
-              Icons.settings_outlined,
+            child: AppIconView(
+              AppIcon.settings,
               size: 20,
               color: colorScheme.secondary,
             ),

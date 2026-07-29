@@ -9,6 +9,7 @@ import 'package:breakdex/core/models/reviewable_item.dart';
 import 'package:breakdex/core/providers.dart';
 import 'package:breakdex/shared/widgets/pressable.dart';
 import 'package:breakdex/shared/widgets/video_player_widget.dart';
+import 'package:breakdex/core/design/icons.dart';
 
 class InstaxVideoCard extends ConsumerStatefulWidget {
   const InstaxVideoCard({
@@ -91,7 +92,9 @@ class _InstaxVideoCardState extends ConsumerState<InstaxVideoCard> {
                   fit: StackFit.expand,
                   children: [
                     RobustVideoPlayer(
-                      key: ValueKey('instax-${item.entityType}-${item.entityId}'),
+                      key: ValueKey(
+                        'instax-${item.entityType}-${item.entityId}',
+                      ),
                       videoPath: videoPath,
                       autoPlay: widget.isActive,
                       minimal: true,
@@ -137,8 +140,8 @@ class _InstaxVideoCardState extends ConsumerState<InstaxVideoCard> {
                     ),
                     if (!widget.isActive)
                       Positioned.fill(
-                        child: Icon(
-                          Icons.play_circle_fill_rounded,
+                        child: AppIconView(
+                          AppIcon.play,
                           size: 64,
                           color: Colors.white.withValues(alpha: 0.6),
                         ),
@@ -154,12 +157,13 @@ class _InstaxVideoCardState extends ConsumerState<InstaxVideoCard> {
                   child: const Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Icon(Icons.videocam_off_rounded, size: 48, color: Colors.white24),
-                      SizedBox(height: AppSpacing.sm),
-                      Text(
-                        'No video',
-                        style: TextStyle(color: Colors.white24),
+                      AppIconView(
+                        AppIcon.video,
+                        size: 48,
+                        color: Colors.white24,
                       ),
+                      SizedBox(height: AppSpacing.sm),
+                      Text('No video', style: TextStyle(color: Colors.white24)),
                     ],
                   ),
                 ),
@@ -202,4 +206,3 @@ class _InstaxVideoCardState extends ConsumerState<InstaxVideoCard> {
     );
   }
 }
-

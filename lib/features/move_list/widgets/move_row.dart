@@ -25,15 +25,19 @@ class _MoveRow extends ConsumerWidget {
         alignment: Alignment.centerRight,
         padding: const EdgeInsets.only(right: AppSpacing.screenEdge),
         color: AppColors.actionAgain,
-        child: const Icon(Icons.delete_outline, color: Colors.white),
+        child: const AppIconView(AppIcon.delete, color: Colors.white),
       ),
       onDismissed: (_) {
-        debugPrint('[MoveRow] onDismissed moveId=${move.id} name="${move.name}"');
+        debugPrint(
+          '[MoveRow] onDismissed moveId=${move.id} name="${move.name}"',
+        );
         unawaited(HapticFeedback.heavyImpact());
         unawaited(_archiveMove(ref, context));
       },
       confirmDismiss: (final direction) async {
-        debugPrint('[MoveRow] confirmDismiss direction=$direction moveId=${move.id}');
+        debugPrint(
+          '[MoveRow] confirmDismiss direction=$direction moveId=${move.id}',
+        );
         return true;
       },
       child: RepaintBoundary(
@@ -43,106 +47,114 @@ class _MoveRow extends ConsumerWidget {
           button: true,
           child: InkWell(
             onTap: () => context.go('/moves/move/${move.id}'),
-            child: Container(
-              margin: const EdgeInsets.only(bottom: AppSpacing.sm),
-              decoration: BoxDecoration(
-                color: colorScheme.surface,
-                borderRadius: BorderRadius.circular(AppRadius.sm),
-              ),
-              child: IntrinsicHeight(
-                child: Row(
-                  children: [
-                    Container(
-                      width: 5,
+            child:
+                Container(
+                      margin: const EdgeInsets.only(bottom: AppSpacing.sm),
                       decoration: BoxDecoration(
-                        color: stateColor,
-                        borderRadius: const BorderRadius.only(
-                          topLeft: Radius.circular(AppRadius.sm),
-                          bottomLeft: Radius.circular(AppRadius.sm),
-                        ),
+                        color: colorScheme.surface,
+                        borderRadius: BorderRadius.circular(AppRadius.sm),
                       ),
-                    ),
-                    Expanded(
-                      child: Padding(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: AppSpacing.md,
-                          vertical: AppSpacing.sm,
-                        ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          mainAxisAlignment: MainAxisAlignment.center,
+                      child: IntrinsicHeight(
+                        child: Row(
                           children: [
-                            Row(
-                              children: [
-                                Expanded(
-                                  child: Text(
-                                    move.name,
-                                    maxLines: 2,
-                                    overflow: TextOverflow.ellipsis,
-                                    style: AppTypography.bodyMedium.copyWith(
-                                      color: colorScheme.onSurface,
-                                    ),
-                                  ),
+                            Container(
+                              width: 5,
+                              decoration: BoxDecoration(
+                                color: stateColor,
+                                borderRadius: const BorderRadius.only(
+                                  topLeft: Radius.circular(AppRadius.sm),
+                                  bottomLeft: Radius.circular(AppRadius.sm),
                                 ),
-                                if (move.videoPath == null &&
-                                    move.contentHash == null) ...[
-                                  const SizedBox(width: 6),
-                                  Icon(
-                                    Icons.videocam_off,
-                                    size: 14,
-                                    color: colorScheme.secondary.withValues(
-                                      alpha: 0.5,
-                                    ),
-                                  ),
-                                ] else if (move.videoPath == null &&
-                                    move.contentHash != null) ...[
-                                  const SizedBox(width: 6),
-                                  Icon(
-                                    Icons.cloud_download_outlined,
-                                    size: 14,
-                                    color: AppColors.accent.withValues(
-                                      alpha: 0.5,
-                                    ),
-                                  ),
-                                ],
-                              ],
+                              ),
                             ),
-                            const SizedBox(height: AppSpacing.xs),
-                            Wrap(
-                              spacing: AppSpacing.sm,
-                              runSpacing: AppSpacing.xs,
-                              crossAxisAlignment: WrapCrossAlignment.center,
-                              children: [
-                                if (move.category != 'default')
-                                  _CategoryLabel(category: move.category),
-                                StatePill(state: state),
-                                LibraryDateLabel(date: date),
-                              ],
+                            Expanded(
+                              child: Padding(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: AppSpacing.md,
+                                  vertical: AppSpacing.sm,
+                                ),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    Row(
+                                      children: [
+                                        Expanded(
+                                          child: Text(
+                                            move.name,
+                                            maxLines: 2,
+                                            overflow: TextOverflow.ellipsis,
+                                            style: AppTypography.bodyMedium
+                                                .copyWith(
+                                                  color: colorScheme.onSurface,
+                                                ),
+                                          ),
+                                        ),
+                                        if (move.videoPath == null &&
+                                            move.contentHash == null) ...[
+                                          const SizedBox(width: 6),
+                                          AppIconView(
+                                            AppIcon.videoOff,
+                                            size: 14,
+                                            color: colorScheme.secondary
+                                                .withValues(alpha: 0.5),
+                                          ),
+                                        ] else if (move.videoPath == null &&
+                                            move.contentHash != null) ...[
+                                          const SizedBox(width: 6),
+                                          AppIconView(
+                                            AppIcon.download,
+                                            size: 14,
+                                            color: AppColors.accent.withValues(
+                                              alpha: 0.5,
+                                            ),
+                                          ),
+                                        ],
+                                      ],
+                                    ),
+                                    const SizedBox(height: AppSpacing.xs),
+                                    Wrap(
+                                      spacing: AppSpacing.sm,
+                                      runSpacing: AppSpacing.xs,
+                                      crossAxisAlignment:
+                                          WrapCrossAlignment.center,
+                                      children: [
+                                        if (move.category != 'default')
+                                          _CategoryLabel(
+                                            category: move.category,
+                                          ),
+                                        StatePill(state: state),
+                                        LibraryDateLabel(date: date),
+                                      ],
+                                    ),
+                                  ],
+                                ),
+                              ),
                             ),
                           ],
                         ),
                       ),
+                    )
+                    .animate()
+                    .fadeIn(
+                      duration: AppMotion.moderate01,
+                      delay: Duration(milliseconds: index.clamp(0, 15) * 40),
+                    )
+                    .slideY(
+                      begin: 0.03,
+                      duration: AppMotion.moderate02,
+                      delay: Duration(milliseconds: index.clamp(0, 15) * 40),
                     ),
-                  ],
-                ),
-              ),
-            ).animate()
-                .fadeIn(
-                  duration: AppMotion.moderate01,
-                  delay: Duration(milliseconds: index.clamp(0, 15) * 40),
-                )
-                .slideY(
-                  begin: 0.03,
-                  duration: AppMotion.moderate02,
-                  delay: Duration(milliseconds: index.clamp(0, 15) * 40),
-                ),
           ),
         ),
       ),
     );
   }
 
-  Future<void> _archiveMove(final WidgetRef ref, final BuildContext context) async {
+  Future<void> _archiveMove(
+    final WidgetRef ref,
+    final BuildContext context,
+  ) async {
     debugPrint('[MoveRow] ARCHIVING move: id=${move.id} name="${move.name}"');
     try {
       final repo = ref.read(moveRepositoryProvider);
@@ -155,7 +167,9 @@ class _MoveRow extends ConsumerWidget {
           action: SnackBarAction(
             label: 'Undo',
             onPressed: () {
-              debugPrint('[MoveRow] UNDO archive: id=${move.id} name="${move.name}"');
+              debugPrint(
+                '[MoveRow] UNDO archive: id=${move.id} name="${move.name}"',
+              );
               unawaited(_undoArchive(ref));
             },
           ),
@@ -253,9 +267,7 @@ class _MoveCountDots extends StatelessWidget {
           const SizedBox(width: AppSpacing.xs),
           Text(
             '+$overflow',
-            style: AppTypography.caption.copyWith(
-              color: colorScheme.secondary,
-            ),
+            style: AppTypography.caption.copyWith(color: colorScheme.secondary),
           ),
         ],
       ],

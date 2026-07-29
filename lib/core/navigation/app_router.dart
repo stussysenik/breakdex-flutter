@@ -36,6 +36,7 @@ import 'package:breakdex/shared/widgets/bottom_nav_shell.dart';
 import 'package:breakdex/shared/widgets/quick_video_viewer.dart';
 import 'package:breakdex/core/models/app_mode.dart';
 import 'package:breakdex/core/services/settings_service.dart';
+import 'package:breakdex/core/design/icons.dart';
 
 final _rootNavigatorKey = GlobalKey<NavigatorState>();
 
@@ -64,7 +65,8 @@ final appRouter = GoRouter(
               routes: [
                 GoRoute(
                   path: 'moves',
-                  builder: (final context, final state) => const MoveCategoryScreen(),
+                  builder: (final context, final state) =>
+                      const MoveCategoryScreen(),
                   routes: [
                     GoRoute(
                       path: ':category',
@@ -96,7 +98,10 @@ final appRouter = GoRouter(
         // Add — create moves
         StatefulShellBranch(
           routes: [
-            GoRoute(path: '/add', builder: (final context, final state) => const AddScreen()),
+            GoRoute(
+              path: '/add',
+              builder: (final context, final state) => const AddScreen(),
+            ),
           ],
         ),
         // Review — flashcard drill or party shake, controlled via AppMode
@@ -122,7 +127,8 @@ final appRouter = GoRouter(
           routes: [
             GoRoute(
               path: '/settings',
-              builder: (final context, final state) => const SettingsScreen.tab(),
+              builder: (final context, final state) =>
+                  const SettingsScreen.tab(),
             ),
           ],
         ),
@@ -268,11 +274,13 @@ final appRouter = GoRouter(
     ),
     GoRoute(
       path: '/moves/move/:id',
-      redirect: (final context, final state) => '/breakdex/move/${state.pathParameters['id']}',
+      redirect: (final context, final state) =>
+          '/breakdex/move/${state.pathParameters['id']}',
     ),
     GoRoute(
       path: '/moves/combo/:id',
-      redirect: (final context, final state) => '/breakdex/combo/${state.pathParameters['id']}',
+      redirect: (final context, final state) =>
+          '/breakdex/combo/${state.pathParameters['id']}',
     ),
     GoRoute(
       path: '/arsenal',
@@ -301,11 +309,7 @@ class _RedirectToHomeState extends State<_RedirectToHome> {
 
   @override
   Widget build(final BuildContext context) {
-    return const Scaffold(
-      body: Center(
-        child: AppLoader(),
-      ),
-    );
+    return const Scaffold(body: Center(child: AppLoader()));
   }
 }
 
@@ -326,18 +330,26 @@ class _EditorUnavailableOnWeb extends StatelessWidget {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(Icons.movie_creation_outlined, size: 48, color: colorScheme.secondary),
+              AppIconView(
+                AppIcon.video,
+                size: 48,
+                color: colorScheme.secondary,
+              ),
               const SizedBox(height: AppSpacing.lg),
               Text(
                 'Video editing isn’t available on web',
-                style: AppTypography.titleMedium.copyWith(color: colorScheme.onSurface),
+                style: AppTypography.titleMedium.copyWith(
+                  color: colorScheme.onSurface,
+                ),
                 textAlign: TextAlign.center,
               ),
               const SizedBox(height: AppSpacing.sm),
               Text(
                 'Trim, crop, and speed edits run on the mobile app. Web plays '
                 'videos but can’t edit them.',
-                style: AppTypography.bodySmall.copyWith(color: colorScheme.secondary),
+                style: AppTypography.bodySmall.copyWith(
+                  color: colorScheme.secondary,
+                ),
                 textAlign: TextAlign.center,
               ),
             ],
@@ -357,9 +369,9 @@ class _ReviewRouter extends ConsumerWidget {
     return switch (appMode) {
       AppMode.anki => const FlashcardReviewScreen(),
       AppMode.party => BlocProvider(
-          create: (final context) => PartyBloc(),
-          child: const PartyScreen(),
-        ),
+        create: (final context) => PartyBloc(),
+        child: const PartyScreen(),
+      ),
     };
   }
 }

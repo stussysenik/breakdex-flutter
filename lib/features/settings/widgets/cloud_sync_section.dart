@@ -14,6 +14,7 @@ import 'package:breakdex/core/sync/icloud_setup_service.dart';
 import 'package:breakdex/l10n/gen/app_localizations.dart';
 import 'package:breakdex/shared/widgets/action_tile.dart';
 import 'package:breakdex/shared/widgets/app_loader.dart';
+import 'package:breakdex/core/design/icons.dart';
 
 class CloudSyncSection extends ConsumerWidget {
   const CloudSyncSection({super.key});
@@ -26,14 +27,16 @@ class CloudSyncSection extends ConsumerWidget {
     final configuredProviders = ref.watch(cloudProvidersProvider);
 
     // Check if iCloud is already configured & enabled in the DB
-    final iCloudConnected = configuredProviders.whenOrNull(
+    final iCloudConnected =
+        configuredProviders.whenOrNull(
           data: (final providers) =>
               providers.any((final p) => p.providerType == 'icloud'),
         ) ??
         false;
 
     // Check if Google Drive is configured & enabled
-    final gDriveConnected = configuredProviders.whenOrNull(
+    final gDriveConnected =
+        configuredProviders.whenOrNull(
           data: (final providers) =>
               providers.any((final p) => p.providerType == 'gdrive'),
         ) ??
@@ -87,7 +90,7 @@ class CloudSyncSection extends ConsumerWidget {
 
         // iCloud row
         SyncProviderRow(
-          icon: Icons.cloud_outlined,
+          icon: AppIcon.cloud.resolve(context),
           title: l10n.setSyncProviderIcloudTitle,
           status: iCloudConnected
               ? ProviderStatus.connected
@@ -98,9 +101,7 @@ class CloudSyncSection extends ConsumerWidget {
                   loading: () => ProviderStatus.loading,
                   error: (_, _) => ProviderStatus.unavailable,
                 ),
-          onTap: iCloudConnected
-              ? null
-              : () => _enableICloud(context, ref),
+          onTap: iCloudConnected ? null : () => _enableICloud(context, ref),
         ),
         const SizedBox(height: AppSpacing.sm),
 
@@ -110,7 +111,7 @@ class CloudSyncSection extends ConsumerWidget {
         // holds the videos so nobody searches the wrong Drive.
         if (ref.watch(isWebPlatformProvider))
           SyncProviderRow(
-            icon: Icons.add_to_drive_outlined,
+            icon: AppIcon.add.resolve(context),
             title: l10n.setSyncProviderGdriveTitle,
             subtitle: l10n.setSyncGdriveWebUnavailable,
             status: ProviderStatus.unavailable,
@@ -118,9 +119,10 @@ class CloudSyncSection extends ConsumerWidget {
           )
         else
           SyncProviderRow(
-            icon: Icons.add_to_drive_outlined,
+            icon: AppIcon.add.resolve(context),
             title: l10n.setSyncProviderGdriveTitle,
-            subtitle: gDriveConnected &&
+            subtitle:
+                gDriveConnected &&
                     ref.watch(gdriveAccountEmailProvider).valueOrNull != null
                 ? l10n.setSyncGdriveConnectedAccount(
                     ref.watch(gdriveAccountEmailProvider).valueOrNull!,
@@ -137,7 +139,7 @@ class CloudSyncSection extends ConsumerWidget {
 
         // S3 — coming soon
         SyncProviderRow(
-          icon: Icons.storage_outlined,
+          icon: AppIcon.storage.resolve(context),
           title: l10n.setSyncProviderS3Title,
           status: ProviderStatus.comingSoon,
           onTap: null,
@@ -148,7 +150,7 @@ class CloudSyncSection extends ConsumerWidget {
         // library on demand — also the quickest way to confirm Drive writes.
         if (iCloudConnected || gDriveConnected) ...[
           ActionTile(
-            icon: Icons.cloud_upload_outlined,
+            icon: AppIcon.upload.resolve(context),
             label: l10n.setSyncReuploadTile,
             onTap: () => _reuploadManifest(context, ref),
           ),
@@ -157,19 +159,19 @@ class CloudSyncSection extends ConsumerWidget {
 
         // Links to sync screens
         ActionTile(
-          icon: Icons.sync,
+          icon: AppIcon.sync.resolve(context),
           label: l10n.setSyncStatusTile,
           onTap: () => context.push('/settings-panel/sync-status'),
         ),
         const SizedBox(height: AppSpacing.sm),
         ActionTile(
-          icon: Icons.cleaning_services_outlined,
+          icon: AppIcon.refresh.resolve(context),
           label: l10n.setSyncFreeSpaceTile,
           onTap: () => context.push('/settings-panel/free-space'),
         ),
         const SizedBox(height: AppSpacing.sm),
         ActionTile(
-          icon: Icons.help_outline,
+          icon: AppIcon.help.resolve(context),
           label: l10n.setSyncHelpTile,
           onTap: () => context.push('/settings-panel/sync-help'),
         ),
@@ -184,9 +186,7 @@ class CloudSyncSection extends ConsumerWidget {
     final l10n = AppLocalizations.of(context);
     final messenger = ScaffoldMessenger.of(context);
     await HapticFeedback.mediumImpact();
-    messenger.showSnackBar(
-      SnackBar(content: Text(l10n.setSyncReuploading)),
-    );
+    messenger.showSnackBar(SnackBar(content: Text(l10n.setSyncReuploading)));
     try {
       final count = await ref.read(manifestSyncServiceProvider).syncNow();
       if (!context.mounted) return;
@@ -209,7 +209,10 @@ class CloudSyncSection extends ConsumerWidget {
     }
   }
 
-  Future<void> _enableGDrive(final BuildContext context, final WidgetRef ref) async {
+  Future<void> _enableGDrive(
+    final BuildContext context,
+    final WidgetRef ref,
+  ) async {
     await HapticFeedback.mediumImpact();
     final result = await ref.read(gDriveSetupProvider).enable();
     if (!context.mounted) return;
@@ -217,19 +220,17 @@ class CloudSyncSection extends ConsumerWidget {
 
     switch (result) {
       case GDriveSetupResult.enabled:
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(l10n.setSyncGdriveConnected)),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(l10n.setSyncGdriveConnected)));
       case GDriveSetupResult.alreadyEnabled:
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(l10n.setSyncGdriveAlreadyConnected),
-          ),
+          SnackBar(content: Text(l10n.setSyncGdriveAlreadyConnected)),
         );
       case GDriveSetupResult.cancelled:
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(l10n.setSyncGdriveCancelled)),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(l10n.setSyncGdriveCancelled)));
     }
   }
 
@@ -259,12 +260,15 @@ class CloudSyncSection extends ConsumerWidget {
     await HapticFeedback.mediumImpact();
     await ref.read(gDriveSetupProvider).disconnect();
     if (!context.mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(l10n.setSyncGdriveDisconnected)),
-    );
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(l10n.setSyncGdriveDisconnected)));
   }
 
-  Future<void> _enableICloud(final BuildContext context, final WidgetRef ref) async {
+  Future<void> _enableICloud(
+    final BuildContext context,
+    final WidgetRef ref,
+  ) async {
     await HapticFeedback.mediumImpact();
     final result = await ref.read(iCloudSetupProvider).enable();
     if (!context.mounted) return;
@@ -272,9 +276,9 @@ class CloudSyncSection extends ConsumerWidget {
 
     switch (result) {
       case ICloudSetupResult.enabled:
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(l10n.setSyncIcloudEnabled)),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(l10n.setSyncIcloudEnabled)));
       case ICloudSetupResult.alreadyEnabled:
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text(l10n.setSyncIcloudAlreadyEnabled)),
@@ -304,14 +308,14 @@ class _AccountRow extends ConsumerWidget {
     final user = ref.watch(currentAppwriteUserProvider).valueOrNull;
     if (user == null) {
       return SyncProviderRow(
-        icon: Icons.account_circle_outlined,
+        icon: AppIcon.settings.resolve(context),
         title: 'Sign in with Google',
         status: ProviderStatus.available,
         onTap: () => context.push('/auth'),
       );
     }
     return SyncProviderRow(
-      icon: Icons.account_circle,
+      icon: AppIcon.settings.resolve(context),
       title: user.email.isNotEmpty ? user.email : 'Signed in',
       status: ProviderStatus.connected,
       onTap: () => _signOut(context, ref),
@@ -345,9 +349,9 @@ class _AccountRow extends ConsumerWidget {
       await ref.read(appwriteAuthServiceProvider).signOut();
     } on AuthException catch (e) {
       if (!context.mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(e.message)),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(e.message)));
     }
   }
 }
@@ -456,9 +460,7 @@ class SyncProviderRow extends StatelessWidget {
       case ProviderStatus.available:
         return Text(
           l10n.setSyncStatusTapToEnable,
-          style: AppTypography.caption.copyWith(
-            color: AppColors.accent,
-          ),
+          style: AppTypography.caption.copyWith(color: AppColors.accent),
         );
       case ProviderStatus.unavailable:
         return Text(
@@ -475,11 +477,7 @@ class SyncProviderRow extends StatelessWidget {
           ),
         );
       case ProviderStatus.loading:
-        return const SizedBox(
-          width: 16,
-          height: 16,
-          child: AppLoader(size: 6),
-        );
+        return const SizedBox(width: 16, height: 16, child: AppLoader(size: 6));
     }
   }
 }
@@ -504,8 +502,9 @@ class SyncHealthDot extends StatelessWidget {
           SyncHealth.syncing => Colors.blue,
           SyncHealth.pendingUpload => Colors.amber,
           SyncHealth.error => Colors.red,
-          SyncHealth.noProviders =>
-            Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.3),
+          SyncHealth.noProviders => Theme.of(
+            context,
+          ).colorScheme.onSurface.withValues(alpha: 0.3),
         },
       ),
     );

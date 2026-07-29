@@ -7,6 +7,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:uuid/uuid.dart';
 
 import 'package:breakdex/core/database/database.dart';
+import 'package:breakdex/core/design/icons.dart';
 import 'package:breakdex/core/design/spacing.dart';
 import 'package:breakdex/core/design/typography.dart';
 import 'package:breakdex/core/providers.dart';
@@ -75,7 +76,10 @@ class AuraPresetPicker extends ConsumerWidget {
   }
 
   /// Switch the active preset — single tap, no confirmation.
-  Future<void> _activatePreset(final WidgetRef ref, final String presetId) async {
+  Future<void> _activatePreset(
+    final WidgetRef ref,
+    final String presetId,
+  ) async {
     unawaited(HapticFeedback.selectionClick());
     await ref.read(auraDaoProvider).setActivePreset(presetId);
   }
@@ -140,9 +144,9 @@ class AuraPresetPicker extends ConsumerWidget {
         // Delete the preset. The links remain — they are not preset-scoped
         // in this schema version. Presets are organizational labels only.
         final db = ref.read(databaseProvider);
-        await (db.delete(db.auraPresets)
-              ..where((final t) => t.id.equals(preset.id)))
-            .go();
+        await (db.delete(
+          db.auraPresets,
+        )..where((final t) => t.id.equals(preset.id))).go();
         unawaited(HapticFeedback.mediumImpact());
     }
   }
@@ -225,7 +229,7 @@ class _AddPresetChip extends StatelessWidget {
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(Icons.add_rounded, size: 16, color: colorScheme.secondary),
+            AppIconView(AppIcon.add, size: 16, color: colorScheme.secondary),
             const SizedBox(width: 4),
             Text(
               'New',
@@ -289,15 +293,16 @@ class _PresetOptionsSheet extends StatelessWidget {
             ),
             const SizedBox(height: AppSpacing.md),
             ListTile(
-              leading:
-                  Icon(Icons.edit_rounded, color: colorScheme.onSurface),
+              leading: AppIconView(AppIcon.edit, color: colorScheme.onSurface),
               title: Text('Rename', style: AppTypography.bodyMedium),
               onTap: () => Navigator.pop(context, _PresetAction.rename),
               contentPadding: EdgeInsets.zero,
             ),
             ListTile(
-              leading: const Icon(Icons.delete_outline_rounded,
-                  color: Color(0xFFC23B2A)),
+              leading: const AppIconView(
+                AppIcon.delete,
+                color: Color(0xFFC23B2A),
+              ),
               title: Text(
                 'Delete',
                 style: AppTypography.bodyMedium.copyWith(

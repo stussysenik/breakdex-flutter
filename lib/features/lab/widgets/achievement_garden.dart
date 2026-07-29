@@ -6,6 +6,7 @@ import 'package:breakdex/core/design/typography.dart';
 import 'package:breakdex/shared/widgets/app_loader.dart';
 import 'package:breakdex/features/lab/providers/achievement_providers.dart';
 import 'package:breakdex/features/lab/widgets/achievement_tile.dart';
+import 'package:breakdex/core/design/icons.dart';
 
 /// A data-dense grid showing every move's achievement tier.
 ///
@@ -25,8 +26,7 @@ class AchievementGarden extends ConsumerWidget {
     return gardenAsync.when(
       loading: () => const Center(child: AppLoader()),
       error: (final e, _) => Center(
-        child: Text('Error loading garden: $e',
-            style: AppTypography.bodySmall),
+        child: Text('Error loading garden: $e', style: AppTypography.bodySmall),
       ),
       data: (final garden) {
         if (garden.entries.isEmpty) {
@@ -43,8 +43,8 @@ class AchievementGarden extends ConsumerWidget {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(
-            Icons.park_outlined,
+          AppIconView(
+            AppIcon.achievement,
             size: 64,
             color: colorScheme.secondary,
           ),

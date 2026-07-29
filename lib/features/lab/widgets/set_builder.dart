@@ -13,6 +13,7 @@ import 'package:breakdex/shared/widgets/app_loader.dart';
 import 'package:breakdex/features/lab/providers/lab_providers.dart';
 import 'package:breakdex/features/flow/widgets/aura_transition_indicator.dart';
 import 'package:breakdex/features/lab/widgets/set_move_card.dart';
+import 'package:breakdex/core/design/icons.dart';
 
 /// Horizontal move sequencer for labs with type 'set'.
 ///
@@ -27,11 +28,7 @@ import 'package:breakdex/features/lab/widgets/set_move_card.dart';
 /// Watches [labMovesProvider] for reactive updates — any change to the
 /// lab_moves junction table immediately reflects in the UI.
 class SetBuilder extends ConsumerWidget {
-  const SetBuilder({
-    super.key,
-    required this.labId,
-    required this.onAddMove,
-  });
+  const SetBuilder({super.key, required this.labId, required this.onAddMove});
 
   final String labId;
   final VoidCallback onAddMove;
@@ -46,7 +43,9 @@ class SetBuilder extends ConsumerWidget {
       children: [
         // Section header
         Padding(
-          padding: const EdgeInsets.symmetric(horizontal: AppSpacing.screenEdge),
+          padding: const EdgeInsets.symmetric(
+            horizontal: AppSpacing.screenEdge,
+          ),
           child: Text(
             'SET SEQUENCE',
             style: AppTypography.sectionHeader.copyWith(
@@ -58,17 +57,17 @@ class SetBuilder extends ConsumerWidget {
 
         // Sequencer row
         labMovesAsync.when(
-          loading: () => const SizedBox(
-            height: 120,
-            child: Center(child: AppLoader()),
-          ),
+          loading: () =>
+              const SizedBox(height: 120, child: Center(child: AppLoader())),
           error: (final e, _) => Padding(
             padding: const EdgeInsets.symmetric(
               horizontal: AppSpacing.screenEdge,
             ),
             child: Text(
               'Error loading moves: $e',
-              style: AppTypography.caption.copyWith(color: AppColors.actionAgain),
+              style: AppTypography.caption.copyWith(
+                color: AppColors.actionAgain,
+              ),
             ),
           ),
           data: (final labMoves) {
@@ -114,34 +113,33 @@ class SetBuilder extends ConsumerWidget {
                             ),
                           ),
                         ),
-                        childWhenDragging: Opacity(
-                          opacity: 0.3,
-                          child: card,
-                        ),
+                        childWhenDragging: Opacity(opacity: 0.3, child: card),
                         onDragStarted: () => HapticFeedback.mediumImpact(),
                         child: DragTarget<int>(
                           onAcceptWithDetails: (final details) {
                             _reorder(ref, labMoves, details.data, index);
                           },
-                          builder: (final context, final candidates, final rejects) {
-                            return AnimatedContainer(
-                              duration: AppMotion.fast02,
-                              padding: EdgeInsets.all(
-                                candidates.isNotEmpty ? 4 : 0,
-                              ),
-                              decoration: BoxDecoration(
-                                borderRadius:
-                                    BorderRadius.circular(AppRadius.md),
-                                border: candidates.isNotEmpty
-                                    ? Border.all(
-                                        color: AppColors.accent,
-                                        width: 2,
-                                      )
-                                    : null,
-                              ),
-                              child: card,
-                            );
-                          },
+                          builder:
+                              (final context, final candidates, final rejects) {
+                                return AnimatedContainer(
+                                  duration: AppMotion.fast02,
+                                  padding: EdgeInsets.all(
+                                    candidates.isNotEmpty ? 4 : 0,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    borderRadius: BorderRadius.circular(
+                                      AppRadius.md,
+                                    ),
+                                    border: candidates.isNotEmpty
+                                        ? Border.all(
+                                            color: AppColors.accent,
+                                            width: 2,
+                                          )
+                                        : null,
+                                  ),
+                                  child: card,
+                                );
+                              },
                         ),
                       ),
                       // Aura transition indicator between cards —
@@ -215,8 +213,8 @@ class _EmptySetState extends StatelessWidget {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(
-                Icons.drag_indicator_rounded,
+              AppIconView(
+                AppIcon.menu,
                 color: colorScheme.secondary.withValues(alpha: 0.5),
                 size: 28,
               ),
@@ -265,8 +263,8 @@ class _AddMoveButton extends StatelessWidget {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(
-                Icons.add_rounded,
+              AppIconView(
+                AppIcon.add,
                 color: AppColors.accent.withValues(alpha: 0.7),
                 size: 28,
               ),

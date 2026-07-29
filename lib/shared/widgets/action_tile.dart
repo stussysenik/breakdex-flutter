@@ -6,6 +6,7 @@ import 'package:flutter/services.dart';
 import 'package:breakdex/core/design/colors.dart';
 import 'package:breakdex/core/design/spacing.dart';
 import 'package:breakdex/core/design/typography.dart';
+import 'package:breakdex/core/design/icons.dart';
 
 /// Reusable row tile with icon, label, chevron — used across settings, detail screens, etc.
 class ActionTile extends StatelessWidget {
@@ -64,8 +65,8 @@ class ActionTile extends StatelessWidget {
                 ),
               ),
               const SizedBox(width: AppSpacing.sm),
-              Icon(
-                Icons.chevron_right,
+              AppIconView(
+                AppIcon.forward,
                 color: colorScheme.secondary.withValues(alpha: 0.5),
                 size: 20,
               ),

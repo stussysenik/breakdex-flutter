@@ -9,6 +9,7 @@ import 'package:breakdex/core/design/colors.dart';
 import 'package:breakdex/core/design/spacing.dart';
 import 'package:breakdex/core/design/typography.dart';
 import 'package:breakdex/features/flashcard_review/providers/review_providers.dart';
+import 'package:breakdex/core/design/icons.dart';
 
 /// Forward-looking month calendar for the Schedule review mode.
 ///
@@ -66,8 +67,18 @@ class _ScheduleCalendarState extends ConsumerState<ScheduleCalendar> {
 
     // Month header text
     final months = [
-      'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-      'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'May',
+      'Jun',
+      'Jul',
+      'Aug',
+      'Sep',
+      'Oct',
+      'Nov',
+      'Dec',
     ];
     final headerText =
         '${months[_displayedMonth.month - 1]} ${_displayedMonth.year}';
@@ -93,8 +104,11 @@ class _ScheduleCalendarState extends ConsumerState<ScheduleCalendar> {
             children: [
               GestureDetector(
                 onTap: _previousMonth,
-                child: Icon(Icons.chevron_left,
-                    color: colorScheme.onSurface, size: 24),
+                child: AppIconView(
+                  AppIcon.back,
+                  color: colorScheme.onSurface,
+                  size: 24,
+                ),
               ),
               Text(
                 headerText,
@@ -105,8 +119,11 @@ class _ScheduleCalendarState extends ConsumerState<ScheduleCalendar> {
               ),
               GestureDetector(
                 onTap: _nextMonth,
-                child: Icon(Icons.chevron_right,
-                    color: colorScheme.onSurface, size: 24),
+                child: AppIconView(
+                  AppIcon.forward,
+                  color: colorScheme.onSurface,
+                  size: 24,
+                ),
               ),
             ],
           ),
@@ -115,17 +132,19 @@ class _ScheduleCalendarState extends ConsumerState<ScheduleCalendar> {
           // Day-of-week headers
           Row(
             children: ['M', 'T', 'W', 'T', 'F', 'S', 'S']
-                .map((final d) => Expanded(
-                      child: Center(
-                        child: Text(
-                          d,
-                          style: AppTypography.caption.copyWith(
-                            color: colorScheme.secondary,
-                            fontWeight: FontWeight.w600,
-                          ),
+                .map(
+                  (final d) => Expanded(
+                    child: Center(
+                      child: Text(
+                        d,
+                        style: AppTypography.caption.copyWith(
+                          color: colorScheme.secondary,
+                          fontWeight: FontWeight.w600,
                         ),
                       ),
-                    ))
+                    ),
+                  ),
+                )
                 .toList(),
           ),
           const SizedBox(height: 4),
@@ -156,9 +175,11 @@ class _ScheduleCalendarState extends ConsumerState<ScheduleCalendar> {
                       onTap: () {
                         HapticFeedback.selectionClick();
                         ref
-                            .read(
-                                reviewCalendarSelectedDateProvider.notifier)
-                            .state = date;
+                                .read(
+                                  reviewCalendarSelectedDateProvider.notifier,
+                                )
+                                .state =
+                            date;
                       },
                       child: Container(
                         height: 40,
@@ -171,7 +192,9 @@ class _ScheduleCalendarState extends ConsumerState<ScheduleCalendar> {
                                 )
                               : null,
                           color: isSelected
-                              ? Theme.of(context).colorScheme.primary.withValues(alpha: 0.15)
+                              ? Theme.of(
+                                  context,
+                                ).colorScheme.primary.withValues(alpha: 0.15)
                               : null,
                         ),
                         child: Column(
@@ -181,11 +204,12 @@ class _ScheduleCalendarState extends ConsumerState<ScheduleCalendar> {
                               '$dayIndex',
                               style: AppTypography.caption.copyWith(
                                 color: isPast && count == 0
-                                    ? colorScheme.secondary
-                                        .withValues(alpha: 0.3)
+                                    ? colorScheme.secondary.withValues(
+                                        alpha: 0.3,
+                                      )
                                     : count > 0
-                                        ? colorScheme.onSurface
-                                        : colorScheme.secondary,
+                                    ? colorScheme.onSurface
+                                    : colorScheme.secondary,
                                 fontWeight: isSelected
                                     ? FontWeight.w700
                                     : FontWeight.w400,
@@ -199,7 +223,11 @@ class _ScheduleCalendarState extends ConsumerState<ScheduleCalendar> {
                                 height: _dotSize(count),
                                 decoration: BoxDecoration(
                                   shape: BoxShape.circle,
-                                  color: _dotColor(count, isPast, Theme.of(context).colorScheme.primary),
+                                  color: _dotColor(
+                                    count,
+                                    isPast,
+                                    Theme.of(context).colorScheme.primary,
+                                  ),
                                 ),
                               )
                             else

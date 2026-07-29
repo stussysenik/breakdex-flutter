@@ -34,6 +34,7 @@ import 'package:breakdex/shared/widgets/app_loader.dart';
 import 'package:breakdex/features/combo_detail/widgets/status_tag.dart';
 import 'package:breakdex/features/combo_detail/widgets/journal_list.dart';
 import 'package:breakdex/features/combo_detail/widgets/jot_composer.dart';
+import 'package:breakdex/core/design/icons.dart';
 
 class ComboDetailScreen extends ConsumerStatefulWidget {
   const ComboDetailScreen({super.key, required this.comboId});
@@ -55,7 +56,10 @@ class _ComboDetailScreenState extends ConsumerState<ComboDetailScreen> {
     final allIdsAsync = ref.watch(allComboIdsProvider);
     final colorScheme = Theme.of(context).colorScheme;
 
-    ref.listen<sm.ComboDetailState>(comboDetailStateProvider(widget.comboId), (final prev, final next) {
+    ref.listen<sm.ComboDetailState>(comboDetailStateProvider(widget.comboId), (
+      final prev,
+      final next,
+    ) {
       if (next is sm.Gone && mounted) {
         context.pop();
       }
@@ -77,7 +81,7 @@ class _ComboDetailScreenState extends ConsumerState<ComboDetailScreen> {
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(Icons.chevron_left, color: colorScheme.secondary, size: 20),
+              AppIconView(AppIcon.back, color: colorScheme.secondary, size: 20),
               Text(
                 ref.watch(entityNamesProvider).comboPlural,
                 style: AppTypography.sectionHeader.copyWith(
@@ -92,68 +96,118 @@ class _ComboDetailScreenState extends ConsumerState<ComboDetailScreen> {
             : [
                 if (hasPrev)
                   IconButton(
-                    icon: Icon(Icons.chevron_left_rounded, color: colorScheme.onSurface, size: 22),
+                    icon: AppIconView(
+                      AppIcon.back,
+                      color: colorScheme.onSurface,
+                      size: 22,
+                    ),
                     tooltip: 'Previous combo',
-                    onPressed: () => _navigateToCombo(context, allIds[currentIdx - 1]),
+                    onPressed: () =>
+                        _navigateToCombo(context, allIds[currentIdx - 1]),
                   ),
                 if (hasNext)
                   IconButton(
-                    icon: Icon(Icons.chevron_right_rounded, color: colorScheme.onSurface, size: 22),
+                    icon: AppIconView(
+                      AppIcon.forward,
+                      color: colorScheme.onSurface,
+                      size: 22,
+                    ),
                     tooltip: 'Next combo',
-                    onPressed: () => _navigateToCombo(context, allIds[currentIdx + 1]),
+                    onPressed: () =>
+                        _navigateToCombo(context, allIds[currentIdx + 1]),
                   ),
                 PopupMenuButton<String>(
-                  icon: Icon(Icons.more_horiz, color: colorScheme.onSurface),
-                  onSelected: (final action) => _handleAction(context, action, combo),
+                  icon: AppIconView(AppIcon.more, color: colorScheme.onSurface),
+                  onSelected: (final action) =>
+                      _handleAction(context, action, combo),
                   itemBuilder: (_) => [
                     PopupMenuItem(
                       value: 'plan',
-                      child: Row(children: [
-                        Icon(Icons.calendar_today, size: 18, color: colorScheme.secondary),
-                        const SizedBox(width: AppSpacing.sm),
-                        const Text('Plan for a day…'),
-                      ]),
+                      child: Row(
+                        children: [
+                          AppIconView(
+                            AppIcon.calendar,
+                            size: 18,
+                            color: colorScheme.secondary,
+                          ),
+                          const SizedBox(width: AppSpacing.sm),
+                          const Text('Plan for a day…'),
+                        ],
+                      ),
                     ),
                     PopupMenuItem(
                       value: 'duplicate',
-                      child: Row(children: [
-                        Icon(Icons.copy, size: 18, color: colorScheme.secondary),
-                        const SizedBox(width: AppSpacing.sm),
-                        const Text('Duplicate'),
-                      ]),
+                      child: Row(
+                        children: [
+                          AppIconView(
+                            AppIcon.copy,
+                            size: 18,
+                            color: colorScheme.secondary,
+                          ),
+                          const SizedBox(width: AppSpacing.sm),
+                          const Text('Duplicate'),
+                        ],
+                      ),
                     ),
                     PopupMenuItem(
                       value: 'edit',
-                      child: Row(children: [
-                        Icon(Icons.edit_outlined, size: 18, color: colorScheme.secondary),
-                        const SizedBox(width: AppSpacing.sm),
-                        const Text('Edit'),
-                      ]),
+                      child: Row(
+                        children: [
+                          AppIconView(
+                            AppIcon.edit,
+                            size: 18,
+                            color: colorScheme.secondary,
+                          ),
+                          const SizedBox(width: AppSpacing.sm),
+                          const Text('Edit'),
+                        ],
+                      ),
                     ),
                     PopupMenuItem(
                       value: 'share',
-                      child: Row(children: [
-                        Icon(Icons.ios_share, size: 18, color: colorScheme.secondary),
-                        const SizedBox(width: AppSpacing.sm),
-                        const Text('Share'),
-                      ]),
+                      child: Row(
+                        children: [
+                          AppIconView(
+                            AppIcon.share,
+                            size: 18,
+                            color: colorScheme.secondary,
+                          ),
+                          const SizedBox(width: AppSpacing.sm),
+                          const Text('Share'),
+                        ],
+                      ),
                     ),
                     PopupMenuItem(
                       value: 'save-album',
-                      child: Row(children: [
-                        Icon(Icons.save_alt_outlined, size: 18, color: colorScheme.secondary),
-                        const SizedBox(width: AppSpacing.sm),
-                        const Text('Save to Album'),
-                      ]),
+                      child: Row(
+                        children: [
+                          AppIconView(
+                            AppIcon.save,
+                            size: 18,
+                            color: colorScheme.secondary,
+                          ),
+                          const SizedBox(width: AppSpacing.sm),
+                          const Text('Save to Album'),
+                        ],
+                      ),
                     ),
                     const PopupMenuDivider(),
                     PopupMenuItem(
                       value: 'delete',
-                      child: Row(children: [
-                        Icon(Icons.delete_forever, size: 18, color: colorScheme.error),
-                        const SizedBox(width: AppSpacing.sm),
-                        Text('Delete', style: TextStyle(color: colorScheme.error)),
-                      ]),
+                      child: Row(
+                        children: [
+                          AppIconView(
+                            AppIcon.delete,
+                            size: 18,
+                            color: colorScheme.error,
+                          ),
+                          const SizedBox(width: AppSpacing.sm),
+                          Text(
+                            'Delete',
+                            style: TextStyle(color: colorScheme.error),
+                          ),
+                        ],
+                      ),
                     ),
                   ],
                 ),
@@ -176,7 +230,11 @@ class _ComboDetailScreenState extends ConsumerState<ComboDetailScreen> {
     );
   }
 
-  void _handleAction(final BuildContext context, final String action, final Combo combo) {
+  void _handleAction(
+    final BuildContext context,
+    final String action,
+    final Combo combo,
+  ) {
     switch (action) {
       case 'plan':
         _planCombo(context);
@@ -216,26 +274,35 @@ class _ComboDetailScreenState extends ConsumerState<ComboDetailScreen> {
       lastDate: now.add(const Duration(days: 365)),
     ).then((final picked) async {
       if (picked == null || !mounted) return;
-      await ref.read(comboPlansDaoProvider).insertPlan(
-        ComboPlansCompanion.insert(
-          id: const Uuid().v4(),
-          comboId: widget.comboId,
-          planDate: ComboPlansDao.dateOnly(picked),
-        ),
-      );
+      await ref
+          .read(comboPlansDaoProvider)
+          .insertPlan(
+            ComboPlansCompanion.insert(
+              id: const Uuid().v4(),
+              comboId: widget.comboId,
+              planDate: ComboPlansDao.dateOnly(picked),
+            ),
+          );
       if (mounted) {
         ScaffoldMessenger.of(this.context).showSnackBar(
-          SnackBar(content: Text('Planned for ${DateFormat('MMM d').format(picked)}')),
+          SnackBar(
+            content: Text('Planned for ${DateFormat('MMM d').format(picked)}'),
+          ),
         );
       }
     });
   }
 
-  Future<void> _duplicateCombo(final BuildContext context, final Combo source) async {
+  Future<void> _duplicateCombo(
+    final BuildContext context,
+    final Combo source,
+  ) async {
     final newId = const Uuid().v4();
     final newName = '${source.name} (copy)';
 
-    await ref.read(combosDaoProvider).duplicateCombo(
+    await ref
+        .read(combosDaoProvider)
+        .duplicateCombo(
           sourceComboId: source.id,
           newComboId: newId,
           newName: newName,
@@ -244,9 +311,9 @@ class _ComboDetailScreenState extends ConsumerState<ComboDetailScreen> {
         );
 
     if (mounted) {
-      ScaffoldMessenger.of(this.context).showSnackBar(
-        SnackBar(content: Text('Duplicated as "$newName"')),
-      );
+      ScaffoldMessenger.of(
+        this.context,
+      ).showSnackBar(SnackBar(content: Text('Duplicated as "$newName"')));
       unawaited(this.context.push('/breakdex/combo/$newId'));
     }
   }
@@ -265,7 +332,9 @@ class _ComboDetailScreenState extends ConsumerState<ComboDetailScreen> {
             onPressed: () {
               Navigator.pop(context);
               unawaited(HapticFeedback.heavyImpact());
-              ref.read(comboDetailStateProvider(widget.comboId).notifier).send(sm.ConfirmDelete());
+              ref
+                  .read(comboDetailStateProvider(widget.comboId).notifier)
+                  .send(sm.ConfirmDelete());
             },
             child: const Text('Delete Combo'),
           ),
@@ -311,9 +380,9 @@ class _ComboDetailScreenState extends ConsumerState<ComboDetailScreen> {
     } on Object catch (e) {
       DiagnosticsLog.error('ComboDetail', '_saveToAlbum failed: $e');
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed to save: $e')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Failed to save: $e')));
       }
     }
   }
@@ -341,8 +410,13 @@ class _ComboDetailBody extends ConsumerWidget {
   @override
   Widget build(final BuildContext context, final WidgetRef ref) {
     final colorScheme = Theme.of(context).colorScheme;
-    final safeIndex = activeIndex.clamp(0, comboMoves.isEmpty ? 0 : comboMoves.length - 1);
-    final currentMove = comboMoves.isNotEmpty ? comboMoves[safeIndex].move : null;
+    final safeIndex = activeIndex.clamp(
+      0,
+      comboMoves.isEmpty ? 0 : comboMoves.length - 1,
+    );
+    final currentMove = comboMoves.isNotEmpty
+        ? comboMoves[safeIndex].move
+        : null;
     final chain = comboMoves.map((final m) => m.move.name).join(' → ');
 
     return Column(
@@ -377,7 +451,9 @@ class _ComboDetailBody extends ConsumerWidget {
               StatusTag(
                 status: combo.status,
                 onChanged: (final newStatus) async {
-                  await ref.read(combosDaoProvider).updateStatus(
+                  await ref
+                      .read(combosDaoProvider)
+                      .updateStatus(
                         comboId: comboId,
                         newStatus: newStatus,
                         entryId: const Uuid().v4(),
@@ -388,7 +464,9 @@ class _ComboDetailBody extends ConsumerWidget {
               // Video player
               if (currentMove != null && currentMove.videoPath != null)
                 RobustVideoPlayer(
-                  key: ValueKey('${currentMove.id}:$safeIndex:${currentMove.contentHash}'),
+                  key: ValueKey(
+                    '${currentMove.id}:$safeIndex:${currentMove.contentHash}',
+                  ),
                   videoPath: currentMove.resolvedVideoPath!,
                   autoPlay: true,
                 )
@@ -427,8 +505,8 @@ class _ComboDetailBody extends ConsumerWidget {
                         ),
                       ],
                     ),
-                    Icon(
-                      Icons.arrow_forward_ios,
+                    AppIconView(
+                      AppIcon.forward,
                       size: 14,
                       color: colorScheme.secondary,
                     ),
@@ -445,7 +523,8 @@ class _ComboDetailBody extends ConsumerWidget {
         // (house pattern, see move_list_screen FAB).
         Padding(
           padding: EdgeInsets.only(
-            bottom: kBottomNavigationBarHeight +
+            bottom:
+                kBottomNavigationBarHeight +
                 MediaQuery.of(context).padding.bottom,
           ),
           child: JotComposer(comboId: comboId),
@@ -482,15 +561,24 @@ class _SmOverlay extends ConsumerWidget {
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      const Icon(Icons.error_outline, color: Colors.white70, size: 48),
+                      const AppIconView(
+                        AppIcon.error,
+                        color: Colors.white70,
+                        size: 48,
+                      ),
                       const SizedBox(height: AppSpacing.md),
-                      Text(smState.message,
-                          style: const TextStyle(color: Colors.white70),
-                          textAlign: TextAlign.center),
+                      Text(
+                        smState.message,
+                        style: const TextStyle(color: Colors.white70),
+                        textAlign: TextAlign.center,
+                      ),
                       const SizedBox(height: AppSpacing.lg),
                       TextButton(
                         onPressed: () => notifier.send(sm.Cancel()),
-                        child: const Text('OK', style: TextStyle(color: Colors.white)),
+                        child: const Text(
+                          'OK',
+                          style: TextStyle(color: Colors.white),
+                        ),
                       ),
                     ],
                   ),

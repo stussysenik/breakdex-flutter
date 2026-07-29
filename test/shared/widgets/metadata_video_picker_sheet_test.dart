@@ -207,7 +207,7 @@ void main() {
 
       expect(find.text('clip.mov'), findsOneWidget);
       // Slot 4 — the already-in-Breakdex mark resolved from the index.
-      expect(find.byIcon(Icons.bookmark_added_rounded), findsOneWidget);
+      expect(_alreadyInBreakdexMark, findsOneWidget);
 
       // Selecting + importing the member never imports silently.
       await tester.tap(find.text('clip.mov'));
@@ -234,7 +234,7 @@ void main() {
       expect(find.text('a.mov'), findsOneWidget);
       // id-a.mov never equals the managed id, and camera-roll has no hash —
       // an honest miss.
-      expect(find.byIcon(Icons.bookmark_added_rounded), findsNothing);
+      expect(_alreadyInBreakdexMark, findsNothing);
     });
   });
 
@@ -313,3 +313,13 @@ void main() {
     });
   });
 }
+
+/// The membership mark is the tile's "Already in Breakdex" badge.
+///
+/// Matched by its semantics label, not by icon: the badge and the selection
+/// tick both render [AppIcon.check], so an icon finder cannot tell them apart.
+final Finder _alreadyInBreakdexMark = find.byWidgetPredicate(
+  (final widget) =>
+      widget is Semantics && widget.properties.label == 'Already in Breakdex',
+  description: 'the "Already in Breakdex" membership mark',
+);

@@ -10,6 +10,7 @@ import 'package:breakdex/core/design/theme.dart';
 import 'package:breakdex/core/design/typography.dart';
 import 'package:breakdex/shared/widgets/app_loader.dart';
 import 'package:breakdex/features/lab/providers/lab_providers.dart';
+import 'package:breakdex/core/design/icons.dart';
 
 /// Sets view — shows labs filtered to labType='set' only.
 ///
@@ -27,12 +28,10 @@ class LabSetsView extends ConsumerWidget {
     final setsAsync = ref.watch(_setsStreamProvider);
 
     return setsAsync.when(
-      loading: () => const SliverFillRemaining(
-        child: Center(child: AppLoader()),
-      ),
-      error: (final e, _) => SliverFillRemaining(
-        child: Center(child: Text('Error: $e')),
-      ),
+      loading: () =>
+          const SliverFillRemaining(child: Center(child: AppLoader())),
+      error: (final e, _) =>
+          SliverFillRemaining(child: Center(child: Text('Error: $e'))),
       data: (final sets) {
         if (sets.isEmpty) {
           return const SliverFillRemaining(child: _SetsEmptyState());
@@ -41,27 +40,23 @@ class LabSetsView extends ConsumerWidget {
         // The frame's content band supplies the gutter; re-applying it here
         // would double the inset.
         return SliverList.builder(
-            itemCount: sets.length,
-            itemBuilder: (_, final index) {
-              final lab = sets[index];
-              return _SetCard(
-                lab: lab,
-                onTap: () => context.push('/lab/${lab.id}'),
-              )
-                  .animate()
-                  .fadeIn(
-                    duration: AppMotion.moderate01,
-                    delay: Duration(
-                      milliseconds: index.clamp(0, 15) * 40,
-                    ),
-                  )
-                  .slideY(
-                    begin: 0.03,
-                    duration: AppMotion.moderate02,
-                    delay: Duration(
-                      milliseconds: index.clamp(0, 15) * 40,
-                    ),
-                  );
+          itemCount: sets.length,
+          itemBuilder: (_, final index) {
+            final lab = sets[index];
+            return _SetCard(
+                  lab: lab,
+                  onTap: () => context.push('/lab/${lab.id}'),
+                )
+                .animate()
+                .fadeIn(
+                  duration: AppMotion.moderate01,
+                  delay: Duration(milliseconds: index.clamp(0, 15) * 40),
+                )
+                .slideY(
+                  begin: 0.03,
+                  duration: AppMotion.moderate02,
+                  delay: Duration(milliseconds: index.clamp(0, 15) * 40),
+                );
           },
         );
       },
@@ -103,8 +98,8 @@ class _SetCard extends ConsumerWidget {
             // Top row: name + move count badge
             Row(
               children: [
-                Icon(
-                  Icons.playlist_play_rounded,
+                AppIconView(
+                  AppIcon.combo,
                   size: 18,
                   color: colorScheme.primary,
                 ),
@@ -152,11 +147,9 @@ class _SetCard extends ConsumerWidget {
                     for (var i = 0; i < moves.length && i < 5; i++) ...[
                       if (i > 0) ...[
                         Padding(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 4,
-                          ),
-                          child: Icon(
-                            Icons.arrow_forward_ios_rounded,
+                          padding: const EdgeInsets.symmetric(horizontal: 4),
+                          child: AppIconView(
+                            AppIcon.forward,
                             size: 8,
                             color: colorScheme.secondary.withValues(alpha: 0.5),
                           ),
@@ -210,7 +203,6 @@ class _SetCard extends ConsumerWidget {
       ),
     );
   }
-
 }
 
 // -- Empty State --------------------------------------------------------------
@@ -226,11 +218,7 @@ class _SetsEmptyState extends StatelessWidget {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(
-            Icons.playlist_play_rounded,
-            size: 64,
-            color: colorScheme.secondary,
-          ),
+          AppIconView(AppIcon.combo, size: 64, color: colorScheme.secondary),
           const SizedBox(height: AppSpacing.md),
           Text(
             'Create your first set',

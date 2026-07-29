@@ -5,6 +5,7 @@ import 'package:breakdex/core/design/spacing.dart';
 import 'package:breakdex/core/design/typography.dart';
 import 'package:breakdex/core/config/entitlement.dart';
 import 'package:breakdex/core/config/entitlement_providers.dart';
+import 'package:breakdex/core/design/icons.dart';
 
 /// Root wrapper that renders the invite-code gate over [child] for released
 /// builds that require an entitlement.
@@ -31,16 +32,16 @@ class EntitlementGatePrompt extends ConsumerWidget {
     return switch (gate) {
       EntitlementGranted() => child,
       EntitlementRequired() => Stack(
-          children: [
-            child,
-            const ModalBarrier(
-              key: barrierKey,
-              dismissible: false,
-              color: Colors.black54,
-            ),
-            const Center(child: _InviteEntryCard()),
-          ],
-        ),
+        children: [
+          child,
+          const ModalBarrier(
+            key: barrierKey,
+            dismissible: false,
+            color: Colors.black54,
+          ),
+          const Center(child: _InviteEntryCard()),
+        ],
+      ),
     };
   }
 }
@@ -89,14 +90,13 @@ class _InviteEntryCardState extends ConsumerState<_InviteEntryCard> {
   }
 
   String _messageFor(final RedeemOutcome outcome) => switch (outcome) {
-        RedeemOutcome.invalidCode => "That code isn't valid. Check it and retry.",
-        RedeemOutcome.expired => 'That code has expired.',
-        RedeemOutcome.exhausted => 'That code has been fully used.',
-        RedeemOutcome.error => "Couldn't reach the server. Try again.",
-        RedeemOutcome.granted ||
-        RedeemOutcome.alreadyEntitled =>
-          '', // never shown — a grant lifts the gate
-      };
+    RedeemOutcome.invalidCode => "That code isn't valid. Check it and retry.",
+    RedeemOutcome.expired => 'That code has expired.',
+    RedeemOutcome.exhausted => 'That code has been fully used.',
+    RedeemOutcome.error => "Couldn't reach the server. Try again.",
+    RedeemOutcome.granted ||
+    RedeemOutcome.alreadyEntitled => '', // never shown — a grant lifts the gate
+  };
 
   @override
   Widget build(final BuildContext context) {
@@ -113,7 +113,11 @@ class _InviteEntryCardState extends ConsumerState<_InviteEntryCard> {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              Icon(Icons.key_outlined, size: 40, color: colorScheme.primary),
+              AppIconView(
+                AppIcon.settings,
+                size: 40,
+                color: colorScheme.primary,
+              ),
               const SizedBox(height: AppSpacing.md),
               Text(
                 'Enter your invite code',

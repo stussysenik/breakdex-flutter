@@ -55,6 +55,7 @@ dependencies:
   appwrite: ^25.2.0
   flutter_web_auth_2: ^5.0.3
   meta: ^1.17.0
+  lucide_icons_flutter: ^3.1.15
 
 dev_dependencies:
   flutter_test:

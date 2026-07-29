@@ -5,6 +5,7 @@ import 'package:breakdex/core/design/colors.dart';
 import 'package:breakdex/core/design/spacing.dart';
 import 'package:breakdex/core/design/typography.dart';
 import 'package:breakdex/features/move_analysis/providers/analysis_providers.dart';
+import 'package:breakdex/core/design/icons.dart';
 
 /// Toolbar at the bottom of the MoveAnalysisScreen.
 ///
@@ -29,9 +30,7 @@ class AnalysisToolbar extends ConsumerWidget {
       ),
       decoration: BoxDecoration(
         color: colorScheme.surfaceContainerHighest,
-        border: Border(
-          top: BorderSide(color: colorScheme.outline, width: 0.5),
-        ),
+        border: Border(top: BorderSide(color: colorScheme.outline, width: 0.5)),
       ),
       child: SafeArea(
         top: false,
@@ -46,17 +45,15 @@ class AnalysisToolbar extends ConsumerWidget {
             const Spacer(),
             // Background removal
             _ToolbarButton(
-              icon: Icons.content_cut,
+              icon: AppIcon.edit.resolve(context),
               label: 'BG',
               isActive: segActive,
-              onTap: () => ref
-                  .read(segmentationActiveProvider.notifier)
-                  .state = !segActive,
+              onTap: () => ref.read(segmentationActiveProvider.notifier).state =
+                  !segActive,
             ),
             const SizedBox(width: AppSpacing.md),
             // Live indicator
-            if (mode == AnalysisMode.camera)
-              _LiveIndicator(isActive: livePose),
+            if (mode == AnalysisMode.camera) _LiveIndicator(isActive: livePose),
           ],
         ),
       ),
@@ -85,13 +82,13 @@ class _ModeToggle extends StatelessWidget {
         children: [
           _SegmentButton(
             label: 'Video',
-            icon: Icons.videocam,
+            icon: AppIcon.video.resolve(context),
             isSelected: mode == AnalysisMode.video,
             onTap: () => onChanged(AnalysisMode.video),
           ),
           _SegmentButton(
             label: 'Camera',
-            icon: Icons.camera_alt,
+            icon: AppIcon.camera.resolve(context),
             isSelected: mode == AnalysisMode.camera,
             onTap: () => onChanged(AnalysisMode.camera),
           ),
@@ -123,7 +120,9 @@ class _SegmentButton extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
         decoration: BoxDecoration(
-          color: isSelected ? Theme.of(context).colorScheme.primary : Colors.transparent,
+          color: isSelected
+              ? Theme.of(context).colorScheme.primary
+              : Colors.transparent,
           borderRadius: BorderRadius.circular(AppRadius.sm - 2),
         ),
         child: Row(
@@ -176,7 +175,9 @@ class _ToolbarButton extends StatelessWidget {
               : Colors.transparent,
           borderRadius: BorderRadius.circular(AppRadius.sm),
           border: Border.all(
-            color: isActive ? Theme.of(context).colorScheme.primary : colorScheme.outline,
+            color: isActive
+                ? Theme.of(context).colorScheme.primary
+                : colorScheme.outline,
             width: 0.5,
           ),
         ),
@@ -186,13 +187,17 @@ class _ToolbarButton extends StatelessWidget {
             Icon(
               icon,
               size: 16,
-              color: isActive ? Theme.of(context).colorScheme.primary : colorScheme.secondary,
+              color: isActive
+                  ? Theme.of(context).colorScheme.primary
+                  : colorScheme.secondary,
             ),
             const SizedBox(width: 4),
             Text(
               label,
               style: AppTypography.caption.copyWith(
-                color: isActive ? Theme.of(context).colorScheme.primary : colorScheme.secondary,
+                color: isActive
+                    ? Theme.of(context).colorScheme.primary
+                    : colorScheme.secondary,
               ),
             ),
           ],

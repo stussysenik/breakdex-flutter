@@ -11,6 +11,7 @@ import 'package:breakdex/core/design/typography.dart';
 import 'package:breakdex/core/providers.dart';
 import 'package:breakdex/core/utils/diagnostics.dart';
 import 'package:breakdex/features/combo_detail/widgets/library_video_picker_sheet.dart';
+import 'package:breakdex/core/design/icons.dart';
 
 /// The pinned capture affordance: text field, "+ video", accent send.
 /// One action — jot it down. Every send appends one immutable journal row.
@@ -46,16 +47,16 @@ class _JotComposerState extends ConsumerState<JotComposer> {
     final body = _controller.text.trim();
     if (body.isEmpty) return;
 
-    final log = StageLogger.begin('JotComposer._send',
-        subsystem: 'ComboJourney',
-        context: {'comboId': widget.comboId, 'length': body.length});
+    final log = StageLogger.begin(
+      'JotComposer._send',
+      subsystem: 'ComboJourney',
+      context: {'comboId': widget.comboId, 'length': body.length},
+    );
     try {
       unawaited(HapticFeedback.mediumImpact());
-      await ref.read(comboNoteEntriesDaoProvider).addEntry(
-            id: const Uuid().v4(),
-            comboId: widget.comboId,
-            body: body,
-          );
+      await ref
+          .read(comboNoteEntriesDaoProvider)
+          .addEntry(id: const Uuid().v4(), comboId: widget.comboId, body: body);
       log.stage('jotWritten');
       // Evidence-based plan completion: a jot today completes today's plan.
       await ref.read(comboPlansDaoProvider).stampCompletionsFromEvidence();
@@ -71,9 +72,9 @@ class _JotComposerState extends ConsumerState<JotComposer> {
   /// Surfaces a failed write to the user instead of swallowing it silently.
   void _showError(final String message) {
     if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(message)),
-    );
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(message)));
   }
 
   Future<void> _attachVideo() async {
@@ -83,14 +84,18 @@ class _JotComposerState extends ConsumerState<JotComposer> {
       onVideoPicked: (final relativePath, final hash) async {
         if (!mounted) return;
 
-        final log = StageLogger.begin('JotComposer._attachVideo',
-            subsystem: 'ComboJourney',
-            context: {'comboId': widget.comboId, 'path': relativePath});
+        final log = StageLogger.begin(
+          'JotComposer._attachVideo',
+          subsystem: 'ComboJourney',
+          context: {'comboId': widget.comboId, 'path': relativePath},
+        );
         try {
           final basename = p.basename(relativePath);
           final typed = _controller.text.trim();
           final label = basename.isNotEmpty ? basename : 'Video';
-          await ref.read(comboNoteEntriesDaoProvider).addEntry(
+          await ref
+              .read(comboNoteEntriesDaoProvider)
+              .addEntry(
                 id: const Uuid().v4(),
                 comboId: widget.comboId,
                 body: typed.isNotEmpty ? typed : 'Linked $label',
@@ -138,8 +143,7 @@ class _JotComposerState extends ConsumerState<JotComposer> {
             child: Container(
               constraints: const BoxConstraints(minHeight: 48, minWidth: 48),
               alignment: Alignment.center,
-              padding:
-                  const EdgeInsets.symmetric(horizontal: AppSpacing.xs),
+              padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xs),
               child: Text(
                 '+ video',
                 style: AppTypography.caption.copyWith(
@@ -156,8 +160,9 @@ class _JotComposerState extends ConsumerState<JotComposer> {
               minLines: 1,
               maxLines: 4,
               textInputAction: TextInputAction.newline,
-              style: AppTypography.bodySmall
-                  .copyWith(color: colorScheme.onSurface),
+              style: AppTypography.bodySmall.copyWith(
+                color: colorScheme.onSurface,
+              ),
               decoration: InputDecoration(
                 hintText: 'Jot it down…',
                 hintStyle: AppTypography.bodySmall.copyWith(
@@ -169,8 +174,9 @@ class _JotComposerState extends ConsumerState<JotComposer> {
                   vertical: AppSpacing.sm,
                 ),
                 filled: true,
-                fillColor: colorScheme.surfaceContainerHighest
-                    .withValues(alpha: 0.4),
+                fillColor: colorScheme.surfaceContainerHighest.withValues(
+                  alpha: 0.4,
+                ),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(AppRadius.lg),
                   borderSide: BorderSide.none,
@@ -196,8 +202,8 @@ class _JotComposerState extends ConsumerState<JotComposer> {
                       ? colorScheme.primary
                       : colorScheme.primary.withValues(alpha: 0.3),
                 ),
-                child: const Icon(
-                  Icons.arrow_upward_rounded,
+                child: const AppIconView(
+                  AppIcon.up,
                   color: Colors.white,
                   size: 22,
                 ),

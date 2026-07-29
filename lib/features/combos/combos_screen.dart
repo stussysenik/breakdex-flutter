@@ -21,6 +21,7 @@ import 'package:breakdex/shared/widgets/app_loader.dart';
 import 'package:breakdex/shared/widgets/app_segmented_control.dart';
 import 'package:breakdex/features/combo_detail/widgets/status_tag.dart';
 import 'package:breakdex/features/combos/plan_combo_flow.dart';
+import 'package:breakdex/core/design/icons.dart';
 
 // ---------------------------------------------------------------------------
 // Providers
@@ -38,7 +39,9 @@ final _activityRollupProvider = StreamProvider<List<DayActivity>>((final ref) {
   return ref.watch(combosDaoProvider).watchActivityRollup();
 });
 
-final _planCountByDayProvider = StreamProvider<List<(DateTime, int)>>((final ref) {
+final _planCountByDayProvider = StreamProvider<List<(DateTime, int)>>((
+  final ref,
+) {
   return ref.watch(combosDaoProvider).watchPlanCountByDay();
 });
 
@@ -109,7 +112,8 @@ class _CombosScreenState extends ConsumerState<CombosScreen> {
           // move_list_screen) — otherwise the FAB renders behind it.
           : Padding(
               padding: EdgeInsets.only(
-                bottom: kBottomNavigationBarHeight +
+                bottom:
+                    kBottomNavigationBarHeight +
                     MediaQuery.of(context).padding.bottom +
                     AppSpacing.sm,
               ),
@@ -127,7 +131,7 @@ class _CombosScreenState extends ConsumerState<CombosScreen> {
                     }
                   },
                   backgroundColor: colorScheme.primary,
-                  child: const Icon(Icons.add, color: Colors.white),
+                  child: const AppIconView(AppIcon.add, color: Colors.white),
                 ),
               ),
             ),
@@ -150,14 +154,19 @@ class ComboLibraryView extends ConsumerWidget {
     return rowsAsync.when(
       loading: () => const Center(child: AppLoader()),
       error: (final e, _) => Center(
-        child: Text('Error loading combos', style: TextStyle(color: colorScheme.error)),
+        child: Text(
+          'Error loading combos',
+          style: TextStyle(color: colorScheme.error),
+        ),
       ),
       data: (final rows) {
         if (rows.isEmpty) return _LibraryEmptyState(colorScheme: colorScheme);
 
         final grouped = <String, List<LibraryRow>>{};
         for (final row in rows) {
-          final monthKey = DateFormat('MMMM yyyy').format(row.combo.createdAt).toUpperCase();
+          final monthKey = DateFormat(
+            'MMMM yyyy',
+          ).format(row.combo.createdAt).toUpperCase();
           grouped.putIfAbsent(monthKey, () => []).add(row);
         }
 
@@ -190,7 +199,8 @@ class ComboLibraryView extends ConsumerWidget {
                   (final row) => _LibraryRow(
                     row: row,
                     colorScheme: colorScheme,
-                    onTap: () => context.push('/breakdex/combo/${row.combo.id}'),
+                    onTap: () =>
+                        context.push('/breakdex/combo/${row.combo.id}'),
                   ),
                 ),
                 const SizedBox(height: AppSpacing.lg),
@@ -319,10 +329,15 @@ class _StatusBadge extends StatelessWidget {
   @override
   Widget build(final BuildContext context) {
     final borderColor = style.dashed ? colorScheme.outline : style.color;
-    final textColor = style.filled ? Colors.white : (style.dashed ? colorScheme.secondary : style.color);
+    final textColor = style.filled
+        ? Colors.white
+        : (style.dashed ? colorScheme.secondary : style.color);
 
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xs, vertical: 2),
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.xs,
+        vertical: 2,
+      ),
       decoration: BoxDecoration(
         color: style.filled ? style.color : Colors.transparent,
         borderRadius: BorderRadius.circular(AppRadius.xxs),
@@ -353,7 +368,11 @@ class _LibraryEmptyState extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(Icons.auto_awesome, size: 48, color: colorScheme.secondary.withValues(alpha: 0.3)),
+            AppIconView(
+              AppIcon.discover,
+              size: 48,
+              color: colorScheme.secondary.withValues(alpha: 0.3),
+            ),
             const SizedBox(height: AppSpacing.md),
             Text(
               'No combos yet',
@@ -366,7 +385,9 @@ class _LibraryEmptyState extends StatelessWidget {
             Text(
               'Chain moves together into sequences.\nTap + to create your first combo.',
               textAlign: TextAlign.center,
-              style: AppTypography.bodySmall.copyWith(color: colorScheme.secondary),
+              style: AppTypography.bodySmall.copyWith(
+                color: colorScheme.secondary,
+              ),
             ),
           ],
         ),
@@ -426,11 +447,16 @@ class _ComboPlannedViewState extends ConsumerState<ComboPlannedView> {
     );
   }
 
-  List<Widget> _buildQueue(final List<PlanWithCombo> plans, final ColorScheme colorScheme) {
+  List<Widget> _buildQueue(
+    final List<PlanWithCombo> plans,
+    final ColorScheme colorScheme,
+  ) {
     return [
       Text(
         'QUEUE',
-        style: AppTypography.sectionHeader.copyWith(color: colorScheme.secondary),
+        style: AppTypography.sectionHeader.copyWith(
+          color: colorScheme.secondary,
+        ),
       ),
       const SizedBox(height: AppSpacing.sm),
       ReorderableListView.builder(
@@ -466,64 +492,70 @@ class _ComboPlannedViewState extends ConsumerState<ComboPlannedView> {
                 color: colorScheme.error.withValues(alpha: 0.15),
                 borderRadius: BorderRadius.circular(AppRadius.sm),
               ),
-              child: Icon(Icons.delete_outline, color: colorScheme.error),
+              child: AppIconView(AppIcon.delete, color: colorScheme.error),
             ),
             child: Container(
               margin: const EdgeInsets.only(bottom: AppSpacing.xs),
               decoration: AppSurfaces.panel(context, radius: AppRadius.sm),
               child: ListTile(
-              leading: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  ReorderableDragStartListener(
-                    index: index,
-                    child: Icon(
-                      Icons.drag_handle,
-                      color: colorScheme.secondary.withValues(alpha: 0.5),
-                      size: 20,
-                    ),
-                  ),
-                  const SizedBox(width: AppSpacing.xs),
-                  Container(
-                    width: 28,
-                    height: 28,
-                    alignment: Alignment.center,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: completed
-                          ? colorScheme.primary
-                          : colorScheme.surfaceContainerHighest,
-                    ),
-                    child: Text(
-                      '${index + 1}',
-                      style: AppTypography.labelSmall.copyWith(
-                        color: completed ? colorScheme.onPrimary : colorScheme.secondary,
-                        fontWeight: FontWeight.w700,
+                leading: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    ReorderableDragStartListener(
+                      index: index,
+                      child: AppIconView(
+                        AppIcon.menu,
+                        color: colorScheme.secondary.withValues(alpha: 0.5),
+                        size: 20,
                       ),
                     ),
+                    const SizedBox(width: AppSpacing.xs),
+                    Container(
+                      width: 28,
+                      height: 28,
+                      alignment: Alignment.center,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: completed
+                            ? colorScheme.primary
+                            : colorScheme.surfaceContainerHighest,
+                      ),
+                      child: Text(
+                        '${index + 1}',
+                        style: AppTypography.labelSmall.copyWith(
+                          color: completed
+                              ? colorScheme.onPrimary
+                              : colorScheme.secondary,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                title: Text(
+                  pw.combo.name,
+                  style: AppTypography.bodyMedium.copyWith(
+                    color: colorScheme.onSurface,
+                    fontWeight: FontWeight.w600,
                   ),
-                ],
-              ),
-              title: Text(
-                pw.combo.name,
-                style: AppTypography.bodyMedium.copyWith(
-                  color: colorScheme.onSurface,
-                  fontWeight: FontWeight.w600,
+                  overflow: TextOverflow.ellipsis,
                 ),
-                overflow: TextOverflow.ellipsis,
-              ),
-              subtitle: Text(
-                'Planned $planDate${completed ? ' — completed' : ''}',
-                style: AppTypography.caption.copyWith(
-                  color: completed
-                      ? colorScheme.primary
-                      : colorScheme.secondary,
+                subtitle: Text(
+                  'Planned $planDate${completed ? ' — completed' : ''}',
+                  style: AppTypography.caption.copyWith(
+                    color: completed
+                        ? colorScheme.primary
+                        : colorScheme.secondary,
+                  ),
                 ),
-              ),
-              onTap: () => context.push('/breakdex/combo/${pw.combo.id}'),
-              trailing: completed
-                  ? Icon(Icons.check_circle, color: colorScheme.primary, size: 20)
-                  : null,
+                onTap: () => context.push('/breakdex/combo/${pw.combo.id}'),
+                trailing: completed
+                    ? AppIconView(
+                        AppIcon.check,
+                        color: colorScheme.primary,
+                        size: 20,
+                      )
+                    : null,
               ),
             ),
           );
@@ -545,15 +577,17 @@ class _ComboPlannedViewState extends ConsumerState<ComboPlannedView> {
         content: Text('Removed "${pw.combo.name}" from queue'),
         action: SnackBarAction(
           label: 'Undo',
-          onPressed: () => unawaited(dao.insertPlan(
-            ComboPlansCompanion.insert(
-              id: pw.plan.id,
-              comboId: pw.plan.comboId,
-              planDate: pw.plan.planDate,
-              position: Value(pw.plan.position),
-              completedAt: Value(pw.plan.completedAt),
+          onPressed: () => unawaited(
+            dao.insertPlan(
+              ComboPlansCompanion.insert(
+                id: pw.plan.id,
+                comboId: pw.plan.comboId,
+                planDate: pw.plan.planDate,
+                position: Value(pw.plan.position),
+                completedAt: Value(pw.plan.completedAt),
+              ),
             ),
-          )),
+          ),
         ),
       ),
     );
@@ -582,7 +616,11 @@ class _ProgressStrip extends StatelessWidget {
         mainAxisAlignment: MainAxisAlignment.spaceAround,
         children: [
           _Stat(label: 'Landed', value: '$landed', colorScheme: colorScheme),
-          _Stat(label: 'Practiced', value: '$practiced', colorScheme: colorScheme),
+          _Stat(
+            label: 'Practiced',
+            value: '$practiced',
+            colorScheme: colorScheme,
+          ),
           _Stat(label: 'Plans', value: '$totalPlans', colorScheme: colorScheme),
         ],
       ),
@@ -650,8 +688,12 @@ class _ComboCalendarViewState extends ConsumerState<ComboCalendarView> {
     final activities = activityAsync.valueOrNull ?? const <DayActivity>[];
     final planCounts = planCountAsync.valueOrNull ?? const <(DateTime, int)>[];
 
-    final activityMap = {for (final a in activities) DateFormat('yyyy-MM-dd').format(a.day): a};
-    final planMap = {for (final p in planCounts) DateFormat('yyyy-MM-dd').format(p.$1): p.$2};
+    final activityMap = {
+      for (final a in activities) DateFormat('yyyy-MM-dd').format(a.day): a,
+    };
+    final planMap = {
+      for (final p in planCounts) DateFormat('yyyy-MM-dd').format(p.$1): p.$2,
+    };
     final today = DateFormat('yyyy-MM-dd').format(DateTime.now());
 
     return ListView(
@@ -662,9 +704,12 @@ class _ComboCalendarViewState extends ConsumerState<ComboCalendarView> {
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             IconButton(
-              icon: const Icon(Icons.chevron_left),
+              icon: const AppIconView(AppIcon.back),
               onPressed: () => setState(() {
-                _currentMonth = DateTime(_currentMonth.year, _currentMonth.month - 1);
+                _currentMonth = DateTime(
+                  _currentMonth.year,
+                  _currentMonth.month - 1,
+                );
               }),
             ),
             Text(
@@ -675,9 +720,12 @@ class _ComboCalendarViewState extends ConsumerState<ComboCalendarView> {
               ),
             ),
             IconButton(
-              icon: const Icon(Icons.chevron_right),
+              icon: const AppIconView(AppIcon.forward),
               onPressed: () => setState(() {
-                _currentMonth = DateTime(_currentMonth.year, _currentMonth.month + 1);
+                _currentMonth = DateTime(
+                  _currentMonth.year,
+                  _currentMonth.month + 1,
+                );
               }),
             ),
           ],
@@ -701,13 +749,7 @@ class _ComboCalendarViewState extends ConsumerState<ComboCalendarView> {
         ),
         const SizedBox(height: AppSpacing.xs),
         // Calendar grid
-        _buildCalendarGrid(
-          activityMap,
-          planMap,
-          today,
-          colorScheme,
-          context,
-        ),
+        _buildCalendarGrid(activityMap, planMap, today, colorScheme, context),
         const SizedBox(height: AppSpacing.sm),
         _CalendarLegend(colorScheme: colorScheme),
         const SizedBox(height: AppSpacing.lg),
@@ -715,10 +757,7 @@ class _ComboCalendarViewState extends ConsumerState<ComboCalendarView> {
         if (_selectedDate != null) ...[
           Divider(color: colorScheme.outline),
           const SizedBox(height: AppSpacing.md),
-          _DayDetail(
-            date: _selectedDate!,
-            colorScheme: colorScheme,
-          ),
+          _DayDetail(date: _selectedDate!, colorScheme: colorScheme),
         ],
         const SizedBox(height: 80),
       ],
@@ -750,7 +789,8 @@ class _ComboCalendarViewState extends ConsumerState<ComboCalendarView> {
       final planCount = planMap[dateKey] ?? 0;
       final isToday = dateKey == today;
       final isFuture = date.isAfter(DateTime.now());
-      final isSelected = _selectedDate != null &&
+      final isSelected =
+          _selectedDate != null &&
           DateFormat('yyyy-MM-dd').format(_selectedDate!) == dateKey;
 
       cells.add(
@@ -765,12 +805,12 @@ class _ComboCalendarViewState extends ConsumerState<ComboCalendarView> {
               border: isToday
                   ? Border.all(color: colorScheme.primary, width: 2)
                   : isSelected
-                      ? Border.all(color: colorScheme.onSurface, width: 1.5)
-                      : planCount > 0
-                          ? Border.all(
-                              color: colorScheme.primary.withValues(alpha: 0.55),
-                            )
-                          : null,
+                  ? Border.all(color: colorScheme.onSurface, width: 1.5)
+                  : planCount > 0
+                  ? Border.all(
+                      color: colorScheme.primary.withValues(alpha: 0.55),
+                    )
+                  : null,
             ),
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
@@ -793,7 +833,9 @@ class _ComboCalendarViewState extends ConsumerState<ComboCalendarView> {
                               Container(
                                 width: 4,
                                 height: 4,
-                                margin: const EdgeInsets.symmetric(horizontal: 1),
+                                margin: const EdgeInsets.symmetric(
+                                  horizontal: 1,
+                                ),
                                 decoration: BoxDecoration(
                                   color: colorScheme.primary,
                                   shape: BoxShape.circle,
@@ -819,7 +861,9 @@ class _ComboCalendarViewState extends ConsumerState<ComboCalendarView> {
     for (var i = 0; i < cells.length; i += 7) {
       rows.add(
         Row(
-          children: cells.sublist(i, min(i + 7, cells.length)).map((final cell) {
+          children: cells.sublist(i, min(i + 7, cells.length)).map((
+            final cell,
+          ) {
             return Expanded(child: AspectRatio(aspectRatio: 1, child: cell));
           }).toList(),
         ),
@@ -829,10 +873,7 @@ class _ComboCalendarViewState extends ConsumerState<ComboCalendarView> {
     return Column(children: rows);
   }
 
-  Color _dayColor(
-    final DayActivity? activity,
-    final ColorScheme colorScheme,
-  ) {
+  Color _dayColor(final DayActivity? activity, final ColorScheme colorScheme) {
     if (activity != null) {
       final intensity = (activity.jotCount + activity.takeCount).clamp(0, 5);
       return colorScheme.primary.withValues(alpha: 0.1 + (intensity * 0.15));
@@ -866,7 +907,9 @@ class _CalendarLegend extends StatelessWidget {
           const SizedBox(width: AppSpacing.xxs),
           Text(
             label,
-            style: AppTypography.labelSmall.copyWith(color: colorScheme.secondary),
+            style: AppTypography.labelSmall.copyWith(
+              color: colorScheme.secondary,
+            ),
           ),
         ],
       );
@@ -876,7 +919,11 @@ class _CalendarLegend extends StatelessWidget {
       return Container(
         width: 12,
         height: 12,
-        decoration: BoxDecoration(shape: BoxShape.circle, color: fill, border: border),
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          color: fill,
+          border: border,
+        ),
       );
     }
 
@@ -885,12 +932,22 @@ class _CalendarLegend extends StatelessWidget {
       runSpacing: AppSpacing.xxs,
       alignment: WrapAlignment.center,
       children: [
-        item(circle(fill: colorScheme.primary.withValues(alpha: 0.4)), 'practiced'),
         item(
-          circle(border: Border.all(color: colorScheme.primary.withValues(alpha: 0.55))),
+          circle(fill: colorScheme.primary.withValues(alpha: 0.4)),
+          'practiced',
+        ),
+        item(
+          circle(
+            border: Border.all(
+              color: colorScheme.primary.withValues(alpha: 0.55),
+            ),
+          ),
           'planned',
         ),
-        item(circle(border: Border.all(color: colorScheme.primary, width: 2)), 'today'),
+        item(
+          circle(border: Border.all(color: colorScheme.primary, width: 2)),
+          'today',
+        ),
       ],
     );
   }
@@ -906,7 +963,8 @@ class _DayDetail extends ConsumerWidget {
   Widget build(final BuildContext context, final WidgetRef ref) {
     final plansAsync = ref.watch(plansForDateProvider(date));
     final isFuture = date.isAfter(DateTime.now());
-    final isToday = DateFormat('yyyy-MM-dd').format(date) ==
+    final isToday =
+        DateFormat('yyyy-MM-dd').format(date) ==
         DateFormat('yyyy-MM-dd').format(DateTime.now());
 
     final plans = plansAsync.valueOrNull ?? const <PlanWithCombo>[];
@@ -925,40 +983,62 @@ class _DayDetail extends ConsumerWidget {
         if (isFuture || isToday)
           TextButton.icon(
             onPressed: () => planComboFlow(context, ref, presetDate: date),
-            icon: const Icon(Icons.add, size: 18),
+            icon: const AppIconView(AppIcon.add, size: 18),
             label: const Text('Plan a combo'),
           ),
         if (plans.isEmpty)
           Padding(
             padding: const EdgeInsets.symmetric(vertical: AppSpacing.md),
             child: Text(
-              isFuture ? 'Nothing planned for this day.' : 'No activity recorded.',
+              isFuture
+                  ? 'Nothing planned for this day.'
+                  : 'No activity recorded.',
               style: AppTypography.bodySmall.copyWith(
                 color: colorScheme.secondary.withValues(alpha: 0.6),
               ),
             ),
           )
         else
-          ...plans.map((final pw) => ListTile(
-                dense: true,
-                title: Text(
-                  pw.combo.name,
-                  style: AppTypography.bodyMedium.copyWith(color: colorScheme.onSurface),
+          ...plans.map(
+            (final pw) => ListTile(
+              dense: true,
+              title: Text(
+                pw.combo.name,
+                style: AppTypography.bodyMedium.copyWith(
+                  color: colorScheme.onSurface,
                 ),
-                subtitle: pw.plan.completedAt != null
-                    ? Text('Completed', style: TextStyle(color: colorScheme.primary, fontSize: 12))
-                    : Text(pw.combo.status.toUpperCase(),
-                        style: AppTypography.labelSmall.copyWith(color: colorScheme.secondary)),
-                trailing: pw.plan.completedAt != null
-                    ? Icon(Icons.check_circle, color: colorScheme.primary, size: 18)
-                    : null,
-                onTap: () => context.push('/breakdex/combo/${pw.combo.id}'),
-              )),
+              ),
+              subtitle: pw.plan.completedAt != null
+                  ? Text(
+                      'Completed',
+                      style: TextStyle(
+                        color: colorScheme.primary,
+                        fontSize: 12,
+                      ),
+                    )
+                  : Text(
+                      pw.combo.status.toUpperCase(),
+                      style: AppTypography.labelSmall.copyWith(
+                        color: colorScheme.secondary,
+                      ),
+                    ),
+              trailing: pw.plan.completedAt != null
+                  ? AppIconView(
+                      AppIcon.check,
+                      color: colorScheme.primary,
+                      size: 18,
+                    )
+                  : null,
+              onTap: () => context.push('/breakdex/combo/${pw.combo.id}'),
+            ),
+          ),
       ],
     );
   }
 }
 
-final plansForDateProvider = StreamProvider.family<List<PlanWithCombo>, DateTime>(
-  (final ref, final date) => ref.watch(comboPlansDaoProvider).watchPlansForDate(date),
-);
+final plansForDateProvider =
+    StreamProvider.family<List<PlanWithCombo>, DateTime>(
+      (final ref, final date) =>
+          ref.watch(comboPlansDaoProvider).watchPlansForDate(date),
+    );

@@ -18,6 +18,7 @@ import 'package:breakdex/core/services/fsrs_service.dart';
 import 'package:breakdex/l10n/gen/app_localizations.dart';
 import 'package:breakdex/features/flashcard_review/providers/deck_providers.dart';
 import 'package:breakdex/features/flashcard_review/providers/review_providers.dart';
+import 'package:breakdex/core/design/icons.dart';
 
 /// Bottom sheet showing the full FSRS math breakdown for a single item.
 ///
@@ -33,7 +34,10 @@ class ItemScheduleDetailSheet extends ConsumerWidget {
 
   final ReviewableItemWithCard item;
 
-  static Future<void> show(final BuildContext context, final ReviewableItemWithCard item) {
+  static Future<void> show(
+    final BuildContext context,
+    final ReviewableItemWithCard item,
+  ) {
     return showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -99,8 +103,8 @@ class ItemScheduleDetailSheet extends ConsumerWidget {
               children: [
                 Icon(
                   item.item is ReviewableCombo
-                      ? Icons.linear_scale_rounded
-                      : Icons.sports_martial_arts,
+                      ? AppIcon.menu.resolve(context)
+                      : AppIcon.move.resolve(context),
                   size: 20,
                   color: colorScheme.primary,
                 ),
@@ -178,7 +182,8 @@ class ItemScheduleDetailSheet extends ConsumerWidget {
                         child: AppLoader(size: 6),
                       ),
                     ),
-                    error: (final error, final stackTrace) => const SizedBox.shrink(),
+                    error: (final error, final stackTrace) =>
+                        const SizedBox.shrink(),
                     data: (final coeff) => _CoefficientDisplay(coeff: coeff),
                   ),
                 ],
@@ -480,7 +485,11 @@ class _RatingPreviews extends StatelessWidget {
                   ),
                 ),
               ),
-              Icon(Icons.arrow_forward, size: 12, color: colorScheme.secondary),
+              AppIconView(
+                AppIcon.forward,
+                size: 12,
+                color: colorScheme.secondary,
+              ),
               const SizedBox(width: 8),
               Text(
                 _formatInterval(interval),

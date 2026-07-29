@@ -15,6 +15,7 @@ import 'package:breakdex/core/design/spacing.dart';
 import 'package:breakdex/core/design/typography.dart';
 import 'package:breakdex/shared/widgets/app_loader.dart';
 import 'package:breakdex/features/lab/providers/lab_providers.dart';
+import 'package:breakdex/core/design/icons.dart';
 
 /// Vertical list of milestones for a lab, with inline creation.
 ///
@@ -112,7 +113,9 @@ class _MilestoneListState extends ConsumerState<MilestoneList> {
       children: [
         // Section header
         Padding(
-          padding: const EdgeInsets.symmetric(horizontal: AppSpacing.screenEdge),
+          padding: const EdgeInsets.symmetric(
+            horizontal: AppSpacing.screenEdge,
+          ),
           child: Text(
             'MILESTONES',
             style: AppTypography.sectionHeader.copyWith(
@@ -200,8 +203,8 @@ class _MilestoneListState extends ConsumerState<MilestoneList> {
                         _addMilestone();
                         setState(() => _showAddField = false);
                       },
-                      icon: const Icon(
-                        Icons.check_rounded,
+                      icon: const AppIconView(
+                        AppIcon.check,
                         color: AppColors.accent,
                         size: 20,
                       ),
@@ -211,8 +214,8 @@ class _MilestoneListState extends ConsumerState<MilestoneList> {
                         _addController.clear();
                         setState(() => _showAddField = false);
                       },
-                      icon: Icon(
-                        Icons.close_rounded,
+                      icon: AppIconView(
+                        AppIcon.close,
                         color: colorScheme.secondary,
                         size: 20,
                       ),
@@ -229,8 +232,8 @@ class _MilestoneListState extends ConsumerState<MilestoneList> {
                   },
                   child: Row(
                     children: [
-                      const Icon(
-                        Icons.add_rounded,
+                      const AppIconView(
+                        AppIcon.add,
                         size: 18,
                         color: AppColors.accent,
                       ),
@@ -297,8 +300,8 @@ class _MilestoneRow extends StatelessWidget {
                   ),
                 ),
                 child: isComplete
-                    ? const Icon(
-                        Icons.check_rounded,
+                    ? const AppIconView(
+                        AppIcon.check,
                         size: 14,
                         color: AppColors.stateMastery,
                       )
@@ -317,10 +320,12 @@ class _MilestoneRow extends StatelessWidget {
                       color: isComplete
                           ? colorScheme.secondary.withValues(alpha: 0.6)
                           : colorScheme.onSurface,
-                      decoration:
-                          isComplete ? TextDecoration.lineThrough : null,
-                      decorationColor:
-                          colorScheme.secondary.withValues(alpha: 0.4),
+                      decoration: isComplete
+                          ? TextDecoration.lineThrough
+                          : null,
+                      decorationColor: colorScheme.secondary.withValues(
+                        alpha: 0.4,
+                      ),
                     ),
                   ),
                   if (isComplete) ...[
