@@ -3,7 +3,7 @@ title: Design System
 name: design-system
 order: 5
 status: verified
-verified: ec5d28f
+verified: d339094
 watches:
   - lib/core/design/**
   - docs/design/TOKENS.md
@@ -17,13 +17,14 @@ what the source table cannot express: the conformance contract between the token
 consumers, and the **motion doctrine** that constrains which tokens a product surface may
 touch. Read `../design/TOKENS.md` first; read this for the rules around it.
 
-The runtime tokens live in `lib/core/design/` — five files, all `abstract final class`
+The runtime tokens live in `lib/core/design/` — six files, all `abstract final class`
 namespaces of `static const` (or `static final`) members:
 
 | File | Namespace(s) |
 | --- | --- |
 | `colors.dart` | `AppColors` |
 | `spacing.dart` | `AppSpacing`, `AppRadius`, **`AppMotion`** |
+| `layout.dart` | **`AppLayout`** (band geometry, clamps, vertical rhythm) |
 | `typography.dart` | `AppFontFamily` (enum), `AppTypography` |
 | `depth.dart` | `AppDepth` |
 | `theme.dart` | `AppShadows`, `AppSemanticTheme` (the `ThemeExtension`) |
@@ -41,6 +42,15 @@ constants, not their origin.
 (`AppSpacing.xxs … xxxl`), plus `screenEdge = 24`. Every gap, pad, and inset a product surface
 uses resolves to one of these — a raw numeric literal that equals a token value is a
 conformance violation, not a shortcut.
+
+**The frame.** The grid says how big a gap is; it does not say where anything goes. Placement
+is a separate ruling — the **stacked-viewport model** (`AppLayout`): four bands, of which only
+the content band varies, so content's first pixel lands at safe-area top + 80 on every screen.
+It is enforced by a type, `AppScreen` (`lib/shared/widgets/app_screen.dart`), not by
+convention: a screen that builds its own `Scaffold`, `AppBar`, or `SliverAppBar` has opted out
+of the frame and is a review violation, on the same footing as a raw `Duration` in motion. The
+four-band diagram, both token tables, the one-scroll rule, and the per-screen migration ledger
+live in `../design/TOKENS.md` → **Layout & Grid**.
 
 **Type.** **Inter** is the default family. The static `AppTypography` scale
 (`titleLarge … labelSmall`) hardcodes `fontFamily: 'Inter'` and follows the IBM Carbon
@@ -201,8 +211,11 @@ Full ramps are in `../design/TOKENS.md#accessible-palettes` — not duplicated h
 - `docs/design/TOKENS.md` — **the** token source of truth; all values live there, never here.
 - `lib/core/design/spacing.dart` — `AppSpacing`, `AppRadius`, and `AppMotion` (the motion
   doctrine + `_SpringCurve`).
+- `lib/core/design/layout.dart` — `AppLayout` (the stacked-viewport constitution);
+  `lib/shared/widgets/app_screen.dart` — `AppScreen`/`AppSection`, the frame as a type.
 - `lib/core/design/typography.dart` — `AppTypography` scale + `AppFontFamily` enum.
 - `lib/core/design/colors.dart` — `AppColors` (incl. deuteranopia ramp).
 - `lib/core/design/theme.dart` — `AppShadows`, `AppSemanticTheme` (the `ThemeExtension` that
   wires tokens into `BuildContext`).
-- root `CLAUDE.md` — the "Design tokens" and "Motion doctrine" locked rulings.
+- root `CLAUDE.md` — the "Design tokens", "Layout doctrine", and "Motion doctrine" locked
+  rulings.
