@@ -176,6 +176,47 @@ token; the fully-round idiom `circular(999)` maps to `AppRadius.pill`. Off-scale
 that no token expresses are the exception — snapping them to the grid is a design decision, not
 a mechanical swap ([`#token-1`](./09-standards.mdx#token-1)).
 
+## Iconography is a vocabulary plus a swappable pack
+
+Icons follow the same shape as every other token axis: a closed vocabulary the product speaks,
+and an interchangeable implementation behind it. `lib/core/design/icons.dart` holds all four
+pieces, and the split is the point — **a screen names a meaning; a pack chooses the glyph.**
+
+- **`enum AppIcon`** — 78 semantic names. Every name states a meaning a surface can articulate
+  (`back`, `empty`, `delete`); none describes stroke, weight, or terminal. Adding a name means
+  adding a case in every pack in the same commit.
+- **`abstract class IconPack`** — `resolve(AppIcon) → IconData`, implemented as a `switch` with
+  **no `default`**. Dart's exhaustiveness check turns an incomplete pack into a compile error, so
+  completeness is proven by the compiler rather than asserted in review. This is the same
+  reasoning as the conformance tests below, moved one layer earlier: a gate that runs at
+  type-check time beats a gate that runs in CI.
+- **`enum IconPackId`** (`material`, `lucide`) — the persistence key (`icon_pack` in
+  SharedPreferences) and the factory. `fromKey` tolerates unknown values and falls back to
+  `material`, so removing a pack never bricks a client that persisted its name.
+- **`AppIconPackTheme`** — a `ThemeExtension` carrying the resolved pack, registered by
+  `AppTheme.light/dark(iconPack:)` alongside `AppSemanticTheme`. `AppIconPackTheme.of(context)`
+  falls back to `MaterialPack()` when the extension is absent, so a widget pumped outside the app
+  theme still renders.
+- **`AppIconView(AppIcon.x)`** — the only sanctioned way to draw an icon. It reads the pack from
+  the ambient theme, which is what makes a pack swap a theme change rather than a refactor.
+
+**Raw `Icons.*` / `CupertinoIcons.*` anywhere under `lib/` outside `icons.dart` is a
+violation**, enforced by `test/core/design/icon_conformance_test.dart` with a **zero-length
+allowlist** — the absolute form, chosen because an allowlist is where this class of rule goes to
+die. `test/core/design/icon_pack_test.dart` covers resolution and pack identity. The migration
+that established it eliminated 434 raw call sites; the collapse ledger (where several Material
+glyphs fold into one semantic name) lives in `../design/TOKENS.md` → Iconography, not here.
+
+Two consequences worth stating, because both have already bitten:
+
+- **A test must assert the semantic icon, not the glyph.** Asserting a specific `IconData` binds
+  the test to whichever pack happens to be active, so it fails the moment a pack is swapped —
+  the reason `test/helpers/icon_finders.dart` exposes `findAppIcon`.
+- **A pack is a real dependency of the preview scaffold.** Adding `lucide_icons_flutter` for the
+  Lucide pack invalidated the widget-preview scaffold's resolved package set, and every preview
+  failed to compile until it was regenerated
+  (`add-web-first-release-and-monetization` 1.0.6).
+
 ## Accessible palettes are an orthogonal axis
 
 Color is selected on three independent axes: theme brightness (light/dark), viewing mode

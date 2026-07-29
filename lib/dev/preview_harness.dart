@@ -62,7 +62,22 @@ class _Backend {
 // Built once and reused across every preview render in the session.
 Future<_Backend>? _backendFuture;
 
-Future<_Backend> _backend() => _backendFuture ??= _buildBackend();
+/// Builds the backend once per session, but **never caches a failure**.
+///
+/// Top-level state survives hot reload — that is the point of reload, and here
+/// it is a trap. Caching a rejected future means the first failed build is
+/// replayed to every later render, including the reload that carries the fix,
+/// so the harness reports a stale error and the edit→result loop reads as
+/// broken long after it works. Dropping the cache on error costs one rebuild
+/// per failed render and keeps reload honest.
+Future<_Backend> _backend() =>
+    _backendFuture ??= _buildBackend().onError<Object>((
+      final error,
+      final stack,
+    ) {
+      _backendFuture = null;
+      Error.throwWithStackTrace(error, stack);
+    });
 
 Future<_Backend> _buildBackend() async {
   // ignore: invalid_use_of_visible_for_testing_member
@@ -192,12 +207,23 @@ class _PreviewHostState extends State<_PreviewHost> {
             );
 
         if (snapshot.hasError) {
+          // The failure text is the whole diagnostic: a SqliteException carries
+          // its causing statement in `toString()`, and a preview viewport is
+          // small enough to clip it silently. Scrollable + selectable so the
+          // statement can be read and copied out of the panel; also echoed to
+          // the console because the preview scaffold keeps its own log.
+          debugPrint('Preview harness failed: ${snapshot.error}');
+          debugPrintStack(stackTrace: snapshot.stackTrace);
           return shell(
             Scaffold(
-              body: Center(
-                child: Padding(
+              body: SafeArea(
+                child: SingleChildScrollView(
                   padding: const EdgeInsets.all(24),
-                  child: Text('Preview harness failed:\n${snapshot.error}'),
+                  child: SelectableText(
+                    'Preview harness failed:\n\n${snapshot.error}'
+                    '\n\n${snapshot.stackTrace}',
+                    style: const TextStyle(fontSize: 11, height: 1.4),
+                  ),
                 ),
               ),
             ),

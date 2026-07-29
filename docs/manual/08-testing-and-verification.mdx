@@ -32,11 +32,11 @@ From these four, everything below is forced: the CI gate is a *floor* (it proves
 
 ## The test suite
 
-185 `*_test.dart` files under `test/`, split by layer (the jump from 110 is the Appwrite overnight wave — sync dual-write/dual-read/codec/backfill/migration suites — plus config/entitlement and web-seam tests):
+188 `*_test.dart` files under `test/`, split by layer (the jump from 110 is the Appwrite overnight wave — sync dual-write/dual-read/codec/backfill/migration suites — plus config/entitlement and web-seam tests):
 
 | Dir | Files | Covers |
 | --- | --- | --- |
-| `test/core/` | 129 | database + DAOs (incl. migration v22–v27 suites), state machines, sync (codecs, backfills, dual-read/write, tombstones, Appwrite backend/transport), config (remote config, update/entitlement gates), providers, models, design, utils |
+| `test/core/` | 131 | database + DAOs (incl. migration v22–v27 suites), state machines, sync (codecs, backfills, dual-read/write, tombstones, Appwrite backend/transport), config (remote config, update/entitlement gates), providers, models, design, utils |
 | `test/features/` | 43 | screen-level widget tests (move_list, flashcard_review, stats, add, flow, video_editor, party, auth, …) |
 | `test/shared/` | 9 | shared widgets, incl. the `AppScreen` frame and `BackLeading` |
 | `test/design/` | 2 | source-level conformance + the type baseline (see below) |
@@ -162,6 +162,32 @@ the pattern that keeps `diagnostics_buffer_test.dart` and
   asserts the fiction is *absent* (`findsNothing`) as well as that real records appear —
   a placeholder that still renders would otherwise pass a purely positive assertion.
 
+## A conditional export hides half its branches from the suite
+
+`flutter test` runs on the Dart VM, so every `if (dart.library.js_interop)` export resolves to
+its **native** branch. The web branch is not merely untested — it is never compiled by the
+suite at all. The blind spot is structural, and it reads as the opposite of a blind spot,
+because the branch that *does* run is green.
+
+`lib/dev/preview_db.dart` is the worked example. It exports `preview_db_native.dart` or
+`preview_db_web.dart`; `test/preview_harness_smoke_test.dart` exercises the harness end-to-end
+and passes, proving the native executor seeds and streams. Meanwhile `preview_db_web.dart` —
+the only file touching `WasmSqlite3`, the VFS registration, and the `rootBundle` asset key —
+sat broken through a green suite: it never registered a virtual file system, so every web
+preview died with `SqliteException(1): no such vfs: ` before a single row was read
+(`add-web-first-release-and-monetization` 1.0.6).
+
+The trap is that the green native test actively *misdirected* the diagnosis. "Native path
+proven clean" plus "web dead" was read as evidence about the wasm binary and the v28 `onCreate`
+SQL, when the two branches simply share no code. Two rules follow:
+
+- **A conditional export needs a gate per branch, or the untested branch must be named as a
+  gap.** `flutter test --platform chrome` compiles the web branch; where that is impractical,
+  say so in the ledger rather than leaving the asymmetry implicit.
+- **When one platform fails and another passes, the passing test is not evidence about the
+  failure.** Check whether the two even share an execution path before reasoning across them.
+  This is the same lesson Android taught on 2026-07-28, one layer down.
+
 ## Known-pre-existing-failures policy
 
 Not every red test is your bug. The suite carried a documented set of failures belonging to a **test-ahead** change (`clarify-review-loop-and-media-cleanup`) plus post-redesign staleness — tests describing an implementation or copy that no longer matches. That set has since been **quarantined in place**: the affected cases (`rename_magic` / `video_export_save` path-scheme asserts, `card_count_sync` FSRS counts, `stats_screen` copy, flaky `party_screen` timers, …) now carry explicit `skip:` markers pointing at the ledger `docs/stale-tests-post-redesign.md`, so a clean run of the suite is green rather than "green modulo a memorized red list". Un-skipping one is the work order to reconcile the test with the shipped behavior, recorded in that ledger.
@@ -182,6 +208,6 @@ Not every red test is your bug. The suite carried a documented set of failures b
 - `scripts/distribute.sh` — one-command artifact gate for web, Android APK/AAB, unsigned iOS
   compile, and signed iOS IPA when owner signing is configured.
 - `scripts/check_l10n.sh` — the l10n-freshness gate (`flutter gen-l10n` + `git diff` on `lib/l10n/gen`).
-- `test/` — 144 `*_test.dart` files; `test/helpers/` for in-memory Drift fixtures.
+- `test/` — 188 `*_test.dart` files; `test/helpers/` for in-memory Drift fixtures.
 - `pubspec.yaml` — `flutter_test` / `integration_test` / `patrol ^4.6.1` (patrol provisioned, no `integration_test/` flows yet).
 - root `CLAUDE.md` — §9 Binary Truth and the brownfield "verify on a real build" ruling.

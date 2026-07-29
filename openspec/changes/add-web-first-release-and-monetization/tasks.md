@@ -242,6 +242,71 @@
 - [x] 1.0.5 **Verify (binary truth).** `flutter widget-preview start` compiles the full preview set
   and renders in Chrome (screenshot via chrome-devtools MCP); then `flutter build web` succeeds
   (the early half of 1.6). No box in Phase 1.0 ticks until this passes on a committed tree.
+- [x] 1.0.6 **Preview harness on web — both halves diagnosed and fixed** (2026-07-29 → 2026-07-30).
+  The two conflated failures were real and sequential, exactly as ordered; both are now root-caused.
+  <br/>**(a) RESOLVED — stale preview scaffold.** Confirmed: a cold `flutter widget-preview start`
+  compiles the full set with **zero** `LucideIcons` errors (69 previews found, scaffold regenerated,
+  Dart VM Service up). The scaffold had been resolved before the icon commit `acfcb74` added
+  `lucide_icons_flutter`, so its package set lacked the dependency and the top-level class read as
+  a member of its enclosing type. **Correction to the standing rule as first written:** this
+  Flutter (3.11.1 SDK / `widget-preview`) puts the scaffold under
+  `$TMPDIR/flutter_tools.*/widget_preview_scaffold*`, **not** `.dart_tool/widget_preview_scaffold`
+  — that path did not exist even while the stale scaffold was in use, so deleting it proves
+  nothing. The tool self-heals via `Invalid Widget Preview Scaffold manifest … Regenerating`;
+  `flutter widget-preview clean` is the explicit lever. Do not chase `.dart_tool/`.
+  <br/>**(b) ROOT-CAUSED — no VFS was registered for the wasm sqlite3 build.** With (a) clear, the
+  harness card and `debugPrint` finally carried the full statement:
+  `SqliteException(1): while opening the database, no such vfs: , SQL logic error (code 1)`, stack
+  `drift/wasm.dart:333 openDatabase` → `sqlite3/…/sqlite3.dart openInMemory`. The empty name after
+  `no such vfs:` is the whole tell — it is the *default* VFS name, and nothing was registered under
+  it. A native sqlite3 build ships default file systems compiled in (`unix`, `win32`); the WASM
+  build ships none, because there is no host filesystem to wrap. `sqlite3_open_v2` resolves a VFS
+  by name on every open regardless, so `:memory:` does **not** exempt you — the VFS is required to
+  open the database and then barely used, which is why the failure reads as a paradox.
+  **Fix (one line, `lib/dev/preview_db_web.dart`):**
+  `sqlite3.registerVirtualFileSystem(InMemoryFileSystem(), makeDefault: true)` between
+  `WasmSqlite3.load(...)` and `WasmDatabase.inMemory(...)`. `InMemoryFileSystem` is reachable from
+  `package:sqlite3/wasm.dart` (via its `common.dart` export) in the pinned 2.9.4 — verified in
+  `~/.pub-cache/hosted/pub.dev/sqlite3-2.9.4/lib/src/in_memory_vfs.dart`, and
+  `registerVirtualFileSystem(VirtualFileSystem, {bool makeDefault = false})` in `src/sqlite3.dart:52`.
+  <br/>**Superseded suspects — do not re-investigate.** The earlier list (an SQL feature the wasm
+  build omits in the v28 `onCreate` path; a stale `packages/breakdex/assets/sqlite3.wasm`) was
+  wrong: the open fails *before* any SQL runs, and the asset loads fine. The wasm bytes and the
+  `2.9.4` pin were never implicated. The native-path clean run still stands as a true finding, and
+  it is exactly what made the web bug invisible — see 1.0.7.
+  <br/>**Second defect, found while verifying and fixed:** `_backend()` used
+  `_backendFuture ??= _buildBackend()`, caching the *rejected* future in top-level state. Top-level
+  state survives hot reload, so the first failure replayed to every later render including the
+  reload carrying the fix — the harness reported a stale error and the edit→result loop read as
+  broken long after it worked. It now drops the cache via `onError` and rethrows with the original
+  stack. Note the residual: already-mounted `_PreviewHostState` objects hold a `late final _future`,
+  so a *reload* still cannot retry a failed build — only a restart re-runs it. Reload recovers new
+  renders, not existing ones.
+  <br/>**Proven (terminal-observed, cold run 2026-07-30).** The harness runs on web. A cold
+  `flutter widget-preview start -d chrome` found 69 previews, compiled with **zero** `LucideIcons`
+  errors, and produced **zero** `no such vfs` and **zero** `Preview harness failed` lines — where
+  the previous run logged one failure card per preview. The log instead shows the seeded database
+  reaching real widgets: `[MovesDao] watchAll() subscribed`, `[MoveList] _movesStreamProvider
+  emitted 5 moves`, `[MoveList] _combosStreamProvider emitted 2 combos`, `[INF][Party] building
+  move party`. Screens now build against seed data, which is the claim 1.0.6 existed to restore.
+  Also: `flutter analyze lib/dev lib/features/add` 0/0, and `flutter test
+  test/preview_harness_smoke_test.dart` green (native path unregressed by the `_backend()` change).
+  <br/>**NOT proven:** how any preview *looks* — the render read is owner-gated visual review, and
+  no screenshot was taken or judged here. Nothing about `flutter build web --release`, a device, or
+  live Appwrite sync. The residual per-screen exceptions the working harness exposed are real and
+  are tracked separately (`redesign-visual-first-experience` 6.13), not silently absorbed here.
+
+- [ ] 1.0.7 **The web preview executor has zero test coverage — that is why 1.0.6(b) shipped.**
+  `test/preview_harness_smoke_test.dart` runs under `flutter test` on the Dart VM, so
+  `lib/dev/preview_db.dart`'s conditional export hands it `preview_db_native.dart` every time.
+  `preview_db_web.dart` — the only file that touches `WasmSqlite3`, the VFS registration, and the
+  `rootBundle` asset key — is never executed by any test, while the native path it shadows is
+  green. A clean suite therefore said nothing about the surface that was broken, and the
+  contradiction ("native proven clean" + "web dead") is what sent 1.0.6 chasing wasm bytes.
+  Close it with a gate that runs the web branch — `flutter test --platform chrome` on a harness
+  smoke test is the candidate; confirm the asset key resolves under the test bundle before
+  committing to it, since `rootBundle` in a browser test is the known risk. If it cannot be made
+  to resolve, record that here as a ruled-out approach rather than leaving the gap unnamed.
 
 - [x] 1.1 Enable the `web/` target (`flutter create --platforms web .`); commit the scaffold
   then immediately own it (icons, manifest, index.html title/meta — no scaffold boilerplate

@@ -27,6 +27,22 @@
   absolute ban (zero-allowlist), `CLAUDE.md` + `openspec/AGENTS.md` updated. 434 raw
   `Icons.*` sites eliminated. Phase 5 (settings switching surface) deferred — packs already
   work programmatically.
+  **2026-07-30 — the widget-preview loop is repaired, so visual iteration works again.**
+  `add-web-first-release-and-monetization` 1.0.6 is closed: `lib/dev/preview_db_web.dart` never
+  registered a virtual file system for the wasm sqlite3 build, so every preview died with
+  `SqliteException(1): no such vfs: ` before reading a row. One line
+  (`registerVirtualFileSystem(InMemoryFileSystem(), makeDefault: true)`) fixed it; the cold run
+  now compiles 69 previews and streams seed data into real screens. The earlier `LucideIcons`
+  compile error was a separate, stale-scaffold problem and is also gone. **6.11 ticked**
+  (add-flow previews build clean; owner sitting routed to `owner-verification-passes` 6.3).
+  **6.12 content half done** — four manual chapters were red, not two: ch5 had *zero* mention of
+  the icon system 6.4 shipped, ch7 lacked the VFS distinction, ch8's test counts contradicted
+  themselves, ch11 had dropped the `session.log` step. **New: 6.13** — three per-screen exception
+  classes the working harness exposed, all battle/party lane. The **Dart MCP server** is now
+  registered project-scope in `.mcp.json` as the live-runtime instrument (reports; never judges a
+  look). Suite green at **1270 pass / 4 skip / 0 fail**, but a prior run on the same tree showed
+  `-2`, so **two tests are flaky and unidentified** — recorded as 6.14 with the reason they could
+  not be named (the failing run's output was truncated past its own failure blocks).
   **Next unticked: 6.5 — implement color packs** (`openspec/changes/add-color-packs`,
   strict-valid). Same mechanism as 6.4: closed vocabulary → exhaustive-switch packs →
   `ThemeExtension` → persisted preference → conformance test. Measured finding: 38 `const

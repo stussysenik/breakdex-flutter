@@ -71,3 +71,13 @@ survives the move.
       card without scrolling. Needs devices/simulators; cannot run headless. No
       `integration_test/` directory exists yet, so authoring the journey is part of the task.
       (`redesign-visual-first-experience` V.2)
+- [ ] 6.3 **Visual review of the `/add` flow previews**, now that the widget-preview harness runs
+      on web again (`add-web-first-release-and-monetization` 1.0.6 fixed the missing wasm VFS).
+      Run `flutter widget-preview start -d chrome` and read group `add` in order: `1 · AddScreen`
+      → `2 · VideoPickerSheet` (incl. `re-pick`) → `3 · ClipMetadataForm` (incl. `empty name`),
+      each in light and dark. The previews are *proven to build* with no exceptions; whether they
+      read as one flow and hold the density/labelled-icon bars is the owner's call, which is why
+      it lives here rather than in the parent change (`redesign-visual-first-experience` 6.11).
+      Two known non-blockers in the same run, tracked as `redesign-visual-first-experience` 6.13:
+      the battle/party previews throw (`RenderFlex` overflow in `battle_intro.dart`, a missing
+      `PartyBloc` ancestor) and the 3D panel cannot render on web at all.

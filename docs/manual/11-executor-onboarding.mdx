@@ -48,11 +48,33 @@ Do this before anything else, every session:
    ([`#ledger-1`](./09-standards.mdx#ledger-1)).
 4. **If the task is owner-gated, stop and surface it** — then work only the parallel-allowed
    track the NOW block names, nothing else.
+5. **Append one line to `docs/manual/session.log`**:
+   `YYYY-MM-DDThh:mm+TZ <role> <change-name> <what happened>`, including what is *not* proven.
 
 Grounding for the task's subject matter comes from this manual: the chapter whose `watches` cover
 the files you're touching is your reference. If your change alters a documented seam, update that
 chapter's body and `verified:` frontmatter in the same commit
 ([`#ledger-2`](./09-standards.mdx#ledger-2)).
+
+**The `verified:` stamp lags the work by exactly one commit, and that is not a bug.**
+`scripts/docs_ledger_check` diffs `verified..HEAD` over the chapter's `watches`, so a chapter
+cannot name the commit that is still being written. Land the work (body edits included), then
+set `verified:` to that commit's hash in a follow-up commit which touches no watched path. A
+stamp pointing at a commit that does not exist is worse than a stale one: `git diff` aborts, and
+the gate reports `Command failed` instead of drift — it stops being able to see anything at all
+(the `fcc65bd` incident, `redesign-visual-first-experience` 6.12). Never invent a hash, and never
+re-stamp without re-reading the chapter — the gate compares commits, not meaning, so a false
+stamp is a lie it cannot catch.
+
+## Close the session in the record, not the transcript
+
+Root `CLAUDE.md` → **Context budget** governs the landing. Budget the session so the last stretch
+writes findings down; a session that runs out mid-task loses everything it learned and did not
+record. The final three actions are non-negotiable and happen even when the budget is gone: the
+ledger tick, the `## NOW` advance, and the `session.log` line. A **ruled-out hypothesis is a
+finding** — record what you proved false and how, so the next session does not re-run the
+experiment. Report against what was *asked*, listing each item done or not done; a summary that
+narrates only completed work hides the gap it exists to surface.
 
 ## What a student may and may not touch
 

@@ -255,6 +255,112 @@ needs a Scholar pass first) before any Student session touches code.
   data, not permanent seeding: qualitative flows must run against real-looking data that
   leaves no residue. Pairs with `android-e2e` 6.3.
 
+- [x] 6.11 **Add-flow preview coverage.** The three surfaces of `/add` — AddScreen (choose what
+  to add) → `VideoPickerSheet` (choose a source) → clip metadata authoring — could not be
+  reviewed in isolation, because the metadata form was a private `_ClipMetadataForm` inside
+  `add_screen.dart` and only the first surface had previews. **Landed uncommitted 2026-07-29,
+  ties on the next commit:** the form is extracted to
+  `lib/features/add/widgets/clip_metadata_form.dart` as public `ClipMetadataForm` /
+  `ClipMetadataResult` (pure move — `AddScreen` shrinks by 349 lines, no behavior change, the
+  form takes a `VideoPickResult` and holds no route or picker dependency), and
+  `add_screen_previews.dart` gains ordered previews for all three surfaces including the
+  re-pick sheet and the empty-name form. `flutter analyze lib/features/add lib/dev` is clean.
+  **Unblocked 2026-07-30:** the harness now runs on web (1.0.6 fixed — a missing wasm VFS
+  registration), and the cold preview run logs **no** error from any `/add` surface — nothing
+  matching `clip_metadata`, `ClipMetadata`, `VideoPicker`, or `features/add` appears in the run,
+  while the battle/party previews in the same run do throw. The three surfaces build.
+  **Still not proven, and this is the remaining half:** how they *look*. Visual review is
+  owner-gated by doctrine — no screenshot was taken or judged here. The trim step between picker
+  and form is a route, and its previews stay in `video_editor_screen_previews.dart`.
+  **Ticked as implementation-complete**; the owner sitting is routed to `owner-verification-passes`
+  6.3 per queue doctrine, so this box does not hold the change open on work addressed to a
+  different actor.
+
+- [ ] 6.12 **Docs Ledger Gate is red on a dangling stamp — `verify.sh` cannot go green until
+  this clears** (found 2026-07-29; blocks every done-claim on this change, which is why it is
+  parked here and not in a docs change). `docs/manual/08-testing-and-verification.mdx` and
+  `docs/manual/11-executor-onboarding.mdx` both carry `verified: fcc65bd`, and `fcc65bd` exists
+  in neither `git log --all` nor the reflog — so the gate's `git diff fcc65bd HEAD` aborts with
+  `Command failed` rather than reporting drift. Every other gate is green (ledger, openspec
+  strict, l10n, analyzer 0/0, tests 1270 pass / 4 skip). **Fix is re-verify then re-stamp, in
+  that order:** read both chapters against what their `watches:` files actually say now, then
+  set `verified:` to a real commit. Re-stamping without reading is a lie the gate cannot catch.
+  Note chapter 11 watches `CLAUDE.md`, which gained a **Context budget** section on 2026-07-29.
+  <br/>**Re-verified 2026-07-30 (both chapters read against their watched files, drift corrected).**
+  Ch8 (`test/**`, `ci.yml`, `release.yml`, `check_l10n.sh`, `distribute.sh`, `android_smoke.sh`,
+  `pubspec.yaml`): its counts were wrong *and* self-contradictory — the body claimed 185 test files
+  and `test/core/` 129 while its own Indexes line still said 144; measured now 188 total / 131 core
+  / 43 features / 9 shared / 2 design / 3 root, all corrected. Everything else it asserts checks out
+  literally: `ci.yml`'s five steps and the exact `3.41.3` pin, `release.yml` semantic-release on
+  `main`, dev-deps `patrol ^4.6.1` + `fake_async ^1.3.1`, and the claim that no `integration_test/`
+  directory exists (confirmed absent). Ch11 (`openspec/AGENTS.md`, `ROADMAP.md`, `CLAUDE.md`,
+  `CODEX.md`): its session-start protocol had dropped the `session.log` step that CLAUDE.md requires,
+  and predated the **Context budget** section — both now reflected, plus the one-commit stamp lag the
+  `fcc65bd` incident exposed.
+  <br/>**Four chapters were red, not two — the task as written undercounted.** The dangling `fcc65bd`
+  stamp (ch8, ch11) is an *error* class the gate reports separately from *staleness*, so reading only
+  the error banner hid two genuinely stale chapters underneath it:
+  <br/>• **Ch5 design-system** (`verified f47185e`, watches `lib/core/design/**`) — stale on
+  `icons.dart` (+413) and `theme.dart`. It contained **zero** mention of `AppIcon`, `IconPack`,
+  `IconPackId`, `AppIconPackTheme`, or `AppIconView`: task 6.4 landed a locked-stack ruling and its
+  434-site migration without ever documenting it in the chapter that owns design tokens. Now written
+  up as "Iconography is a vocabulary plus a swappable pack" (78 names verified by count; the
+  exhaustive-`switch`-as-compiler-gate reasoning; the zero-length allowlist; the assert-the-semantic-
+  icon and pack-is-a-scaffold-dependency consequences). **This is the load-bearing find of the pass:
+  6.4 was ticked DONE while owing a docs obligation the gate had been failing on ever since.**
+  <br/>• **Ch7 platform-seams** (`verified ec5d28f`, watches include `lib/dev/preview_db_web.dart`) —
+  stale on the `native_media_web.dart` icon swap, which changed no claim the chapter makes, *and* now
+  on this session's VFS fix, which changes a central one. Added the gotcha distinguishing drift's
+  high-level `WasmDatabase.open` (registers an OPFS/IndexedDB VFS for you — why production web works)
+  from the low-level `WasmSqlite3.load` + `WasmDatabase.inMemory` pair (registers nothing — why every
+  preview died). That contrast is exactly what the 1.0.6 session lacked.
+  <br/>**The stamp lands in a follow-up commit, by construction.** The gate diffs `verified..HEAD`,
+  so a chapter can never name the commit still being written; the work commit lands first, then a
+  frontmatter-only commit (touching no watched path) sets `verified:` to it. Ch11 watches `CLAUDE.md`
+  and ch7 watches `lib/dev/preview_db_web.dart`, both changed this session, so stamping at the *old*
+  HEAD would re-redden them immediately.
+
+- [ ] 6.14 **Two tests flaked once and cannot be named — the run that caught them discarded its own
+  evidence** (2026-07-30). Two consecutive `flutter test` runs on the *same* tree disagreed:
+  `+1268 ~4 -2` then `+1270 ~4` with `All tests passed!`. The totals reconcile at 1274 both times,
+  so exactly two tests failed once and passed on re-run — flake, not a regression, and not caused
+  by this session's edits (the add-flow and picker suites pass 17/17 in isolation, and the
+  preview-harness smoke test passes on both paths it can reach).
+  <br/>**Why they are unnamed, which is the part to fix first.** The failing run's captured output
+  retained only its tail — the transcript began mid-suite at `+1249`, by which point `-2` was
+  already in the counter, so both failure blocks had scrolled out irrecoverably. Nothing in the
+  retained text identified either test. This is the "diagnostic that truncates its own evidence"
+  case from root `CLAUDE.md` → Context budget, and it cost the identification outright: a
+  re-run cannot reproduce a flake on demand.
+  <br/>**Next step, in order:** capture to a file with `--reporter expanded` (not a piped tail) so
+  a failure block survives, then run the suite repeatedly until the flake reappears with a name.
+  Note also that a piped `flutter test | tail` reports the **pipe's** exit status, not the suite's,
+  so a failing run can be misread as `exit 0` — read the `+N ~N -N` counter, never the exit code
+  alone. **Standing suspects, unproven:** the timer-related flakes already on record in
+  `docs/stale-tests-post-redesign.md` (`party_screen`) — that ledger is the first place to look,
+  and if the flake is one of those, this task closes by adding it there rather than here.
+  <br/>**Not a blocker for `verify.sh`:** the gate passes on a clean run. It is recorded because a
+  suite that is green only most of the time silently erodes the binary-truth axiom.
+
+- [ ] 6.13 **Per-screen exceptions the repaired preview harness exposed** (found 2026-07-30, the
+  first run in which previews actually rendered). These were invisible while every preview died at
+  the database, and none of them is a harness fault. Three distinct classes, all in the battle/party
+  lane — the `/add` surfaces and the move-list previews are clean in the same run:
+  <br/>**(a) `RenderFlex` overflow, 9 occurrences.** `lib/features/battle/widgets/battle_intro.dart:29`
+  — a `Column` overflows by 40px in the small preview viewports and by 891px in one. The 891 figure
+  suggests an unbounded-height child rather than a merely tight fit, so treat it as two symptoms
+  until measured.
+  <br/>**(b) Missing `PartyBloc`, 4 occurrences.** `Could not find the correct Provider<PartyBloc>
+  above this BlocListener<PartyBloc, PartyState>`. The harness overrides Riverpod providers only;
+  the party surface additionally needs a **`flutter_bloc`** ancestor, which no wrapper supplies. Note
+  what this reveals beyond the preview: the party lane is the one place still on bloc rather than
+  `Machine<S,E>` — worth naming as a migration seam, not just patched with a preview-only provider.
+  <br/>**(c) Unregistered platform view.** `PlatformException(unregistered_view_type, …
+  <com.breakdex/scene_3d_view>)` from `lib/shared/widgets/scene_3d_view.dart:40`, reached via
+  `lib/features/move_analysis/widgets/skeleton_3d_panel.dart`. No `registerViewFactory` runs on web,
+  so the 3D panel cannot render in a browser preview. Decide whether it degrades visibly on web (per
+  the Flutter-Web-is-the-product ruling) or is device-only — that is a product call, not a fix.
+
 **Teacher session 2026-07-29 — disposition of the rest, so it is not re-derived.** That
 session specced 6.4 and 6.5 (above) and stopped there deliberately, under the token ceiling.
 The remaining items are *not* blocked on those two; each needs its own pass, and the lane it

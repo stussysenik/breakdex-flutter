@@ -31,6 +31,27 @@ Two root entry points make the prose rules below machine-checkable:
   instruments, map failures to fixes, report proven vs NOT PROVEN.
 - Commit boundaries: gate passed, task closed, bug fixed — not every file saved.
 
+### Dart MCP server — the live-runtime instrument
+
+Registered project-scope in `.mcp.json` as `dart` (`dart mcp-server`, ships in the Dart SDK
+— no install, no pinned version to drift). It attaches to the Dart Tooling Daemon of a
+running app and closes the edit→result loop without a rebuild: hot reload, runtime errors
+and widget-tree reads off the live isolate, analyzer diagnostics, `pub` operations, and
+`flutter test` runs.
+
+What it is for and what it is not:
+
+- **It reports; it does not judge.** A screenshot or a widget-tree read proves a widget
+  mounted and what it measures. It is never evidence a surface *looks* right — visual
+  review stays owner-gated, and driving a browser to form an opinion about a look remains
+  banned (`~/CLAUDE.md` → Workflow).
+- **It does not replace `verify.sh`.** A hot reload proving a frame rendered is not a
+  passing gate. A done-claim still needs the full run, exit 0.
+- **Its findings are session state, not the record.** Anything learned through it lands in
+  the change's `tasks.md` like any other finding, or it did not happen.
+- Project scope means it is trust-gated on first use per machine — approve it once; the
+  registration itself is checked in, so Claude, Gemini, and Codex all get the same tool.
+
 ## Operating manual — `docs/manual/FACTORY.md`
 
 `CLAUDE.md` is the law — what must be true. `FACTORY.md` is the mechanism — how the law
@@ -240,6 +261,30 @@ transcript. The budget ceiling was the real constraint; dropping the record was 
 
 This is the `## NOW` discipline applied to inbound scope: the board is the memory,
 the transcript is not.
+
+## Context budget — 200k ceiling, hand off before it
+
+Introduced 2026-07-29. A session that runs out of context mid-task loses everything it
+learned that it did not write down. The ceiling is not the problem; arriving at it with
+findings still in the transcript is.
+
+- **Budget 200k tokens per session and plan the landing, not just the takeoff.** Reserve
+  the last stretch for writing findings into the ledger — capture is the deliverable that
+  survives, code that is not ticked and not described is not.
+- **Write the finding when you have it, not when you are done.** A ruled-out hypothesis is
+  a finding: record what you proved *false* and how, so the next session does not re-run
+  the same experiment. `1.0.6` in `add-web-first-release-and-monetization` is the shape —
+  ruled out, next step, standing suspects, in that order.
+- **Do not fan agents out to buy context.** A subagent returns a summary, not the file, and
+  the handoff costs more than the search saved. See **Effort Budget**.
+- **Reproduce narrowly.** One temporary test that prints the real error beats reading five
+  files to guess it. Delete the temporary test in the same session that wrote it.
+- **A diagnostic that truncates its own evidence is the first bug to fix.** Before chasing
+  a failure, check the failure is being reported in full — a gate or error surface that
+  clips the causing statement wastes every session that reads it.
+- **Close with a written handoff, always.** Last action of a session: the ledger tick, the
+  `## NOW` advance, and the `session.log` line. If the budget is gone, those three still
+  happen — stop the work, not the record.
 
 ## Model Orchestration & Limits
 

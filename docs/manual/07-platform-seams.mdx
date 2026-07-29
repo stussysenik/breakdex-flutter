@@ -164,11 +164,14 @@ Separately, WASM Drift also runs in the widget-preview harness, which uses the s
 Future<QueryExecutor> openPreviewExecutor() async {
   final wasm = await rootBundle.load('packages/breakdex/assets/sqlite3.wasm');
   final sqlite3 = await WasmSqlite3.load(wasm.buffer.asUint8List());
+  sqlite3.registerVirtualFileSystem(InMemoryFileSystem(), makeDefault: true);
   return WasmDatabase.inMemory(sqlite3);   // worker-less, re-seeded per session
 }
 ```
 
 The preview harness's `sqlite3.wasm` ships as a **package asset** (declared in `pubspec.yaml`) and is loaded through `rootBundle` so its asset key resolves however the preview scaffold remaps root-project URIs. In-memory means a fresh, re-seeded DB every session — exactly what previews want, and exactly *not* what the shipped consumer app needs (which is why the release path above uses persistent `WasmDatabase.open` instead).
+
+> **Gotcha — the low-level WASM path must register a VFS itself, and `:memory:` does not exempt it.** This is the sharpest difference between the two web paths, and it cost a full debugging session. `WasmDatabase.open(...)` is drift's high-level API: it probes the browser and registers an OPFS or IndexedDB virtual file system for you, which is why production web persistence "just works". `WasmSqlite3.load(...)` + `WasmDatabase.inMemory(...)` is the low-level pair, and it registers **nothing**. A native sqlite3 build ships default file systems compiled in (`unix`, `win32`); the WASM build ships none, because there is no host filesystem to wrap. Since `sqlite3_open_v2` resolves a VFS by name on *every* open — the empty name meaning "the default" — an unregistered default fails with `SqliteException(1): while opening the database, no such vfs: `, naming the empty string it could not resolve. An in-memory database holds its pages in sqlite's own heap rather than in the VFS, so the requirement reads as a paradox: the file system must exist to open the database, then goes essentially unused. The line above is the fix; without it every widget preview died before reading a row (`add-web-first-release-and-monetization` 1.0.6). `InMemoryFileSystem` comes from `package:sqlite3/wasm.dart` via its `common.dart` export.
 
 > **Gotcha — two constructors, two worlds.** `AppDatabase()` calls `openConnection()` (the platform facade → persistent OPFS/IndexedDB `WasmDatabase` on web). `AppDatabase.forTesting(e)` takes an executor you hand it (the preview harness hands it `WasmDatabase.inMemory`). The preview scaffold never reaches `open_connection_web.dart`. Do not read preview behavior (fresh DB every session) as release behavior (persistent), or vice versa.
 
