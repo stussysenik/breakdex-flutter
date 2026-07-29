@@ -29,20 +29,20 @@ The primary user is an active breaker building a personal library under real fat
 ## Release Snapshot
 
 <!-- release:meta:start -->
-- Release tag: `v1.4.0`
-- Release version: `1.4.0`
-- Pubspec version: `1.4.0+6`
-- Released: `2026-07-13`
-- Metadata refreshed: `2026-07-13`
+- Release tag: `v1.5.0`
+- Release version: `1.5.0`
+- Pubspec version: `1.5.0+7`
+- Released: `2026-07-29`
+- Metadata refreshed: `2026-07-29`
 <!-- release:meta:end -->
 
 ## Automatic Provenance
 
 <!-- release:provenance:start -->
 - Source branch: `main`
-- Source revision: `418c550`
-- Source commit: `418c55057558bddccc17e5a5f75ad1ff13761727`
-- Source describe: `v1.3.0-146-g418c550`
+- Source revision: `ee10159`
+- Source commit: `ee1015952bf854f7e8350d0591918d3d9853fe11`
+- Source describe: `v1.4.0-119-gee10159`
 - Generator: `scripts/update_release_metadata.cjs`
 - Inputs: `docs/CHANGELOG.md`, `pubspec.yaml`, and local git metadata
 <!-- release:provenance:end -->
@@ -50,9 +50,9 @@ The primary user is an active breaker building a personal library under real fat
 ## Latest Tagged Notes
 
 <!-- release:notes:start -->
-- 8 UI clarity fixes from audit
-- **a11y:** route Stats reaction-tile rating colors through AppSemanticTheme
-- fixed move re-name text edit
-- **i18n:** install l10n delegates in widget tests broken by 5.2a/5.2b
-- **instax:** repair InstaxVideoCard call sites after ReviewableItem refactor
+- **add:** stack choice cards vertically on compact (phone) widths
+- **auth:** defer hydrate-on-login state write out of provider build
+- **auth:** mobile Google OAuth via token flow — SDK 25.x swallowed callback params
+- **boot:** survive an unconfigured Firebase instead of dying before runApp ([8e7f683](https://github.com/stussysenik/breakdex-flutter/commit/8e7f683e666d48c36968f16b17b8ca8d552e36cb)), closes [#0](https://github.com/stussysenik/breakdex-flutter/issues/0) [#1](https://github.com/stussysenik/breakdex-flutter/issues/1)
+- **distribute:** never build past a failed gate
 <!-- release:notes:end -->
