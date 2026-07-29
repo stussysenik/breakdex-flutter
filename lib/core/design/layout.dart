@@ -86,6 +86,17 @@ abstract final class AppLayout {
   /// this; every *block* height resolves to a multiple of [blockGrid].
   static const double baseline = 4;
 
+  /// The baseline **type** rides — half of [baseline].
+  ///
+  /// Owner's ruling, 2026-07-29: line heights are multiples of 2, not 4. A
+  /// productive type ramp needs steps between 26 and 32 that a 4pt baseline
+  /// cannot express without pushing every heading a full step apart, so the
+  /// scale gets the finer grid and *blocks* still land on [blockGrid]. This is
+  /// the rule the scale already satisfied; naming it turns "known
+  /// non-conformance" into a conformance test
+  /// (`test/design/type_baseline_test.dart`).
+  static const double typeBaseline = 2;
+
   /// Block grid. Card heights, row heights, and section heights land here.
   static const double blockGrid = 8;
 

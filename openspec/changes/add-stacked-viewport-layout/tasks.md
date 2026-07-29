@@ -64,12 +64,25 @@
 
 ## 4. Open design decisions
 
-- [ ] 4.1 Type-scale baseline snap — `titleMedium` line height 30 → 32 and `titleSmall` 26 → 28,
+- [x] 4.1 Type-scale baseline snap — `titleMedium` line height 30 → 32 and `titleSmall` 26 → 28,
       so every step of the scale is a multiple of the 4pt baseline. Shifts type metrics on
       every screen using those two styles; owner's call, recorded in TOKENS.md rather than
       applied silently.
-- [ ] 4.2 Decide whether `web-mirror/`'s `tokens.css` mirrors `AppLayout`, or whether the
+      **RULED 2026-07-29 — no snap. Owner: "do multiples of 2."** The two steps were never
+      non-conforming; they conformed to a rule nobody had written down. A productive ramp
+      needs a heading step between 26 and 32 and a 4pt baseline cannot express one, so type
+      rides a 2pt baseline and *blocks* keep the 8pt block grid. The scale is unchanged and no
+      screen's metrics move. The ruling ships as `AppLayout.typeBaseline` plus
+      `test/design/type_baseline_test.dart` (red-proved at an odd line box), not as prose —
+      prose is what let the question stay open.
+- [x] 4.2 Decide whether `web-mirror/`'s `tokens.css` mirrors `AppLayout`, or whether the
       dev surface is exempt. Current tokens ruling defers CSS until a third consumer.
+      **RULED 2026-07-29 — exempt, and recorded rather than assumed.** `web-mirror` is the
+      owner-only privileged tool, not a product surface; the stacked viewport exists so that
+      *switching tabs in the shipped app* reads as one viewport, which is not a claim about a
+      desktop utility with no tab bar. The standing tokens ruling already defers CSS until a
+      third consumer, and this would have made `AppLayout` that consumer for no user-visible
+      gain. Reversible: if the dev surface ever ships to anyone, it inherits the frame.
 
 ## Verification
 

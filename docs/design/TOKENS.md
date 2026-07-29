@@ -154,6 +154,7 @@ screen in the app, with no exceptions.
 | Token | Value | Dart Constant | Rule |
 |-------|-------|---------------|------|
 | `baseline` | 4 | `AppLayout.baseline` | Every vertical measurement is a multiple of this. |
+| `typeBaseline` | 2 | `AppLayout.typeBaseline` | Line heights ride this finer grid — half of `baseline`. |
 | `blockGrid` | 8 | `AppLayout.blockGrid` | Every *block* height (card, row, section) is a multiple of this. |
 | `sectionGap` | 32 | `AppLayout.sectionGap` | Between two sections of a screen. |
 | `itemGap` | 12 | `AppLayout.itemGap` | Between siblings inside one section. |
@@ -200,13 +201,38 @@ Detail and modal routes pushed on top of a tab (`move_detail`, `combo_detail`,
 a back affordance, no nav band — and giving them the tab frame is a separate ruling, not
 an oversight.
 
-### Known non-conformance in the type scale
+`web-mirror/` is **exempt** (ruled 2026-07-29). It is the owner-only privileged tool, not
+a product surface; the stacked viewport exists so that switching tabs in the shipped app
+reads as one viewport, which is not a claim about a desktop utility with no tab bar. The
+standing tokens ruling defers CSS until a third consumer, and mirroring `AppLayout` there
+would have manufactured that third consumer for no user-visible gain. If the dev surface
+ever ships to anyone, it inherits the frame.
 
-`titleMedium` (line height 30) and `titleSmall` (26) are **not** multiples of the 4pt
-baseline; every other step in the scale is. Text blocks set in those two styles cannot
-land on the grid, which is visible as uneven gaps wherever they stack. Snapping them to
-32 and 28 fixes it and shifts type metrics on every screen that uses them — recorded
-here as a deliberate open item, not silently changed.
+### Type rides a 2pt baseline
+
+**Owner's ruling, 2026-07-29: line heights are multiples of 2, not 4.**
+
+This was previously filed as "known non-conformance" — `titleMedium` (30) and
+`titleSmall` (26) are not multiples of the 4pt baseline, and the open question was
+whether to snap them to 32 and 28. The answer is that they were never wrong: a
+productive ramp needs a heading step between 26 and 32, and a 4pt baseline cannot
+express one. Type gets the finer grid; *blocks* still land on `blockGrid` (8).
+
+So the scale is unchanged and no screen's metrics move. What changed is that the rule
+is now written and enforced: `AppLayout.typeBaseline` names it, and
+`test/design/type_baseline_test.dart` fails if any step of `AppTypography` resolves to
+an odd line box. A rule with no failing gate is a preference.
+
+| Style | Font size | Line box | ÷2 |
+|-------|-----------|----------|-----|
+| `titleLarge` | 32 | 36 | ✅ |
+| `titleMedium` | 24 | 30 | ✅ |
+| `titleSmall` | 20 | 26 | ✅ |
+| `bodyLarge` | 18 | 24 | ✅ |
+| `bodyMedium` | 16 | 24 | ✅ |
+| `bodySmall` | 14 | 20 | ✅ |
+| `caption` · `sectionHeader` · `labelLarge` | 12 | 16 | ✅ |
+| `labelSmall` | 10 | 12 | ✅ |
 
 ---
 
