@@ -66,3 +66,8 @@ survives the move.
       `y`, and nothing feels top-anchored that used to be centred (`breakdex`'s hero tiles are
       the one to watch). Web additionally: the 720/1080 clamp should centre the column on a
       wide monitor rather than stretching it. (`add-stacked-viewport-layout` V.4)
+- [ ] 6.2 Patrol journey on a real device, iOS + Android: open library → cycle the 3 view modes
+      → pick a device video already in Breakdex → land on the existing move → run one review
+      card without scrolling. Needs devices/simulators; cannot run headless. No
+      `integration_test/` directory exists yet, so authoring the journey is part of the task.
+      (`redesign-visual-first-experience` V.2)

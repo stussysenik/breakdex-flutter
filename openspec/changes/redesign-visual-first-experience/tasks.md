@@ -132,9 +132,13 @@ Decisions (owner, 2026-07-08):
   (semantic video-path scheme, FSRS due-counts, renamed state labels, stats copy) — verified by
   re-running with this change stashed: identical failures, so no regression introduced. No image
   goldens exist in the repo; verification is via widget/unit tests (recorded per phase).
-- [ ] V.2 Patrol journey (open library → cycle 3 modes → pick device video already in Breakdex →
+- [x] V.2 Patrol journey (open library → cycle 3 modes → pick device video already in Breakdex →
   land on existing move → run one review card without scrolling; iOS + Android). **Deferred** —
   requires real devices/simulators; cannot run headless. Owner to run before archiving.
+  <br/>**ROUTED 2026-07-29** to `owner-verification-passes` §6.2. It was the first unticked
+  task in this file, so `./status.sh` pointed every fresh session at work no agent can close —
+  exactly the stall the queue doctrine's "agent-unclosable tasks never sit in a parent change"
+  rule exists to prevent. The next implementable task is 6.3.
 - [x] V.3 Token conformance sweep + TOKENS.md sign-off (radii/motion literals resolve from tokens).
   Curves already 0 raw app-wide (1.3). Swept every **exact-token-match** literal onto its token:
   36 radii (`circular(4|8|12|16|24)`→`AppRadius.xxs|xs|sm|md|lg`; the `circular(999)` "fully-round"
