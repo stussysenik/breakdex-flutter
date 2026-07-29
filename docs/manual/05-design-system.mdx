@@ -3,7 +3,7 @@ title: Design System
 name: design-system
 order: 5
 status: verified
-verified: a699026
+verified: 8e1b86d
 watches:
   - lib/core/design/**
   - docs/design/TOKENS.md
@@ -49,8 +49,16 @@ the content band varies, so content's first pixel lands at safe-area top + 80 on
 It is enforced by a type, `AppScreen` (`lib/shared/widgets/app_screen.dart`), not by
 convention: a screen that builds its own `Scaffold`, `AppBar`, or `SliverAppBar` has opted out
 of the frame and is a review violation, on the same footing as a raw `Duration` in motion. The
-four-band diagram, both token tables, the one-scroll rule, and the per-screen migration ledger
-live in `../design/TOKENS.md` → **Layout & Grid**.
+four-band diagram, both token tables, and the one-scroll rule live in `../design/TOKENS.md` →
+**Layout & Grid**.
+
+All five tabs are on the frame as of 2026-07-29, so the migration ledger that tracked them is
+retired; the roster now lives in `test/design/frame_conformance_test.dart`, where CI can fail
+it. Anything the frame must do for a screen belongs to `AppScreen` rather than to the screen —
+that is how `AppScreen.floatingActionButton` arrived, carrying with it the nav-band inset five
+screens had each hand-rolled as `kBottomNavigationBarHeight + padding.bottom`. Detail routes
+pushed on top of a tab are not on the roster: a back affordance and no nav band is a different
+placement problem, and framing them is a separate ruling.
 
 **Type.** **Inter** is the default family. The static `AppTypography` scale
 (`titleLarge … labelSmall`) hardcodes `fontFamily: 'Inter'` and follows the IBM Carbon

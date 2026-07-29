@@ -3,7 +3,7 @@ title: Testing & Verification
 name: testing
 order: 8
 status: verified
-verified: a699026
+verified: 8e1b86d
 watches:
   - test/**
   - .github/workflows/ci.yml
@@ -32,15 +32,24 @@ From these four, everything below is forced: the CI gate is a *floor* (it proves
 
 ## The test suite
 
-144 `*_test.dart` files under `test/`, split by layer (the jump from 110 is the Appwrite overnight wave — sync dual-write/dual-read/codec/backfill/migration suites — plus config/entitlement and web-seam tests):
+183 `*_test.dart` files under `test/`, split by layer (the jump from 110 is the Appwrite overnight wave — sync dual-write/dual-read/codec/backfill/migration suites — plus config/entitlement and web-seam tests):
 
 | Dir | Files | Covers |
 | --- | --- | --- |
-| `test/core/` | 108 | database + DAOs (incl. migration v22–v27 suites), state machines, sync (codecs, backfills, dual-read/write, tombstones, Appwrite backend/transport), config (remote config, update/entitlement gates), providers, models, design, utils |
-| `test/features/` | 26 | screen-level widget tests (move_list, flashcard_review, stats, add, flow, video_editor, party, auth, …) |
-| `test/shared/` | 7 | shared widgets |
+| `test/core/` | 128 | database + DAOs (incl. migration v22–v27 suites), state machines, sync (codecs, backfills, dual-read/write, tombstones, Appwrite backend/transport), config (remote config, update/entitlement gates), providers, models, design, utils |
+| `test/features/` | 43 | screen-level widget tests (move_list, flashcard_review, stats, add, flow, video_editor, party, auth, …) |
+| `test/shared/` | 8 | shared widgets, incl. the `AppScreen` frame |
+| `test/design/` | 1 | source-level conformance (see below) |
 | `test/` root | 3 | l10n foundation, preview-harness smoke, template widget test |
 | `test/helpers/` | — | `test_data.dart`, `test_database.dart` (in-memory Drift fixtures) |
+
+**Conformance tests are a distinct category.** `test/design/frame_conformance_test.dart` reads
+screen *source* and fails if a screen on the roster builds its own `Scaffold`/`AppBar`/
+`SliverAppBar`. It exists because the layout constitution's predecessor was a review rule, and
+review passed five screens that each grew a different header ([Design System](./05-design-system.mdx)).
+A rule with no failing gate is a preference. Reach for this shape when the invariant is about
+how code is *written* rather than what it computes — and keep it narrow, because a source test
+that over-matches becomes a refactor tax.
 
 Test dependencies (`pubspec.yaml`, dev-dependencies):
 
@@ -85,7 +94,7 @@ Five gates: dependency resolution, **l10n freshness**, **docs-ledger freshness**
 - `scripts/docs_ledger_check` diffs each verified manual chapter's `verified..HEAD` restricted to its `watches` globs (git plumbing only) and fails if a watched path changed without the chapter being re-verified ([Manual Meta](./12-meta.mdx)). This is why `checkout` needs `fetch-depth: 0` — a shallow clone can't reach a chapter's `verified` commit.
 - `flutter analyze` is the static gate. It must report `No issues found` — the `analysis_options.yaml` ruleset ([Standards](./09-standards.mdx)) is the real teeth here.
 
-**CI does NOT run `flutter test`.** (It does now build one artifact — the web bundle — but only as a compile gate; nothing is published from CI.) The 144-file suite is *not* enforced on push or PR. This is a deliberately honest statement of the current floor: green CI proves the code analyzes and l10n is current — it does **not** prove the tests pass. Running `flutter test` before handoff is a manual discipline (§9), not something the machine does for you. Do not read a green CI check as "tests pass."
+**CI does NOT run `flutter test`.** (It does now build one artifact — the web bundle — but only as a compile gate; nothing is published from CI.) The 183-file suite is *not* enforced on push or PR. This is a deliberately honest statement of the current floor: green CI proves the code analyzes and l10n is current — it does **not** prove the tests pass. Running `flutter test` before handoff is a manual discipline (§9), not something the machine does for you. Do not read a green CI check as "tests pass."
 
 `release.yml` is separate: it fires only on `push` to `main`, runs `npx semantic-release` (Node 20, Flutter pinned `3.41.3`) for monotonic versioning + CHANGELOG, then a `detect` step checks for an exact-match tag on HEAD and — when a new version published — chains the `deploy-web` reusable workflow with that tag (done via `needs:` rather than `on: push: tags` because tags pushed by `GITHUB_TOKEN` don't trigger downstream workflows; the deploy self-skips when Vercel secrets are unset). It is a publishing pipeline, not a verification gate — it presumes the branch already earned its way to `main`.
 
