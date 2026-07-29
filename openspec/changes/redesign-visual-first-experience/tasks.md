@@ -164,9 +164,25 @@ needs a Scholar pass first) before any Student session touches code.
   rule, so it was answered with a rule rather than a one-screen tweak; `add` is that
   change's reference migration (tasks 2.1–2.3). See that change for the constitution, the
   per-screen migration ledger, and the owner-gated type-scale item (4.1).
-- [ ] 6.2 **`Moves` header overflow.** `SCR-20260728-mafz` shows a RenderFlex "OVERFLOWED BY 2"
+- [x] 6.2 **`Moves` header overflow.** `SCR-20260728-mafz` shows a RenderFlex "OVERFLOWED BY 2"
   on the `< Back  Moves` header. Reproduce (it did not overflow on an API-35 emulator at
   default text scale — suspect larger text scale or iOS metrics) and fix.
+  <br/>**DONE 2026-07-29.** Reproduced in a widget test, not on a device: `AppBar` gives
+  `leading` a fixed **56pt** slot, and a chevron plus a word of `bodyMedium` does not fit it —
+  the old shape overflows by 29px at the test's default metrics and by 48px at text scale 1.3.
+  On the owner's device with Inter it landed at exactly the 2px the screenshot recorded, which
+  is why it looked like a rounding artefact rather than a structural miss.
+  <br/>Fixed as a type, not a nudge: `BackLeading` (`lib/shared/widgets/back_leading.dart`)
+  declares the slot it needs (`slotWidth`) and ellipsizes its label inside it, so overflow is
+  impossible at *any* text scale instead of merely unlikely at one. Both `move_category`
+  headers now use it; the `moves-back` / `category-back` semantics identifiers the Maestro
+  `navigation.yaml` flow selects on are preserved. Covered by
+  `test/shared/widgets/back_leading_test.dart` at scales 1.0 / 1.3 / 2.0, red-proved against
+  the pre-fix shape.
+  <br/>**Left alone deliberately:** `combo_detail_screen.dart` has a third copy of this control
+  with its own `leadingWidth: 104` and a `sectionHeader` type style. It is the same class of
+  defect at large text scales, but converting it changes that screen's voice — out of scope for
+  a header-overflow task, and worth doing when that screen is next touched.
 - [ ] 6.3 **Settings full-view transition animation.** An interesting full-view transition
   when opening settings sections. Must compose from `AppMotion` tokens (Fluid + Morph only —
   raw curve/duration literals are review violations).

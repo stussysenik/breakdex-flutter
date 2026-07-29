@@ -12,6 +12,7 @@ import 'package:breakdex/core/database/database.dart';
 import 'package:breakdex/core/services/entity_names_service.dart';
 import 'package:breakdex/core/design/colors.dart';
 import 'package:breakdex/core/design/spacing.dart';
+import 'package:breakdex/shared/widgets/back_leading.dart';
 import 'package:breakdex/core/design/theme.dart';
 import 'package:breakdex/core/design/typography.dart';
 import 'package:breakdex/core/providers.dart';
@@ -54,28 +55,10 @@ class MoveCategoryScreen extends ConsumerWidget {
 
     return Scaffold(
       appBar: AppBar(
-        leading: Semantics(
+        leadingWidth: BackLeading.slotWidth,
+        leading: BackLeading(
           identifier: 'moves-back',
-          label: 'Back',
-          button: true,
-          child: GestureDetector(
-            onTap: () => context.pop(),
-            child: Padding(
-              padding: const EdgeInsets.symmetric(vertical: AppSpacing.xs),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(Icons.chevron_left, color: colorScheme.secondary, size: 20),
-                  Text(
-                    'Back',
-                    style: AppTypography.bodyMedium.copyWith(
-                      color: colorScheme.secondary,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
+          onTap: () => context.pop(),
         ),
         title: Text(ref.watch(entityNamesProvider).movePlural),
       ),
@@ -226,32 +209,10 @@ class MoveCategoryDetailScreen extends ConsumerWidget {
 
     return Scaffold(
       appBar: AppBar(
-        leading: Semantics(
+        leadingWidth: BackLeading.slotWidth,
+        leading: BackLeading(
           identifier: 'category-back',
-          label: 'Back',
-          button: true,
-          child: GestureDetector(
-            onTap: () => context.pop(),
-            child: Padding(
-              padding: const EdgeInsets.symmetric(vertical: AppSpacing.xs),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(
-                    Icons.chevron_left,
-                    color: colorScheme.secondary,
-                    size: 20,
-                  ),
-                  Text(
-                    'Back',
-                    style: AppTypography.bodyMedium.copyWith(
-                      color: colorScheme.secondary,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
+          onTap: () => context.pop(),
         ),
         title: Text(categoryName == 'uncategorized' ? 'Uncategorized' : categoryName),
       ),
