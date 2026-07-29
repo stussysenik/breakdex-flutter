@@ -21,7 +21,22 @@
 > exactly the next unticked task, verify (binary truth), tick + update this block **in the
 > same commit**. Nothing else starts until this block says so.
 
-- **Change (active, owner-directed 2026-07-28):** `android-e2e`
+- **Change (active, owner-directed 2026-07-29):** `add-web-first-release-and-monetization`
+  — **Ship-today redirect.** Owner's ruling this session: *"no need for testing and wasting
+  tokens on devices — I just need if generally the project and its workload is in working
+  shape so I can do minor UI tweaks and functionalities and deploy and distribute today for
+  testing."* That makes **Flutter Web distribution** the active track and demotes the Android
+  device-harness work below it.
+  **Proven green 2026-07-29:** `./verify.sh` all gates (ledger, `--strict`, docs ledger, l10n,
+  analyzer 0/0, **1225 tests pass / 3 skip / 0 fail**) + `flutter build web --release`.
+  **Not proven:** anything on a device, live Appwrite sync (Phase M), payments.
+  Distribution entry point is `scripts/distribute.sh web`.
+  **Queue reconciled the same session:** 37 → 30 open changes; the Phoenix/BEAM/Gleam
+  cluster retired as superseded by the locked Appwrite ruling — see
+  `openspec/changes/archive/2026-07-29-ARCHIVE-NOTE.md` and the new CLAUDE.md
+  "Supersession rule".
+
+- **Parked 2026-07-29 (was active, owner-directed 2026-07-28):** `android-e2e`
   — Android launch + device-test harness. **6.1 DONE 2026-07-28** — the tooling path is
   ruled in the change's `design.md` (D1–D4): `argent` (`@swmansion/argent`) is an MCP
   agentic toolkit scoped to **iOS-sim / web** smoke, *not* a device farm and not on the
@@ -753,12 +768,19 @@ older intra-app view and is kept for context.
    directory sweeps only after its migration lands; gate before invites go broad.
 10. Nearly-done finishing passes: `foundation-data-resilience` (59/64),
     `tighten-combo-journey-and-review-polish` (33/36), `repo-organization-and-readme-refresh`
-    (12/15), `add-historical-photos-bootstrap` (7/9), `add-web-mirror-player` (19/26).
+    (12/15), `add-web-mirror-player` (19/26). **Caveat (2026-07-29):** most of what remains in
+    these is **owner device/credential proof**, not build work — e.g. `foundation-data-resilience`
+    10.3–10.7 and `add-web-mirror-player` 5.1–5.3. No agent can close them; they need a dedicated
+    device session. `add-historical-photos-bootstrap` left this list **complete** — its last two
+    tasks were BEAM speculation, void under the Appwrite ruling.
 11. **`state-machine-crud`** — kept open as the tracker for genuinely unshipped residual work
     (TrashMachine, MoveListMachine, AppMachine, notes/log overlays); the `Machine<S,E>`
     framework + move-detail vertical already shipped (see its `tasks.md` Residual header).
-12. Everything else parked (labs, provenance/beam ingestion, research workbench, photo
-    archive recovery, etc.).
+12. Everything else parked (labs, research workbench, photo archive recovery, etc.).
+    **`provenance/beam ingestion` is no longer on this list — it was archived 2026-07-29** as
+    superseded by the locked Appwrite ruling, along with the rest of the Phoenix/BEAM/Gleam
+    cluster. `add-self-healing-video-reliability-runtime` deliberately survived it: same 89-day
+    cluster, but on-device product work with no BEAM dependency.
 
 **Recently reconciled (2026-07-06 ledger audit):** archived `add-convex-sync-backend`
 (superseded by Appwrite), `add-discovery-graph-interface` (26/26 shipped), and

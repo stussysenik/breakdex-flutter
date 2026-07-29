@@ -3,7 +3,7 @@ title: Executor Onboarding
 name: onboarding
 order: 11
 status: verified
-verified: 52108b5
+verified: 1f7052e
 watches:
   - openspec/AGENTS.md
   - ROADMAP.md
@@ -71,9 +71,31 @@ chapter's body and `verified:` frontmatter in the same commit
   are decided; re-litigating one is a teacher decision.
 - **Building a non-goal** (E2EE, CRDTs, Temporal, shared/collaborative state). If a task seems to
   require one, that is the signal to escalate ([Product Doctrine](./01-product-doctrine.mdx)).
+- **Acting on a superseded spec.** A queued change is not automatically live. If a task
+  contradicts the locked stack, escalate rather than build it — and see the
+  [Supersession rule](../../CLAUDE.md) plus
+  `openspec/changes/archive/2026-07-29-ARCHIVE-NOTE.md`, which retired six changes proposing a
+  Phoenix/BEAM/Gleam backend, protobuf transport, and CRDTs. They sat in the active queue for
+  89 days after the Appwrite ruling killed them. Age in the queue is not evidence of relevance.
 - **Destructive data operations** — deleting/orphaning user state, non-additive migrations. The
   repo is late-stage production ([`#brownfield-1`](./09-standards.mdx#brownfield-1),
   [`#brownfield-2`](./09-standards.mdx#brownfield-2)).
+
+## The two web surfaces are ranked, not equal
+
+Re-affirmed 2026-07-29. Confusing these is the most common orientation error:
+
+- **Flutter Web is the product** — the released consumer app, same codebase as mobile. When
+  the surfaces compete for effort or diverge in behavior, Flutter wins by default.
+- **`web-mirror/` (Next.js + XState) is an owner-only dev utility** — a privileged test
+  harness and authoring studio. It is deliberately allowed to reach data and force states the
+  consumer app cannot; that privilege is why it is kept. It is a tool for building the
+  product, never a second product. Never ship a user-facing feature there first.
+
+A corollary for verification: exercising Flutter Web proves shared Dart logic, UI, and state
+machines for all targets, but **not** storage (WASM/OPFS vs native SQLite), video (HTML
+`<video>` vs native player), Photos/permissions, secure storage, or plugin paths — web
+short-circuits several native paths with `if (kIsWeb) return;`. Web-green is not mobile-green.
 
 ## Reasoning from the primitives
 

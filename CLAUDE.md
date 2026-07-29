@@ -95,8 +95,8 @@ conversation. Three roles answer to this, never mixed:
 | Sync model | **Record-level LWW + tombstones**, plus a **dirty-guard** | While a record's editing machine is dirty, inbound realtime updates are held and applied only on save/discard — keystrokes are never clobbered mid-edit (align-cross-client-foundations D6). |
 | User model | **Private per-user sync** | Any Google sign-in gets an isolated space on their own Drive quota; local-only users keep working untouched; owner (senik456) is just user #1. No cross-user sharing. |
 | Flutter state architecture | **`Machine<S,E>`** (zero-dep sealed-class framework) | `lib/core/state_machines/machine.dart`, wired into production screens. It IS this codebase's TCA-equivalent. Do not replace it. |
-| Web client (studio) | **Next.js 15** (React) + **XState v5** | In-repo `web-mirror/`. Owner-facing system-of-record + authoring studio. Each web machine mirrors its Flutter counterpart 1:1 (same states/events/guards, different runtime). |
-| Web client (product) | **Flutter Web** — the released consumer app | Decided 2026-07-08. Same codebase as mobile; Drift on WASM/OPFS; platform gaps degrade visibly. Spec: `openspec/changes/add-web-first-release-and-monetization`. Coexists with the studio; they are not rivals. |
+| **Product surface (ranked #1)** | **Flutter Web** — the released consumer app | Decided 2026-07-08, hierarchy re-affirmed 2026-07-29. Same codebase as mobile; Drift on WASM/OPFS; platform gaps degrade visibly. Spec: `openspec/changes/add-web-first-release-and-monetization`. **This is the product.** When the two surfaces compete for effort or diverge in behavior, Flutter wins by default. |
+| **Dev surface (ranked #2)** | **Next.js 15** (React) + **XState v5** — owner-only privileged utility | In-repo `web-mirror/`. Owner-facing system-of-record, authoring studio, and **privileged test harness**: it can reach data and force states the consumer app deliberately cannot, which is exactly why it is kept. Each web machine mirrors its Flutter counterpart 1:1 (same states/events/guards, different runtime). It is a tool for building the product, never a second product. |
 | Distribution & monetization | **Web-first private release**; invite codes bind entitlement + config cohort; offerings **$4.20–$9.99 USD** (web merchant-of-record; StoreKit IAP on iOS later); iOS → Android follow after web soak | Decided 2026-07-08. Remote config first (Appwrite Phase 1R); Shorebird code-push deferred/flagged. GUIDE.md + monotonic versioning + CHANGELOG are release-blocking hygiene. |
 | Design tokens | **`docs/design/TOKENS.md`** is the single source | `lib/core/design/*.dart` and web `tokens.css` both conform. Conformance is a review-checklist item; codegen deferred until a third consumer. Grid: 8pt base / 4pt half-step. Type: Inter. |
 | Product atom model | **move → combo → set**; beats/counts are pre-planned metadata on the atoms | The moat is this opinionated composition (combo = move-after-move; beat grid rides `count`). Every feature composes from these atoms — decided 2026-07-08. |
@@ -164,6 +164,30 @@ corresponding work. A pending change whose tasks materially contradict shipped c
 review violation to reconcile before new work builds on it. (This rule was introduced by
 `align-cross-client-foundations`; the 0/51-vs-shipped drift in `state-machine-crud` is the
 canonical example it fixed.)
+
+## Supersession rule — a ruling must retire the work it kills
+
+Introduced 2026-07-29 after a triage found six changes (~57 open tasks) proposing a
+Phoenix/BEAM/Gleam backend, protobuf transport, and CRDTs — every one of them already
+dead by the locked Appwrite ruling and the Non-goals block, but still sitting in the
+active queue 89 days later because the supersession was never written down.
+
+- **Locking a ruling and retiring the work it kills happen in the SAME commit.** A
+  Canonical-stack row that contradicts a queued change is drift, and drift is invisible:
+  `verify.sh` strict-checks only the ACTIVE change, so a superseded change can rot
+  indefinitely without a single gate going red.
+- **Supersession is recorded, never assumed.** "Everyone knows we moved to Appwrite" is
+  not a record. The archive note is the record; a chat message is not.
+- **Retire the contradicted half, keep the surviving half.** These changes are rarely
+  wholly dead. `add-provenance-ledger-and-beam-ingestion-contract` had a shipped local
+  diagnostics half and a dead BEAM half; `add-self-healing-video-reliability-runtime`
+  sat in the same cluster but has no BEAM dependency at all and stays active. Archiving
+  by cluster instead of by claim throws away live work.
+- **A parked change still costs.** Every triage re-reads it, every queue count includes
+  it, and every fresh session must re-derive why it is not being worked. Park it in the
+  archive with a reason, not in the queue with silence.
+
+Canonical example: `openspec/changes/archive/2026-07-29-ARCHIVE-NOTE.md`.
 
 ## Capture rule — an ask never lives only in chat
 
