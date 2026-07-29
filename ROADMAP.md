@@ -22,9 +22,14 @@
 > same commit**. Nothing else starts until this block says so.
 
 - **Change (active, 2026-07-29 · product finish):** `redesign-visual-first-experience`
-  — **Next unticked: 6.2** — the `Moves` header RenderFlex overflow the owner screenshotted
-  (`SCR-20260728-mafz`, "OVERFLOWED BY 2"). Phases 2–5 shipped 2026-07-08; what is left is a
-  short finish list of owner-observed defects plus V.2's Patrol journey. Release-blocking for
+  — **6.2 DONE 2026-07-29** — the `Moves` header overflow (`SCR-20260728-mafz`) was `AppBar`'s
+  fixed 56pt leading slot, not a rounding artefact: 29px over at test metrics, 48px at text
+  scale 1.3, 2px on the owner's device. Fixed as `BackLeading`, a control that declares its own
+  slot width and ellipsizes, so overflow is impossible at any text scale.
+  **Next unticked: 6.3** — a full-view transition when opening settings sections, composed from
+  `AppMotion` tokens (Fluid + Morph only; raw curve/duration literals are review violations).
+  Phases 2–5 shipped 2026-07-08; what is left is a short finish list of owner-observed defects
+  plus V.2's Patrol journey. Release-blocking for
   wave-1 invites, and no backend dependency — it runs parallel to the owner-gated Appwrite and
   distribution work.
 
