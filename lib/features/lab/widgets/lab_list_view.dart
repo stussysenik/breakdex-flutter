@@ -46,11 +46,9 @@ class LabListView extends ConsumerWidget {
           );
         }
 
-        return SliverPadding(
-          padding: const EdgeInsets.symmetric(
-            horizontal: AppSpacing.screenEdge,
-          ),
-          sliver: SliverList.builder(
+        // No horizontal padding here: the frame's content band already
+        // supplies the gutter, and re-applying it doubles the inset.
+        return SliverList.builder(
             itemCount: labs.length,
             itemBuilder: (_, final index) {
               final lab = labs[index];
@@ -72,8 +70,7 @@ class LabListView extends ConsumerWidget {
                       milliseconds: index.clamp(0, 15) * 40,
                     ),
                   );
-            },
-          ),
+          },
         );
       },
     );

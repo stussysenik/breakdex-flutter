@@ -11,7 +11,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:uuid/uuid.dart';
 
 import 'package:breakdex/core/database/database.dart';
+import 'package:breakdex/core/design/layout.dart';
 import 'package:breakdex/core/design/spacing.dart';
+import 'package:breakdex/shared/widgets/app_screen.dart';
 import 'package:breakdex/core/design/typography.dart';
 import 'package:breakdex/shared/widgets/app_segmented_control.dart';
 import 'package:breakdex/core/utils/time_format.dart';
@@ -89,196 +91,130 @@ class _LabScreenState extends ConsumerState<LabScreen> {
     final viewMode = ref.watch(labViewModeProvider);
     final colorScheme = Theme.of(context).colorScheme;
 
-    return Scaffold(
-      body: SafeArea(
-        child: CustomScrollView(
-          slivers: [
-            // Header: title + segment toggle + quick log
-            SliverToBoxAdapter(
-              child: _buildHeader(context, viewMode, colorScheme, true),
-            ),
+    // The title, its band, and the nav-band insets are the frame's. What stays
+    // here is the workspace itself: the mode toggle and the quick-log capture
+    // strip, which are content, not chrome.
+    return AppScreen.slivers(
+      title: 'Lab',
+      actions: const [WipBadge(compact: true)],
+      floatingActionButton:
+          Semantics(
+                identifier: 'create-new-lab',
+                label: 'Create new lab',
+                button: true,
+                child: FloatingActionButton(
+                  onPressed: _showCreateLabSheet,
+                  backgroundColor: colorScheme.primary,
+                  child: const Icon(Icons.add, color: Colors.white),
+                ),
+              )
+              .animate()
+              .scale(
+                begin: const Offset(0, 0),
+                end: const Offset(1, 1),
+                duration: AppMotion.moderate02,
+                curve: AppMotion.expressive,
+              )
+              .fadeIn(duration: AppMotion.moderate01),
+      slivers: [
+        SliverToBoxAdapter(child: _buildControls(viewMode, colorScheme)),
 
-            // Content — switches based on selected mode
-            switch (viewMode) {
-              LabViewMode.projects => const LabListView(
-                labTypeFilter: 'project',
-              ),
-              LabViewMode.board => const LabBoardView(),
-              LabViewMode.sets => const LabSetsView(),
-            },
-
-            // Bottom padding for frosted nav bar
-            SliverPadding(
-              padding: EdgeInsets.only(
-                bottom:
-                    kBottomNavigationBarHeight +
-                    MediaQuery.of(context).padding.bottom +
-                    AppSpacing.lg,
-              ),
-            ),
-          ],
-        ),
-      ),
-      floatingActionButton: Padding(
-        padding: EdgeInsets.only(
-          bottom:
-              kBottomNavigationBarHeight +
-              MediaQuery.of(context).padding.bottom,
-        ),
-        child:
-            Semantics(
-                  identifier: 'create-new-lab',
-                  label: 'Create new lab',
-                  button: true,
-                  child: FloatingActionButton(
-                    onPressed: _showCreateLabSheet,
-                    backgroundColor: colorScheme.primary,
-                    child: const Icon(Icons.add, color: Colors.white),
-                  ),
-                )
-                .animate()
-                .scale(
-                  begin: const Offset(0, 0),
-                  end: const Offset(1, 1),
-                  duration: AppMotion.moderate02,
-                  curve: AppMotion.expressive,
-                )
-                .fadeIn(duration: AppMotion.moderate01),
-      ),
+        // Content — switches based on selected mode
+        switch (viewMode) {
+          LabViewMode.projects => const LabListView(labTypeFilter: 'project'),
+          LabViewMode.board => const LabBoardView(),
+          LabViewMode.sets => const LabSetsView(),
+        },
+      ],
     );
   }
 
-  /// Shared header widget: title + 3-segment toggle + quick log.
-  Widget _buildHeader(
-    final BuildContext context,
+  /// The screen's own controls: WIP note, 3-segment toggle, quick-log capture.
+  Widget _buildControls(
     final LabViewMode viewMode,
     final ColorScheme colorScheme,
-    final bool showQuickLog,
   ) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // Title + gear
-        Padding(
-          padding: const EdgeInsets.fromLTRB(
-            AppSpacing.screenEdge,
-            AppSpacing.lg,
-            AppSpacing.screenEdge,
-            0,
-          ),
-          child: Row(
-            children: [
-              Text(
-                'Lab',
-                style: AppTypography.titleLarge.copyWith(
-                  color: colorScheme.onSurface,
-                ),
-              ),
-              const SizedBox(width: AppSpacing.sm),
-              const WipBadge(compact: true),
-            ],
-          ),
+        Text(
+          'WIP: projects, boards, and sets are still being shaped, so use this as an active workspace, not a locked final system.',
+          style: AppTypography.bodySmall.copyWith(color: colorScheme.secondary),
         ),
-        Padding(
-          padding: const EdgeInsets.fromLTRB(
-            AppSpacing.screenEdge,
-            AppSpacing.xs,
-            AppSpacing.screenEdge,
-            0,
-          ),
-          child: Text(
-            'WIP: projects, boards, and sets are still being shaped, so use this as an active workspace, not a locked final system.',
-            style: AppTypography.bodySmall.copyWith(
-              color: colorScheme.secondary,
-            ),
-          ),
-        ),
-        const SizedBox(height: AppSpacing.md),
+        const SizedBox(height: AppLayout.cardPadding),
 
         // 3-segment toggle: Projects | Board | Sets
-        Padding(
-          padding: const EdgeInsets.symmetric(
-            horizontal: AppSpacing.screenEdge,
-          ),
-          child: AppSegmentedControl<LabViewMode>(
-            items: const [
-              AppSegmentedControlItem(
-                value: LabViewMode.projects,
-                label: 'Projects',
-                icon: Icons.trip_origin,
-              ),
-              AppSegmentedControlItem(
-                value: LabViewMode.board,
-                label: 'Board',
-                icon: Icons.grid_view_rounded,
-              ),
-              AppSegmentedControlItem(
-                value: LabViewMode.sets,
-                label: 'Sets',
-                icon: Icons.playlist_play_rounded,
-              ),
-            ],
-            selectedValue: viewMode,
-            onChanged: (final mode) {
-              HapticFeedback.selectionClick();
-              ref.read(labViewModeProvider.notifier).state = mode;
-            },
-          ),
+        AppSegmentedControl<LabViewMode>(
+          items: const [
+            AppSegmentedControlItem(
+              value: LabViewMode.projects,
+              label: 'Projects',
+              icon: Icons.trip_origin,
+            ),
+            AppSegmentedControlItem(
+              value: LabViewMode.board,
+              label: 'Board',
+              icon: Icons.grid_view_rounded,
+            ),
+            AppSegmentedControlItem(
+              value: LabViewMode.sets,
+              label: 'Sets',
+              icon: Icons.playlist_play_rounded,
+            ),
+          ],
+          selectedValue: viewMode,
+          onChanged: (final mode) {
+            HapticFeedback.selectionClick();
+            ref.read(labViewModeProvider.notifier).state = mode;
+          },
         ),
-        const SizedBox(height: AppSpacing.md),
+        const SizedBox(height: AppLayout.cardPadding),
 
-        // Quick log input — visible in content creation modes only
-        if (showQuickLog) ...[
-          Padding(
-            padding: const EdgeInsets.symmetric(
-              horizontal: AppSpacing.screenEdge,
-            ),
-            child: Row(
-              children: [
-                Expanded(
-                  child: Semantics(
-                    label: 'Quick log',
-                    textField: true,
-                    child: TextField(
-                      controller: _quickLogController,
-                      decoration: const InputDecoration(
-                        hintText: 'Quick log...',
-                        prefixIcon: Icon(Icons.edit_note_rounded),
-                      ),
-                      textInputAction: TextInputAction.send,
-                      onSubmitted: (_) => _submitQuickLog(),
-                    ),
+        // Quick log input
+        Row(
+          children: [
+            Expanded(
+              child: Semantics(
+                label: 'Quick log',
+                textField: true,
+                child: TextField(
+                  controller: _quickLogController,
+                  decoration: const InputDecoration(
+                    hintText: 'Quick log...',
+                    prefixIcon: Icon(Icons.edit_note_rounded),
                   ),
+                  textInputAction: TextInputAction.send,
+                  onSubmitted: (_) => _submitQuickLog(),
                 ),
-                const SizedBox(width: AppSpacing.sm),
-                Semantics(
-                  label: 'Submit quick log',
-                  button: true,
-                  child: IconButton.filled(
-                    onPressed: _submitQuickLog,
-                    icon: const Icon(Icons.add, color: Colors.white),
-                    style: IconButton.styleFrom(
-                      backgroundColor: colorScheme.primary,
-                    ),
-                  ),
-                ),
-              ],
+              ),
             ),
-          ),
-          // Recent quick-log entries — compact horizontal chip feed
-          Consumer(
-            builder: (final context, final ref, _) {
-              final entriesAsync = ref.watch(labEntriesStreamProvider);
-              final entries = entriesAsync.valueOrNull ?? [];
-              if (entries.isEmpty) return const SizedBox.shrink();
+            const SizedBox(width: AppSpacing.sm),
+            Semantics(
+              label: 'Submit quick log',
+              button: true,
+              child: IconButton.filled(
+                onPressed: _submitQuickLog,
+                icon: const Icon(Icons.add, color: Colors.white),
+                style: IconButton.styleFrom(
+                  backgroundColor: colorScheme.primary,
+                ),
+              ),
+            ),
+          ],
+        ),
+        // Recent quick-log entries — compact horizontal chip feed
+        Consumer(
+          builder: (final context, final ref, _) {
+            final entriesAsync = ref.watch(labEntriesStreamProvider);
+            final entries = entriesAsync.valueOrNull ?? [];
+            if (entries.isEmpty) return const SizedBox.shrink();
 
-              return SizedBox(
+            return Padding(
+              padding: const EdgeInsets.only(top: AppLayout.itemGap),
+              child: SizedBox(
                 height: 32,
                 child: ListView.separated(
                   scrollDirection: Axis.horizontal,
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: AppSpacing.screenEdge,
-                  ),
                   itemCount: entries.length,
                   separatorBuilder: (_, _) =>
                       const SizedBox(width: AppSpacing.xs),
@@ -305,11 +241,11 @@ class _LabScreenState extends ConsumerState<LabScreen> {
                     );
                   },
                 ),
-              );
-            },
-          ),
-          const SizedBox(height: AppSpacing.md),
-        ],
+              ),
+            );
+          },
+        ),
+        const SizedBox(height: AppLayout.cardPadding),
       ],
     );
   }

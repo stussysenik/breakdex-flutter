@@ -190,7 +190,7 @@ touched, never in one invasive sweep:
 | `add` | ✅ conforms | First screen on the frame; the reference implementation. |
 | `breakdex` | ✅ conforms | Sliver form; hero tiles centred inside the band via `SliverFillRemaining`. |
 | `stats` | ✅ conforms | Header on the frame; the Menlo voice stays inside the content band, which the screen owns. |
-| `lab` | ⬜ pending | No app bar; hand-rolled header inside a `CustomScrollView`. |
+| `lab` | ✅ conforms | Sliver form; the WIP badge moved into the header `actions` slot, and the FAB's nav-band inset became a frame concern (`AppScreen.floatingActionButton`) instead of five hand-rolled copies of `kBottomNavigationBarHeight + padding.bottom`. |
 | `flow` | ⬜ pending | No app bar; hand-rolled header. Also carries raw `horizontal: 12` and `EdgeInsets.all(1)`. |
 
 ### Known non-conformance in the type scale

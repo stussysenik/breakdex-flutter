@@ -22,6 +22,7 @@ class AppScreen extends StatelessWidget {
     required this.title,
     required this.children,
     this.actions = const [],
+    this.floatingActionButton,
     this.wide = false,
   }) : slivers = null;
 
@@ -35,6 +36,7 @@ class AppScreen extends StatelessWidget {
     required this.title,
     required List<Widget> this.slivers,
     this.actions = const [],
+    this.floatingActionButton,
     this.wide = false,
   }) : children = const [];
 
@@ -47,6 +49,14 @@ class AppScreen extends StatelessWidget {
   /// beyond that the header stops reading as a fixed anchor.
   final List<Widget> actions;
 
+  /// Floating action affordance for the screen's primary create action.
+  ///
+  /// The frame owns the `Scaffold`, so it also owns the FAB slot — and with it
+  /// the nav-band inset every screen used to hand-roll as
+  /// `kBottomNavigationBarHeight + padding.bottom`. The shell draws band 4 over
+  /// this screen (`extendBody: true`), so an un-inset FAB sits under it.
+  final Widget? floatingActionButton;
+
   final List<Widget> children;
   final List<Widget>? slivers;
 
@@ -58,10 +68,21 @@ class AppScreen extends StatelessWidget {
   Widget build(final BuildContext context) {
     final maxWidth = wide ? AppLayout.maxWideWidth : AppLayout.maxContentWidth;
     final slivers = this.slivers;
+    final fab = floatingActionButton;
 
     // The frame owns the Material surface. Screens no longer build a Scaffold,
     // so if this one went away every InkWell below would lose its ancestor.
     return Scaffold(
+      floatingActionButton: fab == null
+          ? null
+          : Padding(
+              padding: EdgeInsets.only(
+                bottom:
+                    AppLayout.navBandHeight +
+                    MediaQuery.of(context).padding.bottom,
+              ),
+              child: fab,
+            ),
       body: SafeArea(
         bottom: false,
         child: Column(

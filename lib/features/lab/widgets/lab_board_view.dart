@@ -53,11 +53,10 @@ class LabBoardView extends ConsumerWidget {
           child: SizedBox(
             // Fixed height for the board area — enough for ~5 compact cards.
             height: MediaQuery.of(context).size.height * 0.6,
+            // The board scrolls horizontally *inside* the frame's content
+            // column, so the gutter is already applied by the frame.
             child: ListView(
               scrollDirection: Axis.horizontal,
-              padding: const EdgeInsets.symmetric(
-                horizontal: AppSpacing.screenEdge,
-              ),
               children: [
                 _BoardColumn(
                   title: 'Idea',

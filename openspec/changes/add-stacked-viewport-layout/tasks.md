@@ -38,8 +38,16 @@
       screen own — while the title stops scrolling away and stops sitting at its own height.
       Also drops the hand-rolled `kBottomNavigationBarHeight + padding.bottom + xxl` bottom
       inset and the per-sliver `screenEdge` gutters, both of which the frame supplies.
-- [ ] 3.3 `lab` — replace the hand-rolled header; keep the sliver content on
+- [x] 3.3 `lab` — replace the hand-rolled header; keep the sliver content on
       `AppScreen.slivers`
+      **DONE 2026-07-29.** The WIP badge moved into the header `actions` slot, so the title
+      sits on the same baseline as every other screen while the screen keeps its warning.
+      The migration surfaced a real gap in the frame: `lab` needs a FAB, and only the frame
+      builds the `Scaffold`. `AppScreen.floatingActionButton` now owns that slot **and** the
+      nav-band inset — the shell draws band 4 over the content (`extendBody: true`), which is
+      why five screens each hand-rolled `kBottomNavigationBarHeight + padding.bottom`. Proved
+      by `test/shared/widgets/app_screen_test.dart`, red without the inset. The three lab
+      views also dropped their own `screenEdge` gutters, which the frame was about to double.
 - [ ] 3.4 `flow` — replace the hand-rolled header; resolve the raw `horizontal: 12` and
       `EdgeInsets.all(1)` literals to tokens
 - [ ] 3.5 Retire the migration ledger from TOKENS.md once every row reads ✅

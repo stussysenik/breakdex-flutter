@@ -10,6 +10,7 @@ const _migratedScreens = <String>[
   'lib/features/add/add_screen.dart',
   'lib/features/breakdex/breakdex_screen.dart',
   'lib/features/stats/stats_screen.dart',
+  'lib/features/lab/lab_screen.dart',
 ];
 
 /// Chrome a screen is no longer allowed to build for itself. The frame renders

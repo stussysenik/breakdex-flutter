@@ -38,11 +38,9 @@ class LabSetsView extends ConsumerWidget {
           return const SliverFillRemaining(child: _SetsEmptyState());
         }
 
-        return SliverPadding(
-          padding: const EdgeInsets.symmetric(
-            horizontal: AppSpacing.screenEdge,
-          ),
-          sliver: SliverList.builder(
+        // The frame's content band supplies the gutter; re-applying it here
+        // would double the inset.
+        return SliverList.builder(
             itemCount: sets.length,
             itemBuilder: (_, final index) {
               final lab = sets[index];
@@ -64,8 +62,7 @@ class LabSetsView extends ConsumerWidget {
                       milliseconds: index.clamp(0, 15) * 40,
                     ),
                   );
-            },
-          ),
+          },
         );
       },
     );

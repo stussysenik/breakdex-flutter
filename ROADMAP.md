@@ -41,7 +41,12 @@
   content band (the band a screen owns) while the title stops scrolling away. Conformance is
   now enforced by `test/design/frame_conformance_test.dart`, not by review — review is what
   let five headers diverge in the first place.
-  **Next unticked:** 3.3 `lab` onto `AppScreen.slivers`. Screens migrate **as touched**, never
+  **3.3 DONE 2026-07-29** — `lab` on the frame. The WIP badge became a header action; the
+  frame grew `AppScreen.floatingActionButton`, which also owns the nav-band inset the shell's
+  `extendBody: true` requires — that inset was hand-rolled in five screens as
+  `kBottomNavigationBarHeight + padding.bottom`. Covered by
+  `test/shared/widgets/app_screen_test.dart` (red-proved without the inset).
+  **Next unticked:** 3.4 `flow` onto the frame. Screens migrate **as touched**, never
   as a sweep. Task 4.1 (type-scale baseline snap: `titleMedium` 30→32, `titleSmall` 26→28)
   is **owner-gated** — it shifts type metrics on every screen.
 
