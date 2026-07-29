@@ -17,22 +17,44 @@ tags:
 
 ---
 
+# Per-flow isolation — see navigation.yaml. This flow depends on it twice over:
+# the fixture must seed into an empty database, and the Stats opt-in must start
+# from off.
+- clearState
+
 - launchApp:
     arguments:
       maestro: true
       breakdexFixture: review
 
+# Cold start after clearState, plus fixture seeding — wait for the first real
+# frame before touching the nav (see navigation.yaml).
+- extendedWaitUntil:
+    visible: "Breakdex"
+    timeout: 30000
+
 # -- Opt the Stats tab in --
 - tapOn:
     id: "settings-tab"
 - assertVisible: "Settings"
+# The toggle sits far down a long Settings list, and its label is inert — only
+# the switch itself responds — so this scrolls to the control by identifier and
+# taps that, not the text beside it (task 6.3).
 - scrollUntilVisible:
     element:
-      text: "Show Stats Tab"
+      id: "stats-tab-switch"
     direction: DOWN
-- tapOn: "Show Stats Tab"
+    timeout: 60000
+    visibilityPercentage: 60
+- tapOn:
+    id: "stats-tab-switch"
 
 # -- The tab should now be mounted --
+# The nav rebuilds after the toggle; wait for the new item rather than racing it.
+- extendedWaitUntil:
+    visible:
+      id: "stats-tab"
+    timeout: 10000
 - tapOn:
     id: "stats-tab"
 - takeScreenshot: e2e-screenshots/stats-dashboard

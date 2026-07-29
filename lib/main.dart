@@ -292,7 +292,9 @@ void main() async {
         .then((_) => boot.completeGate(BootGate.storageGate)));
   }
 
-  await AutomationFixtureService().seedIfRequested(db, prefs: sharedPrefs);
+  final automation = AutomationFixtureService();
+  await automation.pinSemanticsIfRequested();
+  await automation.seedIfRequested(db, prefs: sharedPrefs);
 
   // --- Global error handlers ---
   FlutterError.onError = (final details) {

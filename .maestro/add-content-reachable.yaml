@@ -15,9 +15,18 @@ tags:
 
 ---
 
-- launchApp
+# Per-flow isolation — see navigation.yaml for why config.yaml cannot provide it.
+- clearState
 
-- assertVisible: "Breakdex"
+# `maestro: true` pins the semantics tree up — see navigation.yaml.
+- launchApp:
+    arguments:
+      maestro: true
+
+# Cold start after clearState — wait for the first real frame (see navigation.yaml).
+- extendedWaitUntil:
+    visible: "Breakdex"
+    timeout: 30000
 
 - tapOn:
     id: "add-tab"
@@ -25,15 +34,21 @@ tags:
 
 # Both entry cards must be present. The Combo card sits at the bottom of the
 # scroll extent, directly above the nav bar — that is the reachability risk
-# this flow exists to catch.
-- assertVisible: "Move"
-- assertVisible: "Combo"
+# this flow exists to catch. Addressed by identifier: the visible label is an
+# emoji and a configurable entity name merged into one node (task 6.3).
+- assertVisible:
+    id: "add-move-card"
+- assertVisible:
+    id: "add-combo-card"
 - takeScreenshot: e2e-screenshots/add-content-entry
 
 # Tap the Combo card and confirm it actually navigates rather than being
-# swallowed by the nav bar's hit area.
-- tapOn: "Combo"
+# swallowed by the nav bar's hit area. Leaving the Add tab is the proof — the
+# card's own identifier is gone once the combo builder is on screen.
+- tapOn:
+    id: "add-combo-card"
 - extendedWaitUntil:
-    visible: "Combo"
-    timeout: 5000
+    notVisible:
+      id: "add-combo-card"
+    timeout: 10000
 - takeScreenshot: e2e-screenshots/add-content-combo

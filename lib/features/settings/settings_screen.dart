@@ -2062,12 +2062,17 @@ class _StatsTabToggle extends ConsumerWidget {
           ),
         ),
         const SizedBox(width: AppSpacing.sm),
-        Switch(
-          value: isEnabled,
-          activeThumbColor: colorScheme.primary,
-          onChanged: (_) {
-            ref.read(showStatsTabProvider.notifier).toggle();
-          },
+        // The row's label is inert — only the switch toggles — so automation
+        // needs a handle on the control itself (task 6.3).
+        Semantics(
+          identifier: 'stats-tab-switch',
+          child: Switch(
+            value: isEnabled,
+            activeThumbColor: colorScheme.primary,
+            onChanged: (_) {
+              ref.read(showStatsTabProvider.notifier).toggle();
+            },
+          ),
         ),
       ],
     );

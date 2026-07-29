@@ -4,7 +4,10 @@
 appId: com.breakdex.breakdex
 name: Breakdex E2E Tests
 
-# Global settings
+# ⚠ INERT under Maestro 2.x — kept only to document intent. Like `tags:` below,
+# nothing reads this: flows that relied on it were resuming each other's screens
+# because `launchApp` attaches to a running app instead of cold-starting it.
+# Each flow now opens with its own `- clearState` (task 6.3).
 onFlowStart:
   - clearState    # Clear app data before each flow
   - clearKeychain # Clear iOS keychain
@@ -15,12 +18,21 @@ initFlow:
   appId: com.breakdex.breakdex
 
 # Tags for selective test runs
-# Run subsets: maestro test --tags=smoke .maestro/
+# Run subsets: maestro test --include-tags=smoke .maestro/
+#
+# ⚠ This map is DOCUMENTATION, not configuration. Maestro 2.x resolves
+# --include-tags against each flow's own front-matter `tags:` block; nothing
+# reads the map below. Adding a flow here does not put it in a tier, and
+# omitting one does not keep it out — task 6.3 found two flows running under
+# the smoke gate that this map never listed. Keep the two in sync by hand, and
+# when they disagree, the per-file block is the truth.
 tags:
   # hero-transition.yaml is parked as .yaml.disabled (task 6.3): it drove the
   # Arsenal "Gallery" view-mode toggle, which the visual-first redesign removed
   # outright. Parked rather than rewritten, since the feature — not the
   # selector — is gone. Same precedent as party-shake.yaml.
+  # flow-clarity.yaml and verify-fixes.yaml were dropped from `smoke` in 6.3 —
+  # both are stale against the visual-first redesign.
   smoke: [navigation.yaml, add-content-reachable.yaml, stats-dashboard.yaml]
   flow: [flow-clarity.yaml, stress-flow-graph.yaml]
   video: [import-and-trim.yaml, video-playback.yaml, export-flow.yaml, video-focus.yaml]

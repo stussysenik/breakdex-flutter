@@ -70,3 +70,6 @@ review-launcher-design.png
 
 # Vercel CLI (vercel link writes project/org IDs here — never commit)
 .vercel/
+
+# E2E run artifacts — screenshots are evidence for one run, not source.
+e2e-screenshots/

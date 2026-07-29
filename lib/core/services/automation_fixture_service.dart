@@ -3,6 +3,7 @@ import 'dart:math';
 
 import 'package:drift/drift.dart' show Value;
 import 'package:flutter/foundation.dart';
+import 'package:flutter/semantics.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_launch_arguments/flutter_launch_arguments.dart';
 import 'package:path/path.dart' as p;
@@ -54,6 +55,7 @@ class AutomationFixtureService {
     : _launchArguments = launchArguments ?? FlutterLaunchArgumentReader();
 
   static const fixtureKey = 'breakdexFixture';
+  static const automationKey = 'maestro';
   static const _reviewFixtureVideos = {
     'fixture-move-new': _FixtureVideoSeed(
       assetPath: 'assets/fixtures-blue-beat.mp4',
@@ -70,6 +72,23 @@ class AutomationFixtureService {
   };
 
   final LaunchArgumentReader _launchArguments;
+
+  /// Pin the semantics tree up for the life of an automation run.
+  ///
+  /// Flutter only builds semantics while something asks for them, and a UI
+  /// driver asking is a race: after `clearState` the app can be fully rendered
+  /// while the platform tree still holds nothing but the bare view. Every
+  /// selector then misses against a screen the tester can plainly see — task
+  /// 6.3 lost a 30s wait on a "Breakdex" that was on screen the whole time.
+  ///
+  /// The returned handle is deliberately never disposed: the tree must stay up
+  /// until the process dies. No-ops unless the run was launched with
+  /// `maestro: true`, so shipped builds are untouched.
+  Future<void> pinSemanticsIfRequested() async {
+    if (kReleaseMode) return;
+    if (await _launchArguments.getBool(automationKey) != true) return;
+    SemanticsBinding.instance.ensureSemantics();
+  }
 
   Future<void> seedIfRequested(
     final AppDatabase db, {

@@ -1,8 +1,12 @@
 appId: com.breakdex.breakdex
 tags:
   - flow
-  - smoke
 name: "Flow clarity regression"
+
+# Dropped from `smoke` in task 6.3 — see verify-fixes.yaml for why the per-file
+# tags block, not config.yaml, decides what the gate runs. This flow drives
+# `flow-tab`, which the visual-first redesign removed; it is red by
+# construction and belongs to the `flow` tier's own repair, not the smoke gate.
 
 ---
 

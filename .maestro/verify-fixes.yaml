@@ -1,12 +1,18 @@
 appId: com.breakdex.breakdex
 tags:
-  - smoke
   - verify
 name: "Verify route fixes + flow re-center"
 
 # Lightweight test for the /arsenal → /moves route fix and
 # the new re-center button on the Flow graph.
 # No stress fixture needed — works with existing app data.
+#
+# Dropped from `smoke` in task 6.3. config.yaml's `tags:` map is NOT
+# authoritative in Maestro 2.x — the per-file `tags:` block is what
+# --include-tags reads, so this flow ran under the smoke gate even though
+# config.yaml never listed it. It is stale against the visual-first redesign
+# ("Search moves..." and the Flow tab are both gone) and cannot pass; it stays
+# under `verify` rather than being silently deleted.
 
 ---
 

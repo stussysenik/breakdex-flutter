@@ -17,7 +17,26 @@ tags:
 
 ---
 
-- launchApp
+# Isolation is per-flow, not global. config.yaml's `onFlowStart: clearState` is
+# as inert as its `tags:` map under Maestro 2.x — without this line `launchApp`
+# RESUMES whatever screen the previous flow left behind, and this flow passes
+# alone while failing in the suite (task 6.3).
+- clearState
+
+# `maestro: true` pins the semantics tree up for the whole run. Without it the
+# app can be fully rendered while the platform tree is still empty, and every
+# selector misses a screen that is plainly on display (task 6.3).
+- launchApp:
+    arguments:
+      maestro: true
+
+# config.yaml clears state before every flow, so this is a cold start: Flutter
+# has to boot the engine and open the database before the first frame. A plain
+# assertVisible races that and fails on a blank surface — every smoke flow waits
+# on the first real frame before it asserts anything.
+- extendedWaitUntil:
+    visible: "Breakdex"
+    timeout: 30000
 
 # -- Breakdex home: the visual-first landing --
 - assertVisible: "Breakdex"
@@ -34,11 +53,16 @@ tags:
 - assertVisible: "Breakdex"
 
 # -- Add tab --
+# The two entry cards render an emoji above a configurable entity name, and the
+# platform tree exposes that as one merged label — so they are addressed by
+# identifier, not text (task 6.3).
 - tapOn:
     id: "add-tab"
 - assertVisible: "Add Content"
-- assertVisible: "Move"
-- assertVisible: "Combo"
+- assertVisible:
+    id: "add-move-card"
+- assertVisible:
+    id: "add-combo-card"
 
 # -- Review tab --
 - tapOn:
@@ -51,7 +75,9 @@ tags:
 - tapOn:
     id: "settings-tab"
 - assertVisible: "Settings"
-- assertVisible: "PRACTICE & REVIEW"
+# The "PRACTICE & REVIEW" subtitle this used to assert was removed from the
+# screen in the same wave as this repair, so asserting it was a guaranteed red.
+# Settings' body is covered by stats-dashboard.yaml, which scrolls the list.
 
 # -- Back to home --
 - tapOn:
