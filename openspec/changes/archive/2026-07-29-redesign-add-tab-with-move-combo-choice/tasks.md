@@ -1,5 +1,10 @@
 ## 1. Redesign AddScreen layout
 
+> **Archived 2026-07-29 as implementation-complete.** 5.7/5.8 verified by the cumulative
+> gate. 5.1–5.6 are hands-on device verification, moved to `owner-verification-passes`
+> tasks 1.6–1.10. No implementation work remains here.
+
+
 - [x] 1.1 Replace single "Select a Clip" button with two stacked choice cards ("Create Move" and "Create Combo") using `AppSurfaces.panel` pattern
 - [x] 1.2 Add distinct icons per card: `video_call_rounded` for Move, `linear_scale_rounded` for Combo
 - [x] 1.3 Add descriptive subtitles per card explaining what each option creates
@@ -37,5 +42,5 @@
 - [ ] 5.4 Verify haptic feedback still fires on category selection and submission
 - [ ] 5.5 Verify beat grid renders correctly with varying move counts
 - [ ] 5.6 Verify beat grid toggle hides/shows the overlay
-- [ ] 5.7 Run existing tests and confirm no regressions
-- [ ] 5.8 Run `flutter analyze` with zero errors
+- [x] 5.7 Run existing tests and confirm no regressions — GREEN 2026-07-29: 1225 pass / 3 skip / 0 fail via `./verify.sh`
+- [x] 5.8 Run `flutter analyze` with zero errors — GREEN 2026-07-29: 0 errors, 0 warnings

@@ -37,8 +37,24 @@ if [ "${1:-}" = "--queue" ]; then
     fi
     total=$((d + o))
 
+    # A change with no git history is NEW (just authored, not yet committed), not
+    # ancient. Reading an absent timestamp as 999d reported brand-new work as the
+    # stalest thing in the queue.
     last=$(git log -1 --format=%at -- "$dir" 2>/dev/null)
-    days=$([ -n "$last" ] && echo $(((NOW_EPOCH - last) / 86400)) || echo 999)
+    days=$([ -n "$last" ] && echo $(((NOW_EPOCH - last) / 86400)) || echo 0)
+
+    # `.triage` lets a decision persist instead of being re-asked every session:
+    #   exempt          — never report as stale (owner-gated durable checklists)
+    #   reviewed: DATE  — staleness counts from the review, not the last code touch
+    triage_exempt=0
+    if [ -f "$dir/.triage" ]; then
+      grep -qi '^exempt' "$dir/.triage" && triage_exempt=1
+      rv=$(sed -n 's/^reviewed: *\([0-9-]*\).*/\1/p' "$dir/.triage" | head -1)
+      if [ -n "$rv" ]; then
+        rt=$(date -j -f "%Y-%m-%d" "$rv" +%s 2>/dev/null || date -d "$rv" +%s 2>/dev/null)
+        [ -n "$rt" ] && days=$(((NOW_EPOCH - rt) / 86400))
+      fi
+    fi
 
     # Structure first: a change that will not validate cannot be archived, and a
     # change with no tasks was never planned — both are louder than staleness.
@@ -52,12 +68,16 @@ if [ "${1:-}" = "--queue" ]; then
       if [ "$o" -eq 0 ]; then
         verdict="ARCHIVE?  all ticked but fails --strict — repair, then archive"
       else
-        verdict="INVALID   fails --strict (missing specs/ deltas)"
+        # Does NOT block working the change — only archiving it. Repair on
+        # activation (the standing rule), not in bulk.
+        verdict="INVALID   old template; workable now, repair before archiving"
       fi
     elif [ "$id" = "$ACTIVE" ]; then
       verdict="ACTIVE    the NOW block points here"
     elif [ "$o" -eq 0 ]; then
       verdict="ARCHIVE   all tasks ticked — run openspec archive"
+    elif [ "$triage_exempt" -eq 1 ]; then
+      verdict="OWNER     owner-gated checklist — exempt from staleness by .triage"
     elif [ "$days" -gt 30 ]; then
       verdict="STALE     untouched ${days}d — confirm it is still wanted"
     elif [ "$d" -eq 0 ]; then
@@ -70,6 +90,8 @@ if [ "${1:-}" = "--queue" ]; then
   echo
   echo "Verdicts are structural, not semantic: a ticked box is not proof the code"
   echo "shipped, and STALE is a prompt to decide, never an instruction to delete."
+  echo "A decision persists: write \`reviewed: YYYY-MM-DD\` (or \`exempt\`) into the"
+  echo "change's .triage file and the board stops re-asking. Decide once."
   exit 0
 fi
 

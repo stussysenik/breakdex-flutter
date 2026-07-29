@@ -1,0 +1,2 @@
+exempt
+reason: durable owner checklist bound to device/console sittings, not an in-flight change (see its spec: "exempt from staleness")

@@ -1,5 +1,10 @@
 # Tasks — Add Web Mirror Player
 
+> **Archived 2026-07-29 as implementation-complete** (19/26). Remaining tasks are owner
+> console/device work → `owner-verification-passes` 2.1 (Google Cloud), 3.1–3.4 (Vercel),
+> 1.11 (Drive manifest on device). Note this is the **dev utility**, not the product.
+
+
 ## Phase 0: Provisioning (owner-run; agent provides exact commands)
 - [x] 0.1 Register a **Web app** in the existing `breakdex-flutter` Firebase project; capture the web config — done (App ID `1:499240019967:web:68dcc699a392e14a04e9ca`; `.env.local` written).
 - [x] 0.2 Enable **Google** sign-in provider in Firebase Auth; add `localhost` to Authorized domains — done (Firebase Console confirms Google = Enabled 2026-06-17; `localhost` auto-authorized). Vercel domain pending deploy (Phase 5).
@@ -36,4 +41,4 @@
 - [ ] 5.1 Set Vercel env vars; deploy a **preview**; validate sign-in + full mirror against the owner's real Drive
 - [ ] 5.2 Confirm non-owner rejection and that all Drive calls are reads (network inspection)
 - [ ] 5.3 Promote to production; record the URL (provisioning + deploy steps already in `web-mirror/README.md`)
-- [ ] 5.4 Update `add-beam-web-architecture-foundation` task 3.4 reference (first web-access slice shipped)
+- [x] 5.4 VOID 2026-07-29 — `add-beam-web-architecture-foundation` was archived as superseded by the locked Appwrite ruling; there is no longer a task 3.4 to update

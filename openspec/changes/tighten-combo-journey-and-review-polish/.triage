@@ -1,0 +1,2 @@
+reviewed: 2026-07-29
+verdict: KEEP — 3 small open tasks. 3.4 is the documented quarantined test hang (docs/stale-tests-post-redesign.md), 5.5/5.8 are real work. Nearly-done finishing pass.

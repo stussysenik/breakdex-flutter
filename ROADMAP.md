@@ -766,13 +766,14 @@ older intra-app view and is kept for context.
 9. **`harden-code-ownership-and-config-purge`** — NEW (2026-07-08): per-directory purge +
    justify sweep (zero behavior change, pure deletions, git history = undo). Rolling: a
    directory sweeps only after its migration lands; gate before invites go broad.
-10. Nearly-done finishing passes: `foundation-data-resilience` (59/64),
-    `tighten-combo-journey-and-review-polish` (33/36), `repo-organization-and-readme-refresh`
-    (12/15), `add-web-mirror-player` (19/26). **Caveat (2026-07-29):** most of what remains in
-    these is **owner device/credential proof**, not build work — e.g. `foundation-data-resilience`
-    10.3–10.7 and `add-web-mirror-player` 5.1–5.3. No agent can close them; they need a dedicated
-    device session. `add-historical-photos-bootstrap` left this list **complete** — its last two
-    tasks were BEAM speculation, void under the Appwrite ruling.
+10. Nearly-done finishing passes — **resolved 2026-07-29, this list is now nearly empty.**
+    `foundation-data-resilience` (59/64), `add-web-mirror-player` (19/26), and
+    `redesign-add-tab-with-move-combo-choice` (19/27) all archived as
+    **implementation-complete**: every remaining task was owner device/console proof, now
+    collected in `owner-verification-passes`. `add-historical-photos-bootstrap` archived
+    complete (its last two tasks were BEAM speculation, void under the Appwrite ruling).
+    Still open here: `tighten-combo-journey-and-review-polish` (33/36 — 3 small tasks) and
+    `repo-organization-and-readme-refresh` (12/15).
 11. **`state-machine-crud`** — kept open as the tracker for genuinely unshipped residual work
     (TrashMachine, MoveListMachine, AppMachine, notes/log overlays); the `Machine<S,E>`
     framework + move-detail vertical already shipped (see its `tasks.md` Residual header).

@@ -165,6 +165,32 @@ review violation to reconcile before new work builds on it. (This rule was intro
 `align-cross-client-foundations`; the 0/51-vs-shipped drift in `state-machine-crud` is the
 canonical example it fixed.)
 
+## Queue doctrine — decide once, in the repo, not in chat
+
+Introduced 2026-07-29. A session must be able to start working within a minute, without
+re-litigating the queue. Everything below is already decided; do not re-open it.
+
+- **A verdict on the board is not a request for your opinion.** `./status.sh --queue`
+  classifies every change. `WIP`/`QUEUED`/`ACTIVE` need nothing from you. Work the `## NOW`
+  block and stop reading the board.
+- **`INVALID` does not block work.** It means the change predates the current openspec
+  proposal template. It blocks *archiving*, not implementing. **Repair it when it becomes
+  active**, never in bulk — a bulk retrofit is a day of edits that ships nothing.
+- **A triage decision is written down, not remembered.** Put `reviewed: YYYY-MM-DD` (with a
+  one-line verdict) or `exempt` in the change's `.triage` file and the board stops asking.
+  A decision that lives only in a transcript will be re-asked every session forever — that
+  is the whole failure this doctrine exists to end.
+- **Agent-unclosable tasks never sit in a parent change.** Anything needing a physical
+  device, owner credentials, or a hosting console goes to `owner-verification-passes` at
+  the moment it is written. The parent then archives as implementation-complete. Never let
+  a change be permanently unfinishable because one task is addressed to a different actor.
+- **Ticked ≠ shipped.** `verify.sh` proves the suite, not semantics. When you touch a change
+  whose ticks look wrong, reconcile *that* change's ledger as part of your task. Do not open
+  a repo-wide ticked-but-unshipped audit; it is unbounded and blocks real work.
+- **Archive with a reason or not at all.** Every archived change gets a dated note saying why
+  (see `openspec/changes/archive/2026-07-29-ARCHIVE-NOTE.md`). Silent deletion destroys the
+  record of what was already decided.
+
 ## Supersession rule — a ruling must retire the work it kills
 
 Introduced 2026-07-29 after a triage found six changes (~57 open tasks) proposing a

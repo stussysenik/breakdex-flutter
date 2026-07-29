@@ -3,7 +3,7 @@ title: Executor Onboarding
 name: onboarding
 order: 11
 status: verified
-verified: 1f7052e
+verified: 0678413
 watches:
   - openspec/AGENTS.md
   - ROADMAP.md
@@ -80,6 +80,14 @@ chapter's body and `verified:` frontmatter in the same commit
 - **Destructive data operations** — deleting/orphaning user state, non-additive migrations. The
   repo is late-stage production ([`#brownfield-1`](./09-standards.mdx#brownfield-1),
   [`#brownfield-2`](./09-standards.mdx#brownfield-2)).
+
+## Do not re-triage the queue
+
+`CLAUDE.md` → **Queue doctrine** already decided it. In short: work the `## NOW` block and
+stop reading the board. `INVALID` blocks archiving, not implementing — repair it only when
+that change becomes active. A triage decision goes in the change's `.triage` file
+(`reviewed: YYYY-MM-DD` or `exempt`) so it is never re-asked. Tasks needing a device, owner
+credentials, or a console belong to `owner-verification-passes`, never to a parent change.
 
 ## The two web surfaces are ranked, not equal
 

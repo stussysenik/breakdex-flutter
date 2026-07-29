@@ -1,5 +1,10 @@
 ## 1. Album Discovery Fix
 
+> **Archived 2026-07-29 as implementation-complete** (59/64). The five open tasks
+> (10.3–10.7) are all physical-device proof and moved to `owner-verification-passes`
+> tasks 1.1–1.5. No implementation work remains here.
+
+
 - [x] 1.1 Update `historicalAlbumPatterns` in `lib/core/services/native_video_album.dart` with unified case-insensitive regex covering all known Breakdex naming variants
 - [x] 1.2 Add `breakdexAlbumPattern` static `RegExp` getter with `caseSensitive: false` and word-boundary-anchored pattern
 - [x] 1.3 Update native iOS `VideoAlbumPlugin.swift` `discoverRecoverableManagedAssets` to use `NSPredicate(format: "title CONTAINS[c] %@")` for case-insensitive album matching
