@@ -3,7 +3,7 @@ title: Design System
 name: design-system
 order: 5
 status: verified
-verified: 8e1b86d
+verified: f47185e
 watches:
   - lib/core/design/**
   - docs/design/TOKENS.md
@@ -60,6 +60,13 @@ screens had each hand-rolled as `kBottomNavigationBarHeight + padding.bottom`. D
 pushed on top of a tab are not on the roster: a back affordance and no nav band is a different
 placement problem, and framing them is a separate ruling.
 
+**The type baseline.** Line heights ride **2pt** (`AppLayout.typeBaseline`), half the 4pt
+layout baseline — owner's ruling, 2026-07-29. A productive ramp needs a heading step between
+26 and 32, which a 4pt grid cannot express, so type gets the finer grid while *blocks* keep
+the 8pt block grid. `titleMedium` (30) and `titleSmall` (26) sat in TOKENS.md as "known
+non-conformance" until this ruling; they were conforming to a rule nobody had written down.
+`test/design/type_baseline_test.dart` now fails if any step resolves to an odd line box.
+
 **Type.** **Inter** is the default family. The static `AppTypography` scale
 (`titleLarge … labelSmall`) hardcodes `fontFamily: 'Inter'` and follows the IBM Carbon
 productive ramp (`12/14/16/20/24/32`). `AppFontFamily` is the user-selectable axis
@@ -105,7 +112,10 @@ Four invariants follow directly:
    `tokens.css` file exists in the repo today. When it lands it must mirror the Dart constants
    1:1 (the same relationship the XState web machines have to Flutter machines — [State
    Architecture](./02-state-architecture.mdx#the-web-mirror-rule)). Until then, "both conform
-   to `TOKENS.md`" describes the intended invariant, not the current tree.
+   to `TOKENS.md`" describes the intended invariant, not the current tree. **`AppLayout` is
+   carved out of that contract** (ruled 2026-07-29): the stacked viewport is a claim about
+   switching tabs in the shipped app, and `web-mirror` is an owner-only tool with no tab bar.
+   Value tokens still aim to mirror; the frame does not.
 
 ## The motion doctrine, encoded
 
