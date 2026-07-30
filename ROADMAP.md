@@ -110,6 +110,30 @@
   6.6) so `./status.sh` is correct by construction, with a comment warning against re-sorting. Note
   the audit's second half was wrong — this bullet already named 6.8; only the file-order divergence
   was real.
+  **2026-07-30 — 6.16 + 6.17 CLOSED, and 6.18 was found by the gate that proved them.** Full gate
+  **ALL GATES PASSED, 1351 pass / 4 skip / 0 fail**, analyzer 0 errors / 0 warnings.
+  **6.16:** `computeHashWithProgress` had **zero tests**, which is how a permanent hang shipped.
+  `onError`/`onExit` now share the *same* `ReceivePort` as the data, so the `await for` reads three
+  message shapes in one exhaustive `switch` and one always arrives; the port closes in a `finally`,
+  which no path but the happy one used to do. Red was the deadline — `TimeoutException after
+  0:00:10` with `_RawReceivePort._handleMessage` on the stack. The task's suggested "validate
+  existence first" half is **deliberately not taken**: it would add a second answer to *can this
+  file be read*, disagree under a TOCTOU race, and still need the exit port for every other death.
+  **6.17:** the specced location (`test/helpers/`) could not have worked — a helper only reaches
+  files that import it, so the trap would stay armed in every test written after today, which is
+  the whole failure mode. `test/flutter_test_config.dart` is the hook that does: `flutter_test`
+  runs its `testExecutable` in place of `main` for all **195** test files, no imports. The 12-line
+  per-file workaround is deleted, not left beside it.
+  **6.18, new and closed in the same session:** a second load-sensitive flake, but load made it
+  *more* deterministic — `sync_diagnostics_test.dart` stamped every fixture row `DateTime.now()`
+  while `getAll()` orders `importedAt DESC`, so it passed only while two inserts shared a clock
+  tick. Load separated them and the real ordering asserted itself: **the flake was the fast path
+  and the failure was the code working.** Proven by inverting the stamps for an identical
+  deterministic red. No production change — the `DESC` ordering was never the defect. This also
+  resolves the `~3`-vs-`~4` skip drift three sessions logged as unexplained: OPTW fixture videos
+  absent locally (conditional), a whole `party_screen_test.dart` suite skip, and two known
+  `assess_stage_switching` skips. Named with `flutter test --reporter json`, which the compact
+  reporter's counts cannot do.
   **Next unticked: 6.8** — honest stats (smallest independent item per §6 disposition table).
   ⚠ **6.8 is a Teacher-lane task, not an Executor one** (that change's §6 disposition table:
   *"Needs a decision about what the readout is for before it can name replacement metrics"*).
