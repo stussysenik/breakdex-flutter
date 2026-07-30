@@ -3,7 +3,7 @@ title: Design System
 name: design-system
 order: 5
 status: verified
-verified: 9e289a4
+verified: ded69d5
 watches:
   - lib/core/design/**
   - docs/design/TOKENS.md
@@ -17,14 +17,15 @@ what the source table cannot express: the conformance contract between the token
 consumers, and the **motion doctrine** that constrains which tokens a product surface may
 touch. Read `../design/TOKENS.md` first; read this for the rules around it.
 
-The runtime tokens live in `lib/core/design/` — nine files. Most are `abstract final class`
-namespaces of `static const` (or `static final`) members; the two newest are not, and the
-difference is the point (see **Color is a vocabulary plus a derived ramp** below):
+The runtime tokens live in `lib/core/design/` — ten files. Most are `abstract final class`
+namespaces of `static const` (or `static final`) members; the three colour files are not, and
+the difference is the point (see **Color is a vocabulary plus a derived ramp** below):
 
 | File | Namespace(s) |
 | --- | --- |
-| `colors.dart` | `AppColors` |
+| `colors.dart` | `AppColors` — pack **data**, not the vocabulary |
 | `color_roles.dart` | `AppColorRole`, `AppColorRoleKind` (enums — the closed color vocabulary) |
+| `color_packs.dart` | `ColorPack`, `ColorPackId`, `ResolvedColors` (the swappable resolution) |
 | `oklch.dart` | `OklchColor`, `ColorRamp`, `rampFromSeed` (perceptual ramp derivation) |
 | `icons.dart` | `AppIcon` (enum), `IconPack`, `AppIconPackTheme`, `AppIconView` |
 | `spacing.dart` | `AppSpacing`, `AppRadius`, **`AppMotion`** |
