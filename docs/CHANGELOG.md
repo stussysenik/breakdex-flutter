@@ -1,3 +1,15 @@
+# [1.7.0](https://github.com/stussysenik/breakdex-flutter/compare/v1.6.1...v1.7.0) (2026-07-30)
+
+
+### Bug Fixes
+
+* **diagnostics:** failures report honestly ([541e210](https://github.com/stussysenik/breakdex-flutter/commit/541e2100bcbf3faa02e94cbf0ee5071b5c3ffeb2))
+
+
+### Features
+
+* **dev:** preview gallery route ([38f1786](https://github.com/stussysenik/breakdex-flutter/commit/38f17861162eb44288cbbb46bde70946913540e3))
+
 ## [1.6.1](https://github.com/stussysenik/breakdex-flutter/compare/v1.6.0...v1.6.1) (2026-07-30)
 
 
