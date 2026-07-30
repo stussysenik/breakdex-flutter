@@ -266,7 +266,9 @@ surface parameters (`bg`/`card`/`fill`/`text`/`secondary`/`separator`) and the h
 express themselves as a *pack substitution* — `monoOutline` or the `monochrome` overlay
 substitutes the `mono` pack — so one concept replaced two branches. Overrides are dropped in
 those modes: a guarantee the user asked for outranks a preference they expressed earlier, and
-nothing is erased.
+nothing is erased. The substitution is now total — the one `copyWith` exception that re-stated
+`error`/`onError` on top of it existed only to preserve the hardwire 2.4 removed, and the `mono`
+pack already resolved both roles correctly on its own.
 
 **Unset must mean "use the pack".** `AppTheme`'s colour parameters are nullable for that
 reason, and it is not cosmetic: `accentColorProvider`, `learningStateColorsProvider`, and
@@ -345,10 +347,14 @@ conformance test with a zero-allowlist ban.
   compiles and renders — and bypasses both the pack and the accessibility overlay. Read color
   from `Theme.of(context)` / `AppSemanticTheme.of(context)`. The 241 existing violations are a
   tracked migration (2.5), not precedent.
-- **`ColorScheme.error` does not follow the deuteranopia overlay.** It is hardwired to the
-  `actionAgain` value in every mode, so the "again" rating swaps to Okabe–Ito vermillion while
-  `error` stays `#C23B2A`. Known gap, tracked as `add-color-packs` 2.4 — do not read the
-  inconsistency as intentional.
+- **`ColorScheme.error` is overlay-owned, and `onError` is *measured*, not inherited.** `error`
+  was hardwired to the `actionAgain` value in every mode and followed no overlay (fixed by
+  `add-color-packs` 2.4). A pack still seeds it under `standard` — `error` and `actionAgain` are
+  distinct meanings — but under any overlay the overlay's value wins, like every other `signal`.
+  The trap is the ink: white reads **3.9:1** on Okabe–Ito vermillion in light mode, so
+  `AppTheme._legibleInkOn` re-picks between the reading ink and the background by
+  `contrastRatio` rather than defaulting to white. Do not "simplify" that back to
+  `Colors.white`; the gate in `accessible_palette_test.dart` covers every palette × brightness.
 - **`oklch.dart` needs a *signed* cube root.** A round trip drives the LMS terms negative, where
   `pow` returns NaN. Do not "simplify" `_cbrt` to `pow(x, 1/3)`.
 - **Shadows and depth are functions, not constants.** `AppShadows.soft(brightness)` and the
