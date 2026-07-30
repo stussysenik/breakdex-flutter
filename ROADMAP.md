@@ -43,13 +43,35 @@
   look). Suite green at **1270 pass / 4 skip / 0 fail**, but a prior run on the same tree showed
   `-2`, so **two tests are flaky and unidentified** — recorded as 6.14 with the reason they could
   not be named (the failing run's output was truncated past its own failure blocks).
-  **Next unticked: 6.5 — implement color packs** (`openspec/changes/add-color-packs`,
-  strict-valid). Same mechanism as 6.4: closed vocabulary → exhaustive-switch packs →
-  `ThemeExtension` → persisted preference → conformance test. Measured finding: 38 `const
-  Color` in 58-line `colors.dart`, only 4 user-adjustable values moving independently.
+  **2026-07-30 — 6.5 color packs: the mechanism is done. Phases 1–4 of 6 are closed
+  (`openspec/changes/add-color-packs`), 26/38 tasks.** Suite **1331 pass / 4 skip / 0 fail**,
+  `./verify.sh` ALL GATES PASSED, analyzer 0/0. What now exists: `AppColorRole` — a closed
+  17-role vocabulary; `ColorPack` resolving it with an exhaustive `switch` (red/green run —
+  deleting one case gives `non_exhaustive_switch_expression`); `classic` and `mono` packs
+  proven **byte-identical** to the pre-pack rendering; OKLCH ramp derivation with no package;
+  `colorPackProvider` + `colorRoleOverridesProvider`; a WCAG contrast gate across every pack ×
+  both brightnesses. `AppTheme._build` reads axis by axis — the six surface parameters and every
+  `gray ? mono… : light…` ternary are gone, because the grayscale modes now express themselves
+  as a *pack substitution*.
+  **The baseline in the spec was wrong and the correction matters:** 39 `const Color`, not 38 —
+  and **241 raw `AppColors.*` sites across 58 files** read constants directly, bypassing the
+  theme. So a pack will not change those pixels, and this is a **live defect in already-shipped
+  work**: those sites bypass the `AccessiblePalette` overlay too, confirmed at
+  `milestone_list.dart:292`, which keeps the unsafe `#1F8A70` under deuteranopia. Captured as
+  that change's **2.5** (the 6.4 icon migration again, one layer down), with **2.4** (`error`
+  follows no overlay) and **4.5** (`actionEasy` on `fill` measures 2.98:1) beside it.
+  **Next unticked: Phase 5 — catalogue + Settings surface** (5.1–5.5: curated collections,
+  a `/settings-panel*` section with live preview, the per-role picker showing the live contrast
+  ratio, stating when an overlay is overriding the pack, ARB keys). Closing Phase 5 is what
+  ticks 6.5 here.
   **Owner decision open, blocking nothing** (`add-color-packs` 6.1): PANTONE® names/numbers
   are licensed IP, so the spec ships in-house curated seasonal collections behind a catalogue
-  interface and a licensed dataset drops in later with no mechanism change.
+  interface and a licensed dataset drops in later with no mechanism change. **6.2 (design the
+  new handpicked family) is deliberately after the ramp** and is where 4.5 gets resolved — by
+  the ramp, not by nudging one hex.
+  **NOT PROVEN:** that any pack *looks* better. No device, no browser. The gate proves
+  completeness, monotonicity, contrast, and precedence — none of which is taste (that change's
+  V.3, routed to `owner-verification-passes`).
   6.6–6.10 stay unspecced with their lanes and a recommended order recorded in that change's
   §6 disposition table (6.6 is Scholar-gated).
   No backend dependency — runs parallel to the owner-gated Appwrite and distribution work.
