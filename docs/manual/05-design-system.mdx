@@ -17,8 +17,8 @@ what the source table cannot express: the conformance contract between the token
 consumers, and the **motion doctrine** that constrains which tokens a product surface may
 touch. Read `../design/TOKENS.md` first; read this for the rules around it.
 
-The runtime tokens live in `lib/core/design/` — eleven files. Most are `abstract final class`
-namespaces of `static const` (or `static final`) members; the three colour files are not, and
+The runtime tokens live in `lib/core/design/` — twelve files. Most are `abstract final class`
+namespaces of `static const` (or `static final`) members; the four colour files are not, and
 the difference is the point (see **Color is a vocabulary plus a derived ramp** below):
 
 | File | Namespace(s) |
@@ -26,6 +26,7 @@ the difference is the point (see **Color is a vocabulary plus a derived ramp** b
 | `colors.dart` | `AppColors` — pack **data**, not the vocabulary |
 | `color_roles.dart` | `AppColorRole`, `AppColorRoleKind` (enums — the closed color vocabulary) |
 | `color_packs.dart` | `ColorPack`, `ColorPackId`, `ResolvedColors` (the swappable resolution) |
+| `color_catalogue.dart` | `ColorCatalogue`, `ColorCollection`, `InHouseCatalogue` (discovery layer) |
 | `oklch.dart` | `OklchColor`, `ColorRamp`, `rampFromSeed` (perceptual ramp derivation) |
 | `contrast.dart` | `contrastRatio`, `relativeLuminance`, `meetsContrast` (WCAG readability) |
 | `icons.dart` | `AppIcon` (enum), `IconPack`, `AppIconPackTheme`, `AppIconView` |
