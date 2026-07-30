@@ -286,6 +286,115 @@ findings still in the transcript is.
   `## NOW` advance, and the `session.log` line. If the budget is gone, those three still
   happen — stop the work, not the record.
 
+## Crew protocol — multi-agent tandem (A, B, C)
+
+Introduced 2026-07-30. Within any session type (Scholar/Teacher/Student), three agents may
+share the work. The supervisor reads the output — never the conversation. Every character
+carries cost; nothing is written that does not survive to disk.
+
+**The supervisor starts here.** Open this section, read `session.log` (last 5 lines), read
+the active change's `tasks.md` checked/unchecked state, then `git log --oneline -5`. The
+board (`./status.sh`) is the supervisor's instrument — the same binary-truth gate agents
+use. If the board disagrees with a claim, the board wins.
+
+### Lanes — non-overlapping, composable
+
+| Agent | Title | Output | Gate |
+|-------|-------|--------|------|
+| **A** | Architect | task breakdown, handoff notes, ledger update, conflict ruling | `tasks.md` ticks match what shipped |
+| **B** | Executor | production code + tests that prove it | each task: `verify.sh --quick` green |
+| **C** | Auditor | gate report listing what IS and IS NOT proven | report filed before A's commit |
+
+- **A writes the plan.** Interprets the spec, names the leverage, splits work into
+  bounded units, assigns B or C. A never writes production code and never runs the
+  gate — A reads the output and judges completeness.
+- **B writes the code.** Implements exactly the spec A interpreted. Flags ambiguity to
+  A, never to the supervisor. B never writes spec text, never reviews A or C.
+- **C writes the gap.** Runs `verify.sh`, checks ledger integrity (tick ↔ commit match),
+  reads the diff for unstated assumptions and edge cases. C's report is the question
+  "what is NOT proven?" answered in full. C never writes production code.
+
+### Communication — files only, no chat
+
+```
+A writes tasks.md → B reads tasks.md → B writes code + test
+B flags ambiguity in tasks.md → A resolves in tasks.md → B continues
+C runs verify.sh → C writes finding in tasks.md → A reads finding → A decides
+```
+
+- **B and C never talk to each other.** A is the hub. If B and C disagree, A decides.
+- **All findings land in tasks.md.** A finding that exists only in a conversation does
+  not exist. Supervisor reads tasks.md, not transcript.
+- **A conflict that A cannot resolve is filed in tasks.md with both positions stated
+  and marked `owner-gated`.** Never resolved by majority vote.
+
+### Token economy — per-handoff caps
+
+| Handoff | Hard cap | If exceeded |
+|---------|----------|-------------|
+| A → B (task assignment) | 500 tokens | Task is too large — split it |
+| B → A (code handoff) | 1000 tokens | Abridge to diff summary + gate result |
+| C → A (audit report) | 500 tokens | Abridge to findings + NOT PROVEN list |
+| A → supervisor (ledger) | 200 tokens | One-line per tick, one per remaining |
+
+- A cap that fits one screen is a good task. A cap that needs three screens is a bad
+  task — re-split at the spec level, not the implementation level.
+- **The cap is the constraint that teaches decomposition.** If the handoff cannot fit,
+  the unit is wrong, not the limit.
+
+### Gate discipline — C is the gatekeeper
+
+1. B writes code and proves it with `verify.sh --quick`.
+2. C runs `verify.sh` (full), reads diff, reads B's test assertions.
+3. C writes a report in `tasks.md`:
+
+   ```
+   **PROVEN:** gate green, assertion X covers requirement Y
+   **NOT PROVEN:** edge case Z (untriggerable from UI), owner visual review,
+   live sync on device
+   ```
+
+4. A reads C's report. If A accepts, A commits and updates `## NOW` and `session.log`.
+5. If C finds a real defect, A tasks B to fix it — C re-verifies the fix.
+
+### Staff-level patterns — judgment over mechanics
+
+These are not junior heuristics. They are the difference between a session that ships
+and one that churns:
+
+- **Name the leverage before you lift.** A starts by stating what unblocks the most
+  downstream work. If the answer is "nothing, this is parallel", state that. If it is
+  "fixing this test lets B work without flake", that is the first task.
+- **What is NOT proven is the deliverable.** C's report is not a summary of what
+  passed. It is a list of what was not tested, not verified, not reviewed. A green
+  gate with an honest NOT PROVEN list is worth more than a green gate that implies
+  completeness.
+- **Invert the problem.** Before writing code, ask "what would make this fail?" and
+  write the test that proves it doesn't. If the test is hard to write, the design is
+  hard to test — fix the design, not the test.
+- **Surgical minimalism is not optional.** Every line of code that does not prove a
+  requirement is waste. Every paragraph that does not refute a hypothesis or record a
+  decision is noise. B writes nothing that does not tick a box. A writes nothing that
+  does not advance the `## NOW` block.
+- **The system must survive the loss of any transcript.** If the conversation ends,
+  the supervisor must be able to continue from disk alone. If they cannot, the handoff
+  was incomplete.
+- **Cost awareness is architectural.** Every token spent on self-narration,
+  meta-commentary, or speculation is a token not spent on evidence. If a model spends
+  200 tokens explaining what it will do next, it has already lost. Write the finding;
+  the "I will now" paragraph is waste.
+
+### Why three, not two
+
+- A alone cannot audit its own work (confirmation bias).
+- B + C without A has no arbiter, no plan, no decomposition.
+- A + B without C has no gate, no edge-case scan, no NOT PROVEN discipline.
+- A + C without B is architecture without execution.
+
+This is the minimal set that covers plan → execute → verify with independent
+perspectives. A supervisor reading the outputs of A/B/C should understand the
+state of play from files alone, in under 60 seconds.
+
 ## Model Orchestration & Limits
 
 - **Fable 5:** Restricted strictly to **planning, scoping, and orchestration**. Never use Fable 5 as a heavy execution agent (to prevent API spend limit blowouts).
