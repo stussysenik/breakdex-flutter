@@ -906,6 +906,13 @@ older intra-app view and is kept for context.
    (Glance → Scan → Study), review WYSIWYG (one screen, `xxs` radius, customizable fill),
    Fluid/Morph motion doctrine. **Release-blocking for wave-1 invites**; no backend
    dependency — parallel with Appwrite phases.
+4b. **`enforce-face-law-conformance`** — ⭐ NEW (2026-07-30 owner ruling: launch-consistency
+   pass): Face Law doctrine (essentialist chrome rules as checkable claims), layout
+   conformance gate (26 raw-Scaffold feature files → 0, shrink-only allowlist), one-frame
+   `AppScreen` migration in owner-review-gated batches, platform-native adaptation by
+   defaults with visible degradation, valoric factory parity (Face Law + professional-tool
+   bars, sittings on `status.sh`). Sequenced directly after the active redesign change —
+   no backend dependency; release-blocking for consistent launch.
 5. **`harden-marathon-reliability`** — ⭐ NEW (2026-07-08): 8-hour soak bar, startup budgets
    (≤2.5s mobile / ≤5s web), **device-diagnostics status page** (deterministic per-device
    checks + redacted JSON export), 3-platform E2E matrix (Patrol/Maestro/Playwright) — the

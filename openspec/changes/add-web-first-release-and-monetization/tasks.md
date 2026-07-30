@@ -534,6 +534,16 @@
   path personally (outside-POV test ruling). Collect issues as openspec-tracked follow-ups.
 - [ ] 4.5 Soak gate: define the stabilization bar to exit to Phase 5 (no data-loss reports, sync
   green across sessions, config gate exercised at least once with a real update message).
+- [ ] 4.6 **Public offerings surface** (captured 2026-07-30, not built). A `web-mirror/src/app/pricing/`
+  draft was written in a prior session and **discarded rather than landed**: it priced $10/month via a
+  placeholder Stripe link, which contradicts shipped 3.1/3.2 (Lemon Squeezy, three **one-time**
+  offerings — Supporter $4.20 / Standard $6.99 / Patron $9.99) and placed a consumer surface in the
+  owner-only dev mirror. When this is built, the offerings must be read from `kOfferings`
+  (`lib/core/config/checkout.dart`) and the buy link from `checkoutUrlFor`, never re-typed; the home is
+  the Flutter web paywall, not `web-mirror/`. Copy worth reusing from the draft: "Your breakdancing
+  library, anywhere"; the four value lines (unlimited moves & combos / training journal & stats / video
+  playback from your Drive / access from any device); the "no uploads, no syncing — your files stay in
+  your Drive" answer.
 
 ## Phase 5: Mobile rollout (after 4.5 soak; iOS first, Android follows)
 
