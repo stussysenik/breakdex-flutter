@@ -1,4 +1,4 @@
-import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:flutter/foundation.dart' show kDebugMode, kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -38,6 +38,7 @@ import 'package:breakdex/shared/widgets/quick_video_viewer.dart';
 import 'package:breakdex/core/models/app_mode.dart';
 import 'package:breakdex/core/services/settings_service.dart';
 import 'package:breakdex/core/design/icons.dart';
+import 'package:breakdex/dev/dev_preview_gallery.dart';
 
 final _rootNavigatorKey = GlobalKey<NavigatorState>();
 
@@ -277,6 +278,14 @@ final appRouter = GoRouter(
         );
       },
     ),
+    // Debug-only: the gallery mounts every screen at once with seeded data, so it
+    // must not be reachable in a release build.
+    if (kDebugMode)
+      GoRoute(
+        path: '/dev/preview-gallery',
+        parentNavigatorKey: _rootNavigatorKey,
+        builder: (final context, final state) => const DevPreviewGallery(),
+      ),
     GoRoute(
       path: '/moves',
       redirect: (final context, final state) => '/breakdex/moves',
