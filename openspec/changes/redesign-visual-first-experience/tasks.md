@@ -363,6 +363,30 @@ needs a Scholar pass first) before any Student session touches code.
   redirect to a file (`flutter test --reporter expanded > log 2>&1`) and grep it, never pipe to
   `tail`; and read the `+N ~N -N` counter rather than the exit code, because a piped
   `flutter test | tail` reports the **pipe's** status and shows `exit 0` for a failing suite.
+  <br/>**ONE OF THEM IS NOW NAMED (agent C, 2026-07-30, at `ee52790`), and the failure is not a
+  timer race.** A full `./verify.sh` redirected to a file — per this task's own rule, never
+  piped — came back **`SOME GATES FAILED`, `+1333 ~3 -1`**, and the expanded reporter kept the
+  block this time:
+  `test/core/state_machines/move_detail/video_export_save_test.dart:137` —
+  *"Save video updates DB with album fields and calls saveToAlbum"*, `Expected: not null /
+  Actual: <null>`.
+  The same file, run alone three times, is **3/3 green** (`+2` each), so the load-sensitivity
+  finding above is confirmed and the test is not simply broken.
+  <br/>**The stack names a mechanism, which the CPU-contention hypothesis does not explain
+  away.** The failing assertion is downstream of
+  `Bad state: Cannot add new events after calling close` thrown from
+  `StorageActionMachine._emit` (`storage_action_machine.dart:214`), reached from
+  `_handleMaterialize` (`:106`) under `<asynchronous suspension>`, via
+  `MoveDetailNotifier._saveVideo` (`provider.dart:224`). That is an **async lifecycle defect**:
+  an in-flight `materialize` emits onto a controller that has already been closed, the emit
+  throws, `_saveVideo` fails at `init`, and the DB row the test expects is never written — the
+  `null` is the symptom, not the bug. Load does not create that race; it only widens the window
+  in which the close lands before the emit. So the leading hypothesis above is **half right**:
+  contention is the trigger, a missing `isClosed`/cancellation guard on the machine's teardown
+  is the cause. Next step is therefore a code read of `StorageActionMachine`'s close path, not
+  the idle-versus-loaded repetition study — that study would only re-measure the trigger.
+  <br/>Unnamed still: the *second* test from run 1's `-2`. This audit produced exactly one `-1`,
+  so the population is at least this test and at most this test plus that one.
   <br/>**Not currently a `verify.sh` blocker** — the gate passes on a clean run. It is recorded
   because a suite that is green only half the time quietly erodes the binary-truth axiom: it makes
   "the tests pass" a coin flip that every future session will have to re-flip.
@@ -403,3 +427,24 @@ needs is already known:
 
 Recommended order once 6.4/6.5 are implemented: **6.8 → 6.7 → 6.10 → 6.9 → 6.6**, cheapest
 and most independent first, with 6.6 last because it is the only one gated on a Scholar pass.
+
+- [ ] 6.15 **The board and the ledger disagree about what "next" is** (found by agent C's audit,
+  2026-07-30). `./status.sh` reports `NEXT: 6.6 Typography control`, because it takes the first
+  unticked box in file order. The ruling recorded at the foot of this file says the order is
+  **6.8 → 6.7 → 6.10 → 6.9 → 6.6**, with 6.6 deliberately *last* as the only item gated on a
+  Scholar pass; `session.log` confirms A advanced `## NOW` to 6.8 on that basis. Both are
+  correct about their own input and they cannot both be obeyed.
+  <br/>This is the queue doctrine's own failure mode turned inward: a decision *was* written
+  down, but not anywhere the instrument reads, so every session must re-derive it by reading to
+  the bottom of a 400-line ledger — or trust the board and silently work the item the ruling
+  put last. The `## NOW` block's "Next task" bullet does not resolve it either: it still
+  describes the 2026-07-13 Appwrite overnight wave and Phase M, naming no 6.x task at all, so
+  the session-start protocol's step 2 ("it names the ONE active change and the next unticked
+  task") is not satisfied today.
+  <br/>Two candidate fixes, A's call — (a) reorder the boxes in this file so file order *is* the
+  ruled order, making the board correct by construction and deleting the second copy of the
+  rule; or (b) teach `status.sh` to read an explicit `next:` marker. (a) is smaller, needs no
+  script change, and removes a divergence rather than instrumenting it. Either way the `## NOW`
+  bullet needs rewriting to name a 6.x task, which is a prerequisite for both.
+  <br/>**Not a gate failure** — nothing is red because of this. It is recorded because a board
+  that disagrees with the ledger costs every future session the minute the board exists to save.

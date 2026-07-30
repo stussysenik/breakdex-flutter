@@ -124,6 +124,60 @@ once, but there is no code dependency between them and they may run in parallel.
   *only* to preserve the leak is deleted. The mono pack already resolved `error` to ink and
   `onError` to the background, so the correct grayscale result now falls out of the pack
   substitution instead of being re-stated as an exception to it.
+  <br/>**AUDIT (agent C, 2026-07-30, commits `0200b2c..ee52790`).**
+  **PROVEN:** the ruling holds where it is asserted. `overlayOwnsSignals` is
+  `isMonoOutline || palette != standard`, and the `semanticTheme` switch matches on
+  `(true, _)` first, so `monoOutline` outranks the palette — the same ink ramp the
+  `monochrome` assertions already cover, which is why the coverage gap below is a
+  regression-guard gap and not a live defect. Ledger rule satisfied: `0200b2c` carries code,
+  tests, and the `tasks.md` tick in one commit. `errorContainer`/`onErrorContainer` are not
+  passed to the `ColorScheme` constructor and fall back to `error`/`onError`, so
+  `robust_video_editor_view.dart:137-138` inherits the fix rather than keeping a stale red —
+  unstated in the task, true by Flutter's getters, and worth naming because it is the only
+  consumer that reads the container slots.
+  <br/>**NOT PROVEN — `viewingMode: ViewingMode.monoOutline` × `error`/`onError` has no
+  assertion.** Both new tests vary only `AccessiblePalette`; `color_packs_test.dart:178` is
+  the sole `monoOutline` build in the suite and it asserts surfaces, not signals. The path is
+  reachable from the UI (marker-outline mode with the standard palette) and is where the
+  deleted `copyWith` used to force `error: actionAgain` / `onError: Colors.white`. Reinstating
+  that hardwire under `monoOutline` alone would pass the full gate today. One `expect` inside
+  the existing loop closes it.
+  <br/>**NOT PROVEN — an unrelated dependency downgrade rode this commit.** `0200b2c` also
+  changed `pubspec.lock`: `matcher` 0.12.19 → **0.12.18** and `test_api` 0.7.10 → **0.7.9**.
+  Nothing in a theme fix asks for that; it is a resolver side effect nobody recorded, and it
+  changes what CI installs against the pinned Flutter 3.41.3. Not a failure — the gate is
+  green on it — but it is an unexplained change to shipped state, which is exactly what the
+  ledger rule exists to prevent. A: either justify the pin or restore it in its own commit.
+  <br/>**NOT PROVEN (unchanged, owner-gated):** how any of this looks — the gate measures
+  contrast ratios, not taste; `flutter build web --release`; device behavior; live sync.
+- [ ] 2.5 **BLOCKING — an in-flight mechanical sweep of this task does not compile** (found by
+  agent C, 2026-07-30, working tree at `ee52790` + 53 uncommitted files). `./verify.sh --quick`
+  is **RED at the analyzer: 57 errors, 34 warnings**, where the same gate was green on the
+  clean tree twenty minutes earlier. The whole population is this sweep, in four classes:
+  **30 `const_eval_method_invocation`** · **23 `undefined_identifier`** ·
+  **4 `implicit_this_reference_in_initializer`** · **34 `unused_import`**.
+  <br/>**One root cause, not four.** The sweep rewrote `AppColors.X` to
+  `AppSemanticTheme.of(context).X` textually, wherever the text appeared — including where no
+  `BuildContext` is in scope and where the expression must stay `const`.
+  `combo_detail/widgets/status_tag.dart:18` is the clean specimen: `statusStyle(String status)`
+  is a **top-level function with no `context` parameter**, so all three rewritten arms reference
+  an identifier that does not exist. The `const` failures are the same edit landing inside
+  `const` constructors and initializers, where a method call is illegal by definition. The
+  unused imports are `colors.dart` left behind after its last reference was rewritten away.
+  <br/>**This is precisely what 2.6 was split out to prevent.** That task already ruled that
+  sites with no `BuildContext` in reach are a different problem needing a different fix — a
+  text-level sweep cannot honor that split, because the thing it must not touch is invisible at
+  the text level. The migration needs the call site's *scope* as input: a `context`-bearing
+  build method takes the theme read; a top-level or `const` site either gains a parameter, or
+  stays a constant and is 2.6's.
+  <br/>**Nothing is committed, so nothing is lost** — but the tree is unbuildable until this is
+  either finished with scope-awareness or reset. A: rule which. Recommend reverting the sweep and
+  re-running it per 2.5a/2.5b's stated split with the `const`/no-context sites excluded up front,
+  rather than repairing 57 sites downstream of a bad rewrite.
+  <br/>**Audit scope note:** the full-gate result recorded under 6.14 in
+  `redesign-visual-first-experience` (`+1333 ~3 -1`) was measured on the **clean** tree at
+  `ee52790`, before these edits existed, and stands.
+
 - [ ] 2.5 **241 raw `AppColors.*` sites in 58 files bypass the theme.** Found by 2.1. Until
   they read roles through `Theme.of(context)`, a pack selection will not change those pixels
   and the `AccessiblePalette` overlay does not reach them either (confirmed at
@@ -133,6 +187,65 @@ once, but there is no code dependency between them and they may run in parallel.
   **zero-allowlist** ban. Sized as its own phase-worth of work — do not fold it into a Phase
   3 task. Sequencing note: cheapest after Phase 3 lands, since the migration target
   (`AppColorRole` via the theme) must exist before 241 sites can point at it.
+  <br/>**BROKEN DOWN 2026-07-30 (A).** Re-measured on this tree: **292** raw `AppColors.*`
+  reads outside `colors.dart`, of which **209 are widget-layer** (198 `lib/features/**` + 11
+  `lib/shared/**`) — those are 2.5's scope. The remaining 83 are not call sites of the same
+  kind and are ruled out below. Three sub-units, each independently verifiable, gate last:
+  **2.5a** signals (114) · **2.5b** accent + surfaces/ink (95) · **2.5c** the conformance ban.
+  <br/>**The substitution table** (`AppTheme._build`, `theme.dart:454–479`, is the authority):
+  `background` → `Theme.of(context).scaffoldBackgroundColor` · `card` → `colorScheme.surface` ·
+  `fill` → `colorScheme.surfaceContainerHighest` · `text` → `colorScheme.onSurface` ·
+  `secondaryText` → `colorScheme.secondary` · `separator` → `colorScheme.outline` ·
+  `accent` → `colorScheme.primary` · `onAccent` → `colorScheme.onPrimary` ·
+  the 7 signals → `AppSemanticTheme.of(context).<field>`.
+  <br/>**Measured de-risk:** only **6** of the 209 sites sit in a `const` expression
+  (`settings_screen.dart:681,907` · `sync_status_screen.dart:423` ·
+  `calendar_view.dart:362,366` · `notes_section.dart:268`), so the sweep is mechanical
+  everywhere else; those six drop `const` or lift the read into `build`. No widget-layer file
+  reads `AppColors` outside a `BuildContext` reach.
+  <br/>**Scope ruling — `lib/core/**` is NOT in 2.5 and is NOT silently exempt.**
+  `lib/core/design/**` (51) is the definition scope: a pack seeding from constants is its job,
+  exactly as `icons.dart` names `Icons.*`. The other 32 — `lib/core/models/**` (14),
+  `lib/core/services/**` (8), `lib/core/providers/**` (10) — are context-free *defaults*, and
+  substituting a theme read there is impossible, not merely awkward. They are 3.4's
+  "bakes the fallback into its state" problem one layer down. Captured as **2.6**.
+- [ ] 2.5a **Signals — the live accessibility defect (114 sites).** Every
+  `AppColors.state{New,Learning,Mastery}` and `AppColors.action{Again,Hard,Good,Easy}` read in
+  `lib/features/**` + `lib/shared/**` → `AppSemanticTheme.of(context).<field>`. Distribution:
+  `actionAgain` 42 · `stateMastery` 33 · `actionGood` 16 · `actionHard` 11 ·
+  `stateLearning` 10 · `stateNew` 2 · `actionEasy` 2. Where the raw read is already switched on
+  a `LearningState`/`ReviewRating`, use `colorForState` / `colorForRating` rather than restating
+  the switch — a second copy of that mapping in a widget is the 3.6 defect.
+  <br/>**Red/green is required and available:** `milestone_list.dart:292,297,306` paints
+  `AppColors.stateMastery` (`#1F8A70`) into a live decoration while
+  `AccessiblePalette.deuteranopia` publishes `#009E73`. A widget test pumping that widget under
+  the deuteranopia theme must fail before the sweep and pass after. One such test is the proof
+  for the class; do not write 114 of them.
+- [ ] 2.5b **Accent, surfaces, and ink (95 sites).** `AppColors.accent` (68) →
+  `colorScheme.primary`; the 27 `light*`/`dark*` reads → the slot table above.
+  <br/>**Not mechanical, and this is the whole risk of the unit:** a widget naming
+  `AppColors.darkBg` (6) / `darkFill` (5) / `darkText` (3) / `darkCard` (2) /
+  `darkSeparator` (1) has hardcoded a *brightness*, which for player chrome or a camera
+  overlay may be deliberate — that surface is always dark regardless of theme. Each such site
+  is a judgement: convert it, or keep it and say why. Any kept site must be re-expressed
+  against the value it actually means, not left naming a theme constant, because 2.5c bans the
+  name. List every kept site with its reason in this ledger.
+- [ ] 2.5c **The conformance ban — zero allowlist.** `test/core/design/color_conformance_test.dart`,
+  mirroring `test/core/design/icon_conformance_test.dart`: no `AppColors.` identifier may appear
+  under `lib/features/**` or `lib/shared/**`, with a **zero-length allowlist** so the ban cannot
+  be widened by adding a line. Land it **last** — it is red until 2.5a and 2.5b are both in.
+  Record the ban's scope and the substitution table in `docs/design/TOKENS.md` → Color Packs,
+  and add the widget-layer ban to the `openspec/AGENTS.md` review checklist beside the
+  `Icons.*` one. `scripts/docs_ledger_check` green.
+- [ ] 2.6 **Context-free color defaults in `lib/core/**` (32 sites).** Split out of 2.5 by the
+  scope ruling above. `learning_state.dart` (7), `rating_colors.dart` (4),
+  `learning_state_colors.dart` (3), `categories_service.dart` (8), `theme_providers.dart` (10)
+  name `AppColors` constants with no `BuildContext` in reach, so the theme read 2.5 uses does
+  not exist for them. This is the same shape as 3.4's finding — a provider that bakes its
+  fallback into its state cannot express "unset", so its default *is* a hardcoded color that
+  no pack and no overlay can move. The answer is a seam (defaults resolved at the read, not at
+  the store), not a substitution, which is why it is not part of the sweep. Not blocking: these
+  are defaults behind values the theme already overrides for every rendered pixel 2.5 touches.
 
 ## Phase 3: The pack mechanism
 
