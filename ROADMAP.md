@@ -167,6 +167,21 @@
   6.6–6.10 stay unspecced with their lanes and a recommended order recorded in that change's
   §6 disposition table (6.6 is Scholar-gated).
   No backend dependency — runs parallel to the owner-gated Appwrite and distribution work.
+  **2026-07-30 — capture-and-push session; NOW is unchanged and 6.8 is still the blocker.**
+  Nothing in this change moved: 6.8 is Teacher-lane and a fifth session declined it. What landed
+  instead was the record — three prior sessions' unpushed work reconciled and pushed:
+  `lib/dev/dev_preview_gallery.dart` (interactive light/dark gallery, route now `kDebugMode`-only),
+  READINGS.md populated (37 sources → 20 entries), FACTORY.md stacked-papers doctrine, CLAUDE.md
+  loss function + agentic-agnostic factory, and three changes queued —
+  `enforce-face-law-conformance` (valid --strict, sequenced 4b), `add-media-manager` (repaired to
+  valid), `breakdex-app-store-launch` (`.triage` PARKED, proposal-only). Two false claims fixed
+  where found: FACTORY.md and ch11 both asserted the frame is machine-gated — it is not, 26
+  feature files still build a raw `Scaffold` against 1 `AppScreen`, which is exactly what
+  `enforce-face-law-conformance` 2.1 exists to close. A `web-mirror/pricing` draft was discarded,
+  not landed ($10/month Stripe placeholder contradicting shipped Lemon Squeezy one-time tiers);
+  the ask survives as monetization 4.6. **Owner fork, not taken unilaterally:** 6.8 blocks this
+  change and only a Teacher session opens it; the queue alternative is to make
+  `enforce-face-law-conformance` the active change and work its 17 tasks now.
 
 - **Archived 2026-07-29 (implementation-complete, 19/19):** `add-stacked-viewport-layout`
   — **Stacked-viewport layout constitution.** All five tabs are on one frame: `AppLayout`
