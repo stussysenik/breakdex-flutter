@@ -1281,6 +1281,108 @@ abstract class AppLocalizations {
   /// **'Photo Library'**
   String get setPanelPhotoLibrary;
 
+  /// Settings panel title linking to the full color-packs management screen.
+  ///
+  /// In en, this message translates to:
+  /// **'Color Packs'**
+  String get setPanelColorPacks;
+
+  /// Color Packs settings panel: page title at the top of the full-screen panel.
+  ///
+  /// In en, this message translates to:
+  /// **'Color Packs'**
+  String get setColorPacksRouteTitle;
+
+  /// Color Packs panel: subtitle explaining the relationship between packs and accessibility overlays.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose a color pack or customize individual colors. Accessible palettes take priority over pack signals.'**
+  String get setColorPacksSubtitle;
+
+  /// Color Packs panel: label for the currently selected pack display.
+  ///
+  /// In en, this message translates to:
+  /// **'Current pack'**
+  String get setColorPacksSelectPack;
+
+  /// Color Packs panel: label for a collection section heading.
+  ///
+  /// In en, this message translates to:
+  /// **'{name}'**
+  String setColorPacksCollection(String name);
+
+  /// Color Packs: name of the seasonal collections group.
+  ///
+  /// In en, this message translates to:
+  /// **'Seasonal'**
+  String get setColorPacksCollectionSeasonal;
+
+  /// Color Packs: collection section heading with a year label.
+  ///
+  /// In en, this message translates to:
+  /// **'{year} Collection'**
+  String setColorPacksCollectionYear(String year);
+
+  /// Color Packs: display name for the default classic pack.
+  ///
+  /// In en, this message translates to:
+  /// **'Default'**
+  String get setColorPacksDefaultName;
+
+  /// Color Packs: display name for the monochrome grayscale pack.
+  ///
+  /// In en, this message translates to:
+  /// **'Monochrome'**
+  String get setColorPacksMonoName;
+
+  /// Color Packs panel: shown when the accessible palette is not standard, informing the user that pack signal colors are overridden by the accessibility guarantee.
+  ///
+  /// In en, this message translates to:
+  /// **'Your accessibility settings are overriding signal colors for this pack.'**
+  String get setColorPacksAccessibleOverride;
+
+  /// Color Packs: a color override passes the WCAG contrast threshold.
+  ///
+  /// In en, this message translates to:
+  /// **'Pass'**
+  String get setColorPacksContrastPass;
+
+  /// Color Packs: a color override does not meet the WCAG contrast threshold.
+  ///
+  /// In en, this message translates to:
+  /// **'Fail'**
+  String get setColorPacksContrastFail;
+
+  /// Color Packs: the computed WCAG contrast ratio shown inline, e.g. '4.5:1'.
+  ///
+  /// In en, this message translates to:
+  /// **'{ratio}:1'**
+  String setColorPacksContrastRatio(String ratio);
+
+  /// Color Packs: label for the per-role color override picker button.
+  ///
+  /// In en, this message translates to:
+  /// **'Override'**
+  String get setColorPacksOverrideColor;
+
+  /// Color Packs: dialog title for overriding a specific color role.
+  ///
+  /// In en, this message translates to:
+  /// **'Override {role}'**
+  String setColorPacksOverrideTitle(String role);
+
+  /// Color Packs: subtitle in the per-role override dialog explaining how overrides interact with packs and contrast.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose any color. The pack provides the default; your override takes priority. Contrast is shown but not enforced.'**
+  String get setColorPacksOverrideSubtitle;
+
+  /// Color Packs: button to clear all per-role overrides for the current pack.
+  ///
+  /// In en, this message translates to:
+  /// **'Reset overrides'**
+  String get setColorPacksResetOverrides;
+
   /// Settings: label for the global accent-color editor (sub-panel title and the color tile/dialog title).
   ///
   /// In en, this message translates to:

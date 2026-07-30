@@ -715,6 +715,68 @@ class AppLocalizationsEn extends AppLocalizations {
   String get setPanelPhotoLibrary => 'Photo Library';
 
   @override
+  String get setPanelColorPacks => 'Color Packs';
+
+  @override
+  String get setColorPacksRouteTitle => 'Color Packs';
+
+  @override
+  String get setColorPacksSubtitle =>
+      'Choose a color pack or customize individual colors. Accessible palettes take priority over pack signals.';
+
+  @override
+  String get setColorPacksSelectPack => 'Current pack';
+
+  @override
+  String setColorPacksCollection(String name) {
+    return '$name';
+  }
+
+  @override
+  String get setColorPacksCollectionSeasonal => 'Seasonal';
+
+  @override
+  String setColorPacksCollectionYear(String year) {
+    return '$year Collection';
+  }
+
+  @override
+  String get setColorPacksDefaultName => 'Default';
+
+  @override
+  String get setColorPacksMonoName => 'Monochrome';
+
+  @override
+  String get setColorPacksAccessibleOverride =>
+      'Your accessibility settings are overriding signal colors for this pack.';
+
+  @override
+  String get setColorPacksContrastPass => 'Pass';
+
+  @override
+  String get setColorPacksContrastFail => 'Fail';
+
+  @override
+  String setColorPacksContrastRatio(String ratio) {
+    return '$ratio:1';
+  }
+
+  @override
+  String get setColorPacksOverrideColor => 'Override';
+
+  @override
+  String setColorPacksOverrideTitle(String role) {
+    return 'Override $role';
+  }
+
+  @override
+  String get setColorPacksOverrideSubtitle =>
+      'Choose any color. The pack provides the default; your override takes priority. Contrast is shown but not enforced.';
+
+  @override
+  String get setColorPacksResetOverrides => 'Reset overrides';
+
+  @override
   String get setAccentColorLabel => 'Accent Color';
 
   @override
