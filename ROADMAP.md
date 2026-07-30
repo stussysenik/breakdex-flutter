@@ -114,6 +114,24 @@
   ⚠ **6.8 is a Teacher-lane task, not an Executor one** (that change's §6 disposition table:
   *"Needs a decision about what the readout is for before it can name replacement metrics"*).
   An implementation session cannot open it; it needs a spec first.
+  **2026-07-30 — `add-color-packs` 2.5 is CLOSED, all three sub-units (`1bff436`).** The 209
+  widget-layer raw `AppColors.*` reads under `lib/features/**` + `lib/shared/**` are **0**, and a
+  conformance gate holds it: `color_conformance_test.dart` bans the name across all of `lib/`
+  with a 7-entry definition layer, plus a second test that deletes an exemption which stops being
+  used. `./verify.sh` **ALL GATES PASSED, exit 0, 1347 pass / 3 skip / 0 fail**, analyzer 0/0.
+  This closed a **live shipped accessibility defect**, red-proved on the named target: under
+  `AccessiblePalette.deuteranopia` `milestone_list.dart` painted `#1F8A70` while the overlay
+  published `#009E73`. Two rulings worth carrying forward — (a) a color migration needs the call
+  site's **scope** as input where the icon migration did not, because a text-level rewrite
+  compiles only where a `BuildContext` is in reach (~23 sites were not, and the analyzer was the
+  oracle); (b) the always-dark surfaces (video player, trim timeline, instax viewer) were not a
+  mistake to list as exceptions but an **unnamed role** — shipped as `AppMediaChrome`, which
+  resolves the active pack at `Brightness.dark`, so they keep their intent and return their
+  pixels to the theme. **Next in that change: 2.6** (`theme_providers.dart`, 10 sites, the 3.4
+  "cannot express unset" shape) — 3 of its 4 remaining files were *ruled* rather than deferred.
+  **New: 2.7** — two crews worked 2.5 concurrently on one tree and only convergent substitution
+  kept it lossless; `## NOW` names the active change, which is no lock on the active task.
+  Claim-on-start is the cheap fix and belongs in `FACTORY.md`.
   **Owner decision open, blocking nothing** (`add-color-packs` 6.1): PANTONE® names/numbers
   are licensed IP, so the spec ships in-house curated seasonal collections behind a catalogue
   interface and a licensed dataset drops in later with no mechanism change. **6.2 (design the

@@ -64,6 +64,18 @@ openspec/changes/<verb-led-id>/
   `icons.dart` definition) is a violation — enforced by
   `test/core/design/icon_conformance_test.dart`. 78 names in 8 sections, 2 packs
   (material + lucide), resolved through `AppIconView` at build time.
+- Color: **`AppColorRole` resolved through the theme** replaces raw `AppColors.*`.
+  **Review checklist:** a raw `AppColors.*` read under `lib/` outside the
+  **definition layer** is a violation — enforced by
+  `test/core/design/color_conformance_test.dart`, whose `_definitionLayer` set is
+  the whole permitted list and admits only files that *define* what a role
+  resolves to, never one that *paints* with it. A widget never qualifies: read
+  `Theme.of(context).colorScheme.*` for surfaces/accent,
+  `AppSemanticTheme.of(context).*` for the 8 signals, and `AppMediaChrome.of(context)`
+  for surfaces that are dark on purpose. Unlike the icon ban this one cannot be
+  zero-allowlist — a pack must seed its roles from constants — so a second test
+  asserts every exemption still reads `AppColors.*`, and an exemption that stops
+  being used must be deleted rather than left standing.
 - Localization: user-facing copy is resolved through `AppLocalizations` (ARB in
   `lib/l10n/`, generated `lib/l10n/gen/` committed & CI-verified via
   `scripts/check_l10n.sh`). **Review checklist:** no *new* hard-coded user-facing

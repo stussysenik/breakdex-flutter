@@ -150,7 +150,23 @@ once, but there is no code dependency between them and they may run in parallel.
   ledger rule exists to prevent. A: either justify the pin or restore it in its own commit.
   <br/>**NOT PROVEN (unchanged, owner-gated):** how any of this looks — the gate measures
   contrast ratios, not taste; `flutter build web --release`; device behavior; live sync.
-- [ ] 2.5 **BLOCKING — an in-flight mechanical sweep of this task does not compile** (found by
+- [x] **C's audit finding on 2.5 — RESOLVED 2026-07-30 by A, by completion rather than revert.**
+  C measured a mid-sweep tree and recommended reverting; A re-measured the finished tree and
+  ruled against that. On `1bff436`: `flutter analyze` **0 errors / 0 warnings** (7 pre-existing
+  infos), `./verify.sh` **ALL GATES PASSED, exit 0, 1347 pass / 3 skip / 0 fail** (+13 from
+  1334). Every one of the 57 errors C counted was an unplumbed no-`context` site, and plumbing
+  them is the work — not damage to undo. **The finding was still correct and load-bearing:** it
+  named the root cause (one bad-rewrite class, not four error classes) and it named the reason
+  a color migration is unlike an icon migration, which is now recorded in 2.5a. It is filed here
+  rather than deleted so the ruling survives, per the archive-with-a-reason rule.
+  <br/>**Process finding, and the real one: two crews worked this task concurrently on one tree,
+  and only convergent substitution kept it lossless.** A dispatched B on 2.5a while another
+  session was already mid-sweep; B detected it from file mtimes, hit exactly one direct
+  collision (`cloud_sync_section.dart`, a `_statusLabel` signature race), and reverted its own
+  edit in favor of the other. Nothing was lost, but nothing prevented loss either — `## NOW`
+  names one active *change*, and that is not a lock on one active *task*. Captured as **2.7**.
+  <br/>Below is C's finding as filed, unedited:
+  <br/>~~BLOCKING — an in-flight mechanical sweep of this task does not compile~~ (found by
   agent C, 2026-07-30, working tree at `ee52790` + 53 uncommitted files). `./verify.sh --quick`
   is **RED at the analyzer: 57 errors, 34 warnings**, where the same gate was green on the
   clean tree twenty minutes earlier. The whole population is this sweep, in four classes:
@@ -365,6 +381,20 @@ once, but there is no code dependency between them and they may run in parallel.
   no pack can move. `colorRoleOverridesProvider` (3.4) already demonstrates the fix by omitting
   unset roles while reading the same keys, so the seam exists and this is a migration onto it
   rather than a design question. Still not blocking, and still not part of any sweep.
+- [ ] 2.7 **Two crews can work one task concurrently and the board cannot tell.** Found the hard
+  way on 2.5 (see the resolved audit finding above). `## NOW` names the one active *change* and
+  the next unticked *task*, which is enough to stop two sessions picking different work and
+  useless at stopping them picking the *same* work. Nothing in `status.sh`, `verify.sh`, or the
+  ledger records that a task is in flight, so the second session's only signal was file mtimes —
+  noticed by an agent, not by an instrument.
+  <br/>**Cheap and sufficient:** claim-on-start. A session ticking into a task writes one line
+  naming the task, the role, and the commit it started from, and `status.sh` prints an unclosed
+  claim as a warning beside `NEXT`. Derived from the log, not stored state, exactly like the
+  rest of the board. Not a lock and should not become one — the goal is that a second session
+  *sees* the collision in its first minute, which is the whole cost here.
+  <br/>Belongs in the `docs/manual/FACTORY.md` operating model rather than this change, since it
+  is a property of the crew protocol and not of color. Recorded here because this is where it was
+  found; move it when a Teacher session touches FACTORY.md.
 
 ## Phase 3: The pack mechanism
 
