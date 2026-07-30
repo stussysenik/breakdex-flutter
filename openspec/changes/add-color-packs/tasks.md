@@ -307,13 +307,38 @@ once, but there is no code dependency between them and they may run in parallel.
   is a judgement: convert it, or keep it and say why. Any kept site must be re-expressed
   against the value it actually means, not left naming a theme constant, because 2.5c bans the
   name. List every kept site with its reason in this ledger.
-- [ ] 2.5c **The conformance ban — zero allowlist.** `test/core/design/color_conformance_test.dart`,
-  mirroring `test/core/design/icon_conformance_test.dart`: no `AppColors.` identifier may appear
-  under `lib/features/**` or `lib/shared/**`, with a **zero-length allowlist** so the ban cannot
-  be widened by adding a line. Land it **last** — it is red until 2.5a and 2.5b are both in.
-  Record the ban's scope and the substitution table in `docs/design/TOKENS.md` → Color Packs,
-  and add the widget-layer ban to the `openspec/AGENTS.md` review checklist beside the
-  `Icons.*` one. `scripts/docs_ledger_check` green.
+  <br/>**DONE 2026-07-30 (`1bff436`) — and the "keep it and say why" branch was refused in
+  favor of a type, which is the better answer.** This task asked for a *list of exceptions*;
+  what shipped is `AppMediaChrome` (`theme.dart:164`), a `ThemeExtension` for surfaces that are
+  dark **on purpose** — video players, the trim timeline, the instax viewer. It resolves the
+  active pack at `Brightness.dark` and publishes `background` / `card` / `fill` / `separator` /
+  `ink`, so those surfaces keep their intent (stay dark under a bright photo) *and* return their
+  pixels to the theme: a pack owns its own dark side, so media chrome follows the pack without
+  ever following the app's light mode. Seven files read it.
+  <br/>This is the same move as `BackLeading` (6.2) and `AppScreen` — **a rule shipped as a type
+  cannot be violated by the next screen, and a list of blessed exceptions can.** The dark-brightness
+  reads were never "hardcoded a brightness by mistake"; they were an unnamed role. Naming it is
+  what let the ban stay absolute with no widget exemptions at all.
+- [x] 2.5c **The conformance ban.** `test/core/design/color_conformance_test.dart`,
+  mirroring `test/core/design/icon_conformance_test.dart`. Land it **last** — it is red until
+  2.5a and 2.5b are both in. Record the ban's scope and the substitution table in
+  `docs/design/TOKENS.md` → Color Packs, and add the ban to the `openspec/AGENTS.md` review
+  checklist beside the `Icons.*` one. `scripts/docs_ledger_check` green.
+  <br/>**DONE 2026-07-30 (`1bff436`). This task specified a zero-length allowlist over
+  `lib/features/**` + `lib/shared/**`; the gate that shipped is different, and stronger.** It
+  bans `AppColors.*` across **all** of `lib/`, with a 7-entry `_definitionLayer` set.
+  **Zero-allowlist is not available for color and the reason is structural, not a concession:**
+  the icon ban could be absolute because `icons.dart` is the only file permitted to name an
+  `IconData`, whereas color *has* a definition layer — a pack must seed its roles from
+  constants and a preference provider must fall back to one, so an absolute ban would forbid
+  the mechanism from existing. Every entry is a file that *defines* what a role resolves to,
+  never one that *paints* with it, and no widget can qualify. Banning all of `lib/` with a
+  justified layer is a tighter gate than banning two directories with none: it covers
+  `lib/core` widgets and any directory added later.
+  <br/>**The anti-rot half is the part worth keeping.** A second test asserts every
+  `_definitionLayer` entry still exists *and still reads* `AppColors.*`, so an exemption cannot
+  outlive its reason — the failure mode of every allowlist is a stale line nobody dares delete,
+  and this one deletes itself. `TOKENS.md:156` records the ban.
 - [ ] 2.6 **Context-free color defaults in `lib/core/**` (32 sites).** Split out of 2.5 by the
   scope ruling above. `learning_state.dart` (7), `rating_colors.dart` (4),
   `learning_state_colors.dart` (3), `categories_service.dart` (8), `theme_providers.dart` (10)
@@ -323,6 +348,23 @@ once, but there is no code dependency between them and they may run in parallel.
   no pack and no overlay can move. The answer is a seam (defaults resolved at the read, not at
   the store), not a substitution, which is why it is not part of the sweep. Not blocking: these
   are defaults behind values the theme already overrides for every rendered pixel 2.5 touches.
+  <br/>**RESCOPED 2026-07-30 (A), after 2.5a–c landed. It is 25 sites in 4 files, not 32 in 5,
+  and only one of them is still an open question.** `learning_state.dart` went to **0** — its 7
+  reads were `LearningState` → color, which is `AppSemanticTheme.colorForState`, so they were
+  never context-free at all and 2.5a absorbed them correctly.
+  <br/>Of the remaining four, three are **answered, not deferred**, and 2.5c's `_definitionLayer`
+  is where the answer is recorded: `rating_colors.dart` (4) + `learning_state_colors.dart` (3)
+  are immutable default snapshots fed *into* `AppTheme` as overrides — a color the theme consumes
+  cannot read the theme, so naming a constant there is the mechanism working; and
+  `categories_service.dart` (8) is a picker palette of **persisted user data**, not rendered
+  theme — a category's color is stored per-category, so re-pointing those presets at the theme
+  would make already-saved categories drift when a pack changes. That one is a ruling to keep,
+  not a migration to do.
+  <br/>**The residual is `theme_providers.dart` (10)** — the genuine 3.4 shape: a provider that
+  bakes its fallback into its state cannot express "unset", so its default *is* a hardcoded color
+  no pack can move. `colorRoleOverridesProvider` (3.4) already demonstrates the fix by omitting
+  unset roles while reading the same keys, so the seam exists and this is a migration onto it
+  rather than a design question. Still not blocking, and still not part of any sweep.
 
 ## Phase 3: The pack mechanism
 

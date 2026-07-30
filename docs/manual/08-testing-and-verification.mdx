@@ -3,7 +3,7 @@ title: Testing & Verification
 name: testing
 order: 8
 status: verified
-verified: 259c02b
+verified: 210deae
 watches:
   - test/**
   - .github/workflows/ci.yml
@@ -194,6 +194,39 @@ For a bug fix, the protocol is not "write a test that passes." It is:
 The red step is the load-bearing one: it is the only thing that proves the test has teeth. This is the state-machine layer's natural mode — a `(state, event) → expected` row is a repro that either matches the transition table or does not.
 
 Brownfield amplifies this: the repo is late-stage production with real user data ([Data Layer](./03-data-layer.mdx)). Changes are additive over invasive, migrations are one-way and must be tested, and a claim of done requires verification on a **real build**, not a passing unit test alone (root `CLAUDE.md`, brownfield row). A migration proven only by a green unit test is *not* proven — it is proven when the iOS-sim build boots against a populated DB without data loss.
+
+## Never sleep for an async side effect — poll to a deadline
+
+A fixed `await Future.delayed(...)` before asserting on an async result is a flake with a
+timer attached. `video_export_save_test.dart` slept a flat `200ms` for a `VideoEdited` fan-out
+(hash isolate + file move) and then read the DB row. Instrumented, that side effect takes
+**452–536ms on an idle machine** — the budget was already short before CPU contention entered,
+which is why the suite disagreed with itself run to run and why the failure count varied
+instead of being one deterministic test.
+
+The fix is a deadline poll, not a bigger sleep: loop until the condition holds or a generous
+deadline (15s) expires, then fall through to the assertion so a genuine failure still reports
+the real value rather than a timeout. `waitForHash` in that same file was already the pattern —
+the flaky case simply never adopted it. **When you see a bare `delayed` before an `expect`,
+treat it as a defect, not a wait.** A sleep encodes a guess about machine speed into the suite;
+a poll encodes the condition you actually care about.
+
+## A logger that reports a failure can replace it
+
+`FlutterError.demangleStackTrace` is wired up by `testWidgets` and **not** by plain `test`.
+`StageLogger.fail` calls `debugPrintStack`, which asserts at `stack_frame.dart:197`
+(*"Got a stack frame from package:stack_trace, where a vm or web frame was expected"*) on the
+traces that propagate inside a plain `test()` body. The resulting `_AssertionError`
+**supersedes the exception under test**, so every error path that logs through `StageLogger`
+reports the logger's own assertion instead of the cause — and `expectLater(..., throwsA(...))`
+fails against a type nobody wrote.
+
+This cost two sessions on one bug: the instrument meant to name the cause was overwriting it.
+Root `CLAUDE.md` states the rule directly — *a diagnostic that truncates its own evidence is
+the first bug to fix* — so when an error assertion fails against a type you never threw,
+suspect the reporting path before the code. Workaround in a single file is to set the demangle
+hook in `main()`; the general fix (shared test setup) is tracked as
+`redesign-visual-first-experience` 6.17.
 
 ## Testing a widget that reads a static buffer
 
