@@ -26,69 +26,79 @@ class BattleIntro extends StatelessWidget {
 
     return Padding(
       padding: const EdgeInsets.all(AppSpacing.screenEdge),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          const Spacer(),
-          AppIconView(
-            AppIcon.flashcard,
-            size: 64,
-            color: Theme.of(context).colorScheme.primary,
-          ),
-          const SizedBox(height: AppSpacing.lg),
-          Semantics(
-            header: true,
-            child: Text(
-              'Battle Mode',
-              style: AppTypography.titleLarge.copyWith(
-                color: Theme.of(context).colorScheme.onSurface,
-              ),
-              textAlign: TextAlign.center,
-            ),
-          ),
-          const SizedBox(height: AppSpacing.sm),
-          Text(
-            'Rate moves as fast as you can.\nGOOD streaks multiply your score!',
-            style: Theme.of(
-              context,
-            ).textTheme.bodyMedium?.copyWith(color: cs.secondary),
-            textAlign: TextAlign.center,
-          ),
-          const SizedBox(height: AppSpacing.xl),
-          for (final diff in BattleDifficulty.values) ...[
-            _DifficultyCard(
-              difficulty: diff,
-              isSelected: diff == selectedDifficulty,
-              onTap: () {
-                HapticFeedback.selectionClick();
-                onSelectDifficulty(diff);
-              },
-            ),
-            const SizedBox(height: AppSpacing.sm),
-          ],
-          const Spacer(),
-          SizedBox(
-            height: 52,
-            child: ElevatedButton(
-              onPressed: () {
-                HapticFeedback.mediumImpact();
-                onStart();
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Theme.of(context).colorScheme.primary,
-                foregroundColor: Colors.white,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(AppRadius.sm),
+      child: LayoutBuilder(
+        builder: (final context, final constraints) => SingleChildScrollView(
+          child: ConstrainedBox(
+            constraints: BoxConstraints(minHeight: constraints.maxHeight),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                AppIconView(
+                  AppIcon.flashcard,
+                  size: 64,
+                  color: Theme.of(context).colorScheme.primary,
                 ),
-                elevation: 0,
-              ),
-              child: const Text(
-                'Start Battle',
-                style: TextStyle(fontWeight: FontWeight.w600, fontSize: 16),
-              ),
+                const SizedBox(height: AppSpacing.lg),
+                Semantics(
+                  header: true,
+                  child: Text(
+                    'Battle Mode',
+                    style: AppTypography.titleLarge.copyWith(
+                      color: Theme.of(context).colorScheme.onSurface,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                ),
+                const SizedBox(height: AppSpacing.sm),
+                Text(
+                  'Rate moves as fast as you can.\nGOOD streaks multiply your score!',
+                  style: Theme.of(
+                    context,
+                  ).textTheme.bodyMedium?.copyWith(color: cs.secondary),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: AppSpacing.xl),
+                for (final diff in BattleDifficulty.values) ...[
+                  _DifficultyCard(
+                    difficulty: diff,
+                    isSelected: diff == selectedDifficulty,
+                    onTap: () {
+                      HapticFeedback.selectionClick();
+                      onSelectDifficulty(diff);
+                    },
+                  ),
+                  const SizedBox(height: AppSpacing.sm),
+                ],
+                const SizedBox(height: AppSpacing.lg),
+                SizedBox(
+                  height: 52,
+                  child: ElevatedButton(
+                    onPressed: () {
+                      HapticFeedback.mediumImpact();
+                      onStart();
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Theme.of(context).colorScheme.primary,
+                      foregroundColor: Colors.white,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(AppRadius.sm),
+                      ),
+                      elevation: 0,
+                    ),
+                    child: const Text(
+                      'Start Battle',
+                      style: TextStyle(
+                        fontWeight: FontWeight.w600,
+                        fontSize: 16,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
             ),
           ),
-        ],
+        ),
       ),
     );
   }

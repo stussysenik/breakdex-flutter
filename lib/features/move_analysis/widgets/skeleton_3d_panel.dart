@@ -1,10 +1,12 @@
 // H.8 lint triage — discarded_futures: intentional fire-and-forget (UI/provider side effects); the rule still guards new sync/codec files.
 // ignore_for_file: discarded_futures
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:breakdex/core/design/colors.dart';
+import 'package:breakdex/core/design/spacing.dart';
 import 'package:breakdex/core/design/typography.dart';
 import 'package:breakdex/core/providers.dart';
 import 'package:breakdex/shared/widgets/scene_3d_view.dart';
@@ -16,6 +18,11 @@ import 'package:breakdex/core/design/icons.dart';
 /// Embeds a SceneKit `Scene3DView` and auto-updates the skeleton
 /// whenever `currentPoseProvider` changes. Includes an info bar
 /// showing joint count and confidence.
+///
+/// **Web:** renders an "Unavailable on web" placeholder — the 3D skeleton
+/// depends on a native SceneKit platform view (UiKitView), which has no
+/// web equivalent. The MethodChannel-based `Scene3D` service hooks are
+/// also skipped to avoid `MissingPluginException`.
 class Skeleton3DPanel extends ConsumerStatefulWidget {
   const Skeleton3DPanel({super.key});
 
@@ -36,11 +43,15 @@ class _Skeleton3DPanelState extends ConsumerState<Skeleton3DPanel> {
     final colorScheme = Theme.of(context).colorScheme;
 
     // Push skeleton updates to native when pose changes
-    if (pose != null && pose.isUsable) {
+    if (pose != null && pose.isUsable && !kIsWeb) {
       // Schedule after frame to avoid calling during build
       WidgetsBinding.instance.addPostFrameCallback((_) {
         ref.read(scene3DProvider).updateSkeleton(pose.joints);
       });
+    }
+
+    if (kIsWeb) {
+      return _webPlaceholder();
     }
 
     return Column(
@@ -80,6 +91,26 @@ class _Skeleton3DPanelState extends ConsumerState<Skeleton3DPanel> {
         // 3D view
         const Expanded(child: Scene3DView(backgroundColor: Colors.black)),
       ],
+    );
+  }
+
+  Widget _webPlaceholder() {
+    final colorScheme = Theme.of(context).colorScheme;
+    return Container(
+      color: colorScheme.surfaceContainerHighest,
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 24),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          AppIconView(AppIcon.discover, size: 24, color: colorScheme.secondary),
+          const SizedBox(height: AppSpacing.sm),
+          Text(
+            '3D skeleton view unavailable on web',
+            style: AppTypography.caption.copyWith(color: colorScheme.secondary),
+            textAlign: TextAlign.center,
+          ),
+        ],
+      ),
     );
   }
 }

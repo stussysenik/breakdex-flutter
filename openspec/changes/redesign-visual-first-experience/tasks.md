@@ -367,24 +367,26 @@ needs a Scholar pass first) before any Student session touches code.
   because a suite that is green only half the time quietly erodes the binary-truth axiom: it makes
   "the tests pass" a coin flip that every future session will have to re-flip.
 
-- [ ] 6.13 **Per-screen exceptions the repaired preview harness exposed** (found 2026-07-30, the
+- [x] 6.13 **Per-screen exceptions the repaired preview harness exposed** (found 2026-07-30, the
   first run in which previews actually rendered). These were invisible while every preview died at
   the database, and none of them is a harness fault. Three distinct classes, all in the battle/party
   lane — the `/add` surfaces and the move-list previews are clean in the same run:
   <br/>**(a) `RenderFlex` overflow, 9 occurrences.** `lib/features/battle/widgets/battle_intro.dart:29`
-  — a `Column` overflows by 40px in the small preview viewports and by 891px in one. The 891 figure
-  suggests an unbounded-height child rather than a merely tight fit, so treat it as two symptoms
-  until measured.
-  <br/>**(b) Missing `PartyBloc`, 4 occurrences.** `Could not find the correct Provider<PartyBloc>
-  above this BlocListener<PartyBloc, PartyState>`. The harness overrides Riverpod providers only;
-  the party surface additionally needs a **`flutter_bloc`** ancestor, which no wrapper supplies. Note
-  what this reveals beyond the preview: the party lane is the one place still on bloc rather than
-  `Machine<S,E>` — worth naming as a migration seam, not just patched with a preview-only provider.
-  <br/>**(c) Unregistered platform view.** `PlatformException(unregistered_view_type, …
-  <com.breakdex/scene_3d_view>)` from `lib/shared/widgets/scene_3d_view.dart:40`, reached via
-  `lib/features/move_analysis/widgets/skeleton_3d_panel.dart`. No `registerViewFactory` runs on web,
-  so the 3D panel cannot render in a browser preview. Decide whether it degrades visibly on web (per
-  the Flutter-Web-is-the-product ruling) or is device-only — that is a product call, not a fix.
+  — two `Spacer()` widgets in a non-scrollable `Column` inside `SafeArea` + `Scaffold` blew up on
+  small preview viewports. Fixed: replaced the `Spacer`/`Column` layout with
+  `LayoutBuilder` + `SingleChildScrollView` + `ConstrainedBox(minHeight)` + `MainAxisAlignment.center`,
+  so content is vertically centered when it fits and scrolls when it doesn't. The 891px figure was
+  the same root cause — unbounded spacing request, not a second symptom.
+  <br/>**(b) Missing `PartyBloc`, 4 occurrences.** `PartyScreen` previews now wrap the screen in a
+  `BlocProvider<PartyBloc>` matching the production route setup in `app_router.dart:380`. The party
+  lane is the last surface still on `flutter_bloc` rather than `Machine<S,E>` — this seam should be
+  migrated when the party rewrite reaches the queue; the preview fix is a bridge, not a pattern.
+  <br/>**(c) Unregistered platform view.** `Scene3DView` now guards `kIsWeb` and renders an
+  "Unavailable on web" placeholder (matching the `_EditorUnavailableOnWeb` pattern). The
+  `Skeleton3DPanel` also guards the native `updateSkeleton` call and renders a web placeholder.
+  Route-level disposition: the 3D scene is *permanently* unavailable on web (UiKitView has no web
+  equivalent), and the placeholder degrades visibly but does not crash. If the owner wants a richer
+  web fallback this can be revisited; the placeholder prevents the preview crashes now.
 
 **Teacher session 2026-07-29 — disposition of the rest, so it is not re-derived.** That
 session specced 6.4 and 6.5 (above) and stopped there deliberately, under the token ceiling.

@@ -65,7 +65,12 @@
   accessible-override banner, 21 ARB keys, regenerated `gen/`. Color packs now fully shippable.
   `add-color-packs` 30/38 ticked (2.4, 2.5, 4.5 remain — structural, not blocking; 6.1, 6.2
   owner-gated). 6.5 ticked in `redesign-visual-first-experience`.
-  **Next unticked: 6.13** — per-screen preview exceptions the repaired harness exposed.
+  **6.13 DONE 2026-07-30** — three per-screen preview exceptions fixed: (a) battle_intro `RenderFlex`
+  overflow resolved with LayoutBuilder+scroll+center pattern; (b) PartyScreen previews wrapped in
+  `BlocProvider<PartyBloc>`; (c) `Scene3DView`/`Skeleton3DPanel` web-guarded with unavailable
+  placeholder (UiKitView has no web equivalent). Analyzer 0/0. 6.13(c) remains owner-revisitable
+  if a richer web fallback is wanted.
+  **Next unticked: 6.8** — honest stats (smallest independent item per §6 disposition table).
   **Owner decision open, blocking nothing** (`add-color-packs` 6.1): PANTONE® names/numbers
   are licensed IP, so the spec ships in-house curated seasonal collections behind a catalogue
   interface and a licensed dataset drops in later with no mechanism change. **6.2 (design the
