@@ -89,6 +89,74 @@ Color is never carried alone in any palette: rating buttons pair color with a
 distinct icon **and** label (WCAG 1.4.1), state pills pair color with a label,
 and category chips always render alongside the category name.
 
+### Color Packs
+
+A **pack** is the swappable answer to "what color is each role". The 39 constants
+above are one pack's worth of data, not the vocabulary: `lightBg`, `darkBg`,
+`monoLightBg`, and `monoDarkBg` are four *values* of a single role, resolved by
+brightness and by the accessibility overlay.
+
+**The role vocabulary is closed** — `AppColorRole` in `lib/core/design/color_roles.dart`,
+17 roles. A pack resolves every one via an exhaustive `switch` with no `default`,
+so a pack missing a role fails `flutter analyze` instead of rendering a fallback.
+Each role carries an `AppColorRoleKind` naming which axis owns it.
+
+| Role | Kind | Renders |
+|------|------|---------|
+| `background` | surface | `scaffoldBackgroundColor` |
+| `card` | surface | `ColorScheme.surface`, cards, sheets, nav bar |
+| `fill` | surface | `surfaceContainerHighest`, input fills |
+| `separator` | surface | `ColorScheme.outline`, dividers, borders |
+| `text` | ink | `onSurface`, primary reading ink |
+| `secondaryText` | ink | `ColorScheme.secondary`, captions, hints |
+| `accent` | ink | `ColorScheme.primary` — the one colored mark |
+| `onAccent` | ink | `onPrimary`; not always white (grayscale modes tone the accent to ink) |
+| `error` | signal | `ColorScheme.error` |
+| `onError` | ink | `ColorScheme.onError` |
+| `stateNew` · `stateLearning` · `stateMastery` | signal | `AppSemanticTheme` learning states |
+| `actionAgain` · `actionHard` · `actionGood` · `actionEasy` | signal | `AppSemanticTheme` review ratings |
+
+**Weights are derived, not listed.** A pack declares a small seed set; the weight
+ramp comes from `rampFromSeed` in `lib/core/design/oklch.dart`. Derivation is in
+OKLCH rather than HSL because equal HSL lightness is not equal *perceived*
+lightness — yellow and blue at HSL `L 0.5` differ by more than 0.3 of the visible
+lightness range, while at OKLCH `L 0.6` they differ by less than 0.01
+(`oklch_test.dart`). One consequence is load-bearing: step *n* of any two hues is
+the same weight, so a contrast threshold is a property of the ramp rather than a
+per-color accident. Out-of-gamut steps **spend chroma, never hue** — channel
+clipping rotates hue, which is the one thing a ramp promises to hold.
+
+**Axis precedence — the overlay is applied last and wins:**
+
+```
+pack → brightness → AccessiblePalette overlay
+```
+
+Without that order a pack selection would silently defeat the shipped
+`AccessiblePalette` guarantee: a user on `deuteranopia` picking an attractive
+pack would quietly lose the Okabe–Ito ramp the palette exists to provide.
+Concretely — on `deuteranopia` the pack still supplies surfaces and accent and
+the overlay replaces the signal roles; on `monochrome` the overlay collapses
+signals to ink and takes the grayscale surface ramp, so pack selection has no
+visible effect. That last case is **stated in the interface**, not left for the
+user to discover that their selection did nothing.
+
+Selecting an overlay stays non-destructive: the stored pack and every per-role
+override return unchanged when the palette goes back to `standard`.
+
+**Shipped packs must pass contrast; user overrides need only be shown.** A pack
+we ship failing a contrast threshold is our defect and is gated in CI across
+every pack × both brightnesses. A per-role override failing is the user's
+informed choice on their own device — the picker shows the live ratio and its
+pass/fail as the color changes, accepts the value, and never blocks it.
+
+**Two roles are not yet honored at every pixel.** `ColorScheme.error` is hardwired
+to the `actionAgain` value in all modes, so it does not follow the deuteranopia
+overlay; and 241 call sites across 58 files under `lib/features/` read
+`AppColors.*` constants directly rather than through the theme, which bypasses
+both the pack and the overlay. Tracked in `openspec/changes/add-color-packs`
+(2.4, 2.5) — the vocabulary above is the target, not yet the whole of what renders.
+
 ---
 
 ## Spacing

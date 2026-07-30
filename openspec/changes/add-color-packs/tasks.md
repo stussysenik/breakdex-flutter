@@ -52,12 +52,66 @@ once, but there is no code dependency between them and they may run in parallel.
 
 ## Phase 2: Role vocabulary
 
-- [ ] 2.1 Enumerate every color role the app renders today — surfaces from `ColorScheme`,
+- [x] 2.1 Enumerate every color role the app renders today — surfaces from `ColorScheme`,
   signals from `AppSemanticTheme`, accent. Baseline (2026-07-29): **38 `const Color` in a
   58-line `colors.dart`**; re-derive rather than trust it.
-- [ ] 2.2 Close the vocabulary as an enum. Every role is a thing a screen means, not a hex.
-- [ ] 2.3 Land 2.2 into `docs/design/TOKENS.md` as a **Color Packs** section, including the
+  <br/>**DONE 2026-07-30 — re-derived, and the baseline was wrong.** It is **39** `const
+  Color` in 58 lines, not 38. The 39 collapse to **17 roles**, because most are the same role
+  under a different mode: `lightBg` / `darkBg` / `monoLightBg` / `monoDarkBg` are four values
+  of `background`, resolved by brightness and overlay rather than by four names.
+  <br/>**The material finding — 241 raw sites in 58 files.** `AppColors.*` is read directly
+  from `lib/features/**` at **241 call sites across 58 files**, bypassing the theme entirely:
+  `accent` ×72, `actionAgain` ×46, `stateMastery` ×37, `actionGood` ×20, `actionHard` ×15,
+  `stateLearning` ×14, then a tail. This is the 6.4 icon problem again (434 raw `Icons.*`),
+  and it means a pack resolving only `ColorScheme` + `AppSemanticTheme` **will not change
+  those pixels**. Recorded as 2.5 rather than fixed here — it is a migration, not this task.
+  <br/>**It is also a live defect in already-shipped work.** These sites bypass the
+  `AccessiblePalette` overlay too, so the deuteranopia guarantee is already broken where they
+  render. Confirmed, not inferred: `lib/features/lab/widgets/milestone_list.dart:292,297,306`
+  paints `AppColors.stateMastery` (`#1F8A70`) into a live decoration; under
+  `AccessiblePalette.deuteranopia` `AppSemanticTheme` swaps mastery to `#009E73` and that
+  widget keeps the unsafe green.
+- [x] 2.2 Close the vocabulary as an enum. Every role is a thing a screen means, not a hex.
+  <br/>**DONE 2026-07-30.** `AppColorRole` in `lib/core/design/color_roles.dart` — 17 roles,
+  each carrying an `AppColorRoleKind` (`surface` · `ink` · `signal`) that names **which axis
+  owns it**, so D3's selective override is checkable rather than conventional: a test can
+  assert no `signal` survives the deuteranopia overlay and every `surface` does.
+  `test/core/design/color_roles_test.dart` (4 tests) pins the count and asserts the
+  signal/surface sets **by name** — reclassifying a signal as ink would silently exempt it
+  from the overlay, which is the exact regression D3 exists to prevent.
+  <br/>**One role the spec did not name: `error`.** `ColorScheme` requires it, and D1 makes
+  the pack responsible for the whole `ColorScheme`, so it must be a role. It is classified
+  `signal` because it is meaning carried by color — which makes the overlay-owned set **8,
+  not the 7 D3 states**. Consequence, and a pre-existing gap: `ColorScheme.error` is
+  hardwired to the `actionAgain` value in every mode, so it does **not** follow the
+  deuteranopia overlay today even though the "again" rating does. Recorded as 2.4; not
+  changed here, because 3.2 requires `classic` to be byte-identical to current rendering and
+  this is an overlay-axis behavior change, not a pack one.
+- [x] 2.3 Land 2.2 into `docs/design/TOKENS.md` as a **Color Packs** section, including the
   axis-precedence rule from D3. Binary truth: `scripts/docs_ledger_check` green.
+  <br/>**DONE 2026-07-30.** New `### Color Packs` section under Accessible Palettes: the
+  17-role table with kinds and what each renders, derived-weights rule with the measured
+  OKLCH-vs-HSL numbers, the `pack → brightness → overlay` precedence with why the order is
+  load-bearing, the non-destructive property, and the shipped-packs-pass /
+  overrides-are-shown split from D5. It also states plainly that two roles are not yet
+  honored at every pixel (2.4, 2.5) — the vocabulary is the target, not yet the whole of what
+  renders. Chapters 05 and 08 re-read and re-stamped; `docs_ledger_check` green.
+
+- [ ] 2.4 **`ColorScheme.error` does not follow the accessibility overlay.** Found by 2.2. It
+  is hardwired to the `actionAgain` value in every mode, so on `deuteranopia` the "again"
+  rating becomes Okabe–Ito vermillion while `error` stays the unsafe `#C23B2A`. Decide
+  whether `error` tracks `actionAgain` per-pack (and therefore follows the overlay) or is an
+  independently seeded role, then make the overlay own it. Blocks nothing in Phases 3–5; the
+  pack mechanism is indifferent to which way it resolves.
+- [ ] 2.5 **241 raw `AppColors.*` sites in 58 files bypass the theme.** Found by 2.1. Until
+  they read roles through `Theme.of(context)`, a pack selection will not change those pixels
+  and the `AccessiblePalette` overlay does not reach them either (confirmed at
+  `milestone_list.dart:292`). Same shape as the 434-site `Icons.*` migration in
+  `add-icon-system-and-packs`, so the same instrument applies: migrate the call sites, then
+  add a conformance test banning raw `AppColors.*` outside `colors.dart` with a
+  **zero-allowlist** ban. Sized as its own phase-worth of work — do not fold it into a Phase
+  3 task. Sequencing note: cheapest after Phase 3 lands, since the migration target
+  (`AppColorRole` via the theme) must exist before 241 sites can point at it.
 
 ## Phase 3: The pack mechanism
 

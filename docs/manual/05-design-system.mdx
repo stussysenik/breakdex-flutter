@@ -17,12 +17,16 @@ what the source table cannot express: the conformance contract between the token
 consumers, and the **motion doctrine** that constrains which tokens a product surface may
 touch. Read `../design/TOKENS.md` first; read this for the rules around it.
 
-The runtime tokens live in `lib/core/design/` — six files, all `abstract final class`
-namespaces of `static const` (or `static final`) members:
+The runtime tokens live in `lib/core/design/` — nine files. Most are `abstract final class`
+namespaces of `static const` (or `static final`) members; the two newest are not, and the
+difference is the point (see **Color is a vocabulary plus a derived ramp** below):
 
 | File | Namespace(s) |
 | --- | --- |
 | `colors.dart` | `AppColors` |
+| `color_roles.dart` | `AppColorRole`, `AppColorRoleKind` (enums — the closed color vocabulary) |
+| `oklch.dart` | `OklchColor`, `ColorRamp`, `rampFromSeed` (perceptual ramp derivation) |
+| `icons.dart` | `AppIcon` (enum), `IconPack`, `AppIconPackTheme`, `AppIconView` |
 | `spacing.dart` | `AppSpacing`, `AppRadius`, **`AppMotion`** |
 | `layout.dart` | **`AppLayout`** (band geometry, clamps, vertical rhythm) |
 | `typography.dart` | `AppFontFamily` (enum), `AppTypography` |
@@ -217,6 +221,39 @@ Two consequences worth stating, because both have already bitten:
   failed to compile until it was regenerated
   (`add-web-first-release-and-monetization` 1.0.6).
 
+## Color is a vocabulary plus a derived ramp
+
+Color is the one token family that is **not** canonical as a constant, and that break is
+deliberate. `AppSpacing.md` *is* `16.0` — there is no prior authority. A color is different: a
+screen never wants `#1F5EFF`, it wants "the one colored mark on this surface". So color has two
+layers, and only the lower one is data.
+
+**The vocabulary is closed.** `AppColorRole` (`color_roles.dart`) is 17 roles, each a thing a
+screen means. The 39 constants in `colors.dart` are one pack's worth of *values*, not the
+vocabulary — `lightBg`, `darkBg`, `monoLightBg`, and `monoDarkBg` are four values of the single
+role `background`, resolved by brightness and by the accessibility overlay. Every role carries
+an `AppColorRoleKind` (`surface` · `ink` · `signal`) naming which axis owns it, which is what
+makes the overlay's *selective* override checkable rather than conventional. Same mechanism as
+iconography above, and for the same reason: an exhaustive `switch` over a closed enum needs no
+`default`, so an incomplete pack is a compile error, not a fallback color at runtime.
+
+**Weights are derived in OKLCH, not listed as hexes.** `rampFromSeed` (`oklch.dart`) takes a
+seed to a weight ramp. HSL would have been free; it is wrong here, and the reason is measured
+rather than asserted (`test/core/design/oklch_test.dart`): yellow and blue at HSL `L 0.5`
+differ by more than **0.3** of the visible lightness range, while at OKLCH `L 0.6` they differ
+by less than **0.01**. The consequence is load-bearing — step *n* of any two hues is the same
+weight, so "the step that clears 4.5:1" is a property of the ramp instead of a per-color
+accident, and a contrast gate can be written once for every hue.
+
+Gamut handling encodes the same priority: a step outside sRGB **spends chroma, never hue**
+(bisection to the largest in-gamut chroma at fixed lightness and hue). Clipping RGB channels
+would rotate hue, which is the one guarantee a ramp makes. The conversion is ~140 lines of
+Ottosson's matrices with **no package added** — two matrix multiplies and a cube root each way
+does not clear the essentialist bar for a dependency.
+
+Full role table, precedence rule, and the derived-weights ruling:
+`../design/TOKENS.md#color-packs`.
+
 ## Accessible palettes are an orthogonal axis
 
 Color is selected on three independent axes: theme brightness (light/dark), viewing mode
@@ -227,6 +264,23 @@ user's accent/state/rating colors survive in prefs and return exactly when the p
 back to `standard`. Critically, **color is never the sole carrier of meaning**: rating buttons
 pair color with a distinct icon *and* label (WCAG 1.4.1), state pills pair color with a label.
 Full ramps are in `../design/TOKENS.md#accessible-palettes` — not duplicated here.
+
+Once packs are selectable the three axes need an order, and it is fixed: **`pack → brightness →
+AccessiblePalette overlay`, overlay last and winning.** Any other order is a silent regression
+of this section — a user on `deuteranopia` picks an attractive pack and quietly loses the
+Okabe–Ito guarantee the palette exists to provide. The `signal` kind on each role is how "the
+overlay replaces meaning-by-color and nothing else" is expressed in code rather than in prose.
+
+**The axis has a hole today, and it is measured.** 241 call sites across 58 files under
+`lib/features/` read `AppColors.*` constants directly instead of going through
+`Theme.of(context)` — `accent` ×72, `actionAgain` ×46, `stateMastery` ×37, and a tail. Those
+pixels bypass the overlay, so the deuteranopia guarantee does not reach them. Confirmed, not
+inferred: `lib/features/lab/widgets/milestone_list.dart:292` paints
+`AppColors.stateMastery` (`#1F8A70`) into a live decoration, and on `deuteranopia`
+`AppSemanticTheme` swaps mastery to `#009E73` while that widget keeps the unsafe green. This is
+the 434-site `Icons.*` situation from the icon pass, one layer down. Tracked as
+`openspec/changes/add-color-packs` 2.5, with the same fix shape: migrate the sites, then a
+conformance test with a zero-allowlist ban.
 
 ## Gotchas
 
@@ -242,6 +296,16 @@ Full ramps are in `../design/TOKENS.md#accessible-palettes` — not duplicated h
   renders Inter regardless of the user's font preference — usually correct, occasionally a bug.
 - **The CSS column is a promise.** `tokens.css` does not exist yet; treat any web-side token
   claim as unverified until the file lands and is checked against the Dart constants.
+- **`AppColors` is pack data, not the vocabulary.** Reaching for `AppColors.accent` in a widget
+  compiles and renders — and bypasses both the pack and the accessibility overlay. Read color
+  from `Theme.of(context)` / `AppSemanticTheme.of(context)`. The 241 existing violations are a
+  tracked migration (2.5), not precedent.
+- **`ColorScheme.error` does not follow the deuteranopia overlay.** It is hardwired to the
+  `actionAgain` value in every mode, so the "again" rating swaps to Okabe–Ito vermillion while
+  `error` stays `#C23B2A`. Known gap, tracked as `add-color-packs` 2.4 — do not read the
+  inconsistency as intentional.
+- **`oklch.dart` needs a *signed* cube root.** A round trip drives the LMS terms negative, where
+  `pow` returns NaN. Do not "simplify" `_cbrt` to `pow(x, 1/3)`.
 - **Shadows and depth are functions, not constants.** `AppShadows.soft(brightness)` and the
   `AppDepth` levels vary by brightness/elevation and inline their own `Color(0x…)` shadow
   alphas — these ARGB shadow colors are *not* on the grid and are not `AppColors` tokens; do
@@ -273,7 +337,9 @@ Full ramps are in `../design/TOKENS.md#accessible-palettes` — not duplicated h
 - `lib/core/design/layout.dart` — `AppLayout` (the stacked-viewport constitution);
   `lib/shared/widgets/app_screen.dart` — `AppScreen`/`AppSection`, the frame as a type.
 - `lib/core/design/typography.dart` — `AppTypography` scale + `AppFontFamily` enum.
-- `lib/core/design/colors.dart` — `AppColors` (incl. deuteranopia ramp).
+- `lib/core/design/colors.dart` — `AppColors` (incl. deuteranopia ramp); pack **data**.
+- `lib/core/design/color_roles.dart` — `AppColorRole`/`AppColorRoleKind`, the closed color
+  vocabulary; `lib/core/design/oklch.dart` — `rampFromSeed` and the sRGB ↔ OKLCH conversion.
 - `lib/core/design/theme.dart` — `AppShadows`, `AppSemanticTheme` (the `ThemeExtension` that
   wires tokens into `BuildContext`).
 - root `CLAUDE.md` — the "Design tokens", "Layout doctrine", and "Motion doctrine" locked
