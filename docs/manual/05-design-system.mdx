@@ -251,6 +251,29 @@ would rotate hue, which is the one guarantee a ramp makes. The conversion is ~14
 Ottosson's matrices with **no package added** — two matrix multiplies and a cube root each way
 does not clear the essentialist bar for a dependency.
 
+**A pack is `Color resolve(role, brightness)`, and deliberately nothing more.** It could have
+been a `(ColorScheme, AppSemanticTheme)` factory — the same information — but then a pack would
+know Material's slot names and could reach past its own axis. `ResolvedColors` is the seam:
+pack plus per-role overrides go in, role-addressed colors come out, and only `AppTheme` maps
+roles onto `ColorScheme` afterwards. Roles stop existing at exactly that line.
+
+The wiring reads axis by axis, which is what made `_build` shrink rather than grow: the six
+surface parameters (`bg`/`card`/`fill`/`text`/`secondary`/`separator`) and the hand-rolled
+`gray ? mono… : light…` ternaries at every call site are **gone**. The grayscale modes now
+express themselves as a *pack substitution* — `monoOutline` or the `monochrome` overlay
+substitutes the `mono` pack — so one concept replaced two branches. Overrides are dropped in
+those modes: a guarantee the user asked for outranks a preference they expressed earlier, and
+nothing is erased.
+
+**Unset must mean "use the pack".** `AppTheme`'s colour parameters are nullable for that
+reason, and it is not cosmetic: `accentColorProvider`, `learningStateColorsProvider`, and
+`ratingColorsProvider` each bake the `AppColors` fallback into their own state, so they cannot
+express "unset" — every read returns a colour. Feeding them straight into a theme would
+override whichever pack is selected with the classic values on every build, and choosing `mono`
+would leave the state pills pink. `colorRoleOverridesProvider` omits unset roles instead, and
+reads the *same preference keys* those three write, so there is one stored truth per role and
+no migration for a user who set an accent before packs existed.
+
 Full role table, precedence rule, and the derived-weights ruling:
 `../design/TOKENS.md#color-packs`.
 
