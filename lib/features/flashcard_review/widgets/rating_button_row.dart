@@ -3,14 +3,11 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:breakdex/core/design/spacing.dart';
 import 'package:breakdex/core/design/theme.dart';
 import 'package:breakdex/core/design/typography.dart';
 import 'package:breakdex/core/models/learning_state.dart';
-import 'package:breakdex/core/providers.dart';
-import 'package:breakdex/core/services/settings_service.dart';
 import 'package:breakdex/l10n/gen/app_localizations.dart';
 import 'package:breakdex/core/design/icons.dart';
 
@@ -26,7 +23,7 @@ import 'package:breakdex/core/design/icons.dart';
 /// same route. This widget used to read `ratingColorsProvider` directly and
 /// branch on `accessiblePaletteProvider` to decide which source won, which put a
 /// second copy of the precedence rule in a widget.
-class RatingButtonRow extends ConsumerWidget {
+class RatingButtonRow extends StatelessWidget {
   const RatingButtonRow({
     super.key,
     required this.onRate,
@@ -55,7 +52,7 @@ class RatingButtonRow extends ConsumerWidget {
   };
 
   @override
-  Widget build(final BuildContext context, final WidgetRef ref) {
+  Widget build(final BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
     final semantic = AppSemanticTheme.of(context);
     Color colorFor(final ReviewRating rating) =>

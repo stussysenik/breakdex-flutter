@@ -3,7 +3,7 @@ title: Testing & Verification
 name: testing
 order: 8
 status: verified
-verified: 872d7d2
+verified: 9e289a4
 watches:
   - test/**
   - .github/workflows/ci.yml
@@ -32,11 +32,11 @@ From these four, everything below is forced: the CI gate is a *floor* (it proves
 
 ## The test suite
 
-190 `*_test.dart` files under `test/`, split by layer (the jump from 110 is the Appwrite overnight wave — sync dual-write/dual-read/codec/backfill/migration suites — plus config/entitlement and web-seam tests):
+191 `*_test.dart` files under `test/`, split by layer (the jump from 110 is the Appwrite overnight wave — sync dual-write/dual-read/codec/backfill/migration suites — plus config/entitlement and web-seam tests):
 
 | Dir | Files | Covers |
 | --- | --- | --- |
-| `test/core/` | 133 | database + DAOs (incl. migration v22–v27 suites), state machines, sync (codecs, backfills, dual-read/write, tombstones, Appwrite backend/transport), config (remote config, update/entitlement gates), providers, models, design (5 — icons, accessible palettes, color roles, OKLCH), utils |
+| `test/core/` | 134 | database + DAOs (incl. migration v22–v27 suites), state machines, sync (codecs, backfills, dual-read/write, tombstones, Appwrite backend/transport), config (remote config, update/entitlement gates), providers, models, design (6 — icons, accessible palettes, color roles, OKLCH, color packs), utils |
 | `test/features/` | 43 | screen-level widget tests (move_list, flashcard_review, stats, add, flow, video_editor, party, auth, …) |
 | `test/shared/` | 9 | shared widgets, incl. the `AppScreen` frame and `BackLeading` |
 | `test/design/` | 2 | source-level conformance + the type baseline (see below) |
@@ -63,6 +63,13 @@ gap: HSL spreads yellow against blue by more than 0.3 of the visible lightness r
 less than 0.01. Reach for this shape when a design document contains a claim about the physical
 world that the implementation depends on. The alternative is a paragraph nobody can falsify,
 and the cost of being wrong is ~140 lines of arithmetic nobody needed.
+
+A fourth shape sits beside it: **the test that pins a known defect on purpose.**
+`color_packs_test.dart` asserts that grayscale modes still leak one red through
+`ColorScheme.error`, and names the task that will turn it red. The alternative — leaving the
+gap unasserted — loses it, and fixing it later looks like a regression to whoever runs the
+suite. A test can encode "this is wrong and tracked" as legitimately as "this is right", as
+long as the assertion says which.
 
 It pays immediately, and not in the way intended: the OKLCH gamut fit shipped with a tolerance
 of half an 8-bit step applied in *linear* RGB rather than encoded sRGB. The transfer function's
@@ -121,7 +128,7 @@ Five gates: dependency resolution, **l10n freshness**, **docs-ledger freshness**
 - `scripts/docs_ledger_check` diffs each verified manual chapter's `verified..HEAD` restricted to its `watches` globs (git plumbing only) and fails if a watched path changed without the chapter being re-verified ([Manual Meta](./12-meta.mdx)). This is why `checkout` needs `fetch-depth: 0` — a shallow clone can't reach a chapter's `verified` commit.
 - `flutter analyze` is the static gate. It must report `No issues found` — the `analysis_options.yaml` ruleset ([Standards](./09-standards.mdx)) is the real teeth here.
 
-**CI does NOT run `flutter test`.** (It does now build one artifact — the web bundle — but only as a compile gate; nothing is published from CI.) The 190-file suite is *not* enforced on push or PR. This is a deliberately honest statement of the current floor: green CI proves the code analyzes and l10n is current — it does **not** prove the tests pass. Running `flutter test` before handoff is a manual discipline (§9), not something the machine does for you. Do not read a green CI check as "tests pass."
+**CI does NOT run `flutter test`.** (It does now build one artifact — the web bundle — but only as a compile gate; nothing is published from CI.) The 191-file suite is *not* enforced on push or PR. This is a deliberately honest statement of the current floor: green CI proves the code analyzes and l10n is current — it does **not** prove the tests pass. Running `flutter test` before handoff is a manual discipline (§9), not something the machine does for you. Do not read a green CI check as "tests pass."
 
 `release.yml` is separate: it fires only on `push` to `main`, runs `npx semantic-release` (Node 20, Flutter pinned `3.41.3`) for monotonic versioning + CHANGELOG, then a `detect` step checks for an exact-match tag on HEAD and — when a new version published — chains the `deploy-web` reusable workflow with that tag (done via `needs:` rather than `on: push: tags` because tags pushed by `GITHUB_TOKEN` don't trigger downstream workflows; the deploy self-skips when Vercel secrets are unset). It is a publishing pipeline, not a verification gate — it presumes the branch already earned its way to `main`.
 
