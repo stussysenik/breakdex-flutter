@@ -265,7 +265,7 @@ once, but there is no code dependency between them and they may run in parallel.
   `lib/core/services/**` (8), `lib/core/providers/**` (10) — are context-free *defaults*, and
   substituting a theme read there is impossible, not merely awkward. They are 3.4's
   "bakes the fallback into its state" problem one layer down. Captured as **2.6**.
-- [ ] 2.5a **Signals — the live accessibility defect (114 sites).** Every
+- [x] 2.5a **Signals — the live accessibility defect (114 sites).** Every
   `AppColors.state{New,Learning,Mastery}` and `AppColors.action{Again,Hard,Good,Easy}` read in
   `lib/features/**` + `lib/shared/**` → `AppSemanticTheme.of(context).<field>`. Distribution:
   `actionAgain` 42 · `stateMastery` 33 · `actionGood` 16 · `actionHard` 11 ·
@@ -277,7 +277,28 @@ once, but there is no code dependency between them and they may run in parallel.
   `AccessiblePalette.deuteranopia` publishes `#009E73`. A widget test pumping that widget under
   the deuteranopia theme must fail before the sweep and pass after. One such test is the proof
   for the class; do not write 114 of them.
-- [ ] 2.5b **Accent, surfaces, and ink (95 sites).** `AppColors.accent` (68) →
+  <br/>**DONE 2026-07-30 (`1bff436`). 116 sites, not 114 — the estimate was low by two.** Raw
+  signal reads under `lib/features/**` + `lib/shared/**` are now **0**, verified by count and
+  held by 2.5c. RED/GREEN ran on the named target:
+  `test/features/lab/milestone_list_signal_theme_test.dart` pumps `MilestoneList` under
+  `AppTheme.light(palette: AccessiblePalette.deuteranopia)` and failed pre-sweep with
+  `Expected: not <2067056> / Actual: <2067056>` — `#1F8A70` reaching the pixel with the overlay
+  bypassed. A second case pins the standard palette so the fix cannot drift into always-deuter.
+  <br/>**The substitution was mechanical; the *scope* was not, and that is the finding.** A
+  blind text rewrite of `AppColors.X` → `AppSemanticTheme.of(context).X` compiles only where a
+  `BuildContext` is in reach. It was not, at ~23 sites — `statusStyle(String)` in
+  `combo_detail/widgets/status_tag.dart` is the clean specimen: a top-level function with no
+  `context` parameter, where all three rewritten arms named an identifier that does not exist.
+  The analyzer was used as the oracle to find every one, then each was plumbed: painters take a
+  resolved color read in `build`, and `statusStyle` / `dotColor` / `achievement_tile` take a
+  `BuildContext` or an `AppSemanticTheme`. No widget restates a `LearningState`/`ReviewRating`
+  switch, so no 3.6 defect was introduced. **A text-level sweep cannot honor the 2.6 split,
+  because the thing it must not touch is invisible at the text level** — scope is the input a
+  color migration needs and an icon migration did not.
+  <br/>Of the six named `const` sites, `calendar_view.dart:362,366` dropped `const` on the two
+  signal `_Dot`s while keeping it on the adjacent `Color(0xFF9333EA)` literal; the other four
+  resolved in the same sweep. Six now-unused `colors.dart` imports removed.
+- [x] 2.5b **Accent, surfaces, and ink (95 sites).** `AppColors.accent` (68) →
   `colorScheme.primary`; the 27 `light*`/`dark*` reads → the slot table above.
   <br/>**Not mechanical, and this is the whole risk of the unit:** a widget naming
   `AppColors.darkBg` (6) / `darkFill` (5) / `darkText` (3) / `darkCard` (2) /

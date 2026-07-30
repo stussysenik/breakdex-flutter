@@ -318,16 +318,48 @@ of this section — a user on `deuteranopia` picks an attractive pack and quietl
 Okabe–Ito guarantee the palette exists to provide. The `signal` kind on each role is how "the
 overlay replaces meaning-by-color and nothing else" is expressed in code rather than in prose.
 
-**The axis has a hole today, and it is measured.** 241 call sites across 58 files under
-`lib/features/` read `AppColors.*` constants directly instead of going through
-`Theme.of(context)` — `accent` ×72, `actionAgain` ×46, `stateMastery` ×37, and a tail. Those
-pixels bypass the overlay, so the deuteranopia guarantee does not reach them. Confirmed, not
-inferred: `lib/features/lab/widgets/milestone_list.dart:292` paints
-`AppColors.stateMastery` (`#1F8A70`) into a live decoration, and on `deuteranopia`
-`AppSemanticTheme` swaps mastery to `#009E73` while that widget keeps the unsafe green. This is
-the 434-site `Icons.*` situation from the icon pass, one layer down. Tracked as
-`openspec/changes/add-color-packs` 2.5, with the same fix shape: migrate the sites, then a
-conformance test with a zero-allowlist ban.
+**The hole in that axis is closed, and the closing taught three things** (`add-color-packs`
+2.5, 2026-07-30). The chapter used to record 241 raw `AppColors.*` reads in 58 files bypassing
+the overlay — `milestone_list.dart:292` keeping the unsafe `#1F8A70` under deuteranopia was the
+confirmed case. The gate was written first and found **275 sites in 55 files**: the figure had
+grown, because Phase 5 shipped a new settings surface into the same problem. All are migrated
+and `test/core/design/color_conformance_test.dart` now bans the read.
+
+**The ban is not zero-allowlist, unlike the icon ban, and the difference is structural.**
+`icons.dart` may be the only file naming an `IconData`, so that ban can be absolute. Colors
+have a **definition layer**: a pack seeds its roles from constants and a preference provider
+falls back to one, so an absolute ban outside `colors.dart` would forbid the mechanism from
+existing. The allowlist admits only files that *define what a role resolves to* — never one
+that *paints* with it, which a widget always does — and a second test asserts each entry still
+reads `AppColors`, so an exemption cannot outlive its reason. One entry is there for a
+different reason than the rest: `categories_service.dart`'s presets are **persisted user
+data**, and re-pointing them at the theme would make categories a user already saved drift when
+a pack changes.
+
+**Counting call sites understates this class of defect, because the worst bypasses never spell
+the constant.** Two were found only by migrating: `LearningState` and `ReviewRating` each
+carried a baked `Color` field, so a widget reading `state.color` skipped the theme without
+naming `AppColors` at all — invisible to the very gate meant to catch it (the field is now
+deleted; the lookup is `AppSemanticTheme.colorForState` / `colorForRating`). And a Riverpod
+`FutureProvider` in `calendar_view.dart` built rows carrying a resolved `Color`, deciding a
+pixel from a layer with no `BuildContext` (it now carries a *kind*; the widget resolves).
+**A domain enum or a provider holding a `Color` is the same defect as a raw constant, and it
+is harder to see.**
+
+**`AppMediaChrome` — for surfaces that are dark on purpose.** Video player, trim timeline and
+instax viewer named `AppColors.darkBg`/`darkCard`/`darkFill` because they must stay dark under
+a bright photo regardless of app brightness. The *intent* is legitimate, which is exactly why
+those constants survived every prior review. The `ThemeExtension` resolves the **active pack at
+`Brightness.dark`**: intent preserved, pixels returned to the theme, and a pack now owns its
+media chrome. Read it with `AppMediaChrome.of(context)`; never re-introduce a `dark*` constant
+for this.
+
+**A `CustomPainter` has no `BuildContext` — resolve in `build`, pass the value down.** Four
+painters and three top-level helpers were the migration's hard cases. Doing it correctly made
+`_FlowGraphPainter` *smaller*: passing the resolved ink deleted three
+`brightness == Brightness.light ? AppColors.lightText : AppColors.darkText` ternaries, because
+the theme already answers that question and duplicating it was precisely what kept the canvas
+outside the pack and the overlay.
 
 ## Gotchas
 

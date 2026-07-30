@@ -36,8 +36,8 @@ From these four, everything below is forced: the CI gate is a *floor* (it proves
 
 | Dir | Files | Covers |
 | --- | --- | --- |
-| `test/core/` | 134 | database + DAOs (incl. migration v22–v27 suites), state machines, sync (codecs, backfills, dual-read/write, tombstones, Appwrite backend/transport), config (remote config, update/entitlement gates), providers, models, design (6 — icons, accessible palettes, color roles, OKLCH, color packs), utils |
-| `test/features/` | 43 | screen-level widget tests (move_list, flashcard_review, stats, add, flow, video_editor, party, auth, …) |
+| `test/core/` | 136 | database + DAOs (incl. migration v22–v27 suites), state machines, sync (codecs, backfills, dual-read/write, tombstones, Appwrite backend/transport), config (remote config, update/entitlement gates), providers, models, design (8 — icons, accessible palettes, color roles, OKLCH, color packs, contrast, plus the color-conformance ban and its migration proof), utils |
+| `test/features/` | 44 | screen-level widget tests (move_list, flashcard_review, stats, add, flow, video_editor, party, auth, …) |
 | `test/shared/` | 9 | shared widgets, incl. the `AppScreen` frame and `BackLeading` |
 | `test/design/` | 2 | source-level conformance + the type baseline (see below) |
 | `test/` root | 3 | l10n foundation, preview-harness smoke, template widget test |
@@ -49,6 +49,15 @@ the category is defined by what it asserts, not by where it sits. Two shapes are
 - **Source-level.** `test/design/frame_conformance_test.dart` reads screen *source* and fails
   if a screen on the roster builds its own `Scaffold`/`AppBar`/`SliverAppBar`.
   `test/design/type_baseline_test.dart` is the same shape for the type scale.
+  `test/core/design/icon_conformance_test.dart` and `color_conformance_test.dart` ban raw
+  `Icons.*` and raw `AppColors.*` respectively. **The two bans are deliberately not the same
+  shape, and copying one onto the other is a mistake**: the icon ban is absolute
+  (zero-allowlist, since exactly one file may name an `IconData`), while the color ban admits a
+  named **definition layer**, because a pack must seed its roles from constants and a
+  preference provider must fall back to one — an absolute color ban would forbid the mechanism
+  from existing. A source-level ban is also **only a spelling check**: it cannot see a domain
+  enum or a provider that holds a resolved `Color`, which is why the color pass pairs it with
+  `color_migration_test.dart` (below).
 - **Structure-level.** `test/core/navigation/settings_section_transition_test.dart` walks the
   live `appRouter` and fails any `/settings-panel*` route declared without a `pageBuilder`,
   so a new settings section cannot ship with the default push transition by accident. It
@@ -70,6 +79,22 @@ A **property gate** is the same instinct applied to a whole matrix rather than o
 discipline that makes it usable is choosing pairs that correspond to real pixels — a matrix over
 every role against every other role would be larger, mostly meaningless, and would have to be
 weakened until it passed.
+
+A fifth shape closes the color work: **the test that asserts the pre-fix value fails.** A
+conformance ban proves nobody *spells* the banned name; it cannot prove the migrated call sites
+now render what the theme says. `test/core/design/color_migration_test.dart` reads the migrated
+helpers under `AccessiblePalette.deuteranopia` and asserts they return Okabe–Ito `#009E73`, not
+the classic `#1F8A70` they were pinned to — and that claim was **run red**: restoring the
+constant at one `statusStyle` case turns two tests red, reverting the revert returns all seven
+green. Pair a spelling gate with a behavioral one whenever the migration's whole point is a
+behavior the spelling cannot see.
+
+**A gotcha that cost a wrong diagnosis in that pass, and will cost you one too:** `MaterialApp`
+wraps its child in an `AnimatedTheme`, so swapping `theme:` between pumps is **lerped**, and
+`ThemeExtension.lerp` holds the *old* value for `t < 0.5`. A single `pump()` therefore reads
+the **previous** theme. The first run of these tests reported the classic green under
+deuteranopia and looked exactly like a failed migration; the migration was fine and the harness
+was lying. Use `pumpAndSettle()` after any theme swap you intend to read.
 
 A fourth shape sits beside it: **the test that pins a known defect on purpose.**
 `color_packs_test.dart` asserts that grayscale modes still leak one red through
@@ -238,6 +263,6 @@ Not every red test is your bug. The suite carried a documented set of failures b
 - `scripts/distribute.sh` — one-command artifact gate for web, Android APK/AAB, unsigned iOS
   compile, and signed iOS IPA when owner signing is configured.
 - `scripts/check_l10n.sh` — the l10n-freshness gate (`flutter gen-l10n` + `git diff` on `lib/l10n/gen`).
-- `test/` — 188 `*_test.dart` files; `test/helpers/` for in-memory Drift fixtures.
+- `test/` — 194 `*_test.dart` files; `test/helpers/` for in-memory Drift fixtures.
 - `pubspec.yaml` — `flutter_test` / `integration_test` / `patrol ^4.6.1` (patrol provisioned, no `integration_test/` flows yet).
 - root `CLAUDE.md` — §9 Binary Truth and the brownfield "verify on a real build" ruling.

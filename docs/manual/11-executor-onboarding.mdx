@@ -59,6 +59,13 @@ Do this before anything else, every session:
    ([`#ledger-1`](./09-standards.mdx#ledger-1)).
 4. **If the task is owner-gated, stop and surface it** — then work only the parallel-allowed
    track the NOW block names, nothing else.
+   <br/>**The same applies to a lane mismatch, which is easier to miss.** The next unticked task
+   may belong to a *different session type* — a change's disposition table can mark an item
+   Scholar or Teacher (`6.6` and `6.8` in `redesign-visual-first-experience` both are). An
+   Executor cannot open one: the deliverable is a spec, not code, and improvising the missing
+   decision in the implementation is exactly the bias the three lanes exist to prevent. Say so,
+   pick up the nearest *implementable* open task, and record the reroute — do not silently
+   implement a Teacher task, and do not stall with nothing delivered.
 5. **Append one line to `docs/manual/session.log`**:
    `YYYY-MM-DDThh:mm+TZ <role> <change-name> <what happened>`, including what is *not* proven.
 
