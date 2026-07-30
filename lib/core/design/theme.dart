@@ -6,6 +6,7 @@ import 'package:breakdex/core/services/settings_service.dart';
 import 'package:breakdex/core/design/color_packs.dart';
 import 'package:breakdex/core/design/color_roles.dart';
 import 'package:breakdex/core/design/colors.dart';
+import 'package:breakdex/core/design/contrast.dart';
 import 'package:breakdex/core/design/icons.dart';
 import 'package:breakdex/core/design/spacing.dart';
 import 'package:breakdex/core/design/typography.dart';
@@ -370,6 +371,18 @@ abstract final class AppTheme {
     };
   }
 
+  /// Whichever of [ink] and [bg] reads better on [color].
+  ///
+  /// Used only where the overlay chose [color] and the pack's paired ink no
+  /// longer applies. Measured rather than assumed: white is the reflex answer
+  /// and it is wrong on Okabe–Ito vermillion in light mode, where the reading
+  /// ink clears 4.5:1 and white does not.
+  static Color _legibleInkOn(
+    final Color color, {
+    required final Color ink,
+    required final Color bg,
+  }) => contrastRatio(ink, color) >= contrastRatio(bg, color) ? ink : bg;
+
   static ThemeData _build({
     required final Brightness brightness,
     required final ColorPackId pack,
@@ -394,17 +407,6 @@ abstract final class AppTheme {
       grayscale ? ColorPackId.mono.pack : pack.pack,
       brightness,
       overrides: grayscale ? const {} : overrides,
-    ).copyWith(
-      grayscale
-          // `ColorScheme.error` is hardwired to the "again" value in the shipped
-          // theme and does not follow any overlay — so a grayscale mode leaks one
-          // red. Preserved deliberately: 3.2 requires byte-identity with the
-          // pre-pack build. The leak is add-color-packs 2.4, an overlay fix.
-          ? const {
-              AppColorRole.error: AppColors.actionAgain,
-              AppColorRole.onError: Colors.white,
-            }
-          : const {},
     );
 
     final bg = colors[AppColorRole.background];
@@ -434,6 +436,20 @@ abstract final class AppTheme {
         actionEasy: colors[AppColorRole.actionEasy],
       ),
     };
+    // Axis 3 owns `error` too. It is an `AppColorRoleKind.signal`, and a signal
+    // that survives the overlay is precisely what the overlay exists to prevent
+    // (2.4): the shipped theme hardwired it to the classic "again" hex in every
+    // mode, so deuteranopia moved the rating to Okabe–Ito vermillion while an
+    // error surface stayed unsafe red, and monochrome kept one red while
+    // claiming no color survives. The pack still seeds the role — under
+    // `standard` its value is used verbatim, so a pack may name a failed
+    // condition independently of the "again" rating — but an overlay publishes
+    // one safe value for that meaning and it wins here like everywhere else.
+    final overlayOwnsSignals =
+        isMonoOutline || palette != AccessiblePalette.standard;
+    final errorColor = overlayOwnsSignals
+        ? semanticTheme.actionAgain
+        : colors[AppColorRole.error];
     final textTheme = AppTypography.textTheme(text, secondary, family: family);
     final colorScheme = ColorScheme(
       brightness: brightness,
@@ -443,8 +459,14 @@ abstract final class AppTheme {
       onSecondary: text,
       surface: card,
       onSurface: text,
-      error: colors[AppColorRole.error],
-      onError: colors[AppColorRole.onError],
+      error: errorColor,
+      // The pack's `onError` sits on the pack's `error`; once the overlay has
+      // renamed the color, that pairing is stale, so the ink is re-chosen by
+      // measured contrast between the only two inks the theme can guarantee are
+      // on-palette — the reading ink and the background it reads on.
+      onError: overlayOwnsSignals
+          ? _legibleInkOn(errorColor, ink: text, bg: bg)
+          : colors[AppColorRole.onError],
       surfaceContainerHighest: fill,
       outline: separator,
     );

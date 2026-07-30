@@ -83,10 +83,10 @@ class _ClassicColorPack extends ColorPack {
       // White on both brightnesses, matching the shipped `onPrimary`. The
       // grayscale modes swap it for the background; that is the overlay's job.
       AppColorRole.onAccent => Colors.white,
-      // Hardwired to the "again" value in the shipped theme. Tracked as
-      // add-color-packs 2.4: as a signal it should follow the accessibility
-      // overlay, and today it does not. Kept identical here because 3.2
-      // requires byte-identity — the fix is an overlay change, not a pack one.
+      // The same value the shipped theme used for a failed condition. A pack
+      // may seed this independently of the rating — the roles are distinct
+      // meanings — but classic does not, and 2.4 made that a pack's choice
+      // rather than a hardwire: an overlay now replaces it like any signal.
       AppColorRole.error => AppColors.actionAgain,
       AppColorRole.onError => Colors.white,
       AppColorRole.stateNew => AppColors.stateNew,

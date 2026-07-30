@@ -106,6 +106,58 @@ void main() {
       expect(semantic.isMonoOutline, isFalse);
     });
 
+    // 2.4 — `error` is an AppColorRoleKind.signal, so the overlay owns it like
+    // every other signal. It was hardwired to the classic `actionAgain` hex in
+    // every mode, which leaked one unsafe red into both accessible palettes:
+    // deuteranopia moved the "again" rating to Okabe–Ito vermillion while an
+    // error surface stayed #C23B2A, and monochrome kept it while claiming no
+    // color survives. Asserted per palette rather than "error == actionAgain",
+    // so a pack seeding `error` independently stays free to under `standard`.
+    test('every signal follows the overlay, `error` included', () {
+      for (final build in <ThemeData Function(AccessiblePalette)>[
+        (final p) => AppTheme.light(palette: p),
+        (final p) => AppTheme.dark(palette: p),
+      ]) {
+        final deuter = build(AccessiblePalette.deuteranopia);
+        expect(
+          deuter.colorScheme.error,
+          AppColors.deuterActionAgain,
+          reason: 'deuteranopia must reach ColorScheme.error, not just the ramp',
+        );
+
+        final mono = build(AccessiblePalette.monochrome);
+        expect(
+          mono.colorScheme.error,
+          _semanticOf(mono).actionAgain,
+          reason: 'monochrome claims no color survives — error is not exempt',
+        );
+        expect(
+          mono.colorScheme.error,
+          isNot(AppColors.actionAgain),
+          reason: 'the shipped red is exactly what a grayscale mode must drop',
+        );
+      }
+    });
+
+    // The overlay must not hand back an unreadable pair: whatever it names for
+    // a failed condition, the ink on top of it is chosen for contrast, not
+    // inherited from the pack that no longer owns the color.
+    test('onError stays legible against whatever the overlay names', () {
+      for (final palette in AccessiblePalette.values) {
+        for (final theme in [
+          AppTheme.light(palette: palette),
+          AppTheme.dark(palette: palette),
+        ]) {
+          final scheme = theme.colorScheme;
+          expect(
+            contrastRatio(scheme.onError, scheme.error),
+            greaterThanOrEqualTo(4.5),
+            reason: 'onError on error, palette ${palette.name}',
+          );
+        }
+      }
+    });
+
     test('standard is unchanged and returns exactly on toggle-off', () {
       // A baseline theme built before any palette was ever chosen.
       final baseline = AppTheme.light();

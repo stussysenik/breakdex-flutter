@@ -36,6 +36,17 @@ code is a review violation to reconcile before building on it.
 executes the next task exactly. This split only works because the manual lets the student locate
 every seam without archaeology — which is why the manual exists.
 
+**A crew, when there is one.** Root `CLAUDE.md` → **Crew protocol** splits any one lane across
+three agents: **A** architect (plan, ledger, conflict rulings), **B** executor (code + the tests
+that prove it), **C** auditor (the gate report, stated as what is and is *not* proven). It does
+not add a fourth session type — a crew is still one lane, and A/B/C never mix Scholar with
+Student any more than a solo session may. Two rules matter more than the roster: **B and C never
+talk to each other** (A is the hub, and A decides when they disagree), and **every finding lands
+in `tasks.md`** — a handoff that exists only in a conversation did not happen, which is the same
+reason the `session.log` line is non-negotiable below. The per-handoff token caps are a
+decomposition instrument, not a budget: a task whose assignment does not fit on a screen is the
+wrong size, and the fix is at the spec level, not the implementation's.
+
 ## The session-start protocol
 
 Do this before anything else, every session:

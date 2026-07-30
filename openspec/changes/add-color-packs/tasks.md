@@ -97,12 +97,33 @@ once, but there is no code dependency between them and they may run in parallel.
   honored at every pixel (2.4, 2.5) — the vocabulary is the target, not yet the whole of what
   renders. Chapters 05 and 08 re-read and re-stamped; `docs_ledger_check` green.
 
-- [ ] 2.4 **`ColorScheme.error` does not follow the accessibility overlay.** Found by 2.2. It
-  is hardwired to the `actionAgain` value in every mode, so on `deuteranopia` the "again"
-  rating becomes Okabe–Ito vermillion while `error` stays the unsafe `#C23B2A`. Decide
-  whether `error` tracks `actionAgain` per-pack (and therefore follows the overlay) or is an
-  independently seeded role, then make the overlay own it. Blocks nothing in Phases 3–5; the
-  pack mechanism is indifferent to which way it resolves.
+- [x] 2.4 **`ColorScheme.error` does not follow the accessibility overlay.** Found by 2.2. It
+  was hardwired to the `actionAgain` value in every mode, so on `deuteranopia` the "again"
+  rating became Okabe–Ito vermillion while `error` stayed the unsafe `#C23B2A`, and
+  `monochrome` kept one red while claiming no color survives.
+  <br/>**Ruled: neither branch of the either/or — `error` stays an independently seeded
+  role, *and* the overlay owns it.** The two options in this task were a false choice.
+  Making `error` track `actionAgain` per-pack would buy overlay-following by deleting a
+  distinction the vocabulary was written to make (2.1's whole point), while leaving it
+  pack-seeded and overlay-free is the defect. A pack seeds it under `standard`; an overlay
+  publishes one safe value for a failed condition and wins, exactly as it does for the other
+  seven signals. Nothing in the vocabulary changed — `error` was already
+  `AppColorRoleKind.signal`, which is what made the leak visible at all.
+  <br/>RED/GREEN: the assertion `accessible_palette_test.dart` gained fails on the pre-fix
+  build with vermillion expected and `#C23B2A` actual. The retired counter-assertion is the
+  proof from the other side — `color_packs_test.dart` carried a test that *pinned the leak*
+  ("this assertion is what will go red when it lands"), and it did; it now asserts the
+  byte-identity that survives, which is `standard` only.
+  <br/>**`onError` could not ride along and is the non-obvious half.** Once the overlay
+  renames the color, the pack's paired ink is stale, and white — the reflex answer, and what
+  the hardwire shipped — measures **3.9:1 on Okabe–Ito vermillion in light mode**, under
+  4.5:1. `AppTheme._legibleInkOn` re-picks between the reading ink and the background by
+  measured `contrastRatio`; the reading ink wins there at 5.4:1. Gated for every palette ×
+  both brightnesses, so a future overlay value cannot reintroduce an unreadable pair.
+  <br/>Second-order win: the grayscale `copyWith` block in `AppTheme._build` that existed
+  *only* to preserve the leak is deleted. The mono pack already resolved `error` to ink and
+  `onError` to the background, so the correct grayscale result now falls out of the pack
+  substitution instead of being re-stated as an exception to it.
 - [ ] 2.5 **241 raw `AppColors.*` sites in 58 files bypass the theme.** Found by 2.1. Until
   they read roles through `Theme.of(context)`, a pack selection will not change those pixels
   and the `AccessiblePalette` overlay does not reach them either (confirmed at

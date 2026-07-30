@@ -65,9 +65,10 @@ enum AppColorRole {
   onAccent(AppColorRoleKind.ink),
 
   /// A destructive or failed condition. Distinct from [actionAgain] as a
-  /// *meaning* even where a pack happens to give both the same value — today's
-  /// hardwire of `ColorScheme.error` to the "again" rating is precisely the kind
-  /// of untracked coincidence this vocabulary exists to make explicit.
+  /// *meaning* even where a pack happens to give both the same value — the old
+  /// hardwire of `ColorScheme.error` to the "again" rating was precisely the
+  /// kind of untracked coincidence this vocabulary exists to make explicit, and
+  /// naming it is what surfaced that it followed no overlay at all (2.4).
   error(AppColorRoleKind.signal),
 
   /// Ink legible on top of [error].

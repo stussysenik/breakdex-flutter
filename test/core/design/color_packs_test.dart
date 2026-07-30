@@ -202,28 +202,19 @@ void main() {
       expect(dark.colorScheme.onPrimary, AppColors.monoDarkBg);
     });
 
-    test(
-      'grayscale still leaks one red through ColorScheme.error — 2.4, preserved',
-      () {
-        // Not an endorsement: `error` is hardwired to the "again" value in every
-        // mode and follows no overlay, so monochrome shows one colored pixel and
-        // deuteranopia keeps an unsafe red. Pinned here because 3.2 requires
-        // byte-identity with the pre-pack build; the fix is add-color-packs 2.4,
-        // and this assertion is what will go red when it lands.
-        expect(
-          AppTheme.light(palette: AccessiblePalette.monochrome)
-              .colorScheme
-              .error,
-          AppColors.actionAgain,
-        );
-        expect(
-          AppTheme.light(palette: AccessiblePalette.deuteranopia)
-              .colorScheme
-              .error,
-          AppColors.actionAgain,
-        );
-      },
-    );
+    test('ColorScheme.error is byte-identical where the overlay is off', () {
+      // This assertion used to pin the *opposite*: `error` was hardwired to the
+      // "again" value in every mode, so monochrome showed one colored pixel and
+      // deuteranopia kept an unsafe red, preserved only because 3.2 demanded
+      // byte-identity. 2.4 handed the role to the overlay, so byte-identity now
+      // means what it should have meant — identical under `standard`, replaced
+      // under an overlay. The replacement side is asserted per palette in
+      // `accessible_palette_test.dart`, next to the other signals it joined.
+      for (final theme in [AppTheme.light(), AppTheme.dark()]) {
+        expect(theme.colorScheme.error, AppColors.actionAgain);
+        expect(theme.colorScheme.onError, Colors.white);
+      }
+    });
   });
 
   group('mono pack', () {
