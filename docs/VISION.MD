@@ -29,9 +29,9 @@ The primary user is an active breaker building a personal library under real fat
 ## Release Snapshot
 
 <!-- release:meta:start -->
-- Release tag: `v1.6.0`
+- Release tag: `v1.6.1`
 - Release version: `1.6.0`
-- Pubspec version: `1.6.0+8`
+- Pubspec version: `1.6.1+9`
 - Released: `2026-07-30`
 - Metadata refreshed: `2026-07-30`
 <!-- release:meta:end -->
@@ -40,9 +40,9 @@ The primary user is an active breaker building a personal library under real fat
 
 <!-- release:provenance:start -->
 - Source branch: `main`
-- Source revision: `75ce401`
-- Source commit: `75ce401c63ab16270430364417588abc043cdd98`
-- Source describe: `v1.5.0-22-g75ce401`
+- Source revision: `a94108a`
+- Source commit: `a94108ac0085e1d18f0be3498ec503cc05f4d716`
+- Source describe: `v1.6.0-13-ga94108a`
 - Generator: `scripts/update_release_metadata.cjs`
 - Inputs: `docs/CHANGELOG.md`, `pubspec.yaml`, and local git metadata
 <!-- release:provenance:end -->

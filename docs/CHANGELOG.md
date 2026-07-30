@@ -1,3 +1,10 @@
+## [1.6.1](https://github.com/stussysenik/breakdex-flutter/compare/v1.6.0...v1.6.1) (2026-07-30)
+
+
+### Bug Fixes
+
+* **theme:** overlay owns error ([0200b2c](https://github.com/stussysenik/breakdex-flutter/commit/0200b2cbc213002b8d7760f551f93c9385e23367))
+
 # [1.6.0](https://github.com/stussysenik/breakdex-flutter/compare/v1.5.0...v1.6.0) (2026-07-30)
 
 
