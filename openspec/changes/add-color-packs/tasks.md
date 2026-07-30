@@ -14,15 +14,41 @@ once, but there is no code dependency between them and they may run in parallel.
 
 ## Phase 1: Perceptual ramp
 
-- [ ] 1.1 sRGB ↔ OKLab ↔ OKLCH conversion in `lib/core/design/oklch.dart` (~40 LOC, no
+- [x] 1.1 sRGB ↔ OKLab ↔ OKLCH conversion in `lib/core/design/oklch.dart` (~40 LOC, no
   package — D2). Round-trip is lossless within tolerance.
-- [ ] 1.2 Ramp derivation: seed + weight step → color, monotonic in lightness, hue preserved
+  <br/>**DONE 2026-07-30.** Ottosson's matrices, no package. Round trip holds within half an
+  8-bit code point for all 11 shipped seeds and a 52-point hue sweep; the sRGB primaries and
+  white match the published `oklch()` values within 1e-4. Two shapes the arithmetic needed
+  that the spec did not name: a **signed** cube root (a round trip drives the LMS terms
+  negative, where `pow` returns NaN) and hue pinned to 0 below chroma 1e-6 (`atan2` of
+  numerically-zero chroma is noise, which would hue-jitter a gray seed's ramp).
+- [x] 1.2 Ramp derivation: seed + weight step → color, monotonic in lightness, hue preserved
   within a stated tolerance.
-- [ ] 1.3 `test/core/design/oklch_test.dart` — round-trip fidelity, known-value conversions
+  <br/>**DONE 2026-07-30.** `rampFromSeed` distributes lightness linearly 0.97 → 0.22; the
+  seed contributes hue and chroma only, so step *n* of any two ramps is the same weight
+  (measured spread < 0.01 L across five hues). Out-of-gamut steps **spend chroma, never hue**
+  — bisection to the largest in-gamut chroma at fixed (L, h), because channel clipping
+  rotates hue. Stated tolerance: hue holds within **2°** across every step, and the fit moves
+  L and h by float noise only (1e-6 / 1e-4).
+  <br/>**Defect found and fixed in the same pass:** the gamut test used half an 8-bit step as
+  its tolerance but applied it in *linear* RGB. The transfer function's slope near black is
+  12.92, so a linear overshoot of 0.002 became six encoded code points and the clamp moved
+  hue by **3.5°** — breaking the one guarantee the fit exists to provide. The bound is now
+  float noise (1e-9), so the clamp is unreachable rather than merely small. The test
+  tolerances were tightened to match; the loose ones passed the broken code.
+- [x] 1.3 `test/core/design/oklch_test.dart` — round-trip fidelity, known-value conversions
   against published OKLab reference values, ramp monotonicity, hue stability across steps.
-- [ ] 1.4 Red-prove 1.2 against an HSL ramp: assert that two hues at the same step differ
+  <br/>**DONE 2026-07-30.** 16 tests, all green: conversion (5), gamut fitting (2), ramp
+  (5), HSL comparison (3, task 1.4). Chroma taper proven not to touch an achromatic seed, so
+  the same call yields the grayscale ramp the `mono` pack needs.
+- [x] 1.4 Red-prove 1.2 against an HSL ramp: assert that two hues at the same step differ
   perceptibly in lightness under HSL and do not under OKLCH. This is the claim D2 rests on;
   it should be a test, not a paragraph.
+  <br/>**DONE 2026-07-30 — measured.** Yellow (60°) and blue (240°) at HSL lightness 0.5
+  differ by **>0.3** perceived lightness — about a third of the visible range at the same
+  nominal "lightness". The same two hues at OKLCH L 0.6 differ by **<0.01**. At ramp scale
+  across nine steps: worst HSL spread **>0.15**, worst OKLCH spread **<0.01**. D2 is now a
+  test, not a paragraph.
 
 ## Phase 2: Role vocabulary
 
