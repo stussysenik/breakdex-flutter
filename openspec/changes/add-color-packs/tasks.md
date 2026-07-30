@@ -191,15 +191,60 @@ once, but there is no code dependency between them and they may run in parallel.
 
 ## Phase 4: Guarantees
 
-- [ ] 4.1 Extend `test/core/design/accessible_palette_test.dart` to run its existing contrast
+- [x] 4.1 Extend `test/core/design/accessible_palette_test.dart` to run its existing contrast
   assertions across **every pack × both brightnesses**. A shipped pack failing contrast fails
   CI.
-- [ ] 4.2 Axis-precedence test: for each accessible palette, assert pack selection cannot
+  <br/>**DONE 2026-07-30 — with a corrected premise.** The task says "its existing contrast
+  assertions"; **there were none.** That file asserted role *identity* (deuteranopia swaps the
+  ramp, monochrome inks it) and the icon+label double-encoding, but never a ratio. So 4.1 was
+  writing the gate, not extending one. `lib/core/design/contrast.dart` holds WCAG 2.1 relative
+  luminance — kept **separate from `oklch.dart` on purpose**: OKLab lightness is perceptual and
+  WCAG luminance is photometric, they disagree, and deriving one from the other returns
+  plausible wrong numbers. Phase 5.3's live readout uses the same function.
+  <br/>Gated across every pack × both brightnesses: text and secondary text on all three
+  surfaces, `onAccent` on `accent`, `onError` on `error` at **4.5:1** (SC 1.4.3); every signal
+  on `card` and `background` at **3:1** (SC 1.4.11 — 3:1 rather than 4.5:1 because no signal
+  carries meaning alone, which is asserted separately in the same file). Overlay-doesn't-lower-
+  contrast is asserted for all three palettes. Measured worst cases: text 15.78:1, secondary
+  5.60:1, `onAccent` 5.12:1, signals 3.12:1.
+  <br/>**Two measured facts recorded rather than gated**, both in the shipped palette:
+  `separator` on `background` is **1.27:1** in classic light — a deliberate aesthetic
+  (`~/CLAUDE.md`: prefer surface value over hairlines) and WCAG-exempt as decoration, so
+  gating it would fail the design doctrine, not the palette. And `actionEasy` on `fill` is
+  **2.98:1** in classic light, short of 3:1 by 0.02 — pinned by an assertion that names 4.5 as
+  the task, because no shipped surface paints a raw signal on `fill` (rating pills composite at
+  alpha 0.10, a different number) and moving a shipped hex is a design call, not a test's.
+- [x] 4.2 Axis-precedence test: for each accessible palette, assert pack selection cannot
   alter the colors that palette guarantees; and that returning to `standard` restores the
   pack and every per-role override unchanged.
-- [ ] 4.3 Pack-completeness test: every pack resolves every role in both brightnesses.
-- [ ] 4.4 Persistence test: unset → `classic`; unknown key → `classic` without throwing; a
+  <br/>**DONE 2026-07-30** (landed with 3.5, `color_packs_test.dart`). Five assertions:
+  the overlay replaces signals the pack supplied; no pack can defeat the deuteranopia
+  guarantee; no per-role override can either; the pack still supplies surfaces under
+  deuteranopia; and monochrome makes pack selection invisible. Non-destructiveness is asserted
+  end to end — pack `mono` + an accent override, through `monochrome`, back to `standard`,
+  byte-equal to before.
+- [x] 4.3 Pack-completeness test: every pack resolves every role in both brightnesses.
+  <br/>**DONE 2026-07-30** (landed with 3.1). Two forms: `resolve` returns normally for every
+  pack × brightness × role, and `ResolvedColors` is total by construction because it is built
+  from `AppColorRole.values` rather than accumulated by callers. The compile-time guarantee is
+  the real gate; this is the runtime backstop.
+- [x] 4.4 Persistence test: unset → `classic`; unknown key → `classic` without throwing; a
   stored preference is not overridden by a default change or a newly added pack.
+  <br/>**DONE 2026-07-30.** 11 tests in `theme_providers_test.dart`: unset → `classic`,
+  unknown key → `classic`, selection survives a restart (fresh container over the same prefs),
+  unset roles **absent** from the override map, override round-trips a restart, `clear` returns
+  a role to the pack and removes the key, every role's key is unique, and `fromKey` matches by
+  key rather than ordinal so inserting an enum value cannot move an existing selection.
+  <br/>Two tests cover the shared-key seam specifically: a pre-pack install carrying
+  `accent_color` / `learning_state_color_mastery` / `rating_color_easy` is **adopted, not
+  orphaned**, and a write through either reader is visible to the other.
+
+- [ ] 4.5 **`actionEasy` on `fill` is 2.98:1 in classic light.** Measured by 4.1. Teal
+  `#0D9F9A` on `#F1F5F9`, short of the 3:1 graphical-object threshold by 0.02. Not gated: no
+  shipped surface paints a raw signal on `fill`, and changing a shipped hex is owner-visible.
+  Resolve it in 6.2 (the new handpicked family) rather than by nudging one value — the derived
+  ramp is what makes "the step that clears 3:1" a property of the ramp instead of a per-color
+  accident, so a hand-nudge here re-creates the problem the ramp exists to remove.
 
 ## Phase 5: Catalogue and Settings
 

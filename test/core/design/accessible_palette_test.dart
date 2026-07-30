@@ -1,4 +1,7 @@
+import 'package:breakdex/core/design/color_packs.dart';
+import 'package:breakdex/core/design/color_roles.dart';
 import 'package:breakdex/core/design/colors.dart';
+import 'package:breakdex/core/design/contrast.dart';
 import 'package:breakdex/core/design/icons.dart';
 import 'package:breakdex/core/design/theme.dart';
 import 'package:breakdex/core/models/learning_state_colors.dart';
@@ -176,4 +179,116 @@ void main() {
       expect(find.text('EASY'), findsOneWidget);
     },
   );
+
+  group('contrast — every shipped pack, both brightnesses', () {
+    // D5: a pack **we** ship failing contrast is our defect and is gated here. A
+    // user's own per-role override is not — the picker shows the ratio and
+    // accepts the value either way.
+    //
+    // Pairs are chosen to match pixels that actually render. Thresholds are
+    // WCAG 2.1: 4.5:1 for text (SC 1.4.3), 3:1 for graphical objects whose shape
+    // must be discernible (SC 1.4.11). Signals get 3:1 rather than 4.5:1 because
+    // none of them carries meaning alone — every one is paired with an icon and a
+    // label, which is asserted separately above.
+    const textPairs = <(AppColorRole, AppColorRole)>[
+      (AppColorRole.text, AppColorRole.background),
+      (AppColorRole.text, AppColorRole.card),
+      (AppColorRole.text, AppColorRole.fill),
+      (AppColorRole.secondaryText, AppColorRole.background),
+      (AppColorRole.secondaryText, AppColorRole.card),
+      (AppColorRole.secondaryText, AppColorRole.fill),
+      (AppColorRole.onAccent, AppColorRole.accent),
+      (AppColorRole.onError, AppColorRole.error),
+    ];
+
+    test('text clears 4.5:1 on every surface it renders on', () {
+      for (final id in ColorPackId.values) {
+        for (final brightness in Brightness.values) {
+          final colors = ResolvedColors.of(id.pack, brightness);
+          for (final (foreground, background) in textPairs) {
+            final ratio = contrastRatio(colors[foreground], colors[background]);
+            expect(
+              ratio,
+              greaterThanOrEqualTo(4.5),
+              reason:
+                  '${id.name}/${brightness.name}: ${foreground.name} on '
+                  '${background.name} is ${ratio.toStringAsFixed(2)}:1',
+            );
+          }
+        }
+      }
+    });
+
+    test('every signal clears 3:1 on card and background', () {
+      for (final id in ColorPackId.values) {
+        for (final brightness in Brightness.values) {
+          final colors = ResolvedColors.of(id.pack, brightness);
+          for (final signal in AppColorRole.signals) {
+            for (final surface in [
+              AppColorRole.card,
+              AppColorRole.background,
+            ]) {
+              final ratio = contrastRatio(colors[signal], colors[surface]);
+              expect(
+                ratio,
+                greaterThanOrEqualTo(3),
+                reason:
+                    '${id.name}/${brightness.name}: ${signal.name} on '
+                    '${surface.name} is ${ratio.toStringAsFixed(2)}:1',
+              );
+            }
+          }
+        }
+      }
+    });
+
+    test('MEASURED, NOT GATED: actionEasy on fill is 2.98:1 in classic light', () {
+      // Teal #0D9F9A on #F1F5F9. It fails 3:1 by 0.02, and it is recorded here
+      // rather than gated for two reasons: no shipped surface paints a raw signal
+      // on `fill` (rating pills composite the signal at alpha 0.10 over the
+      // surface, so the real ratio is a different number), and moving a shipped
+      // hex is a design decision, not a test's call. Tracked as add-color-packs
+      // 4.5. If this assertion starts failing, the palette changed — re-measure
+      // the whole table rather than editing the number.
+      final classicLight = ResolvedColors.of(
+        ColorPackId.classic.pack,
+        Brightness.light,
+      );
+      expect(
+        contrastRatio(
+          classicLight[AppColorRole.actionEasy],
+          classicLight[AppColorRole.fill],
+        ),
+        closeTo(2.98, 0.01),
+      );
+    });
+
+    test('the accessibility overlays do not lower text contrast', () {
+      // The overlay replaces signals; if it ever touched surfaces or ink, this
+      // is where a regression would land.
+      for (final palette in AccessiblePalette.values) {
+        for (final theme in [
+          AppTheme.light(palette: palette),
+          AppTheme.dark(palette: palette),
+        ]) {
+          final scheme = theme.colorScheme;
+          expect(
+            contrastRatio(scheme.onSurface, scheme.surface),
+            greaterThanOrEqualTo(4.5),
+            reason: '${palette.name}: onSurface on surface',
+          );
+          expect(
+            contrastRatio(scheme.onSurface, theme.scaffoldBackgroundColor),
+            greaterThanOrEqualTo(4.5),
+            reason: '${palette.name}: onSurface on scaffold',
+          );
+          expect(
+            contrastRatio(scheme.onPrimary, scheme.primary),
+            greaterThanOrEqualTo(4.5),
+            reason: '${palette.name}: onPrimary on primary',
+          );
+        }
+      }
+    });
+  });
 }
