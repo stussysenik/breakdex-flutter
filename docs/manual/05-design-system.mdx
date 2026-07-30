@@ -17,7 +17,7 @@ what the source table cannot express: the conformance contract between the token
 consumers, and the **motion doctrine** that constrains which tokens a product surface may
 touch. Read `../design/TOKENS.md` first; read this for the rules around it.
 
-The runtime tokens live in `lib/core/design/` — ten files. Most are `abstract final class`
+The runtime tokens live in `lib/core/design/` — eleven files. Most are `abstract final class`
 namespaces of `static const` (or `static final`) members; the three colour files are not, and
 the difference is the point (see **Color is a vocabulary plus a derived ramp** below):
 
@@ -27,6 +27,7 @@ the difference is the point (see **Color is a vocabulary plus a derived ramp** b
 | `color_roles.dart` | `AppColorRole`, `AppColorRoleKind` (enums — the closed color vocabulary) |
 | `color_packs.dart` | `ColorPack`, `ColorPackId`, `ResolvedColors` (the swappable resolution) |
 | `oklch.dart` | `OklchColor`, `ColorRamp`, `rampFromSeed` (perceptual ramp derivation) |
+| `contrast.dart` | `contrastRatio`, `relativeLuminance`, `meetsContrast` (WCAG readability) |
 | `icons.dart` | `AppIcon` (enum), `IconPack`, `AppIconPackTheme`, `AppIconView` |
 | `spacing.dart` | `AppSpacing`, `AppRadius`, **`AppMotion`** |
 | `layout.dart` | **`AppLayout`** (band geometry, clamps, vertical rhythm) |
@@ -274,6 +275,25 @@ override whichever pack is selected with the classic values on every build, and 
 would leave the state pills pink. `colorRoleOverridesProvider` omits unset roles instead, and
 reads the *same preference keys* those three write, so there is one stored truth per role and
 no migration for a user who set an accent before packs existed.
+
+**Contrast is gated, and it does not live in `oklch.dart`.** `contrast.dart` implements WCAG
+2.1 relative luminance; keeping it separate is a correctness decision, not tidiness. OKLab
+lightness is a *perceptual* quantity fitted to how a colour looks; WCAG luminance is
+*photometric*, with different coefficients and a different transfer function. They disagree, so
+deriving one from the other would return plausible wrong numbers. `accessible_palette_test.dart`
+runs every pack × both brightnesses: **4.5:1** for text and for ink-on-accent, **3:1** for
+signals on `card`/`background` — 3:1 rather than 4.5:1 because no signal carries meaning alone.
+
+The split that makes that gate safe: **a pack we ship must pass; a user's override need only be
+shown.** Our failing pack is our defect and fails CI. A user's own adjustment failing is their
+informed choice — the picker displays the live ratio and accepts the value either way, because
+WCAG is a legibility floor, not a universal aesthetic rule.
+
+Two measured facts are recorded rather than gated, both in the shipped palette: `separator` on
+`background` is **1.27:1** in classic light, which is the hairline doctrine working as intended
+and WCAG-exempt as decoration; and `actionEasy` on `fill` is **2.98:1**, short of 3:1 by 0.02
+(`add-color-packs` 4.5). Neither is gated because gating the first would fail the design
+doctrine and the second would move a shipped hex, which is a design call.
 
 Full role table, precedence rule, and the derived-weights ruling:
 `../design/TOKENS.md#color-packs`.

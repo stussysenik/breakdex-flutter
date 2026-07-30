@@ -64,6 +64,13 @@ less than 0.01. Reach for this shape when a design document contains a claim abo
 world that the implementation depends on. The alternative is a paragraph nobody can falsify,
 and the cost of being wrong is ~140 lines of arithmetic nobody needed.
 
+A **property gate** is the same instinct applied to a whole matrix rather than one claim:
+`accessible_palette_test.dart` asserts WCAG contrast over every colour pack × both brightnesses
+× the pairs that actually render, so a new pack cannot ship unreadable without failing CI. The
+discipline that makes it usable is choosing pairs that correspond to real pixels — a matrix over
+every role against every other role would be larger, mostly meaningless, and would have to be
+weakened until it passed.
+
 A fourth shape sits beside it: **the test that pins a known defect on purpose.**
 `color_packs_test.dart` asserts that grayscale modes still leak one red through
 `ColorScheme.error`, and names the task that will turn it red. The alternative — leaving the
