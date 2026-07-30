@@ -215,7 +215,7 @@ needs a Scholar pass first) before any Student session touches code.
   `icons.dart` definition file remains. `CLAUDE.md` canonical-stack table and
   `openspec/AGENTS.md` review checklist updated. Phase 5 (settings surface) deferred;
   packs work already, switching UI is a Settings-only follow-up.
-- [ ] 6.5 **Pantone-only color packs.** `SCR-20260728-maro`: minimal but not sophisticated;
+- [x] 6.5 **Pantone-only color packs.** `SCR-20260728-maro`: minimal but not sophisticated;
   "better colors". Design from light→bold weights, fluid and organic rather than hard
   statements — Linear's design philosophy, simple handpicked colors. Color packs are
   **Pantone only**: adjust any color, pick by season, and choose from the full database
@@ -236,6 +236,13 @@ needs a Scholar pass first) before any Student session touches code.
   "the full database" is a purchase, not an implementation. The catalogue sits behind an
   interface, so the spec ships in-house curated seasonal/year collections by default and a
   licensed dataset drops in later with no mechanism change.
+  <br/>**Phase 5 (catalogue + Settings) DONE 2026-07-30.** All five tasks closed in one
+  commit: `ColorCatalogue` abstract class + `InHouseCatalogue` default, `ColorPacksScreen`
+  on a `/settings-panel*` route with the Fluid+Morph transition, per-role override picker
+  with live WCAG contrast badge, accessible-override banner (5.4), and 21 ARB keys plus
+  regenerated `gen/`. Icon conformance gate caught a raw `Icons.check_circle` in the new
+  screen — fixed to `AppIcon.success` before the commit landed (the gate works).
+  `add-color-packs` tasks 5.1–5.5 ticked; this change's 6.5 ticked in the same commit.
 - [ ] 6.6 **Typography control + power-user layer.** `SCR-20260728-mawt`: per-label/input
   font-family control, made easy — "interfaces are to be read", the taste is in denoting each
   one. Alongside it: one central XState machine; an AST-shaped property model so every

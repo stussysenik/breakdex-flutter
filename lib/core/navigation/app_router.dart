@@ -31,6 +31,7 @@ import 'package:breakdex/features/settings/sync_providers_screen.dart';
 import 'package:breakdex/features/settings/sync_status_screen.dart';
 import 'package:breakdex/features/settings/help/asset_sync_help_screen.dart';
 import 'package:breakdex/features/settings/system_status_screen.dart';
+import 'package:breakdex/features/settings/widgets/color_packs_section.dart';
 import 'package:breakdex/shared/widgets/app_loader.dart';
 import 'package:breakdex/shared/widgets/bottom_nav_shell.dart';
 import 'package:breakdex/shared/widgets/quick_video_viewer.dart';
@@ -255,6 +256,14 @@ final appRouter = GoRouter(
       pageBuilder: (final context, final state) => settingsSectionPage(
         key: state.pageKey,
         child: const AssetSyncHelpScreen(),
+      ),
+    ),
+    GoRoute(
+      path: '/settings-panel/color-packs',
+      parentNavigatorKey: _rootNavigatorKey,
+      pageBuilder: (final context, final state) => settingsSectionPage(
+        key: state.pageKey,
+        child: const ColorPacksScreen(),
       ),
     ),
     GoRoute(

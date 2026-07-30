@@ -60,10 +60,12 @@
   `milestone_list.dart:292`, which keeps the unsafe `#1F8A70` under deuteranopia. Captured as
   that change's **2.5** (the 6.4 icon migration again, one layer down), with **2.4** (`error`
   follows no overlay) and **4.5** (`actionEasy` on `fill` measures 2.98:1) beside it.
-  **Next unticked: Phase 5 — catalogue + Settings surface** (5.1–5.5: curated collections,
-  a `/settings-panel*` section with live preview, the per-role picker showing the live contrast
-  ratio, stating when an overlay is overriding the pack, ARB keys). Closing Phase 5 is what
-  ticks 6.5 here.
+  **Phase 5 DONE 2026-07-30.** Catalogue interface + `ColorPacksScreen` on a `/settings-panel*`
+  route with Fluid+Morph transition, per-role override picker with live WCAG contrast badge,
+  accessible-override banner, 21 ARB keys, regenerated `gen/`. Color packs now fully shippable.
+  `add-color-packs` 30/38 ticked (2.4, 2.5, 4.5 remain — structural, not blocking; 6.1, 6.2
+  owner-gated). 6.5 ticked in `redesign-visual-first-experience`.
+  **Next unticked: 6.13** — per-screen preview exceptions the repaired harness exposed.
   **Owner decision open, blocking nothing** (`add-color-packs` 6.1): PANTONE® names/numbers
   are licensed IP, so the spec ships in-house curated seasonal collections behind a catalogue
   interface and a licensed dataset drops in later with no mechanism change. **6.2 (design the

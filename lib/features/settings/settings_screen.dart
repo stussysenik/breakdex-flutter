@@ -333,6 +333,22 @@ class SettingsScreen extends ConsumerWidget {
                         width: panelWidth,
                         child: _SettingsPanel(
                           title: l10n.setPanelColors,
+                          action: TextButton(
+                            onPressed: () =>
+                                context.push('/settings-panel/color-packs'),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Text(l10n.setPanelColorPacks),
+                                const SizedBox(width: AppSpacing.xxs),
+                                AppIconView(
+                                  AppIcon.forward,
+                                  size: 14,
+                                  color: colorScheme.primary,
+                                ),
+                              ],
+                            ),
+                          ),
                           child: Column(
                             children: [
                               _SettingsSubPanel(

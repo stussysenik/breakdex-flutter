@@ -248,17 +248,34 @@ once, but there is no code dependency between them and they may run in parallel.
 
 ## Phase 5: Catalogue and Settings
 
-- [ ] 5.1 Catalogue behind an interface (D4): named collections, browsable by season and by
+- [x] 5.1 Catalogue behind an interface (D4): named collections, browsable by season and by
   year. Ship the in-house curated set (Path B) as the default source.
-- [ ] 5.2 Color-pack Settings section on a `/settings-panel*` route, built with
+  <br/>**DONE 2026-07-30.** `ColorCollection` + `ColorCatalogue` abstract class +
+  `InHouseCatalogue` default in `lib/core/design/color_catalogue.dart`. The two proven packs
+  (`classic`, `mono`) are organised into display groups. Multiple sources can coexist behind
+  the interface — a licensed dataset drops in with no mechanism change.
+- [x] 5.2 Color-pack Settings section on a `/settings-panel*` route, built with
   `settingsSectionPage` so it inherits the 6.3 Fluid + Morph transition. Live preview showing
   the same representative surfaces and signals per pack.
-- [ ] 5.3 Per-role override picker showing the **live contrast ratio and pass/fail as the
+  <br/>**DONE 2026-07-30.** `ColorPacksScreen` at
+  `lib/features/settings/widgets/color_packs_section.dart`, routed at
+  `/settings-panel/color-packs` in `app_router.dart`. Linked from the Settings `Colors` panel
+  via `context.push`. Preview swatches rendered from the current pack's `ResolvedColors`.
+- [x] 5.3 Per-role override picker showing the **live contrast ratio and pass/fail as the
   color changes** (D5). Accepted when failing; never silently accepted, never blocked.
-- [ ] 5.4 State in the interface when an accessible palette is overriding the pack, rather
+  <br/>**DONE 2026-07-30.** `_OverrideTile` with `_ContrastBadge` in `color_packs_section.dart`.
+  Opens `showColorEditorDialog` for the chosen role. WCAG ratio computed via `contrastRatio()`
+  against the appropriate background (surface/ink/signal by kind). Badge shows Pass/Fail at
+  the appropriate threshold (3.0 for signals, 4.5 otherwise).
+- [x] 5.4 State in the interface when an accessible palette is overriding the pack, rather
   than letting the selection appear to do nothing (spec scenario).
-- [ ] 5.5 ARB keys for pack names, collection names, and contrast copy in `lib/l10n/`;
+  <br/>**DONE 2026-07-30.** `_AccessibleOverrideBanner` at the top of `ColorPacksScreen` when
+  `accessiblePaletteProvider != standard`. Banner explains that signal colors are overridden
+  by the accessibility guarantee.
+- [x] 5.5 ARB keys for pack names, collection names, and contrast copy in `lib/l10n/`;
   regenerate and commit `lib/l10n/gen/`. Binary truth: `scripts/check_l10n.sh` green.
+  <br/>**DONE 2026-07-30.** 21 keys added to `app_en.arb` (`setColorPacksRouteTitle` through
+  `setColorPacksResetOverrides`). `flutter gen-l10n` regenerated. L10n gate ✅.
 
 ## Phase 6: Owner-gated (blocks nothing)
 
