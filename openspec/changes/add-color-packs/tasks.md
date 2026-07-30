@@ -115,19 +115,79 @@ once, but there is no code dependency between them and they may run in parallel.
 
 ## Phase 3: The pack mechanism
 
-- [ ] 3.1 `lib/core/design/color_packs.dart` — `ColorPack` as `(Brightness) → (ColorScheme,
+- [x] 3.1 `lib/core/design/color_packs.dart` — `ColorPack` as `(Brightness) → (ColorScheme,
   AppSemanticTheme)`, resolving every role via a `switch` with **no `default`**. Confirm the
   exhaustiveness guarantee by deleting one case, observing `flutter analyze` fail, restoring
   it; record that red/green in the commit message.
-- [ ] 3.2 `classic` pack from today's `AppColors` seeds. **Byte-identical** to current
+  <br/>**DONE 2026-07-30 — red/green run, not assumed.** Deleting
+  `AppColorRole.actionEasy` from `_ClassicColorPack.resolve` produced
+  `non_exhaustive_switch_expression` at `color_packs.dart:73`; restoring it returned
+  `No issues found`. A pack is `Color resolve(role, brightness)` rather than a direct
+  `(ColorScheme, AppSemanticTheme)` factory — the same information, but it keeps the pack
+  ignorant of Material's slot names, so a pack cannot accidentally own overlay behavior.
+  `ResolvedColors` is the seam: pack + overrides in, role-addressed colors out, and
+  `AppTheme` maps roles onto `ColorScheme` after the overlay has had its say.
+- [x] 3.2 `classic` pack from today's `AppColors` seeds. **Byte-identical** to current
   rendering — the spec requires no screen changes appearance. Prove it with a golden or a
   role-by-role equality test against the pre-change constants, not by inspection.
-- [ ] 3.3 `mono` pack from the existing `monoLight*`/`monoDark*` ramp.
-- [ ] 3.4 `colorPackProvider` in `lib/core/providers/theme_providers.dart` beside
+  <br/>**DONE 2026-07-30.** `color_packs_test.dart` holds the 17 light + 17 dark expected
+  values as literal maps, **hand-written rather than derived from the pack** — a test that
+  reads the switch it checks proves only self-consistency. Asserted at three levels: role →
+  constant, the built `ColorScheme` slot by slot, and the `AppSemanticTheme` ramp. The
+  grayscale modes are covered too, since `monoOutline` / `monochrome` previously ran a
+  hand-rolled `gray ?` branch and now run the `mono` pack.
+  <br/>**One byte-identity carve-out, pinned rather than fixed:** grayscale modes still leak
+  one red through `ColorScheme.error` (2.4). The test asserts the leak *on purpose* and names
+  2.4 as the task that will turn it red — so the gap cannot be lost, and closing it cannot be
+  mistaken for a regression.
+- [x] 3.3 `mono` pack from the existing `monoLight*`/`monoDark*` ramp.
+  <br/>**DONE 2026-07-30.** Surfaces from the shipped ramp; accent, `error`, and all seven
+  signals collapse to ink; `onAccent`/`onError` are the background, never a hardcoded white
+  (which vanishes on a near-white fill in dark mode — the bug the shipped grayscale branch had
+  already fixed). Selecting it as a *pack* leaves `isMonoOutline` false, so surfaces stay
+  filled: a pack is not a viewing mode.
+- [x] 3.4 `colorPackProvider` in `lib/core/providers/theme_providers.dart` beside
   `fontFamilyProvider`; persists `color_pack` + per-role overrides; `fromKey` tolerates
   unknown values (spec: never brick on a removed pack).
-- [ ] 3.5 Wire the pack into `AppTheme.build` **before** the `AccessiblePalette` overlay, so
+  <br/>**DONE 2026-07-30.** `colorPackProvider` persists `color_pack`; `ColorPackId.fromKey`
+  falls back to `classic` on null, empty, unknown, and wrong-case input.
+  <br/>**Finding that shaped the override half: per-role overrides already existed, three
+  times.** `accentColorProvider`, `learningStateColorsProvider`, and `ratingColorsProvider`
+  already persist 8 of the 17 roles under three different key schemes. A fresh
+  `color_role_override_*` store would have been a second source for the same eight facts. So
+  `colorRoleOverridesProvider` **reads the same keys those three write** — zero migration, and
+  a user who set an accent before packs existed keeps it. Writes invalidate in both directions,
+  because the stored value cannot diverge but an in-memory cache can.
+  <br/>**The defect that made the map necessary:** those three providers bake the `AppColors`
+  fallback into their own state, so they cannot express "unset" — every read returns a color.
+  Feeding them into a theme would override whichever pack is selected with the classic values
+  on every build, and selecting `mono` would leave the state pills pink. The overrides map
+  omits unset roles instead, and `AppTheme`'s convenience parameters are nullable for the same
+  reason. Asserted by "omitting a parameter means *use the pack*, not *use classic*".
+- [x] 3.5 Wire the pack into `AppTheme.build` **before** the `AccessiblePalette` overlay, so
   the overlay is applied last (D3).
+  <br/>**DONE 2026-07-30.** `_build` now reads axis by axis: pack + overrides → `ResolvedColors`
+  → overlay → `ColorScheme`. The overlay expresses itself as a **pack substitution** (grayscale
+  ⇒ the `mono` pack) rather than as a second set of `gray ?` branches, which is why the old
+  six surface parameters collapsed to none. Precedence is asserted four ways: neither a pack
+  nor a per-role override can defeat the deuteranopia guarantee; the pack still supplies
+  surfaces under deuteranopia; pack selection is invisible under monochrome; and returning to
+  `standard` restores both pack and overrides unchanged.
+  <br/>Grayscale drops the override map — a guarantee the user asked for outranks a preference
+  they expressed earlier, and nothing is erased.
+
+- [x] 3.6 **Fold the rating colors into the theme, closing a live second source.** Not
+  specced; found while wiring 3.5. `ratingColorsProvider` never reached `AppSemanticTheme` —
+  `rating_button_row.dart` read it directly and branched on `accessiblePaletteProvider` to
+  decide which source won, putting a second copy of the precedence rule in a widget. Any other
+  consumer of `colorForRating` (e.g. `settings_screen.dart:1289`) rendered the default while
+  the buttons showed the user's choice. Ratings are now per-role overrides like every other
+  signal, and the widget is one unconditional `AppSemanticTheme.of(context)` read — the palette
+  branch and the local `_colorForRating` helper are both deleted. Byte-identical for the
+  buttons in every mode.
+  <br/>Also moved `RatingColors` to `lib/core/models/rating_colors.dart`, beside its sibling
+  `LearningStateColors`: it lived in a `part of providers.dart`, which the design layer cannot
+  import.
 
 ## Phase 4: Guarantees
 

@@ -25,6 +25,135 @@ class IconPackNotifier extends Notifier<IconPackId> {
 }
 
 // ---------------------------------------------------------------------------
+// Color pack — persisted in SharedPreferences
+// ---------------------------------------------------------------------------
+
+final colorPackProvider = NotifierProvider<ColorPackNotifier, ColorPackId>(
+  ColorPackNotifier.new,
+);
+
+class ColorPackNotifier extends Notifier<ColorPackId> {
+  static const _key = 'color_pack';
+
+  @override
+  ColorPackId build() {
+    final prefs = ref.watch(sharedPreferencesProvider);
+    return ColorPackId.fromKey(prefs.getString(_key));
+  }
+
+  Future<void> set(final ColorPackId pack) async {
+    state = pack;
+    final prefs = ref.read(sharedPreferencesProvider);
+    await prefs.setString(_key, pack.key);
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Per-role color overrides — the user's adjustments on top of the pack
+// ---------------------------------------------------------------------------
+
+/// The roles the user has actually adjusted — **unset roles are absent**, not
+/// defaulted.
+///
+/// That distinction is the whole reason this provider exists beside the older
+/// `accentColorProvider` / `learningStateColorsProvider` / `ratingColorsProvider`.
+/// Those three bake the `AppColors` fallback into their own state, so they cannot
+/// express "unset": every read returns a color, and feeding that into a theme
+/// would override whichever pack is selected with the classic values on every
+/// build. Selecting `mono` would leave the state pills pink.
+///
+/// It reads the **same preference keys** those three write, so there is one
+/// stored truth per role and no migration: a user who set an accent before packs
+/// existed keeps it. New roles get `color_role_<name>`.
+final colorRoleOverridesProvider =
+    NotifierProvider<ColorRoleOverridesNotifier, Map<AppColorRole, Color>>(
+      ColorRoleOverridesNotifier.new,
+    );
+
+class ColorRoleOverridesNotifier
+    extends Notifier<Map<AppColorRole, Color>> {
+  /// Preference key for a role.
+  ///
+  /// The eight roles that were user-adjustable before packs keep their original
+  /// key. Renaming them would orphan live user state on a brownfield install,
+  /// which is never worth a tidier naming scheme.
+  static String keyFor(final AppColorRole role) => switch (role) {
+    AppColorRole.accent => 'accent_color',
+    AppColorRole.stateNew => 'learning_state_color_new',
+    AppColorRole.stateLearning => 'learning_state_color_learning',
+    AppColorRole.stateMastery => 'learning_state_color_mastery',
+    AppColorRole.actionAgain => 'rating_color_again',
+    AppColorRole.actionHard => 'rating_color_hard',
+    AppColorRole.actionGood => 'rating_color_good',
+    AppColorRole.actionEasy => 'rating_color_easy',
+    AppColorRole.background ||
+    AppColorRole.card ||
+    AppColorRole.fill ||
+    AppColorRole.separator ||
+    AppColorRole.text ||
+    AppColorRole.secondaryText ||
+    AppColorRole.onAccent ||
+    AppColorRole.error ||
+    AppColorRole.onError => 'color_role_${role.name}',
+  };
+
+  @override
+  Map<AppColorRole, Color> build() {
+    final prefs = ref.watch(sharedPreferencesProvider);
+    return {
+      for (final role in AppColorRole.values)
+        if (prefs.getInt(keyFor(role)) case final int argb) role: Color(argb),
+    };
+  }
+
+  Future<void> set(final AppColorRole role, final Color color) async {
+    await _writeColor(ref, keyFor(role), color);
+    state = {...state, role: color};
+    _invalidateLegacyReaders(role);
+  }
+
+  /// Clears one role, returning it to whatever the selected pack says.
+  Future<void> clear(final AppColorRole role) async {
+    await _removeColor(ref, keyFor(role));
+    state = {...state}..remove(role);
+    _invalidateLegacyReaders(role);
+  }
+
+  Future<void> clearAll() async {
+    for (final role in state.keys.toList()) {
+      await _removeColor(ref, keyFor(role));
+    }
+    state = const {};
+    for (final role in AppColorRole.values) {
+      _invalidateLegacyReaders(role);
+    }
+  }
+
+  /// Keeps the pre-pack providers from serving a stale cache.
+  ///
+  /// They read the same keys, so the *stored* value can never diverge — but their
+  /// in-memory state is built once. Without this, adjusting a color here would
+  /// leave the Settings rows that still watch them showing the old swatch.
+  void _invalidateLegacyReaders(final AppColorRole role) {
+    switch (role) {
+      case AppColorRole.accent:
+        ref.invalidate(accentColorProvider);
+      case AppColorRole.stateNew ||
+          AppColorRole.stateLearning ||
+          AppColorRole.stateMastery:
+        ref.invalidate(learningStateColorsProvider);
+      case AppColorRole.actionAgain ||
+          AppColorRole.actionHard ||
+          AppColorRole.actionGood ||
+          AppColorRole.actionEasy:
+        ref.invalidate(ratingColorsProvider);
+      case _:
+        break;
+    }
+  }
+}
+
+// ---------------------------------------------------------------------------
 // Font family — persisted in SharedPreferences
 // ---------------------------------------------------------------------------
 
@@ -69,11 +198,13 @@ class AccentColorNotifier extends Notifier<Color> {
   Future<void> set(final Color color) async {
     await _writeColor(ref, _key, color);
     state = color;
+    ref.invalidate(colorRoleOverridesProvider);
   }
 
   Future<void> reset() async {
     await _removeColor(ref, _key);
     state = AppColors.accent;
+    ref.invalidate(colorRoleOverridesProvider);
   }
 }
 
@@ -110,6 +241,7 @@ class LearningStateColorsNotifier extends Notifier<LearningStateColors> {
       LearningState.learning => state.copyWith(learning: color),
       LearningState.mastery => state.copyWith(mastery: color),
     };
+    ref.invalidate(colorRoleOverridesProvider);
   }
 
   Future<void> resetAll() async {
@@ -117,6 +249,7 @@ class LearningStateColorsNotifier extends Notifier<LearningStateColors> {
       await _removeColor(ref, _prefix + key);
     }
     state = LearningStateColors.defaults;
+    ref.invalidate(colorRoleOverridesProvider);
   }
 }
 
@@ -124,45 +257,9 @@ class LearningStateColorsNotifier extends Notifier<LearningStateColors> {
 // Rating colors — configurable per-rating button colors
 // ---------------------------------------------------------------------------
 
-/// Immutable snapshot of the four rating colors.
-class RatingColors {
-  final Color again;
-  final Color hard;
-  final Color good;
-  final Color easy;
-
-  const RatingColors({
-    required this.again,
-    required this.hard,
-    required this.good,
-    required this.easy,
-  });
-
-  static const defaults = RatingColors(
-    again: AppColors.actionAgain,
-    hard: AppColors.actionHard,
-    good: AppColors.actionGood,
-    easy: AppColors.actionEasy,
-  );
-
-  /// Look up the color for a given rating name (AGAIN, HARD, GOOD, EASY).
-  Color forName(final String name) => switch (name) {
-    'AGAIN' => again,
-    'HARD' => hard,
-    'GOOD' => good,
-    'EASY' => easy,
-    _ => again,
-  };
-
-  RatingColors copyWith({final Color? again, final Color? hard, final Color? good, final Color? easy}) {
-    return RatingColors(
-      again: again ?? this.again,
-      hard: hard ?? this.hard,
-      good: good ?? this.good,
-      easy: easy ?? this.easy,
-    );
-  }
-}
+// `RatingColors` itself lives in `lib/core/models/rating_colors.dart` — the
+// design layer accepts it as a per-role theme override, and a `part of` file
+// cannot be imported.
 
 final ratingColorsProvider =
     NotifierProvider<RatingColorsNotifier, RatingColors>(
@@ -193,6 +290,7 @@ class RatingColorsNotifier extends Notifier<RatingColors> {
       'easy' => state.copyWith(easy: color),
       _ => state,
     };
+    ref.invalidate(colorRoleOverridesProvider);
   }
 
   Future<void> resetAll() async {
@@ -200,6 +298,7 @@ class RatingColorsNotifier extends Notifier<RatingColors> {
       await _removeColor(ref, _prefix + key);
     }
     state = RatingColors.defaults;
+    ref.invalidate(colorRoleOverridesProvider);
   }
 }
 

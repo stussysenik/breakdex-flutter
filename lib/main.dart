@@ -422,8 +422,11 @@ class BreakdexApp extends ConsumerWidget {
     final themeSetting = ref.watch(themeSettingProvider);
     final viewingMode = ref.watch(viewingModeProvider);
     final fontFamily = ref.watch(fontFamilyProvider);
-    final accent = ref.watch(accentColorProvider);
-    final stateColors = ref.watch(learningStateColorsProvider);
+    // Pack + per-role overrides, not the pre-pack colour providers: those bake
+    // the classic fallback into their state, so feeding them here would override
+    // the selected pack on every build (see `colorRoleOverridesProvider`).
+    final colorPack = ref.watch(colorPackProvider);
+    final colorOverrides = ref.watch(colorRoleOverridesProvider);
     final palette = ref.watch(accessiblePaletteProvider);
     final iconPack = ref.watch(iconPackProvider);
 
@@ -435,16 +438,16 @@ class BreakdexApp extends ConsumerWidget {
       scaffoldMessengerKey: _rootScaffoldMessengerKey,
       theme: AppTheme.light(
         family: fontFamily,
-        accent: accent,
-        stateColors: stateColors,
+        pack: colorPack,
+        overrides: colorOverrides,
         viewingMode: viewingMode,
         palette: palette,
         iconPack: iconPack,
       ),
       darkTheme: AppTheme.dark(
         family: fontFamily,
-        accent: accent,
-        stateColors: stateColors,
+        pack: colorPack,
+        overrides: colorOverrides,
         viewingMode: viewingMode,
         palette: palette,
         iconPack: iconPack,

@@ -20,8 +20,12 @@ import 'package:breakdex/core/design/icons.dart';
 /// red is commonly confused with green (deuteranopia), so shape
 /// differentiators ensure ratings are distinguishable without color.
 ///
-/// Colors are read from [ratingColorsProvider] so they respect user
-/// customization from Settings.
+/// Colors come from `AppSemanticTheme` — one read, no palette branch. The theme
+/// has already applied `pack → brightness → accessibility overlay`, so the
+/// user's configured rating colors and the deuteranopia-safe ramp arrive by the
+/// same route. This widget used to read `ratingColorsProvider` directly and
+/// branch on `accessiblePaletteProvider` to decide which source won, which put a
+/// second copy of the precedence rule in a widget.
 class RatingButtonRow extends ConsumerWidget {
   const RatingButtonRow({
     super.key,
@@ -50,34 +54,12 @@ class RatingButtonRow extends ConsumerWidget {
     ReviewRating.easy => AppIcon.star, // Star — "effortless"
   };
 
-  /// Map from ReviewRating to the matching configurable color.
-  static Color _colorForRating(
-    final ReviewRating rating,
-    final RatingColors rc,
-  ) => switch (rating) {
-    ReviewRating.again => rc.again,
-    ReviewRating.hard => rc.hard,
-    ReviewRating.good => rc.good,
-    ReviewRating.easy => rc.easy,
-  };
-
   @override
   Widget build(final BuildContext context, final WidgetRef ref) {
     final colorScheme = Theme.of(context).colorScheme;
-    // Under an accessible palette the rating colors follow the theme's semantic
-    // ramp (deuteranopia-safe or grayscale ink) rather than the user's custom
-    // rating colors; the icon+label double-encoding keeps ratings legible either
-    // way. Standard palette keeps the user's configured colors.
-    final palette = ref.watch(accessiblePaletteProvider);
     final semantic = AppSemanticTheme.of(context);
-    final rc = palette == AccessiblePalette.standard
-        ? ref.watch(ratingColorsProvider)
-        : RatingColors(
-            again: semantic.actionAgain,
-            hard: semantic.actionHard,
-            good: semantic.actionGood,
-            easy: semantic.actionEasy,
-          );
+    Color colorFor(final ReviewRating rating) =>
+        semantic.colorForRating(rating);
 
     return Row(
       children: [
@@ -88,7 +70,7 @@ class RatingButtonRow extends ConsumerWidget {
                 ? _CompactRatingButton(
                     rating: rating,
                     icon: iconForRating(rating),
-                    color: _colorForRating(rating, rc),
+                    color: colorFor(rating),
                     onRate: onRate,
                     intervalLabel: _formatInterval(intervalPreviews?[rating]),
                   )
@@ -98,7 +80,7 @@ class RatingButtonRow extends ConsumerWidget {
                       _TintedPillButton(
                         rating: rating,
                         icon: iconForRating(rating),
-                        color: _colorForRating(rating, rc),
+                        color: colorFor(rating),
                         onRate: onRate,
                       ),
                       if (intervalPreviews != null) ...[

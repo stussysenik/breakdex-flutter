@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:breakdex/core/models/learning_state.dart';
 import 'package:breakdex/core/models/learning_state_colors.dart';
+import 'package:breakdex/core/models/rating_colors.dart';
 import 'package:breakdex/core/services/settings_service.dart';
+import 'package:breakdex/core/design/color_packs.dart';
+import 'package:breakdex/core/design/color_roles.dart';
 import 'package:breakdex/core/design/colors.dart';
 import 'package:breakdex/core/design/icons.dart';
 import 'package:breakdex/core/design/spacing.dart';
@@ -282,104 +285,166 @@ extension AppSemanticThemeContext on BuildContext {
 abstract final class AppTheme {
   static ThemeData light({
     final AppFontFamily family = AppFontFamily.inter,
-    final Color accent = AppColors.accent,
-    final LearningStateColors stateColors = LearningStateColors.defaults,
+    final ColorPackId pack = ColorPackId.classic,
+    final Map<AppColorRole, Color> overrides = const {},
+    final Color? accent,
+    final LearningStateColors? stateColors,
+    final RatingColors? ratingColors,
     final ViewingMode viewingMode = ViewingMode.standard,
     final AccessiblePalette palette = AccessiblePalette.standard,
     final IconPackId iconPack = IconPackId.material,
-  }) {
-    // monoOutline and monochrome both render on the grayscale surface ramp.
-    final gray =
-        viewingMode == ViewingMode.monoOutline ||
-        palette == AccessiblePalette.monochrome;
-    return _build(
-      brightness: Brightness.light,
-      bg: gray ? AppColors.monoLightBg : AppColors.lightBg,
-      card: gray ? AppColors.monoLightCard : AppColors.lightCard,
-      fill: gray ? AppColors.monoLightFill : AppColors.lightFill,
-      text: gray ? AppColors.monoLightText : AppColors.lightText,
-      secondary: gray ? AppColors.monoLightSecondary : AppColors.lightSecondary,
-      separator: gray ? AppColors.monoLightSeparator : AppColors.lightSeparator,
-      family: family,
+  }) => _build(
+    brightness: Brightness.light,
+    pack: pack,
+    overrides: _mergeOverrides(
+      overrides,
       accent: accent,
       stateColors: stateColors,
-      viewingMode: viewingMode,
-      palette: palette,
-      iconPack: iconPack,
-    );
-  }
+      ratingColors: ratingColors,
+    ),
+    family: family,
+    viewingMode: viewingMode,
+    palette: palette,
+    iconPack: iconPack,
+  );
 
   static ThemeData dark({
     final AppFontFamily family = AppFontFamily.inter,
-    final Color accent = AppColors.accent,
-    final LearningStateColors stateColors = LearningStateColors.defaults,
+    final ColorPackId pack = ColorPackId.classic,
+    final Map<AppColorRole, Color> overrides = const {},
+    final Color? accent,
+    final LearningStateColors? stateColors,
+    final RatingColors? ratingColors,
     final ViewingMode viewingMode = ViewingMode.standard,
     final AccessiblePalette palette = AccessiblePalette.standard,
     final IconPackId iconPack = IconPackId.material,
-  }) {
-    final gray =
-        viewingMode == ViewingMode.monoOutline ||
-        palette == AccessiblePalette.monochrome;
-    return _build(
-      brightness: Brightness.dark,
-      bg: gray ? AppColors.monoDarkBg : AppColors.darkBg,
-      card: gray ? AppColors.monoDarkCard : AppColors.darkCard,
-      fill: gray ? AppColors.monoDarkFill : AppColors.darkFill,
-      text: gray ? AppColors.monoDarkText : AppColors.darkText,
-      secondary: gray ? AppColors.monoDarkSecondary : AppColors.darkSecondary,
-      separator: gray ? AppColors.monoDarkSeparator : AppColors.darkSeparator,
-      family: family,
+  }) => _build(
+    brightness: Brightness.dark,
+    pack: pack,
+    overrides: _mergeOverrides(
+      overrides,
       accent: accent,
       stateColors: stateColors,
-      viewingMode: viewingMode,
-      palette: palette,
-      iconPack: iconPack,
-    );
+      ratingColors: ratingColors,
+    ),
+    family: family,
+    viewingMode: viewingMode,
+    palette: palette,
+    iconPack: iconPack,
+  );
+
+  /// Folds the typed convenience parameters into the role-keyed override map.
+  ///
+  /// The typed parameters exist because most call sites want one color, not a
+  /// map — `AppTheme.light(stateColors: custom)` reads better in a widget test
+  /// than an `AppColorRole` literal. They are **nullable on purpose**: with a
+  /// pack axis, "unset" has to mean *use the pack*, and a non-null default would
+  /// make every build silently override the pack with the classic values. That is
+  /// exactly the trap `learningStateColorsProvider` falls into — it bakes the
+  /// `AppColors` fallback into its own state, so a consumer cannot tell "the user
+  /// chose #E45D7A" from "the user chose nothing". Read overrides through
+  /// `colorRoleOverridesProvider`, which omits unset roles instead.
+  static Map<AppColorRole, Color> _mergeOverrides(
+    final Map<AppColorRole, Color> overrides, {
+    final Color? accent,
+    final LearningStateColors? stateColors,
+    final RatingColors? ratingColors,
+  }) {
+    if (accent == null && stateColors == null && ratingColors == null) {
+      return overrides;
+    }
+    return {
+      ...overrides,
+      if (accent != null) AppColorRole.accent: accent,
+      if (stateColors != null) ...{
+        AppColorRole.stateNew: stateColors.newState,
+        AppColorRole.stateLearning: stateColors.learning,
+        AppColorRole.stateMastery: stateColors.mastery,
+      },
+      if (ratingColors != null) ...{
+        AppColorRole.actionAgain: ratingColors.again,
+        AppColorRole.actionHard: ratingColors.hard,
+        AppColorRole.actionGood: ratingColors.good,
+        AppColorRole.actionEasy: ratingColors.easy,
+      },
+    };
   }
 
   static ThemeData _build({
     required final Brightness brightness,
-    required final Color bg,
-    required final Color card,
-    required final Color fill,
-    required final Color text,
-    required final Color secondary,
-    required final Color separator,
+    required final ColorPackId pack,
+    required final Map<AppColorRole, Color> overrides,
     required final AppFontFamily family,
-    required final Color accent,
-    required final LearningStateColors stateColors,
     required final ViewingMode viewingMode,
     required final AccessiblePalette palette,
     required final IconPackId iconPack,
   }) {
     final isMonoOutline = viewingMode == ViewingMode.monoOutline;
-    // Any grayscale mode (marker outline or monochrome palette) tones the accent
-    // to ink so no color survives; the deuteranopia palette keeps the accent.
+    // Any grayscale mode (marker outline or monochrome palette) renders on the
+    // grayscale ramp with the accent toned to ink, so no color survives. That is
+    // the `mono` pack's definition, which is why the overlay can express itself
+    // as a pack substitution rather than as a second set of branches.
     final grayscale = isMonoOutline || palette == AccessiblePalette.monochrome;
-    final effectiveAccent = grayscale ? text : accent;
+
+    // Axis 1 + 2 — pack at this brightness, with the user's per-role overrides.
+    // Grayscale drops the overrides: a guarantee the user asked for outranks a
+    // preference they expressed earlier, and the adjustment is not erased — it
+    // returns when the mode does.
+    final colors = ResolvedColors.of(
+      grayscale ? ColorPackId.mono.pack : pack.pack,
+      brightness,
+      overrides: grayscale ? const {} : overrides,
+    ).copyWith(
+      grayscale
+          // `ColorScheme.error` is hardwired to the "again" value in the shipped
+          // theme and does not follow any overlay — so a grayscale mode leaks one
+          // red. Preserved deliberately: 3.2 requires byte-identity with the
+          // pre-pack build. The leak is add-color-packs 2.4, an overlay fix.
+          ? const {
+              AppColorRole.error: AppColors.actionAgain,
+              AppColorRole.onError: Colors.white,
+            }
+          : const {},
+    );
+
+    final bg = colors[AppColorRole.background];
+    final card = colors[AppColorRole.card];
+    final fill = colors[AppColorRole.fill];
+    final text = colors[AppColorRole.text];
+    final secondary = colors[AppColorRole.secondaryText];
+    final separator = colors[AppColorRole.separator];
+    final effectiveAccent = colors[AppColorRole.accent];
+
+    // Axis 3 — the accessibility overlay, applied last and winning. It replaces
+    // signal roles only; surfaces and accent above already came from the pack.
     final semanticTheme = switch ((isMonoOutline, palette)) {
       // Marker outline keeps its distinctive outline flag + ink ramp.
       (true, _) => AppSemanticTheme.ink(text, isMonoOutline: true),
       // Monochrome: ink ramp, but filled surfaces (isMonoOutline stays false).
       (false, AccessiblePalette.monochrome) => AppSemanticTheme.ink(text),
       (false, AccessiblePalette.deuteranopia) => AppSemanticTheme.deuteranopia,
-      (false, AccessiblePalette.standard) => AppSemanticTheme.defaults.copyWith(
-        stateNew: stateColors.newState,
-        stateLearning: stateColors.learning,
-        stateMastery: stateColors.mastery,
+      (false, AccessiblePalette.standard) => AppSemanticTheme(
+        isMonoOutline: false,
+        stateNew: colors[AppColorRole.stateNew],
+        stateLearning: colors[AppColorRole.stateLearning],
+        stateMastery: colors[AppColorRole.stateMastery],
+        actionAgain: colors[AppColorRole.actionAgain],
+        actionHard: colors[AppColorRole.actionHard],
+        actionGood: colors[AppColorRole.actionGood],
+        actionEasy: colors[AppColorRole.actionEasy],
       ),
     };
     final textTheme = AppTypography.textTheme(text, secondary, family: family);
     final colorScheme = ColorScheme(
       brightness: brightness,
       primary: effectiveAccent,
-      onPrimary: grayscale ? bg : Colors.white,
+      onPrimary: colors[AppColorRole.onAccent],
       secondary: secondary,
       onSecondary: text,
       surface: card,
       onSurface: text,
-      error: AppColors.actionAgain,
-      onError: Colors.white,
+      error: colors[AppColorRole.error],
+      onError: colors[AppColorRole.onError],
       surfaceContainerHighest: fill,
       outline: separator,
     );
