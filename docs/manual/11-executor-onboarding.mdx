@@ -3,7 +3,7 @@ title: Executor Onboarding
 name: onboarding
 order: 11
 status: verified
-verified: ef21069
+verified: 4661625
 watches:
   - openspec/AGENTS.md
   - ROADMAP.md
@@ -35,6 +35,13 @@ code is a review violation to reconcile before building on it.
 **Teacher vs. student.** The teacher owns sequencing, scope, and the locked stack; the student
 executes the next task exactly. This split only works because the manual lets the student locate
 every seam without archaeology — which is why the manual exists.
+
+**The loss function.** Root `CLAUDE.md` → **Loss function** ranks four terms — portability,
+atomicity, compile speed, GPU-bound animation — and it is a tiebreaker, not a checklist. The
+locked stack says which options are *legal*; this says which legal option *wins*, and the
+ranking is strict: a design that improves compile speed by regressing portability is rejected
+without further argument. Reach for it when two implementations both satisfy the spec; do not
+cite it to reopen a locked ruling.
 
 **A crew, when there is one.** Root `CLAUDE.md` → **Crew protocol** splits any one lane across
 three agents: **A** architect (plan, ledger, conflict rulings), **B** executor (code + the tests
@@ -109,9 +116,12 @@ narrates only completed work hides the gap it exists to surface.
 - **Touching the locked stack** (root `CLAUDE.md` "Canonical stack — LOCKED": Appwrite backend,
   Drift canonical, `Machine<S,E>`, XState-v5 web mirror, token source, layout doctrine, motion
   doctrine, the icon system, and the color system). These are decided; re-litigating one is a
-  teacher decision. Three of those rows are enforced by a **conformance test** rather than by
-  review — the frame, `icon_conformance_test.dart`, and `color_conformance_test.dart` — so
-  breaking them is a red suite, not an argument. The review-checklist wording for each lives in
+  teacher decision. Two of those rows are enforced by a **conformance test** rather than by
+  review — `icon_conformance_test.dart` and `color_conformance_test.dart` — so breaking them is
+  a red suite, not an argument. **The frame is not one of them yet**: 26 files under
+  `lib/features/` still build a raw `Scaffold` and 1 uses `AppScreen`, so the layout doctrine is
+  review-enforced until `enforce-face-law-conformance` 2.1 lands
+  `test/core/design/layout_conformance_test.dart`. The review-checklist wording for each lives in
   `openspec/AGENTS.md`, and the two icon/color bans are deliberately different shapes: the icon
   ban is absolute, the color ban admits a named definition layer. Copying one onto the other is
   a mistake, not a simplification.
