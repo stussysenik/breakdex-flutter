@@ -10,20 +10,20 @@ This ledger records what Breakdex is trying to be at the system level: a move li
 ## Release Snapshot
 
 <!-- release:meta:start -->
-- Release tag: `v1.5.0`
-- Release version: `1.5.0`
-- Pubspec version: `1.5.0+7`
-- Released: `2026-07-29`
-- Metadata refreshed: `2026-07-29`
+- Release tag: `v1.6.0`
+- Release version: `1.6.0`
+- Pubspec version: `1.6.0+8`
+- Released: `2026-07-30`
+- Metadata refreshed: `2026-07-30`
 <!-- release:meta:end -->
 
 ## Automatic Provenance
 
 <!-- release:provenance:start -->
 - Source branch: `main`
-- Source revision: `ee10159`
-- Source commit: `ee1015952bf854f7e8350d0591918d3d9853fe11`
-- Source describe: `v1.4.0-119-gee10159`
+- Source revision: `75ce401`
+- Source commit: `75ce401c63ab16270430364417588abc043cdd98`
+- Source describe: `v1.5.0-22-g75ce401`
 - Generator: `scripts/update_release_metadata.cjs`
 - Inputs: `docs/CHANGELOG.md`, `pubspec.yaml`, and local git metadata
 <!-- release:provenance:end -->
@@ -31,11 +31,11 @@ This ledger records what Breakdex is trying to be at the system level: a move li
 ## Latest Tagged Notes
 
 <!-- release:notes:start -->
-- **add:** stack choice cards vertically on compact (phone) widths
-- **auth:** defer hydrate-on-login state write out of provider build
-- **auth:** mobile Google OAuth via token flow — SDK 25.x swallowed callback params
-- **boot:** survive an unconfigured Firebase instead of dying before runApp ([8e7f683](https://github.com/stussysenik/breakdex-flutter/commit/8e7f683e666d48c36968f16b17b8ca8d552e36cb)), closes [#0](https://github.com/stussysenik/breakdex-flutter/issues/0) [#1](https://github.com/stussysenik/breakdex-flutter/issues/1)
-- **distribute:** never build past a failed gate
+- **preview:** 6.13 three per-screen preview exceptions fixed
+- **previews:** register a wasm VFS so widget previews open a database
+- **review:** dead imports removed
+- **color-packs:** Phase 5 catalogue + Settings surface
+- **design:** color packs wired
 <!-- release:notes:end -->
 
 ## Why It Exists

@@ -1,3 +1,20 @@
+# [1.6.0](https://github.com/stussysenik/breakdex-flutter/compare/v1.5.0...v1.6.0) (2026-07-30)
+
+
+### Bug Fixes
+
+* **preview:** 6.13 three per-screen preview exceptions fixed ([2e62a2f](https://github.com/stussysenik/breakdex-flutter/commit/2e62a2f06111a9d0c5f6e67061206ac073335ca7))
+* **previews:** register a wasm VFS so widget previews open a database ([301167e](https://github.com/stussysenik/breakdex-flutter/commit/301167e4e48cbfd7adf5cb981f19533cc9ee83d2))
+* **review:** dead imports removed ([fded978](https://github.com/stussysenik/breakdex-flutter/commit/fded97882ccbac0f0628f80dc15f012ea23739e8))
+
+
+### Features
+
+* **color-packs:** Phase 5 catalogue + Settings surface ([ba26a40](https://github.com/stussysenik/breakdex-flutter/commit/ba26a40477ae66223ab4c93fabf9ea6b7753fc20))
+* **design:** color packs wired ([c1b28a7](https://github.com/stussysenik/breakdex-flutter/commit/c1b28a73dd8990df9486ec0995dbf9d9d293fe00))
+* **design:** color vocabulary closed ([9e289a4](https://github.com/stussysenik/breakdex-flutter/commit/9e289a4e787ddab9d1297a1731ed39a53cd609c7))
+* **design:** oklch ramp derivation ([f919985](https://github.com/stussysenik/breakdex-flutter/commit/f9199855da27b8053b094a02a8a4c32e82f29734))
+
 # [1.5.0](https://github.com/stussysenik/breakdex-flutter/compare/v1.4.0...v1.5.0) (2026-07-29)
 
 
