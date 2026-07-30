@@ -70,7 +70,50 @@
   `BlocProvider<PartyBloc>`; (c) `Scene3DView`/`Skeleton3DPanel` web-guarded with unavailable
   placeholder (UiKitView has no web equivalent). Analyzer 0/0. 6.13(c) remains owner-revisitable
   if a richer web fallback is wanted.
+  **2026-07-30 — `add-color-packs` 2.5 DONE, and the pack mechanism now reaches every pixel.**
+  The 241-site figure was stale: the gate (written first, run red) found **275 raw `AppColors.*`
+  reads in 55 files** — Phase 5 had shipped a new settings surface into the same problem.
+  All migrated; `test/core/design/color_conformance_test.dart` now bans the read outside a
+  **seven-file definition layer**. The task's "zero-allowlist" instruction was wrong and the
+  reason is recorded: unlike icons, colors *have* a definition layer, so an absolute ban would
+  forbid the mechanism from existing. Two bypass classes the site count could not see are also
+  closed — `LearningState`/`ReviewRating` carried a baked `Color` field (a widget reading
+  `state.color` bypassed the theme without naming `AppColors` at all), and a Riverpod
+  `FutureProvider` in `calendar_view.dart` was deciding a pixel. New `AppMediaChrome`
+  `ThemeExtension` resolves the **active pack at `Brightness.dark`** for the surfaces that are
+  dark on purpose (video player, trim timeline, instax viewer) — the intent that made those
+  constants look correct survives, and a pack now owns that chrome too. Four painters take
+  resolved colors instead of reading the theme, and `_FlowGraphPainter` **shrank** doing it
+  (three `brightness == light ? … : …` ternaries deleted — the theme already answers that).
+  Red/green proven at `milestone_list.dart:292`'s defect class, not assumed.
+  Suite **1347 pass / 3 skip / 0 fail**, analyzer 0 errors / 0 warnings, `./verify.sh` green.
+  `add-color-packs` is now 31/38 — only owner-gated (6.1, 6.2), the deliberately-deferred 4.5,
+  and the V.* closers remain.
+  **6.14 + 6.15 DONE 2026-07-30 — the flake is named and fixed, and the board now agrees with the
+  ledger.** 6.14's audit had the causal chain inverted: line 137 runs in the test *body*, the only
+  `dispose()` is in `tearDown`, so the `Bad state: Cannot add new events after calling close` fires
+  *after* the assertion and cannot explain the `null`. Two independent defects, both fixed: (1) the
+  `null` was a flat `200ms` sleep where `_saveVideo` measures **452–536ms idle** — replaced with the
+  deadline poll the sibling test in the same file already used; (2) `StorageActionMachine._emit` and
+  `execute`'s own `catch` both wrote to a controller `dispose()` had closed, so the `StateError` was
+  raised *inside the error handler* and **replaced the `rethrow`** — any real materialize failure at
+  teardown was reported as a bogus `Bad state` instead of its cause. Guarded on `isClosed`; progress
+  is advisory and never fails the transaction. RED/GREEN both directions. Full gate
+  **ALL GATES PASSED, +1347 ~3 -0** (from `+1333 ~3 -1`).
+  **Two new defects found behind it, captured not fixed:** **6.16** — a missing source hangs
+  materialize *forever* (`asset_hash_service.dart:83` `lengthSync()` kills the isolate, no
+  `onError`/`onExit`, the `ReceivePort` never closes, `await for` waits indefinitely: a spinner that
+  never resolves); **6.17** — `StageLogger.fail`'s `debugPrintStack` asserts in plain `test()` bodies
+  and the `_AssertionError` **supersedes the exception being reported**, which is likely why this
+  defect survived two prior sessions — the instrument was overwriting the cause.
+  6.15 closed via reordering: the 6.x boxes are now stored in ruled order (6.8 → 6.7 → 6.10 → 6.9 →
+  6.6) so `./status.sh` is correct by construction, with a comment warning against re-sorting. Note
+  the audit's second half was wrong — this bullet already named 6.8; only the file-order divergence
+  was real.
   **Next unticked: 6.8** — honest stats (smallest independent item per §6 disposition table).
+  ⚠ **6.8 is a Teacher-lane task, not an Executor one** (that change's §6 disposition table:
+  *"Needs a decision about what the readout is for before it can name replacement metrics"*).
+  An implementation session cannot open it; it needs a spec first.
   **Owner decision open, blocking nothing** (`add-color-packs` 6.1): PANTONE® names/numbers
   are licensed IP, so the spec ships in-house curated seasonal collections behind a catalogue
   interface and a licensed dataset drops in later with no mechanism change. **6.2 (design the

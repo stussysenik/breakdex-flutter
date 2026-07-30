@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 
 import 'package:breakdex/core/database/database.dart';
 import 'package:breakdex/core/utils/time_format.dart';
-import 'package:breakdex/core/design/colors.dart';
 import 'package:breakdex/core/design/spacing.dart';
 import 'package:breakdex/core/design/theme.dart';
 import 'package:breakdex/core/design/typography.dart';
@@ -161,7 +160,7 @@ class _StatusPill extends StatelessWidget {
 
   @override
   Widget build(final BuildContext context) {
-    final (label, color) = _statusMeta(status);
+    final (label, color) = _statusMeta(context, status);
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
@@ -191,10 +190,10 @@ class _StatusPill extends StatelessWidget {
     );
   }
 
-  static (String, Color) _statusMeta(final String status) => switch (status) {
+  static (String, Color) _statusMeta(final BuildContext context, final String status) => switch (status) {
     'idea' => ('Idea', const Color(0xFFA7B1C2)),
-    'attempting' => ('Attempting', AppColors.stateLearning),
-    'landed' => ('Landed', AppColors.stateMastery),
+    'attempting' => ('Attempting', AppSemanticTheme.of(context).stateLearning),
+    'landed' => ('Landed', AppSemanticTheme.of(context).stateMastery),
     'clean' => ('Clean', const Color(0xFF0D9F9A)),
     _ => ('Idea', const Color(0xFFA7B1C2)),
   };
@@ -214,7 +213,7 @@ class _LabProgressBar extends StatelessWidget {
   @override
   Widget build(final BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
-    final (_, color) = _StatusPill._statusMeta(status);
+    final (_, color) = _StatusPill._statusMeta(context, status);
     final progress = _progressForStatus(status);
 
     return ClipRRect(

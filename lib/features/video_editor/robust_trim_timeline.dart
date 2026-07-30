@@ -2,10 +2,9 @@
 // ignore_for_file: discarded_futures
 
 import 'package:flutter/material.dart';
-import 'package:flutter/cupertino.dart';
+import 'package:breakdex/core/design/theme.dart';
 import 'package:flutter/services.dart';
 
-import 'package:breakdex/core/design/colors.dart';
 import 'package:breakdex/core/design/spacing.dart';
 import 'package:breakdex/core/design/typography.dart';
 import 'package:breakdex/features/video_editor/trim_timeline_math.dart';
@@ -238,7 +237,7 @@ class _RobustTrimTimelineState extends State<RobustTrimTimeline> {
                       child: Container(
                         margin: const EdgeInsets.all(1),
                         decoration: BoxDecoration(
-                          color: AppColors.darkFill,
+                          color: AppMediaChrome.of(context).fill,
                           borderRadius: BorderRadius.circular(2),
                         ),
                         clipBehavior: Clip.antiAlias,

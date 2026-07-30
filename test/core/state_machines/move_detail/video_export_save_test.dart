@@ -127,13 +127,26 @@ void main() {
       // Trigger video save/edit action
       notifier.send(VideoEdited(sourceVideoFile.path));
 
-      // Wait for the async side effects to execute
-      await Future<void>.delayed(const Duration(milliseconds: 200));
+      // Wait for the async side effects to land. A fixed sleep made this test
+      // load-sensitive: `VideoEdited` fans out to a hash isolate and a file
+      // move, which under a loaded machine outran 200ms and read a null row.
+      // Poll to a generous deadline instead — same idiom as `waitForHash` below.
+      Future<Move> waitForVideoPath() async {
+        final deadline = DateTime.now().add(const Duration(seconds: 15));
+        while (DateTime.now().isBefore(deadline)) {
+          final row = await (db.select(
+            db.moves,
+          )..where((final t) => t.id.equals('m1'))).getSingle();
+          if (row.videoPath != null) return row;
+          await Future<void>.delayed(const Duration(milliseconds: 25));
+        }
+        return (db.select(
+          db.moves,
+        )..where((final t) => t.id.equals('m1'))).getSingle();
+      }
 
       // Verify: DB contains updated video path and content hash
-      final dbMove = await (db.select(
-        db.moves,
-      )..where((final t) => t.id.equals('m1'))).getSingle();
+      final dbMove = await waitForVideoPath();
       expect(dbMove.videoPath, isNotNull);
       expect(dbMove.videoPath, matches(r'^Moves/Power/Windmill - [a-f0-9]+\.mp4$'));
       expect(dbMove.contentHash, isNotNull);

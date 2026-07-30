@@ -150,12 +150,24 @@ every pack × both brightnesses. A per-role override failing is the user's
 informed choice on their own device — the picker shows the live ratio and its
 pass/fail as the color changes, accepts the value, and never blocks it.
 
-**Two roles are not yet honored at every pixel.** `ColorScheme.error` is hardwired
-to the `actionAgain` value in all modes, so it does not follow the deuteranopia
-overlay; and 241 call sites across 58 files under `lib/features/` read
-`AppColors.*` constants directly rather than through the theme, which bypasses
-both the pack and the overlay. Tracked in `openspec/changes/add-color-packs`
-(2.4, 2.5) — the vocabulary above is the target, not yet the whole of what renders.
+**The vocabulary now reaches every pixel — enforced, not asserted.** Both gaps
+this section used to list are closed: `ColorScheme.error` follows the overlay
+(2.4), and the raw call sites are migrated (2.5). Reading an `AppColors`
+constant outside the **definition layer** is now a test failure —
+`test/core/design/color_conformance_test.dart`, the color twin of the icon ban.
+Unlike icons the ban is not zero-allowlist, because colors *have* a definition
+layer: a pack seeds its roles from constants and a preference provider falls
+back to one. The allowlist admits files that **define what a role resolves to**
+(`colors.dart`, `color_packs.dart`, `theme.dart`, `theme_providers.dart`, the
+two default snapshots, and the category *picker palette*, whose values are
+persisted user data rather than rendered theme). A widget never qualifies.
+
+**Media chrome is a role read at the other brightness.** Video surfaces are dark
+on purpose regardless of app brightness, which is why `AppColors.darkBg` read as
+correct there for so long. `AppMediaChrome` (a `ThemeExtension`) resolves the
+*active pack at `Brightness.dark`*, so the intent survives and the pixels return
+to the theme: a pack owns its own dark side, and media chrome follows the pack
+without ever following the app's light mode.
 
 ---
 

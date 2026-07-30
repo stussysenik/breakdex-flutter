@@ -3,10 +3,10 @@
 
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:breakdex/core/design/theme.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import 'package:breakdex/core/design/colors.dart';
 import 'package:breakdex/core/design/spacing.dart';
 import 'package:breakdex/core/design/typography.dart';
 import 'package:breakdex/core/models/learning_state.dart';
@@ -386,7 +386,7 @@ class ConfirmActionOverlay extends StatelessWidget {
                     onPressed: onConfirm,
                     style: isDestructive
                         ? FilledButton.styleFrom(
-                            backgroundColor: AppColors.actionAgain,
+                            backgroundColor: AppSemanticTheme.of(context).actionAgain,
                             foregroundColor: Colors.white,
                           )
                         : null,
@@ -475,7 +475,7 @@ class _RenameOverlayState extends ConsumerState<RenameOverlay> {
                       entityNames.comboSingular.toLowerCase(),
                     ),
                     style: AppTypography.caption.copyWith(
-                      color: AppColors.actionAgain,
+                      color: AppSemanticTheme.of(context).actionAgain,
                     ),
                   ),
                 ),

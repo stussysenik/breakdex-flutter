@@ -6,7 +6,6 @@ import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 
 import 'package:breakdex/core/database/database.dart';
-import 'package:breakdex/core/design/colors.dart';
 import 'package:breakdex/core/design/spacing.dart';
 import 'package:breakdex/core/design/theme.dart';
 import 'package:breakdex/core/design/typography.dart';
@@ -70,7 +69,7 @@ class _SetMoveCardState extends State<SetMoveCard> {
                     width: 40,
                     height: 40,
                     decoration: BoxDecoration(
-                      color: AppColors.accent.withValues(alpha: 0.12),
+                      color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.12),
                       shape: BoxShape.circle,
                     ),
                     child: Center(
@@ -79,7 +78,7 @@ class _SetMoveCardState extends State<SetMoveCard> {
                             ? widget.move.name[0].toUpperCase()
                             : '?',
                         style: AppTypography.titleSmall.copyWith(
-                          color: AppColors.accent,
+                          color: Theme.of(context).colorScheme.primary,
                           fontWeight: FontWeight.w700,
                         ),
                       ),
@@ -119,8 +118,8 @@ class _SetMoveCardState extends State<SetMoveCard> {
                   child: Container(
                     width: 22,
                     height: 22,
-                    decoration: const BoxDecoration(
-                      color: AppColors.actionAgain,
+                    decoration: BoxDecoration(
+                      color: AppSemanticTheme.of(context).actionAgain,
                       shape: BoxShape.circle,
                     ),
                     child: const AppIconView(

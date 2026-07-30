@@ -6,7 +6,6 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:breakdex/shared/widgets/app_loader.dart';
-import 'package:breakdex/core/design/colors.dart';
 import 'package:breakdex/core/design/spacing.dart';
 import 'package:breakdex/core/design/theme.dart';
 import 'package:breakdex/core/design/typography.dart';
@@ -289,7 +288,7 @@ class _CoefficientDisplay extends StatelessWidget {
           label: l10n.revStability,
           value: coeff.stabilityFormatted,
           fraction: (coeff.stability / 365).clamp(0, 1),
-          color: AppColors.stateMastery,
+          color: AppSemanticTheme.of(context).stateMastery,
         ),
         const SizedBox(height: AppSpacing.sm),
 
@@ -298,7 +297,7 @@ class _CoefficientDisplay extends StatelessWidget {
           label: l10n.revDifficulty,
           value: coeff.difficulty.toStringAsFixed(1),
           fraction: coeff.difficulty / 10,
-          color: AppColors.actionHard,
+          color: AppSemanticTheme.of(context).actionHard,
         ),
         const SizedBox(height: AppSpacing.sm),
 
@@ -308,10 +307,10 @@ class _CoefficientDisplay extends StatelessWidget {
           value: '$retPct%',
           fraction: coeff.retrievability,
           color: coeff.retrievability > 0.85
-              ? AppColors.actionGood
+              ? AppSemanticTheme.of(context).actionGood
               : coeff.retrievability > 0.5
-              ? AppColors.actionHard
-              : AppColors.actionAgain,
+              ? AppSemanticTheme.of(context).actionHard
+              : AppSemanticTheme.of(context).actionAgain,
         ),
         const SizedBox(height: AppSpacing.md),
 
@@ -321,13 +320,13 @@ class _CoefficientDisplay extends StatelessWidget {
             _StatChip(
               label: l10n.revReps,
               value: '${coeff.reps}',
-              color: AppColors.actionGood,
+              color: AppSemanticTheme.of(context).actionGood,
             ),
             const SizedBox(width: AppSpacing.sm),
             _StatChip(
               label: l10n.revLapses,
               value: '${coeff.lapses}',
-              color: AppColors.actionAgain,
+              color: AppSemanticTheme.of(context).actionAgain,
             ),
             const SizedBox(width: AppSpacing.sm),
             _StatChip(
@@ -470,7 +469,7 @@ class _RatingPreviews extends StatelessWidget {
                 width: 8,
                 height: 8,
                 decoration: BoxDecoration(
-                  color: rating.color,
+                  color: AppSemanticTheme.of(context).colorForRating(rating),
                   shape: BoxShape.circle,
                 ),
               ),
@@ -480,7 +479,7 @@ class _RatingPreviews extends StatelessWidget {
                 child: Text(
                   rating.displayText,
                   style: AppTypography.caption.copyWith(
-                    color: rating.color,
+                    color: AppSemanticTheme.of(context).colorForRating(rating),
                     fontWeight: FontWeight.w600,
                   ),
                 ),

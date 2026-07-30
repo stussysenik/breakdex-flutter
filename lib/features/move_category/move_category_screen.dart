@@ -10,7 +10,6 @@ import 'package:go_router/go_router.dart';
 
 import 'package:breakdex/core/database/database.dart';
 import 'package:breakdex/core/services/entity_names_service.dart';
-import 'package:breakdex/core/design/colors.dart';
 import 'package:breakdex/core/design/spacing.dart';
 import 'package:breakdex/shared/widgets/back_leading.dart';
 import 'package:breakdex/core/design/theme.dart';
@@ -806,21 +805,21 @@ class _FilterChipsView extends ConsumerWidget {
                       _FilterChip(
                         label: 'New',
                         active: activeStates.contains('NEW'),
-                        activeColor: AppColors.stateNew,
+                        activeColor: AppSemanticTheme.of(context).stateNew,
                         onTap: () => _toggleState(ref, 'NEW'),
                       ),
                       const SizedBox(width: AppSpacing.sm),
                       _FilterChip(
                         label: 'Learning',
                         active: activeStates.contains('LEARNING'),
-                        activeColor: AppColors.stateLearning,
+                        activeColor: AppSemanticTheme.of(context).stateLearning,
                         onTap: () => _toggleState(ref, 'LEARNING'),
                       ),
                       const SizedBox(width: AppSpacing.sm),
                       _FilterChip(
                         label: 'Mastery',
                         active: activeStates.contains('MASTERY'),
-                        activeColor: AppColors.stateMastery,
+                        activeColor: AppSemanticTheme.of(context).stateMastery,
                         onTap: () => _toggleState(ref, 'MASTERY'),
                       ),
                     ],

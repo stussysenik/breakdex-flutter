@@ -276,7 +276,7 @@ class _StudyMediaMissing extends StatelessWidget {
             recoverable ? AppIcon.download : AppIcon.videoOff,
             size: 40,
             color: recoverable
-                ? AppColors.accent.withValues(alpha: 0.6)
+                ? Theme.of(context).colorScheme.primary.withValues(alpha: 0.6)
                 : colorScheme.secondary,
           ),
           if (!recoverable) ...[

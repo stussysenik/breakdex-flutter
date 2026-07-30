@@ -139,11 +139,12 @@ class _MetadataVideoPickerSheetState
       }
       unawaited(_loadMembership());
     } on Object catch (e) {
-      if (mounted)
+      if (mounted) {
         setState(() {
           _error = e.toString();
           _loading = false;
         });
+      }
     }
   }
 
@@ -152,8 +153,9 @@ class _MetadataVideoPickerSheetState
   Future<void> _loadMembership() async {
     try {
       final moves = await ref.read(movesDaoProvider).getAll();
-      if (mounted)
+      if (mounted) {
         setState(() => _membership = MoveMembershipIndex.fromMoves(moves));
+      }
     } on Object catch (_) {
       // Overlay stays empty — the picker still imports.
     }
@@ -181,8 +183,9 @@ class _MetadataVideoPickerSheetState
     if (byManaged != null) return byManaged;
     if (asset.isLocal) {
       final hash = await _contentHashForLocal(asset.localIdentifier);
-      if (hash != null)
+      if (hash != null) {
         return _membership.memberMoveId(asset, contentHash: hash);
+      }
     }
     return null;
   }
@@ -253,8 +256,9 @@ class _MetadataVideoPickerSheetState
       for (final entity in entities) {
         if (entity is File) {
           final path = entity.path.toLowerCase();
-          if (path.contains('/.thumbs/') || path.contains('/.ds_store'))
+          if (path.contains('/.thumbs/') || path.contains('/.ds_store')) {
             continue;
+          }
 
           if (path.endsWith('.mp4') ||
               path.endsWith('.mov') ||
@@ -967,11 +971,12 @@ class _VideoTileState extends ConsumerState<_VideoTile> {
             .read(videoServiceProvider)
             .getAssetThumbnail(asset.localIdentifier);
       }
-      if (mounted)
+      if (mounted) {
         setState(() {
           _thumbnail = bytes;
           _loading = false;
         });
+      }
     } on Object catch (_) {
       if (mounted) setState(() => _loading = false);
     }

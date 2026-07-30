@@ -5,11 +5,11 @@ import 'dart:async';
 import 'package:breakdex/core/platform/native_media.dart';
 import 'package:breakdex/core/platform/web_support.dart';
 import 'package:flutter/material.dart';
+import 'package:breakdex/core/design/theme.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:video_player/video_player.dart';
-import 'package:breakdex/core/design/colors.dart';
 import 'package:breakdex/core/design/spacing.dart';
 import 'package:breakdex/core/design/typography.dart';
 import 'package:breakdex/core/design/icons.dart';
@@ -362,7 +362,7 @@ class _VideoPlayerWidgetState extends ConsumerState<VideoPlayerWidget>
       child: Container(
         height: widget.height,
         width: double.infinity,
-        color: AppColors.darkBg,
+        color: AppMediaChrome.of(context).background,
         child: _hasError
             ? const Center(
                 child: AppIconView(
@@ -783,8 +783,9 @@ class _FullscreenVideoPlayerState extends State<_FullscreenVideoPlayer>
     if (_route != nextRoute) {
       if (_route is ModalRoute<dynamic>) appRouteObserver.unsubscribe(this);
       _route = nextRoute;
-      if (nextRoute is ModalRoute<dynamic>)
+      if (nextRoute is ModalRoute<dynamic>) {
         appRouteObserver.subscribe(this, nextRoute);
+      }
     }
   }
 
@@ -800,8 +801,9 @@ class _FullscreenVideoPlayerState extends State<_FullscreenVideoPlayer>
     cancelHideTimer();
     WidgetsBinding.instance.removeObserver(this);
     if (_route is ModalRoute<dynamic>) appRouteObserver.unsubscribe(this);
-    if (!widget.controller.value.isPlaying)
+    if (!widget.controller.value.isPlaying) {
       MediaPlaybackCoordinator.shared.release(widget.playbackId);
+    }
     unawaited(SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge));
     unawaited(
       SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]),

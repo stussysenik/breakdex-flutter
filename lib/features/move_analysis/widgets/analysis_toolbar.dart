@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:breakdex/core/design/theme.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import 'package:breakdex/core/design/colors.dart';
 import 'package:breakdex/core/design/spacing.dart';
 import 'package:breakdex/core/design/typography.dart';
 import 'package:breakdex/features/move_analysis/providers/analysis_providers.dart';
@@ -221,7 +221,7 @@ class _LiveIndicator extends StatelessWidget {
           width: 8,
           height: 8,
           decoration: BoxDecoration(
-            color: isActive ? AppColors.actionAgain : Colors.grey,
+            color: isActive ? AppSemanticTheme.of(context).actionAgain : Colors.grey,
             shape: BoxShape.circle,
           ),
         ),
@@ -229,7 +229,7 @@ class _LiveIndicator extends StatelessWidget {
         Text(
           isActive ? 'LIVE' : 'OFF',
           style: AppTypography.caption.copyWith(
-            color: isActive ? AppColors.actionAgain : Colors.grey,
+            color: isActive ? AppSemanticTheme.of(context).actionAgain : Colors.grey,
             fontWeight: FontWeight.w600,
             fontSize: 10,
           ),

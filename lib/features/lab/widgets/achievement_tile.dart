@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:breakdex/core/design/theme.dart';
 import 'package:go_router/go_router.dart';
 
-import 'package:breakdex/core/design/colors.dart';
 import 'package:breakdex/core/design/spacing.dart';
 import 'package:breakdex/core/design/typography.dart';
 
@@ -42,16 +42,16 @@ class AchievementTile extends StatelessWidget {
   ///   Growing   → stateLearning (blue, active progress)
   ///   Sprouting → actionGood (green, positive signal)
   ///   Seed      → secondary grey (neutral, dormant)
-  static Color tierColor(final String tier) => switch (tier) {
-        'mastered' => AppColors.stateMastery,
-        'growing' => AppColors.stateLearning,
-        'sprouting' => AppColors.actionGood,
+  static Color tierColor(final BuildContext context, final String tier) => switch (tier) {
+        'mastered' => AppSemanticTheme.of(context).stateMastery,
+        'growing' => AppSemanticTheme.of(context).stateLearning,
+        'sprouting' => AppSemanticTheme.of(context).actionGood,
         _ => const Color(0xFF8892A4), // Neutral grey for seed
       };
 
   @override
   Widget build(final BuildContext context) {
-    final color = tierColor(tier);
+    final color = tierColor(context, tier);
     final icon = tierIcon(tier);
 
     return GestureDetector(

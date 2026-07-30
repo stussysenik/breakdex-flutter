@@ -243,24 +243,29 @@ needs a Scholar pass first) before any Student session touches code.
   regenerated `gen/`. Icon conformance gate caught a raw `Icons.check_circle` in the new
   screen — fixed to `AppIcon.success` before the commit landed (the gate works).
   `add-color-packs` tasks 5.1–5.5 ticked; this change's 6.5 ticked in the same commit.
+<!-- Boxes below are in RULED EXECUTION ORDER (6.8 → 6.7 → 6.10 → 6.9 → 6.6), not
+     numeric order, so `./status.sh` — which reports the first unticked box in file
+     order — is correct by construction. The rationale per item is in the triage
+     table at the foot of this file. Closed by 6.15; do not re-sort numerically. -->
+
+- [ ] 6.8 **Honest stats.** `SCR-20260728-maro` (MOVES BOXES): give actually helpful and
+  reliable stats — the current NEW / PRACTICING / STRONG / TOTAL DUE readout is not earning
+  its space.
+- [ ] 6.7 **Never-destroy behavior ledger.** Working state and behavior are never destroyed:
+  a black box that can be viewed in-app at any time and exported out. **Must extend the
+  existing `provenanceJournal` / `docs/hyperdata-ledger.md`, not become a second system.**
+- [ ] 6.10 **Ephemeral Maestro fixtures.** Long-term usable Maestro testing needs temporary
+  data, not permanent seeding: qualitative flows must run against real-looking data that
+  leaves no residue. Pairs with `android-e2e` 6.3.
+- [ ] 6.9 **Updates + A/B testing.** Solve the update story, and add an A/B test showcase
+  openable from Settings. Overlaps the remote-config work in
+  `add-web-first-release-and-monetization` (Phase 1R) — reconcile before specifying.
 - [ ] 6.6 **Typography control + power-user layer.** `SCR-20260728-mawt`: per-label/input
   font-family control, made easy — "interfaces are to be read", the taste is in denoting each
   one. Alongside it: one central XState machine; an AST-shaped property model so every
   element is addressable; lexical (`sgrep`) matched with syntactical search; and cmd+K brought
   into the app so it serves power users. Treat as an infinite-traversal problem over a set of
   information pieces. **Scholar session required before specifying.**
-- [ ] 6.7 **Never-destroy behavior ledger.** Working state and behavior are never destroyed:
-  a black box that can be viewed in-app at any time and exported out. **Must extend the
-  existing `provenanceJournal` / `docs/hyperdata-ledger.md`, not become a second system.**
-- [ ] 6.8 **Honest stats.** `SCR-20260728-maro` (MOVES BOXES): give actually helpful and
-  reliable stats — the current NEW / PRACTICING / STRONG / TOTAL DUE readout is not earning
-  its space.
-- [ ] 6.9 **Updates + A/B testing.** Solve the update story, and add an A/B test showcase
-  openable from Settings. Overlaps the remote-config work in
-  `add-web-first-release-and-monetization` (Phase 1R) — reconcile before specifying.
-- [ ] 6.10 **Ephemeral Maestro fixtures.** Long-term usable Maestro testing needs temporary
-  data, not permanent seeding: qualitative flows must run against real-looking data that
-  leaves no residue. Pairs with `android-e2e` 6.3.
 
 - [x] 6.11 **Add-flow preview coverage.** The three surfaces of `/add` — AddScreen (choose what
   to add) → `VideoPickerSheet` (choose a source) → clip metadata authoring — could not be
@@ -327,7 +332,7 @@ needs a Scholar pass first) before any Student session touches code.
   and ch7 watches `lib/dev/preview_db_web.dart`, both changed this session, so stamping at the *old*
   HEAD would re-redden them immediately.
 
-- [ ] 6.14 **The suite is flaky at roughly 50%, and the flaking tests are still unnamed**
+- [x] 6.14 **The suite is flaky at roughly 50%, and the flaking tests are still unnamed**
   (2026-07-30). Four `flutter test` runs on the *same* commit disagreed:
 
   | run | result | conditions |
@@ -390,6 +395,47 @@ needs a Scholar pass first) before any Student session touches code.
   <br/>**Not currently a `verify.sh` blocker** — the gate passes on a clean run. It is recorded
   because a suite that is green only half the time quietly erodes the binary-truth axiom: it makes
   "the tests pass" a coin flip that every future session will have to re-flip.
+  <br/>**RESOLVED 2026-07-30 (agent A, code read of the close path as the audit directed). The
+  audit's causal chain was inverted, and the read found three more defects behind it.** Line 137
+  is `expect(dbMove.videoPath, isNotNull)` and it runs in the test *body*; the only `dispose()` in
+  the file is in `tearDown`, which runs *after* it. So the `StateError` cannot be upstream of the
+  `null` — it fires later, at teardown. Both are real; they are independent:
+  <br/>**(1) The `null` — a fixed sleep, which is the load-sensitivity, confirmed by measurement.**
+  The test fanned `VideoEdited` out to a hash isolate plus a file move and then slept a flat
+  `200ms`. Instrumented, `_saveVideo` takes **452ms and 536ms** on an *idle* machine, so the budget
+  was already short before contention entered — the flake needed no exotic race. Fixed by polling
+  to a 15s deadline, which is the idiom the *sibling test in the same file* (`waitForHash`) already
+  used; the flaky one simply never got it. Not a new pattern, a missing application of the file's own.
+  <br/>**(2) The `StateError` — a real production defect, and its error path was self-defeating.**
+  `_emit` (:214) added to `_progressController` unguarded, and `dispose()` closes it while an action
+  can still be suspended on an await. Worse, `execute`'s `catch` (:90) emitted onto **that same
+  closed controller**, so the `StateError` was raised *inside the error handler* and replaced the
+  `rethrow` — any genuine materialize failure during teardown was reported as a bogus
+  `Bad state` instead of its cause. Fixed with an `isClosed` guard on both emit sites (`_emit` +
+  new `_emitError`): progress is an advisory side channel, so a torn-down machine loses its
+  progress and never its transaction. RED/GREEN both directions in
+  `test/core/services/storage_action_machine_test.dart` — pre-fix the first test threw
+  `StateError` at `_emit` via `_handleMaterialize`, and the second proved the masking with
+  `storage_action_machine.dart 90:27` on the stack.
+  <br/>**(3) NEW — a missing source hangs materialize forever.** `AssetHashService`
+  `_computeHashWithProgressIsolate` calls `file.lengthSync()` (`asset_hash_service.dart:83`)
+  before any error plumbing. On a missing or unreadable file the isolate dies, its `SendPort`
+  never sends, and the `ReceivePort` in `computeHashWithProgress` never closes — so
+  `_handleMaterialize`'s `await for` waits indefinitely. No timeout, no error, no progress: in the
+  app that is a spinner that never resolves if a source video vanished between pick and save.
+  `Isolate.spawn` is never given `onError`/`onExit`. **Not fixed here** — wiring isolate error
+  propagation is a design call with its own blast radius, and this task is the flake. Filed as
+  6.16.
+  <br/>**(4) NEW — the diagnostics logger replaces the error it is reporting.** `StageLogger.fail`
+  calls `debugPrintStack`, which asserts (`stack_frame.dart:197`,
+  *"Got a stack frame from package:stack_trace, where a vm or web frame was expected"*) on the
+  traces that propagate inside a plain `test()` body, because `FlutterError.demangleStackTrace` is
+  only wired up by `testWidgets`. The `_AssertionError` then **supersedes the real exception**, so
+  every error path through `execute` in a unit test reports the logger's own failure instead of the
+  cause. This is precisely the "diagnostic that truncates its own evidence" trap, and it is a
+  strong candidate for why this defect survived two prior sessions. Worked around locally by
+  setting the demangle hook in the test's `main()`; the general fix is 6.17.
+  <br/>Still unnamed: the *second* test from run 1's `-2`. Unchanged by this work.
 
 - [x] 6.13 **Per-screen exceptions the repaired preview harness exposed** (found 2026-07-30, the
   first run in which previews actually rendered). These were invisible while every preview died at
@@ -428,7 +474,7 @@ needs is already known:
 Recommended order once 6.4/6.5 are implemented: **6.8 → 6.7 → 6.10 → 6.9 → 6.6**, cheapest
 and most independent first, with 6.6 last because it is the only one gated on a Scholar pass.
 
-- [ ] 6.15 **The board and the ledger disagree about what "next" is** (found by agent C's audit,
+- [x] 6.15 **The board and the ledger disagree about what "next" is** (found by agent C's audit,
   2026-07-30). `./status.sh` reports `NEXT: 6.6 Typography control`, because it takes the first
   unticked box in file order. The ruling recorded at the foot of this file says the order is
   **6.8 → 6.7 → 6.10 → 6.9 → 6.6**, with 6.6 deliberately *last* as the only item gated on a
@@ -448,3 +494,46 @@ and most independent first, with 6.6 last because it is the only one gated on a 
   bullet needs rewriting to name a 6.x task, which is a prerequisite for both.
   <br/>**Not a gate failure** — nothing is red because of this. It is recorded because a board
   that disagrees with the ledger costs every future session the minute the board exists to save.
+  <br/>**CLOSED 2026-07-30 (agent A) via (a).** The 6.x boxes are now stored in ruled execution
+  order (6.8 → 6.7 → 6.10 → 6.9 → 6.6) with an HTML comment at the head of the block saying so
+  and warning against re-sorting numerically. `./status.sh` now reports `NEXT: 6.8` by reading
+  the file it already reads — no script change, and the second copy of the rule is gone rather
+  than instrumented.
+  <br/>**One half of the finding was wrong, recorded so the correction survives:** the `## NOW`
+  block already carried a `**Next unticked: 6.8**` bullet naming a 6.x task, so session-start step 2
+  *was* satisfied — the audit read the block's long DONE narration (which does discuss the
+  2026-07-13 Appwrite wave) and missed the operative line below it. Only the file-order divergence
+  was real. A long `## NOW` block whose actionable line sits after fifty lines of history is its own
+  mild hazard, but it is not the defect claimed.
+
+- [ ] 6.16 **A missing source file hangs materialize forever** (found 2026-07-30 while closing
+  6.14). `AssetHashService._computeHashWithProgressIsolate` calls `file.lengthSync()`
+  (`asset_hash_service.dart:83`) before any error plumbing exists, and `Isolate.spawn` is called
+  with no `onError`/`onExit`. When the file is missing or unreadable the isolate dies silently,
+  its `SendPort` never sends, and the `ReceivePort` loop in `computeHashWithProgress` never
+  closes — so `StorageActionMachine._handleMaterialize`'s `await for` waits **indefinitely**. In
+  the app that is a progress spinner that never resolves and never errors if a picked video moved
+  or was deleted between pick and save; in tests it is a 30s timeout (observed).
+  <br/>Fix shape: give `Isolate.spawn` `onError`/`onExit` ports and convert isolate death into a
+  stream error, so `execute`'s existing `catch` can surface it — the catch is already correct as
+  of 6.14, it is simply never reached. Consider validating existence before spawning as the cheap
+  half. **Deliberately not fixed inside 6.14**: isolate error propagation touches every
+  `computeHashWithProgress` caller and deserves its own red test per path, not a drive-by.
+
+- [ ] 6.17 **`StageLogger.fail` replaces the error it is reporting, in every non-widget test**
+  (found 2026-07-30 while closing 6.14). `StageLogger.fail` calls `debugPrintStack`, which asserts
+  at `stack_frame.dart:197` — *"Got a stack frame from package:stack_trace, where a vm or web frame
+  was expected"* — on traces propagating inside a plain `test()` body, because
+  `FlutterError.demangleStackTrace` is wired up by `testWidgets` and not by `test`. The resulting
+  `_AssertionError` **supersedes the real exception**, so any code path that logs a failure through
+  `StageLogger` reports the logger's own assertion instead of the cause.
+  <br/>This is the "a diagnostic that truncates its own evidence is the first bug to fix" rule in
+  `CLAUDE.md`, and it is a strong candidate for why 6.14's defect survived two prior sessions: the
+  instrument meant to name the cause was overwriting it. 6.14 worked around it by setting the
+  demangle hook in one test file's `main()`; that fixes one file and leaves the trap armed
+  everywhere else.
+  <br/>Fix shape: set the hook once in shared test setup (`test/helpers/`) so every unit test
+  inherits it, or make `StageLogger.fail` not call `debugPrintStack` when
+  `FlutterError.demangleStackTrace` is the unwired default. Prefer the former — the logger's
+  production behavior is correct and should not bend to the test harness. Red test: assert a
+  `StageLogger`-logged failure surfaces its own exception type from a plain `test()` body.

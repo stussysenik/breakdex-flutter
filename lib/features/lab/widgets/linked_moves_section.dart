@@ -7,7 +7,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import 'package:breakdex/core/database/database.dart';
-import 'package:breakdex/core/design/colors.dart';
 import 'package:breakdex/core/design/spacing.dart';
 import 'package:breakdex/core/design/theme.dart';
 import 'package:breakdex/core/design/typography.dart';
@@ -69,7 +68,7 @@ class LinkedMovesSection extends ConsumerWidget {
               decoration: isHighlighted
                   ? BoxDecoration(
                       borderRadius: BorderRadius.circular(AppRadius.md),
-                      border: Border.all(color: AppColors.accent, width: 2),
+                      border: Border.all(color: Theme.of(context).colorScheme.primary, width: 2),
                     )
                   : const BoxDecoration(),
               child: labMovesAsync.when(
@@ -84,7 +83,7 @@ class LinkedMovesSection extends ConsumerWidget {
                   child: Text(
                     'Error: $e',
                     style: AppTypography.caption.copyWith(
-                      color: AppColors.actionAgain,
+                      color: AppSemanticTheme.of(context).actionAgain,
                     ),
                   ),
                 ),
@@ -180,7 +179,7 @@ class _LinkedMoveCardState extends State<_LinkedMoveCard> {
                         width: 28,
                         height: 28,
                         decoration: BoxDecoration(
-                          color: AppColors.accent.withValues(alpha: 0.12),
+                          color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.12),
                           borderRadius: BorderRadius.circular(6),
                         ),
                         child: Center(
@@ -189,7 +188,7 @@ class _LinkedMoveCardState extends State<_LinkedMoveCard> {
                                 ? widget.move.name[0].toUpperCase()
                                 : '?',
                             style: AppTypography.caption.copyWith(
-                              color: AppColors.accent,
+                              color: Theme.of(context).colorScheme.primary,
                               fontWeight: FontWeight.w700,
                             ),
                           ),
@@ -241,8 +240,8 @@ class _LinkedMoveCardState extends State<_LinkedMoveCard> {
                   child: Container(
                     width: 20,
                     height: 20,
-                    decoration: const BoxDecoration(
-                      color: AppColors.actionAgain,
+                    decoration: BoxDecoration(
+                      color: AppSemanticTheme.of(context).actionAgain,
                       shape: BoxShape.circle,
                     ),
                     child: const AppIconView(
@@ -328,7 +327,7 @@ class _AddLinkedMoveCard extends StatelessWidget {
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(AppRadius.md),
           border: Border.all(
-            color: AppColors.accent.withValues(alpha: 0.3),
+            color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.3),
             width: 1.5,
           ),
         ),
@@ -337,14 +336,14 @@ class _AddLinkedMoveCard extends StatelessWidget {
           children: [
             AppIconView(
               AppIcon.add,
-              color: AppColors.accent.withValues(alpha: 0.7),
+              color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.7),
               size: 24,
             ),
             const SizedBox(height: 4),
             Text(
               'Add',
               style: AppTypography.caption.copyWith(
-                color: AppColors.accent.withValues(alpha: 0.7),
+                color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.7),
                 fontWeight: FontWeight.w600,
                 fontSize: 10,
               ),

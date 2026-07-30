@@ -1,12 +1,12 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:breakdex/core/design/theme.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import 'package:breakdex/core/database/database.dart';
-import 'package:breakdex/core/design/colors.dart';
 import 'package:breakdex/core/design/icons.dart';
 import 'package:breakdex/core/design/spacing.dart';
 import 'package:breakdex/core/design/typography.dart';
@@ -207,9 +207,9 @@ class _ArchivedMoveRow extends ConsumerWidget {
           ),
           TextButton(
             onPressed: () => Navigator.pop(context, true),
-            child: const Text(
+            child: Text(
               'Delete',
-              style: TextStyle(color: AppColors.actionAgain),
+              style: TextStyle(color: AppSemanticTheme.of(context).actionAgain),
             ),
           ),
         ],

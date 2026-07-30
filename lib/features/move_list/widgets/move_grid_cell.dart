@@ -44,7 +44,7 @@ class _MoveGridCell extends ConsumerWidget {
                     restorable ? AppIcon.download : AppIcon.videoOff,
                     size: 40,
                     color: restorable
-                        ? AppColors.accent.withValues(alpha: 0.5)
+                        ? Theme.of(context).colorScheme.primary.withValues(alpha: 0.5)
                         : colorScheme.secondary,
                   ),
                   if (!restorable) ...[

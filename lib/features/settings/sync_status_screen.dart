@@ -4,9 +4,9 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:breakdex/core/design/theme.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import 'package:breakdex/core/design/colors.dart';
 import 'package:breakdex/core/design/spacing.dart';
 import 'package:breakdex/core/design/typography.dart';
 import 'package:breakdex/core/providers.dart';
@@ -72,7 +72,7 @@ class SyncStatusScreen extends ConsumerWidget {
                 : 'WiFi only',
             trailing: Switch.adaptive(
               value: networkPolicy.syncOnMobileData,
-              activeThumbColor: AppColors.accent,
+              activeThumbColor: Theme.of(context).colorScheme.primary,
               onChanged: (final value) async {
                 await networkPolicy.setSyncOnMobileData(enabled: value);
               },
@@ -295,15 +295,15 @@ class _IssueRow extends StatelessWidget {
     final (icon, tint) = switch (issue.kind) {
       IntegrityIssueKind.mismatch => (
         AppIcon.warning.resolve(context),
-        AppColors.actionAgain,
+        AppSemanticTheme.of(context).actionAgain,
       ),
       IntegrityIssueKind.missing => (
         AppIcon.link.resolve(context),
-        AppColors.actionHard,
+        AppSemanticTheme.of(context).actionHard,
       ),
       IntegrityIssueKind.unreadable => (
         AppIcon.error.resolve(context),
-        AppColors.actionAgain,
+        AppSemanticTheme.of(context).actionAgain,
       ),
     };
 
@@ -388,8 +388,8 @@ class _StatusCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(AppRadius.md),
         border: Border.all(
           color: allSynced
-              ? AppColors.stateMastery.withValues(alpha: 0.3)
-              : AppColors.accent.withValues(alpha: 0.3),
+              ? AppSemanticTheme.of(context).stateMastery.withValues(alpha: 0.3)
+              : Theme.of(context).colorScheme.primary.withValues(alpha: 0.3),
         ),
       ),
       child: Column(
@@ -401,7 +401,7 @@ class _StatusCard extends StatelessWidget {
                 allSynced
                     ? AppIcon.cloudDone.resolve(context)
                     : AppIcon.sync.resolve(context),
-                color: allSynced ? AppColors.stateMastery : AppColors.accent,
+                color: allSynced ? AppSemanticTheme.of(context).stateMastery : Theme.of(context).colorScheme.primary,
                 size: 24,
               ),
               const SizedBox(width: AppSpacing.sm),
@@ -420,7 +420,7 @@ class _StatusCard extends StatelessWidget {
               child: LinearProgressIndicator(
                 value: syncProgress.fraction,
                 backgroundColor: colorScheme.onSurface.withValues(alpha: 0.1),
-                valueColor: const AlwaysStoppedAnimation(AppColors.accent),
+                valueColor: AlwaysStoppedAnimation(Theme.of(context).colorScheme.primary),
                 minHeight: 6,
               ),
             ),
@@ -517,27 +517,27 @@ class _AssetTallyRow extends StatelessWidget {
       (
         tally.uploading,
         l10n.setSyncTallyUploading(tally.uploading),
-        AppColors.accent,
+        Theme.of(context).colorScheme.primary,
       ),
       (
         tally.waiting,
         l10n.setSyncTallyWaiting(tally.waiting),
-        AppColors.actionHard,
+        AppSemanticTheme.of(context).actionHard,
       ),
       (
         tally.retrying,
         l10n.setSyncTallyRetrying(tally.retrying),
-        AppColors.actionHard,
+        AppSemanticTheme.of(context).actionHard,
       ),
       (
         tally.unbackupable,
         l10n.setSyncTallyStuck(tally.unbackupable),
-        AppColors.actionAgain,
+        AppSemanticTheme.of(context).actionAgain,
       ),
       (
         tally.backedUp,
         l10n.setSyncTallyBackedUp(tally.backedUp),
-        AppColors.stateMastery,
+        AppSemanticTheme.of(context).stateMastery,
       ),
     ];
 
@@ -578,23 +578,23 @@ class _AssetDetailRow extends StatelessWidget {
     final (icon, tint) = switch (detail.status) {
       AssetSyncStatus.backedUp => (
         AppIcon.cloudDone.resolve(context),
-        AppColors.stateMastery,
+        AppSemanticTheme.of(context).stateMastery,
       ),
       AssetSyncStatus.uploading => (
         AppIcon.upload.resolve(context),
-        AppColors.accent,
+        Theme.of(context).colorScheme.primary,
       ),
       AssetSyncStatus.queued => (
         AppIcon.schedule.resolve(context),
-        AppColors.accent,
+        Theme.of(context).colorScheme.primary,
       ),
       AssetSyncStatus.failed => (
         AppIcon.error.resolve(context),
-        AppColors.actionAgain,
+        AppSemanticTheme.of(context).actionAgain,
       ),
       AssetSyncStatus.pending => (
         AppIcon.error.resolve(context),
-        AppColors.actionHard,
+        AppSemanticTheme.of(context).actionHard,
       ),
     };
 
@@ -639,8 +639,8 @@ class _AssetDetailRow extends StatelessWidget {
                       backgroundColor: colorScheme.onSurface.withValues(
                         alpha: 0.1,
                       ),
-                      valueColor: const AlwaysStoppedAnimation(
-                        AppColors.accent,
+                      valueColor: AlwaysStoppedAnimation(
+                        Theme.of(context).colorScheme.primary,
                       ),
                       minHeight: 3,
                     ),
@@ -805,7 +805,7 @@ class _DataUsageCard extends StatelessWidget {
               value: fraction,
               backgroundColor: colorScheme.onSurface.withValues(alpha: 0.1),
               valueColor: AlwaysStoppedAnimation(
-                fraction > 0.9 ? AppColors.actionAgain : AppColors.accent,
+                fraction > 0.9 ? AppSemanticTheme.of(context).actionAgain : Theme.of(context).colorScheme.primary,
               ),
               minHeight: 6,
             ),
@@ -851,7 +851,7 @@ class _ActionTile extends StatelessWidget {
         ),
         child: Row(
           children: [
-            Icon(icon, color: AppColors.accent, size: 22),
+            Icon(icon, color: Theme.of(context).colorScheme.primary, size: 22),
             const SizedBox(width: AppSpacing.md),
             Expanded(
               child: Column(

@@ -11,7 +11,6 @@ import 'package:intl/intl.dart';
 
 import 'package:breakdex/core/database/database.dart';
 import 'package:breakdex/core/database/daos/combos_dao.dart';
-import 'package:breakdex/core/design/colors.dart';
 import 'package:breakdex/core/design/icons.dart';
 import 'package:breakdex/core/design/spacing.dart';
 import 'package:breakdex/core/design/theme.dart';
@@ -613,12 +612,12 @@ class _StartupVideoReliabilityBanner extends ConsumerWidget {
       child: Container(
         decoration: BoxDecoration(
           color: hasRecovery
-              ? AppColors.accent.withValues(alpha: 0.12)
+              ? Theme.of(context).colorScheme.primary.withValues(alpha: 0.12)
               : colorScheme.surfaceContainerHighest,
           borderRadius: BorderRadius.circular(AppRadius.md),
           border: Border.all(
             color: hasRecovery
-                ? AppColors.accent.withValues(alpha: 0.25)
+                ? Theme.of(context).colorScheme.primary.withValues(alpha: 0.25)
                 : colorScheme.outline.withValues(alpha: 0.15),
           ),
         ),
@@ -630,7 +629,7 @@ class _StartupVideoReliabilityBanner extends ConsumerWidget {
               AppIconView(
                 hasRecovery ? AppIcon.check : AppIcon.sync,
                 color: hasRecovery
-                    ? AppColors.accent
+                    ? Theme.of(context).colorScheme.primary
                     : colorScheme.onSurfaceVariant,
               ),
               const SizedBox(width: AppSpacing.sm),

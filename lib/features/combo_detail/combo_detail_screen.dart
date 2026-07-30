@@ -467,7 +467,7 @@ class _ComboDetailBody extends ConsumerWidget {
                   key: ValueKey(
                     '${currentMove.id}:$safeIndex:${currentMove.contentHash}',
                   ),
-                  videoPath: currentMove.resolvedVideoPath!,
+                  videoPath: currentMove.resolvedVideoPath,
                   autoPlay: true,
                 )
               else

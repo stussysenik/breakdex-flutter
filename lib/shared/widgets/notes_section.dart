@@ -9,7 +9,6 @@ import 'package:flutter_markdown/flutter_markdown.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-import 'package:breakdex/core/design/colors.dart';
 import 'package:breakdex/core/design/spacing.dart';
 import 'package:breakdex/core/design/typography.dart';
 import 'package:breakdex/core/providers.dart';
@@ -184,7 +183,7 @@ class _NotesSectionState extends ConsumerState<NotesSection> {
                 child: Text(
                   _expanded ? 'Show less' : 'Show more',
                   style: AppTypography.caption.copyWith(
-                    color: AppColors.accent,
+                    color: Theme.of(context).colorScheme.primary,
                     fontWeight: FontWeight.w600,
                   ),
                 ),
@@ -223,7 +222,7 @@ class _NotesSectionState extends ConsumerState<NotesSection> {
                 setState(() => _editing = false);
               },
               style: TextButton.styleFrom(
-                foregroundColor: AppColors.accent,
+                foregroundColor: Theme.of(context).colorScheme.primary,
                 padding: const EdgeInsets.symmetric(
                   horizontal: AppSpacing.sm,
                   vertical: AppSpacing.xs,
@@ -265,7 +264,7 @@ class _NotesSectionState extends ConsumerState<NotesSection> {
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(AppRadius.sm),
-              borderSide: const BorderSide(color: AppColors.accent),
+              borderSide: BorderSide(color: Theme.of(context).colorScheme.primary),
             ),
           ),
         ),
@@ -397,7 +396,7 @@ class _MentionMarkdownBody extends ConsumerWidget {
               color: colorScheme.onSurface,
             ),
             a: AppTypography.bodySmall.copyWith(
-              color: AppColors.accent,
+              color: Theme.of(context).colorScheme.primary,
               fontWeight: FontWeight.w600,
             ),
             h1: AppTypography.titleSmall.copyWith(
@@ -411,7 +410,7 @@ class _MentionMarkdownBody extends ConsumerWidget {
               color: colorScheme.secondary,
             ),
             code: AppTypography.caption.copyWith(
-              color: AppColors.accent,
+              color: Theme.of(context).colorScheme.primary,
               backgroundColor: colorScheme.surfaceContainerHighest,
             ),
           ),

@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:breakdex/core/design/theme.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:breakdex/core/database/database.dart';
 import 'package:breakdex/core/database/daos/combos_dao.dart';
-import 'package:breakdex/core/design/colors.dart';
 import 'package:breakdex/core/design/spacing.dart';
 import 'package:breakdex/core/models/learning_state.dart';
 import 'package:breakdex/core/models/review_card_display_settings.dart';
@@ -203,7 +203,7 @@ class ReviewCard extends ConsumerWidget {
                   child: Container(
                     clipBehavior: Clip.antiAlias,
                     decoration: BoxDecoration(
-                      color: AppColors.darkFill,
+                      color: AppMediaChrome.of(context).fill,
                       borderRadius: BorderRadius.circular(AppRadius.xxs),
                     ),
                     child: Stack(

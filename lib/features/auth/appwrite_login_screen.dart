@@ -13,7 +13,6 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:breakdex/core/config/appwrite_env.dart';
-import 'package:breakdex/core/design/colors.dart';
 import 'package:breakdex/core/design/spacing.dart';
 import 'package:breakdex/core/design/theme.dart';
 import 'package:breakdex/core/design/typography.dart';
@@ -262,7 +261,7 @@ class _AppMark extends StatelessWidget {
         height: AppSpacing.xxxl + AppSpacing.xs,
         alignment: Alignment.center,
         decoration: BoxDecoration(
-          color: AppColors.accent,
+          color: Theme.of(context).colorScheme.primary,
           borderRadius: BorderRadius.circular(AppRadius.lg),
         ),
         // FittedBox scales the token glyph to the mark, so no raw fontSize

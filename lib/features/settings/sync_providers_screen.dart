@@ -3,11 +3,11 @@
 
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:breakdex/core/design/theme.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:breakdex/core/database/database.dart';
-import 'package:breakdex/core/design/colors.dart';
 import 'package:breakdex/core/design/icons.dart';
 import 'package:breakdex/core/design/spacing.dart';
 import 'package:breakdex/core/design/typography.dart';
@@ -146,7 +146,7 @@ class _ProviderCard extends ConsumerWidget {
         children: [
           AppIconView(
             _iconForProvider(provider.providerType),
-            color: AppColors.accent,
+            color: Theme.of(context).colorScheme.primary,
             size: 28,
           ),
           const SizedBox(width: AppSpacing.md),
@@ -169,7 +169,7 @@ class _ProviderCard extends ConsumerWidget {
                       connected ? 'Connected' : 'Not connected',
                       style: AppTypography.bodySmall.copyWith(
                         color: connected
-                            ? AppColors.stateMastery
+                            ? AppSemanticTheme.of(context).stateMastery
                             : colorScheme.onSurface.withValues(alpha: 0.5),
                       ),
                     );
@@ -227,20 +227,20 @@ class _AddProviderButton extends ConsumerWidget {
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(AppRadius.md),
           border: Border.all(
-            color: AppColors.accent.withValues(alpha: 0.3),
+            color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.3),
             style: BorderStyle.solid,
           ),
         ),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            AppIconView(AppIcon.add, color: AppColors.accent, size: 20),
+            AppIconView(AppIcon.add, color: Theme.of(context).colorScheme.primary, size: 20),
             const SizedBox(width: AppSpacing.sm),
             Text(
               'Add Cloud Provider',
               style: AppTypography.bodySmall
                   .merge(const TextStyle(fontWeight: FontWeight.w600))
-                  .copyWith(color: AppColors.accent),
+                  .copyWith(color: Theme.of(context).colorScheme.primary),
             ),
           ],
         ),
@@ -366,7 +366,7 @@ class _ProviderOption extends StatelessWidget {
   Widget build(final BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
     return ListTile(
-      leading: AppIconView(icon, color: AppColors.accent),
+      leading: AppIconView(icon, color: Theme.of(context).colorScheme.primary),
       title: Text(
         title,
         style: AppTypography.bodySmall

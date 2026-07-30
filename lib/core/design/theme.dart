@@ -150,6 +150,85 @@ abstract final class AppSurfaces {
   }
 }
 
+/// Chrome for surfaces that are dark **on purpose** — video players, the trim
+/// timeline, the instax viewer — regardless of the app's brightness.
+///
+/// These surfaces used to name `AppColors.darkBg` / `darkCard` / `darkFill`
+/// directly, which is the 2.5 bypass in its least obvious form: the intent
+/// ("stay dark under a bright photo") is legitimate, so the constants read as
+/// correct, but they still pinned the pixels outside the theme and a pack could
+/// never restyle them. Resolving the *active pack at [Brightness.dark]* keeps
+/// the intent and returns the pixels: a pack owns its own dark side, so media
+/// chrome follows the pack without ever following the app's light mode.
+@immutable
+class AppMediaChrome extends ThemeExtension<AppMediaChrome> {
+  const AppMediaChrome({
+    required this.background,
+    required this.card,
+    required this.fill,
+    required this.separator,
+    required this.ink,
+  });
+
+  /// The full-bleed backdrop behind media.
+  final Color background;
+
+  /// A contained panel over that backdrop.
+  final Color card;
+
+  /// A recessed well — scrub tracks, placeholder tiles.
+  final Color fill;
+
+  /// A hairline on dark chrome.
+  final Color separator;
+
+  /// Reading ink on dark chrome.
+  final Color ink;
+
+  static AppMediaChrome of(final BuildContext context) =>
+      Theme.of(context).extension<AppMediaChrome>() ?? _fallback;
+
+  /// Used only when a widget is mounted under a bare `ThemeData` (previews,
+  /// tests). Matches the `classic` pack's dark side.
+  static const _fallback = AppMediaChrome(
+    background: AppColors.darkBg,
+    card: AppColors.darkCard,
+    fill: AppColors.darkFill,
+    separator: AppColors.darkSeparator,
+    ink: AppColors.darkText,
+  );
+
+  @override
+  AppMediaChrome copyWith({
+    final Color? background,
+    final Color? card,
+    final Color? fill,
+    final Color? separator,
+    final Color? ink,
+  }) => AppMediaChrome(
+    background: background ?? this.background,
+    card: card ?? this.card,
+    fill: fill ?? this.fill,
+    separator: separator ?? this.separator,
+    ink: ink ?? this.ink,
+  );
+
+  @override
+  AppMediaChrome lerp(
+    final ThemeExtension<AppMediaChrome>? other,
+    final double t,
+  ) {
+    if (other is! AppMediaChrome) return this;
+    return AppMediaChrome(
+      background: Color.lerp(background, other.background, t) ?? background,
+      card: Color.lerp(card, other.card, t) ?? card,
+      fill: Color.lerp(fill, other.fill, t) ?? fill,
+      separator: Color.lerp(separator, other.separator, t) ?? separator,
+      ink: Color.lerp(ink, other.ink, t) ?? ink,
+    );
+  }
+}
+
 @immutable
 class AppSemanticTheme extends ThemeExtension<AppSemanticTheme> {
   const AppSemanticTheme({
@@ -356,7 +435,7 @@ abstract final class AppTheme {
     }
     return {
       ...overrides,
-      if (accent != null) AppColorRole.accent: accent,
+      AppColorRole.accent: ?accent,
       if (stateColors != null) ...{
         AppColorRole.stateNew: stateColors.newState,
         AppColorRole.stateLearning: stateColors.learning,
@@ -382,6 +461,24 @@ abstract final class AppTheme {
     required final Color ink,
     required final Color bg,
   }) => contrastRatio(ink, color) >= contrastRatio(bg, color) ? ink : bg;
+
+  static AppMediaChrome _mediaChrome(
+    final ColorPack pack, {
+    required final Map<AppColorRole, Color> overrides,
+  }) {
+    final dark = ResolvedColors.of(
+      pack,
+      Brightness.dark,
+      overrides: overrides,
+    );
+    return AppMediaChrome(
+      background: dark[AppColorRole.background],
+      card: dark[AppColorRole.card],
+      fill: dark[AppColorRole.fill],
+      separator: dark[AppColorRole.separator],
+      ink: dark[AppColorRole.text],
+    );
+  }
 
   static ThemeData _build({
     required final Brightness brightness,
@@ -475,7 +572,18 @@ abstract final class AppTheme {
       brightness: brightness,
       useMaterial3: true,
       colorScheme: colorScheme,
-      extensions: [semanticTheme, AppIconPackTheme(iconPack.build())],
+      extensions: [
+        semanticTheme,
+        // Media chrome is the same pack read at its dark brightness — never the
+        // app's. The overrides ride along so a user's adjustment reaches a
+        // video surface too; grayscale drops them for the same reason it does
+        // above.
+        _mediaChrome(
+          grayscale ? ColorPackId.mono.pack : pack.pack,
+          overrides: grayscale ? const {} : overrides,
+        ),
+        AppIconPackTheme(iconPack.build()),
+      ],
       scaffoldBackgroundColor: bg,
       textTheme: textTheme,
       appBarTheme: AppBarTheme(

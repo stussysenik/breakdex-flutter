@@ -4,13 +4,13 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:breakdex/core/design/theme.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:uuid/uuid.dart';
 
 import 'package:breakdex/core/database/database.dart';
-import 'package:breakdex/core/design/colors.dart';
 import 'package:breakdex/core/design/spacing.dart';
 import 'package:breakdex/core/design/typography.dart';
 import 'package:breakdex/shared/widgets/app_loader.dart';
@@ -89,9 +89,9 @@ class _MilestoneListState extends ConsumerState<MilestoneList> {
           ),
           TextButton(
             onPressed: () => Navigator.pop(ctx, true),
-            child: const Text(
+            child: Text(
               'Delete',
-              style: TextStyle(color: AppColors.actionAgain),
+              style: TextStyle(color: AppSemanticTheme.of(context).actionAgain),
             ),
           ),
         ],
@@ -138,7 +138,7 @@ class _MilestoneListState extends ConsumerState<MilestoneList> {
             child: Text(
               'Error: $e',
               style: AppTypography.caption.copyWith(
-                color: AppColors.actionAgain,
+                color: AppSemanticTheme.of(context).actionAgain,
               ),
             ),
           ),
@@ -203,9 +203,9 @@ class _MilestoneListState extends ConsumerState<MilestoneList> {
                         _addMilestone();
                         setState(() => _showAddField = false);
                       },
-                      icon: const AppIconView(
+                      icon: AppIconView(
                         AppIcon.check,
-                        color: AppColors.accent,
+                        color: Theme.of(context).colorScheme.primary,
                         size: 20,
                       ),
                     ),
@@ -232,16 +232,16 @@ class _MilestoneListState extends ConsumerState<MilestoneList> {
                   },
                   child: Row(
                     children: [
-                      const AppIconView(
+                      AppIconView(
                         AppIcon.add,
                         size: 18,
-                        color: AppColors.accent,
+                        color: Theme.of(context).colorScheme.primary,
                       ),
                       const SizedBox(width: AppSpacing.xs),
                       Text(
                         'Add milestone',
                         style: AppTypography.bodySmall.copyWith(
-                          color: AppColors.accent,
+                          color: Theme.of(context).colorScheme.primary,
                           fontWeight: FontWeight.w600,
                         ),
                       ),
@@ -289,21 +289,21 @@ class _MilestoneRow extends StatelessWidget {
                 margin: const EdgeInsets.only(top: 1),
                 decoration: BoxDecoration(
                   color: isComplete
-                      ? AppColors.stateMastery.withValues(alpha: 0.15)
+                      ? AppSemanticTheme.of(context).stateMastery.withValues(alpha: 0.15)
                       : Colors.transparent,
                   borderRadius: BorderRadius.circular(6),
                   border: Border.all(
                     color: isComplete
-                        ? AppColors.stateMastery
+                        ? AppSemanticTheme.of(context).stateMastery
                         : colorScheme.outline.withValues(alpha: 0.4),
                     width: 1.5,
                   ),
                 ),
                 child: isComplete
-                    ? const AppIconView(
+                    ? AppIconView(
                         AppIcon.check,
                         size: 14,
-                        color: AppColors.stateMastery,
+                        color: AppSemanticTheme.of(context).stateMastery,
                       )
                     : null,
               ),
@@ -333,7 +333,7 @@ class _MilestoneRow extends StatelessWidget {
                     Text(
                       'Completed ${DateFormat('MMM d').format(milestone.completedAt!)}',
                       style: AppTypography.caption.copyWith(
-                        color: AppColors.stateMastery.withValues(alpha: 0.7),
+                        color: AppSemanticTheme.of(context).stateMastery.withValues(alpha: 0.7),
                       ),
                     ),
                   ],

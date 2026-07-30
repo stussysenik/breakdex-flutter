@@ -226,7 +226,7 @@ class _LibraryRow extends StatelessWidget {
 
   @override
   Widget build(final BuildContext context) {
-    final style = statusStyle(row.combo.status);
+    final style = statusStyle(context, row.combo.status);
 
     return GestureDetector(
       onTap: onTap,

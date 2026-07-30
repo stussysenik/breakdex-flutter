@@ -157,7 +157,7 @@ class _GatesList extends StatelessWidget {
               ),
               const Spacer(),
               if (isDone)
-                AppIconView(AppIcon.success, size: 14, color: Colors.green)
+                const AppIconView(AppIcon.success, size: 14, color: Colors.green)
               else if (boot.currentTask?.contains(_gateLabel(gate)) ?? false)
                 const SizedBox(
                   width: 12,

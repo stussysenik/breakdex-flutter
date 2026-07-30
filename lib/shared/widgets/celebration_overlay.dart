@@ -3,8 +3,8 @@
 
 import 'dart:math';
 import 'package:flutter/material.dart';
+import 'package:breakdex/core/design/theme.dart';
 
-import 'package:breakdex/core/design/colors.dart';
 import 'package:breakdex/core/design/spacing.dart';
 import 'package:breakdex/core/design/typography.dart';
 
@@ -45,12 +45,19 @@ class _CelebrationOverlayState extends State<CelebrationOverlay>
   final _random = Random();
 
   static const _particleCount = 28;
-  static const _baseColors = [
-    AppColors.stateNew,
-    AppColors.stateLearning,
-    AppColors.stateMastery,
-    AppColors.actionGood,
-  ];
+
+  /// Read at paint time rather than held as a `static const` list: the signal
+  /// ramp is theme state now, so a confetti palette pinned at class-load would
+  /// be the same bypass this migration exists to remove.
+  static List<Color> _baseColors(final BuildContext context) {
+    final semantic = AppSemanticTheme.of(context);
+    return [
+      semantic.stateNew,
+      semantic.stateLearning,
+      semantic.stateMastery,
+      semantic.actionGood,
+    ];
+  }
 
   @override
   void initState() {
@@ -96,7 +103,7 @@ class _CelebrationOverlayState extends State<CelebrationOverlay>
         builder: (final context, _) {
           final opacity = 1.0 - _fade.value;
           final colors = [
-            ..._baseColors,
+            ..._baseColors(context),
             Theme.of(context).colorScheme.primary,
           ];
 

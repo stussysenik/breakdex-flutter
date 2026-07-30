@@ -1,6 +1,6 @@
 import 'dart:math';
 import 'package:flutter/material.dart';
-import 'package:breakdex/core/design/colors.dart';
+import 'package:breakdex/core/design/theme.dart';
 
 class TimerRing extends StatelessWidget {
   const TimerRing({
@@ -19,7 +19,7 @@ class TimerRing extends StatelessWidget {
 
     // Color lerps from accent to red as time depletes
     final ringColor = Color.lerp(
-      AppColors.actionAgain,
+      AppSemanticTheme.of(context).actionAgain,
       cs.primary,
       progress,
     )!;

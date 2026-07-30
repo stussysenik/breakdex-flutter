@@ -586,7 +586,7 @@ class _AddConnectionSheetState extends ConsumerState<_AddConnectionSheet> {
                 textField: true,
                 child: TextField(
                   controller: _searchController,
-                  decoration: InputDecoration(
+                  decoration: const InputDecoration(
                     hintText: 'Search moves...',
                     prefixIcon: AppIconView(AppIcon.search),
                   ),

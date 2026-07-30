@@ -8,7 +8,6 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:breakdex/shared/widgets/app_loader.dart';
-import 'package:breakdex/core/design/colors.dart';
 import 'package:breakdex/core/design/spacing.dart';
 import 'package:breakdex/core/design/theme.dart';
 import 'package:breakdex/core/design/typography.dart';
@@ -359,11 +358,11 @@ class _DayCell extends StatelessWidget {
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   if (hasReviews)
-                    const _Dot(color: AppColors.stateLearning), // Blue
+                    _Dot(color: AppSemanticTheme.of(context).stateLearning), // Blue
                   if (hasEntries)
                     const _Dot(color: Color(0xFF9333EA)), // Purple
                   if (hasMilestones)
-                    const _Dot(color: AppColors.stateMastery), // Green
+                    _Dot(color: AppSemanticTheme.of(context).stateMastery), // Green
                 ],
               ),
             ),
@@ -403,7 +402,7 @@ class _Legend extends StatelessWidget {
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
         _LegendItem(
-          color: AppColors.stateLearning,
+          color: AppSemanticTheme.of(context).stateLearning,
           label: 'Reviews',
           colorScheme: colorScheme,
         ),
@@ -415,7 +414,7 @@ class _Legend extends StatelessWidget {
         ),
         const SizedBox(width: AppSpacing.md),
         _LegendItem(
-          color: AppColors.stateMastery,
+          color: AppSemanticTheme.of(context).stateMastery,
           label: 'Milestones',
           colorScheme: colorScheme,
         ),
@@ -536,7 +535,7 @@ class _DayDetailSheet extends ConsumerWidget {
                           ),
                           child: Row(
                             children: [
-                              _Dot(color: item.color),
+                              _Dot(color: item.kind.color(context)),
                               const SizedBox(width: AppSpacing.sm),
                               Expanded(
                                 child: Column(
@@ -545,7 +544,7 @@ class _DayDetailSheet extends ConsumerWidget {
                                     Text(
                                       item.typeLabel,
                                       style: AppTypography.caption.copyWith(
-                                        color: item.color,
+                                        color: item.kind.color(context),
                                         fontWeight: FontWeight.w600,
                                       ),
                                     ),
@@ -670,17 +669,33 @@ final _monthActivityProvider = FutureProvider.family<_MonthActivity, DateTime>((
 });
 
 /// A single activity item shown in the day detail bottom sheet.
+/// What a day-detail row *is*. The row used to carry a resolved `Color`,
+/// which meant a Riverpod `FutureProvider` — a data layer with no
+/// `BuildContext` — decided a pixel, and no pack or accessibility overlay
+/// could reach it. The kind travels; the widget resolves.
+enum _ActivityKind {
+  review,
+  labEntry,
+  milestone;
+
+  Color color(final BuildContext context) => switch (this) {
+    _ActivityKind.review => AppSemanticTheme.of(context).stateLearning,
+    _ActivityKind.labEntry => const Color(0xFF9333EA),
+    _ActivityKind.milestone => AppSemanticTheme.of(context).stateMastery,
+  };
+}
+
 class _DayActivityItem {
   const _DayActivityItem({
     required this.typeLabel,
     required this.description,
-    required this.color,
+    required this.kind,
     required this.timestamp,
   });
 
   final String typeLabel;
   final String description;
-  final Color color;
+  final _ActivityKind kind;
   final DateTime timestamp;
 }
 
@@ -705,7 +720,7 @@ final _dayDetailProvider =
                 '${r.rating} review'
                 '${r.moveId != null ? ' (move)' : ''}'
                 '${r.comboId != null ? ' (combo)' : ''}',
-            color: AppColors.stateLearning,
+            kind: _ActivityKind.review,
             timestamp: r.reviewedAt,
           ),
         );
@@ -721,7 +736,7 @@ final _dayDetailProvider =
             _DayActivityItem(
               typeLabel: 'Lab Entry',
               description: e.content,
-              color: const Color(0xFF9333EA),
+              kind: _ActivityKind.labEntry,
               timestamp: e.createdAt,
             ),
           );
@@ -744,7 +759,7 @@ final _dayDetailProvider =
               _DayActivityItem(
                 typeLabel: 'Milestone',
                 description: '${m.title} (${lab.name})',
-                color: AppColors.stateMastery,
+                kind: _ActivityKind.milestone,
                 timestamp: m.completedAt!,
               ),
             );

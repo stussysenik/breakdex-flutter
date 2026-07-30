@@ -12,7 +12,6 @@ import 'package:go_router/go_router.dart';
 import 'package:path/path.dart' as p;
 import 'package:breakdex/l10n/gen/app_localizations.dart';
 import 'package:breakdex/core/database/database.dart';
-import 'package:breakdex/core/design/colors.dart';
 import 'package:breakdex/core/design/spacing.dart';
 import 'package:breakdex/core/design/theme.dart';
 import 'package:breakdex/core/design/typography.dart';
@@ -542,8 +541,9 @@ class SettingsScreen extends ConsumerWidget {
                             final exportsDir = Directory(
                               p.join(dir.path, 'Exports'),
                             );
-                            if (!await exportsDir.exists())
+                            if (!await exportsDir.exists()) {
                               await exportsDir.create(recursive: true);
+                            }
                             final file = File(
                               p.join(
                                 exportsDir.path,
@@ -678,7 +678,7 @@ class SettingsScreen extends ConsumerWidget {
                 onPressed: canConfirm ? () => Navigator.pop(ctx, true) : null,
                 child: Text(
                   l10n.setClearConfirmButton,
-                  style: const TextStyle(color: AppColors.actionAgain),
+                  style: TextStyle(color: AppSemanticTheme.of(context).actionAgain),
                 ),
               ),
             ],
@@ -898,13 +898,13 @@ class SettingsScreen extends ConsumerWidget {
               if (!category.isDefault)
                 ListTile(
                   contentPadding: EdgeInsets.zero,
-                  leading: const AppIconView(
+                  leading: AppIconView(
                     AppIcon.delete,
-                    color: AppColors.actionAgain,
+                    color: AppSemanticTheme.of(context).actionAgain,
                   ),
                   title: Text(
                     l10n.setCategoryDelete,
-                    style: const TextStyle(color: AppColors.actionAgain),
+                    style: TextStyle(color: AppSemanticTheme.of(context).actionAgain),
                   ),
                   onTap: () =>
                       Navigator.pop(context, _CategorySheetAction.delete),
@@ -1700,7 +1700,7 @@ class _PhotosAccessTile extends ConsumerWidget {
                 _statusIcon(access),
                 size: 20,
                 color: access == PhotoLibraryAccessStatus.authorized
-                    ? AppColors.actionGood
+                    ? AppSemanticTheme.of(context).actionGood
                     : colorScheme.secondary,
               ),
               onTap:

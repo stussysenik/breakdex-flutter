@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:breakdex/core/design/theme.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-import 'package:breakdex/core/design/colors.dart';
 import 'package:breakdex/core/design/spacing.dart';
 import 'package:breakdex/core/design/typography.dart';
 import 'package:breakdex/core/providers.dart';
@@ -397,7 +397,7 @@ class SyncProviderRow extends StatelessWidget {
           borderRadius: BorderRadius.circular(AppRadius.sm),
           border: Border.all(
             color: status == ProviderStatus.connected
-                ? AppColors.stateMastery.withValues(alpha: 0.4)
+                ? AppSemanticTheme.of(context).stateMastery.withValues(alpha: 0.4)
                 : colorScheme.outline.withValues(alpha: 0.22),
           ),
         ),
@@ -437,7 +437,7 @@ class SyncProviderRow extends StatelessWidget {
                 ],
               ),
             ),
-            _statusLabel(l10n, colorScheme),
+            _statusLabel(l10n, colorScheme, AppSemanticTheme.of(context)),
           ],
         ),
       ),
@@ -447,20 +447,21 @@ class SyncProviderRow extends StatelessWidget {
   Widget _statusLabel(
     final AppLocalizations l10n,
     final ColorScheme colorScheme,
+    final AppSemanticTheme semantic,
   ) {
     switch (status) {
       case ProviderStatus.connected:
         return Text(
           l10n.setSyncStatusConnected,
           style: AppTypography.caption.copyWith(
-            color: AppColors.stateMastery,
+            color: semantic.stateMastery,
             fontWeight: FontWeight.w600,
           ),
         );
       case ProviderStatus.available:
         return Text(
           l10n.setSyncStatusTapToEnable,
-          style: AppTypography.caption.copyWith(color: AppColors.accent),
+          style: AppTypography.caption.copyWith(color: colorScheme.primary),
         );
       case ProviderStatus.unavailable:
         return Text(
@@ -498,7 +499,7 @@ class SyncHealthDot extends StatelessWidget {
       decoration: BoxDecoration(
         shape: BoxShape.circle,
         color: switch (health) {
-          SyncHealth.allSynced => AppColors.stateMastery,
+          SyncHealth.allSynced => AppSemanticTheme.of(context).stateMastery,
           SyncHealth.syncing => Colors.blue,
           SyncHealth.pendingUpload => Colors.amber,
           SyncHealth.error => Colors.red,

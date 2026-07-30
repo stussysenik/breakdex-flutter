@@ -2,11 +2,11 @@
 // ignore_for_file: discarded_futures
 
 import 'package:flutter/material.dart';
+import 'package:breakdex/core/design/theme.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:breakdex/core/database/daos/labs_dao.dart';
-import 'package:breakdex/core/design/colors.dart';
 import 'package:breakdex/core/design/spacing.dart';
 import 'package:breakdex/core/design/typography.dart';
 import 'package:breakdex/shared/widgets/app_loader.dart';
@@ -66,7 +66,7 @@ class SetBuilder extends ConsumerWidget {
             child: Text(
               'Error loading moves: $e',
               style: AppTypography.caption.copyWith(
-                color: AppColors.actionAgain,
+                color: AppSemanticTheme.of(context).actionAgain,
               ),
             ),
           ),
@@ -132,7 +132,7 @@ class SetBuilder extends ConsumerWidget {
                                     ),
                                     border: candidates.isNotEmpty
                                         ? Border.all(
-                                            color: AppColors.accent,
+                                            color: Theme.of(context).colorScheme.primary,
                                             width: 2,
                                           )
                                         : null,
@@ -256,7 +256,7 @@ class _AddMoveButton extends StatelessWidget {
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(AppRadius.md),
             border: Border.all(
-              color: AppColors.accent.withValues(alpha: 0.3),
+              color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.3),
               width: 1.5,
             ),
           ),
@@ -265,14 +265,14 @@ class _AddMoveButton extends StatelessWidget {
             children: [
               AppIconView(
                 AppIcon.add,
-                color: AppColors.accent.withValues(alpha: 0.7),
+                color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.7),
                 size: 28,
               ),
               const SizedBox(height: 4),
               Text(
                 'Add',
                 style: AppTypography.caption.copyWith(
-                  color: AppColors.accent.withValues(alpha: 0.7),
+                  color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.7),
                   fontWeight: FontWeight.w600,
                 ),
               ),

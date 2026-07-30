@@ -13,7 +13,6 @@ import 'package:go_router/go_router.dart';
 import 'package:uuid/uuid.dart';
 
 import 'package:breakdex/core/database/database.dart';
-import 'package:breakdex/core/design/colors.dart';
 import 'package:breakdex/core/design/icons.dart';
 import 'package:breakdex/core/design/spacing.dart';
 import 'package:breakdex/core/design/theme.dart';
@@ -233,6 +232,10 @@ class _FlowGraphPainter extends CustomPainter {
     required this.selectedNodeId,
     required this.connectedNodeIds,
     required this.brightness,
+    required this.ink,
+    required this.separator,
+    required this.accent,
+    required this.unknownCategory,
     required this.viewMode,
     required this.zoomScale,
     this.multiSelectedIds = const {},
@@ -244,6 +247,20 @@ class _FlowGraphPainter extends CustomPainter {
   final String? selectedNodeId;
   final Set<String> connectedNodeIds;
   final Brightness brightness;
+
+  // Resolved theme colors. A `CustomPainter` has no `BuildContext`, so these
+  // are read once in `build` and passed down. Passing the *resolved* ink also
+  // deletes the `brightness == Brightness.light ? light… : dark…` ternaries
+  // this painter used to carry: the theme already answers that question, and
+  // duplicating it here is what kept a pack and the accessibility overlay from
+  // reaching the canvas.
+  final Color ink;
+  final Color separator;
+  final Color accent;
+
+  /// Fallback tint for a node whose category has no assigned color.
+  final Color unknownCategory;
+
   final FlowViewMode viewMode;
   final double zoomScale;
   final Set<String> multiSelectedIds;
@@ -287,9 +304,7 @@ class _FlowGraphPainter extends CustomPainter {
   /// The dots are barely visible (6% opacity) — just enough to give the
   /// canvas a textured feel without competing with the graph data.
   void _drawDotGrid(final Canvas canvas, final Size size) {
-    final dotColor = brightness == Brightness.light
-        ? AppColors.lightText.withValues(alpha: 0.06)
-        : AppColors.darkText.withValues(alpha: 0.06);
+    final dotColor = ink.withValues(alpha: 0.06);
 
     final paint = Paint()
       ..color = dotColor
@@ -308,9 +323,7 @@ class _FlowGraphPainter extends CustomPainter {
   /// top-left, "Footwork" top-right, etc. Drawn behind edges/nodes
   /// at low opacity so they don't compete with the graph data.
   void _drawCategoryLabels(final Canvas canvas, final Size size) {
-    final textColor = brightness == Brightness.light
-        ? AppColors.lightText.withValues(alpha: 0.22)
-        : AppColors.darkText.withValues(alpha: 0.22);
+    final textColor = ink.withValues(alpha: 0.22);
 
     final gravityMap = _ForceLayout.categoryGravity(size.width, size.height);
 
@@ -371,16 +384,16 @@ class _FlowGraphPainter extends CustomPainter {
       // Affinity-based opacity tiers for unselected edges.
       Color edgeColor;
       if (isConnected) {
-        edgeColor = AppColors.accent;
+        edgeColor = accent;
       } else if (isDimmed) {
-        edgeColor = AppColors.lightSeparator.withValues(alpha: 0.15);
+        edgeColor = separator.withValues(alpha: 0.15);
       } else {
         final alpha = switch (edge.affinity) {
           'natural' => 0.60,
           'possible' => 0.40,
           _ => 0.20,
         };
-        edgeColor = AppColors.lightSeparator.withValues(alpha: alpha);
+        edgeColor = separator.withValues(alpha: alpha);
       }
 
       final paint = Paint()
@@ -485,7 +498,7 @@ class _FlowGraphPainter extends CustomPainter {
     for (final node in nodes) {
       final radius = _radiusForMastery(node.masteryState);
       final baseColor =
-          categoryColors[node.category] ?? AppColors.lightSecondary;
+          categoryColors[node.category] ?? unknownCategory;
 
       final isSelected = node.id == selectedNodeId;
       final isConnected = connectedNodeIds.contains(node.id);
@@ -512,7 +525,7 @@ class _FlowGraphPainter extends CustomPainter {
       final isMultiSelected = multiSelectedIds.contains(node.id);
       if (isMultiSelected) {
         final accentPaint = Paint()
-          ..color = AppColors.accent.withValues(alpha: 0.7)
+          ..color = accent.withValues(alpha: 0.7)
           ..style = PaintingStyle.stroke
           ..strokeWidth = 3;
         canvas.drawCircle(center, radius + 5, accentPaint);
@@ -553,9 +566,7 @@ class _FlowGraphPainter extends CustomPainter {
     // Too zoomed out — labels are illegible, skip entirely.
     if (zoomScale < 0.5) return;
 
-    final textColor = brightness == Brightness.light
-        ? AppColors.lightText.withValues(alpha: 0.85)
-        : AppColors.darkText.withValues(alpha: 0.85);
+    final textColor = ink.withValues(alpha: 0.85);
     final maxLabelWidth = min(132.0, max(80.0, size.width * 0.18));
 
     // Build label candidates with priority sorting.
@@ -734,7 +745,7 @@ class _FlowGraphCanvasState extends ConsumerState<FlowGraphCanvas> {
   ///
   /// Uses the user's custom categories from [categoriesProvider], which are
   /// stored in SharedPreferences with user-chosen colors. Falls back to
-  /// AppColors.lightSecondary for unknown categories.
+  /// [unknownCategory] for categories with no assigned color.
   Map<String, Color> _buildCategoryColors(final List<Category> categories) {
     return {for (final cat in categories) cat.name: cat.color};
   }
@@ -1124,9 +1135,7 @@ class _FlowGraphCanvasState extends ConsumerState<FlowGraphCanvas> {
     }
 
     // Canvas background color from the design system.
-    final canvasBg = brightness == Brightness.light
-        ? AppColors.lightFill
-        : AppColors.darkFill;
+    final canvasBg = colorScheme.surfaceContainerHighest;
 
     return Stack(
       children: [
@@ -1160,6 +1169,10 @@ class _FlowGraphCanvasState extends ConsumerState<FlowGraphCanvas> {
                         selectedNodeId: effectiveSelectedNodeId,
                         connectedNodeIds: connectedNodeIds,
                         brightness: brightness,
+                        ink: colorScheme.onSurface,
+                        separator: colorScheme.outline,
+                        accent: colorScheme.primary,
+                        unknownCategory: colorScheme.secondary,
                         viewMode: viewMode,
                         zoomScale: _transformController.value
                             .getMaxScaleOnAxis(),
@@ -1273,7 +1286,7 @@ class _FlowGraphCanvasState extends ConsumerState<FlowGraphCanvas> {
                             vertical: AppSpacing.sm,
                           ),
                           decoration: BoxDecoration(
-                            color: AppColors.accent,
+                            color: Theme.of(context).colorScheme.primary,
                             borderRadius: BorderRadius.circular(AppRadius.sm),
                           ),
                           child: Text(

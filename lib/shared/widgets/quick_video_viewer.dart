@@ -77,8 +77,9 @@ class _QuickVideoViewerState extends ConsumerState<QuickVideoViewer>
     if (_route != nextRoute) {
       if (_route is ModalRoute<dynamic>) appRouteObserver.unsubscribe(this);
       _route = nextRoute;
-      if (nextRoute is ModalRoute<dynamic>)
+      if (nextRoute is ModalRoute<dynamic>) {
         appRouteObserver.subscribe(this, nextRoute);
+      }
     }
   }
 

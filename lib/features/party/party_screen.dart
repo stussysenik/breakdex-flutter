@@ -10,7 +10,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import 'package:breakdex/core/database/database.dart';
-import 'package:breakdex/core/design/colors.dart';
 import 'package:breakdex/core/design/spacing.dart';
 import 'package:breakdex/core/design/typography.dart';
 import 'package:breakdex/core/models/learning_state.dart';
@@ -735,7 +734,7 @@ class _PartyScreenState extends ConsumerState<PartyScreen>
           ClipRRect(
             borderRadius: BorderRadius.circular(AppRadius.md),
             child: RobustVideoPlayer(
-              videoPath: move.resolvedVideoPath!,
+              videoPath: move.resolvedVideoPath,
               autoPlay: true,
               looping: true,
               muted: true,
@@ -1094,16 +1093,16 @@ class _MoveReviewStats extends ConsumerWidget {
             Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                const AppIconView(
+                AppIconView(
                   AppIcon.star,
                   size: 14,
-                  color: AppColors.accent,
+                  color: Theme.of(context).colorScheme.primary,
                 ),
                 const SizedBox(width: 4),
                 Text(
                   '${card.reps}',
                   style: AppTypography.caption.copyWith(
-                    color: AppColors.accent,
+                    color: Theme.of(context).colorScheme.primary,
                     fontWeight: FontWeight.w800,
                   ),
                 ),

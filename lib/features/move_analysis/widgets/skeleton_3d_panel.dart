@@ -3,9 +3,9 @@
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:breakdex/core/design/theme.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import 'package:breakdex/core/design/colors.dart';
 import 'package:breakdex/core/design/spacing.dart';
 import 'package:breakdex/core/design/typography.dart';
 import 'package:breakdex/core/providers.dart';
@@ -124,10 +124,10 @@ class _ConfidenceDot extends StatelessWidget {
   @override
   Widget build(final BuildContext context) {
     final color = confidence > 0.7
-        ? AppColors.actionGood
+        ? AppSemanticTheme.of(context).actionGood
         : confidence > 0.4
-        ? AppColors.actionHard
-        : AppColors.actionAgain;
+        ? AppSemanticTheme.of(context).actionHard
+        : AppSemanticTheme.of(context).actionAgain;
 
     return Row(
       mainAxisSize: MainAxisSize.min,

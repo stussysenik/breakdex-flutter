@@ -56,7 +56,7 @@ class _ComboRow extends ConsumerWidget {
         alignment: Alignment.centerRight,
         padding: const EdgeInsets.only(right: AppSpacing.screenEdge),
         decoration: BoxDecoration(
-          color: AppColors.actionAgain,
+          color: AppSemanticTheme.of(context).actionAgain,
           borderRadius: BorderRadius.circular(AppRadius.sm),
         ),
         child: const AppIconView(AppIcon.delete, color: Colors.white),

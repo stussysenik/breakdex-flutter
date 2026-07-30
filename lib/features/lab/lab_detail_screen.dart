@@ -10,7 +10,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import 'package:breakdex/core/database/database.dart';
-import 'package:breakdex/core/design/colors.dart';
 import 'package:breakdex/core/design/icons.dart';
 import 'package:breakdex/core/design/spacing.dart';
 import 'package:breakdex/core/design/theme.dart';
@@ -173,9 +172,9 @@ class _LabDetailScreenState extends ConsumerState<LabDetailScreen> {
           ),
           TextButton(
             onPressed: () => Navigator.pop(ctx, true),
-            child: const Text(
+            child: Text(
               'Delete',
-              style: TextStyle(color: AppColors.actionAgain),
+              style: TextStyle(color: AppSemanticTheme.of(context).actionAgain),
             ),
           ),
         ],
@@ -205,7 +204,7 @@ class _LabDetailScreenState extends ConsumerState<LabDetailScreen> {
             child: Text(
               'Error loading lab: $e',
               style: AppTypography.bodySmall.copyWith(
-                color: AppColors.actionAgain,
+                color: AppSemanticTheme.of(context).actionAgain,
               ),
             ),
           ),
@@ -264,7 +263,7 @@ class _LabDetailScreenState extends ConsumerState<LabDetailScreen> {
                     children: [
                       AppIconView(
                         isSet ? AppIcon.combo : AppIcon.lab,
-                        color: AppColors.accent,
+                        color: Theme.of(context).colorScheme.primary,
                         size: 24,
                       ),
                       const SizedBox(width: AppSpacing.sm),
@@ -298,11 +297,11 @@ class _LabDetailScreenState extends ConsumerState<LabDetailScreen> {
                             value: 'rename',
                             child: Text('Rename'),
                           ),
-                          const PopupMenuItem(
+                          PopupMenuItem(
                             value: 'delete',
                             child: Text(
                               'Delete Lab',
-                              style: TextStyle(color: AppColors.actionAgain),
+                              style: TextStyle(color: AppSemanticTheme.of(context).actionAgain),
                             ),
                           ),
                         ],
@@ -478,7 +477,7 @@ class _LabStatusPill extends StatelessWidget {
 
   @override
   Widget build(final BuildContext context) {
-    final (label, color) = _statusMeta(status);
+    final (label, color) = _statusMeta(context, status);
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
@@ -514,10 +513,10 @@ class _LabStatusPill extends StatelessWidget {
     );
   }
 
-  static (String, Color) _statusMeta(final String status) => switch (status) {
+  static (String, Color) _statusMeta(final BuildContext context, final String status) => switch (status) {
     'idea' => ('Idea', const Color(0xFFA7B1C2)),
-    'attempting' => ('Attempting', AppColors.stateLearning),
-    'landed' => ('Landed', AppColors.stateMastery),
+    'attempting' => ('Attempting', AppSemanticTheme.of(context).stateLearning),
+    'landed' => ('Landed', AppSemanticTheme.of(context).stateMastery),
     'clean' => ('Clean', const Color(0xFF0D9F9A)),
     _ => ('Idea', const Color(0xFFA7B1C2)),
   };
@@ -611,7 +610,7 @@ class _MovePickerSheetState extends ConsumerState<_MovePickerSheet> {
               child: TextField(
                 controller: _searchController,
                 autofocus: true,
-                decoration: InputDecoration(
+                decoration: const InputDecoration(
                   hintText: 'Search moves...',
                   prefixIcon: AppIconView(AppIcon.search),
                 ),
@@ -696,16 +695,16 @@ class _MovePickerSheetState extends ConsumerState<_MovePickerSheet> {
           padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm),
           child: Row(
             children: [
-              const AppIconView(
+              AppIconView(
                 AppIcon.discover,
                 size: 14,
-                color: AppColors.stateMastery,
+                color: AppSemanticTheme.of(context).stateMastery,
               ),
               const SizedBox(width: AppSpacing.xs),
               Text(
                 'Suggested — flows naturally from previous move',
                 style: AppTypography.caption.copyWith(
-                  color: AppColors.stateMastery,
+                  color: AppSemanticTheme.of(context).stateMastery,
                   fontWeight: FontWeight.w600,
                 ),
               ),
@@ -749,7 +748,7 @@ class _MovePickerSheetState extends ConsumerState<_MovePickerSheet> {
     required final bool isSuggested,
     required final ColorScheme colorScheme,
   }) {
-    final accent = isSuggested ? AppColors.stateMastery : AppColors.accent;
+    final accent = isSuggested ? AppSemanticTheme.of(context).stateMastery : Theme.of(context).colorScheme.primary;
     return ListTile(
       leading: Container(
         width: 36,
@@ -786,9 +785,9 @@ class _MovePickerSheetState extends ConsumerState<_MovePickerSheet> {
         style: AppTypography.caption.copyWith(color: colorScheme.secondary),
       ),
       trailing: isLinked
-          ? const AppIconView(
+          ? AppIconView(
               AppIcon.check,
-              color: AppColors.stateMastery,
+              color: AppSemanticTheme.of(context).stateMastery,
               size: 20,
             )
           : null,
@@ -823,7 +822,7 @@ class _ActionRow extends StatelessWidget {
   @override
   Widget build(final BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
-    final color = destructive ? AppColors.actionAgain : colorScheme.onSurface;
+    final color = destructive ? AppSemanticTheme.of(context).actionAgain : colorScheme.onSurface;
 
     return InkWell(
       onTap: onTap,

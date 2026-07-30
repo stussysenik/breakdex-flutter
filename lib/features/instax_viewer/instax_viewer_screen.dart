@@ -2,6 +2,7 @@
 // ignore_for_file: discarded_futures
 
 import 'package:flutter/material.dart';
+import 'package:breakdex/core/design/theme.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -11,7 +12,6 @@ import 'package:breakdex/core/database/database.dart';
 import 'package:breakdex/core/models/reviewable_item.dart'
     show MoveVideoPath, ReviewableMove;
 import 'package:breakdex/core/services/media_playback_coordinator.dart';
-import 'package:breakdex/core/design/colors.dart';
 import 'package:breakdex/core/design/spacing.dart';
 import 'package:breakdex/core/design/typography.dart';
 import 'package:breakdex/shared/widgets/app_loader.dart';
@@ -85,7 +85,7 @@ class _InstaxViewerScreenState extends ConsumerState<InstaxViewerScreen>
     debugPrint('[InstaxViewer] build mode=$mode category=${widget.category}');
 
     return Scaffold(
-      backgroundColor: AppColors.darkBg,
+      backgroundColor: AppMediaChrome.of(context).background,
       appBar: _buildAppBar(mode),
       body: movesAsync.when(
         data: (final moves) =>
@@ -108,7 +108,7 @@ class _InstaxViewerScreenState extends ConsumerState<InstaxViewerScreen>
       child: Column(
         children: [
           AppBar(
-            backgroundColor: AppColors.darkBg,
+            backgroundColor: AppMediaChrome.of(context).background,
             elevation: 0,
             leading: IconButton(
               icon: const AppIconView(AppIcon.back, size: 18),

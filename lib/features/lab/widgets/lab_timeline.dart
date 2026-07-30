@@ -2,13 +2,13 @@ import 'dart:async';
 
 import 'package:drift/drift.dart' as drift;
 import 'package:flutter/material.dart';
+import 'package:breakdex/core/design/theme.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:uuid/uuid.dart';
 
 import 'package:breakdex/core/database/database.dart';
 import 'package:breakdex/core/utils/time_format.dart';
-import 'package:breakdex/core/design/colors.dart';
 import 'package:breakdex/core/design/spacing.dart';
 import 'package:breakdex/core/design/typography.dart';
 import 'package:breakdex/shared/widgets/app_loader.dart';
@@ -137,7 +137,7 @@ class _LabTimelineState extends ConsumerState<LabTimeline> {
             child: Text(
               'Error: $e',
               style: AppTypography.caption.copyWith(
-                color: AppColors.actionAgain,
+                color: AppSemanticTheme.of(context).actionAgain,
               ),
             ),
           ),
@@ -246,10 +246,10 @@ class _TimelineItem {
 
   /// Dot color: blue for entries, purple for pending milestones, green for
   /// completed milestones.
-  Color get dotColor => switch (type) {
-    _TimelineItemType.entry => AppColors.accent,
+  Color dotColor(final BuildContext context) => switch (type) {
+    _TimelineItemType.entry => Theme.of(context).colorScheme.primary,
     _TimelineItemType.milestone =>
-      completed ? AppColors.stateMastery : const Color(0xFF8B5CF6),
+      completed ? AppSemanticTheme.of(context).stateMastery : const Color(0xFF8B5CF6),
   };
 }
 
@@ -279,7 +279,7 @@ class _TimelineRow extends StatelessWidget {
                   width: 10,
                   height: 10,
                   decoration: BoxDecoration(
-                    color: item.dotColor,
+                    color: item.dotColor(context),
                     shape: BoxShape.circle,
                   ),
                 ),
@@ -329,13 +329,13 @@ class _TimelineRow extends StatelessWidget {
                         AppIconView(
                           AppIcon.video,
                           size: 14,
-                          color: AppColors.accent.withValues(alpha: 0.7),
+                          color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.7),
                         ),
                         const SizedBox(width: 4),
                         Text(
                           'Video attached',
                           style: AppTypography.caption.copyWith(
-                            color: AppColors.accent.withValues(alpha: 0.7),
+                            color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.7),
                           ),
                         ),
                       ],
@@ -351,13 +351,13 @@ class _TimelineRow extends StatelessWidget {
                         vertical: 2,
                       ),
                       decoration: BoxDecoration(
-                        color: item.dotColor.withValues(alpha: 0.12),
+                        color: item.dotColor(context).withValues(alpha: 0.12),
                         borderRadius: BorderRadius.circular(10),
                       ),
                       child: Text(
                         item.completed ? 'Milestone completed' : 'Milestone',
                         style: AppTypography.caption.copyWith(
-                          color: item.dotColor,
+                          color: item.dotColor(context),
                           fontWeight: FontWeight.w600,
                         ),
                       ),

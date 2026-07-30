@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:breakdex/core/design/theme.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import 'package:breakdex/core/database/database.dart';
-import 'package:breakdex/core/design/colors.dart';
 import 'package:breakdex/core/design/spacing.dart';
 import 'package:breakdex/core/design/typography.dart';
 import 'package:breakdex/shared/widgets/app_loader.dart';
@@ -66,13 +66,13 @@ class LabBoardView extends ConsumerWidget {
                 const SizedBox(width: AppSpacing.sm),
                 _BoardColumn(
                   title: 'Attempting',
-                  color: AppColors.stateLearning,
+                  color: AppSemanticTheme.of(context).stateLearning,
                   labs: buckets['attempting']!,
                 ),
                 const SizedBox(width: AppSpacing.sm),
                 _BoardColumn(
                   title: 'Landed',
-                  color: AppColors.stateMastery,
+                  color: AppSemanticTheme.of(context).stateMastery,
                   labs: buckets['landed']!,
                 ),
                 const SizedBox(width: AppSpacing.sm),

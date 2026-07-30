@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:breakdex/core/design/theme.dart';
 
-import 'package:breakdex/core/design/colors.dart';
 import 'package:breakdex/core/models/pose_frame.dart';
 import 'package:breakdex/core/models/pose_joint.dart';
 
@@ -23,16 +23,47 @@ class PoseOverlay extends StatelessWidget {
     }
 
     return CustomPaint(
-      painter: _PoseOverlayPainter(poseFrame!),
+      painter: _PoseOverlayPainter(
+        poseFrame!,
+        palette: _JointPalette.of(context),
+      ),
       size: Size.infinite,
     );
   }
 }
 
+/// The four limb-group colors a pose frame paints with, resolved once in
+/// `build`. A `CustomPainter` has no `BuildContext`, so the theme read cannot
+/// happen inside `paint` — it is lifted here and passed down.
+class _JointPalette {
+  const _JointPalette({
+    required this.arms,
+    required this.legs,
+    required this.torso,
+    required this.other,
+  });
+
+  factory _JointPalette.of(final BuildContext context) {
+    final semantic = AppSemanticTheme.of(context);
+    return _JointPalette(
+      arms: Theme.of(context).colorScheme.primary,
+      legs: semantic.actionGood,
+      torso: semantic.actionAgain,
+      other: semantic.actionEasy,
+    );
+  }
+
+  final Color arms;
+  final Color legs;
+  final Color torso;
+  final Color other;
+}
+
 class _PoseOverlayPainter extends CustomPainter {
-  _PoseOverlayPainter(this.frame);
+  _PoseOverlayPainter(this.frame, {required this.palette});
 
   final PoseFrame frame;
+  final _JointPalette palette;
 
   /// Bone connections — pairs of joint names to draw lines between.
   static const _bones = [
@@ -125,18 +156,18 @@ class _PoseOverlayPainter extends CustomPainter {
     if (name.contains('shoulder') ||
         name.contains('elbow') ||
         name.contains('wrist')) {
-      return AppColors.accent; // Blue — arms
+      return palette.arms;
     } else if (name.contains('hip') ||
         name.contains('knee') ||
         name.contains('ankle') ||
         name.contains('foot')) {
-      return AppColors.actionGood; // Green — legs
+      return palette.legs;
     } else if (name.contains('spine') ||
         name == 'root' ||
         name.contains('center')) {
-      return AppColors.actionAgain; // Red — torso
+      return palette.torso;
     }
-    return AppColors.actionEasy; // Teal — other
+    return palette.other;
   }
 
   @override

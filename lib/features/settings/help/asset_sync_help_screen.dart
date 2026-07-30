@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 
-import 'package:breakdex/core/design/colors.dart';
 import 'package:breakdex/core/design/icons.dart';
 import 'package:breakdex/core/design/spacing.dart';
 import 'package:breakdex/core/design/typography.dart';
@@ -154,7 +153,7 @@ class _HelpSection extends StatelessWidget {
         children: [
           Row(
             children: [
-              AppIconView(icon, color: AppColors.accent, size: 22),
+              AppIconView(icon, color: Theme.of(context).colorScheme.primary, size: 22),
               const SizedBox(width: AppSpacing.sm),
               Expanded(
                 child: Text(

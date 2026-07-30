@@ -178,7 +178,7 @@ once, but there is no code dependency between them and they may run in parallel.
   `redesign-visual-first-experience` (`+1333 ~3 -1`) was measured on the **clean** tree at
   `ee52790`, before these edits existed, and stands.
 
-- [ ] 2.5 **241 raw `AppColors.*` sites in 58 files bypass the theme.** Found by 2.1. Until
+- [x] 2.5 **241 raw `AppColors.*` sites in 58 files bypass the theme.** Found by 2.1. Until
   they read roles through `Theme.of(context)`, a pack selection will not change those pixels
   and the `AccessiblePalette` overlay does not reach them either (confirmed at
   `milestone_list.dart:292`). Same shape as the 434-site `Icons.*` migration in
@@ -187,6 +187,62 @@ once, but there is no code dependency between them and they may run in parallel.
   **zero-allowlist** ban. Sized as its own phase-worth of work — do not fold it into a Phase
   3 task. Sequencing note: cheapest after Phase 3 lands, since the migration target
   (`AppColorRole` via the theme) must exist before 241 sites can point at it.
+  <br/>**DONE 2026-07-30. FULL GATE: `ALL GATES PASSED`, exit 0 — 1347 pass / 3 skip / 0 fail
+  (from 1334; +13), analyzer 0 errors / 0 warnings.** The gate was written first and run red:
+  **55 files**, not 58, and **275 sites**, not 241 — the count grew because Phase 5 shipped a
+  new settings surface into the same problem. Post-migration the gate is green with **zero**
+  offending files.
+  <br/>**The "zero-allowlist" instruction in this task is wrong, and the reason is worth
+  keeping.** The icon ban could be absolute because `icons.dart` is the only file allowed to
+  name an `IconData`. Colors have a **definition layer**: a pack must seed its roles from
+  constants and a preference provider must fall back to one, so an absolute ban outside
+  `colors.dart` would forbid the mechanism from existing. The allowlist is therefore
+  seven named files that *define what a role resolves to*, never one that *paints* with it —
+  and a second test asserts each entry still reads `AppColors`, so an exemption cannot outlive
+  its reason. `categories_service.dart` is in it for a different reason than the rest: its
+  presets are **persisted user data**, and re-pointing them at the theme would make categories
+  a user already saved drift when a pack changes.
+  <br/>**Two bypass classes the site count could not see, both closed here.**
+  <br/>• **`LearningState` / `ReviewRating` carried a baked `Color` field.** A widget reading
+  `state.color` bypassed the theme *without ever naming `AppColors`* — invisible to the gate
+  this task specifies, which is why counting call sites understated the problem. The field is
+  deleted (3 call sites, all moved to `colorForState` / `colorForRating`); presentation no
+  longer rides on a domain enum.
+  <br/>• **A Riverpod `FutureProvider` decided a pixel.** `calendar_view.dart`'s day-detail
+  rows carried a resolved `Color` built inside a provider with no `BuildContext`. Replaced
+  with an `_ActivityKind` that resolves at the widget — the kind travels, the color does not.
+  <br/>**`AppMediaChrome` — the sites that looked correct.** Video player, trim timeline,
+  instax viewer and review card named `AppColors.darkBg`/`darkCard`/`darkFill` because those
+  surfaces are dark *on purpose*, independent of app brightness. The intent is legitimate,
+  which is exactly why the constants survived every prior review. New `ThemeExtension`
+  resolves the **active pack at `Brightness.dark`**: the intent survives, the pixels return to
+  the theme, and a pack now owns its own media chrome. Gated three ways — equal to the classic
+  pack's dark side, identical under `AppTheme.light()` and `AppTheme.dark()`, and *different*
+  under the `mono` pack.
+  <br/>**Painters take resolved colors, they do not read the theme.** Four `CustomPainter`s
+  (`_BurstPainter`, `_PoseOverlayPainter`, `_FlowGraphPainter`, plus `statusStyle` /
+  `tierColor` / `_statusMeta` as context-less helpers) had no `BuildContext` at all. Each now
+  receives the resolved value from `build`. `_FlowGraphPainter` **shrank** doing it: passing
+  the resolved ink deleted three
+  `brightness == Brightness.light ? AppColors.lightText : AppColors.darkText` ternaries — the
+  theme already answers that question, and duplicating it was what kept the canvas outside the
+  pack and the overlay.
+  <br/>**Red/green, not assumed.** `test/core/design/color_migration_test.dart` (7 tests)
+  asserts the *pre-migration* values fail: restoring `AppColors.stateMastery` at one
+  `statusStyle` case turns two tests red (deuteranopia keeps `#1F8A70` instead of Okabe–Ito
+  `#009E73`, and monochrome stops collapsing to ink); reverting the revert returns all 7 green.
+  This is the `milestone_list.dart:292` defect 2.1 confirmed, now proven fixed by measurement
+  rather than by the gate's spelling check.
+  <br/>**Gotcha found while writing that test, recorded because it cost a wrong diagnosis:**
+  `MaterialApp` wraps its child in an `AnimatedTheme`, so a theme swap is **lerped**, and
+  `ThemeExtension.lerp` holds the *old* value for `t < 0.5`. A single `pump()` therefore reads
+  the previous theme — the first run reported the classic green under deuteranopia and looked
+  exactly like a failed migration. `pumpAndSettle()` is what makes the read the theme under
+  test.
+  <br/>**NOT PROVEN:** how any migrated surface *looks* — no device, no browser, no screenshot
+  judged. The gate proves the constants are unreachable and the axes resolve; it says nothing
+  about taste or about a layout that a now-theme-following color may sit badly against
+  (→ V.3, `owner-verification-passes`). Also unproven here: `flutter build web --release`.
   <br/>**BROKEN DOWN 2026-07-30 (A).** Re-measured on this tree: **292** raw `AppColors.*`
   reads outside `colors.dart`, of which **209 are widget-layer** (198 `lib/features/**` + 11
   `lib/shared/**`) — those are 2.5's scope. The remaining 83 are not call sites of the same

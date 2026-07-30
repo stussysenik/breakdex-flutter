@@ -24,7 +24,7 @@ class _MoveRow extends ConsumerWidget {
       background: Container(
         alignment: Alignment.centerRight,
         padding: const EdgeInsets.only(right: AppSpacing.screenEdge),
-        color: AppColors.actionAgain,
+        color: AppSemanticTheme.of(context).actionAgain,
         child: const AppIconView(AppIcon.delete, color: Colors.white),
       ),
       onDismissed: (_) {
@@ -105,7 +105,7 @@ class _MoveRow extends ConsumerWidget {
                                           AppIconView(
                                             AppIcon.download,
                                             size: 14,
-                                            color: AppColors.accent.withValues(
+                                            color: Theme.of(context).colorScheme.primary.withValues(
                                               alpha: 0.5,
                                             ),
                                           ),

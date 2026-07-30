@@ -4,7 +4,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import 'package:breakdex/shared/widgets/app_loader.dart';
-import 'package:breakdex/core/design/colors.dart';
 import 'package:breakdex/core/design/spacing.dart';
 import 'package:breakdex/core/design/theme.dart';
 import 'package:breakdex/core/design/typography.dart';
@@ -158,7 +157,7 @@ class ScheduleReviewScreen extends ConsumerWidget {
                         AppIconView(
                           AppIcon.check,
                           size: 48,
-                          color: AppColors.actionGood.withValues(alpha: 0.5),
+                          color: AppSemanticTheme.of(context).actionGood.withValues(alpha: 0.5),
                         ),
                         const SizedBox(height: AppSpacing.sm),
                         Text(

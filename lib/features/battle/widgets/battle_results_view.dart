@@ -2,8 +2,8 @@
 // ignore_for_file: discarded_futures
 
 import 'package:flutter/material.dart';
+import 'package:breakdex/core/design/theme.dart';
 import 'package:flutter/services.dart';
-import 'package:breakdex/core/design/colors.dart';
 import 'package:breakdex/core/design/spacing.dart';
 import 'package:breakdex/core/design/typography.dart';
 import 'package:breakdex/features/battle/providers/battle_providers.dart';
@@ -93,21 +93,21 @@ class BattleResultsView extends StatelessWidget {
                       child: _MiniStat(
                         label: 'Good',
                         value: state.goodCount,
-                        color: AppColors.actionGood,
+                        color: AppSemanticTheme.of(context).actionGood,
                       ),
                     ),
                     Expanded(
                       child: _MiniStat(
                         label: 'Hard',
                         value: state.hardCount,
-                        color: AppColors.actionHard,
+                        color: AppSemanticTheme.of(context).actionHard,
                       ),
                     ),
                     Expanded(
                       child: _MiniStat(
                         label: 'Again',
                         value: state.againCount,
-                        color: AppColors.actionAgain,
+                        color: AppSemanticTheme.of(context).actionAgain,
                       ),
                     ),
                   ],

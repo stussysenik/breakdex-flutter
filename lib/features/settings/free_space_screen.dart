@@ -1,9 +1,9 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:breakdex/core/design/theme.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import 'package:breakdex/core/design/colors.dart';
 import 'package:breakdex/core/design/icons.dart';
 import 'package:breakdex/core/design/spacing.dart';
 import 'package:breakdex/core/design/typography.dart';
@@ -88,8 +88,8 @@ class _FreeSpaceScreenState extends ConsumerState<FreeSpaceScreen> {
                 analysis.canFree ? AppIcon.cloudDone : AppIcon.success,
                 size: 48,
                 color: analysis.canFree
-                    ? AppColors.accent
-                    : AppColors.stateMastery,
+                    ? Theme.of(context).colorScheme.primary
+                    : AppSemanticTheme.of(context).stateMastery,
               ),
               const SizedBox(height: AppSpacing.md),
               Text(
@@ -146,14 +146,14 @@ class _FreeSpaceScreenState extends ConsumerState<FreeSpaceScreen> {
           Container(
             padding: const EdgeInsets.all(AppSpacing.md),
             decoration: BoxDecoration(
-              color: AppColors.stateMastery.withValues(alpha: 0.1),
+              color: AppSemanticTheme.of(context).stateMastery.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(AppRadius.md),
             ),
             child: Row(
               children: [
                 AppIconView(
                   AppIcon.success,
-                  color: AppColors.stateMastery,
+                  color: AppSemanticTheme.of(context).stateMastery,
                   size: 20,
                 ),
                 const SizedBox(width: AppSpacing.sm),
@@ -161,7 +161,7 @@ class _FreeSpaceScreenState extends ConsumerState<FreeSpaceScreen> {
                   child: Text(
                     'Freed ${(_freedBytes! / (1024 * 1024)).toStringAsFixed(1)} MB',
                     style: AppTypography.bodySmall.copyWith(
-                      color: AppColors.stateMastery,
+                      color: AppSemanticTheme.of(context).stateMastery,
                       fontWeight: FontWeight.w600,
                     ),
                   ),
@@ -179,7 +179,7 @@ class _FreeSpaceScreenState extends ConsumerState<FreeSpaceScreen> {
             child: ElevatedButton(
               onPressed: _freeing ? null : () => _freeAll(analysis),
               style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.accent,
+                backgroundColor: Theme.of(context).colorScheme.primary,
                 foregroundColor: Colors.white,
                 padding: const EdgeInsets.symmetric(vertical: 16),
                 shape: RoundedRectangleBorder(

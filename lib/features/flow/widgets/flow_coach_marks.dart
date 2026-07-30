@@ -6,7 +6,6 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-import 'package:breakdex/core/design/colors.dart';
 import 'package:breakdex/core/design/spacing.dart';
 import 'package:breakdex/core/design/typography.dart';
 
@@ -116,7 +115,7 @@ class _CoachStep {
 /// The overlay widget for a single coach mark step.
 ///
 /// Renders a semi-transparent scrim with a centered tooltip that
-/// fades in and out. The tooltip uses [AppColors.accent] as its
+/// fades in and out. The tooltip uses [Theme.of(context).colorScheme.primary] as its
 /// background and includes a small downward-pointing triangle to
 /// suggest it relates to the canvas below.
 class _CoachTooltipOverlay extends StatefulWidget {
@@ -225,11 +224,11 @@ class _CoachTooltipOverlayState extends State<_CoachTooltipOverlay>
             vertical: 12,
           ),
           decoration: BoxDecoration(
-            color: AppColors.accent.withValues(alpha: 0.95),
+            color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.95),
             borderRadius: BorderRadius.circular(AppRadius.sm),
             boxShadow: [
               BoxShadow(
-                color: AppColors.accent.withValues(alpha: 0.3),
+                color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.3),
                 blurRadius: 12,
               ),
             ],
@@ -273,7 +272,7 @@ class _CoachTooltipOverlayState extends State<_CoachTooltipOverlay>
         CustomPaint(
           size: const Size(16, 8),
           painter: _TrianglePainter(
-            color: AppColors.accent.withValues(alpha: 0.95),
+            color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.95),
           ),
         ),
       ],

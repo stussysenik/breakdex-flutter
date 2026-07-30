@@ -1,6 +1,5 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
-import 'package:breakdex/core/design/colors.dart';
 
 /// User-defined learning state for custom review modes.
 ///
@@ -39,15 +38,14 @@ class CustomLearningState {
 }
 
 enum LearningState {
-  newState('NEW', 'New', AppColors.stateNew),
-  learning('LEARNING', 'Practicing', AppColors.stateLearning),
-  mastery('MASTERY', 'Strong', AppColors.stateMastery);
+  newState('NEW', 'New'),
+  learning('LEARNING', 'Practicing'),
+  mastery('MASTERY', 'Strong');
 
-  const LearningState(this.dbValue, this.displayText, this.color);
+  const LearningState(this.dbValue, this.displayText);
 
   final String dbValue;
   final String displayText;
-  final Color color;
 
   static LearningState fromString(final String value) => switch (value.toUpperCase()) {
         'NEW' => LearningState.newState,
@@ -71,16 +69,15 @@ enum LearningState {
 }
 
 enum ReviewRating {
-  again('AGAIN', 'AGAIN', AppColors.actionAgain),
-  hard('HARD', 'HARD', AppColors.actionHard),
-  good('GOOD', 'GOOD', AppColors.actionGood),
-  easy('EASY', 'EASY', AppColors.actionEasy);
+  again('AGAIN', 'AGAIN'),
+  hard('HARD', 'HARD'),
+  good('GOOD', 'GOOD'),
+  easy('EASY', 'EASY');
 
-  const ReviewRating(this.dbValue, this.displayText, this.color);
+  const ReviewRating(this.dbValue, this.displayText);
 
   final String dbValue;
   final String displayText;
-  final Color color;
 
   static ReviewRating fromString(final String value) => switch (value) {
         'AGAIN' => ReviewRating.again,

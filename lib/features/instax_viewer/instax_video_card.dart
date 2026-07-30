@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:breakdex/core/design/theme.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import 'package:breakdex/core/design/colors.dart';
 import 'package:breakdex/core/design/spacing.dart';
 import 'package:breakdex/core/design/typography.dart';
 import 'package:breakdex/core/models/learning_state.dart';
@@ -67,10 +67,10 @@ class _InstaxVideoCardState extends ConsumerState<InstaxVideoCard> {
           vertical: AppSpacing.sm,
         ),
         decoration: BoxDecoration(
-          color: AppColors.darkCard,
+          color: AppMediaChrome.of(context).card,
           borderRadius: BorderRadius.circular(AppRadius.lg),
           border: Border.all(
-            color: AppColors.darkSeparator.withValues(alpha: 0.3),
+            color: AppMediaChrome.of(context).separator.withValues(alpha: 0.3),
             width: 1,
           ),
           boxShadow: [
@@ -121,7 +121,7 @@ class _InstaxVideoCardState extends ConsumerState<InstaxVideoCard> {
                               width: 8,
                               height: 8,
                               decoration: BoxDecoration(
-                                color: learningState.color,
+                                color: AppSemanticTheme.of(context).colorForState(learningState),
                                 shape: BoxShape.circle,
                               ),
                             ),
@@ -153,7 +153,7 @@ class _InstaxVideoCardState extends ConsumerState<InstaxVideoCard> {
               AspectRatio(
                 aspectRatio: 3 / 4,
                 child: Container(
-                  color: AppColors.darkFill,
+                  color: AppMediaChrome.of(context).fill,
                   child: const Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
@@ -174,7 +174,7 @@ class _InstaxVideoCardState extends ConsumerState<InstaxVideoCard> {
                 horizontal: AppSpacing.md,
                 vertical: AppSpacing.md,
               ),
-              color: AppColors.darkCard,
+              color: AppMediaChrome.of(context).card,
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [

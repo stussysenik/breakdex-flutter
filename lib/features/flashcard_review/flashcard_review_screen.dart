@@ -14,7 +14,6 @@ import 'package:breakdex/core/services/swing_detector.dart';
 
 import 'package:breakdex/core/database/database.dart';
 import 'package:breakdex/core/database/daos/combos_dao.dart';
-import 'package:breakdex/core/design/colors.dart';
 import 'package:breakdex/core/design/spacing.dart';
 import 'package:breakdex/core/design/theme.dart';
 import 'package:breakdex/core/design/typography.dart';
@@ -663,13 +662,13 @@ class _FlashcardReviewScreenState extends ConsumerState<FlashcardReviewScreen>
                   width: 88,
                   height: 88,
                   decoration: BoxDecoration(
-                    color: AppColors.actionGood.withValues(alpha: 0.12),
+                    color: AppSemanticTheme.of(context).actionGood.withValues(alpha: 0.12),
                     shape: BoxShape.circle,
                   ),
-                  child: const AppIconView(
+                  child: AppIconView(
                     AppIcon.check,
                     size: 48,
-                    color: AppColors.actionGood,
+                    color: AppSemanticTheme.of(context).actionGood,
                   ),
                 ),
                 const SizedBox(height: AppSpacing.lg),

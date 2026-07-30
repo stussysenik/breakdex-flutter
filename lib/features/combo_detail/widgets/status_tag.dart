@@ -1,9 +1,9 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:breakdex/core/design/theme.dart';
 import 'package:flutter/services.dart';
 
-import 'package:breakdex/core/design/colors.dart';
 import 'package:breakdex/core/design/spacing.dart';
 import 'package:breakdex/core/design/typography.dart';
 
@@ -12,11 +12,15 @@ const comboStatuses = ['idea', 'attempting', 'landed', 'clean'];
 
 /// Visual treatment per status. Text carries the meaning; color only
 /// reinforces (existing learning-state palette, no new vocabulary).
-({Color color, bool filled, bool dashed}) statusStyle(final String status) {
+({Color color, bool filled, bool dashed}) statusStyle(
+  final BuildContext context,
+  final String status,
+) {
+  final semantic = AppSemanticTheme.of(context);
   return switch (status) {
-    'attempting' => (color: AppColors.stateLearning, filled: false, dashed: false),
-    'landed' => (color: AppColors.stateMastery, filled: false, dashed: false),
-    'clean' => (color: AppColors.stateMastery, filled: true, dashed: false),
+    'attempting' => (color: semantic.stateLearning, filled: false, dashed: false),
+    'landed' => (color: semantic.stateMastery, filled: false, dashed: false),
+    'clean' => (color: semantic.stateMastery, filled: true, dashed: false),
     _ => (color: Colors.transparent, filled: false, dashed: true), // idea
   };
 }
@@ -91,7 +95,7 @@ class _StatusChip extends StatelessWidget {
   @override
   Widget build(final BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
-    final style = statusStyle(status);
+    final style = statusStyle(context, status);
     final borderColor =
         style.dashed ? colorScheme.outline : style.color;
     final textColor = style.filled

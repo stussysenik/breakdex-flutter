@@ -2,9 +2,9 @@
 // ignore_for_file: discarded_futures
 
 import 'package:flutter/material.dart';
+import 'package:breakdex/core/design/theme.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:breakdex/core/design/colors.dart';
 import 'package:breakdex/core/design/spacing.dart';
 import 'package:breakdex/core/design/typography.dart';
 import 'package:breakdex/features/battle/providers/battle_providers.dart';
@@ -73,9 +73,9 @@ Future<void> _handleClose(
           ),
           TextButton(
             onPressed: () => Navigator.pop(ctx, true),
-            child: const Text(
+            child: Text(
               'Forfeit',
-              style: TextStyle(color: AppColors.actionAgain),
+              style: TextStyle(color: AppSemanticTheme.of(context).actionAgain),
             ),
           ),
         ],
@@ -118,7 +118,7 @@ class _ActiveBattle extends ConsumerWidget {
               child: Text(
                 '${state.streak}x Streak!',
                 style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                  color: AppColors.actionGood,
+                  color: AppSemanticTheme.of(context).actionGood,
                   fontWeight: FontWeight.w700,
                 ),
               ),
@@ -172,7 +172,7 @@ class _ActiveBattle extends ConsumerWidget {
               Expanded(
                 child: _RatingButton(
                   label: 'Again',
-                  color: AppColors.actionAgain,
+                  color: AppSemanticTheme.of(context).actionAgain,
                   onPressed: () {
                     HapticFeedback.lightImpact();
                     ref.read(battleProvider.notifier).rate('AGAIN');
@@ -183,7 +183,7 @@ class _ActiveBattle extends ConsumerWidget {
               Expanded(
                 child: _RatingButton(
                   label: 'Hard',
-                  color: AppColors.actionHard,
+                  color: AppSemanticTheme.of(context).actionHard,
                   foregroundColor: Colors.black,
                   onPressed: () {
                     HapticFeedback.lightImpact();
@@ -195,7 +195,7 @@ class _ActiveBattle extends ConsumerWidget {
               Expanded(
                 child: _RatingButton(
                   label: 'Good',
-                  color: AppColors.actionGood,
+                  color: AppSemanticTheme.of(context).actionGood,
                   foregroundColor: Colors.black,
                   onPressed: () {
                     HapticFeedback.mediumImpact();

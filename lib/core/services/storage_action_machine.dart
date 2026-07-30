@@ -87,7 +87,7 @@ class StorageActionMachine {
       };
     } catch (e, st) {
       logger.fail(e, st);
-      _progressController.add(StorageProgress(progress: 0, stage: 'Error', error: e.toString()));
+      _emitError(e);
       rethrow;
     }
   }
@@ -210,8 +210,18 @@ class StorageActionMachine {
     return a.path;
   }
 
+  /// Progress is an advisory side channel. `dispose()` can close the controller
+  /// while an action is still suspended on an await, so every emit is guarded:
+  /// a torn-down machine must lose its progress, never fail the transaction —
+  /// and never let a StateError from the error path mask the real cause.
   void _emit(final double p, final String stage, {final bool isComplete = false}) {
+    if (_progressController.isClosed) return;
     _progressController.add(StorageProgress(progress: p, stage: stage, isComplete: isComplete));
+  }
+
+  void _emitError(final Object e) {
+    if (_progressController.isClosed) return;
+    _progressController.add(StorageProgress(progress: 0, stage: 'Error', error: e.toString()));
   }
 
   void dispose() {

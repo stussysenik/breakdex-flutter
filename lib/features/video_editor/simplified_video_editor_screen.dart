@@ -8,7 +8,7 @@ import 'dart:ui';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/cupertino.dart';
+import 'package:breakdex/core/design/theme.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -17,7 +17,6 @@ import 'package:path_provider/path_provider.dart';
 import 'package:uuid/uuid.dart';
 import 'package:video_player/video_player.dart';
 
-import 'package:breakdex/core/design/colors.dart';
 import 'package:breakdex/core/design/spacing.dart';
 import 'package:breakdex/core/design/typography.dart';
 import 'package:breakdex/core/navigation/app_route_observer.dart'
@@ -699,7 +698,7 @@ class _SimplifiedVideoEditorViewState
               child: Container(
                 height: 300,
                 width: double.infinity,
-                color: AppColors.darkBg,
+                color: AppMediaChrome.of(context).background,
                 child: Stack(
                   fit: StackFit.expand,
                   children: [
@@ -734,7 +733,7 @@ class _SimplifiedVideoEditorViewState
       width: double.infinity,
       padding: const EdgeInsets.all(AppSpacing.lg),
       decoration: BoxDecoration(
-        color: AppColors.darkBg,
+        color: AppMediaChrome.of(context).background,
         borderRadius: BorderRadius.circular(AppRadius.lg),
       ),
       child: Center(
@@ -802,7 +801,7 @@ class _SimplifiedVideoEditorViewState
 
   Widget _buildBottomControls(final ColorScheme colorScheme) {
     return Container(
-      color: AppColors.darkBg,
+      color: AppMediaChrome.of(context).background,
       padding: const EdgeInsets.fromLTRB(
         AppSpacing.screenEdge,
         AppSpacing.md,
@@ -936,9 +935,9 @@ class _SimplifiedVideoEditorViewState
             ),
             TextButton(
               onPressed: () => Navigator.pop(ctx, true),
-              child: const Text(
+              child: Text(
                 'Discard',
-                style: TextStyle(color: AppColors.actionAgain),
+                style: TextStyle(color: AppSemanticTheme.of(context).actionAgain),
               ),
             ),
           ],
@@ -1354,7 +1353,7 @@ class _TrimTimelineState extends State<_TrimTimeline> {
                     margin: const EdgeInsets.all(2),
                     clipBehavior: Clip.antiAlias,
                     decoration: BoxDecoration(
-                      color: AppColors.darkFill,
+                      color: AppMediaChrome.of(context).fill,
                       borderRadius: BorderRadius.circular(AppRadius.xxs),
                     ),
                     child:

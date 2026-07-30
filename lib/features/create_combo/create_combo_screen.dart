@@ -125,7 +125,7 @@ class _CreateComboScreenState extends ConsumerState<CreateComboScreen> {
                           key: ValueKey(
                             '${currentMove.id}:$safeIndex:${currentMove.contentHash}',
                           ),
-                          videoPath: currentMove.resolvedVideoPath!,
+                          videoPath: currentMove.resolvedVideoPath,
                           autoPlay: true,
                         )
                       else

@@ -2,7 +2,6 @@
 // ignore_for_file: discarded_futures
 
 import 'package:flutter/material.dart';
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/services.dart';
 import 'package:video_player/video_player.dart';
 

@@ -2,12 +2,12 @@ import 'dart:async';
 
 import 'package:drift/drift.dart' show Value;
 import 'package:flutter/material.dart';
+import 'package:breakdex/core/design/theme.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import 'package:breakdex/core/database/database.dart';
-import 'package:breakdex/core/design/colors.dart';
 import 'package:breakdex/core/design/icons.dart';
 import 'package:breakdex/core/design/spacing.dart';
 import 'package:breakdex/core/design/typography.dart';
@@ -126,7 +126,7 @@ class _TrashedAssetRow extends ConsumerWidget {
         horizontal: AppSpacing.md,
         vertical: 4,
       ),
-      leading: AppIconView(AppIcon.video, color: _trashedColor, size: 28),
+      leading: const AppIconView(AppIcon.video, color: _trashedColor, size: 28),
       title: Row(
         children: [
           Expanded(
@@ -217,9 +217,9 @@ class _TrashedAssetRow extends ConsumerWidget {
           ),
           TextButton(
             onPressed: () => Navigator.pop(ctx, true),
-            child: const Text(
+            child: Text(
               'Delete',
-              style: TextStyle(color: AppColors.actionAgain),
+              style: TextStyle(color: AppSemanticTheme.of(context).actionAgain),
             ),
           ),
         ],

@@ -126,25 +126,25 @@ class _SummaryHeader extends StatelessWidget {
           _TierChip(
             count: garden.mastered,
             label: 'Mastered',
-            color: AchievementTile.tierColor('mastered'),
+            color: AchievementTile.tierColor(context, 'mastered'),
           ),
         if (garden.growing > 0)
           _TierChip(
             count: garden.growing,
             label: 'Growing',
-            color: AchievementTile.tierColor('growing'),
+            color: AchievementTile.tierColor(context, 'growing'),
           ),
         if (garden.sprouting > 0)
           _TierChip(
             count: garden.sprouting,
             label: 'Sprouting',
-            color: AchievementTile.tierColor('sprouting'),
+            color: AchievementTile.tierColor(context, 'sprouting'),
           ),
         if (garden.seed > 0)
           _TierChip(
             count: garden.seed,
             label: 'Seed',
-            color: AchievementTile.tierColor('seed'),
+            color: AchievementTile.tierColor(context, 'seed'),
           ),
       ],
     );

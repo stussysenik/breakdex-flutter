@@ -2,10 +2,10 @@
 // ignore_for_file: discarded_futures
 
 import 'package:flutter/material.dart';
+import 'package:breakdex/core/design/theme.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import 'package:breakdex/core/design/colors.dart';
 import 'package:breakdex/core/design/spacing.dart';
 import 'package:breakdex/core/design/typography.dart';
 import 'package:breakdex/features/flashcard_review/providers/review_providers.dart';
@@ -259,7 +259,7 @@ class _ScheduleCalendarState extends ConsumerState<ScheduleCalendar> {
 
   /// Badge color: overdue items are red, future items use accent.
   Color _dotColor(final int count, final bool isPast, final Color primary) {
-    if (isPast) return AppColors.actionAgain.withValues(alpha: 0.7);
+    if (isPast) return AppSemanticTheme.of(context).actionAgain.withValues(alpha: 0.7);
     if (count >= 8) return primary;
     if (count >= 4) return primary.withValues(alpha: 0.7);
     return primary.withValues(alpha: 0.4);

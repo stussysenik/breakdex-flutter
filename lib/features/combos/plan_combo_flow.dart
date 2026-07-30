@@ -121,7 +121,7 @@ class _PlanPickerSheet extends ConsumerWidget {
                         );
                       }
                       final combo = combos[index - 1];
-                      final style = statusStyle(combo.status);
+                      final style = statusStyle(context, combo.status);
                       return ListTile(
                         leading: Container(
                           width: 3,

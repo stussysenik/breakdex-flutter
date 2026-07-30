@@ -8,7 +8,6 @@ import 'package:intl/intl.dart';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import 'package:breakdex/core/design/colors.dart';
 import 'package:breakdex/core/services/entity_names_service.dart';
 import 'package:breakdex/core/design/spacing.dart';
 import 'package:breakdex/core/design/theme.dart';
@@ -1741,10 +1740,10 @@ class _TimelineEntryTile extends StatelessWidget {
   Widget build(final BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
     final ratingColor = switch (entry.rating) {
-      'AGAIN' => AppColors.actionAgain,
-      'HARD' => AppColors.actionHard,
-      'GOOD' => AppColors.actionGood,
-      'EASY' => AppColors.actionEasy,
+      'AGAIN' => AppSemanticTheme.of(context).actionAgain,
+      'HARD' => AppSemanticTheme.of(context).actionHard,
+      'GOOD' => AppSemanticTheme.of(context).actionGood,
+      'EASY' => AppSemanticTheme.of(context).actionEasy,
       _ => colorScheme.secondary,
     };
 
@@ -1955,9 +1954,9 @@ Color _dueBucketColor(
 ) {
   final colorScheme = Theme.of(context).colorScheme;
   return switch (bucket) {
-    ProgressDueBucket.now => AppColors.actionAgain,
-    ProgressDueBucket.today => AppColors.actionHard,
-    ProgressDueBucket.tomorrow => AppColors.actionGood,
+    ProgressDueBucket.now => AppSemanticTheme.of(context).actionAgain,
+    ProgressDueBucket.today => AppSemanticTheme.of(context).actionHard,
+    ProgressDueBucket.tomorrow => AppSemanticTheme.of(context).actionGood,
     ProgressDueBucket.later => colorScheme.secondary,
     ProgressDueBucket.unscheduled => colorScheme.secondary,
   };

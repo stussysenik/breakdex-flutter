@@ -2,8 +2,8 @@
 // ignore_for_file: discarded_futures
 
 import 'package:flutter/material.dart';
+import 'package:breakdex/core/design/theme.dart';
 import 'package:flutter/services.dart';
-import 'package:breakdex/core/design/colors.dart';
 import 'package:breakdex/core/design/spacing.dart';
 import 'package:breakdex/core/design/typography.dart';
 import 'package:breakdex/core/design/icons.dart';
@@ -26,7 +26,7 @@ class ActionTile extends StatelessWidget {
   @override
   Widget build(final BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
-    final color = destructive ? AppColors.actionAgain : colorScheme.onSurface;
+    final color = destructive ? AppSemanticTheme.of(context).actionAgain : colorScheme.onSurface;
     return Semantics(
       label: label,
       button: true,

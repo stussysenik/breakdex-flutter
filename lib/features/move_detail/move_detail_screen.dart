@@ -6,13 +6,13 @@ import 'package:breakdex/core/platform/native_media.dart';
 import 'package:breakdex/core/platform/web_support.dart';
 import 'dart:math';
 import 'package:flutter/material.dart';
+import 'package:breakdex/core/design/theme.dart';
 import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:breakdex/core/database/database.dart';
-import 'package:breakdex/core/design/colors.dart';
 import 'package:breakdex/core/design/spacing.dart';
 import 'package:breakdex/core/design/typography.dart';
 import 'package:breakdex/core/models/learning_state.dart';
@@ -70,8 +70,9 @@ class _MoveDetailScreenState extends ConsumerState<MoveDetailScreen> {
               debugPrint(
                 '[MoveDetailScreen] initState loaded move name="${m.name}" id=${m.id}',
               );
-              if (!supportsLocalVideoPlayback)
+              if (!supportsLocalVideoPlayback) {
                 unawaited(_logWebVideoDiagnostics(m));
+              }
               ref.read(moveDetailProvider.notifier).init(m);
             }
           })
@@ -167,7 +168,7 @@ class _MoveDetailScreenState extends ConsumerState<MoveDetailScreen> {
                             key: ValueKey(
                               'detail-video-${move.id}-${move.videoPath}-${move.contentHash}',
                             ),
-                            videoPath: move.resolvedVideoPath!,
+                            videoPath: move.resolvedVideoPath,
                             originalVideoName: move.originalVideoName,
                           ),
                         )
@@ -498,21 +499,28 @@ class _MoveDetailScreenState extends ConsumerState<MoveDetailScreen> {
       );
     }
 
-    if (state is Deleting)
+    if (state is Deleting) {
       overlays.add(SavingOverlay(message: l10n.mdOverlayDeleting));
-    if (state is SavingName)
+    }
+    if (state is SavingName) {
       overlays.add(SavingOverlay(message: l10n.mdOverlayRenaming));
-    if (state is SavingState)
+    }
+    if (state is SavingState) {
       overlays.add(SavingOverlay(message: l10n.mdOverlayUpdatingState));
-    if (state is SavingCategory)
+    }
+    if (state is SavingCategory) {
       overlays.add(SavingOverlay(message: l10n.mdOverlayUpdatingCategory));
-    if (state is SavingCount)
+    }
+    if (state is SavingCount) {
       overlays.add(SavingOverlay(message: l10n.mdOverlayUpdatingCount));
-    if (state is SavingNotes)
+    }
+    if (state is SavingNotes) {
       overlays.add(SavingOverlay(message: l10n.mdOverlaySavingNotes));
-    if (state is SavingPhotos)
+    }
+    if (state is SavingPhotos) {
       overlays.add(SavingOverlay(message: l10n.mdOverlayUpdatingPhotos));
-    if (state is Duplicating)
+    }
+    if (state is Duplicating) {
       overlays.add(
         SavingOverlay(
           message: l10n.mdOverlayDuplicatingEntity(
@@ -520,6 +528,7 @@ class _MoveDetailScreenState extends ConsumerState<MoveDetailScreen> {
           ),
         ),
       );
+    }
     // Removed SavingVideo overlay to make video import non-blocking
 
     if (state is ChangingState) {
@@ -998,7 +1007,7 @@ class _VideoMissingCard extends ConsumerWidget {
             child: Text(
               l10n.mdDeleteEntity(entityNames.moveSingular.toLowerCase()),
               style: AppTypography.caption.copyWith(
-                color: AppColors.actionAgain.withValues(alpha: 0.7),
+                color: AppSemanticTheme.of(context).actionAgain.withValues(alpha: 0.7),
               ),
             ),
           ),
@@ -1031,17 +1040,17 @@ class _MissingActionButton extends StatelessWidget {
         decoration: BoxDecoration(
           color: colorScheme.surface,
           borderRadius: BorderRadius.circular(AppRadius.sm),
-          border: Border.all(color: AppColors.accent.withValues(alpha: 0.3)),
+          border: Border.all(color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.3)),
         ),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(icon, size: 18, color: AppColors.accent),
+            Icon(icon, size: 18, color: Theme.of(context).colorScheme.primary),
             const SizedBox(width: 6),
             Text(
               label,
               style: AppTypography.bodySmall.copyWith(
-                color: AppColors.accent,
+                color: Theme.of(context).colorScheme.primary,
                 fontWeight: FontWeight.w600,
               ),
             ),
@@ -1135,10 +1144,10 @@ class _CloudVideoPlaceholderState
                   ),
                 )
               else
-                const AppIconView(
+                AppIconView(
                   AppIcon.download,
                   size: 48,
-                  color: AppColors.accent,
+                  color: Theme.of(context).colorScheme.primary,
                 ),
               const SizedBox(height: AppSpacing.md),
               Text(
