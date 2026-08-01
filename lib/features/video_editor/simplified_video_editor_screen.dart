@@ -30,6 +30,7 @@ import 'package:breakdex/core/utils/diagnostics.dart';
 import 'package:breakdex/shared/widgets/app_loader.dart';
 import 'package:breakdex/features/video_editor/video_edit_geometry.dart';
 import 'package:breakdex/core/design/icons.dart';
+import 'package:breakdex/shared/widgets/app_sheet.dart';
 
 class SimplifiedVideoEditorView extends ConsumerStatefulWidget {
   const SimplifiedVideoEditorView({super.key, required this.videoPath});
@@ -956,12 +957,8 @@ class _SimplifiedVideoEditorViewState
       hController.text = (16.0 / _customAspectRatio!).round().toString();
     }
 
-    showModalBottomSheet<void>(
+    showAppSheet<void>(
       context: context,
-      isScrollControlled: true,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(AppRadius.lg)),
-      ),
       builder: (final ctx) {
         final colorScheme = Theme.of(ctx).colorScheme;
         return Padding(

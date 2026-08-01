@@ -16,6 +16,7 @@ import 'package:breakdex/core/sync/integrity_verifier.dart';
 import 'package:breakdex/l10n/gen/app_localizations.dart';
 import 'package:breakdex/shared/widgets/app_loader.dart';
 import 'package:breakdex/core/design/icons.dart';
+import 'package:breakdex/shared/widgets/app_sheet.dart';
 
 /// Sync status dashboard showing overall progress, active transfers,
 /// and monthly data usage.
@@ -160,10 +161,8 @@ Future<void> _runIntegrityCheck(
     return;
   }
 
-  await showModalBottomSheet<void>(
+  await showAppSheet<void>(
     context: context,
-    isScrollControlled: true,
-    showDragHandle: true,
     builder: (final sheetContext) =>
         _IntegrityResultSheet(report: report, verifier: verifier),
   );

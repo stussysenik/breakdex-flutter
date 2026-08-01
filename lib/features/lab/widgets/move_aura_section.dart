@@ -19,6 +19,7 @@ import 'package:breakdex/features/flow/providers/aura_providers.dart';
 import 'package:breakdex/features/flow/widgets/aura_link_tile.dart'
     show AuraAffinity;
 import 'package:breakdex/core/design/icons.dart';
+import 'package:breakdex/shared/widgets/app_sheet.dart';
 
 // ---------------------------------------------------------------------------
 // MoveAuraSection — compact aura flow display for the Move Detail screen.
@@ -272,7 +273,7 @@ class _AuraPill extends ConsumerWidget {
     final colorScheme = Theme.of(context).colorScheme;
     final currentAffinity = AuraAffinity.fromString(link.affinity);
 
-    final result = await showModalBottomSheet<String>(
+    final result = await showAppSheet<String>(
       context: context,
       builder: (final ctx) => SafeArea(
         child: Padding(
@@ -398,9 +399,8 @@ class _AddConnectionButton extends ConsumerWidget {
     final WidgetRef ref,
   ) async {
     final result =
-        await showModalBottomSheet<({String targetMoveId, String affinity})>(
+        await showAppSheet<({String targetMoveId, String affinity})>(
           context: context,
-          isScrollControlled: true,
           builder: (_) => _QuickAddSheet(moveId: moveId, direction: direction),
         );
 
@@ -726,9 +726,8 @@ class _EmptyAuraState extends ConsumerWidget {
     final WidgetRef ref,
   ) async {
     final result =
-        await showModalBottomSheet<({String targetMoveId, String affinity})>(
+        await showAppSheet<({String targetMoveId, String affinity})>(
           context: context,
-          isScrollControlled: true,
           builder: (_) => _QuickAddSheet(
             moveId: moveId,
             direction: _FlowDirection.outgoing,

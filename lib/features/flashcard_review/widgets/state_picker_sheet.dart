@@ -12,6 +12,7 @@ import 'package:breakdex/core/models/learning_state.dart';
 import 'package:breakdex/core/providers.dart';
 import 'package:breakdex/core/services/entity_names_service.dart';
 import 'package:breakdex/l10n/gen/app_localizations.dart';
+import 'package:breakdex/shared/widgets/app_sheet.dart';
 
 /// Bottom sheet for manually overriding a move's learning state.
 ///
@@ -34,12 +35,8 @@ class StatePickerSheet extends ConsumerWidget {
     required final LearningState currentState,
     required final String moveName,
   }) {
-    return showModalBottomSheet<LearningState>(
+    return showAppSheet<LearningState>(
       context: context,
-      backgroundColor: Theme.of(context).colorScheme.surface,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.zero, // Sharp corners for brutalist feel
-      ),
       builder: (_) =>
           StatePickerSheet(currentState: currentState, moveName: moveName),
     );

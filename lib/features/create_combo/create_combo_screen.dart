@@ -21,6 +21,7 @@ import 'package:breakdex/shared/widgets/combo_step_line.dart';
 import 'package:breakdex/features/combos/plan_combo_flow.dart';
 import 'package:breakdex/shared/widgets/app_loader.dart';
 import 'package:breakdex/shared/widgets/secondary_button.dart';
+import 'package:breakdex/shared/widgets/app_sheet.dart';
 import 'package:breakdex/shared/widgets/video_player_widget.dart'
     show RobustVideoPlayer, VideoPlaceholder;
 
@@ -320,9 +321,8 @@ class _CreateComboScreenState extends ConsumerState<CreateComboScreen> {
   }
 
   Future<void> _showMovePicker() async {
-    final result = await showModalBottomSheet<List<Move>>(
+    final result = await showAppSheet<List<Move>>(
       context: context,
-      isScrollControlled: true,
       builder: (final context) =>
           _MovePickerSheet(alreadySelectedIds: _selectedMoveIds),
     );
@@ -453,7 +453,7 @@ class _CreateComboScreenState extends ConsumerState<CreateComboScreen> {
   /// Post-create affordance: "Plan it?" — accepting opens the date picker
   /// and persists a plan for the freshly created combo.
   Future<void> _offerPlanIt(final String comboId) async {
-    final wantsPlan = await showModalBottomSheet<bool>(
+    final wantsPlan = await showAppSheet<bool>(
       context: context,
       builder: (final sheetContext) {
         final colorScheme = Theme.of(sheetContext).colorScheme;

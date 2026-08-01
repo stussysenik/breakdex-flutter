@@ -41,6 +41,7 @@ import 'package:breakdex/features/lab/providers/achievement_providers.dart';
 import 'package:breakdex/l10n/gen/app_localizations.dart';
 import 'package:breakdex/features/flashcard_review/review_session_state.dart';
 import 'package:breakdex/core/design/icons.dart';
+import 'package:breakdex/shared/widgets/app_sheet.dart';
 
 class FlashcardReviewScreen extends ConsumerStatefulWidget {
   const FlashcardReviewScreen({super.key});
@@ -162,7 +163,7 @@ class _FlashcardReviewScreenState extends ConsumerState<FlashcardReviewScreen>
   void _confirmEndSession() {
     final reviewed = _currentIndex;
     final total = _items.length;
-    showModalBottomSheet<void>(
+    showAppSheet<void>(
       context: context,
       builder: (final context) {
         final colorScheme = Theme.of(context).colorScheme;

@@ -12,6 +12,7 @@ import 'package:breakdex/core/design/spacing.dart';
 import 'package:breakdex/core/design/typography.dart';
 import 'package:breakdex/core/providers.dart';
 import 'package:breakdex/features/flow/providers/aura_providers.dart';
+import 'package:breakdex/shared/widgets/app_sheet.dart';
 
 // ---------------------------------------------------------------------------
 // AuraPresetPicker — horizontal scroll of preset "team" chips.
@@ -89,9 +90,8 @@ class AuraPresetPicker extends ConsumerWidget {
     final BuildContext context,
     final WidgetRef ref,
   ) async {
-    final name = await showModalBottomSheet<String>(
+    final name = await showAppSheet<String>(
       context: context,
-      isScrollControlled: true,
       builder: (_) => const _PresetNameSheet(title: 'New Aura Preset'),
     );
 
@@ -115,7 +115,7 @@ class AuraPresetPicker extends ConsumerWidget {
   ) async {
     unawaited(HapticFeedback.lightImpact());
 
-    final action = await showModalBottomSheet<_PresetAction>(
+    final action = await showAppSheet<_PresetAction>(
       context: context,
       builder: (final ctx) => _PresetOptionsSheet(presetName: preset.name),
     );
@@ -124,9 +124,8 @@ class AuraPresetPicker extends ConsumerWidget {
 
     switch (action) {
       case _PresetAction.rename:
-        final newName = await showModalBottomSheet<String>(
+        final newName = await showAppSheet<String>(
           context: context,
-          isScrollControlled: true,
           builder: (_) => _PresetNameSheet(
             title: 'Rename Preset',
             initialValue: preset.name,

@@ -23,6 +23,7 @@ import 'package:breakdex/features/lab/providers/lab_providers.dart';
 import 'package:breakdex/features/lab/widgets/lab_board_view.dart';
 import 'package:breakdex/features/lab/widgets/lab_list_view.dart';
 import 'package:breakdex/features/lab/widgets/lab_sets_view.dart';
+import 'package:breakdex/shared/widgets/app_sheet.dart';
 
 /// The Lab tab — a space for organizing training projects and practice sets.
 ///
@@ -65,9 +66,8 @@ class _LabScreenState extends ConsumerState<LabScreen> {
 
   /// Show bottom sheet for creating a new lab.
   Future<void> _showCreateLabSheet() async {
-    final result = await showModalBottomSheet<({String name, String type})>(
+    final result = await showAppSheet<({String name, String type})>(
       context: context,
-      isScrollControlled: true,
       builder: (_) => const _CreateLabSheet(),
     );
 

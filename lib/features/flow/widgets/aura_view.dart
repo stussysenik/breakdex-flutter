@@ -18,6 +18,7 @@ import 'package:breakdex/core/providers.dart';
 import 'package:breakdex/features/flow/providers/aura_providers.dart';
 import 'package:breakdex/features/flow/widgets/aura_link_tile.dart';
 import 'package:breakdex/features/flow/widgets/aura_preset_picker.dart';
+import 'package:breakdex/shared/widgets/app_sheet.dart';
 
 // ---------------------------------------------------------------------------
 // AuraView — the main "Your Aura" screen/section.
@@ -155,9 +156,8 @@ class _AuraViewState extends ConsumerState<AuraView> {
     final String fromMoveId,
   ) async {
     final result =
-        await showModalBottomSheet<({String toMoveId, String affinity})>(
+        await showAppSheet<({String toMoveId, String affinity})>(
           context: context,
-          isScrollControlled: true,
           builder: (_) => _AddConnectionSheet(fromMoveId: fromMoveId),
         );
 

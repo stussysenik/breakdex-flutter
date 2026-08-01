@@ -12,6 +12,7 @@ import 'package:breakdex/core/services/video_path_resolver.dart';
 import 'package:breakdex/shared/widgets/app_loader.dart';
 import 'package:breakdex/shared/widgets/metadata_video_picker_sheet.dart';
 import 'package:breakdex/core/design/icons.dart';
+import 'package:breakdex/shared/widgets/app_sheet.dart';
 
 /// A video picker that lists library-referenced videos first:
 /// "THIS COMBO'S MOVES" (with file info), then "RECENT TAKES",
@@ -33,9 +34,8 @@ class LibraryVideoPickerSheet extends ConsumerWidget {
     required final void Function(String relativePath, String? hash)
     onVideoPicked,
   }) {
-    return showModalBottomSheet(
+    return showAppSheet<void>(
       context: context,
-      isScrollControlled: true,
       builder: (_) => LibraryVideoPickerSheet(
         comboId: comboId,
         onVideoPicked: onVideoPicked,

@@ -23,17 +23,41 @@ Items 1–2 and 6–7 landed this session; 3–5 and 8 are captured, not built.
 - [x] 2.3 `AppIcon.library` (book) and `AppIcon.dojo` (training floor) added to all three packs.
 - [x] 2.4 Nav rewired: Breakdex → `library`, Review (anki mode) → `dojo`.
 
-## 3. Overlays must compute their own coordinates — NOT BUILT
+## 3. Overlays must compute their own coordinates — SHEETS DONE, DIALOGS OPEN
 
 Owner, on `SCR-20260801-mxjs`: *"unreliable reliance on the viewport … you need to be always
 calculating your own coordinates. Apple Native would have done this better."* The "Plan a
 combo" sheet is clipped by band 4.
 
-- [ ] 3.1 `AppSheet` helper owning `navBandHeight + MediaQuery.padding.bottom`, mirroring how
-      `AppScreen` owns it for screens. One computation, one place.
-- [ ] 3.2 Migrate every `showModalBottomSheet` / `showDialog` call site to it.
-- [ ] 3.3 Widget test: sheet bottom edge clears band 4 at 3 viewport heights. Must go red
-      against today's code first.
+Cause, found by reading the shell: a sheet opened from a screen inside the tab shell is pushed
+onto that branch's *nested* navigator, which lives inside the shell `Scaffold`'s **body** — and
+the shell sets `extendBody: true`. So the viewport the sheet measures runs to the physical
+bottom while its last `56 + padding.bottom` is under the blurred band. The viewport is not
+unreliable; it is honestly reporting a box that something else paints over.
+
+- [x] 3.1 `showAppSheet` (`lib/shared/widgets/app_sheet.dart`) owning
+      `navBandHeight + MediaQuery.padding.bottom`, mirroring how `AppScreen` owns it for
+      screens. It *removes* the bottom safe-area padding from the subtree before applying the
+      inset, so the ~20 bodies that wrap themselves in `SafeArea` cannot count the home
+      indicator twice — the guarantee holds whatever the body is built from. It also sets
+      `useSafeArea: true` for every sheet: the top edge is a coordinate too, and a tall
+      scroll-controlled sheet must stop at band 1 rather than slide under the status bar.
+      `viewInsets` is left untouched, so sheets that lift above the keyboard still do.
+- [x] 3.2 All 24 `showModalBottomSheet` call sites migrated; zero remain outside the helper.
+      Per-site chrome went with them — 8 hand-copied `RoundedRectangleBorder`s, one
+      `BorderRadius.zero` "brutalist" variant, one lone `showDragHandle`, and every
+      `backgroundColor: Theme.of(context).colorScheme.surface`. The single surviving parameter
+      is `backgroundColor`, for the two sheets whose body paints its own container and must
+      pass `Colors.transparent` or get a second surface drawn behind it.
+- [x] 3.3 `test/shared/widgets/app_sheet_test.dart` — clearance at 600/800/1000pt viewports,
+      each asserting the inset is applied **once** as well as at all. RED first against a bare
+      `showModalBottomSheet`: 34pt of clearance where 90 is required, at all three heights —
+      exactly the 56pt band. Green after.
+- [ ] 3.4 Dialogs are a different computation and were **not** folded into `showAppSheet`.
+      An `AlertDialog` is centred, so band 4 only bites one tall enough to reach it; shifting
+      every dialog up by 56pt would misplace the 30-odd short ones to fix the few tall ones.
+      The fix there is a max-height clamp, not an inset. 34 `showDialog` sites across 19 files
+      remain unmigrated — deliberately, with this reason, not by omission.
 
 ## 4. Frame migration — 28 screens — NOT BUILT
 

@@ -13,6 +13,7 @@ import 'package:breakdex/core/services/video_service.dart';
 import 'package:breakdex/core/utils/loading_state_machine.dart';
 import 'package:breakdex/shared/widgets/app_loader.dart';
 import 'package:breakdex/shared/widgets/metadata_video_picker_sheet.dart';
+import 'package:breakdex/shared/widgets/app_sheet.dart';
 
 /// Bottom sheet with 3 video source options: Camera, Photo Library, Files (iCloud).
 /// Shows loading overlay during pick/download. Returns [VideoPickResult] or null.
@@ -31,12 +32,8 @@ class VideoPickerSheet extends StatefulWidget {
     final String? previousVideoName,
     final String? previousThumbnailPath,
   }) {
-    return showModalBottomSheet<VideoPickResult>(
+    return showAppSheet<VideoPickResult>(
       context: context,
-      backgroundColor: Theme.of(context).colorScheme.surface,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(AppRadius.lg)),
-      ),
       builder: (final ctx) => VideoPickerSheet(
         previousVideoName: previousVideoName,
         previousThumbnailPath: previousThumbnailPath,

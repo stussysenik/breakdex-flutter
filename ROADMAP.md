@@ -24,11 +24,15 @@
 - **Change (active, 2026-08-01 · product finish):** `unify-text-first-frame-and-icon-vocabulary`
   — sections 1, 2, 6, 7, 9, 10, 11 landed (`AppRow`/`AppSection` on Add, Cupertino icon pack as
   default, the owner's canonical 8 categories, `AppBreadcrumb` in the 72pt header band, and
-  `AppChoiceList` replacing the deleted `_SegmentedPicker` at all five call sites). Gate: analyzer
-  0/0, **1353 pass / 3 skip / 0 fail**, `./verify.sh` ALL GATES PASSED. **Next unticked: 3.1** —
-  `AppSheet`, one place that owns `navBandHeight + MediaQuery.padding.bottom`, because the
-  "Plan a combo" sheet is clipped by band 4 (owner repro `SCR-20260801-mxjs`). How any of it
-  *looks* is still owner-gated.
+  `AppChoiceList` replacing the deleted `_SegmentedPicker` at all five call sites).
+  **§3 sheets closed 2026-08-01:** `showAppSheet` owns `navBandHeight + padding.bottom` in one
+  place and all 24 `showModalBottomSheet` sites migrated onto it — the "Plan a combo" clipping
+  (`SCR-20260801-mxjs`) was the nested branch navigator living inside the shell body under
+  `extendBody: true`, so the viewport was honest and nothing was subtracting the band. Red-first
+  at three viewport heights: 34pt clearance where 90 is required. Gate: analyzer 0/0,
+  **1356 pass / 3 skip / 0 fail**. **Next unticked: 3.4** — dialogs, deliberately *not* folded
+  into the sheet helper (a centred dialog needs a height clamp, not a 56pt shift) — or jump to
+  §4.1, the four tab-level screens. How any of it *looks* is still owner-gated.
 - **Change (prior, 2026-07-29 · product finish):** `redesign-visual-first-experience`
   — **6.4 DONE 2026-07-29.** `openspec/changes/add-icon-system-and-packs` Phase 4 closed:
   `AppIcon` enum with 78 semantic names, material + lucide packs, conformance gate with

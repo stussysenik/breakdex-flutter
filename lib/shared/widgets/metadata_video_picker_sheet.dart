@@ -24,6 +24,7 @@ import 'package:breakdex/core/utils/app_clock.dart';
 import 'package:breakdex/shared/widgets/app_loader.dart';
 import 'package:breakdex/core/utils/diagnostics.dart';
 import 'package:breakdex/core/utils/stall_detector.dart';
+import 'package:breakdex/shared/widgets/app_sheet.dart';
 
 class MetadataVideoPickerSheet extends ConsumerStatefulWidget {
   const MetadataVideoPickerSheet({super.key});
@@ -33,11 +34,9 @@ class MetadataVideoPickerSheet extends ConsumerStatefulWidget {
       'MetadataVideoPickerSheet',
       'Opening high-fidelity discovery picker',
     );
-    return showModalBottomSheet<VideoPickResult>(
+    return showAppSheet<VideoPickResult>(
       context: context,
-      isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      useSafeArea: true,
       builder: (_) => const MetadataVideoPickerSheet(),
     );
   }
@@ -335,7 +334,7 @@ class _MetadataVideoPickerSheetState
   }
 
   Future<_MemberChoice?> _showMembershipChoice() {
-    return showModalBottomSheet<_MemberChoice>(
+    return showAppSheet<_MemberChoice>(
       context: context,
       builder: (final ctx) => SafeArea(
         child: Column(

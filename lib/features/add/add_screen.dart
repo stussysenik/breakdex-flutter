@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-import 'package:breakdex/core/design/spacing.dart';
 import 'package:breakdex/core/services/entity_names_service.dart';
 import 'package:breakdex/core/models/add_flow_order.dart';
 import 'package:breakdex/core/models/move_creation.dart';
@@ -14,6 +13,7 @@ import 'package:breakdex/shared/widgets/app_row.dart';
 import 'package:breakdex/shared/widgets/app_screen.dart';
 import 'package:breakdex/shared/widgets/video_picker_sheet.dart';
 import 'package:breakdex/l10n/gen/app_localizations.dart';
+import 'package:breakdex/shared/widgets/app_sheet.dart';
 
 class AddScreen extends ConsumerWidget {
   const AddScreen({super.key});
@@ -98,13 +98,8 @@ class AddScreen extends ConsumerWidget {
     final WidgetRef ref,
     final VideoPickResult pickResult,
   ) {
-    return showModalBottomSheet<ClipMetadataResult>(
+    return showAppSheet<ClipMetadataResult>(
       context: context,
-      backgroundColor: Theme.of(context).colorScheme.surface,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(AppRadius.lg)),
-      ),
-      isScrollControlled: true,
       builder: (_) => ClipMetadataForm(pickResult: pickResult),
     );
   }

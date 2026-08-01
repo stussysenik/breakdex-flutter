@@ -23,6 +23,7 @@ import 'package:breakdex/features/lab/widgets/lab_timeline.dart';
 import 'package:breakdex/features/lab/widgets/linked_moves_section.dart';
 import 'package:breakdex/features/lab/widgets/milestone_list.dart';
 import 'package:breakdex/features/lab/widgets/set_builder.dart';
+import 'package:breakdex/shared/widgets/app_sheet.dart';
 
 /// Full detail screen for a single lab (project or set).
 ///
@@ -136,9 +137,8 @@ class _LabDetailScreenState extends ConsumerState<LabDetailScreen> {
 
     if (!mounted) return;
 
-    final selectedMoveId = await showModalBottomSheet<String>(
+    final selectedMoveId = await showAppSheet<String>(
       context: context,
-      isScrollControlled: true,
       builder: (_) => _MovePickerSheet(
         linkedMoveIds: linkedMoveIds,
         lastMoveId: lastMoveId,

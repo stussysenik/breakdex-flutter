@@ -40,6 +40,7 @@ import 'package:breakdex/shared/widgets/app_loader.dart';
 import 'package:breakdex/shared/widgets/video_picker_sheet.dart';
 import 'package:breakdex/shared/widgets/video_player_widget.dart';
 import 'package:breakdex/features/sync_onboarding/sync_onboarding_card.dart';
+import 'package:breakdex/shared/widgets/app_sheet.dart';
 
 part 'widgets/move_grid_cell.dart';
 part 'widgets/combo_grid_cell.dart';
@@ -474,20 +475,15 @@ class MoveListScreen extends ConsumerWidget {
     final BuildContext context,
     final WidgetRef ref,
   ) async {
-    final draft = await showModalBottomSheet<({String name, String category})>(
+    final draft = await showAppSheet<({String name, String category})>(
       context: context,
-      isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (_) => const _MoveMetadataSheet(),
     );
     if (draft == null || !context.mounted) return;
 
-    final videoIntent = await showModalBottomSheet<_MoveVideoIntent>(
+    final videoIntent = await showAppSheet<_MoveVideoIntent>(
       context: context,
-      backgroundColor: Theme.of(context).colorScheme.surface,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(AppRadius.lg)),
-      ),
       builder: (_) =>
           _MoveVideoPromptSheet(name: draft.name, category: draft.category),
     );

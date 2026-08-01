@@ -19,6 +19,7 @@ import 'package:breakdex/core/services/entity_names_service.dart';
 import 'package:breakdex/l10n/gen/app_localizations.dart';
 import 'package:breakdex/features/flashcard_review/providers/deck_providers.dart';
 import 'package:breakdex/core/design/icons.dart';
+import 'package:breakdex/shared/widgets/app_sheet.dart';
 
 /// Bottom sheet for creating a new smart or manual deck.
 ///
@@ -30,13 +31,8 @@ class CreateDeckSheet extends ConsumerStatefulWidget {
   final Deck? deck;
 
   static Future<void> show(final BuildContext context, {final Deck? deck}) {
-    return showModalBottomSheet(
+    return showAppSheet<void>(
       context: context,
-      isScrollControlled: true,
-      backgroundColor: Theme.of(context).colorScheme.surface,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(AppRadius.lg)),
-      ),
       builder: (_) => CreateDeckSheet(deck: deck),
     );
   }

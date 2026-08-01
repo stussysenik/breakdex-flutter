@@ -18,6 +18,7 @@ import 'package:breakdex/l10n/gen/app_localizations.dart';
 import 'package:breakdex/features/flashcard_review/providers/deck_providers.dart';
 import 'package:breakdex/features/flashcard_review/providers/review_providers.dart';
 import 'package:breakdex/core/design/icons.dart';
+import 'package:breakdex/shared/widgets/app_sheet.dart';
 
 /// Bottom sheet showing the full FSRS math breakdown for a single item.
 ///
@@ -37,9 +38,8 @@ class ItemScheduleDetailSheet extends ConsumerWidget {
     final BuildContext context,
     final ReviewableItemWithCard item,
   ) {
-    return showModalBottomSheet(
+    return showAppSheet<void>(
       context: context,
-      isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (_) => ItemScheduleDetailSheet(item: item),
     );

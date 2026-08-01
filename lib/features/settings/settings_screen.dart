@@ -49,6 +49,7 @@ import 'package:breakdex/shared/widgets/shake_detector.dart';
 import 'package:breakdex/features/stats/providers/stats_providers.dart';
 import 'package:breakdex/features/settings/recently_deleted_screen.dart';
 import 'package:breakdex/core/design/icons.dart';
+import 'package:breakdex/shared/widgets/app_sheet.dart';
 
 final _settingsMovesProvider = StreamProvider<List<Move>>((final ref) {
   return ref.watch(moveRepositoryProvider).watchAll();
@@ -831,12 +832,8 @@ class SettingsScreen extends ConsumerWidget {
     required final int usageCount,
   }) async {
     final l10n = AppLocalizations.of(context);
-    final action = await showModalBottomSheet<_CategorySheetAction>(
+    final action = await showAppSheet<_CategorySheetAction>(
       context: context,
-      backgroundColor: Theme.of(context).colorScheme.surface,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(AppRadius.lg)),
-      ),
       builder: (final context) => SafeArea(
         child: Padding(
           padding: const EdgeInsets.fromLTRB(

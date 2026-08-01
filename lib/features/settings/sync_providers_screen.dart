@@ -16,6 +16,7 @@ import 'package:breakdex/core/providers.dart';
 import 'package:breakdex/core/sync/cloud_provider.dart';
 import 'package:breakdex/core/sync/gdrive_setup_service.dart';
 import 'package:breakdex/core/sync/icloud_setup_service.dart';
+import 'package:breakdex/shared/widgets/app_sheet.dart';
 
 /// Feature flag: Google Drive requires OAuth client ID setup (GoogleService-
 /// Info.plist). Flip to `true` once the Google Cloud project is provisioned.
@@ -249,12 +250,8 @@ class _AddProviderButton extends ConsumerWidget {
   }
 
   void _showAddProviderSheet(final BuildContext context, final WidgetRef ref) {
-    showModalBottomSheet<void>(
+    showAppSheet<void>(
       context: context,
-      backgroundColor: Theme.of(context).colorScheme.surface,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
-      ),
       builder: (final ctx) => Padding(
         padding: const EdgeInsets.all(AppSpacing.screenEdge),
         child: Column(

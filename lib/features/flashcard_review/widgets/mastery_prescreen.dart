@@ -20,6 +20,7 @@ import 'package:breakdex/features/flashcard_review/providers/deck_providers.dart
 import 'package:breakdex/features/flashcard_review/providers/review_providers.dart';
 import 'package:breakdex/features/flashcard_review/widgets/create_deck_sheet.dart';
 import 'package:breakdex/core/design/icons.dart';
+import 'package:breakdex/shared/widgets/app_sheet.dart';
 
 /// The session launcher shown before entering a flashcard review session.
 class MasteryPrescreen extends ConsumerWidget {
@@ -384,7 +385,7 @@ class _DecksSection extends ConsumerWidget {
     final WidgetRef ref,
     final Deck deck,
   ) {
-    showModalBottomSheet<void>(
+    showAppSheet<void>(
       context: context,
       builder: (final context) => SafeArea(
         child: Column(

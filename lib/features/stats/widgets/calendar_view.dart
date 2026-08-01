@@ -14,6 +14,7 @@ import 'package:breakdex/core/design/typography.dart';
 import 'package:breakdex/core/providers.dart';
 import 'package:breakdex/core/design/icons.dart';
 import 'package:breakdex/features/lab/providers/lab_providers.dart';
+import 'package:breakdex/shared/widgets/app_sheet.dart';
 
 // ---------------------------------------------------------------------------
 // LabCalendarView — month-grid calendar showing daily Lab activity.
@@ -160,9 +161,8 @@ class _LabCalendarViewState extends ConsumerState<LabCalendarView> {
     final DateTime date,
   ) async {
     unawaited(HapticFeedback.selectionClick());
-    await showModalBottomSheet<void>(
+    await showAppSheet<void>(
       context: context,
-      isScrollControlled: true,
       builder: (_) => _DayDetailSheet(date: date),
     );
   }

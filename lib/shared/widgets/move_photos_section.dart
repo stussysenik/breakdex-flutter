@@ -17,6 +17,7 @@ import 'package:breakdex/core/design/typography.dart';
 import 'package:breakdex/core/design/icons.dart';
 import 'package:breakdex/core/services/app_storage_paths.dart';
 import 'package:breakdex/shared/widgets/app_loader.dart';
+import 'package:breakdex/shared/widgets/app_sheet.dart';
 
 Future<String> _photoDirectory() async {
   final docs = await AppStoragePaths.documentsDirectory();
@@ -67,7 +68,7 @@ class _MovePhotosSectionState extends State<MovePhotosSection> {
   Future<void> _addPhoto() async {
     setState(() => _loading = true);
     try {
-      final source = await showModalBottomSheet<String>(
+      final source = await showAppSheet<String>(
         context: context,
         builder: (final ctx) => SafeArea(
           child: Padding(

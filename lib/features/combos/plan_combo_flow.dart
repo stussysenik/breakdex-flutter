@@ -16,6 +16,7 @@ import 'package:breakdex/core/providers.dart';
 import 'package:breakdex/shared/widgets/app_loader.dart';
 import 'package:breakdex/features/combo_detail/widgets/status_tag.dart';
 import 'package:breakdex/core/design/icons.dart';
+import 'package:breakdex/shared/widgets/app_sheet.dart';
 
 final allCombosProvider = StreamProvider<List<Combo>>((final ref) {
   return ref.watch(combosDaoProvider).watchAll();
@@ -34,7 +35,7 @@ Future<void> planComboFlow(
   final DateTime? presetDate,
 }) async {
   String? pickedComboId = comboId;
-  pickedComboId ??= await showModalBottomSheet<String>(
+  pickedComboId ??= await showAppSheet<String>(
     context: context,
     builder: (_) => const _PlanPickerSheet(),
   );
