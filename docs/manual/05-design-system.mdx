@@ -3,7 +3,7 @@ title: Design System
 name: design-system
 order: 5
 status: verified
-verified: 210deae
+verified: 976533b
 watches:
   - lib/core/design/**
   - docs/design/TOKENS.md
@@ -66,6 +66,13 @@ that is how `AppScreen.floatingActionButton` arrived, carrying with it the nav-b
 screens had each hand-rolled as `kBottomNavigationBarHeight + padding.bottom`. Detail routes
 pushed on top of a tab are not on the roster: a back affordance and no nav band is a different
 placement problem, and framing them is a separate ruling.
+
+**The address line lives inside band 2, which does not grow.** `AppBreadcrumb`
+(`lib/shared/widgets/app_breadcrumb.dart`) renders the route as one line of type above the
+title — `AppLayout.crumbHeight` (16) + `crumbGap` (4) + the 36pt title = 56, centred in the
+unchanged 72pt header band. A header whose height changes between screens is precisely the
+discontinuity `AppScreen` exists to remove, so the crumb was fitted into the band rather than
+added to it.
 
 **The type baseline.** Line heights ride **2pt** (`AppLayout.typeBaseline`), half the 4pt
 layout baseline — owner's ruling, 2026-07-29. A productive ramp needs a heading step between
@@ -189,7 +196,7 @@ Icons follow the same shape as every other token axis: a closed vocabulary the p
 and an interchangeable implementation behind it. `lib/core/design/icons.dart` holds all four
 pieces, and the split is the point — **a screen names a meaning; a pack chooses the glyph.**
 
-- **`enum AppIcon`** — 78 semantic names. Every name states a meaning a surface can articulate
+- **`enum AppIcon`** — 80 semantic names. Every name states a meaning a surface can articulate
   (`back`, `empty`, `delete`); none describes stroke, weight, or terminal. Adding a name means
   adding a case in every pack in the same commit.
 - **`abstract class IconPack`** — `resolve(AppIcon) → IconData`, implemented as a `switch` with
@@ -197,9 +204,11 @@ pieces, and the split is the point — **a screen names a meaning; a pack choose
   completeness is proven by the compiler rather than asserted in review. This is the same
   reasoning as the conformance tests below, moved one layer earlier: a gate that runs at
   type-check time beats a gate that runs in CI.
-- **`enum IconPackId`** (`material`, `lucide`) — the persistence key (`icon_pack` in
+- **`enum IconPackId`** (`cupertino`, `material`, `lucide`) — the persistence key (`icon_pack` in
   SharedPreferences) and the factory. `fromKey` tolerates unknown values and falls back to
-  `material`, so removing a pack never bricks a client that persisted its name.
+  `cupertino`, so removing a pack never bricks a client that persisted its name. **`cupertino` is
+  the default**: a client that has never chosen a pack gets one vocabulary on every OS, rather
+  than a glyph set that changes shape when the same build runs on iOS.
 - **`AppIconPackTheme`** — a `ThemeExtension` carrying the resolved pack, registered by
   `AppTheme.light/dark(iconPack:)` alongside `AppSemanticTheme`. `AppIconPackTheme.of(context)`
   falls back to `MaterialPack()` when the extension is absent, so a widget pumped outside the app
