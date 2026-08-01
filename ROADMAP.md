@@ -139,9 +139,19 @@
   instead of the statics, so a subtree wrapped in a `Theme` re-flows on the next frame with no
   hot restart. Proved red-first: the override case measured the *default* 24pt gutter until the
   frame stopped reading the constant. Gate: analyzer 0/0, **1404 pass / 3 skip / 0 fail**.
-  **Next unticked: 5.2** — a dev gallery route seeded with real fixture data rendering every
-  primitive (extends `lib/dev/preview_harness.dart`), which 5.3 then wires to live sliders bound
-  to the 5.1 basis. How any of §4–5 *looks* is still owner-gated.
+  **§5.2 landed 2026-08-02 — the vocabulary, not just the compositions.** The gallery already
+  mounted 15 seeded screens; what was missing underneath them was every primitive those screens
+  are spelled with. `lib/dev/primitives_catalogue.dart` is a new *section* of the existing
+  `/dev/preview-gallery` route (no new route, no second harness): the frame with nothing in it
+  but rows, `AppRow` in all seven states, every `AppIcon` × all three packs side by side, every
+  `AppColorRole` × both colour packs, and one instance of each locked motion family, replayable
+  by tap. Completeness is asserted rather than eyeballed — the test walks both enum products and
+  demands each cell, so a name added to either vocabulary without a cell here fails the gate;
+  proved red-first by truncating the loops and reading back the exact missing names. Gate:
+  analyzer 0/0, **1410 pass / 3 skip / 0 fail**.
+  **Next unticked: 5.3** — live sliders in that gallery bound to the 5.1 basis, so the grid is
+  adjusted by moving a control rather than editing a constant and hot-restarting. How any of
+  §4–5 *looks* is still owner-gated.
 - **Change (prior, 2026-07-29 · product finish):** `redesign-visual-first-experience`
   — **6.4 DONE 2026-07-29.** `openspec/changes/add-icon-system-and-packs` Phase 4 closed:
   `AppIcon` enum with 78 semantic names, material + lucide packs, conformance gate with

@@ -275,10 +275,32 @@ every element so each one can be seen functioning.
 - [x] 5.1 Make `AppLayout` overridable at runtime (a `ThemeExtension` carrying the constants,
       defaulting to today's values) so gutter / baseline / blockGrid / rowHeight / headerHeight
       can be changed live and every screen re-flows. The constants stay the default, not the law.
-- [ ] 5.2 Dev gallery route, pre-seeded with real fixture data (`automation_fixture_service`
+- [x] 5.2 Dev gallery route, pre-seeded with real fixture data (`automation_fixture_service`
       already seeds moves/combos), rendering every primitive — `AppScreen`, `AppSection`,
       `AppRow` in each state, all 3 icon packs side by side, all 17 color roles, the motion
       families. Extends `lib/dev/preview_harness.dart` rather than starting a new harness.
+      **Done 2026-08-02.** `lib/dev/primitives_catalogue.dart` is a new *section* of the
+      existing `/dev/preview-gallery` route, not a new route and not a new harness: the
+      screen cards above it already prove the compositions render against the seeded
+      backend, and what was missing was the vocabulary underneath them. It renders the
+      frame with nothing in it but rows (band 3 without a feature), `AppRow` in all seven
+      states it can hold, every `AppIcon` name × all three packs side by side, every
+      `AppColorRole` × both colour packs at the brightness in force, and one instance of
+      each locked motion family, replayable by tapping.
+      A `Column`, not a `ListView`, on purpose — everything must build whether or not it is
+      on screen, so the completeness assertions measure the whole catalogue in one pump.
+      Completeness is asserted, not eyeballed: `primitives_catalogue_test.dart` walks
+      `AppIcon.values × IconPackId.values` and `AppColorRole.values × ColorPackId.values`
+      and demands each cell, so adding a name to either vocabulary without rendering it
+      here fails the gate. Proved red-first by truncating both loops (`.take(10)` /
+      `.take(3)`) and watching it report `up missing from the cupertino column` and
+      `separator missing from the classic column`. A second test resolves one cell's
+      `IconData` through the pack in force, because three columns of the *default* pack
+      would satisfy the count and prove nothing.
+      Gate: analyzer 0 errors / 0 warnings, **1410 pass / 3 skip / 0 fail**.
+      **NOT PROVEN:** how any of it looks. Also unrendered: the depth/elevation tokens and
+      the typography ramp — neither is named by this task, and both are candidates for the
+      catalogue when 5.3's sliders make a second basis worth reading them against.
 - [ ] 5.3 Live sliders in that gallery bound to 5.1, so the basis is adjusted by moving a
       control, not by editing a constant and hot-restarting.
 - [ ] 5.4 Motion: owner wants **morph-first** animation, "how graphics are rendered from first

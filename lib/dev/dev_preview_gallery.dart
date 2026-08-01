@@ -5,6 +5,7 @@ import 'package:breakdex/core/design/spacing.dart';
 import 'package:breakdex/core/design/theme.dart';
 import 'package:breakdex/dev/preview_gallery_service.dart';
 import 'package:breakdex/dev/preview_harness.dart';
+import 'package:breakdex/dev/primitives_catalogue.dart';
 import 'package:breakdex/features/add/add_screen.dart';
 import 'package:breakdex/features/battle/battle_screen.dart';
 import 'package:breakdex/features/breakdex/breakdex_screen.dart';
@@ -74,6 +75,9 @@ final class DevPreviewGallery extends ConsumerWidget {
               _PreviewCard(label: 'AddScreen', child: AddScreen()),
               _PreviewCard(label: 'BattleScreen', child: BattleScreen()),
               _PreviewCard(label: 'SettingsScreen', child: SettingsScreen()),
+              SizedBox(height: AppSpacing.lg),
+              _SectionLabel(label: 'Primitives'),
+              DevPrimitivesCatalogue(),
             ],
           ),
         ),
