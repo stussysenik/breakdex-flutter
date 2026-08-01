@@ -10,20 +10,20 @@ This ledger records what Breakdex is trying to be at the system level: a move li
 ## Release Snapshot
 
 <!-- release:meta:start -->
-- Release tag: `v1.7.0`
-- Release version: `1.7.0`
-- Pubspec version: `1.7.0+10`
-- Released: `2026-07-30`
-- Metadata refreshed: `2026-07-30`
+- Release tag: `v1.8.0`
+- Release version: `1.8.0`
+- Pubspec version: `1.8.0+11`
+- Released: `2026-08-01`
+- Metadata refreshed: `2026-08-01`
 <!-- release:meta:end -->
 
 ## Automatic Provenance
 
 <!-- release:provenance:start -->
 - Source branch: `main`
-- Source revision: `8c81252`
-- Source commit: `8c81252584ad51b1b0cfc8afbff7394f836aa6cb`
-- Source describe: `v1.6.1-11-g8c81252`
+- Source revision: `2fdd09d`
+- Source commit: `2fdd09d9af5f318fe8317692726610040e5e58dc`
+- Source describe: `v1.7.0-22-g2fdd09d`
 - Generator: `scripts/update_release_metadata.cjs`
 - Inputs: `docs/CHANGELOG.md`, `pubspec.yaml`, and local git metadata
 <!-- release:provenance:end -->
@@ -31,9 +31,11 @@ This ledger records what Breakdex is trying to be at the system level: a move li
 ## Latest Tagged Notes
 
 <!-- release:notes:start -->
-- **diagnostics:** failures report honestly
-- **dev:** preview gallery route
-- **theme:** overlay owns error
+- **ui:** the gallery is the wall, not a picture — merge caught it
+- **ui:** a bar is either an address or a transaction, and that empties the table
+- **ui:** appSheet owns the band-4 inset; 24 sheet sites migrated
+- **ui:** detail screens onto AppScreen; back is read from the route, not passed
+- **ui:** dialogs get a measure; the band was never their problem ([2cde4af](https://github.com/stussysenik/breakdex-flutter/commit/2cde4afd137c807e860f6af074b33585fd4b757f)), closes [ranked-#1](https://github.com/ranked-/issues/1)
 <!-- release:notes:end -->
 
 ## Why It Exists

@@ -1,3 +1,23 @@
+# [1.8.0](https://github.com/stussysenik/breakdex-flutter/compare/v1.7.0...v1.8.0) (2026-08-01)
+
+
+### Bug Fixes
+
+* **ui:** the gallery is the wall, not a picture — merge caught it ([ceb9c79](https://github.com/stussysenik/breakdex-flutter/commit/ceb9c79afd4db7c940df4a886a547913bfe29f2a))
+
+
+### Features
+
+* **ui:** a bar is either an address or a transaction, and that empties the table ([5cdb2a7](https://github.com/stussysenik/breakdex-flutter/commit/5cdb2a78a308d4baa70a5d2e1c8c429eac018355))
+* **ui:** appSheet owns the band-4 inset; 24 sheet sites migrated ([e6c8232](https://github.com/stussysenik/breakdex-flutter/commit/e6c8232e2c7d4835c837c251a184ae31c02ee3ee))
+* **ui:** detail screens onto AppScreen; back is read from the route, not passed ([76ce635](https://github.com/stussysenik/breakdex-flutter/commit/76ce635e8520ab0e7b2e565c016af89f0db7f878))
+* **ui:** dialogs get a measure; the band was never their problem ([2cde4af](https://github.com/stussysenik/breakdex-flutter/commit/2cde4afd137c807e860f6af074b33585fd4b757f)), closes [ranked-#1](https://github.com/ranked-/issues/1)
+* **ui:** five screens onto the frame, and the roster becomes a closed table ([33e8b9c](https://github.com/stussysenik/breakdex-flutter/commit/33e8b9c93751d98b147cf96d22513a1dca54cc54))
+* **ui:** move_list/combos/drill onto AppScreen; frame gains fill, pinned, real inset ([bcbd13f](https://github.com/stussysenik/breakdex-flutter/commit/bcbd13ff3b2874000995fe32a9e74afc002549b2))
+* **ui:** settings onto AppScreen; band 4 is a scope, not an assumption ([37d19c4](https://github.com/stussysenik/breakdex-flutter/commit/37d19c4bb6d6bf80b62a4ab361e9fb9bcdfb6b51))
+* **ui:** text-first rows, Cupertino icon default, breadcrumb address line ([976533b](https://github.com/stussysenik/breakdex-flutter/commit/976533bd6174757f3a0716b4553b3bfea24316a9))
+* **ui:** the frame asks the route to pop, so a screen can refuse ([64d1841](https://github.com/stussysenik/breakdex-flutter/commit/64d1841ea9f370f293503859d997775db9db7cd3))
+
 # [1.7.0](https://github.com/stussysenik/breakdex-flutter/compare/v1.6.1...v1.7.0) (2026-07-30)
 
 
