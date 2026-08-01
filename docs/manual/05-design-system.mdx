@@ -3,7 +3,7 @@ title: Design System
 name: design-system
 order: 5
 status: verified
-verified: 76ce635
+verified: 37d19c4
 watches:
   - lib/core/design/**
   - docs/design/TOKENS.md
@@ -77,6 +77,21 @@ centred, the title's centreline does not move between a tab root and a detail sc
 `BackLeading`, the labelled `AppBar` control three screens had each grown their own version
 of, was deleted in the same commit: it existed only because detail routes built their own
 chrome.
+
+**Band 4 is a scope, not an assumption.** Settings joined the roster on 2026-08-01 and brought
+the first screens pushed on the **root** navigator, where the shell — and its nav band — is not
+above them at all. `NavBandScope` (`lib/shared/widgets/nav_band_scope.dart`) is an
+`InheritedWidget` the shell wraps its branch navigator in; a root-navigator route is a *sibling*
+of the shell in the root stack rather than a descendant, so it never finds the scope and is told
+the truth. Presence *is* the value — the widget has no field, because the only question a
+surface ever has is whether a band is drawn over it, and asking the tree cannot drift from the
+router the way a hand-kept route list would. `AppScreen.bottomInsetOf` is therefore a sum,
+`bandInsetOf + contentBottomGap + padding.bottom`, which named the 16 that had been hiding
+inside `scrollBottomInset`: the trailing gap mirrors `contentTopGap` and is owed on every
+route, the 56pt band only where one exists. `showAppSheet` reads the same scope, so a sheet
+opened from Settings no longer floats above its own bottom edge. `SettingsScreen.isTab` was
+deleted with it — one widget serves `/settings` and `/settings-panel`, and the route already
+knows which is which.
 
 **The address line lives inside band 2, which does not grow.** `AppBreadcrumb`
 (`lib/shared/widgets/app_breadcrumb.dart`) renders the route as one line of type above the
