@@ -144,6 +144,154 @@ Rules that keep gates honest:
   proposes; the spec disposes. A spec must be self-contained: implementable by a model
   that never saw the originating conversation.
 
+## Screen consistency — the stacked-papers doctrine
+
+Every screen in breakdex is one sheet of paper in an identical frame. Stack them on a
+light table and the margins, header, nav, and safe areas align perfectly — only the
+content band differs. This is not a design aspiration; it is a hard-lint rule enforced
+by conformance tests.
+
+### The mechanical basis
+
+Flutter's layout pipeline is constraints-down / sizes-up (see READINGS.md → Flutter
+rendering pipeline). The stacked viewport (CLAUDE.md → Layout doctrine) exploits this:
+`AppScreen` is the parent that reads the viewport and proposes constraints to four
+bands. The content band receives `BoxConstraints` with `minHeight` and `maxHeight`
+derived from the frame — it never reads `MediaQuery` itself. This is the parent-child
+constraint contract:
+
+```
+AppScreen (reads viewport, proposes constraints)
+  ├── Band 1: SafeArea (system chrome)
+  ├── Band 2: Header (72pt, fixed)
+  ├── Band 3: Content (receives constraints, picks size)
+  └── Band 4: Nav (56pt, fixed)
+```
+
+A screen that builds its own `Scaffold`, reads `MediaQuery.of(context).size`, or
+hardcodes a pixel value is violating the constraint contract — it is a paper that
+refuses to fit the frame.
+
+### The hard-lint rules
+
+These are review violations, not style suggestions. The conformance test that will
+enforce them mechanically is specced, not yet written
+(`enforce-face-law-conformance` 2.1 → `test/core/design/layout_conformance_test.dart`);
+until it lands these rules are review-enforced, and 26 feature files still build a raw
+`Scaffold`:
+
+1. **One frame, one reader.** Only `AppScreen` reads the viewport. Content widgets
+   receive constraints from their parent. `MediaQuery.of(context)` in a content
+   widget is a defect unless the widget IS a band (header, nav).
+
+2. **Constraints go down, size goes up.** A parent proposes `BoxConstraints`; a child
+   picks a `Size` within them. A child that queries its own size to lay out its
+   children (intrinsic sizing) is O(n²) and a review violation in hot paths.
+
+3. **Content is interchangeable paper.** If you remove the content band from any
+   screen and replace it with another screen's content band, the frame (header,
+   nav, safe area) must be pixel-identical. This is the stacking test.
+
+4. **Mobile-first means constraint-first.** The layout is authored for the smallest
+   target (390pt logical width) and scales UP by receiving wider constraints —
+   not by reading the viewport and branching on width. Breakpoints are constraint
+   values, not `MediaQuery` queries. A `LayoutBuilder` that branches on
+   `constraints.maxWidth` is correct; a `MediaQuery.of(context).size.width` branch
+   is not.
+
+5. **8pt block grid, 4pt baseline.** Every vertical dimension is a multiple of 8pt
+   (blocks) or 4pt (half-steps). Every horizontal gutter is 24pt. The content band's
+   first pixel is at safe-top + 80 (72pt header + 8pt breathing room). These are
+   derived token values from `AppLayout`, not hand-picked paddings.
+
+6. **One scroll axis per screen.** A screen has exactly one scrollable axis. Nested
+   scrollables (a `ListView` inside a `SingleChildScrollView`) are a defect — they
+   break the constraint contract because the inner scrollable receives unbounded
+   constraints and cannot participate in the parent's layout.
+
+7. **720pt reading clamp.** Content wider than 720pt is centered with symmetric
+   margins. The clamp is enforced by the frame, not by individual screens.
+
+### The amplification principle
+
+Consistency amplifies like light through a lens: each screen that conforms to the
+frame makes the next screen easier to build, because the frame's constraints are
+already decided. The cost of a new screen is ONLY its content band — the header,
+nav, safe area, grid, and scroll axis are free. This is how a factory condenses
+work: the frame is built once, tested once, and every screen inherits it.
+
+The inverse is also true: each screen that violates the frame makes the next screen
+harder, because the violator's ad-hoc layout becomes a precedent that future screens
+must match or explain why they differ. Drift compounds.
+
+### Conformance testing
+
+Specified shape (`enforce-face-law-conformance` 2.1, unwritten as of 2026-07-30):
+`test/core/design/layout_conformance_test.dart` walks every registered screen route,
+builds it in a test harness, and asserts:
+
+- The widget tree contains exactly one `AppScreen` ancestor
+- No `Scaffold` exists below `AppScreen` (the frame IS the scaffold)
+- No `MediaQuery.of(context).size` call exists in content-band widgets
+- The content band's first rendered pixel is at safe-top + 80 ± 4pt
+
+A screen that fails any assertion is RED before it reaches review. The test is the
+lint; the lint is the doctrine; the doctrine is the frame.
+
+## The agentic-agnostic factory
+
+The factory is model-agnostic: it produces the same output regardless of which LLM
+executes a session. The model proposes text; the grammar decides whether it survives.
+
+### Context condensation
+
+A session that reads files (not history) starts with the context the files contain,
+not the context the conversation accumulated. The condensation target:
+
+| Budget | Mechanism |
+|---|---|
+| 200k ceiling | Hard limit per session; land at a checkbox, never mid-edit |
+| 150k effective | Records ARE the context — no re-derivation from transcript |
+| 100k target | Primeable bundles (`scripts/docs_bundle`) for cheap inference |
+
+The only stochastic process is individual character generation — token sampling.
+Everything else is deterministic: file I/O, script execution, gate results, ledger
+ticks. The factory's records (ROADMAP.md, openspec/, verify.sh, session.log) are
+the state machine; the model is the transition function, replaceable without loss.
+
+### Discrete stochastic processes
+
+The build loop is a sequence of discrete steps, each with a binary outcome:
+
+```
+read file → parse (succeeds or fails)
+  → interpret spec (deterministic from file content)
+  → generate code (stochastic: token sampling)
+  → compile (succeeds or fails)
+  → test (succeeds or fails)
+  → gate (succeeds or fails)
+  → tick ledger (deterministic: checkbox + commit)
+```
+
+The stochastic step (generate code) is bounded by the spec (what to build), the
+manual (how to build it), and the gate (whether it works). The model's creativity
+is constrained to the space between spec and gate — and that space shrinks as the
+manual grows more precise. This is the condensation mechanism: each reading entry,
+each standing bar, each conformance test removes one degree of freedom from the
+stochastic step, so the next session needs fewer tokens to reach the same result.
+
+### Handoff caps
+
+| Handoff | Token cap | If exceeded |
+|---|---|---|
+| Spec → implementation | 500 | Task is too large — split it |
+| Implementation → review | 1000 | Abridge to diff summary + gate result |
+| Audit → decision | 500 | Abridge to findings + NOT PROVEN list |
+| Session → record | 200 | One line per tick, one per remaining |
+
+A cap that fits one screen is a good task. A cap that needs three screens is a bad
+task — re-split at the spec level, not the implementation level.
+
 ## The unattended loop (overnight)
 
 ```sh
@@ -169,6 +317,8 @@ the loop, nothing is pushed, and merging stays the owner's act.
 | A large diff nobody can review | One commit per unit, one `session.log` line per commit |
 | An agent asserting the UI looks right | No visual gate is self-certifiable |
 | A migration that orphans user data | Brownfield constraint — additive over invasive, migrations one-way and tested |
+| Screens that drift from the frame | Stacked-papers doctrine; gate specced as `test/core/design/layout_conformance_test.dart` (`enforce-face-law-conformance` 2.1), review-enforced until it lands |
+| A model-dependent build process | Agentic-agnostic factory — records are the state machine, the model is replaceable |
 
 ## Where the other roles attach
 

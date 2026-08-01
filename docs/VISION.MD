@@ -29,9 +29,9 @@ The primary user is an active breaker building a personal library under real fat
 ## Release Snapshot
 
 <!-- release:meta:start -->
-- Release tag: `v1.6.0`
-- Release version: `1.6.0`
-- Pubspec version: `1.6.0+8`
+- Release tag: `v1.7.0`
+- Release version: `1.7.0`
+- Pubspec version: `1.7.0+10`
 - Released: `2026-07-30`
 - Metadata refreshed: `2026-07-30`
 <!-- release:meta:end -->
@@ -40,9 +40,9 @@ The primary user is an active breaker building a personal library under real fat
 
 <!-- release:provenance:start -->
 - Source branch: `main`
-- Source revision: `75ce401`
-- Source commit: `75ce401c63ab16270430364417588abc043cdd98`
-- Source describe: `v1.5.0-22-g75ce401`
+- Source revision: `8c81252`
+- Source commit: `8c81252584ad51b1b0cfc8afbff7394f836aa6cb`
+- Source describe: `v1.6.1-11-g8c81252`
 - Generator: `scripts/update_release_metadata.cjs`
 - Inputs: `docs/CHANGELOG.md`, `pubspec.yaml`, and local git metadata
 <!-- release:provenance:end -->
@@ -50,9 +50,7 @@ The primary user is an active breaker building a personal library under real fat
 ## Latest Tagged Notes
 
 <!-- release:notes:start -->
-- **preview:** 6.13 three per-screen preview exceptions fixed
-- **previews:** register a wasm VFS so widget previews open a database
-- **review:** dead imports removed
-- **color-packs:** Phase 5 catalogue + Settings surface
-- **design:** color packs wired
+- **diagnostics:** failures report honestly
+- **dev:** preview gallery route
+- **theme:** overlay owns error
 <!-- release:notes:end -->

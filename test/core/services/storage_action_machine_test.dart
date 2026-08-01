@@ -3,10 +3,8 @@
 
 import 'dart:io';
 
-import 'package:flutter/foundation.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:path/path.dart' as p;
-import 'package:stack_trace/stack_trace.dart';
 
 import 'package:breakdex/core/models/canonical_path.dart';
 import 'package:breakdex/core/services/storage_action_machine.dart';
@@ -26,16 +24,6 @@ class _ThrowingHashService extends AssetHashService {
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
-
-  // `StageLogger.fail` calls `debugPrintStack`, which asserts on the
-  // stack_trace-formatted traces that propagate inside a plain `test()` body.
-  // Without this hook the assertion REPLACES the error under test, so every
-  // error path here would report `_AssertionError` instead of its cause.
-  FlutterError.demangleStackTrace = (final StackTrace stack) => switch (stack) {
-        final Trace t => t.vmTrace,
-        final Chain c => c.toTrace().vmTrace,
-        _ => stack,
-      };
 
   group('StorageActionMachine.DuplicateAction', () {
     late Directory tempDir;
@@ -96,6 +84,38 @@ void main() {
   // `execute` emitted onto that same closed controller, so the StateError
   // replaced the real error instead of rethrowing it. Progress is advisory;
   // losing it must never fail the transaction or hide a cause.
+  group('StorageActionMachine.MaterializeAction', () {
+    late Directory tempDir;
+    late StorageActionMachine machine;
+
+    setUp(() async {
+      tempDir = await Directory.systemTemp.createTemp('breakdex-storage-live');
+      VideoPathResolver.docsPathOverride = tempDir.path;
+      machine = StorageActionMachine(hashService: AssetHashService());
+    });
+
+    tearDown(() async {
+      machine.dispose();
+      VideoPathResolver.docsPathOverride = '';
+      if (await tempDir.exists()) await tempDir.delete(recursive: true);
+    });
+
+    test(
+      'a source that vanished between pick and save fails, never hangs',
+      () async {
+        await expectLater(
+          machine.execute(MaterializeAction(
+            sourcePath: p.join(tempDir.path, 'Edits', 'vanished.mp4'),
+            category: 'Power',
+            moveName: 'Windmill',
+          )),
+          throwsA(isA<HashIsolateFailure>()),
+        );
+      },
+      timeout: const Timeout(Duration(seconds: 10)),
+    );
+  });
+
   group('StorageActionMachine after dispose', () {
     late Directory tempDir;
     late StorageActionMachine machine;
@@ -131,10 +151,9 @@ void main() {
     });
 
     test('a real failure is rethrown, not masked by the closed stream', () async {
-      // Faked rather than provoked with a bad path: a missing source makes the
-      // hash isolate die without closing its port, so `_handleMaterialize`
-      // hangs instead of throwing (recorded as a separate finding). This drives
-      // the error path directly, which is the unit under test.
+      // Faked rather than provoked with a bad path: the missing-source route
+      // now throws too, but through `HashIsolateFailure`, so a stub is what
+      // keeps this test about the closed-stream masking and nothing else.
       final failing = StorageActionMachine(hashService: _ThrowingHashService())
         ..dispose();
 

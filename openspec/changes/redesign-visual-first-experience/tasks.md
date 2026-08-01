@@ -506,7 +506,7 @@ and most independent first, with 6.6 last because it is the only one gated on a 
   was real. A long `## NOW` block whose actionable line sits after fifty lines of history is its own
   mild hazard, but it is not the defect claimed.
 
-- [ ] 6.16 **A missing source file hangs materialize forever** (found 2026-07-30 while closing
+- [x] 6.16 **A missing source file hangs materialize forever** (found 2026-07-30 while closing
   6.14). `AssetHashService._computeHashWithProgressIsolate` calls `file.lengthSync()`
   (`asset_hash_service.dart:83`) before any error plumbing exists, and `Isolate.spawn` is called
   with no `onError`/`onExit`. When the file is missing or unreadable the isolate dies silently,
@@ -519,8 +519,31 @@ and most independent first, with 6.6 last because it is the only one gated on a 
   of 6.14, it is simply never reached. Consider validating existence before spawning as the cheap
   half. **Deliberately not fixed inside 6.14**: isolate error propagation touches every
   `computeHashWithProgress` caller and deserves its own red test per path, not a drive-by.
+  <br/>**DONE 2026-07-30.** Red first, and the red is the *deadline*: the new
+  `computeHashWithProgress` group in `asset_hash_service_test.dart` — the method had **zero
+  tests**, which is why a permanent hang shipped — failed pre-fix with
+  `TimeoutException after 0:00:10` and `_RawReceivePort._handleMessage` on the stack, the
+  indefinite wait measured rather than argued. Same red at the machine level: a new
+  `StorageActionMachine.MaterializeAction` group materializes a source that vanished between
+  pick and save and now gets `HashIsolateFailure` where it used to get nothing.
+  <br/>**Multiplexed onto one port instead of three.** `onError` and `onExit` are given
+  `port.sendPort` — the *same* port the data uses — so the `await for` reads three message
+  shapes in one exhaustive `switch` (`HashPercent` / `HashValue` / `List` from an uncaught throw
+  / `null` from exit) and one of them always arrives. Two extra `ReceivePort`s and a
+  `Future.any` race would have bought the same guarantee with three lifetimes to close instead
+  of one; the port now closes in a `finally`, which the old code did not do on any path but the
+  happy one.
+  <br/>**The task's "cheap half" is deliberately NOT taken.** An existence check before spawning
+  would add a second answer to "can this file be read", disagree with the isolate's answer under
+  a TOCTOU race, and still need the exit port for every other way an isolate dies. The isolate's
+  own `FileSystemException` text is what `HashIsolateFailure.detail` carries, so there is one
+  source of truth and the message names the real OS error.
+  <br/>**Second-order:** `storage_action_machine_test.dart:122`'s comment said a missing source
+  *cannot* be used to provoke the error path and cited this finding as the reason. That reason is
+  now gone, so the comment was rewritten in place rather than left to rot — the stub stays, but
+  because it keeps that test about closed-stream masking, not because the real path hangs.
 
-- [ ] 6.17 **`StageLogger.fail` replaces the error it is reporting, in every non-widget test**
+- [x] 6.17 **`StageLogger.fail` replaces the error it is reporting, in every non-widget test**
   (found 2026-07-30 while closing 6.14). `StageLogger.fail` calls `debugPrintStack`, which asserts
   at `stack_frame.dart:197` — *"Got a stack frame from package:stack_trace, where a vm or web frame
   was expected"* — on traces propagating inside a plain `test()` body, because
@@ -537,3 +560,52 @@ and most independent first, with 6.6 last because it is the only one gated on a 
   `FlutterError.demangleStackTrace` is the unwired default. Prefer the former — the logger's
   production behavior is correct and should not bend to the test harness. Red test: assert a
   `StageLogger`-logged failure surfaces its own exception type from a plain `test()` body.
+  <br/>**DONE 2026-07-30, and the specced location was wrong.** `test/helpers/` cannot close this:
+  a helper only reaches the files that import it, so the trap stays armed in every test written
+  after today — which is the entire failure mode. `test/flutter_test_config.dart` is the hook that
+  can: `flutter_test` finds the nearest file of that name above each test and runs its
+  `testExecutable(testMain)` in place of `main`, so the demangle hook applies to all 195 test files
+  with **zero imports and no per-file discipline**. A rule enforced by the harness cannot be
+  forgotten by the next test; a rule enforced by an import can.
+  <br/>**Red/green both directions**, `test/core/utils/stage_logger_trace_test.dart`: pre-fix
+  `_reportedCauseOf` surfaced `_AssertionError` where `_CauseUnderTest` was thrown — the
+  substitution named literally in the failure output, not inferred — and the direct
+  `returnsNormally` case threw the `stack_frame.dart:197` assertion verbatim. Both green after.
+  <br/>**One drafted assertion was deleted for passing.** `fail()` given a bare `Trace` never went
+  red: a `Trace` formats VM-shaped frames, and it is the `Chain` — with its
+  `===== asynchronous gap =====` separator — that the assertion rejects. A `Chain` is also what
+  `package:test` actually propagates from an async body, so the surviving test uses the shape the
+  defect needs and the reason sits in a comment instead of a green test nobody can break.
+  <br/>**The workaround it replaces is deleted, not left beside it** — the 12-line hook in
+  `storage_action_machine_test.dart`'s `main()` is gone along with its two now-unused imports, and
+  that file still passes 4/4 on the suite-wide hook alone. Two copies of one rule disagree within
+  a week (`CLAUDE.md` → Update In Place).
+  <br/>**`stack_trace` promoted from transitive to a declared `dev_dependency`** (`^1.12.1`, the
+  version already resolved, so nothing moves). The suite-wide config names `Trace`/`Chain`, and a
+  file every test depends on must not depend on a package by accident — this also clears the three
+  `depend_on_referenced_packages` infos the pre-existing import had been carrying.
+
+- [x] 6.18 **A second load-sensitive flake, and load made it *more* deterministic, not less**
+  (found + closed 2026-07-30 by this session's own full gate).
+  `sync_diagnostics_test.dart:123` asserted `ORPHAN h1` on the line where a loaded run produced
+  `ORPHAN h2`. `AssetManifestDao.getAll()` orders `importedAt DESC` — correct and deliberate —
+  while the fixture stamped **every** row `DateTime.now()`, microseconds apart. The assertions
+  therefore held only while two inserts landed inside one clock tick and SQLite fell back to
+  rowid order; when load separated the timestamps the real ordering asserted itself and h2, the
+  later import, sorted first.
+  <br/>**This inverts 6.14's lesson rather than repeating it.** There, load stole time from a
+  budget that was already too small. Here, load *revealed* an ordering the fixture had been
+  hiding — the flake is the fast path, and the failure is the code working. A flake is not
+  automatically a timing-budget problem; ask which direction load pushed the behaviour before
+  reaching for a bigger deadline.
+  <br/>**Causation proven, not inferred.** Stamping the fixture *ascending* instead of descending
+  fails deterministically in isolation with the identical message
+  (`Expected: … ORPHAN h1` / `Actual: … ORPHAN h2`); restoring descending stamps is 5/5 green.
+  The fix is one monotonically-decreasing `seedClock` in the fixture, so report order is a
+  property of the seeded data. No production change: the `DESC` ordering was never the defect.
+  <br/>**Method note worth keeping:** the compact reporter's counts could not have found this. It
+  was `flutter test --reporter json` plus a `testDone`/`error` filter that named the failing test,
+  its suite path, and the assertion — after which the `~4` skip drift that three prior sessions
+  recorded as unexplained also resolved (OPTW fixture videos absent on this machine, a whole
+  `party_screen_test.dart` suite skip, and the two known `assess_stage_switching` skips; the count
+  moves between 3 and 4 because the OPTW skip is conditional on local files).

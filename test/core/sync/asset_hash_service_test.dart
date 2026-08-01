@@ -70,6 +70,49 @@ void main() {
       });
     });
 
+    group('computeHashWithProgress', () {
+      test(
+        'a missing source ends the stream with an error, never hanging',
+        () async {
+          final absent =
+              '${Directory.systemTemp.path}/breakdex-absent-source.mp4';
+          expect(File(absent).existsSync(), isFalse);
+
+          await expectLater(
+            hashService.computeHashWithProgress(absent),
+            emitsError(
+              isA<HashIsolateFailure>()
+                  .having((final e) => e.path, 'path', absent),
+            ),
+          );
+        },
+        // The pre-fix failure mode is an indefinite wait, so the deadline is
+        // the assertion: without it this test hangs the runner instead of
+        // reporting.
+        timeout: const Timeout(Duration(seconds: 10)),
+      );
+
+      // Guards the rewritten loop rather than a defect: the error plumbing
+      // added `onExit`/`onError` messages to the same port the data uses, so
+      // the success path has to keep ending on the hash and nothing else.
+      test('ends on the hash after streaming fractional progress', () async {
+        final dir = Directory.systemTemp.createTempSync('hash_progress_');
+        addTearDown(() => dir.deleteSync(recursive: true));
+        final file = File('${dir.path}/video.mp4')
+          ..writeAsBytesSync(List.generate(4096, (final i) => i % 256));
+
+        final events =
+            await hashService.computeHashWithProgress(file.path).toList();
+
+        expect(events.last, matches(RegExp(r'^[0-9a-f]{64}$')));
+        expect(events.last, await hashService.computeHash(file.path));
+        expect(
+          events.sublist(0, events.length - 1),
+          everyElement(isA<double>()),
+        );
+      });
+    });
+
     group('verifyHash', () {
       test('returns true for matching hash', () async {
         final dir = Directory.systemTemp.createTempSync('hash_test_');

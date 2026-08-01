@@ -213,6 +213,30 @@
   6.6) so `./status.sh` is correct by construction, with a comment warning against re-sorting. Note
   the audit's second half was wrong — this bullet already named 6.8; only the file-order divergence
   was real.
+  **2026-07-30 — 6.16 + 6.17 CLOSED, and 6.18 was found by the gate that proved them.** Full gate
+  **ALL GATES PASSED, 1351 pass / 4 skip / 0 fail**, analyzer 0 errors / 0 warnings.
+  **6.16:** `computeHashWithProgress` had **zero tests**, which is how a permanent hang shipped.
+  `onError`/`onExit` now share the *same* `ReceivePort` as the data, so the `await for` reads three
+  message shapes in one exhaustive `switch` and one always arrives; the port closes in a `finally`,
+  which no path but the happy one used to do. Red was the deadline — `TimeoutException after
+  0:00:10` with `_RawReceivePort._handleMessage` on the stack. The task's suggested "validate
+  existence first" half is **deliberately not taken**: it would add a second answer to *can this
+  file be read*, disagree under a TOCTOU race, and still need the exit port for every other death.
+  **6.17:** the specced location (`test/helpers/`) could not have worked — a helper only reaches
+  files that import it, so the trap would stay armed in every test written after today, which is
+  the whole failure mode. `test/flutter_test_config.dart` is the hook that does: `flutter_test`
+  runs its `testExecutable` in place of `main` for all **195** test files, no imports. The 12-line
+  per-file workaround is deleted, not left beside it.
+  **6.18, new and closed in the same session:** a second load-sensitive flake, but load made it
+  *more* deterministic — `sync_diagnostics_test.dart` stamped every fixture row `DateTime.now()`
+  while `getAll()` orders `importedAt DESC`, so it passed only while two inserts shared a clock
+  tick. Load separated them and the real ordering asserted itself: **the flake was the fast path
+  and the failure was the code working.** Proven by inverting the stamps for an identical
+  deterministic red. No production change — the `DESC` ordering was never the defect. This also
+  resolves the `~3`-vs-`~4` skip drift three sessions logged as unexplained: OPTW fixture videos
+  absent locally (conditional), a whole `party_screen_test.dart` suite skip, and two known
+  `assess_stage_switching` skips. Named with `flutter test --reporter json`, which the compact
+  reporter's counts cannot do.
   **Next unticked: 6.8** — honest stats (smallest independent item per §6 disposition table).
   ⚠ **6.8 is a Teacher-lane task, not an Executor one** (that change's §6 disposition table:
   *"Needs a decision about what the readout is for before it can name replacement metrics"*).
@@ -246,6 +270,21 @@
   6.6–6.10 stay unspecced with their lanes and a recommended order recorded in that change's
   §6 disposition table (6.6 is Scholar-gated).
   No backend dependency — runs parallel to the owner-gated Appwrite and distribution work.
+  **2026-07-30 — capture-and-push session; NOW is unchanged and 6.8 is still the blocker.**
+  Nothing in this change moved: 6.8 is Teacher-lane and a fifth session declined it. What landed
+  instead was the record — three prior sessions' unpushed work reconciled and pushed:
+  `lib/dev/dev_preview_gallery.dart` (interactive light/dark gallery, route now `kDebugMode`-only),
+  READINGS.md populated (37 sources → 20 entries), FACTORY.md stacked-papers doctrine, CLAUDE.md
+  loss function + agentic-agnostic factory, and three changes queued —
+  `enforce-face-law-conformance` (valid --strict, sequenced 4b), `add-media-manager` (repaired to
+  valid), `breakdex-app-store-launch` (`.triage` PARKED, proposal-only). Two false claims fixed
+  where found: FACTORY.md and ch11 both asserted the frame is machine-gated — it is not, 26
+  feature files still build a raw `Scaffold` against 1 `AppScreen`, which is exactly what
+  `enforce-face-law-conformance` 2.1 exists to close. A `web-mirror/pricing` draft was discarded,
+  not landed ($10/month Stripe placeholder contradicting shipped Lemon Squeezy one-time tiers);
+  the ask survives as monetization 4.6. **Owner fork, not taken unilaterally:** 6.8 blocks this
+  change and only a Teacher session opens it; the queue alternative is to make
+  `enforce-face-law-conformance` the active change and work its 17 tasks now.
 
 - **Archived 2026-07-29 (implementation-complete, 19/19):** `add-stacked-viewport-layout`
   — **Stacked-viewport layout constitution.** All five tabs are on one frame: `AppLayout`
@@ -985,6 +1024,13 @@ older intra-app view and is kept for context.
    (Glance → Scan → Study), review WYSIWYG (one screen, `xxs` radius, customizable fill),
    Fluid/Morph motion doctrine. **Release-blocking for wave-1 invites**; no backend
    dependency — parallel with Appwrite phases.
+4b. **`enforce-face-law-conformance`** — ⭐ NEW (2026-07-30 owner ruling: launch-consistency
+   pass): Face Law doctrine (essentialist chrome rules as checkable claims), layout
+   conformance gate (26 raw-Scaffold feature files → 0, shrink-only allowlist), one-frame
+   `AppScreen` migration in owner-review-gated batches, platform-native adaptation by
+   defaults with visible degradation, valoric factory parity (Face Law + professional-tool
+   bars, sittings on `status.sh`). Sequenced directly after the active redesign change —
+   no backend dependency; release-blocking for consistent launch.
 5. **`harden-marathon-reliability`** — ⭐ NEW (2026-07-08): 8-hour soak bar, startup budgets
    (≤2.5s mobile / ≤5s web), **device-diagnostics status page** (deterministic per-device
    checks + redacted JSON export), 3-platform E2E matrix (Patrol/Maestro/Playwright) — the

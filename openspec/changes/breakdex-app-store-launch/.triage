@@ -1,0 +1,5 @@
+reviewed: 2026-07-30
+verdict: PARKED — proposal-only (no deltas), INVALID by template. iOS/Android store launch is
+downstream of the locked "web-first, iOS after web soak" ruling; its data-integrity and UX halves
+are already owned by add-media-manager and add-web-first-release-and-monetization. Repair the
+template when web soak closes and this becomes active, never in bulk.

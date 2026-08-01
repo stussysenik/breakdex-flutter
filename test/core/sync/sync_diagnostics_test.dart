@@ -20,16 +20,26 @@ void main() {
     await db.close();
   });
 
+  // `getAll()` orders `importedAt DESC`, so report order is fixture data, not
+  // insertion order. Stamping every row `DateTime.now()` made the assertions
+  // below pass only while two inserts landed in one clock tick — under load the
+  // timestamps separated, h2 sorted ahead of h1, and the suite disagreed with
+  // itself. Explicit descending stamps make the expected order a property of
+  // the fixture instead of the machine.
+  var seedClock = DateTime.utc(2026, 7, 30, 12);
+
   Future<void> seedManifest(
     final String hash, {
     final int copyCount = 0,
     final DateTime? deletedAt,
   }) async {
+    final importedAt = seedClock;
+    seedClock = seedClock.subtract(const Duration(minutes: 1));
     await db.assetManifestDao.upsert(AssetManifestCompanion(
       contentHash: Value(hash),
       fileSizeBytes: const Value(1024),
       sourceType: const Value('camera'),
-      importedAt: Value(DateTime.now()),
+      importedAt: Value(importedAt),
       copyCount: Value(copyCount),
       deletedAt: Value(deletedAt),
     ));

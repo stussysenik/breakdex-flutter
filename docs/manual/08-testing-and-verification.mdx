@@ -32,16 +32,17 @@ From these four, everything below is forced: the CI gate is a *floor* (it proves
 
 ## The test suite
 
-191 `*_test.dart` files under `test/`, split by layer (the jump from 110 is the Appwrite overnight wave — sync dual-write/dual-read/codec/backfill/migration suites — plus config/entitlement and web-seam tests):
+195 `*_test.dart` files under `test/`, split by layer (the jump from 110 is the Appwrite overnight wave — sync dual-write/dual-read/codec/backfill/migration suites — plus config/entitlement and web-seam tests):
 
 | Dir | Files | Covers |
 | --- | --- | --- |
-| `test/core/` | 136 | database + DAOs (incl. migration v22–v27 suites), state machines, sync (codecs, backfills, dual-read/write, tombstones, Appwrite backend/transport), config (remote config, update/entitlement gates), providers, models, design (8 — icons, accessible palettes, color roles, OKLCH, color packs, contrast, plus the color-conformance ban and its migration proof), utils |
+| `test/core/` | 137 | database + DAOs (incl. migration v22–v27 suites), state machines, sync (codecs, backfills, dual-read/write, tombstones, Appwrite backend/transport), config (remote config, update/entitlement gates), providers, models, design (8 — icons, accessible palettes, color roles, OKLCH, color packs, contrast, plus the color-conformance ban and its migration proof), utils |
 | `test/features/` | 44 | screen-level widget tests (move_list, flashcard_review, stats, add, flow, video_editor, party, auth, …) |
 | `test/shared/` | 8 | shared widgets, incl. the `AppScreen` frame (bands, insets, the route-derived back affordance, and the `PopGuard` a screen with unsaved state declares so the chevron and the system gesture refuse alike) |
 | `test/design/` | 2 | source-level conformance + the type baseline (see below) |
 | `test/` root | 3 | l10n foundation, preview-harness smoke, template widget test |
 | `test/helpers/` | — | `test_data.dart`, `test_database.dart` (in-memory Drift fixtures) |
+| `test/flutter_test_config.dart` | — | suite-wide setup every test inherits with no import (see the demangle section below) |
 
 **Conformance tests are a distinct category**, and they do not all live in `test/design/` —
 the category is defined by what it asserts, not by where it sits. Two shapes are in use:
@@ -222,6 +223,27 @@ the flaky case simply never adopted it. **When you see a bare `delayed` before a
 treat it as a defect, not a wait.** A sleep encodes a guess about machine speed into the suite;
 a poll encodes the condition you actually care about.
 
+The mirror case is a test that *cannot* fail: `computeHashWithProgress` waited on a `ReceivePort`
+whose isolate had died, so a missing source hung the runner rather than reporting. Give a test
+whose failure mode is an indefinite wait an explicit `timeout:` — there the deadline **is** the
+assertion, and a 10s red beats a 30s framework timeout that names no unit.
+
+## Ask which direction load pushed the behaviour
+
+Not every flake is a budget that ran out. `sync_diagnostics_test.dart` asserted `ORPHAN h1` where
+a loaded run produced `ORPHAN h2`: `AssetManifestDao.getAll()` orders `importedAt DESC`, and the
+fixture stamped every row `DateTime.now()` microseconds apart, so the assertions held only while
+two inserts landed inside one clock tick and SQLite fell back to rowid order. Load *separated* the
+timestamps and the real ordering asserted itself — **the flake was the fast path and the failure
+was the code working.** Compare the deadline case above, where load stole time from a budget that
+was already short; the two look identical from the outside and want opposite fixes. A test that
+reads an ordered query must seed the ordering key deterministically: report order should be a
+property of the fixture, never of clock resolution.
+
+Both flakes were named the same way, and not by the compact reporter — `flutter test --reporter
+json` filtered on `testDone`/`error` gives the failing test, its suite path, and the assertion
+text, where `+1351 ~4 -1` gives a count and nothing to act on.
+
 ## A logger that reports a failure can replace it
 
 `FlutterError.demangleStackTrace` is wired up by `testWidgets` and **not** by plain `test`.
@@ -235,9 +257,16 @@ fails against a type nobody wrote.
 This cost two sessions on one bug: the instrument meant to name the cause was overwriting it.
 Root `CLAUDE.md` states the rule directly — *a diagnostic that truncates its own evidence is
 the first bug to fix* — so when an error assertion fails against a type you never threw,
-suspect the reporting path before the code. Workaround in a single file is to set the demangle
-hook in `main()`; the general fix (shared test setup) is tracked as
-`redesign-visual-first-experience` 6.17.
+suspect the reporting path before the code.
+
+**Fixed suite-wide, not per file.** `test/flutter_test_config.dart` wires the hook once:
+`flutter_test` looks for the nearest file of that name above each test and runs its
+`testExecutable(testMain)` instead of `main` directly, so anything set there applies to every
+test under `test/` with no import — the only hook that can make a rule hold for tests that do
+not exist yet. The production logger is unchanged, deliberately: `debugPrintStack` is correct
+behavior, and bending it to a harness gap would trade a real diagnostic for a test-shaped one.
+Red/green is in `test/core/utils/stage_logger_trace_test.dart`, which asserts from a plain
+`test()` body that a `StageLogger`-reported cause is what the caller still surfaces.
 
 ## Testing a widget that reads a static buffer
 

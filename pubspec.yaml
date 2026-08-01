@@ -1,7 +1,7 @@
 name: breakdex
 description: "Breakdancing training app — catalog moves, build combos, master through spaced repetition."
 publish_to: 'none'
-version: 1.6.0+8
+version: 1.7.0+10
 
 environment:
   sdk: ^3.11.1
@@ -64,6 +64,10 @@ dev_dependencies:
     sdk: flutter
   flutter_lints: ^6.0.0
   fake_async: ^1.3.1
+  # Declared, not incidental: `test/flutter_test_config.dart` wires
+  # `FlutterError.demangleStackTrace` for the whole suite and needs the Trace /
+  # Chain types by name. Version matches what the SDK already resolves.
+  stack_trace: ^1.12.1
   drift_dev: ^2.22.1
   build_runner: ^2.15.0
   freezed: ^3.2.5

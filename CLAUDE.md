@@ -121,12 +121,41 @@ conversation. Three roles answer to this, never mixed:
 | Distribution & monetization | **Web-first private release**; invite codes bind entitlement + config cohort; offerings **$4.20–$9.99 USD** (web merchant-of-record; StoreKit IAP on iOS later); iOS → Android follow after web soak | Decided 2026-07-08. Remote config first (Appwrite Phase 1R); Shorebird code-push deferred/flagged. GUIDE.md + monotonic versioning + CHANGELOG are release-blocking hygiene. |
 | Design tokens | **`docs/design/TOKENS.md`** is the single source | `lib/core/design/*.dart` and web `tokens.css` both conform. Conformance is a review-checklist item; codegen deferred until a third consumer. Grid: 8pt base / 4pt half-step. Type: Inter. |
 | Product atom model | **move → combo → set**; beats/counts are pre-planned metadata on the atoms | The moat is this opinionated composition (combo = move-after-move; beat grid rides `count`). Every feature composes from these atoms — decided 2026-07-08. |
-| **Layout doctrine** | **Stacked viewport: one frame, four bands** — every screen is the same frame with different filling | Decided 2026-07-29. Bands 1/2/4 (safe area · 72pt header · 56pt nav) are identical on every screen and never move; only the content band varies, so content's first pixel is always at safe-top + 80. Enforced by `AppScreen`, not convention: a screen building its own `Scaffold`/`AppBar`/`SliverAppBar` is a review violation. 8pt block grid / 4pt baseline, 24pt gutter, 720pt reading clamp, one scroll axis per screen. Tokens: `AppLayout` (`lib/core/design/layout.dart`); rules + migration ledger: `docs/design/TOKENS.md` → Layout & Grid. |
+| **Layout doctrine** | **Stacked viewport: one frame, four bands** — every screen is the same frame with different filling | Decided 2026-07-29. Bands 1/2/4 (safe area · 72pt header · 56pt nav) are identical on every screen and never move; only the content band varies, so content's first pixel is always at safe-top + 80. Enforced by `AppScreen`, not convention: a screen building its own `Scaffold`/`AppBar`/`SliverAppBar` is a review violation. 8pt block grid / 4pt baseline, 24pt gutter, 720pt reading clamp, one scroll axis per screen. **Parent-child constraint contract:** constraints go down, size goes up — content widgets receive `BoxConstraints` from the frame and never read `MediaQuery` directly; mobile-first means constraint-first (breakpoints are constraint values, not viewport queries). Tokens: `AppLayout` (`lib/core/design/layout.dart`); rules + migration ledger: `docs/design/TOKENS.md` → Layout & Grid; hard-lint rules: `FACTORY.md` → Screen consistency (stacked-papers doctrine). |
 | Motion doctrine | **Two families only: Fluid + Morph**, composed from `AppMotion` tokens | Fluid = opacity/translation on productive curves (default); Morph = shape/layout continuity on `springGentle`. Raw curve/duration literals are review violations. Spec: `redesign-visual-first-experience`. |
 | Interface language | **Visual-first**: chrome communicates through visual anchors; text is for input + settings | Decided 2026-07-08. Spec: `redesign-visual-first-experience` (media-grid membership, 3 view modes, review WYSIWYG). |
 | Icon system | **`AppIcon` enum + swappable `IconPack`** via `AppIconPackTheme` + `AppIconView` | Raw `Icons.*` / `CupertinoIcons.*` under `lib/` (outside `icons.dart` definition) is a review violation. Enforced by `icon_conformance_test.dart`. 78 semantic names, 2 packs (material, lucide). Spec: `add-icon-system-and-packs`. |
 | Color system | **`AppColorRole` (17 roles) + swappable `ColorPack`**, axes ordered `pack → brightness → accessibility overlay` with **the overlay last and winning** | A raw `AppColors.*` read under `lib/` outside the **definition layer** is a review violation. Enforced by `color_conformance_test.dart`, whose allowlist admits only files that *define* what a role resolves to — a widget never qualifies. Read `colorScheme.*` (surfaces/accent), `AppSemanticTheme.of(context)` (8 signals), `AppMediaChrome.of(context)` (surfaces dark on purpose). Packs derive weights via OKLCH, never HSL. Spec: `add-color-packs`. |
 | Roadmap | **root `ROADMAP.md`** is the ONE roadmap | `docs/ROADMAP.MD` + `docs/PROGRESS.MD` were folded in and removed (2026-07-06). |
+
+## Loss function — the ranked tiebreaker
+
+Named 2026-07-30. This is a multi-device project built by developers. The Canonical stack
+says what is legal; this says which legal option wins. **Ranked, not weighted** — a lower
+term never outranks a higher one, and a design that improves term 3 by regressing term 1
+is rejected without further argument.
+
+1. **Portability.** One codebase reaches web, iOS, and Android. A solution that works on
+   one surface and degrades *invisibly* on another loses to a plainer solution that
+   degrades *visibly* everywhere. Platform-specific code is a cost paid per surface,
+   forever — `Scene3DView`'s web guard is the shape: name the gap, render the gap.
+2. **Atomicity.** The unit of work is small, reversible, and provable alone. A change that
+   cannot be landed, gated, and reverted by itself is the wrong size — this is the ledger
+   rule stated as a preference rather than as a prohibition.
+3. **Compile speed.** The edit→result loop is the factory's throughput; every second on it
+   is paid once per iteration for the life of the project. Web is the default dev surface
+   because it is the fastest (`flutter build web --release`: 41s compile, measured
+   2026-07-30) and because the widget-preview harness runs there. Reach for a simulator to
+   answer a question web cannot, not by default.
+4. **GPU-bound animation.** Motion belongs on the compositor, not the CPU. Prefer
+   transform/opacity under a `RepaintBoundary`; animate with `AnimatedBuilder`/listenables
+   rather than `setState` on an ancestor; never drive layout per frame. An animation that
+   rebuilds a subtree every tick is a defect even when it looks correct — the loss shows up
+   on the weakest device, which is never the one it was authored on.
+
+**Local dev machine (this checkout).** iPhone 17 Pro on the **iOS 26.2** runtime is the only
+installed simulator, deliberately — disk is the scarce resource here, so a second runtime is
+not kept. iOS compile proof without a simulator remains `scripts/distribute.sh ios-nosign`.
 
 ## Non-goals — do NOT build these
 
@@ -286,6 +315,32 @@ findings still in the transcript is.
 - **Close with a written handoff, always.** Last action of a session: the ledger tick, the
   `## NOW` advance, and the `session.log` line. If the budget is gone, those three still
   happen — stop the work, not the record.
+
+## Agentic-agnostic factory — model-agnostic build system
+
+Introduced 2026-07-30. The factory produces the same output regardless of which LLM
+executes a session. The model proposes text; the grammar (openspec --strict, analyzer,
+tests, conformance gates) decides whether it survives. The only stochastic process is
+individual character generation — token sampling. Everything else is deterministic:
+file I/O, script execution, gate results, ledger ticks.
+
+- **Records ARE the context.** A fresh session reads files, not history. The condensation
+  target: 200k ceiling → 150k effective (records carry the state) → 100k (primeable
+  bundles via `scripts/docs_bundle`). Each reading entry, standing bar, and conformance
+  test removes one degree of freedom from the stochastic step.
+- **Discrete stochastic processes.** The build loop is: read file → parse → interpret
+  spec → generate code (stochastic) → compile → test → gate → tick ledger. The
+  stochastic step is bounded by spec (what), manual (how), and gate (whether).
+- **Handoff caps enforce decomposition.** Spec→implementation: 500 tokens. Implementation→
+  review: 1000. Audit→decision: 500. Session→record: 200. A cap that needs three screens
+  is a bad task — re-split at the spec level.
+- **Screen consistency becomes hard-lint, not review.** The stacked-papers doctrine
+  (FACTORY.md → Screen consistency) states that every screen is interchangeable paper in
+  an identical frame; the gate that proves it is specced, not shipped
+  (`enforce-face-law-conformance` 2.1). Conformance tests, not aesthetic judgment, are
+  what will prove consistency — 26 feature files still build a raw `Scaffold`.
+  Parent-child constraint flow (Flutter's layout pipeline) is the mechanical basis:
+  constraints go down, size goes up, the frame reads the viewport, content never does.
 
 ## Crew protocol — multi-agent tandem (A, B, C)
 
