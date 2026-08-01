@@ -29,9 +29,9 @@ The primary user is an active breaker building a personal library under real fat
 ## Release Snapshot
 
 <!-- release:meta:start -->
-- Release tag: `v1.11.0`
-- Release version: `1.11.0`
-- Pubspec version: `1.11.0+14`
+- Release tag: `v1.12.0`
+- Release version: `1.12.0`
+- Pubspec version: `1.12.0+15`
 - Released: `2026-08-01`
 - Metadata refreshed: `2026-08-01`
 <!-- release:meta:end -->
@@ -40,9 +40,9 @@ The primary user is an active breaker building a personal library under real fat
 
 <!-- release:provenance:start -->
 - Source branch: `main`
-- Source revision: `ba2f713`
-- Source commit: `ba2f713dca405e7d7b0aba5f55a11a46dd13307b`
-- Source describe: `v1.10.0-2-gba2f713`
+- Source revision: `a018062`
+- Source commit: `a0180626a0277fb2ffa664a4246b44a2f64573cf`
+- Source describe: `v1.11.0-1-ga018062`
 - Generator: `scripts/update_release_metadata.cjs`
 - Inputs: `docs/CHANGELOG.md`, `pubspec.yaml`, and local git metadata
 <!-- release:provenance:end -->
@@ -50,5 +50,5 @@ The primary user is an active breaker building a personal library under real fat
 ## Latest Tagged Notes
 
 <!-- release:notes:start -->
-- **dev:** the grid is a control now, not a constant
+- **motion:** morph is the default now, and the shape carries its own curve
 <!-- release:notes:end -->

@@ -1,3 +1,10 @@
+# [1.12.0](https://github.com/stussysenik/breakdex-flutter/compare/v1.11.0...v1.12.0) (2026-08-01)
+
+
+### Features
+
+* **motion:** morph is the default now, and the shape carries its own curve ([a018062](https://github.com/stussysenik/breakdex-flutter/commit/a0180626a0277fb2ffa664a4246b44a2f64573cf))
+
 # [1.11.0](https://github.com/stussysenik/breakdex-flutter/compare/v1.10.0...v1.11.0) (2026-08-01)
 
 
