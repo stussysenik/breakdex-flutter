@@ -1,3 +1,10 @@
+# [1.11.0](https://github.com/stussysenik/breakdex-flutter/compare/v1.10.0...v1.11.0) (2026-08-01)
+
+
+### Features
+
+* **dev:** the grid is a control now, not a constant ([9b10135](https://github.com/stussysenik/breakdex-flutter/commit/9b101351b1d030cc438515c66866fb138cae04b7))
+
 # [1.10.0](https://github.com/stussysenik/breakdex-flutter/compare/v1.9.0...v1.10.0) (2026-08-01)
 
 

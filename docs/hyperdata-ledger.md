@@ -10,9 +10,9 @@ This ledger records what Breakdex is trying to be at the system level: a move li
 ## Release Snapshot
 
 <!-- release:meta:start -->
-- Release tag: `v1.10.0`
-- Release version: `1.10.0`
-- Pubspec version: `1.10.0+13`
+- Release tag: `v1.11.0`
+- Release version: `1.11.0`
+- Pubspec version: `1.11.0+14`
 - Released: `2026-08-01`
 - Metadata refreshed: `2026-08-01`
 <!-- release:meta:end -->
@@ -21,9 +21,9 @@ This ledger records what Breakdex is trying to be at the system level: a move li
 
 <!-- release:provenance:start -->
 - Source branch: `main`
-- Source revision: `2308dd4`
-- Source commit: `2308dd49d657abb1f26661511bb64ee274d41c85`
-- Source describe: `v1.9.0-1-g2308dd4`
+- Source revision: `ba2f713`
+- Source commit: `ba2f713dca405e7d7b0aba5f55a11a46dd13307b`
+- Source describe: `v1.10.0-2-gba2f713`
 - Generator: `scripts/update_release_metadata.cjs`
 - Inputs: `docs/CHANGELOG.md`, `pubspec.yaml`, and local git metadata
 <!-- release:provenance:end -->
@@ -31,7 +31,7 @@ This ledger records what Breakdex is trying to be at the system level: a move li
 ## Latest Tagged Notes
 
 <!-- release:notes:start -->
-- **dev:** the gallery gains the vocabulary its screens are spelled with
+- **dev:** the grid is a control now, not a constant
 <!-- release:notes:end -->
 
 ## Why It Exists
