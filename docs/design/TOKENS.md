@@ -227,6 +227,7 @@ screen in the app, with no exceptions.
 | `gutter` | 24 | `AppLayout.gutter` | Left/right content edge. Mirrors `AppSpacing.screenEdge`. |
 | `maxContentWidth` | 720 | `AppLayout.maxContentWidth` | Reading column clamp; centres above this. |
 | `maxWideWidth` | 1080 | `AppLayout.maxWideWidth` | Dense grids/boards only — never reading content. |
+| `dialogMaxWidth` | 480 | `AppLayout.dialogMaxWidth` | Box a dialog lays out in (`showAppDialog`); Material's 40pt gutter sits inside it, so the painted card is ≤400. |
 | `breakpointCompact` | 600 | `AppLayout.breakpointCompact` | Below: single column. |
 | `breakpointExpanded` | 1024 | `AppLayout.breakpointExpanded` | At/above: side-by-side regions allowed. |
 

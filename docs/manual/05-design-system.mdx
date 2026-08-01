@@ -3,7 +3,7 @@ title: Design System
 name: design-system
 order: 5
 status: verified
-verified: 37d19c4
+verified: 2cde4af
 watches:
   - lib/core/design/**
   - docs/design/TOKENS.md
@@ -92,6 +92,18 @@ route, the 56pt band only where one exists. `showAppSheet` reads the same scope,
 opened from Settings no longer floats above its own bottom edge. `SettingsScreen.isTab` was
 deleted with it — one widget serves `/settings` and `/settings-panel`, and the route already
 knows which is which.
+
+**A dialog is bounded by a measure, not by the band.** `showAppDialog`
+(`lib/shared/widgets/app_dialog.dart`) is the sheet helper's opposite number and deliberately
+does *not* mirror it: `showDialog` defaults to the **root** navigator, so a dialog route is a
+sibling of the shell and paints *over* band 4 — reserving space for it would be reserving space
+for nothing. Height is Material's already (`Dialog` carries its own `SafeArea`), and a second
+clamp could only re-introduce the double-counted safe inset `showAppSheet` had to remove padding
+to avoid. What Material does not bound is width: its only lever is a 40pt `insetPadding`, so a
+two-sentence confirm box on a 1400pt browser window is painted 1320pt wide. The helper clamps the
+layout box to `AppLayout.dialogMaxWidth` (480); the gutter sits inside it, so the card is at most
+400pt — the same card a 480pt phone gives it. The one exception carries its reason inline:
+`Dialog.fullscreen` (the photo viewer) is a screen wearing a route and has no measure to keep.
 
 **The address line lives inside band 2, which does not grow.** `AppBreadcrumb`
 (`lib/shared/widgets/app_breadcrumb.dart`) renders the route as one line of type above the
