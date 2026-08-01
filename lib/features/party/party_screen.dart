@@ -28,8 +28,14 @@ import 'package:breakdex/core/services/swing_detector.dart';
 import 'package:breakdex/features/party/bloc/party_bloc.dart';
 import 'package:breakdex/features/party/bloc/combo_party_bloc.dart';
 import 'package:breakdex/core/design/icons.dart';
+import 'package:breakdex/shared/widgets/app_screen.dart';
 
 const _partySubsystem = 'Party';
+
+/// One title for every branch of this screen. Named once so the loading, error
+/// and data frames cannot drift apart — the header is the same band in all
+/// three, and a literal repeated four times is a drift waiting to happen.
+const _partyTitle = 'Party';
 
 class PartyScreen extends ConsumerStatefulWidget {
   const PartyScreen({super.key});
@@ -256,16 +262,24 @@ class _PartyScreenState extends ConsumerState<PartyScreen>
           orElse: () {},
         );
       },
+      // Three async branches, one frame. Each branch used to build its own
+      // Scaffold, so the header appeared and vanished as the data resolved;
+      // on the frame the bands are already there and only the fill changes.
       child: movesAsync.when(
-        loading: () => const Scaffold(body: Center(child: AppLoader())),
-        error: (final e, _) => Scaffold(body: Center(child: Text('Error: $e'))),
+        loading: () => const AppScreen.fill(
+          title: _partyTitle,
+          child: Center(child: AppLoader()),
+        ),
+        error: (final e, _) => AppScreen.fill(
+          title: _partyTitle,
+          child: Center(child: Text('Error: $e')),
+        ),
         data: (final moves) {
-          return Scaffold(
-            body: SafeArea(
-              child: moves.isEmpty
-                  ? _buildEmptyState(colorScheme, isCombo: false)
-                  : _buildMoveContent(context, colorScheme, moves),
-            ),
+          return AppScreen.fill(
+            title: _partyTitle,
+            child: moves.isEmpty
+                ? _buildEmptyState(colorScheme, isCombo: false)
+                : _buildMoveContent(context, colorScheme, moves),
           );
         },
       ),
@@ -301,15 +315,20 @@ class _PartyScreenState extends ConsumerState<PartyScreen>
         }
       },
       child: combosAsync.when(
-        loading: () => const Scaffold(body: Center(child: AppLoader())),
-        error: (final e, _) => Scaffold(body: Center(child: Text('Error: $e'))),
+        loading: () => const AppScreen.fill(
+          title: _partyTitle,
+          child: Center(child: AppLoader()),
+        ),
+        error: (final e, _) => AppScreen.fill(
+          title: _partyTitle,
+          child: Center(child: Text('Error: $e')),
+        ),
         data: (final combos) {
-          return Scaffold(
-            body: SafeArea(
-              child: combos.isEmpty
-                  ? _buildEmptyState(colorScheme, isCombo: true)
-                  : _buildComboContent(context, colorScheme, combos),
-            ),
+          return AppScreen.fill(
+            title: _partyTitle,
+            child: combos.isEmpty
+                ? _buildEmptyState(colorScheme, isCombo: true)
+                : _buildComboContent(context, colorScheme, combos),
           );
         },
       ),

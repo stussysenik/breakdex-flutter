@@ -6,9 +6,9 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 
 import 'package:breakdex/core/design/spacing.dart';
+
 import 'package:breakdex/core/design/typography.dart';
 import 'package:breakdex/core/design/icons.dart';
 import 'package:breakdex/core/models/pose_frame.dart';
@@ -20,6 +20,7 @@ import 'package:breakdex/shared/widgets/app_loader.dart';
 import 'package:breakdex/features/move_analysis/widgets/analysis_toolbar.dart';
 import 'package:breakdex/features/move_analysis/widgets/pose_overlay.dart';
 import 'package:breakdex/features/move_analysis/widgets/skeleton_3d_panel.dart';
+import 'package:breakdex/shared/widgets/app_screen.dart';
 
 /// Full-screen move analysis screen: video + 3D skeleton visualization.
 ///
@@ -70,108 +71,63 @@ class _MoveAnalysisScreenState extends ConsumerState<MoveAnalysisScreen> {
       }
     });
 
-    return Scaffold(
-      backgroundColor: colorScheme.surface,
-      body: SafeArea(
-        child: Column(
-          children: [
-            // Header
-            _buildHeader(context, colorScheme),
-
-            // Main content: video + 3D split view
-            Expanded(
-              child: Column(
-                children: [
-                  // Top half: video with pose overlay
-                  Expanded(
-                    child: Stack(
-                      fit: StackFit.expand,
-                      children: [
-                        if (widget.videoPath.isNotEmpty &&
-                            mode == AnalysisMode.video)
-                          RobustVideoPlayer(videoPath: widget.videoPath)
-                        else if (mode == AnalysisMode.camera)
-                          _buildCameraPlaceholder(colorScheme)
-                        else
-                          const VideoPlaceholder(icon: AppIcon.videoOff),
-
-                        // Pose overlay on top of video
-                        if (pose != null)
-                          Positioned.fill(child: PoseOverlay(poseFrame: pose)),
-
-                        // Analyze button (video mode)
-                        if (mode == AnalysisMode.video &&
-                            widget.videoPath.isNotEmpty)
-                          Positioned(
-                            right: 12,
-                            bottom: 12,
-                            child: _buildAnalyzeButton(colorScheme),
-                          ),
-                      ],
-                    ),
-                  ),
-
-                  // Divider
-                  Container(height: 1, color: colorScheme.outline),
-
-                  // Bottom half: 3D skeleton
-                  const Expanded(child: Skeleton3DPanel()),
-                ],
-              ),
-            ),
-
-            // Toolbar
-            const AnalysisToolbar(),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildHeader(
-    final BuildContext context,
-    final ColorScheme colorScheme,
-  ) {
-    return Container(
-      padding: const EdgeInsets.symmetric(
-        horizontal: AppSpacing.screenEdge,
-        vertical: AppSpacing.sm,
-      ),
-      decoration: BoxDecoration(
-        border: Border(
-          bottom: BorderSide(color: colorScheme.outline, width: 0.5),
-        ),
-      ),
-      child: Row(
+    // Two panes that each own their height, plus a toolbar pinned to the
+    // bottom — never one scroll, so this is the `fill` form.
+    return AppScreen.fill(
+      title: 'Move Analysis',
+      child: Column(
         children: [
-          GestureDetector(
-            onTap: () => context.pop(),
-            child: Row(
+          // Main content: video + 3D split view
+          Expanded(
+            child: Column(
               children: [
-                AppIconView(
-                  AppIcon.back,
-                  color: colorScheme.secondary,
-                  size: 20,
-                ),
-                Text(
-                  'Back',
-                  style: AppTypography.bodyMedium.copyWith(
-                    color: colorScheme.secondary,
+                // Top half: video with pose overlay
+                Expanded(
+                  child: Stack(
+                    fit: StackFit.expand,
+                    children: [
+                      if (widget.videoPath.isNotEmpty &&
+                          mode == AnalysisMode.video)
+                        RobustVideoPlayer(videoPath: widget.videoPath)
+                      else if (mode == AnalysisMode.camera)
+                        _buildCameraPlaceholder(colorScheme)
+                      else
+                        const VideoPlaceholder(icon: AppIcon.videoOff),
+
+                      // Pose overlay on top of video
+                      if (pose != null)
+                        Positioned.fill(child: PoseOverlay(poseFrame: pose)),
+
+                      // Analyze button (video mode)
+                      if (mode == AnalysisMode.video &&
+                          widget.videoPath.isNotEmpty)
+                        Positioned(
+                          right: 12,
+                          bottom: 12,
+                          child: _buildAnalyzeButton(colorScheme),
+                        ),
+                    ],
                   ),
                 ),
+
+                // Divider
+                Container(height: 1, color: colorScheme.outline),
+
+                // Bottom half: 3D skeleton
+                const Expanded(child: Skeleton3DPanel()),
               ],
             ),
           ),
-          const Spacer(),
-          Text(
-            'Move Analysis',
-            style: AppTypography.titleMedium.copyWith(
-              color: colorScheme.onSurface,
+
+          // Toolbar. The frame paints band 4 over this screen where the shell
+          // has one, so the toolbar reserves that height rather than sitting
+          // under it.
+          Padding(
+            padding: EdgeInsets.only(
+              bottom: AppScreen.bandInsetOf(context),
             ),
+            child: const AnalysisToolbar(),
           ),
-          const Spacer(),
-          // Spacer to balance the back button
-          const SizedBox(width: 60),
         ],
       ),
     );

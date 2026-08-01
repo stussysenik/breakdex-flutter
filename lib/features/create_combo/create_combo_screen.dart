@@ -20,6 +20,7 @@ import 'package:breakdex/shared/widgets/beat_grid.dart';
 import 'package:breakdex/shared/widgets/combo_step_line.dart';
 import 'package:breakdex/features/combos/plan_combo_flow.dart';
 import 'package:breakdex/shared/widgets/app_loader.dart';
+import 'package:breakdex/shared/widgets/app_screen.dart';
 import 'package:breakdex/shared/widgets/secondary_button.dart';
 import 'package:breakdex/shared/widgets/app_sheet.dart';
 import 'package:breakdex/shared/widgets/app_dialog.dart';
@@ -71,209 +72,187 @@ class _CreateComboScreenState extends ConsumerState<CreateComboScreen> {
         ? _selectedMoves[safeIndex]
         : null;
 
+    // One editing column plus a saving veil over it — so the frame is the
+    // default form and the veil stays a sibling in a Stack, above the whole
+    // screen including its bands.
+    //
+    // The title was a tap target that renamed the combo. The frame renders the
+    // title as text, so the rename moved into the action cluster where every
+    // other screen puts a verb — one less place where a header is bespoke.
     return Stack(
       children: [
-        Scaffold(
-          appBar: AppBar(
-            title: GestureDetector(
-              onTap: _renameCombo,
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Flexible(
-                    child: Text(
-                      _comboName ??
-                          (widget.isEditing ? 'Edit Combo' : 'Create Combo'),
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ),
-                  const SizedBox(width: 4),
-                  AppIconView(
-                    AppIcon.edit,
-                    size: 14,
-                    color: Theme.of(
-                      context,
-                    ).colorScheme.secondary.withValues(alpha: 0.6),
-                  ),
-                ],
-              ),
+        AppScreen(
+          title:
+              _comboName ?? (widget.isEditing ? 'Edit Combo' : 'Create Combo'),
+          actions: [
+            IconButton(
+              onPressed: _renameCombo,
+              icon: const AppIconView(AppIcon.edit, size: 18),
+              tooltip: 'Rename combo',
             ),
-            actions: [
-              if (_selectedMoves.isNotEmpty &&
-                  _screenState != _ScreenState.saving)
-                TextButton(
-                  onPressed: () => _saveCombo(),
-                  child: Text(
-                    'SAVE',
-                    style: TextStyle(
-                      color: colorScheme.primary,
-                      fontWeight: FontWeight.bold,
-                    ),
+            if (_selectedMoves.isNotEmpty &&
+                _screenState != _ScreenState.saving)
+              TextButton(
+                onPressed: () => _saveCombo(),
+                child: Text(
+                  'SAVE',
+                  style: TextStyle(
+                    color: colorScheme.primary,
+                    fontWeight: FontWeight.bold,
                   ),
                 ),
-            ],
-          ),
-          body: SafeArea(
-            child: _isLoadingExisting
-                ? const Center(child: AppLoader())
-                : ListView(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: AppSpacing.screenEdge,
-                    ),
-                    children: [
-                      const SizedBox(height: AppSpacing.md),
-                      if (currentMove != null && currentMove.videoPath != null)
-                        RobustVideoPlayer(
-                          key: ValueKey(
-                            '${currentMove.id}:$safeIndex:${currentMove.contentHash}',
+              ),
+          ],
+          children: _isLoadingExisting
+              ? const [Center(child: AppLoader())]
+              : [
+                  if (currentMove != null && currentMove.videoPath != null)
+                    RobustVideoPlayer(
+                      key: ValueKey(
+                        '${currentMove.id}:$safeIndex:${currentMove.contentHash}',
+                      ),
+                      videoPath: currentMove.resolvedVideoPath,
+                      autoPlay: true,
+                    )
+                  else
+                    const VideoPlaceholder(),
+                  const SizedBox(height: AppSpacing.lg),
+
+                  // -- Beat Grid (renders its own moves/beats summary) --
+                  if (_selectedMoves.isNotEmpty) ...[
+                    BeatGrid(
+                      items: [
+                        for (int i = 0; i < _selectedMoves.length; i++)
+                          BeatGridItem(
+                            label: _selectedMoves[i].name,
+                            count: _selectedMoves[i].count,
+                            isActive: i == safeIndex,
+                            onTap: () => setState(() => _activeIndex = i),
                           ),
-                          videoPath: currentMove.resolvedVideoPath,
-                          autoPlay: true,
-                        )
-                      else
-                        const VideoPlaceholder(),
-                      const SizedBox(height: AppSpacing.lg),
-
-                      // -- Beat Grid (renders its own moves/beats summary) --
-                      if (_selectedMoves.isNotEmpty) ...[
-                        BeatGrid(
-                          items: [
-                            for (int i = 0; i < _selectedMoves.length; i++)
-                              BeatGridItem(
-                                label: _selectedMoves[i].name,
-                                count: _selectedMoves[i].count,
-                                isActive: i == safeIndex,
-                                onTap: () => setState(() => _activeIndex = i),
-                              ),
-                          ],
-                        ),
-                        const SizedBox(height: AppSpacing.lg),
                       ],
+                    ),
+                    const SizedBox(height: AppSpacing.lg),
+                  ],
 
-                      Text(
-                        'SEQUENCE',
-                        style: AppTypography.labelLarge.copyWith(
-                          color: colorScheme.secondary,
-                          letterSpacing: 1.5,
-                        ),
-                      ),
-                      const SizedBox(height: AppSpacing.md),
-                      ComboStepLine(
-                        stepCount: _selectedMoves.length,
-                        activeIndex: safeIndex,
-                        onStepSelected: (final index) =>
-                            setState(() => _activeIndex = index),
-                        onAddStep: _showMovePicker,
-                        beatCounts: _selectedMoves
-                            .map((final m) => m.count)
-                            .toList(),
-                      ),
-                      const SizedBox(height: AppSpacing.xl),
+                  Text(
+                    'SEQUENCE',
+                    style: AppTypography.labelLarge.copyWith(
+                      color: colorScheme.secondary,
+                      letterSpacing: 1.5,
+                    ),
+                  ),
+                  const SizedBox(height: AppSpacing.md),
+                  ComboStepLine(
+                    stepCount: _selectedMoves.length,
+                    activeIndex: safeIndex,
+                    onStepSelected: (final index) =>
+                        setState(() => _activeIndex = index),
+                    onAddStep: _showMovePicker,
+                    beatCounts: _selectedMoves
+                        .map((final m) => m.count)
+                        .toList(),
+                  ),
+                  const SizedBox(height: AppSpacing.xl),
 
-                      Text(
-                        'ORDER',
-                        style: AppTypography.labelLarge.copyWith(
-                          color: colorScheme.secondary,
-                          letterSpacing: 1.5,
-                        ),
-                      ),
-                      const SizedBox(height: AppSpacing.md),
-                      ReorderableListView.builder(
-                        shrinkWrap: true,
-                        physics: const NeverScrollableScrollPhysics(),
-                        buildDefaultDragHandles: false,
-                        itemCount: _selectedMoves.length,
-                        onReorder: _reorderMoves,
-                        itemBuilder: (final context, final index) {
-                          final move = _selectedMoves[index];
-                          final isActive = index == safeIndex;
-                          return Container(
-                            key: ValueKey(move.id),
-                            decoration: BoxDecoration(
-                              border: Border(
-                                bottom: BorderSide(
-                                  color: colorScheme.outline.withValues(
-                                    alpha: 0.1,
-                                  ),
-                                  width: 1,
-                                ),
-                              ),
+                  Text(
+                    'ORDER',
+                    style: AppTypography.labelLarge.copyWith(
+                      color: colorScheme.secondary,
+                      letterSpacing: 1.5,
+                    ),
+                  ),
+                  const SizedBox(height: AppSpacing.md),
+                  ReorderableListView.builder(
+                    shrinkWrap: true,
+                    physics: const NeverScrollableScrollPhysics(),
+                    buildDefaultDragHandles: false,
+                    itemCount: _selectedMoves.length,
+                    onReorder: _reorderMoves,
+                    itemBuilder: (final context, final index) {
+                      final move = _selectedMoves[index];
+                      final isActive = index == safeIndex;
+                      return Container(
+                        key: ValueKey(move.id),
+                        decoration: BoxDecoration(
+                          border: Border(
+                            bottom: BorderSide(
+                              color: colorScheme.outline.withValues(alpha: 0.1),
+                              width: 1,
                             ),
-                            child: ListTile(
-                              onTap: () => setState(() => _activeIndex = index),
-                              contentPadding: const EdgeInsets.symmetric(
-                                vertical: 4,
+                          ),
+                        ),
+                        child: ListTile(
+                          onTap: () => setState(() => _activeIndex = index),
+                          contentPadding: const EdgeInsets.symmetric(
+                            vertical: 4,
+                          ),
+                          leading: Text(
+                            '${index + 1}',
+                            style: AppTypography.titleMedium.copyWith(
+                              color: isActive
+                                  ? colorScheme.primary
+                                  : colorScheme.outline,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          title: Text(
+                            move.name,
+                            style: AppTypography.bodyMedium.copyWith(
+                              color: colorScheme.onSurface,
+                              fontWeight: isActive
+                                  ? FontWeight.w700
+                                  : FontWeight.w500,
+                            ),
+                          ),
+                          subtitle: Text(
+                            '${move.count} BEATS${move.category != 'default' ? ' · ${move.category.toUpperCase()}' : ''}',
+                            style: AppTypography.caption.copyWith(
+                              color: colorScheme.secondary,
+                              letterSpacing: 0.5,
+                            ),
+                          ),
+                          trailing: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              _CountControl(
+                                icon: AppIcon.remove.resolve(context),
+                                enabled: move.count > 1,
+                                onTap: () => _adjustMoveCount(index, -1),
                               ),
-                              leading: Text(
-                                '${index + 1}',
-                                style: AppTypography.titleMedium.copyWith(
-                                  color: isActive
-                                      ? colorScheme.primary
-                                      : colorScheme.outline,
+                              const SizedBox(width: AppSpacing.md),
+                              Text(
+                                '${move.count}',
+                                style: AppTypography.bodyMedium.copyWith(
+                                  color: colorScheme.onSurface,
                                   fontWeight: FontWeight.bold,
                                 ),
                               ),
-                              title: Text(
-                                move.name,
-                                style: AppTypography.bodyMedium.copyWith(
-                                  color: colorScheme.onSurface,
-                                  fontWeight: isActive
-                                      ? FontWeight.w700
-                                      : FontWeight.w500,
+                              const SizedBox(width: AppSpacing.md),
+                              _CountControl(
+                                icon: AppIcon.add.resolve(context),
+                                enabled: move.count < 16,
+                                onTap: () => _adjustMoveCount(index, 1),
+                              ),
+                              const SizedBox(width: AppSpacing.md),
+                              ReorderableDragStartListener(
+                                index: index,
+                                child: AppIconView(
+                                  AppIcon.menu,
+                                  color: colorScheme.outline,
                                 ),
                               ),
-                              subtitle: Text(
-                                '${move.count} BEATS${move.category != 'default' ? ' · ${move.category.toUpperCase()}' : ''}',
-                                style: AppTypography.caption.copyWith(
-                                  color: colorScheme.secondary,
-                                  letterSpacing: 0.5,
-                                ),
-                              ),
-                              trailing: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  _CountControl(
-                                    icon: AppIcon.remove.resolve(context),
-                                    enabled: move.count > 1,
-                                    onTap: () => _adjustMoveCount(index, -1),
-                                  ),
-                                  const SizedBox(width: AppSpacing.md),
-                                  Text(
-                                    '${move.count}',
-                                    style: AppTypography.bodyMedium.copyWith(
-                                      color: colorScheme.onSurface,
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  ),
-                                  const SizedBox(width: AppSpacing.md),
-                                  _CountControl(
-                                    icon: AppIcon.add.resolve(context),
-                                    enabled: move.count < 16,
-                                    onTap: () => _adjustMoveCount(index, 1),
-                                  ),
-                                  const SizedBox(width: AppSpacing.md),
-                                  ReorderableDragStartListener(
-                                    index: index,
-                                    child: AppIconView(
-                                      AppIcon.menu,
-                                      color: colorScheme.outline,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          );
-                        },
-                      ),
-                      const SizedBox(height: AppSpacing.xl),
-                      SecondaryButton(
-                        label: 'ADD MOVE',
-                        onPressed: () => _showMovePicker(),
-                      ),
-                      const SizedBox(height: AppSpacing.xl),
-                    ],
+                            ],
+                          ),
+                        ),
+                      );
+                    },
                   ),
-          ),
+                  const SizedBox(height: AppSpacing.xl),
+                  SecondaryButton(
+                    label: 'ADD MOVE',
+                    onPressed: () => _showMovePicker(),
+                  ),
+                ],
         ),
         if (_screenState == _ScreenState.saving)
           Positioned.fill(

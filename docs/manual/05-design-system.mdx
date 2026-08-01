@@ -105,6 +105,24 @@ layout box to `AppLayout.dialogMaxWidth` (480); the gutter sits inside it, so th
 400pt — the same card a 480pt phone gives it. The one exception carries its reason inline:
 `Dialog.fullscreen` (the photo viewer) is a screen wearing a route and has no measure to keep.
 
+**The roster became a closed table on 2026-08-01 (§4.4).** `frame_conformance_test.dart` was a
+list of migrated screens — an allowlist, which can only ever say something about the files it
+already knows. It is now four tables that partition *every* file under `lib/` that builds
+chrome: `_onFrame` (through `AppScreen`, asserted chrome-free), `_frameless` (no bands at all,
+on purpose, and never an `AppBar` — that is the band that drifted five times), `_awaitingRuling`
+(still bespoke, one line each naming the *decision* owed rather than the typing), and
+`_framework` (`app_screen.dart` and `bottom_nav_shell.dart`, the two files allowed to build
+bands). A closure test walks `lib/` and fails on any chrome-building file in no table, so a new
+bespoke `Scaffold` fails on the commit that adds it. That is already the denylist task 4.5 asks
+for; 4.5 is now finished by *deleting* `_awaitingRuling` once it empties. Five screens joined
+`_onFrame` in the same commit — auth, party, move-analysis, create-combo, and the dev sync
+panel — and each states which of the three forms it takes and why in one comment above the
+call. Two rulings fell out of migrating them: `create_combo` had a *tappable title* that
+renamed the combo, and since the frame renders titles as text the rename became an action, next
+to every other verb; `party` built a separate `Scaffold` in each of its loading, error and data
+branches, so its header appeared and vanished as data resolved — on the frame the bands are
+already there and only the fill changes.
+
 **The address line lives inside band 2, which does not grow.** `AppBreadcrumb`
 (`lib/shared/widgets/app_breadcrumb.dart`) renders the route as one line of type above the
 title — `AppLayout.crumbHeight` (16) + `crumbGap` (4) + the 36pt title = 56, centred in the

@@ -9,8 +9,8 @@ import 'package:go_router/go_router.dart';
 import 'package:breakdex/core/design/spacing.dart';
 import 'package:breakdex/core/design/typography.dart';
 import 'package:breakdex/core/providers.dart';
+import 'package:breakdex/shared/widgets/app_screen.dart';
 import 'package:breakdex/shared/widgets/primary_button.dart';
-import 'package:breakdex/core/design/icons.dart';
 
 class AuthScreen extends ConsumerStatefulWidget {
   const AuthScreen({super.key});
@@ -74,129 +74,105 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
   Widget build(final BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
 
-    return Scaffold(
-      body: SafeArea(
-        child: ListView(
-          padding: const EdgeInsets.all(AppSpacing.screenEdge),
-          children: [
-            const SizedBox(height: AppSpacing.xl),
-            Row(
-              children: [
-                GestureDetector(
-                  onTap: () => context.pop(),
-                  child: AppIconView(
-                    AppIcon.back,
-                    color: colorScheme.onSurface,
-                    size: 24,
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: AppSpacing.xl),
-            Text(
-              _isLogin ? 'Sign In' : 'Create Account',
-              style: AppTypography.titleLarge.copyWith(
-                color: colorScheme.onSurface,
-              ),
-            ),
-            const SizedBox(height: AppSpacing.sm),
-            Text(
-              'Sync your moves, combos, and videos across devices.',
-              style: AppTypography.bodySmall.copyWith(
-                color: colorScheme.secondary,
-              ),
-            ),
-            const SizedBox(height: AppSpacing.xl),
-            TextField(
-              controller: _emailController,
-              keyboardType: TextInputType.emailAddress,
-              autocorrect: false,
-              textInputAction: TextInputAction.next,
-              style: AppTypography.bodyMedium.copyWith(
-                color: colorScheme.onSurface,
-              ),
-              decoration: InputDecoration(
-                labelText: 'Email',
-                labelStyle: AppTypography.bodySmall.copyWith(
-                  color: colorScheme.secondary,
-                ),
-                filled: true,
-                fillColor: colorScheme.surfaceContainerHighest,
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(AppRadius.sm),
-                  borderSide: BorderSide.none,
-                ),
-              ),
-            ),
-            const SizedBox(height: AppSpacing.md),
-            TextField(
-              controller: _passwordController,
-              obscureText: true,
-              textInputAction: TextInputAction.done,
-              onSubmitted: (_) => _submit(),
-              style: AppTypography.bodyMedium.copyWith(
-                color: colorScheme.onSurface,
-              ),
-              decoration: InputDecoration(
-                labelText: 'Password',
-                labelStyle: AppTypography.bodySmall.copyWith(
-                  color: colorScheme.secondary,
-                ),
-                filled: true,
-                fillColor: colorScheme.surfaceContainerHighest,
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(AppRadius.sm),
-                  borderSide: BorderSide.none,
-                ),
-              ),
-            ),
-            if (_error != null) ...[
-              const SizedBox(height: AppSpacing.md),
-              Text(
-                _error!,
-                style: AppTypography.bodySmall.copyWith(
-                  color: AppSemanticTheme.of(context).actionAgain,
-                ),
-              ),
-            ],
-            const SizedBox(height: AppSpacing.lg),
-            PrimaryButton(
-              label: _loading
-                  ? 'Please wait...'
-                  : (_isLogin ? 'Sign In' : 'Create Account'),
-              onPressed: _loading ? null : _submit,
-            ),
-            const SizedBox(height: AppSpacing.md),
-            Center(
-              child: GestureDetector(
-                onTap: () => setState(() {
-                  _isLogin = !_isLogin;
-                  _error = null;
-                }),
-                child: Text.rich(
-                  TextSpan(
-                    text: _isLogin
-                        ? "Don't have an account? "
-                        : 'Already have an account? ',
-                    style: AppTypography.bodySmall.copyWith(
-                      color: colorScheme.secondary,
-                    ),
-                    children: [
-                      TextSpan(
-                        text: _isLogin ? 'Sign Up' : 'Sign In',
-                        style: AppTypography.bodySmall.copyWith(
-                          color: colorScheme.primary,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-          ],
+    // One short form, one scroll — the default form. The title and the way back
+    // are the frame's; this screen had hand-rolled both, which is exactly the
+    // drift the frame exists to end.
+    return AppScreen(
+      title: _isLogin ? 'Sign In' : 'Create Account',
+      children: [
+        Text(
+          'Sync your moves, combos, and videos across devices.',
+          style: AppTypography.bodySmall.copyWith(color: colorScheme.secondary),
         ),
-      ),
+        const SizedBox(height: AppSpacing.xl),
+        TextField(
+          controller: _emailController,
+          keyboardType: TextInputType.emailAddress,
+          autocorrect: false,
+          textInputAction: TextInputAction.next,
+          style: AppTypography.bodyMedium.copyWith(
+            color: colorScheme.onSurface,
+          ),
+          decoration: InputDecoration(
+            labelText: 'Email',
+            labelStyle: AppTypography.bodySmall.copyWith(
+              color: colorScheme.secondary,
+            ),
+            filled: true,
+            fillColor: colorScheme.surfaceContainerHighest,
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(AppRadius.sm),
+              borderSide: BorderSide.none,
+            ),
+          ),
+        ),
+        const SizedBox(height: AppSpacing.md),
+        TextField(
+          controller: _passwordController,
+          obscureText: true,
+          textInputAction: TextInputAction.done,
+          onSubmitted: (_) => _submit(),
+          style: AppTypography.bodyMedium.copyWith(
+            color: colorScheme.onSurface,
+          ),
+          decoration: InputDecoration(
+            labelText: 'Password',
+            labelStyle: AppTypography.bodySmall.copyWith(
+              color: colorScheme.secondary,
+            ),
+            filled: true,
+            fillColor: colorScheme.surfaceContainerHighest,
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(AppRadius.sm),
+              borderSide: BorderSide.none,
+            ),
+          ),
+        ),
+        if (_error != null) ...[
+          const SizedBox(height: AppSpacing.md),
+          Text(
+            _error!,
+            style: AppTypography.bodySmall.copyWith(
+              color: AppSemanticTheme.of(context).actionAgain,
+            ),
+          ),
+        ],
+        const SizedBox(height: AppSpacing.lg),
+        PrimaryButton(
+          label: _loading
+              ? 'Please wait...'
+              : (_isLogin ? 'Sign In' : 'Create Account'),
+          onPressed: _loading ? null : _submit,
+        ),
+        const SizedBox(height: AppSpacing.md),
+        Center(
+          child: GestureDetector(
+            onTap: () => setState(() {
+              _isLogin = !_isLogin;
+              _error = null;
+            }),
+            child: Text.rich(
+              TextSpan(
+                text: _isLogin
+                    ? "Don't have an account? "
+                    : 'Already have an account? ',
+                style: AppTypography.bodySmall.copyWith(
+                  color: colorScheme.secondary,
+                ),
+                children: [
+                  TextSpan(
+                    text: _isLogin ? 'Sign Up' : 'Sign In',
+                    style: AppTypography.bodySmall.copyWith(
+                      color: colorScheme.primary,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ],
     );
   }
 }

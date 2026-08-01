@@ -170,8 +170,33 @@ unreliable; it is honestly reporting a box that something else paints over.
       is owner-gated.
 - [ ] 4.4 Remaining: auth, battle, party, video editors, instax, dev panels. Includes extracting
       the immersive drill session out of `flashcard_review_screen` so that file joins the roster.
+      **Batch 1 landed 2026-08-01 — five screens on the frame, and the roster closed.** The
+      task said "remaining" as if it were a list of files to type; it was a list of *rulings*,
+      and the first move was to make that visible. `frame_conformance_test.dart` is now four
+      tables partitioning every chrome-building file under `lib/`: `_onFrame`, `_frameless`
+      (never an `AppBar` — that is the band that drifted), `_awaitingRuling` (one line each
+      naming the decision owed), `_framework`. A closure test walks `lib/` and fails on any
+      such file in **no** table — which is 4.5's denylist, arriving early and by construction.
+      Migrated: `auth_screen` (default form; had hand-rolled both title and back),
+      `party_screen` (fill; six Scaffolds across loading/error/data, so its header appeared
+      and vanished as data resolved — one title constant now, four uses),
+      `move_analysis_screen` (fill; a hand-rolled header row with a "Back" word, deleted, and
+      its toolbar now insets by `AppScreen.bandInsetOf` instead of sitting under band 4),
+      `create_combo_screen` (default under a saving veil in a Stack; the *tappable title* that
+      renamed the combo became an action, because the frame renders titles as text),
+      `sync_cutover_panel` (default — a dev surface is still a screen).
+      Still owed, each with its ruling written in `_awaitingRuling`: battle (its close is a
+      forfeit confirm, and the frame's back calls `GoRouter.pop` unconditionally — the ruling
+      owed is how *any* screen with unsaved state refuses a pop, not a battle-specific patch),
+      instax, both video editors, quick-video-viewer, video-player fullscreen, the metadata
+      picker sheet, the preview harness, the router's own error/loading routes, main's boot
+      surface, and the drill-session extraction.
+      Gate: analyzer 0 errors / 0 warnings, **1382 pass / 3 skip / 0 fail** (+7 cases: 5 new
+      roster rows, the frameless bound, the closure). How any of it *looks* is owner-gated.
 - [ ] 4.5 Flip `frame_conformance_test.dart` from an allowlist to a denylist once the remainder
       is small — the guard should fail on a *new* bespoke Scaffold, not merely tolerate old ones.
+      **The mechanism landed with 4.4 batch 1** (the closure test). What is left is not a flip
+      but an emptying: this box ticks when `_awaitingRuling` is empty and the table is deleted.
 
 ## 5. The grid basis must be adjustable — NOT BUILT
 

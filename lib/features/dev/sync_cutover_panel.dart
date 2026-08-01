@@ -36,6 +36,7 @@ import 'package:breakdex/core/services/settings_service.dart'
 import 'package:breakdex/core/services/sync_service.dart';
 import 'package:breakdex/core/sync/backfill/sync_backfill_service.dart'
     show BackfillReport, SyncBackfillService;
+import 'package:breakdex/shared/widgets/app_screen.dart';
 
 /// One cutover entity: a label, the shared dual-**write** pref key (null for
 /// `fsrsCards` — it is derived server-side and never pushed, so read-only), and
@@ -113,46 +114,42 @@ class _SyncCutoverPanelState extends ConsumerState<SyncCutoverPanel> {
     // dev surface, so this is normally already-resolved.
     final user = ref.watch(currentAppwriteUserProvider).valueOrNull;
 
-    return Scaffold(
-      appBar: AppBar(title: const Text('Sync cutover (dev)')),
-      body: SafeArea(
-        child: ListView(
-          padding: const EdgeInsets.all(AppSpacing.screenEdge),
-          children: [
-            Text(
-              'Flip dual-write, soak, then dual-read — one entity at a time '
-              '(runbook order). Flipping a switch back OFF is the instant '
-              'rollback to local-only.',
-              style: AppTypography.bodySmall.copyWith(
-                color: colorScheme.secondary,
-              ),
-            ),
-            const SizedBox(height: AppSpacing.lg),
-            for (final entity in _kCutoverEntities) ...[
-              _EntityCard(
-                entity: entity,
-                writeValue: entity.writeKey == null
-                    ? null
-                    : _valueOf(entity.writeKey!),
-                readValue: _valueOf(entity.readKey),
-                onWrite: entity.writeKey == null
-                    ? null
-                    : (final v) => _set(entity.writeKey!, v),
-                onRead: (final v) => _set(entity.readKey, v),
-              ),
-              const SizedBox(height: AppSpacing.md),
-            ],
-            const SizedBox(height: AppSpacing.sm),
-            _BackfillSection(signedIn: user != null),
-            const SizedBox(height: AppSpacing.md),
-            _HydrateSection(signedIn: user != null),
-            const SizedBox(height: AppSpacing.md),
-            const _DiagnosticsSection(),
-            const SizedBox(height: AppSpacing.md),
-            _IdentityFooter(userId: user?.id, email: user?.email),
-          ],
+    // One scrolling column of controls — the default form. A dev surface is
+    // still a screen: it gets the same bands as every other one, so an operator
+    // reads the same header and the same way back here as anywhere else.
+    return AppScreen(
+      title: 'Sync cutover (dev)',
+      children: [
+        Text(
+          'Flip dual-write, soak, then dual-read — one entity at a time '
+          '(runbook order). Flipping a switch back OFF is the instant '
+          'rollback to local-only.',
+          style: AppTypography.bodySmall.copyWith(color: colorScheme.secondary),
         ),
-      ),
+        const SizedBox(height: AppSpacing.lg),
+        for (final entity in _kCutoverEntities) ...[
+          _EntityCard(
+            entity: entity,
+            writeValue: entity.writeKey == null
+                ? null
+                : _valueOf(entity.writeKey!),
+            readValue: _valueOf(entity.readKey),
+            onWrite: entity.writeKey == null
+                ? null
+                : (final v) => _set(entity.writeKey!, v),
+            onRead: (final v) => _set(entity.readKey, v),
+          ),
+          const SizedBox(height: AppSpacing.md),
+        ],
+        const SizedBox(height: AppSpacing.sm),
+        _BackfillSection(signedIn: user != null),
+        const SizedBox(height: AppSpacing.md),
+        _HydrateSection(signedIn: user != null),
+        const SizedBox(height: AppSpacing.md),
+        const _DiagnosticsSection(),
+        const SizedBox(height: AppSpacing.md),
+        _IdentityFooter(userId: user?.id, email: user?.email),
+      ],
     );
   }
 }

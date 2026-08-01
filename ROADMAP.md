@@ -79,9 +79,26 @@
   a route, and has no measure to keep. Also fixed because it was the gate (3.5):
   `dumpUnresolvableAssets` rendered lines in `getAll()` order with no `ORDER BY`, failing
   ~1 run in 3 — a forensic report that cannot be diffed against the previous run.
-  **Next unticked: 4.4** — the remaining screens (auth, battle, party, editors, instax, dev
-  panels), which is where the roster gets small enough for 4.5 to flip it from an allowlist to
-  a denylist. How any of it *looks* is still owner-gated.
+  **§4.4 batch 1 landed 2026-08-01 — five screens on the frame, and the roster is now closed.**
+  4.4 read like a list of files to type; it was a list of *rulings*, and the first move was to
+  make that visible. `frame_conformance_test.dart` is four tables that partition **every**
+  chrome-building file under `lib/`: `_onFrame` (asserted chrome-free), `_frameless` (no bands
+  at all, on purpose, and never an `AppBar` — that is the band that drifted five times),
+  `_awaitingRuling` (still bespoke; one line each naming the decision owed), `_framework` (the
+  two files allowed to build bands). A closure test walks `lib/` and fails on any such file in
+  **no** table — so a new bespoke `Scaffold` fails on the commit that adds it. That is 4.5's
+  denylist, arriving early and by construction; 4.5 now ticks by *emptying* `_awaitingRuling`,
+  not by flipping anything. Migrated: `auth_screen`, `party_screen` (six Scaffolds across
+  loading/error/data, so its header appeared and vanished as the data resolved),
+  `move_analysis_screen` (a hand-rolled header row with a "Back" word, deleted),
+  `create_combo_screen` (its *tappable title* renamed the combo — the frame renders titles as
+  text, so the rename became an action), `sync_cutover_panel`. Gate: analyzer 0/0,
+  **1382 pass / 3 skip / 0 fail**.
+  **Next unticked: 4.4 batch 2** — ten files, each with its ruling already written in
+  `_awaitingRuling`. The one that generalizes: battle's close is a forfeit confirm and the
+  frame's back calls `GoRouter.pop` unconditionally, so the ruling owed is how *any* screen
+  with unsaved state refuses a pop — not a battle-specific patch. How any of it *looks* is
+  still owner-gated.
 - **Change (prior, 2026-07-29 · product finish):** `redesign-visual-first-experience`
   — **6.4 DONE 2026-07-29.** `openspec/changes/add-icon-system-and-packs` Phase 4 closed:
   `AppIcon` enum with 78 semantic names, material + lucide packs, conformance gate with
