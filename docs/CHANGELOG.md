@@ -1,3 +1,10 @@
+# [1.9.0](https://github.com/stussysenik/breakdex-flutter/compare/v1.8.0...v1.9.0) (2026-08-01)
+
+
+### Features
+
+* **design:** the grid basis is a value, not a constant ([6963048](https://github.com/stussysenik/breakdex-flutter/commit/6963048c23eb822a6f3cb0f58893005536798e68))
+
 # [1.8.0](https://github.com/stussysenik/breakdex-flutter/compare/v1.7.0...v1.8.0) (2026-08-01)
 
 

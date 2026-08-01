@@ -47,9 +47,9 @@ Breakdex is split into a product runtime, native bridges, release tooling, and a
 ## Release Snapshot
 
 <!-- release:meta:start -->
-- Release tag: `v1.8.0`
-- Release version: `1.8.0`
-- Pubspec version: `1.8.0+11`
+- Release tag: `v1.9.0`
+- Release version: `1.9.0`
+- Pubspec version: `1.9.0+12`
 - Released: `2026-08-01`
 - Metadata refreshed: `2026-08-01`
 <!-- release:meta:end -->
@@ -58,9 +58,9 @@ Breakdex is split into a product runtime, native bridges, release tooling, and a
 
 <!-- release:provenance:start -->
 - Source branch: `main`
-- Source revision: `2fdd09d`
-- Source commit: `2fdd09d9af5f318fe8317692726610040e5e58dc`
-- Source describe: `v1.7.0-22-g2fdd09d`
+- Source revision: `091a0ae`
+- Source commit: `091a0ae316520a5aaa3b4a7b31e53d58a420451b`
+- Source describe: `v1.8.0-3-g091a0ae`
 - Generator: `scripts/update_release_metadata.cjs`
 - Inputs: `docs/CHANGELOG.md`, `pubspec.yaml`, and local git metadata
 <!-- release:provenance:end -->
@@ -68,9 +68,5 @@ Breakdex is split into a product runtime, native bridges, release tooling, and a
 ## Latest Tagged Notes
 
 <!-- release:notes:start -->
-- **ui:** the gallery is the wall, not a picture — merge caught it
-- **ui:** a bar is either an address or a transaction, and that empties the table
-- **ui:** appSheet owns the band-4 inset; 24 sheet sites migrated
-- **ui:** detail screens onto AppScreen; back is read from the route, not passed
-- **ui:** dialogs get a measure; the band was never their problem ([2cde4af](https://github.com/stussysenik/breakdex-flutter/commit/2cde4afd137c807e860f6af074b33585fd4b757f)), closes [ranked-#1](https://github.com/ranked-/issues/1)
+- **design:** the grid basis is a value, not a constant
 <!-- release:notes:end -->
