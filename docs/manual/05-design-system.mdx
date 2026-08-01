@@ -3,7 +3,7 @@ title: Design System
 name: design-system
 order: 5
 status: verified
-verified: 6963048
+verified: a018062
 watches:
   - lib/core/design/**
   - docs/design/TOKENS.md
@@ -163,7 +163,23 @@ families**, and both are composed from `AppMotion` tokens:
   `AppMotion.entrance` (`easeOut`). Durations sit in the `fast01`–`moderate02` band.
 - **Morph** — continuity of **one persistent identity** as its size/shape/position changes.
   Reserved for the state change of a *single* element (a panel expanding, a card reordering).
-  Rides `AppMotion.morph`, an alias of `springGentle`, over `moderate02`.
+  Rides `AppMotion.morph`, an alias of `springGentle`, over `moderate02`. **Shared elements go
+  through `AppMorph` and nothing else** (`lib/shared/widgets/app_morph.dart`): a raw `Hero`
+  interpolates its rect linearly against the route's animation, which is the Fluid feel applied
+  to a Morph problem, so `AppMorph.morphRectTween` spends the flight's own `t` on
+  `AppMotion.morph` first. `test/design/morph_conformance_test.dart` bans a raw `Hero(` under
+  `lib/` with no allowlist.
+
+**Gotcha — a `Hero` in a page's `transitionsBuilder` is never found.** `ModalRoute.subtreeContext`,
+the context Flutter searches on push, points at `buildPage`'s output only; everything
+`buildTransitions` wraps around it is outside. The route just fades, with no error. `morphPage`
+therefore puts the destination end in `MorphDestination` on the page's *child*.
+
+**Gotcha — a spring curve is normalised onto its own settle time** (`isDone`, 1ms resolution,
+3s ceiling). Until 2026-08-02 `_SpringCurve` used a fixed 3-second window, so `springGentle`
+reached 1.0 at about `t = 0.2`: a 240ms transition showed ~40ms of motion and read as a pop.
+If a spring ever looks instant, check what window it is sampled over before reaching for a
+longer duration.
 
 **`AppMotion`.** The motion namespace (in `spacing.dart` — see gotcha below). It holds the
 duration ladder (`fast01 = 70ms … slow01 = 400ms`), the named curves, the two spring curves,
