@@ -11,8 +11,8 @@ import 'package:breakdex/features/battle/providers/battle_providers.dart';
 import 'package:breakdex/features/battle/widgets/battle_intro.dart';
 import 'package:breakdex/features/battle/widgets/timer_ring.dart';
 import 'package:breakdex/features/battle/widgets/battle_results_view.dart';
-import 'package:breakdex/core/design/icons.dart';
 import 'package:breakdex/shared/widgets/app_dialog.dart';
+import 'package:breakdex/shared/widgets/app_screen.dart';
 
 class BattleScreen extends ConsumerWidget {
   const BattleScreen({super.key});
@@ -21,73 +21,76 @@ class BattleScreen extends ConsumerWidget {
   Widget build(final BuildContext context, final WidgetRef ref) {
     final state = ref.watch(battleProvider);
 
-    return Scaffold(
-      appBar: AppBar(
-        leading: IconButton(
-          icon: const AppIconView(AppIcon.close),
-          onPressed: () => _handleClose(context, ref, state),
-        ),
-        title: state.phase == BattlePhase.active
-            ? Text('Score: ${state.score}')
-            : null,
-      ),
-      body: SafeArea(
-        child: switch (state.phase) {
-          BattlePhase.intro => BattleIntro(
-            selectedDifficulty: state.difficulty,
-            onSelectDifficulty: (final d) =>
-                ref.read(battleProvider.notifier).selectDifficulty(d),
-            onStart: () => ref.read(battleProvider.notifier).start(),
-          ),
-          BattlePhase.active => _ActiveBattle(state: state),
-          BattlePhase.results => BattleResultsView(
-            state: state,
-            onPlayAgain: () {
-              ref.read(battleProvider.notifier).reset();
-            },
-            onDone: () {
-              ref.read(battleProvider.notifier).reset();
-              Navigator.of(context).pop();
-            },
-          ),
+    // Joined the frame 2026-08-01 (§4.4 batch 2). `fill`, because a battle is
+    // one screenful with a timer at the top and the rating row pinned at the
+    // bottom — never a scroll. The close control it used to carry was really
+    // two facts: a way back (the frame's, now) and a refusal to leave a battle
+    // in progress (the screen's, declared once for the chevron and the system
+    // back alike).
+    return PopGuard(
+      blocked: state.phase == BattlePhase.active,
+      confirm: (final context) => _confirmForfeit(context, ref),
+      child: AppScreen.fill(
+        title: switch (state.phase) {
+          BattlePhase.intro => 'Battle',
+          BattlePhase.active => 'Score: ${state.score}',
+          BattlePhase.results => 'Results',
         },
+        child: Padding(
+          padding: EdgeInsets.only(bottom: AppScreen.bottomInsetOf(context)),
+          child: switch (state.phase) {
+            BattlePhase.intro => BattleIntro(
+              selectedDifficulty: state.difficulty,
+              onSelectDifficulty: (final d) =>
+                  ref.read(battleProvider.notifier).selectDifficulty(d),
+              onStart: () => ref.read(battleProvider.notifier).start(),
+            ),
+            BattlePhase.active => _ActiveBattle(state: state),
+            BattlePhase.results => BattleResultsView(
+              state: state,
+              onPlayAgain: () {
+                ref.read(battleProvider.notifier).reset();
+              },
+              onDone: () {
+                ref.read(battleProvider.notifier).reset();
+                Navigator.of(context).pop();
+              },
+            ),
+          },
+        ),
       ),
     );
   }
 }
 
-Future<void> _handleClose(
+/// The price of leaving mid-battle, asked once and answered for every way out.
+Future<bool> _confirmForfeit(
   final BuildContext context,
   final WidgetRef ref,
-  final BattleState state,
 ) async {
-  if (state.phase == BattlePhase.active) {
-    final confirmed = await showAppDialog<bool>(
-      context: context,
-      builder: (final ctx) => AlertDialog(
-        title: const Text('Forfeit battle?'),
-        content: const Text('Your current score will be lost.'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('Continue'),
+  final confirmed = await showAppDialog<bool>(
+    context: context,
+    builder: (final ctx) => AlertDialog(
+      title: const Text('Forfeit battle?'),
+      content: const Text('Your current score will be lost.'),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(ctx, false),
+          child: const Text('Continue'),
+        ),
+        TextButton(
+          onPressed: () => Navigator.pop(ctx, true),
+          child: Text(
+            'Forfeit',
+            style: TextStyle(color: AppSemanticTheme.of(context).actionAgain),
           ),
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, true),
-            child: Text(
-              'Forfeit',
-              style: TextStyle(color: AppSemanticTheme.of(context).actionAgain),
-            ),
-          ),
-        ],
-      ),
-    );
-    if (confirmed != true) return;
-  }
-  if (context.mounted) {
-    ref.read(battleProvider.notifier).reset();
-    Navigator.of(context).pop();
-  }
+        ),
+      ],
+    ),
+  );
+  if (confirmed != true) return false;
+  ref.read(battleProvider.notifier).reset();
+  return true;
 }
 
 class _ActiveBattle extends ConsumerWidget {

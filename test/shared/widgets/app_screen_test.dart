@@ -195,6 +195,110 @@ void main() {
       ));
     });
 
+    testWidgets('the frame asks the route to pop, so a guarded screen can '
+        'refuse — from the chevron and from the system back alike', (
+      final tester,
+    ) async {
+      final navigator = GlobalKey<NavigatorState>();
+      var asked = 0;
+      await tester.pumpWidget(
+        MaterialApp(
+          navigatorKey: navigator,
+          home: const AppScreen(title: 'Root', children: [Text('root')]),
+        ),
+      );
+      unawaited(
+        navigator.currentState!.push(
+          MaterialPageRoute<void>(
+            builder: (_) => PopGuard(
+              blocked: true,
+              confirm: (_) async {
+                asked++;
+                return false;
+              },
+              child: const AppScreen(
+                title: 'Guarded',
+                children: [Text('guarded')],
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // The chevron used to call `GoRouter.pop` unconditionally, which no
+      // screen could refuse — so a screen with unsaved state had to hide the
+      // frame's back and hand-roll its own close. The frame now *asks*
+      // (`Navigator.maybePop`), which is the same question the OS back gesture
+      // asks, so one declaration answers both.
+      await tester.tap(find.bySemanticsLabel('Back'));
+      await tester.pumpAndSettle();
+      expect(asked, 1);
+      expect(find.text('guarded'), findsOneWidget);
+
+      unawaited(navigator.currentState!.maybePop());
+      await tester.pumpAndSettle();
+      expect(asked, 2);
+      expect(find.text('guarded'), findsOneWidget);
+    });
+
+    testWidgets('a guard that consents lets the pop through', (
+      final tester,
+    ) async {
+      final navigator = GlobalKey<NavigatorState>();
+      await tester.pumpWidget(
+        MaterialApp(
+          navigatorKey: navigator,
+          home: const AppScreen(title: 'Root', children: [Text('root')]),
+        ),
+      );
+      unawaited(
+        navigator.currentState!.push(
+          MaterialPageRoute<void>(
+            builder: (_) => PopGuard(
+              blocked: true,
+              confirm: (_) async => true,
+              child: const AppScreen(
+                title: 'Guarded',
+                children: [Text('guarded')],
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.bySemanticsLabel('Back'));
+      await tester.pumpAndSettle();
+      expect(find.text('guarded'), findsNothing);
+      expect(find.text('root'), findsOneWidget);
+    });
+
+    testWidgets('an unguarded screen pops on the first tap', (
+      final tester,
+    ) async {
+      final navigator = GlobalKey<NavigatorState>();
+      await tester.pumpWidget(
+        MaterialApp(
+          navigatorKey: navigator,
+          home: const AppScreen(title: 'Root', children: [Text('root')]),
+        ),
+      );
+      unawaited(
+        navigator.currentState!.push(
+          MaterialPageRoute<void>(
+            builder: (_) =>
+                const AppScreen(title: 'Detail', children: [Text('detail')]),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.bySemanticsLabel('Back'));
+      await tester.pumpAndSettle();
+      expect(find.text('detail'), findsNothing);
+    });
+
     testWidgets('renders no FAB when a screen supplies none', (
       final tester,
     ) async {

@@ -1,7 +1,6 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-import 'package:go_router/go_router.dart';
 
 import 'package:breakdex/core/design/icons.dart';
 import 'package:breakdex/core/design/layout.dart';
@@ -300,6 +299,13 @@ class _HeaderBand extends StatelessWidget {
 /// twice — and the two would drift the first time a route was renamed. It
 /// occupies [AppLayout.backSlot] square so the target clears the touch floor
 /// while the glyph stays on the gutter line the crumbs start from.
+///
+/// It **asks** the route to pop rather than popping it. `Navigator.maybePop` is
+/// the same question the system back gesture asks, so a screen that must refuse
+/// — unsaved edits, a battle in progress — declares that once with a [PopGuard]
+/// and both entry points honour it. The alternative was the state this replaces:
+/// a screen that could not trust the frame's back hid it and hand-rolled a close
+/// control, which is exactly how bespoke chrome grows back.
 class _BackAffordance extends StatelessWidget {
   const _BackAffordance({required this.identifier});
 
@@ -314,14 +320,7 @@ class _BackAffordance extends StatelessWidget {
       button: true,
       child: GestureDetector(
         behavior: HitTestBehavior.opaque,
-        onTap: () {
-          final router = GoRouter.maybeOf(context);
-          if (router == null) {
-            unawaited(Navigator.maybePop(context));
-          } else {
-            router.pop();
-          }
-        },
+        onTap: () => unawaited(Navigator.maybePop(context)),
         child: SizedBox.square(
           dimension: AppLayout.backSlot,
           child: Align(
@@ -336,6 +335,56 @@ class _BackAffordance extends StatelessWidget {
       ),
     );
   }
+}
+
+/// How a screen with state it would lose refuses a pop.
+///
+/// The refusal is a fact about the *screen*, so the screen declares it; the
+/// frame keeps one back affordance and never learns which screens are special.
+/// [blocked] says a pop would cost something right now; [confirm] asks the
+/// person and returns whether to leave anyway. Both the frame's chevron and the
+/// system back gesture route through the same declaration, because both go
+/// through `Navigator.maybePop`.
+class PopGuard extends StatefulWidget {
+  const PopGuard({
+    super.key,
+    required this.blocked,
+    required this.confirm,
+    required this.child,
+  });
+
+  /// True while leaving would discard something the person cannot get back.
+  final bool blocked;
+
+  /// Asks whether to leave anyway. Returning false keeps the screen.
+  final Future<bool> Function(BuildContext context) confirm;
+
+  final Widget child;
+
+  @override
+  State<PopGuard> createState() => _PopGuardState();
+}
+
+class _PopGuardState extends State<PopGuard> {
+  /// Two back taps while the dialog is up must not queue two confirms.
+  bool _asking = false;
+
+  @override
+  Widget build(final BuildContext context) => PopScope<Object?>(
+    canPop: !widget.blocked,
+    onPopInvokedWithResult: (final didPop, final _) async {
+      if (didPop || _asking) return;
+      _asking = true;
+      // Captured before the await: after it, this context may be gone.
+      final navigator = Navigator.of(context);
+      final leave = await widget.confirm(context);
+      _asking = false;
+      // `Navigator.pop` does not consult the guard, which is what makes the
+      // consented exit possible while `canPop` is still false.
+      if (leave && mounted) navigator.pop();
+    },
+    child: widget.child,
+  );
 }
 
 /// A titled group inside a content band.

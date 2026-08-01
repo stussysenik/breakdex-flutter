@@ -72,6 +72,18 @@ const _onFrame = <String, String>{
       'default form under a saving veil; rename moved title → action',
   'lib/features/dev/sync_cutover_panel.dart':
       'default form — a dev surface is still a screen',
+
+  // Joined 2026-08-01 (§4.4 batch 2), once the frame stopped popping and
+  // started asking: the chevron calls `Navigator.maybePop`, so a screen with
+  // state to lose declares one `PopGuard` and the same refusal covers the
+  // system back gesture. Battle's close was never a layout problem.
+  'lib/features/battle/battle_screen.dart':
+      'fill form — one screenful, timer above and rating row below; guarded '
+      'while a battle is active',
+  'lib/core/navigation/app_router.dart':
+      'default form — the web degradation for /video-editor is a screen, and '
+      'its empty AppBar was only ever a way back; the redirect surface stopped '
+      'building a Scaffold, because a frame between two routes is not a screen',
 };
 
 /// Surfaces with **no** bands at all, on purpose. Frameless is not an exemption
@@ -89,14 +101,31 @@ const _frameless = <String, String>{
   'lib/features/auth/appwrite_login_screen.dart':
       'the door, not a room: pre-auth, outside the shell, with no crumb address '
       'to show and nowhere to go back to.',
+
+  // Ruled 2026-08-01 (§4.4 batch 2). One question settled five of these: is
+  // this a *screen* — something with an address, a title, and a way back — or
+  // a surface the media itself owns? Playback is the media; the frame's bands
+  // would sit on top of the thing being watched.
+  'lib/shared/widgets/quick_video_viewer.dart':
+      'full-bleed playback: black surround by design, dismissed by tapping the '
+      'video it is showing, and it has no address to put in a crumb.',
+  'lib/shared/widgets/video_player_widget.dart':
+      'the fullscreen playback route the player pushes for itself; same ruling '
+      'as the quick viewer, and it lives inside the player it belongs to.',
+  'lib/shared/widgets/metadata_video_picker_sheet.dart':
+      'a sheet, not a screen — bounded by the §3 measure `showAppSheet` owns. '
+      'Its Scaffold is the sheet body, which is why it has no bar.',
+  'lib/dev/preview_harness.dart':
+      'the harness renders other screens, so its Scaffold is the wall the '
+      'picture hangs on. Bands here would be a second frame over the framed.',
+  'lib/main.dart':
+      'the boot-failure surface: it exists precisely when the app did not, so '
+      'there is no shell, no router and no frame to build it from.',
 };
 
 /// Still bespoke. The remaining §4.4 roster, one line each saying what has to
 /// be decided — not what has to be typed. Every line here is a ruling owed.
 const _awaitingRuling = <String, String>{
-  'lib/features/battle/battle_screen.dart':
-      'close is a forfeit confirm, and the frame\'s back pops unconditionally; '
-      'ruling owed on how a screen with unsaved state refuses a pop.',
   'lib/features/instax_viewer/instax_viewer_screen.dart':
       'media chrome (AppMediaChrome, dark on purpose) with a real AppBar — '
       'either frameless without that bar, or on the frame in dark chrome.',
@@ -104,18 +133,6 @@ const _awaitingRuling = <String, String>{
       'editor shell: a switcher plus a FAB over two full-bleed editor views.',
   'lib/features/video_editor/simplified_video_editor_screen.dart':
       'full-bleed editing surface with a transparent bar over the video.',
-  'lib/shared/widgets/quick_video_viewer.dart':
-      'black full-bleed viewer; almost certainly frameless, needs the reason.',
-  'lib/shared/widgets/video_player_widget.dart':
-      'fullscreen playback route inside a widget file; likely frameless.',
-  'lib/shared/widgets/metadata_video_picker_sheet.dart':
-      'a sheet, not a screen — the §3 dialog ruling probably applies verbatim.',
-  'lib/dev/preview_harness.dart':
-      'the harness renders other screens; its Scaffold may be the harness '
-      'itself rather than a screen, which is a different thing again.',
-  'lib/core/navigation/app_router.dart':
-      'the router\'s own loading and error routes; small, but still screens.',
-  'lib/main.dart': 'the boot-failure surface, before any of this exists.',
 };
 
 /// The frame itself. Two files, and the whole point is that it is two.

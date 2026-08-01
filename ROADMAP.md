@@ -94,11 +94,24 @@
   `create_combo_screen` (its *tappable title* renamed the combo — the frame renders titles as
   text, so the rename became an action), `sync_cutover_panel`. Gate: analyzer 0/0,
   **1382 pass / 3 skip / 0 fail**.
-  **Next unticked: 4.4 batch 2** — ten files, each with its ruling already written in
-  `_awaitingRuling`. The one that generalizes: battle's close is a forfeit confirm and the
-  frame's back calls `GoRouter.pop` unconditionally, so the ruling owed is how *any* screen
-  with unsaved state refuses a pop — not a battle-specific patch. How any of it *looks* is
-  still owner-gated.
+  **§4.4 batch 2 landed 2026-08-01 — the frame stopped popping and started asking.** The
+  chevron called `GoRouter.pop` unconditionally, so a screen with state to lose could not
+  trust it and hand-rolled a close instead — that is how bespoke chrome grows back. It now
+  calls `Navigator.maybePop`, the same question the system back gesture asks, and a screen
+  refuses by declaring one `PopGuard(blocked:, confirm:)`: the refusal is a fact about the
+  screen, stated once, honoured by both ways out. Red-first at three points (chevron refused,
+  `maybePop` refused, consent lets it through). `battle_screen` is the first user and joined
+  the frame; `app_router` joined too (its `/video-editor` web degradation is a screen whose
+  empty `AppBar` was only ever a way back, and a deep-link has nothing to pop to, so the way
+  out is now an action; its redirect surface stopped building a `Scaffold` — a frame between
+  two routes is not a screen). Five ruled frameless by one question — is this a screen, or a
+  surface the media owns: `quick_video_viewer`, `video_player_widget`'s fullscreen route,
+  `metadata_video_picker_sheet`, `preview_harness`, `main.dart`. Gate: analyzer 0/0,
+  **1392 pass / 3 skip / 0 fail**.
+  **Next unticked: 4.4 batch 3** — `_awaitingRuling` is down to **three**: instax and the two
+  video editors, all three the same open question of what chrome a full-bleed editing surface
+  gets, plus the drill-session extraction tracked in `_frameless`. Emptying that table ticks
+  4.4 and 4.5 together. How any of it *looks* is still owner-gated.
 - **Change (prior, 2026-07-29 · product finish):** `redesign-visual-first-experience`
   — **6.4 DONE 2026-07-29.** `openspec/changes/add-icon-system-and-packs` Phase 4 closed:
   `AppIcon` enum with 78 semantic names, material + lucide packs, conformance gate with

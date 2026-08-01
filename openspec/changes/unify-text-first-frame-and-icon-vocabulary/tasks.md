@@ -193,6 +193,32 @@ unreliable; it is honestly reporting a box that something else paints over.
       surface, and the drill-session extraction.
       Gate: analyzer 0 errors / 0 warnings, **1382 pass / 3 skip / 0 fail** (+7 cases: 5 new
       roster rows, the frameless bound, the closure). How any of it *looks* is owner-gated.
+      **Batch 2 landed 2026-08-01 — the pop ruling, and seven more files ruled.** The one that
+      generalized: **the frame no longer pops, it asks.** The chevron called `GoRouter.pop`
+      unconditionally, so a screen with state to lose could not trust it and hid it behind a
+      hand-rolled close — which is how bespoke chrome grows back. It now calls
+      `Navigator.maybePop`, the same question the system back gesture asks, and a screen
+      refuses by declaring one `PopGuard(blocked:, confirm:)` — so the refusal is a fact about
+      the *screen*, stated once, honoured by both ways out. Proved red-first: a guarded screen
+      survives the chevron **and** `maybePop`, a consenting guard lets the pop through, an
+      unguarded screen still pops on the first tap. `battle_screen` is the first user (blocked
+      while `phase == active`, confirm = the forfeit dialog, which resets before consenting);
+      its `AppBar` and its `_handleClose` are gone, and its conditional title became the
+      frame's (`Battle` / `Score: n` / `Results`).
+      `app_router` joined `_onFrame`: the web `/video-editor` degradation is a screen, its
+      empty `AppBar` was only ever a way back, and a deep-link has nothing to pop to — so the
+      way out is now stated as an action. Its redirect surface stopped building a `Scaffold`
+      at all: a frame between two routes has no address, no title and nothing to leave, so it
+      is not a screen.
+      Five more ruled **frameless** by one question — is this a screen, or a surface the media
+      owns? `quick_video_viewer` and `video_player_widget`'s fullscreen route (playback is the
+      media; bands would sit on top of the thing being watched), `metadata_video_picker_sheet`
+      (a sheet, bounded by §3's measure), `preview_harness` (its Scaffold is the wall, not the
+      picture), `main.dart` (the boot-failure surface exists precisely when the app did not).
+      **`_awaitingRuling` is down to three:** instax and the two video editors — all three the
+      same open question of what chrome a full-bleed editing surface gets — plus the drill-session
+      extraction tracked in `_frameless`. Gate: analyzer 0/0, **1392 pass / 3 skip / 0 fail**
+      (+10). How any of it *looks* is owner-gated.
 - [ ] 4.5 Flip `frame_conformance_test.dart` from an allowlist to a denylist once the remainder
       is small — the guard should fail on a *new* bespoke Scaffold, not merely tolerate old ones.
       **The mechanism landed with 4.4 batch 1** (the closure test). What is left is not a flip

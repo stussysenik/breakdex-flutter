@@ -33,6 +33,7 @@ import 'package:breakdex/features/settings/help/asset_sync_help_screen.dart';
 import 'package:breakdex/features/settings/system_status_screen.dart';
 import 'package:breakdex/features/settings/widgets/color_packs_section.dart';
 import 'package:breakdex/shared/widgets/app_loader.dart';
+import 'package:breakdex/shared/widgets/app_screen.dart';
 import 'package:breakdex/shared/widgets/bottom_nav_shell.dart';
 import 'package:breakdex/shared/widgets/quick_video_viewer.dart';
 import 'package:breakdex/core/models/app_mode.dart';
@@ -317,7 +318,13 @@ class _RedirectToHomeState extends State<_RedirectToHome> {
 
   @override
   Widget build(final BuildContext context) {
-    return const Scaffold(body: Center(child: AppLoader()));
+    // Not a screen: a single frame between one route and the next. It carries
+    // no bands because there is nothing here to address, act on, or leave —
+    // giving it a Scaffold made the router look like a surface author.
+    return ColoredBox(
+      color: Theme.of(context).colorScheme.surface,
+      child: const Center(child: AppLoader()),
+    );
   }
 }
 
@@ -330,40 +337,51 @@ class _EditorUnavailableOnWeb extends StatelessWidget {
   @override
   Widget build(final BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
-    return Scaffold(
-      appBar: AppBar(),
-      body: Center(
-        child: Padding(
-          padding: const EdgeInsets.all(AppSpacing.xl),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              AppIconView(
-                AppIcon.video,
-                size: 48,
-                color: colorScheme.secondary,
-              ),
-              const SizedBox(height: AppSpacing.lg),
-              Text(
-                'Video editing isn’t available on web',
-                style: AppTypography.titleMedium.copyWith(
-                  color: colorScheme.onSurface,
-                ),
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: AppSpacing.sm),
-              Text(
-                'Trim, crop, and speed edits run on the mobile app. Web plays '
-                'videos but can’t edit them.',
-                style: AppTypography.bodySmall.copyWith(
+    // On the frame 2026-08-01 (§4.4 batch 2). Its empty `AppBar` existed for
+    // one reason — a way back — and that is now the frame's job. A deep-link
+    // arrives with nothing to pop to, so the way out is stated as an action
+    // rather than left to a chevron that may not be there.
+    return AppScreen(
+      title: 'Video editor',
+      children: [
+        Center(
+          child: Padding(
+            padding: const EdgeInsets.all(AppSpacing.xl),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                AppIconView(
+                  AppIcon.video,
+                  size: 48,
                   color: colorScheme.secondary,
                 ),
-                textAlign: TextAlign.center,
-              ),
-            ],
+                const SizedBox(height: AppSpacing.lg),
+                Text(
+                  'Video editing isn’t available on web',
+                  style: AppTypography.titleMedium.copyWith(
+                    color: colorScheme.onSurface,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: AppSpacing.sm),
+                Text(
+                  'Trim, crop, and speed edits run on the mobile app. Web '
+                  'plays videos but can’t edit them.',
+                  style: AppTypography.bodySmall.copyWith(
+                    color: colorScheme.secondary,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: AppSpacing.lg),
+                TextButton(
+                  onPressed: () => context.go('/breakdex'),
+                  child: const Text('Go to Breakdex'),
+                ),
+              ],
+            ),
           ),
         ),
-      ),
+      ],
     );
   }
 }
