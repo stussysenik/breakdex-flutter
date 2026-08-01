@@ -142,6 +142,12 @@ abstract class AppLocalizations {
   /// **'Settings'**
   String get navSettings;
 
+  /// Add screen section label above the content-type choices.
+  ///
+  /// In en, this message translates to:
+  /// **'Create'**
+  String get addSectionCreate;
+
   /// Add screen large app-bar title.
   ///
   /// In en, this message translates to:

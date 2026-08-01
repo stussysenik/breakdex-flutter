@@ -51,10 +51,12 @@ void main() {
   });
 
   group('IconPackId', () {
-    test('fromKey returns material for unknown keys', () {
-      expect(IconPackId.fromKey(null), IconPackId.material);
-      expect(IconPackId.fromKey(''), IconPackId.material);
-      expect(IconPackId.fromKey('nonexistent'), IconPackId.material);
+    test('fromKey falls back to the default pack for unknown keys', () {
+      // Cupertino is the default: Flutter bundles CupertinoIcons as a font, so
+      // every platform gets the same glyphs rather than the host's.
+      expect(IconPackId.fromKey(null), IconPackId.cupertino);
+      expect(IconPackId.fromKey(''), IconPackId.cupertino);
+      expect(IconPackId.fromKey('nonexistent'), IconPackId.cupertino);
     });
 
     test('fromKey returns lucide for lucide key', () {

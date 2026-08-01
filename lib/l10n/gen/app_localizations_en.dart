@@ -44,6 +44,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get navSettings => 'Settings';
 
   @override
+  String get addSectionCreate => 'Create';
+
+  @override
   String get addContentTitle => 'Add Content';
 
   @override

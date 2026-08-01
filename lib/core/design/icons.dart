@@ -1,3 +1,4 @@
+import 'package:flutter/cupertino.dart' show CupertinoIcons;
 import 'package:flutter/material.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 
@@ -100,6 +101,15 @@ enum AppIcon {
   glance,
   scan,
   study,
+
+  // ── Places ──────────────────────────────────────────────────────────────
+  /// The catalogue itself — the index of everything you know. A book, not a
+  /// grid: the grid described the *layout* of the screen, which stops being
+  /// true the moment the screen changes shape.
+  library,
+
+  /// Where practice happens. The training floor, not the act of studying.
+  dojo,
 }
 
 /// An icon pack resolves every [AppIcon] to an [IconData].
@@ -213,6 +223,10 @@ final class MaterialPack implements IconPack {
     AppIcon.glance => Icons.view_agenda_rounded,
     AppIcon.scan => Icons.grid_view_rounded,
     AppIcon.study => Icons.layers_rounded,
+
+    // Places
+    AppIcon.library => Icons.menu_book_rounded,
+    AppIcon.dojo => Icons.self_improvement,
   };
 }
 
@@ -317,6 +331,128 @@ final class LucidePack implements IconPack {
     AppIcon.glance => LucideIcons.eye,
     AppIcon.scan => LucideIcons.scanLine,
     AppIcon.study => LucideIcons.bookOpen,
+
+    // Places
+    AppIcon.library => LucideIcons.book,
+    AppIcon.dojo => LucideIcons.swords,
+  };
+}
+
+/// Apple's Cupertino (SF-derived) pack — the **default**.
+///
+/// Shipped as the default so the icon vocabulary is identical on Android and
+/// web, not just on iOS. Flutter bundles `CupertinoIcons` as a font asset, so
+/// these glyphs render the same on every platform rather than deferring to a
+/// host icon set — that platform-independence is the whole reason this is the
+/// default pack rather than an iOS-only branch.
+///
+/// A handful of semantic names have no Cupertino glyph (`videoOff` has no
+/// slashed camera). Those resolve to the nearest honest analogue and are noted
+/// inline; a wrong-but-close glyph beats a missing one, and the collapse is
+/// recorded rather than hidden.
+final class CupertinoPack implements IconPack {
+  @override
+  IconData resolve(final AppIcon icon) => switch (icon) {
+    // Navigation
+    AppIcon.back => CupertinoIcons.chevron_back,
+    AppIcon.forward => CupertinoIcons.chevron_forward,
+    AppIcon.close => CupertinoIcons.xmark,
+    AppIcon.menu => CupertinoIcons.line_horizontal_3,
+    AppIcon.expandMore => CupertinoIcons.chevron_down,
+    AppIcon.expandLess => CupertinoIcons.chevron_up,
+    AppIcon.search => CupertinoIcons.search,
+    AppIcon.more => CupertinoIcons.ellipsis,
+    AppIcon.settings => CupertinoIcons.gear,
+    AppIcon.filter => CupertinoIcons.line_horizontal_3_decrease,
+    AppIcon.up => CupertinoIcons.arrow_up,
+    AppIcon.down => CupertinoIcons.arrow_down,
+    AppIcon.forwardIos => CupertinoIcons.chevron_right,
+    AppIcon.backIos => CupertinoIcons.chevron_left,
+
+    // Actions
+    AppIcon.add => CupertinoIcons.plus,
+    AppIcon.delete => CupertinoIcons.trash,
+    AppIcon.edit => CupertinoIcons.pencil,
+    AppIcon.save => CupertinoIcons.tray_arrow_down,
+    AppIcon.share => CupertinoIcons.share,
+    AppIcon.check => CupertinoIcons.checkmark,
+    AppIcon.copy => CupertinoIcons.doc_on_doc,
+    AppIcon.refresh => CupertinoIcons.arrow_clockwise,
+    AppIcon.download => CupertinoIcons.cloud_download,
+    AppIcon.upload => CupertinoIcons.cloud_upload,
+    AppIcon.remove => CupertinoIcons.minus,
+    AppIcon.link => CupertinoIcons.link,
+
+    // Video / Media
+    AppIcon.video => CupertinoIcons.videocam,
+    // No slashed-camera glyph in Cupertino; `nosign` reads as "not recording".
+    AppIcon.videoOff => CupertinoIcons.nosign,
+    AppIcon.play => CupertinoIcons.play_fill,
+    AppIcon.pause => CupertinoIcons.pause_fill,
+    AppIcon.skip => CupertinoIcons.forward_end_fill,
+    AppIcon.replay => CupertinoIcons.arrow_counterclockwise,
+    AppIcon.repeat => CupertinoIcons.repeat,
+    AppIcon.shuffle => CupertinoIcons.shuffle,
+    AppIcon.volume => CupertinoIcons.speaker_2_fill,
+    AppIcon.volumeOff => CupertinoIcons.speaker_slash_fill,
+    AppIcon.music => CupertinoIcons.music_note,
+    AppIcon.photo => CupertinoIcons.photo,
+    AppIcon.camera => CupertinoIcons.camera,
+
+    // Review / Learning
+    AppIcon.star => CupertinoIcons.star_fill,
+    AppIcon.schedule => CupertinoIcons.clock,
+    AppIcon.calendar => CupertinoIcons.calendar,
+    AppIcon.timer => CupertinoIcons.timer,
+    AppIcon.school => CupertinoIcons.book,
+    AppIcon.celebration => CupertinoIcons.sparkles,
+    AppIcon.flashcard => CupertinoIcons.square_stack_3d_up,
+    AppIcon.rate => CupertinoIcons.hand_thumbsup,
+
+    // Status
+    AppIcon.error => CupertinoIcons.exclamationmark_circle,
+    AppIcon.warning => CupertinoIcons.exclamationmark_triangle,
+    AppIcon.info => CupertinoIcons.info_circle,
+    AppIcon.help => CupertinoIcons.question_circle,
+    AppIcon.success => CupertinoIcons.checkmark_circle_fill,
+    AppIcon.empty => CupertinoIcons.tray,
+    AppIcon.cloud => CupertinoIcons.cloud,
+    AppIcon.cloudDone => CupertinoIcons.cloud_fill,
+
+    // Sync / Storage
+    AppIcon.sync => CupertinoIcons.arrow_2_circlepath,
+    AppIcon.storage => CupertinoIcons.tray_full,
+    AppIcon.folder => CupertinoIcons.folder,
+    AppIcon.trash => CupertinoIcons.trash,
+    AppIcon.restore => CupertinoIcons.arrow_uturn_left,
+    AppIcon.drive => CupertinoIcons.archivebox,
+
+    // Content / Lab
+    AppIcon.lab => CupertinoIcons.lab_flask,
+    AppIcon.move => CupertinoIcons.person_alt,
+    AppIcon.combo => CupertinoIcons.list_bullet,
+    AppIcon.graph => CupertinoIcons.chart_bar,
+    AppIcon.timeline => CupertinoIcons.waveform_path,
+    AppIcon.insight => CupertinoIcons.lightbulb,
+    AppIcon.achievement => CupertinoIcons.rosette,
+    AppIcon.discover => CupertinoIcons.compass,
+    AppIcon.notes => CupertinoIcons.doc_text,
+
+    // Layout
+    AppIcon.grid => CupertinoIcons.square_grid_2x2,
+    AppIcon.list => CupertinoIcons.list_bullet,
+    AppIcon.sort => CupertinoIcons.arrow_up_arrow_down,
+    AppIcon.fullscreen => CupertinoIcons.fullscreen,
+    AppIcon.fullscreenExit => CupertinoIcons.fullscreen_exit,
+    AppIcon.glance => CupertinoIcons.rectangle_grid_1x2,
+    AppIcon.scan => CupertinoIcons.viewfinder,
+    AppIcon.study => CupertinoIcons.square_stack,
+
+    // Places
+    AppIcon.library => CupertinoIcons.book,
+    // The training floor. `sportscourt` is the only Cupertino glyph that means
+    // a place you practise in rather than an activity you perform.
+    AppIcon.dojo => CupertinoIcons.sportscourt,
   };
 }
 
@@ -325,17 +461,22 @@ final class LucidePack implements IconPack {
 /// Stored as a string key in SharedPreferences (`icon_pack`). The `fromKey`
 /// factory tolerates unknown values so removing a pack never bricks a client.
 enum IconPackId {
+  cupertino,
   material,
   lucide;
 
+  /// Unknown and absent keys both fall to [cupertino] — the default pack, so a
+  /// client that has never chosen one gets the same vocabulary on every OS.
   static IconPackId fromKey(final String? key) => switch (key) {
     'lucide' => IconPackId.lucide,
-    _ => IconPackId.material,
+    'material' => IconPackId.material,
+    _ => IconPackId.cupertino,
   };
 
   String get key => name;
 
   IconPack build() => switch (this) {
+    IconPackId.cupertino => CupertinoPack(),
     IconPackId.material => MaterialPack(),
     IconPackId.lucide => LucidePack(),
   };

@@ -36,6 +36,17 @@ abstract final class AppLayout {
   /// between screens is the exact discontinuity this file exists to remove.
   static const double headerHeight = 72;
 
+  /// Height of the address line that sits above the title inside band 2.
+  ///
+  /// The `caption` line box. It lives *inside* [headerHeight] — the band does
+  /// not grow to accommodate it, because a header that changes height between
+  /// screens is the discontinuity this file exists to remove. 16 + 4 + 36 = 56
+  /// centred in 72 leaves 8/8, still on the block grid.
+  static const double crumbHeight = 16;
+
+  /// Gap between the address line and the title baseline.
+  static const double crumbGap = 4;
+
   /// Gap between the header band and the first content pixel.
   ///
   /// Content therefore always begins at `headerHeight + contentTopGap` = 80

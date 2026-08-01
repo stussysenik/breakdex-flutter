@@ -43,11 +43,22 @@ const categoryPresetColors = [
   AppColors.darkSecondary,
 ];
 
+/// The shipped vocabulary of the form, in the owner's canonical order.
+///
+/// Order is meaning, not alphabetics: it runs the way a set is built — power
+/// and footwork first because that is what most people log, freezes and go
+/// downs next, then the connective tissue (toprock, transitions), then the
+/// competitive register (burns, blow ups) last. Reordering this list changes
+/// what the app teaches a new user to think about first.
 const _defaultCategories = [
   Category(name: 'Power Moves', colorValue: 0xFFDA1E28, isDefault: true),
   Category(name: 'Footwork', colorValue: 0xFF2362A2, isDefault: true),
   Category(name: 'Freezes', colorValue: 0xFF8A3FFC, isDefault: false),
+  Category(name: 'Go Downs', colorValue: 0xFF009D9A, isDefault: false),
   Category(name: 'Toprock', colorValue: 0xFF42BE65, isDefault: false),
+  Category(name: 'Transitions', colorValue: 0xFFFF832B, isDefault: false),
+  Category(name: 'Burns', colorValue: 0xFFD12771, isDefault: false),
+  Category(name: 'Blow Ups', colorValue: 0xFFF1C21B, isDefault: false),
 ];
 
 final categoriesProvider =

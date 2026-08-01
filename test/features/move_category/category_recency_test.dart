@@ -183,7 +183,9 @@ void main() {
 
     // Toprock holds nothing: still on screen, and at the bottom.
     expect(renderedOrder(tester), ['Freezes', 'Power', 'Toprock']);
-    // Uncategorized is empty too, so the copy appears on both tiles.
-    expect(find.text('Nothing here yet'), findsNWidgets(2));
+    // Uncategorized is not a category the user made — it is a holding pen, so
+    // it renders only while it holds something. A named category always
+    // renders, empty or not.
+    expect(find.text('Nothing here yet'), findsOneWidget);
   });
 }

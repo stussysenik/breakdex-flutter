@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import 'package:breakdex/core/design/layout.dart';
 import 'package:breakdex/core/design/typography.dart';
+import 'package:breakdex/shared/widgets/app_breadcrumb.dart';
 
 /// The one screen frame. Every top-level surface is built from this.
 ///
@@ -152,19 +153,27 @@ class _HeaderBand extends StatelessWidget {
           constraints: BoxConstraints(maxWidth: maxWidth),
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: AppLayout.gutter),
-            child: Row(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                Expanded(
-                  child: Text(
-                    title,
-                    style: AppTypography.titleLarge.copyWith(
-                      color: colorScheme.onSurface,
+                const AppBreadcrumb(),
+                const SizedBox(height: AppLayout.crumbGap),
+                Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        title,
+                        style: AppTypography.titleLarge.copyWith(
+                          color: colorScheme.onSurface,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
                     ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
+                    ...actions,
+                  ],
                 ),
-                ...actions,
               ],
             ),
           ),

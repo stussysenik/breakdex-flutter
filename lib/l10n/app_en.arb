@@ -38,6 +38,8 @@
   "navSettings": "Settings",
   "@navSettings": { "description": "Bottom-nav tab: settings." },
 
+  "addSectionCreate": "Create",
+  "@addSectionCreate": { "description": "Add screen section label above the content-type choices." },
   "addContentTitle": "Add Content",
   "@addContentTitle": { "description": "Add screen large app-bar title." },
   "fieldNameLabel": "NAME",

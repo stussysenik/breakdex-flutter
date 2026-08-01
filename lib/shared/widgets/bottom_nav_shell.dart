@@ -121,7 +121,7 @@ class BottomNavShell extends ConsumerWidget {
                 BottomNavigationBarItem(
                   icon: Semantics(
                     identifier: 'breakdex-tab',
-                    child: const AppIconView(AppIcon.grid),
+                    child: const AppIconView(AppIcon.library),
                   ),
                   label: l10n.navBreakdex,
                 ),
@@ -140,7 +140,7 @@ class BottomNavShell extends ConsumerWidget {
                         final appMode = ref.watch(appModeProvider);
                         return AppIconView(
                           appMode == AppMode.anki
-                              ? AppIcon.study
+                              ? AppIcon.dojo
                               : AppIcon.celebration,
                         );
                       },

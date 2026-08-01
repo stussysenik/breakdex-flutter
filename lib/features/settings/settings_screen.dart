@@ -35,6 +35,7 @@ import 'package:breakdex/features/settings/widgets/review_fill_color_section.dar
 import 'package:breakdex/features/settings/widgets/review_states_section.dart';
 import 'package:breakdex/core/services/stats_export_service.dart';
 import 'package:breakdex/shared/widgets/app_loader.dart';
+import 'package:breakdex/shared/widgets/app_row.dart';
 import 'package:breakdex/shared/widgets/state_pill.dart';
 import 'package:breakdex/features/flashcard_review/widgets/rating_button_row.dart';
 import 'package:breakdex/shared/widgets/action_tile.dart';
@@ -135,7 +136,7 @@ class SettingsScreen extends ConsumerWidget {
                 children: [
                   _SettingsPanel(
                     title: l10n.setPanelAppMode,
-                    child: _SegmentedPicker<AppMode>(
+                    child: AppChoiceList<AppMode>(
                       values: AppMode.values,
                       selected: ref.watch(appModeProvider),
                       labelOf: (final m) => m.displayName,
@@ -182,7 +183,7 @@ class SettingsScreen extends ConsumerWidget {
                   const SizedBox(height: AppSpacing.md),
                   _SettingsPanel(
                     title: l10n.setPanelAddFlow,
-                    child: _SegmentedPicker<AddFlowOrder>(
+                    child: AppChoiceList<AddFlowOrder>(
                       values: AddFlowOrder.values,
                       selected: ref.watch(addFlowOrderProvider),
                       labelOf: (final o) => o.displayName,
@@ -220,7 +221,7 @@ class SettingsScreen extends ConsumerWidget {
                         width: panelWidth,
                         child: _SettingsPanel(
                           title: l10n.setPanelAppTheme,
-                          child: _SegmentedPicker<ThemeSetting>(
+                          child: AppChoiceList<ThemeSetting>(
                             values: ThemeSetting.values,
                             selected: theme,
                             labelOf: (final t) => t.displayName,
@@ -236,7 +237,7 @@ class SettingsScreen extends ConsumerWidget {
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.stretch,
                             children: [
-                              _SegmentedPicker<AccessiblePalette>(
+                              AppChoiceList<AccessiblePalette>(
                                 values: AccessiblePalette.values,
                                 selected: palette,
                                 labelOf: (final p) => p.displayName,
@@ -261,43 +262,12 @@ class SettingsScreen extends ConsumerWidget {
                         width: panelWidth,
                         child: _SettingsPanel(
                           title: l10n.setPanelTypography,
-                          child: Wrap(
-                            spacing: AppSpacing.sm,
-                            runSpacing: AppSpacing.sm,
-                            children: AppFontFamily.values.map((final f) {
-                              final isSelected = f == fontFamily;
-                              return ChoiceChip(
-                                label: Text(f.displayName),
-                                selected: isSelected,
-                                onSelected: (_) => ref
-                                    .read(fontFamilyProvider.notifier)
-                                    .set(f),
-                                selectedColor: colorScheme.primary,
-                                backgroundColor:
-                                    colorScheme.surfaceContainerHighest,
-                                side: BorderSide(
-                                  color: isSelected
-                                      ? colorScheme.primary
-                                      : colorScheme.outline.withValues(
-                                          alpha: 0.45,
-                                        ),
-                                ),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(
-                                    AppRadius.sm,
-                                  ),
-                                ),
-                                labelStyle: AppTypography.caption.copyWith(
-                                  color: isSelected
-                                      ? Colors.white
-                                      : colorScheme.onSurface,
-                                  fontWeight: isSelected
-                                      ? FontWeight.w600
-                                      : FontWeight.w400,
-                                ),
-                                showCheckmark: false,
-                              );
-                            }).toList(),
+                          child: AppChoiceList<AppFontFamily>(
+                            values: AppFontFamily.values,
+                            selected: fontFamily,
+                            labelOf: (final f) => f.displayName,
+                            onChanged: (final f) =>
+                                ref.read(fontFamilyProvider.notifier).set(f),
                           ),
                         ),
                       ),
@@ -486,11 +456,10 @@ class SettingsScreen extends ConsumerWidget {
                   const SizedBox(height: AppSpacing.md),
                   _SettingsPanel(
                     title: l10n.setPanelMoveCaption,
-                    child: _SegmentedPicker<MoveDetailCaption>(
+                    child: AppChoiceList<MoveDetailCaption>(
                       values: MoveDetailCaption.values,
                       selected: ref.watch(moveDetailCaptionProvider),
                       labelOf: (final c) => c.displayName,
-                      fontSize: 11,
                       onChanged: (final c) {
                         HapticFeedback.selectionClick();
                         ref.read(moveDetailCaptionProvider.notifier).set(c);
@@ -1352,77 +1321,6 @@ class _RatingPreviewChip extends StatelessWidget {
   }
 }
 
-/// Generic segmented picker — replaces _ThemePicker and _FontPicker.
-class _SegmentedPicker<T> extends StatelessWidget {
-  const _SegmentedPicker({
-    super.key,
-    required this.values,
-    required this.selected,
-    required this.onChanged,
-    required this.labelOf,
-    this.fontSize,
-  });
-
-  final List<T> values;
-  final T selected;
-  final ValueChanged<T> onChanged;
-  final String Function(T) labelOf;
-  final double? fontSize;
-
-  @override
-  Widget build(final BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
-    return Container(
-      padding: const EdgeInsets.all(4),
-      decoration: BoxDecoration(
-        color: colorScheme.surfaceContainerHighest,
-        borderRadius: BorderRadius.circular(AppRadius.sm),
-      ),
-      child: Row(
-        children: values.map((final v) {
-          final isSelected = v == selected;
-          return Expanded(
-            child: GestureDetector(
-              onTap: () => onChanged(v),
-              child: AnimatedContainer(
-                duration: const Duration(milliseconds: 200),
-                padding: const EdgeInsets.symmetric(vertical: 12),
-                decoration: BoxDecoration(
-                  color: isSelected ? colorScheme.surface : Colors.transparent,
-                  borderRadius: BorderRadius.circular(AppRadius.sm - 2),
-                  boxShadow: isSelected
-                      ? [
-                          BoxShadow(
-                            color: Colors.black.withValues(alpha: 0.08),
-                            blurRadius: 4,
-                            offset: const Offset(0, 1),
-                          ),
-                        ]
-                      : null,
-                ),
-                child: Center(
-                  child: Text(
-                    labelOf(v),
-                    style: AppTypography.bodySmall.copyWith(
-                      color: isSelected
-                          ? colorScheme.onSurface
-                          : colorScheme.secondary,
-                      fontWeight: isSelected
-                          ? FontWeight.w600
-                          : FontWeight.w400,
-                      fontSize: fontSize,
-                    ),
-                    textAlign: TextAlign.center,
-                  ),
-                ),
-              ),
-            ),
-          );
-        }).toList(),
-      ),
-    );
-  }
-}
 
 class _CategoryRow extends StatelessWidget {
   const _CategoryRow({

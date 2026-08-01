@@ -86,27 +86,34 @@ class MoveCategoryScreen extends ConsumerWidget {
                 '/breakdex/moves/${Uri.encodeComponent(cat.name)}',
               ),
             ),
-          const SizedBox(height: AppSpacing.lg),
-          Semantics(
-            header: true,
-            child: Text(
-              'Uncategorized',
-              style: AppTypography.titleSmall.copyWith(
-                color: colorScheme.onSurface,
-                fontWeight: FontWeight.w700,
+          // Uncategorized is a *fallback*, not a category anyone chose. Shown
+          // only while it actually holds something, so a clean library never
+          // advertises an empty bucket — and never orphans moves either, since
+          // the block reappears the moment one lands there. The
+          // `/breakdex/moves/uncategorized` route stays reachable regardless.
+          if (activities.uncategorized.count > 0) ...[
+            const SizedBox(height: AppSpacing.lg),
+            Semantics(
+              header: true,
+              child: Text(
+                'Uncategorized',
+                style: AppTypography.titleSmall.copyWith(
+                  color: colorScheme.onSurface,
+                  fontWeight: FontWeight.w700,
+                ),
               ),
             ),
-          ),
-          const SizedBox(height: AppSpacing.sm),
-          _CategoryTile(
-            category: Category(
-              name: 'Uncategorized',
-              colorValue: colorScheme.secondary.toARGB32(),
-              isDefault: true,
+            const SizedBox(height: AppSpacing.sm),
+            _CategoryTile(
+              category: Category(
+                name: 'Uncategorized',
+                colorValue: colorScheme.secondary.toARGB32(),
+                isDefault: true,
+              ),
+              activity: activities.uncategorized,
+              onTap: () => context.push('/breakdex/moves/uncategorized'),
             ),
-            activity: activities.uncategorized,
-            onTap: () => context.push('/breakdex/moves/uncategorized'),
-          ),
+          ],
         ],
       ),
     );
