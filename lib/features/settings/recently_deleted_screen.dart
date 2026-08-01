@@ -4,15 +4,16 @@ import 'package:flutter/material.dart';
 import 'package:breakdex/core/design/theme.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 
 import 'package:breakdex/core/database/database.dart';
 import 'package:breakdex/core/design/icons.dart';
+import 'package:breakdex/core/design/layout.dart';
 import 'package:breakdex/core/design/spacing.dart';
 import 'package:breakdex/core/design/typography.dart';
 import 'package:breakdex/core/models/move_archive_reason.dart';
 import 'package:breakdex/core/providers.dart';
 import 'package:breakdex/shared/widgets/app_loader.dart';
+import 'package:breakdex/shared/widgets/app_screen.dart';
 import 'package:breakdex/shared/widgets/settings_list_group.dart';
 
 final archivedMovesProvider = StreamProvider<List<Move>>((final ref) {
@@ -34,84 +35,60 @@ class RecentlyDeletedScreen extends ConsumerWidget {
     final archivedMovesAsync = ref.watch(archivedMovesProvider);
     final colorScheme = Theme.of(context).colorScheme;
 
-    return Scaffold(
-      body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.all(AppSpacing.screenEdge),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              GestureDetector(
-                onTap: () => context.pop(),
-                child: Row(
-                  children: [
-                    AppIconView(
-                      AppIcon.back,
-                      color: colorScheme.secondary,
-                      size: 20,
-                    ),
-                    Text(
-                      'Settings',
-                      style: AppTypography.bodyMedium.copyWith(
-                        color: colorScheme.secondary,
+    return AppScreen.fill(
+      title: 'Recently Deleted',
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: AppLayout.gutter),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Moves deleted from Photos stay here for 30 days so you can restore them or remove them permanently.',
+              style: AppTypography.bodySmall.copyWith(
+                color: colorScheme.secondary,
+              ),
+            ),
+            const SizedBox(height: AppSpacing.lg),
+            Expanded(
+              child: archivedMovesAsync.when(
+                data: (final moves) {
+                  if (moves.isEmpty) {
+                    return Center(
+                      child: Text(
+                        'Nothing in Recently Deleted.',
+                        style: AppTypography.bodyMedium.copyWith(
+                          color: colorScheme.secondary,
+                        ),
                       ),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: AppSpacing.lg),
-              Text(
-                'Recently Deleted',
-                style: AppTypography.titleLarge.copyWith(
-                  color: colorScheme.onSurface,
-                ),
-              ),
-              const SizedBox(height: AppSpacing.sm),
-              Text(
-                'Moves deleted from Photos stay here for 30 days so you can restore them or remove them permanently.',
-                style: AppTypography.bodySmall.copyWith(
-                  color: colorScheme.secondary,
-                ),
-              ),
-              const SizedBox(height: AppSpacing.lg),
-              Expanded(
-                child: archivedMovesAsync.when(
-                  data: (final moves) {
-                    if (moves.isEmpty) {
-                      return Center(
-                        child: Text(
-                          'Nothing in Recently Deleted.',
-                          style: AppTypography.bodyMedium.copyWith(
-                            color: colorScheme.secondary,
-                          ),
-                        ),
-                      );
-                    }
-
-                    return ListView(
-                      children: [
-                        SettingsListGroup(
-                          children: [
-                            for (final move in moves)
-                              _ArchivedMoveRow(move: move),
-                          ],
-                        ),
-                      ],
                     );
-                  },
-                  loading: () => const Center(child: AppLoader()),
-                  error: (final error, final stackTrace) => Center(
-                    child: Text(
-                      'Recently Deleted could not be loaded.',
-                      style: AppTypography.bodyMedium.copyWith(
-                        color: colorScheme.secondary,
+                  }
+
+                  return ListView(
+                    padding: EdgeInsets.only(
+                      bottom: AppScreen.bottomInsetOf(context),
+                    ),
+                    children: [
+                      SettingsListGroup(
+                        children: [
+                          for (final move in moves)
+                            _ArchivedMoveRow(move: move),
+                        ],
                       ),
+                    ],
+                  );
+                },
+                loading: () => const Center(child: AppLoader()),
+                error: (final error, final stackTrace) => Center(
+                  child: Text(
+                    'Recently Deleted could not be loaded.',
+                    style: AppTypography.bodyMedium.copyWith(
+                      color: colorScheme.secondary,
                     ),
                   ),
                 ),
               ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );

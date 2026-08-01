@@ -1,14 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 
 import 'package:breakdex/core/design/color_catalogue.dart';
 import 'package:breakdex/core/design/color_packs.dart';
 import 'package:breakdex/core/design/color_roles.dart';
 import 'package:breakdex/core/design/contrast.dart';
+import 'package:breakdex/core/design/layout.dart';
 import 'package:breakdex/core/design/spacing.dart';
 import 'package:breakdex/core/design/theme.dart';
 import 'package:breakdex/core/design/typography.dart';
+import 'package:breakdex/shared/widgets/app_screen.dart';
 import 'package:breakdex/core/design/icons.dart';
 import 'package:breakdex/core/providers.dart';
 import 'package:breakdex/core/services/settings_service.dart';
@@ -30,72 +31,39 @@ class ColorPacksScreen extends ConsumerWidget {
     final overrides = ref.watch(colorRoleOverridesProvider);
     final isOverriding = palette != AccessiblePalette.standard;
 
-    return Scaffold(
-      body: SafeArea(
-        child: ListView(
-          padding: const EdgeInsets.all(AppSpacing.screenEdge),
-          children: [
-            _BackHeader(title: l10n.setColorPacksRouteTitle),
-            const SizedBox(height: AppSpacing.lg),
-            if (isOverriding) _AccessibleOverrideBanner(palette: palette.displayName),
-            Text(
-              l10n.setColorPacksSubtitle,
-              style: AppTypography.bodySmall.copyWith(
-                color: colorScheme.secondary,
-              ),
+    return AppScreen.fill(
+      title: l10n.setColorPacksRouteTitle,
+      backIdentifier: 'color-packs-back',
+      child: ListView(
+        padding: EdgeInsets.fromLTRB(
+          AppLayout.gutter,
+          0,
+          AppLayout.gutter,
+          AppScreen.bottomInsetOf(context),
+        ),
+        children: [
+          if (isOverriding)
+            _AccessibleOverrideBanner(palette: palette.displayName),
+          Text(
+            l10n.setColorPacksSubtitle,
+            style: AppTypography.bodySmall.copyWith(
+              color: colorScheme.secondary,
             ),
-            const SizedBox(height: AppSpacing.lg),
-            _CurrentPackPreview(currentPack: currentPack),
-            const SizedBox(height: AppSpacing.xl),
-            for (final collection in colorCatalogue.collections) ...[
-              _CollectionSection(collection: collection, selected: currentPack),
-              const SizedBox(height: AppSpacing.lg),
-            ],
-            if (overrides.isNotEmpty)
-              _OverridesSection(
-                overrides: overrides,
-                onResetAll: () =>
-                    ref.read(colorRoleOverridesProvider.notifier).clearAll(),
-              ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _BackHeader extends StatelessWidget {
-  const _BackHeader({required this.title});
-
-  final String title;
-
-  @override
-  Widget build(final BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
-    return Semantics(
-      identifier: 'color-packs-back',
-      label: 'Back',
-      button: true,
-      child: GestureDetector(
-        behavior: HitTestBehavior.opaque,
-        onTap: () => context.pop(),
-        child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: AppSpacing.xs),
-          child: Row(
-            children: [
-              AppIconView(AppIcon.back, color: colorScheme.secondary, size: 20),
-              const SizedBox(width: AppSpacing.sm),
-              Expanded(
-                child: Text(
-                  title,
-                  style: AppTypography.titleLarge.copyWith(
-                    color: colorScheme.onSurface,
-                  ),
-                ),
-              ),
-            ],
           ),
-        ),
+          const SizedBox(height: AppSpacing.lg),
+          _CurrentPackPreview(currentPack: currentPack),
+          const SizedBox(height: AppSpacing.xl),
+          for (final collection in colorCatalogue.collections) ...[
+            _CollectionSection(collection: collection, selected: currentPack),
+            const SizedBox(height: AppSpacing.lg),
+          ],
+          if (overrides.isNotEmpty)
+            _OverridesSection(
+              overrides: overrides,
+              onResetAll: () =>
+                  ref.read(colorRoleOverridesProvider.notifier).clearAll(),
+            ),
+        ],
       ),
     );
   }
@@ -115,9 +83,7 @@ class _AccessibleOverrideBanner extends StatelessWidget {
       decoration: BoxDecoration(
         color: colorScheme.tertiaryContainer.withValues(alpha: 0.3),
         borderRadius: BorderRadius.circular(AppRadius.sm),
-        border: Border.all(
-          color: colorScheme.tertiary.withValues(alpha: 0.3),
-        ),
+        border: Border.all(color: colorScheme.tertiary.withValues(alpha: 0.3)),
       ),
       child: Row(
         children: [
@@ -319,9 +285,13 @@ class _PackCard extends ConsumerWidget {
                             height: 16,
                             decoration: BoxDecoration(
                               color: resolved[role],
-                              borderRadius: BorderRadius.circular(AppRadius.xxs),
+                              borderRadius: BorderRadius.circular(
+                                AppRadius.xxs,
+                              ),
                               border: Border.all(
-                                color: colorScheme.outline.withValues(alpha: 0.12),
+                                color: colorScheme.outline.withValues(
+                                  alpha: 0.12,
+                                ),
                               ),
                             ),
                           ),
@@ -331,7 +301,11 @@ class _PackCard extends ConsumerWidget {
                 ),
               ),
               if (isSelected)
-                AppIconView(AppIcon.success, color: colorScheme.primary, size: 22),
+                AppIconView(
+                  AppIcon.success,
+                  color: colorScheme.primary,
+                  size: 22,
+                ),
             ],
           ),
         ),
@@ -341,10 +315,7 @@ class _PackCard extends ConsumerWidget {
 }
 
 class _OverridesSection extends StatelessWidget {
-  const _OverridesSection({
-    required this.overrides,
-    required this.onResetAll,
-  });
+  const _OverridesSection({required this.overrides, required this.onResetAll});
 
   final Map<AppColorRole, Color> overrides;
   final VoidCallback onResetAll;
@@ -377,10 +348,7 @@ class _OverridesSection extends StatelessWidget {
         for (final entry in overrides.entries)
           Padding(
             padding: const EdgeInsets.only(bottom: AppSpacing.sm),
-            child: _OverrideTile(
-              role: entry.key,
-              color: entry.value,
-            ),
+            child: _OverrideTile(role: entry.key, color: entry.value),
           ),
       ],
     );
@@ -399,8 +367,8 @@ class _OverrideTile extends ConsumerWidget {
     final bg = role.kind == AppColorRoleKind.ink
         ? colorScheme.surface
         : role.kind == AppColorRoleKind.signal
-            ? colorScheme.surfaceContainerHighest
-            : colorScheme.surface;
+        ? colorScheme.surfaceContainerHighest
+        : colorScheme.surface;
     final threshold = role.kind == AppColorRoleKind.signal ? 3.0 : 4.5;
     final ratio = contrastRatio(color, bg);
     final passes = ratio >= threshold;
@@ -489,11 +457,12 @@ Future<void> _showOverrideDialog(
   final AppColorRole role,
 ) async {
   final overrides = ref.read(colorRoleOverridesProvider);
-  final currentColor = overrides[role] ??
-      ref.read(colorPackProvider).pack.resolve(
-        role,
-        Theme.of(context).brightness,
-      );
+  final currentColor =
+      overrides[role] ??
+      ref
+          .read(colorPackProvider)
+          .pack
+          .resolve(role, Theme.of(context).brightness);
   final l10n = AppLocalizations.of(context);
 
   final selected = await showColorEditorDialog(

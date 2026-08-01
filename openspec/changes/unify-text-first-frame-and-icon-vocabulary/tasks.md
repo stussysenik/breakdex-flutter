@@ -112,11 +112,41 @@ unreliable; it is honestly reporting a box that something else paints over.
       `kBottomNavigationBarHeight + padding.bottom + xxl` for `AppScreen.bottomInsetOf`.
       Roster grew by all four in the same commit. Gate: analyzer 0 errors/0 warnings,
       **1362 pass / 3 skip / 0 fail**. How any of it *looks* is owner-gated.
-- [ ] 4.3 Settings sub-screens (7 files) — the cheapest batch, all already list-shaped.
-      **Unblocked by 4.2**: `/settings-panel` pushes on the root navigator, and the frame's
-      back affordance is read from the route, so it needs nothing 4.2 did not already ship.
-      The open question there is band 4, not back: the root navigator has no nav band, so the
-      bottom inset `AppScreen` reserves is dead space on those routes.
+- [x] 4.3 Settings — 9 files, not 7: `settings`, `system_status`, `sync_status`,
+      `sync_providers`, `free_space`, `recently_deleted`, `canonical_trash`,
+      `asset_sync_help`, and `color_packs` (a screen living under `widgets/`, which is why
+      the first count missed it).
+      The open question was band 4, and the answer is a **scope, not a route list**:
+      `NavBandScope` (`lib/shared/widgets/nav_band_scope.dart`) is an `InheritedWidget` the
+      shell wraps its branch navigator in. A root-navigator route is a *sibling* of the shell
+      in the root stack, not a descendant, so it never finds the scope and is told the truth —
+      nothing is painted over its bottom edge. Presence **is** the value; there is no field,
+      because the only question a surface ever has is whether it has a band, and asking the
+      tree cannot drift from the router the way a path allowlist would.
+      `AppScreen.bottomInsetOf` became a sum rather than a constant:
+      `bandInsetOf + contentBottomGap + padding.bottom`. That named the 16 that was hiding
+      inside `scrollBottomInset` — the trailing gap is owed on **every** route (it is
+      `contentTopGap`'s mirror), the 56pt band only on the routes that have one.
+      `scrollBottomInset` keeps its value (`navBandHeight + contentBottomGap`) and its meaning
+      narrows to "inside the shell". The FAB slot reads the same scope.
+      Red-first: a bare `AppScreen` reserved 106 where 50 is owed (72 + 34 of home indicator,
+      for a band that is not drawn); green after. The two in-shell inset tests now say so
+      explicitly by wrapping in the scope, which is the point — the fact is declared, not
+      assumed.
+      `showAppSheet` reads it too, and had to: three of these screens open sheets, and on the
+      root navigator those were floating 56pt above their own bottom edge. Its test grew the
+      root-navigator case, with the scope moved above the `Navigator` (a modal route is a
+      sibling of `home`, not a child, so a scope at `home` never reaches the sheet — the same
+      structural fact the shell relies on, proved in a test).
+      **`SettingsScreen.isTab` was deleted** with its `.tab()` constructor: one widget serves
+      `/settings` (a tab root, cannot pop, no back) and `/settings-panel` (pushed, pops, has
+      back), and since 4.2 the route already knows which. Two hand-rolled back rows
+      (`canonical_trash`, `recently_deleted`, both reading "Settings") and `color_packs`'
+      `_BackHeader` went the same way, along with every screen's second copy of its own title.
+      `settings-back` and `color-packs-back` survive as `backIdentifier`s.
+      Roster grew by all nine in the same commit. Gate: analyzer 0 errors/0 warnings,
+      **1373 pass / 3 skip / 0 fail** (+9 roster cases, +2 new facts). How any of it *looks*
+      is owner-gated.
 - [ ] 4.4 Remaining: auth, battle, party, video editors, instax, dev panels. Includes extracting
       the immersive drill session out of `flashcard_review_screen` so that file joins the roster.
 - [ ] 4.5 Flip `frame_conformance_test.dart` from an allowlist to a denylist once the remainder

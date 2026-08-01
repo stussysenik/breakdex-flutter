@@ -12,6 +12,7 @@ import 'package:go_router/go_router.dart';
 import 'package:path/path.dart' as p;
 import 'package:breakdex/l10n/gen/app_localizations.dart';
 import 'package:breakdex/core/database/database.dart';
+import 'package:breakdex/core/design/layout.dart';
 import 'package:breakdex/core/design/spacing.dart';
 import 'package:breakdex/core/design/theme.dart';
 import 'package:breakdex/core/design/typography.dart';
@@ -42,6 +43,7 @@ import 'package:breakdex/shared/widgets/action_tile.dart';
 import 'package:breakdex/core/services/view_names_service.dart';
 import 'package:breakdex/core/services/entity_names_service.dart';
 import 'package:breakdex/shared/widgets/color_setting_tile.dart';
+import 'package:breakdex/shared/widgets/app_screen.dart';
 import 'package:breakdex/shared/widgets/settings_list_group.dart';
 import 'package:breakdex/features/settings/widgets/cloud_sync_section.dart';
 import 'package:breakdex/features/dev/sync_cutover_panel.dart';
@@ -58,11 +60,7 @@ final _settingsMovesProvider = StreamProvider<List<Move>>((final ref) {
 enum ReviewSettingsResetAction { cardPlayback, states, all }
 
 class SettingsScreen extends ConsumerWidget {
-  const SettingsScreen({super.key, this.isTab = false});
-
-  const SettingsScreen.tab({super.key}) : isTab = true;
-
-  final bool isTab;
+  const SettingsScreen({super.key});
 
   @override
   Widget build(final BuildContext context, final WidgetRef ref) {
@@ -83,520 +81,480 @@ class SettingsScreen extends ConsumerWidget {
       categoryUsage[move.category] = (categoryUsage[move.category] ?? 0) + 1;
     }
 
-    return Scaffold(
-      body: SafeArea(
-        child: ListView(
-          padding: const EdgeInsets.all(AppSpacing.screenEdge),
-          children: [
-            if (!isTab)
-              Semantics(
-                identifier: 'settings-back',
-                label: l10n.setBack,
-                button: true,
-                child: GestureDetector(
-                  behavior: HitTestBehavior.opaque,
-                  onTap: () => context.pop(),
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(
-                      vertical: AppSpacing.xs,
-                    ),
-                    child: Row(
-                      children: [
-                        AppIconView(
-                          AppIcon.back,
-                          color: colorScheme.secondary,
-                          size: 20,
-                        ),
-                        Text(
-                          l10n.setBack,
-                          style: AppTypography.bodyMedium.copyWith(
-                            color: colorScheme.secondary,
-                          ),
-                        ),
-                      ],
-                    ),
+    return AppScreen.fill(
+      title: l10n.navSettings,
+      backIdentifier: 'settings-back',
+      child: ListView(
+        padding: EdgeInsets.fromLTRB(
+          AppLayout.gutter,
+          0,
+          AppLayout.gutter,
+          AppScreen.bottomInsetOf(context),
+        ),
+        children: [
+          // ── PRACTICE & REVIEW ──────────────────────────────────────────
+          _SettingsSection(
+            title: l10n.setSectionPractice,
+            child: Column(
+              children: [
+                _SettingsPanel(
+                  title: l10n.setPanelAppMode,
+                  child: AppChoiceList<AppMode>(
+                    values: AppMode.values,
+                    selected: ref.watch(appModeProvider),
+                    labelOf: (final m) => m.displayName,
+                    onChanged: (final m) {
+                      HapticFeedback.selectionClick();
+                      ref.read(appModeProvider.notifier).set(m);
+                    },
                   ),
                 ),
-              ),
-            if (!isTab) const SizedBox(height: AppSpacing.lg),
-            Semantics(
-              header: true,
-              child: Text(
-                l10n.navSettings,
-                style: AppTypography.titleLarge.copyWith(
-                  color: colorScheme.onSurface,
+                const SizedBox(height: AppSpacing.md),
+                _SettingsPanel(
+                  title: l10n.setPanelLearningEngine,
+                  child: const _FsrsToggle(),
                 ),
-              ),
-            ),
-            const SizedBox(height: AppSpacing.lg),
-
-            // ── PRACTICE & REVIEW ──────────────────────────────────────────
-            _SettingsSection(
-              title: l10n.setSectionPractice,
-              child: Column(
-                children: [
-                  _SettingsPanel(
-                    title: l10n.setPanelAppMode,
-                    child: AppChoiceList<AppMode>(
-                      values: AppMode.values,
-                      selected: ref.watch(appModeProvider),
-                      labelOf: (final m) => m.displayName,
-                      onChanged: (final m) {
-                        HapticFeedback.selectionClick();
-                        ref.read(appModeProvider.notifier).set(m);
-                      },
-                    ),
-                  ),
-                  const SizedBox(height: AppSpacing.md),
-                  _SettingsPanel(
-                    title: l10n.setPanelLearningEngine,
-                    child: const _FsrsToggle(),
-                  ),
-                  const SizedBox(height: AppSpacing.md),
-                  _SettingsPanel(
-                    title: l10n.setPanelQuietMode,
-                    child: const _QuietModeToggle(),
-                  ),
-                  const SizedBox(height: AppSpacing.md),
-                  _SettingsPanel(
-                    title: l10n.setPanelViewComposer,
-                    child: const ReviewCardDisplaySection(),
-                  ),
-                  const SizedBox(height: AppSpacing.md),
-                  _SettingsPanel(
-                    title: l10n.setPanelPartyMode,
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const _ShakeDiscoveryToggle(),
-                        const SizedBox(height: AppSpacing.md),
-                        _PartyCycleDurationSlider(),
-                        const SizedBox(height: AppSpacing.md),
-                        _PartyComboModeToggle(),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: AppSpacing.md),
-                  _SettingsPanel(
-                    title: l10n.setPanelVideoEditor,
-                    child: const _VideoEditorToggle(),
-                  ),
-                  const SizedBox(height: AppSpacing.md),
-                  _SettingsPanel(
-                    title: l10n.setPanelAddFlow,
-                    child: AppChoiceList<AddFlowOrder>(
-                      values: AddFlowOrder.values,
-                      selected: ref.watch(addFlowOrderProvider),
-                      labelOf: (final o) => o.displayName,
-                      onChanged: (final o) {
-                        HapticFeedback.selectionClick();
-                        ref.read(addFlowOrderProvider.notifier).set(o);
-                      },
-                    ),
-                  ),
-                  const SizedBox(height: AppSpacing.md),
-                  _SettingsPanel(
-                    title: l10n.setPanelStatsTab,
-                    child: const _StatsTabToggle(),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: AppSpacing.xl),
-
-            // ── VISUALS & STYLE ───────────────────────────────────────────
-            _SettingsSection(
-              title: l10n.setSectionVisuals,
-              subtitle: l10n.setSectionVisualsSubtitle,
-              child: LayoutBuilder(
-                builder: (final context, final constraints) {
-                  final isTwoColumn = constraints.maxWidth >= 640;
-                  final panelWidth = isTwoColumn
-                      ? (constraints.maxWidth - AppSpacing.md) / 2
-                      : constraints.maxWidth;
-                  return Wrap(
-                    spacing: AppSpacing.md,
-                    runSpacing: AppSpacing.md,
+                const SizedBox(height: AppSpacing.md),
+                _SettingsPanel(
+                  title: l10n.setPanelQuietMode,
+                  child: const _QuietModeToggle(),
+                ),
+                const SizedBox(height: AppSpacing.md),
+                _SettingsPanel(
+                  title: l10n.setPanelViewComposer,
+                  child: const ReviewCardDisplaySection(),
+                ),
+                const SizedBox(height: AppSpacing.md),
+                _SettingsPanel(
+                  title: l10n.setPanelPartyMode,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      SizedBox(
-                        width: panelWidth,
-                        child: _SettingsPanel(
-                          title: l10n.setPanelAppTheme,
-                          child: AppChoiceList<ThemeSetting>(
-                            values: ThemeSetting.values,
-                            selected: theme,
-                            labelOf: (final t) => t.displayName,
-                            onChanged: (final t) =>
-                                ref.read(themeSettingProvider.notifier).set(t),
-                          ),
+                      const _ShakeDiscoveryToggle(),
+                      const SizedBox(height: AppSpacing.md),
+                      _PartyCycleDurationSlider(),
+                      const SizedBox(height: AppSpacing.md),
+                      _PartyComboModeToggle(),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: AppSpacing.md),
+                _SettingsPanel(
+                  title: l10n.setPanelVideoEditor,
+                  child: const _VideoEditorToggle(),
+                ),
+                const SizedBox(height: AppSpacing.md),
+                _SettingsPanel(
+                  title: l10n.setPanelAddFlow,
+                  child: AppChoiceList<AddFlowOrder>(
+                    values: AddFlowOrder.values,
+                    selected: ref.watch(addFlowOrderProvider),
+                    labelOf: (final o) => o.displayName,
+                    onChanged: (final o) {
+                      HapticFeedback.selectionClick();
+                      ref.read(addFlowOrderProvider.notifier).set(o);
+                    },
+                  ),
+                ),
+                const SizedBox(height: AppSpacing.md),
+                _SettingsPanel(
+                  title: l10n.setPanelStatsTab,
+                  child: const _StatsTabToggle(),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: AppSpacing.xl),
+
+          // ── VISUALS & STYLE ───────────────────────────────────────────
+          _SettingsSection(
+            title: l10n.setSectionVisuals,
+            subtitle: l10n.setSectionVisualsSubtitle,
+            child: LayoutBuilder(
+              builder: (final context, final constraints) {
+                final isTwoColumn = constraints.maxWidth >= 640;
+                final panelWidth = isTwoColumn
+                    ? (constraints.maxWidth - AppSpacing.md) / 2
+                    : constraints.maxWidth;
+                return Wrap(
+                  spacing: AppSpacing.md,
+                  runSpacing: AppSpacing.md,
+                  children: [
+                    SizedBox(
+                      width: panelWidth,
+                      child: _SettingsPanel(
+                        title: l10n.setPanelAppTheme,
+                        child: AppChoiceList<ThemeSetting>(
+                          values: ThemeSetting.values,
+                          selected: theme,
+                          labelOf: (final t) => t.displayName,
+                          onChanged: (final t) =>
+                              ref.read(themeSettingProvider.notifier).set(t),
                         ),
                       ),
-                      SizedBox(
-                        width: panelWidth,
-                        child: _SettingsPanel(
-                          title: l10n.setPanelAccessibility,
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                    ),
+                    SizedBox(
+                      width: panelWidth,
+                      child: _SettingsPanel(
+                        title: l10n.setPanelAccessibility,
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            AppChoiceList<AccessiblePalette>(
+                              values: AccessiblePalette.values,
+                              selected: palette,
+                              labelOf: (final p) => p.displayName,
+                              onChanged: (final p) => ref
+                                  .read(accessiblePaletteProvider.notifier)
+                                  .set(p),
+                            ),
+                            const SizedBox(height: AppSpacing.sm),
+                            Text(
+                              palette.description,
+                              style: AppTypography.caption.copyWith(
+                                color: colorScheme.secondary,
+                              ),
+                            ),
+                            const SizedBox(height: AppSpacing.md),
+                            const _AccessiblePalettePreview(),
+                          ],
+                        ),
+                      ),
+                    ),
+                    SizedBox(
+                      width: panelWidth,
+                      child: _SettingsPanel(
+                        title: l10n.setPanelTypography,
+                        child: AppChoiceList<AppFontFamily>(
+                          values: AppFontFamily.values,
+                          selected: fontFamily,
+                          labelOf: (final f) => f.displayName,
+                          onChanged: (final f) =>
+                              ref.read(fontFamilyProvider.notifier).set(f),
+                        ),
+                      ),
+                    ),
+                    SizedBox(
+                      width: panelWidth,
+                      child: _SettingsPanel(
+                        title: l10n.setPanelReviewStates,
+                        action: TextButton(
+                          onPressed: () async {
+                            await HapticFeedback.mediumImpact();
+                            await ref
+                                .read(learningStateLabelsProvider.notifier)
+                                .reset();
+                            await ref
+                                .read(learningStateColorsProvider.notifier)
+                                .resetAll();
+                          },
+                          child: Text(l10n.setReset),
+                        ),
+                        child: ReviewStatesSection(
+                          onRename: (final state, final currentLabel) =>
+                              _showRenameLearningStateDialog(
+                                context,
+                                ref,
+                                state,
+                                currentLabel,
+                              ),
+                        ),
+                      ),
+                    ),
+                    SizedBox(
+                      width: panelWidth,
+                      child: _SettingsPanel(
+                        title: l10n.setPanelColors,
+                        action: TextButton(
+                          onPressed: () =>
+                              context.push('/settings-panel/color-packs'),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
                             children: [
-                              AppChoiceList<AccessiblePalette>(
-                                values: AccessiblePalette.values,
-                                selected: palette,
-                                labelOf: (final p) => p.displayName,
-                                onChanged: (final p) => ref
-                                    .read(accessiblePaletteProvider.notifier)
-                                    .set(p),
+                              Text(l10n.setPanelColorPacks),
+                              const SizedBox(width: AppSpacing.xxs),
+                              AppIconView(
+                                AppIcon.forward,
+                                size: 14,
+                                color: colorScheme.primary,
                               ),
-                              const SizedBox(height: AppSpacing.sm),
-                              Text(
-                                palette.description,
-                                style: AppTypography.caption.copyWith(
-                                  color: colorScheme.secondary,
-                                ),
-                              ),
-                              const SizedBox(height: AppSpacing.md),
-                              const _AccessiblePalettePreview(),
                             ],
                           ),
                         ),
-                      ),
-                      SizedBox(
-                        width: panelWidth,
-                        child: _SettingsPanel(
-                          title: l10n.setPanelTypography,
-                          child: AppChoiceList<AppFontFamily>(
-                            values: AppFontFamily.values,
-                            selected: fontFamily,
-                            labelOf: (final f) => f.displayName,
-                            onChanged: (final f) =>
-                                ref.read(fontFamilyProvider.notifier).set(f),
-                          ),
+                        child: Column(
+                          children: [
+                            _SettingsSubPanel(
+                              title: l10n.setAccentColorLabel,
+                              action: TextButton(
+                                onPressed: () async {
+                                  await HapticFeedback.mediumImpact();
+                                  await ref
+                                      .read(accentColorProvider.notifier)
+                                      .reset();
+                                },
+                                child: Text(l10n.setReset),
+                              ),
+                              child: const AccentColorSection(),
+                            ),
+                            const SizedBox(height: AppSpacing.md),
+                            _SettingsSubPanel(
+                              title: l10n.setRatingColorsLabel,
+                              action: TextButton(
+                                onPressed: () async {
+                                  await HapticFeedback.mediumImpact();
+                                  await ref
+                                      .read(ratingColorsProvider.notifier)
+                                      .resetAll();
+                                },
+                                child: Text(l10n.setReset),
+                              ),
+                              child: const RatingColorsSection(),
+                            ),
+                            const SizedBox(height: AppSpacing.md),
+                            _SettingsSubPanel(
+                              title: l10n.setReviewCardFillLabel,
+                              action: TextButton(
+                                onPressed: () async {
+                                  await HapticFeedback.mediumImpact();
+                                  await ref
+                                      .read(reviewFillColorProvider.notifier)
+                                      .reset();
+                                },
+                                child: Text(l10n.setReset),
+                              ),
+                              child: const ReviewFillColorSection(),
+                            ),
+                          ],
                         ),
                       ),
-                      SizedBox(
-                        width: panelWidth,
-                        child: _SettingsPanel(
-                          title: l10n.setPanelReviewStates,
-                          action: TextButton(
-                            onPressed: () async {
-                              await HapticFeedback.mediumImpact();
-                              await ref
-                                  .read(learningStateLabelsProvider.notifier)
-                                  .reset();
-                              await ref
-                                  .read(learningStateColorsProvider.notifier)
-                                  .resetAll();
-                            },
-                            child: Text(l10n.setReset),
-                          ),
-                          child: ReviewStatesSection(
-                            onRename: (final state, final currentLabel) =>
-                                _showRenameLearningStateDialog(
-                                  context,
-                                  ref,
-                                  state,
-                                  currentLabel,
-                                ),
-                          ),
+                    ),
+                    SizedBox(
+                      width: panelWidth,
+                      child: _SettingsPanel(
+                        title: l10n.setPanelGlobalLabels,
+                        child: SettingsListGroup(
+                          children: [
+                            ActionTile(
+                              icon: AppIcon.notes.resolve(context),
+                              label: l10n.setLabelArsenalTitle(
+                                viewNames['title'] ?? 'Arsenal',
+                              ),
+                              onTap: () => _showRenameArsenalDialog(
+                                context,
+                                ref,
+                                viewNames['title'] ?? 'Arsenal',
+                              ),
+                            ),
+                            ActionTile(
+                              icon: AppIcon.move.resolve(context),
+                              label: l10n.setLabelMovesDataBank(
+                                entityNames.movePlural,
+                              ),
+                              onTap: () => _showRenameEntityDialog(
+                                context,
+                                ref,
+                                current: entityNames,
+                                singularField: EntityNameField.moveSingular,
+                                pluralField: EntityNameField.movePlural,
+                              ),
+                            ),
+                            ActionTile(
+                              icon: AppIcon.link.resolve(context),
+                              label: l10n.setLabelCombosDataBank(
+                                entityNames.comboPlural,
+                              ),
+                              onTap: () => _showRenameEntityDialog(
+                                context,
+                                ref,
+                                current: entityNames,
+                                singularField: EntityNameField.comboSingular,
+                                pluralField: EntityNameField.comboPlural,
+                              ),
+                            ),
+                          ],
                         ),
                       ),
-                      SizedBox(
-                        width: panelWidth,
-                        child: _SettingsPanel(
-                          title: l10n.setPanelColors,
-                          action: TextButton(
-                            onPressed: () =>
-                                context.push('/settings-panel/color-packs'),
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Text(l10n.setPanelColorPacks),
-                                const SizedBox(width: AppSpacing.xxs),
-                                AppIconView(
-                                  AppIcon.forward,
-                                  size: 14,
-                                  color: colorScheme.primary,
-                                ),
-                              ],
+                    ),
+                  ],
+                );
+              },
+            ),
+          ),
+          const SizedBox(height: AppSpacing.xl),
+
+          // ── LIBRARY & DATA ─────────────────────────────────────────────
+          _SettingsSection(
+            title: l10n.setSectionLibrary,
+            subtitle: l10n.setSectionLibrarySubtitle,
+            child: Column(
+              children: [
+                _SettingsPanel(
+                  title: l10n.setPanelMoveCategories,
+                  action: TextButton.icon(
+                    onPressed: () => _showAddCategoryDialog(context, ref),
+                    icon: const AppIconView(AppIcon.add, size: 16),
+                    label: Text(l10n.setAdd),
+                  ),
+                  child: SettingsListGroup(
+                    children: [
+                      for (final cat in categories)
+                        _CategoryRow(
+                          name: cat.name,
+                          color: cat.color,
+                          isDefault: cat.isDefault,
+                          usageCount: categoryUsage[cat.name] ?? 0,
+                          onTap: () => context.push(
+                            '/breakdex/moves/${Uri.encodeComponent(cat.name)}',
+                          ),
+                          onLongPress: () => _showCategoryActionsSheet(
+                            context,
+                            ref,
+                            cat,
+                            usageCount: categoryUsage[cat.name] ?? 0,
+                          ),
+                        ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: AppSpacing.md),
+                _SettingsPanel(
+                  title: l10n.setPanelMoveCaption,
+                  child: AppChoiceList<MoveDetailCaption>(
+                    values: MoveDetailCaption.values,
+                    selected: ref.watch(moveDetailCaptionProvider),
+                    labelOf: (final c) => c.displayName,
+                    onChanged: (final c) {
+                      HapticFeedback.selectionClick();
+                      ref.read(moveDetailCaptionProvider.notifier).set(c);
+                    },
+                  ),
+                ),
+                const SizedBox(height: AppSpacing.md),
+                const _PhotosAccessTile(),
+                const SizedBox(height: AppSpacing.md),
+                const CloudSyncSection(),
+                const SizedBox(height: AppSpacing.md),
+                _SettingsPanel(
+                  title: l10n.setPanelBackupReset,
+                  child: Column(
+                    children: [
+                      _DataActionTileAsync(
+                        icon: AppIcon.share.resolve(context),
+                        label: l10n.setActionExportStats,
+                        onTap: (final tileContext) async {
+                          final origin = sharePositionOrigin(tileContext);
+                          final stats = await ref.read(
+                            statsBundleProvider.future,
+                          );
+                          final summary =
+                              StatsExportService.generateTextSummary(stats);
+                          await NativeShareSheet.shareText(
+                            text: summary,
+                            sharePositionOrigin: origin,
+                          );
+                          return null;
+                        },
+                      ),
+                      const SizedBox(height: AppSpacing.sm),
+                      _DataActionTileAsync(
+                        icon: AppIcon.download.resolve(context),
+                        label: l10n.setActionExportJson,
+                        onTap: (final tileContext) async {
+                          final origin = sharePositionOrigin(tileContext);
+                          final db = ref.read(databaseProvider);
+                          final prefs = ref.read(sharedPreferencesProvider);
+                          final result =
+                              await StatsExportService.generateJsonExport(
+                                db,
+                                prefs,
+                              );
+                          final dir =
+                              await AppStoragePaths.documentsDirectory();
+                          final exportsDir = Directory(
+                            p.join(dir.path, 'Exports'),
+                          );
+                          if (!await exportsDir.exists()) {
+                            await exportsDir.create(recursive: true);
+                          }
+                          final file = File(
+                            p.join(
+                              exportsDir.path,
+                              StatsExportService.exportFilename,
+                            ),
+                          );
+                          await file.writeAsString(result.json, flush: true);
+                          await NativeShareSheet.shareFiles(
+                            filePaths: [file.path],
+                            sharePositionOrigin: origin,
+                          );
+                          return l10n.setExportedRecords(result.totalRecords);
+                        },
+                        showResultSnackBar: true,
+                      ),
+                      const SizedBox(height: AppSpacing.sm),
+                      _DataActionTileAsync(
+                        icon: AppIcon.upload.resolve(context),
+                        label: l10n.setActionImportJson,
+                        onTap: (_) async {
+                          await _showImportFlow(context, ref);
+                          return null;
+                        },
+                      ),
+                      const SizedBox(height: AppSpacing.sm),
+                      ActionTile(
+                        icon: AppIcon.restore.resolve(context),
+                        label: l10n.setActionRecentlyDeleted(archivedMoveCount),
+                        onTap: () =>
+                            context.push('/settings-panel/recently-deleted'),
+                      ),
+                      const SizedBox(height: AppSpacing.sm),
+                      ActionTile(
+                        icon: AppIcon.menu.resolve(context),
+                        label: l10n.setActionSystemStatus,
+                        onTap: () =>
+                            context.push('/settings-panel/system-status'),
+                      ),
+                      const SizedBox(height: AppSpacing.sm),
+                      // Dev-only sync-cutover panel (task 2.2). Flag OFF ⇒ this
+                      // tile is never built, so it tree-shakes away and release
+                      // builds stay byte-identical (design D2). Pushed via a
+                      // MaterialPageRoute so no app router config is touched.
+                      if (kDevSyncPanelEnabled) ...[
+                        ActionTile(
+                          icon: AppIcon.sync.resolve(context),
+                          label: 'Sync cutover (dev)',
+                          onTap: () => Navigator.of(context).push(
+                            MaterialPageRoute<void>(
+                              builder: (_) => const SyncCutoverPanel(),
                             ),
                           ),
-                          child: Column(
-                            children: [
-                              _SettingsSubPanel(
-                                title: l10n.setAccentColorLabel,
-                                action: TextButton(
-                                  onPressed: () async {
-                                    await HapticFeedback.mediumImpact();
-                                    await ref
-                                        .read(accentColorProvider.notifier)
-                                        .reset();
-                                  },
-                                  child: Text(l10n.setReset),
-                                ),
-                                child: const AccentColorSection(),
-                              ),
-                              const SizedBox(height: AppSpacing.md),
-                              _SettingsSubPanel(
-                                title: l10n.setRatingColorsLabel,
-                                action: TextButton(
-                                  onPressed: () async {
-                                    await HapticFeedback.mediumImpact();
-                                    await ref
-                                        .read(ratingColorsProvider.notifier)
-                                        .resetAll();
-                                  },
-                                  child: Text(l10n.setReset),
-                                ),
-                                child: const RatingColorsSection(),
-                              ),
-                              const SizedBox(height: AppSpacing.md),
-                              _SettingsSubPanel(
-                                title: l10n.setReviewCardFillLabel,
-                                action: TextButton(
-                                  onPressed: () async {
-                                    await HapticFeedback.mediumImpact();
-                                    await ref
-                                        .read(reviewFillColorProvider.notifier)
-                                        .reset();
-                                  },
-                                  child: Text(l10n.setReset),
-                                ),
-                                child: const ReviewFillColorSection(),
-                              ),
-                            ],
-                          ),
                         ),
-                      ),
-                      SizedBox(
-                        width: panelWidth,
-                        child: _SettingsPanel(
-                          title: l10n.setPanelGlobalLabels,
-                          child: SettingsListGroup(
-                            children: [
-                              ActionTile(
-                                icon: AppIcon.notes.resolve(context),
-                                label: l10n.setLabelArsenalTitle(
-                                  viewNames['title'] ?? 'Arsenal',
-                                ),
-                                onTap: () => _showRenameArsenalDialog(
-                                  context,
-                                  ref,
-                                  viewNames['title'] ?? 'Arsenal',
-                                ),
-                              ),
-                              ActionTile(
-                                icon: AppIcon.move.resolve(context),
-                                label: l10n.setLabelMovesDataBank(
-                                  entityNames.movePlural,
-                                ),
-                                onTap: () => _showRenameEntityDialog(
-                                  context,
-                                  ref,
-                                  current: entityNames,
-                                  singularField: EntityNameField.moveSingular,
-                                  pluralField: EntityNameField.movePlural,
-                                ),
-                              ),
-                              ActionTile(
-                                icon: AppIcon.link.resolve(context),
-                                label: l10n.setLabelCombosDataBank(
-                                  entityNames.comboPlural,
-                                ),
-                                onTap: () => _showRenameEntityDialog(
-                                  context,
-                                  ref,
-                                  current: entityNames,
-                                  singularField: EntityNameField.comboSingular,
-                                  pluralField: EntityNameField.comboPlural,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
+                        const SizedBox(height: AppSpacing.sm),
+                      ],
+                      ActionTile(
+                        icon: AppIcon.delete.resolve(context),
+                        label: l10n.setActionClearData,
+                        destructive: true,
+                        onTap: () => _showClearDataDialog(context, ref),
                       ),
                     ],
-                  );
-                },
-              ),
-            ),
-            const SizedBox(height: AppSpacing.xl),
-
-            // ── LIBRARY & DATA ─────────────────────────────────────────────
-            _SettingsSection(
-              title: l10n.setSectionLibrary,
-              subtitle: l10n.setSectionLibrarySubtitle,
-              child: Column(
-                children: [
-                  _SettingsPanel(
-                    title: l10n.setPanelMoveCategories,
-                    action: TextButton.icon(
-                      onPressed: () => _showAddCategoryDialog(context, ref),
-                      icon: const AppIconView(AppIcon.add, size: 16),
-                      label: Text(l10n.setAdd),
-                    ),
-                    child: SettingsListGroup(
-                      children: [
-                        for (final cat in categories)
-                          _CategoryRow(
-                            name: cat.name,
-                            color: cat.color,
-                            isDefault: cat.isDefault,
-                            usageCount: categoryUsage[cat.name] ?? 0,
-                            onTap: () => context.push(
-                              '/breakdex/moves/${Uri.encodeComponent(cat.name)}',
-                            ),
-                            onLongPress: () => _showCategoryActionsSheet(
-                              context,
-                              ref,
-                              cat,
-                              usageCount: categoryUsage[cat.name] ?? 0,
-                            ),
-                          ),
-                      ],
-                    ),
                   ),
-                  const SizedBox(height: AppSpacing.md),
-                  _SettingsPanel(
-                    title: l10n.setPanelMoveCaption,
-                    child: AppChoiceList<MoveDetailCaption>(
-                      values: MoveDetailCaption.values,
-                      selected: ref.watch(moveDetailCaptionProvider),
-                      labelOf: (final c) => c.displayName,
-                      onChanged: (final c) {
-                        HapticFeedback.selectionClick();
-                        ref.read(moveDetailCaptionProvider.notifier).set(c);
-                      },
-                    ),
-                  ),
-                  const SizedBox(height: AppSpacing.md),
-                  const _PhotosAccessTile(),
-                  const SizedBox(height: AppSpacing.md),
-                  const CloudSyncSection(),
-                  const SizedBox(height: AppSpacing.md),
-                  _SettingsPanel(
-                    title: l10n.setPanelBackupReset,
-                    child: Column(
-                      children: [
-                        _DataActionTileAsync(
-                          icon: AppIcon.share.resolve(context),
-                          label: l10n.setActionExportStats,
-                          onTap: (final tileContext) async {
-                            final origin = sharePositionOrigin(tileContext);
-                            final stats = await ref.read(
-                              statsBundleProvider.future,
-                            );
-                            final summary =
-                                StatsExportService.generateTextSummary(stats);
-                            await NativeShareSheet.shareText(
-                              text: summary,
-                              sharePositionOrigin: origin,
-                            );
-                            return null;
-                          },
-                        ),
-                        const SizedBox(height: AppSpacing.sm),
-                        _DataActionTileAsync(
-                          icon: AppIcon.download.resolve(context),
-                          label: l10n.setActionExportJson,
-                          onTap: (final tileContext) async {
-                            final origin = sharePositionOrigin(tileContext);
-                            final db = ref.read(databaseProvider);
-                            final prefs = ref.read(sharedPreferencesProvider);
-                            final result =
-                                await StatsExportService.generateJsonExport(
-                                  db,
-                                  prefs,
-                                );
-                            final dir =
-                                await AppStoragePaths.documentsDirectory();
-                            final exportsDir = Directory(
-                              p.join(dir.path, 'Exports'),
-                            );
-                            if (!await exportsDir.exists()) {
-                              await exportsDir.create(recursive: true);
-                            }
-                            final file = File(
-                              p.join(
-                                exportsDir.path,
-                                StatsExportService.exportFilename,
-                              ),
-                            );
-                            await file.writeAsString(result.json, flush: true);
-                            await NativeShareSheet.shareFiles(
-                              filePaths: [file.path],
-                              sharePositionOrigin: origin,
-                            );
-                            return l10n.setExportedRecords(result.totalRecords);
-                          },
-                          showResultSnackBar: true,
-                        ),
-                        const SizedBox(height: AppSpacing.sm),
-                        _DataActionTileAsync(
-                          icon: AppIcon.upload.resolve(context),
-                          label: l10n.setActionImportJson,
-                          onTap: (_) async {
-                            await _showImportFlow(context, ref);
-                            return null;
-                          },
-                        ),
-                        const SizedBox(height: AppSpacing.sm),
-                        ActionTile(
-                          icon: AppIcon.restore.resolve(context),
-                          label: l10n.setActionRecentlyDeleted(
-                            archivedMoveCount,
-                          ),
-                          onTap: () =>
-                              context.push('/settings-panel/recently-deleted'),
-                        ),
-                        const SizedBox(height: AppSpacing.sm),
-                        ActionTile(
-                          icon: AppIcon.menu.resolve(context),
-                          label: l10n.setActionSystemStatus,
-                          onTap: () =>
-                              context.push('/settings-panel/system-status'),
-                        ),
-                        const SizedBox(height: AppSpacing.sm),
-                        // Dev-only sync-cutover panel (task 2.2). Flag OFF ⇒ this
-                        // tile is never built, so it tree-shakes away and release
-                        // builds stay byte-identical (design D2). Pushed via a
-                        // MaterialPageRoute so no app router config is touched.
-                        if (kDevSyncPanelEnabled) ...[
-                          ActionTile(
-                            icon: AppIcon.sync.resolve(context),
-                            label: 'Sync cutover (dev)',
-                            onTap: () => Navigator.of(context).push(
-                              MaterialPageRoute<void>(
-                                builder: (_) => const SyncCutoverPanel(),
-                              ),
-                            ),
-                          ),
-                          const SizedBox(height: AppSpacing.sm),
-                        ],
-                        ActionTile(
-                          icon: AppIcon.delete.resolve(context),
-                          label: l10n.setActionClearData,
-                          destructive: true,
-                          onTap: () => _showClearDataDialog(context, ref),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: AppSpacing.xl),
-
-            // Version footer
-            Center(
-              child: Text(
-                AppMetadata.footerLabel,
-                style: AppTypography.caption.copyWith(
-                  color: colorScheme.secondary,
                 ),
+              ],
+            ),
+          ),
+          const SizedBox(height: AppSpacing.xl),
+
+          // Version footer
+          Center(
+            child: Text(
+              AppMetadata.footerLabel,
+              style: AppTypography.caption.copyWith(
+                color: colorScheme.secondary,
               ),
             ),
-            const SizedBox(height: AppSpacing.lg),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
@@ -648,7 +606,9 @@ class SettingsScreen extends ConsumerWidget {
                 onPressed: canConfirm ? () => Navigator.pop(ctx, true) : null,
                 child: Text(
                   l10n.setClearConfirmButton,
-                  style: TextStyle(color: AppSemanticTheme.of(context).actionAgain),
+                  style: TextStyle(
+                    color: AppSemanticTheme.of(context).actionAgain,
+                  ),
                 ),
               ),
             ],
@@ -870,7 +830,9 @@ class SettingsScreen extends ConsumerWidget {
                   ),
                   title: Text(
                     l10n.setCategoryDelete,
-                    style: TextStyle(color: AppSemanticTheme.of(context).actionAgain),
+                    style: TextStyle(
+                      color: AppSemanticTheme.of(context).actionAgain,
+                    ),
                   ),
                   onTap: () =>
                       Navigator.pop(context, _CategorySheetAction.delete),
@@ -1317,7 +1279,6 @@ class _RatingPreviewChip extends StatelessWidget {
     );
   }
 }
-
 
 class _CategoryRow extends StatelessWidget {
   const _CategoryRow({

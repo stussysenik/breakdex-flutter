@@ -10,6 +10,7 @@ import 'package:breakdex/core/design/icons.dart';
 import 'package:breakdex/core/design/spacing.dart';
 import 'package:breakdex/core/design/typography.dart';
 import 'package:breakdex/shared/widgets/app_loader.dart';
+import 'package:breakdex/shared/widgets/app_screen.dart';
 
 class SystemStatusScreen extends ConsumerWidget {
   const SystemStatusScreen({super.key});
@@ -23,48 +24,24 @@ class SystemStatusScreen extends ConsumerWidget {
   @override
   Widget build(final BuildContext context, final WidgetRef ref) {
     final boot = ref.watch(bootCoordinatorProvider);
-    final colorScheme = Theme.of(context).colorScheme;
 
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('System Status'),
-        backgroundColor: colorScheme.surface,
-        elevation: 0,
-      ),
-      body: ListView(
-        padding: const EdgeInsets.all(AppSpacing.screenEdge),
-        children: [
-          _StatusHeader(boot: boot),
-          const SizedBox(height: AppSpacing.xl),
-          Text(
-            'BOOT GATES',
-            style: AppTypography.sectionHeader.copyWith(
-              color: colorScheme.secondary,
-            ),
-          ),
-          const SizedBox(height: AppSpacing.md),
-          _GatesList(boot: boot),
-          const SizedBox(height: AppSpacing.xl),
-          Text(
-            'STORAGE HYGIENE',
-            style: AppTypography.sectionHeader.copyWith(
-              color: colorScheme.secondary,
-            ),
-          ),
-          const SizedBox(height: AppSpacing.md),
-          const _HygieneCounters(),
-          const SizedBox(height: AppSpacing.xl),
-
-          Text(
-            'DIAGNOSTIC LOG',
-            style: AppTypography.sectionHeader.copyWith(
-              color: colorScheme.secondary,
-            ),
-          ),
-          const SizedBox(height: AppSpacing.md),
-          const _DiagnosticFeed(),
-        ],
-      ),
+    return AppScreen(
+      title: 'System Status',
+      children: [
+        AppSection(first: true, children: [_StatusHeader(boot: boot)]),
+        AppSection(
+          title: 'Boot gates',
+          children: [_GatesList(boot: boot)],
+        ),
+        const AppSection(
+          title: 'Storage hygiene',
+          children: [_HygieneCounters()],
+        ),
+        const AppSection(
+          title: 'Diagnostic log',
+          children: [_DiagnosticFeed()],
+        ),
+      ],
     );
   }
 }
@@ -157,7 +134,11 @@ class _GatesList extends StatelessWidget {
               ),
               const Spacer(),
               if (isDone)
-                const AppIconView(AppIcon.success, size: 14, color: Colors.green)
+                const AppIconView(
+                  AppIcon.success,
+                  size: 14,
+                  color: Colors.green,
+                )
               else if (boot.currentTask?.contains(_gateLabel(gate)) ?? false)
                 const SizedBox(
                   width: 12,

@@ -9,9 +9,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:breakdex/core/database/database.dart';
 import 'package:breakdex/core/design/icons.dart';
+import 'package:breakdex/core/design/layout.dart';
 import 'package:breakdex/core/design/spacing.dart';
 import 'package:breakdex/core/design/typography.dart';
 import 'package:breakdex/shared/widgets/app_loader.dart';
+import 'package:breakdex/shared/widgets/app_screen.dart';
 import 'package:breakdex/core/providers.dart';
 import 'package:breakdex/core/sync/cloud_provider.dart';
 import 'package:breakdex/core/sync/gdrive_setup_service.dart';
@@ -35,22 +37,18 @@ class SyncProvidersScreen extends ConsumerWidget {
     final providersAsync = ref.watch(cloudProvidersProvider);
     final colorScheme = Theme.of(context).colorScheme;
 
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(
-          'Cloud Providers',
-          style: AppTypography.titleSmall.copyWith(
-            color: colorScheme.onSurface,
-          ),
-        ),
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-      ),
-      body: providersAsync.when(
+    return AppScreen.fill(
+      title: 'Cloud Providers',
+      child: providersAsync.when(
         loading: () => const Center(child: AppLoader()),
         error: (final e, _) => Center(child: Text('Error: $e')),
         data: (final providers) => ListView(
-          padding: const EdgeInsets.all(AppSpacing.screenEdge),
+          padding: EdgeInsets.fromLTRB(
+            AppLayout.gutter,
+            0,
+            AppLayout.gutter,
+            AppScreen.bottomInsetOf(context),
+          ),
           children: [
             // Header
             Text(
@@ -235,7 +233,11 @@ class _AddProviderButton extends ConsumerWidget {
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            AppIconView(AppIcon.add, color: Theme.of(context).colorScheme.primary, size: 20),
+            AppIconView(
+              AppIcon.add,
+              color: Theme.of(context).colorScheme.primary,
+              size: 20,
+            ),
             const SizedBox(width: AppSpacing.sm),
             Text(
               'Add Cloud Provider',

@@ -7,6 +7,7 @@ import 'package:breakdex/core/design/icons.dart';
 import 'package:breakdex/core/design/layout.dart';
 import 'package:breakdex/core/design/typography.dart';
 import 'package:breakdex/shared/widgets/app_breadcrumb.dart';
+import 'package:breakdex/shared/widgets/nav_band_scope.dart';
 
 /// The one screen frame. Every top-level surface is built from this.
 ///
@@ -59,8 +60,8 @@ class AppScreen extends StatelessWidget {
   /// pad — an `IndexedStack` whose branches each scroll themselves.
   ///
   /// The frame still owns bands 1, 2 and 4 and the width clamp; the child owns
-  /// its own padding and its own bottom inset ([AppLayout.scrollBottomInset]
-  /// plus the safe inset, exactly as the scrolling forms compute it).
+  /// its own padding and its own bottom inset — [bottomInsetOf], the same sum
+  /// the scrolling forms apply.
   const AppScreen.fill({
     super.key,
     required this.title,
@@ -140,7 +141,7 @@ class AppScreen extends StatelessWidget {
           : Padding(
               padding: EdgeInsets.only(
                 bottom:
-                    AppLayout.navBandHeight +
+                    bandInsetOf(context) +
                     MediaQuery.of(context).padding.bottom,
               ),
               child: fab,
@@ -214,10 +215,24 @@ class AppScreen extends StatelessWidget {
     );
   }
 
+  /// What band 4 costs at the bottom of *this* route: the band's height where
+  /// the shell paints one, nothing where it does not.
+  ///
+  /// `/settings-panel*` is pushed on the root navigator, outside the shell, so
+  /// there is no band over it and an inset reserved for one is dead space at
+  /// the end of every list. The frame asks the tree ([NavBandScope]) rather
+  /// than taking a per-screen flag, for the same reason the back affordance is
+  /// read from the route: a screen cannot get a fact about its surroundings
+  /// wrong if it is never asked for one.
+  static double bandInsetOf(final BuildContext context) =>
+      NavBandScope.of(context) ? AppLayout.navBandHeight : 0;
+
   /// The bottom inset a `fill` child must reserve at the end of its own scroll,
-  /// so it clears band 4 exactly as the frame's own scrolling forms do.
+  /// so it ends exactly where the frame's own scrolling forms end.
   static double bottomInsetOf(final BuildContext context) =>
-      AppLayout.scrollBottomInset + MediaQuery.of(context).padding.bottom;
+      bandInsetOf(context) +
+      AppLayout.contentBottomGap +
+      MediaQuery.of(context).padding.bottom;
 }
 
 /// Band 2. Fixed height, fixed baseline, on every screen.

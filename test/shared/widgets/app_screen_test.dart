@@ -5,6 +5,7 @@ import 'package:flutter_test/flutter_test.dart';
 
 import 'package:breakdex/core/design/layout.dart';
 import 'package:breakdex/shared/widgets/app_screen.dart';
+import 'package:breakdex/shared/widgets/nav_band_scope.dart';
 
 void main() {
   group('AppScreen', () {
@@ -18,13 +19,15 @@ void main() {
             padding: EdgeInsets.only(bottom: bottomPadding),
           ),
           child: MaterialApp(
-            home: AppScreen(
-              title: 'Frame',
-              floatingActionButton: FloatingActionButton(
-                onPressed: null,
-                child: Icon(Icons.add),
+            home: NavBandScope(
+              child: AppScreen(
+                title: 'Frame',
+                floatingActionButton: FloatingActionButton(
+                  onPressed: null,
+                  child: Icon(Icons.add),
+                ),
+                children: [Text('content')],
               ),
-              children: [Text('content')],
             ),
           ),
         ),
@@ -51,9 +54,11 @@ void main() {
             padding: EdgeInsets.only(bottom: bottomPadding),
           ),
           child: MaterialApp(
-            home: AppScreen(
-              title: 'Frame',
-              children: [SizedBox(height: 2000), Text('last')],
+            home: NavBandScope(
+              child: AppScreen(
+                title: 'Frame',
+                children: [SizedBox(height: 2000), Text('last')],
+              ),
             ),
           ),
         ),
@@ -70,6 +75,42 @@ void main() {
       expect(
         screenBottom - lastBottom,
         greaterThanOrEqualTo(AppLayout.navBandHeight + bottomPadding),
+      );
+    });
+
+    testWidgets('reserves nothing for a band the shell does not paint', (
+      final tester,
+    ) async {
+      const bottomPadding = 34.0;
+      await tester.pumpWidget(
+        const MediaQuery(
+          data: MediaQueryData(
+            padding: EdgeInsets.only(bottom: bottomPadding),
+          ),
+          child: MaterialApp(
+            home: AppScreen(
+              title: 'Frame',
+              children: [SizedBox(height: 2000), Text('last')],
+            ),
+          ),
+        ),
+      );
+
+      await tester.drag(
+        find.byType(SingleChildScrollView),
+        const Offset(0, -3000),
+      );
+      await tester.pumpAndSettle();
+
+      // `/settings-panel` is pushed on the **root** navigator, outside the
+      // shell — there is no band 4 over it, so reserving 56pt for one is dead
+      // space at the end of every settings list. The frame reserves the safe
+      // inset and the trailing gap, and nothing for a band that is not there.
+      final lastBottom = tester.getRect(find.text('last')).bottom;
+      final screenBottom = tester.getRect(find.byType(AppScreen)).bottom;
+      expect(
+        screenBottom - lastBottom,
+        closeTo(AppLayout.contentBottomGap + bottomPadding, 0.5),
       );
     });
 

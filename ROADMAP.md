@@ -50,11 +50,26 @@
   `AppLayout.backSlot` (48) clears the touch floor without band 2 growing — proved red-first,
   along with the title's centreline not moving. **`BackLeading` deleted** (widget + test):
   nothing builds an `AppBar` any more. Each screen also stopped typing its own title twice.
-  Gate: analyzer 0 errors/0 warnings, **1362 pass / 3 skip / 0 fail**. **Next unticked: 3.4**
-  — dialogs, deliberately *not* folded into the sheet helper (a centred dialog needs a height
-  clamp, not a 56pt shift) — or §4.3, settings, now unblocked, where the open question turns
-  out to be band 4 rather than back: root-navigator routes have no nav band, so the inset the
-  frame reserves is dead space there. How any of it *looks* is still owner-gated.
+  Gate: analyzer 0 errors/0 warnings, **1362 pass / 3 skip / 0 fail**.
+  **§4.3 closed 2026-08-01 — 9 settings screens, and the band is now a scope.** These are the
+  first screens pushed on the **root** navigator, so the frame stopped assuming band 4 exists:
+  `NavBandScope` is an `InheritedWidget` the shell wraps its branch navigator in, and a
+  root-navigator route is a *sibling* of the shell rather than a descendant, so it never finds
+  the scope and is told the truth. Presence is the value — no field, because the only question
+  a surface has is whether it has a band, and asking the tree cannot drift from the router the
+  way a path allowlist would. `bottomInsetOf` became `bandInsetOf + contentBottomGap +
+  padding.bottom`, which named the 16 hiding inside `scrollBottomInset`: the trailing gap is
+  owed on every route (it mirrors `contentTopGap`), the 56pt band only where one is drawn.
+  Red-first: a bare `AppScreen` reserved 106 where 50 is owed. `showAppSheet` reads the same
+  scope — three of these screens open sheets that were floating 56pt above their own bottom
+  edge. **`SettingsScreen.isTab` deleted** with its `.tab()` constructor: one widget serves
+  `/settings` (tab root, no back) and `/settings-panel` (pushed, has back), and since 4.2 the
+  route already knows which; two hand-rolled back rows and `color_packs`' `_BackHeader` went
+  with it. Gate: analyzer 0/0, **1373 pass / 3 skip / 0 fail**.
+  **Next unticked: 3.4** — dialogs, deliberately *not* folded into the sheet helper (a centred
+  dialog needs a height clamp, not a 56pt shift) — or §4.4, the remaining screens (auth,
+  battle, party, editors, instax, dev panels), which is where the roster gets small enough for
+  4.5 to flip it from an allowlist to a denylist. How any of it *looks* is still owner-gated.
 - **Change (prior, 2026-07-29 · product finish):** `redesign-visual-first-experience`
   — **6.4 DONE 2026-07-29.** `openspec/changes/add-icon-system-and-packs` Phase 4 closed:
   `AppIcon` enum with 78 semantic names, material + lucide packs, conformance gate with

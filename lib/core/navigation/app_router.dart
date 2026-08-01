@@ -128,8 +128,7 @@ final appRouter = GoRouter(
           routes: [
             GoRoute(
               path: '/settings',
-              builder: (final context, final state) =>
-                  const SettingsScreen.tab(),
+              builder: (final context, final state) => const SettingsScreen(),
             ),
           ],
         ),

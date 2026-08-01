@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import 'package:breakdex/core/design/layout.dart';
 import 'package:breakdex/core/design/spacing.dart';
+import 'package:breakdex/shared/widgets/nav_band_scope.dart';
 
 /// Opens a modal bottom sheet inside the stacked-viewport frame.
 ///
@@ -58,7 +59,13 @@ Future<T?> showAppSheet<T>({
         removeBottom: true,
         child: Padding(
           padding: EdgeInsets.only(
-            bottom: AppLayout.navBandHeight + media.padding.bottom,
+            // A sheet opened from a root-navigator route (`/settings-panel*`)
+            // is pushed on the root navigator too, where no band is drawn — the
+            // inset is read from the tree so those sheets do not float 56pt
+            // above their own bottom edge.
+            bottom:
+                (NavBandScope.of(sheetContext) ? AppLayout.navBandHeight : 0) +
+                media.padding.bottom,
           ),
           child: builder(sheetContext),
         ),

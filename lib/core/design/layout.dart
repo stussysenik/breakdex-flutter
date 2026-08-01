@@ -69,9 +69,19 @@ abstract final class AppLayout {
   /// views must reserve [scrollBottomInset] rather than assume it is clipped.
   static const double navBandHeight = 56;
 
-  /// Bottom padding a scrolling content band must reserve so its last element
-  /// clears the translucent nav band instead of hiding beneath it.
-  static const double scrollBottomInset = navBandHeight + 16;
+  /// Gap between the last content pixel and whatever bounds the content band —
+  /// band 4 where the shell paints one, the safe area where it does not.
+  ///
+  /// The mirror of [contentTopGap] at the other end, and the reason the bottom
+  /// inset is a sum rather than a constant: the gap is owed on every route, the
+  /// band only on the routes that have one.
+  static const double contentBottomGap = 16;
+
+  /// Bottom padding a scrolling content band must reserve, **inside the shell**,
+  /// so its last element clears the translucent nav band instead of hiding
+  /// beneath it. On a root-navigator route there is no band and this does not
+  /// apply — ask `AppScreen.bottomInsetOf`, which reads the route.
+  static const double scrollBottomInset = navBandHeight + contentBottomGap;
 
   // ── Horizontal grid ──────────────────────────────────────────────────────
 

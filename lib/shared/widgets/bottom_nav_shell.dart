@@ -14,6 +14,7 @@ import 'package:breakdex/core/services/settings_service.dart';
 import 'package:breakdex/core/utils/diagnostics.dart';
 import 'package:breakdex/core/design/icons.dart';
 import 'package:breakdex/l10n/gen/app_localizations.dart';
+import 'package:breakdex/shared/widgets/nav_band_scope.dart';
 import 'package:breakdex/shared/widgets/shake_detector.dart';
 import 'package:breakdex/shared/widgets/sync_progress_bar.dart';
 
@@ -78,7 +79,10 @@ class BottomNavShell extends ConsumerWidget {
                 return const SyncProgressBar();
               },
             ),
-            Expanded(child: navigationShell),
+            // Everything inside the branch navigator has band 4 drawn over it
+            // (`extendBody: true`). Screens and sheets read this to reserve the
+            // inset; a root-navigator route never sees it and reserves none.
+            Expanded(child: NavBandScope(child: navigationShell)),
           ],
         ),
       ),

@@ -7,6 +7,7 @@ import 'package:flutter/material.dart';
 import 'package:breakdex/core/design/theme.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'package:breakdex/core/design/layout.dart';
 import 'package:breakdex/core/design/spacing.dart';
 import 'package:breakdex/core/design/typography.dart';
 import 'package:breakdex/core/providers.dart';
@@ -15,6 +16,7 @@ import 'package:breakdex/core/sync/asset_sync_engine.dart';
 import 'package:breakdex/core/sync/integrity_verifier.dart';
 import 'package:breakdex/l10n/gen/app_localizations.dart';
 import 'package:breakdex/shared/widgets/app_loader.dart';
+import 'package:breakdex/shared/widgets/app_screen.dart';
 import 'package:breakdex/core/design/icons.dart';
 import 'package:breakdex/shared/widgets/app_sheet.dart';
 
@@ -29,19 +31,15 @@ class SyncStatusScreen extends ConsumerWidget {
     final colorScheme = Theme.of(context).colorScheme;
     final networkPolicy = ref.watch(networkPolicyProvider);
 
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(
-          'Sync Status',
-          style: AppTypography.titleSmall.copyWith(
-            color: colorScheme.onSurface,
-          ),
+    return AppScreen.fill(
+      title: 'Sync Status',
+      child: ListView(
+        padding: EdgeInsets.fromLTRB(
+          AppLayout.gutter,
+          0,
+          AppLayout.gutter,
+          AppScreen.bottomInsetOf(context),
         ),
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-      ),
-      body: ListView(
-        padding: const EdgeInsets.all(AppSpacing.screenEdge),
         children: [
           // Overall status card
           _StatusCard(
@@ -400,7 +398,9 @@ class _StatusCard extends StatelessWidget {
                 allSynced
                     ? AppIcon.cloudDone.resolve(context)
                     : AppIcon.sync.resolve(context),
-                color: allSynced ? AppSemanticTheme.of(context).stateMastery : Theme.of(context).colorScheme.primary,
+                color: allSynced
+                    ? AppSemanticTheme.of(context).stateMastery
+                    : Theme.of(context).colorScheme.primary,
                 size: 24,
               ),
               const SizedBox(width: AppSpacing.sm),
@@ -419,7 +419,9 @@ class _StatusCard extends StatelessWidget {
               child: LinearProgressIndicator(
                 value: syncProgress.fraction,
                 backgroundColor: colorScheme.onSurface.withValues(alpha: 0.1),
-                valueColor: AlwaysStoppedAnimation(Theme.of(context).colorScheme.primary),
+                valueColor: AlwaysStoppedAnimation(
+                  Theme.of(context).colorScheme.primary,
+                ),
                 minHeight: 6,
               ),
             ),
@@ -804,7 +806,9 @@ class _DataUsageCard extends StatelessWidget {
               value: fraction,
               backgroundColor: colorScheme.onSurface.withValues(alpha: 0.1),
               valueColor: AlwaysStoppedAnimation(
-                fraction > 0.9 ? AppSemanticTheme.of(context).actionAgain : Theme.of(context).colorScheme.primary,
+                fraction > 0.9
+                    ? AppSemanticTheme.of(context).actionAgain
+                    : Theme.of(context).colorScheme.primary,
               ),
               minHeight: 6,
             ),

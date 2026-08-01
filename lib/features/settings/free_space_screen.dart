@@ -5,11 +5,13 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:breakdex/core/design/icons.dart';
+import 'package:breakdex/core/design/layout.dart';
 import 'package:breakdex/core/design/spacing.dart';
 import 'package:breakdex/core/design/typography.dart';
 import 'package:breakdex/core/providers.dart';
 import 'package:breakdex/core/sync/space_manager.dart';
 import 'package:breakdex/shared/widgets/app_loader.dart';
+import 'package:breakdex/shared/widgets/app_screen.dart';
 
 /// Provider for space analysis — refreshes when this screen is opened.
 final spaceAnalysisProvider = FutureProvider<SpaceAnalysis>((final ref) {
@@ -36,18 +38,9 @@ class _FreeSpaceScreenState extends ConsumerState<FreeSpaceScreen> {
     final analysis = ref.watch(spaceAnalysisProvider);
     final colorScheme = Theme.of(context).colorScheme;
 
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(
-          'Free Up Space',
-          style: AppTypography.titleSmall.copyWith(
-            color: colorScheme.onSurface,
-          ),
-        ),
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-      ),
-      body: analysis.when(
+    return AppScreen.fill(
+      title: 'Free Up Space',
+      child: analysis.when(
         loading: () => const Center(child: AppLoader()),
         error: (final e, _) => Center(
           child: Text(
@@ -70,7 +63,12 @@ class _FreeSpaceScreenState extends ConsumerState<FreeSpaceScreen> {
     );
 
     return ListView(
-      padding: const EdgeInsets.all(AppSpacing.screenEdge),
+      padding: EdgeInsets.fromLTRB(
+        AppLayout.gutter,
+        0,
+        AppLayout.gutter,
+        AppScreen.bottomInsetOf(context),
+      ),
       children: [
         // Status card
         Container(
@@ -146,7 +144,9 @@ class _FreeSpaceScreenState extends ConsumerState<FreeSpaceScreen> {
           Container(
             padding: const EdgeInsets.all(AppSpacing.md),
             decoration: BoxDecoration(
-              color: AppSemanticTheme.of(context).stateMastery.withValues(alpha: 0.1),
+              color: AppSemanticTheme.of(
+                context,
+              ).stateMastery.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(AppRadius.md),
             ),
             child: Row(

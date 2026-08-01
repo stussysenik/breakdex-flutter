@@ -5,6 +5,7 @@ import 'package:flutter_test/flutter_test.dart';
 
 import 'package:breakdex/core/design/layout.dart';
 import 'package:breakdex/shared/widgets/app_sheet.dart';
+import 'package:breakdex/shared/widgets/nav_band_scope.dart';
 
 /// The band-4 clearance contract, measured at three viewport heights.
 ///
@@ -19,6 +20,7 @@ void main() {
     final WidgetTester tester, {
     required final Size viewport,
     required final Widget body,
+    final bool inShell = true,
   }) async {
     await tester.binding.setSurfaceSize(viewport);
     addTearDown(() => tester.binding.setSurfaceSize(null));
@@ -32,7 +34,10 @@ void main() {
           data: MediaQuery.of(context).copyWith(
             padding: const EdgeInsets.only(bottom: bottomPadding),
           ),
-          child: child!,
+          // Above the `Navigator`, exactly as the shell sits above its branch
+          // navigator — a modal route is a sibling of `home`, not a child of
+          // it, so a scope declared at `home` would never reach the sheet.
+          child: _maybeShell(inShell, child!),
         ),
         home: Builder(
           builder: (final context) {
@@ -75,4 +80,23 @@ void main() {
       );
     });
   }
+
+  testWidgets('a sheet on a root-navigator route reserves no band', (
+    final tester,
+  ) async {
+    await openSheet(
+      tester,
+      viewport: const Size(400, 800),
+      inShell: false,
+      body: const SafeArea(child: SizedBox(height: 120, child: Text('last'))),
+    );
+
+    // `/settings-panel*` is outside the shell. Reserving 56pt there floats the
+    // sheet's last row above its own bottom edge for a band that is not drawn.
+    final contentBottom = tester.getRect(find.text('last')).bottom;
+    expect(800 - contentBottom, closeTo(bottomPadding, 0.5));
+  });
 }
+
+Widget _maybeShell(final bool inShell, final Widget child) =>
+    inShell ? NavBandScope(child: child) : child;

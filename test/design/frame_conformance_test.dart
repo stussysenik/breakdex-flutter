@@ -25,6 +25,21 @@ const _migratedScreens = <String>[
   'lib/features/combo_detail/combo_detail_screen.dart',
   'lib/features/lab/lab_detail_screen.dart',
   'lib/features/move_category/move_category_screen.dart',
+  // Settings joined on 2026-08-01 (§4.3). These are the first screens pushed on
+  // the **root** navigator, outside the shell — so the frame stopped assuming
+  // band 4 exists and started reading `NavBandScope`. `SettingsScreen.isTab`
+  // went with the assumption: the same widget serves `/settings` (a tab root,
+  // cannot pop, no back) and `/settings-panel` (pushed, pops, has back), and
+  // the route already knows which.
+  'lib/features/settings/settings_screen.dart',
+  'lib/features/settings/system_status_screen.dart',
+  'lib/features/settings/sync_status_screen.dart',
+  'lib/features/settings/sync_providers_screen.dart',
+  'lib/features/settings/free_space_screen.dart',
+  'lib/features/settings/recently_deleted_screen.dart',
+  'lib/features/settings/canonical_trash_screen.dart',
+  'lib/features/settings/help/asset_sync_help_screen.dart',
+  'lib/features/settings/widgets/color_packs_section.dart',
 ];
 
 /// Surfaces that are deliberately frameless, and why. A frameless surface is
