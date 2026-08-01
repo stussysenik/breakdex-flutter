@@ -329,11 +329,62 @@ every element so each one can be seen functioning.
       them and is a judgement only the owner makes. Also unenforced: nothing fails when a
       sixth field is added to `AppLayoutTheme` without a slider — Dart cannot walk a class's
       fields, so the completeness gate 5.2 has over the enums has no equivalent here.
-- [ ] 5.4 Motion: owner wants **morph-first** animation, "how graphics are rendered from first
+- [x] 5.4 Motion: owner wants **morph-first** animation, "how graphics are rendered from first
       principles", Skia-level precision, a CSS-native equivalent in Flutter. The locked doctrine
       already names two families (Fluid + Morph on `AppMotion`); this task is to make Morph the
       *default* for layout/shape continuity and to prove it with a shared-element transition
       between the Add row and the screen it opens.
+      **Done 2026-08-02.** "Default" is made to mean something the same way the icon and colour
+      vocabularies did: `lib/shared/widgets/app_morph.dart` is the **only** way to declare a
+      shared element, and `test/design/morph_conformance_test.dart` fails the gate on a raw
+      `Hero(` anywhere under `lib/` (zero allowlist — the icon ban's shape, not the colour
+      ban's, because nothing needs to *define* what a flight is). The curve does not live in the
+      route: `AppMorph.morphRectTween` spends the flight's own `t` on `AppMotion.morph` before
+      interpolating, because a raw `Hero` interpolates its rect linearly against the route
+      animation, which is the Fluid feel applied to a Morph problem. Asserted as an identity —
+      the morph tween *is* the linear tween sampled on the morph curve — so the ruling is
+      readable in the test, not just satisfied by it. Trajectory stays a straight line, no
+      Material arc: the spring is the expression, and bending the path too would be a second
+      opinion about the same motion. The one pre-existing raw `Hero` (`move_grid_cell`, the
+      cell→detail card) migrated and thereby *gained* the morph timing — that migration is what
+      makes this a default rather than a new option.
+      The proof is `test/features/add/add_morph_flight_test.dart`: the real `AddScreen`, the
+      combo row tapped by its driver identifier, the destination behind `morphPage`. At rest the
+      travelling surface is exactly the row's rect; mid-flight there is **one** surface (both
+      route ends render placeholders, so a second hit means nothing was handed over) at neither
+      end's size; settled, it is the page. Red-first twice: dropping the source end reports
+      `the shape never left the row / Expected greater than 56.0, Actual 56.0` — the row height —
+      and dropping the destination end leaves two surfaces at 56 and full-page, `the shape did
+      not travel`. The test runs the source inside a nested navigator and pushes on the root,
+      because that is the production topology (Add is a shell branch, `/create-combo` is a root
+      route) and a flight that only works in a flat navigator would pass a simpler test and do
+      nothing in the app.
+      **Two findings worth more than the feature.** (1) A `Hero` declared in a page's
+      `transitionsBuilder` is **silently never found**: `ModalRoute.subtreeContext` — the context
+      Flutter searches on push — points at `buildPage`'s output only, and everything a
+      `buildTransitions` wraps around it is outside. The push just fades, with no error. Found by
+      bisection (same widget under `builder:` flew, under `transitionsBuilder` did not), which is
+      why `morphPage` puts the destination in `MorphDestination` on the page's *child*.
+      (2) `AppMotion.springGentle` was **not a spring across its duration**. `_SpringCurve`
+      normalised onto a fixed 3-second window, so it reached 1.0 at about t=0.2: a 240ms
+      transition showed ~40ms of motion and read as a pop. It now asks the simulation when it is
+      done (`isDone`, 1ms resolution, 3s ceiling so a near-undamped spring degrades to the old
+      behaviour rather than hanging), which makes the duration at every call site mean what it
+      says. Red-first: `AppMotion.morph.transform(0.05)` read `0.8754` under the fixed window
+      and reads `0.202` now. This touches `springBouncy`, `notes_section`, the settings-section
+      recede and the celebration overlay — all four are *more* correct, but none of them is
+      proven by eye.
+      Gate: analyzer 0 errors / 0 warnings, **1423 pass / 3 skip / 0 fail**; docs ledger
+      chapter 08 restamped at `ba2f713`.
+      **NOT PROVEN:** how any of it looks — the flight's rect is measured, its *appearance* is
+      not, and the four call sites the spring fix touches are owner-judgement. The corner radius
+      does not interpolate (the shuttle is the destination's widget, so it carries the
+      destination's radius for the whole flight) — measured as travel, seen as a page-cornered
+      rectangle leaving a rounded row. And the real router's `/create-combo` page builder is
+      exercised only by running the app: the flight test stubs the destination screen, so what
+      is proven is the seam and the source end's placement, not that `app_router.dart` still
+      calls `morphPage`. The other three entry points to `/create-combo` carry no source and
+      keep a plain fade — deliberate, untested.
 
 ## 6. Default categories — DONE
 

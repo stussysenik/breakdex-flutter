@@ -9,6 +9,8 @@ import 'package:breakdex/core/state_machines/move_creation/provider.dart';
 import 'package:breakdex/core/services/settings_service.dart';
 import 'package:breakdex/core/services/video_service.dart';
 import 'package:breakdex/features/add/widgets/clip_metadata_form.dart';
+import 'package:breakdex/core/navigation/morph_page.dart';
+import 'package:breakdex/shared/widgets/app_morph.dart';
 import 'package:breakdex/shared/widgets/app_row.dart';
 import 'package:breakdex/shared/widgets/app_screen.dart';
 import 'package:breakdex/shared/widgets/video_picker_sheet.dart';
@@ -40,10 +42,19 @@ class AddScreen extends ConsumerWidget {
               label: entityNames.moveSingular,
               onTap: () => _startClipFlow(context, ref),
             ),
-            AppRow(
-              identifier: 'add-combo-card',
-              label: entityNames.comboSingular,
-              onTap: () => context.push<String>('/create-combo'),
+            // The one row that opens a full screen also *becomes* it: the
+            // row's surface is the destination page's surface at a smaller
+            // size, so the two are one identity travelling (Morph), not a
+            // page arriving over a list (Fluid). The other three entry points
+            // to `/create-combo` carry no source, and a Hero without a match
+            // is a no-op — they keep the plain fade.
+            AppMorph.behind(
+              identifier: createComboMorphId,
+              child: AppRow(
+                identifier: 'add-combo-card',
+                label: entityNames.comboSingular,
+                onTap: () => context.push<String>('/create-combo'),
+              ),
             ),
           ],
         ),

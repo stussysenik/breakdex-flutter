@@ -158,9 +158,21 @@
   `AppLayout.of(context)`, never the provider: red-first, dropping the basis from the extension
   list reported `Expected 48, Actual 24` — the shipped constant. Gate: analyzer 0/0,
   **1414 pass / 3 skip / 0 fail**.
-  **Next unticked: 5.4** — make Morph the default for layout/shape continuity and prove it with
-  a shared-element transition between the Add row and the screen it opens. How any of §4–5
-  *looks* — and whether a hostile basis stays legible — is still owner-gated.
+  **§5.4 landed 2026-08-02 — Morph is the default, and it is enforced.** `AppMorph` is the only
+  way to declare a shared element (`morph_conformance_test.dart` bans a raw `Hero(` under `lib/`
+  with zero allowlist), and the curve lives in the *shape*: `morphRectTween` spends the flight's
+  own `t` on `AppMotion.morph` before interpolating, asserted as the identity "linear tween
+  sampled on the morph curve". The Add screen's combo row now morphs into `/create-combo` —
+  proved red-first at both ends (`the shape never left the row / Expected greater than 56.0`),
+  with the source in a nested navigator and the push on the root, because that is the shell
+  topology. Two findings outlive the feature: a `Hero` declared in a page's `transitionsBuilder`
+  is **silently never found** (`subtreeContext` sees only `buildPage`), and
+  `AppMotion.springGentle` was normalised onto a fixed 3s window, so it finished at t≈0.2 and a
+  240ms transition showed ~40ms of motion — it now asks the simulation when it is done. Gate:
+  analyzer 0/0, **1423 pass / 3 skip / 0 fail**.
+  **Next unticked: 8.1** — surface the cloud pointer on the move/video surface. How any of §4–5
+  *looks* — whether a hostile basis stays legible, and how the four call sites the spring fix
+  touches now feel — is still owner-gated.
 - **Change (prior, 2026-07-29 · product finish):** `redesign-visual-first-experience`
   — **6.4 DONE 2026-07-29.** `openspec/changes/add-icon-system-and-packs` Phase 4 closed:
   `AppIcon` enum with 78 semantic names, material + lucide packs, conformance gate with

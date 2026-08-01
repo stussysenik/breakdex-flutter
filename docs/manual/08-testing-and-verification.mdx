@@ -3,7 +3,7 @@ title: Testing & Verification
 name: testing
 order: 8
 status: verified
-verified: 82291f9
+verified: ba2f713
 watches:
   - test/**
   - .github/workflows/ci.yml
@@ -39,7 +39,7 @@ From these four, everything below is forced: the CI gate is a *floor* (it proves
 | `test/core/` | 137 | database + DAOs (incl. migration v22–v27 suites), state machines, sync (codecs, backfills, dual-read/write, tombstones, Appwrite backend/transport), config (remote config, update/entitlement gates), providers, models, design (8 — icons, accessible palettes, color roles, OKLCH, color packs, contrast, plus the color-conformance ban and its migration proof), utils |
 | `test/features/` | 44 | screen-level widget tests (move_list, flashcard_review, stats, add, flow, video_editor, party, auth, …) |
 | `test/shared/` | 11 | shared widgets, incl. the `AppScreen` frame (bands, insets, the route-derived back affordance, and the `PopGuard` a screen with unsaved state declares so the chevron and the system gesture refuse alike) |
-| `test/design/` | 3 | source-level conformance, the type baseline (see below), and the layout basis — that the frame measures the `AppLayoutTheme` in force and the shipped constants when there is none |
+| `test/design/` | 4 | source-level conformance, the type baseline (see below), the layout basis — that the frame measures the `AppLayoutTheme` in force and the shipped constants when there is none — and the morph ban, which is the same shape as the icon ban applied to shared elements |
 | `test/` root | 3 | l10n foundation, preview-harness smoke, template widget test |
 | `test/helpers/` | — | `test_data.dart`, `test_database.dart` (in-memory Drift fixtures) |
 | `test/flutter_test_config.dart` | — | suite-wide setup every test inherits with no import (see the demangle section below) |
@@ -62,7 +62,10 @@ the category is defined by what it asserts, not by where it sits. Two shapes are
   own an `AppBar`.
   `test/design/type_baseline_test.dart` is the same shape for the type scale.
   `test/core/design/icon_conformance_test.dart` and `color_conformance_test.dart` ban raw
-  `Icons.*` and raw `AppColors.*` respectively. **The two bans are deliberately not the same
+  `Icons.*` and raw `AppColors.*` respectively, and `test/design/morph_conformance_test.dart`
+  bans a raw `Hero(` outside `AppMorph` — a shared element that skips the seam rides the route's
+  linear animation instead of `AppMotion.morph`, which is the Fluid feel applied to a Morph
+  problem. **The two bans are deliberately not the same
   shape, and copying one onto the other is a mistake**: the icon ban is absolute
   (zero-allowlist, since exactly one file may name an `IconData`), while the color ban admits a
   named **definition layer**, because a pack must seed its roles from constants and a

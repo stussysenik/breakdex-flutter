@@ -88,17 +88,35 @@ abstract final class AppMotion {
 /// The simulation runs from displacement 0→1 with zero initial velocity.
 /// We clamp the output to [0, 1] because spring overshoot can momentarily
 /// exceed 1.0 (that overshoot is the visible "bounce").
+///
+/// The curve parameter is normalised onto the spring's **own settle time**, not
+/// onto a fixed window. A fixed 3-second window (what this did until 2026-08-02)
+/// made `springGentle` reach 1.0 at about t=0.2, so four fifths of every
+/// animation's duration was the spring sitting still: a 240ms transition showed
+/// ~40ms of motion and read as a pop, not a spring. Asking the simulation when
+/// it is done makes the duration at the call site mean what it says.
 class _SpringCurve extends Curve {
   _SpringCurve(final SpringDescription spring)
-      : _simulation = SpringSimulation(spring, 0, 1, 0);
+      : _simulation = SpringSimulation(spring, 0, 1, 0) {
+    _settleTime = _findSettleTime();
+  }
 
   final SpringSimulation _simulation;
 
-  @override
-  double transformInternal(final double t) {
-    // SpringSimulation.x(t) returns displacement at time `t` (seconds).
-    // We treat the 0→1 curve parameter as 0→3 seconds — long enough for
-    // any reasonable spring to settle, short enough to avoid wasted frames.
-    return _simulation.x(t * 3).clamp(0.0, 1.0);
+  /// Seconds of simulation the 0→1 curve parameter is stretched across.
+  late final double _settleTime;
+
+  double _findSettleTime() {
+    // 1ms resolution, capped at 3s — the same ceiling the fixed window used, so
+    // a pathological (near-undamped) spring degrades to the old behaviour
+    // instead of hanging.
+    for (var ms = 1; ms <= 3000; ms++) {
+      if (_simulation.isDone(ms / 1000)) return ms / 1000;
+    }
+    return 3;
   }
+
+  @override
+  double transformInternal(final double t) =>
+      _simulation.x(t * _settleTime).clamp(0.0, 1.0);
 }

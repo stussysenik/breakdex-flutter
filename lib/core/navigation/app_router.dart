@@ -7,6 +7,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:breakdex/core/design/spacing.dart';
 import 'package:breakdex/core/design/typography.dart';
 import 'package:breakdex/core/navigation/app_route_observer.dart';
+import 'package:breakdex/core/navigation/morph_page.dart';
 import 'package:breakdex/core/navigation/settings_section_page.dart';
 import 'package:breakdex/features/move_detail/move_detail_screen.dart';
 import 'package:breakdex/features/flashcard_review/flashcard_review_screen.dart';
@@ -140,7 +141,11 @@ final appRouter = GoRouter(
     GoRoute(
       path: '/create-combo',
       parentNavigatorKey: _rootNavigatorKey,
-      builder: (final context, final state) => const CreateComboScreen(),
+      pageBuilder: (final context, final state) => morphPage<Object?>(
+        key: state.pageKey,
+        identifier: createComboMorphId,
+        child: const CreateComboScreen(),
+      ),
     ),
     GoRoute(
       path: '/edit-combo/:id',

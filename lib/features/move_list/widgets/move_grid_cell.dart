@@ -272,7 +272,9 @@ class _GridCardShell extends StatelessWidget {
     );
 
     if (heroTag != null) {
-      card = Hero(tag: heroTag!, child: card);
+      // Morph, not a raw Hero: the cell and the detail screen are one card
+      // changing size, so the flight is timed by AppMotion.morph.
+      card = AppMorph(identifier: heroTag!, child: card);
     }
 
     return Pressable(onTap: onTap, scaleEnd: 0.96, child: card);
