@@ -39,7 +39,8 @@ class DeckSummary {
   int get totalMoves => moves.length;
   bool get isSmart => deck.deckType == 'smart';
 
-  List<Move> movesForState(final LearningState state) => stateMap[state] ?? const [];
+  List<Move> movesForState(final LearningState state) =>
+      stateMap[state] ?? const [];
 }
 
 final deckSummaryProvider = FutureProvider.family<DeckSummary, String>((

@@ -64,11 +64,30 @@ unreliable; it is honestly reporting a box that something else paints over.
 `AppScreen` binds 5 of 33 screens. Migrate in batches, adding each to the
 `frame_conformance_test.dart` allowlist **in the same commit** so the guard grows with the fact.
 
-- [ ] 4.1 Tab-level first (highest parity payoff): `move_list`, `combos`, `settings`,
-      `mastery_prescreen`.
+- [x] 4.1 Tab-level: `move_list` (`AppScreen.slivers`, `wide`), `combos` and the drill screen
+      (`AppScreen.fill`). Two frame facts were missing and were added first, red-first:
+      **(a)** the frame's scroll inset was the flat `scrollBottomInset` (72), so migrating a
+      screen that correctly used `kBottomNavigationBarHeight + padding.bottom` onto it would
+      have *regressed* clearance on a home-indicator device — it is now
+      `AppScreen.bottomInsetOf(context)`, the same sum `showAppSheet` owns, and a fill child
+      calls that helper rather than re-deriving it; **(b)** `AppScreen.fill` + `pinned`, for a
+      content band that is not one scroll the frame can pad (combos' `IndexedStack` of three
+      self-scrolling views) and for a control that must stay under the header without band 2
+      growing. Nine hand-rolled `screenEdge` gutters came out of `move_list` because the frame
+      now owns that column, and combos' three lists traded a magic `80` for the real inset.
+      `settings` is **not** in this batch: `/settings-panel` pushes the same widget on the
+      **root** navigator, where there is no band 4 to inset and a back affordance is required,
+      which is the detail-frame ruling 4.2/4.3 owes — it rides with 4.3, not with a second
+      frame variant invented here.
+      Roster grew by `move_list` + `combos` in the same commit. `flashcard_review_screen` is
+      held out and *bounded* instead: a new test pins it at exactly one `Scaffold` (the
+      immersive drill session, deliberately band-less) and asserts it uses `AppScreen.fill`, so
+      the exemption cannot widen back into a hand-built header.
+      Gate: analyzer 0/0, 1361 pass / 3 skip / 0 fail.
 - [ ] 4.2 Detail screens: `move_detail`, `combo_detail`, `lab_detail`, `move_category`.
 - [ ] 4.3 Settings sub-screens (7 files) — the cheapest batch, all already list-shaped.
-- [ ] 4.4 Remaining: auth, battle, party, video editors, instax, dev panels.
+- [ ] 4.4 Remaining: auth, battle, party, video editors, instax, dev panels. Includes extracting
+      the immersive drill session out of `flashcard_review_screen` so that file joins the roster.
 - [ ] 4.5 Flip `frame_conformance_test.dart` from an allowlist to a denylist once the remainder
       is small — the guard should fail on a *new* bespoke Scaffold, not merely tolerate old ones.
 

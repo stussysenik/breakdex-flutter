@@ -40,6 +40,7 @@ import 'package:breakdex/shared/widgets/app_loader.dart';
 import 'package:breakdex/shared/widgets/video_picker_sheet.dart';
 import 'package:breakdex/shared/widgets/video_player_widget.dart';
 import 'package:breakdex/features/sync_onboarding/sync_onboarding_card.dart';
+import 'package:breakdex/shared/widgets/app_screen.dart';
 import 'package:breakdex/shared/widgets/app_sheet.dart';
 
 part 'widgets/move_grid_cell.dart';
@@ -237,202 +238,147 @@ class MoveListScreen extends ConsumerWidget {
     final title =
         viewNames['title'] ?? ref.watch(entityNamesProvider).movePlural;
 
-    return Scaffold(
-      body: ThumbnailCoordinatorScope(
-        coordinator: _thumbnailCoordinator,
-        child: SafeArea(
-          bottom: false,
-          child: CustomScrollView(
-            physics: const AlwaysScrollableScrollPhysics(),
-            slivers: [
-              // Top padding for the header
-              const SliverToBoxAdapter(child: SizedBox(height: AppSpacing.md)),
-
-              // Title + search + controls as pinned header
-              SliverToBoxAdapter(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // Title
-                    Padding(
-                      padding: const EdgeInsets.fromLTRB(
-                        AppSpacing.screenEdge,
-                        AppSpacing.lg,
-                        AppSpacing.screenEdge,
-                        0,
-                      ),
-                      child: Text(
-                        title,
-                        style: AppTypography.titleLarge.copyWith(
-                          color: colorScheme.onSurface,
-                        ),
+    return ThumbnailCoordinatorScope(
+      coordinator: _thumbnailCoordinator,
+      child: AppScreen.slivers(
+        title: title,
+        wide: true,
+        slivers: [
+          // Search + controls. The title above them is the frame's, not
+          // this screen's — band 2 renders it at the same baseline here as
+          // on every other screen.
+          SliverToBoxAdapter(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Search bar
+                Semantics(
+                  label: 'Search',
+                  textField: true,
+                  child: TextField(
+                    onChanged: (final v) =>
+                        ref.read(_searchQueryProvider.notifier).onChanged(v),
+                    decoration: InputDecoration(
+                      hintText: segment == ArsenalSegment.moves
+                          ? 'Search moves...'
+                          : 'Search combos...',
+                      prefixIcon: AppIconView(
+                        AppIcon.search,
+                        color: colorScheme.secondary,
                       ),
                     ),
-                    const SizedBox(height: AppSpacing.md),
-
-                    // Search bar
-                    Padding(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: AppSpacing.screenEdge,
-                      ),
-                      child: Semantics(
-                        label: 'Search',
-                        textField: true,
-                        child: TextField(
-                          onChanged: (final v) => ref
-                              .read(_searchQueryProvider.notifier)
-                              .onChanged(v),
-                          decoration: InputDecoration(
-                            hintText: segment == ArsenalSegment.moves
-                                ? 'Search moves...'
-                                : 'Search combos...',
-                            prefixIcon: AppIconView(
-                              AppIcon.search,
-                              color: colorScheme.secondary,
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: AppSpacing.md),
-
-                    // Moves / Combos segment toggle
-                    _ArsenalSegmentControl(segment: segment),
-                    const SizedBox(height: AppSpacing.sm),
-
-                    _ViewModeToggle(viewMode: viewMode, viewNames: viewNames),
-                    const SizedBox(height: AppSpacing.sm),
-
-                    const LibrarySortToggle(),
-                    const SizedBox(height: AppSpacing.sm),
-
-                    LibraryFilmedFallbackNotice(
-                      sort: ref.watch(librarySortProvider),
-                      segment: segment,
-                    ),
-                  ],
+                  ),
                 ),
-              ),
+                const SizedBox(height: AppSpacing.md),
 
-              // iCloud onboarding — shown once on first launch
-              const SliverToBoxAdapter(child: SyncOnboardingCard()),
-              const SliverToBoxAdapter(child: _StartupVideoReliabilityBanner()),
+                // Moves / Combos segment toggle
+                _ArsenalSegmentControl(segment: segment),
+                const SizedBox(height: AppSpacing.sm),
 
-              // Content — sliver-based for compositor-friendly scrolling
-              segment == ArsenalSegment.moves
-                  ? movesAsync.when(
-                      loading: () => const SliverFillRemaining(
-                        child: Center(child: AppLoader()),
-                      ),
-                      error: (final e, _) => SliverFillRemaining(
-                        child: Center(child: Text('Error: $e')),
-                      ),
-                      data: (final filtered) {
-                        if (filtered.isEmpty) {
-                          return SliverFillRemaining(
-                            child: _EmptyState(
-                              hasSearch: searchQuery.isNotEmpty,
-                              isCombo: false,
-                            ),
-                          );
-                        }
+                _ViewModeToggle(viewMode: viewMode, viewNames: viewNames),
+                const SizedBox(height: AppSpacing.sm),
 
-                        final sort = ref.watch(librarySortProvider);
-                        return librarySectionedSliver<Move>(
-                          items: filtered,
-                          sort: sort,
-                          viewMode: viewMode,
-                          dateOf: (final m) => m.effectiveDate(sort),
-                          sliverOf: (final section) => switch (viewMode) {
-                            ViewMode.glance => _MoveGridSliver(
-                              moves: section,
-                              sort: sort,
-                            ),
-                            ViewMode.scan => _MoveListSliver(
-                              moves: section,
-                              sort: sort,
-                            ),
-                            ViewMode.study => _MoveStudySliver(moves: section),
-                          },
-                        );
-                      },
-                    )
-                  : combosAsync.when(
-                      loading: () => const SliverFillRemaining(
-                        child: Center(child: AppLoader()),
-                      ),
-                      error: (final e, _) => SliverFillRemaining(
-                        child: Center(child: Text('Error: $e')),
-                      ),
-                      data: (final rows) {
-                        if (rows.isEmpty) {
-                          return SliverFillRemaining(
-                            child: _EmptyState(
-                              hasSearch: searchQuery.isNotEmpty,
-                              isCombo: true,
-                            ),
-                          );
-                        }
+                const LibrarySortToggle(),
+                const SizedBox(height: AppSpacing.sm),
 
-                        final sort = ref.watch(librarySortProvider);
-                        return librarySectionedSliver<LibraryRow>(
-                          items: rows,
-                          sort: sort,
-                          viewMode: viewMode,
-                          dateOf: (final r) => r.effectiveDate(sort),
-                          sliverOf: (final section) {
-                            // `LibraryRow` maps back to a `(combo, count,
-                            // date)` triple at the sliver boundary. The date
-                            // rides along because a combo's practiced date is
-                            // `lastEntryAt`, which lives on the row and not on
-                            // the combo — the sort alone cannot recover it
-                            // downstream the way a move's can.
-                            final combos = section
-                                .map(
-                                  (final r) => (
-                                    r.combo,
-                                    r.moveCount,
-                                    r.effectiveDate(sort),
-                                  ),
-                                )
-                                .toList();
-                            return switch (viewMode) {
-                              ViewMode.glance => _ComboGridSliver(
-                                combos: combos,
-                              ),
-                              ViewMode.scan => _CombosContentSliver(
-                                combos: combos,
-                              ),
-                              ViewMode.study => _ComboStudySliver(
-                                combos: combos,
-                              ),
-                            };
-                          },
-                        );
-                      },
-                    ),
-
-              // Bottom padding so last items aren't hidden behind frosted nav bar
-              SliverPadding(
-                padding: EdgeInsets.only(
-                  bottom:
-                      kBottomNavigationBarHeight +
-                      MediaQuery.of(context).padding.bottom +
-                      AppSpacing.xxl,
+                LibraryFilmedFallbackNotice(
+                  sort: ref.watch(librarySortProvider),
+                  segment: segment,
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
-        ),
-      ),
-      floatingActionButton: Padding(
-        padding: EdgeInsets.only(
-          bottom:
-              kBottomNavigationBarHeight +
-              MediaQuery.of(context).padding.bottom +
-              AppSpacing.sm,
-        ),
-        child:
+
+          // iCloud onboarding — shown once on first launch
+          const SliverToBoxAdapter(child: SyncOnboardingCard()),
+          const SliverToBoxAdapter(child: _StartupVideoReliabilityBanner()),
+
+          // Content — sliver-based for compositor-friendly scrolling
+          segment == ArsenalSegment.moves
+              ? movesAsync.when(
+                  loading: () => const SliverFillRemaining(
+                    child: Center(child: AppLoader()),
+                  ),
+                  error: (final e, _) => SliverFillRemaining(
+                    child: Center(child: Text('Error: $e')),
+                  ),
+                  data: (final filtered) {
+                    if (filtered.isEmpty) {
+                      return SliverFillRemaining(
+                        child: _EmptyState(
+                          hasSearch: searchQuery.isNotEmpty,
+                          isCombo: false,
+                        ),
+                      );
+                    }
+
+                    final sort = ref.watch(librarySortProvider);
+                    return librarySectionedSliver<Move>(
+                      items: filtered,
+                      sort: sort,
+                      viewMode: viewMode,
+                      dateOf: (final m) => m.effectiveDate(sort),
+                      sliverOf: (final section) => switch (viewMode) {
+                        ViewMode.glance => _MoveGridSliver(
+                          moves: section,
+                          sort: sort,
+                        ),
+                        ViewMode.scan => _MoveListSliver(
+                          moves: section,
+                          sort: sort,
+                        ),
+                        ViewMode.study => _MoveStudySliver(moves: section),
+                      },
+                    );
+                  },
+                )
+              : combosAsync.when(
+                  loading: () => const SliverFillRemaining(
+                    child: Center(child: AppLoader()),
+                  ),
+                  error: (final e, _) => SliverFillRemaining(
+                    child: Center(child: Text('Error: $e')),
+                  ),
+                  data: (final rows) {
+                    if (rows.isEmpty) {
+                      return SliverFillRemaining(
+                        child: _EmptyState(
+                          hasSearch: searchQuery.isNotEmpty,
+                          isCombo: true,
+                        ),
+                      );
+                    }
+
+                    final sort = ref.watch(librarySortProvider);
+                    return librarySectionedSliver<LibraryRow>(
+                      items: rows,
+                      sort: sort,
+                      viewMode: viewMode,
+                      dateOf: (final r) => r.effectiveDate(sort),
+                      sliverOf: (final section) {
+                        // `LibraryRow` maps back to a `(combo, count,
+                        // date)` triple at the sliver boundary. The date
+                        // rides along because a combo's practiced date is
+                        // `lastEntryAt`, which lives on the row and not on
+                        // the combo — the sort alone cannot recover it
+                        // downstream the way a move's can.
+                        final combos = section
+                            .map(
+                              (final r) =>
+                                  (r.combo, r.moveCount, r.effectiveDate(sort)),
+                            )
+                            .toList();
+                        return switch (viewMode) {
+                          ViewMode.glance => _ComboGridSliver(combos: combos),
+                          ViewMode.scan => _CombosContentSliver(combos: combos),
+                          ViewMode.study => _ComboStudySliver(combos: combos),
+                        };
+                      },
+                    );
+                  },
+                ),
+        ],
+        floatingActionButton:
             Semantics(
                   label: segment == ArsenalSegment.moves
                       ? 'Add new move'
@@ -599,12 +545,7 @@ class _StartupVideoReliabilityBanner extends ConsumerWidget {
     final hasRecovery = report.restoredLocally > 0;
 
     return Padding(
-      padding: const EdgeInsets.fromLTRB(
-        AppSpacing.screenEdge,
-        0,
-        AppSpacing.screenEdge,
-        AppSpacing.md,
-      ),
+      padding: const EdgeInsets.only(bottom: AppSpacing.md),
       child: Container(
         decoration: BoxDecoration(
           color: hasRecovery
@@ -1180,11 +1121,9 @@ class LibraryMonthHeader extends StatelessWidget {
 
     return SliverToBoxAdapter(
       child: Padding(
-        padding: const EdgeInsets.fromLTRB(
-          AppSpacing.screenEdge,
-          AppSpacing.md,
-          AppSpacing.screenEdge,
-          AppSpacing.xs,
+        padding: const EdgeInsets.only(
+          top: AppSpacing.md,
+          bottom: AppSpacing.xs,
         ),
         child: Text(
           label.toUpperCase(),
@@ -1278,72 +1217,69 @@ class _PillToggleRow<T> extends StatelessWidget {
   @override
   Widget build(final BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.screenEdge),
-      child: Row(
-        children: [
-          for (final item in items) ...[
-            if (item != items.first) const SizedBox(width: AppSpacing.sm),
-            Expanded(
-              child: Semantics(
-                button: true,
-                selected: selected == item,
-                label: labelOf(item),
-                child: GestureDetector(
-                  onTap: () {
-                    if (selected != item) onSelected(item);
-                  },
-                  onLongPress: onLongPress != null
-                      ? () => onLongPress!(item)
-                      : null,
-                  child: ExcludeSemantics(
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(vertical: 8),
-                      decoration: BoxDecoration(
-                        color: selected == item
-                            ? colorScheme.primary
-                            : colorScheme.surfaceContainerHighest,
-                        borderRadius: BorderRadius.circular(AppRadius.sm),
-                      ),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(
-                            iconOf(item),
-                            size: 16,
-                            color: selected == item
-                                ? Colors.white
-                                : colorScheme.secondary,
-                          ),
-                          const SizedBox(width: 6),
-                          // Flexible: four pills (the sort row) do not fit a
-                          // narrow screen at full label width; two and three
-                          // still lay out unchanged.
-                          Flexible(
-                            child: Text(
-                              labelOf(item),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: AppTypography.caption.copyWith(
-                                color: selected == item
-                                    ? Colors.white
-                                    : colorScheme.onSurface,
-                                fontWeight: selected == item
-                                    ? FontWeight.w600
-                                    : FontWeight.w400,
-                              ),
+    return Row(
+      children: [
+        for (final item in items) ...[
+          if (item != items.first) const SizedBox(width: AppSpacing.sm),
+          Expanded(
+            child: Semantics(
+              button: true,
+              selected: selected == item,
+              label: labelOf(item),
+              child: GestureDetector(
+                onTap: () {
+                  if (selected != item) onSelected(item);
+                },
+                onLongPress: onLongPress != null
+                    ? () => onLongPress!(item)
+                    : null,
+                child: ExcludeSemantics(
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(vertical: 8),
+                    decoration: BoxDecoration(
+                      color: selected == item
+                          ? colorScheme.primary
+                          : colorScheme.surfaceContainerHighest,
+                      borderRadius: BorderRadius.circular(AppRadius.sm),
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(
+                          iconOf(item),
+                          size: 16,
+                          color: selected == item
+                              ? Colors.white
+                              : colorScheme.secondary,
+                        ),
+                        const SizedBox(width: 6),
+                        // Flexible: four pills (the sort row) do not fit a
+                        // narrow screen at full label width; two and three
+                        // still lay out unchanged.
+                        Flexible(
+                          child: Text(
+                            labelOf(item),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: AppTypography.caption.copyWith(
+                              color: selected == item
+                                  ? Colors.white
+                                  : colorScheme.onSurface,
+                              fontWeight: selected == item
+                                  ? FontWeight.w600
+                                  : FontWeight.w400,
                             ),
                           ),
-                        ],
-                      ),
+                        ),
+                      ],
                     ),
                   ),
                 ),
               ),
             ),
-          ],
+          ),
         ],
-      ),
+      ],
     );
   }
 }
@@ -1358,12 +1294,9 @@ Widget _sliverStaggeredList({
   required final int itemCount,
   required final Widget Function(int index) builder,
 }) {
-  return SliverPadding(
-    padding: const EdgeInsets.symmetric(horizontal: AppSpacing.screenEdge),
-    sliver: SliverList.builder(
-      itemCount: itemCount,
-      itemBuilder: (_, final index) => builder(index),
-    ),
+  return SliverList.builder(
+    itemCount: itemCount,
+    itemBuilder: (_, final index) => builder(index),
   );
 }
 
@@ -1372,18 +1305,15 @@ Widget _sliverArsenalGrid({
   required final int itemCount,
   required final Widget Function(int index) builder,
 }) {
-  return SliverPadding(
-    padding: const EdgeInsets.symmetric(horizontal: AppSpacing.screenEdge),
-    sliver: SliverGrid.builder(
-      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 2,
-        mainAxisSpacing: AppSpacing.sm,
-        crossAxisSpacing: AppSpacing.sm,
-        childAspectRatio: 0.8,
-      ),
-      itemCount: itemCount,
-      itemBuilder: (_, final index) => builder(index),
+  return SliverGrid.builder(
+    gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+      crossAxisCount: 2,
+      mainAxisSpacing: AppSpacing.sm,
+      crossAxisSpacing: AppSpacing.sm,
+      childAspectRatio: 0.8,
     ),
+    itemCount: itemCount,
+    itemBuilder: (_, final index) => builder(index),
   );
 }
 

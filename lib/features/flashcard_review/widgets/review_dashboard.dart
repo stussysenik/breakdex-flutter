@@ -1,2 +1,1 @@
-
 // Immersive review dashboard overlay.

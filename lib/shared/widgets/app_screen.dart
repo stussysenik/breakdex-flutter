@@ -11,12 +11,16 @@ import 'package:breakdex/shared/widgets/app_breadcrumb.dart';
 /// Screens do not build their own `Scaffold`, `AppBar`, or `SliverAppBar` —
 /// doing so re-introduces the per-screen header drift this type removes.
 ///
-/// Two forms:
+/// Three forms:
 /// - default — a single scrolling column, the **one-scroll** default.
 /// - [AppScreen.slivers] — for grids and lazy lists that need sliver control.
+/// - [AppScreen.fill] — for a content band that manages its own scrolling
+///   (an `IndexedStack` of views, each already a list).
 ///
-/// Both apply the gutter, the reading-width clamp, and the nav-band inset, so
-/// no caller has to remember them.
+/// The two scrolling forms apply the gutter, the reading-width clamp, and the
+/// nav-band inset, so no caller has to remember them. [AppScreen.fill] applies
+/// the clamp and the top gap only — its child owns its padding, because a
+/// frame that padded it too would double every edge.
 class AppScreen extends StatelessWidget {
   const AppScreen({
     super.key,
@@ -24,8 +28,10 @@ class AppScreen extends StatelessWidget {
     required this.children,
     this.actions = const [],
     this.floatingActionButton,
+    this.pinned,
     this.wide = false,
-  }) : slivers = null;
+  }) : slivers = null,
+       child = null;
 
   /// Sliver form, for content that must lazily build (grids, long lists).
   ///
@@ -38,8 +44,27 @@ class AppScreen extends StatelessWidget {
     required List<Widget> this.slivers,
     this.actions = const [],
     this.floatingActionButton,
+    this.pinned,
     this.wide = false,
-  }) : children = const [];
+  }) : children = const [],
+       child = null;
+
+  /// Fill form, for a content band that is not one scroll view the frame can
+  /// pad — an `IndexedStack` whose branches each scroll themselves.
+  ///
+  /// The frame still owns bands 1, 2 and 4 and the width clamp; the child owns
+  /// its own padding and its own bottom inset ([AppLayout.scrollBottomInset]
+  /// plus the safe inset, exactly as the scrolling forms compute it).
+  const AppScreen.fill({
+    super.key,
+    required this.title,
+    required Widget this.child,
+    this.actions = const [],
+    this.floatingActionButton,
+    this.pinned,
+    this.wide = false,
+  }) : children = const [],
+       slivers = null;
 
   /// Screen title. Always rendered at the same baseline, in `titleLarge`.
   /// A screen whose title needs bespoke styling is asking for a different
@@ -58,8 +83,15 @@ class AppScreen extends StatelessWidget {
   /// this screen (`extendBody: true`), so an un-inset FAB sits under it.
   final Widget? floatingActionButton;
 
+  /// A control that stays put directly under the header band — a segmented
+  /// control, a filter row. It sits inside the content band, not inside band 2:
+  /// the header keeps its fixed height on every screen, and a screen that needs
+  /// a persistent control gets one without growing the band.
+  final Widget? pinned;
+
   final List<Widget> children;
   final List<Widget>? slivers;
+  final Widget? child;
 
   /// Opt into the wider [AppLayout.maxWideWidth] clamp. For dense grids only —
   /// never for reading content, where a wide measure hurts legibility.
@@ -69,7 +101,19 @@ class AppScreen extends StatelessWidget {
   Widget build(final BuildContext context) {
     final maxWidth = wide ? AppLayout.maxWideWidth : AppLayout.maxContentWidth;
     final slivers = this.slivers;
+    final child = this.child;
+    final pinned = this.pinned;
     final fab = floatingActionButton;
+    // The shell paints band 4 over this screen, and on a home-indicator device
+    // that band is `navBandHeight + padding.bottom` tall — the same sum
+    // `showAppSheet` owns. A flat constant here under-reserves by the inset.
+    final bottomInset = bottomInsetOf(context);
+    final contentPadding = EdgeInsets.fromLTRB(
+      AppLayout.gutter,
+      AppLayout.contentTopGap,
+      AppLayout.gutter,
+      bottomInset,
+    );
 
     // The frame owns the Material surface. Screens no longer build a Scaffold,
     // so if this one went away every InkWell below would lose its ancestor.
@@ -90,6 +134,22 @@ class AppScreen extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             _HeaderBand(title: title, actions: actions, maxWidth: maxWidth),
+            if (pinned != null)
+              Align(
+                alignment: Alignment.topCenter,
+                child: ConstrainedBox(
+                  constraints: BoxConstraints(maxWidth: maxWidth),
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(
+                      AppLayout.gutter,
+                      AppLayout.contentTopGap,
+                      AppLayout.gutter,
+                      AppLayout.contentTopGap,
+                    ),
+                    child: pinned,
+                  ),
+                ),
+              ),
             Expanded(
               // topCenter, never Center: the clamp is horizontal only. Centring
               // vertically would let short content float away from the header
@@ -98,22 +158,29 @@ class AppScreen extends StatelessWidget {
                 alignment: Alignment.topCenter,
                 child: ConstrainedBox(
                   constraints: BoxConstraints(maxWidth: maxWidth),
-                  child: slivers == null
-                      ? SingleChildScrollView(
-                          padding: _contentPadding,
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.stretch,
-                            children: children,
-                          ),
-                        )
-                      : CustomScrollView(
-                          slivers: [
-                            SliverPadding(
-                              padding: _contentPadding,
-                              sliver: SliverMainAxisGroup(slivers: slivers),
-                            ),
-                          ],
+                  child: switch ((slivers, child)) {
+                    (final s?, _) => CustomScrollView(
+                      slivers: [
+                        SliverPadding(
+                          padding: contentPadding,
+                          sliver: SliverMainAxisGroup(slivers: s),
                         ),
+                      ],
+                    ),
+                    (_, final c?) => Padding(
+                      padding: EdgeInsets.only(
+                        top: pinned == null ? AppLayout.contentTopGap : 0,
+                      ),
+                      child: c,
+                    ),
+                    _ => SingleChildScrollView(
+                      padding: contentPadding,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: children,
+                      ),
+                    ),
+                  },
                 ),
               ),
             ),
@@ -123,12 +190,10 @@ class AppScreen extends StatelessWidget {
     );
   }
 
-  static const _contentPadding = EdgeInsets.fromLTRB(
-    AppLayout.gutter,
-    AppLayout.contentTopGap,
-    AppLayout.gutter,
-    AppLayout.scrollBottomInset,
-  );
+  /// The bottom inset a `fill` child must reserve at the end of its own scroll,
+  /// so it clears band 4 exactly as the frame's own scrolling forms do.
+  static double bottomInsetOf(final BuildContext context) =>
+      AppLayout.scrollBottomInset + MediaQuery.of(context).padding.bottom;
 }
 
 /// Band 2. Fixed height, fixed baseline, on every screen.

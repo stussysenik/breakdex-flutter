@@ -34,6 +34,7 @@ import 'package:breakdex/features/flashcard_review/widgets/rating_button_row.dar
 import 'package:breakdex/features/flashcard_review/widgets/mastery_prescreen.dart';
 import 'package:breakdex/features/flashcard_review/widgets/review_card.dart';
 import 'package:breakdex/features/flashcard_review/widgets/state_picker_sheet.dart';
+import 'package:breakdex/shared/widgets/app_screen.dart';
 import 'package:breakdex/shared/widgets/app_segmented_control.dart';
 import 'package:breakdex/shared/widgets/celebration_overlay.dart';
 import 'package:breakdex/shared/widgets/video_picker_sheet.dart';
@@ -257,7 +258,6 @@ class _FlashcardReviewScreenState extends ConsumerState<FlashcardReviewScreen>
 
   @override
   Widget build(final BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
     final l10n = AppLocalizations.of(context);
     final reviewMode = ref.watch(reviewModeProvider);
     final sessionActive = ref.watch(reviewSessionActiveProvider);
@@ -269,58 +269,28 @@ class _FlashcardReviewScreenState extends ConsumerState<FlashcardReviewScreen>
       return Scaffold(body: SafeArea(child: _buildFlashcardSession()));
     }
 
-    return Scaffold(
-      body: SafeArea(
-        child: Column(
-          children: [
-            const SizedBox(height: AppSpacing.md),
-
-            // Title
-            Padding(
-              padding: const EdgeInsets.symmetric(
-                horizontal: AppSpacing.screenEdge,
-              ),
-              child: Text(
-                l10n.revDrill,
-                style: AppTypography.titleLarge.copyWith(
-                  color: colorScheme.onSurface,
-                ),
-              ),
-            ),
-
-            const SizedBox(height: AppSpacing.xs),
-            Padding(
-              padding: const EdgeInsets.symmetric(
-                horizontal: AppSpacing.screenEdge,
-              ),
-              child: AppSegmentedControl<ReviewMode>(
-                items: [
-                  AppSegmentedControlItem(
-                    value: ReviewMode.review,
-                    icon: AppIcon.grid.resolve(context),
-                    label: l10n.revReviewSegment,
-                  ),
-                  AppSegmentedControlItem(
-                    value: ReviewMode.deck,
-                    icon: AppIcon.study.resolve(context),
-                    label: l10n.revDeckSegment,
-                  ),
-                ],
-                selectedValue: reviewMode,
-                onChanged: _setReviewMode,
-              ),
-            ),
-            const SizedBox(height: AppSpacing.xs),
-
-            Expanded(
-              child: MasteryPrescreen(
-                source: reviewMode == ReviewMode.deck
-                    ? ReviewSessionSource.deck
-                    : ReviewSessionSource.stateBased,
-              ),
-            ),
-          ],
-        ),
+    return AppScreen.fill(
+      title: l10n.revDrill,
+      pinned: AppSegmentedControl<ReviewMode>(
+        items: [
+          AppSegmentedControlItem(
+            value: ReviewMode.review,
+            icon: AppIcon.grid.resolve(context),
+            label: l10n.revReviewSegment,
+          ),
+          AppSegmentedControlItem(
+            value: ReviewMode.deck,
+            icon: AppIcon.study.resolve(context),
+            label: l10n.revDeckSegment,
+          ),
+        ],
+        selectedValue: reviewMode,
+        onChanged: _setReviewMode,
+      ),
+      child: MasteryPrescreen(
+        source: reviewMode == ReviewMode.deck
+            ? ReviewSessionSource.deck
+            : ReviewSessionSource.stateBased,
       ),
     );
   }
@@ -663,7 +633,9 @@ class _FlashcardReviewScreenState extends ConsumerState<FlashcardReviewScreen>
                   width: 88,
                   height: 88,
                   decoration: BoxDecoration(
-                    color: AppSemanticTheme.of(context).actionGood.withValues(alpha: 0.12),
+                    color: AppSemanticTheme.of(
+                      context,
+                    ).actionGood.withValues(alpha: 0.12),
                     shape: BoxShape.circle,
                   ),
                   child: AppIconView(

@@ -16,7 +16,19 @@ const _migratedScreens = <String>[
   'lib/features/stats/stats_screen.dart',
   'lib/features/lab/lab_screen.dart',
   'lib/features/flow/flow_screen.dart',
+  'lib/features/move_list/move_list_screen.dart',
+  'lib/features/combos/combos_screen.dart',
 ];
+
+/// Surfaces that are deliberately frameless, and why. A frameless surface is
+/// not an exemption from the constitution — it is a surface with **no** bands
+/// at all, which is a different decision from a screen that builds its own.
+///
+/// `flashcard_review_screen` holds both: its prescreen is on the frame
+/// (`AppScreen.fill`), and an active drill session takes the whole viewport
+/// with the header and nav band hidden on purpose. It joins the roster above
+/// when that session moves to its own file — tracked as task 4.4.
+const _frameless = 'lib/features/flashcard_review/flashcard_review_screen.dart';
 
 /// Chrome a screen is no longer allowed to build for itself. The frame renders
 /// bands 1, 2 and 4; a screen that re-declares any of them has left the frame.
@@ -48,6 +60,15 @@ void main() {
         }
       });
     }
+
+    test('the frameless drill session stays a single bounded exemption', () {
+      // Bounded, not open: one Scaffold is the immersive session. A second one
+      // means a screen quietly grew chrome again under cover of the exemption.
+      final source = File(_frameless).readAsStringSync();
+      expect('Scaffold('.allMatches(source).length, 1);
+      expect(source.contains('AppBar('), isFalse);
+      expect(source.contains('AppScreen.fill('), isTrue);
+    });
 
     test('the frame itself is the single place chrome is built', () {
       // AppScreen is allowed the Scaffold precisely because it is the one

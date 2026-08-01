@@ -157,7 +157,9 @@ class ScheduleReviewScreen extends ConsumerWidget {
                         AppIconView(
                           AppIcon.check,
                           size: 48,
-                          color: AppSemanticTheme.of(context).actionGood.withValues(alpha: 0.5),
+                          color: AppSemanticTheme.of(
+                            context,
+                          ).actionGood.withValues(alpha: 0.5),
                         ),
                         const SizedBox(height: AppSpacing.sm),
                         Text(

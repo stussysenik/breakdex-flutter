@@ -87,7 +87,7 @@ class StatePickerSheet extends ConsumerWidget {
               ],
             ),
           ),
-          
+
           const Divider(height: 1),
 
           for (final state in LearningState.values)
@@ -122,7 +122,7 @@ class StatePickerSheet extends ConsumerWidget {
                 },
               ),
           ],
-          
+
           const SizedBox(height: AppSpacing.xl),
         ],
       ),
@@ -168,11 +168,7 @@ class _StateOption extends StatelessWidget {
         ),
         child: Row(
           children: [
-            Container(
-              width: 4,
-              height: 24,
-              color: stateColor,
-            ),
+            Container(width: 4, height: 24, color: stateColor),
             const SizedBox(width: AppSpacing.md),
             Expanded(
               child: Text(
@@ -181,7 +177,9 @@ class _StateOption extends StatelessWidget {
                   fontWeight: isCurrent ? FontWeight.w900 : FontWeight.w600,
                   letterSpacing: 1.0,
                   fontFamily: 'Menlo',
-                  color: isCurrent ? colorScheme.onSurface : colorScheme.onSurface.withValues(alpha: 0.6),
+                  color: isCurrent
+                      ? colorScheme.onSurface
+                      : colorScheme.onSurface.withValues(alpha: 0.6),
                 ),
               ),
             ),
@@ -208,4 +206,3 @@ class _StateOption extends StatelessWidget {
     );
   }
 }
-

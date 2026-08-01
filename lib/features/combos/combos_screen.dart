@@ -18,6 +18,7 @@ import 'package:breakdex/core/design/typography.dart';
 import 'package:breakdex/core/providers.dart';
 import 'package:breakdex/core/utils/time_format.dart';
 import 'package:breakdex/shared/widgets/app_loader.dart';
+import 'package:breakdex/shared/widgets/app_screen.dart';
 import 'package:breakdex/shared/widgets/app_segmented_control.dart';
 import 'package:breakdex/features/combo_detail/widgets/status_tag.dart';
 import 'package:breakdex/features/combos/plan_combo_flow.dart';
@@ -68,34 +69,47 @@ class _CombosScreenState extends ConsumerState<CombosScreen> {
     final colorScheme = Theme.of(context).colorScheme;
     final comboPlural = ref.watch(entityNamesProvider).comboPlural;
 
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(comboPlural),
-        bottom: PreferredSize(
-          preferredSize: const Size.fromHeight(60),
-          child: Padding(
-            padding: const EdgeInsets.symmetric(
-              horizontal: AppSpacing.screenEdge,
-              vertical: AppSpacing.sm,
-            ),
-            child: AppSegmentedControl<int>(
-              // No icons: three segments + icons truncate the labels on
-              // phone widths ("Planne…").
-              items: const [
-                AppSegmentedControlItem(value: 0, label: 'Library'),
-                AppSegmentedControlItem(value: 1, label: 'Planned'),
-                AppSegmentedControlItem(value: 2, label: 'Calendar'),
-              ],
-              selectedValue: _tabIndex,
-              onChanged: (final v) {
-                unawaited(HapticFeedback.selectionClick());
-                setState(() => _tabIndex = v);
-              },
-            ),
-          ),
-        ),
+    return AppScreen.fill(
+      title: comboPlural,
+      // The segment control is a persistent control, not a header: band 2
+      // keeps its fixed height and this rides directly beneath it.
+      pinned: AppSegmentedControl<int>(
+        // No icons: three segments + icons truncate the labels on
+        // phone widths ("Planne…").
+        items: const [
+          AppSegmentedControlItem(value: 0, label: 'Library'),
+          AppSegmentedControlItem(value: 1, label: 'Planned'),
+          AppSegmentedControlItem(value: 2, label: 'Calendar'),
+        ],
+        selectedValue: _tabIndex,
+        onChanged: (final v) {
+          unawaited(HapticFeedback.selectionClick());
+          setState(() => _tabIndex = v);
+        },
       ),
-      body: IndexedStack(
+      // The + button is the single entry point for adding on each tab:
+      // Library → create a combo, Planned → plan a combo. (Calendar plans
+      // per-day via its own inline affordance.)
+      floatingActionButton: _tabIndex == 2
+          ? null
+          : Semantics(
+              identifier: 'combos-fab',
+              button: true,
+              label: _tabIndex == 1 ? 'Plan a combo' : 'Create combo',
+              child: FloatingActionButton(
+                tooltip: _tabIndex == 1 ? 'Plan a combo' : 'Create combo',
+                onPressed: () async {
+                  if (_tabIndex == 1) {
+                    await planComboFlow(context, ref);
+                  } else {
+                    await context.push('/create-combo');
+                  }
+                },
+                backgroundColor: colorScheme.primary,
+                child: const AppIconView(AppIcon.add, color: Colors.white),
+              ),
+            ),
+      child: IndexedStack(
         index: _tabIndex,
         children: const [
           ComboLibraryView(),
@@ -103,38 +117,6 @@ class _CombosScreenState extends ConsumerState<CombosScreen> {
           ComboCalendarView(),
         ],
       ),
-      // The + button is the single entry point for adding on each tab:
-      // Library → create a combo, Planned → plan a combo. (Calendar plans
-      // per-day via its own inline affordance.)
-      floatingActionButton: _tabIndex == 2
-          ? null
-          // Lift above the shell's bottom nav (house pattern, see
-          // move_list_screen) — otherwise the FAB renders behind it.
-          : Padding(
-              padding: EdgeInsets.only(
-                bottom:
-                    kBottomNavigationBarHeight +
-                    MediaQuery.of(context).padding.bottom +
-                    AppSpacing.sm,
-              ),
-              child: Semantics(
-                identifier: 'combos-fab',
-                button: true,
-                label: _tabIndex == 1 ? 'Plan a combo' : 'Create combo',
-                child: FloatingActionButton(
-                  tooltip: _tabIndex == 1 ? 'Plan a combo' : 'Create combo',
-                  onPressed: () async {
-                    if (_tabIndex == 1) {
-                      await planComboFlow(context, ref);
-                    } else {
-                      await context.push('/create-combo');
-                    }
-                  },
-                  backgroundColor: colorScheme.primary,
-                  child: const AppIconView(AppIcon.add, color: Colors.white),
-                ),
-              ),
-            ),
     );
   }
 }
@@ -171,11 +153,11 @@ class ComboLibraryView extends ConsumerWidget {
         }
 
         return ListView.builder(
-          padding: const EdgeInsets.fromLTRB(
+          padding: EdgeInsets.fromLTRB(
             AppSpacing.screenEdge,
             AppSpacing.sm,
             AppSpacing.screenEdge,
-            80,
+            AppScreen.bottomInsetOf(context),
           ),
           itemCount: grouped.length,
           itemBuilder: (final context, final sectionIndex) {
@@ -418,11 +400,11 @@ class _ComboPlannedViewState extends ConsumerState<ComboPlannedView> {
     final progress = progressAsync.valueOrNull ?? (0, 0, 0);
 
     return ListView(
-      padding: const EdgeInsets.fromLTRB(
+      padding: EdgeInsets.fromLTRB(
         AppSpacing.screenEdge,
         AppSpacing.sm,
         AppSpacing.screenEdge,
-        80,
+        AppScreen.bottomInsetOf(context),
       ),
       children: [
         _ProgressStrip(
@@ -697,7 +679,12 @@ class _ComboCalendarViewState extends ConsumerState<ComboCalendarView> {
     final today = DateFormat('yyyy-MM-dd').format(DateTime.now());
 
     return ListView(
-      padding: const EdgeInsets.all(AppSpacing.screenEdge),
+      padding: EdgeInsets.fromLTRB(
+        AppSpacing.screenEdge,
+        AppSpacing.screenEdge,
+        AppSpacing.screenEdge,
+        AppScreen.bottomInsetOf(context),
+      ),
       children: [
         // Month header with navigation
         Row(

@@ -44,10 +44,14 @@ class ReviewSessionSourceNotifier extends Notifier<ReviewSessionSource> {
 }
 
 /// Which learning state to filter review cards by (null = all).
-final reviewStateFilterProvider = StateProvider<LearningState?>((final ref) => null);
+final reviewStateFilterProvider = StateProvider<LearningState?>(
+  (final ref) => null,
+);
 
 /// Which custom learning state dbValue to filter review cards by (null = all).
-final reviewCustomStateFilterProvider = StateProvider<String?>((final ref) => null);
+final reviewCustomStateFilterProvider = StateProvider<String?>(
+  (final ref) => null,
+);
 
 /// Which entity type to review in state-based mode.
 final reviewEntityKindProvider = StateProvider<ReviewEntityKind>(
@@ -55,7 +59,9 @@ final reviewEntityKindProvider = StateProvider<ReviewEntityKind>(
 );
 
 /// Which move category to filter by (null = all).
-final reviewCategoryFilterProvider = StateProvider<String?>((final ref) => null);
+final reviewCategoryFilterProvider = StateProvider<String?>(
+  (final ref) => null,
+);
 
 /// Session size (null = all matching moves).
 final reviewSessionSizeProvider = StateProvider<int?>((final ref) => null);
@@ -76,7 +82,9 @@ final reviewSessionTargetMoveIdsProvider = StateProvider<Set<String>?>(
 );
 
 /// Filtered + shuffled moves for the current review session.
-final filteredReviewMovesProvider = FutureProvider<List<Move>>((final ref) async {
+final filteredReviewMovesProvider = FutureProvider<List<Move>>((
+  final ref,
+) async {
   // Bind to a seed so we only re-fetch/reshuffle when explicitly requested
   final seed = ref.watch(_sessionSeedProvider);
   final source = ref.watch(reviewSessionSourceProvider);
@@ -88,7 +96,9 @@ final filteredReviewMovesProvider = FutureProvider<List<Move>>((final ref) async
   List<Move> moves;
   if (targetMoveIds != null && targetMoveIds.isNotEmpty) {
     final allMoves = await ref.watch(movesDaoProvider).getAll();
-    moves = allMoves.where((final move) => targetMoveIds.contains(move.id)).toList();
+    moves = allMoves
+        .where((final move) => targetMoveIds.contains(move.id))
+        .toList();
   } else if (source == ReviewSessionSource.deck) {
     if (selectedDeck == null) return [];
     moves = await ref.watch(deckServiceProvider).resolveDeck(selectedDeck);
@@ -152,20 +162,23 @@ class ReviewStateMatrix {
   final Map<String, int> customMoveCounts;
 
   int totalFor(final ReviewEntityKind kind) => switch (kind) {
-    ReviewEntityKind.moves => moveCounts.values.fold(
-      0,
-      (final sum, final value) => sum + value,
-    ) + customMoveCounts.values.fold(0, (final sum, final value) => sum + value),
+    ReviewEntityKind.moves =>
+      moveCounts.values.fold(0, (final sum, final value) => sum + value) +
+          customMoveCounts.values.fold(
+            0,
+            (final sum, final value) => sum + value,
+          ),
     ReviewEntityKind.combos => comboCounts.values.fold(
       0,
       (final sum, final value) => sum + value,
     ),
   };
 
-  Map<LearningState, int> countsFor(final ReviewEntityKind kind) => switch (kind) {
-    ReviewEntityKind.moves => moveCounts,
-    ReviewEntityKind.combos => comboCounts,
-  };
+  Map<LearningState, int> countsFor(final ReviewEntityKind kind) =>
+      switch (kind) {
+        ReviewEntityKind.moves => moveCounts,
+        ReviewEntityKind.combos => comboCounts,
+      };
 }
 
 String _entityKey(final String entityType, final String entityId) =>
@@ -207,10 +220,11 @@ final reviewStateMatrixProvider = FutureProvider<ReviewStateMatrix>((
   for (final move in moves) {
     final card = cardMap[_entityKey('move', move.id)];
     if (!practiceAll && !_isDue(card, now)) continue;
-    
+
     // Categorize by move.learningState if it's not a standard one
     final dbState = move.learningState;
-    final standardState = LearningState.values.any((final s) => s.dbValue == dbState)
+    final standardState =
+        LearningState.values.any((final s) => s.dbValue == dbState)
         ? LearningState.fromString(dbState)
         : null;
 
@@ -235,7 +249,6 @@ final reviewStateMatrixProvider = FutureProvider<ReviewStateMatrix>((
   );
 });
 
-
 final reactiveMovesProvider = StreamProvider<List<Move>>((final ref) {
   return ref.watch(moveRepositoryProvider).watchAll();
 });
@@ -247,135 +260,138 @@ final reactiveCombosProvider = StreamProvider<List<Combo>>((final ref) {
 /// State-based sessions are due-only. Deck sessions still honor the deck
 /// definition, and targeted sessions bypass due filtering so the user can
 /// review that specific move immediately.
-final filteredReviewSessionItemsProvider =
-    FutureProvider<List<ReviewSessionItem>>((final ref) async {
-      ref.watch(fsrsCardsRefreshProvider);
-      
-      // Watch reactive streams to strictly rebuild on any entity change (data relationship)
-      final movesAsync = ref.watch(reactiveMovesProvider);
-      final combosAsync = ref.watch(reactiveCombosProvider);
-      
-      final seed = ref.watch(_sessionSeedProvider);
-      final source = ref.watch(reviewSessionSourceProvider);
-      final practiceAll = ref.watch(reviewPracticeAllProvider);
-      final stateFilter = ref.watch(reviewStateFilterProvider);
-      final customStateFilter = ref.watch(reviewCustomStateFilterProvider);
-      final sessionSize = ref.watch(reviewSessionSizeProvider);
-      final selectedDeck = ref.watch(selectedDeckProvider);
-      final targetMoveIds = ref.watch(reviewSessionTargetMoveIdsProvider);
-      final entityKind = ref.watch(reviewEntityKindProvider);
-      
-      final db = ref.watch(databaseProvider);
-      
-      // Fallback to static fetch for the very first frame if streams are still loading
-      final moves = movesAsync.value ?? await db.movesDao.getAll();
-      final combos = combosAsync.value ?? await db.combosDao.getAll();
-      final cards = await db.fsrsCardsDao.getAll();
-      final cardMap = {
-        for (final card in cards)
-          _entityKey(card.entityType, card.entityId): card,
-      };
-      final now = DateTime.now().toUtc();
+final filteredReviewSessionItemsProvider = FutureProvider<List<ReviewSessionItem>>((
+  final ref,
+) async {
+  ref.watch(fsrsCardsRefreshProvider);
 
-      List<ReviewSessionItem> items;
-      if (targetMoveIds != null && targetMoveIds.isNotEmpty) {
-        items = moves
-            .where((final move) => targetMoveIds.contains(move.id))
-            .map(
-              (final move) => ReviewSessionItem(
-                entityId: move.id,
-                entityType: 'move',
-                displayName: move.name,
-                state: learningStateFromFsrsState(
-                  cardMap[_entityKey('move', move.id)]?.fsrsState,
-                ),
-                category: move.category,
-                videoPath: move.resolvedVideoPath,
-                originalVideoName: move.originalVideoName,
-                move: move,
-              ),
-            )
-            .toList();
-      } else if (source == ReviewSessionSource.deck) {
-        if (selectedDeck == null) return [];
-        final moves = await ref
-            .watch(deckServiceProvider)
-            .resolveDeck(selectedDeck);
-        items = moves
-            .map(
-              (final move) => ReviewSessionItem(
-                entityId: move.id,
-                entityType: 'move',
-                displayName: move.name,
-                state: learningStateFromFsrsState(
-                  cardMap[_entityKey('move', move.id)]?.fsrsState,
-                ),
-                category: move.category,
-                videoPath: move.resolvedVideoPath,
-                originalVideoName: move.originalVideoName,
-                move: move,
-              ),
-            )
-            .toList();
-      } else if (entityKind == ReviewEntityKind.moves) {
-        items = moves
-            .where((final move) => practiceAll || _isDue(cardMap[_entityKey('move', move.id)], now))
-            .map(
-              (final move) => ReviewSessionItem(
-                entityId: move.id,
-                entityType: 'move',
-                displayName: move.name,
-                state: learningStateFromFsrsState(
-                  cardMap[_entityKey('move', move.id)]?.fsrsState,
-                ),
-                category: move.category,
-                videoPath: move.resolvedVideoPath,
-                originalVideoName: move.originalVideoName,
-                move: move,
-              ),
-            )
-            .toList();
-      } else {
-        items = combos
-            .where(
-              (final combo) => practiceAll || _isDue(cardMap[_entityKey('combo', combo.id)], now),
-            )
-            .map(
-              (final combo) => ReviewSessionItem(
-                entityId: combo.id,
-                entityType: 'combo',
-                displayName: combo.name,
-                state: learningStateFromFsrsState(
-                  cardMap[_entityKey('combo', combo.id)]?.fsrsState,
-                ),
-                category: 'combo',
-                videoPath: combo.resolvedActiveVideoPath,
-                combo: combo,
-              ),
-            )
-            .toList();
-      }
+  // Watch reactive streams to strictly rebuild on any entity change (data relationship)
+  final movesAsync = ref.watch(reactiveMovesProvider);
+  final combosAsync = ref.watch(reactiveCombosProvider);
 
-      if (stateFilter != null && targetMoveIds == null) {
-        items = items.where((final item) => item.state == stateFilter).toList();
-      } else if (customStateFilter != null && targetMoveIds == null) {
-        items = items
-            .where((final item) => item.move?.learningState == customStateFilter)
-            .toList();
-      }
+  final seed = ref.watch(_sessionSeedProvider);
+  final source = ref.watch(reviewSessionSourceProvider);
+  final practiceAll = ref.watch(reviewPracticeAllProvider);
+  final stateFilter = ref.watch(reviewStateFilterProvider);
+  final customStateFilter = ref.watch(reviewCustomStateFilterProvider);
+  final sessionSize = ref.watch(reviewSessionSizeProvider);
+  final selectedDeck = ref.watch(selectedDeckProvider);
+  final targetMoveIds = ref.watch(reviewSessionTargetMoveIdsProvider);
+  final entityKind = ref.watch(reviewEntityKindProvider);
 
-      final shuffled = List<ReviewSessionItem>.from(items)
-        ..shuffle(Random(seed));
-      final effectiveSessionSize = switch (source) {
-        ReviewSessionSource.deck => selectedDeck?.sessionSize,
-        ReviewSessionSource.stateBased => sessionSize,
-      };
-      if (effectiveSessionSize != null &&
-          shuffled.length > effectiveSessionSize) {
-        return shuffled.sublist(0, effectiveSessionSize);
-      }
-      return shuffled;
-    });
+  final db = ref.watch(databaseProvider);
+
+  // Fallback to static fetch for the very first frame if streams are still loading
+  final moves = movesAsync.value ?? await db.movesDao.getAll();
+  final combos = combosAsync.value ?? await db.combosDao.getAll();
+  final cards = await db.fsrsCardsDao.getAll();
+  final cardMap = {
+    for (final card in cards) _entityKey(card.entityType, card.entityId): card,
+  };
+  final now = DateTime.now().toUtc();
+
+  List<ReviewSessionItem> items;
+  if (targetMoveIds != null && targetMoveIds.isNotEmpty) {
+    items = moves
+        .where((final move) => targetMoveIds.contains(move.id))
+        .map(
+          (final move) => ReviewSessionItem(
+            entityId: move.id,
+            entityType: 'move',
+            displayName: move.name,
+            state: learningStateFromFsrsState(
+              cardMap[_entityKey('move', move.id)]?.fsrsState,
+            ),
+            category: move.category,
+            videoPath: move.resolvedVideoPath,
+            originalVideoName: move.originalVideoName,
+            move: move,
+          ),
+        )
+        .toList();
+  } else if (source == ReviewSessionSource.deck) {
+    if (selectedDeck == null) return [];
+    final moves = await ref
+        .watch(deckServiceProvider)
+        .resolveDeck(selectedDeck);
+    items = moves
+        .map(
+          (final move) => ReviewSessionItem(
+            entityId: move.id,
+            entityType: 'move',
+            displayName: move.name,
+            state: learningStateFromFsrsState(
+              cardMap[_entityKey('move', move.id)]?.fsrsState,
+            ),
+            category: move.category,
+            videoPath: move.resolvedVideoPath,
+            originalVideoName: move.originalVideoName,
+            move: move,
+          ),
+        )
+        .toList();
+  } else if (entityKind == ReviewEntityKind.moves) {
+    items = moves
+        .where(
+          (final move) =>
+              practiceAll || _isDue(cardMap[_entityKey('move', move.id)], now),
+        )
+        .map(
+          (final move) => ReviewSessionItem(
+            entityId: move.id,
+            entityType: 'move',
+            displayName: move.name,
+            state: learningStateFromFsrsState(
+              cardMap[_entityKey('move', move.id)]?.fsrsState,
+            ),
+            category: move.category,
+            videoPath: move.resolvedVideoPath,
+            originalVideoName: move.originalVideoName,
+            move: move,
+          ),
+        )
+        .toList();
+  } else {
+    items = combos
+        .where(
+          (final combo) =>
+              practiceAll ||
+              _isDue(cardMap[_entityKey('combo', combo.id)], now),
+        )
+        .map(
+          (final combo) => ReviewSessionItem(
+            entityId: combo.id,
+            entityType: 'combo',
+            displayName: combo.name,
+            state: learningStateFromFsrsState(
+              cardMap[_entityKey('combo', combo.id)]?.fsrsState,
+            ),
+            category: 'combo',
+            videoPath: combo.resolvedActiveVideoPath,
+            combo: combo,
+          ),
+        )
+        .toList();
+  }
+
+  if (stateFilter != null && targetMoveIds == null) {
+    items = items.where((final item) => item.state == stateFilter).toList();
+  } else if (customStateFilter != null && targetMoveIds == null) {
+    items = items
+        .where((final item) => item.move?.learningState == customStateFilter)
+        .toList();
+  }
+
+  final shuffled = List<ReviewSessionItem>.from(items)..shuffle(Random(seed));
+  final effectiveSessionSize = switch (source) {
+    ReviewSessionSource.deck => selectedDeck?.sessionSize,
+    ReviewSessionSource.stateBased => sessionSize,
+  };
+  if (effectiveSessionSize != null && shuffled.length > effectiveSessionSize) {
+    return shuffled.sublist(0, effectiveSessionSize);
+  }
+  return shuffled;
+});
 
 /// Refreshes the active review session (fetches new due cards and reshuffles).
 void refreshReviewSession(final WidgetRef ref) {
@@ -384,7 +400,9 @@ void refreshReviewSession(final WidgetRef ref) {
 }
 
 /// Live counts per learning state (always across ALL moves, ignoring filters).
-final moveStateCountsProvider = StreamProvider<Map<LearningState, int>>((final ref) {
+final moveStateCountsProvider = StreamProvider<Map<LearningState, int>>((
+  final ref,
+) {
   return ref.watch(moveRepositoryProvider).watchAll().map((final moves) {
     return {
       for (final s in LearningState.values)
@@ -402,7 +420,9 @@ final comboRefreshProvider = StreamProvider<int>((final ref) {
 });
 
 /// Live counts per category (always across ALL moves, ignoring filters).
-final moveCategoryCountsProvider = StreamProvider<Map<String, int>>((final ref) {
+final moveCategoryCountsProvider = StreamProvider<Map<String, int>>((
+  final ref,
+) {
   return ref.watch(moveRepositoryProvider).watchAll().map((final moves) {
     final counts = <String, int>{};
     for (final m in moves) {
@@ -414,7 +434,10 @@ final moveCategoryCountsProvider = StreamProvider<Map<String, int>>((final ref) 
 
 /// Total move count (all moves, no filter).
 final totalMoveCountProvider = StreamProvider<int>((final ref) {
-  return ref.watch(moveRepositoryProvider).watchAll().map((final m) => m.length);
+  return ref
+      .watch(moveRepositoryProvider)
+      .watchAll()
+      .map((final m) => m.length);
 });
 
 /// Total number of reviewable entities across moves and combos.
@@ -513,7 +536,9 @@ final calendarDueCountsProvider = FutureProvider<Map<DateTime, int>>((
 
 /// Items grouped by due date for the calendar drilldown.
 final calendarDueMapProvider =
-    FutureProvider<Map<DateTime, List<ReviewableItemWithCard>>>((final ref) async {
+    FutureProvider<Map<DateTime, List<ReviewableItemWithCard>>>((
+      final ref,
+    ) async {
       ref.watch(fsrsCardsRefreshProvider);
       final items = await ref.watch(allReviewableItemsProvider.future);
       final map = <DateTime, List<ReviewableItemWithCard>>{};

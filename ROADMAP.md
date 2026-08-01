@@ -29,10 +29,20 @@
   place and all 24 `showModalBottomSheet` sites migrated onto it — the "Plan a combo" clipping
   (`SCR-20260801-mxjs`) was the nested branch navigator living inside the shell body under
   `extendBody: true`, so the viewport was honest and nothing was subtracting the band. Red-first
-  at three viewport heights: 34pt clearance where 90 is required. Gate: analyzer 0/0,
-  **1356 pass / 3 skip / 0 fail**. **Next unticked: 3.4** — dialogs, deliberately *not* folded
-  into the sheet helper (a centred dialog needs a height clamp, not a 56pt shift) — or jump to
-  §4.1, the four tab-level screens. How any of it *looks* is still owner-gated.
+  at three viewport heights: 34pt clearance where 90 is required.
+  **§4.1 closed 2026-08-01:** `move_list` onto `AppScreen.slivers`, `combos` and the drill
+  screen onto a new `AppScreen.fill` + `pinned` (a content band that is not one scroll the
+  frame can pad, and a segment control that stays under the header without band 2 growing).
+  The frame's own scroll inset was a flat 72 and is now `AppScreen.bottomInsetOf(context)` —
+  migrating `move_list` onto the old constant would have *regressed* clearance by the home
+  indicator, proved red-first. `settings` deferred to 4.3: `/settings-panel` pushes it on the
+  root navigator, where there is no band 4 and a back is required — that is the detail-frame
+  ruling, not a second variant invented under 4.1. `flashcard_review_screen` stays off the
+  roster but is now bounded at exactly one `Scaffold` (the immersive session).
+  Gate: analyzer 0/0, **1361 pass / 3 skip / 0 fail**. **Next unticked: 3.4** — dialogs,
+  deliberately *not* folded into the sheet helper (a centred dialog needs a height clamp, not a
+  56pt shift) — or §4.2, the detail screens, which owes the back-affordance ruling `settings`
+  is waiting on. How any of it *looks* is still owner-gated.
 - **Change (prior, 2026-07-29 · product finish):** `redesign-visual-first-experience`
   — **6.4 DONE 2026-07-29.** `openspec/changes/add-icon-system-and-packs` Phase 4 closed:
   `AppIcon` enum with 78 semantic names, material + lucide packs, conformance gate with

@@ -8,6 +8,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:breakdex/core/database/database.dart';
 import 'package:breakdex/core/services/entity_names_service.dart';
+import 'package:breakdex/core/design/layout.dart';
 import 'package:breakdex/core/design/spacing.dart';
 import 'package:breakdex/core/design/theme.dart';
 import 'package:breakdex/core/design/typography.dart';
@@ -15,6 +16,7 @@ import 'package:breakdex/core/models/learning_state.dart';
 import 'package:breakdex/core/providers.dart';
 import 'package:breakdex/l10n/gen/app_localizations.dart';
 import 'package:breakdex/shared/widgets/app_loader.dart';
+import 'package:breakdex/shared/widgets/app_screen.dart';
 import 'package:breakdex/shared/widgets/app_segmented_control.dart';
 import 'package:breakdex/features/flashcard_review/providers/deck_providers.dart';
 import 'package:breakdex/features/flashcard_review/providers/review_providers.dart';
@@ -37,21 +39,20 @@ class MasteryPrescreen extends ConsumerWidget {
       return const _ReviewEmptyState();
     }
 
-    final viewPadding = MediaQuery.of(context).padding;
-    const bottomNavHeight = kBottomNavigationBarHeight;
-
     return SingleChildScrollView(
-      // Top padding accounts for status bar + extra space
-      // Bottom padding accounts for frosted nav bar + safe area + extra breathing room
+      // The frame owns bands 1, 2 and 4 — this owns only its own gutter and
+      // the bottom inset the frame's scrolling forms would have applied.
       padding: EdgeInsets.fromLTRB(
-        AppSpacing.screenEdge,
-        AppSpacing.xl + viewPadding.top,
-        AppSpacing.screenEdge,
-        bottomNavHeight + viewPadding.bottom + AppSpacing.xxl,
+        AppLayout.gutter,
+        AppLayout.contentTopGap,
+        AppLayout.gutter,
+        AppScreen.bottomInsetOf(context),
       ),
       child: Center(
         child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 600),
+          constraints: const BoxConstraints(
+            maxWidth: AppLayout.maxContentWidth,
+          ),
           child: source == ReviewSessionSource.stateBased
               ? const _StateModeSection()
               : const _DecksSection(),
