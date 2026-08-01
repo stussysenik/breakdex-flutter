@@ -26,94 +26,90 @@ final class DevPreviewGallery extends ConsumerWidget {
   Widget build(final BuildContext context, final WidgetRef ref) {
     final themeMode = ref.watch(previewGalleryThemeProvider);
     final isDark = themeMode == ThemeMode.dark;
-    final theme =
-        isDark ? AppTheme.dark() : AppTheme.light();
+    final theme = isDark ? AppTheme.dark() : AppTheme.light();
 
     return Theme(
       data: theme,
       child: Scaffold(
-        appBar: AppBar(
-          title: const Text('Preview Gallery'),
-          actions: [
-            Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(isDark ? 'Dark' : 'Light',
-                    style: const TextStyle(fontSize: 13)),
-                Switch(
-                  value: isDark,
-                  onChanged: (final v) =>
-                      ref.read(previewGalleryThemeProvider.notifier).state =
-                          v ? ThemeMode.dark : ThemeMode.light,
-                ),
-              ],
-            ),
-          ],
+        body: SafeArea(
+          child: ListView(
+            padding: const EdgeInsets.all(AppSpacing.md),
+            children: [
+              _GalleryTitle(
+                isDark: isDark,
+                onBrightnessChanged: (final v) =>
+                    ref.read(previewGalleryThemeProvider.notifier).state = v
+                    ? ThemeMode.dark
+                    : ThemeMode.light,
+              ),
+              _SectionLabel(label: 'Home'),
+              _PreviewCard(label: 'BreakdexScreen', child: BreakdexScreen()),
+              _PreviewCard(
+                label: 'MoveCategoryScreen',
+                child: MoveCategoryScreen(),
+              ),
+              _PreviewCard(label: 'MoveListScreen', child: MoveListScreen()),
+              _PreviewCard(
+                label: 'MoveDetailScreen',
+                child: MoveDetailScreen(moveId: PreviewSeed.moveId),
+              ),
+              SizedBox(height: AppSpacing.lg),
+              _SectionLabel(label: 'Combos & Flow'),
+              _PreviewCard(label: 'CombosScreen', child: CombosScreen()),
+              _PreviewCard(
+                label: 'ComboDetailScreen',
+                child: ComboDetailScreen(comboId: PreviewSeed.comboId),
+              ),
+              _PreviewCard(label: 'FlowScreen', child: FlowScreen()),
+              SizedBox(height: AppSpacing.lg),
+              _SectionLabel(label: 'Review & Stats'),
+              _PreviewCard(label: 'StatsScreen', child: StatsScreen()),
+              _PreviewCard(label: 'LabScreen', child: LabScreen()),
+              _PreviewCard(
+                label: 'LabDetailScreen',
+                child: LabDetailScreen(labId: PreviewSeed.labId),
+              ),
+              SizedBox(height: AppSpacing.lg),
+              _SectionLabel(label: 'Other'),
+              _PreviewCard(label: 'AddScreen', child: AddScreen()),
+              _PreviewCard(label: 'BattleScreen', child: BattleScreen()),
+              _PreviewCard(label: 'SettingsScreen', child: SettingsScreen()),
+            ],
+          ),
         ),
-        body: ListView(
-          padding: const EdgeInsets.all(AppSpacing.md),
-          children: [
-            _SectionLabel(label: 'Home'),
-            _PreviewCard(
-              label: 'BreakdexScreen',
-              child: BreakdexScreen(),
-            ),
-            _PreviewCard(
-              label: 'MoveCategoryScreen',
-              child: MoveCategoryScreen(),
-            ),
-            _PreviewCard(
-              label: 'MoveListScreen',
-              child: MoveListScreen(),
-            ),
-            _PreviewCard(
-              label: 'MoveDetailScreen',
-              child: MoveDetailScreen(moveId: PreviewSeed.moveId),
-            ),
-            SizedBox(height: AppSpacing.lg),
-            _SectionLabel(label: 'Combos & Flow'),
-            _PreviewCard(
-              label: 'CombosScreen',
-              child: CombosScreen(),
-            ),
-            _PreviewCard(
-              label: 'ComboDetailScreen',
-              child: ComboDetailScreen(comboId: PreviewSeed.comboId),
-            ),
-            _PreviewCard(
-              label: 'FlowScreen',
-              child: FlowScreen(),
-            ),
-            SizedBox(height: AppSpacing.lg),
-            _SectionLabel(label: 'Review & Stats'),
-            _PreviewCard(
-              label: 'StatsScreen',
-              child: StatsScreen(),
-            ),
-            _PreviewCard(
-              label: 'LabScreen',
-              child: LabScreen(),
-            ),
-            _PreviewCard(
-              label: 'LabDetailScreen',
-              child: LabDetailScreen(labId: PreviewSeed.labId),
-            ),
-            SizedBox(height: AppSpacing.lg),
-            _SectionLabel(label: 'Other'),
-            _PreviewCard(
-              label: 'AddScreen',
-              child: AddScreen(),
-            ),
-            _PreviewCard(
-              label: 'BattleScreen',
-              child: BattleScreen(),
-            ),
-            _PreviewCard(
-              label: 'SettingsScreen',
-              child: SettingsScreen(),
-            ),
-          ],
-        ),
+      ),
+    );
+  }
+}
+
+/// The gallery's own label, in the content — not a header band.
+///
+/// Every card below renders a *framed* screen, so the gallery is the wall the
+/// pictures hang on: a band here would be a second frame over the framed. That
+/// is `preview_harness.dart`'s ruling, and it binds the same way — a frameless
+/// surface may own a `Scaffold` and may never own an `AppBar`.
+class _GalleryTitle extends StatelessWidget {
+  const _GalleryTitle({
+    required this.isDark,
+    required this.onBrightnessChanged,
+  });
+
+  final bool isDark;
+  final ValueChanged<bool> onBrightnessChanged;
+
+  @override
+  Widget build(final BuildContext context) {
+    final theme = Theme.of(context);
+    return Padding(
+      padding: const EdgeInsets.only(bottom: AppSpacing.sm),
+      child: Row(
+        children: [
+          Expanded(
+            child: Text('Preview Gallery', style: theme.textTheme.titleLarge),
+          ),
+          Text(isDark ? 'Dark' : 'Light', style: theme.textTheme.labelMedium),
+          Switch(value: isDark, onChanged: onBrightnessChanged),
+        ],
       ),
     );
   }
@@ -159,7 +155,9 @@ class _PreviewCard extends StatelessWidget {
         children: [
           Padding(
             padding: const EdgeInsets.only(
-                left: AppSpacing.xxs, bottom: AppSpacing.xxs),
+              left: AppSpacing.xxs,
+              bottom: AppSpacing.xxs,
+            ),
             child: Text(
               label,
               style: theme.textTheme.labelMedium?.copyWith(
@@ -172,15 +170,10 @@ class _PreviewCard extends StatelessWidget {
             child: Container(
               height: 420,
               decoration: BoxDecoration(
-                border: Border.all(
-                  color: theme.colorScheme.outlineVariant,
-                ),
+                border: Border.all(color: theme.colorScheme.outlineVariant),
                 borderRadius: BorderRadius.circular(AppRadius.sm),
               ),
-              child: AbsorbPointer(
-                absorbing: true,
-                child: child,
-              ),
+              child: AbsorbPointer(absorbing: true, child: child),
             ),
           ),
         ],

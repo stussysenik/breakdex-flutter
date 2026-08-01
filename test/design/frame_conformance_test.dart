@@ -127,6 +127,15 @@ const _frameless = <String, String>{
   'lib/dev/preview_harness.dart':
       'the harness renders other screens, so its Scaffold is the wall the '
       'picture hangs on. Bands here would be a second frame over the framed.',
+  // Ruled 2026-08-01 on merge. The gallery arrived from a parallel session with
+  // an AppBar and failed the closure test on the merge commit — which is the
+  // test doing its job: it caught a file no table knew about, at the moment it
+  // entered `lib/`. Its bar looked like an address, but every card in its list
+  // renders a *framed* screen at 420pt, so it is the harness's case exactly:
+  // the wall, not a picture. The bar became a title inside the content.
+  'lib/dev/dev_preview_gallery.dart':
+      'a wall of framed screens; same ruling as the harness it lists. Its title '
+      'and brightness switch are content, because a band here frames the frames.',
   'lib/main.dart':
       'the boot-failure surface: it exists precisely when the app did not, so '
       'there is no shell, no router and no frame to build it from.',
