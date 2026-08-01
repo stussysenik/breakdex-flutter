@@ -29,9 +29,9 @@ The primary user is an active breaker building a personal library under real fat
 ## Release Snapshot
 
 <!-- release:meta:start -->
-- Release tag: `v1.9.0`
-- Release version: `1.9.0`
-- Pubspec version: `1.9.0+12`
+- Release tag: `v1.10.0`
+- Release version: `1.10.0`
+- Pubspec version: `1.10.0+13`
 - Released: `2026-08-01`
 - Metadata refreshed: `2026-08-01`
 <!-- release:meta:end -->
@@ -40,9 +40,9 @@ The primary user is an active breaker building a personal library under real fat
 
 <!-- release:provenance:start -->
 - Source branch: `main`
-- Source revision: `091a0ae`
-- Source commit: `091a0ae316520a5aaa3b4a7b31e53d58a420451b`
-- Source describe: `v1.8.0-3-g091a0ae`
+- Source revision: `2308dd4`
+- Source commit: `2308dd49d657abb1f26661511bb64ee274d41c85`
+- Source describe: `v1.9.0-1-g2308dd4`
 - Generator: `scripts/update_release_metadata.cjs`
 - Inputs: `docs/CHANGELOG.md`, `pubspec.yaml`, and local git metadata
 <!-- release:provenance:end -->
@@ -50,5 +50,5 @@ The primary user is an active breaker building a personal library under real fat
 ## Latest Tagged Notes
 
 <!-- release:notes:start -->
-- **design:** the grid basis is a value, not a constant
+- **dev:** the gallery gains the vocabulary its screens are spelled with
 <!-- release:notes:end -->

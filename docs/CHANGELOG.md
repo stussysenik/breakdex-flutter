@@ -1,3 +1,10 @@
+# [1.10.0](https://github.com/stussysenik/breakdex-flutter/compare/v1.9.0...v1.10.0) (2026-08-01)
+
+
+### Features
+
+* **dev:** the gallery gains the vocabulary its screens are spelled with ([2308dd4](https://github.com/stussysenik/breakdex-flutter/commit/2308dd49d657abb1f26661511bb64ee274d41c85))
+
 # [1.9.0](https://github.com/stussysenik/breakdex-flutter/compare/v1.8.0...v1.9.0) (2026-08-01)
 
 
