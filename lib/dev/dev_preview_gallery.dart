@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:breakdex/core/design/spacing.dart';
 import 'package:breakdex/core/design/theme.dart';
+import 'package:breakdex/dev/basis_controls.dart';
 import 'package:breakdex/dev/preview_gallery_service.dart';
 import 'package:breakdex/dev/preview_harness.dart';
 import 'package:breakdex/dev/primitives_catalogue.dart';
@@ -31,7 +32,8 @@ final class DevPreviewGallery extends ConsumerWidget {
 
     return Theme(
       data: theme,
-      child: Scaffold(
+      child: DevBasisScope(
+        child: Scaffold(
         body: SafeArea(
           child: ListView(
             padding: const EdgeInsets.all(AppSpacing.md),
@@ -43,6 +45,7 @@ final class DevPreviewGallery extends ConsumerWidget {
                     ? ThemeMode.dark
                     : ThemeMode.light,
               ),
+              DevBasisControls(),
               _SectionLabel(label: 'Home'),
               _PreviewCard(label: 'BreakdexScreen', child: BreakdexScreen()),
               _PreviewCard(
@@ -80,6 +83,7 @@ final class DevPreviewGallery extends ConsumerWidget {
               DevPrimitivesCatalogue(),
             ],
           ),
+        ),
         ),
       ),
     );

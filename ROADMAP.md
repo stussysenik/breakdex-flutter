@@ -149,9 +149,18 @@
   demands each cell, so a name added to either vocabulary without a cell here fails the gate;
   proved red-first by truncating the loops and reading back the exact missing names. Gate:
   analyzer 0/0, **1410 pass / 3 skip / 0 fail**.
-  **Next unticked: 5.3** — live sliders in that gallery bound to the 5.1 basis, so the grid is
-  adjusted by moving a control rather than editing a constant and hot-restarting. How any of
-  §4–5 *looks* is still owner-gated.
+  **§5.3 landed 2026-08-02 — the grid is a control now, not a constant.** `basis_controls.dart`
+  holds `DevBasisScope` (re-registers the `AppLayoutTheme` extension from a provider, carrying
+  every other extension through) wrapping the whole gallery, so the 15 screen cards and the 5.2
+  catalogue re-flow together off one slider. `basisFields` — one entry per overridable field,
+  with its range, reader and `copyWith` — is what both the controls and the test are built from,
+  so they cannot describe different vocabularies. Assertions read back through
+  `AppLayout.of(context)`, never the provider: red-first, dropping the basis from the extension
+  list reported `Expected 48, Actual 24` — the shipped constant. Gate: analyzer 0/0,
+  **1414 pass / 3 skip / 0 fail**.
+  **Next unticked: 5.4** — make Morph the default for layout/shape continuity and prove it with
+  a shared-element transition between the Add row and the screen it opens. How any of §4–5
+  *looks* — and whether a hostile basis stays legible — is still owner-gated.
 - **Change (prior, 2026-07-29 · product finish):** `redesign-visual-first-experience`
   — **6.4 DONE 2026-07-29.** `openspec/changes/add-icon-system-and-packs` Phase 4 closed:
   `AppIcon` enum with 78 semantic names, material + lucide packs, conformance gate with

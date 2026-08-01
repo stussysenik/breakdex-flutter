@@ -301,8 +301,34 @@ every element so each one can be seen functioning.
       **NOT PROVEN:** how any of it looks. Also unrendered: the depth/elevation tokens and
       the typography ramp — neither is named by this task, and both are candidates for the
       catalogue when 5.3's sliders make a second basis worth reading them against.
-- [ ] 5.3 Live sliders in that gallery bound to 5.1, so the basis is adjusted by moving a
+- [x] 5.3 Live sliders in that gallery bound to 5.1, so the basis is adjusted by moving a
       control, not by editing a constant and hot-restarting.
+      **Done 2026-08-02.** `lib/dev/basis_controls.dart` is two widgets and a list.
+      `DevBasisScope` is the seam: it reads `previewBasisProvider` and re-registers the
+      `AppLayoutTheme` extension on the ambient theme, carrying every extension already
+      there through — a change of grid must not cost the colour packs or the semantic
+      signals. It wraps the *whole* gallery, so the 15 screen cards and the 5.2 catalogue
+      re-flow together off one control.
+      `basisFields` — not the widget — is the source of truth: one entry per overridable
+      field (gutter, baseline, blockGrid, rowHeight, headerHeight) carrying its range, its
+      reader and its `copyWith`. The controls build a slider per entry and the test drives
+      the same entries, so the two cannot describe different vocabularies. Sliders step one
+      point at a time: a fractional gutter is a value no screen could be built to.
+      Every assertion reads the answer back through `AppLayout.of(context)` — the call a
+      real screen makes — never through the provider, so the provider moving is not
+      mistaken for the layout moving. Per field: drag to the bound, that field arrives,
+      every other field is unchanged. Proved red-first by dropping `basis` from the
+      extension list and watching `gutter did not reach its bound / Expected 48, Actual 24`
+      — the shipped constant, which is exactly the failure this seam exists to prevent.
+      `AppTheme` already registers the default basis, so the scope's job is to *replace*
+      one, not to add one: the test asserts a seeded `gutter: 99` survives to the subtree,
+      because `isNotNull` would have passed without the widget existing.
+      Gate: analyzer 0 errors / 0 warnings, **1414 pass / 3 skip / 0 fail**.
+      **NOT PROVEN:** how any basis *looks*, and that a hostile basis stays legible — the
+      sliders can reach values no screen was designed for, which is the point of having
+      them and is a judgement only the owner makes. Also unenforced: nothing fails when a
+      sixth field is added to `AppLayoutTheme` without a slider — Dart cannot walk a class's
+      fields, so the completeness gate 5.2 has over the enums has no equivalent here.
 - [ ] 5.4 Motion: owner wants **morph-first** animation, "how graphics are rendered from first
       principles", Skia-level precision, a CSS-native equivalent in Flutter. The locked doctrine
       already names two families (Fluid + Morph on `AppMotion`); this task is to make Morph the
