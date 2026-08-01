@@ -116,6 +116,8 @@ class AppScreen extends StatelessWidget {
 
   @override
   Widget build(final BuildContext context) {
+    // The basis in force here — the constants unless a subtree overrode them.
+    final layout = AppLayout.of(context);
     final maxWidth = wide ? AppLayout.maxWideWidth : AppLayout.maxContentWidth;
     final slivers = this.slivers;
     final child = this.child;
@@ -126,9 +128,9 @@ class AppScreen extends StatelessWidget {
     // `showAppSheet` owns. A flat constant here under-reserves by the inset.
     final bottomInset = bottomInsetOf(context);
     final contentPadding = EdgeInsets.fromLTRB(
-      AppLayout.gutter,
+      layout.gutter,
       AppLayout.contentTopGap,
-      AppLayout.gutter,
+      layout.gutter,
       bottomInset,
     );
 
@@ -164,10 +166,10 @@ class AppScreen extends StatelessWidget {
                 child: ConstrainedBox(
                   constraints: BoxConstraints(maxWidth: maxWidth),
                   child: Padding(
-                    padding: const EdgeInsets.fromLTRB(
-                      AppLayout.gutter,
+                    padding: EdgeInsets.fromLTRB(
+                      layout.gutter,
                       AppLayout.contentTopGap,
-                      AppLayout.gutter,
+                      layout.gutter,
                       AppLayout.contentTopGap,
                     ),
                     child: pinned,
@@ -253,13 +255,14 @@ class _HeaderBand extends StatelessWidget {
   @override
   Widget build(final BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
+    final layout = AppLayout.of(context);
     return SizedBox(
-      height: AppLayout.headerHeight,
+      height: layout.headerHeight,
       child: Center(
         child: ConstrainedBox(
           constraints: BoxConstraints(maxWidth: maxWidth),
           child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: AppLayout.gutter),
+            padding: EdgeInsets.symmetric(horizontal: layout.gutter),
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               crossAxisAlignment: CrossAxisAlignment.stretch,

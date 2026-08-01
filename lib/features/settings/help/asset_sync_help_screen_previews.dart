@@ -6,8 +6,16 @@ import 'package:flutter/widgets.dart';
 import 'package:breakdex/dev/preview_harness.dart';
 import 'package:breakdex/features/settings/help/asset_sync_help_screen.dart';
 
-@Preview(name: 'AssetSyncHelpScreen · light', group: 'settings', wrapper: wrapLight)
+@Preview(
+  name: 'AssetSyncHelpScreen · light',
+  group: 'settings',
+  wrapper: wrapLight,
+)
 Widget assetSyncHelpScreenLight() => const AssetSyncHelpScreen();
 
-@Preview(name: 'AssetSyncHelpScreen · dark', group: 'settings', wrapper: wrapDark)
+@Preview(
+  name: 'AssetSyncHelpScreen · dark',
+  group: 'settings',
+  wrapper: wrapDark,
+)
 Widget assetSyncHelpScreenDark() => const AssetSyncHelpScreen();

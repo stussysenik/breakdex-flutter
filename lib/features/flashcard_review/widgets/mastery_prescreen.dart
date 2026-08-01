@@ -43,9 +43,9 @@ class MasteryPrescreen extends ConsumerWidget {
       // The frame owns bands 1, 2 and 4 — this owns only its own gutter and
       // the bottom inset the frame's scrolling forms would have applied.
       padding: EdgeInsets.fromLTRB(
-        AppLayout.gutter,
+        AppLayout.of(context).gutter,
         AppLayout.contentTopGap,
-        AppLayout.gutter,
+        AppLayout.of(context).gutter,
         AppScreen.bottomInsetOf(context),
       ),
       child: Center(

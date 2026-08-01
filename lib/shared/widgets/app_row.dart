@@ -88,7 +88,7 @@ class AppRow extends StatelessWidget {
     );
 
     final line = Container(
-      constraints: const BoxConstraints(minHeight: AppLayout.rowHeight),
+      constraints: BoxConstraints(minHeight: AppLayout.of(context).rowHeight),
       alignment: Alignment.centerLeft,
       child: row,
     );

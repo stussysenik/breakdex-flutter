@@ -6,8 +6,16 @@ import 'package:flutter/widgets.dart';
 import 'package:breakdex/dev/preview_harness.dart';
 import 'package:breakdex/features/settings/system_status_screen.dart';
 
-@Preview(name: 'SystemStatusScreen · light', group: 'settings', wrapper: wrapLight)
+@Preview(
+  name: 'SystemStatusScreen · light',
+  group: 'settings',
+  wrapper: wrapLight,
+)
 Widget systemStatusScreenLight() => const SystemStatusScreen();
 
-@Preview(name: 'SystemStatusScreen · dark', group: 'settings', wrapper: wrapDark)
+@Preview(
+  name: 'SystemStatusScreen · dark',
+  group: 'settings',
+  wrapper: wrapDark,
+)
 Widget systemStatusScreenDark() => const SystemStatusScreen();

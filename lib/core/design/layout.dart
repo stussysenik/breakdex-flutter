@@ -1,3 +1,5 @@
+import 'package:flutter/material.dart';
+
 /// The stacked-viewport layout constitution.
 ///
 /// Every screen in this app is the **same frame** with different filling. Bands
@@ -26,6 +28,18 @@
 /// See `docs/design/TOKENS.md` → **Layout & Grid** for the prose rules and the
 /// per-screen conformance ledger.
 abstract final class AppLayout {
+  /// The basis in force for this subtree.
+  ///
+  /// The constants below are the *default*, not the law: a subtree wrapped in a
+  /// `Theme` carrying an [AppLayoutTheme] re-flows to that basis instead. Read
+  /// this from any widget that lays something out; read the constants only
+  /// where there is no context (a `const` default, a pure geometry helper).
+  ///
+  /// Falls back to the constants when no extension is registered, so a widget
+  /// test that builds a bare `MaterialApp` measures the shipped frame.
+  static AppLayoutTheme of(final BuildContext context) =>
+      Theme.of(context).extension<AppLayoutTheme>() ?? const AppLayoutTheme();
+
   // ── Band geometry ────────────────────────────────────────────────────────
 
   /// Height of the header band, measured below the safe area.
@@ -153,7 +167,10 @@ abstract final class AppLayout {
   static const double rowHeight = 56;
 
   /// Resolves the content column width for a viewport, honouring the clamp.
-  static double contentWidthFor(final double viewportWidth, {final bool wide = false}) {
+  static double contentWidthFor(
+    final double viewportWidth, {
+    final bool wide = false,
+  }) {
     final max = wide ? maxWideWidth : maxContentWidth;
     final available = viewportWidth - (gutter * 2);
     return available < max ? available : max;
@@ -165,4 +182,97 @@ abstract final class AppLayout {
   /// designer chose deliberately. Snapping is a mechanical conformance move;
   /// changing an intentional off-grid value is a design decision.
   static double snap(final double raw) => (raw / blockGrid).ceil() * blockGrid;
+}
+
+/// The adjustable basis the frame is drawn on.
+///
+/// Five numbers decide the whole grid: how far content sits from the edge
+/// ([gutter]), the unit every vertical measurement resolves to ([baseline]),
+/// the unit every *block* resolves to ([blockGrid]), how tall a tappable row
+/// is ([rowHeight]), and how tall band 2 is ([headerHeight]). Everything else
+/// in [AppLayout] is either derived from these or a deliberate one-off.
+///
+/// It is a `ThemeExtension` so the basis can be changed **live** — move a
+/// control, and every screen under that `Theme` re-flows on the next frame, no
+/// hot restart and no edited constant. That is the whole point: the grid is a
+/// thing you can adjust and watch, not a thing you take on faith.
+///
+/// Defaults are the [AppLayout] constants, so a subtree that never overrides it
+/// is byte-identical to the shipped frame.
+@immutable
+class AppLayoutTheme extends ThemeExtension<AppLayoutTheme> {
+  const AppLayoutTheme({
+    this.gutter = AppLayout.gutter,
+    this.baseline = AppLayout.baseline,
+    this.blockGrid = AppLayout.blockGrid,
+    this.rowHeight = AppLayout.rowHeight,
+    this.headerHeight = AppLayout.headerHeight,
+  });
+
+  /// See [AppLayout.gutter].
+  final double gutter;
+
+  /// See [AppLayout.baseline].
+  final double baseline;
+
+  /// See [AppLayout.blockGrid].
+  final double blockGrid;
+
+  /// See [AppLayout.rowHeight].
+  final double rowHeight;
+
+  /// See [AppLayout.headerHeight].
+  final double headerHeight;
+
+  /// Snaps a raw dimension up onto *this* basis's block grid.
+  double snap(final double raw) => (raw / blockGrid).ceil() * blockGrid;
+
+  @override
+  AppLayoutTheme copyWith({
+    final double? gutter,
+    final double? baseline,
+    final double? blockGrid,
+    final double? rowHeight,
+    final double? headerHeight,
+  }) => AppLayoutTheme(
+    gutter: gutter ?? this.gutter,
+    baseline: baseline ?? this.baseline,
+    blockGrid: blockGrid ?? this.blockGrid,
+    rowHeight: rowHeight ?? this.rowHeight,
+    headerHeight: headerHeight ?? this.headerHeight,
+  );
+
+  @override
+  AppLayoutTheme lerp(
+    final ThemeExtension<AppLayoutTheme>? other,
+    final double t,
+  ) {
+    if (other is! AppLayoutTheme) return this;
+    return AppLayoutTheme(
+      gutter: lerpDouble(gutter, other.gutter, t),
+      baseline: lerpDouble(baseline, other.baseline, t),
+      blockGrid: lerpDouble(blockGrid, other.blockGrid, t),
+      rowHeight: lerpDouble(rowHeight, other.rowHeight, t),
+      headerHeight: lerpDouble(headerHeight, other.headerHeight, t),
+    );
+  }
+
+  /// Non-nullable interpolation. `ui.lerpDouble` returns `double?` for the
+  /// both-null case these fields cannot be in.
+  static double lerpDouble(final double a, final double b, final double t) =>
+      a + (b - a) * t;
+
+  @override
+  bool operator ==(final Object other) =>
+      identical(this, other) ||
+      other is AppLayoutTheme &&
+          other.gutter == gutter &&
+          other.baseline == baseline &&
+          other.blockGrid == blockGrid &&
+          other.rowHeight == rowHeight &&
+          other.headerHeight == headerHeight;
+
+  @override
+  int get hashCode =>
+      Object.hash(gutter, baseline, blockGrid, rowHeight, headerHeight);
 }

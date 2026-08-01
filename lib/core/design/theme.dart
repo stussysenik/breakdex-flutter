@@ -8,6 +8,7 @@ import 'package:breakdex/core/design/color_roles.dart';
 import 'package:breakdex/core/design/colors.dart';
 import 'package:breakdex/core/design/contrast.dart';
 import 'package:breakdex/core/design/icons.dart';
+import 'package:breakdex/core/design/layout.dart';
 import 'package:breakdex/core/design/spacing.dart';
 import 'package:breakdex/core/design/typography.dart';
 
@@ -583,6 +584,10 @@ abstract final class AppTheme {
           overrides: grayscale ? const {} : overrides,
         ),
         AppIconPackTheme(iconPack.build()),
+        // The shipped basis. Registered so every screen reads its grid from the
+        // theme rather than from a constant — which is what lets a subtree
+        // (the dev gallery) swap in a different basis and watch it re-flow.
+        const AppLayoutTheme(),
       ],
       scaffoldBackgroundColor: bg,
       textTheme: textTheme,

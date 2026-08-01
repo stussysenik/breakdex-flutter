@@ -28,37 +28,43 @@ class ReviewCardDisplaySection extends ConsumerWidget {
         title: l10n.setViewKeepMusicTitle,
         subtitle: l10n.setViewKeepMusicSubtitle,
         value: silentPractice,
-        onChanged: ({required final value}) => silentPracticeNotifier.setEnabled(value: value),
+        onChanged: ({required final value}) =>
+            silentPracticeNotifier.setEnabled(value: value),
       ),
       _ReviewCardToggle(
         title: l10n.setViewTitleTitle,
         subtitle: l10n.setViewTitleSubtitle,
         value: settings.showTitle,
-        onChanged: ({required final value}) => notifier.setShowTitle(value: value),
+        onChanged: ({required final value}) =>
+            notifier.setShowTitle(value: value),
       ),
       _ReviewCardToggle(
         title: l10n.setViewStatePillTitle,
         subtitle: l10n.setViewStatePillSubtitle,
         value: settings.showState,
-        onChanged: ({required final value}) => notifier.setShowState(value: value),
+        onChanged: ({required final value}) =>
+            notifier.setShowState(value: value),
       ),
       _ReviewCardToggle(
         title: l10n.setViewCategoryTitle,
         subtitle: l10n.setViewCategorySubtitle,
         value: settings.showCategory,
-        onChanged: ({required final value}) => notifier.setShowCategory(value: value),
+        onChanged: ({required final value}) =>
+            notifier.setShowCategory(value: value),
       ),
       _ReviewCardToggle(
         title: l10n.setViewComboTimelineTitle,
         subtitle: l10n.setViewComboTimelineSubtitle,
         value: settings.showComboTimeline,
-        onChanged: ({required final value}) => notifier.setShowComboTimeline(value: value),
+        onChanged: ({required final value}) =>
+            notifier.setShowComboTimeline(value: value),
       ),
       _ReviewCardToggle(
         title: l10n.setViewStepLabelTitle,
         subtitle: l10n.setViewStepLabelSubtitle,
         value: settings.showComboStepName,
-        onChanged: ({required final value}) => notifier.setShowComboStepName(value: value),
+        onChanged: ({required final value}) =>
+            notifier.setShowComboStepName(value: value),
       ),
       _ReviewCardToggle(
         title: l10n.setViewPlaybackControlsTitle,
@@ -149,7 +155,8 @@ class _ReviewCardToggleTile extends StatelessWidget {
               ),
               Switch.adaptive(
                 value: entry.value,
-                onChanged: (final value) => unawaited(entry.onChanged(value: value)),
+                onChanged: (final value) =>
+                    unawaited(entry.onChanged(value: value)),
                 activeThumbColor: colorScheme.primary,
                 activeTrackColor: colorScheme.primary.withValues(alpha: 0.35),
               ),

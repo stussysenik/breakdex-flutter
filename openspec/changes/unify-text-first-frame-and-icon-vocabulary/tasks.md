@@ -272,7 +272,7 @@ Owner: *"a showcase of precision and like grids and rules (i could easily adjust
 which grids and rules of the application are built upon)"*, plus: pre-seed a dev mode showing
 every element so each one can be seen functioning.
 
-- [ ] 5.1 Make `AppLayout` overridable at runtime (a `ThemeExtension` carrying the constants,
+- [x] 5.1 Make `AppLayout` overridable at runtime (a `ThemeExtension` carrying the constants,
       defaulting to today's values) so gutter / baseline / blockGrid / rowHeight / headerHeight
       can be changed live and every screen re-flows. The constants stay the default, not the law.
 - [ ] 5.2 Dev gallery route, pre-seeded with real fixture data (`automation_fixture_service`

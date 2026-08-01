@@ -398,7 +398,9 @@ class SyncProviderRow extends StatelessWidget {
           borderRadius: BorderRadius.circular(AppRadius.sm),
           border: Border.all(
             color: status == ProviderStatus.connected
-                ? AppSemanticTheme.of(context).stateMastery.withValues(alpha: 0.4)
+                ? AppSemanticTheme.of(
+                    context,
+                  ).stateMastery.withValues(alpha: 0.4)
                 : colorScheme.outline.withValues(alpha: 0.22),
           ),
         ),

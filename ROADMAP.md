@@ -130,9 +130,18 @@
   unmounts the widget, so the hand-written state reset and the `sessionActive = false` write in
   `_setReviewMode` were dead the moment the state stopped being shared. Gate: analyzer 0/0,
   **1401 pass / 3 skip / 0 fail**.
-  **Next unticked: 5.1** — make `AppLayout` overridable at runtime (a `ThemeExtension` carrying
-  the constants) so the grid basis can be adjusted without a rebuild; 5.2/5.3 then put it behind
-  live sliders in a seeded dev gallery. How any of §4 *looks* is still owner-gated.
+  **§5.1 landed 2026-08-01 — the grid basis is a value now, not a constant.** `AppLayoutTheme`
+  is a `ThemeExtension` carrying the five numbers the whole grid resolves to (`gutter`,
+  `baseline`, `blockGrid`, `rowHeight`, `headerHeight`), defaulting to today's constants, and
+  `AppLayout.of(context)` reads whatever basis is in force — falling back to the constants when
+  no extension is registered, so a bare-`MaterialApp` widget test still measures the shipped
+  frame. `AppScreen`, `AppRow` and the eight screens that padded their own content band read it
+  instead of the statics, so a subtree wrapped in a `Theme` re-flows on the next frame with no
+  hot restart. Proved red-first: the override case measured the *default* 24pt gutter until the
+  frame stopped reading the constant. Gate: analyzer 0/0, **1404 pass / 3 skip / 0 fail**.
+  **Next unticked: 5.2** — a dev gallery route seeded with real fixture data rendering every
+  primitive (extends `lib/dev/preview_harness.dart`), which 5.3 then wires to live sliders bound
+  to the 5.1 basis. How any of §4–5 *looks* is still owner-gated.
 - **Change (prior, 2026-07-29 · product finish):** `redesign-visual-first-experience`
   — **6.4 DONE 2026-07-29.** `openspec/changes/add-icon-system-and-packs` Phase 4 closed:
   `AppIcon` enum with 78 semantic names, material + lucide packs, conformance gate with

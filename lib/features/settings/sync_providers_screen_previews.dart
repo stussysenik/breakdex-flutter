@@ -6,8 +6,16 @@ import 'package:flutter/widgets.dart';
 import 'package:breakdex/dev/preview_harness.dart';
 import 'package:breakdex/features/settings/sync_providers_screen.dart';
 
-@Preview(name: 'SyncProvidersScreen · light', group: 'settings', wrapper: wrapLight)
+@Preview(
+  name: 'SyncProvidersScreen · light',
+  group: 'settings',
+  wrapper: wrapLight,
+)
 Widget syncProvidersScreenLight() => const SyncProvidersScreen();
 
-@Preview(name: 'SyncProvidersScreen · dark', group: 'settings', wrapper: wrapDark)
+@Preview(
+  name: 'SyncProvidersScreen · dark',
+  group: 'settings',
+  wrapper: wrapDark,
+)
 Widget syncProvidersScreenDark() => const SyncProvidersScreen();

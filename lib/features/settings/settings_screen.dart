@@ -87,9 +87,9 @@ class SettingsScreen extends ConsumerWidget {
       backIdentifier: 'settings-back',
       child: ListView(
         padding: EdgeInsets.fromLTRB(
-          AppLayout.gutter,
+          AppLayout.of(context).gutter,
           0,
-          AppLayout.gutter,
+          AppLayout.of(context).gutter,
           AppScreen.bottomInsetOf(context),
         ),
         children: [

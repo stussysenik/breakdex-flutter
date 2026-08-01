@@ -30,7 +30,7 @@ class CanonicalTrashScreen extends ConsumerWidget {
     return AppScreen.fill(
       title: 'Canonical Trash',
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: AppLayout.gutter),
+        padding: EdgeInsets.symmetric(horizontal: AppLayout.of(context).gutter),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [

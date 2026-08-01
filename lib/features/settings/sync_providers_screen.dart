@@ -44,9 +44,9 @@ class SyncProvidersScreen extends ConsumerWidget {
         error: (final e, _) => Center(child: Text('Error: $e')),
         data: (final providers) => ListView(
           padding: EdgeInsets.fromLTRB(
-            AppLayout.gutter,
+            AppLayout.of(context).gutter,
             0,
-            AppLayout.gutter,
+            AppLayout.of(context).gutter,
             AppScreen.bottomInsetOf(context),
           ),
           children: [

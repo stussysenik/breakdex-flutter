@@ -6,8 +6,16 @@ import 'package:flutter/widgets.dart';
 import 'package:breakdex/dev/preview_harness.dart';
 import 'package:breakdex/features/settings/recently_deleted_screen.dart';
 
-@Preview(name: 'RecentlyDeletedScreen · light', group: 'settings', wrapper: wrapLight)
+@Preview(
+  name: 'RecentlyDeletedScreen · light',
+  group: 'settings',
+  wrapper: wrapLight,
+)
 Widget recentlyDeletedScreenLight() => const RecentlyDeletedScreen();
 
-@Preview(name: 'RecentlyDeletedScreen · dark', group: 'settings', wrapper: wrapDark)
+@Preview(
+  name: 'RecentlyDeletedScreen · dark',
+  group: 'settings',
+  wrapper: wrapDark,
+)
 Widget recentlyDeletedScreenDark() => const RecentlyDeletedScreen();
