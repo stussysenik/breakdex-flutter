@@ -3,7 +3,7 @@ title: Testing & Verification
 name: testing
 order: 8
 status: verified
-verified: 2cde4af
+verified: 33e8b9c
 watches:
   - test/**
   - .github/workflows/ci.yml
@@ -47,10 +47,17 @@ From these four, everything below is forced: the CI gate is a *floor* (it proves
 the category is defined by what it asserts, not by where it sits. Two shapes are in use:
 
 - **Source-level.** `test/design/frame_conformance_test.dart` reads screen *source* and fails
-  if a screen on the roster builds its own `Scaffold`/`AppBar`/`SliverAppBar`. It also bounds
-  the one deliberate exemption: `flashcard_review_screen` may hold exactly **one** `Scaffold`
-  (the immersive drill session, which has no bands at all) and a second one fails the test, so
-  the exemption cannot quietly widen into a re-grown header.
+  if a screen on the roster builds its own `Scaffold`/`AppBar`/`SliverAppBar`. Since 2026-08-01
+  it is **closed rather than enumerated**, and that is the more useful shape to copy: four
+  tables partition every chrome-building file under `lib/` — `_onFrame`, `_frameless` (no bands
+  at all, on purpose, and never an `AppBar`), `_awaitingRuling` (still bespoke, one line each
+  naming the decision owed), `_framework` — and a closure test walks `lib/` and fails on any
+  such file in **no** table. An allowlist can only assert about files it already knows; a
+  closed table fails on the commit that adds an unlisted one. The cost is that every exemption
+  must be *written*, which is the point: `flashcard_review_screen`'s immersive drill session
+  and the pre-auth login door are frameless with their reasons in the table, and the bound on
+  frameless is the same for both — a surface with no bands may own a `Scaffold` and may never
+  own an `AppBar`.
   `test/design/type_baseline_test.dart` is the same shape for the type scale.
   `test/core/design/icon_conformance_test.dart` and `color_conformance_test.dart` ban raw
   `Icons.*` and raw `AppColors.*` respectively. **The two bans are deliberately not the same
