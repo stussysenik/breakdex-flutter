@@ -23,7 +23,7 @@ Items 1–2 and 6–7 landed this session; 3–5 and 8 are captured, not built.
 - [x] 2.3 `AppIcon.library` (book) and `AppIcon.dojo` (training floor) added to all three packs.
 - [x] 2.4 Nav rewired: Breakdex → `library`, Review (anki mode) → `dojo`.
 
-## 3. Overlays must compute their own coordinates — SHEETS DONE, DIALOGS OPEN
+## 3. Overlays must compute their own coordinates — DONE
 
 Owner, on `SCR-20260801-mxjs`: *"unreliable reliance on the viewport … you need to be always
 calculating your own coordinates. Apple Native would have done this better."* The "Plan a
@@ -53,11 +53,32 @@ unreliable; it is honestly reporting a box that something else paints over.
       each asserting the inset is applied **once** as well as at all. RED first against a bare
       `showModalBottomSheet`: 34pt of clearance where 90 is required, at all three heights —
       exactly the 56pt band. Green after.
-- [ ] 3.4 Dialogs are a different computation and were **not** folded into `showAppSheet`.
-      An `AlertDialog` is centred, so band 4 only bites one tall enough to reach it; shifting
-      every dialog up by 56pt would misplace the 30-odd short ones to fix the few tall ones.
-      The fix there is a max-height clamp, not an inset. 34 `showDialog` sites across 19 files
-      remain unmigrated — deliberately, with this reason, not by omission.
+- [x] 3.4 `showAppDialog` (`lib/shared/widgets/app_dialog.dart`), 33 of 34 sites migrated.
+      **Both premises this task was filed on turned out to be false, and measurement is what
+      corrected them.** Band 4 never bites a dialog at all: `showDialog` defaults to the *root*
+      navigator and no call site overrides it, so every dialog route is a sibling of the shell
+      in the root stack and paints **over** the band. And the max-height clamp it asked for was
+      never owed either — `Dialog` already wraps itself in a `SafeArea` plus 24pt of vertical
+      inset, and a dialog carrying 2000pt of content measures inside the safe region unaided.
+      The defect measurement *did* find is horizontal: Material's only bound is `insetPadding`,
+      a 40pt gutter whatever the window, so on a 1400pt browser window a two-sentence confirm
+      box paints **1320pt wide** — red first, on the ranked-#1 surface. The helper clamps the
+      box the dialog lays out in to `AppLayout.dialogMaxWidth` (480 = 60 · `blockGrid`, clearing
+      Material's own 280pt floor); the 40pt gutter sits inside that, so the painted card is at
+      most 400pt — the same card a 480pt phone gives it, which is the point. Height is
+      deliberately *not* re-owned: a second clamp could only re-introduce the double-counted
+      safe inset `showAppSheet` had to `removePadding` to avoid, so the height case is a guard
+      (green before and after), and it is labelled as one rather than dressed up as red/green.
+      The one surviving raw `showDialog` is the photo viewer's `Dialog.fullscreen` — a screen
+      wearing a route, with no measure to keep; clamping it would put a photo in a 400pt box.
+      It carries that reason inline, so the next reader does not re-migrate it.
+- [x] 3.5 Found while gating 3.4, unrelated to it, fixed because it was the gate:
+      `SyncDiagnostics.dumpUnresolvableAssets` rendered its per-asset lines in whatever order
+      `assetManifestDao.getAll()` returned, and that select has no `ORDER BY` — so
+      `sync_diagnostics_test` failed roughly one run in three on the `ORPHAN h1`/`h2` ordering.
+      The flake is the symptom; the defect is a forensic report that cannot be diffed against
+      the previous run, which is most of what such a report is for. `lines.sort()` before the
+      join groups by verdict then hash, because the label leads the string.
 
 ## 4. Frame migration — 28 screens — NOT BUILT
 

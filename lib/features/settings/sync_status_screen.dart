@@ -19,6 +19,7 @@ import 'package:breakdex/shared/widgets/app_loader.dart';
 import 'package:breakdex/shared/widgets/app_screen.dart';
 import 'package:breakdex/core/design/icons.dart';
 import 'package:breakdex/shared/widgets/app_sheet.dart';
+import 'package:breakdex/shared/widgets/app_dialog.dart';
 
 /// Sync status dashboard showing overall progress, active transfers,
 /// and monthly data usage.
@@ -134,7 +135,7 @@ Future<void> _runIntegrityCheck(
 
   // Blocking spinner — a full re-hash of every local video can take a while.
   unawaited(
-    showDialog<void>(
+    showAppDialog<void>(
       context: context,
       barrierDismissible: false,
       builder: (final _) => const Center(child: AppLoader()),
@@ -248,7 +249,7 @@ class _IntegrityResultSheet extends StatelessWidget {
     final BuildContext context,
     final List<String> hashes,
   ) async {
-    final confirmed = await showDialog<bool>(
+    final confirmed = await showAppDialog<bool>(
       context: context,
       builder: (final dialogContext) => AlertDialog(
         title: const Text('Re-download flagged files?'),

@@ -21,6 +21,7 @@ import 'package:breakdex/core/services/categories_service.dart';
 import 'package:breakdex/features/lab/providers/lab_providers.dart';
 import 'package:breakdex/features/flow/providers/flow_graph_providers.dart';
 import 'package:breakdex/features/flow/widgets/flow_graph_legend.dart';
+import 'package:breakdex/shared/widgets/app_dialog.dart';
 
 // ---------------------------------------------------------------------------
 // Force-directed layout engine.
@@ -941,7 +942,7 @@ class _FlowGraphCanvasState extends ConsumerState<FlowGraphCanvas> {
   Future<void> _createSetFromSelection() async {
     if (_multiSelectedIds.isEmpty) return;
 
-    final name = await showDialog<String>(
+    final name = await showAppDialog<String>(
       context: context,
       builder: (final ctx) {
         final controller = TextEditingController();

@@ -66,10 +66,22 @@
   `/settings` (tab root, no back) and `/settings-panel` (pushed, has back), and since 4.2 the
   route already knows which; two hand-rolled back rows and `color_packs`' `_BackHeader` went
   with it. Gate: analyzer 0/0, **1373 pass / 3 skip / 0 fail**.
-  **Next unticked: 3.4** — dialogs, deliberately *not* folded into the sheet helper (a centred
-  dialog needs a height clamp, not a 56pt shift) — or §4.4, the remaining screens (auth,
-  battle, party, editors, instax, dev panels), which is where the roster gets small enough for
-  4.5 to flip it from an allowlist to a denylist. How any of it *looks* is still owner-gated.
+  **§3 closed 2026-08-01 — and 3.4 was filed on two false premises, both corrected by
+  measurement.** Band 4 never bites a dialog: `showDialog` defaults to the **root** navigator
+  and no site overrides it, so every dialog paints *over* the band. Nor was the height clamp
+  the task asked for owed — `Dialog` already carries a `SafeArea`, and 2000pt of content
+  measures inside the safe region unaided. The real defect is horizontal: Material's only
+  bound is a 40pt `insetPadding`, so on a 1400pt browser window a two-sentence confirm box
+  paints **1320pt wide** (red first, on the ranked-#1 surface). `showAppDialog` clamps the
+  layout box to `AppLayout.dialogMaxWidth` (480); Material's gutter sits inside it, so the
+  card is at most 400pt — the same card a 480pt phone gives it. 33 of 34 sites migrated; the
+  photo viewer's `Dialog.fullscreen` stays raw, with the reason inline: it is a screen wearing
+  a route, and has no measure to keep. Also fixed because it was the gate (3.5):
+  `dumpUnresolvableAssets` rendered lines in `getAll()` order with no `ORDER BY`, failing
+  ~1 run in 3 — a forensic report that cannot be diffed against the previous run.
+  **Next unticked: 4.4** — the remaining screens (auth, battle, party, editors, instax, dev
+  panels), which is where the roster gets small enough for 4.5 to flip it from an allowlist to
+  a denylist. How any of it *looks* is still owner-gated.
 - **Change (prior, 2026-07-29 · product finish):** `redesign-visual-first-experience`
   — **6.4 DONE 2026-07-29.** `openspec/changes/add-icon-system-and-packs` Phase 4 closed:
   `AppIcon` enum with 78 semantic names, material + lucide packs, conformance gate with

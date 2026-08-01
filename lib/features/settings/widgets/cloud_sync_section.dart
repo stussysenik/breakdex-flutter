@@ -15,6 +15,7 @@ import 'package:breakdex/l10n/gen/app_localizations.dart';
 import 'package:breakdex/shared/widgets/action_tile.dart';
 import 'package:breakdex/shared/widgets/app_loader.dart';
 import 'package:breakdex/core/design/icons.dart';
+import 'package:breakdex/shared/widgets/app_dialog.dart';
 
 class CloudSyncSection extends ConsumerWidget {
   const CloudSyncSection({super.key});
@@ -239,7 +240,7 @@ class CloudSyncSection extends ConsumerWidget {
     final WidgetRef ref,
   ) async {
     final l10n = AppLocalizations.of(context);
-    final confirmed = await showDialog<bool>(
+    final confirmed = await showAppDialog<bool>(
       context: context,
       builder: (final ctx) => AlertDialog(
         title: Text(l10n.setSyncDisconnectTitle),
@@ -323,7 +324,7 @@ class _AccountRow extends ConsumerWidget {
   }
 
   Future<void> _signOut(final BuildContext context, final WidgetRef ref) async {
-    final confirmed = await showDialog<bool>(
+    final confirmed = await showAppDialog<bool>(
       context: context,
       builder: (final ctx) => AlertDialog(
         title: const Text('Sign out?'),

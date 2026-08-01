@@ -12,6 +12,7 @@ import 'package:breakdex/core/providers.dart';
 import 'package:breakdex/l10n/gen/app_localizations.dart';
 import 'package:breakdex/shared/widgets/color_setting_tile.dart';
 import 'package:breakdex/shared/widgets/settings_list_group.dart';
+import 'package:breakdex/shared/widgets/app_dialog.dart';
 
 const reviewStatePresetColors = [
   Color(0xFFC46F6F),
@@ -196,7 +197,7 @@ class ReviewStatesSection extends ConsumerWidget {
     final l10n = AppLocalizations.of(context);
     final controller = TextEditingController();
     Color selectedColor = reviewStatePresetColors[0];
-    final result = await showDialog<CustomLearningState>(
+    final result = await showAppDialog<CustomLearningState>(
       context: context,
       builder: (final ctx) => StatefulBuilder(
         builder: (final ctx, final setDialogState) => AlertDialog(
@@ -268,7 +269,7 @@ class ReviewStatesSection extends ConsumerWidget {
     final l10n = AppLocalizations.of(context);
     final controller = TextEditingController(text: custom.label);
     Color selectedColor = custom.color;
-    final result = await showDialog<CustomLearningState>(
+    final result = await showAppDialog<CustomLearningState>(
       context: context,
       builder: (final ctx) => StatefulBuilder(
         builder: (final ctx, final setDialogState) => AlertDialog(

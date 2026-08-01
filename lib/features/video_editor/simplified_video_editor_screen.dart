@@ -31,6 +31,7 @@ import 'package:breakdex/shared/widgets/app_loader.dart';
 import 'package:breakdex/features/video_editor/video_edit_geometry.dart';
 import 'package:breakdex/core/design/icons.dart';
 import 'package:breakdex/shared/widgets/app_sheet.dart';
+import 'package:breakdex/shared/widgets/app_dialog.dart';
 
 class SimplifiedVideoEditorView extends ConsumerStatefulWidget {
   const SimplifiedVideoEditorView({super.key, required this.videoPath});
@@ -924,7 +925,7 @@ class _SimplifiedVideoEditorViewState
 
   Future<void> _handleDiscard(final BuildContext context) async {
     if (_hasEdits) {
-      final confirmed = await showDialog<bool>(
+      final confirmed = await showAppDialog<bool>(
         context: context,
         builder: (final ctx) => AlertDialog(
           title: const Text('Discard edits?'),

@@ -17,6 +17,7 @@ import 'package:breakdex/shared/widgets/color_setting_tile.dart';
 import 'package:breakdex/features/flashcard_review/widgets/state_picker_sheet.dart';
 import 'package:breakdex/l10n/gen/app_localizations.dart';
 import 'package:breakdex/core/design/icons.dart';
+import 'package:breakdex/shared/widgets/app_dialog.dart';
 
 class StatePickerOverlay extends StatelessWidget {
   const StatePickerOverlay({
@@ -160,7 +161,7 @@ class CategoryPickerOverlay extends ConsumerWidget {
     final BuildContext context,
     final WidgetRef ref,
   ) {
-    return showDialog<String>(
+    return showAppDialog<String>(
       context: context,
       builder: (final context) {
         final l10n = AppLocalizations.of(context);

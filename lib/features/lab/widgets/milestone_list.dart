@@ -16,6 +16,7 @@ import 'package:breakdex/core/design/typography.dart';
 import 'package:breakdex/shared/widgets/app_loader.dart';
 import 'package:breakdex/features/lab/providers/lab_providers.dart';
 import 'package:breakdex/core/design/icons.dart';
+import 'package:breakdex/shared/widgets/app_dialog.dart';
 
 /// Vertical list of milestones for a lab, with inline creation.
 ///
@@ -77,7 +78,7 @@ class _MilestoneListState extends ConsumerState<MilestoneList> {
   }
 
   Future<void> _deleteMilestone(final Milestone milestone) async {
-    final confirm = await showDialog<bool>(
+    final confirm = await showAppDialog<bool>(
       context: context,
       builder: (final ctx) => AlertDialog(
         title: const Text('Delete Milestone?'),

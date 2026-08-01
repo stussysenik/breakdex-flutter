@@ -12,6 +12,7 @@ import 'package:breakdex/core/providers.dart';
 import 'package:breakdex/core/sync/space_manager.dart';
 import 'package:breakdex/shared/widgets/app_loader.dart';
 import 'package:breakdex/shared/widgets/app_screen.dart';
+import 'package:breakdex/shared/widgets/app_dialog.dart';
 
 /// Provider for space analysis — refreshes when this screen is opened.
 final spaceAnalysisProvider = FutureProvider<SpaceAnalysis>((final ref) {
@@ -206,7 +207,7 @@ class _FreeSpaceScreenState extends ConsumerState<FreeSpaceScreen> {
 
   Future<void> _freeAll(final SpaceAnalysis analysis) async {
     // Safety confirmation dialog
-    final confirmed = await showDialog<bool>(
+    final confirmed = await showAppDialog<bool>(
       context: context,
       builder: (final ctx) => AlertDialog(
         title: const Text('Free Up Space?'),

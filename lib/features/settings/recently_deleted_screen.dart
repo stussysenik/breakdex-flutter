@@ -15,6 +15,7 @@ import 'package:breakdex/core/providers.dart';
 import 'package:breakdex/shared/widgets/app_loader.dart';
 import 'package:breakdex/shared/widgets/app_screen.dart';
 import 'package:breakdex/shared/widgets/settings_list_group.dart';
+import 'package:breakdex/shared/widgets/app_dialog.dart';
 
 final archivedMovesProvider = StreamProvider<List<Move>>((final ref) {
   return ref.watch(movesDaoProvider).watchArchived();
@@ -170,7 +171,7 @@ class _ArchivedMoveRow extends ConsumerWidget {
     final BuildContext context,
     final WidgetRef ref,
   ) async {
-    final confirm = await showDialog<bool>(
+    final confirm = await showAppDialog<bool>(
       context: context,
       builder: (final context) => AlertDialog(
         title: const Text('Delete permanently?'),

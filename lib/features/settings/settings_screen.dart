@@ -52,6 +52,7 @@ import 'package:breakdex/features/stats/providers/stats_providers.dart';
 import 'package:breakdex/features/settings/recently_deleted_screen.dart';
 import 'package:breakdex/core/design/icons.dart';
 import 'package:breakdex/shared/widgets/app_sheet.dart';
+import 'package:breakdex/shared/widgets/app_dialog.dart';
 
 final _settingsMovesProvider = StreamProvider<List<Move>>((final ref) {
   return ref.watch(moveRepositoryProvider).watchAll();
@@ -561,7 +562,7 @@ class SettingsScreen extends ConsumerWidget {
 
   void _showClearDataDialog(final BuildContext context, final WidgetRef ref) {
     final l10n = AppLocalizations.of(context);
-    showDialog<bool>(
+    showAppDialog<bool>(
       context: context,
       builder: (final ctx) => StatefulBuilder(
         builder: (final ctx, final setDialogState) {
@@ -698,7 +699,7 @@ class SettingsScreen extends ConsumerWidget {
     if (!context.mounted) return;
 
     // Show mode selection dialog
-    final mode = await showDialog<ImportMode>(
+    final mode = await showAppDialog<ImportMode>(
       context: context,
       builder: (final ctx) => AlertDialog(
         title: Text(l10n.setImportTitle),
@@ -744,7 +745,7 @@ class SettingsScreen extends ConsumerWidget {
 
     // Show loading
     unawaited(
-      showDialog(
+      showAppDialog(
         context: context,
         barrierDismissible: false,
         builder: (_) => const Center(child: AppLoader()),
@@ -870,7 +871,7 @@ class SettingsScreen extends ConsumerWidget {
     final Category cat,
   ) {
     final l10n = AppLocalizations.of(context);
-    showDialog<void>(
+    showAppDialog<void>(
       context: context,
       builder: (final context) {
         final controller = TextEditingController(text: cat.name);
@@ -957,7 +958,7 @@ class SettingsScreen extends ConsumerWidget {
   ) {
     final l10n = AppLocalizations.of(context);
     final controller = TextEditingController(text: current);
-    showDialog<void>(
+    showAppDialog<void>(
       context: context,
       builder: (final ctx) => AlertDialog(
         title: Text(l10n.setRenamePageTitle),
@@ -999,7 +1000,7 @@ class SettingsScreen extends ConsumerWidget {
       text: current.forField(singularField),
     );
     final plural = TextEditingController(text: current.forField(pluralField));
-    showDialog<void>(
+    showAppDialog<void>(
       context: context,
       builder: (final ctx) => AlertDialog(
         title: Text(l10n.setRenameDataBankTitle),
@@ -1059,7 +1060,7 @@ class SettingsScreen extends ConsumerWidget {
   ) {
     final l10n = AppLocalizations.of(context);
     final controller = TextEditingController(text: current);
-    showDialog<void>(
+    showAppDialog<void>(
       context: context,
       builder: (final ctx) => AlertDialog(
         title: Text(
@@ -1097,7 +1098,7 @@ class SettingsScreen extends ConsumerWidget {
 
   void _showAddCategoryDialog(final BuildContext context, final WidgetRef ref) {
     final l10n = AppLocalizations.of(context);
-    showDialog<void>(
+    showAppDialog<void>(
       context: context,
       builder: (final context) {
         final controller = TextEditingController();
@@ -1181,7 +1182,7 @@ class SettingsScreen extends ConsumerWidget {
   }) async {
     final l10n = AppLocalizations.of(context);
     if (usageCount > 0) {
-      await showDialog<void>(
+      await showAppDialog<void>(
         context: context,
         builder: (final ctx) => AlertDialog(
           title: Text(l10n.setCategoryInUseTitle),

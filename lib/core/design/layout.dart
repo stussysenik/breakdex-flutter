@@ -103,6 +103,15 @@ abstract final class AppLayout {
   /// more columns genuinely beat a narrower measure.
   static const double maxWideWidth = 1080;
 
+  /// Maximum width of a dialog.
+  ///
+  /// Narrower than [maxContentWidth] because a dialog is one decision, not a
+  /// reading column: its measure is set by the button row and a sentence or
+  /// two, and stretching that across a desktop window turns a confirm box into
+  /// a banner. 480 = 60 * [blockGrid], and clears the 280pt minimum a Material
+  /// `Dialog` already enforces.
+  static const double dialogMaxWidth = 480;
+
   // ── Breakpoints ──────────────────────────────────────────────────────────
 
   /// Below this the layout is single-column and stacks.

@@ -179,6 +179,13 @@ class SyncDiagnostics {
       );
     }
 
+    // `getAll()` has no ORDER BY, so SQLite may hand these rows back in any
+    // order it likes — and a forensic report whose lines move between runs
+    // cannot be diffed against the previous one, which is most of what a
+    // report like this is for. Sorting the rendered lines groups them by
+    // verdict and then by hash, because the label leads the string.
+    lines.sort();
+
     final control = await _ownerJoinControl();
     final split = 'sandbox rescue: $rescuable of ${lines.length} '
         'unreachable assets have bytes on disk';

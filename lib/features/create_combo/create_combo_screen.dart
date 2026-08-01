@@ -22,6 +22,7 @@ import 'package:breakdex/features/combos/plan_combo_flow.dart';
 import 'package:breakdex/shared/widgets/app_loader.dart';
 import 'package:breakdex/shared/widgets/secondary_button.dart';
 import 'package:breakdex/shared/widgets/app_sheet.dart';
+import 'package:breakdex/shared/widgets/app_dialog.dart';
 import 'package:breakdex/shared/widgets/video_player_widget.dart'
     show RobustVideoPlayer, VideoPlaceholder;
 
@@ -514,7 +515,7 @@ class _CreateComboScreenState extends ConsumerState<CreateComboScreen> {
 
   Future<String?> _promptForName() async {
     final controller = TextEditingController(text: _comboName);
-    return showDialog<String>(
+    return showAppDialog<String>(
       context: context,
       builder: (final context) => AlertDialog(
         title: const Text('Combo Name'),

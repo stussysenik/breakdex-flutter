@@ -5,6 +5,7 @@ import 'package:breakdex/core/design/spacing.dart';
 import 'package:breakdex/core/design/typography.dart';
 import 'package:breakdex/core/design/icons.dart';
 import 'package:breakdex/l10n/gen/app_localizations.dart';
+import 'package:breakdex/shared/widgets/app_dialog.dart';
 
 String formatColorHex(final Color color) {
   return '#${color.toARGB32().toRadixString(16).padLeft(8, '0').toUpperCase()}';
@@ -29,7 +30,7 @@ Future<Color?> showColorEditorDialog(
   final String? subtitle,
   final List<Color> presets = const [],
 }) {
-  return showDialog<Color>(
+  return showAppDialog<Color>(
     context: context,
     builder: (_) => _ColorEditorDialog(
       initialColor: initialColor,

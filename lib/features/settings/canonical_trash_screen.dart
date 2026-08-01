@@ -17,6 +17,7 @@ import 'package:breakdex/shared/widgets/app_loader.dart';
 import 'package:breakdex/shared/widgets/app_screen.dart';
 import 'package:breakdex/shared/widgets/settings_list_group.dart';
 import 'package:breakdex/shared/widgets/source_origin_badge.dart';
+import 'package:breakdex/shared/widgets/app_dialog.dart';
 
 class CanonicalTrashScreen extends ConsumerWidget {
   const CanonicalTrashScreen({super.key});
@@ -179,7 +180,7 @@ class _TrashedAssetRow extends ConsumerWidget {
     final WidgetRef ref,
     final AssetManifestData asset,
   ) async {
-    final confirm = await showDialog<bool>(
+    final confirm = await showAppDialog<bool>(
       context: context,
       builder: (final ctx) => AlertDialog(
         title: const Text('Delete permanently?'),

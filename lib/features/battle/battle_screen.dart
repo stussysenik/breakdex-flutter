@@ -12,6 +12,7 @@ import 'package:breakdex/features/battle/widgets/battle_intro.dart';
 import 'package:breakdex/features/battle/widgets/timer_ring.dart';
 import 'package:breakdex/features/battle/widgets/battle_results_view.dart';
 import 'package:breakdex/core/design/icons.dart';
+import 'package:breakdex/shared/widgets/app_dialog.dart';
 
 class BattleScreen extends ConsumerWidget {
   const BattleScreen({super.key});
@@ -61,7 +62,7 @@ Future<void> _handleClose(
   final BattleState state,
 ) async {
   if (state.phase == BattlePhase.active) {
-    final confirmed = await showDialog<bool>(
+    final confirmed = await showAppDialog<bool>(
       context: context,
       builder: (final ctx) => AlertDialog(
         title: const Text('Forfeit battle?'),

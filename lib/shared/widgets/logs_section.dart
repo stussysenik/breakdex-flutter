@@ -12,6 +12,7 @@ import 'package:breakdex/core/design/typography.dart';
 import 'package:breakdex/core/utils/time_format.dart';
 import 'package:breakdex/core/design/icons.dart';
 import 'package:breakdex/core/providers.dart';
+import 'package:breakdex/shared/widgets/app_dialog.dart';
 
 /// Live log entries for a move or combo. Keyed on (type, id) so the family
 /// caches one stream per entity. Backed by Drift `.watch()` queries, it
@@ -159,7 +160,7 @@ class LogsSection extends ConsumerWidget {
     final WidgetRef ref,
   ) async {
     final controller = TextEditingController();
-    final result = await showDialog<String>(
+    final result = await showAppDialog<String>(
       context: context,
       builder: (final context) => AlertDialog(
         title: const Text('Add Log Entry'),
@@ -201,7 +202,7 @@ class LogsSection extends ConsumerWidget {
     final WidgetRef ref,
     final String id,
   ) async {
-    final confirmed = await showDialog<bool>(
+    final confirmed = await showAppDialog<bool>(
       context: context,
       builder: (final context) => AlertDialog(
         title: const Text('Delete entry?'),
@@ -235,7 +236,7 @@ class LogsSection extends ConsumerWidget {
     final String currentBody,
   ) async {
     final controller = TextEditingController(text: currentBody);
-    final result = await showDialog<String>(
+    final result = await showAppDialog<String>(
       context: context,
       builder: (final context) => AlertDialog(
         title: const Text('Edit Log Entry'),

@@ -25,6 +25,7 @@ import 'package:breakdex/features/lab/widgets/linked_moves_section.dart';
 import 'package:breakdex/features/lab/widgets/milestone_list.dart';
 import 'package:breakdex/features/lab/widgets/set_builder.dart';
 import 'package:breakdex/shared/widgets/app_sheet.dart';
+import 'package:breakdex/shared/widgets/app_dialog.dart';
 
 /// Full detail screen for a single lab (project or set).
 ///
@@ -84,7 +85,7 @@ class _LabDetailScreenState extends ConsumerState<LabDetailScreen> {
 
   Future<void> _rename(final Lab lab) async {
     final controller = TextEditingController(text: lab.name);
-    final newName = await showDialog<String>(
+    final newName = await showAppDialog<String>(
       context: context,
       builder: (final ctx) {
         return AlertDialog(
@@ -159,7 +160,7 @@ class _LabDetailScreenState extends ConsumerState<LabDetailScreen> {
   // ---------------------------------------------------------------------------
 
   Future<void> _deleteLab(final Lab lab) async {
-    final confirm = await showDialog<bool>(
+    final confirm = await showAppDialog<bool>(
       context: context,
       builder: (final ctx) => AlertDialog(
         title: const Text('Delete Lab?'),

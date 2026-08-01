@@ -13,6 +13,7 @@ import 'package:breakdex/features/video_editor/robust_trim_timeline.dart';
 import 'package:breakdex/features/video_editor/video_edit_geometry.dart';
 import 'package:breakdex/features/video_editor/video_editor_controller.dart';
 import 'package:breakdex/core/design/icons.dart';
+import 'package:breakdex/shared/widgets/app_dialog.dart';
 
 class RobustVideoEditorView extends StatefulWidget {
   const RobustVideoEditorView({super.key, required this.controller});
@@ -496,7 +497,7 @@ class _RobustVideoEditorViewState extends State<RobustVideoEditorView> {
     final controllerX = TextEditingController();
     final controllerY = TextEditingController();
 
-    showDialog<void>(
+    showAppDialog<void>(
       context: context,
       builder: (final ctx) => AlertDialog(
         title: const Text('Custom Aspect Ratio'),

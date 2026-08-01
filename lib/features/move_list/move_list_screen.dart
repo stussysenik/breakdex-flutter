@@ -42,6 +42,7 @@ import 'package:breakdex/shared/widgets/video_player_widget.dart';
 import 'package:breakdex/features/sync_onboarding/sync_onboarding_card.dart';
 import 'package:breakdex/shared/widgets/app_screen.dart';
 import 'package:breakdex/shared/widgets/app_sheet.dart';
+import 'package:breakdex/shared/widgets/app_dialog.dart';
 
 part 'widgets/move_grid_cell.dart';
 part 'widgets/combo_grid_cell.dart';
@@ -502,7 +503,7 @@ class MoveListScreen extends ConsumerWidget {
   }
 
   Future<bool> _confirmCreateWithoutVideo(final BuildContext context) async {
-    final result = await showDialog<bool>(
+    final result = await showAppDialog<bool>(
       context: context,
       builder: (final dialogContext) => AlertDialog(
         title: const Text('Create Without Video?'),
@@ -965,7 +966,7 @@ class _ViewModeToggle extends ConsumerWidget {
       text: viewNames[mode.name] ?? _defaultViewModeLabel(mode),
     );
 
-    final newName = await showDialog<String>(
+    final newName = await showAppDialog<String>(
       context: context,
       builder: (final ctx) => AlertDialog(
         title: const Text('Rename View'),

@@ -131,6 +131,9 @@ class _MovePhotosSectionState extends State<MovePhotosSection> {
     final fullPath = await _resolveAbsolutePath(filename);
     if (fullPath == null || !mounted) return;
 
+    // The one surface that stays on a raw `showDialog`: `Dialog.fullscreen` is
+    // a screen wearing a route, not a dialog. Clamping it to a dialog measure
+    // would put a photo viewer in a 400pt box. It has no measure to keep.
     await showDialog<void>(
       context: context,
       builder: (final ctx) => Dialog.fullscreen(
