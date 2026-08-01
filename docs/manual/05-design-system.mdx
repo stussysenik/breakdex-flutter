@@ -3,7 +3,7 @@ title: Design System
 name: design-system
 order: 5
 status: verified
-verified: 33e8b9c
+verified: 6963048
 watches:
   - lib/core/design/**
   - docs/design/TOKENS.md
@@ -58,6 +58,17 @@ convention: a screen that builds its own `Scaffold`, `AppBar`, or `SliverAppBar`
 of the frame and is a review violation, on the same footing as a raw `Duration` in motion. The
 four-band diagram, both token tables, and the one-scroll rule live in `../design/TOKENS.md` →
 **Layout & Grid**.
+
+**The basis is a value, not a constant** (ruled 2026-08-01, §5.1). Five of `AppLayout`'s
+numbers — `gutter`, `baseline`, `blockGrid`, `rowHeight`, `headerHeight` — are also carried by
+`AppLayoutTheme`, a `ThemeExtension` whose defaults *are* those constants. Layout code reads
+`AppLayout.of(context)`, so a subtree wrapped in a `Theme` re-flows onto a different basis on
+the next frame, with no hot restart and no edited source; with no extension registered the
+lookup returns the constants, so a widget test that builds a bare `MaterialApp` measures the
+shipped frame. This is the one place a token is not simply its constant — deliberately, because
+a grid you can move a slider on is a grid you can *see*, and that gallery (§5.2–5.3) is what
+the extension exists to serve. The other `AppLayout` members stay constants: five numbers
+decide the grid, and every additional knob is one more thing that can disagree with itself.
 
 All five tabs are on the frame as of 2026-07-29, so the migration ledger that tracked them is
 retired; the roster now lives in `test/design/frame_conformance_test.dart`, where CI can fail
