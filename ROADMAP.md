@@ -120,10 +120,19 @@
   `simplified_video_editor_screen` builds no chrome at all. Its `_handleDiscard` became a
   `PopGuard(blocked: _hasEdits)` — closing by system gesture used to discard unsaved trims
   silently. Gate: analyzer 0/0, **1394 pass / 3 skip / 0 fail**.
-  **Next unticked: 4.4's last item** — extracting the immersive drill session out of
-  `flashcard_review_screen` (1140 lines, prescreen and session sharing state) so that file
-  carries one verdict instead of two. It is a refactor, not a ruling: nothing there is unruled.
-  How any of it *looks* is still owner-gated.
+  **§4.4 batch 4 landed 2026-08-01 — the split, and §4 is closed.** `flashcard_review_screen`
+  answered the frame question twice: a prescreen on the frame and an immersive session taking
+  the whole viewport, chosen by a provider read inside `build`. The session is now
+  `drill_session_screen.dart` and owns all session state; the tab is 58 lines that render the
+  prescreen or hand the viewport over. One verdict per file — the tab joined `_onFrame`, the
+  session took the `_frameless` row the tab used to hold, proved by deleting that row and
+  watching the closure test go red. Keeping the branch a *provider* paid: ending a session
+  unmounts the widget, so the hand-written state reset and the `sessionActive = false` write in
+  `_setReviewMode` were dead the moment the state stopped being shared. Gate: analyzer 0/0,
+  **1401 pass / 3 skip / 0 fail**.
+  **Next unticked: 5.1** — make `AppLayout` overridable at runtime (a `ThemeExtension` carrying
+  the constants) so the grid basis can be adjusted without a rebuild; 5.2/5.3 then put it behind
+  live sliders in a seeded dev gallery. How any of §4 *looks* is still owner-gated.
 - **Change (prior, 2026-07-29 · product finish):** `redesign-visual-first-experience`
   — **6.4 DONE 2026-07-29.** `openspec/changes/add-icon-system-and-packs` Phase 4 closed:
   `AppIcon` enum with 78 semantic names, material + lucide packs, conformance gate with

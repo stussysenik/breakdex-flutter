@@ -168,7 +168,7 @@ unreliable; it is honestly reporting a box that something else paints over.
       Roster grew by all nine in the same commit. Gate: analyzer 0 errors/0 warnings,
       **1373 pass / 3 skip / 0 fail** (+9 roster cases, +2 new facts). How any of it *looks*
       is owner-gated.
-- [ ] 4.4 Remaining: auth, battle, party, video editors, instax, dev panels. Includes extracting
+- [x] 4.4 Remaining: auth, battle, party, video editors, instax, dev panels. Includes extracting
       the immersive drill session out of `flashcard_review_screen` so that file joins the roster.
       **Batch 1 landed 2026-08-01 — five screens on the frame, and the roster closed.** The
       task said "remaining" as if it were a list of files to type; it was a list of *rulings*,
@@ -239,11 +239,24 @@ unreliable; it is honestly reporting a box that something else paints over.
       **1394 pass / 3 skip / 0 fail**. **NOT PROVEN:** the editor guard has no widget test of
       its own (the editor needs a real video to reach `_isEditorReady`); it reuses the `PopGuard`
       proved red-first at three points in batch 2. How any of it *looks* is owner-gated.
-      **Still owed on 4.4 — one item, and it is a refactor, not a ruling:** extracting the
-      immersive drill session out of `flashcard_review_screen` (1140 lines, prescreen and session
-      sharing state) so that file carries one verdict instead of two. It is bounded at exactly
-      one `Scaffold` and listed in `_frameless` with its reason, so nothing is unruled — this is
-      the only thing keeping 4.4 open.
+      **Batch 4 landed 2026-08-01 — the split, and 4.4 closes.** `flashcard_review_screen.dart`
+      was 1140 lines answering the frame question twice: a prescreen on the frame, and an
+      immersive session that took the whole viewport, chosen by a provider read inside `build`.
+      The session moved to `drill_session_screen.dart` (`DrillSessionScreen`), which owns every
+      piece of session state — the card index, the two-stage assessment, the exit animation,
+      the shake detector, the route/lifecycle observers — and the tab is now a 58-line
+      `ConsumerWidget` that renders the prescreen or hands the viewport over. One verdict per
+      file: the tab joined `_onFrame`, the session took the `_frameless` row the tab used to
+      hold, and the closure test was proved red by deleting that row before adding it.
+      **The branch stays a provider, not a route**, and the split made that pay: ending a
+      session unmounts the session widget, so `_setReviewMode`'s hand-reset and its
+      `sessionActive = false` write were both dead code the moment the state stopped being
+      shared, and `_reloadSessionIfActive`'s "is a session running?" guard became "am I still
+      mounted?". Gate: analyzer 0 errors / 0 warnings, **1401 pass / 3 skip / 0 fail**.
+      **NOT PROVEN:** the two `assess_stage_switching` tests that drive a live session are still
+      skipped (the pre-existing FakeAsync hang, `tighten-combo-journey-and-review-polish` 3.4),
+      so the session's behaviour after the move is carried by the analyzer and by the unchanged
+      body, not by a widget test. How any of it *looks* is owner-gated.
 - [x] 4.5 Flip `frame_conformance_test.dart` from an allowlist to a denylist once the remainder
       is small — the guard should fail on a *new* bespoke Scaffold, not merely tolerate old ones.
       **The mechanism landed with 4.4 batch 1** (the closure test); **the emptying landed with

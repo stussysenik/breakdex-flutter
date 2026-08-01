@@ -125,8 +125,9 @@ narrates only completed work hides the gap it exists to surface.
   closure test re-derives the left-hand side from disk and fails on any file in **no** table.
   An allowlist can only assert about files it already knows; this fails on the commit that adds
   an unlisted one — which is exactly how the dev preview gallery was caught arriving from a
-  parallel session with an `AppBar`. 29 files under `lib/features/` build through `AppScreen`;
-  the 3 that still own a `Scaffold` are named frameless with their reasons. The review-checklist
+  parallel session with an `AppBar`. 29 files build through `AppScreen`, 28 of them under
+  `lib/features/`; the 3 under `lib/features/` that still own a `Scaffold` are named frameless
+  with their reasons. The review-checklist
   wording for each lives in
   `openspec/AGENTS.md`, and the two icon/color bans are deliberately different shapes: the icon
   ban is absolute, the color ban admits a named definition layer. Copying one onto the other is

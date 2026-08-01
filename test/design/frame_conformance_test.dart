@@ -93,6 +93,14 @@ const _onFrame = <String, String>{
   'lib/features/instax_viewer/instax_viewer_screen.dart':
       'fill form — a dark content band over one category, with the view-mode '
       'row inside that band because it is a control over the media',
+
+  // Joined 2026-08-01 (§4.4, last item). It was the one file carrying two
+  // verdicts: a prescreen on the frame and an immersive session that took the
+  // whole viewport, chosen by a provider inside `build`. The session moved to
+  // `drill_session_screen.dart`, so each file now answers the question once.
+  'lib/features/flashcard_review/flashcard_review_screen.dart':
+      'fill form — the Drill tab picks what to practise; when a session starts '
+      'it renders the frameless session widget instead',
 };
 
 /// Surfaces with **no** bands at all, on purpose. Frameless is not an exemption
@@ -103,10 +111,11 @@ const _onFrame = <String, String>{
 /// A header is the band that drifted five times; it is the band nobody gets to
 /// re-declare, framed or not.
 const _frameless = <String, String>{
-  'lib/features/flashcard_review/flashcard_review_screen.dart':
-      'the drill session takes the whole viewport by design; its prescreen is '
-      'on the frame (AppScreen.fill) and the session is the exemption. It '
-      'joins _onFrame when the session moves to its own file — task 4.4.',
+  'lib/features/flashcard_review/drill_session_screen.dart':
+      'the card is the surface: one clip filling the viewport, with no address '
+      'to show and no band to tap away from. The way out is the card\'s own '
+      'end control, which asks first. Split out of the Drill tab on 2026-08-01 '
+      'so that file could take a single verdict.',
   'lib/features/auth/appwrite_login_screen.dart':
       'the door, not a room: pre-auth, outside the shell, with no crumb address '
       'to show and nowhere to go back to.',
