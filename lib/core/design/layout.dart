@@ -47,6 +47,16 @@ abstract final class AppLayout {
   /// Gap between the address line and the title baseline.
   static const double crumbGap = 4;
 
+  /// Square slot the back affordance occupies at the head of the title row on
+  /// a screen that can pop.
+  ///
+  /// 48, not 44: it clears the touch floor *and* lands on [blockGrid]. The
+  /// title row grows from 36 to 48, so band 2 holds 16 + 4 + 48 = 68 inside its
+  /// unchanged [headerHeight] — the band never grows, and because the header
+  /// column is centred the title's centreline does not move either. A detail
+  /// screen is therefore the same frame as a tab root, with one control in it.
+  static const double backSlot = 48;
+
   /// Gap between the header band and the first content pixel.
   ///
   /// Content therefore always begins at `headerHeight + contentTopGap` = 80

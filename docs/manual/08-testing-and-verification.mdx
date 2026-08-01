@@ -38,7 +38,7 @@ From these four, everything below is forced: the CI gate is a *floor* (it proves
 | --- | --- | --- |
 | `test/core/` | 136 | database + DAOs (incl. migration v22–v27 suites), state machines, sync (codecs, backfills, dual-read/write, tombstones, Appwrite backend/transport), config (remote config, update/entitlement gates), providers, models, design (8 — icons, accessible palettes, color roles, OKLCH, color packs, contrast, plus the color-conformance ban and its migration proof), utils |
 | `test/features/` | 44 | screen-level widget tests (move_list, flashcard_review, stats, add, flow, video_editor, party, auth, …) |
-| `test/shared/` | 9 | shared widgets, incl. the `AppScreen` frame and `BackLeading` |
+| `test/shared/` | 8 | shared widgets, incl. the `AppScreen` frame (bands, insets, and the route-derived back affordance) |
 | `test/design/` | 2 | source-level conformance + the type baseline (see below) |
 | `test/` root | 3 | l10n foundation, preview-harness smoke, template widget test |
 | `test/helpers/` | — | `test_data.dart`, `test_database.dart` (in-memory Drift fixtures) |

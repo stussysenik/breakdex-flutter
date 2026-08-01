@@ -12,11 +12,12 @@ import 'package:intl/intl.dart';
 import 'package:uuid/uuid.dart';
 
 import 'package:breakdex/core/database/database.dart';
-import 'package:breakdex/core/services/entity_names_service.dart';
 import 'package:breakdex/core/database/daos/combo_plans_dao.dart';
 import 'package:breakdex/core/database/daos/combos_dao.dart';
+import 'package:breakdex/core/design/layout.dart';
 import 'package:breakdex/core/design/spacing.dart';
 import 'package:breakdex/core/design/typography.dart';
+import 'package:breakdex/shared/widgets/app_screen.dart';
 import 'package:breakdex/core/models/reviewable_item.dart';
 import 'package:breakdex/core/providers.dart';
 import 'package:breakdex/core/services/media_playback_coordinator.dart';
@@ -72,148 +73,133 @@ class _ComboDetailScreenState extends ConsumerState<ComboDetailScreen> {
     final hasPrev = currentIdx > 0;
     final hasNext = currentIdx >= 0 && currentIdx < allIds.length - 1;
 
-    return Scaffold(
-      appBar: AppBar(
-        leadingWidth: 104,
-        leading: GestureDetector(
-          onTap: () => context.pop(),
-          behavior: HitTestBehavior.opaque,
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              AppIconView(AppIcon.back, color: colorScheme.secondary, size: 20),
-              Text(
-                ref.watch(entityNamesProvider).comboPlural,
-                style: AppTypography.sectionHeader.copyWith(
-                  color: colorScheme.secondary,
+    return AppScreen.fill(
+      // The combo's name is the screen's title, so the body no longer repeats
+      // it: one name, on the frame's fixed baseline, like every other screen.
+      title: combo?.name ?? '',
+      backIdentifier: 'combo-back',
+      actions: combo == null
+          ? const <Widget>[]
+          : [
+              if (hasPrev)
+                IconButton(
+                  icon: AppIconView(
+                    AppIcon.back,
+                    color: colorScheme.onSurface,
+                    size: 22,
+                  ),
+                  tooltip: 'Previous combo',
+                  onPressed: () =>
+                      _navigateToCombo(context, allIds[currentIdx - 1]),
                 ),
+              if (hasNext)
+                IconButton(
+                  icon: AppIconView(
+                    AppIcon.forward,
+                    color: colorScheme.onSurface,
+                    size: 22,
+                  ),
+                  tooltip: 'Next combo',
+                  onPressed: () =>
+                      _navigateToCombo(context, allIds[currentIdx + 1]),
+                ),
+              PopupMenuButton<String>(
+                icon: AppIconView(AppIcon.more, color: colorScheme.onSurface),
+                onSelected: (final action) =>
+                    _handleAction(context, action, combo),
+                itemBuilder: (_) => [
+                  PopupMenuItem(
+                    value: 'plan',
+                    child: Row(
+                      children: [
+                        AppIconView(
+                          AppIcon.calendar,
+                          size: 18,
+                          color: colorScheme.secondary,
+                        ),
+                        const SizedBox(width: AppSpacing.sm),
+                        const Text('Plan for a day…'),
+                      ],
+                    ),
+                  ),
+                  PopupMenuItem(
+                    value: 'duplicate',
+                    child: Row(
+                      children: [
+                        AppIconView(
+                          AppIcon.copy,
+                          size: 18,
+                          color: colorScheme.secondary,
+                        ),
+                        const SizedBox(width: AppSpacing.sm),
+                        const Text('Duplicate'),
+                      ],
+                    ),
+                  ),
+                  PopupMenuItem(
+                    value: 'edit',
+                    child: Row(
+                      children: [
+                        AppIconView(
+                          AppIcon.edit,
+                          size: 18,
+                          color: colorScheme.secondary,
+                        ),
+                        const SizedBox(width: AppSpacing.sm),
+                        const Text('Edit'),
+                      ],
+                    ),
+                  ),
+                  PopupMenuItem(
+                    value: 'share',
+                    child: Row(
+                      children: [
+                        AppIconView(
+                          AppIcon.share,
+                          size: 18,
+                          color: colorScheme.secondary,
+                        ),
+                        const SizedBox(width: AppSpacing.sm),
+                        const Text('Share'),
+                      ],
+                    ),
+                  ),
+                  PopupMenuItem(
+                    value: 'save-album',
+                    child: Row(
+                      children: [
+                        AppIconView(
+                          AppIcon.save,
+                          size: 18,
+                          color: colorScheme.secondary,
+                        ),
+                        const SizedBox(width: AppSpacing.sm),
+                        const Text('Save to Album'),
+                      ],
+                    ),
+                  ),
+                  const PopupMenuDivider(),
+                  PopupMenuItem(
+                    value: 'delete',
+                    child: Row(
+                      children: [
+                        AppIconView(
+                          AppIcon.delete,
+                          size: 18,
+                          color: colorScheme.error,
+                        ),
+                        const SizedBox(width: AppSpacing.sm),
+                        Text(
+                          'Delete',
+                          style: TextStyle(color: colorScheme.error),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
               ),
             ],
-          ),
-        ),
-        actions: combo == null
-            ? null
-            : [
-                if (hasPrev)
-                  IconButton(
-                    icon: AppIconView(
-                      AppIcon.back,
-                      color: colorScheme.onSurface,
-                      size: 22,
-                    ),
-                    tooltip: 'Previous combo',
-                    onPressed: () =>
-                        _navigateToCombo(context, allIds[currentIdx - 1]),
-                  ),
-                if (hasNext)
-                  IconButton(
-                    icon: AppIconView(
-                      AppIcon.forward,
-                      color: colorScheme.onSurface,
-                      size: 22,
-                    ),
-                    tooltip: 'Next combo',
-                    onPressed: () =>
-                        _navigateToCombo(context, allIds[currentIdx + 1]),
-                  ),
-                PopupMenuButton<String>(
-                  icon: AppIconView(AppIcon.more, color: colorScheme.onSurface),
-                  onSelected: (final action) =>
-                      _handleAction(context, action, combo),
-                  itemBuilder: (_) => [
-                    PopupMenuItem(
-                      value: 'plan',
-                      child: Row(
-                        children: [
-                          AppIconView(
-                            AppIcon.calendar,
-                            size: 18,
-                            color: colorScheme.secondary,
-                          ),
-                          const SizedBox(width: AppSpacing.sm),
-                          const Text('Plan for a day…'),
-                        ],
-                      ),
-                    ),
-                    PopupMenuItem(
-                      value: 'duplicate',
-                      child: Row(
-                        children: [
-                          AppIconView(
-                            AppIcon.copy,
-                            size: 18,
-                            color: colorScheme.secondary,
-                          ),
-                          const SizedBox(width: AppSpacing.sm),
-                          const Text('Duplicate'),
-                        ],
-                      ),
-                    ),
-                    PopupMenuItem(
-                      value: 'edit',
-                      child: Row(
-                        children: [
-                          AppIconView(
-                            AppIcon.edit,
-                            size: 18,
-                            color: colorScheme.secondary,
-                          ),
-                          const SizedBox(width: AppSpacing.sm),
-                          const Text('Edit'),
-                        ],
-                      ),
-                    ),
-                    PopupMenuItem(
-                      value: 'share',
-                      child: Row(
-                        children: [
-                          AppIconView(
-                            AppIcon.share,
-                            size: 18,
-                            color: colorScheme.secondary,
-                          ),
-                          const SizedBox(width: AppSpacing.sm),
-                          const Text('Share'),
-                        ],
-                      ),
-                    ),
-                    PopupMenuItem(
-                      value: 'save-album',
-                      child: Row(
-                        children: [
-                          AppIconView(
-                            AppIcon.save,
-                            size: 18,
-                            color: colorScheme.secondary,
-                          ),
-                          const SizedBox(width: AppSpacing.sm),
-                          const Text('Save to Album'),
-                        ],
-                      ),
-                    ),
-                    const PopupMenuDivider(),
-                    PopupMenuItem(
-                      value: 'delete',
-                      child: Row(
-                        children: [
-                          AppIconView(
-                            AppIcon.delete,
-                            size: 18,
-                            color: colorScheme.error,
-                          ),
-                          const SizedBox(width: AppSpacing.sm),
-                          Text(
-                            'Delete',
-                            style: TextStyle(color: colorScheme.error),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-      ),
-      body: Stack(
+      child: Stack(
         children: [
           combo == null || comboMoves == null
               ? const Center(child: AppLoader())
@@ -425,17 +411,8 @@ class _ComboDetailBody extends ConsumerWidget {
           child: ListView(
             padding: const EdgeInsets.all(AppSpacing.screenEdge),
             children: [
-              // Name
-              Semantics(
-                header: true,
-                child: Text(
-                  combo.name,
-                  style: AppTypography.titleLarge.copyWith(
-                    color: colorScheme.onSurface,
-                  ),
-                ),
-              ),
-              const SizedBox(height: AppSpacing.sm),
+              // The name lives in the header band now — see `AppScreen.fill`
+              // above. What is left here is what the name does not say.
               // Transition chain
               if (chain.isNotEmpty)
                 Text(
@@ -519,13 +496,13 @@ class _ComboDetailBody extends ConsumerWidget {
             ],
           ),
         ),
-        // Pinned jot composer — lifted above the shell's bottom nav
-        // (house pattern, see move_list_screen FAB).
+        // Pinned jot composer — lifted above band 4, which the shell paints
+        // over this screen. Band height, not the scroll inset: this bar sits
+        // flush on top of the band rather than clearing it by a margin.
         Padding(
           padding: EdgeInsets.only(
             bottom:
-                kBottomNavigationBarHeight +
-                MediaQuery.of(context).padding.bottom,
+                AppLayout.navBandHeight + MediaQuery.of(context).padding.bottom,
           ),
           child: JotComposer(comboId: comboId),
         ),

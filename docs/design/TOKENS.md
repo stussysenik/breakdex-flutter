@@ -220,6 +220,7 @@ screen in the app, with no exceptions.
 | Token | Value | Dart Constant | Rule |
 |-------|-------|---------------|------|
 | `headerHeight` | 72 | `AppLayout.headerHeight` | `titleLarge` line box (36) centred in 18/18. Fixed — no collapsing, floating, or `.large` headers. |
+| `backSlot` | 48 | `AppLayout.backSlot` | Square slot for the back affordance, at the head of the title row on a screen that can pop. Clears the touch floor *and* lands on `blockGrid`; 16 + 4 + 48 = 68 still fits inside the unchanged `headerHeight`, so band 2 never grows to hold it. |
 | `contentTopGap` | 8 | `AppLayout.contentTopGap` | Gap between header band and first content pixel. |
 | `navBandHeight` | 56 | `AppLayout.navBandHeight` | Bottom nav. Rendered *over* content (`extendBody: true`). |
 | `scrollBottomInset` | 72 | `AppLayout.scrollBottomInset` | Scroll padding so the last item clears the translucent nav band. |
@@ -259,7 +260,11 @@ continuous scroll:
 
 A screen that builds its own `Scaffold`, `AppBar`, or `SliverAppBar` has opted out of
 the constitution and is a **review violation**. Screens use `AppScreen` (column form,
-the default) or `AppScreen.slivers` (grids and lazy lists). A raw pixel value in a
+the default), `AppScreen.slivers` (grids and lazy lists), or `AppScreen.fill` (a
+content band that scrolls itself, or one the overlays must layer over). **A back
+affordance is never passed as a flag** — the frame reads it from the route, so a
+screen can neither invent one nor omit one; a screen may only *name* it, via
+`backIdentifier`, for the automation flows. A raw pixel value in a
 layout position that a token expresses is likewise a violation, on the same footing as
 a raw `Duration` in motion or a raw `BorderRadius.circular(N)`.
 

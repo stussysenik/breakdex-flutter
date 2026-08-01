@@ -41,6 +41,7 @@ import 'package:breakdex/core/services/categories_service.dart';
 import 'package:breakdex/core/services/entity_names_service.dart';
 import 'package:breakdex/core/sync/video_retrieval_controller.dart';
 import 'package:breakdex/shared/widgets/app_loader.dart';
+import 'package:breakdex/shared/widgets/app_screen.dart';
 import 'package:breakdex/l10n/gen/app_localizations.dart';
 
 import 'package:breakdex/features/move_detail/widgets/move_detail_overlays.dart';
@@ -135,28 +136,32 @@ class _MoveDetailScreenState extends ConsumerState<MoveDetailScreen> {
       Future.microtask(() {
         if (mounted) this.context.pop();
       });
-      return const Scaffold(body: Center(child: AppLoader()));
+      return const AppScreen.fill(
+        title: '',
+        child: Center(child: AppLoader()),
+      );
     }
 
     final move = machineState.move;
     final state = LearningState.fromName(move.learningState);
 
-    return Scaffold(
-      backgroundColor: colorScheme.surface,
-      body: Stack(
+    // `fill`, because the overlays below layer over the whole content band —
+    // the frame's scrolling forms have no slot for that.
+    return AppScreen.fill(
+      title: move.name,
+      backIdentifier: 'move-back',
+      child: Stack(
         children: [
           CustomScrollView(
             slivers: [
-              SliverAppBar(
-                expandedHeight: 0,
-                pinned: true,
-                title: Text(move.name, style: AppTypography.titleSmall),
-                backgroundColor: colorScheme.surface,
-                surfaceTintColor: Colors.transparent,
-              ),
               SliverToBoxAdapter(
                 child: Padding(
-                  padding: const EdgeInsets.all(AppSpacing.screenEdge),
+                  padding: EdgeInsets.fromLTRB(
+                    AppSpacing.screenEdge,
+                    0,
+                    AppSpacing.screenEdge,
+                    AppScreen.bottomInsetOf(context),
+                  ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -203,13 +208,8 @@ class _MoveDetailScreenState extends ConsumerState<MoveDetailScreen> {
                         ),
                       const SizedBox(height: AppSpacing.lg),
 
-                      // Move Name
-                      Text(
-                        move.name,
-                        style: AppTypography.titleLarge.copyWith(
-                          color: colorScheme.onSurface,
-                        ),
-                      ),
+                      // The name is the frame's title now — it was previously
+                      // typed twice on this screen, in the pinned bar and here.
                       // Caption (D4): the date by default, not the camera
                       // filename or a truncated hash. Owner-selectable via
                       // Settings → Library; the filename keeps its labeled row
@@ -452,7 +452,6 @@ class _MoveDetailScreenState extends ConsumerState<MoveDetailScreen> {
                               .send(TapDelete(combos: combos));
                         },
                       ),
-                      const SizedBox(height: AppSpacing.xxxl),
                     ],
                   ),
                 ),
@@ -1007,7 +1006,9 @@ class _VideoMissingCard extends ConsumerWidget {
             child: Text(
               l10n.mdDeleteEntity(entityNames.moveSingular.toLowerCase()),
               style: AppTypography.caption.copyWith(
-                color: AppSemanticTheme.of(context).actionAgain.withValues(alpha: 0.7),
+                color: AppSemanticTheme.of(
+                  context,
+                ).actionAgain.withValues(alpha: 0.7),
               ),
             ),
           ),
@@ -1040,7 +1041,9 @@ class _MissingActionButton extends StatelessWidget {
         decoration: BoxDecoration(
           color: colorScheme.surface,
           borderRadius: BorderRadius.circular(AppRadius.sm),
-          border: Border.all(color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.3)),
+          border: Border.all(
+            color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.3),
+          ),
         ),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,

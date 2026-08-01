@@ -1,5 +1,9 @@
-import 'package:flutter/material.dart';
+import 'dart:async';
 
+import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
+
+import 'package:breakdex/core/design/icons.dart';
 import 'package:breakdex/core/design/layout.dart';
 import 'package:breakdex/core/design/typography.dart';
 import 'package:breakdex/shared/widgets/app_breadcrumb.dart';
@@ -30,6 +34,7 @@ class AppScreen extends StatelessWidget {
     this.floatingActionButton,
     this.pinned,
     this.wide = false,
+    this.backIdentifier = _defaultBackIdentifier,
   }) : slivers = null,
        child = null;
 
@@ -46,6 +51,7 @@ class AppScreen extends StatelessWidget {
     this.floatingActionButton,
     this.pinned,
     this.wide = false,
+    this.backIdentifier = _defaultBackIdentifier,
   }) : children = const [],
        child = null;
 
@@ -63,6 +69,7 @@ class AppScreen extends StatelessWidget {
     this.floatingActionButton,
     this.pinned,
     this.wide = false,
+    this.backIdentifier = _defaultBackIdentifier,
   }) : children = const [],
        slivers = null;
 
@@ -96,6 +103,16 @@ class AppScreen extends StatelessWidget {
   /// Opt into the wider [AppLayout.maxWideWidth] clamp. For dense grids only —
   /// never for reading content, where a wide measure hurts legibility.
   final bool wide;
+
+  /// Semantics identifier the automation flows select the back affordance by.
+  ///
+  /// Only the *name* is per-screen. Whether a screen has a back affordance at
+  /// all is read from the route (`Navigator.canPop`), never passed as a flag:
+  /// a tab root cannot pop, so it cannot offer a way back that does nothing,
+  /// and a pushed screen cannot forget to offer one.
+  final String backIdentifier;
+
+  static const String _defaultBackIdentifier = 'screen-back';
 
   @override
   Widget build(final BuildContext context) {
@@ -133,7 +150,14 @@ class AppScreen extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            _HeaderBand(title: title, actions: actions, maxWidth: maxWidth),
+            _HeaderBand(
+              title: title,
+              actions: actions,
+              maxWidth: maxWidth,
+              backIdentifier: (Navigator.maybeOf(context)?.canPop() ?? false)
+                  ? backIdentifier
+                  : null,
+            ),
             if (pinned != null)
               Align(
                 alignment: Alignment.topCenter,
@@ -202,11 +226,15 @@ class _HeaderBand extends StatelessWidget {
     required this.title,
     required this.actions,
     required this.maxWidth,
+    required this.backIdentifier,
   });
 
   final String title;
   final List<Widget> actions;
   final double maxWidth;
+
+  /// Non-null exactly when this route can pop.
+  final String? backIdentifier;
 
   @override
   Widget build(final BuildContext context) {
@@ -226,6 +254,8 @@ class _HeaderBand extends StatelessWidget {
                 const SizedBox(height: AppLayout.crumbGap),
                 Row(
                   children: [
+                    if (backIdentifier != null)
+                      _BackAffordance(identifier: backIdentifier!),
                     Expanded(
                       child: Text(
                         title,
@@ -240,6 +270,51 @@ class _HeaderBand extends StatelessWidget {
                   ],
                 ),
               ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// The way back up the address line.
+///
+/// A chevron and nothing else: the crumb line rendered directly above it
+/// already *says* where back goes, so a word here would be the same fact typed
+/// twice — and the two would drift the first time a route was renamed. It
+/// occupies [AppLayout.backSlot] square so the target clears the touch floor
+/// while the glyph stays on the gutter line the crumbs start from.
+class _BackAffordance extends StatelessWidget {
+  const _BackAffordance({required this.identifier});
+
+  final String identifier;
+
+  @override
+  Widget build(final BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    return Semantics(
+      identifier: identifier,
+      label: 'Back',
+      button: true,
+      child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTap: () {
+          final router = GoRouter.maybeOf(context);
+          if (router == null) {
+            unawaited(Navigator.maybePop(context));
+          } else {
+            router.pop();
+          }
+        },
+        child: SizedBox.square(
+          dimension: AppLayout.backSlot,
+          child: Align(
+            alignment: Alignment.centerLeft,
+            child: AppIconView(
+              AppIcon.back,
+              color: colorScheme.secondary,
+              size: 24,
             ),
           ),
         ),

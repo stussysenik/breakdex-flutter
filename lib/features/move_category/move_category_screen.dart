@@ -11,7 +11,7 @@ import 'package:go_router/go_router.dart';
 import 'package:breakdex/core/database/database.dart';
 import 'package:breakdex/core/services/entity_names_service.dart';
 import 'package:breakdex/core/design/spacing.dart';
-import 'package:breakdex/shared/widgets/back_leading.dart';
+import 'package:breakdex/shared/widgets/app_screen.dart';
 import 'package:breakdex/core/design/theme.dart';
 import 'package:breakdex/core/design/typography.dart';
 import 'package:breakdex/core/providers.dart';
@@ -54,68 +54,47 @@ class MoveCategoryScreen extends ConsumerWidget {
         byName[name]!,
     ];
 
-    return Scaffold(
-      appBar: AppBar(
-        leadingWidth: BackLeading.slotWidth,
-        leading: BackLeading(
-          identifier: 'moves-back',
-          onTap: () => context.pop(),
-        ),
-        title: Text(ref.watch(entityNamesProvider).movePlural),
-      ),
-      body: ListView(
-        padding: const EdgeInsets.all(AppSpacing.screenEdge),
-        children: [
-          Semantics(
-            header: true,
-            child: Text(
-              'Categories',
-              style: AppTypography.titleLarge.copyWith(
-                color: colorScheme.onSurface,
-              ),
-            ),
-          ),
-          const SizedBox(height: AppSpacing.lg),
-          for (final cat in ordered)
-            _CategoryTile(
-              category: cat,
-              activity:
-                  activities.byCategory[cat.name] ??
-                  LibraryCategoryActivity.empty,
-              onTap: () => context.push(
-                '/breakdex/moves/${Uri.encodeComponent(cat.name)}',
-              ),
-            ),
-          // Uncategorized is a *fallback*, not a category anyone chose. Shown
-          // only while it actually holds something, so a clean library never
-          // advertises an empty bucket — and never orphans moves either, since
-          // the block reappears the moment one lands there. The
-          // `/breakdex/moves/uncategorized` route stays reachable regardless.
-          if (activities.uncategorized.count > 0) ...[
-            const SizedBox(height: AppSpacing.lg),
-            Semantics(
-              header: true,
-              child: Text(
-                'Uncategorized',
-                style: AppTypography.titleSmall.copyWith(
-                  color: colorScheme.onSurface,
-                  fontWeight: FontWeight.w700,
+    return AppScreen(
+      title: ref.watch(entityNamesProvider).movePlural,
+      backIdentifier: 'moves-back',
+      children: [
+        AppSection(
+          title: 'Categories',
+          first: true,
+          children: [
+            for (final cat in ordered)
+              _CategoryTile(
+                category: cat,
+                activity:
+                    activities.byCategory[cat.name] ??
+                    LibraryCategoryActivity.empty,
+                onTap: () => context.push(
+                  '/breakdex/moves/${Uri.encodeComponent(cat.name)}',
                 ),
               ),
-            ),
-            const SizedBox(height: AppSpacing.sm),
-            _CategoryTile(
-              category: Category(
-                name: 'Uncategorized',
-                colorValue: colorScheme.secondary.toARGB32(),
-                isDefault: true,
-              ),
-              activity: activities.uncategorized,
-              onTap: () => context.push('/breakdex/moves/uncategorized'),
-            ),
           ],
-        ],
-      ),
+        ),
+        // Uncategorized is a *fallback*, not a category anyone chose. Shown
+        // only while it actually holds something, so a clean library never
+        // advertises an empty bucket — and never orphans moves either, since
+        // the block reappears the moment one lands there. The
+        // `/breakdex/moves/uncategorized` route stays reachable regardless.
+        if (activities.uncategorized.count > 0)
+          AppSection(
+            title: 'Uncategorized',
+            children: [
+              _CategoryTile(
+                category: Category(
+                  name: 'Uncategorized',
+                  colorValue: colorScheme.secondary.toARGB32(),
+                  isDefault: true,
+                ),
+                activity: activities.uncategorized,
+                onTap: () => context.push('/breakdex/moves/uncategorized'),
+              ),
+            ],
+          ),
+      ],
     );
   }
 }
@@ -138,65 +117,64 @@ class _CategoryTile extends StatelessWidget {
   @override
   Widget build(final BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
-    return Padding(
-      padding: const EdgeInsets.only(bottom: AppSpacing.sm),
-      child: Pressable(
-        onTap: onTap,
-        child: Container(
-          padding: const EdgeInsets.all(AppSpacing.md),
-          decoration: AppSurfaces.panel(context, radius: AppRadius.md),
-          child: Row(
-            children: [
-              Container(
-                width: 12,
-                height: 12,
-                decoration: BoxDecoration(
-                  color: category.color,
-                  shape: BoxShape.circle,
-                ),
+    // No bottom margin: `AppSection` owns the gap between siblings, and a tile
+    // carrying one too would double every gap it appears in.
+    return Pressable(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.all(AppSpacing.md),
+        decoration: AppSurfaces.panel(context, radius: AppRadius.md),
+        child: Row(
+          children: [
+            Container(
+              width: 12,
+              height: 12,
+              decoration: BoxDecoration(
+                color: category.color,
+                shape: BoxShape.circle,
               ),
-              const SizedBox(width: AppSpacing.md),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
+            ),
+            const SizedBox(width: AppSpacing.md),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    category.name,
+                    style: AppTypography.bodyMedium.copyWith(
+                      color: colorScheme.onSurface,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  // The tile the grid is sorted by discloses the date it is
+                  // sorted on; an empty category says so rather than showing
+                  // a blank where every sibling has a line.
+                  if (activity.lastAddedAt case final lastAddedAt?)
+                    LibraryDateLabel(date: lastAddedAt)
+                  else
                     Text(
-                      category.name,
-                      style: AppTypography.bodyMedium.copyWith(
-                        color: colorScheme.onSurface,
-                        fontWeight: FontWeight.w600,
+                      AppLocalizations.of(context).libraryCategoryEmpty,
+                      style: AppTypography.caption.copyWith(
+                        color: colorScheme.secondary,
                       ),
                     ),
-                    const SizedBox(height: 4),
-                    // The tile the grid is sorted by discloses the date it is
-                    // sorted on; an empty category says so rather than showing
-                    // a blank where every sibling has a line.
-                    if (activity.lastAddedAt case final lastAddedAt?)
-                      LibraryDateLabel(date: lastAddedAt)
-                    else
-                      Text(
-                        AppLocalizations.of(context).libraryCategoryEmpty,
-                        style: AppTypography.caption.copyWith(
-                          color: colorScheme.secondary,
-                        ),
-                      ),
-                  ],
-                ),
+                ],
               ),
-              Text(
-                '${activity.count}',
-                style: AppTypography.bodySmall.copyWith(
-                  color: colorScheme.secondary,
-                ),
-              ),
-              const SizedBox(width: AppSpacing.md),
-              AppIconView(
-                AppIcon.forward,
+            ),
+            Text(
+              '${activity.count}',
+              style: AppTypography.bodySmall.copyWith(
                 color: colorScheme.secondary,
-                size: 20,
               ),
-            ],
-          ),
+            ),
+            const SizedBox(width: AppSpacing.md),
+            AppIconView(
+              AppIcon.forward,
+              color: colorScheme.secondary,
+              size: 20,
+            ),
+          ],
         ),
       ),
     );
@@ -251,23 +229,16 @@ class MoveCategoryDetailScreen extends ConsumerWidget {
               .toList()
         : allMoves.where((final m) => m.category == categoryName).toList();
 
-    final bottomPadding =
-        kBottomNavigationBarHeight +
-        MediaQuery.of(context).padding.bottom +
-        AppSpacing.xxl;
+    // The frame's own inset, not a hand-rolled sum: each of the three views
+    // below scrolls itself, so `fill` cannot pad them and each must reserve the
+    // band the shell paints over it — the same figure `showAppSheet` owns.
+    final bottomPadding = AppScreen.bottomInsetOf(context);
 
-    return Scaffold(
-      appBar: AppBar(
-        leadingWidth: BackLeading.slotWidth,
-        leading: BackLeading(
-          identifier: 'category-back',
-          onTap: () => context.pop(),
-        ),
-        title: Text(
-          categoryName == 'uncategorized' ? 'Uncategorized' : categoryName,
-        ),
-      ),
-      body: filtered.isEmpty
+    return AppScreen.fill(
+      title: categoryName == 'uncategorized' ? 'Uncategorized' : categoryName,
+      backIdentifier: 'category-back',
+      pinned: filtered.isEmpty ? null : _NavModeToggle(navMode: navMode),
+      child: filtered.isEmpty
           ? Center(
               child: Column(
                 mainAxisSize: MainAxisSize.min,
@@ -287,34 +258,27 @@ class MoveCategoryDetailScreen extends ConsumerWidget {
                 ],
               ),
             )
-          : Column(
-              children: [
-                _NavModeToggle(navMode: navMode),
-                Expanded(
-                  child: switch (navMode) {
-                    CategoryNavMode.scrollIndex => _ScrollIndexView(
-                      moves: filtered,
-                      bottomPadding: bottomPadding,
-                      onTap: (final move) =>
-                          context.push('/breakdex/move/${move.id}'),
-                    ),
-                    CategoryNavMode.search => _SearchBarView(
-                      moves: filtered,
-                      categoryName: categoryName,
-                      bottomPadding: bottomPadding,
-                      onTap: (final move) =>
-                          context.push('/breakdex/move/${move.id}'),
-                    ),
-                    CategoryNavMode.filterChips => _FilterChipsView(
-                      moves: filtered,
-                      bottomPadding: bottomPadding,
-                      onTap: (final move) =>
-                          context.push('/breakdex/move/${move.id}'),
-                    ),
-                  },
-                ),
-              ],
-            ),
+          : switch (navMode) {
+              CategoryNavMode.scrollIndex => _ScrollIndexView(
+                moves: filtered,
+                bottomPadding: bottomPadding,
+                onTap: (final move) =>
+                    context.push('/breakdex/move/${move.id}'),
+              ),
+              CategoryNavMode.search => _SearchBarView(
+                moves: filtered,
+                categoryName: categoryName,
+                bottomPadding: bottomPadding,
+                onTap: (final move) =>
+                    context.push('/breakdex/move/${move.id}'),
+              ),
+              CategoryNavMode.filterChips => _FilterChipsView(
+                moves: filtered,
+                bottomPadding: bottomPadding,
+                onTap: (final move) =>
+                    context.push('/breakdex/move/${move.id}'),
+              ),
+            },
     );
   }
 }
@@ -327,82 +291,76 @@ class _NavModeToggle extends ConsumerWidget {
   @override
   Widget build(final BuildContext context, final WidgetRef ref) {
     final colorScheme = Theme.of(context).colorScheme;
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(
-        AppSpacing.screenEdge,
-        AppSpacing.xs,
-        AppSpacing.screenEdge,
-        AppSpacing.sm,
-      ),
-      child: Row(
-        children: [
-          for (final mode in CategoryNavMode.values) ...[
-            if (mode != CategoryNavMode.values.first)
-              const SizedBox(width: AppSpacing.sm),
-            Expanded(
-              child: Semantics(
-                button: true,
-                selected: navMode == mode,
-                label: switch (mode) {
-                  CategoryNavMode.scrollIndex => 'Letter index',
-                  CategoryNavMode.search => 'Search',
-                  CategoryNavMode.filterChips => 'Filter',
+    // No padding of its own: the frame's `pinned` slot already applies the
+    // gutter and the gap below the header band.
+    return Row(
+      children: [
+        for (final mode in CategoryNavMode.values) ...[
+          if (mode != CategoryNavMode.values.first)
+            const SizedBox(width: AppSpacing.sm),
+          Expanded(
+            child: Semantics(
+              button: true,
+              selected: navMode == mode,
+              label: switch (mode) {
+                CategoryNavMode.scrollIndex => 'Letter index',
+                CategoryNavMode.search => 'Search',
+                CategoryNavMode.filterChips => 'Filter',
+              },
+              child: GestureDetector(
+                onTap: () {
+                  if (navMode != mode) {
+                    HapticFeedback.selectionClick();
+                    ref.read(_categoryNavModeProvider.notifier).set(mode);
+                  }
                 },
-                child: GestureDetector(
-                  onTap: () {
-                    if (navMode != mode) {
-                      HapticFeedback.selectionClick();
-                      ref.read(_categoryNavModeProvider.notifier).set(mode);
-                    }
-                  },
-                  child: ExcludeSemantics(
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(vertical: 8),
-                      decoration: BoxDecoration(
-                        color: navMode == mode
-                            ? colorScheme.primary
-                            : colorScheme.surfaceContainerHighest,
-                        borderRadius: BorderRadius.circular(AppRadius.sm),
-                      ),
-                      child: FittedBox(
-                        fit: BoxFit.scaleDown,
-                        child: Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 4),
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Icon(
-                                switch (mode) {
-                                  CategoryNavMode.scrollIndex =>
-                                    AppIcon.sort.resolve(context),
-                                  CategoryNavMode.search =>
-                                    AppIcon.search.resolve(context),
-                                  CategoryNavMode.filterChips =>
-                                    AppIcon.filter.resolve(context),
-                                },
-                                size: 16,
+                child: ExcludeSemantics(
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(vertical: 8),
+                    decoration: BoxDecoration(
+                      color: navMode == mode
+                          ? colorScheme.primary
+                          : colorScheme.surfaceContainerHighest,
+                      borderRadius: BorderRadius.circular(AppRadius.sm),
+                    ),
+                    child: FittedBox(
+                      fit: BoxFit.scaleDown,
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 4),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(
+                              switch (mode) {
+                                CategoryNavMode.scrollIndex =>
+                                  AppIcon.sort.resolve(context),
+                                CategoryNavMode.search =>
+                                  AppIcon.search.resolve(context),
+                                CategoryNavMode.filterChips =>
+                                  AppIcon.filter.resolve(context),
+                              },
+                              size: 16,
+                              color: navMode == mode
+                                  ? Colors.white
+                                  : colorScheme.secondary,
+                            ),
+                            const SizedBox(width: 4),
+                            Text(
+                              switch (mode) {
+                                CategoryNavMode.scrollIndex => 'Index',
+                                CategoryNavMode.search => 'Search',
+                                CategoryNavMode.filterChips => 'Filter',
+                              },
+                              style: AppTypography.caption.copyWith(
                                 color: navMode == mode
                                     ? Colors.white
-                                    : colorScheme.secondary,
+                                    : colorScheme.onSurface,
+                                fontWeight: navMode == mode
+                                    ? FontWeight.w600
+                                    : FontWeight.w400,
                               ),
-                              const SizedBox(width: 4),
-                              Text(
-                                switch (mode) {
-                                  CategoryNavMode.scrollIndex => 'Index',
-                                  CategoryNavMode.search => 'Search',
-                                  CategoryNavMode.filterChips => 'Filter',
-                                },
-                                style: AppTypography.caption.copyWith(
-                                  color: navMode == mode
-                                      ? Colors.white
-                                      : colorScheme.onSurface,
-                                  fontWeight: navMode == mode
-                                      ? FontWeight.w600
-                                      : FontWeight.w400,
-                                ),
-                              ),
-                            ],
-                          ),
+                            ),
+                          ],
                         ),
                       ),
                     ),
@@ -410,9 +368,9 @@ class _NavModeToggle extends ConsumerWidget {
                 ),
               ),
             ),
-          ],
+          ),
         ],
-      ),
+      ],
     );
   }
 }

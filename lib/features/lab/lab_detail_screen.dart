@@ -17,6 +17,7 @@ import 'package:breakdex/core/design/typography.dart';
 import 'package:breakdex/core/providers.dart';
 import 'package:breakdex/features/flow/providers/aura_providers.dart';
 import 'package:breakdex/shared/widgets/app_loader.dart';
+import 'package:breakdex/shared/widgets/app_screen.dart';
 import 'package:breakdex/shared/widgets/notes_section.dart';
 import 'package:breakdex/features/lab/providers/lab_providers.dart';
 import 'package:breakdex/features/lab/widgets/lab_timeline.dart';
@@ -196,263 +197,213 @@ class _LabDetailScreenState extends ConsumerState<LabDetailScreen> {
     final labAsync = ref.watch(labDetailProvider(widget.labId));
     final colorScheme = Theme.of(context).colorScheme;
 
-    return Scaffold(
-      body: SafeArea(
-        child: labAsync.when(
-          loading: () => const Center(child: AppLoader()),
-          error: (final e, _) => Center(
-            child: Text(
-              'Error loading lab: $e',
-              style: AppTypography.bodySmall.copyWith(
-                color: AppSemanticTheme.of(context).actionAgain,
+    final lab = labAsync.valueOrNull;
+
+    // `fill`, not the scrolling default: half the sections below are
+    // deliberately full-bleed (the set sequencer scrolls edge to edge), so a
+    // frame that applied the gutter to every child would inset them all.
+    return AppScreen.fill(
+      title: lab?.name ?? '',
+      backIdentifier: 'lab-back',
+      actions: lab == null
+          ? const <Widget>[]
+          : [
+              PopupMenuButton<String>(
+                icon: AppIconView(AppIcon.more, color: colorScheme.secondary),
+                onSelected: (final value) {
+                  switch (value) {
+                    case 'rename':
+                      _rename(lab);
+                    case 'delete':
+                      _deleteLab(lab);
+                  }
+                },
+                itemBuilder: (_) => [
+                  const PopupMenuItem(value: 'rename', child: Text('Rename')),
+                  PopupMenuItem(
+                    value: 'delete',
+                    child: Text(
+                      'Delete Lab',
+                      style: TextStyle(
+                        color: AppSemanticTheme.of(context).actionAgain,
+                      ),
+                    ),
+                  ),
+                ],
               ),
+            ],
+      child: labAsync.when(
+        loading: () => const Center(child: AppLoader()),
+        error: (final e, _) => Center(
+          child: Text(
+            'Error loading lab: $e',
+            style: AppTypography.bodySmall.copyWith(
+              color: AppSemanticTheme.of(context).actionAgain,
             ),
           ),
-          data: (final lab) {
-            if (lab == null) {
-              return Center(
+        ),
+        data: (final lab) {
+          if (lab == null) {
+            return Center(
+              child: Text(
+                'Lab not found',
+                style: AppTypography.bodyMedium.copyWith(
+                  color: colorScheme.secondary,
+                ),
+              ),
+            );
+          }
+
+          final isSet = lab.labType == 'set';
+
+          return ListView(
+            padding: EdgeInsets.only(bottom: AppScreen.bottomInsetOf(context)),
+            children: [
+              // The back affordance, the name, and the more-menu all moved
+              // into the header band the frame owns. What is left is the
+              // lab's substance.
+
+              // -- Status pill (tappable) + metadata row --------------------
+              Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: AppSpacing.screenEdge,
+                ),
+                child: Wrap(
+                  spacing: AppSpacing.sm,
+                  runSpacing: AppSpacing.sm,
+                  crossAxisAlignment: WrapCrossAlignment.center,
+                  children: [
+                    // Tappable status pill
+                    GestureDetector(
+                      onTap: () => _cycleStatus(lab),
+                      child: _LabStatusPill(status: lab.status),
+                    ),
+                    // Lab type badge
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 4,
+                      ),
+                      decoration: BoxDecoration(
+                        color: colorScheme.surfaceContainerHighest,
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: Text(
+                        isSet ? 'Set' : 'Project',
+                        style: AppTypography.caption.copyWith(
+                          color: colorScheme.secondary,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: AppSpacing.sm),
+
+              // -- Created time ago -----------------------------------------
+              Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: AppSpacing.screenEdge,
+                ),
                 child: Text(
-                  'Lab not found',
-                  style: AppTypography.bodyMedium.copyWith(
+                  'Created ${_daysAgo(lab.createdAt)}',
+                  style: AppTypography.caption.copyWith(
+                    color: colorScheme.secondary.withValues(alpha: 0.6),
+                  ),
+                ),
+              ),
+              const SizedBox(height: AppSpacing.lg),
+
+              // -- Type-specific content ------------------------------------
+              if (isSet) ...[
+                // Set Builder — horizontal move sequencer
+                SetBuilder(labId: widget.labId, onAddMove: _showMovePicker),
+                const SizedBox(height: AppSpacing.lg),
+              ] else ...[
+                // Project: Timeline view
+                LabTimeline(labId: widget.labId),
+                const SizedBox(height: AppSpacing.lg),
+
+                // Project: Linked moves
+                LinkedMovesSection(
+                  labId: widget.labId,
+                  onAddMove: _showMovePicker,
+                ),
+                const SizedBox(height: AppSpacing.lg),
+              ],
+
+              // -- Milestones (both types) ----------------------------------
+              MilestoneList(labId: widget.labId),
+              const SizedBox(height: AppSpacing.lg),
+
+              // -- Notes (both types) ---------------------------------------
+              Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: AppSpacing.screenEdge,
+                ),
+                child: NotesSection(
+                  notes: lab.notes,
+                  onChanged: (final text) {
+                    ref
+                        .read(labsDaoProvider)
+                        .updateLab(
+                          LabsCompanion(
+                            id: drift.Value(lab.id),
+                            notes: drift.Value(text.isEmpty ? null : text),
+                            updatedAt: drift.Value(DateTime.now()),
+                          ),
+                        );
+                  },
+                ),
+              ),
+              const SizedBox(height: AppSpacing.lg),
+
+              // -- Danger zone / actions ------------------------------------
+              Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: AppSpacing.screenEdge,
+                ),
+                child: Divider(color: colorScheme.outline),
+              ),
+              const SizedBox(height: AppSpacing.md),
+              Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: AppSpacing.screenEdge,
+                ),
+                child: Text(
+                  'ACTIONS',
+                  style: AppTypography.sectionHeader.copyWith(
                     color: colorScheme.secondary,
                   ),
                 ),
-              );
-            }
-
-            final isSet = lab.labType == 'set';
-
-            return ListView(
-              padding: const EdgeInsets.only(
-                top: AppSpacing.screenEdge,
-                bottom: kBottomNavigationBarHeight + AppSpacing.xxl,
               ),
-              children: [
-                // -- Back breadcrumb ------------------------------------------
-                Padding(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: AppSpacing.screenEdge,
-                  ),
-                  child: GestureDetector(
-                    onTap: () => context.pop(),
-                    child: Row(
-                      children: [
-                        AppIconView(
-                          AppIcon.back,
-                          color: colorScheme.secondary,
-                          size: 20,
-                        ),
-                        Text(
-                          'Lab',
-                          style: AppTypography.bodyMedium.copyWith(
-                            color: colorScheme.secondary,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
+              const SizedBox(height: AppSpacing.sm),
+              Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: AppSpacing.screenEdge,
                 ),
-                const SizedBox(height: AppSpacing.lg),
-
-                // -- Lab type icon + name (tappable to rename) ----------------
-                Padding(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: AppSpacing.screenEdge,
-                  ),
-                  child: Row(
-                    children: [
-                      AppIconView(
-                        isSet ? AppIcon.combo : AppIcon.lab,
-                        color: Theme.of(context).colorScheme.primary,
-                        size: 24,
-                      ),
-                      const SizedBox(width: AppSpacing.sm),
-                      Expanded(
-                        child: GestureDetector(
-                          onTap: () => _rename(lab),
-                          child: Text(
-                            lab.name,
-                            style: AppTypography.titleLarge.copyWith(
-                              color: colorScheme.onSurface,
-                            ),
-                          ),
-                        ),
-                      ),
-                      // More menu
-                      PopupMenuButton<String>(
-                        icon: AppIconView(
-                          AppIcon.more,
-                          color: colorScheme.secondary,
-                        ),
-                        onSelected: (final value) {
-                          switch (value) {
-                            case 'rename':
-                              _rename(lab);
-                            case 'delete':
-                              _deleteLab(lab);
-                          }
-                        },
-                        itemBuilder: (_) => [
-                          const PopupMenuItem(
-                            value: 'rename',
-                            child: Text('Rename'),
-                          ),
-                          PopupMenuItem(
-                            value: 'delete',
-                            child: Text(
-                              'Delete Lab',
-                              style: TextStyle(color: AppSemanticTheme.of(context).actionAgain),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
+                child: _ActionRow(
+                  icon: AppIcon.link.resolve(context),
+                  label: 'Link Move',
+                  onTap: _showMovePicker,
                 ),
-                const SizedBox(height: AppSpacing.sm),
-
-                // -- Status pill (tappable) + metadata row --------------------
-                Padding(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: AppSpacing.screenEdge,
-                  ),
-                  child: Wrap(
-                    spacing: AppSpacing.sm,
-                    runSpacing: AppSpacing.sm,
-                    crossAxisAlignment: WrapCrossAlignment.center,
-                    children: [
-                      // Tappable status pill
-                      GestureDetector(
-                        onTap: () => _cycleStatus(lab),
-                        child: _LabStatusPill(status: lab.status),
-                      ),
-                      // Lab type badge
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 12,
-                          vertical: 4,
-                        ),
-                        decoration: BoxDecoration(
-                          color: colorScheme.surfaceContainerHighest,
-                          borderRadius: BorderRadius.circular(20),
-                        ),
-                        child: Text(
-                          isSet ? 'Set' : 'Project',
-                          style: AppTypography.caption.copyWith(
-                            color: colorScheme.secondary,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
+              ),
+              const SizedBox(height: AppSpacing.sm),
+              Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: AppSpacing.screenEdge,
                 ),
-                const SizedBox(height: AppSpacing.sm),
-
-                // -- Created time ago -----------------------------------------
-                Padding(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: AppSpacing.screenEdge,
-                  ),
-                  child: Text(
-                    'Created ${_daysAgo(lab.createdAt)}',
-                    style: AppTypography.caption.copyWith(
-                      color: colorScheme.secondary.withValues(alpha: 0.6),
-                    ),
-                  ),
+                child: _ActionRow(
+                  icon: AppIcon.delete.resolve(context),
+                  label: 'Delete Lab',
+                  destructive: true,
+                  onTap: () => _deleteLab(lab),
                 ),
-                const SizedBox(height: AppSpacing.lg),
-
-                // -- Type-specific content ------------------------------------
-                if (isSet) ...[
-                  // Set Builder — horizontal move sequencer
-                  SetBuilder(labId: widget.labId, onAddMove: _showMovePicker),
-                  const SizedBox(height: AppSpacing.lg),
-                ] else ...[
-                  // Project: Timeline view
-                  LabTimeline(labId: widget.labId),
-                  const SizedBox(height: AppSpacing.lg),
-
-                  // Project: Linked moves
-                  LinkedMovesSection(
-                    labId: widget.labId,
-                    onAddMove: _showMovePicker,
-                  ),
-                  const SizedBox(height: AppSpacing.lg),
-                ],
-
-                // -- Milestones (both types) ----------------------------------
-                MilestoneList(labId: widget.labId),
-                const SizedBox(height: AppSpacing.lg),
-
-                // -- Notes (both types) ---------------------------------------
-                Padding(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: AppSpacing.screenEdge,
-                  ),
-                  child: NotesSection(
-                    notes: lab.notes,
-                    onChanged: (final text) {
-                      ref
-                          .read(labsDaoProvider)
-                          .updateLab(
-                            LabsCompanion(
-                              id: drift.Value(lab.id),
-                              notes: drift.Value(text.isEmpty ? null : text),
-                              updatedAt: drift.Value(DateTime.now()),
-                            ),
-                          );
-                    },
-                  ),
-                ),
-                const SizedBox(height: AppSpacing.lg),
-
-                // -- Danger zone / actions ------------------------------------
-                Padding(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: AppSpacing.screenEdge,
-                  ),
-                  child: Divider(color: colorScheme.outline),
-                ),
-                const SizedBox(height: AppSpacing.md),
-                Padding(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: AppSpacing.screenEdge,
-                  ),
-                  child: Text(
-                    'ACTIONS',
-                    style: AppTypography.sectionHeader.copyWith(
-                      color: colorScheme.secondary,
-                    ),
-                  ),
-                ),
-                const SizedBox(height: AppSpacing.sm),
-                Padding(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: AppSpacing.screenEdge,
-                  ),
-                  child: _ActionRow(
-                    icon: AppIcon.link.resolve(context),
-                    label: 'Link Move',
-                    onTap: _showMovePicker,
-                  ),
-                ),
-                const SizedBox(height: AppSpacing.sm),
-                Padding(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: AppSpacing.screenEdge,
-                  ),
-                  child: _ActionRow(
-                    icon: AppIcon.delete.resolve(context),
-                    label: 'Delete Lab',
-                    destructive: true,
-                    onTap: () => _deleteLab(lab),
-                  ),
-                ),
-              ],
-            );
-          },
-        ),
+              ),
+            ],
+          );
+        },
       ),
     );
   }
@@ -513,7 +464,10 @@ class _LabStatusPill extends StatelessWidget {
     );
   }
 
-  static (String, Color) _statusMeta(final BuildContext context, final String status) => switch (status) {
+  static (String, Color) _statusMeta(
+    final BuildContext context,
+    final String status,
+  ) => switch (status) {
     'idea' => ('Idea', const Color(0xFFA7B1C2)),
     'attempting' => ('Attempting', AppSemanticTheme.of(context).stateLearning),
     'landed' => ('Landed', AppSemanticTheme.of(context).stateMastery),
@@ -748,7 +702,9 @@ class _MovePickerSheetState extends ConsumerState<_MovePickerSheet> {
     required final bool isSuggested,
     required final ColorScheme colorScheme,
   }) {
-    final accent = isSuggested ? AppSemanticTheme.of(context).stateMastery : Theme.of(context).colorScheme.primary;
+    final accent = isSuggested
+        ? AppSemanticTheme.of(context).stateMastery
+        : Theme.of(context).colorScheme.primary;
     return ListTile(
       leading: Container(
         width: 36,
@@ -822,7 +778,9 @@ class _ActionRow extends StatelessWidget {
   @override
   Widget build(final BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
-    final color = destructive ? AppSemanticTheme.of(context).actionAgain : colorScheme.onSurface;
+    final color = destructive
+        ? AppSemanticTheme.of(context).actionAgain
+        : colorScheme.onSurface;
 
     return InkWell(
       onTap: onTap,

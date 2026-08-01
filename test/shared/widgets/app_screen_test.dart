@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -87,6 +89,69 @@ void main() {
       final pinnedBottom = tester.getRect(find.text('segments')).bottom;
       final bodyTop = tester.getRect(find.text('body')).top;
       expect(bodyTop, greaterThanOrEqualTo(pinnedBottom));
+    });
+
+    testWidgets('a pushed screen gets a back affordance; a root screen does not', (
+      final tester,
+    ) async {
+      final navigator = GlobalKey<NavigatorState>();
+      await tester.pumpWidget(
+        MaterialApp(
+          navigatorKey: navigator,
+          home: const AppScreen(title: 'Root', children: [Text('root')]),
+        ),
+      );
+
+      // A tab root cannot pop, so the frame must not offer a way back that
+      // would do nothing. The affordance is a fact about the route, not a flag
+      // a screen remembers to pass.
+      expect(find.bySemanticsLabel('Back'), findsNothing);
+
+      unawaited(
+        navigator.currentState!.push(
+          MaterialPageRoute<void>(
+            builder: (_) =>
+                const AppScreen(title: 'Detail', children: [Text('detail')]),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.bySemanticsLabel('Back'), findsOneWidget);
+    });
+
+    testWidgets('the back affordance meets the touch floor without moving the '
+        'title baseline or growing band 2', (final tester) async {
+      final navigator = GlobalKey<NavigatorState>();
+      await tester.pumpWidget(
+        MaterialApp(
+          navigatorKey: navigator,
+          home: const AppScreen(title: 'Frame', children: [Text('root')]),
+        ),
+      );
+      final rootTitle = tester.getRect(find.text('Frame'));
+
+      unawaited(
+        navigator.currentState!.push(
+          MaterialPageRoute<void>(
+            builder: (_) =>
+                const AppScreen(title: 'Frame', children: [Text('detail')]),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final back = tester.getRect(find.bySemanticsLabel('Back'));
+      expect(back.height, greaterThanOrEqualTo(44));
+      expect(back.width, greaterThanOrEqualTo(44));
+
+      // Band 2 is the same height on a detail screen as on a tab root — a
+      // header that grows to hold a control is the drift the frame removes.
+      final detailTitle = tester.getRect(find.text('Frame').last);
+      expect(detailTitle.center.dy, rootTitle.center.dy);
+      expect(tester.getRect(find.text('detail')).top, greaterThanOrEqualTo(
+        AppLayout.headerHeight + AppLayout.contentTopGap,
+      ));
     });
 
     testWidgets('renders no FAB when a screen supplies none', (

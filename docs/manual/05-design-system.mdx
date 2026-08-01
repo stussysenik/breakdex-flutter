@@ -63,9 +63,20 @@ All five tabs are on the frame as of 2026-07-29, so the migration ledger that tr
 retired; the roster now lives in `test/design/frame_conformance_test.dart`, where CI can fail
 it. Anything the frame must do for a screen belongs to `AppScreen` rather than to the screen —
 that is how `AppScreen.floatingActionButton` arrived, carrying with it the nav-band inset five
-screens had each hand-rolled as `kBottomNavigationBarHeight + padding.bottom`. Detail routes
-pushed on top of a tab are not on the roster: a back affordance and no nav band is a different
-placement problem, and framing them is a separate ruling.
+screens had each hand-rolled as `kBottomNavigationBarHeight + padding.bottom`.
+
+**Detail routes joined the roster on 2026-08-01**, and the ruling that let them is worth
+stating: they are pushed *inside* the shell branch, so band 4 was never absent — the only
+missing fact was a way back. `AppScreen` now reads that from the route (`Navigator.canPop`)
+rather than taking it as a flag, so a tab root cannot show a back control that would do
+nothing and a pushed screen cannot forget one. The control is a chevron and no word, sized
+`AppLayout.backSlot` (48): the crumb line directly above it already *says* where back goes,
+and typing that twice is two things to keep in sync. Band 2 does not grow to hold it —
+16 + 4 + 48 = 68 still fits inside the unchanged 72 — and because the header column is
+centred, the title's centreline does not move between a tab root and a detail screen.
+`BackLeading`, the labelled `AppBar` control three screens had each grown their own version
+of, was deleted in the same commit: it existed only because detail routes built their own
+chrome.
 
 **The address line lives inside band 2, which does not grow.** `AppBreadcrumb`
 (`lib/shared/widgets/app_breadcrumb.dart`) renders the route as one line of type above the

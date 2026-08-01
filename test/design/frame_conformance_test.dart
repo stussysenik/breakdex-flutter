@@ -7,9 +7,12 @@ import 'package:flutter_test/flutter_test.dart';
 /// carries a migration ledger — this list replaced it. Add a screen here in
 /// the same commit that migrates it.
 ///
-/// Detail routes pushed on top of a tab are deliberately absent: they are a
-/// different placement problem (back affordance, no nav band) and framing them
-/// is a separate ruling.
+/// Detail routes joined on 2026-08-01 (§4.2). The ruling they were waiting on:
+/// they are pushed *inside* the shell branch, so band 4 is still there and the
+/// only missing fact was a way back — which the frame now reads from the route
+/// (`Navigator.canPop`) rather than taking as a per-screen flag. A tab root
+/// cannot pop, so it cannot show a back control that does nothing; a pushed
+/// screen cannot forget one.
 const _migratedScreens = <String>[
   'lib/features/add/add_screen.dart',
   'lib/features/breakdex/breakdex_screen.dart',
@@ -18,6 +21,10 @@ const _migratedScreens = <String>[
   'lib/features/flow/flow_screen.dart',
   'lib/features/move_list/move_list_screen.dart',
   'lib/features/combos/combos_screen.dart',
+  'lib/features/move_detail/move_detail_screen.dart',
+  'lib/features/combo_detail/combo_detail_screen.dart',
+  'lib/features/lab/lab_detail_screen.dart',
+  'lib/features/move_category/move_category_screen.dart',
 ];
 
 /// Surfaces that are deliberately frameless, and why. A frameless surface is

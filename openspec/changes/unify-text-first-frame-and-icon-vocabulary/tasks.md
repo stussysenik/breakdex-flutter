@@ -84,8 +84,39 @@ unreliable; it is honestly reporting a box that something else paints over.
       immersive drill session, deliberately band-less) and asserts it uses `AppScreen.fill`, so
       the exemption cannot widen back into a hand-built header.
       Gate: analyzer 0/0, 1361 pass / 3 skip / 0 fail.
-- [ ] 4.2 Detail screens: `move_detail`, `combo_detail`, `lab_detail`, `move_category`.
+- [x] 4.2 Detail screens: `move_detail`, `combo_detail`, `lab_detail`, `move_category` (both
+      of its screens). The ruling 4.1 deferred here turned out to have a false premise: all
+      four are pushed **inside** the shell branch, so band 4 was never absent and no second
+      frame variant was needed. The only missing fact was a way back, and it is now a fact
+      about the **route**, not a flag — `AppScreen` reads `Navigator.canPop`, so a tab root
+      cannot render a control that would do nothing and a pushed screen cannot forget one.
+      A screen may only *name* it (`backIdentifier`), which is what keeps `.maestro`'s
+      `moves-back` selector alive. Red-first: the affordance absent at the root, present when
+      pushed, ≥44 square, with the title's centreline unmoved and content still starting at
+      `headerHeight + contentTopGap` — proved red before `AppLayout.backSlot` existed.
+      **The chevron carries no word.** The crumb line rendered directly above it already says
+      where back goes; typing it twice is two strings to keep in sync, and `combo_detail`'s
+      said "Combos" while `lab_detail`'s said "Lab" and `move_category`'s said "Back".
+      **`BackLeading` was deleted in the same commit** (widget + test): it existed only to
+      stop three screens hand-rolling a labelled `AppBar` leading, and no screen builds an
+      `AppBar` any more. Its slot-width ruling (`SCR-20260728-mafz`) is superseded by
+      `backSlot`, not lost.
+      Each screen also stopped repeating its own title: `move_detail` typed the move name in
+      a `SliverAppBar` *and* again as `titleLarge` two lines below it; `combo_detail` and
+      `lab_detail` did the same. One name, on the frame's baseline.
+      Three took `AppScreen.fill` for a stated reason — `move_detail` and `combo_detail`
+      because overlays layer over the whole band, `lab_detail` because half its sections are
+      deliberately full-bleed (the set sequencer scrolls edge to edge) and a uniform gutter
+      would inset them. `move_category`'s index took the scrolling default and its detail
+      took `fill` + `pinned` (the same shape combos got in 4.1), trading a hand-rolled
+      `kBottomNavigationBarHeight + padding.bottom + xxl` for `AppScreen.bottomInsetOf`.
+      Roster grew by all four in the same commit. Gate: analyzer 0 errors/0 warnings,
+      **1362 pass / 3 skip / 0 fail**. How any of it *looks* is owner-gated.
 - [ ] 4.3 Settings sub-screens (7 files) — the cheapest batch, all already list-shaped.
+      **Unblocked by 4.2**: `/settings-panel` pushes on the root navigator, and the frame's
+      back affordance is read from the route, so it needs nothing 4.2 did not already ship.
+      The open question there is band 4, not back: the root navigator has no nav band, so the
+      bottom inset `AppScreen` reserves is dead space on those routes.
 - [ ] 4.4 Remaining: auth, battle, party, video editors, instax, dev panels. Includes extracting
       the immersive drill session out of `flashcard_review_screen` so that file joins the roster.
 - [ ] 4.5 Flip `frame_conformance_test.dart` from an allowlist to a denylist once the remainder

@@ -39,10 +39,22 @@
   root navigator, where there is no band 4 and a back is required — that is the detail-frame
   ruling, not a second variant invented under 4.1. `flashcard_review_screen` stays off the
   roster but is now bounded at exactly one `Scaffold` (the immersive session).
-  Gate: analyzer 0/0, **1361 pass / 3 skip / 0 fail**. **Next unticked: 3.4** — dialogs,
-  deliberately *not* folded into the sheet helper (a centred dialog needs a height clamp, not a
-  56pt shift) — or §4.2, the detail screens, which owes the back-affordance ruling `settings`
-  is waiting on. How any of it *looks* is still owner-gated.
+  **§4.2 closed 2026-08-01 — and the ruling it owed had a false premise.** All four detail
+  screens (`move_detail`, `combo_detail`, `lab_detail`, both `move_category` screens) are
+  pushed *inside* the shell branch, so band 4 was never absent: the only missing fact was a
+  way back. That is now a fact about the **route** — `AppScreen` reads `Navigator.canPop`, so
+  a tab root cannot show a control that does nothing and a pushed screen cannot forget one;
+  a screen may only *name* it (`backIdentifier`), which keeps `.maestro`'s `moves-back`
+  selector alive. The chevron carries no word: the crumb line above it already says where
+  back goes, and the three screens that typed it each said something different.
+  `AppLayout.backSlot` (48) clears the touch floor without band 2 growing — proved red-first,
+  along with the title's centreline not moving. **`BackLeading` deleted** (widget + test):
+  nothing builds an `AppBar` any more. Each screen also stopped typing its own title twice.
+  Gate: analyzer 0 errors/0 warnings, **1362 pass / 3 skip / 0 fail**. **Next unticked: 3.4**
+  — dialogs, deliberately *not* folded into the sheet helper (a centred dialog needs a height
+  clamp, not a 56pt shift) — or §4.3, settings, now unblocked, where the open question turns
+  out to be band 4 rather than back: root-navigator routes have no nav band, so the inset the
+  frame reserves is dead space there. How any of it *looks* is still owner-gated.
 - **Change (prior, 2026-07-29 · product finish):** `redesign-visual-first-experience`
   — **6.4 DONE 2026-07-29.** `openspec/changes/add-icon-system-and-packs` Phase 4 closed:
   `AppIcon` enum with 78 semantic names, material + lucide packs, conformance gate with
