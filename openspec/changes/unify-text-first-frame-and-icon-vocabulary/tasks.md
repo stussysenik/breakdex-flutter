@@ -219,10 +219,39 @@ unreliable; it is honestly reporting a box that something else paints over.
       same open question of what chrome a full-bleed editing surface gets — plus the drill-session
       extraction tracked in `_frameless`. Gate: analyzer 0/0, **1392 pass / 3 skip / 0 fail**
       (+10). How any of it *looks* is owner-gated.
-- [ ] 4.5 Flip `frame_conformance_test.dart` from an allowlist to a denylist once the remainder
+      **Batch 3 landed 2026-08-01 — `_awaitingRuling` is empty.** The last three were settled by
+      the question the earlier batches had already asked twice, stated once: what is this bar
+      *for*? An **address** — where you are, and the way back up — makes it a screen, and the
+      frame owns that. A **transaction** — abandon or keep the work in front of you — makes it a
+      control, and the surface owns it. `instax_viewer` was an address: the category it shows is
+      the address, so it went on the frame (`AppScreen.fill`) and its darkness moved to where it
+      actually belongs — the **content** band paints `AppMediaChrome`, and the view-mode row
+      rides inside that dark band rather than in `pinned`, because it is a control over the
+      media, not over the screen. Both video editors were a transaction, so both went frameless:
+      `video_editor_screen` now holds the cluster's **single** `Scaffold` (its two views each
+      built a second one inside it), and `simplified_video_editor_screen` builds no chrome at
+      all — it is in no table now, which is the correct end state for a file that stopped being
+      a surface. Its transparent `AppBar` became a transaction row (close · EDIT VIDEO · SAVE),
+      and its `_handleDiscard` — which checked `_hasEdits` itself and then popped — became a
+      `PopGuard(blocked: _hasEdits, confirm: _confirmDiscard)`, so the condition is stated once
+      and the system back gesture now honours it too. It did not before: closing by gesture
+      discarded unsaved trims silently. Gate: analyzer 0 errors / 0 warnings,
+      **1394 pass / 3 skip / 0 fail**. **NOT PROVEN:** the editor guard has no widget test of
+      its own (the editor needs a real video to reach `_isEditorReady`); it reuses the `PopGuard`
+      proved red-first at three points in batch 2. How any of it *looks* is owner-gated.
+      **Still owed on 4.4 — one item, and it is a refactor, not a ruling:** extracting the
+      immersive drill session out of `flashcard_review_screen` (1140 lines, prescreen and session
+      sharing state) so that file carries one verdict instead of two. It is bounded at exactly
+      one `Scaffold` and listed in `_frameless` with its reason, so nothing is unruled — this is
+      the only thing keeping 4.4 open.
+- [x] 4.5 Flip `frame_conformance_test.dart` from an allowlist to a denylist once the remainder
       is small — the guard should fail on a *new* bespoke Scaffold, not merely tolerate old ones.
-      **The mechanism landed with 4.4 batch 1** (the closure test). What is left is not a flip
-      but an emptying: this box ticks when `_awaitingRuling` is empty and the table is deleted.
+      **The mechanism landed with 4.4 batch 1** (the closure test); **the emptying landed with
+      4.4 batch 3.** Done 2026-08-01. One deviation from the task text, deliberate: the table is
+      kept rather than deleted, empty, with the deleted rows' rulings preserved above it. A
+      deleted table takes its shape with it, and the next owed ruling would have nowhere to be
+      written — the guard's teeth are the closure test, which does not depend on the table
+      having rows.
 
 ## 5. The grid basis must be adjustable — NOT BUILT
 

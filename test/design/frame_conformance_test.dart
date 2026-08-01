@@ -18,9 +18,10 @@ import 'package:flutter_test/flutter_test.dart';
 /// | [_awaitingRuling]| still bespoke; the remaining §4.4 work, one line each |
 /// | [_framework]     | the two files allowed to build bands, being the frame |
 ///
-/// [_awaitingRuling] is the only table that shrinks. When it is empty, task 4.5
-/// is done by deletion: the guard is already a denylist — it fails on a *new*
-/// bespoke `Scaffold` today, because a new one is a file in no table at all.
+/// [_awaitingRuling] emptied on 2026-08-01, which is what finished §4.4 — and
+/// finished 4.5 by deletion, because the guard was already a denylist: a *new*
+/// bespoke `Scaffold` fails the closure test today, being a file in no table.
+/// The table is kept, empty, so the next ruling has somewhere to be owed.
 
 /// Screens on the frame. Chrome-free by assertion, not by review.
 ///
@@ -84,6 +85,14 @@ const _onFrame = <String, String>{
       'default form — the web degradation for /video-editor is a screen, and '
       'its empty AppBar was only ever a way back; the redirect surface stopped '
       'building a Scaffold, because a frame between two routes is not a screen',
+
+  // Joined 2026-08-01 (§4.4 batch 3). It looked like media chrome, but the
+  // category it shows IS an address, and it had a title and a way back — so it
+  // is a screen. What is dark is the *content*, not the frame: the media
+  // surround and the mode row live inside the content band.
+  'lib/features/instax_viewer/instax_viewer_screen.dart':
+      'fill form — a dark content band over one category, with the view-mode '
+      'row inside that band because it is a control over the media',
 };
 
 /// Surfaces with **no** bands at all, on purpose. Frameless is not an exemption
@@ -121,19 +130,31 @@ const _frameless = <String, String>{
   'lib/main.dart':
       'the boot-failure surface: it exists precisely when the app did not, so '
       'there is no shell, no router and no frame to build it from.',
+
+  // Ruled 2026-08-01 (§4.4 batch 3). An editor is not a screen: it is a
+  // full-bleed surface that owns a video and holds unsaved work, and its bar
+  // is a transaction — discard or save — not an address. This is the one
+  // Scaffold in the cluster; `simplified_video_editor_screen.dart` used to
+  // build a second one inside it and now builds no chrome at all, which is
+  // why it is in no table.
+  'lib/features/video_editor/video_editor_screen.dart':
+      'the editing surface both editors share: no bands, one Material surface, '
+      'and a FAB that switches which editor is on it.',
 };
 
-/// Still bespoke. The remaining §4.4 roster, one line each saying what has to
-/// be decided — not what has to be typed. Every line here is a ruling owed.
-const _awaitingRuling = <String, String>{
-  'lib/features/instax_viewer/instax_viewer_screen.dart':
-      'media chrome (AppMediaChrome, dark on purpose) with a real AppBar — '
-      'either frameless without that bar, or on the frame in dark chrome.',
-  'lib/features/video_editor/video_editor_screen.dart':
-      'editor shell: a switcher plus a FAB over two full-bleed editor views.',
-  'lib/features/video_editor/simplified_video_editor_screen.dart':
-      'full-bleed editing surface with a transparent bar over the video.',
-};
+/// Empty, as of 2026-08-01 (§4.4 batch 3). Every ruling owed has been made.
+///
+/// The last three were settled by one question the earlier batches had already
+/// asked twice: what is this bar *for*? An address — where you are, and the way
+/// back up — makes it a screen, and the frame owns it. A transaction — abandon
+/// or keep the work in front of you — makes it a control, and the surface owns
+/// it. Instax was an address (a category), so it went on the frame and kept its
+/// darkness in the content band. Both editors were a transaction, so they went
+/// frameless, and the shell now holds the cluster's single Scaffold instead of
+/// wrapping a second one.
+///
+/// The table stays, empty, as the place the next ruling gets written down.
+const _awaitingRuling = <String, String>{};
 
 /// The frame itself. Two files, and the whole point is that it is two.
 const _framework = <String, String>{

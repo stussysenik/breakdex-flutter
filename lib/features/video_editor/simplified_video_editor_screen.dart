@@ -32,6 +32,7 @@ import 'package:breakdex/features/video_editor/video_edit_geometry.dart';
 import 'package:breakdex/core/design/icons.dart';
 import 'package:breakdex/shared/widgets/app_sheet.dart';
 import 'package:breakdex/shared/widgets/app_dialog.dart';
+import 'package:breakdex/shared/widgets/app_screen.dart' show PopGuard;
 
 class SimplifiedVideoEditorView extends ConsumerStatefulWidget {
   const SimplifiedVideoEditorView({super.key, required this.videoPath});
@@ -447,43 +448,19 @@ class _SimplifiedVideoEditorViewState
   Widget build(final BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
 
-    return Scaffold(
-      backgroundColor: colorScheme.surface,
-      appBar: AppBar(
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        leading: IconButton(
-          icon: AppIconView(AppIcon.close, color: colorScheme.onSurface),
-          onPressed: () => _handleDiscard(context),
-        ),
-        title: Text(
-          'EDIT VIDEO',
-          style: AppTypography.labelLarge.copyWith(
-            color: colorScheme.onSurface,
-            letterSpacing: 2,
-          ),
-        ),
-        actions: [
-          if (_isEditorReady && !_exporting)
-            Padding(
-              padding: const EdgeInsets.only(right: 8.0),
-              child: TextButton(
-                onPressed: _export,
-                child: Text(
-                  'SAVE',
-                  style: AppTypography.labelLarge.copyWith(
-                    color: colorScheme.primary,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-              ),
-            ),
-        ],
-      ),
-      body: Stack(
+    // Frameless, and the shell above owns the Scaffold. The bar here is not a
+    // header: it carries the editing *transaction* — abandon or keep — which is
+    // why it has no crumb, no title baseline, and no back chevron. Leaving is
+    // declared once as a [PopGuard], so the close control and the system back
+    // gesture ask the same question.
+    return PopGuard(
+      blocked: _hasEdits,
+      confirm: _confirmDiscard,
+      child: Stack(
         children: [
           Column(
             children: [
+              _buildTransactionBar(colorScheme),
               Expanded(
                 child: Center(
                   child: Padding(
@@ -502,6 +479,43 @@ class _SimplifiedVideoEditorViewState
       ),
     );
   }
+
+  Widget _buildTransactionBar(final ColorScheme colorScheme) => SizedBox(
+    height: kToolbarHeight,
+    child: Row(
+      children: [
+        IconButton(
+          icon: AppIconView(AppIcon.close, color: colorScheme.onSurface),
+          onPressed: () => unawaited(Navigator.maybePop(context)),
+        ),
+        Expanded(
+          child: Text(
+            'EDIT VIDEO',
+            textAlign: TextAlign.center,
+            style: AppTypography.labelLarge.copyWith(
+              color: colorScheme.onSurface,
+              letterSpacing: 2,
+            ),
+          ),
+        ),
+        SizedBox(
+          width: 88,
+          child: _isEditorReady && !_exporting
+              ? TextButton(
+                  onPressed: _export,
+                  child: Text(
+                    'SAVE',
+                    style: AppTypography.labelLarge.copyWith(
+                      color: colorScheme.primary,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                )
+              : null,
+        ),
+      ],
+    ),
+  );
 
   Widget _buildVideoPreview(final ColorScheme colorScheme) {
     return _loadState.map(
@@ -923,31 +937,31 @@ class _SimplifiedVideoEditorViewState
     );
   }
 
-  Future<void> _handleDiscard(final BuildContext context) async {
-    if (_hasEdits) {
-      final confirmed = await showAppDialog<bool>(
-        context: context,
-        builder: (final ctx) => AlertDialog(
-          title: const Text('Discard edits?'),
-          content: const Text('You have unsaved changes to this video.'),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(ctx, false),
-              child: const Text('Keep Editing'),
+  /// The one declaration of what leaving costs. [PopGuard] only calls this
+  /// while `_hasEdits` is true, so the check that used to live here is now the
+  /// guard's `blocked` — the condition is stated once, not twice.
+  Future<bool> _confirmDiscard(final BuildContext context) async {
+    final confirmed = await showAppDialog<bool>(
+      context: context,
+      builder: (final ctx) => AlertDialog(
+        title: const Text('Discard edits?'),
+        content: const Text('You have unsaved changes to this video.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Keep Editing'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: Text(
+              'Discard',
+              style: TextStyle(color: AppSemanticTheme.of(context).actionAgain),
             ),
-            TextButton(
-              onPressed: () => Navigator.pop(ctx, true),
-              child: Text(
-                'Discard',
-                style: TextStyle(color: AppSemanticTheme.of(context).actionAgain),
-              ),
-            ),
-          ],
-        ),
-      );
-      if (confirmed != true || !mounted) return;
-    }
-    if (mounted) this.context.pop();
+          ),
+        ],
+      ),
+    );
+    return confirmed ?? false;
   }
 
   void _showCustomAspectDialog() {

@@ -46,6 +46,11 @@ class _VideoEditorScreenState extends ConsumerState<VideoEditorScreen> {
     final useSimplified = ref.watch(useSimplifiedVideoEditorProvider);
     final colorScheme = Theme.of(context).colorScheme;
 
+    // Frameless, and deliberately the *only* Scaffold in the cluster. An editor
+    // is not a screen — it is a full-bleed surface that owns a video and holds
+    // unsaved work, so it gets no bands. But it is still a Material surface with
+    // a FAB, and both views it switches between used to build a second Scaffold
+    // inside this one. The shell owns it once; the views own the editing.
     return Scaffold(
       backgroundColor: colorScheme.surface,
       floatingActionButton: FloatingActionButton.small(

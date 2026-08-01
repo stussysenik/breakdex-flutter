@@ -15,6 +15,7 @@ import 'package:breakdex/core/services/media_playback_coordinator.dart';
 import 'package:breakdex/core/design/spacing.dart';
 import 'package:breakdex/core/design/typography.dart';
 import 'package:breakdex/shared/widgets/app_loader.dart';
+import 'package:breakdex/shared/widgets/app_screen.dart';
 import 'package:breakdex/core/providers.dart';
 import 'package:breakdex/features/instax_viewer/instax_video_card.dart';
 import 'package:breakdex/core/design/icons.dart';
@@ -84,46 +85,40 @@ class _InstaxViewerScreenState extends ConsumerState<InstaxViewerScreen>
     final movesAsync = ref.watch(_filteredMovesProvider(widget.category));
     debugPrint('[InstaxViewer] build mode=$mode category=${widget.category}');
 
-    return Scaffold(
-      backgroundColor: AppMediaChrome.of(context).background,
-      appBar: _buildAppBar(mode),
-      body: movesAsync.when(
-        data: (final moves) =>
-            InstaxVideoViewer(moves: moves, category: widget.category),
-        loading: () => const Center(child: AppLoader()),
-        error: (final err, _) => const Center(
-          child: Text(
-            'Failed to load moves',
-            style: TextStyle(color: Colors.white38),
-          ),
+    // On the frame: the category IS the address, so the header band says it and
+    // the chevron is the way back. What stays bespoke is the surround — this
+    // screen shows video, so the *content* band is dark (AppMediaChrome), and
+    // the mode row rides inside that dark band rather than in `pinned`, because
+    // it is a control over the media, not over the screen.
+    return AppScreen.fill(
+      title: widget.category,
+      child: ColoredBox(
+        color: AppMediaChrome.of(context).background,
+        child: Column(
+          children: [
+            _buildModeBar(mode),
+            Expanded(
+              child: movesAsync.when(
+                data: (final moves) =>
+                    InstaxVideoViewer(moves: moves, category: widget.category),
+                loading: () => const Center(child: AppLoader()),
+                error: (final err, _) => const Center(
+                  child: Text(
+                    'Failed to load moves',
+                    style: TextStyle(color: Colors.white38),
+                  ),
+                ),
+              ),
+            ),
+          ],
         ),
       ),
     );
   }
 
-  PreferredSizeWidget _buildAppBar(final InstaxMode mode) {
+  Widget _buildModeBar(final InstaxMode mode) {
     final colorScheme = Theme.of(context).colorScheme;
-    return PreferredSize(
-      preferredSize: const Size.fromHeight(56 + 50),
-      child: Column(
-        children: [
-          AppBar(
-            backgroundColor: AppMediaChrome.of(context).background,
-            elevation: 0,
-            leading: IconButton(
-              icon: const AppIconView(AppIcon.back, size: 18),
-              onPressed: () => context.pop(),
-            ),
-            title: Text(
-              widget.category,
-              style: AppTypography.bodyLarge.copyWith(
-                color: Colors.white,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-            centerTitle: true,
-          ),
-          Container(
+    return Container(
             height: 50,
             padding: const EdgeInsets.symmetric(
               horizontal: AppSpacing.screenEdge,
@@ -186,9 +181,6 @@ class _InstaxViewerScreenState extends ConsumerState<InstaxViewerScreen>
                   ),
                 );
               }).toList(),
-            ),
-          ),
-        ],
       ),
     );
   }

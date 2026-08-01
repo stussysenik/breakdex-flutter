@@ -108,10 +108,22 @@
   surface the media owns: `quick_video_viewer`, `video_player_widget`'s fullscreen route,
   `metadata_video_picker_sheet`, `preview_harness`, `main.dart`. Gate: analyzer 0/0,
   **1392 pass / 3 skip / 0 fail**.
-  **Next unticked: 4.4 batch 3** — `_awaitingRuling` is down to **three**: instax and the two
-  video editors, all three the same open question of what chrome a full-bleed editing surface
-  gets, plus the drill-session extraction tracked in `_frameless`. Emptying that table ticks
-  4.4 and 4.5 together. How any of it *looks* is still owner-gated.
+  **§4.4 batch 3 landed 2026-08-01 — `_awaitingRuling` is empty, and 4.5 is ticked.** The last
+  three were settled by one question stated once: what is this bar *for*? An **address** (where
+  you are, and the way back up) makes it a screen and the frame owns it; a **transaction**
+  (abandon or keep the work in front of you) makes it a control and the surface owns it.
+  `instax_viewer` was an address — the category IS the address — so it went on the frame, and
+  its darkness moved to where it belongs: the **content** band paints `AppMediaChrome`, with
+  the view-mode row inside that band because it is a control over the media, not the screen.
+  Both video editors were a transaction and went frameless: the shell now holds the cluster's
+  **single** `Scaffold` (each view was building a second one inside it), and
+  `simplified_video_editor_screen` builds no chrome at all. Its `_handleDiscard` became a
+  `PopGuard(blocked: _hasEdits)` — closing by system gesture used to discard unsaved trims
+  silently. Gate: analyzer 0/0, **1394 pass / 3 skip / 0 fail**.
+  **Next unticked: 4.4's last item** — extracting the immersive drill session out of
+  `flashcard_review_screen` (1140 lines, prescreen and session sharing state) so that file
+  carries one verdict instead of two. It is a refactor, not a ruling: nothing there is unruled.
+  How any of it *looks* is still owner-gated.
 - **Change (prior, 2026-07-29 · product finish):** `redesign-visual-first-experience`
   — **6.4 DONE 2026-07-29.** `openspec/changes/add-icon-system-and-packs` Phase 4 closed:
   `AppIcon` enum with 78 semantic names, material + lucide packs, conformance gate with
