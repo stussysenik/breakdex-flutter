@@ -1,3 +1,10 @@
+# [1.13.0](https://github.com/stussysenik/breakdex-flutter/compare/v1.12.0...v1.13.0) (2026-08-02)
+
+
+### Features
+
+* **media:** a clip says where it lives and which way it is moving ([4da7c0a](https://github.com/stussysenik/breakdex-flutter/commit/4da7c0ab669b107ac13984b94fff73a9bcceb6cc))
+
 # [1.12.0](https://github.com/stussysenik/breakdex-flutter/compare/v1.11.0...v1.12.0) (2026-08-01)
 
 

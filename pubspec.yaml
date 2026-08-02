@@ -1,7 +1,7 @@
 name: breakdex
 description: "Breakdancing training app — catalog moves, build combos, master through spaced repetition."
 publish_to: 'none'
-version: 1.12.0+15
+version: 1.13.0+16
 
 environment:
   sdk: ^3.11.1

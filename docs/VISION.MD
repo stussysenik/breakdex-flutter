@@ -29,20 +29,20 @@ The primary user is an active breaker building a personal library under real fat
 ## Release Snapshot
 
 <!-- release:meta:start -->
-- Release tag: `v1.12.0`
-- Release version: `1.12.0`
-- Pubspec version: `1.12.0+15`
-- Released: `2026-08-01`
-- Metadata refreshed: `2026-08-01`
+- Release tag: `v1.13.0`
+- Release version: `1.13.0`
+- Pubspec version: `1.13.0+16`
+- Released: `2026-08-02`
+- Metadata refreshed: `2026-08-02`
 <!-- release:meta:end -->
 
 ## Automatic Provenance
 
 <!-- release:provenance:start -->
 - Source branch: `main`
-- Source revision: `a018062`
-- Source commit: `a0180626a0277fb2ffa664a4246b44a2f64573cf`
-- Source describe: `v1.11.0-1-ga018062`
+- Source revision: `9e4e6ab`
+- Source commit: `9e4e6abb7bc4c5de22fb9d467fc17df8b82a6ef8`
+- Source describe: `v1.12.0-4-g9e4e6ab`
 - Generator: `scripts/update_release_metadata.cjs`
 - Inputs: `docs/CHANGELOG.md`, `pubspec.yaml`, and local git metadata
 <!-- release:provenance:end -->
@@ -50,5 +50,5 @@ The primary user is an active breaker building a personal library under real fat
 ## Latest Tagged Notes
 
 <!-- release:notes:start -->
-- **motion:** morph is the default now, and the shape carries its own curve
+- **media:** a clip says where it lives and which way it is moving
 <!-- release:notes:end -->
