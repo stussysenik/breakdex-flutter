@@ -22,6 +22,8 @@ import 'package:breakdex/shared/widgets/state_pill.dart';
 import 'package:breakdex/core/models/learning_state.dart';
 import 'package:breakdex/core/models/library_category_activity.dart';
 import 'package:breakdex/core/models/library_sort.dart';
+import 'package:breakdex/core/models/reviewable_item.dart' show MoveVideoPath;
+import 'package:breakdex/shared/widgets/child_preview_strip.dart';
 import 'package:breakdex/l10n/gen/app_localizations.dart';
 import 'package:breakdex/features/move_list/move_list_screen.dart'
     show librarySortProvider;
@@ -159,6 +161,19 @@ class _CategoryTile extends StatelessWidget {
                         color: colorScheme.secondary,
                       ),
                     ),
+                  // The category introduces itself with its moves' faces
+                  // before you open it (task 8.3). Below the date line, so the
+                  // tile still reads name → when → what.
+                  if (activity.previewMoves.isNotEmpty) ...[
+                    const SizedBox(height: AppSpacing.sm),
+                    ChildPreviewStrip(
+                      videoPaths: [
+                        for (final move in activity.previewMoves)
+                          ?move.resolvedVideoPath,
+                      ],
+                      totalCount: activity.count,
+                    ),
+                  ],
                 ],
               ),
             ),

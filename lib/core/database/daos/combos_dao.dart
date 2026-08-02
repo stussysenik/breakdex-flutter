@@ -46,6 +46,12 @@ class DayActivity {
 class LibraryRow {
   final Combo combo;
   final String transitionChain;
+
+  /// The stored (possibly relative) video paths of this combo's moves, in
+  /// sequence order, with the unfilmed ones absent — what a row draws its
+  /// preview strip from (task 8.3). Resolve with `VideoPathResolver.toAbsolute`
+  /// at the point of use, like every other stored path.
+  final List<String> previewVideoPaths;
   final int moveCount;
   final int jotCount;
   final String? lastEntryBody;
@@ -56,11 +62,23 @@ class LibraryRow {
     required this.transitionChain,
     required this.moveCount,
     required this.jotCount,
+    this.previewVideoPaths = const <String>[],
     this.lastEntryBody,
     this.lastEntryAt,
   });
 
   DateTime? get lastJotOrStatusAt => lastEntryAt ?? combo.createdAt;
+}
+
+/// `GROUP_CONCAT(..., char(10))` back into a list. Newline is the separator
+/// because it is the one character our own generated video paths never carry,
+/// unlike the `' → '` the name chain can safely use.
+List<String> _splitPreviewPaths(final String? concatenated) {
+  if (concatenated == null || concatenated.isEmpty) return const <String>[];
+  return [
+    for (final path in concatenated.split('\n'))
+      if (path.isNotEmpty) path,
+  ];
 }
 
 class ComboWithMoves {
@@ -452,6 +470,16 @@ class CombosDao extends DatabaseAccessor<AppDatabase> with _$CombosDaoMixin {
          JOIN moves m ON m.id = cm.move_id
          WHERE cm.combo_id = c.id AND cm.deleted_at IS NULL
          ORDER BY cm.sequence_index) AS transition_chain,
+        -- The same walk as the chain above, carrying the moves' footage
+        -- instead of their names, so a combo row can show its children's
+        -- faces without a second query or a stream per row (task 8.3).
+        -- GROUP_CONCAT drops NULLs, so an unfilmed move simply is not in the
+        -- strip; `move_count` still says how many are in the combo.
+        (SELECT GROUP_CONCAT(m.video_path, char(10))
+         FROM combo_moves cm
+         JOIN moves m ON m.id = cm.move_id
+         WHERE cm.combo_id = c.id AND cm.deleted_at IS NULL
+         ORDER BY cm.sequence_index) AS preview_video_paths,
         (SELECT COUNT(*) FROM combo_moves cm
           WHERE cm.combo_id = c.id AND cm.deleted_at IS NULL) AS move_count,
         (SELECT COUNT(*) FROM combo_note_entries e
@@ -489,6 +517,9 @@ class CombosDao extends DatabaseAccessor<AppDatabase> with _$CombosDaoMixin {
                   : null,
             ),
             transitionChain: row.readNullable<String>('transition_chain') ?? '',
+            previewVideoPaths: _splitPreviewPaths(
+              row.readNullable<String>('preview_video_paths'),
+            ),
             moveCount: row.read<int>('move_count'),
             jotCount: row.read<int>('jot_count'),
             lastEntryBody: row.readNullable<String>('last_entry_body'),

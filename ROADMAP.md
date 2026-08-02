@@ -182,10 +182,26 @@
   `contentHash`, not `videoPath`, so the cloud-only clip that the videoPath-gated panel below
   structurally cannot show is exactly the one that says where it is. Gate: analyzer 0/0,
   **1439 pass / 3 skip / 0 fail**.
-  **Next unticked: 8.3** — the parent-with-many-children preview strip. How any of §4–5 and §8
-  *looks* — whether a hostile basis stays legible, how the four call sites the spring fix
-  touches now feel, and whether the residency line reads as a fact or as an alert — is still
-  owner-gated.
+  **§8.3 landed 2026-08-02 — a parent now introduces itself with its children's faces, and the
+  change is complete (36/36).** `ChildPreviewStrip` takes video paths and a total, so what is on
+  screen is the children themselves — no new container type was invented for the preview. Both
+  parents feed it from a walk they were already doing: `watchLibraryRows` gains one
+  `GROUP_CONCAT` beside the transition chain it already builds (no second query, no stream per
+  row), and `libraryCategoryActivity` keeps the four newest *filmed* moves in the same single
+  pass that produced the count. Fit-before-build found one real reuse and took it — the grid's
+  private `_GridThumbnail` was exactly this loader, so it was **promoted** to
+  `shared/widgets/video_thumbnail_image.dart` rather than copied, and the promotion is what
+  surfaced a latent defect the grid had carried all along: an inherited-widget lookup inside
+  `dispose()`, illegal once the element is deactivated, now a reference held from
+  `didChangeDependencies`. `totalCount` is the parent's real size, never `videoPaths.length` —
+  a nine-move combo with two filmed moves shows two faces and `+7`, because the overflow answers
+  how much is inside, not how much decoded. An unfilmed parent renders nothing and the combo row
+  keeps its dots. Gate: analyzer 0/0, **1451 pass / 3 skip / 0 fail**.
+  **Next: this change archives.** How any of §4–5 and §8 *looks* — whether a hostile basis
+  stays legible, how the four call sites the spring fix touches now feel, whether the residency
+  line reads as a fact or as an alert, and whether a 40×28 strip at the bottom of a row reads as
+  a preview or as clutter — is still owner-gated, and no strip has been watched decoding real
+  footage on a device.
 - **Change (prior, 2026-07-29 · product finish):** `redesign-visual-first-experience`
   — **6.4 DONE 2026-07-29.** `openspec/changes/add-icon-system-and-packs` Phase 4 closed:
   `AppIcon` enum with 78 semantic names, material + lucide packs, conformance gate with

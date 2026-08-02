@@ -3,9 +3,16 @@ import 'package:breakdex/core/database/database.dart';
 /// What a category tile knows about itself: how many moves it holds and when it
 /// was most recently added to (design D5).
 class LibraryCategoryActivity {
-  const LibraryCategoryActivity({required this.count, required this.lastAddedAt});
+  const LibraryCategoryActivity({
+    required this.count,
+    required this.lastAddedAt,
+    this.previewMoves = const <Move>[],
+  });
 
   static const empty = LibraryCategoryActivity(count: 0, lastAddedAt: null);
+
+  /// How many faces a category tile introduces itself with (task 8.3).
+  static const maxPreviewMoves = 4;
 
   final int count;
 
@@ -14,24 +21,66 @@ class LibraryCategoryActivity {
   /// state 4.2 sorts last rather than hides.
   final DateTime? lastAddedAt;
 
+  /// Up to [maxPreviewMoves] of this category's moves that actually have
+  /// footage, newest first — the representative strip a tile shows before you
+  /// open it (task 8.3).
+  ///
+  /// Newest-first because the tile is already ordered by "most recently added
+  /// to": the strip then shows the same moves the date line is talking about.
+  /// A move with no `videoPath` is skipped rather than drawn as a hole, so a
+  /// category of nine where two are filmed previews those two and still counts
+  /// nine.
+  final List<Move> previewMoves;
+
   LibraryCategoryActivity _withMove(final Move move) => LibraryCategoryActivity(
         count: count + 1,
         lastAddedAt: lastAddedAt == null || move.createdAt.isAfter(lastAddedAt!)
             ? move.createdAt
             : lastAddedAt,
+        previewMoves: _previewWith(move),
       );
+
+  /// Insert [move] into the newest-first preview list, capped at
+  /// [maxPreviewMoves]. Ties break on `id` so two moves added in the same
+  /// second cannot swap places between rebuilds — the same stability the
+  /// recency sort needed.
+  List<Move> _previewWith(final Move move) {
+    if (move.videoPath == null) return previewMoves;
+    final next = [...previewMoves, move]..sort((final a, final b) {
+      final byDate = b.createdAt.compareTo(a.createdAt);
+      return byDate != 0 ? byDate : a.id.compareTo(b.id);
+    });
+    return next.length > maxPreviewMoves
+        ? next.sublist(0, maxPreviewMoves)
+        : next;
+  }
 
   @override
   bool operator ==(final Object other) =>
       other is LibraryCategoryActivity &&
       other.count == count &&
-      other.lastAddedAt == lastAddedAt;
+      other.lastAddedAt == lastAddedAt &&
+      _sameIds(other.previewMoves, previewMoves);
+
+  static bool _sameIds(final List<Move> a, final List<Move> b) {
+    if (a.length != b.length) return false;
+    for (var i = 0; i < a.length; i++) {
+      if (a[i].id != b[i].id) return false;
+    }
+    return true;
+  }
 
   @override
-  int get hashCode => Object.hash(count, lastAddedAt);
+  int get hashCode => Object.hash(
+        count,
+        lastAddedAt,
+        Object.hashAll([for (final m in previewMoves) m.id]),
+      );
 
   @override
-  String toString() => 'LibraryCategoryActivity(count: $count, lastAddedAt: $lastAddedAt)';
+  String toString() =>
+      'LibraryCategoryActivity(count: $count, lastAddedAt: $lastAddedAt, '
+      'previewMoves: ${previewMoves.length})';
 }
 
 typedef LibraryCategoryActivities = ({

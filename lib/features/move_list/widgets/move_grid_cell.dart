@@ -34,7 +34,7 @@ class _MoveGridCell extends ConsumerWidget {
       },
       heroTag: 'move-thumb-${move.id}',
       background: move.videoPath != null
-          ? _GridThumbnail(videoPath: move.resolvedVideoPath!)
+          ? VideoThumbnailImage(videoPath: move.resolvedVideoPath!)
           : Container(
               color: colorScheme.surfaceContainerHighest,
               child: Column(
@@ -79,123 +79,6 @@ class _MoveGridCell extends ConsumerWidget {
       ),
       topRightWidget: StatePill(state: learningState),
     );
-  }
-}
-
-class _GridThumbnail extends StatefulWidget {
-  const _GridThumbnail({required this.videoPath});
-  final String videoPath;
-
-  @override
-  State<_GridThumbnail> createState() => _GridThumbnailState();
-}
-
-class _GridThumbnailState extends State<_GridThumbnail> {
-  final _videoService = VideoService();
-  String? _thumbPath;
-  bool _loaded = false;
-
-  @override
-  void initState() {
-    super.initState();
-    _load();
-  }
-
-  @override
-  void didUpdateWidget(covariant final _GridThumbnail oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    if (oldWidget.videoPath != widget.videoPath) {
-      // Cancel previous pending load if coordinator is available
-      ThumbnailCoordinatorScope.of(context)?.cancel(oldWidget.videoPath);
-      _thumbPath = null;
-      _loaded = false;
-      _load();
-    }
-  }
-
-  @override
-  void dispose() {
-    ThumbnailCoordinatorScope.of(context)?.cancel(widget.videoPath);
-    super.dispose();
-  }
-
-  Future<void> _load() async {
-    final videoPath = widget.videoPath;
-    if (videoPath.isEmpty) {
-      if (mounted) {
-        setState(() {
-          _thumbPath = null;
-          _loaded = true;
-        });
-      }
-      return;
-    }
-
-    final status = await _videoService.checkVideoFileWithRetry(videoPath);
-    if (!mounted || widget.videoPath != videoPath) return;
-    if (status != VideoFileStatus.ready) {
-      setState(() {
-        _thumbPath = null;
-        _loaded = true;
-      });
-      return;
-    }
-
-    // Use coordinator for bounded concurrency if available, else direct
-    final coordinator = ThumbnailCoordinatorScope.of(context);
-    final String? path;
-    if (coordinator != null) {
-      path = await coordinator.enqueue(
-        videoPath,
-        maxWidth: VideoService.thumbnailWidthGrid,
-      );
-    } else {
-      path = await _videoService.generateThumbnail(
-        videoPath,
-        maxWidth: VideoService.thumbnailWidthGrid,
-      );
-    }
-    if (!mounted || widget.videoPath != videoPath) return;
-    setState(() {
-      _thumbPath = path;
-      _loaded = true;
-    });
-  }
-
-  @override
-  Widget build(final BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
-    if (_loaded && _thumbPath != null) {
-      return fileImage(
-        _thumbPath!,
-        fit: BoxFit.cover,
-        filterQuality: FilterQuality.high,
-        gaplessPlayback: true,
-        errorBuilder: (_, _, _) => Container(
-          color: colorScheme.surfaceContainerHighest,
-          child: AppIconView(
-            AppIcon.videoOff,
-            size: 40,
-            color: colorScheme.secondary,
-          ),
-        ),
-      );
-    }
-    if (_loaded) {
-      return Container(
-        color: colorScheme.surfaceContainerHighest,
-        child: AppIconView(
-          AppIcon.videoOff,
-          size: 40,
-          color: colorScheme.secondary,
-        ),
-      );
-    }
-    // Shimmer placeholder while thumbnail loads — smoother than a spinner
-    // and consistent with the RobustVideoPlayer loading state.
-    return Container(color: colorScheme.surfaceContainerHighest)
-        .animate(onPlay: (final c) => c.repeat())
-        .shimmer(duration: 1200.ms, color: Colors.white12);
   }
 }
 

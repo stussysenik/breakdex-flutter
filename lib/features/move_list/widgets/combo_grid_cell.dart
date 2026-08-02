@@ -8,14 +8,14 @@ part of '../move_list_screen.dart';
 class _ComboGridSliver extends StatelessWidget {
   const _ComboGridSliver({required this.combos});
 
-  final List<(Combo, int, DateTime)> combos;
+  final List<ComboLibraryEntry> combos;
 
   @override
   Widget build(final BuildContext context) {
     return _sliverArsenalGrid(
       itemCount: combos.length,
       builder: (final index) {
-        final (combo, moveCount, date) = combos[index];
+        final (:combo, :moveCount, :date, previewPaths: _) = combos[index];
         return _ComboGridCell(
           key: ValueKey('combo-cell-${combo.id}'),
           combo: combo,
@@ -61,7 +61,7 @@ class _ComboGridCell extends ConsumerWidget {
             combo.resolvedActiveVideoPath;
 
         final background = previewPath != null && previewPath.isNotEmpty
-            ? _GridThumbnail(videoPath: previewPath)
+            ? VideoThumbnailImage(videoPath: previewPath)
             : _ComboPreviewFallback(
                 stepCount: moves.length,
                 stepNames: moves

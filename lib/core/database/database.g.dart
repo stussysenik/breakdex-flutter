@@ -5841,7 +5841,14 @@ class AssetManifestData extends DataClass
   /// Video height in pixels.
   final int? height;
 
-  /// Absolute path to the local copy (null if only exists in cloud).
+  /// Path to the local copy **relative to the Documents directory** (null if
+  /// the asset only exists in the cloud). Never absolute: iOS rewrites the
+  /// container UUID on every reinstall, so an absolute path is dead on the
+  /// next launch — resolve through `VideoPathResolver.toAbsolute`.
+  ///
+  /// A *hint*, not identity. It is written at import and goes stale on
+  /// renames and category moves; the sync engine heals it (owning entity,
+  /// then a hash-indexed sandbox scan) and writes the correction back here.
   final String? localPath;
 
   /// Last time the local file was verified to match [contentHash].

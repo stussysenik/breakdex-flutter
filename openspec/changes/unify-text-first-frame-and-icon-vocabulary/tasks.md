@@ -398,7 +398,7 @@ every element so each one can be seen functioning.
       clean library never advertises an empty bucket and moves are never orphaned. The
       `/breakdex/moves/uncategorized` route stays reachable either way.
 
-## 8. Videos must name where they live — 8.1/8.2 DONE, 8.3 OPEN
+## 8. Videos must name where they live — DONE
 
 Owner: videos should carry a visible reference to their cloud location (Google Drive, Dropbox)
 so the bidirectionality is legible; and where a thing has many children, a preview should
@@ -425,9 +425,29 @@ introduce it.
       never heard of is not the same claim as one known to be local-only, and 10 unit tests
       pin the precedence (a `deleted` row is not a place it lives; a `pending` *local* row is
       not an upload; an unknown provider key is carried through and named, never dropped).
-- [ ] 8.3 Parent-with-many-children preview: a combo or category with N items shows a
-      representative strip before you open it. Composes from the atom model (move → combo →
-      set); do not invent a new container type for it.
+- [x] 8.3 Parent-with-many-children preview: a combo or category with N items shows a
+      representative strip before you open it. No new container type — `ChildPreviewStrip`
+      takes video paths and a total, so what is on screen is the children themselves; the
+      parent decides which children, the strip only draws them. Both parents feed it from a
+      walk they were already doing: `watchLibraryRows` gains one `GROUP_CONCAT` beside the
+      transition chain it already builds (no second query, no stream per row), and
+      `libraryCategoryActivity` keeps four newest-filmed moves in the same single pass that
+      produced the count. Fit-before-build found one real reuse and took it: the grid's
+      private `_GridThumbnail` was the loader this needed, so it was promoted to
+      `shared/widgets/video_thumbnail_image.dart` rather than copied — and the promotion is
+      what surfaced a latent defect the grid had carried all along, an inherited-widget
+      lookup inside `dispose()` (illegal once the element is deactivated), now a reference
+      held from `didChangeDependencies`.
+      `totalCount` is the parent's real size, never `videoPaths.length`: a nine-move combo
+      with two filmed moves shows two faces and `+7`, because the overflow answers how much
+      is inside, not how much decoded. An unfilmed parent renders nothing and the row keeps
+      its existing count affordance (the combo dots) rather than being handed an empty box.
+      Category previews are newest-first with an id tiebreak — the same stability the
+      recency sort needed, so a rebuild cannot reshuffle two moves added in the same second.
+      12 tests: 4 on the DAO column (sequence order, unfilmed skipped, tombstoned steps
+      excluded, empty combo), 5 on the category pass, 3 on the strip's arithmetic.
+      **NOT PROVEN:** how the strip looks — 40×28 thumbnails at the bottom of a row and a
+      tile is owner-gated, and no strip has been watched decoding real footage on a device.
 
 ## 9. Lexical address line — DONE
 

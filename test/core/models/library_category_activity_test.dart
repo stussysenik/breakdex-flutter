@@ -6,6 +6,7 @@ Move _move({
   required final String id,
   required final String category,
   required final DateTime createdAt,
+  final String? videoPath,
 }) =>
     Move(
       id: id,
@@ -14,6 +15,7 @@ Move _move({
       count: 0,
       learningState: 'new',
       createdAt: createdAt,
+      videoPath: videoPath,
     );
 
 void main() {
@@ -140,6 +142,89 @@ void main() {
       );
 
       expect(ordered, ['Power', 'Ghost']);
+    });
+  });
+
+  // Task 8.3 — the tile introduces a category with its moves' faces.
+  group('category preview moves', () {
+    test('takes the newest filmed moves, skipping the unfilmed', () {
+      final result = libraryCategoryActivities(
+        moves: [
+          _move(id: 'a', category: 'Power', createdAt: jan, videoPath: 'a.mp4'),
+          _move(id: 'b', category: 'Power', createdAt: dec, videoPath: 'b.mp4'),
+          // No footage: counted, never previewed as a hole.
+          _move(id: 'c', category: 'Power', createdAt: jun),
+        ],
+        categoryNames: {'Power'},
+      );
+
+      final power = result.byCategory['Power']!;
+      expect(power.count, 3);
+      expect([for (final m in power.previewMoves) m.id], ['b', 'a']);
+    });
+
+    test('caps the strip and keeps the newest, not the first seen', () {
+      final result = libraryCategoryActivities(
+        moves: [
+          for (var day = 1; day <= 6; day++)
+            _move(
+              id: 'm$day',
+              category: 'Power',
+              createdAt: DateTime(2026, 3, day),
+              videoPath: 'm$day.mp4',
+            ),
+        ],
+        categoryNames: {'Power'},
+      );
+
+      final power = result.byCategory['Power']!;
+      expect(power.count, 6);
+      expect(
+        power.previewMoves.length,
+        LibraryCategoryActivity.maxPreviewMoves,
+      );
+      expect([for (final m in power.previewMoves) m.id], [
+        'm6',
+        'm5',
+        'm4',
+        'm3',
+      ]);
+    });
+
+    test('same-instant moves order by id, so a rebuild cannot reshuffle', () {
+      final result = libraryCategoryActivities(
+        moves: [
+          _move(id: 'z', category: 'Power', createdAt: jun, videoPath: 'z.mp4'),
+          _move(id: 'a', category: 'Power', createdAt: jun, videoPath: 'a.mp4'),
+        ],
+        categoryNames: {'Power'},
+      );
+
+      expect([for (final m in result.byCategory['Power']!.previewMoves) m.id], [
+        'a',
+        'z',
+      ]);
+    });
+
+    test('an unfilmed category previews nothing but still counts', () {
+      final result = libraryCategoryActivities(
+        moves: [_move(id: 'a', category: 'Power', createdAt: jan)],
+        categoryNames: {'Power'},
+      );
+
+      expect(result.byCategory['Power']!.count, 1);
+      expect(result.byCategory['Power']!.previewMoves, isEmpty);
+    });
+
+    test('uncategorized gets a strip too', () {
+      final result = libraryCategoryActivities(
+        moves: [
+          _move(id: 'a', category: 'Ghost', createdAt: jan, videoPath: 'a.mp4'),
+        ],
+        categoryNames: {'Power'},
+      );
+
+      expect([for (final m in result.uncategorized.previewMoves) m.id], ['a']);
     });
   });
 }

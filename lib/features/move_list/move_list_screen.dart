@@ -23,12 +23,11 @@ import 'package:breakdex/core/models/move_creation.dart';
 import 'package:breakdex/core/models/reviewable_item.dart'
     show ComboVideoPath, MoveVideoPath;
 import 'package:breakdex/core/providers.dart';
-import 'package:breakdex/core/platform/native_media.dart';
 import 'package:breakdex/core/services/categories_service.dart';
 import 'package:breakdex/core/services/settings_service.dart';
 import 'package:breakdex/core/services/media_playback_coordinator.dart';
 import 'package:breakdex/core/services/thumbnail_load_coordinator.dart';
-import 'package:breakdex/core/services/video_service.dart';
+import 'package:breakdex/core/services/video_path_resolver.dart';
 import 'package:breakdex/core/utils/diagnostics.dart';
 import 'package:breakdex/core/services/view_names_service.dart';
 import 'package:breakdex/core/services/entity_names_service.dart';
@@ -39,6 +38,8 @@ import 'package:breakdex/features/move_list/widgets/library_date_line_format.dar
 import 'package:breakdex/shared/widgets/app_loader.dart';
 import 'package:breakdex/shared/widgets/video_picker_sheet.dart';
 import 'package:breakdex/shared/widgets/video_player_widget.dart';
+import 'package:breakdex/shared/widgets/video_thumbnail_image.dart';
+import 'package:breakdex/shared/widgets/child_preview_strip.dart';
 import 'package:breakdex/features/sync_onboarding/sync_onboarding_card.dart';
 import 'package:breakdex/shared/widgets/app_morph.dart';
 import 'package:breakdex/shared/widgets/app_screen.dart';
@@ -50,6 +51,21 @@ part 'widgets/combo_grid_cell.dart';
 part 'widgets/move_row.dart';
 part 'widgets/combo_row.dart';
 part 'widgets/study_card.dart';
+
+/// One combo as the library's three combo slivers consume it: the combo, how
+/// many moves are inside, the date the active sort resolved to, and the moves'
+/// footage for the preview strip (task 8.3).
+///
+/// A record rather than three positional fields because the fourth arrived and
+/// `(combo, moveCount, date, previewPaths)` stopped being readable at the call
+/// site. Every sliver takes the whole entry even when it draws only part of it,
+/// so the payload shape stays one thing.
+typedef ComboLibraryEntry = ({
+  Combo combo,
+  int moveCount,
+  DateTime date,
+  List<String> previewPaths,
+});
 
 // -- Providers ---------------------------------------------------------------
 
@@ -367,7 +383,12 @@ class MoveListScreen extends ConsumerWidget {
                         final combos = section
                             .map(
                               (final r) =>
-                                  (r.combo, r.moveCount, r.effectiveDate(sort)),
+                                  (
+                                combo: r.combo,
+                                moveCount: r.moveCount,
+                                date: r.effectiveDate(sort),
+                                previewPaths: r.previewVideoPaths,
+                              ),
                             )
                             .toList();
                         return switch (viewMode) {

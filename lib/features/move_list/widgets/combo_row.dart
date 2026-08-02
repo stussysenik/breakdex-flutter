@@ -5,18 +5,19 @@ part of '../move_list_screen.dart';
 class _CombosContentSliver extends StatelessWidget {
   const _CombosContentSliver({required this.combos});
 
-  final List<(Combo, int, DateTime)> combos;
+  final List<ComboLibraryEntry> combos;
 
   @override
   Widget build(final BuildContext context) {
     return _sliverStaggeredList(
       itemCount: combos.length,
       builder: (final index) {
-        final (combo, moveCount, date) = combos[index];
+        final (:combo, :moveCount, :date, :previewPaths) = combos[index];
         return _ComboRow(
           combo: combo,
           moveCount: moveCount,
           date: date,
+          previewPaths: previewPaths,
           index: index,
         );
       },
@@ -31,11 +32,15 @@ class _ComboRow extends ConsumerWidget {
     required this.combo,
     required this.moveCount,
     required this.date,
+    required this.previewPaths,
     this.index = 0,
   });
 
   final Combo combo;
   final int moveCount;
+
+  /// The stored paths of this combo's filmed moves, in sequence order.
+  final List<String> previewPaths;
 
   /// The combo's effective date under the active sort, resolved by the sliver.
   final DateTime date;
@@ -133,8 +138,26 @@ class _ComboRow extends ConsumerWidget {
                                     crossAxisAlignment:
                                         WrapCrossAlignment.center,
                                     children: [
-                                      if (moveCount > 0)
-                                        _MoveCountDots(count: moveCount),
+                                      // The combo introduces itself with its
+                                      // moves' faces (task 8.3). The dots stay
+                                      // as the fallback for a combo whose
+                                      // moves are not filmed yet — the row
+                                      // must still say how long it is.
+                                      if (previewPaths.isEmpty)
+                                        if (moveCount > 0)
+                                          _MoveCountDots(count: moveCount)
+                                        else
+                                          const SizedBox.shrink()
+                                      else
+                                        ChildPreviewStrip(
+                                          videoPaths: [
+                                            for (final path in previewPaths)
+                                              VideoPathResolver.toAbsolute(
+                                                path,
+                                              ),
+                                          ],
+                                          totalCount: moveCount,
+                                        ),
                                       LibraryDateLabel(date: date),
                                     ],
                                   ),
