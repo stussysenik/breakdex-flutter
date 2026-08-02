@@ -73,9 +73,9 @@ shrink the allowlist in the same commit, serve a build, route visual review to
 
 ## Phase 5 — Factory sittings (valoric parity)
 
-- [ ] 5.1 Tag every open task in `owner-verification-passes` with a sitting
-      (`DEVICE` / `REVIEW` / `DECIDE`); registry closed at those three plus `SCHOLAR`.
-- [ ] 5.2 `./status.sh` groups owner-gated items by sitting at read time — derived,
-      never stored; board stays read-only.
-- [ ] 5.3 FACTORY.md documents the sitting registry and that adding a sitting is an
-      owner decision.
+- [x] 5.1 Tag every open task in `owner-verification-passes` with a sitting
+      (`DEVICE` / `REVIEW` / `DECIDE` / `SCHOLAR`); registry closed at those four.
+- [x] 5.2 `./status.sh --sittings` groups owner-gated items by sitting at read time —
+      derived, never stored; board stays read-only.
+- [x] 5.3 FACTORY.md documents the sitting registry (DEVICE/REVIEW/DECIDE/SCHOLAR)
+      and that adding a sitting is an owner decision.

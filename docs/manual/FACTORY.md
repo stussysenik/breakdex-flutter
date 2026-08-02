@@ -162,6 +162,22 @@ Rules that keep gates honest:
   exit 0, or `verify.sh` green. No claim of success without a terminal-verified proof.
 - **Determinism.** Meaning comes from specification and compositional semantics. The LLM
   proposes; the spec disposes. A spec must be self-contained: implementable by a model
+
+### Sitting registry
+
+Owner-gated work is grouped by **sitting** — a single owner review session clears a column
+rather than context-switching per task. The registry is closed; adding a sitting is an owner
+decision. Current sittings:
+
+| Sitting | Purpose | Example tasks |
+|---|---|---|
+| `DEVICE` | Requires physical device or simulator | iOS/Android builds, camera access, haptics |
+| `REVIEW` | Visual/UX judgment call | Design sittings, preview reviews |
+| `DECIDE` | External state or credentials | OAuth clients, signing keys, deployments |
+| `SCHOLAR` | Research/evidence gathering | Reading source, auditing code |
+
+Tasks in `owner-verification-passes` carry their sitting in brackets, e.g. `[DEVICE]`.
+Run `./status.sh --sittings` to view owner-gated items grouped by sitting.
   that never saw the originating conversation.
 - **Face Law.** Hold a screenshot beside Figma, Linear, and DaVinci Resolve. If it reads
   as a web page, it has failed — regardless of green gates. The six rules are in

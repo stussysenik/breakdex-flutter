@@ -3,6 +3,7 @@
 #
 #   ./status.sh          # the head of the queue: active change, next task, git
 #   ./status.sh --queue  # triage every open change: archive-ready / wip / stale / broken
+#   ./status.sh --sittings # group owner-gated items by sitting (DEVICE/REVIEW/DECIDE/SCHOLAR)
 #
 # The board is derived, never stored: the active change comes from ROADMAP.md's
 # NOW block, task counts from that change's tasks.md, and the tree's state from
@@ -116,3 +117,25 @@ CHANGES=$(ls -d openspec/changes/*/ | grep -cv '/archive/')
 echo "QUEUE:    $CHANGES open changes (order: ROADMAP.md D8 backlog)"
 echo
 echo "Gates: ./verify.sh (--quick skips flutter test). Board is read-only."
+
+# --sittings — group owner-gated items by sitting at read time
+if [ "${1:-}" = "--sittings" ]; then
+  echo
+  echo "=== Owner-gated items by sitting ==="
+  echo
+  
+  # Read owner-verification-passes tasks and group by sitting
+  OVP="openspec/changes/owner-verification-passes/tasks.md"
+  if [ -f "$OVP" ]; then
+    # Extract sitting-tagged tasks
+    # Format: - [ ] [SITTING] description
+    for sitting in DEVICE REVIEW DECIDE SCHOLAR; do
+      echo "[$sitting]"
+      grep "^ *- \[ \] \[$sitting\]" "$OVP" | sed 's/^ *- \[ \] \['"$sitting"'\] //'
+      echo
+    done
+  else
+    echo "owner-verification-passes/tasks.md not found"
+  fi
+  exit 0
+fi
