@@ -3,7 +3,7 @@ title: Product Doctrine
 name: product-doctrine
 order: 1
 status: verified
-verified: 210deae
+verified: 4da7c0a
 watches:
   - lib/core/models/**
   - lib/core/domain/**
@@ -65,6 +65,19 @@ anchor (the move's own media, a positional cue, a color from the learning-state 
 carry the meaning instead. The details and the three view modes live in the
 `redesign-visual-first-experience` spec; the standard the manual enforces is: **on product
 surfaces, prefer a visual anchor over a text label.**
+
+### Bidirectionality must be legible
+
+A video's bytes live in more than one place, and the product does not get to be vague about
+which. A clip states **where it is** and **which way it is moving**, as two facts, never one
+verdict — `describeResidency` (`lib/core/models/asset_residency.dart`) reduces the copy ledger
+for one asset to named places plus a direction, and `AssetResidencyLine` renders it as a line
+of type. This is the one place text beats a visual anchor, and it is the exception that proves
+the rule above: "somewhere in the cloud" is not a fact a person can act on, and a colored dot
+would say even less. Note the sibling: `AssetSyncDetail` answers *is the backup pipeline
+moving* for the whole library from `sync_operations`; residency answers *where does this clip
+live* for one hash from `asset_copies`. Same tables, different questions — compose them at a
+surface rather than widening either.
 
 ## Non-goals are doctrine, not omissions
 
