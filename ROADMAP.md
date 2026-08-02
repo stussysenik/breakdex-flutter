@@ -21,7 +21,13 @@
 > exactly the next unticked task, verify (binary truth), tick + update this block **in the
 > same commit**. Nothing else starts until this block says so.
 
-- **Change (active, 2026-08-02 · launch consistency):** `enforce-face-law-conformance`
+- **Change (active, 2026-08-02 · compile-speed):** `excise-firebase-and-restore-compile-speed`
+  — **NEW 2026-08-02**, unplaced: owner ranks it. Measured `flutter run --release -d senik` =
+  **990.3s** Xcode build vs 41s web; **26 of 55 root pods** in `ios/Podfile.lock` are the
+  Firebase/Firestore C++ tree (abseil, gRPC, BoringSSL, leveldb) compiled from source for a
+  backend `main.dart:78` already calls *legacy — superseded by Appwrite*. Baseline-before-delete,
+  5 phases, strongly net-negative LOC. Blocks nothing; unblocks every future device loop.
+- **Change (complete, 2026-08-02 · launch consistency):** `enforce-face-law-conformance`
   — the successor named by the D8 backlog (4b), and the gap the predecessor left on purpose.
   `unify-text-first-frame-and-icon-vocabulary` migrated the screens; nothing holds them there.
   Raw `Scaffold(` under `lib/` is **11 files** today (from 26), and every one of them is either
@@ -29,17 +35,17 @@
   owns — but that is a fact about this commit, not a rule, and `frame_conformance_test.dart`
   (written under 4.4 of the predecessor) partitions chrome-building files without yet holding
   the `Scaffold` count itself down.
-  **Phases 1–5 closed 2026-08-02 (16/17).** §1–2: Face Law codified and gated as above.
+  **Phases 1–5 closed 2026-08-02 (17/17).** §1–2: Face Law codified and gated as above.
   **Phase 3 (5 tasks, 3.1–3.5):** Ledger reconciled — raw `Scaffold(` under `lib/` is **11 files**,
   each in `frame_conformance_test.dart` tables with stated reasons: 29 on frame, 11 frameless,
   2 framework, 0 awaiting ruling. All Batch 1–3 screens verified migrated; dev surfaces documented.
-  **Phase 4 (3 tasks, 4.1–4.2 done):** Scroll physics/back gesture/text scaling use platform
-  defaults; `Scene3DView` enumerated in `07-platform-seams.mdx` with visible degradation.
+  **Phase 4 (3 tasks, 4.1–4.3 done):** Scroll physics/back gesture/text scaling use platform
+  defaults; `Scene3DView` enumerated in `07-platform-seams.mdx` with visible degradation; iOS
+  compile proof via `scripts/distribute.sh ios-nosign` built Runner.app (89.8MB) in 109.3s.
   **Phase 5 (3 tasks, 5.1–5.3 done):** Sittings registry documented — `owner-verification-passes`
   tasks tagged with `DEVICE`/`REVIEW`/`DECIDE`/`SCHOLAR`; `status.sh --sittings` groups by sitting;
   FACTORY.md documents the four sittings and that adding one is owner-gated.
-  **Next unticked task: 4.3** — iOS compile proof via `scripts/distribute.sh ios-nosign`;
-  device look routed to `owner-verification-passes` (sitting: DEVICE).
+  **All tasks complete.**
   **Parallel-allowed / owner-gated:** everything the predecessor left NOT PROVEN is a *look*,
   collected in its archive note (`openspec/changes/archive/2026-08-02-unify-text-first-frame-and-icon-vocabulary/ARCHIVE-NOTE.md`)
   — the preview strip on real footage, the residency line, the Morph transitions, a hostile

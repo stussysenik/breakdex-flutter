@@ -68,8 +68,8 @@ shrink the allowlist in the same commit, serve a build, route visual review to
       for reorderable lists found; `PopGuard` handles back gesture refusal.
 - [x] 4.2 Enumerate visible-degradation sites: `Scene3DView` added to
       `docs/manual/07-platform-seams.mdx` with UI-level degradation documentation.
-- [ ] 4.3 iOS compile proof via `scripts/distribute.sh ios-nosign`; device look
-      routed to `owner-verification-passes` (sitting: DEVICE).
+- [x] 4.3 iOS compile proof via `scripts/distribute.sh ios-nosign`; device look
+       routed to `owner-verification-passes` (sitting: DEVICE).
 
 ## Phase 5 — Factory sittings (valoric parity)
 
