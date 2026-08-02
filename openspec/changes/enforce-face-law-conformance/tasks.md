@@ -6,16 +6,16 @@ independent of 2–4 and may run any time after Phase 1.
 
 ## Phase 1 — Doctrine on disk
 
-- [ ] 1.1 Add the **Face Law** doctrine row to `CLAUDE.md` → Canonical stack: the six
+- [x] 1.1 Add the **Face Law** doctrine row to `CLAUDE.md` → Canonical stack: the six
       checkable rules (one frame · one primary action per content band · monochrome
       carries, color marks state · a control shows its value · a new chrome control
       displaces one or the diff says why · density tokens only), with this change named
       as spec. One row, no prose beyond it.
-- [ ] 1.2 Add to `docs/manual/FACTORY.md` → Standing bars: **Face Law** (held beside
+- [x] 1.2 Add to `docs/manual/FACTORY.md` → Standing bars: **Face Law** (held beside
       Figma / Linear / Resolve, a screenshot that reads as a web page has failed
       regardless of green gates) and **Professional tool, not a hobbyist toy** ("it's
       early" is not a defense). Mirror valoric's wording discipline, cite this change.
-- [ ] 1.3 Add the Face Law rules to `docs/manual/10-review-checklist.mdx` as countable
+- [x] 1.3 Add the Face Law rules to `docs/manual/10-review-checklist.mdx` as countable
       diff checks (primary-action count, displaced-control statement, raw dimension
       literals in chrome).
 

@@ -57,6 +57,24 @@ skipped, not argued.
       [`#token-1`](./09-standards.mdx#token-1), [`#token-2`](./09-standards.mdx#token-2),
       [`#type-1`](./09-standards.mdx#type-1))
 
+## Face Law
+
+Six rules, counted on the diff. Rules 1 and 3 are held by conformance tests
+(`frame_conformance_test.dart`, `color_conformance_test.dart`) — if the gate is green they
+are answered and the reviewer skips them. The three below are the ones only a reader can
+count. Rules: `CLAUDE.md` → Canonical stack → Face Law.
+
+- [ ] **Primary actions per content band ≤ 1.** Count filled/primary-emphasis controls added to
+      any one band. Two means the diff demotes one or splits the surface. (Face Law 2)
+- [ ] **A control shows its value.** Any chrome control the diff adds or renames that has a
+      current value renders that value, not only its noun. (Face Law 4)
+- [ ] **Chrome control count did not grow silently.** If the diff adds a chrome control, it
+      names the control it displaced, or the change's `tasks.md` states why the count grew.
+      (Face Law 5)
+- [ ] **No raw dimension literal in chrome.** Header/nav/gutter/inset numbers resolve from
+      `AppLayout` (`AppLayout.of(context)` where a basis may be overridden), never a literal —
+      a literal is invisible to the basis controls and to every future re-grid. (Face Law 6)
+
 ## Localization
 
 - [ ] No new hardcoded user-facing strings (grep the diff); `check_l10n.sh` green; nouns compose

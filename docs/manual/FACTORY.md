@@ -143,6 +143,14 @@ Rules that keep gates honest:
 - **Determinism.** Meaning comes from specification and compositional semantics. The LLM
   proposes; the spec disposes. A spec must be self-contained: implementable by a model
   that never saw the originating conversation.
+- **Face Law.** Hold a screenshot beside Figma, Linear, and DaVinci Resolve. If it reads
+  as a web page, it has failed — regardless of green gates. The six rules are in
+  `CLAUDE.md` → Canonical stack; each is answerable yes/no on a diff, and adjectives
+  ("clean", "minimal") are not admitted because they are not answerable. Spec:
+  `enforce-face-law-conformance`.
+- **Professional tool, not a hobbyist toy.** The bar is what a working practitioner would
+  keep open all day. "It's early" is not a defense: early is when the face is set, and
+  every surface shipped below the bar is one a later surface will be built to match.
 
 ## Screen consistency — the stacked-papers doctrine
 
