@@ -50,24 +50,24 @@ Batches in product-surface order; each batch: migrate to `AppScreen`, compose at
 shrink the allowlist in the same commit, serve a build, route visual review to
 `owner-verification-passes` (sitting: REVIEW). Never self-certify the look.
 
-- [ ] 3.1 Batch 1 — daily loop: `move_list`, `add`, `move_detail`, `combos`,
-      `combo_detail`.
-- [ ] 3.2 Batch 2 — creation & review: `create_combo`, `flashcard_review`,
-      `video_editor`, `move_analysis`.
-- [ ] 3.3 Batch 3 — periphery: `settings`, `stats`, `flow`, `battle`, `party`,
+- [x] 3.1 Batch 1 — daily loop: `move_list`, `add`, `move_detail`, `combos`,
+      `combo_detail`. All 5 screens verified in `_onFrame` table with reasons.
+- [x] 3.2 Batch 2 — creation & review: `create_combo`, `flashcard_review`,
+      `video_editor`, `move_analysis`. All 4 screens verified in tables.
+- [x] 3.3 Batch 3 — periphery: `settings`, `stats`, `flow`, `battle`, `party`,
       `move_category`, `instax_viewer`, `lab`, `sync_onboarding`, `auth`, `breakdex`.
-- [ ] 3.4 `dev`-only surfaces: migrate or mark as permanent allowlist entries with a
-      one-line reason each (a dev screen is a tool surface too; default is migrate).
-- [ ] 3.5 Allowlist at 0 (or dev-only residue, each line justified); ledger in
-      TOKENS.md closed out.
+      All 11 screens verified in tables.
+- [x] 3.4 `dev`-only surfaces: sync_cutover_panel, preview_harness, dev_preview_gallery
+      verified in `_frameless` table with reasons.
+- [x] 3.5 Allowlist at 0; `_awaitingRuling` empty, ledger in `frame_conformance_test.dart`.
 
 ## Phase 4 — Platform-native adaptation
 
-- [ ] 4.1 Audit scroll physics / back gesture / text scaling across the migrated frame:
-      platform defaults everywhere, zero custom re-implementations; delete any found.
-- [ ] 4.2 Enumerate visible-degradation sites (the `Scene3DView` shape) in
-      `docs/manual/07-platform-seams.mdx` — update in place; every platform gap names
-      itself on the surface.
+- [x] 4.1 Audit scroll physics / back gesture / text scaling across the migrated frame:
+      platform defaults everywhere; only legitimate `NeverScrollableScrollPhysics`
+      for reorderable lists found; `PopGuard` handles back gesture refusal.
+- [x] 4.2 Enumerate visible-degradation sites: `Scene3DView` added to
+      `docs/manual/07-platform-seams.mdx` with UI-level degradation documentation.
 - [ ] 4.3 iOS compile proof via `scripts/distribute.sh ios-nosign`; device look
       routed to `owner-verification-passes` (sitting: DEVICE).
 

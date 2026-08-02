@@ -33,6 +33,12 @@ resolves to `b.dart` when the environment constant `dart.library.X` is truthy fo
 
 **Visible degradation.** The policy primitive. On web, a missing native capability resolves to one of exactly three honest outcomes — a truthful answer (`false`, `'web'`), a thrown `UnsupportedError`, or a UI affordance that hides/labels itself — and *never* a silent no-op that pretends the operation succeeded. Silence is the one forbidden outcome.
 
+### UI-level visible degradation
+
+Widget-level gaps that have no compile-time seam degrade visibly at runtime:
+
+- **`Scene3DView`** (`lib/shared/widgets/scene_3d_view.dart`) — embeds a native SceneKit `SCNView` via `UiKitView` on iOS/macOS; on web renders a placeholder with icon + "3D view unavailable on web" label. The 3D skeleton depends on a native platform view with no web equivalent.
+
 From these four, everything below is forced.
 
 ## The `dart:io` seam
@@ -207,6 +213,7 @@ The compile-time `if` is preferred over a runtime `kIsWeb` branch wherever the c
 - `lib/core/database/connection/open_connection_web.dart` — persistent web DB (`WasmDatabase.open`, OPFS → IndexedDB fallback, degradation surfaced).
 - `lib/core/platform/native_paths.dart` / `native_media.dart` / `native_file_transfer.dart` — the web-release seam trio (each a facade + `_native`/`_web` pair).
 - `lib/core/platform/web_support.dart` — runtime capability flags for affordance-level visible degradation.
+- `lib/shared/widgets/scene_3d_view.dart` — SceneKit 3D view with web placeholder degradation.
 - `lib/dev/preview_db_web.dart` — the preview-harness WASM Drift path (in-memory, re-seeded per session).
 - `lib/core/web/library_manifest.dart` — JSON export schema for the read-only web studio mirror (not a seam).
 - root `CLAUDE.md` — "Flutter Web = released consumer app; platform gaps degrade visibly."

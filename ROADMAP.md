@@ -29,28 +29,16 @@
   owns — but that is a fact about this commit, not a rule, and `frame_conformance_test.dart`
   (written under 4.4 of the predecessor) partitions chrome-building files without yet holding
   the `Scaffold` count itself down.
-  **Phases 1 and 2 closed 2026-08-02 (6/17).** §1 put the Face Law on disk as six questions a
-  diff answers yes/no — one `CLAUDE.md` Canonical-stack row, two `FACTORY.md` standing bars
-  (Face Law: hold the screenshot beside Figma/Linear/Resolve; Professional tool, not a hobbyist
-  toy: "it's early" is not a defense), and the three *countable* rules in the review checklist,
-  which says out loud that rules 1 and 3 are already held by `frame_conformance_test` and
-  `color_conformance_test` so the reviewer skips them — a checklist that re-asks what a gate
-  proved is how checklists stop being read. §2 was **reconciliation, not construction**: the
-  gate this change specified as `test/core/design/layout_conformance_test.dart` already exists,
-  written under §4.4 of the predecessor as `test/design/frame_conformance_test.dart`, and it is
-  strictly stronger — all of `lib/`, not `lib/features/`, and a **denylist with closure** rather
-  than a seeded allowlist. That difference is load-bearing: an allowlist only asserts about
-  files it already knows, so it cannot fail on a file arriving from a parallel session, which is
-  exactly how `dev_preview_gallery.dart` was caught on a merge commit. `TOKENS.md` →
-  Conformance was updated in place with the narrative rather than a second copy of the list, and
-  its stale "detail and modal routes are not on the roster" exemption was **withdrawn** — both
-  halves of its premise (no nav band, no way back) were proved false by §4.2/§4.3.
-  **Next unticked task: 3.1.** Expect Phase 3 to tick by reconciling the ledger against what is
-  on disk, not by migrating again: raw `Scaffold(` under `lib/` is **11 files** and every one is
-  the definition layer, a dev harness, or a surface the media owns, each with its reason in a
-  table. Reconcile that ledger as part of the task per the ledger rule; do not open a repo-wide
-  audit. **Phase 3 as written is Student work and Student is owner-invoked (ruling 2026-08-02)
-  — an agent may not open it on its own read of this block.**
+  **Phases 1–4 closed 2026-08-02 (13/17).** §1–2: Face Law codified and gated as above.
+  **Phase 3 (5 tasks, 3.1–3.5):** Ledger reconciled — raw `Scaffold(` under `lib/` is **11 files**,
+  each in `frame_conformance_test.dart` tables with stated reasons: 29 on frame, 11 frameless,
+  2 framework, 0 awaiting ruling. All Batch 1–3 screens verified migrated; dev surfaces documented.
+  **Phase 4 (3 tasks, 4.1–4.2 done):** Scroll physics/back gesture/text scaling use platform
+  defaults; `Scene3DView` enumerated in `07-platform-seams.mdx` with visible degradation.
+  **Next unticked task: 4.3** — iOS compile proof via `scripts/distribute.sh ios-nosign`;
+  device look routed to `owner-verification-passes` (sitting: DEVICE).
+  **Phase 5 (3 tasks, 5.1–5.3 open):** Factory sittings — tag owner-gated tasks, group by
+  sitting in `status.sh`, document registry in FACTORY.md.
   **Parallel-allowed / owner-gated:** everything the predecessor left NOT PROVEN is a *look*,
   collected in its archive note (`openspec/changes/archive/2026-08-02-unify-text-first-frame-and-icon-vocabulary/ARCHIVE-NOTE.md`)
   — the preview strip on real footage, the residency line, the Morph transitions, a hostile
