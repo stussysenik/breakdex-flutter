@@ -1,3 +1,10 @@
+# [1.14.0](https://github.com/stussysenik/breakdex-flutter/compare/v1.13.0...v1.14.0) (2026-08-02)
+
+
+### Features
+
+* **library:** a parent introduces itself with its children's faces ([75e562a](https://github.com/stussysenik/breakdex-flutter/commit/75e562adb0d5f1b013f6abbaf1c8b53568ec45ff))
+
 # [1.13.0](https://github.com/stussysenik/breakdex-flutter/compare/v1.12.0...v1.13.0) (2026-08-02)
 
 

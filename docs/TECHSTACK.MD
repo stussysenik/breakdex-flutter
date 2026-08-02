@@ -47,9 +47,9 @@ Breakdex is split into a product runtime, native bridges, release tooling, and a
 ## Release Snapshot
 
 <!-- release:meta:start -->
-- Release tag: `v1.13.0`
-- Release version: `1.13.0`
-- Pubspec version: `1.13.0+16`
+- Release tag: `v1.14.0`
+- Release version: `1.14.0`
+- Pubspec version: `1.14.0+17`
 - Released: `2026-08-02`
 - Metadata refreshed: `2026-08-02`
 <!-- release:meta:end -->
@@ -58,9 +58,9 @@ Breakdex is split into a product runtime, native bridges, release tooling, and a
 
 <!-- release:provenance:start -->
 - Source branch: `main`
-- Source revision: `9e4e6ab`
-- Source commit: `9e4e6abb7bc4c5de22fb9d467fc17df8b82a6ef8`
-- Source describe: `v1.12.0-4-g9e4e6ab`
+- Source revision: `75e562a`
+- Source commit: `75e562adb0d5f1b013f6abbaf1c8b53568ec45ff`
+- Source describe: `v1.13.0-1-g75e562a`
 - Generator: `scripts/update_release_metadata.cjs`
 - Inputs: `docs/CHANGELOG.md`, `pubspec.yaml`, and local git metadata
 <!-- release:provenance:end -->
@@ -68,5 +68,5 @@ Breakdex is split into a product runtime, native bridges, release tooling, and a
 ## Latest Tagged Notes
 
 <!-- release:notes:start -->
-- **media:** a clip says where it lives and which way it is moving
+- **library:** a parent introduces itself with its children's faces
 <!-- release:notes:end -->
