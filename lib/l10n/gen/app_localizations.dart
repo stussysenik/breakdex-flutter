@@ -226,6 +226,48 @@ abstract class AppLocalizations {
   /// **'Original Name'**
   String get mdMetaOriginalName;
 
+  /// Metadata row label: where the clip's bytes live and which way they are moving.
+  ///
+  /// In en, this message translates to:
+  /// **'Stored'**
+  String get mdMetaStored;
+
+  /// Residency location: the clip is on the local device.
+  ///
+  /// In en, this message translates to:
+  /// **'This device'**
+  String get residencyThisDevice;
+
+  /// Residency: the clip exists nowhere but this device — no cloud copy.
+  ///
+  /// In en, this message translates to:
+  /// **'This device only'**
+  String get residencyThisDeviceOnly;
+
+  /// Residency: the copy ledger has no record for this clip, so nothing is claimed about where it lives.
+  ///
+  /// In en, this message translates to:
+  /// **'Not tracked yet'**
+  String get residencyUntracked;
+
+  /// Residency direction: an upload is in flight to the named places.
+  ///
+  /// In en, this message translates to:
+  /// **'sending to {places}'**
+  String residencySending(String places);
+
+  /// Residency direction: the last upload to the named places failed.
+  ///
+  /// In en, this message translates to:
+  /// **'upload failed — {places}'**
+  String residencyUploadFailed(String places);
+
+  /// Residency: the clip's bytes are verified in the cloud but absent locally, so playing it needs a download.
+  ///
+  /// In en, this message translates to:
+  /// **'{places} only — not on this device'**
+  String residencyCloudOnly(String places);
+
   /// Metadata row label: the clip's duration.
   ///
   /// In en, this message translates to:

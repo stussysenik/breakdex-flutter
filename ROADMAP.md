@@ -170,9 +170,22 @@
   `AppMotion.springGentle` was normalised onto a fixed 3s window, so it finished at t≈0.2 and a
   240ms transition showed ~40ms of motion — it now asks the simulation when it is done. Gate:
   analyzer 0/0, **1423 pass / 3 skip / 0 fail**.
-  **Next unticked: 8.1** — surface the cloud pointer on the move/video surface. How any of §4–5
-  *looks* — whether a hostile basis stays legible, and how the four call sites the spring fix
-  touches now feel — is still owner-gated.
+  **§8.1/8.2 landed 2026-08-02 — a clip now says where it lives and which way it is moving.**
+  Fit-before-build was checked twice and answered no both times, recorded rather than assumed:
+  `source_origin_badge.dart` names where a clip was *captured*, not where its bytes are, and is
+  a hex-coloured chip of the kind 10.1 removed; `AssetSyncDetail` classifies the backup pipeline
+  as one word from `sync_operations`, library-wide, and never names a provider. The gap was the
+  naming, so `describeResidency` (`core/models/asset_residency.dart`) reduces the copy ledger
+  for one hash to *places* plus *direction* — failure → in-flight → verified for the state,
+  places collected independently — and `AssetResidencyLine` renders it as one line of type in
+  the Video Info row grammar, with only the direction span in the error role. Keyed off
+  `contentHash`, not `videoPath`, so the cloud-only clip that the videoPath-gated panel below
+  structurally cannot show is exactly the one that says where it is. Gate: analyzer 0/0,
+  **1439 pass / 3 skip / 0 fail**.
+  **Next unticked: 8.3** — the parent-with-many-children preview strip. How any of §4–5 and §8
+  *looks* — whether a hostile basis stays legible, how the four call sites the spring fix
+  touches now feel, and whether the residency line reads as a fact or as an alert — is still
+  owner-gated.
 - **Change (prior, 2026-07-29 · product finish):** `redesign-visual-first-experience`
   — **6.4 DONE 2026-07-29.** `openspec/changes/add-icon-system-and-packs` Phase 4 closed:
   `AppIcon` enum with 78 semantic names, material + lucide packs, conformance gate with

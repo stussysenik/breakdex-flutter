@@ -29,6 +29,7 @@ import 'package:breakdex/core/utils/diagnostics.dart';
 import 'package:breakdex/core/utils/share_sheet.dart';
 import 'package:breakdex/core/utils/transfer_rate_estimator.dart';
 import 'package:breakdex/shared/widgets/action_tile.dart';
+import 'package:breakdex/shared/widgets/asset_residency_line.dart';
 import 'package:breakdex/shared/widgets/notes_section.dart';
 import 'package:breakdex/shared/widgets/logs_section.dart';
 import 'package:breakdex/shared/widgets/state_pill.dart';
@@ -242,6 +243,27 @@ class _MoveDetailScreenState extends ConsumerState<MoveDetailScreen> {
                             color: colorScheme.secondary,
                             fontFamily: 'monospace',
                           ),
+                        ),
+                      ],
+
+                      // Where the bytes live, and which way they are moving
+                      // (8.1/8.2). Keyed off `contentHash`, not `videoPath`, so
+                      // a clip that exists only in the cloud still says where
+                      // it is — that case is the whole reason the line exists,
+                      // and it is exactly the one the Video Info panel below
+                      // cannot show, being gated on a local file.
+                      if (move.contentHash != null) ...[
+                        const SizedBox(height: AppSpacing.sm),
+                        Consumer(
+                          builder: (final context, final ref, _) {
+                            final residency = ref
+                                .watch(assetResidencyProvider(move.contentHash!))
+                                .valueOrNull;
+                            if (residency == null) {
+                              return const SizedBox.shrink();
+                            }
+                            return AssetResidencyLine(residency: residency);
+                          },
                         ),
                       ],
 

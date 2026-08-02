@@ -398,17 +398,33 @@ every element so each one can be seen functioning.
       clean library never advertises an empty bucket and moves are never orphaned. The
       `/breakdex/moves/uncategorized` route stays reachable either way.
 
-## 8. Videos must name where they live — NOT BUILT
+## 8. Videos must name where they live — 8.1/8.2 DONE, 8.3 OPEN
 
 Owner: videos should carry a visible reference to their cloud location (Google Drive, Dropbox)
 so the bidirectionality is legible; and where a thing has many children, a preview should
 introduce it.
 
-- [ ] 8.1 Surface the cloud pointer on the move/video surface. `source_origin_badge.dart`
-      already exists — check whether it can carry this before building anything new (fit before
-      build). Drive pointers are already stored; this is a display gap, not a data gap.
-- [ ] 8.2 State the direction, not just the location: local-only / uploaded / pending / failed
-      are different facts, and one badge that conflates them is worse than no badge.
+- [x] 8.1 Surface the cloud pointer on the move/video surface. Fit-before-build checked and
+      answered no twice, both recorded rather than assumed: `source_origin_badge.dart` names
+      where a clip was *captured* (`AssetSource.camera/photos/files`), which is a different
+      question from where its bytes now live, and it is a hex-coloured chip — the shape
+      ruling 10.1 removed. `AssetSyncDetail` (`core/sync/asset_sync_detail.dart`) classifies
+      the pipeline as one word from `sync_operations`, for the whole library at once, and
+      never names a provider. The gap was the naming: `describeResidency` in
+      `core/models/asset_residency.dart` reduces the copy ledger for one hash to places +
+      direction, `assetResidencyProvider(hash)` streams it, `AssetResidencyLine` renders it
+      as one line of type in the Video Info row grammar. Keyed off `contentHash`, not
+      `videoPath`, so a cloud-only clip — the case the videoPath-gated panel below structurally
+      cannot show — is exactly the one that says where it is.
+- [x] 8.2 Direction and location are separate spans, never one verdict. Precedence is
+      failure → in-flight → verified, because that is the order in which a fact is actionable;
+      places are collected independently of that ranking, so the line reads "This device ·
+      Google Drive / sending to iCloud" without either fact hiding the other. Only the
+      direction span takes `colorScheme.error`, so a failed upload does not paint the place
+      the file is safely sitting in red. `untracked` is its own state: an asset the ledger has
+      never heard of is not the same claim as one known to be local-only, and 10 unit tests
+      pin the precedence (a `deleted` row is not a place it lives; a `pending` *local* row is
+      not an upload; an unknown provider key is carried through and named, never dropped).
 - [ ] 8.3 Parent-with-many-children preview: a combo or category with N items shows a
       representative strip before you open it. Composes from the atom model (move → combo →
       set); do not invent a new container type for it.

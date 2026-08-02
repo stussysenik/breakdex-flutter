@@ -17,6 +17,21 @@ final assetCopiesDaoProvider = Provider<AssetCopiesDao>((final ref) {
   return ref.watch(databaseProvider).assetCopiesDao;
 });
 
+/// Where one asset's bytes live and which way they are moving, derived live
+/// from the copy ledger. One stream per content hash; the reduction to a
+/// residency statement is a pure function, so the display rules are tested
+/// without a database (`asset_residency_test.dart`).
+final assetResidencyProvider =
+    StreamProvider.family<AssetResidency, String>((final ref, final hash) {
+  return ref.watch(assetCopiesDaoProvider).watchByHash(hash).map(
+        (final rows) => describeResidency(
+          rows.map(
+            (final r) => AssetCopyFact(provider: r.provider, status: r.status),
+          ),
+        ),
+      );
+});
+
 /// DAO for the sync operation queue.
 final syncOperationsDaoProvider = Provider<SyncOperationsDao>((final ref) {
   return ref.watch(databaseProvider).syncOperationsDao;

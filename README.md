@@ -226,25 +226,119 @@ Breakdex follows **CLEAN Architecture** principles with a local-first, state-mac
 
 ## Development
 
-### Static Analysis
+### Environment Configuration
+
+The app uses Appwrite as the backend (cloud sync optional). Configuration lives in `.env.local` at the project root:
 
 ```bash
+# Appwrite (required)
+APPWRITE_ENDPOINT=https://fra.cloud.appwrite.io/v1
+APPWRITE_API_KEY=<your-key>
+APPWRITE_PROJECT_ID=6a50f25b000e15631ad0
+APPWRITE_PROJECT_NAME=breakdex-flutter
+
+# Google OAuth (required for authentication)
+GOOGLE_WEB_OAUTH_KEYS=<your-key>.apps.googleusercontent.com
+GOOGLE_WEB_CLIENT_SECRET=<your-secret>
+
+# Dev test accounts (optional)
+DEV0_EMAIL=dev0@breakdex.dev
+DEV0_PASSWORD=<password>
+OWNER_DEV_PASSWORD=<password>
+```
+
+**Note:** `.env.local` is git-ignored. If running for the first time, copy template values from project documentation or request them from the team.
+
+### Prerequisites Setup
+
+```bash
+# Install dependencies
+flutter pub get
+
+# Generate build files (required after pubspec.yaml changes or Drift schema edits)
+dart run build_runner build
+
+# One-time: Install NPM dependencies for release tooling
+npm ci
+```
+
+### Local Development — Web (Recommended)
+
+**Flutter Web is the fastest dev loop (~41s compile).** Start here:
+
+```bash
+# Launch dev server with hot reload on http://localhost:9100
+flutter run -d web
+
+# Stop: press 'q' in the terminal
+```
+
+Hot reload lets you edit Dart code and see changes instantly without rebuilding. The web version shares the same codebase as mobile — all features work identically.
+
+**Development cycle:**
+1. Make a change to any `.dart` file
+2. Save the file → hot reload (automatic in VS Code, or press `r` in the terminal)
+3. Browser refreshes instantly; local database state persists
+
+### Local Development — iOS Simulator
+
+```bash
+# Run on the iOS 26.2 simulator (iPhone 17 Pro)
+flutter run
+
+# With verbose logging
+flutter run -v
+
+# Hot reload: press 'r' in terminal
+# Hot restart (full rebuild): press 'R' in terminal
+```
+
+### Static Analysis & Verification
+
+```bash
+# Quick verification gate (all checks except full test suite)
+./verify.sh --quick
+
+# Full verification including tests
+./verify.sh
+
+# Linting — Flutter analyzer
 flutter analyze
+
+# Type checking
+dart analyze
+
+# Code formatting (auto-fix)
+dart format lib/ test/ integration_test/
 ```
 
 ### Testing
 
 ```bash
-flutter test                              # Unit & widget tests
-flutter test integration_test/            # Integration tests
-maestro test .maestro/                    # E2E tests
+# Unit & widget tests (recommended for pre-commit)
+flutter test
+
+# Watch mode (re-run on file changes)
+flutter test --watch
+
+# Specific test file
+flutter test test/core/state_machines/move_machine_test.dart
+
+# Integration tests (device/emulator required)
+flutter test integration_test/
+
+# E2E tests with Maestro
+maestro test .maestro/
 maestro test --tags=stress .maestro/      # Stress tests
 ```
 
 ### Building for Release
 
 ```bash
-# Android APK
+# Web (recommended for distribution — 41s compile)
+flutter build web --release
+
+# Android APK (sideloadable)
 flutter build apk --release
 
 # Android App Bundle (Play Store)
@@ -253,8 +347,8 @@ flutter build appbundle --release
 # iOS (macOS + Xcode required)
 flutter build ios --release
 
-# Web
-flutter build web --release
+# All platforms at once (CI pattern)
+scripts/distribute.sh all --quick
 ```
 
 ### FlowDeck iOS Workflow
@@ -262,14 +356,87 @@ flutter build web --release
 For iOS platform development, FlowDeck wraps the native Runner workspace:
 
 ```bash
-flowdeck build                             # Validate iOS build compiles
-flowdeck test                              # Run iOS native tests
+flowdeck config get --json                 # Check saved workspace config
+flowdeck run                                # Build + run on iPhone 17 Pro simulator
+flowdeck run --log                         # Build + run with live log streaming
+flowdeck test                              # Run iOS native RunnerTests
 flowdeck build -C Release                  # Release configuration build
-flowdeck run --log                         # Launch with live log streaming
 flowdeck logs <app-id>                     # Attach to running app logs
 flowdeck ui simulator session start \
-  -S "iPhone 16 Pro" --json                # Continuous screenshot + accessibility tree capture
+  -S "iPhone 17 Pro" --json                # Continuous screenshot + a11y tree capture
 ```
+
+### Common Development Tasks
+
+#### Database Schema Changes
+
+When modifying Drift tables in `lib/core/database/`:
+
+```bash
+# Regenerate the database layer
+dart run build_runner build
+
+# Clean and rebuild (if incremental fails)
+dart run build_runner clean
+dart run build_runner build
+
+# Run tests to verify schema migrations
+flutter test
+```
+
+#### Generating Code (Freezed, Riverpod, etc.)
+
+```bash
+# Watch mode — auto-regenerate on file changes
+dart run build_runner watch
+
+# One-time generation
+dart run build_runner build --delete-conflicting-outputs
+```
+
+#### Device Debugging & Logging
+
+```bash
+# Web: Open browser DevTools
+# In Chrome: Press F12 or Cmd+Option+I → Console tab
+
+# iOS simulator: Print logs to terminal
+flutter run -v
+
+# Clear app state (local database reset)
+flutter run --purge-persistent-cache
+
+# Clear build artifacts
+flutter clean
+```
+
+#### Git & Release Workflow
+
+```bash
+# Check uncommitted changes
+git status
+
+# Pre-commit checks (quick gates)
+./verify.sh --quick
+
+# View recent commits
+git log --oneline -10
+
+# Release (semantic versioning via conventional commits)
+npm run release:dry-run              # Preview next version
+npm run release:sync-docs            # Update docs + version
+```
+
+### Troubleshooting
+
+| Issue | Solution |
+|-------|----------|
+| **Hot reload not working** | Press `R` (hard restart) instead. If that fails: `flutter clean && flutter run -d web` |
+| **Build fails on pubspec.yaml change** | Run `flutter pub get && dart run build_runner build` |
+| **DevTools DevTools connectivity** | Ensure no firewall blocks localhost. Try `flutter run -d web --web-port=9101` to use a different port |
+| **Database locked / corrupt** | Close the app and delete `.dart_tool/build` and `build/` directories; run `flutter clean` |
+| **iOS simulator stuck** | `flowdeck simulator list && flowdeck simulator erase --all && flowdeck run` |
+| **Web CORS / auth errors** | Check `.env.local` has correct `APPWRITE_ENDPOINT` and `GOOGLE_WEB_CLIENT_SECRET`; refresh the browser hard-reload (Cmd+Shift+R) |
 
 ---
 

@@ -24,6 +24,7 @@ import 'package:breakdex/core/data/sync_aware_repositories.dart';
 import 'package:breakdex/core/design/color_packs.dart';
 import 'package:breakdex/core/design/color_roles.dart';
 import 'package:breakdex/core/design/colors.dart';
+import 'package:breakdex/core/models/asset_residency.dart';
 import 'package:breakdex/core/models/rating_colors.dart';
 import 'package:breakdex/core/design/icons.dart';
 import 'package:breakdex/core/design/typography.dart';

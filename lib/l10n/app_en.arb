@@ -76,6 +76,29 @@
   "@mdMetaFileSize": { "description": "Metadata row label: the clip's file size." },
   "mdMetaOriginalName": "Original Name",
   "@mdMetaOriginalName": { "description": "Metadata row label: the clip's original filename." },
+  "mdMetaStored": "Stored",
+  "@mdMetaStored": { "description": "Metadata row label: where the clip's bytes live and which way they are moving." },
+  "residencyThisDevice": "This device",
+  "@residencyThisDevice": { "description": "Residency location: the clip is on the local device." },
+  "residencyThisDeviceOnly": "This device only",
+  "@residencyThisDeviceOnly": { "description": "Residency: the clip exists nowhere but this device — no cloud copy." },
+  "residencyUntracked": "Not tracked yet",
+  "@residencyUntracked": { "description": "Residency: the copy ledger has no record for this clip, so nothing is claimed about where it lives." },
+  "residencySending": "sending to {places}",
+  "@residencySending": {
+    "description": "Residency direction: an upload is in flight to the named places.",
+    "placeholders": { "places": { "type": "String", "example": "iCloud" } }
+  },
+  "residencyUploadFailed": "upload failed — {places}",
+  "@residencyUploadFailed": {
+    "description": "Residency direction: the last upload to the named places failed.",
+    "placeholders": { "places": { "type": "String", "example": "Google Drive" } }
+  },
+  "residencyCloudOnly": "{places} only — not on this device",
+  "@residencyCloudOnly": {
+    "description": "Residency: the clip's bytes are verified in the cloud but absent locally, so playing it needs a download.",
+    "placeholders": { "places": { "type": "String", "example": "Google Drive" } }
+  },
   "mdMetaDuration": "Duration",
   "@mdMetaDuration": { "description": "Metadata row label: the clip's duration." },
   "mdMetaResolution": "Resolution",

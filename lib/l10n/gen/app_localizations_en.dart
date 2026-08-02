@@ -92,6 +92,33 @@ class AppLocalizationsEn extends AppLocalizations {
   String get mdMetaOriginalName => 'Original Name';
 
   @override
+  String get mdMetaStored => 'Stored';
+
+  @override
+  String get residencyThisDevice => 'This device';
+
+  @override
+  String get residencyThisDeviceOnly => 'This device only';
+
+  @override
+  String get residencyUntracked => 'Not tracked yet';
+
+  @override
+  String residencySending(String places) {
+    return 'sending to $places';
+  }
+
+  @override
+  String residencyUploadFailed(String places) {
+    return 'upload failed — $places';
+  }
+
+  @override
+  String residencyCloudOnly(String places) {
+    return '$places only — not on this device';
+  }
+
+  @override
   String get mdMetaDuration => 'Duration';
 
   @override
