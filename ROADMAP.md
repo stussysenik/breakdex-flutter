@@ -1116,6 +1116,13 @@ Priority order for pending OpenSpec changes, top first. This is the authoritativ
 (align-cross-client-foundations D8); the risk-ordered workstream narrative further down is the
 older intra-app view and is kept for context.
 
+0. **`excise-firebase-and-restore-compile-speed`** — ⭐ NEW (2026-08-02), unplaced: owner
+   ranks it. Measured `flutter run --release -d senik` = **990.3s** Xcode build vs 41s web;
+   **26 of 55 root pods** in `ios/Podfile.lock` are the Firebase/Firestore C++ tree (abseil,
+   gRPC, BoringSSL, leveldb) compiled from source for a backend `main.dart:78` already calls
+   *legacy — superseded by Appwrite*. This is the supersession rule's unpaid bill from the
+   2026-07-05 Appwrite lock. Baseline-before-delete, 5 phases, strongly net-negative LOC.
+   Blocks nothing; unblocks every future device loop.
 1. **`migrate-canonical-backend-to-appwrite`** — the backend spine. Phase H done
    (`phase-h-hardening`); **Phase 0 provisioning is NEXT and owner-gated** (Appwrite Cloud
    project + Google OAuth; owner confirmed ready 2026-07-08). Now also carries **Phase 1R
