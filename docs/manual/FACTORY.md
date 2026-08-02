@@ -78,7 +78,26 @@ entry. Output is a new change under `openspec/changes/`.
 
 **Student** — implements exactly one approved spec. If the spec is ambiguous, stop and
 flag it. Never improvise around a spec — ambiguity is a bug in the spec, fixed there,
-never patched around in code.
+never patched around in code. **Owner-invoked only, as of 2026-08-02** — see below.
+
+### Spec-only default (2026-08-02)
+
+The default lane is **Teacher**. A session converges on one question and leaves an OpenSpec
+change on disk; the spec is the deliverable, and the session ends when
+`openspec validate --strict` passes on it — not when the first task is done.
+
+- Scholar remains self-invocable: evidence is never blocked.
+- Student is **owner-invoked**. An agent may not read `## NOW`, judge the next task easy,
+  and land code. Believing a spec is ready is a one-line statement, then stop.
+- Spec repair is Teacher work: `INVALID` proposals, drifted `tasks.md` ledgers, and
+  oversized changes are fixed in-lane, no invocation needed.
+- Record-keeping is always in-lane — ledger ticks, `## NOW` advances, `session.log`,
+  archive notes, and doctrine edits are how a spec-only session ends cleanly.
+
+The reason is the loop cost. `flutter run --release -d senik` measured **990.3s** on
+2026-08-02 against 41s for the web build. When verification is that expensive, the cheapest
+artifact an agent can produce is a spec precise enough to spend the build once, on the right
+thing. `CLAUDE.md` → Session types carries the same ruling as law.
 
 **Owner** — holds product shape, GUI look and feel, pricing, brand, legal, and every
 one-way door. Promotes decisions to `agreed`. Runs the live device review. Merges.
@@ -96,6 +115,7 @@ one-way door. Promotes decisions to `agreed`. Runs the live device review. Merge
 Every session, regardless of role, starts in order:
 
 1. **Identify your session type.** Scholar, Teacher, or Student. Never switch mid-session.
+   Default to Teacher; Student requires the owner to have named a change and said build it.
 2. **Run `./status.sh`.** The board tells you the active change, next unticked task, and git state.
 3. **Run `./verify.sh --quick`** if anything will be edited.
 4. **Read ROADMAP.md → `## NOW` block.** That is your work.

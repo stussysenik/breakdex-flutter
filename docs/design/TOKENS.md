@@ -269,12 +269,22 @@ screen can neither invent one nor omit one; a screen may only *name* it, via
 layout position that a token expresses is likewise a violation, on the same footing as
 a raw `Duration` in motion or a raw `BorderRadius.circular(N)`.
 
-**All five tabs conform** as of 2026-07-29 — `add` (the reference implementation),
-`breakdex`, `stats`, `lab`, `flow`. The migration ledger that tracked them is retired;
-its job is now done by `test/design/frame_conformance_test.dart`, which fails CI if any
-roster screen re-declares a band. A migrated screen is added to that roster in the same
-commit that migrates it. Prose could describe the rule; only the test can hold it, and
-review is what let five headers diverge in the first place.
+**The migration is complete and the ledger is a test.** It began as five tabs on
+2026-07-29 and closed on 2026-08-01: `frame_conformance_test.dart` now holds **four
+tables that partition every chrome-building file under `lib/`** — `_onFrame` (29 screens,
+asserted chrome-free), `_frameless` (11 surfaces with no bands at all, each carrying its
+reason, and never an `AppBar`), `_awaitingRuling` (empty, kept as the place the next
+ruling is owed), and `_framework` (the two files allowed to build bands: `app_screen`
+and `bottom_nav_shell`). A closure test walks the tree and fails on any chrome-building
+file in **no** table, which is what makes it a denylist rather than an allowlist: a new
+bespoke `Scaffold` fails on the commit that adds it, and a file arriving from a parallel
+session fails on the merge — both have happened, which is the argument for the shape.
+
+A screen joins a table in the same commit that changes how it builds, and it is never in
+two and never in none. Prose could describe the rule; only the test can hold it, and
+review is what let five headers diverge in the first place. This is Face Law rule 1
+(`CLAUDE.md` → Canonical stack), and it is the reason the reviewer's checklist does not
+re-ask it.
 
 Two frame concerns were discovered during the migrations and belong to `AppScreen`, not
 to any screen: the FAB slot (`AppScreen.floatingActionButton`, which also supplies the
@@ -282,10 +292,17 @@ nav-band inset the shell's `extendBody: true` requires) and the choice of column
 sliver form. A screen that needs a third thing from the frame extends the frame — it
 does not build around it.
 
-Detail and modal routes pushed on top of a tab (`move_detail`, `combo_detail`,
-`video_editor`, …) are **not** on the roster. They are a different placement problem —
-a back affordance, no nav band — and giving them the tab frame is a separate ruling, not
-an oversight.
+Detail and modal routes were once off the roster as "a different placement problem — a
+back affordance, no nav band". Both halves of that premise turned out to be false and the
+exemption is **withdrawn** (2026-08-01, §4.2/§4.3). Detail routes are pushed *inside* the
+shell branch, so band 4 was never absent; the only missing fact was a way back, and the
+frame now reads that from the route (`Navigator.canPop`) instead of taking it as a flag.
+Settings routes are pushed on the *root* navigator, where band 4 genuinely is absent —
+and the frame reads that from `NavBandScope`, an inherited widget the shell wraps its
+branch in, so a sibling route is told the truth rather than consulting a path allowlist.
+`move_detail`, `combo_detail`, `lab_detail`, `move_category` and nine settings screens are
+all on the frame. `video_editor` is off it for a different reason entirely — it is a
+transaction, not an address — and that is `_frameless`, not an exemption.
 
 `web-mirror/` is **exempt** (ruled 2026-07-29). It is the owner-only privileged tool, not
 a product surface; the stacked viewport exists so that switching tabs in the shipped app

@@ -70,6 +70,30 @@ the full operating manual lives there.
 
 ## Session types — never mixed
 
+**Spec-only is the default lane (ruled 2026-08-02).** Unless the owner names a change and
+says implement it, a session is a **Teacher** session: it converges on one question and
+leaves an OpenSpec change on disk. Not "write a spec then start it" — the spec *is* the
+deliverable, and the session ends when `openspec validate --strict` passes on it.
+
+- **A Student session is owner-invoked, never self-invoked.** An agent may not read the
+  `## NOW` block, decide the next task looks easy, and land code. The board names what is
+  next; the owner names *when someone builds it*. If you believe a spec is ready to
+  implement, say so in one line and stop.
+- **A Scholar session is still self-invocable** — evidence is never blocked. When a spec
+  would otherwise rest on confident vibes, go read the source and write the READINGS entry
+  first, in the same session, before the spec text.
+- **Repairing a spec is Teacher work, not implementation.** Fixing an `INVALID` proposal,
+  reconciling a drifted `tasks.md` against shipped code, or splitting an oversized change
+  are all in-lane and need no owner invocation.
+- **The exemption is the record itself.** Ledger ticks, `## NOW` advances, `session.log`
+  lines, archive notes, and doctrine edits to `CLAUDE.md`/`FACTORY.md` are always allowed —
+  they are how a spec-only session ends cleanly. They are not "implementation".
+
+**Why:** measured 2026-08-02, one `flutter run --release -d senik` cost **990.3s of Xcode
+build** before a single line could be judged. When the verification loop is that expensive,
+the cheapest thing an agent can produce is a spec precise enough that the build is spent
+once, on the right thing. Speculative implementation now costs more than it saves.
+
 A session is exactly one of three lanes. Mixing them is how specs acquire implementation
 bias and implementations acquire scope.
 
@@ -148,6 +172,17 @@ is rejected without further argument.
    because it is the fastest (`flutter build web --release`: 41s compile, measured
    2026-07-30) and because the widget-preview harness runs there. Reach for a simulator to
    answer a question web cannot, not by default.
+
+   **`--release` on a physical device is a distribution act, never a dev loop** (ruled
+   2026-08-02). Measured: `flutter run --release -d senik` = **990.3s Xcode build**, 24×
+   the web loop. Debug on device is JIT and incremental; release recompiles the Dart AOT
+   snapshot, every pod, and a dSYM each time. If a question needs a device, run debug or
+   profile; if it needs release, that is `scripts/distribute.sh ios-ipa` and it is
+   owner-gated. **The dominant cost is Firebase**: 26 of 55 root pods
+   (`FirebaseFirestore` → `abseil` + `gRPC-C++`/`gRPC-Core` + `BoringSSL-GRPC` +
+   `leveldb-library` + `nanopb`) are a C++ source tree that recompiles cold, for a backend
+   `main.dart` itself annotates as *legacy — superseded by Appwrite*. Excision is specced:
+   `openspec/changes/excise-firebase-and-restore-compile-speed`.
 4. **GPU-bound animation.** Motion belongs on the compositor, not the CPU. Prefer
    transform/opacity under a `RepaintBoundary`; animate with `AnimatedBuilder`/listenables
    rather than `setState` on an ancestor; never drive layout per frame. An animation that
