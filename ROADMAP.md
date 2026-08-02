@@ -21,7 +21,25 @@
 > exactly the next unticked task, verify (binary truth), tick + update this block **in the
 > same commit**. Nothing else starts until this block says so.
 
-- **Change (active, 2026-08-01 · product finish):** `unify-text-first-frame-and-icon-vocabulary`
+- **Change (active, 2026-08-02 · launch consistency):** `enforce-face-law-conformance`
+  — the successor named by the D8 backlog (4b), and the gap the predecessor left on purpose.
+  `unify-text-first-frame-and-icon-vocabulary` migrated the screens; nothing holds them there.
+  Raw `Scaffold(` under `lib/` is **11 files** today (from 26), and every one of them is either
+  the definition layer (`app_screen`, `bottom_nav_shell`), a dev harness, or a surface the media
+  owns — but that is a fact about this commit, not a rule, and `frame_conformance_test.dart`
+  (written under 4.4 of the predecessor) partitions chrome-building files without yet holding
+  the `Scaffold` count itself down.
+  **Next unticked task: 1.1** — Face Law doctrine onto disk (`CLAUDE.md` → Canonical stack,
+  `FACTORY.md` → Standing bars, `10-review-checklist.mdx` as countable rules), then **2.1**, the
+  gate that makes the 11 a ceiling with a named reason per line. Phase 3's migration batches are
+  largely *already shipped* by the predecessor — expect 3.1–3.5 to tick by reconciling the
+  ledger against what is on disk, not by migrating again; reconcile that change's ticks as part
+  of the task per the ledger rule, do not open a repo-wide audit.
+  **Parallel-allowed / owner-gated:** everything the predecessor left NOT PROVEN is a *look*,
+  collected in its archive note (`openspec/changes/archive/2026-08-02-unify-text-first-frame-and-icon-vocabulary/ARCHIVE-NOTE.md`)
+  — the preview strip on real footage, the residency line, the Morph transitions, a hostile
+  basis. Those need a device and the owner's eyes; do not self-grade them.
+- **Change (prior, 2026-08-01 · product finish, ARCHIVED 2026-08-02 complete 36/36):** `unify-text-first-frame-and-icon-vocabulary`
   — sections 1, 2, 6, 7, 9, 10, 11 landed (`AppRow`/`AppSection` on Add, Cupertino icon pack as
   default, the owner's canonical 8 categories, `AppBreadcrumb` in the 72pt header band, and
   `AppChoiceList` replacing the deleted `_SegmentedPicker` at all five call sites).
