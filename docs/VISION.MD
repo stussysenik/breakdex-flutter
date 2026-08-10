@@ -29,20 +29,20 @@ The primary user is an active breaker building a personal library under real fat
 ## Release Snapshot
 
 <!-- release:meta:start -->
-- Release tag: `v1.14.0`
-- Release version: `1.14.0`
-- Pubspec version: `1.14.0+17`
-- Released: `2026-08-02`
-- Metadata refreshed: `2026-08-02`
+- Release tag: `v1.15.0`
+- Release version: `1.15.0`
+- Pubspec version: `1.15.0+18`
+- Released: `2026-08-10`
+- Metadata refreshed: `2026-08-10`
 <!-- release:meta:end -->
 
 ## Automatic Provenance
 
 <!-- release:provenance:start -->
 - Source branch: `main`
-- Source revision: `75e562a`
-- Source commit: `75e562adb0d5f1b013f6abbaf1c8b53568ec45ff`
-- Source describe: `v1.13.0-1-g75e562a`
+- Source revision: `80027c5`
+- Source commit: `80027c597ba791bd46abef2eaddde4cc3226185e`
+- Source describe: `v1.14.0-13-g80027c5`
 - Generator: `scripts/update_release_metadata.cjs`
 - Inputs: `docs/CHANGELOG.md`, `pubspec.yaml`, and local git metadata
 <!-- release:provenance:end -->
@@ -50,5 +50,9 @@ The primary user is an active breaker building a personal library under real fat
 ## Latest Tagged Notes
 
 <!-- release:notes:start -->
-- **library:** a parent introduces itself with its children's faces
+- bump docs ledger verified hash for onboarding chapter
+- complete enforce-face-law-conformance (17/17)
+- complete Phase 5 for enforce-face-law-conformance
+- **design-system:** land token showcase, update README.md, and restamp docs ledger
+- tick Phase 3 and 4 tasks for enforce-face-law-conformance
 <!-- release:notes:end -->

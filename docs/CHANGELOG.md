@@ -1,3 +1,18 @@
+# [1.15.0](https://github.com/stussysenik/breakdex-flutter/compare/v1.14.0...v1.15.0) (2026-08-10)
+
+
+### Bug Fixes
+
+* bump docs ledger verified hash for onboarding chapter ([66ba9a7](https://github.com/stussysenik/breakdex-flutter/commit/66ba9a7cd52e19e1659d80137cbd1bec406939c4))
+
+
+### Features
+
+* complete enforce-face-law-conformance (17/17) ([c0b9436](https://github.com/stussysenik/breakdex-flutter/commit/c0b9436d900fddf6a8e0fc8ee0ee0cad911e29be))
+* complete Phase 5 for enforce-face-law-conformance ([98f99ab](https://github.com/stussysenik/breakdex-flutter/commit/98f99abb96b6965f232929c23ef5f2b178d12050))
+* **design-system:** land token showcase, update README.md, and restamp docs ledger ([80027c5](https://github.com/stussysenik/breakdex-flutter/commit/80027c597ba791bd46abef2eaddde4cc3226185e))
+* tick Phase 3 and 4 tasks for enforce-face-law-conformance ([be9a415](https://github.com/stussysenik/breakdex-flutter/commit/be9a415a32bb40035df740dbb4dfacface708d27))
+
 # [1.14.0](https://github.com/stussysenik/breakdex-flutter/compare/v1.13.0...v1.14.0) (2026-08-02)
 
 
