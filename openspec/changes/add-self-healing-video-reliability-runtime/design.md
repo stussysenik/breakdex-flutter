@@ -2,13 +2,16 @@
 
 ## Product Contract
 
-Breakdex should treat video reliability as a subsystem with explicit policy, not a collection of unrelated fixes. The app should be able to verify, retry, recover, and explain video availability state in a bounded and deterministic way.
+Breakdex treats video reliability as a subsystem with explicit policy, not a collection
+of unrelated fixes. The app verifies, retries, recovers, and explains video availability
+state in a bounded and deterministic way. The runtime is **local-first**: it runs the
+same logic on every surface without depending on a server-driven policy layer.
 
 ## Reliability State Model
 
 ### Core states
 
-The runtime should distinguish at least:
+The runtime distinguishes at least:
 
 - available locally
 - recoverable from Photos
@@ -29,7 +32,7 @@ Without explicit states, the app cannot clearly answer whether a missing video i
 
 ### Priority order
 
-The runtime should prioritize:
+The runtime prioritizes:
 
 1. moves currently visible or recently opened
 2. assets with recent failures
@@ -38,9 +41,9 @@ The runtime should prioritize:
 
 ### Trigger points
 
-Sweeps should be considered on:
+Sweeps run on:
 
-- startup after critical initialization
+- startup after first frame
 - app resume
 - connectivity improvement
 - explicit user request to repair or inspect
@@ -49,44 +52,31 @@ Sweeps should be considered on:
 
 ### Local-first policy
 
-The runtime should prefer the cheapest credible recovery path first:
+The runtime prefers the cheapest credible recovery path first:
 
 - use local verified file if present
-- restore from managed Photos asset if possible
-- retrieve from cloud if policy allows
+- restore from managed Photos asset if possible (composes `reverse-album-delete-archive`)
+- retrieve from cloud if policy allows (Appwrite)
 - mark blocked or failed explicitly if conditions are not met
 
 ### Retry budgets
 
-Retries must be bounded by:
+Retries are bounded by:
 
 - attempt count
 - time window
 - connectivity and policy conditions
 
-Provenance events should record these transitions so the system can explain why it stopped retrying.
+Provenance events record these transitions so the system can explain why it stopped
+retrying.
 
 ## Provenance Feedback Loop
 
-The runtime should use provenance not just for debugging, but for policy:
+The runtime uses provenance not just for debugging, but for policy:
 
-- repeated retrieval failures can lower automatic retry confidence
-- repeated startup DB recovery failures can escalate diagnostics severity
-- successful recoveries can suppress false-alarm incident noise
-
-## BEAM Alignment
-
-### Near-term Flutter role
-
-Flutter owns immediate local sweeps and local-first remediation while the backend is absent.
-
-### Future BEAM role
-
-Phoenix/Gleam should eventually own:
-
-- cross-session retry policy refinement
-- correlation of repeated failures across installs
-- server-driven incident scoring or repair suggestions
+- repeated retrieval failures lower automatic retry confidence
+- repeated startup DB recovery failures escalate diagnostics severity
+- successful recoveries suppress false-alarm incident noise
 
 ## Risks
 

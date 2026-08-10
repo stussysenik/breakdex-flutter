@@ -39,7 +39,7 @@ Archived moves are retained for 30 days. Expired archived moves are purged durin
 
 ## Sync
 
-Supabase `moves` metadata gains:
+Appwrite `moves` metadata gains:
 - `archived_at`
 - `archive_reason`
 
