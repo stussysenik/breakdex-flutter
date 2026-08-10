@@ -83,6 +83,9 @@ Head-to-head practice mode for comparing moves and combos side by side.
 ### Settings
 Theme, font, categories, sync, and export control. Native iOS share sheet via UIKit bridge.
 
+### Design System & Conformance
+Token-pure live showcase (`/dev/design-system`) for inspecting typography, color roles (with brightness × accessibility palette matrix), spacing, radius, depth/shadows, layout bands, and motion curves. Strictly conforms to Face Law design rules.
+
 ---
 
 ## Screenshots
@@ -216,6 +219,7 @@ Breakdex follows **CLEAN Architecture** principles with a local-first, state-mac
 | **Application** | `Machine<S,E>` (custom sealed-class framework) + `flutter_bloc` (legacy) | State machines orchestrate business logic; impossible states are made impossible at the type level. |
 | **Infrastructure** | `fpdart` (`TaskEither`) | Wraps I/O (Drift, platform channels, network) into pure `TaskEither`s; errors declared in return types. |
 | **Presentation** | `mix` + `flutter_riverpod` | "Dumb" UI — renders current state; applies CVA-style variant styling via `mix`. |
+| **Design System** | `AppScreen`, `TOKENS.md`, Face Law | Live token-pure showcase (`/dev/design-system`), 6-rule chrome essentialism, swappable OKLCH color packs and icon packs. |
 | **Storage** | Drift (SQLite) | Versioned local-first data layer — the source of truth. |
 | **Sync** | Appwrite (direction; provider-agnostic `SyncBackend` contract) | Additive cloud sync over local-first; LWW + tombstones + dirty-guard. |
 | **Scheduling** | FSRS 2.0 | Spaced-repetition algorithm. |

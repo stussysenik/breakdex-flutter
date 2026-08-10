@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 
 import 'package:breakdex/core/design/spacing.dart';
@@ -41,7 +43,8 @@ class _AppLoaderState extends State<AppLoader>
     _controller = AnimationController(
       vsync: this,
       duration: AppMotion.loaderLoop,
-    )..repeat(reverse: true);
+    );
+    unawaited(_controller.repeat(reverse: true));
   }
 
   @override

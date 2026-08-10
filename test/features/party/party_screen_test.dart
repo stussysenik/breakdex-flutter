@@ -167,7 +167,9 @@ void main() {
     bloc.add(PartyEvent.tick(DateTime.now().add(const Duration(seconds: 6))));
     await tester.pump(); // Process the tick event to transition to revealing state
     
-    for (var i = 0; i < 5; i++) await tester.pump(const Duration(milliseconds: 500)); // Bounded pump for animation
+    for (var i = 0; i < 5; i++) {
+      await tester.pump(const Duration(milliseconds: 500)); // Bounded pump for animation
+    }
     await tester.pump(); // Process the final transition to revealed state
 
     expect(find.text('WINDMILL'), findsOneWidget);

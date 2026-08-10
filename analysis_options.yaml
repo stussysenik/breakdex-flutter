@@ -4,6 +4,11 @@ analyzer:
   exclude:
     # Scratch/repro files — not part of the app or test suite (see scratch/README.md).
     - scratch/**
+    # Dev-only preview tooling — gated behind kDebugMode in app_router.dart, never
+    # mounts in a release build. Mounts live feature screens with runtime args, so
+    # it is not const-analyzable; excluded from the product gate the same way as
+    # scratch/** (not shipped product).
+    - lib/dev/**
     # Appwrite server Functions are standalone Dart packages with their own
     # pubspec + analysis_options (verified via `dart analyze` in-package).
     - functions/**

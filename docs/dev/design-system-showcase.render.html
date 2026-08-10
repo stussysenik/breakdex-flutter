@@ -1,0 +1,578 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Design System — Breakdex</title>
+<style>
+  /* ------------------------------------------------------------------ *
+   *  Token constants — copied verbatim from the Dart definitions so
+   *  this render is byte-for-byte the same system the app ships.
+   *  Spacing: AppSpacing.  Radius: AppRadius.  Motion: AppMotion.
+   * ------------------------------------------------------------------ */
+  :root {
+    /* AppSpacing */
+    --sp-xxs: 4px; --sp-xs: 8px; --sp-sm: 12px; --sp-md: 16px;
+    --sp-lg: 24px; --sp-xl: 32px; --sp-xxl: 48px; --sp-xxxl: 64px;
+
+    /* AppRadius */
+    --rd-xxs: 4px; --rd-xs: 8px; --rd-sm: 12px; --rd-md: 16px;
+    --rd-lg: 24px; --rd-xl: 32px;
+
+    /* AppLayout */
+    --header-h: 72px; --content-top: 8px; --nav-h: 56px;
+    --gutter: 24px; --max-content: 720px; --max-wide: 1080px;
+    --section-gap: 32px; --item-gap: 12px;
+
+    /* AppMotion */
+    --fast02: 110ms;
+    --ease-fluid: cubic-bezier(0.4, 0, 0.2, 1); /* easeInOutCubic */
+
+    /* AppTypography (Inter stack; system fallback when unbundled) */
+    --font: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto,
+            Helvetica, Arial, sans-serif;
+    --font-mono: 'SF Mono', 'JetBrains Mono', Menlo, Consolas, monospace;
+
+    /* Resolved at runtime by the variant rail below. */
+    --bg: #F8FAFC; --card: #FFFFFF; --fill: #F1F5F9; --sep: #D9E0EA;
+    --ink: #0B0D12; --ink-2: #5A6272; --accent: #1F5EFF; --on-accent: #FFFFFF;
+    --err: #C23B2A;
+    --st-new: #E45D7A; --st-learn: #2F6BFF; --st-mastery: #1F8A70;
+    --ac-again: #C23B2A; --ac-hard: #B7791F; --ac-good: #1F7A4F; --ac-easy: #0D9F9A;
+  }
+
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    background: var(--bg);
+    color: var(--ink);
+    font-family: var(--font);
+    font-size: 16px;
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+    transition: background var(--fast02) var(--ease-fluid),
+                color var(--fast02) var(--ease-fluid);
+  }
+
+  /* ---- AppScreen frame -------------------------------------------- */
+  .frame { min-height: 100vh; }
+
+  /* Band 2 — header. Fixed 72px, title on a fixed baseline. */
+  .header {
+    height: var(--header-h);
+    display: flex;
+    align-items: stretch;
+  }
+  .header__inner {
+    width: 100%;
+    max-width: var(--max-content);
+    margin: 0 auto;
+    padding: 0 var(--gutter);
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 4px;
+  }
+  .crumbs { font-size: 10px; font-weight: 500; color: var(--ink-2); height: 16px; line-height: 16px; }
+  .title {
+    font-size: 32px; font-weight: 700; line-height: 36px;
+    letter-spacing: -0.01em;
+  }
+
+  /* Band 3 — content. */
+  .content {
+    width: 100%;
+    max-width: var(--max-content);
+    margin: 0 auto;
+    padding: var(--content-top) var(--gutter) 80px;
+  }
+
+  /* Pinned variant rail (the one control, Face Law rule 2). */
+  .rail {
+    display: flex;
+    flex-direction: column;
+    gap: var(--sp-sm);
+    padding: var(--content-top) 0 var(--sp-lg);
+  }
+  .seg {
+    display: inline-flex;
+    align-items: center;
+    background: var(--fill);
+    border-radius: var(--rd-sm);
+    padding: var(--sp-xxs);
+    align-self: flex-start;
+  }
+  .seg__btn {
+    border: 0;
+    background: transparent;
+    color: var(--ink);
+    font-family: var(--font);
+    font-size: 12px; font-weight: 500; line-height: 16px;
+    padding: var(--sp-xs) var(--sp-md);
+    border-radius: var(--rd-xs);
+    cursor: pointer;
+    transition: background var(--fast02) var(--ease-fluid),
+                color var(--fast02) var(--ease-fluid);
+  }
+  .seg__btn[aria-pressed="true"] {
+    background: var(--ink);
+    color: var(--bg);
+  }
+
+  /* ---- AppSection -------------------------------------------------- */
+  .sec { margin-top: var(--section-gap); }
+  .sec--first { margin-top: 0; }
+  .sec__title {
+    font-size: 12px; font-weight: 700; line-height: 16px;
+    letter-spacing: 1.2px;
+    text-transform: uppercase;
+    color: var(--ink-2);
+    margin: 0 0 var(--item-gap);
+  }
+
+  /* ---- Color region ------------------------------------------------ */
+  .swatch-grid {
+    display: flex; flex-wrap: wrap; gap: var(--sp-sm);
+  }
+  .triple {
+    display: inline-flex; align-items: center; gap: var(--sp-sm);
+  }
+  .triple__name { width: 120px; font-size: 12px; font-weight: 500; color: var(--ink-2); }
+  .triple__hex { width: 80px; font-size: 10px; font-weight: 500; font-family: var(--font-mono); }
+  .swatch {
+    width: 32px; height: 32px; border-radius: var(--rd-xxs);
+    border: 1px solid var(--sep);
+    background: var(--swatch-color, transparent);
+  }
+  .pill {
+    display: inline-flex; flex-direction: column;
+    padding: var(--sp-xs) var(--sp-md);
+    border-radius: 500px;
+    background: var(--pill-color, transparent);
+    gap: 1px;
+  }
+  .pill__name { font-size: 12px; font-weight: 700; line-height: 16px; letter-spacing: 1.2px; }
+  .pill__hex  { font-size: 10px; font-weight: 500; opacity: 0.7; font-family: var(--font-mono); }
+  .hr { height: var(--sp-lg); }
+
+  /* ---- Typography region ------------------------------------------ */
+  .typo-row {
+    display: flex; align-items: baseline; gap: var(--sp-sm);
+    padding-bottom: var(--sp-sm);
+  }
+  .typo__name { width: 120px; font-size: 12px; font-weight: 500; color: var(--ink-2); flex-shrink: 0; }
+  .typo__meta { width: 96px; font-size: 12px; font-weight: 500; color: var(--ink-2); flex-shrink: 0;
+                font-family: var(--font-mono); }
+  .typo__sample { flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .font-row {
+    display: flex; align-items: baseline; gap: var(--sp-sm);
+    padding-bottom: var(--sp-sm);
+  }
+  .font__name { width: 120px; font-size: 12px; font-weight: 500; color: var(--ink-2); flex-shrink: 0; }
+  .font__sample { flex: 1; font-size: 18px; font-weight: 400; white-space: nowrap;
+                 overflow: hidden; text-overflow: ellipsis; }
+
+  /* ---- Spacing / Radius region ------------------------------------ */
+  .metric-row {
+    display: flex; align-items: center; gap: var(--sp-sm);
+    padding-bottom: var(--sp-xs);
+  }
+  .metric__name { width: 96px; font-size: 12px; font-weight: 500; flex-shrink: 0; }
+  .metric__val  { width: 64px; font-size: 10px; font-weight: 500; font-family: var(--font-mono); flex-shrink: 0; }
+  .metric__bar  { height: 12px; border-radius: var(--rd-xxs); background: var(--accent); }
+  .radius-grid { display: flex; flex-wrap: wrap; gap: var(--sp-sm); }
+  .radius-tile { text-align: center; }
+  .radius-tile__box {
+    width: 56px; height: 56px;
+    background: var(--fill);
+    border-radius: var(--rd, 0);
+    border: 1px solid var(--ink-2);
+  }
+  .radius-tile__label { font-size: 10px; font-weight: 500; margin-top: var(--sp-xxs); }
+
+  /* ---- Depth / Shadows region ------------------------------------- */
+  .depth-grid { display: flex; flex-wrap: wrap; gap: var(--sp-md); }
+  .depth-card {
+    width: 140px;
+  }
+  .depth-card__box {
+    height: 64px; border-radius: var(--rd-sm);
+    background: var(--card);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 12px; font-weight: 700; letter-spacing: 1.2px;
+  }
+  .depth-card__meta { font-size: 10px; font-weight: 500; margin-top: var(--sp-xs); }
+
+  /* ---- Layout region ---------------------------------------------- */
+  .frame-diagram {
+    border-radius: var(--rd-sm);
+    border: 1px solid var(--sep);
+    overflow: hidden;
+  }
+  .band {
+    padding: 0 var(--sp-md);
+    font-size: 10px; font-weight: 500;
+    display: flex; align-items: center;
+  }
+  .band--1 { height: 20px; background: color-mix(in srgb, var(--ink) 4%, transparent); }
+  .band--2 { height: var(--header-h); background: color-mix(in srgb, var(--ink) 8%, transparent); }
+  .band--3 { height: 96px; background: color-mix(in srgb, var(--ink) 4%, transparent); }
+  .band--4 { height: var(--nav-h); background: color-mix(in srgb, var(--ink) 8%, transparent); }
+  .layout-row {
+    display: flex; gap: var(--sp-sm);
+    padding-bottom: var(--sp-xs);
+  }
+  .layout__name { width: 160px; font-size: 12px; font-weight: 500; }
+  .layout__val  { font-size: 12px; font-weight: 500; font-family: var(--font-mono); }
+
+  /* ---- Motion region ---------------------------------------------- */
+  .motion-family { margin-bottom: var(--sp-md); }
+  .motion-family__label { font-size: 12px; font-weight: 700; letter-spacing: 1.2px; }
+  .motion-family__sub   { font-size: 12px; font-weight: 500; color: var(--ink-2); margin-left: var(--sp-xs); }
+  .chips { display: flex; flex-wrap: wrap; gap: var(--sp-sm); margin: var(--sp-sm) 0; }
+  .chip {
+    font-size: 10px; font-weight: 500;
+    padding: var(--sp-xs) var(--sp-sm);
+    border-radius: var(--rd-xs);
+    background: var(--fill);
+    font-family: var(--font-mono);
+  }
+  .replay-row { display: flex; align-items: center; gap: var(--sp-xxl); }
+  .replay-track { position: relative; width: 144px; height: 24px; }
+  .replay-dot {
+    position: absolute; left: 0; top: 0;
+    width: 24px; height: 24px; border-radius: 50%;
+    background: var(--accent);
+    will-change: transform, opacity;
+  }
+  .replay-btn {
+    border: 0; cursor: pointer;
+    background: var(--ink); color: var(--bg);
+    font-family: var(--font);
+    font-size: 12px; font-weight: 500; line-height: 16px;
+    padding: var(--sp-xs) var(--sp-md);
+    border-radius: var(--rd-xs);
+  }
+  @keyframes fluid-sample {
+    0%   { transform: translateX(0);   opacity: 0; }
+    100% { transform: translateX(120px); opacity: 1; }
+  }
+  .replay-dot--play { animation: fluid-sample var(--fast02) var(--ease-fluid); }
+</style>
+</head>
+<body>
+<div class="frame">
+
+  <!-- Band 2 — header (fixed 72px, fixed baseline) -->
+  <header class="header">
+    <div class="header__inner">
+      <div class="crumbs">&nbsp;</div>
+      <div class="title">Design System</div>
+    </div>
+  </header>
+
+  <!-- Band 3 — content -->
+  <main class="content">
+
+    <!-- Pinned variant rail: the one control (Face Law rule 2) -->
+    <div class="rail">
+      <div class="seg" role="group" aria-label="Brightness">
+        <button class="seg__btn" data-axis="brightness" data-val="light" aria-pressed="true">Light</button>
+        <button class="seg__btn" data-axis="brightness" data-val="dark" aria-pressed="false">Dark</button>
+      </div>
+      <div class="seg" role="group" aria-label="Accessibility palette">
+        <button class="seg__btn" data-axis="palette" data-val="standard" aria-pressed="true">Standard</button>
+        <button class="seg__btn" data-axis="palette" data-val="deuteranopia" aria-pressed="false">Deuteranopia</button>
+        <button class="seg__btn" data-axis="palette" data-val="monochrome" aria-pressed="false">Monochrome</button>
+      </div>
+    </div>
+
+    <!-- 1. Color -->
+    <section class="sec sec--first" data-region="color">
+      <h2 class="sec__title" data-color-heading>Color · #F8FAFC ground · light</h2>
+
+      <div class="swatch-grid" data-surface-swatches></div>
+      <div class="hr"></div>
+      <div class="swatch-grid" data-ink-swatches></div>
+      <div class="hr"></div>
+      <div class="swatch-grid" data-signal-pills></div>
+    </section>
+
+    <!-- 2. Typography -->
+    <section class="sec">
+      <h2 class="sec__title">Typography</h2>
+      <div data-typo-scale></div>
+      <div class="hr"></div>
+      <div data-font-families></div>
+    </section>
+
+    <!-- 3. Spacing · Radius -->
+    <section class="sec">
+      <h2 class="sec__title">Spacing · Radius</h2>
+      <div data-spacing-rows></div>
+      <div class="hr"></div>
+      <div class="radius-grid" data-radius-tiles></div>
+    </section>
+
+    <!-- 4. Depth · Shadows -->
+    <section class="sec">
+      <h2 class="sec__title">Depth · Shadows</h2>
+      <div class="depth-grid" data-depth-cards></div>
+    </section>
+
+    <!-- 5. Layout -->
+    <section class="sec">
+      <h2 class="sec__title">Layout</h2>
+      <div class="frame-diagram">
+        <div class="band band--1">1 · safe area</div>
+        <div class="band band--2">2 · header · 72pt</div>
+        <div class="band band--3">3 · content (scrolls)</div>
+        <div class="band band--4">4 · nav · 56pt</div>
+      </div>
+      <div class="hr"></div>
+      <div data-layout-rows></div>
+    </section>
+
+    <!-- 6. Motion -->
+    <section class="sec">
+      <h2 class="sec__title">Motion</h2>
+      <div class="motion-family">
+        <span class="motion-family__label">Fluid</span>
+        <span class="motion-family__sub">opacity · translation</span>
+      </div>
+      <div class="chips" data-motion-chips></div>
+      <div class="motion-family">
+        <span class="motion-family__label">Morph</span>
+        <span class="motion-family__sub">shape · layout continuity</span>
+      </div>
+      <div class="hr"></div>
+      <div class="replay-row">
+        <div class="replay-track"><div class="replay-dot" data-replay-dot></div></div>
+        <button class="replay-btn" data-replay>Replay</button>
+      </div>
+    </section>
+
+  </main>
+</div>
+
+<script>
+/* ------------------------------------------------------------------ *
+ *  Token tables — verbatim from the Dart definitions.
+ * ------------------------------------------------------------------ */
+const SPACING = [['xxs',4],['xs',8],['sm',12],['md',16],['lg',24],['xl',32],['xxl',48],['xxxl',64]];
+const RADIUS  = [['xxs',4],['xs',8],['sm',12],['md',16],['lg',24],['xl',32],['pill',500]];
+const TYPO_SCALE = [
+  ['titleLarge',32,700],['titleMedium',24,600],['titleSmall',20,600],
+  ['bodyLarge',18,400],['bodyMedium',16,400],['bodySmall',14,400],
+  ['caption',12,500],['sectionHeader',12,700],['labelLarge',12,700],['labelSmall',10,500],
+];
+const FONT_FAMILIES = ['Inter','Outfit','Poppins','Space Mono','JetBrains Mono','System'];
+const DEPTH = [
+  ['sunken',0,0],['flat',8,0.06],['elevated',16,0.12],['floating',28,0.18],['overlay',40,0.24],
+];
+const LAYOUT = [
+  ['headerHeight',72],['backSlot',48],['contentTopGap',8],['navBandHeight',56],
+  ['gutter',24],['maxContentWidth',720],['maxWideWidth',1080],['dialogMaxWidth',480],
+  ['sectionGap',32],['itemGap',12],['rowHeight',56],['blockGrid',8],
+];
+const DURATIONS = [['fast01',70],['fast02',110],['moderate01',150],['moderate02',240],['slow01',400]];
+
+/* Color resolution — mirrors DesignSystemShowcaseScreen._resolve:
+ *   pack -> brightness -> accessibility overlay (last, winning on signals)
+ * Classic pack values from AppColors. */
+const PACK = {
+  surfaces: {
+    light: { background:'#F8FAFC', card:'#FFFFFF', fill:'#F1F5F9', separator:'#D9E0EA' },
+    dark:  { background:'#090B10', card:'#11141B', fill:'#1A1F29', separator:'#283041' },
+  },
+  inks: {
+    light: { text:'#0B0D12', secondary:'#5A6272', accent:'#1F5EFF', onAccent:'#FFFFFF' },
+    dark:  { text:'#F7FAFF', secondary:'#A7B1C2', accent:'#1F5EFF', onAccent:'#FFFFFF' },
+  },
+  signals: { /* standard — from AppColors */
+    stateNew:'#E45D7A', stateLearning:'#2F6BFF', stateMastery:'#1F8A70',
+    actionAgain:'#C23B2A', actionHard:'#B7791F', actionGood:'#1F7A4F', actionEasy:'#0D9F9A',
+    error:'#C23B2A',
+  },
+  deuter: { /* Okabe–Ito ramp from AppColors */
+    stateNew:'#E69F00', stateLearning:'#0072B2', stateMastery:'#009E73',
+    actionAgain:'#D55E00', actionHard:'#E69F00', actionGood:'#009E73', actionEasy:'#0072B2',
+    error:'#D55E00',
+  },
+};
+
+const SURFACES = ['background','card','fill','separator'];
+const INKS = ['text','secondaryText','accent','onAccent'];
+const SIGNALS = ['error','stateNew','stateLearning','stateMastery',
+                 'actionAgain','actionHard','actionGood','actionEasy'];
+
+const hexOf = c => c;
+
+/* ---- Variant rail state + color resolution ------------------------ */
+let brightness = 'light';
+let palette = 'standard';
+
+function resolveColor(role) {
+  // surfaces + most inks come from the pack at the chosen brightness
+  const surf = PACK.surfaces[brightness];
+  const ink = PACK.inks[brightness];
+  if (role in surf) return surf[role];
+  if (role in ink) return ink[role];
+  // signals: accessibility overlay wins
+  if (palette === 'deuteranopia') return PACK.deuter[role] || PACK.signals[role];
+  if (palette === 'monochrome') {
+    // monochrome overlays signal roles with the active text ink (AppSemanticTheme.ink(text))
+    return ink.text;
+  }
+  return PACK.signals[role];
+}
+
+function cssVarFor(role) {
+  const map = {
+    background:'--bg', card:'--card', fill:'--fill', separator:'--sep',
+    text:'--ink', secondaryText:'--ink-2', accent:'--accent', onAccent:'--on-accent',
+    error:'--err', stateNew:'--st-new', stateLearning:'--st-learn',
+    stateMastery:'--st-mastery', actionAgain:'--ac-again', actionHard:'--ac-hard',
+    actionGood:'--ac-good', actionEasy:'--ac-easy',
+  };
+  return map[role];
+}
+
+function applyColors() {
+  const root = document.documentElement.style;
+  for (const role of [...SURFACES, ...INKS, ...SIGNALS]) {
+    root.setProperty(cssVarFor(role), resolveColor(role));
+  }
+  // re-render the color region so hex labels + swatches track the rail
+  renderColor();
+}
+
+/* ---- Render: Color ------------------------------------------------ */
+function renderColor() {
+  const head = document.querySelector('[data-color-heading]');
+  head.textContent = `Color · ${resolveColor('background')} ground · ${brightness}`;
+
+  const sWrap = document.querySelector('[data-surface-swatches]');
+  sWrap.innerHTML = SURFACES.map(r => triple(r)).join('');
+
+  const iWrap = document.querySelector('[data-ink-swatches]');
+  iWrap.innerHTML = INKS.map(r => triple(r)).join('');
+
+  const pWrap = document.querySelector('[data-signal-pills]');
+  pWrap.innerHTML = SIGNALS.map(r => pill(r)).join('');
+}
+
+function triple(role) {
+  const c = resolveColor(role);
+  return `<span class="triple">
+    <span class="triple__name">${role}</span>
+    <span class="triple__hex">${c}</span>
+    <span class="swatch" style="--swatch-color:${c}"></span>
+  </span>`;
+}
+function pill(role) {
+  const c = resolveColor(role);
+  const on = isDark(c) ? '#FFFFFF' : '#000000';
+  return `<span class="pill" style="--pill-color:${c}; color:${on}">
+    <span class="pill__name">${role}</span>
+    <span class="pill__hex">${c}</span>
+  </span>`;
+}
+function isDark(hex) {
+  const h = hex.replace('#','');
+  const r = parseInt(h.slice(0,2),16), g = parseInt(h.slice(2,4),16), b = parseInt(h.slice(4,6),16);
+  return (r*299 + g*587 + b*114)/1000 < 140;
+}
+
+/* ---- Render: Typography ------------------------------------------- */
+function renderTypo() {
+  const wrap = document.querySelector('[data-typo-scale]');
+  wrap.innerHTML = TYPO_SCALE.map(([n,size,wt]) =>
+    `<div class="typo-row">
+      <span class="typo__name">${n}</span>
+      <span class="typo__meta">${size}·${wt}</span>
+      <span class="typo__sample" style="font-size:${size}px;font-weight:${wt};line-height:${(size*1.125).toFixed(1)}px">Breakdex</span>
+    </div>`).join('');
+  const fWrap = document.querySelector('[data-font-families]');
+  fWrap.innerHTML = FONT_FAMILIES.map(f =>
+    `<div class="font-row">
+      <span class="font__name">${f}</span>
+      <span class="font__sample" style="font-family:'${f}',var(--font)">Breakdex moves in sets</span>
+    </div>`).join('');
+}
+
+/* ---- Render: Spacing / Radius ------------------------------------- */
+function renderSpacingRadius() {
+  const sWrap = document.querySelector('[data-spacing-rows]');
+  sWrap.innerHTML = SPACING.map(([n,v]) =>
+    `<div class="metric-row">
+      <span class="metric__name">${n}</span>
+      <span class="metric__val">${v}pt</span>
+      <span class="metric__bar" style="width:${Math.min(v,200)}px"></span>
+    </div>`).join('');
+  const rWrap = document.querySelector('[data-radius-tiles]');
+  rWrap.innerHTML = RADIUS.map(([n,v]) =>
+    `<div class="radius-tile">
+      <div class="radius-tile__box" style="--rd:${v}px"></div>
+      <div class="radius-tile__label">${n} · ${v}</div>
+    </div>`).join('');
+}
+
+/* ---- Render: Depth / Shadows -------------------------------------- */
+function renderDepth() {
+  const wrap = document.querySelector('[data-depth-cards]');
+  wrap.innerHTML = DEPTH.map(([n,blur,op]) =>
+    `<div class="depth-card">
+      <div class="depth-card__box" style="box-shadow:0 ${blur/4}px ${blur}px rgba(0,0,0,${op})">${n}</div>
+      <div class="depth-card__meta">blur ${blur} · z 1.00</div>
+    </div>`).join('');
+}
+
+/* ---- Render: Layout ----------------------------------------------- */
+function renderLayout() {
+  const wrap = document.querySelector('[data-layout-rows]');
+  wrap.innerHTML = LAYOUT.map(([n,v]) =>
+    `<div class="layout-row">
+      <span class="layout__name">${n}</span>
+      <span class="layout__val">${Number.isInteger(v)?v+'pt':v}</span>
+    </div>`).join('');
+}
+
+/* ---- Render: Motion ----------------------------------------------- */
+function renderMotion() {
+  const wrap = document.querySelector('[data-motion-chips]');
+  wrap.innerHTML = DURATIONS.map(([n,d]) =>
+    `<span class="chip">${n} · ${d}ms</span>`).join('');
+}
+
+/* ---- Variant rail interaction ------------------------------------- */
+document.querySelectorAll('.seg__btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    const axis = btn.dataset.axis;
+    const val = btn.dataset.val;
+    document.querySelectorAll(`.seg__btn[data-axis="${axis}"]`)
+      .forEach(b => b.setAttribute('aria-pressed', 'false'));
+    btn.setAttribute('aria-pressed', 'true');
+    if (axis === 'brightness') brightness = val; else palette = val;
+    applyColors();
+  });
+});
+
+/* ---- Motion replay (compositor-bound: transform + opacity only) --- */
+document.querySelector('[data-replay]').addEventListener('click', () => {
+  const dot = document.querySelector('[data-replay-dot]');
+  dot.classList.remove('replay-dot--play');
+  void dot.offsetWidth; // reflow to restart the animation
+  dot.classList.add('replay-dot--play');
+});
+
+/* ---- Initial paint ------------------------------------------------ */
+applyColors();          // renders color + sets css vars
+renderTypo();
+renderSpacingRadius();
+renderDepth();
+renderLayout();
+renderMotion();
+</script>
+</body>
+</html>

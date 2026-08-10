@@ -193,8 +193,8 @@ void main() {
   test('whole-second tie ⇒ local wins (derived skipped)', () async {
     await prefs.setBool(SyncService.fsrsCardsDualReadPrefKey, true);
     // Same second, sub-second apart: LWW compares at second granularity.
-    final localMs = 1700000000750;
-    final pulledMs = 1700000000200;
+    const localMs = 1700000000750;
+    const pulledMs = 1700000000200;
     await _insertCard(db,
         stability: 42.0,
         lastReview: DateTime.fromMillisecondsSinceEpoch(localMs, isUtc: true));

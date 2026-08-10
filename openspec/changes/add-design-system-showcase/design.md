@@ -78,9 +78,31 @@ leaving the page — that is what "ready for general rollout" is answered agains
 - One primary action per content band (Face Law rule 2): the variant rail is the one
   control; regions are read-only.
 
+## Craft Bar — the visual standard
+
+**Goal: build it so Ivan Zhao (Notion) would be happy.** This is a *reading*
+surface, and every pixel is either load-bearing or it's clutter. The bar:
+
+- **Intentional spacing.** Every gap resolves from `AppSpacing`/`AppLayout`; nothing
+  is eyeballed. Adjacent triples (`[name | value | preview]`) read as one row — the
+  eye connects label to swatch without crossing whitespace.
+- **Restrained color.** Monochrome carries, color marks state (Face Law #3). The page
+  is mostly surface + ink; the only color is the tokens demonstrating themselves. No
+  decoration, no gradient for gradient's sake.
+- **Composited motion.** Motion lives on the compositor (transform/opacity), never
+  drives layout per frame. Region entrances use the Fluid family; the variant rail
+  re-render uses Morph continuity. No `setState`-on-animator.
+- **Nothing placeholder.** Every sample is real data from the runtime constants. No
+  lorem ipsum, no gray boxes, no "sample" text that isn't demonstrating the actual
+  token. A pixel that isn't earning its keep is a defect.
+- **Demo-grade facade is a defect.** If it looks like a mockup, it's wrong. It must
+  look like a shipped product a design lead would sign off on.
+
 ## Acceptance Criteria
 
 - Every TOKENS.md category is represented by live-rendered samples.
 - The variant rail flips brightness × palette and re-renders the color region in place.
 - No raw color/spacing/radius/duration/curve literal appears in the feature.
 - The page is reachable on web, one scroll axis, readable in a single sitting.
+- **Craft hold:** a design lead (Notion visual standard) would sign off on the result —
+  intentional spacing, restrained color, composited motion, zero placeholder pixels.

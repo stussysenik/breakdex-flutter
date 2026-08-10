@@ -33,7 +33,7 @@ class _FakeSource implements RemoteConfigSource {
   _FakeSource({this.fetchResult, this.fetchError, this.updates});
 
   Map<String, Object?>? fetchResult;
-  Object? fetchError;
+  Error? fetchError;
   Stream<Map<String, Object?>>? updates;
   int fetchCalls = 0;
 
@@ -97,7 +97,7 @@ void main() {
     });
 
     test('malformed JSON column degrades to empty map, never throws', () {
-      final cfg = RemoteConfig.fromRow({
+      final cfg = RemoteConfig.fromRow(const {
         'version': 1,
         'minSupportedBuild': 0,
         'latestBuild': 0,

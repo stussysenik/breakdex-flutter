@@ -41,6 +41,7 @@ import 'package:breakdex/core/models/app_mode.dart';
 import 'package:breakdex/core/services/settings_service.dart';
 import 'package:breakdex/core/design/icons.dart';
 import 'package:breakdex/dev/dev_preview_gallery.dart';
+import 'package:breakdex/features/dev/design_system_showcase_screen.dart';
 
 final _rootNavigatorKey = GlobalKey<NavigatorState>();
 
@@ -290,6 +291,16 @@ final appRouter = GoRouter(
         path: '/dev/preview-gallery',
         parentNavigatorKey: _rootNavigatorKey,
         builder: (final context, final state) => const DevPreviewGallery(),
+      ),
+    // Debug-only: the live design-system reference. Every sample resolves from
+    // the runtime token constants, so it doubles as a conformance proof — a token
+    // value drifting from its preview is immediately visible.
+    if (kDebugMode)
+      GoRoute(
+        path: '/dev/design-system',
+        parentNavigatorKey: _rootNavigatorKey,
+        builder: (final context, final state) =>
+            const DesignSystemShowcaseScreen(),
       ),
     GoRoute(
       path: '/moves',
