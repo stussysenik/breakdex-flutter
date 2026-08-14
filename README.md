@@ -1,7 +1,9 @@
 <h1 align="center">Breakdex</h1>
 
 <p align="center">
-  <em>A pocket video database for dance moves — capture, connect, review, and track.</em>
+  <em>Breakdex is a way how you can organize your dance knowledge. The exact scenario's, you have some practice fottage in the gallery and you'd like to review them in batch.
+  
+  We offer a fully customizable expandable modular system.</em>
 </p>
 
 <p align="center">
