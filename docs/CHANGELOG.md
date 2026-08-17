@@ -1,3 +1,12 @@
+# [1.16.0](https://github.com/stussysenik/breakdex-flutter/compare/v1.15.0...v1.16.0) (2026-08-17)
+
+
+### Features
+
+* **release:** excise Firebase, land Appwrite-only sync for App Store release ([6c11240](https://github.com/stussysenik/breakdex-flutter/commit/6c1124035a8cc9d53f0382dc477b261f5b4d6fa6))
+* **sync:** first-login production provisioning trigger + SyncService activation API ([f11770f](https://github.com/stussysenik/breakdex-flutter/commit/f11770fb119a48e723d457c11338212b17b455ae))
+* **sync:** phase 4 tests + named bool params for provisioning change ([5815a26](https://github.com/stussysenik/breakdex-flutter/commit/5815a26b2e3719ba075e5dc39f745090255dc3d4))
+
 # [1.15.0](https://github.com/stussysenik/breakdex-flutter/compare/v1.14.0...v1.15.0) (2026-08-10)
 
 

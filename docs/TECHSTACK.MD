@@ -47,20 +47,20 @@ Breakdex is split into a product runtime, native bridges, release tooling, and a
 ## Release Snapshot
 
 <!-- release:meta:start -->
-- Release tag: `v1.15.0`
-- Release version: `1.15.0`
-- Pubspec version: `1.15.0+18`
-- Released: `2026-08-10`
-- Metadata refreshed: `2026-08-10`
+- Release tag: `v1.16.0`
+- Release version: `1.16.0`
+- Pubspec version: `1.16.0+19`
+- Released: `2026-08-17`
+- Metadata refreshed: `2026-08-17`
 <!-- release:meta:end -->
 
 ## Automatic Provenance
 
 <!-- release:provenance:start -->
 - Source branch: `main`
-- Source revision: `80027c5`
-- Source commit: `80027c597ba791bd46abef2eaddde4cc3226185e`
-- Source describe: `v1.14.0-13-g80027c5`
+- Source revision: `947448d`
+- Source commit: `947448db6197d8e74ccf0a764500364c610e2563`
+- Source describe: `v1.15.0-9-g947448d`
 - Generator: `scripts/update_release_metadata.cjs`
 - Inputs: `docs/CHANGELOG.md`, `pubspec.yaml`, and local git metadata
 <!-- release:provenance:end -->
@@ -68,9 +68,7 @@ Breakdex is split into a product runtime, native bridges, release tooling, and a
 ## Latest Tagged Notes
 
 <!-- release:notes:start -->
-- bump docs ledger verified hash for onboarding chapter
-- complete enforce-face-law-conformance (17/17)
-- complete Phase 5 for enforce-face-law-conformance
-- **design-system:** land token showcase, update README.md, and restamp docs ledger
-- tick Phase 3 and 4 tasks for enforce-face-law-conformance
+- **release:** excise Firebase, land Appwrite-only sync for App Store release
+- **sync:** first-login production provisioning trigger + SyncService activation API
+- **sync:** phase 4 tests + named bool params for provisioning change
 <!-- release:notes:end -->
