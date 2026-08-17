@@ -3,7 +3,6 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:breakdex/core/database/database.dart';
-import 'package:breakdex/core/services/auth_service.dart';
 import 'package:breakdex/core/services/sync_service.dart';
 import 'package:breakdex/core/sync/codecs/move_codec.dart';
 import 'package:breakdex/core/sync/sync_backend.dart';
@@ -98,7 +97,7 @@ void main() {
   late _FakeBackend backend;
 
   SyncService service({final SyncBackend? withBackend}) => SyncService(
-        authService: AuthService(prefs),
+
         syncDao: db.syncDao,
         db: db,
         prefs: prefs,

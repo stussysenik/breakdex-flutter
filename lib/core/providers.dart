@@ -36,7 +36,6 @@ import 'package:breakdex/core/models/review_card_display_settings.dart';
 import 'package:breakdex/core/models/reviewable_item.dart';
 import 'package:breakdex/core/config/remote_config_providers.dart' show appwriteClientProvider;
 import 'package:breakdex/core/services/appwrite_auth_providers.dart';
-import 'package:breakdex/core/services/auth_service.dart';
 import 'package:breakdex/core/sync/backends/appwrite_functions_transport.dart';
 import 'package:breakdex/core/sync/backends/appwrite_sync_backend.dart';
 import 'package:breakdex/core/sync/backfill/sync_backfill_service.dart';
@@ -80,7 +79,6 @@ import 'package:breakdex/core/sync/legacy_asset_migration.dart';
 import 'package:breakdex/core/sync/network_policy.dart';
 import 'package:breakdex/core/sync/orphan_restore_service.dart';
 import 'package:breakdex/core/sync/providers/gdrive_provider.dart';
-import 'package:breakdex/core/sync/providers/firebase_storage_provider.dart';
 import 'package:breakdex/core/sync/providers/icloud_provider.dart';
 import 'package:breakdex/core/sync/safety_guard.dart';
 import 'package:breakdex/core/sync/sync_diagnostics.dart';
@@ -191,16 +189,10 @@ final deckServiceProvider = Provider<DeckService>((final ref) {
 
 // Auth
 //
-// The legacy [AuthService] (SharedPreferences email/password mock) is retained
-// ONLY as the Firestore-side identity `SyncService` still reads (its identity
-// role is retired in Phase 5). Since the wave (task 3.3), the app's logged-in
-// truth is the **Appwrite session**, not this service.
-final authServiceProvider = Provider<AuthService>((final ref) {
-  final prefs = ref.watch(sharedPreferencesProvider);
-  return AuthService(prefs);
-});
+// The app's logged-in truth is the **Appwrite session**. The legacy Firebase
+// AuthService has been removed for release.
 
-/// Whether an **Appwrite identity session** is active (wave task 3.3).
+/// Whether an **Appwrite identity session** is active.
 ///
 /// Sign-in stays OPTIONAL (locked user model, D11): a `null` session is
 /// local-only mode — plain repos, no auto-sync, no login wall. A session flips
@@ -484,7 +476,6 @@ final fullBackfillServiceProvider = Provider<SyncBackfillService>((final ref) {
 
 final syncServiceProvider = Provider<SyncService>((final ref) {
   return SyncService(
-    authService: ref.watch(authServiceProvider),
     syncDao: ref.watch(syncDaoProvider),
     db: ref.watch(databaseProvider),
     prefs: ref.watch(sharedPreferencesProvider),
@@ -502,7 +493,8 @@ final syncServiceProvider = Provider<SyncService>((final ref) {
 });
 
 final syncBlocProvider = Provider<SyncBloc>((final ref) {
-  return SyncBloc(ref.watch(syncServiceProvider));
+  final providers = ref.watch(cloudProvidersProvider).valueOrNull ?? [];
+  return SyncBloc(ref.watch(syncServiceProvider), cloudProviders: providers);
 });
 final syncStateProvider = StreamProvider<SyncState>((final ref) {
   final bloc = ref.watch(syncBlocProvider);

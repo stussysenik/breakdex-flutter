@@ -20,10 +20,10 @@ void main() {
   group('BootState progress math', () {
     test('coreFloor reflects only core gates and hits 1.0 when ready', () {
       final half = _state(
-        gates: {BootGate.firebase, BootGate.preferences, BootGate.database},
+        gates: {BootGate.recovery, BootGate.preferences, BootGate.database},
       );
-      // 3 of 6 core gates cleared.
-      expect(half.coreFloor, closeTo(0.5, 0.0001));
+      // 3 of 5 core gates cleared (Firebase gate removed for release).
+      expect(half.coreFloor, closeTo(0.6, 0.0001));
 
       final ready = _state(gates: kCoreBootGates, ready: true);
       expect(ready.coreFloor, 1.0);
@@ -37,14 +37,13 @@ void main() {
         gates: {...kCoreBootGates, BootGate.migrations, BootGate.healing},
         ready: true,
       );
-      // 2 of 3 post-frame gates done (pruning was a dead gate nothing ever
-      // completed — its removal is what lets isComplete actually flip).
+      // 2 of 3 post-frame gates done.
       expect(some.postFrameProgress, closeTo(2 / 3, 0.0001));
     });
 
     test('interpolatedProgress blends time with the gate floor', () {
       final s = _state(
-        gates: {BootGate.firebase}, // 1/6 floor ~= 0.1667
+        gates: {BootGate.recovery}, // 1/5 floor = 0.2
         expectedReady: const Duration(seconds: 10),
       );
 
@@ -61,16 +60,16 @@ void main() {
     });
 
     test('interpolatedProgress falls back to floor without calibration', () {
-      final s = _state(gates: {BootGate.firebase, BootGate.preferences});
+      final s = _state(gates: {BootGate.recovery, BootGate.preferences});
       expect(
         s.interpolatedProgress(const Duration(seconds: 5)),
-        closeTo(2 / 6, 0.0001),
+        closeTo(2 / 5, 0.0001),
       );
     });
 
     test('eta counts down and clamps at zero', () {
       final s = _state(
-        gates: {BootGate.firebase},
+        gates: {BootGate.recovery},
         expectedReady: const Duration(seconds: 10),
       );
       expect(s.eta(const Duration(seconds: 4)), const Duration(seconds: 6));

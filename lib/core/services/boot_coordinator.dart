@@ -8,9 +8,6 @@ import 'package:breakdex/core/services/settings_service.dart' show sharedPrefere
 
 /// The critical stages of the application startup sequence.
 enum BootGate {
-  /// Firebase core initialization.
-  firebase,
-
   /// SharedPreferences loaded.
   preferences,
 
@@ -40,7 +37,6 @@ enum BootGate {
 /// represents *these* — post-frame work (migrations, healing, …) runs after
 /// the app is already interactive and must not inflate the splash denominator.
 const Set<BootGate> kCoreBootGates = {
-  BootGate.firebase,
   BootGate.preferences,
   BootGate.videoResolver,
   BootGate.storageGate,

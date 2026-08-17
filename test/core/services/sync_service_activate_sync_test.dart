@@ -6,7 +6,6 @@
 library;
 
 import 'package:breakdex/core/database/database.dart';
-import 'package:breakdex/core/services/auth_service.dart';
 import 'package:breakdex/core/services/sync_service.dart';
 import 'package:breakdex/core/sync/backfill/sync_backfill_service.dart';
 import 'package:breakdex/core/sync/sync_backend.dart';
@@ -28,7 +27,7 @@ void main() {
   tearDown(() => db.close());
 
   SyncService syncService({required SyncBackfillService backfill}) => SyncService(
-        authService: AuthService(prefs),
+
         syncDao: db.syncDao,
         db: db,
         prefs: prefs,
@@ -44,7 +43,7 @@ void main() {
   test('no backfill service → no-op, returns empty list, touches no prefs',
       () async {
     final s = SyncService(
-      authService: AuthService(prefs),
+
       syncDao: db.syncDao,
       db: db,
       prefs: prefs,

@@ -4,7 +4,6 @@ import 'package:breakdex/core/providers.dart'
     show fullBackfillServiceProvider, syncServiceProvider;
 import 'package:breakdex/core/services/appwrite_auth_providers.dart';
 import 'package:breakdex/core/services/appwrite_auth_service.dart' show AuthUser;
-import 'package:breakdex/core/services/auth_service.dart';
 import 'package:breakdex/core/services/settings_service.dart'
     show sharedPreferencesProvider;
 import 'package:breakdex/core/services/sync_service.dart';
@@ -223,7 +222,6 @@ void main() {
     // entity (all 0 applied), proving the button drives hydrateAllFromBackend
     // over the full set without fabricating rows.
     final service = SyncService(
-      authService: AuthService(prefs),
       syncDao: db.syncDao,
       db: db,
       prefs: prefs,

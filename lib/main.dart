@@ -6,9 +6,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:path/path.dart' as p;
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:firebase_core/firebase_core.dart';
-import 'package:breakdex/firebase_options.dart';
-
 import 'package:breakdex/core/config/widgets/entitlement_gate_prompt.dart';
 import 'package:breakdex/core/config/widgets/update_gate_prompt.dart';
 import 'package:breakdex/core/database/database.dart';
@@ -70,34 +67,6 @@ Future<void> _backupDatabaseIfNeeded(
         message: 'Rolling database backup failed: $error',
       ),
     );
-  }
-}
-
-/// Bring Firebase up without letting an unconfigured platform take down boot.
-///
-/// Firebase is legacy here — Appwrite is the canonical backend — and
-/// `firebase_options.dart` only carries an iOS config. On Android its
-/// `currentPlatform` getter *throws*, and because that throw happened while
-/// building the `unawaited(...)` argument it escaped `main()` before `runApp`,
-/// so the app never rendered a frame: blank screen, no crash dialog. A missing
-/// legacy backend must degrade visibly (one warning, gate marked unconfigured),
-/// exactly like the web branch above, not block the product.
-Future<void> _initializeFirebaseIfConfigured(final BootCoordinator boot) async {
-  try {
-    await Firebase.initializeApp(
-      options: DefaultFirebaseOptions.currentPlatform,
-    );
-    boot.completeGate(BootGate.firebase);
-    // Deliberately unbounded: the failure this guards against is an
-    // UnsupportedError (an Error, not an Exception), and any other init failure
-    // in a legacy backend should be survivable too.
-    // ignore: avoid_catches_without_on_clauses
-  } catch (error) {
-    DiagnosticsLog.warn(
-      'Boot',
-      'Firebase unavailable on this platform, continuing without it: $error',
-    );
-    boot.completeGate(BootGate.firebase, detail: 'unconfigured');
   }
 }
 
@@ -276,16 +245,13 @@ void main() async {
   boot.completeGate(BootGate.recovery, detail: restoredPrimary ? 'restored' : 'skipped');
   boot.completeGate(BootGate.preferences);
 
-  // 4. Initialize async plugins in parallel. Firebase (legacy, superseded by
-  // Appwrite — no web config) and the on-disk video path/storage services are
-  // native-only; on web their gates complete immediately as skipped so the UI
-  // becomes ready without them.
+  // 4. Initialize async plugins in parallel. The on-disk video path/storage
+  // services are native-only; on web their gates complete immediately as
+  // skipped so the UI becomes ready without them.
   if (kIsWeb) {
-    boot.completeGate(BootGate.firebase, detail: 'skipped-web');
     boot.completeGate(BootGate.videoResolver, detail: 'skipped-web');
     boot.completeGate(BootGate.storageGate, detail: 'skipped-web');
   } else {
-    unawaited(_initializeFirebaseIfConfigured(boot));
     unawaited(VideoPathResolver.initialize()
         .then((_) => boot.completeGate(BootGate.videoResolver)));
     unawaited(VideoStorageGate.initialize()

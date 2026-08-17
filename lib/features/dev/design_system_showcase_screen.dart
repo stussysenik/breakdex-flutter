@@ -766,6 +766,9 @@ class _MotionRegionState extends State<_MotionRegion>
   }
 
   void _replay() {
+    // Deliberately fire-and-forget: the animation ticker future is owned by
+    // the controller and resolves when the animation completes.
+    // ignore: discarded_futures
     _controller.forward(from: 0);
   }
 

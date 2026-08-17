@@ -63,8 +63,6 @@ final cloudProvidersProvider = StreamProvider<List<CloudProvider>>((final ref) {
     for (final row in rows) {
       if (!row.enabled) continue;
       switch (row.providerType) {
-        case 'firebase':
-          providers.add(FirebaseStorageProvider());
         case 'icloud':
           providers.add(ICloudProvider());
         case 'gdrive':

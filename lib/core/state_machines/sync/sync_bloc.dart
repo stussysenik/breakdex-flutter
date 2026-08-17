@@ -3,6 +3,7 @@ import 'package:freezed_annotation/freezed_annotation.dart';
 
 import 'package:breakdex/core/domain/failures/failure.dart';
 import 'package:breakdex/core/services/sync_service.dart';
+import 'package:breakdex/core/sync/cloud_provider.dart';
 
 part 'sync_bloc.freezed.dart';
 
@@ -33,19 +34,20 @@ class SyncState with _$SyncState {
 // --- Bloc ---
 class SyncBloc extends Bloc<SyncEvent, SyncState> {
   final SyncService _syncService;
+  final List<CloudProvider> _cloudProviders;
 
-  SyncBloc(this._syncService) : super(const SyncState.idle()) {
+  SyncBloc(this._syncService, {List<CloudProvider>? cloudProviders})
+      : _cloudProviders = cloudProviders ?? const [],
+        super(const SyncState.idle()) {
     on<_StartSync>(_onStartSync);
     // You can handle intermediate progress events or just await the TaskEithers sequentially
   }
 
   Future<void> _onStartSync(final _StartSync event, final Emitter<SyncState> emit) async {
-    // 1. Authenticating
+    // 1. Authenticating — Appwrite session is the auth truth; the legacy
+    // Firebase Auth path is removed. The Appwrite session check happens at the
+    // router level (isLoggedInProvider), so a sync without a session never starts.
     emit(const SyncState.authenticating());
-    final authResult = await _syncService.authenticate().run();
-    if (authResult.isLeft()) {
-      return emit(SyncState.error(authResult.match((final l) => l, (final r) => throw Exception())));
-    }
 
     // 2. Pushing Metadata
     emit(const SyncState.pushingMetadata(0, 0, ''));
@@ -56,11 +58,12 @@ class SyncBloc extends Bloc<SyncEvent, SyncState> {
       return emit(SyncState.error(pushResult.match((final l) => l, (final r) => throw Exception())));
     }
 
-    // 3. Uploading Videos
+    // 3. Uploading Videos — through the CloudProvider abstraction (GDrive,
+    // iCloud, S3). Firebase Storage was the legacy sink, now removed.
     emit(const SyncState.uploadingVideos(0, 0, ''));
     final uploadResult = await _syncService.uploadVideos((final c, final t, final i) {
       if (!isClosed) add(SyncEvent.progressUpdated(c, t, i));
-    }).run();
+    }, providers: _cloudProviders).run();
     if (uploadResult.isLeft()) {
       return emit(SyncState.error(uploadResult.match((final l) => l, (final r) => throw Exception())));
     }
@@ -79,11 +82,11 @@ class SyncBloc extends Bloc<SyncEvent, SyncState> {
       return emit(SyncState.error(reconcileLegacyResult.match((final l) => l, (final r) => throw Exception())));
     }
 
-    // 6. Download Videos
+    // 6. Download Videos — through the CloudProvider abstraction.
     emit(const SyncState.downloadingVideos(0, 0, ''));
     final downloadResult = await _syncService.downloadVideos((final c, final t, final i) {
       if (!isClosed) add(SyncEvent.progressUpdated(c, t, i));
-    }).run();
+    }, providers: _cloudProviders).run();
     if (downloadResult.isLeft()) {
       return emit(SyncState.error(downloadResult.match((final l) => l, (final r) => throw Exception())));
     }

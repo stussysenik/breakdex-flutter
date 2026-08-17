@@ -13,7 +13,6 @@ import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:breakdex/core/config/remote_config_providers.dart' show appwriteClientProvider;
-import 'package:breakdex/core/providers.dart' show authServiceProvider;
 import 'package:breakdex/core/services/appwrite_auth_providers.dart' show currentAppwriteUserProvider;
 import 'package:breakdex/core/services/legacy_identity_gateway.dart';
 import 'package:breakdex/core/services/legacy_identity_service.dart';
@@ -31,12 +30,10 @@ final legacyIdentityClaimTriggerProvider = Provider<void>((final ref) {
   final user = ref.watch(currentAppwriteUserProvider).valueOrNull;
   if (user == null) return;
 
-  String firebaseUid;
-  try {
-    firebaseUid = ref.read(authServiceProvider).userId;
-  } on Object catch (_) {
-    firebaseUid = '';
-  }
+  // The legacy Firebase uid is now always empty — Firebase Auth has been
+  // removed. The claim is still written (harmless no-op on fresh installs)
+  // but the firebaseUid field is no longer populated from any live session.
+  const firebaseUid = '';
 
   unawaited(
     ref

@@ -154,7 +154,6 @@ class _GatesList extends StatelessWidget {
 
   String _gateLabel(final BootGate gate) {
     return switch (gate) {
-      BootGate.firebase => 'Cloud Infrastructure',
       BootGate.preferences => 'User Preferences',
       BootGate.videoResolver => 'Path Resolver',
       BootGate.storageGate => 'Storage Validator',

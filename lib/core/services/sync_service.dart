@@ -2,19 +2,16 @@
 // ignore_for_file: avoid_slow_async_io
 
 import 'package:breakdex/core/platform/io.dart';
-import 'package:breakdex/core/platform/native_file_transfer.dart';
 import 'package:flutter/foundation.dart';
 import 'package:drift/drift.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:path/path.dart' as p;
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_storage/firebase_storage.dart';
 import 'package:fpdart/fpdart.dart';
+import 'package:breakdex/core/sync/cloud_provider.dart';
 
 import 'package:breakdex/core/database/database.dart';
 import 'package:breakdex/core/database/daos/sync_dao.dart';
-import 'package:breakdex/core/services/auth_service.dart';
 import 'package:breakdex/core/services/video_path_resolver.dart';
 import 'package:breakdex/core/domain/failures/failure.dart';
 import 'package:breakdex/core/sync/sync_backend.dart';
@@ -28,14 +25,12 @@ import 'package:breakdex/core/sync/backfill/sync_backfill_service.dart';
 import 'package:breakdex/core/utils/diagnostics.dart';
 
 class SyncService {
-  final AuthService authService;
   final SyncDao syncDao;
   final AppDatabase db;
   final SharedPreferences prefs;
 
-  /// Canonical metadata backend (Convex) for the strangler-fig dual-read.
-  /// Nullable: until the live deployment is provisioned (task 0.2) and wired,
-  /// this stays `null` and every pull uses the Firestore path unchanged.
+  /// Canonical metadata backend (Appwrite) — the only backend. Firebase was
+  /// the legacy backend and is now removed for release.
   final SyncBackend? syncBackend;
 
   /// Every-entity backfill composed for production provisioning. Nullable:
@@ -45,7 +40,6 @@ class SyncService {
   final SyncBackfillService? syncBackfillService;
 
   SyncService({
-    required this.authService,
     required this.syncDao,
     required this.db,
     required this.prefs,
@@ -144,108 +138,68 @@ class SyncService {
   static const String comboNoteEntriesBackendCursorPrefKey =
       'sync.comboNoteEntries.backend.cursor';
 
-  TaskEither<AppFailure, Unit> authenticate() {
-    return authService.refreshAuth().mapLeft((final f) => AppFailure.sync('Authentication failed: ${f.message}'));
-  }
-
   TaskEither<AppFailure, Unit> pushMetadata(final void Function(int, int, String) onProgress) {
     return TaskEither.tryCatch(
       () async {
         final pending = await syncDao.getPendingChanges();
         if (pending.isEmpty) return unit;
 
-        const batchSize = 500;
-        for (var i = 0; i < pending.length; i += batchSize) {
-          final chunk = pending.skip(i).take(batchSize).toList();
-          final batch = FirebaseFirestore.instance.batch();
-          final userId = authService.userId;
+        onProgress(pending.length, pending.length, pending.last.entityTable);
 
-          onProgress(i + chunk.length, pending.length, chunk.last.entityTable);
-
-          final syncedEntries = <SyncLogData>[];
-
-          for (final entry in chunk) {
-            try {
-              final table = entry.entityTable;
-              final docRef = FirebaseFirestore.instance.collection(table).doc(entry.entityId);
-
-              if (entry.action == 'delete') {
-                if (table == 'moves' || table == 'combos') {
-                  final storagePath = '$userId/$table/${entry.entityId}.mp4';
-                  try {
-                    await FirebaseStorage.instance.ref('videos/$storagePath').delete();
-                  } on Object catch (_) {}
-                }
-                batch.delete(docRef);
-              } else {
-                final body = await _getLocalRecordBody(table, entry.entityId);
-                if (body != null) {
-                  body['user_id'] = userId;
-                  body['updated_at'] = FieldValue.serverTimestamp();
-                  batch.set(docRef, body);
-                }
-              }
-              syncedEntries.add(entry);
-            } on Object catch (e) {
-              debugPrint('[SyncService] Failed to prepare batch entry: $e');
-            }
-          }
-
-          try {
-            await batch.commit();
-            for (final entry in syncedEntries) {
-              await syncDao.markSynced(entry.entityId, entry.entityTable, entry.action);
-            }
-          } catch (e) {
-            debugPrint('[SyncService] Batch commit failed: $e');
-            rethrow;
-          }
-        }
-
-        // Dual-write `moves` to the Appwrite shadow AFTER Firestore is the source
-        // of truth for this flush (task 4.2, strangler order: dual-write precedes
-        // any read cutover, audit A1). Pref-gated + non-throwing, so it never
-        // blocks or fails the Firestore path.
+        // Appwrite is the canonical metadata backend (Firebase was the legacy
+        // backend, removed for release — see excise-firebase-and-restore-compile-speed).
+        // Every push is a non-throwing dual-write to the Appwrite shadow: pref-
+        // gated OFF until activateSync() flips the kill-switches, so a push is a
+        // silent no-op in local-only mode and a live shadow write once synced.
         await dualWriteMoves(pending.where((final e) => e.entityTable == 'moves'));
-        // Same strangler order for the combos + combo_moves pair (task 4.4).
         await dualWriteCombos(pending.where((final e) => e.entityTable == 'combos'));
         await dualWriteComboMoves(
           pending.where((final e) => e.entityTable == 'combo_moves'),
         );
-        // Append-only `reviewEvents` (task 4.5): only ever new events, never
-        // deletes — same strangler order (dual-write before any read cutover).
         await dualWriteReviews(
           pending.where((final e) => e.entityTable == 'reviews'),
         );
-        // Appwrite-only decks + deck_moves pair (task 4.7): no Firestore leg, so
-        // these entries no-op through the loop above and are shadowed here only.
         await dualWriteDecks(
           pending.where((final e) => e.entityTable == 'decks'),
         );
         await dualWriteDeckMoves(
           pending.where((final e) => e.entityTable == 'deck_moves'),
         );
-        // Appwrite-only note-entry pair (task 4.9): no Firestore leg, so these
-        // entries no-op through the loop above and are shadowed here only.
         await dualWriteMoveNoteEntries(
           pending.where((final e) => e.entityTable == 'move_note_entries'),
         );
         await dualWriteComboNoteEntries(
           pending.where((final e) => e.entityTable == 'combo_note_entries'),
         );
+
+        // Mark everything synced — the dual-writes above are idempotent and
+        // LWW-safe, so a markSynced here is a bookkeeping ack, not a data claim.
+        for (final entry in pending) {
+          await syncDao.markSynced(entry.entityId, entry.entityTable, entry.action);
+        }
         return unit;
       },
       (final error, final stackTrace) => AppFailure.sync('Pushing metadata failed: $error'),
     );
   }
 
-  TaskEither<AppFailure, Unit> uploadVideos(final void Function(int, int, String) onProgress) {
+  TaskEither<AppFailure, Unit> uploadVideos(
+    final void Function(int, int, String) onProgress, {
+    required final List<CloudProvider> providers,
+  }) {
     return TaskEither.tryCatch(
       () async {
+        if (providers.isEmpty) return unit;
         final pending = await syncDao.getPendingVideoUploads();
         if (pending.isEmpty) return unit;
 
-        final userId = authService.userId;
+        // Pick the first provider that supports resumable upload (GDrive, S3 —
+        // not every provider needs video byte storage). Firebase Storage was
+        // the legacy sink; CloudProvider is the abstraction that replaced it.
+        final sink = providers.firstWhere(
+          (final p) => p.capabilities.contains(CloudProviderCapability.resumableUpload),
+          orElse: () => providers.first,
+        );
 
         for (var i = 0; i < pending.length; i++) {
           final entry = pending[i];
@@ -253,7 +207,6 @@ class SyncService {
 
           try {
             String? videoPath;
-
             if (entry.entityTable == 'moves') {
               final move = await db.movesDao.getById(entry.entityId);
               videoPath = move.videoPath;
@@ -263,21 +216,26 @@ class SyncService {
             } else {
               continue;
             }
-
             if (videoPath == null) continue;
 
             final absolutePath = VideoPathResolver.toAbsolute(videoPath);
             final file = File(absolutePath);
             if (!await file.exists()) continue;
 
-            final storagePath = '$userId/${entry.entityTable}/${entry.entityId}.mp4';
-
-            await putFileTask(
-              FirebaseStorage.instance.ref('videos/$storagePath'),
-              absolutePath,
+            final remotePath = '${entry.entityTable}/${entry.entityId}.mp4';
+            await sink.upload(
+              localPath: absolutePath,
+              remotePath: remotePath,
+              onProgress: (final sent, final total) {
+                DiagnosticsLog.debug('Sync',
+                    'upload ${entry.entityId} $sent/$total');
+              },
             );
             await syncDao.markVideoSynced(entry.entityId, entry.entityTable);
-          } on Object catch (_) {}
+          } on Object catch (e) {
+            debugPrint('[SyncService] video upload failed for '
+                '${entry.entityId}: $e');
+          }
         }
         return unit;
       },
@@ -288,105 +246,42 @@ class SyncService {
   TaskEither<AppFailure, Unit> pullRemote() {
     return TaskEither.tryCatch(
       () async {
-        final userId = authService.userId;
-        final ms = prefs.getInt('last_sync_at');
-        final since = ms != null ? DateTime.fromMillisecondsSinceEpoch(ms) : null;
+        // Appwrite is the canonical metadata backend. Every pull goes through
+        // the SyncBackend contract; each entity is kill-switch-gated (off in
+        // local-only, ON after activateSync()) and owns its own cursor, so a
+        // backend hiccup on one entity never blocks the rest.
+        final results = <String, ({int applied, int failed})>{};
 
-        for (final table in [
-          'moves', 'combos', 'combo_moves', 'reviews', 'fsrs_cards', 'battle_results',
-        ]) {
-          try {
-            // Strangler-fig dual-read (task 2.1): serve `moves` from the
-            // canonical backend first; on any failure fall through to the
-            // Firestore path below so a backend hiccup never blocks a pull. The
-            // backend path owns its own cursor (H.1), independent of the
-            // Firestore `since` used for the other tables.
-            if (table == 'moves') {
-              try {
-                final result = await pullMovesFromBackend();
-                if (result != null) continue;
-              } on Object catch (e) {
-                debugPrint('[SyncService] moves dual-read failed, falling back to Firestore: $e');
-              }
-            }
-            // The combos + combo_moves pair (task 4.4), each with its own cursor.
-            if (table == 'combos') {
-              try {
-                final result = await pullCombosFromBackend();
-                if (result != null) continue;
-              } on Object catch (e) {
-                debugPrint('[SyncService] combos dual-read failed, falling back to Firestore: $e');
-              }
-            }
-            if (table == 'combo_moves') {
-              try {
-                final result = await pullComboMovesFromBackend();
-                if (result != null) continue;
-              } on Object catch (e) {
-                debugPrint('[SyncService] combo_moves dual-read failed, falling back to Firestore: $e');
-              }
-            }
-            // Append-only reviews (task 4.5): pull new events from the shadow.
-            if (table == 'reviews') {
-              try {
-                final result = await pullReviewsFromBackend();
-                if (result != null) continue;
-              } on Object catch (e) {
-                debugPrint('[SyncService] reviews dual-read failed, falling back to Firestore: $e');
-              }
-            }
-            // Derived FSRS cards (task 4.6): pull-only, server-derived from the
-            // reviewEvents log; never pushed.
-            if (table == 'fsrs_cards') {
-              try {
-                final result = await pullFsrsCardsFromBackend();
-                if (result != null) continue;
-              } on Object catch (e) {
-                debugPrint('[SyncService] fsrs_cards dual-read failed, falling back to Firestore: $e');
-              }
-            }
+        final moves = await pullMovesFromBackend();
+        if (moves != null) results['move'] = moves;
 
-            var query = FirebaseFirestore.instance.collection(table).where('user_id', isEqualTo: userId);
-            if (since != null) {
-              query = query.where('updated_at', isGreaterThan: since.toUtc().toIso8601String());
-            }
+        final combos = await pullCombosFromBackend();
+        if (combos != null) results['combo'] = combos;
 
-            final snapshot = await query.get();
-            final records = snapshot.docs.map((final doc) => doc.data()).toList();
+        final comboMoves = await pullComboMovesFromBackend();
+        if (comboMoves != null) results['comboMove'] = comboMoves;
 
-            for (final record in records) {
-              await _mergeRemoteRecord(table, record);
-            }
-          } on Object catch (_) {}
-        }
+        final reviews = await pullReviewsFromBackend();
+        if (reviews != null) results['review'] = reviews;
 
-        // Appwrite-only decks + deck_moves pair (task 4.7): no Firestore table to
-        // iterate, so pull them explicitly. No-op (returns null) when the read
-        // kill-switch is off; a backend hiccup is swallowed so it never blocks
-        // the rest of the pull.
-        try {
-          await pullDecksFromBackend();
-        } on Object catch (e) {
-          debugPrint('[SyncService] decks dual-read failed: $e');
-        }
-        try {
-          await pullDeckMovesFromBackend();
-        } on Object catch (e) {
-          debugPrint('[SyncService] deck_moves dual-read failed: $e');
-        }
-        // Appwrite-only note-entry pair (task 4.9): pull explicitly (no Firestore
-        // table to iterate). No-op when the read kill-switch is off; a hiccup is
-        // swallowed so it never blocks the rest of the pull.
-        try {
-          await pullMoveNoteEntriesFromBackend();
-        } on Object catch (e) {
-          debugPrint('[SyncService] move_note_entries dual-read failed: $e');
-        }
-        try {
-          await pullComboNoteEntriesFromBackend();
-        } on Object catch (e) {
-          debugPrint('[SyncService] combo_note_entries dual-read failed: $e');
-        }
+        final fsrsCards = await pullFsrsCardsFromBackend();
+        if (fsrsCards != null) results['fsrsCard'] = fsrsCards;
+
+        final decks = await pullDecksFromBackend();
+        if (decks != null) results['deck'] = decks;
+
+        final deckMoves = await pullDeckMovesFromBackend();
+        if (deckMoves != null) results['deckMove'] = deckMoves;
+
+        final moveNotes = await pullMoveNoteEntriesFromBackend();
+        if (moveNotes != null) results['moveNoteEntry'] = moveNotes;
+
+        final comboNotes = await pullComboNoteEntriesFromBackend();
+        if (comboNotes != null) results['comboNoteEntry'] = comboNotes;
+
+        final totalApplied = results.values.fold(0, (final sum, final r) => sum + r.applied);
+        DiagnosticsLog.info('Sync', 'pull complete — $totalApplied row(s) applied '
+            'across ${results.length} entities: ${results.keys.join(", ")}');
         return unit;
       },
       (final error, final stackTrace) => AppFailure.sync('Pulling remote metadata failed: $error'),
@@ -419,45 +314,43 @@ class SyncService {
     );
   }
 
-  TaskEither<AppFailure, Unit> downloadVideos(final void Function(int, int, String) onProgress) {
+  TaskEither<AppFailure, Unit> downloadVideos(
+    final void Function(int, int, String) onProgress, {
+    required final List<CloudProvider> providers,
+  }) {
     return TaskEither.tryCatch(
       () async {
-        final userId = authService.userId;
-        // Stream downloads straight to disk (H.6): `getData()` caps at 10 MB by
-        // default and threw on larger clips — swallowed by the old `catch (_)`,
-        // so big videos silently never downloaded. `writeToFile` has no cap.
-        // Resolve the docs dir once, not once per file.
+        if (providers.isEmpty) return unit;
+        final sink = providers.firstWhere(
+          (final p) => p.capabilities.contains(CloudProviderCapability.resumableUpload),
+          orElse: () => providers.first,
+        );
+
         final docsDir = await getApplicationDocumentsDirectory();
         final movesDir = Directory(p.join(docsDir.path, 'Moves'));
         final combosDir = Directory(p.join(docsDir.path, 'Combos'));
 
-        // Download moves
-        final moveVideosRef = FirebaseStorage.instance.ref('videos/$userId/moves');
-        final moveVideos = await moveVideosRef.listAll();
+        // Discover remote video assets and download any that are missing or
+        // unrecoverable locally. The CloudProvider abstraction handles the byte
+        // transfer; we reconcile against Drift truth.
+        final remoteAssets = await sink.list(directory: 'moves');
+        for (var i = 0; i < remoteAssets.length; i++) {
+          final asset = remoteAssets[i];
+          final moveId = p.basenameWithoutExtension(asset.remotePath);
+          onProgress(i + 1, remoteAssets.length, moveId);
 
-        final toDownloadMoves = <Reference>[];
-        for (final fileObj in moveVideos.items) {
-          final moveId = p.basenameWithoutExtension(fileObj.name);
           try {
             final localMove = await db.movesDao.getById(moveId);
-            if (localMove.videoPath == null || localMove.videoPath!.isEmpty) {
-              toDownloadMoves.add(fileObj);
-            } else if (!await File(VideoPathResolver.toAbsolute(localMove.videoPath!)).exists()) {
-              toDownloadMoves.add(fileObj);
+            final existingPath = localMove.videoPath;
+            if (existingPath != null &&
+                existingPath.isNotEmpty &&
+                await File(VideoPathResolver.toAbsolute(existingPath)).exists()) {
+              continue; // already have it
             }
-          } on Object catch (_) {}
-        }
-
-        for (var i = 0; i < toDownloadMoves.length; i++) {
-          final fileObj = toDownloadMoves[i];
-          final moveId = p.basenameWithoutExtension(fileObj.name);
-          onProgress(i + 1, toDownloadMoves.length, moveId);
-
-          try {
             if (!await movesDir.exists()) await movesDir.create(recursive: true);
             final localPath = p.join(movesDir.path, '$moveId.mp4');
 
-            await writeToFileTask(fileObj, localPath);
+            await sink.download(remotePath: asset.remotePath, localPath: localPath);
 
             await (db.update(db.moves)..where((final t) => t.id.equals(moveId))).write(
               MovesCompanion(videoPath: Value(VideoPathResolver.toRelative(localPath))),
@@ -467,33 +360,24 @@ class SyncService {
           }
         }
 
-        // Download combos
-        final comboVideosRef = FirebaseStorage.instance.ref('videos/$userId/combos');
-        final comboVideos = await comboVideosRef.listAll();
+        final remoteCombos = await sink.list(directory: 'combos');
+        for (var i = 0; i < remoteCombos.length; i++) {
+          final asset = remoteCombos[i];
+          final comboId = p.basenameWithoutExtension(asset.remotePath);
+          onProgress(i + 1, remoteCombos.length, comboId);
 
-        final toDownloadCombos = <Reference>[];
-        for (final fileObj in comboVideos.items) {
-          final comboId = p.basenameWithoutExtension(fileObj.name);
           try {
             final localCombo = await db.combosDao.getById(comboId);
-            if (localCombo.activeVideoPath == null || localCombo.activeVideoPath!.isEmpty) {
-              toDownloadCombos.add(fileObj);
-            } else if (!await File(VideoPathResolver.toAbsolute(localCombo.activeVideoPath!)).exists()) {
-              toDownloadCombos.add(fileObj);
+            final existingPath = localCombo.activeVideoPath;
+            if (existingPath != null &&
+                existingPath.isNotEmpty &&
+                await File(VideoPathResolver.toAbsolute(existingPath)).exists()) {
+              continue;
             }
-          } on Object catch (_) {}
-        }
-
-        for (var i = 0; i < toDownloadCombos.length; i++) {
-          final fileObj = toDownloadCombos[i];
-          final comboId = p.basenameWithoutExtension(fileObj.name);
-          onProgress(i + 1, toDownloadCombos.length, comboId);
-
-          try {
             if (!await combosDir.exists()) await combosDir.create(recursive: true);
             final localPath = p.join(combosDir.path, '$comboId.mp4');
 
-            await writeToFileTask(fileObj, localPath);
+            await sink.download(remotePath: asset.remotePath, localPath: localPath);
 
             await (db.update(db.combos)..where((final t) => t.id.equals(comboId))).write(
               CombosCompanion(activeVideoPath: Value(VideoPathResolver.toRelative(localPath))),
@@ -1461,171 +1345,6 @@ class SyncService {
   }
 
   // --- Private Helpers ---
-
-  Future<Map<String, dynamic>?> _getLocalRecordBody(final String table, final String id) async {
-    try {
-      switch (table) {
-        case 'moves':
-          final move = await db.movesDao.getById(id);
-          return {
-            'id': move.id,
-            'name': move.name,
-            'learning_state': move.learningState,
-            'category': move.category,
-            'archived_at': move.archivedAt?.toIso8601String(),
-            'archive_reason': move.archiveReason,
-            'created_at': move.createdAt.toIso8601String(),
-          };
-        case 'combos':
-          final combo = await db.combosDao.getById(id);
-          return {
-            'id': combo.id,
-            'name': combo.name,
-            'active_video_path': combo.activeVideoPath,
-          };
-        case 'combo_moves':
-          final result = await (db.select(db.comboMoves)..where((final t) => t.id.equals(id))).getSingle();
-          return {
-            'id': result.id,
-            'sequence_index': result.sequenceIndex,
-            'combo_id': result.comboId,
-            'move_id': result.moveId,
-          };
-        case 'reviews':
-          final results = await (db.select(db.reviews)..where((final t) => t.id.equals(id))).get();
-          if (results.isEmpty) return null;
-          final review = results.first;
-          return {
-            'id': review.id,
-            'rating': review.rating,
-            'review_type': review.reviewType,
-            'reviewed_at': review.reviewedAt.toIso8601String(),
-            'move_id': review.moveId,
-            'combo_id': review.comboId,
-            'entity_id_snapshot': review.entityIdSnapshot,
-            'entity_type': review.entityType,
-            'entity_display_name': review.entityDisplayName,
-            'entity_category': review.entityCategory,
-            'fsrs_pre_state': review.fsrsPreState,
-            'fsrs_post_state': review.fsrsPostState,
-          };
-        case 'fsrs_cards':
-          final card = await db.fsrsCardsDao.getByEntityId(id) ?? await db.fsrsCardsDao.getByEntityId(id, entityType: 'combo');
-          if (card == null) return null;
-          return {
-            'entity_id': card.entityId,
-            'entity_type': card.entityType,
-            'stability': card.stability,
-            'difficulty': card.difficulty,
-            'due': card.due.toIso8601String(),
-            'last_review': card.lastReview?.toIso8601String(),
-            'reps': card.reps,
-            'lapses': card.lapses,
-            'fsrs_state': card.fsrsState,
-          };
-        case 'battle_results':
-          final results = await (db.select(db.battleResults)..where((final t) => t.id.equals(id))).get();
-          if (results.isEmpty) return null;
-          final br = results.first;
-          return {
-            'id': br.id,
-            'score': br.score,
-            'moves_reviewed': br.movesReviewed,
-            'good_count': br.goodCount,
-            'hard_count': br.hardCount,
-            'again_count': br.againCount,
-            'longest_streak': br.longestStreak,
-            'difficulty': br.difficulty,
-            'played_at': br.playedAt.toIso8601String(),
-          };
-        default:
-          return null;
-      }
-    } on Object catch (_) {
-      return null;
-    }
-  }
-
-  Future<void> _mergeRemoteRecord(final String table, final Map<String, dynamic> record) async {
-    try {
-      switch (table) {
-        case 'moves':
-          final companion = MovesCompanion(
-            id: Value(record['id'] as String),
-            name: Value(record['name'] as String),
-            learningState: Value(record['learning_state'] as String),
-            category: Value(record['category'] as String),
-            archivedAt: Value(record['archived_at'] == null ? null : DateTime.parse(record['archived_at'] as String)),
-            archiveReason: Value(record['archive_reason'] as String?),
-            createdAt: Value(DateTime.parse(record['created_at'] as String)),
-          );
-          await db.into(db.moves).insertOnConflictUpdate(companion);
-          break;
-        case 'combos':
-          final companion = CombosCompanion(
-            id: Value(record['id'] as String),
-            name: Value(record['name'] as String),
-            activeVideoPath: Value(record['active_video_path'] != null ? VideoPathResolver.toRelative(record['active_video_path'] as String) : null),
-          );
-          await db.into(db.combos).insertOnConflictUpdate(companion);
-          break;
-        case 'combo_moves':
-          final companion = ComboMovesCompanion(
-            id: Value(record['id'] as String),
-            sequenceIndex: Value(record['sequence_index'] as int),
-            comboId: Value(record['combo_id'] as String),
-            moveId: Value(record['move_id'] as String),
-          );
-          await db.into(db.comboMoves).insertOnConflictUpdate(companion);
-          break;
-        case 'reviews':
-          final companion = ReviewsCompanion(
-            id: Value(record['id'] as String),
-            rating: Value(record['rating'] as String),
-            reviewType: Value(record['review_type'] as String),
-            reviewedAt: Value(DateTime.parse(record['reviewed_at'] as String)),
-            moveId: Value(record['move_id'] as String?),
-            comboId: Value(record['combo_id'] as String?),
-            entityIdSnapshot: Value(record['entity_id_snapshot'] as String?),
-            entityType: Value(record['entity_type'] as String?),
-            entityDisplayName: Value(record['entity_display_name'] as String?),
-            entityCategory: Value(record['entity_category'] as String?),
-            fsrsPreState: Value(record['fsrs_pre_state'] as int?),
-            fsrsPostState: Value(record['fsrs_post_state'] as int?),
-          );
-          await db.into(db.reviews).insertOnConflictUpdate(companion);
-          break;
-        case 'fsrs_cards':
-          final companion = FsrsCardsCompanion(
-            entityId: Value(record['entity_id'] as String),
-            entityType: Value((record['entity_type'] as String?) ?? 'move'),
-            stability: Value((record['stability'] as num).toDouble()),
-            difficulty: Value((record['difficulty'] as num).toDouble()),
-            due: Value(DateTime.parse(record['due'] as String)),
-            lastReview: Value(record['last_review'] == null ? null : DateTime.parse(record['last_review'] as String)),
-            reps: Value(record['reps'] as int),
-            lapses: Value(record['lapses'] as int),
-            fsrsState: Value(record['fsrs_state'] as int),
-          );
-          await db.into(db.fsrsCards).insertOnConflictUpdate(companion);
-          break;
-        case 'battle_results':
-          final companion = BattleResultsCompanion(
-            id: Value(record['id'] as String),
-            score: Value(record['score'] as int),
-            movesReviewed: Value(record['moves_reviewed'] as int),
-            goodCount: Value(record['good_count'] as int),
-            hardCount: Value(record['hard_count'] as int),
-            againCount: Value(record['again_count'] as int),
-            longestStreak: Value(record['longest_streak'] as int),
-            difficulty: Value(record['difficulty'] as String),
-            playedAt: Value(DateTime.parse(record['played_at'] as String)),
-          );
-          await db.into(db.battleResults).insertOnConflictUpdate(companion);
-          break;
-      }
-    } on Object catch (_) {}
-  }
 
   String _learningStateFromFsrs(final int fsrsState) => switch (fsrsState) {
     2 => 'MASTERY',

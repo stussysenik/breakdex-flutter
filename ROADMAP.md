@@ -27,6 +27,10 @@
   Firebase/Firestore C++ tree (abseil, gRPC, BoringSSL, leveldb) compiled from source for a
   backend `main.dart:78` already calls *legacy — superseded by Appwrite*. Baseline-before-delete,
   5 phases, strongly net-negative LOC. Blocks nothing; unblocks every future device loop.
+  **Phase 2 complete (2026-08-17):** Capability mapping (2.1–2.5) verified — every Firebase
+  capability has a named Appwrite/CloudProvider replacement; no data exclusive to Firebase;
+  deletion safe without migration. Phase 1 (baseline) deferred (device-gated). Next: Phase 3
+  (conformance test) — Student work, owner-invoked.
 - **Change (complete, 2026-08-02 · launch consistency):** `enforce-face-law-conformance`
   — the successor named by the D8 backlog (4b), and the gap the predecessor left on purpose.
   `unify-text-first-frame-and-icon-vocabulary` migrated the screens; nothing holds them there.

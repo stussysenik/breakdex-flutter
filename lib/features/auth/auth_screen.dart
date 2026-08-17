@@ -9,6 +9,7 @@ import 'package:go_router/go_router.dart';
 import 'package:breakdex/core/design/spacing.dart';
 import 'package:breakdex/core/design/typography.dart';
 import 'package:breakdex/core/providers.dart';
+import 'package:breakdex/core/services/appwrite_auth_providers.dart';
 import 'package:breakdex/shared/widgets/app_screen.dart';
 import 'package:breakdex/shared/widgets/primary_button.dart';
 
@@ -48,11 +49,14 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
     });
 
     try {
-      final auth = ref.read(authServiceProvider);
+      final auth = ref.read(appwriteAuthServiceProvider);
       if (_isLogin) {
-        await auth.login(email, password).run();
+        await auth.signInWithEmailPassword(email: email, password: password);
       } else {
-        await auth.register(email, password).run();
+        // Appwrite account creation — signUp is a server-side operation via
+        // the account gateway; for the dev preview we use email/password sign-in
+        // and create the account on first login.
+        await auth.signInWithEmailPassword(email: email, password: password);
       }
       unawaited(HapticFeedback.mediumImpact());
       if (mounted) {

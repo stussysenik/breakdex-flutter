@@ -16,7 +16,6 @@ import 'package:breakdex/core/database/database.dart';
 import 'package:breakdex/core/providers.dart' show syncServiceProvider;
 import 'package:breakdex/core/services/appwrite_auth_providers.dart';
 import 'package:breakdex/core/services/appwrite_auth_service.dart';
-import 'package:breakdex/core/services/auth_service.dart';
 import 'package:breakdex/core/services/sync_activation_providers.dart';
 import 'package:breakdex/core/services/sync_service.dart';
 import 'package:breakdex/core/sync/backfill/sync_backfill_service.dart';
@@ -168,7 +167,7 @@ class _CountingSyncService extends SyncService {
     required this.activations,
     Object? error,
   }) : super(
-          authService: AuthService(prefs),
+
           syncDao: db.syncDao,
           syncBackfillService: _FakeBackfill(db: db, error: error),
         );
