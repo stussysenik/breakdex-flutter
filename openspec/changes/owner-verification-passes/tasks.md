@@ -72,12 +72,25 @@ survives the move. Registry: `DEVICE` / `REVIEW` / `DECIDE` / `SCHOLAR`.
        `integration_test/` directory exists yet, so authoring the journey is part of the task.
        (`redesign-visual-first-experience` V.2)
 - [ ] [REVIEW] 6.3 **Visual review of the `/add` flow previews**, now that the widget-preview harness runs
-       on web again (`add-web-first-release-and-monetization` 1.0.6 fixed the missing wasm VFS).
-       Run `flutter widget-preview start -d chrome` and read group `add` in order: `1 · AddScreen`
-       → `2 · VideoPickerSheet` (incl. `re-pick`) → `3 · ClipMetadataForm` (incl. `empty name`),
-       each in light and dark. The previews are *proven to build* with no exceptions; whether they
-       read as one flow and hold the density/labelled-icon bars is the owner's call, which is why
-       it lives here rather than in the parent change (`redesign-visual-first-experience` 6.11).
-       Two known non-blockers in the same run, tracked as `redesign-visual-first-experience` 6.13:
-       the battle/party previews throw (`RenderFlex` overflow in `battle_intro.dart`, a missing
-       `PartyBloc` ancestor) and the 3D panel cannot render on web at all.
+        on web again (`add-web-first-release-and-monetization` 1.0.6 fixed the missing wasm VFS).
+        Run `flutter widget-preview start -d chrome` and read group `add` in order: `1 · AddScreen`
+        → `2 · VideoPickerSheet` (incl. `re-pick`) → `3 · ClipMetadataForm` (incl. `empty name`),
+        each in light and dark. The previews are *proven to build* with no exceptions; whether they
+        read as one flow and hold the density/labelled-icon bars is the owner's call, which is why
+        it lives here rather than in the parent change (`redesign-visual-first-experience` 6.11).
+        Two known non-blockers in the same run, tracked as `redesign-visual-first-experience` 6.13:
+        the battle/party previews throw (`RenderFlex` overflow in `battle_intro.dart`, a missing
+        `PartyBloc` ancestor) and the 3D panel cannot render on web at all.
+
+## 7. Sync provisioning device proof
+
+> Code shipped in `add-first-user-production-provisioning` (Phases 1–4, commit e3e536c).
+> 14/14 tests green, analyze clean. Only live-device proof remains.
+
+- [ ] [DEVICE] 7.1 Google-sign-in on the phone (canonical identity). (`add-first-user-production-provisioning` 5.1)
+- [ ] [DEVICE] 7.2 Provision (auto on first login) → verify per-entity row counts match local
+        library via server-side `curl` / `get_app_logs`. (`add-first-user-production-provisioning` 5.2)
+- [ ] [DEVICE] 7.3 Second surface (web / other device) signs in same identity → same data appears.
+        (`add-first-user-production-provisioning` 5.3)
+- [ ] [DEVICE] 7.4 CRUD on either surface propagates within a pull cycle (argent acceptance:
+        all devices up, one truth, CRUD works). (`add-first-user-production-provisioning` 5.4)
