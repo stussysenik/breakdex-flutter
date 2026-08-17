@@ -24,6 +24,7 @@ import 'package:breakdex/core/sync/codecs/review_codec.dart';
 import 'package:breakdex/core/sync/codecs/fsrs_card_codec.dart';
 import 'package:breakdex/core/sync/codecs/deck_codec.dart';
 import 'package:breakdex/core/sync/codecs/note_entry_codec.dart';
+import 'package:breakdex/core/sync/backfill/sync_backfill_service.dart';
 import 'package:breakdex/core/utils/diagnostics.dart';
 
 class SyncService {
@@ -37,12 +38,19 @@ class SyncService {
   /// this stays `null` and every pull uses the Firestore path unchanged.
   final SyncBackend? syncBackend;
 
+  /// Every-entity backfill composed for production provisioning. Nullable:
+  /// `activateSync()` is a no-op when null (e.g. in tests that don't override
+  /// it); the live [syncServiceProvider] wires it from
+  /// [fullBackfillServiceProvider].
+  final SyncBackfillService? syncBackfillService;
+
   SyncService({
     required this.authService,
     required this.syncDao,
     required this.db,
     required this.prefs,
     this.syncBackend,
+    this.syncBackfillService,
   });
 
   /// Kill-switch for the `moves` dual-read (task 2.1). Off by default, so the
@@ -923,6 +931,57 @@ class SyncService {
     final failed = reports.where((final r) => r.failed != 0).length;
     hydrate.complete('$applied row(s) applied across ${reports.length} entities'
         '${failed == 0 ? '' : ', $failed entity/entities with failures'}');
+    return reports;
+  }
+
+  // --- Production first-login provisioning (add-first-user-production-provisioning) ---
+
+  /// Flip every per-entity dual-write kill-switch at once (production path).
+  /// Writes each key via `SharedPreferences.setBool`; no other behavior.
+  /// Skips `fsrsCards` (derived server-side, no write key). See spec
+  /// `SyncService batch pref setters`.
+  Future<void> setDualWriteAll(final bool enabled) async {
+    await prefs.setBool(movesDualWritePrefKey, enabled);
+    await prefs.setBool(combosDualWritePrefKey, enabled);
+    await prefs.setBool(reviewsDualWritePrefKey, enabled);
+    await prefs.setBool(decksDualWritePrefKey, enabled);
+    await prefs.setBool(noteEntriesDualWritePrefKey, enabled);
+  }
+
+  /// Flip every per-entity dual-read kill-switch at once (production path).
+  /// Writes each key via `SharedPreferences.setBool`; no other behavior.
+  /// Includes `fsrsCards` (read-only entity). See spec
+  /// `SyncService batch pref setters`.
+  Future<void> setDualReadAll(final bool enabled) async {
+    await prefs.setBool(movesDualReadPrefKey, enabled);
+    await prefs.setBool(combosDualReadPrefKey, enabled);
+    await prefs.setBool(reviewsDualReadPrefKey, enabled);
+    await prefs.setBool(fsrsCardsDualReadPrefKey, enabled);
+    await prefs.setBool(decksDualReadPrefKey, enabled);
+    await prefs.setBool(noteEntriesDualReadPrefKey, enabled);
+  }
+
+  /// All-or-nothing production activation: compose the eight `backfill*()`
+  /// calls via the injected [SyncBackfillService]; on full success flip every
+  /// dual-write then dual-read pref ON; on any throw change NO prefs and let
+  /// the exception propagate. Returns the list of `BackfillReport`. No-op
+  /// (returns `const []`) when no backfill service is wired.
+  Future<List<BackfillReport>> activateSync() async {
+    final backfill = syncBackfillService;
+    if (backfill == null) return const [];
+
+    final reports = <BackfillReport>[];
+    reports.add(await backfill.backfillMoves());
+    reports.add(await backfill.backfillCombos());
+    reports.add(await backfill.backfillComboMoves());
+    reports.add(await backfill.backfillReviews());
+    reports.add(await backfill.backfillDecks());
+    reports.add(await backfill.backfillDeckMoves());
+    reports.add(await backfill.backfillMoveNoteEntries());
+    reports.add(await backfill.backfillComboNoteEntries());
+
+    await setDualWriteAll(true);
+    await setDualReadAll(true);
     return reports;
   }
 

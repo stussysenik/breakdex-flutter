@@ -494,6 +494,10 @@ final syncServiceProvider = Provider<SyncService>((final ref) {
     // `movesDualReadPrefKey` (both off by default) — so every flush/pull is
     // byte-identical to Firestore-only until the owner turns them on.
     syncBackend: ref.watch(appwriteSyncBackendProvider),
+    // Every-entity backfill for first-login provisioning: `activateSync()`
+    // composes the eight `backfill*()` calls against this, then flips every
+    // dual-write/dual-read pref ON — no-op until the trigger fires.
+    syncBackfillService: ref.watch(fullBackfillServiceProvider),
   );
 });
 

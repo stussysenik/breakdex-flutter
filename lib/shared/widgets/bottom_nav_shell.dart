@@ -8,6 +8,7 @@ import 'package:breakdex/core/providers.dart';
 import 'package:breakdex/core/design/theme.dart';
 import 'package:breakdex/core/services/hydrate_on_login_providers.dart';
 import 'package:breakdex/core/services/legacy_identity_providers.dart';
+import 'package:breakdex/core/services/sync_activation_providers.dart';
 import 'package:breakdex/core/services/media_playback_coordinator.dart';
 import 'package:breakdex/core/models/app_mode.dart';
 import 'package:breakdex/core/services/settings_service.dart';
@@ -76,6 +77,10 @@ class BottomNavShell extends ConsumerWidget {
                 // fresh device (esp. a just-signed-in web client) sees the
                 // user's library immediately; once per user, never throws.
                 ref.watch(hydrateOnLoginTriggerProvider);
+                // First-login production provisioning: shadow local library TO
+                // the backend and flip every dual-write/dual-read pref ON —
+                // once per user, never throws, no-op until a session exists.
+                ref.watch(firstLoginProvisioningTrigger);
                 return const SyncProgressBar();
               },
             ),
