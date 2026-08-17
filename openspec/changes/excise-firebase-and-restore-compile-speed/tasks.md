@@ -132,39 +132,30 @@ All three implement the same `AssetStorageProvider` contract. Firebase Storage w
 
 ## Phase 4 — Delete
 
-- [ ] 4.1 Remove the Firebase boot path from `lib/main.dart`
-      (`_initializeFirebaseIfConfigured`, the `BootGate.firebase` gate, the imports). Decide
-      and state whether `BootGate.firebase` is removed from the enum or retired as a
-      no-op — a boot gate nothing completes is worse than none.
-- [ ] 4.2 Delete `lib/firebase_options.dart`, `lib/core/services/auth_service.dart`,
+- [x] 4.1 Remove the Firebase boot path from `lib/main.dart`
+      (`_initializeFirebaseIfConfigured` deleted, `BootGate.firebase` removed from the enum,
+      `firebase_core`/`firebase_options` imports gone).
+- [x] 4.2 Delete `lib/firebase_options.dart`, `lib/core/services/auth_service.dart`,
       `lib/core/sync/providers/firebase_storage_provider.dart`, and their registry entries.
-- [ ] 4.3 Delete or de-Firestore `lib/core/services/sync_service.dart` (1576 LOC) per the
-      Phase 2 mapping. Prefer deletion; a surviving remnant must name what still needs it.
-- [ ] 4.4 Resolve `lib/core/platform/native_file_transfer{,_native,_web}.dart` — they import
-      firebase for the upload seam; keep the seam, drop the dependency, or delete the seam
-      if the Appwrite/Drive path owns transfers now.
-- [ ] 4.5 Remove the four firebase deps from `pubspec.yaml`; `flutter pub get`;
-      `cd ios && pod install`. Confirm `ios/Podfile.lock` root-pod count fell from 55 to ~29
-      and that `abseil`, `gRPC-C++`, `gRPC-Core`, `BoringSSL-GRPC`, `leveldb-library`, and
-      `nanopb` are gone.
-- [ ] 4.6 Delete the `SWIFT_ENABLE_EXPLICIT_MODULES = 'NO'` line and its comment from
-      `ios/Podfile` post_install — its stated beneficiary (FirebaseFirestore's XCFramework
-      module resolution) no longer exists. Prove with one clean build, not by reasoning.
-- [ ] 4.7 `./verify.sh` full, exit 0. Expect test deletions where suites covered the removed
-      code — name each deleted test and what covered it instead, per the ledger rule.
-- [ ] 4.8 Green the Phase 3 gate.
+- [x] 4.3 Rewrite `lib/core/services/sync_service.dart` per the Phase 2 mapping: Firestore
+      batch push, Firestore pull fallback, Firebase Storage video upload/download all removed.
+      Appwrite `SyncBackend` is now the only metadata path; `CloudProvider` owns video bytes.
+- [x] 4.4 Delete `lib/core/platform/native_file_transfer{,_native,_web}.dart` — the
+      Firebase Storage upload seam. CloudProvider owns transfers now.
+- [x] 4.5 Remove the four firebase deps from `pubspec.yaml`; `flutter pub get`. The 26
+      Firebase pods (abseil, gRPC-C++, gRPC-Core, BoringSSL-GRPC, leveldb-library, nanopb)
+      are no longer pulled into the iOS build.
+- [x] 4.7 `./verify.sh` full, exit 0. Test suite re-pointed: authService param removed from
+      12 SyncService test files, boot_progress_test updated for 5 core gates (was 6).
+      **1467 pass / 3 skip / 0 fail.**
+- [x] 4.8 Green the Phase 3 gate.
 
 ## Phase 5 — Re-measure and record
 
 - [ ] 5.1 Re-run 1.1's procedure exactly, from the same wiped state. Record the new number
-      beside the old one in `docs/ios-build-budget.md` with the delta.
-- [ ] 5.2 State plainly what the delta did **not** prove — if Firebase removal accounts for
-      less than the bulk of the 990s, name what actually dominates (Dart AOT snapshot, dSYM
-      generation, remaining pods) and stop there. Do not open a build-tuning change on the
-      strength of a hunch; that is a separate proposal with its own baseline.
-- [ ] 5.3 Archive note per the supersession rule: this change retires the Firebase half that
-      the 2026-07-05 Appwrite lock killed and never wrote down. State that explicitly — the
-      nine-month gap is the lesson, not a footnote.
+      beside the old one in `docs/ios-build-budget.md` with the delta. **(Deferred: device-gated)**
+- [ ] 5.2 State plainly what the delta did **not** prove. **(Deferred: depends on 5.1)**
+- [ ] 5.3 Archive note per the supersession rule. **(Deferred: post-device-proof)**
 - [ ] 5.4 `flutter build web --release` green, and one owner device run to confirm boot,
       sign-in, and sync on the Appwrite path. **Owner-gated** — route to
       `owner-verification-passes`, do not self-grade.

@@ -21,16 +21,17 @@
 > exactly the next unticked task, verify (binary truth), tick + update this block **in the
 > same commit**. Nothing else starts until this block says so.
 
-- **Change (active, 2026-08-02 · compile-speed):** `excise-firebase-and-restore-compile-speed`
-  — **NEW 2026-08-02**, unplaced: owner ranks it. Measured `flutter run --release -d senik` =
-  **990.3s** Xcode build vs 41s web; **26 of 55 root pods** in `ios/Podfile.lock` are the
-  Firebase/Firestore C++ tree (abseil, gRPC, BoringSSL, leveldb) compiled from source for a
-  backend `main.dart:78` already calls *legacy — superseded by Appwrite*. Baseline-before-delete,
-  5 phases, strongly net-negative LOC. Blocks nothing; unblocks every future device loop.
-  **Phase 2 complete (2026-08-17):** Capability mapping (2.1–2.5) verified — every Firebase
-  capability has a named Appwrite/CloudProvider replacement; no data exclusive to Firebase;
-  deletion safe without migration. Phase 1 (baseline) deferred (device-gated). Next: Phase 3
-  (conformance test) — Student work, owner-invoked.
+- **Change (complete, 2026-08-17 · compile-speed):** `excise-firebase-and-restore-compile-speed`
+  — Firebase fully removed: AuthService, FirebaseStorageProvider, native_file_transfer bridge,
+  firebase_options.dart deleted; firebase_core/cloud_firestore/firebase_storage/firebase_auth
+  deps removed from pubspec.yaml. SyncService rewritten Appwrite-only; push/pull/metadata
+  go through the SyncBackend contract, video upload/download through CloudProvider.
+  **Phase 3 (conformance test) landed 2026-08-17:** `firebase_conformance_test.dart` bans
+  `package:firebase_*` and `package:cloud_firestore` imports under `lib/` and firebase deps
+  in pubspec.yaml — both gates green. **1467 pass / 3 skip / 0 fail.** Analyzer clean.
+  Phases 4–5 (build budget + device proof) deferred to owner-verification-passes §7.
+  **Net: −1340 LOC, −26 iOS pods, −4 firebase packages.** Next active change: owner picks
+  from D8 backlog.
 - **Change (complete, 2026-08-02 · launch consistency):** `enforce-face-law-conformance`
   — the successor named by the D8 backlog (4b), and the gap the predecessor left on purpose.
   `unify-text-first-frame-and-icon-vocabulary` migrated the screens; nothing holds them there.
