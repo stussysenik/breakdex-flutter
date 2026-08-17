@@ -940,7 +940,7 @@ class SyncService {
   /// Writes each key via `SharedPreferences.setBool`; no other behavior.
   /// Skips `fsrsCards` (derived server-side, no write key). See spec
   /// `SyncService batch pref setters`.
-  Future<void> setDualWriteAll(final bool enabled) async {
+  Future<void> setDualWriteAll({required final bool enabled}) async {
     await prefs.setBool(movesDualWritePrefKey, enabled);
     await prefs.setBool(combosDualWritePrefKey, enabled);
     await prefs.setBool(reviewsDualWritePrefKey, enabled);
@@ -952,7 +952,7 @@ class SyncService {
   /// Writes each key via `SharedPreferences.setBool`; no other behavior.
   /// Includes `fsrsCards` (read-only entity). See spec
   /// `SyncService batch pref setters`.
-  Future<void> setDualReadAll(final bool enabled) async {
+  Future<void> setDualReadAll({required final bool enabled}) async {
     await prefs.setBool(movesDualReadPrefKey, enabled);
     await prefs.setBool(combosDualReadPrefKey, enabled);
     await prefs.setBool(reviewsDualReadPrefKey, enabled);
@@ -980,8 +980,8 @@ class SyncService {
     reports.add(await backfill.backfillMoveNoteEntries());
     reports.add(await backfill.backfillComboNoteEntries());
 
-    await setDualWriteAll(true);
-    await setDualReadAll(true);
+    await setDualWriteAll(enabled: true);
+    await setDualReadAll(enabled: true);
     return reports;
   }
 
