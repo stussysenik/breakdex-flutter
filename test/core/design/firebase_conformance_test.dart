@@ -13,10 +13,10 @@ void main() {
   group('firebase conformance — no Firebase imports or dependencies', () {
     test('no file under lib/ imports package:firebase_* or package:cloud_firestore', () {
       final banned = [
-        RegExp(r"package:firebase_core"),
-        RegExp(r"package:firebase_auth"),
-        RegExp(r"package:firebase_storage"),
-        RegExp(r"package:cloud_firestore"),
+        RegExp(r'package:firebase_core'),
+        RegExp(r'package:firebase_auth'),
+        RegExp(r'package:firebase_storage'),
+        RegExp(r'package:cloud_firestore'),
       ];
 
       final offending = <String>[];
